@@ -897,8 +897,6 @@ class CNOT(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-
-    is_controlled = "PauliX"
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -940,10 +938,6 @@ class CNOT(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
-    @property
-    def target_wires(self):
-        return Wires(self.wires[1])
-
 
 class CZ(Operation):
     r"""CZ(wires)
@@ -967,7 +961,6 @@ class CZ(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    is_controlled = "PauliZ"
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -1031,10 +1024,6 @@ class CZ(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
-    @property
-    def target_wires(self):
-        return Wires(self.wires[1])
-
 
 class CY(Operation):
     r"""CY(wires)
@@ -1058,7 +1047,6 @@ class CY(Operation):
         wires (Sequence[int]): the wires the operation acts on
     """
     num_wires = 2
-    is_controlled = "PauliY"
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -1127,10 +1115,6 @@ class CY(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[0])
-
-    @property
-    def target_wires(self):
-        return Wires(self.wires[1])
 
 
 class SWAP(Operation):
@@ -1491,8 +1475,6 @@ class CSWAP(Operation):
     """
     is_self_inverse = True
     num_wires = 3
-    is_controlled = "SWAP"
-
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -1571,10 +1553,6 @@ class CSWAP(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
-    @property
-    def target_wires(self):
-        return Wires(self.wires[1::])
-
 
 class Toffoli(Operation):
     r"""Toffoli(wires)
@@ -1603,7 +1581,6 @@ class Toffoli(Operation):
         wires (Sequence[int]): the subsystem the gate acts on
     """
     num_wires = 3
-    is_controlled = "PauliX"
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -1711,10 +1688,6 @@ class Toffoli(Operation):
     def control_wires(self):
         return Wires(self.wires[:2])
 
-    @property
-    def target_wires(self):
-        return Wires(self.wires[2])
-
 
 class MultiControlledX(Operation):
     r"""MultiControlledX(control_wires, wires, control_values)
@@ -1763,7 +1736,6 @@ class MultiControlledX(Operation):
     """
     is_self_inverse = True
     num_wires = AnyWires
-    is_controlled = "PauliX"
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -1874,10 +1846,6 @@ class MultiControlledX(Operation):
     @property
     def control_wires(self):
         return self.wires[:~0]
-
-    @property
-    def target_wires(self):
-        return self.wires[-1:]
 
     def label(self, decimals=None, base_label=None):
         return base_label or "X"

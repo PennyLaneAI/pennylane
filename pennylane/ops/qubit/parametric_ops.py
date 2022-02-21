@@ -473,7 +473,6 @@ class ControlledPhaseShift(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    is_controlled = "PhaseShift"
     basis = "Z"
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -593,10 +592,6 @@ class ControlledPhaseShift(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[0])
-
-    @property
-    def target_wires(self):
-        return Wires(self.wires[1])
 
 
 CPhase = ControlledPhaseShift
@@ -1219,7 +1214,6 @@ class CRX(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    is_controlled = "RX"
     basis = "X"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
@@ -1325,10 +1319,6 @@ class CRX(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
-    @property
-    def target_wires(self):
-        return Wires(self.wires[1])
-
 
 class CRY(Operation):
     r"""
@@ -1375,7 +1365,6 @@ class CRY(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Y"
-    is_controlled = "RY"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
     parameter_frequencies = [(0.5, 1.0)]
@@ -1470,10 +1459,6 @@ class CRY(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
-    @property
-    def target_wires(self):
-        return Wires(self.wires[1])
-
 
 class CRZ(Operation):
     r"""
@@ -1523,7 +1508,6 @@ class CRZ(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
-    is_controlled = "RZ"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe
     parameter_frequencies = [(0.5, 1.0)]
@@ -1643,10 +1627,6 @@ class CRZ(Operation):
     def control_wires(self):
         return Wires(self.wires[0])
 
-    @property
-    def target_wires(self):
-        return Wires(self.wires[1])
-
 
 class CRot(Operation):
     r"""
@@ -1692,7 +1672,6 @@ class CRot(Operation):
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
 
-    is_controlled = "Rot"
     grad_method = "A"
     grad_recipe = four_term_grad_recipe * 3
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
@@ -1811,10 +1790,6 @@ class CRot(Operation):
     @property
     def control_wires(self):
         return Wires(self.wires[0])
-
-    @property
-    def target_wires(self):
-        return Wires(self.wires[1])
 
 
 class U1(Operation):

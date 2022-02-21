@@ -25,7 +25,7 @@ import pennylane.numpy as np
 from pennylane.wires import Wires
 
 
-def get_dag_commutation(circuit):
+def commutation_dag(circuit):
     r"""Construct the pairwise-commutation DAG representation of a quantum circuit. A node represents a quantum
     operations and  an edge represent non commutation between two operations. It takes into account that not all
     operations can be moved next to each other by pairwise commutation.
@@ -54,7 +54,7 @@ def get_dag_commutation(circuit):
 
     The commutation dag can be returned by using the following code:
 
-    >>> get_dag = get_dag_commutation(circuit)
+    >>> get_dag = commutation_dag(circuit)
     >>> theta = np.pi/4
     >>> phi = np.pi/3
     >>> psi = np.pi/2
@@ -76,8 +76,8 @@ def get_dag_commutation(circuit):
     For more details, see:
 
     * Iten, R., Moyard, R., Metger, T., Sutter, D., Woerner, S.
-      "Exact and practical pattern matching for quantum circuit optimization" `arXiv:1909.05270. (2020).
-      <https://arxiv.org/pdf/1909.05270.pdf>`_
+      "Exact and practical pattern matching for quantum circuit optimization" `doi.org/10.1145/3498325
+      <https://dl.acm.org/doi/abs/10.1145/3498325>`_
 
     """
 
@@ -105,23 +105,9 @@ def get_dag_commutation(circuit):
         else:
             raise ValueError("Input is not a tape, QNode, or quantum function")
 
-        # if no wire ordering is specified, take wire list from tape
-        wires = tape.wires
+        # Initialize DAG
+        dag = CommutationDAG(tape)
 
-        consecutive_wires = Wires(range(len(wires)))
-        wires_map = OrderedDict(zip(wires, consecutive_wires))
-
-        for obs in tape.observables:
-            obs._wires = Wires([wires_map[wire] for wire in obs.wires.tolist()])
-
-        with qml.tape.Unwrap(tape):
-            # Initialize DAG
-            dag = CommutationDAG(consecutive_wires, tape.observables)
-
-            for operation in tape.operations:
-                operation._wires = Wires([wires_map[wire] for wire in operation.wires.tolist()])
-                dag.add_node(operation)
-            dag._add_successors()
         return dag
 
     return wrapper
@@ -159,858 +145,50 @@ position = OrderedDict(
         "BasisState": 27,
     }
 )
-"""OrderedDict[str, int]: represents the place of each gates in the commutation_map."""
+"""OrderedDict[str, int]: represents the index of each gates in the list of the commutation_map dictionary."""
+
+# fmt: off
 
 commutation_map = OrderedDict(
     {
-        "Hadamard": [
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ],
-        "PauliX": [
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-        ],
-        "PauliY": [
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-        ],
-        "PauliZ": [
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-        ],
-        "SWAP": [
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ],
-        "ctrl": [
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-        ],
-        "S": [
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-        ],
-        "T": [
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-        ],
-        "SX": [
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-        ],
-        "ISWAP": [
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ],
-        "SISWAP": [
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ],
-        "Barrier": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ],
-        "WireCut": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ],
-        "RX": [
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-        ],
-        "RY": [
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-        ],
-        "RZ": [
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-        ],
-        "PhaseShift": [
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-        ],
-        "Rot": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ],
-        "MultiRZ": [
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-        ],
-        "Identity": [
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            0,
-            0,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            1,
-            0,
-            0,
-        ],
-        "U1": [
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-        ],
-        "U2": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ],
-        "U3": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ],
-        "IsingXX": [
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-        ],
-        "IsingYY": [
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-            0,
-        ],
-        "IsingZZ": [
-            0,
-            0,
-            0,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            1,
-            1,
-            0,
-            1,
-            1,
-            1,
-            0,
-            0,
-            0,
-            0,
-            1,
-            0,
-            0,
-        ],
-        "QubitStateVector": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ],
-        "BasisState": [
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-        ],
+        "Hadamard": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        "PauliX": [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
+        "PauliY": [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
+        "PauliZ": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
+        "SWAP": [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        "ctrl": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
+        "S": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
+        "T": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
+        "SX": [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
+        "ISWAP": [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        "SISWAP": [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        "Barrier": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "WireCut": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "RX": [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
+        "RY": [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
+        "RZ": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
+        "PhaseShift": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
+        "Rot": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        "MultiRZ": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
+        "Identity": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+        "U1": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
+        "U2": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        "U3": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        "IsingXX": [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
+        "IsingYY": [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
+        "IsingZZ": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
+        "QubitStateVector": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "BasisState": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     }
 )
-"""OrderedDict[str, array[bool]]: represents the commutation map of each gates. Positions in the array are the
-one defined by the position dictionary. True represents commutation and False non commutation."""
+"""OrderedDict[str, array[bool]]: represents the commutation relations between each gate. Positions in the array are 
+the one defined by the position dictionary. True represents commutation and False non commutation."""
+
+# fmt: on
 
 
 def intersection(wires1, wires2):
-    r"""Check if two operations are commuting
+    r"""Check if two sets of wires intersect.
 
     Args:
         wires1 (pennylane.wires.Wires): First set of wires.
@@ -1053,14 +231,15 @@ def simplify_rotation(rot):
 
 
 def simplify_controlled_rotation(crot):
-    r"""Simplify a general one qubit rotation into RX, RY and RZ rotation.
+    r"""Simplify a general one qubit controlled rotation into CRX, CRY, CRZ and CH.
 
     Args:
-        rot (pennylane.CRot): One qubit controlled rotation.
+        crot (pennylane.CRot): One qubit controlled rotation.
 
     Returns:
          qml.operation: Simplified controlled rotation if possible.
     """
+    target_wires = [w for w in crot.wires if w not in crot.control_wires]
 
     if np.allclose(np.mod(crot.data[0], 2 * np.pi), np.pi / 2) and np.allclose(
         np.mod(crot.data[2], -2 * np.pi), -np.pi / 2
@@ -1078,7 +257,7 @@ def simplify_controlled_rotation(crot):
         and np.allclose(np.mod(crot.data[2], 2 * np.pi), 0)
     ):
         hadamard = qml.Hadamard
-        return qml.ctrl(hadamard, control=crot.control_wires)(wires=crot.target_wires)
+        return qml.ctrl(hadamard, control=crot.control_wires)(wires=target_wires)
 
     return crot
 
@@ -1109,7 +288,7 @@ def simplify_u3(u3):
     r"""Simplify a general U3 one qubit rotation into RX, RY and RZ rotation.
 
     Args:
-        u3 (pennylane.u3): One qubit U3 rotation.
+        u3 (pennylane.U3): One qubit U3 rotation.
 
     Returns:
          qml.operation: Simplified rotation if possible.
@@ -1138,7 +317,7 @@ def simplify_u3(u3):
 
 
 def simplify(operation):
-    r"""Simplify a rotation/ controlled rotation into RX, RY and RZ rotations.
+    r"""Simplify a rotation/ controlled rotation into RX, CRX, RY, CRY, RZ, CZ, H and CH.
 
     Args:
         operation (pennylane.Operation): Rotation or controlled rotation.
@@ -1172,15 +351,21 @@ def two_non_simplified_crot(operation1, operation2):
          Bool: True if commutation, False otherwise.
     """
     # Two non simplified CRot
+    target_wires_1 = qml.wires.Wires(
+        [w for w in operation1.wires if w not in operation1.control_wires]
+    )
+    target_wires_2 = qml.wires.Wires(
+        [w for w in operation2.wires if w not in operation2.control_wires]
+    )
 
     control_control = intersection(operation1.control_wires, operation2.control_wires)
-    target_target = intersection(operation1.target_wires, operation2.target_wires)
+    target_target = intersection(target_wires_1, target_wires_2)
 
     if control_control and target_target:
         return np.all(
             np.allclose(
-                np.matmul(operation1.matrix, operation2.matrix),
-                np.matmul(operation2.matrix, operation1.matrix),
+                np.matmul(operation1.get_matrix(), operation2.get_matrix()),
+                np.matmul(operation2.get_matrix(), operation1.get_matrix()),
             )
         )
     elif control_control and not target_target:
@@ -1189,12 +374,12 @@ def two_non_simplified_crot(operation1, operation2):
         return np.all(
             np.allclose(
                 np.matmul(
-                    qml.Rot(*operation1.data, wires=operation1.wires[1]).matrix,
-                    qml.Rot(*operation2.data, wires=operation2.wires[1]).matrix,
+                    qml.Rot(*operation1.data, wires=operation1.wires[1]).get_matrix(),
+                    qml.Rot(*operation2.data, wires=operation2.wires[1]).get_matrix(),
                 ),
                 np.matmul(
-                    qml.Rot(*operation2.data, wires=operation2.wires[1]).matrix,
-                    qml.Rot(*operation1.data, wires=operation1.wires[1]).matrix,
+                    qml.Rot(*operation2.data, wires=operation2.wires[1]).get_matrix(),
+                    qml.Rot(*operation1.data, wires=operation1.wires[1]).get_matrix(),
                 ),
             )
         )
@@ -1235,34 +420,41 @@ def two_non_simplified_rotations(operation1, operation2):
     if (operation1.name in ["U2", "U3", "Rot", "CRot"]) and (
         operation2.name in ["U2", "U3", "Rot", "CRot"]
     ):
+        target_wires_1 = qml.wires.Wires(
+            [w for w in operation1.wires if w not in operation1.control_wires]
+        )
+        target_wires_2 = qml.wires.Wires(
+            [w for w in operation2.wires if w not in operation2.control_wires]
+        )
+
         if operation1.name == "CRot":
-            if not intersection(operation1.target_wires, operation2.wires):
+            if not intersection(target_wires_1, operation2.wires):
                 return bool(commutation_map["ctrl"][position[operation2.name]])
             return np.all(
                 np.allclose(
                     np.matmul(
-                        qml.Rot(*operation1.data, wires=operation1.target_wires).matrix,
-                        operation2.matrix,
+                        qml.Rot(*operation1.data, wires=target_wires_1).get_matrix(),
+                        operation2.get_matrix(),
                     ),
                     np.matmul(
-                        operation2.matrix,
-                        qml.Rot(*operation1.data, wires=operation1.target_wires).matrix,
+                        operation2.get_matrix(),
+                        qml.Rot(*operation1.data, wires=target_wires_1).get_matrix(),
                     ),
                 )
             )
 
         if operation2.name == "CRot":
-            if not intersection(operation2.target_wires, operation1.wires):
+            if not intersection(target_wires_2, operation1.wires):
                 return bool(commutation_map[operation1.name][position["ctrl"]])
             return np.all(
                 np.allclose(
                     np.matmul(
-                        qml.Rot(*operation2.data, wires=operation2.target_wires).matrix,
-                        operation1.matrix,
+                        qml.Rot(*operation2.data, wires=target_wires_2).get_matrix(),
+                        operation1.get_matrix(),
                     ),
                     np.matmul(
-                        operation1.matrix,
-                        qml.Rot(*operation2.data, wires=operation2.target_wires).matrix,
+                        operation1.get_matrix(),
+                        qml.Rot(*operation2.data, wires=target_wires_2).get_matrix(),
                     ),
                 )
             )
@@ -1270,12 +462,12 @@ def two_non_simplified_rotations(operation1, operation2):
         return np.all(
             np.allclose(
                 np.matmul(
-                    operation1.matrix,
-                    operation2.matrix,
+                    operation1.get_matrix(),
+                    operation2.get_matrix(),
                 ),
                 np.matmul(
-                    operation2.matrix,
-                    operation1.matrix,
+                    operation2.get_matrix(),
+                    operation1.get_matrix(),
                 ),
             )
         )
@@ -1350,6 +542,21 @@ def is_commuting(operation1, operation2):
     # pylint: disable=too-many-branches
     # pylint: disable=too-many-return-statements
 
+    control_base = {
+        "CNOT": "PauliX",
+        "CZ": "PauliZ",
+        "CY": "PauliY",
+        "CSWAP": "SWAP",
+        "Toffoli": "PauliX",
+        "ControlledPhaseShift": "PhaseShift",
+        "CRX": "RX",
+        "CRY": "RY",
+        "CRZ": "RZ",
+        "CRot": "Rot",
+        "MultiControlledX": "PauliX",
+        "ControlledOperation": "ControlledOperation",
+    }
+
     if operation1.name in not_supported_operations or isinstance(
         operation1, (qml.operation.CVOperation, qml.operation.Channel)
     ):
@@ -1359,6 +566,12 @@ def is_commuting(operation1, operation2):
         operation2, (qml.operation.CVOperation, qml.operation.Channel)
     ):
         raise qml.QuantumFunctionError(f"Operation {operation2.name} not supported.")
+
+    if operation1.name == "ControlledOperation" and operation1.control_base == "MultipleTargets":
+        raise qml.QuantumFunctionError(f"{operation1.control_base} controlled is not supported.")
+
+    if operation2.name == "ControlledOperation" and operation2.control_base == "MultipleTargets":
+        raise qml.QuantumFunctionError(f"{operation2.control_base} controlled is not supported.")
 
     # Simplify the rotations if possible
     if operation1.name in ["U2", "U3", "Rot", "CRot"]:
@@ -1394,11 +607,28 @@ def is_commuting(operation1, operation2):
         return two_non_simplified_rot
 
     # Case 2 both operations are controlled
-    if operation1.is_controlled and operation2.is_controlled:
+    if control_base.get(operation1.name) and control_base.get(operation2.name):
+        if control_base.get(operation1.name) != "ControlledOperation":
+            control_base_1 = control_base.get(operation1.name)
+        else:
+            control_base_1 = operation1.control_base
+
+        if control_base.get(operation2.name) != "ControlledOperation":
+            control_base_2 = control_base.get(operation2.name)
+        else:
+            control_base_2 = operation2.control_base
+
+        target_wires_1 = qml.wires.Wires(
+            [w for w in operation1.wires if w not in operation1.control_wires]
+        )
+        target_wires_2 = qml.wires.Wires(
+            [w for w in operation2.wires if w not in operation2.control_wires]
+        )
+
         control_control = intersection(operation1.control_wires, operation2.control_wires)
-        target_target = intersection(operation1.target_wires, operation2.target_wires)
-        control_target = intersection(operation1.control_wires, operation2.target_wires)
-        target_control = intersection(operation1.target_wires, operation2.control_wires)
+        target_target = intersection(target_wires_1, target_wires_2)
+        control_target = intersection(operation1.control_wires, target_wires_2)
+        target_control = intersection(target_wires_1, operation2.control_wires)
 
         # Case 2.1: disjoint targets
         if control_control and not target_target and not control_target and not target_control:
@@ -1406,63 +636,65 @@ def is_commuting(operation1, operation2):
 
         # Case 2.2: disjoint controls
         if not control_control and target_target and not control_target and not target_control:
-            return bool(
-                commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
-            )
+            return bool(commutation_map[control_base_1][position[control_base_2]])
 
         # Case 2.3: targets overlap and controls overlap
         if target_target and control_control and not control_target and not target_control:
-            return bool(
-                commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
-            )
+            return bool(commutation_map[control_base_1][position[control_base_2]])
 
         # Case 2.4: targets and controls overlap
         if control_target and target_control and not target_target:
-            return bool(commutation_map["ctrl"][position[operation2.is_controlled]]) and bool(
-                commutation_map[operation1.is_controlled][position["ctrl"]]
+            return bool(commutation_map["ctrl"][position[control_base_2]]) and bool(
+                commutation_map[control_base_1][position["ctrl"]]
             )
 
         # Case 2.5: targets overlap with and controls and targets
         if control_target and not target_control and target_target:
-            return bool(commutation_map["ctrl"][position[operation2.is_controlled]]) and bool(
-                commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
+            return bool(commutation_map["ctrl"][position[control_base_2]]) and bool(
+                commutation_map[control_base_1][position[control_base_2]]
             )
 
         # Case 2.6: targets overlap with and controls and targets
         if target_control and not control_target and target_target:
-            return bool(commutation_map[operation1.is_controlled][position["ctrl"]]) and bool(
-                commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
+            return bool(commutation_map[control_base_1][position["ctrl"]]) and bool(
+                commutation_map[control_base_1][position[control_base_2]]
             )
 
         # Case 2.7: targets overlap with control
         if target_control and not control_target and not target_target:
-            return bool(commutation_map[operation1.is_controlled][position["ctrl"]])
+            return bool(commutation_map[control_base_1][position["ctrl"]])
 
         # Case 2.8: targets overlap with control
         if not target_control and control_target and not target_target:
-            return bool(commutation_map["ctrl"][position[operation2.is_controlled]])
+            return bool(commutation_map["ctrl"][position[control_base_2]])
 
         # Case 2.9: targets and controls overlap with targets and controls
         if target_control and control_target and target_target:
             return (
-                bool(commutation_map[operation1.is_controlled][position["ctrl"]])
-                and bool(commutation_map["ctrl"][position[operation2.is_controlled]])
-                and bool(
-                    commutation_map[operation1.is_controlled][position[operation2.is_controlled]]
-                )
+                bool(commutation_map[control_base_1][position["ctrl"]])
+                and bool(commutation_map["ctrl"][position[control_base_2]])
+                and bool(commutation_map[control_base_1][position[control_base_2]])
             )
 
     # Case 3: only operation 1 is controlled
-    elif operation1.is_controlled:
+    elif control_base.get(operation1.name):
+        if control_base.get(operation1.name) != "ControlledOperation":
+            control_base_1 = control_base.get(operation1.name)
+        else:
+            control_base_1 = operation1.control_base
+
+        target_wires_1 = qml.wires.Wires(
+            [w for w in operation1.wires if w not in operation1.control_wires]
+        )
 
         control_target = intersection(operation1.control_wires, operation2.wires)
-        target_target = intersection(operation1.target_wires, operation2.wires)
+        target_target = intersection(target_wires_1, operation2.wires)
 
         # Case 3.1: control and target 1 overlap with target 2
         if control_target and target_target:
-            return bool(
-                commutation_map[operation1.is_controlled][position[operation2.name]]
-            ) and bool(commutation_map["ctrl"][position[operation2.name]])
+            return bool(commutation_map[control_base_1][position[operation2.name]]) and bool(
+                commutation_map["ctrl"][position[operation2.name]]
+            )
 
         # Case 3.2: control operation 1 overlap with target 2
         if control_target and not target_target:
@@ -1470,18 +702,27 @@ def is_commuting(operation1, operation2):
 
         # Case 3.3: target 1 overlaps with target 2
         if not control_target and target_target:
-            return bool(commutation_map[operation1.is_controlled][position[operation2.name]])
+            return bool(commutation_map[control_base_1][position[operation2.name]])
 
     # Case 4: only operation 2 is controlled
-    elif operation2.is_controlled:
+    elif control_base.get(operation2.name):
+        if control_base.get(operation2.name) != "ControlledOperation":
+            control_base_2 = control_base.get(operation2.name)
+        else:
+            control_base_2 = operation2.control_base
+
+        target_wires_2 = qml.wires.Wires(
+            [w for w in operation2.wires if w not in operation2.control_wires]
+        )
+
         target_control = intersection(operation1.wires, operation2.control_wires)
-        target_target = intersection(operation1.wires, operation2.target_wires)
+        target_target = intersection(operation1.wires, target_wires_2)
 
         # Case 4.1: control and target 2 overlap with target 1
         if target_control and target_target:
-            return bool(
-                commutation_map[operation1.name][position[operation2.is_controlled]]
-            ) and bool(commutation_map[operation1.name][position[operation2.is_controlled]])
+            return bool(commutation_map[operation1.name][position[control_base_2]]) and bool(
+                commutation_map[operation1.name][position[control_base_2]]
+            )
 
         # Case 4.2: control operation 2 overlap with target 1
         if target_control and not target_target:
@@ -1489,7 +730,7 @@ def is_commuting(operation1, operation2):
 
         # Case 4.3: target 1 overlaps with target 2
         if not target_control and target_target:
-            return bool(commutation_map[operation1.name][position[operation2.is_controlled]])
+            return bool(commutation_map[operation1.name][position[control_base_2]])
 
     # Case 5: no controlled operations
     # Case 5.1: no controlled operations we simply check the commutation table
@@ -1564,22 +805,38 @@ class CommutationDAGNode:
 class CommutationDAG:
     r"""Class to represent a quantum circuit as a directed acyclic graph (DAG). This class is useful to build the
     commutation DAG and set up all nodes attributes. The construction of the DAG should be used through the
-    transform :class:`qml.transforms.get_commutation_dag`.
+    transform :class:`qml.transforms.commutation_dag`.
+
+    Args:
+        tape (.QuantumTape): PennyLane quantum tape representing a quantum circuit.
 
     **Reference:**
 
     [1] Iten, R., Moyard, R., Metger, T., Sutter, D. and Woerner, S., 2020.
     Exact and practical pattern matching for quantum circuit optimization.
-    `arXiv:1909.05270 <https://arxiv.org/abs/1909.05270>`_
+    `doi.org/10.1145/3498325 <https://dl.acm.org/doi/abs/10.1145/3498325>`_
 
     """
 
-    def __init__(self, wires, observables=None):
-        self.wires = wires
-        self.num_wires = len(wires)
+    def __init__(self, tape):
+
+        self.num_wires = len(tape.wires)
         self.node_id = -1
         self._multi_graph = nx.MultiDiGraph()
-        self.observables = observables if observables is not None else []
+
+        consecutive_wires = Wires(range(len(tape.wires)))
+        wires_map = OrderedDict(zip(tape.wires, consecutive_wires))
+
+        for operation in tape.operations:
+            operation._wires = Wires([wires_map[wire] for wire in operation.wires.tolist()])
+            self.add_node(operation)
+
+        self._add_successors()
+
+        for obs in tape.observables:
+            obs._wires = Wires([wires_map[wire] for wire in obs.wires.tolist()])
+
+        self.observables = tape.observables if tape.observables is not None else []
 
     def _add_node(self, node):
         self.node_id += 1
@@ -1592,12 +849,13 @@ class CommutationDAG:
         Args:
             operation (qml.operation): PennyLane quantum operation to add to the DAG.
         """
-        if operation.is_controlled:
+        if operation.control_base:
+            target_wires = [w for w in operation.wires if w not in operation.control_wires]
             new_node = CommutationDAGNode(
                 op=operation,
                 wires=operation.wires.tolist(),
-                target_wires=operation.target_wires.tolist(),
-                control_wires=operation.control_wires.toset(),
+                target_wires=target_wires,
+                control_wires=operation.control_wires.tolist(),
                 successors=[],
                 predecessors=[],
             )

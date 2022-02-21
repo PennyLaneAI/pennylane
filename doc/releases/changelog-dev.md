@@ -4,6 +4,44 @@
 
 <h3>New features since last release</h3>
 
+* Transform a circuit from quantum tape, quantum function or quantum node to a pairwise
+  commutation DAG. The node represents the quantum operations, and the edges represent 
+  non commutation.
+  [(#1712)](https://github.com/PennyLaneAI/pennylane/pull/1712)
+  
+  From the following quantum function,
+  ```
+  def circuit(x, y, z):
+      qml.RX(x, wires=0)
+      qml.RX(y, wires=0)
+      qml.CNOT(wires=[1, 2])
+      qml.RY(y, wires=1)
+      qml.Hadamard(wires=2)
+      qml.CRZ(z, wires=[2, 0])
+      qml.RY(-y, wires=1)
+      return qml.expval(qml.PauliZ(0))
+  ```
+  commutation dag can be returned by using the following code:
+  ```
+  get_dag = commutation_dag(circuit)
+  theta = np.pi/4
+  phi = np.pi/3
+  psi = np.pi/2
+  dag = get_dag(theta, phi, psi)
+  ```
+  You can access all nodes by using the get_nodes function in the form of a list (ID, CommutationDAGNode):
+  ```
+  nodes = dag.get_nodes()
+  ```
+  You can also access specific nodes CommutationDAGNode by using get_node function. From the CommutationDAGNode
+  you can directly access all node attributes.
+  ```
+  second_node = dag.get_node(2)
+  second_operation = second_node.op
+  second_node_successors = second_node.successors
+  second_node_predecessors = second_node.predecessors
+  ```
+  
 * The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has 
   a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions, 
   deprecation of the `charset` keyword, and minor cosmetic changes.
@@ -24,14 +62,33 @@
 
 * Parametric operations now have the `parameter_frequencies`
   method that returns the frequencies with which a parameter
-  enters a circuit when using the operation.
+  enters a circuit. In addition, the general parameter-shift
+  rule is now automatically used by `qml.gradients.param_shift`.
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
+  [(#2182)](https://github.com/PennyLaneAI/pennylane/pull/2182)
 
   The frequencies can be used for circuit analysis, optimization
   via the `RotosolveOptimizer` and differentiation with the
   parameter-shift rule. They assume that the circuit returns
   expectation values or probabilities, for a variance
   measurement the frequencies will differ.
+
+  By default, the frequencies will be obtained from the
+  `generator` property (if it is defined).
+
+  When using `qml.gradients.param_shift`, the parameter frequencies
+  are used to obtain the shift rule for the operation.
+
+  For operations that are registered to have an analytic gradient
+  method but that do not provide parameter frequencies, the
+  `grad_recipe` of the operation will be used for differentiation
+  instead. If there is no `grad_recipe`, the standard two-term shift
+  rule will be used.
+
+  See [Vidal and Theis (2018)](https://arxiv.org/abs/1812.06323)
+  and [Wierichs et al. (2021)](https://arxiv.org/abs/2107.12390)
+  for theoretical background information on the general
+  parameter-shift rule.
 
 * Continued development of the circuit-cutting compiler:
 
@@ -54,8 +111,17 @@
   A differentiable tensor contraction function `contract_tensors` has been
   added.
   [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
+  
+  A method has been added that expands a quantum tape over `MeasureNode` and `PrepareNode`
+  configurations.
+  [(#2169)](https://github.com/PennyLaneAI/pennylane/pull/2169)
 
 <h3>Improvements</h3>
+
+* The `gradients` module has been streamlined and special-purpose functions
+  moved closer to their use cases. This does not change the behaviour for
+  users in any way.
+  [(#2200)](https://github.com/PennyLaneAI/pennylane/pull/2200)
 
 * Added a new `partition_pauli_group` function to the `grouping` module for
   efficiently measuring the `N`-qubit Pauli group with `3 ** N`
@@ -100,6 +166,9 @@
   [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
 
 <h3>Deprecations</h3>
+
+* A deprecation warning has been added to the `qml.finite_diff()` method.
+  [#2212](https://github.com/PennyLaneAI/pennylane/pull/2212)
 
 <h3>Bug fixes</h3>
 
@@ -253,7 +322,7 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee, 
-Maria Fernanda Morris, Maria Schuld, Jay Soni, Antal Száva,
-David Wierichs
+Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
+Maria Fernanda Morris, Romain Moyard, Maria Schuld, Jay Soni,
+Antal Száva, David Wierichs
 

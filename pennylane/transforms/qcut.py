@@ -18,14 +18,15 @@ circuits to be distributed across multiple devices.
 
 import copy
 import string
-from typing import Sequence, Tuple
-
-from networkx import MultiDiGraph, weakly_connected_components
+from itertools import product
+from typing import List, Sequence, Tuple
 
 import pennylane as qml
-from pennylane import apply
+from networkx import MultiDiGraph, weakly_connected_components
+from pennylane import apply, expval
+from pennylane.grouping import string_to_pauli_word
 from pennylane.measure import MeasurementProcess
-from pennylane.operation import Operation, Operator, Tensor
+from pennylane.operation import Expectation, Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
@@ -362,6 +363,175 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 reverse_wire_map[new_wire] = original_wire
 
     return tape
+
+
+def _get_measurements(
+    group: Sequence[Operator], measurements: Sequence[MeasurementProcess]
+) -> List[MeasurementProcess]:
+    """Pairs each observable in ``group`` with the circuit ``measurements``.
+
+    Only a single measurement of an expectation value is currently supported
+    in ``measurements``.
+
+    Args:
+        group (Sequence[Operator]): a collection of observables
+        measurements (Sequence[MeasurementProcess]): measurements from the circuit
+
+    Returns:
+        List[MeasurementProcess]: the expectation values of ``g @ obs``, where ``g`` is iterated
+        over ``group`` and ``obs`` is the observable composing the single measurement
+        in ``measurements``
+    """
+    n_measurements = len(measurements)
+    if n_measurements > 1:
+        raise ValueError(
+            "The circuit cutting workflow only supports circuits with a single output "
+            "measurement"
+        )
+    if n_measurements == 0:
+        return [expval(g) for g in group]
+
+    measurement = measurements[0]
+
+    if measurement.return_type is not Expectation:
+        raise ValueError(
+            "The circuit cutting workflow only supports circuits with expectation "
+            "value measurements"
+        )
+
+    obs = measurement.obs
+
+    return [expval(obs @ g) for g in group]
+
+
+def _prep_zero_state(wire):
+    qml.Identity(wire)
+
+
+def _prep_one_state(wire):
+    qml.PauliX(wire)
+
+
+def _prep_plus_state(wire):
+    qml.Hadamard(wire)
+
+
+def _prep_iplus_state(wire):
+    qml.Hadamard(wire)
+    qml.S(wires=wire)
+
+
+PREPARE_SETTINGS = [_prep_zero_state, _prep_one_state, _prep_plus_state, _prep_iplus_state]
+
+
+def expand_fragment_tapes(
+    tape: QuantumTape,
+) -> Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]:
+    """
+    Expands a fragment tape into a collection of tapes for each configuration of the
+    :class:`MeasureNode` and :class:`PrepareNode` operations.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow. Check out the
+        :doc:`transforms </code/qml_transforms>` page for more details.
+
+    Args:
+        tape (QuantumTape): the fragment tape to be expanded.
+
+    Returns:
+        Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]: the
+        tapes corresponding to each configuration, the preparation nodes and
+        the measurement nodes.
+
+    **Example**
+
+    Consider the following circuit, which contains a :class:`~.MeasureNode` and :class:`~.PrepareNode`
+    operation:
+
+    .. code-block:: python
+
+        from pennylane.transforms import qcut
+
+        with qml.tape.QuantumTape() as tape:
+            qcut.PrepareNode(wires=0)
+            qml.RX(0.5, wires=0)
+            qcut.MeasureNode(wires=0)
+
+    We can expand over the measurement and preparation nodes using:
+
+    .. code-block:: python
+
+        >>> tapes, prep, meas = qml.transforms.expand_fragment_tapes(tape)
+        >>> for t in tapes:
+        ...     print(t.draw())
+         0: ──I──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
+
+         0: ──I──RX(0.5)──┤ ⟨X⟩
+
+         0: ──I──RX(0.5)──┤ ⟨Y⟩
+
+         0: ──X──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
+
+         0: ──X──RX(0.5)──┤ ⟨X⟩
+
+         0: ──X──RX(0.5)──┤ ⟨Y⟩
+
+         0: ──H──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
+
+         0: ──H──RX(0.5)──┤ ⟨X⟩
+
+         0: ──H──RX(0.5)──┤ ⟨Y⟩
+
+         0: ──H──S──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
+
+         0: ──H──S──RX(0.5)──┤ ⟨X⟩
+
+         0: ──H──S──RX(0.5)──┤ ⟨Y⟩
+    """
+    prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
+    measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]
+
+    wire_map = {mn.wires[0]: i for i, mn in enumerate(measure_nodes)}
+
+    n_meas = len(measure_nodes)
+    if n_meas >= 1:
+        measure_combinations = qml.grouping.partition_pauli_group(len(measure_nodes))
+    else:
+        measure_combinations = [[""]]
+
+    tapes = []
+
+    for prepare_settings in product(range(len(PREPARE_SETTINGS)), repeat=len(prepare_nodes)):
+        for measure_group in measure_combinations:
+            if n_meas >= 1:
+                group = [
+                    string_to_pauli_word(paulis, wire_map=wire_map) for paulis in measure_group
+                ]
+            else:
+                group = []
+
+            prepare_mapping = {
+                n: PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
+            }
+
+            with QuantumTape() as tape_:
+                for op in tape.operations:
+                    if isinstance(op, PrepareNode):
+                        w = op.wires[0]
+                        prepare_mapping[op](w)
+                    elif not isinstance(op, MeasureNode):
+                        apply(op)
+
+                with qml.tape.stop_recording():
+                    measurements = _get_measurements(group, tape.measurements)
+
+                for meas in measurements:
+                    apply(meas)
+
+                tapes.append(tape_)
+
+    return tapes, prepare_nodes, measure_nodes
 
 
 def _get_symbol(i):

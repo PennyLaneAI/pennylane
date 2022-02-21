@@ -24,7 +24,11 @@ from scipy.special import factorial
 
 import pennylane as qml
 
-from .gradient_transform import gradient_transform
+from .gradient_transform import (
+    gradient_transform,
+    grad_method_validation,
+    choose_grad_methods,
+)
 
 
 @functools.lru_cache(maxsize=None)
@@ -300,10 +304,10 @@ def finite_diff(
         )
         return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
-    # TODO: replace the JacobianTape._grad_method_validation
-    # functionality before deprecation.
     if validate_params:
-        diff_methods = tape._grad_method_validation("numeric")
+        if "grad_method" not in tape._par_info[0]:
+            tape._update_gradient_info()
+        diff_methods = grad_method_validation("numeric", tape)
     else:
         diff_methods = ["F" for i in tape.trainable_params]
 
@@ -330,9 +334,7 @@ def finite_diff(
         shifts = shifts[1:]
         coeffs = coeffs[1:]
 
-    # TODO: replace the JacobianTape._choose_params_with_methods
-    # functionality before deprecation.
-    method_map = dict(tape._choose_params_with_methods(diff_methods, argnum))
+    method_map = choose_grad_methods(diff_methods, argnum)
 
     for i, _ in enumerate(tape.trainable_params):
         if i not in method_map or method_map[i] == "0":
