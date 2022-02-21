@@ -764,9 +764,6 @@ class CommutationDAGNode:
         successors (array[int]): List of the node's successors in the DAG.
         predecessors (array[int]): List of the node's predecessors in the DAG.
         reachable (bool): Attribute used to check reachability by pairwise commutation.
-        matchedwith (array[int]): ID of the matched node in the pattern.
-        isblocked (bool): True for a blocked node, else False.
-        successortovisit (array[int]): List of nodes (IDs) to visit in the forward part of the algorithm.
     """
 
     # pylint: disable=too-many-instance-attributes
@@ -782,9 +779,6 @@ class CommutationDAGNode:
         "successors",
         "predecessors",
         "reachable",
-        "matchedwith",
-        "isblocked",
-        "successorstovisit",
     ]
 
     def __init__(
@@ -796,9 +790,6 @@ class CommutationDAGNode:
         successors=None,
         predecessors=None,
         reachable=None,
-        matchedwith=None,
-        successorstovisit=None,
-        isblocked=None,
         node_id=-1,
     ):
         self.op = op
@@ -809,9 +800,6 @@ class CommutationDAGNode:
         self.successors = successors if successors is not None else []
         self.predecessors = predecessors if predecessors is not None else []
         self.reachable = reachable
-        self.matchedwith = matchedwith if matchedwith is not None else []
-        self.isblocked = isblocked
-        self.successorstovisit = successorstovisit if successorstovisit is not None else []
 
 
 class CommutationDAG:
