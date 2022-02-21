@@ -861,8 +861,8 @@ class CommutationDAG:
         Args:
             operation (qml.operation): PennyLane quantum operation to add to the DAG.
         """
-        if operation.control_base:
-            target_wires = [w for w in operation.wires if w not in operation.control_wires]
+        target_wires = [w for w in operation.wires if w not in operation.control_wires]
+        if target_wires:
             new_node = CommutationDAGNode(
                 op=operation,
                 wires=operation.wires.tolist(),
