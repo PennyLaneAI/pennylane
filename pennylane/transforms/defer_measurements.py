@@ -31,15 +31,15 @@ def defer_measurements(tape):
 
     .. note::
 
-        The transform uses the `:func:~.ctrl` transform to implement operations
+        The transform uses the :func:`~.ctrl` transform to implement operations
         controlled on mid-circuit measurement outcomes. The set of operations
         that can be controlled as such depends on the set of operations
         supported by the chosen device.
 
     .. note::
 
-        This transform does not extend the terminal measurements returned by
-        the quantum function with the mid-circuit measurements.
+        This transform does not change the list of terminal measurements returned by
+        the quantum function.
 
     Args:
         qfunc (function): a quantum function

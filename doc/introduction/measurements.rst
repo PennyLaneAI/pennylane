@@ -154,6 +154,48 @@ so corresponds to a :math:`99.75\%` probability of measuring
 state :math:`|00\rangle`, and a :math:`0.25\%` probability of
 measuring state :math:`|01\rangle`.
 
+Mid-circuit measurements and conditional operations
+---------------------------------------------------
+
+PennyLane allows specifying measurements in the middle of the circuit.
+Operations can then be conditioned on the measurement outcome of such
+mid-circuit measurements:
+
+.. code-block:: python
+
+    def my_quantum_function(x, y):
+        qml.RY(x, wires=1)
+        qml.CNOT(wires=[0, 1])
+        m_0 = qml.mid_measure(1)
+
+        qml.if_then(m_0, qml.RY)(y, wires=1)
+        return qml.probs(wires=[0])
+
+A quantum function with mid-circuit measurements (defined using
+:func:`~.pennylane.mid_measure`) and conditional operations (defined using
+:func:`~.pennylane.if_then`) can be executed by applying the deferred
+measurement principle. PennyLane implements the deferred measurement principle
+to transform conditional operations with the
+:func:`~.pennylane.defer_measurements` quantum function transform.
+
+.. code-block:: python
+
+    transformed_qfunc = qml.transforms.defer_measurements(my_quantum_function)
+    transformed_qnode = qml.QNode(transformed_qfunc, dev)
+    pars = np.array([0.643, 0.246], requires_grad=True)
+
+>>> transformed_qnode(*pars)
+tensor([0.99849698, 0.00150302], requires_grad=True)
+
+The decorator syntax applies equally well:
+
+.. code-block:: python
+
+    @qml.qnode(dev)
+    @qml.defer_measurements
+    def qnode(x, y):
+        (...)
+
 Changing the number of shots
 ----------------------------
 
