@@ -343,15 +343,17 @@ class QuantumMonteCarlo(Operation):
                 "The probability distribution must have a length that is a power of two"
             )
 
-        self.target_wires = list(target_wires)
-        self.estimation_wires = list(estimation_wires)
-        wires = self.target_wires + self.estimation_wires
+        target_wires = list(target_wires)
+        estimation_wires = list(estimation_wires)
+        wires = target_wires + estimation_wires
 
-        if num_target_wires != len(self.target_wires):
+        if num_target_wires != len(target_wires):
             raise ValueError(
                 f"The probability distribution of dimension {dim_p} requires"
                 f" {num_target_wires} target wires"
             )
+
+        self._hyperparameters = {"estimation_wires": estimation_wires, "target_wires": target_wires}
 
         A = probs_to_unitary(probs)
         R = func_to_unitary(func, dim_p)
@@ -362,14 +364,36 @@ class QuantumMonteCarlo(Operation):
     def num_params(self):
         return 3
 
-    def expand(self):
-        A, R, Q = self.parameters
+    @staticmethod
+    def compute_decomposition(
+        A, R, Q, wires, estimation_wires, target_wires
+    ):  # pylint: disable=arguments-differ,unused-argument
+        r"""Representation of the operator as a product of other operators.
 
-        with qml.tape.QuantumTape() as tape:
-            QubitUnitary(A, wires=self.target_wires[:-1])
-            QubitUnitary(R, wires=self.target_wires)
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+
+        .. seealso:: :meth:`~.QuantumMonteCarlo.decomposition`.
+
+        Args:
+            A (array): unitary matrix corresponding to an input probability distribution
+            R (array): unitary that encodes the function applied to the ancilla qubit register
+            Q (array): matrix that encodes the expectation value according to the probability unitary
+                and the function-encoding unitary
+            wires (Any or Iterable[Any]): full set of wires that the operator acts on
+            target_wires (Iterable[Any]): the target wires
+            estimation_wires (Iterable[Any]): the estimation wires
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+        """
+        op_list = [
+            QubitUnitary(A, wires=target_wires[:-1]),
+            QubitUnitary(R, wires=target_wires),
             qml.templates.QuantumPhaseEstimation(
-                Q, target_wires=self.target_wires, estimation_wires=self.estimation_wires
-            )
+                Q, target_wires=target_wires, estimation_wires=estimation_wires
+            ),
+        ]
 
-        return tape
+        return op_list

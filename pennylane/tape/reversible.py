@@ -97,7 +97,7 @@ class ReversibleTape(JacobianTape):
         """
         # pylint: disable=protected-access
 
-        mat = np.reshape(obs.matrix, [2] * len(obs.wires) * 2)
+        mat = np.reshape(obs.get_matrix(), [2] * len(obs.wires) * 2)
         vec1 = np.reshape(vec1, [2] * len(dev_wires))
         vec2 = np.reshape(vec2, [2] * len(dev_wires))
 
@@ -184,16 +184,15 @@ class ReversibleTape(JacobianTape):
         # create a new circuit which rewinds the pre-measurement state to just after `op`,
         # applies the generator of `op`, and then plays forward back to
         # pre-measurement step
-        wires = op.wires
         op_idx = self.operations.index(op)
         between_ops = self.operations[op_idx + 1 :]
 
         if op.name == "Rot":
-            decomp = op.decompose()
-            generator, multiplier = decomp[p_idx].generator
+            decomp = op.decomposition()
+            generator, multiplier = qml.utils.get_generator(decomp[p_idx])
             between_ops = decomp[p_idx + 1 :] + between_ops
         else:
-            generator, multiplier = op.generator
+            generator, multiplier = qml.utils.get_generator(op)
 
         # construct circuit to compute differentiated state
         between_ops_inverse = [copy.copy(op) for op in between_ops[::-1]]
@@ -207,7 +206,7 @@ class ReversibleTape(JacobianTape):
                 op.queue().inv()
 
             # apply generator needed for differentiation
-            generator(wires)
+            qml.apply(generator)
 
             # evolve forwards again
             for op in between_ops:

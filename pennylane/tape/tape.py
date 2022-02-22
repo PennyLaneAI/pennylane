@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
-from pennylane.operation import Sample
+from pennylane.operation import DecompositionUndefinedError, Sample
 
 from .unwrap import UnwrapTape
 
@@ -195,7 +195,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
-                except NotImplementedError:
+                except DecompositionUndefinedError:
                     # Object does not define an expansion; treat this as
                     # a stopping condition.
                     getattr(new_tape, queue).append(obj)
@@ -656,7 +656,7 @@ class QuantumTape(AnnotatedQueue):
         for idx, op in enumerate(self._ops):
             try:
                 self._ops[idx] = op.adjoint()
-            except NotImplementedError:
+            except qml.operation.AdjointUndefinedError:
                 op.inverse = not op.inverse
 
         self._ops = list(reversed(self._ops))
@@ -1007,11 +1007,11 @@ class QuantumTape(AnnotatedQueue):
         rotation_gates = []
 
         for observable in self.observables:
+            # some observables do not have diagonalizing gates,
+            # in which case we just don't append any
             try:
-                # some observables do not have diagonalizing gates,
-                # in which case we just don't append any
                 rotation_gates.extend(observable.diagonalizing_gates())
-            except NotImplementedError:
+            except qml.operation.DiagGatesUndefinedError:
                 pass
 
         return rotation_gates

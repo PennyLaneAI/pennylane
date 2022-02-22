@@ -14,6 +14,7 @@
 """
 This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
+import warnings
 from functools import partial
 
 import numpy as onp
@@ -78,7 +79,7 @@ class grad:
           as differentiable.
         """
         if self._grad_fn is not None:
-            return self._grad_fn
+            return self._grad_fn, self._argnum
 
         # Inspect the arguments for differentiability, and
         # compute the autograd gradient function with required argnums
@@ -93,16 +94,25 @@ class grad:
         if len(argnum) == 1:
             argnum = argnum[0]
 
-        return self._grad_with_forward(
-            self._fun,
-            argnum=argnum,
-        )
+        return self._grad_with_forward(self._fun, argnum=argnum), argnum
 
     def __call__(self, *args, **kwargs):
         """Evaluates the gradient function, and saves the function value
         calculated during the forward pass in :attr:`.forward`."""
-        grad_value, ans = self._get_grad_fn(args)(*args, **kwargs)
+        grad_fn, argnum = self._get_grad_fn(args)
+
+        if not isinstance(argnum, int) and not argnum:
+            warnings.warn(
+                "Attempted to differentiate a function with no trainable parameters. "
+                "If this is unintended, please add trainable parameters via the "
+                "'requires_grad' attribute or 'argnum' keyword."
+            )
+            self._forward = self._fun(*args, **kwargs)
+            return ()
+
+        grad_value, ans = grad_fn(*args, **kwargs)
         self._forward = ans
+
         return grad_value
 
     @property
@@ -306,6 +316,13 @@ def jacobian(func, argnum=None):
             unpack = isinstance(argnum, int)
             _argnum = [argnum] if unpack else argnum
 
+        if not _argnum:
+            warnings.warn(
+                "Attempted to differentiate a function with no trainable parameters. "
+                "If this is unintended, please add trainable parameters via the "
+                "'requires_grad' attribute or 'argnum' keyword."
+            )
+
         jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
 
         return jac[0] if unpack else jac
@@ -355,7 +372,7 @@ def _fd_first_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
         gradient[i] = (
             f(*args[:argnum], x + shift, *args[argnum + 1 :], **kwargs)
             - f(*args[:argnum], x - shift, *args[argnum + 1 :], **kwargs)
-        ) * delta ** -1
+        ) * delta**-1
 
     return gradient
 
@@ -415,7 +432,7 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
             f(*args[:argnum], x + shift, *args[argnum + 1 :], **kwargs)
             - 2 * f(*args[:argnum], x, *args[argnum + 1 :], **kwargs)
             + f(*args[:argnum], x - shift, *args[argnum + 1 :], **kwargs)
-        ) * delta ** -2
+        ) * delta**-2
 
     # off-diagonal
     if i != j:
@@ -430,7 +447,7 @@ def _fd_second_order_centered(f, argnum, delta, *args, idx=None, **kwargs):
             - f(*args[:argnum], x - shift_i + shift_j, *args[argnum + 1 :], **kwargs)
             - f(*args[:argnum], x + shift_i - shift_j, *args[argnum + 1 :], **kwargs)
             + f(*args[:argnum], x - shift_i - shift_j, *args[argnum + 1 :], **kwargs)
-        ) * delta ** -2
+        ) * delta**-2
 
     return deriv2
 
@@ -507,6 +524,12 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
     >>> print(second_derivative(x, y))
     -0.372062798810191
     """
+    warnings.warn(
+        "The black-box finite_diff function will be deprecated, users can "
+        "instead use qml.gradients.finite_diff to compute the gradient of "
+        "tapes or QNodes. Otherwise, manual implementation is required.",
+        UserWarning,
+    )
 
     if not callable(f):
         error_message = f"{type(f)} object is not callable. \n'f' should be a callable function"

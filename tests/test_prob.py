@@ -31,7 +31,7 @@ def init_state(scope="session"):
 
     def _init_state(n):
         """An initial state over n wires"""
-        state = np.random.random([2 ** n]) + np.random.random([2 ** n]) * 1j
+        state = np.random.random([2**n]) + np.random.random([2**n]) * 1j
         state /= np.linalg.norm(state)
         return state
 
@@ -152,9 +152,9 @@ def test_numerical_analytic_diff_agree(init_state, tol):
 
     # Both jacobians should be of shape (2**prob.wires, num_params)
     assert isinstance(res_F, tuple) and len(res_F) == 3
-    assert all(_r.shape == (2 ** 2,) for _r in res_F)
+    assert all(_r.shape == (2**2,) for _r in res_F)
     assert isinstance(res_A, tuple) and len(res_A) == 3
-    assert all(_r.shape == (2 ** 2,) for _r in res_A)
+    assert all(_r.shape == (2**2,) for _r in res_A)
 
     # Check that they agree up to numeric tolerance
     assert all(np.allclose(_rF, _rA, atol=tol, rtol=0) for _rF, _rA in zip(res_F, res_A))
@@ -441,7 +441,8 @@ def test_hamiltonian_error(coeffs, obs, init_state, tol):
     "operation", [qml.SingleExcitation, qml.SingleExcitationPlus, qml.SingleExcitationMinus]
 )
 def test_generalize_prob_not_hermitian(operation):
-    """Test that the Operation or Observables has a diagonalizing_gates attribute."""
+    """Test that Operators that do not have a diagonalizing_gates representation cannot
+    be used in probability measurements."""
 
     dev = qml.device("default.qubit", wires=2)
 
@@ -453,7 +454,7 @@ def test_generalize_prob_not_hermitian(operation):
 
     with pytest.raises(
         qml.QuantumFunctionError,
-        match="has not diagonalizing_gates attribute: cannot be used to rotate the probability",
+        match="does not define diagonalizing gates : cannot be used to rotate the probability",
     ):
         circuit()
 

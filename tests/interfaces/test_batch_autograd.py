@@ -66,13 +66,16 @@ class TestAutogradExecuteUnitTests:
                 qml.expval(qml.PauliZ(0))
 
             return execute(
-                [tape], device, gradient_fn=param_shift, gradient_kwargs={"shift": np.pi / 4}
+                [tape],
+                device,
+                gradient_fn=param_shift,
+                gradient_kwargs={"shifts": [(np.pi / 4,)] * 2},
             )[0]
 
         res = qml.jacobian(cost)(a, device=dev)
 
         for args in spy.call_args_list:
-            assert args[1]["shift"] == np.pi / 4
+            assert args[1]["shifts"] == [(np.pi / 4,)] * 2
 
     def test_incorrect_mode(self):
         """Test that an error is raised if a gradient transform
@@ -320,7 +323,7 @@ class TestCaching:
         expected_runs = 1  # forward pass
         expected_runs += 2 * N  # Jacobian
         expected_runs += 4 * N + 1  # Hessian diagonal
-        expected_runs += 4 * N ** 2  # Hessian off-diagonal
+        expected_runs += 4 * N**2  # Hessian off-diagonal
         assert dev.num_executions == expected_runs
 
         # Use caching: number of executions is ideal
@@ -554,7 +557,7 @@ class TestAutogradExecuteIntegration:
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
-                qml.RX(c + c ** 2 + np.sin(a), wires=0)
+                qml.RX(c + c**2 + np.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
 
             return execute([tape], device, **execute_kwargs)[0]
@@ -584,13 +587,14 @@ class TestAutogradExecuteIntegration:
         res = cost(a, b, device=dev)
         assert res.shape == (2,)
 
-        res = qml.jacobian(cost)(a, b, device=dev)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            res = qml.jacobian(cost)(a, b, device=dev)
         assert len(res) == 0
 
         def loss(a, b):
             return np.sum(cost(a, b, device=dev))
 
-        with pytest.warns(UserWarning, match="Output seems independent"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             res = qml.grad(loss)(a, b)
 
         assert np.allclose(res, 0)

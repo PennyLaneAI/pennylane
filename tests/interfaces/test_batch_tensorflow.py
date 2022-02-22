@@ -46,14 +46,14 @@ class TestTensorFlowExecuteUnitTests:
                 [tape],
                 dev,
                 gradient_fn=param_shift,
-                gradient_kwargs={"shift": np.pi / 4},
+                gradient_kwargs={"shifts": [(np.pi / 4,)] * 2},
                 interface="tf",
             )[0]
 
         res = t.jacobian(res, a)
 
         for args in spy.call_args_list:
-            assert args[1]["shift"] == np.pi / 4
+            assert args[1]["shifts"] == [(np.pi / 4,)] * 2
 
     def test_incorrect_mode(self):
         """Test that an error is raised if a gradient transform
@@ -489,12 +489,12 @@ class TestTensorFlowExecuteIntegration:
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
-                qml.RX(c + c ** 2 + tf.sin(a), wires=0)
+                qml.RX(c + c**2 + tf.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
 
             res = execute([tape], dev, **execute_kwargs)[0]
             assert tape.trainable_params == [0, 2]
-            assert tape.get_parameters() == [a * c, c + c ** 2 + tf.sin(a)]
+            assert tape.get_parameters() == [a * c, c + c**2 + tf.sin(a)]
 
         res = t.jacobian(res, [a, b, c])
         assert isinstance(res[0], tf.Tensor)

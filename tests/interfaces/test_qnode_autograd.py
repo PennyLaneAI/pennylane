@@ -333,7 +333,7 @@ class TestQNode:
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
             qml.RZ(b, wires=0)
-            qml.RX(c + c ** 2 + np.sin(a), wires=0)
+            qml.RX(c + c**2 + np.sin(a), wires=0)
             return qml.expval(qml.PauliZ(0))
 
         res = qml.jacobian(circuit)(a, b, c)
@@ -341,7 +341,7 @@ class TestQNode:
         if diff_method == "finite-diff":
             assert circuit.qtape.trainable_params == [0, 2]
             tape_params = np.array(circuit.qtape.get_parameters())
-            assert np.all(tape_params == [a * c, c + c ** 2 + np.sin(a)])
+            assert np.all(tape_params == [a * c, c + c**2 + np.sin(a)])
 
         assert isinstance(res, tuple) and len(res) == 2
 
@@ -367,12 +367,13 @@ class TestQNode:
         assert res.shape == (2,)
         assert isinstance(res, np.ndarray)
 
-        assert not qml.jacobian(circuit)(a, b)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            assert not qml.jacobian(circuit)(a, b)
 
         def cost(a, b):
             return np.sum(circuit(a, b))
 
-        with pytest.warns(UserWarning, match="Output seems independent of input"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             grad = qml.grad(cost)(a, b)
 
         assert grad == tuple()

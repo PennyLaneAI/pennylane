@@ -72,7 +72,7 @@ class IQPEmbedding(Operation):
 
     Args:
         features (tensor_like): tensor of features to encode
-        wires (Iterable): wires that the template acts on
+        wires (Any or Iterable[Any]): wires that the template acts on
         n_repeats (int): number of times the basic embedding is repeated
         pattern (list[int]): specifies the wires and features of the entanglers
 
@@ -180,8 +180,7 @@ class IQPEmbedding(Operation):
             # default is an all-to-all pattern
             pattern = combinations(wires, 2)
 
-        self.pattern = pattern
-        self.n_repeats = n_repeats
+        self._hyperparameters = {"pattern": pattern, "n_repeats": n_repeats}
 
         super().__init__(features, wires=wires, do_queue=do_queue, id=id)
 
@@ -189,22 +188,51 @@ class IQPEmbedding(Operation):
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(
+        features, wires, n_repeats, pattern
+    ):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        features = self.parameters[0]
+        .. math:: O = O_1 O_2 \dots O_n.
 
-        with qml.tape.QuantumTape() as tape:
 
-            for _ in range(self.n_repeats):
 
-                for i in range(len(self.wires)):
-                    qml.Hadamard(wires=self.wires[i])
-                    qml.RZ(features[i], wires=self.wires[i])
+        .. seealso:: :meth:`~.IQPEmbedding.decomposition`.
 
-                for wire_pair in self.pattern:
-                    # get the position of the wire indices in the array
-                    idx1, idx2 = self.wires.indices(wire_pair)
-                    # apply product of two features as entangler
-                    qml.MultiRZ(features[idx1] * features[idx2], wires=wire_pair)
+        Args:
+            features (tensor_like): tensor of features to encode
+            wires (Any or Iterable[Any]): wires that the template acts on
 
-        return tape
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> features = torch.tensor([1., 2., 3.])
+        >>> pattern = [(0, 1), (0, 2), (1, 2)]
+        >>> qml.IQPEmbedding.compute_decomposition(features, wires=[0, 1, 2], n_repeats=2, pattern=pattern)
+        [Hadamard(wires=[0]), RZ(tensor(1.), wires=[0]),
+         Hadamard(wires=[1]), RZ(tensor(2.), wires=[1]),
+         Hadamard(wires=[2]), RZ(tensor(3.), wires=[2]),
+         MultiRZ(tensor(2.), wires=[0, 1]), MultiRZ(tensor(3.), wires=[0, 2]), MultiRZ(tensor(6.), wires=[1, 2]),
+         Hadamard(wires=[0]), RZ(tensor(1.), wires=[0]),
+         Hadamard(wires=[1]), RZ(tensor(2.), wires=[1]),
+         Hadamard(wires=[2]), RZ(tensor(3.), wires=[2]),
+         MultiRZ(tensor(2.), wires=[0, 1]), MultiRZ(tensor(3.), wires=[0, 2]), MultiRZ(tensor(6.), wires=[1, 2])]
+        """
+        wires = qml.wires.Wires(wires)
+        op_list = []
+        for _ in range(n_repeats):
+
+            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
+                op_list.append(qml.Hadamard(wires=wires[i]))
+                op_list.append(qml.RZ(features[i], wires=wires[i]))
+
+            for wire_pair in pattern:
+                # get the position of the wire indices in the array
+                idx1, idx2 = wires.indices(wire_pair)
+                # apply product of two features as entangler
+                op_list.append(qml.MultiRZ(features[idx1] * features[idx2], wires=wire_pair))
+
+        return op_list

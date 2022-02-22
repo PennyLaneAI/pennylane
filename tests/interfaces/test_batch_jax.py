@@ -48,14 +48,14 @@ class TestJaxExecuteUnitTests:
                 [tape],
                 device,
                 gradient_fn=param_shift,
-                gradient_kwargs={"shift": np.pi / 4},
+                gradient_kwargs={"shifts": [(np.pi / 4,)] * 2},
                 interface=interface,
             )[0][0]
 
         res = jax.grad(cost)(a, device=dev)
 
         for args in spy.call_args_list:
-            assert args[1]["shift"] == np.pi / 4
+            assert args[1]["shifts"] == [(np.pi / 4,)] * 2
 
     def test_incorrect_mode(self, interface):
         """Test that an error is raised if an gradient transform
@@ -482,7 +482,7 @@ class TestJaxExecuteIntegration:
             with qml.tape.JacobianTape() as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
-                qml.RX(c + c ** 2 + jnp.sin(a), wires=0)
+                qml.RX(c + c**2 + jnp.sin(a), wires=0)
                 qml.expval(qml.PauliZ(0))
 
             return execute([tape], device, interface=interface, **execute_kwargs)[0][0]
@@ -548,7 +548,7 @@ class TestJaxExecuteIntegration:
         """Test that the jax interface works correctly
         with a matrix parameter"""
         a = jnp.array(0.1)
-        U = qml.RY(a, wires=0).matrix
+        U = qml.RY(a, wires=0).get_matrix()
 
         def cost(U, device):
             with qml.tape.JacobianTape() as tape:
@@ -834,3 +834,19 @@ class TestVectorValued:
 
         with pytest.raises(InterfaceUnsupportedError):
             jax.jacobian(cost)(params, cache=None)
+
+
+def test_diff_method_None_jit():
+    """Test that jitted execution works when `gradient_fn=None`."""
+
+    dev = qml.device("default.qubit.jax", wires=1, shots=10)
+
+    @jax.jit
+    def wrapper(x):
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        return qml.execute([tape], dev, gradient_fn=None)
+
+    assert jnp.allclose(wrapper(jnp.array(0.0))[0], 1.0)

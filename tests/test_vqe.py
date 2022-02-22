@@ -192,7 +192,7 @@ ANSAETZE = [
 
 EMPTY_PARAMS = []
 VAR_PARAMS = [0.5]
-EMBED_PARAMS = np.array([1 / np.sqrt(2 ** 3)] * 2 ** 3)
+EMBED_PARAMS = np.array([1 / np.sqrt(2**3)] * 2**3)
 LAYER_PARAMS = np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=3))
 
 CIRCUITS = [
@@ -526,9 +526,10 @@ class TestVQE:
 
         np.random.seed(1967)
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        w = np.random.random(shape)
+        w = pnp.random.random(shape, requires_grad=True)
 
-        dc = qml.grad(cost)(w)
+        with pytest.warns(UserWarning, match="Output seems independent of input"):
+            dc = qml.grad(cost)(w)
         assert np.allclose(dc, 0)
 
     @pytest.mark.slow
@@ -752,7 +753,7 @@ class TestNewVQE:
             return qml.expval(H1)
 
         res = qml.draw(circuit1)()
-        expected = " 0: ──H──╭┤ ⟨Hamiltonian(1, 1, 1)⟩ \n" + " 2: ─────╰┤ ⟨Hamiltonian(1, 1, 1)⟩ \n"
+        expected = "0: ──H─┤ ╭<𝓗(1.00,1.00,1.00)>\n2: ────┤ ╰<𝓗(1.00,1.00,1.00)>"
         assert res == expected
 
     def test_multiple_expvals(self):
@@ -811,7 +812,9 @@ class TestNewVQE:
         def circuit():
             return qml.var(H)
 
-        with pytest.raises(ValueError, match="Cannot compute analytic variance"):
+        with pytest.raises(
+            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic variance"
+        ):
             circuit()
 
     def test_error_sample_measurement(self):

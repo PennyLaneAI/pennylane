@@ -15,16 +15,16 @@
 Unit tests for functions needed for qubit tapering.
 """
 import functools
-import scipy
-import pytest
+
 import pennylane as qml
+import pytest
+import scipy
 from pennylane import numpy as np
 from pennylane.hf.tapering import (
     _binary_matrix,
     _kernel,
     _observable_mult,
     _reduced_row_echelon,
-    _simplify,
     clifford,
     generate_paulis,
     generate_symmetries,
@@ -359,52 +359,6 @@ def test_observable_mult(obs_a, obs_b, result):
 
 
 @pytest.mark.parametrize(
-    ("hamiltonian", "result"),
-    [
-        (
-            qml.Hamiltonian(
-                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)]
-            ),
-            qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.5, -0.5]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
-            ),
-            qml.Hamiltonian([], []),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.0, -0.5]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
-            ),
-            qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.25, 0.25, 0.25, -0.25]),
-                [
-                    qml.PauliX(0) @ qml.PauliY(1),
-                    qml.PauliX(0) @ qml.PauliZ(1),
-                    qml.PauliX(0) @ qml.PauliY(1),
-                    qml.PauliX(0) @ qml.PauliY(1),
-                ],
-            ),
-            qml.Hamiltonian(
-                np.array([0.25, 0.25]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
-            ),
-        ),
-    ],
-)
-def test_simplify(hamiltonian, result):
-    r"""Test that simplify returns the correct hamiltonian."""
-    h = _simplify(hamiltonian)
-    assert h.compare(result)
-
-
-@pytest.mark.parametrize(
     ("generator", "paulix_ops", "result"),
     [
         (
@@ -465,10 +419,10 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulix_ops, paulix_
     ham_calc = transform_hamiltonian(h, generator, paulix_ops, paulix_sector)
 
     # sort Hamiltonian terms and then compare with reference
-    sorted_terms = list(sorted(zip(ham_calc.terms[0], ham_calc.terms[1])))
+    sorted_terms = list(sorted(zip(ham_calc.terms()[0], ham_calc.terms()[1])))
     for i, term in enumerate(sorted_terms):
-        assert np.allclose(term[0], ham_ref.terms[0][i])
-        assert term[1].compare(ham_ref.terms[1][i])
+        assert np.allclose(term[0], ham_ref.terms()[0][i])
+        assert term[1].compare(ham_ref.terms()[1][i])
 
 
 @pytest.mark.parametrize(
