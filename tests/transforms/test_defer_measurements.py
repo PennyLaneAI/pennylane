@@ -148,7 +148,7 @@ class TestConditionalOperations:
             return qml.expval(qml.PauliZ(1))
 
         qnode()
-        assert len(qnode.qtape.queue) == 4 # observable and measurement queued separately queued
+        assert len(qnode.qtape.queue) == 4  # observable and measurement queued separately queued
 
         first_ctrl_op = qnode.qtape.queue[0].expand()
         assert len(first_ctrl_op.queue) == 1

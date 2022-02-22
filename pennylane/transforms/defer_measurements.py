@@ -102,9 +102,9 @@ def defer_measurements(tape):
             control = [measured_wires[m_id] for m_id in op.dependant_measurements]
             for value in op.branches.values():
                 if value:
-                    op_to_apply = op.then_op
                     ctrl(
-                        lambda: apply(op_to_apply), control=Wires(control)  # pylint: disable=cell-var-from-loop
+                        lambda: apply(op.then_op),  # pylint: disable=cell-var-from-loop
+                        control=Wires(control),
                     )()
         else:
             apply(op)
