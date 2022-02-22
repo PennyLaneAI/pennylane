@@ -1565,7 +1565,7 @@ class TestQCutProcessingFn:
         ### Find the result using qcut_processing_fn
 
         meas_basis = [I, Z, X, Y]
-        states = [np.outer(s.conj(), s) for s in states_pure]
+        states = [np.outer(s, s.conj()) for s in states_pure]
         zero_proj = states[0]
 
         u1 = qml.RX(x, wires=0).matrix
