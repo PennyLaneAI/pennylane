@@ -227,7 +227,7 @@ class gradient_transform(qml.batch_transform):
                 )
                 return jacs
 
-            is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
+            is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
 
             if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
                 # Classical Jacobian is the identity. No classical processing
