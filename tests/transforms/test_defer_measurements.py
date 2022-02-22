@@ -193,7 +193,7 @@ class TestTemplates:
 
     def test_layers(self):
         """Test layers conditioned on mid-circuit measurement outcomes."""
-        dev = qml.device('default.qubit', wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         num_wires = 2
 
@@ -215,6 +215,7 @@ class TestTemplates:
         weights = np.random.random(size=shape)
 
         assert np.allclose(qnode1(weights), qnode2(weights))
+
 
 class TestDrawing:
     """Tests drawing circuits with mid-circuit measurements and conditional
