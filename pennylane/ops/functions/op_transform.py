@@ -14,6 +14,7 @@
 """
 This module contains the @op_transform decorator.
 """
+# pylint: disable=protected-access
 import functools
 import inspect
 import os
@@ -177,6 +178,7 @@ class op_transform:
                 UserWarning,
             )
 
+            args[0].tape_transform = lambda x: x
             return args[0]
 
         return super().__new__(cls)
@@ -245,7 +247,7 @@ class op_transform:
         try:
             return self._fn(obj, *args, **kwargs)
 
-        except Exception as e1:
+        except Exception as e1:  # pylint: disable=broad-except
 
             try:
                 # attempt to decompose the operation and call
@@ -367,6 +369,9 @@ class op_transform:
 
 
 class tape_transform(op_transform):
+    """With a minor modification, you can turn this into
+    a decorator that transforms tape -> classical representation"""
+
     def __init__(self, fn):
         if not callable(fn):
             raise OperationTransformError(
