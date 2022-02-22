@@ -1568,9 +1568,9 @@ class TestQCutProcessingFn:
         states = [np.outer(s, s.conj()) for s in states_pure]
         zero_proj = states[0]
 
-        u1 = qml.RX(x, wires=0).matrix
-        u2 = qml.RY(y, wires=0).matrix
-        u3 = qml.RX(z, wires=0).matrix
+        u1 = qml.RX.compute_matrix(x)
+        u2 = qml.RY.compute_matrix(y)
+        u3 = qml.RX.compute_matrix(z)
         t1 = np.array([np.trace(b @ u1 @ zero_proj @ u1.conj().T) for b in meas_basis])
         t2 = np.array([[np.trace(b @ u2 @ s @ u2.conj().T) for b in meas_basis] for s in states])
         t3 = np.array([np.trace(Z @ u3 @ s @ u3.conj().T) for s in states])
