@@ -379,15 +379,14 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
         for m, r in zip(var_mask, qml.math.atleast_1d(results[0])):
             array_func = np.ones if m else np.zeros
             shape = qml.math.shape(r)
-            shape = (1,) if shape == tuple() else shape
             mask.append(array_func(shape, dtype=bool))
 
         if ragged:
             res = qml.math.hstack(res)
             mask = qml.math.hstack(mask)
 
-        mask = qml.math.convert_like(qml.math.reshape(mask, [-1, 1]), res)
         f0 = qml.math.expand_dims(res, -1)
+        mask = qml.math.convert_like(qml.math.reshape(mask, qml.math.shape(f0)), res)
 
         pdA = pdA_fn(results[1:tape_boundary])
         pdA2 = 0
