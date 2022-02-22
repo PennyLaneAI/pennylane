@@ -129,6 +129,9 @@
 
 <h3>Deprecations</h3>
 
+* A deprecation warning has been added to the `qml.finite_diff()` method.
+  [#2212](https://github.com/PennyLaneAI/pennylane/pull/2212)
+
 <h3>Bug fixes</h3>
 
 * Fixes a bug in which passing required arguments into operations as
