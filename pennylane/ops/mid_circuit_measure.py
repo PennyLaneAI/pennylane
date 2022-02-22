@@ -14,7 +14,7 @@
 """
 Mid-circuit measurements and associated operations.
 """
-from typing import Any, TypeVar, Generic, Type
+from typing import TypeVar, Generic, Type
 import uuid
 from pennylane.operation import Operation
 

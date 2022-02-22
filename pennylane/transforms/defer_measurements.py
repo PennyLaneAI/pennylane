@@ -77,7 +77,6 @@ def defer_measurements(tape):
     >>> print(par, cost)
     3.018529732412975 -0.0037774828357067247
     """
-    # TODO: do we need a map or can we just have a list?
     measured_wires = {}
 
     if any(
@@ -89,22 +88,23 @@ def defer_measurements(tape):
         raise ValueError("Continuous variable operations and observables are not supported.")
 
     for op in tape.queue:
-        if any([wire in measured_wires.values() for wire in op.wires]):
+        if any(wire in measured_wires.values() for wire in op.wires):
             raise ValueError(
                 "Cannot apply operations on {op.wires} as some has been measured already."
             )
 
         if isinstance(
-            op, qml.ops.mid_circuit_measure._MidCircuitMeasure
-        ):  # pylint: disable=protected-access
+            op, qml.ops.mid_circuit_measure._MidCircuitMeasure  # pylint: disable=protected-access
+        ):
             measured_wires[op.measurement_id] = op.wires[0]
 
         elif op.__class__.__name__ == "_IfOp":
-            # TODO: Why does op.dependant_measurements store the wire ids instead of labels?
             control = [measured_wires[m_id] for m_id in op.dependant_measurements]
             for value in op.branches.values():
                 if value:
                     op_to_apply = op.then_op
-                    ctrl(lambda: apply(op_to_apply), control=Wires(control))() # pylint: disable=cell-var-from-loop
+                    ctrl(
+                        lambda: apply(op_to_apply), control=Wires(control)  # pylint: disable=cell-var-from-loop
+                    )()
         else:
             apply(op)
