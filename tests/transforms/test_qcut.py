@@ -1239,6 +1239,59 @@ class TestExpandFragmentTapes:
             for wire3_prep_op, wire3_exp_op in zip(wire3_prep_ops, wire3_exp):
                 assert type(wire3_prep_op) == wire3_exp_op
 
+    def test_no_measure_node_observables(self):
+        """
+        Tests that a fragment with no MeasureNodes give the correct
+        configurations
+        """
+
+        with qml.tape.QuantumTape() as frag:
+            qml.RY(0.543, wires=[1])
+            qcut.PrepareNode(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.24, wires=[0])
+            qml.RZ(0.133, wires=[1])
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        expanded_tapes, prep_nodes, meas_nodes = qcut.expand_fragment_tapes(frag)
+
+        ops = [
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(0.24, wires=[0]),
+            qml.RZ(0.133, wires=[1]),
+            qml.expval(qml.PauliZ(wires=[0])),
+        ]
+
+        with qml.tape.QuantumTape() as config1:
+            qml.RY(0.543, wires=[1])
+            qml.Identity(wires=[0])
+            for optr in ops:
+                qml.apply(optr)
+
+        with qml.tape.QuantumTape() as config2:
+            qml.RY(0.543, wires=[1])
+            qml.PauliX(wires=[0])
+            for optr in ops:
+                qml.apply(optr)
+
+        with qml.tape.QuantumTape() as config3:
+            qml.RY(0.543, wires=[1])
+            qml.Hadamard(wires=[0])
+            for optr in ops:
+                qml.apply(optr)
+
+        with qml.tape.QuantumTape() as config4:
+            qml.RY(0.543, wires=[1])
+            qml.Hadamard(wires=[0])
+            qml.S(wires=[0])
+            for optr in ops:
+                qml.apply(optr)
+
+        expected_configs = [config1, config2, config3, config4]
+
+        for tape, config in zip(expanded_tapes, expected_configs):
+            compare_tapes(tape, config)
+
 
 class TestContractTensors:
     """Tests for the contract_tensors function"""
@@ -1498,12 +1551,7 @@ class TestQCutProcessingFn:
         U = unitary_group.rvs(2**n, random_state=1967)
 
         # First, create target process tensor
-        I, X, Y, Z = (
-            np.eye(2),
-            qml.PauliX.compute_matrix(),
-            qml.PauliY.compute_matrix(),
-            qml.PauliZ.compute_matrix(),
-        )
+
         basis = np.array([I, X, Y, Z]) / np.sqrt(2)
         prod_inp = itertools.product(range(4), repeat=n)
         prod_out = itertools.product(range(4), repeat=n)
@@ -1571,12 +1619,14 @@ class TestQCutProcessingFn:
         ### Find the result using qcut_processing_fn
 
         meas_basis = [I, Z, X, Y]
-        states = [np.outer(s.conj(), s) for s in states_pure]
+
+        states = [np.outer(s, s.conj()) for s in states_pure]
         zero_proj = states[0]
 
-        u1 = qml.RX(x, wires=0).matrix
-        u2 = qml.RY(y, wires=0).matrix
-        u3 = qml.RX(z, wires=0).matrix
+        u1 = qml.RX.compute_matrix(x)
+        u2 = qml.RY.compute_matrix(y)
+        u3 = qml.RX.compute_matrix(z)
+
         t1 = np.array([np.trace(b @ u1 @ zero_proj @ u1.conj().T) for b in meas_basis])
         t2 = np.array([[np.trace(b @ u2 @ s @ u2.conj().T) for b in meas_basis] for s in states])
         t3 = np.array([np.trace(Z @ u3 @ s @ u3.conj().T) for s in states])
@@ -1765,5 +1815,3 @@ class TestCutCircuitTransform:
         
         results = circuit()
         import pdb; pdb.set_trace()
-            
-        

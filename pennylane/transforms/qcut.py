@@ -386,6 +386,11 @@ def _get_measurements(
         over ``group`` and ``obs`` is the observable composing the single measurement
         in ``measurements``
     """
+    if len(group) == 0:
+        # This ensures the measurements of the original tape are carried over to the
+        # following tape configurations in the absence of any MeasureNodes in the fragment
+        return measurements
+
     n_measurements = len(measurements)
     if n_measurements > 1:
         raise ValueError(
@@ -529,7 +534,6 @@ def expand_fragment_tapes(
 
                 with qml.tape.stop_recording():
                     measurements = _get_measurements(group, tape.measurements)
-
                 for meas in measurements:
                     apply(meas)
 
@@ -740,7 +744,10 @@ def _process_tensor(results, n_prep: int, n_meas: int):
 
     axes = list(reversed(range(n_prep))) + list(range(n_prep, n))
 
-    # Use transpose to reorder indices
+    # Use transpose to reorder indices. We must do this because tensordot returns a tensor whose
+    # indices are ordered according to the uncontracted indices of the first tensor, followed
+    # by the uncontracted indices of the second tensor. For example, calculating C_kj T_ij returns
+    # a tensor T'_ki rather than T'_ik.
     final_tensor = qml.math.transpose(final_tensor, axes=axes)
 
     final_tensor *= qml.math.power(2, -(n_meas + n_prep) / 2)
@@ -871,4 +878,3 @@ def cut_circuit(
         prepare_nodes=prepare_nodes,
         measure_nodes=measure_nodes,
     )    
-    
