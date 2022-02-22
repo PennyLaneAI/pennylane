@@ -523,7 +523,7 @@ class CutStrategy:
         min_free_wires (int): Number of wires for the smallest available device.
             Optional, defaults to ``max_device_wires``.
         max_fragments_probed (Union[int, Sequence[int]]): Single, or 2-Sequence of, number(s)
-            specifying the potential (range of) number of fragments for the partitioner to attampt.
+            specifying the potential (range of) number of fragments for the partitioner to attempt.
             Optional, defaults to probing all valid strategies derivable from the circuit and
             devices.
         max_free_gates (int): Maximum allowed circuit depth for the deepest available device.
