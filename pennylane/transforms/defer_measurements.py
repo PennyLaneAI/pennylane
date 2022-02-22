@@ -17,7 +17,6 @@ from pennylane.wires import Wires
 import pennylane as qml
 from pennylane.transforms import qfunc_transform, ctrl
 from pennylane.queuing import apply
-from pennylane.tape import QuantumTape, get_active_tape
 
 
 @qfunc_transform
@@ -105,6 +104,7 @@ def defer_measurements(tape):
             control = [measured_wires[m_id] for m_id in op.dependant_measurements]
             for value in op.branches.values():
                 if value:
-                    ctrl(lambda: apply(op.then_op), control=Wires(control))()
+                    op_to_apply = op.then_op
+                    ctrl(lambda: apply(op_to_apply), control=Wires(control))() # pylint: disable=cell-var-from-loop
         else:
             apply(op)

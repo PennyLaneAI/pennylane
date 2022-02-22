@@ -127,12 +127,43 @@ class TestQNode:
             qnode()
 
 
-class TestMidCircuitMeasurements:
-    """Tests mid circuit measurements"""
+class TestConditionalOperations:
+    """Tests conditional operations"""
+
+    def test_correct_ops_in_tape(self):
+        """Test that the underlying tape contains the correct operations."""
+        dev = qml.device("default.qubit", wires=3)
+
+        first_par = 0.1
+        sec_par = 0.3
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode():
+            m_0 = qml.mid_measure(0)
+            qml.if_then(m_0, qml.RY)(first_par, wires=1)
+
+            m_1 = qml.mid_measure(2)
+            qml.if_then(m_0, qml.RZ)(sec_par, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        qnode()
+        assert len(qnode.qtape.queue) == 4 # observable and measurement queued separately queued
+
+        first_ctrl_op = qnode.qtape.queue[0].expand()
+        assert len(first_ctrl_op.queue) == 1
+        assert isinstance(first_ctrl_op.queue[0], qml.CRY)
+        assert first_ctrl_op.data == [first_par]
+
+        sec_ctrl_op = qnode.qtape.queue[1].expand()
+        assert len(sec_ctrl_op.queue) == 1
+        assert isinstance(sec_ctrl_op.queue[0], qml.CRZ)
+        assert sec_ctrl_op.data == [sec_par]
 
     @pytest.mark.parametrize("r", np.linspace(0.0, 1.6, 10))
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
     def test_quantum_teleportation(self, device, r):
+        """Test quantum teleportation."""
         dev = qml.device(device, wires=3)
 
         @qml.qnode(dev)
