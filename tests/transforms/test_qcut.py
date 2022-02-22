@@ -1239,6 +1239,59 @@ class TestExpandFragmentTapes:
             for wire3_prep_op, wire3_exp_op in zip(wire3_prep_ops, wire3_exp):
                 assert type(wire3_prep_op) == wire3_exp_op
 
+    def test_no_measure_node_observables(self):
+        """
+        Tests that a fragment with no MeasureNodes give the correct
+        configurations
+        """
+
+        with qml.tape.QuantumTape() as frag:
+            qml.RY(0.543, wires=[1])
+            qcut.PrepareNode(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.24, wires=[0])
+            qml.RZ(0.133, wires=[1])
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        expanded_tapes, prep_nodes, meas_nodes = qcut.expand_fragment_tapes(frag)
+
+        ops = [
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(0.24, wires=[0]),
+            qml.RZ(0.133, wires=[1]),
+            qml.expval(qml.PauliZ(wires=[0])),
+        ]
+
+        with qml.tape.QuantumTape() as config1:
+            qml.RY(0.543, wires=[1])
+            qml.Identity(wires=[0])
+            for optr in ops:
+                qml.apply(optr)
+
+        with qml.tape.QuantumTape() as config2:
+            qml.RY(0.543, wires=[1])
+            qml.PauliX(wires=[0])
+            for optr in ops:
+                qml.apply(optr)
+
+        with qml.tape.QuantumTape() as config3:
+            qml.RY(0.543, wires=[1])
+            qml.Hadamard(wires=[0])
+            for optr in ops:
+                qml.apply(optr)
+
+        with qml.tape.QuantumTape() as config4:
+            qml.RY(0.543, wires=[1])
+            qml.Hadamard(wires=[0])
+            qml.S(wires=[0])
+            for optr in ops:
+                qml.apply(optr)
+
+        expected_configs = [config1, config2, config3, config4]
+
+        for tape, config in zip(expanded_tapes, expected_configs):
+            compare_tapes(tape, config)
+
 
 class TestContractTensors:
     """Tests for the contract_tensors function"""
