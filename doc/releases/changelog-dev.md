@@ -78,6 +78,9 @@
   configurations.
   [(#2169)](https://github.com/PennyLaneAI/pennylane/pull/2169)
 
+  The postprocessing function for the `cut_circuit` transform has been added.
+  [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
+
 <h3>Improvements</h3>
 
 * The `gradients` module has been streamlined and special-purpose functions
