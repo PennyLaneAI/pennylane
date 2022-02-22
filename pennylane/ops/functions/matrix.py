@@ -121,7 +121,7 @@ def matrix(op, wire_order=None):
     if isinstance(op, qml.Hamiltonian):
         return qml.utils.sparse_hamiltonian(op, wires=wire_order).toarray()
 
-    return op.get_matrix(wire_order=None)
+    return op.get_matrix(wire_order=wire_order)
 
 
 @matrix.tape_transform
@@ -137,7 +137,7 @@ def matrix(tape, wire_order=None):
     unitary_matrix = qml.math.eye(2**n_wires, like=interface)
 
     for op in tape.operations:
-        U = matrix(op, wire_order)
+        U = matrix(op, wire_order=wire_order)
         unitary_matrix = qml.math.dot(U, unitary_matrix)
 
     return unitary_matrix
