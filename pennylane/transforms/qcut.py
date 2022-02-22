@@ -737,7 +737,10 @@ def _process_tensor(results, n_prep: int, n_meas: int):
 
     axes = list(reversed(range(n_prep))) + list(range(n_prep, n))
 
-    # Use transpose to reorder indices
+    # Use transpose to reorder indices. We must do this because tensordot returns a tensor whose
+    # indices are ordered according to the uncontracted indices of the first tensor, followed
+    # by the uncontracted indices of the second tensor. For example, calculating C_kj T_ij returns
+    # a tensor T'_ki rather than T'_ik.
     final_tensor = qml.math.transpose(final_tensor, axes=axes)
 
     final_tensor *= qml.math.power(2, -(n_meas + n_prep) / 2)
