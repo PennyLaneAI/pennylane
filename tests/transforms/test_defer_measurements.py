@@ -187,6 +187,35 @@ class TestMidCircuitMeasurements:
         assert np.allclose(normal_probs, teleported_probs)
 
 
+class TestTemplates:
+    """Tests drawing circuits with mid-circuit measurements and conditional
+    operations that have been transformed"""
+
+    def test_layers(self):
+        """Test layers conditioned on mid-circuit measurement outcomes."""
+        dev = qml.device('default.qubit', wires=3)
+
+        num_wires = 2
+
+        @qml.qnode(dev)
+        def qnode1(parameters):
+            qml.Hadamard(0)
+            qml.ctrl(qml.StronglyEntanglingLayers, control=0)(parameters, wires=range(1, 3))
+            return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2))
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode2(parameters):
+            qml.Hadamard(0)
+            m_0 = qml.mid_measure(0)
+            qml.if_then(m_0, qml.StronglyEntanglingLayers)(parameters, wires=range(1, 3))
+            return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2))
+
+        shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=num_wires)
+        weights = np.random.random(size=shape)
+
+        assert np.allclose(qnode1(weights), qnode2(weights))
+
 class TestDrawing:
     """Tests drawing circuits with mid-circuit measurements and conditional
     operations that have been transformed"""
