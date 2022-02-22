@@ -191,7 +191,7 @@ class TestMidCircuitMeasurements:
         keyword syntax works."""
         op = qml.RY
 
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def qnode1(parameters):
@@ -213,8 +213,34 @@ class TestMidCircuitMeasurements:
 
 
 class TestTemplates:
-    """Tests drawing circuits with mid-circuit measurements and conditional
-    operations that have been transformed"""
+    """Tests templates being conditioned on mid-circuit measurement outcomes."""
+
+    def test_basis_state_prep(self, template):
+        """Test the basis state prep template conditioned on mid-circuit
+        measurement outcomes."""
+        template = qml.BasisStatePreparation
+
+        basis_state = [0, 1, 1, 0]
+
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def qnode1():
+            qml.Hadamard(0)
+            qml.ctrl(template, control=0)(basis_state, wires=range(1, 5))
+            return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode2():
+            qml.Hadamard(0)
+            m_0 = qml.mid_measure(0)
+            qml.if_then(m_0, template)(basis_state, wires=range(1, 5))
+            return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
+
+        dev = qml.device("default.qubit", wires=2)
+
+        assert np.allclose(qnode1(), qnode2())
 
     @pytest.mark.parametrize("template", [qml.StronglyEntanglingLayers, qml.BasicEntanglerLayers])
     def test_layers(self, template):
