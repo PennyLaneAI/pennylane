@@ -599,7 +599,7 @@ def contract_tensors(
             differentiable contraction.
 
     Returns:
-        float or array-like: the result of contracting the tensor network
+        float or tensor_like: the result of contracting the tensor network
 
     **Example**
 
@@ -698,12 +698,12 @@ def _process_tensor(results, n_prep: int, n_meas: int):
        the |0>, |1>, |+>, |+i> basis to the I, X, Y, Z basis using ``CHANGE_OF_BASIS``.
 
     Args:
-        results (array-like): the input execution results
+        results (tensor_like): the input execution results
         n_prep (int): the number of preparation nodes in the corresponding circuit fragment
         n_meas (int): the number of measurement nodes in the corresponding circuit fragment
 
     Returns:
-        array-like: the corresponding fragment tensor
+        tensor_like: the corresponding fragment tensor
     """
     n = n_prep + n_meas
     dim_meas = 4**n_meas
@@ -757,7 +757,7 @@ def _to_tensors(
     transformation.
 
     Args:
-        results (array-like): A collection of execution results corresponding to the
+        results (tensor_like): A collection of execution results corresponding to the
             expansion of circuit fragments in the communication graph over measurement and
             preparation node configurations. These results are processed into tensors by this
             function.
@@ -769,7 +769,7 @@ def _to_tensors(
             measurement nodes in a given fragment
 
     Returns:
-        List[array-like]: the tensors for each circuit fragment in the communication graph
+        List[tensor_like]: the tensors for each circuit fragment in the communication graph
     """
     ctr = 0
     tensors = []
@@ -826,7 +826,7 @@ def qcut_processing_fn(
             differentiable contraction.
 
     Returns:
-        float or array-like: the output of the original uncut circuit arising from contracting
+        float or tensor_like: the output of the original uncut circuit arising from contracting
         the tensor network of circuit fragments
     """
     flat_results = qml.math.concatenate(results)
