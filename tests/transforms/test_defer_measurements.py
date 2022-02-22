@@ -194,6 +194,7 @@ class TestDrawing:
     def test_drawing(self):
         """Test that drawing a func with mid-circuit measurements works and
         that controlled operations are drawn for conditional operations."""
+
         def qfunc():
             m_0 = qml.mid_measure(0)
             qml.if_then(m_0, qml.RY)(0.312, wires=1)
@@ -207,7 +208,9 @@ class TestDrawing:
         transformed_qfunc = qml.transforms.defer_measurements(qfunc)
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
-        expected = ("0: ─╭C────────────────────────────────────────────────────┤     \n"
-                   "1: ─╰ControlledOperation(0.31)─╭ControlledOperation(0.31)─┤  <Z>\n"
-                   "2: ────────────────────────────╰C─────────────────────────┤     ")
+        expected = (
+            "0: ─╭C────────────────────────────────────────────────────┤     \n"
+            "1: ─╰ControlledOperation(0.31)─╭ControlledOperation(0.31)─┤  <Z>\n"
+            "2: ────────────────────────────╰C─────────────────────────┤     "
+        )
         assert qml.draw(transformed_qnode)() == expected
