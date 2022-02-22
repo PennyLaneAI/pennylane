@@ -33,7 +33,8 @@ def dipole_integrals(mol, core=None, active=None):
         \hat{c}_{p\downarrow}^\dagger \hat{c}_{q\downarrow}] -
         \hat{D}_\mathrm{c} + \hat{D}_\mathrm{n},
 
-    where the coefficients :math:`d_{pq}` are given by the integral over molecular orbitals
+    where the coefficients :math:`d_{pq}` are given by the integral of the position operator
+    :math:`\hat{{\bf r}}` over molecular orbitals
     :math:`\phi`
 
     .. math::
@@ -311,11 +312,11 @@ def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
     return _dipole
 
 
-def fermionic_one(core_constant, integral, cutoff=1.0e-12):
+def fermionic_one(constant, integral, cutoff=1.0e-12):
     r"""Create a fermionic operator from one-particle molecular orbital integrals.
 
     Args:
-        core_constant (array[float]): the contribution of the core orbitals and nuclei
+        constant (array[float]): the contribution of the core orbitals and nuclei
         integral (array[float]): the one-particle molecular orbital integrals
         cutoff (float): cutoff value for discarding the negligible integrals
 
@@ -332,8 +333,8 @@ def fermionic_one(core_constant, integral, cutoff=1.0e-12):
     """
     coeffs = anp.array([])
 
-    if core_constant != anp.array([0.0]):
-        coeffs = anp.concatenate((coeffs, core_constant))
+    if constant != anp.array([0.0]):
+        coeffs = anp.concatenate((coeffs, constant))
         operators = [[]]
     else:
         operators = []
@@ -351,9 +352,9 @@ def fermionic_one(core_constant, integral, cutoff=1.0e-12):
 def qubit_operator(o_ferm, cutoff=1.0e-12):
     r"""Convert a fermionic observable to a PennyLane qubit observable.
 
-    The fermionic operator is a tuple containing the fermionic coefficients and operators. The
-    one-body fermionic operator :math:`a_2^\dagger a_0` is specified as [2, 0] and the two-body
-    operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` is specified as [4, 3, 2, 1].
+    The fermionic operator is a tuple containing the fermionic coefficients and operators. For
+    instance, the one-body fermionic operator :math:`a_2^\dagger a_0` is specified as [2, 0] and the
+    two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` is specified as [4, 3, 2, 1].
 
     Args:
         o_ferm tuple(array[float], list[int]): fermionic operator
