@@ -1847,8 +1847,51 @@ class TestDeprecationWarnings:
 
         assert np.allclose(m1, op.get_eigvals())
 
-    def test_decomposition_deprecation(self):
-        """Test that old-style staticmethod decompositions raise a warning"""
+    def test_decomposition_deprecation_no_parameters(self):
+        """Test that old-style staticmethod decompositions for an operation
+        with no parameters raises a warning"""
+        dev = qml.device("default.qubit", wires=1)
+
+        class MyOp(Operation):
+            num_wires = 1
+            num_params = 0
+
+            @staticmethod
+            def decomposition(wires):
+                qml.RY(0.5, wires=wires[0])
+
+        @qml.qnode(dev)
+        def qnode():
+            MyOp(wires=0)
+            return qml.state()
+
+        with pytest.warns(UserWarning, match="is now an instance method"):
+            result1 = qnode()
+
+        # using an instance method will not raise a deprecation warning
+
+        class MyOp(Operation):
+            num_wires = 1
+            num_params = 0
+
+            def decomposition(self):
+                qml.RY(0.5, wires=self.wires[0])
+
+        @qml.qnode(dev)
+        def qnode():
+            MyOp(wires=0)
+            return qml.state()
+
+        with warnings.catch_warnings():
+            # any warnings emitted will be raised as errors
+            warnings.simplefilter("error")
+            result2 = qnode()
+
+        assert np.allclose(result1, result2)
+
+    def test_decomposition_deprecation_parameters(self):
+        """Test that old-style staticmethod decompositions for an operation
+        with parameters raises a warning"""
         dev = qml.device("default.qubit", wires=1)
 
         class MyOp(Operation):
