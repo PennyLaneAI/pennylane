@@ -14,10 +14,7 @@
 """
 Mid-circuit measurements and associated operations.
 """
-
-import functools
-
-from typing import Union, Any, TypeVar, Generic, Callable, Type
+from typing import Any, TypeVar, Generic, Type
 import uuid
 from pennylane.operation import Operation
 

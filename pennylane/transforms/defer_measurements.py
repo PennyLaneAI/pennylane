@@ -83,7 +83,7 @@ def defer_measurements(tape):
 
     if any(
         [
-            isinstance(op, qml.operation.CVOperation) or isinstance(op, qml.operation.CVObservable)
+            isinstance(op, (qml.operation.CVOperation, qml.operation.CVObservable))
             for op in tape.queue
         ]
     ):
@@ -95,13 +95,15 @@ def defer_measurements(tape):
                 "Cannot apply operations on {op.wires} as some has been measured already."
             )
 
-        if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
+        if isinstance(
+            op, qml.ops.mid_circuit_measure._MidCircuitMeasure
+        ):  # pylint: disable=protected-access
             measured_wires[op.measurement_id] = op.wires[0]
 
         elif op.__class__.__name__ == "_IfOp":
             # TODO: Why does op.dependant_measurements store the wire ids instead of labels?
             control = [measured_wires[m_id] for m_id in op.dependant_measurements]
-            for branch, value in op.branches.items():
+            for value in op.branches.values():
                 if value:
                     ctrl(lambda: apply(op.then_op), control=Wires(control))()
         else:
