@@ -691,23 +691,27 @@ class CutStrategy:
         max_free_wires (int): Number of wires for the largest available device. Optional only when
             ``devices`` is provided where it defaults to the maximum number of wires among
             ``devices``.
-        min_free_wires (int): Number of wires for the smallest available device.
-            Optional, defaults to ``max_device_wires``.
-        max_fragments_probed (Union[int, Sequence[int]]): Single, or 2-Sequence of, number(s)
+        min_free_wires (int): Number of wires for the smallest available device, or, equivalently,
+            the smallest max fragment-wire-size that the partitioning is allowed to explore.
+            When provided, this parameter will be used to derive an upper-bound to the range of
+            explored number of fragments.  Optional, defaults to ``max_free_wires``.
+        num_fragments_probed (Union[int, Sequence[int]]): Single, or 2-Sequence of, number(s)
             specifying the potential (range of) number of fragments for the partitioner to attampt.
             Optional, defaults to probing all valid strategies derivable from the circuit and
             devices.
         max_free_gates (int): Maximum allowed circuit depth for the deepest available device.
             Optional, defaults to unlimited depth.
         min_free_gates (int): Maximum allowed circuit depth for the shallowest available device.
-            Optional, defaults to ``max_device_gates``.
+            Optional, defaults to ``max_free_gates``.
+        imbalance_tolerance (float): The global maximum allowed imbalance for all partition trials.
+            Optional, defaults to unlimited imbalance. Used only if there's a known hard balacing
+            constraint on the partitioning problem.
 
     **Example**
 
     .. code-block:: python
 
         import pennylane as qml
-        from pennylane.transforms import qcut
 
         dev_a = qml.device('default.qubit', wires=4)
         dev_b = qml.device('default.qubit', wires=6)
@@ -718,23 +722,23 @@ class CutStrategy:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(1))
 
-        tape_dag = qcut.tape_to_graph(tape)
+        tape_dag = qml.transforms.tape_to_graph(tape)
 
     Cut circuit with single-device-based strategy using the default 'kahypar' cutter:
-    >>> cut_strategy = qcut.CutStrategy(devices=dev_a)
-    >>> qcut.cut_circuit(tape_dag, method='kahypar', strategy=cut_strategy)
+    >>> cut_strategy = qml.transforms.CutStrategy(devices=dev_a)
+    >>> qml.transforms.cut_circuit(tape_dag, method='kahypar', strategy=cut_strategy)
 
     Cut circuit with multi-device-based strategy using the default 'kahypar' cutter:
-    >>> cut_strategy = qcut.CutStrategy(devices=(dev_a, dev_b))
-    >>> qcut.cut_circuit(tape_dag, method='kahypar', strategy=cut_strategy)
+    >>> cut_strategy = qml.transforms.CutStrategy(devices=(dev_a, dev_b))
+    >>> qml.transforms.cut_circuit(tape_dag, method='kahypar', strategy=cut_strategy)
 
     Cut circuit with user-supplied strategy using user-supplied partitioning callable:
-    >>> cut_strategy = qcut.CutStrategy(
+    >>> cut_strategy = qml.transforms.CutStrategy(
             max_free_wires=6,
             min_free_wires=4,
             num_fragments_probed=(2, 5),
         )
-    >>> qcut.cut_circuit(tape_dag, method=my_partitioner, strategy=cut_strategy, **my_kwargs)
+    >>> qml.transforms.cut_circuit(tape_dag, method=my_partitioner, strategy=cut_strategy, **my_kwargs)
 
     """
 
@@ -805,30 +809,6 @@ class CutStrategy:
         """Derive the complete set of arguments, based on a given circuit, for passing to a graph
         partitioner.
 
-        **Example**
-
-        .. code-block:: python
-
-            import pennylane as qml
-            from pennylane.transforms import qcut
-
-            dev = qml.device('default.qubit', wires=4)
-
-            with qml.tape.QuantumTape() as tape:
-                qml.RX(0.4, wires=0)
-                qml.RY(0.9, wires=0)
-                qml.CNOT(wires=[0, 1])
-                qml.expval(qml.PauliZ(1))
-
-            tape_dag = qcut.tape_to_graph(tape)
-
-        Deriving kwargs for a given circuit and feed it to a custom partitioner along with an extra
-        custom parameter:
-        >>> cut_strategy = qcut.CutStrategy(devices=dev)
-        >>> cut_kwargs = cut_strategy.get_cut_kwargs(tape_dag)
-        >>> cut_kwargs.update({'extra_param': 0})
-        >>> my_partitioner(tape_dag, **cut_kwargs)
-
         Args:
             tape_dag (MultiDiGraph): Graph representing a tape, typically the output of
                 :func:`tape_to_graph`.
@@ -842,6 +822,17 @@ class CutStrategy:
         Returns:
             List[Dict[str, Any]]: A list of minimal set of kwargs being passed to a graph
                 partitioner method.
+
+        **Example**
+
+        Deriving kwargs for a given circuit and feed it to a custom partitioner along with an extra
+        custom parameter:
+        >>> cut_strategy = qcut.CutStrategy(devices=dev)
+        >>> cut_kwargs = cut_strategy.get_cut_kwargs(tape_dag)
+        >>> cut_trials = [
+                my_partition_fn(tape_dag, **kwargs, **extra_kwargs) for kwargs in cut_kwargs
+            ]
+
         """
         tape_wires = set(w for _, _, w in tape_dag.edges.data("wire"))
         assert all((w is not None for w in tape_wires))
@@ -900,7 +891,7 @@ class CutStrategy:
     ) -> List[Dict[str, Any]]:
         """
         Helper function for deriving the minimal set of best default partitioning constraints
-        for the a graph partitioner.
+        for the graph partitioner.
 
         Args:
             num_tape_wires (int): Number of wires in the circuit tape to be partitioned.

@@ -290,6 +290,6 @@ The Operator class has undergone a major refactor with the following changes:
 This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
-Maria Fernanda Morris, Maria Schuld, Jay Soni, Antal Száva,
+Maria Fernanda Morris, Zeyue Niu, Maria Schuld, Jay Soni, Antal Száva,
 David Wierichs
 
