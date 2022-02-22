@@ -17,6 +17,7 @@ circuits to be distributed across multiple devices.
 """
 
 import copy
+from multiprocessing.sharedctypes import Value
 import string
 import warnings
 from typing import Sequence, Tuple, List, Dict, Any, Union, ClassVar
@@ -835,7 +836,6 @@ class CutStrategy:
 
         """
         tape_wires = set(w for _, _, w in tape_dag.edges.data("wire"))
-        assert all((w is not None for w in tape_wires))
         num_tape_wires = len(tape_wires)
         num_tape_gates = tape_dag.order()
         self._validate_input(max_wires_by_fragment, max_gates_by_fragment)
@@ -856,8 +856,16 @@ class CutStrategy:
         """Helper function for determining best imbalance limit."""
         avg_fragment_wires = (num_wires - 1) // k + 1
         avg_fragment_gates = (num_gates - 1) // k + 1
-        assert free_wires >= avg_fragment_wires
-        assert free_gates >= avg_fragment_gates
+        if free_wires < avg_fragment_wires:
+            raise ValueError(
+                "`free_wires` should be no less than the average number of wires per fragment. "
+                f"Got {free_wires} >= {avg_fragment_wires} ."
+            )
+        if free_gates < avg_fragment_gates:
+            raise ValueError(
+                "`free_gates` should be no less than the average number of gates per fragment. "
+                f"Got {free_gates} >= {avg_fragment_gates} ."
+            )
 
         wire_imbalance = free_wires / avg_fragment_wires - 1
         gate_imbalance = free_gates / avg_fragment_gates - 1
@@ -874,13 +882,31 @@ class CutStrategy:
     ):
         """Helper parameter checker."""
         if max_wires_by_fragment is not None:
-            assert isinstance(max_wires_by_fragment, (list, tuple))
-            assert all(isinstance(i, int) and i > 0 for i in max_wires_by_fragment)
+            if not isinstance(max_wires_by_fragment, (list, tuple)):
+                raise ValueError(
+                    "`max_wires_by_fragment` is expected to be a list or tuple, but got "
+                    f"{type(max_gates_by_fragment)}."
+                )
+            if any(not isinstance(i, int) and i > 0 for i in max_wires_by_fragment):
+                raise ValueError(
+                    "`max_wires_by_fragment` is expected to contain positive integers only."
+                )
         if max_gates_by_fragment is not None:
-            assert isinstance(max_gates_by_fragment, (list, tuple))
-            assert all(isinstance(i, int) and i > 0 for i in max_gates_by_fragment)
+            if not isinstance(max_gates_by_fragment, (list, tuple)):
+                raise ValueError(
+                    "`max_gates_by_fragment` is expected to be a list or tuple, but got "
+                    f"{type(max_gates_by_fragment)}."
+                )
+            if any(not isinstance(i, int) and i > 0 for i in max_gates_by_fragment):
+                raise ValueError(
+                    "`max_gates_by_fragment` is expected to contain positive integers only."
+                )
         if max_wires_by_fragment is not None and max_gates_by_fragment is not None:
-            assert len(max_wires_by_fragment) == len(max_gates_by_fragment)
+            if len(max_wires_by_fragment) != len(max_gates_by_fragment):
+                raise ValueError(
+                    "The lengths of `max_wires_by_fragment` and `max_gates_by_fragment` should be "
+                    f"equal, but got {len(max_wires_by_fragment)} and {len(max_gates_by_fragment)}."
+                )
 
     def _infer_probed_cuts(
         self,

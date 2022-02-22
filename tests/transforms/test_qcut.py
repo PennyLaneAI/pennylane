@@ -1512,6 +1512,25 @@ class TestCutStrategy:
         else:
             assert imbalance == free_wires / avg_size - 1
 
+    @pytest.mark.parametrize("num_wires", [50, 10])
+    def test_infer_wire_imbalance_raises(
+        self,
+        num_wires,
+    ):
+        """Test that the imbalance correctly raises."""
+
+        k = 2
+        num_gates = 50
+
+        with pytest.raises(ValueError, match=f"`free_{'wires' if num_wires > 40 else 'gates'}`"):
+            qcut.CutStrategy._infer_imbalance(
+                k=k,
+                num_wires=num_wires,
+                num_gates=num_gates,
+                free_wires=20,
+                free_gates=20,
+            )
+
     @pytest.mark.parametrize("devices", [devs[0], devs])
     @pytest.mark.parametrize("num_fragments_probed", [None, 4, (4, 6)])
     @pytest.mark.parametrize("imbalance_tolerance", [None, 0, 0.1])
@@ -1560,7 +1579,7 @@ class TestCutStrategy:
             and max_gates_by_fragment
             and len(max_wires_by_fragment) != len(max_gates_by_fragment)
         ):
-            with pytest.raises(AssertionError):
+            with pytest.raises(ValueError):
                 cut_kwargs = strategy.get_cut_kwargs(
                     self.tape_dags[1],
                     max_wires_by_fragment=max_wires_by_fragment,
