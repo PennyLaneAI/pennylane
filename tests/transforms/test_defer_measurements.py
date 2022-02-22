@@ -80,6 +80,37 @@ class TestQNode:
             assert type(op1) == type(op2)
             assert op1.data == op2.data
 
+    def test_already_measured_error_operation(self):
+        """Test that attempting to apply an operation on a wires that has been
+        measured raises an error."""
+        dev = qml.device("default.qubit", wires=3)
+
+        def qfunc():
+            qml.mid_measure(1)
+            qml.PauliX(1)
+            return qml.expval(qml.PauliZ(0))
+
+        tape_deferred_func = qml.defer_measurements(qfunc)
+        qnode = qml.QNode(tape_deferred_func, dev)
+
+        with pytest.raises(ValueError, match="Cannot apply operations"):
+            qnode()
+
+    def test_already_measured_error_terminal_measurement(self):
+        """Test that attempting to measure a wire at the end of the circuit
+        that has been measured in the middle of the circuit raises an error."""
+        dev = qml.device("default.qubit", wires=3)
+
+        def qfunc():
+            qml.mid_measure(1)
+            return qml.expval(qml.PauliZ(1))
+
+        tape_deferred_func = qml.defer_measurements(qfunc)
+        qnode = qml.QNode(tape_deferred_func, dev)
+
+        with pytest.raises(ValueError, match="Cannot apply operations"):
+            qnode()
+
 
 class TestMidCircuitMeasurements:
     """Tests mid circuit measurements"""

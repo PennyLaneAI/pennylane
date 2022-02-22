@@ -26,7 +26,7 @@ def defer_measurements(tape):
     measured_wires = {}
     for op in tape.queue:
         if any([wire in measured_wires.values() for wire in op.wires]):
-            raise ValueError("cannot reuse measured wires.")
+            raise ValueError("Cannot apply operations on {op.wires} as some has been measured already.")
 
         if isinstance(op, qml.ops.mid_circuit_measure._MidCircuitMeasure):
             measured_wires[op.measurement_id] = op.wires[0]
