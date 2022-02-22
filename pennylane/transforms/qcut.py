@@ -725,21 +725,15 @@ class CutStrategy:
 
         tape_dag = qml.transforms.tape_to_graph(tape)
 
-    Cut circuit with single-device-based strategy using the default 'kahypar' cutter:
-    >>> cut_strategy = qml.transforms.CutStrategy(devices=dev_a)
-    >>> qml.transforms.cut_circuit(tape_dag, method='kahypar', strategy=cut_strategy)
+    The following cut strategy specifies that a circuit should be cut into between
+    ``2`` to ``5`` fragments, with each fragment having at most ``6`` wires and
+    at least ``4`` wires:
 
-    Cut circuit with multi-device-based strategy using the default 'kahypar' cutter:
-    >>> cut_strategy = qml.transforms.CutStrategy(devices=(dev_a, dev_b))
-    >>> qml.transforms.cut_circuit(tape_dag, method='kahypar', strategy=cut_strategy)
-
-    Cut circuit with user-supplied strategy using user-supplied partitioning callable:
     >>> cut_strategy = qml.transforms.CutStrategy(
-            max_free_wires=6,
-            min_free_wires=4,
-            num_fragments_probed=(2, 5),
-        )
-    >>> qml.transforms.cut_circuit(tape_dag, method=my_partitioner, strategy=cut_strategy, **my_kwargs)
+    ...     max_free_wires=6,
+    ...     min_free_wires=4,
+    ...     num_fragments_probed=(2, 5),
+    ... )
 
     """
 
