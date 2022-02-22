@@ -669,7 +669,7 @@ class CutStrategy:
                 exploration of other choices will not be made.
 
         Returns:
-            List[Dict[str, Any]]: A list of minimal set of kwargs being passed to a graph
+            List[Dict[str, Any]]: A list of minimal kwargs being passed to a graph
                 partitioner method.
         """
         tape_wires = set(w for _, _, w in tape_dag.edges.data("wire"))
