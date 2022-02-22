@@ -210,6 +210,7 @@ class KerasLayer(Layer):
         argnum: Union[Sequence[int], int] = None,
         **kwargs,
     ):
+        # pylint: disable=too-many-arguments
         if not CORRECT_TF_VERSION:
             raise ImportError(
                 "KerasLayer requires TensorFlow version 2 or above. The latest "
