@@ -729,7 +729,7 @@ class CutStrategy:
     ) -> List[Dict[str, Any]]:
         """
         Helper function for deriving the minimal set of best default partitioning constraints
-        for the a graph partitioner.
+        for the graph partitioner.
 
         Args:
             num_tape_wires (int): Number of wires in the circuit tape to be partitioned.
