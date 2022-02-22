@@ -22,11 +22,12 @@ from pennylane.tape import QuantumTape, get_active_tape
 
 @qfunc_transform
 def defer_measurements(tape):
-    """Quantum function transform that changes operations controlled on
-    measurement outcomes in the middle of the circuit to controlled unitaries.
+    """Quantum function transform that substitutes operations conditioned on
+    measurement outcomes to controlled operations.
 
     This transform uses the `deferred measurement principle
-    <https://en.wikipedia.org/wiki/Deferred_Measurement_Principle>`_.
+    <https://en.wikipedia.org/wiki/Deferred_Measurement_Principle>`_ and
+    applies to qubit based quantum functions.
 
     .. note::
 
