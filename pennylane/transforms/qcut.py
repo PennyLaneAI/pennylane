@@ -524,8 +524,12 @@ def expand_fragment_tapes(
                         apply(op)
 
                 with qml.tape.stop_recording():
-                    measurements = _get_measurements(group, tape.measurements)
-
+                    if len(group) > 0:
+                        measurements = _get_measurements(group, tape.measurements)
+                    # This ensures the measurements of the original tape are carried over to the
+                    # following tape configurations in the absence of any MeasureNodes in the fragment
+                    else:
+                        measurements = tape.measurements
                 for meas in measurements:
                     apply(meas)
 
