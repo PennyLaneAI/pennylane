@@ -1571,9 +1571,11 @@ class TestQCutProcessingFn:
         u1 = qml.RX.compute_matrix(x)
         u2 = qml.RY.compute_matrix(y)
         u3 = qml.RX.compute_matrix(z)
-        t1 = np.array([np.trace(b @ u1 @ zero_proj @ u1.conj().T) for b in meas_basis])
-        t2 = np.array([[np.trace(b @ u2 @ s @ u2.conj().T) for b in meas_basis] for s in states])
-        t3 = np.array([np.trace(Z @ u3 @ s @ u3.conj().T) for s in states])
+        B = np.reshape(meas_basis, (4,4))
+        S = np.reshape(np.array(states), (4,4))
+        t1 = B.T @ kron(u1, u1.conj()) @ zero_proj
+        t2 = B.T @ kron(u2, u2.conj()) @ S
+        t3 = np.reshape(Z, (4,)).T @ kron(u3, u3.conj()) @ S
 
         res = [t1, t2.flatten(), t3]
         p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
