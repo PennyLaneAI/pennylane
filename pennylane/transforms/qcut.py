@@ -382,6 +382,11 @@ def _get_measurements(
         over ``group`` and ``obs`` is the observable composing the single measurement
         in ``measurements``
     """
+    if len(group) == 0:
+        # This ensures the measurements of the original tape are carried over to the
+        # following tape configurations in the absence of any MeasureNodes in the fragment
+        return measurements
+
     n_measurements = len(measurements)
     if n_measurements > 1:
         raise ValueError(
@@ -524,12 +529,7 @@ def expand_fragment_tapes(
                         apply(op)
 
                 with qml.tape.stop_recording():
-                    if len(group) > 0:
-                        measurements = _get_measurements(group, tape.measurements)
-                    # This ensures the measurements of the original tape are carried over to the
-                    # following tape configurations in the absence of any MeasureNodes in the fragment
-                    else:
-                        measurements = tape.measurements
+                    measurements = _get_measurements(group, tape.measurements)
                 for meas in measurements:
                     apply(meas)
 
