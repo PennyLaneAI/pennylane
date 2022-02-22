@@ -119,6 +119,9 @@ def if_then(expr: MeasurementDependantValue[bool], then_op: Type[Operation]):
 
         def __init__(self, *args, **kwargs):
             self.then_op = then_op(*args, do_queue=False, **kwargs)
-            super().__init__(*args, **kwargs)
+
+            # TODO: make dynamically inspected or otherwise refactor
+            op_kwargs = {k: v for k, v in kwargs.items() if k in ("wires", "do_queue", "id")}
+            super().__init__(*args, **op_kwargs)
 
     return _IfOp

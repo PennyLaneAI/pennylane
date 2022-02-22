@@ -186,12 +186,38 @@ class TestMidCircuitMeasurements:
 
         assert np.allclose(normal_probs, teleported_probs)
 
+    def test_keyword_syntax(self):
+        """Test that passing an argument to the conditioned operation using the
+        keyword syntax works."""
+        op = qml.RY
+
+        dev = qml.device('default.qubit', wires=2)
+
+        @qml.qnode(dev)
+        def qnode1(parameters):
+            qml.Hadamard(0)
+            qml.ctrl(op, control=0)(phi=par, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode2(parameters):
+            qml.Hadamard(0)
+            m_0 = qml.mid_measure(0)
+            qml.if_then(m_0, op)(phi=par, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        par = np.array(0.3)
+
+        assert np.allclose(qnode1(par), qnode2(par))
+
 
 class TestTemplates:
     """Tests drawing circuits with mid-circuit measurements and conditional
     operations that have been transformed"""
 
-    def test_layers(self):
+    @pytest.mark.parametrize("template", [qml.StronglyEntanglingLayers, qml.BasicEntanglerLayers])
+    def test_layers(self, template):
         """Test layers conditioned on mid-circuit measurement outcomes."""
         dev = qml.device("default.qubit", wires=3)
 
@@ -200,7 +226,7 @@ class TestTemplates:
         @qml.qnode(dev)
         def qnode1(parameters):
             qml.Hadamard(0)
-            qml.ctrl(qml.StronglyEntanglingLayers, control=0)(parameters, wires=range(1, 3))
+            qml.ctrl(template, control=0)(parameters, wires=range(1, 3))
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2))
 
         @qml.qnode(dev)
@@ -208,10 +234,10 @@ class TestTemplates:
         def qnode2(parameters):
             qml.Hadamard(0)
             m_0 = qml.mid_measure(0)
-            qml.if_then(m_0, qml.StronglyEntanglingLayers)(parameters, wires=range(1, 3))
+            qml.if_then(m_0, template)(parameters, wires=range(1, 3))
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2))
 
-        shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=num_wires)
+        shape = template.shape(n_layers=2, n_wires=num_wires)
         weights = np.random.random(size=shape)
 
         assert np.allclose(qnode1(weights), qnode2(weights))
