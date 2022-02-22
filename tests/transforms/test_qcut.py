@@ -15,16 +15,33 @@
 Unit tests for the `pennylane.qcut` package.
 """
 import copy
+import itertools
 import string
 import sys
 from itertools import product
 
-import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
+from scipy.stats import unitary_group
+
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
+
+I, X, Y, Z = (
+    np.eye(2),
+    qml.PauliX.compute_matrix(),
+    qml.PauliY.compute_matrix(),
+    qml.PauliZ.compute_matrix(),
+)
+
+states_pure = [
+    np.array([1, 0]),
+    np.array([0, 1]),
+    np.array([1, 1]) / np.sqrt(2),
+    np.array([1, 1j]) / np.sqrt(2),
+]
 
 with qml.tape.QuantumTape() as tape:
     qml.RX(0.432, wires=0)
@@ -50,6 +67,17 @@ with qml.tape.QuantumTape() as multi_cut_tape:
     qml.RY(0.543, wires=2)
     qml.RZ(0.876, wires=3)
     qml.expval(qml.PauliZ(wires=[0]))
+
+
+def kron(*args):
+    """Multi-argument kronecker product"""
+    if len(args) == 1:
+        return args[0]
+    if len(args) == 2:
+        return np.kron(args[0], args[1])
+    else:
+        return np.kron(args[0], kron(*args[1:]))
+
 
 # tape containing mid-circuit measurements
 with qml.tape.QuantumTape() as mcm_tape:
@@ -1421,3 +1449,286 @@ class TestContractTensors:
 
         assert eqn == expected_eqn
         assert np.allclose(res, np.einsum(eqn, *t))
+
+
+class TestQCutProcessingFn:
+    """Tests for the qcut_processing_fn and contained functions"""
+
+    def test_to_tensors(self, monkeypatch):
+        """Test that _to_tensors correctly reshapes the flat list of results into the original
+        tensors according to the supplied prepare_nodes and measure_nodes. Uses a mock function
+        for _process_tensor since we do not need to process the tensors."""
+        prepare_nodes = [[None] * 3, [None] * 2, [None] * 1, [None] * 4]
+        measure_nodes = [[None] * 2, [None] * 2, [None] * 3, [None] * 3]
+        tensors = [
+            np.arange(4**5).reshape((4,) * 5),
+            np.arange(4**4).reshape((4,) * 4),
+            np.arange(4**4).reshape((4,) * 4),
+            np.arange(4**7).reshape((4,) * 7),
+        ]
+        results = np.concatenate([t.flatten() for t in tensors])
+
+        def mock_process_tensor(r, np, nm):
+            return qml.math.reshape(r, (4,) * (np + nm))
+
+        with monkeypatch.context() as m:
+            m.setattr(qcut, "_process_tensor", mock_process_tensor)
+            tensors_out = qcut._to_tensors(results, prepare_nodes, measure_nodes)
+
+        for t1, t2 in zip(tensors, tensors_out):
+            assert np.allclose(t1, t2)
+
+    def test_to_tensors_raises(self):
+        """Tests if a ValueError is raised when a results vector is passed to _to_tensors with a
+        size that is incompatible with the prepare_nodes and measure_nodes arguments"""
+        prepare_nodes = [[None] * 3]
+        measure_nodes = [[None] * 2]
+        tensors = [np.arange(4**5).reshape((4,) * 5), np.arange(4)]
+        results = np.concatenate([t.flatten() for t in tensors])
+
+        with pytest.raises(ValueError, match="should be a flat list of length 1024"):
+            qcut._to_tensors(results, prepare_nodes, measure_nodes)
+
+    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
+    @pytest.mark.parametrize("n", [1, 2])
+    def test_process_tensor(self, n, interface):
+        """Test if the tensor returned by _process_tensor is equal to the expected value"""
+        lib = pytest.importorskip(interface)
+
+        U = unitary_group.rvs(2**n, random_state=1967)
+
+        # First, create target process tensor
+        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = itertools.product(range(4), repeat=n)
+
+        results = []
+
+        # Calculates U_{ijkl} = Tr((b[k] x b[l]) U (b[i] x b[j]) U*)
+        # See Sec. II. A. of https://arxiv.org/abs/1909.07534, below Eq. (2).
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[basis[i] for i in inp])
+            output = kron(*[basis[i] for i in out])
+            results.append(np.trace(output @ U @ input @ U.conj().T))
+
+        target_tensor = np.array(results).reshape((4,) * (2 * n))
+
+        # Now, create the input results vector found from executing over the product of |0>, |1>,
+        # |+>, |+i> inputs and using the grouped Pauli terms for measurements
+        dev = qml.device("default.qubit", wires=n)
+
+        @qml.qnode(dev)
+        def f(state, measurement):
+            qml.QubitStateVector(state, wires=range(n))
+            qml.QubitUnitary(U, wires=range(n))
+            return [qml.expval(qml.grouping.string_to_pauli_word(m)) for m in measurement]
+
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = qml.grouping.partition_pauli_group(n)
+
+        results = []
+
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[states_pure[i] for i in inp])
+            results.append(f(input, out))
+
+        results = qml.math.cast_like(np.concatenate(results), lib.ones(1))
+
+        # Now apply _process_tensor
+        tensor = qcut._process_tensor(results, n, n)
+        assert np.allclose(tensor, target_tensor)
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_qcut_processing_fn(self, use_opt_einsum):
+        """Test if qcut_processing_fn returns the expected answer when applied to a simple circuit
+        that is cut up into three fragments:
+        0: ──RX(0.5)─|─RY(0.6)─|─RX(0.8)──┤ ⟨Z⟩
+        """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        ### Find the expected result
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def f(x, y, z):
+            qml.RX(x, wires=0)
+            ### CUT HERE
+            qml.RY(y, wires=0)
+            ### CUT HERE
+            qml.RX(z, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x, y, z = 0.5, 0.6, 0.8
+        expected_result = f(x, y, z)
+
+        ### Find the result using qcut_processing_fn
+
+        meas_basis = [I, Z, X, Y]
+        states = [np.outer(s, s.conj()) for s in states_pure]
+        zero_proj = states[0]
+
+        u1 = qml.RX.compute_matrix(x)
+        u2 = qml.RY.compute_matrix(y)
+        u3 = qml.RX.compute_matrix(z)
+        t1 = np.array([np.trace(b @ u1 @ zero_proj @ u1.conj().T) for b in meas_basis])
+        t2 = np.array([[np.trace(b @ u2 @ s @ u2.conj().T) for b in meas_basis] for s in states])
+        t3 = np.array([np.trace(Z @ u3 @ s @ u3.conj().T) for s in states])
+
+        res = [t1, t2.flatten(), t3]
+        p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
+        m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
+
+        edges = [
+            (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
+            (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+        ]
+        g = MultiDiGraph(edges)
+
+        result = qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
+        assert np.allclose(result, expected_result)
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_qcut_processing_fn_autograd(self, use_opt_einsum):
+        """Test if qcut_processing_fn handles the gradient as expected in the autograd interface
+        using a simple example"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        x = np.array(0.9, requires_grad=True)
+
+        def f(x):
+            t1 = x * np.arange(4)
+            t2 = x**2 * np.arange(16).reshape((4, 4))
+            t3 = np.sin(x * np.pi / 2) * np.arange(4)
+
+            res = [t1, t2.flatten(), t3]
+            p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
+            m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
+
+            edges = [
+                (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
+                (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+            ]
+            g = MultiDiGraph(edges)
+
+            return qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
+
+        grad = qml.grad(f)(x)
+        expected_grad = (
+            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
+        ) * f(1)
+
+        assert np.allclose(grad, expected_grad)
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_qcut_processing_fn_tf(self, use_opt_einsum):
+        """Test if qcut_processing_fn handles the gradient as expected in the TF interface
+        using a simple example"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        tf = pytest.importorskip("tensorflow")
+
+        x = tf.Variable(0.9, dtype=tf.float64)
+
+        def f(x):
+            x = tf.cast(x, dtype=tf.float64)
+            t1 = x * tf.range(4, dtype=tf.float64)
+            t2 = x**2 * tf.range(16, dtype=tf.float64)
+            t3 = tf.sin(x * np.pi / 2) * tf.range(4, dtype=tf.float64)
+
+            res = [t1, t2, t3]
+            p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
+            m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
+
+            edges = [
+                (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
+                (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+            ]
+            g = MultiDiGraph(edges)
+
+            return qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
+
+        with tf.GradientTape() as tape:
+            res = f(x)
+
+        grad = tape.gradient(res, x)
+        expected_grad = (
+            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
+        ) * f(1)
+
+        assert np.allclose(grad, expected_grad)
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_qcut_processing_fn_torch(self, use_opt_einsum):
+        """Test if qcut_processing_fn handles the gradient as expected in the torch interface
+        using a simple example"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        torch = pytest.importorskip("torch")
+
+        x = torch.tensor(0.9, requires_grad=True, dtype=torch.float64)
+
+        def f(x):
+            t1 = x * torch.arange(4)
+            t2 = x**2 * torch.arange(16)
+            t3 = torch.sin(x * np.pi / 2) * torch.arange(4)
+
+            res = [t1, t2, t3]
+            p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
+            m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
+
+            edges = [
+                (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
+                (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+            ]
+            g = MultiDiGraph(edges)
+
+            return qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
+
+        res = f(x)
+        res.backward()
+        grad = x.grad
+
+        x_ = x.detach().numpy()
+        f1 = f(torch.tensor(1, dtype=torch.float64))
+        expected_grad = (
+            3 * x_**2 * np.sin(x_ * np.pi / 2) + x_**3 * np.cos(x_ * np.pi / 2) * np.pi / 2
+        ) * f1
+
+        assert np.allclose(grad.detach().numpy(), expected_grad)
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_qcut_processing_fn_jax(self, use_opt_einsum):
+        """Test if qcut_processing_fn handles the gradient as expected in the jax interface
+        using a simple example"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        jax = pytest.importorskip("jax")
+        jnp = pytest.importorskip("jax.numpy")
+
+        x = jnp.array(0.9)
+
+        def f(x):
+            t1 = x * jnp.arange(4)
+            t2 = x**2 * jnp.arange(16).reshape((4, 4))
+            t3 = jnp.sin(x * np.pi / 2) * jnp.arange(4)
+
+            res = [t1, t2.flatten(), t3]
+            p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
+            m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
+
+            edges = [
+                (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
+                (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+            ]
+            g = MultiDiGraph(edges)
+
+            return qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
+
+        grad = jax.grad(f)(x)
+        expected_grad = (
+            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
+        ) * f(1)
+
+        assert np.allclose(grad, expected_grad)

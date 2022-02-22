@@ -263,5 +263,9 @@ class TestPartitionPauliGroup:
         with pytest.raises(TypeError, match="Must specify an integer number"):
             partition_pauli_group("3")
 
-        with pytest.raises(ValueError, match="Number of qubits must be at least 1"):
+        with pytest.raises(ValueError, match="Number of qubits must be at least 0"):
             partition_pauli_group(-1)
+
+    def test_zero(self):
+        """Test if [[""]] is returned with zero qubits"""
+        assert partition_pauli_group(0) == [[""]]
