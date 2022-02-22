@@ -696,7 +696,7 @@ class CutStrategy:
             When provided, this parameter will be used to derive an upper-bound to the range of
             explored number of fragments.  Optional, defaults to ``max_free_wires``.
         num_fragments_probed (Union[int, Sequence[int]]): Single, or 2-Sequence of, number(s)
-            specifying the potential (range of) number of fragments for the partitioner to attampt.
+            specifying the potential (range of) number of fragments for the partitioner to attempt.
             Optional, defaults to probing all valid strategies derivable from the circuit and
             devices.
         max_free_gates (int): Maximum allowed circuit depth for the deepest available device.
@@ -784,7 +784,7 @@ class CutStrategy:
                 (not isinstance(d, qml.Device) for d in devices)
             ):
                 raise ValueError(
-                    f"Argument `devices` must be a list of `Device` instances, got {type(devices)}."
+                    f"Argument `devices` contain at least one `Device` instance, got {type(devices)}."
                 )
 
             device_wire_sizes = [len(d.wires) for d in devices]
@@ -820,7 +820,7 @@ class CutStrategy:
                 exploration of other choices will not be made.
 
         Returns:
-            List[Dict[str, Any]]: A list of minimal set of kwargs being passed to a graph
+            List[Dict[str, Any]]: A list of minimal kwargs being passed to a graph
                 partitioner method.
 
         **Example**
