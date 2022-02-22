@@ -14,6 +14,7 @@
 """
 This module contains the qml.matrix function.
 """
+# pylint: disable=protected-access
 import pennylane as qml
 
 from .op_transform import op_transform

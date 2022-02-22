@@ -370,15 +370,9 @@ class op_transform:
 
 class tape_transform(op_transform):
     """With a minor modification, you can turn this into
-    a decorator that transforms tape -> classical representation"""
+    a decorator that transforms tape -> anything"""
 
     def __init__(self, fn):
-        if not callable(fn):
-            raise OperationTransformError(
-                f"The operator function to register, {fn}, "
-                "does not appear to be a valid Python function or callable."
-            )
-
+        super().__init__(fn)
+        self._tape_fn = self._fn
         self._fn = None
-        self._tape_fn = fn
-        functools.update_wrapper(self, fn)
