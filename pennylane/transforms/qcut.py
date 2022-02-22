@@ -609,7 +609,7 @@ class CutStrategy:
                 (not isinstance(d, qml.Device) for d in devices)
             ):
                 raise ValueError(
-                    f"Argument `devices` must be a list of `Device` instances, got {type(devices)}."
+                    f"Argument `devices` contain at least one `Device` instance, got {type(devices)}."
                 )
 
             device_wire_sizes = [len(d.wires) for d in devices]
