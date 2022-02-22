@@ -757,10 +757,10 @@ def _to_tensors(
     transformation.
 
     Args:
-        results (tensor_like): A collection of execution results corresponding to the
-            expansion of circuit fragments in the communication graph over measurement and
-            preparation node configurations. These results are processed into tensors by this
-            function.
+        results (tensor_like): A collection of execution results, provided as a flat tensor,
+            corresponding to the expansion of circuit fragments in the communication graph over
+            measurement and preparation node configurations. These results are processed into
+            tensors by this function.
         prepare_nodes (Sequence[Sequence[PrepareNode]]): a sequence whose length is equal to the
             number of circuit fragments, with each element used here to determine the number of
             preparation nodes in a given fragment
