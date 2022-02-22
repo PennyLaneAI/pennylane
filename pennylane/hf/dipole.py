@@ -33,7 +33,7 @@ def dipole_integrals(mol, core=None, active=None):
         \hat{c}_{p\downarrow}^\dagger \hat{c}_{q\downarrow}] -
         \hat{D}_\mathrm{c} + \hat{D}_\mathrm{n},
 
-    where the matrix elements :math:`d_{pq}` are given by the integral over molecular orbitals
+    where the coefficients :math:`d_{pq}` are given by the integral over molecular orbitals
     :math:`\phi`
 
     .. math::
@@ -42,7 +42,7 @@ def dipole_integrals(mol, core=None, active=None):
 
     :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
     respectively, and :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}` are the contribution
-    of the core orbitals and nuclei to the dipole operator, respectivel.
+    of the core orbitals and nuclei, respectively.
 
     The molecular orbitals are represented as a linear combination of atomic orbitals as
 
@@ -58,11 +58,11 @@ def dipole_integrals(mol, core=None, active=None):
 
     where :math:`d_{\mu \nu}` is the dipole moment integral over the atomic orbitals and :math:`C`
     is the molecular orbital expansion coefficient matrix. The contribution of the core molecular
-    orbitals to the dipole operator is computed as
+    orbitals is computed as
 
     .. math::
 
-        \hat{D}_\mathrm{c} = \sum_{i=1}^{N_\mathrm{core}} d_{ii},
+        \hat{D}_\mathrm{c} = 2 \sum_{i=1}^{N_\mathrm{core}} d_{ii},
 
     where :math:`N_\mathrm{core}` is the number of core orbitals.
 
@@ -155,11 +155,11 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
 
     :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
     respectively, and :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}` are the contribution
-    of the core orbitals and nuclei to the dipole operator, respectively, which are computed as
+    of the core orbitals and nuclei, respectively, which are computed as
 
     .. math::
 
-        \hat{D}_\mathrm{c} = \sum_{i=1}^{N_\mathrm{core}} d_{ii},
+        \hat{D}_\mathrm{c} = 2 \sum_{i=1}^{N_\mathrm{core}} d_{ii},
 
     and
 
@@ -240,11 +240,11 @@ def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
 
     :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
     respectively, and :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}` are the contribution
-    of the core orbitals and nuclei to the dipole operator, respectively, which are computed as
+    of the core orbitals and nuclei, respectively, which are computed as
 
     .. math::
 
-        \hat{D}_\mathrm{c} = \sum_{i=1}^{N_\mathrm{core}} d_{ii},
+        \hat{D}_\mathrm{c} = 2 \sum_{i=1}^{N_\mathrm{core}} d_{ii},
 
     and
 
