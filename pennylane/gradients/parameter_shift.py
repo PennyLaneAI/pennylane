@@ -376,7 +376,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
         ragged = getattr(results[0], "dtype", None) is np.dtype("object")
 
         mask = []
-        for m, r in zip(var_mask, results[0]):
+        for m, r in zip(var_mask, qml.math.atleast_1d(results[0])):
             array_func = np.ones if m else np.zeros
             shape = qml.math.shape(r)
             shape = (1,) if shape == tuple() else shape
