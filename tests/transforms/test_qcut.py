@@ -1458,8 +1458,8 @@ class TestQCutProcessingFn:
         """Test that _to_tensors correctly reshapes the flat list of results into the original
         tensors according to the supplied prepare_nodes and measure_nodes. Uses a mock function
         for _process_tensor since we do not need to process the tensors."""
-        prepare_nodes = [[None] * 3, [None] * 2, [None] * 1, [None] * 6]
-        measure_nodes = [[None] * 2, [None] * 2, [None] * 3, [None] * 1]
+        prepare_nodes = [[None] * 3, [None] * 2, [None] * 1, [None] * 4]
+        measure_nodes = [[None] * 2, [None] * 2, [None] * 3, [None] * 3]
         tensors = [
             np.arange(4**5).reshape((4,) * 5),
             np.arange(4**4).reshape((4,) * 4),
