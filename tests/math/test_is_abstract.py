@@ -150,9 +150,13 @@ class TestJAX:
         res = cost(x, w)
         assert res == 0.26
 
-        # since we only specify argnums=0, w will not be abstract
-        grad = jax.grad(cost, argnums=0)(x, w, w_is_abstract=False)
-        assert np.allclose(grad, 2 * x)
+        # NOTE: As of JAX 0.3.1, JAX will trace non-differentiated arguments.
+        # As a result, it is no longer possible to assume that non-differentiated
+        # arguments will not be abstract.
+
+        # # since we only specify argnums=0, w will not be abstract
+        # grad = jax.grad(cost, argnums=0)(x, w, w_is_abstract=False)
+        # assert np.allclose(grad, 2 * x)
 
         # Otherwise, w will be abstract
         grad = jax.grad(cost, argnums=[0, 1])(x, w, w_is_abstract=True)
