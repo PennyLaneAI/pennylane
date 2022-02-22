@@ -237,6 +237,10 @@ class DiagGatesUndefinedError(OperatorPropertyUndefined):
     """Raised when an Operator's diagonalizing gates are undefined."""
 
 
+class InverseUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's inverse version is undefined."""
+
+
 class AdjointUndefinedError(OperatorPropertyUndefined):
     """Raised when an Operator's adjoint version is undefined."""
 
@@ -1238,21 +1242,6 @@ class Operation(Operator):
         """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
 
-    def adjoint(self, do_queue=False):  # pylint:disable=no-self-use
-        """Create an operation that is the adjoint of this one.
-
-        Adjointed operations are the conjugated and transposed version of the
-        original operation. Adjointed ops are equivalent to the inverted operation for unitary
-        gates.
-
-        Args:
-            do_queue: Whether to add the adjointed gate to the context queue.
-
-        Returns:
-            The adjointed operation.
-        """
-        raise AdjointUndefinedError
-
     @inverse.setter
     def inverse(self, boolean):
         self._inverse = boolean
@@ -1361,6 +1350,31 @@ class Operation(Operator):
                 assert (
                     len(self.grad_recipe) == self.num_params
                 ), "Gradient recipe must have one entry for each parameter!"
+
+    def adjoint(self):  # pylint:disable=no-self-use
+        """Create an operation that is the adjoint of this one.
+
+        Adjointed operations are the conjugated and transposed version of the
+        original operation. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        Returns:
+            The adjointed operation.
+        """
+        raise AdjointUndefinedError
+
+    # rename function once in-place infrastructure deprecated
+    def get_inverse(self):  # pylint:disable=no-self-use
+        """Create an operation that is the adjoint of this one.
+
+        Adjointed operations are the conjugated and transposed version of the
+        original operation. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        Returns:
+            The adjointed operation.
+        """
+        raise InverseUndefinedError
 
 
 class Channel(Operation, abc.ABC):
