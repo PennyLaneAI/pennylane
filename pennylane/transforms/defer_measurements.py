@@ -79,6 +79,15 @@ def defer_measurements(tape):
     """
     # TODO: do we need a map or can we just have a list?
     measured_wires = {}
+
+    if any(
+        [
+            isinstance(op, qml.operation.CVOperation) or isinstance(op, qml.operation.CVObservable)
+            for op in tape.queue
+        ]
+    ):
+        raise ValueError("Continuous variable operations and observables are not supported.")
+
     for op in tape.queue:
         if any([wire in measured_wires.values() for wire in op.wires]):
             raise ValueError(

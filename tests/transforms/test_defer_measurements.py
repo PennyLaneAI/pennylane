@@ -111,6 +111,21 @@ class TestQNode:
         with pytest.raises(ValueError, match="Cannot apply operations"):
             qnode()
 
+    def test_cv_error(self):
+        """Test that CV operations are not supported."""
+        dev = qml.device("default.gaussian", wires=3)
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode():
+            qml.X(0)
+            return qml.expval(qml.NumberOperator(1))
+
+        with pytest.raises(
+            ValueError, match="Continuous variable operations and observables are not supported"
+        ):
+            qnode()
+
 
 class TestMidCircuitMeasurements:
     """Tests mid circuit measurements"""
