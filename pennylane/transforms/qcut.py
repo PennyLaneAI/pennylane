@@ -780,7 +780,7 @@ def _to_tensors(
         n = n_prep + n_meas
 
         dim = 4**n
-        results_slice = qml.math.stack(results[ctr : dim + ctr])
+        results_slice = results[ctr : dim + ctr]
 
         tensors.append(_process_tensor(results_slice, n_prep, n_meas))
 
