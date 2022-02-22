@@ -146,6 +146,11 @@ class op_transform:
             tr = qml.math.trace(qml.matrix(tape))
             return qml.math.real(tr)
 
+    .. note::
+
+        The registered tape transform should have the same parameters as the
+        original operation transform function.
+
     We can now apply this transform directly to a qfunc:
 
     >>> def circuit(x, y):
