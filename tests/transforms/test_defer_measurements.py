@@ -230,7 +230,7 @@ class TestMidCircuitMeasurements:
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""
 
-    def test_basis_state_prep(self, template):
+    def test_basis_state_prep(self):
         """Test the basis state prep template conditioned on mid-circuit
         measurement outcomes."""
         template = qml.BasisStatePreparation
@@ -256,6 +256,34 @@ class TestTemplates:
         dev = qml.device("default.qubit", wires=2)
 
         assert np.allclose(qnode1(), qnode2())
+
+    def test_angle_embedding(self):
+        """Test the angle embedding template conditioned on mid-circuit
+        measurement outcomes."""
+        template = qml.AngleEmbedding
+        feature_vector = [1,2,3]
+
+        dev = qml.device("default.qubit", wires=5)
+
+        @qml.qnode(dev)
+        def qnode1():
+            qml.Hadamard(0)
+            qml.ctrl(template, control=0)(features=feature_vector, wires=range(1,5), rotation='Z')
+            return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode2():
+            qml.Hadamard(0)
+            m_0 = qml.mid_measure(0)
+            qml.if_then(m_0, template)(features=feature_vector, wires=range(1,5), rotation='Z')
+            return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
+
+        dev = qml.device("default.qubit", wires=2)
+        res1 = qnode1()
+        res2 = qnode2()
+
+        assert np.allclose(res1, res2)
 
     @pytest.mark.parametrize("template", [qml.StronglyEntanglingLayers, qml.BasicEntanglerLayers])
     def test_layers(self, template):
