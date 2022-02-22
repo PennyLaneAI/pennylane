@@ -14,6 +14,6 @@
 """
 This module contains functions that act on operators and tapes.
 """
-from .op_transform import op_transform
+from .op_transform import op_transform, tape_transform
 
 from .matrix import matrix

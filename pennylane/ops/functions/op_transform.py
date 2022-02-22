@@ -44,33 +44,31 @@ def _make_tape(obj, wire_order, *args, **kwargs):
         # user passed a QNode, get the tape
         obj.construct(args, kwargs)
         tape = obj.qtape
-
-        # if no wire ordering is specified, take wire list from the device
-        wire_order = obj.device.wires if wire_order is None else qml.wires.Wires(wire_order)
+        wires = obj.device.wires
 
     elif isinstance(obj, qml.tape.QuantumTape):
         # user passed a tape
         tape = obj
-        # if no wire ordering is specified, take wire list from tape
-        wire_order = tape.wires if wire_order is None else qml.wires.Wires(wire_order)
+        wires = tape.wires
 
     elif inspect.isclass(obj) and issubclass(obj, qml.operation.Operator):
         tape = obj(*args, **kwargs)
-        wire_order = tape.wires if wire_order is None else qml.wires.Wires(wire_order)
+        wires = tape.wires
 
     elif callable(obj):
         # user passed something that is callable but not a tape or QNode.
         tape = qml.transforms.make_tape(obj)(*args, **kwargs)
+        wires = tape.wires
 
         # raise exception if it is not a quantum function
         if len(tape.operations) == 0:
             raise OperationTransformError("Quantum function contains no quantum operations")
 
-        # if no wire ordering is specified, take wire list from tape
-        wire_order = tape.wires if wire_order is None else qml.wires.Wires(wire_order)
-
     else:
         raise OperationTransformError("Input is not an Operator, tape, QNode, or quantum function")
+
+    # if no wire ordering is specified, take wire list from tape/device
+    wire_order = wires if wire_order is None else qml.wires.Wires(wire_order)
 
     # check that all wire labels in the circuit are contained in wire_order
     if not set(tape.wires).issubset(wire_order):
@@ -80,11 +78,11 @@ def _make_tape(obj, wire_order, *args, **kwargs):
 
 
 class op_transform:
-    r"""Class for registering an operation transform that takes an operation,
-    and returns a new quantity.
+    r"""Class for registering an operator transform that takes one or more operators,
+    and returns a classical representation.
 
     Using ``op_transform`` is not necessary in most cases; simply define a
-    standard Python function that accepts an operation and returns the
+    standard Python function that accepts an operator and returns the
     computed quantity.
 
     However, this registration class is useful if you wish to easily create
@@ -96,13 +94,13 @@ class op_transform:
     - Supports being used with a functional transform UI.
 
     Args:
-        fn (function): The function to register as the batch tape transform.
+        fn (function): The function to register as the operator transform.
             It can have an arbitrary number of arguments, but the first argument
-            **must** be the input operation.
+            **must** be the input operator.
 
     **Example**
 
-    Consider an operation function that computes the trace of an operator:
+    Consider an operator function that computes the trace of an operator:
 
     .. code-block:: python
 
@@ -291,6 +289,11 @@ class op_transform:
         to apply to datastructures containing multiple operations, such as QNodes, qfuncs,
         and tapes.
 
+        .. note::
+
+            The registered tape transform should have the same parameters as the
+            original operation transform function.
+
         Args:
             fn (callable): The function to register as the tape transform. This function
                 should accept a :class:`~.QuantumTape` as the first argument.
@@ -307,7 +310,7 @@ class op_transform:
 
             @name.tape_transform
             def name(tape, lower=True):
-                return [name(op) for op in tape.operations]
+                return [name(op, lower=lower) for op in tape.operations]
 
         We can now use this function on a qfunc, tape, or QNode:
 
@@ -316,8 +319,8 @@ class op_transform:
         ...     qml.Hadamard(wires=1)
         ...     qml.CNOT(wires=[0, 1])
         ...     qml.CRY(y, wires=[1, 0])
-        >>> name(circuit)(0.1, 0.8)
-        ['RX', 'Hadamard', 'CNOT', 'CRY']
+        >>> name(circuit, lower=True)(0.1, 0.8)
+        ['rx', 'hadamard', 'cnot', 'cry']
         """
         self._tape_fn = fn
         return self
@@ -361,3 +364,16 @@ class op_transform:
             )
 
         return wrapper
+
+
+class tape_transform(op_transform):
+    def __init__(self, fn):
+        if not callable(fn):
+            raise OperationTransformError(
+                f"The operator function to register, {fn}, "
+                "does not appear to be a valid Python function or callable."
+            )
+
+        self._fn = None
+        self._tape_fn = fn
+        functools.update_wrapper(self, fn)
