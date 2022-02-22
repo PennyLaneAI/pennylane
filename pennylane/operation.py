@@ -1266,7 +1266,22 @@ class Operation(Operator):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
-            self.decomposition()
+
+            try:
+                self.decomposition()
+
+            except TypeError:
+                if self.num_params == 0:
+                    self.decomposition(wires=self.wires)
+                else:
+                    self.decomposition(*self.parameters, wires=self.wires)
+
+                warnings.warn(
+                    "Operator.decomposition() is now an instance method, and no longer accepts parameters. "
+                    "Either define the static method 'compute_decomposition' instead, or use "
+                    "'self.wires' and 'self.parameters'.",
+                    UserWarning,
+                )
 
         if not self.data:
             # original operation has no trainable parameters

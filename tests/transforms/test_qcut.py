@@ -20,13 +20,28 @@ import string
 import sys
 from itertools import product
 
-import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
+from scipy.stats import unitary_group
+
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
-from scipy.stats import unitary_group
+
+I, X, Y, Z = (
+    np.eye(2),
+    qml.PauliX.compute_matrix(),
+    qml.PauliY.compute_matrix(),
+    qml.PauliZ.compute_matrix(),
+)
+
+states_pure = [
+    np.array([1, 0]),
+    np.array([0, 1]),
+    np.array([1, 1]) / np.sqrt(2),
+    np.array([1, 1j]) / np.sqrt(2),
+]
 
 with qml.tape.QuantumTape() as tape:
     qml.RX(0.432, wires=0)
@@ -1443,8 +1458,8 @@ class TestQCutProcessingFn:
         """Test that _to_tensors correctly reshapes the flat list of results into the original
         tensors according to the supplied prepare_nodes and measure_nodes. Uses a mock function
         for _process_tensor since we do not need to process the tensors."""
-        prepare_nodes = [[None] * 3, [None] * 2, [None] * 1, [None] * 6]
-        measure_nodes = [[None] * 2, [None] * 2, [None] * 3, [None] * 1]
+        prepare_nodes = [[None] * 3, [None] * 2, [None] * 1, [None] * 4]
+        measure_nodes = [[None] * 2, [None] * 2, [None] * 3, [None] * 3]
         tensors = [
             np.arange(4**5).reshape((4,) * 5),
             np.arange(4**4).reshape((4,) * 4),
@@ -1495,6 +1510,8 @@ class TestQCutProcessingFn:
 
         results = []
 
+        # Calculates U_{ijkl} = Tr((b[k] x b[l]) U (b[i] x b[j]) U*)
+        # See Sec. II. A. of https://arxiv.org/abs/1909.07534, below Eq. (2).
         for inp, out in itertools.product(prod_inp, prod_out):
             input = kron(*[basis[i] for i in inp])
             output = kron(*[basis[i] for i in out])
@@ -1505,12 +1522,6 @@ class TestQCutProcessingFn:
         # Now, create the input results vector found from executing over the product of |0>, |1>,
         # |+>, |+i> inputs and using the grouped Pauli terms for measurements
         dev = qml.device("default.qubit", wires=n)
-        states = [
-            np.array([1, 0]),
-            np.array([0, 1]),
-            np.array([1, 1]) / np.sqrt(2),
-            np.array([1, 1j]) / np.sqrt(2),
-        ]
 
         @qml.qnode(dev)
         def f(state, measurement):
@@ -1524,7 +1535,7 @@ class TestQCutProcessingFn:
         results = []
 
         for inp, out in itertools.product(prod_inp, prod_out):
-            input = kron(*[states[i] for i in inp])
+            input = kron(*[states_pure[i] for i in inp])
             results.append(f(input, out))
 
         results = qml.math.cast_like(np.concatenate(results), lib.ones(1))
@@ -1558,19 +1569,8 @@ class TestQCutProcessingFn:
         expected_result = f(x, y, z)
 
         ### Find the result using qcut_processing_fn
-        I, X, Y, Z = (
-            np.eye(2),
-            qml.PauliX.compute_matrix(),
-            qml.PauliY.compute_matrix(),
-            qml.PauliZ.compute_matrix(),
-        )
+
         meas_basis = [I, Z, X, Y]
-        states_pure = [
-            np.array([1, 0]),
-            np.array([0, 1]),
-            np.array([1, 1]) / np.sqrt(2),
-            np.array([1, 1j]) / np.sqrt(2),
-        ]
         states = [np.outer(s.conj(), s) for s in states_pure]
         zero_proj = states[0]
 
