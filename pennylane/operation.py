@@ -944,6 +944,7 @@ class Operator(abc.ABC):
         Returns:
             list[Operator]: decomposition of the operator
         """
+        print(self.parameters, self.wires, self.hyperparameters, type(self))
         return self.compute_decomposition(
             *self.parameters, wires=self.wires, **self.hyperparameters
         )

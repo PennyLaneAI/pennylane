@@ -49,7 +49,7 @@ class TestQNode:
             assert type(op1) == type(op2)
             assert op1.data == op2.data
 
-    def test_ops_before_after(self):
+    def test_mid_measure_between_ops(self):
         """Test that a quantum function that contains one operation before and
         after a mid-circuit measurement yields the correct results and is
         transformed correctly."""
