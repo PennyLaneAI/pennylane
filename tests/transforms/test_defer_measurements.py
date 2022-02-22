@@ -261,14 +261,14 @@ class TestTemplates:
         """Test the angle embedding template conditioned on mid-circuit
         measurement outcomes."""
         template = qml.AngleEmbedding
-        feature_vector = [1,2,3]
+        feature_vector = [1, 2, 3]
 
         dev = qml.device("default.qubit", wires=5)
 
         @qml.qnode(dev)
         def qnode1():
             qml.Hadamard(0)
-            qml.ctrl(template, control=0)(features=feature_vector, wires=range(1,5), rotation='Z')
+            qml.ctrl(template, control=0)(features=feature_vector, wires=range(1, 5), rotation="Z")
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
 
         @qml.qnode(dev)
@@ -276,7 +276,7 @@ class TestTemplates:
         def qnode2():
             qml.Hadamard(0)
             m_0 = qml.mid_measure(0)
-            qml.if_then(m_0, template)(features=feature_vector, wires=range(1,5), rotation='Z')
+            qml.if_then(m_0, template)(features=feature_vector, wires=range(1, 5), rotation="Z")
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
 
         dev = qml.device("default.qubit", wires=2)
