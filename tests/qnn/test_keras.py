@@ -624,12 +624,13 @@ def test_batch_input():
     dev = qml.device("default.qubit.tf", wires=4)
 
     @qml.qnode(dev, diff_method="parameter-shift")
-    def circuit(inputs, weights):
-        qml.AngleEmbedding(inputs, wires=range(4), rotation="Y")
+    def circuit(x, weights):
+        qml.AngleEmbedding(x, wires=range(4), rotation="Y")
         qml.RY(weights[0], wires=0)
         qml.RY(weights[1], wires=1)
         return qml.probs(op=qml.PauliZ(1))
 
+    KerasLayer.set_input_argument("x")
     layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,), argnum=0)
     conf = layer.get_config()
     layer.build((None, 2))
