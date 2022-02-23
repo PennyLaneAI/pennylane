@@ -50,15 +50,14 @@ class TestPatternMatching:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
-        cnots_qnode = qml.specs(qnode)()['gate_types']['CNOT']
-        cnots_optimized_qnode = qml.specs(optimized_qnode)()['gate_types']['CNOT']
+        cnots_qnode = qml.specs(qnode)()["gate_types"]["CNOT"]
+        cnots_optimized_qnode = qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
 
         assert len(qnode.qtape.operations) == 8
         assert cnots_qnode == 4
 
         assert len(optimized_qnode.qtape.operations) == 7
         assert cnots_optimized_qnode == 3
-
 
     def test_mod_5_4_pattern_matching(self):
         """Test pattern matching algorithm for mod_5_4 with a CNOTs template."""
@@ -133,8 +132,8 @@ class TestPatternMatching:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
-        cnots_qnode = qml.specs(qnode)()['gate_types']['CNOT']
-        cnots_optimized_qnode = qml.specs(optimized_qnode)()['gate_types']['CNOT']
+        cnots_qnode = qml.specs(qnode)()["gate_types"]["CNOT"]
+        cnots_optimized_qnode = qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
 
         assert len(qnode.qtape.operations) == 51
         assert cnots_qnode == 28
