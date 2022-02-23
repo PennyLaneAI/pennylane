@@ -927,7 +927,7 @@ class SX(Operation):
             2 : lambda op: PauliX(wires=op.wires),
         }
         if n_mod4 in pow_map:
-            return pow_map(self)
+            return pow_map[n_mod4](self)
         return super().__pow__(n)
 
 
