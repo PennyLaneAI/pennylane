@@ -1596,3 +1596,13 @@ class TestCutStrategy:
 
         cut_kwargs = cut_kwargs[0]
         assert cut_kwargs["num_fragments"] == len(max_wires_by_fragment or max_gates_by_fragment)
+
+    @pytest.mark.parametrize("max_wires_by_fragment", [2, ["a", 3], [2, 3], None])
+    @pytest.mark.parametrize("max_gates_by_fragment", [2, ["b", 30]])
+    def test_validate_fragment_sizes(self, max_wires_by_fragment, max_gates_by_fragment):
+        """Test that the user provided by-fragment limits has the right types."""
+        with pytest.raises(ValueError):
+            _ = qcut.CutStrategy._validate_input(
+                max_wires_by_fragment=max_wires_by_fragment,
+                max_gates_by_fragment=max_gates_by_fragment,
+            )

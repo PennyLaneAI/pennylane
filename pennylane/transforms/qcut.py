@@ -881,7 +881,7 @@ class CutStrategy:
                     "`max_wires_by_fragment` is expected to be a list or tuple, but got "
                     f"{type(max_gates_by_fragment)}."
                 )
-            if any(not isinstance(i, int) and i > 0 for i in max_wires_by_fragment):
+            if any(not (isinstance(i, int) and i > 0) for i in max_wires_by_fragment):
                 raise ValueError(
                     "`max_wires_by_fragment` is expected to contain positive integers only."
                 )
@@ -891,7 +891,7 @@ class CutStrategy:
                     "`max_gates_by_fragment` is expected to be a list or tuple, but got "
                     f"{type(max_gates_by_fragment)}."
                 )
-            if any(not isinstance(i, int) and i > 0 for i in max_gates_by_fragment):
+            if any(not (isinstance(i, int) and i > 0) for i in max_gates_by_fragment):
                 raise ValueError(
                     "`max_gates_by_fragment` is expected to contain positive integers only."
                 )
