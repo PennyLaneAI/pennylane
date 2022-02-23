@@ -361,8 +361,8 @@ def test_types_consistency():
     # Build PL operator using 'convert_observable'
     pl = convert_observable(of)
 
-    ops = pl.terms[1]
-    ops_ref = pl_ref.terms[1]
+    ops = pl.ops
+    ops_ref = pl_ref.ops
 
     for i, op in enumerate(ops):
         assert op.name == ops_ref[i].name
