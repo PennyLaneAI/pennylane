@@ -104,7 +104,7 @@ def test_lie_algebra_omegas(circuit, hamiltonian):
     ops = opt.get_su_n_operators(None)[0]
     omegas_np = []
     for op in ops:
-        op = qml.utils.expand(op.matrix, op.wires, wires)
+        op = qml.utils.expand(op.get_matrix(), op.wires, wires)
         omegas_np.append(-np.trace(lie_algebra_np @ op).imag / 2)
     omegas = opt.get_omegas()
     assert np.allclose(omegas, omegas_np)
@@ -151,7 +151,7 @@ def test_lie_algebra_omegas_restricted(circuit, hamiltonian):
     ops = opt.get_su_n_operators(restriction)[0]
     omegas_np = []
     for op in ops:
-        op = qml.utils.expand(op.matrix, op.wires, wires)
+        op = qml.utils.expand(op.get_matrix(), op.wires, wires)
         omegas_np.append(-np.trace(lie_algebra_np @ op).imag / 2)
     omegas = opt.get_omegas()
 
@@ -323,8 +323,7 @@ def test_docstring_example():
 
     for step in range(6):
         circuit, cost = opt.step_and_cost()
-        print(f"Step {step} - cost {cost}")
-    print(circuit())
+    circuit()
 
     assert np.isclose(cost, -2.23, atol=1e-2)
 
@@ -349,7 +348,6 @@ def test_docstring_example_exact():
 
     for step in range(6):
         _, cost = opt.step_and_cost()
-        print(f"Step {step} - cost {cost}")
     assert np.isclose(cost, -2.23, atol=1e-2)
 
 
@@ -372,4 +370,3 @@ def test_example_shots():
 
     for step in range(3):
         _, cost = opt.step_and_cost()
-        print(f"Step {step} - cost {cost}")

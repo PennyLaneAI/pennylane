@@ -557,7 +557,7 @@ class TestPassthruIntegration:
         assert qml.math.isclose(jax.jacobian(jax.jacobian(circuit))(x), -1.0)
         assert qml.math.isclose(jax.grad(jax.grad(circuit))(x), -1.0)
 
-    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
+    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.compute_decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop"])
     def test_jax_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct

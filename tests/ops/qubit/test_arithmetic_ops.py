@@ -29,11 +29,11 @@ import pennylane as qml
 def test_adjoint_with_decomposition(op_builder):
     """Tests the ``QubitCarry`` op under adjoint and decomposition."""
     op = op_builder()
-    decomposed_ops = op.decompose()
+    decomposed_ops = op.decomposition()
     with qml.tape.QuantumTape() as adjoint_tape:
         qml.adjoint(op_builder)()
     for a, b in zip(decomposed_ops, reversed(adjoint_tape.operations)):
-        np.testing.assert_allclose(a.matrix, np.conj(b.matrix).T)
+        np.testing.assert_allclose(a.get_matrix(), np.conj(b.get_matrix()).T)
 
 
 label_data = [
@@ -50,8 +50,8 @@ def test_label(op, label):
     assert op.label() == label + "⁻¹"
 
 
-class TestArithmetic:
-    """Tests the arithmetic operations."""
+class TestQubitCarry:
+    """Tests the QubitCarry operator."""
 
     @pytest.mark.parametrize(
         "wires,input_string,output_string,expand",
@@ -94,7 +94,7 @@ class TestArithmetic:
             ([3, 2, 0, 1], "1010", "0110", False),
         ],
     )
-    def test_QubitCarry(self, wires, input_string, output_string, expand, mocker):
+    def test_output(self, wires, input_string, output_string, expand, mocker):
         """Test if ``QubitCarry`` produces the right output and is expandable."""
         dev = qml.device("default.qubit", wires=4)
         spy = mocker.spy(qml.QubitCarry, "decomposition")
@@ -116,7 +116,7 @@ class TestArithmetic:
         # checks that decomposition is only used when intended
         assert expand is (len(spy.call_args_list) != 0)
 
-    def test_QubitCarry_superposition(self):
+    def test_superposition(self):
         """Test if ``QubitCarry`` works for superposition input states."""
         dev = qml.device("default.qubit", wires=4)
 
@@ -129,6 +129,38 @@ class TestArithmetic:
 
         result = circuit()
         assert np.allclose(result, 0.5)
+
+    def test_matrix_representation(self, tol):
+        """Test that the matrix representation is defined correctly"""
+
+        res_static = qml.QubitCarry.compute_matrix()
+        res_dynamic = qml.QubitCarry(wires=[0, 1, 2, 3]).get_matrix()
+        expected = np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            ]
+        )
+        assert np.allclose(res_static, expected, atol=tol)
+        assert np.allclose(res_dynamic, expected, atol=tol)
+
+
+class TestQubitSum:
+    """Tests for the QubitSum operator"""
 
     # fmt: off
     @pytest.mark.parametrize(
@@ -167,7 +199,7 @@ class TestArithmetic:
         ],
     )
     # fmt: on
-    def test_QubitSum(self, wires, input_state, output_state, expand, mocker):
+    def test_output(self, wires, input_state, output_state, expand, mocker):
         """Test if ``QubitSum`` produces the correct output"""
         dev = qml.device("default.qubit", wires=3)
         spy = mocker.spy(qml.QubitSum, "decomposition")
@@ -188,9 +220,9 @@ class TestArithmetic:
         # checks that decomposition is only used when intended
         assert expand is (len(spy.call_args_list) != 0)
 
-    def test_qubit_sum_adjoint(self):
+    def test_adjoint(self):
         """Test the adjoint method of QubitSum by reconstructing the unitary matrix and checking
-        if it is equal to qml.QubitSum.matrix (recall that the operation is self-adjoint)"""
+        if it is equal to qml.QubitSum's matrix representation (recall that the operation is self-adjoint)"""
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
@@ -200,4 +232,24 @@ class TestArithmetic:
             return qml.probs(wires=range(3))
 
         u = np.array([f(state) for state in np.eye(2**3)]).T
-        assert np.allclose(u, qml.QubitSum._matrix())
+        assert np.allclose(u, qml.QubitSum.compute_matrix())
+
+    def test_matrix_representation(self, tol):
+        """Test that the matrix representation is defined correctly"""
+
+        res_static = qml.QubitSum.compute_matrix()
+        res_dynamic = qml.QubitSum(wires=[0, 1, 2]).get_matrix()
+        expected = np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1],
+            ]
+        )
+        assert np.allclose(res_static, expected, atol=tol)
+        assert np.allclose(res_dynamic, expected, atol=tol)

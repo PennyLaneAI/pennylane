@@ -124,10 +124,7 @@ class TestQNode:
             return qml.state()
 
         result = qml.draw(circuit)(p1=x, p3=z)
-        expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ State 
- 1: ──RY(0.06)───────────╰X──╰┤ State 
-"""
+        expected = "0: ──RX(0.10)──RX(0.40)─╭C─┤  State\n" "1: ──RY(0.06)───────────╰X─┤  State"
         assert result == expected
 
     def test_jacobian(self, dev_name, diff_method, mode, mocker, tol):

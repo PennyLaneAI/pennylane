@@ -412,9 +412,9 @@ class TestValidation:
             basis = "X"
             grad_method = "F"
 
-            @classmethod
-            def _matrix(cls, *params):
-                return qml.RX._matrix(*params)
+            @staticmethod
+            def compute_matrix(*params):
+                return qml.RX.compute_matrix(*params)
 
         dev = qml.device("default.mixed", wires=3, shots=None)
         dev.operations.add("MyRX")
@@ -558,17 +558,23 @@ class TestValidation:
 
         grad = qml.grad(qn)
 
-        # Raise error in cases 1 and 5, as non-trainable parameters do not trigger differentiation
+        # Raise error in cases 1 and 5, as non-trainable parameters do not trigger differentiation.
+        # Raise warning in cases 1-4 as there a no trainable parameters.
         # Case 1: No input
         # Case 2: int input
         # Case 3: float input
         # Case 4: numpy input
         # Case 5: differentiable tensor input
-        if par is None or hasattr(par, "requires_grad"):
+        if par is None:
+            with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+                with pytest.raises(TypeError) as exp:
+                    grad()
+        elif hasattr(par, "requires_grad"):
             with pytest.raises(TypeError) as exp:
-                grad() if par is None else grad(par)
+                grad(par)
         else:
-            grad(par)
+            with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+                grad(par)
 
     def test_diff_method_none_no_qnode_param(self):
         """Test if diff_method=None works as intended."""
@@ -584,7 +590,8 @@ class TestValidation:
         grad = qml.grad(qn)
 
         # No differentiation required. No error raised.
-        grad()
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            grad()
 
     def test_unrecognized_keyword_arguments_validation(self):
         """Tests that a UserWarning is raised when unrecognized keyword arguments are provided."""
@@ -819,11 +826,10 @@ class TestTapeConstruction:
 
     def test_draw_transform(self):
         """Test circuit drawing"""
-        from pennylane import numpy as anp
 
-        x = anp.array(0.1, requires_grad=True)
-        y = anp.array([0.2, 0.3], requires_grad=True)
-        z = anp.array(0.4, requires_grad=True)
+        x = pnp.array(0.1, requires_grad=True)
+        y = pnp.array([0.2, 0.3], requires_grad=True)
+        z = pnp.array(0.4, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -836,46 +842,16 @@ class TestTapeConstruction:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         result = draw(circuit)(p1=x, p3=z)
-        expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
- 1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
-"""
-
-        assert result == expected
-
-    def test_draw_transform_ascii(self):
-        """Test circuit drawing when using ASCII characters"""
-        from pennylane import numpy as anp
-
-        x = anp.array(0.1, requires_grad=True)
-        y = anp.array([0.2, 0.3], requires_grad=True)
-        z = anp.array(0.4, requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qnode(dev, interface="autograd")
-        def circuit(p1, p2, **kwargs):
-            qml.RX(p1, wires=0)
-            qml.RY(p2[0] * p2[1], wires=1)
-            qml.RX(kwargs["p3"], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
-
-        result = draw(circuit, charset="ascii")(p1=x, p2=y, p3=z)
-        expected = """\
- 0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X> 
- 1: --RY(0.06)-----------+X--+| <Z @ X> 
-"""
+        expected = "0: ──RX(0.10)──RX(0.40)─╭C─┤ ╭<Z@X>\n" "1: ──RY(0.06)───────────╰X─┤ ╰<Z@X>"
 
         assert result == expected
 
     def test_drawing(self):
         """Test circuit drawing"""
-        from pennylane import numpy as anp
 
-        x = anp.array(0.1, requires_grad=True)
-        y = anp.array([0.2, 0.3], requires_grad=True)
-        z = anp.array(0.4, requires_grad=True)
+        x = pnp.array(0.1, requires_grad=True)
+        y = pnp.array([0.2, 0.3], requires_grad=True)
+        z = pnp.array(0.4, requires_grad=True)
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -889,7 +865,8 @@ class TestTapeConstruction:
 
         circuit(p1=x, p3=z)
 
-        result = circuit.draw()
+        with pytest.warns(UserWarning, match="The QNode.draw method has been deprecated."):
+            result = circuit.draw()
         expected = """\
  0: ──RX(0.1)───RX(0.4)──╭C──╭┤ ⟨Z ⊗ X⟩ 
  1: ──RY(0.06)───────────╰X──╰┤ ⟨Z ⊗ X⟩ 
@@ -917,7 +894,8 @@ class TestTapeConstruction:
 
         circuit(p1=x, p3=z)
 
-        result = circuit.draw(charset="ascii")
+        with pytest.warns(UserWarning, match="The QNode.draw method has been deprecated."):
+            result = circuit.draw(charset="ascii")
         expected = """\
  0: --RX(0.1)---RX(0.4)--+C--+| <Z @ X> 
  1: --RY(0.06)-----------+X--+| <Z @ X> 
@@ -1228,10 +1206,10 @@ class TestMutability:
         np.testing.assert_allclose(res, np.cos(x), atol=tol, rtol=0)
 
         # test differentiability
-        grad = qml.grad(circuit)(0.5)
+        grad = qml.grad(circuit, argnum=0)(0.5)
         np.testing.assert_allclose(grad, 0, atol=tol, rtol=0)
 
-        grad = qml.grad(circuit)(-0.5)
+        grad = qml.grad(circuit, argnum=0)(-0.5)
         np.testing.assert_allclose(grad, -np.sin(-0.5), atol=tol, rtol=0)
 
     def test_immutable(self, mocker, tol):
@@ -1267,7 +1245,8 @@ class TestMutability:
         np.testing.assert_allclose(res, 1, atol=tol, rtol=0)
 
         # test differentiability. The circuit will assume an RZ gate
-        grad = qml.grad(circuit)(-0.5)
+        with pytest.warns(UserWarning, match="Output seems independent of input"):
+            grad = qml.grad(circuit, argnum=0)(-0.5)
         np.testing.assert_allclose(grad, 0, atol=tol, rtol=0)
 
 
@@ -1455,9 +1434,9 @@ def test_finitediff_float32(tol):
 
     shape = qml.templates.StronglyEntanglingLayers.shape(n_wires=n_wires, n_layers=n_layers)
 
-    rng = np.random.default_rng(seed=42)
-    params = rng.random(shape)
-    params_f32 = np.array(params, dtype=np.float32)
+    rng = pnp.random.default_rng(seed=42)
+    params = rng.random(shape, requires_grad=True)
+    params_f32 = pnp.array(params, dtype=np.float32, requires_grad=True)
 
     dev = qml.device("default.qubit", n_wires)
 
