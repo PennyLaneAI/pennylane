@@ -24,6 +24,7 @@ from pennylane.hf.matrices import (
     generate_overlap_matrix,
     generate_repulsion_tensor,
     molecular_density_matrix,
+    moment_matrix,
 )
 from pennylane.hf.molecule import Molecule
 
@@ -145,6 +146,118 @@ def test_gradient_overlap_matrix(symbols, geometry, alpha, coeff, g_alpha_ref, g
     args = [mol.alpha, mol.coeff]
     g_alpha = autograd.jacobian(generate_overlap_matrix(mol.basis_set), argnum=0)(*args)
     g_coeff = autograd.jacobian(generate_overlap_matrix(mol.basis_set), argnum=1)(*args)
+    assert np.allclose(g_alpha, g_alpha_ref)
+    assert np.allclose(g_coeff, g_coeff_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "e", "idx", "s_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+            np.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            1,
+            0,
+            np.array([[0.0, 0.4627777], [0.4627777, 2.0]]),
+        )
+    ],
+)
+def test_moment_matrix(symbols, geometry, alpha, e, idx, s_ref):
+    r"""Test that moment_matrix returns the correct matrix."""
+    mol = Molecule(symbols, geometry, alpha=alpha)
+    args = [alpha]
+    s = moment_matrix(mol.basis_set, e, idx)(*args)
+    assert np.allclose(s, s_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "e", "idx", "s_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+            1,
+            0,
+            np.array([[0.0, 0.4627777], [0.4627777, 2.0]]),
+        )
+    ],
+)
+def test_moment_matrix_nodiff(symbols, geometry, e, idx, s_ref):
+    r"""Test that moment_matrix returns the correct matrix when no differentiable parameter is
+    used."""
+    mol = Molecule(symbols, geometry)
+    s = moment_matrix(mol.basis_set, e, idx)()
+    assert np.allclose(s, s_ref)
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alpha", "coeff", "e", "idx", "g_alpha_ref", "g_coeff_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False),
+            np.array(
+                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                requires_grad=True,
+            ),
+            np.array(
+                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                requires_grad=True,
+            ),
+            1,
+            0,
+            # Jacobian matrix contains gradient of S11, S12, S21, S22 wrt arg_1, arg_2, computed
+            # with finite difference.
+            np.array(
+                [
+                    [
+                        [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                        [
+                            [3.87296664e-03, -2.29246093e-01, -9.93852751e-01],
+                            [-4.86326933e-04, -6.72924734e-02, 2.47919030e-01],
+                        ],
+                    ],
+                    [
+                        [
+                            [3.87296664e-03, -2.29246093e-01, -9.93852751e-01],
+                            [-4.86326933e-04, -6.72924734e-02, 2.47919030e-01],
+                        ],
+                        [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                    ],
+                ]
+            ),
+            np.array(
+                [
+                    [
+                        [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                        [
+                            [-0.26160753, -0.18843804, 0.3176762],
+                            [-0.09003791, 0.01797702, 0.00960757],
+                        ],
+                    ],
+                    [
+                        [
+                            [-0.26160753, -0.18843804, 0.3176762],
+                            [-0.09003791, 0.01797702, 0.00960757],
+                        ],
+                        [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                    ],
+                ]
+            ),
+        )
+    ],
+)
+def test_gradient_moment_matrix(symbols, geometry, alpha, coeff, e, idx, g_alpha_ref, g_coeff_ref):
+    r"""Test that the moment matrix gradients are correct."""
+    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    args = [mol.alpha, mol.coeff]
+    g_alpha = autograd.jacobian(moment_matrix(mol.basis_set, e, idx), argnum=0)(*args)
+    g_coeff = autograd.jacobian(moment_matrix(mol.basis_set, e, idx), argnum=1)(*args)
+
     assert np.allclose(g_alpha, g_alpha_ref)
     assert np.allclose(g_coeff, g_coeff_ref)
 
