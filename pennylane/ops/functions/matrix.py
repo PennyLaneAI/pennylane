@@ -21,7 +21,7 @@ from .op_transform import op_transform
 
 
 @op_transform
-def matrix(op, wire_order=None):
+def matrix(op, *, wire_order=None):
     r"""The matrix representation of an operation or quantum circuit.
 
     Args:

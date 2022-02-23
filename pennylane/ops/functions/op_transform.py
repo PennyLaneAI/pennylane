@@ -73,7 +73,10 @@ def _make_tape(obj, wire_order, *args, **kwargs):
 
     # check that all wire labels in the circuit are contained in wire_order
     if not set(tape.wires).issubset(wire_order):
-        raise OperationTransformError("Wires in circuit are inconsistent with those in wire_order")
+        raise OperationTransformError(
+            f"Wires in circuit {tape.wires.tolist()} are inconsistent with "
+            f"those in wire_order {wire_order.tolist()}"
+        )
 
     return tape, wire_order
 
@@ -196,6 +199,7 @@ class op_transform:
             )
 
         self._fn = fn
+        self._sig = inspect.signature(fn).parameters
         self._tape_fn = None
         functools.update_wrapper(self, fn)
 
@@ -344,10 +348,10 @@ class op_transform:
 
         elif isinstance(obj, qml.tape.QuantumTape):
             # Input is a quantum tape. Get the quantum tape.
-            tape, new_wire_order = _make_tape(obj, wire_order)
+            tape, verified_wire_order = _make_tape(obj, wire_order)
 
             if wire_order is not None:
-                tkwargs["wire_order"] = new_wire_order
+                tkwargs["wire_order"] = verified_wire_order
 
             wrapper = self.tape_fn(tape, *targs, **tkwargs)
 
@@ -355,10 +359,15 @@ class op_transform:
             # Input is a QNode, or qfunc. Get the quantum tape.
             def wrapper(*args, **kwargs):
                 nonlocal wire_order
-                tape, new_wire_order = _make_tape(obj, wire_order, *args, **kwargs)
+                tape, verified_wire_order = _make_tape(obj, wire_order, *args, **kwargs)
 
-                if wire_order is not None:
-                    tkwargs["wire_order"] = new_wire_order
+                if wire_order is not None or (
+                    "wire_order" in self._sig and isinstance(obj, qml.QNode)
+                ):
+                    # Use the verified wire order if:
+                    # - wire_order was passed to the transform
+                    # - The object is a QNode, and the function takes a wire_order argument
+                    tkwargs["wire_order"] = verified_wire_order
 
                 if isinstance(tape, qml.operation.Operator):
                     return self.fn(tape, *targs, **tkwargs)
