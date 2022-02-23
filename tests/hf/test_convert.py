@@ -347,6 +347,22 @@ def test_not_xyz_terms_to_qubit_operator():
         )
 
 
+def test_wires_not_covered_terms_to_qubit_operator():
+    r"""Test if the conversion complains about Supplied wires not covering ops wires"""
+    with pytest.raises(
+        ValueError,
+        match="Supplied `wires` does not cover all wires defined in `ops`.",
+    ):
+        _terms_to_qubit_operator(
+            np.array([0.1, 0.2]),
+            [
+                qml.operation.Tensor(qml.PauliX(wires=["w0"])),
+                qml.operation.Tensor(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w2"])),
+            ],
+            wires=qml.wires.Wires(["w0", "w1"]),
+        )
+
+
 def test_types_consistency():
     r"""Test the type consistency of the qubit Hamiltonian constructed by 'convert_observable' from
     an OpenFermion QubitOperator with respect to the same observable built directly using PennyLane
