@@ -23,7 +23,7 @@ from pennylane.wires import Wires
 
 
 def _process_wires(wires, n_wires=None):
-    r""" Checks and consolidates custom user wire mapping into a consistent, direction-free, `Wires`
+    r"""Checks and consolidates custom user wire mapping into a consistent, direction-free, `Wires`
     format. Used for converting between OpenFermion qubit numbering and Pennylane wire labels.
 
     Since OpenFermion's qubit numbering is always consecutive int, simple iterable types such as
