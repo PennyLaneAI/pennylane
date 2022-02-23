@@ -241,10 +241,6 @@ class ControlledQubitUnitary(QubitUnitary):
         total_wires = control_wires + wires
         super().__init__(*params, wires=total_wires, do_queue=do_queue)
 
-    @property
-    def num_params(self):
-        return 1
-
     @staticmethod
     def compute_matrix(
         U, control_wires, u_wires, control_values=None

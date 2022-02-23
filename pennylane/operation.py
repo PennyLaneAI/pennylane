@@ -500,6 +500,7 @@ class Operator(abc.ABC):
     -0.9999987318946099
 
     """
+    # pylint: disable=too-many-public-methods
 
     def __copy__(self):
         cls = self.__class__

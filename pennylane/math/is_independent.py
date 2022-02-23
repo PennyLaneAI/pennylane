@@ -23,10 +23,10 @@ a function is independent of its arguments for the interfaces
 import warnings
 
 import numpy as np
-from pennylane import numpy as pnp
-
 from autograd.tracer import isbox, new_box, trace_stack
 from autograd.core import VJPNode
+
+from pennylane import numpy as pnp
 
 
 def _autograd_is_indep_analytic(func, *args, **kwargs):
