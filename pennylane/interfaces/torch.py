@@ -174,7 +174,7 @@ class _TorchInterface(torch.autograd.Function):
                     )
 
         if tape.is_sampled and not tape.all_sampled:
-            return tuple([torch.as_tensor(t, dtype=tape.dtype) for t in res])
+            return tuple(torch.as_tensor(t, dtype=tape.dtype) for t in res)
 
         if res.dtype == np.dtype("object"):
             res = np.hstack(res)

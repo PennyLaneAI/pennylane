@@ -100,7 +100,7 @@ class Tracker:
         whether ``execute`` or ``batch_execute`` last performed an update.
 
         >>> def shots_info(totals, history, latest):
-        ...     if 'shots' in latest.keys():
+        ...     if 'shots' in latest:
         ...         print("Total shots: ", totals['shots'])
         >>> x = np.array(0.1, requires_grad=True)
         >>> with qml.Tracker(circuit.device, callback=shots_info) as tracker:
@@ -167,7 +167,7 @@ class Tracker:
 
         for key, value in kwargs.items():
             # update history
-            if key in self.history.keys():
+            if key in self.history:
                 self.history[key].append(value)
             else:
                 self.history[key] = [value]
