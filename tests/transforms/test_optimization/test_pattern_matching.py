@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import timeit
 
 import pennylane as qml
 from pennylane.transforms.optimization.pattern_matching import pattern_matching
@@ -19,8 +20,8 @@ from pennylane.transforms.optimization.pattern_matching import pattern_matching
 class TestPatternMatching:
     """Pattern matching circuit optimization tests."""
 
-    def test_quantum_function_pattern_matching(self):
-        """Test pattern matching algorithmm for circuit optimization with a CNOTs template."""
+    def test_simple_quantum_function_pattern_matching(self):
+        """Test pattern matching algorithm for circuit optimization with a CNOTs template."""
 
         def circuit():
             qml.Toffoli(wires=[3, 4, 0])
@@ -41,7 +42,102 @@ class TestPatternMatching:
             qml.CNOT(wires=[0, 2])
 
         dev = qml.device("default.qubit", wires=5)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode()
+
         optimized_qfunc = pattern_matching(pattern_tapes=[template])(circuit)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
+
+        cnots_qnode = qml.specs(qnode)()['gate_types']['CNOT']
+        cnots_optimized_qnode = qml.specs(optimized_qnode)()['gate_types']['CNOT']
+
+        assert len(qnode.qtape.operations) == 8
+        assert cnots_qnode == 4
+
         assert len(optimized_qnode.qtape.operations) == 7
+        assert cnots_optimized_qnode == 3
+
+
+    def test_mod_5_4_pattern_matching(self):
+        """Test pattern matching algorithm for mod_5_4 with a CNOTs template."""
+
+        def mod_5_4():
+            qml.PauliX(wires=4)
+            qml.Hadamard(wires=4)
+            qml.CNOT(wires=[3, 4])
+            qml.CNOT(wires=[0, 4])
+            qml.T(wires=4)
+            qml.CNOT(wires=[3, 4])
+            qml.adjoint(qml.T)(wires=4)
+            qml.CNOT(wires=[0, 4])
+            qml.CNOT(wires=[0, 3])
+            qml.adjoint(qml.T)(wires=3)
+            qml.CNOT(wires=[0, 3])
+            qml.CNOT(wires=[3, 4])
+            qml.CNOT(wires=[2, 4])
+            qml.adjoint(qml.T)(wires=4)
+            qml.CNOT(wires=[3, 4])
+            qml.T(wires=4)
+            qml.CNOT(wires=[2, 4])
+            qml.CNOT(wires=[2, 3])
+            qml.T(wires=3)
+            qml.CNOT(wires=[2, 3])
+            qml.Hadamard(wires=4)
+            qml.CNOT(wires=[3, 4])
+            qml.Hadamard(wires=4)
+            qml.CNOT(wires=[2, 4])
+            qml.adjoint(qml.T)(wires=4)
+            qml.CNOT(wires=[1, 4])
+            qml.T(wires=4)
+            qml.CNOT(wires=[2, 4])
+            qml.adjoint(qml.T)(wires=4)
+            qml.CNOT(wires=[1, 4])
+            qml.T(wires=4)
+            qml.CNOT(wires=[1, 2])
+            qml.adjoint(qml.T)(wires=2)
+            qml.CNOT(wires=[1, 2])
+            qml.Hadamard(wires=4)
+            qml.CNOT(wires=[2, 4])
+            qml.Hadamard(wires=4)
+            qml.CNOT(wires=[1, 4])
+            qml.T(wires=4)
+            qml.CNOT(wires=[0, 4])
+            qml.adjoint(qml.T)(wires=4)
+            qml.CNOT(wires=[1, 4])
+            qml.T(wires=4)
+            qml.CNOT(wires=[0, 4])
+            qml.adjoint(qml.T)(wires=4)
+            qml.CNOT(wires=[0, 1])
+            qml.T(wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.Hadamard(wires=4)
+            qml.CNOT(wires=[1, 4])
+            qml.CNOT(wires=[0, 4])
+            return qml.expval(qml.PauliX(wires=0))
+
+        with qml.tape.QuantumTape() as template:
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[0, 2])
+
+        dev = qml.device("default.qubit", wires=5)
+
+        qnode = qml.QNode(mod_5_4, dev)
+        qnode()
+
+        optimized_qfunc = pattern_matching(pattern_tapes=[template])(mod_5_4)
+        optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        optimized_qnode()
+
+        cnots_qnode = qml.specs(qnode)()['gate_types']['CNOT']
+        cnots_optimized_qnode = qml.specs(optimized_qnode)()['gate_types']['CNOT']
+
+        assert len(qnode.qtape.operations) == 51
+        assert cnots_qnode == 28
+
+        assert len(optimized_qnode.qtape.operations) == 49
+        assert cnots_optimized_qnode == 26
