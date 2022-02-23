@@ -41,9 +41,9 @@ def dipole_integrals(mol, core=None, active=None):
 
         d_{pq} = \int \phi_p^*(r) \hat{{\bf r}} \phi_q(r) dr,
 
-    :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
-    respectively, and :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}` are the contribution
-    of the core orbitals and nuclei, respectively.
+    and :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
+    respectively. The contribution of the core orbitals and nuclei are denoted by
+    :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}`, respectively.
 
     The molecular orbitals are represented as a linear combination of atomic orbitals as
 
@@ -154,9 +154,9 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
 
         d_{pq} = \int \phi_p^*(r) \hat{{\bf r}} \phi_q(r) dr,
 
-    :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
-    respectively, and :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}` are the contribution
-    of the core orbitals and nuclei, respectively, which are computed as
+    and :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
+    respectively. The contribution of the core orbitals and nuclei are denoted by
+    :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}`, respectively, which are computed as
 
     .. math::
 
@@ -239,9 +239,9 @@ def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
 
         d_{pq} = \int \phi_p^*(r) \hat{{\bf r}} \phi_q(r) dr,
 
-    :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
-    respectively, and :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}` are the contribution
-    of the core orbitals and nuclei, respectively, which are computed as
+    and :math:`\hat{c}^{\dagger}` and :math:`\hat{c}` are the creation and annihilation operators,
+    respectively. The contribution of the core orbitals and nuclei are denoted by
+    :math:`\hat{D}_\mathrm{c}` and :math:`\hat{D}_\mathrm{n}`, respectively, which are computed as
 
     .. math::
 
