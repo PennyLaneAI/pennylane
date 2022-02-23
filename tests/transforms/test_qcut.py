@@ -165,15 +165,14 @@ def test_node_ids(monkeypatch):
     """
     Tests that the `MeasureNode` and `PrepareNode` return the correct id
     """
+    with monkeypatch.context() as m:
+        m.setattr("uuid.uuid4", lambda: "some_string")
 
-    monkeypatch.setattr(qcut.MeasureNode, "id", "measure_id_string")
-    monkeypatch.setattr(qcut.PrepareNode, "id", "prepare_id_string")
+        mn = qcut.MeasureNode(wires=0)
+        pn = qcut.PrepareNode(wires=0)
 
-    mn = qcut.MeasureNode(wires=0)
-    pn = qcut.PrepareNode(wires=0)
-
-    assert mn.id == "measure_id_string"
-    assert pn.id == "prepare_id_string"
+        assert mn.id == "some_string"
+        assert pn.id == "some_string"
 
 
 class TestTapeToGraph:
