@@ -11,7 +11,7 @@ from pennylane.transforms.batch_transform import batch_transform
 @batch_transform
 def batch_input(
     tape: Union[qml.tape.JacobianTape, qml.QNode],
-    argnum: Union[Sequence[int], int] = None,
+    argnum: Union[Sequence[int], int] = 0,
 ) -> Tuple[Sequence[qml.tape.JacobianTape], Callable]:
     """
     In a classical ML application one needs to batch the non-trainable inputs of the network.
@@ -58,9 +58,6 @@ def batch_input(
         to batch the results.
     """
     parameters = tape.get_parameters(trainable_only=False)
-
-    if argnum is None:
-        return parameters, lambda x: x
 
     argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)
 

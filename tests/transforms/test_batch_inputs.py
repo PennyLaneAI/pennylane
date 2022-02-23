@@ -40,24 +40,3 @@ def test_simple_circuit():
 
     res = circuit(inputs, weights)
     assert res.shape == (batch_size,)
-
-
-def test_default():
-    """Test that batching works for a simple circuit"""
-    dev = qml.device("default.qubit", wires=2)
-
-    @qml.batch_input(argnum=None)
-    @qml.qnode(dev, diff_method="parameter-shift")
-    def circuit(inputs, weights):
-        qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
-        qml.RY(weights[0], wires=0)
-        qml.RY(weights[1], wires=1)
-        return qml.expval(qml.PauliZ(1))
-
-    batch_size = 5
-    inputs = np.random.uniform(0, np.pi, (2,))
-    inputs.requires_grad = False
-    weights = np.random.uniform(-np.pi, np.pi, (2,))
-
-    res = circuit(inputs, weights)
-    assert res.shape == (1,)
