@@ -235,6 +235,93 @@ class TestCustomWireOrdering:
         assert np.allclose(testcircuit(x), expected_matrix)
 
 
+class TestTemplates:
+    """These tests are useful as they test operators that might not have
+    matrix forms defined, requiring decomposition."""
+
+    def test_instantiated(self):
+        """Test an instantiated template"""
+        weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
+        op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
+        res = qml.matrix(op)
+
+        with qml.tape.QuantumTape() as tape:
+            op.decomposition()
+
+        expected = qml.matrix(tape)
+        np.allclose(res, expected)
+
+    def test_qfunc(self):
+        """Test a template used within a qfunc"""
+
+        def circuit(weights, x):
+            qml.StronglyEntanglingLayers(weights, wires=[0, 1])
+            qml.RX(x, wires=0)
+
+        weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
+        x = 0.54
+        res = qml.matrix(circuit)(weights, x)
+
+        op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
+
+        with qml.tape.QuantumTape() as tape:
+            op.decomposition()
+            qml.RX(x, wires=0)
+
+        expected = qml.matrix(tape)
+        np.allclose(res, expected)
+
+    def test_nested_instantiated(self):
+        """Test an operation that must be decomposed twice"""
+
+        class CustomOp(qml.operation.Operation):
+            num_params = 1
+            num_wires = 2
+
+            @staticmethod
+            def compute_decomposition(weights, wires):
+                return [qml.StronglyEntanglingLayers(weights, wires=wires)]
+
+        weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
+        op = CustomOp(weights, wires=[0, 1])
+        res = qml.matrix(op)
+
+        op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
+        with qml.tape.QuantumTape() as tape:
+            op.decomposition()
+
+        expected = qml.matrix(tape)
+        np.allclose(res, expected)
+
+    def test_nested_qfunc(self):
+        """Test an operation that must be decomposed twice"""
+
+        class CustomOp(qml.operation.Operation):
+            num_params = 1
+            num_wires = 2
+
+            @staticmethod
+            def compute_decomposition(weights, wires):
+                return [qml.StronglyEntanglingLayers(weights, wires=wires)]
+
+        def circuit(weights, x):
+            CustomOp(weights, wires=[0, 1])
+            qml.RX(x, wires=0)
+
+        weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
+        x = 0.54
+        res = qml.matrix(circuit)(weights, x)
+
+        op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
+
+        with qml.tape.QuantumTape() as tape:
+            op.decomposition()
+            qml.RX(x, wires=0)
+
+        expected = qml.matrix(tape)
+        np.allclose(res, expected)
+
+
 class TestValidation:
     def test_invalid_argument(self):
         """Assert error raised when input is neither a tape, QNode, nor quantum function"""
