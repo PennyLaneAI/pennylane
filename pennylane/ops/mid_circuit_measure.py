@@ -81,18 +81,6 @@ class MeasurementDependantValue(Generic[T]):
         """List of all measurements this MeasurementDependantValue depends on."""
         return [self._depends_on]
 
-    def __str__(self):
-        measurements = self.measurements
-        lines = []
-        for k, v in self.branches.items():
-            lines.append(
-                "if "
-                + ",".join([f"{measurements[i]}={k[i]}" for i in range(len(measurements))])
-                + " => "
-                + str(v)
-            )
-        return "\n".join(lines)
-
 
 def if_then(expr: MeasurementDependantValue[bool], then_op: Type[Operation]):
     """
