@@ -147,8 +147,8 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
         \hat{c}_{p\downarrow}^\dagger \hat{c}_{q\downarrow}] -
         \hat{D}_\mathrm{c} + \hat{D}_\mathrm{n},
 
-    where the matrix elements :math:`d_{pq}` are given by the integral over molecular orbitals
-    :math:`\phi`
+    where the matrix elements :math:`d_{pq}` are given by the integral of the position operator
+    :math:`\hat{{\bf r}}` over molecular orbitals :math:`\phi`
 
     .. math::
 
@@ -232,8 +232,8 @@ def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
         \hat{c}_{p\downarrow}^\dagger \hat{c}_{q\downarrow}] -
         \hat{D}_\mathrm{c} + \hat{D}_\mathrm{n},
 
-    where the matrix elements :math:`d_{pq}` are given by the integral over molecular orbitals
-    :math:`\phi`
+    where the matrix elements :math:`d_{pq}` are given by the integral of the position operator
+    :math:`\hat{{\bf r}}` over molecular orbitals :math:`\phi`
 
     .. math::
 
@@ -282,7 +282,7 @@ def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> dipole_moment(mol)(*args)[2].terms[1]
+    >>> dipole_moment(mol)(*args)[2].ops
     [PauliZ(wires=[0]),
      PauliY(wires=[0]) @ PauliZ(wires=[1]) @ PauliY(wires=[2]),
      PauliX(wires=[0]) @ PauliZ(wires=[1]) @ PauliX(wires=[2]),

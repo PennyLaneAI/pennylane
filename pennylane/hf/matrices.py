@@ -106,12 +106,12 @@ def generate_overlap_matrix(basis_functions):
     return overlap
 
 
-def moment_matrix(basis_functions, e, idx):
+def moment_matrix(basis_functions, order, idx):
     r"""Return a function that computes the multipole moment matrix for a set of basis functions.
 
     Args:
         basis_functions (list[BasisFunction]): basis functions
-        e (integer): exponent of the position component
+        order (integer): exponent of the position component
         idx (integer): index determining the dimension of the multipole moment integral
 
     Returns:
@@ -125,8 +125,8 @@ def moment_matrix(basis_functions, e, idx):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> e, idx = 1, 0
-    >>> moment_matrix(mol.basis_set, e, idx)(*args)
+    >>> order, idx = 1, 0
+    >>> moment_matrix(mol.basis_set, order, idx)(*args)
     tensor([[0.0, 0.4627777], [0.4627777, 2.0]], requires_grad=True)
     """
 
@@ -147,7 +147,7 @@ def moment_matrix(basis_functions, e, idx):
             args_ab = []
             if args:
                 args_ab.extend(arg[[i, j]] for arg in args)
-            integral = moment_integral(a, b, e, idx)(*args_ab)
+            integral = moment_integral(a, b, order, idx)(*args_ab)
 
             o = anp.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
