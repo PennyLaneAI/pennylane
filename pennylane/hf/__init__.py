@@ -17,6 +17,7 @@ Hartree-Fock calculations.
 """
 from .basis_data import STO3G, atomic_numbers
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
+from .dipole import dipole_integrals, dipole_moment, fermionic_dipole, fermionic_one, qubit_operator
 from .hamiltonian import (
     generate_electron_integrals,
     generate_fermionic_hamiltonian,
@@ -47,6 +48,7 @@ from .matrices import (
     generate_overlap_matrix,
     generate_repulsion_tensor,
     molecular_density_matrix,
+    moment_matrix,
 )
 from .molecule import Molecule
 from .particle_number import particle_number
