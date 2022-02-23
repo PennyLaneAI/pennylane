@@ -51,6 +51,8 @@ from .matrices import (
     moment_matrix,
 )
 from .molecule import Molecule
+from .particle_number import particle_number
+from .spin import spin2, spinz
 from .tapering import (
     clifford,
     generate_paulis,
