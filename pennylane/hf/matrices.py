@@ -15,6 +15,8 @@
 This module contains the functions needed for computing matrices.
 """
 # pylint: disable= too-many-branches
+import itertools as it
+
 import autograd.numpy as anp
 from pennylane.hf.integrals import (
     generate_attraction,
@@ -87,19 +89,17 @@ def generate_overlap_matrix(basis_functions):
         """
         n = len(basis_functions)
         overlap_matrix = anp.eye(len(basis_functions))
-        for i, a in enumerate(basis_functions):
-            for j, b in enumerate(basis_functions):
-                if i < j:
-                    if args:
-                        args_ab = []
-                        for arg in args:
-                            args_ab.append(arg[[i, j]])
-                        overlap_integral = generate_overlap(a, b)(*args_ab)
-                    else:
-                        overlap_integral = generate_overlap(a, b)()
-                    o = anp.zeros((n, n))
-                    o[i, j] = o[j, i] = 1.0
-                    overlap_matrix = overlap_matrix + overlap_integral * o
+
+        for (i, a), (j, b) in it.combinations(enumerate(basis_functions), r=2):
+            args_ab = []
+            if args:
+                args_ab.extend(arg[[i, j]] for arg in args)
+            overlap_integral = generate_overlap(a, b)(*args_ab)
+
+            o = anp.zeros((n, n))
+            o[i, j] = o[j, i] = 1.0
+            overlap_matrix = overlap_matrix + overlap_integral * o
+
         return overlap_matrix
 
     return overlap
@@ -137,19 +137,17 @@ def generate_kinetic_matrix(basis_functions):
         """
         n = len(basis_functions)
         kinetic_matrix = anp.zeros((n, n))
-        for i, a in enumerate(basis_functions):
-            for j, b in enumerate(basis_functions):
-                if i <= j:
-                    if args:
-                        args_ab = []
-                        for arg in args:
-                            args_ab.append(arg[[i, j]])
-                        kinetic_integral = generate_kinetic(a, b)(*args_ab)
-                    else:
-                        kinetic_integral = generate_kinetic(a, b)()
-                    o = anp.zeros((n, n))
-                    o[i, j] = o[j, i] = 1.0
-                    kinetic_matrix = kinetic_matrix + kinetic_integral * o
+
+        for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
+            args_ab = []
+            if args:
+                args_ab.extend(arg[[i, j]] for arg in args)
+            kinetic_integral = generate_kinetic(a, b)(*args_ab)
+
+            o = anp.zeros((n, n))
+            o[i, j] = o[j, i] = 1.0
+            kinetic_matrix = kinetic_matrix + kinetic_integral * o
+
         return kinetic_matrix
 
     return kinetic
@@ -190,37 +188,34 @@ def generate_attraction_matrix(basis_functions, charges, r):
         """
         n = len(basis_functions)
         attraction_matrix = anp.zeros((n, n))
-        for i, a in enumerate(basis_functions):
-            for j, b in enumerate(basis_functions):
-                attraction_integral = 0
-                if i <= j:
-                    if args:
-                        args_ab = []
+        for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
+            attraction_integral = 0
+            if args:
+                args_ab = []
 
-                        if r.requires_grad:
-                            for l in range(len(args) - 1):
-                                args_ab.append(args[l + 1][[i, j]])
-                        else:
-                            for arg in args:
-                                args_ab.append(arg[[i, j]])
+                if r.requires_grad:
+                    args_ab.extend(arg[[i, j]] for arg in args[1:])
+                else:
+                    args_ab.extend(arg[[i, j]] for arg in args)
 
-                        for k, c in enumerate(r):
-                            if c.requires_grad:
-                                args_ab = [args[0][k]] + args_ab
-                            attraction_integral = attraction_integral - charges[
-                                k
-                            ] * generate_attraction(c, a, b)(*args_ab)
-                            if c.requires_grad:
-                                args_ab = args_ab[1:]
-                    else:
-                        for k, c in enumerate(r):
-                            attraction_integral = (
-                                attraction_integral - charges[k] * generate_attraction(c, a, b)()
-                            )
+                for k, c in enumerate(r):
+                    if c.requires_grad:
+                        args_ab = [args[0][k]] + args_ab
+                    attraction_integral = attraction_integral - charges[k] * generate_attraction(
+                        c, a, b
+                    )(*args_ab)
+                    if c.requires_grad:
+                        args_ab = args_ab[1:]
+            else:
+                for k, c in enumerate(r):
+                    attraction_integral = (
+                        attraction_integral - charges[k] * generate_attraction(c, a, b)()
+                    )
 
-                    o = anp.zeros((n, n))
-                    o[i, j] = o[j, i] = 1.0
-                    attraction_matrix = attraction_matrix + attraction_integral * o
+            o = anp.zeros((n, n))
+            o[i, j] = o[j, i] = 1.0
+            attraction_matrix = attraction_matrix + attraction_integral * o
+
         return attraction_matrix
 
     return attraction
@@ -267,35 +262,29 @@ def generate_repulsion_tensor(basis_functions):
         repulsion_tensor = anp.zeros((n, n, n, n))
         e_calc = []
 
-        for i, a in enumerate(basis_functions):
-            for j, b in enumerate(basis_functions):
-                for k, c in enumerate(basis_functions):
-                    for l, d in enumerate(basis_functions):
+        for (i, a), (j, b), (k, c), (l, d) in it.product(enumerate(basis_functions), repeat=4):
+            if (i, j, k, l) not in e_calc:
+                args_abcd = []
+                if args:
+                    args_abcd.extend(arg[[i, j, k, l]] for arg in args)
+                repulsion_integral = generate_repulsion(a, b, c, d)(*args_abcd)
 
-                        if [i, j, k, l] not in e_calc:
-                            if args:
-                                args_abcd = []
-                                for arg in args:
-                                    args_abcd.append(arg[[i, j, k, l]])
-                                repulsion_integral = generate_repulsion(a, b, c, d)(*args_abcd)
-                            else:
-                                repulsion_integral = generate_repulsion(a, b, c, d)()
+                permutations = [
+                    (i, j, k, l),
+                    (k, l, i, j),
+                    (j, i, l, k),
+                    (l, k, j, i),
+                    (j, i, k, l),
+                    (l, k, i, j),
+                    (i, j, l, k),
+                    (k, l, j, i),
+                ]
 
-                            o = anp.zeros((n, n, n, n))
-                            o[i, j, k, l] = o[k, l, i, j] = o[j, i, l, k] = o[l, k, j, i] = 1.0
-                            o[j, i, k, l] = o[l, k, i, j] = o[i, j, l, k] = o[k, l, j, i] = 1.0
-                            repulsion_tensor = repulsion_tensor + repulsion_integral * o
-                            e_calc = e_calc + [
-                                [i, j, k, l],
-                                [k, l, i, j],
-                                [j, i, l, k],
-                                [l, k, j, i],
-                                [j, i, k, l],
-                                [l, k, i, j],
-                                [i, j, l, k],
-                                [k, l, j, i],
-                            ]
-
+                o = anp.zeros((n, n, n, n))
+                for perm in permutations:
+                    o[perm] = 1.0
+                repulsion_tensor = repulsion_tensor + repulsion_integral * o
+                e_calc = e_calc + permutations
         return repulsion_tensor
 
     return repulsion
