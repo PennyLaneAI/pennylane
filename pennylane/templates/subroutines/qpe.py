@@ -109,7 +109,6 @@ class QuantumPhaseEstimation(Operation):
 
     def __init__(self, unitary, target_wires, estimation_wires, do_queue=True, id=None):
 
-        self._target_wires = list(target_wires)
         target_wires = list(target_wires)
         estimation_wires = list(estimation_wires)
         wires = target_wires + estimation_wires
@@ -125,10 +124,6 @@ class QuantumPhaseEstimation(Operation):
         }
 
         super().__init__(unitary, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def target_wires(self):
-        return self._target_wires
 
     @property
     def num_params(self):

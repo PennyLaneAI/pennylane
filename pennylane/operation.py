@@ -500,6 +500,7 @@ class Operator(abc.ABC):
     -0.9999987318946099
 
     """
+    # pylint: disable=too-many-public-methods
 
     def __copy__(self):
         cls = self.__class__
@@ -1130,15 +1131,6 @@ class Operation(Operator):
         return Wires([])
 
     @property
-    def target_wires(self):  # pragma: no cover
-        r"""For operations that are targeted, returns the set of target wires.
-
-        Returns:
-            Wires: The set of target wires of the operation.
-        """
-        raise NotImplementedError
-
-    @property
     def single_qubit_rot_angles(self):
         r"""The parameters required to implement a single-qubit gate as an
         equivalent ``Rot`` gate, up to a global phase.
@@ -1276,7 +1268,22 @@ class Operation(Operator):
         tape = qml.tape.QuantumTape(do_queue=False)
 
         with tape:
-            self.decomposition()
+
+            try:
+                self.decomposition()
+
+            except TypeError:
+                if self.num_params == 0:
+                    self.decomposition(wires=self.wires)
+                else:
+                    self.decomposition(*self.parameters, wires=self.wires)
+
+                warnings.warn(
+                    "Operator.decomposition() is now an instance method, and no longer accepts parameters. "
+                    "Either define the static method 'compute_decomposition' instead, or use "
+                    "'self.wires' and 'self.parameters'.",
+                    UserWarning,
+                )
 
         if not self.data:
             # original operation has no trainable parameters

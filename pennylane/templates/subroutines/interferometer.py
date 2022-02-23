@@ -14,6 +14,7 @@
 r"""
 Contains the ``Interferometer`` template.
 """
+from itertools import product
 import pennylane as qml
 
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
@@ -227,20 +228,17 @@ class Interferometer(CVOperation):
             if mesh == "rectangular":
                 # Apply the Clements beamsplitter array
                 # The array depth is N
-                for l in range(M):
-                    for k, (w1, w2) in enumerate(zip(wires[:-1], wires[1:])):
-                        # skip even or odd pairs depending on layer
-                        if (l + k) % 2 != 1:
-                            if beamsplitter == "clements":
-                                op_list.append(Rotation(phi[n], wires=Wires(w1)))
-                                op_list.append(Beamsplitter(theta[n], 0, wires=Wires([w1, w2])))
-                            elif beamsplitter == "pennylane":
-                                op_list.append(
-                                    Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2]))
-                                )
-                            else:
-                                raise ValueError(f"did not recognize beamsplitter {beamsplitter}")
-                            n += 1
+                for l, (k, (w1, w2)) in product(range(M), enumerate(zip(wires[:-1], wires[1:]))):
+                    # skip even or odd pairs depending on layer
+                    if (l + k) % 2 != 1:
+                        if beamsplitter == "clements":
+                            op_list.append(Rotation(phi[n], wires=Wires(w1)))
+                            op_list.append(Beamsplitter(theta[n], 0, wires=Wires([w1, w2])))
+                        elif beamsplitter == "pennylane":
+                            op_list.append(Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2])))
+                        else:
+                            raise ValueError(f"did not recognize beamsplitter {beamsplitter}")
+                        n += 1
 
             elif mesh == "triangular":
                 # apply the Reck beamsplitter array
