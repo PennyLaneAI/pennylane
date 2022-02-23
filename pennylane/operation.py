@@ -1130,15 +1130,6 @@ class Operation(Operator):
         return Wires([])
 
     @property
-    def target_wires(self):  # pragma: no cover
-        r"""For operations that are targeted, returns the set of target wires.
-
-        Returns:
-            Wires: The set of target wires of the operation.
-        """
-        raise NotImplementedError
-
-    @property
     def single_qubit_rot_angles(self):
         r"""The parameters required to implement a single-qubit gate as an
         equivalent ``Rot`` gate, up to a global phase.

@@ -79,10 +79,52 @@ class TestCommutingFunction:
         """Commutation between CZ and MCZ."""
 
         def z():
-            qml.PauliZ(wires=wires[1][1])
+            qml.PauliZ(wires=wires[1][2])
 
         commutation = qml.is_commuting(
-            qml.CZ(wires=wires[0]), qml.transforms.ctrl(z, control=wires[1][0])()
+            qml.CZ(wires=wires[0]), qml.transforms.ctrl(z, control=wires[1][:-1])()
+        )
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1], [0, 1, 2]], True),
+            ([[0, 2], [0, 1, 2]], True),
+            ([[0, 2], [0, 2, 1]], True),
+        ],
+    )
+    def test_mcz_cz(self, wires, res):
+        """Commutation between MCZ and CZ"""
+
+        def z():
+            qml.PauliZ(wires=wires[1][2])
+
+        commutation = qml.is_commuting(
+            qml.transforms.ctrl(z, control=wires[1][:-1])(), qml.CZ(wires=wires[0])
+        )
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0, 1, 2], [0, 1, 2]], True),
+            ([[0, 2, 1], [0, 1, 2]], True),
+            ([[1, 2, 0], [0, 2, 1]], True),
+        ],
+    )
+    def test_mcz_mcz(self, wires, res):
+        """Commutation between MCZ and MCZ."""
+
+        def z_1():
+            qml.PauliZ(wires=wires[0][2])
+
+        def z_2():
+            qml.PauliZ(wires=wires[1][2])
+
+        commutation = qml.is_commuting(
+            qml.transforms.ctrl(z_1, control=wires[0][:-1])(),
+            qml.transforms.ctrl(z_2, control=wires[1][:-1])(),
         )
         assert commutation == res
 

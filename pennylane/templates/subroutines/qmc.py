@@ -343,8 +343,6 @@ class QuantumMonteCarlo(Operation):
                 "The probability distribution must have a length that is a power of two"
             )
 
-        self._target_wires = target_wires
-
         target_wires = list(target_wires)
         estimation_wires = list(estimation_wires)
         wires = target_wires + estimation_wires
@@ -361,10 +359,6 @@ class QuantumMonteCarlo(Operation):
         R = func_to_unitary(func, dim_p)
         Q = make_Q(A, R)
         super().__init__(A, R, Q, wires=wires, do_queue=do_queue, id=id)
-
-    @property
-    def target_wires(self):
-        return self._target_wires
 
     @property
     def num_params(self):
