@@ -990,11 +990,12 @@ class CutStrategy:
 
         Deriving kwargs for a given circuit and feed it to a custom partitioner along with an extra
         custom parameter:
+
         >>> cut_strategy = qcut.CutStrategy(devices=dev)
         >>> cut_kwargs = cut_strategy.get_cut_kwargs(tape_dag)
         >>> cut_trials = [
-                my_partition_fn(tape_dag, **kwargs, **extra_kwargs) for kwargs in cut_kwargs
-            ]
+        ...     my_partition_fn(tape_dag, **kwargs, **extra_kwargs) for kwargs in cut_kwargs
+        ... ]
 
         """
         tape_wires = set(w for _, _, w in tape_dag.edges.data("wire"))
