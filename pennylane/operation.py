@@ -532,6 +532,9 @@ class Operator(abc.ABC):
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
         return copied_op
 
+    def __pow__(self, n):
+        raise OperatorPropertyUndefined
+
     @property
     def hash(self):
         """int: Integer hash that uniquely represents the operator."""
