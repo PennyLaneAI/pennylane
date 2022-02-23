@@ -1311,9 +1311,9 @@ class TestContractTensors:
 
     t = [np.arange(4), np.arange(4, 8)]
     # make copies of nodes to ensure id comparisons work correctly
-    m = [[copy.copy(qcut.MeasureNode(wires=0))], []]
-    p = [[], [copy.copy(qcut.PrepareNode(wires=0))]]
-    edge_dict = {"pair": (m[0][0], p[1][0])}
+    m = [[qcut.MeasureNode(wires=0)], []]
+    p = [[], [qcut.PrepareNode(wires=0)]]
+    edge_dict = {"pair": (copy.copy(m)[0][0], copy.copy(p)[1][0])}
     g = MultiDiGraph([(0, 1, edge_dict)])
     expected_result = np.dot(*t)
 
