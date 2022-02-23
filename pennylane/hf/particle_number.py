@@ -41,6 +41,9 @@ def particle_number(orbitals):
     Returns:
         pennylane.Hamiltonian: the particle number observable
 
+    Raises:
+        ValueError: If orbitals is less than or equal to 0
+
     **Example**
 
     >>> orbitals = 4

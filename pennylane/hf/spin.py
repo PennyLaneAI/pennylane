@@ -133,6 +133,9 @@ def spin2(electrons, orbitals):
     Returns:
         pennylane.Hamiltonian: the total spin observable :math:`\hat{S}^2`
 
+    Raises:
+        ValueError: If electrons or orbitals is less than or equal to 0
+
     **Example**
 
     >>> electrons = 2
@@ -200,6 +203,9 @@ def spinz(orbitals):
 
     Returns:
         pennylane.Hamiltonian: the total spin projection observable :math:`\hat{S}_z`
+
+    Raises:
+        ValueError: If orbitals is less than or equal to 0
 
     **Example**
 
