@@ -138,7 +138,7 @@ def spin2(electrons, orbitals):
 
     >>> electrons = 2
     >>> orbitals = 4
-    >>> print(spin2_fermionic(electrons, orbitals))
+    >>> print(spin2(electrons, orbitals))
     (0.75) [I0]
     + (0.375) [Z1]
     + (-0.375) [Z0 Z1]
