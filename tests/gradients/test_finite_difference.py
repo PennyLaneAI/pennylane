@@ -285,6 +285,19 @@ class TestFiniteDiff:
         assert np.allclose(j1, [exp, 0])
         assert np.allclose(j2, [0, exp])
 
+    def test_correct_2d_output_shape(self):
+        """Test that the finite diff transform does not swap QNode output dimensions."""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.Rot(*params, wires=0)
+            return [qml.probs([0, 1]), qml.probs([2, 3])]
+
+        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        result = qml.gradients.finite_diff(circuit)(params)
+        assert result.shape == (2, 4, len(params))
+
 
 @pytest.mark.parametrize("approx_order", [2, 4])
 @pytest.mark.parametrize("strategy", ["forward", "backward", "center"])

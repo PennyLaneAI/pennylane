@@ -372,6 +372,19 @@ class TestParamShift:
         grad = fn(dev.batch_execute(tapes))
         assert np.allclose(grad, -np.sin(x))
 
+    def test_correct_2d_output_shape(self):
+        """Test that the parameter shift transform does not swap QNode output dimensions."""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.Rot(*params, wires=0)
+            return [qml.probs([0, 1]), qml.probs([2, 3])]
+
+        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+        result = qml.gradients.param_shift(circuit)(params)
+        assert result.shape == (2, 4, len(params))
+
 
 class TestParameterShiftRule:
     """Tests for the parameter shift implementation"""
