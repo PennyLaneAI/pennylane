@@ -20,14 +20,13 @@ import string
 import sys
 from itertools import product
 
+import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
-from scipy.stats import unitary_group
-
-import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
+from scipy.stats import unitary_group
 
 I, X, Y, Z = (
     np.eye(2),
@@ -160,6 +159,20 @@ def compare_measurements(meas1, meas2):
     obs2 = meas2.obs
     assert np.array(obs1.name == obs2.name).all()
     assert obs1.wires.tolist() == obs2.wires.tolist()
+
+
+def test_node_ids(monkeypatch):
+    """
+    Tests that the `MeasureNode` and `PrepareNode` return the correct id
+    """
+    with monkeypatch.context() as m:
+        m.setattr("uuid.uuid4", lambda: "some_string")
+
+        mn = qcut.MeasureNode(wires=0)
+        pn = qcut.PrepareNode(wires=0)
+
+        assert mn.id == "some_string"
+        assert pn.id == "some_string"
 
 
 class TestTapeToGraph:
@@ -1297,9 +1310,10 @@ class TestContractTensors:
     """Tests for the contract_tensors function"""
 
     t = [np.arange(4), np.arange(4, 8)]
+    # make copies of nodes to ensure id comparisons work correctly
     m = [[qcut.MeasureNode(wires=0)], []]
     p = [[], [qcut.PrepareNode(wires=0)]]
-    edge_dict = {"pair": (m[0][0], p[1][0])}
+    edge_dict = {"pair": (copy.copy(m)[0][0], copy.copy(p)[1][0])}
     g = MultiDiGraph([(0, 1, edge_dict)])
     expected_result = np.dot(*t)
 
