@@ -108,6 +108,44 @@ class TestCommutingFunction:
     @pytest.mark.parametrize(
         "wires,res",
         [
+            ([[0], [0, 1, 2]], False),
+            ([[1], [0, 1, 2]], False),
+            ([[2], [0, 1, 2]], False),
+        ],
+    )
+    def test_rx_mcz(self, wires, res):
+        """Commutation between RX and MCZ"""
+
+        def z():
+            qml.PauliZ(wires=wires[1][2])
+
+        commutation = qml.is_commuting(
+            qml.RX(0.1, wires=wires[0][0]), qml.transforms.ctrl(z, control=wires[1][:-1])()
+        )
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
+            ([[0], [0, 1, 2]], True),
+            ([[1], [0, 1, 2]], True),
+            ([[2], [0, 1, 2]], True),
+        ],
+    )
+    def test_rx_mcz(self, wires, res):
+        """Commutation between MCZ and RZ"""
+
+        def z():
+            qml.PauliZ(wires=wires[1][2])
+
+        commutation = qml.is_commuting(
+            qml.transforms.ctrl(z, control=wires[1][:-1])(), qml.RZ(0.1, wires=wires[0][0])
+        )
+        assert commutation == res
+
+    @pytest.mark.parametrize(
+        "wires,res",
+        [
             ([[0, 1, 2], [0, 1, 2]], True),
             ([[0, 2, 1], [0, 1, 2]], True),
             ([[1, 2, 0], [0, 2, 1]], True),
