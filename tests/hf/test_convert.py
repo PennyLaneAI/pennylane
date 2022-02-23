@@ -15,9 +15,12 @@
 Unit tests for functions needed for converting observables obtained from external libraries to a
 PennyLane observable.
 """
+import pytest
+
+pytest.importorskip("openfermion")
+
 import numpy as np
 import pennylane as qml
-import pytest
 from openfermion import QubitOperator
 from pennylane.hf.convert import (
     _process_wires,
