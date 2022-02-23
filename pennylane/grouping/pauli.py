@@ -309,8 +309,11 @@ def partition_pauli_group(n_qubits: int) -> List[List[str]]:
     if not isinstance(n_qubits, int):
         raise TypeError("Must specify an integer number of qubits.")
 
-    if n_qubits <= 0:
-        raise ValueError("Number of qubits must be at least 1.")
+    if n_qubits < 0:
+        raise ValueError("Number of qubits must be at least 0.")
+
+    if n_qubits == 0:
+        return [[""]]
 
     strings = set()  # tracks all the strings that have already been grouped
     groups = []

@@ -22,11 +22,12 @@ representation of Pauli words and applications, see:
 """
 from functools import reduce
 
+import numpy as np
+
 import pennylane as qml
 from pennylane import PauliX, PauliY, PauliZ, Identity
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
-import numpy as np
 
 # To make this quicker later on
 ID_MAT = np.eye(2)
@@ -426,7 +427,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
         raise TypeError(f"Input to string_to_pauli_word must be string, obtained {pauli_string}")
 
     # String can only consist of I, X, Y, Z
-    if any(char not in character_map.keys() for char in pauli_string):
+    if any(char not in character_map for char in pauli_string):
         raise ValueError(
             "Invalid characters encountered in string_to_pauli_word "
             f"string {pauli_string}. Permitted characters are 'I', 'X', 'Y', and 'Z'"
@@ -444,7 +445,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
 
     # Special case: all-identity Pauli
     if pauli_string == "I" * len(wire_map):
-        first_wire = list(wire_map.keys())[0]
+        first_wire = list(wire_map)[0]
         return Identity(first_wire)
 
     pauli_word = None
