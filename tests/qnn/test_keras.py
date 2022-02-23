@@ -628,12 +628,9 @@ def test_batch_input():
         qml.AngleEmbedding(inputs, wires=range(4), rotation="Y")
         qml.RY(weights[0], wires=0)
         qml.RY(weights[1], wires=1)
-        return qml.probs(op = qml.PauliZ(1))
+        return qml.probs(op=qml.PauliZ(1))
 
-
-    layer = KerasLayer(
-        circuit, weight_shapes = {"weights": (2,)}, output_dim = (2,), argnum = 0
-    )
+    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,), argnum=0)
     conf = layer.get_config()
     layer.build((None, 2))
-    assert layer(np.random.uniform(0,1, (10,4))).shape == (10, 2)
+    assert layer(np.random.uniform(0, 1, (10, 4))).shape == (10, 2)
