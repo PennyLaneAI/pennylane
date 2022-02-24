@@ -53,7 +53,7 @@ def defer_measurements(tape):
         def qfunc(par):
             qml.RY(0.123, wires=0)
             qml.Hadamard(wires=1)
-            m_0 = qml.measure(1)
+            m_0 = qml.measurements(1)
             qml.If(m_0, qml.RY(par, wires=0))
             return qml.expval(qml.PauliZ(0))
 

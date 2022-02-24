@@ -26,7 +26,7 @@ def measure(wire):
 
     .. code-block:: python
 
-        m0 = qml.measure(0)
+        m0 = qml.measurements(0)
     """
     measurement_id = str(uuid.uuid4())[:8]
     _MidCircuitMeasure(wire, measurement_id)

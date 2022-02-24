@@ -1004,7 +1004,7 @@ class TestGetMeasurements:
         out = qcut._get_measurements(group, meas)
 
         assert len(out) == len(group)
-        assert out[0].return_type is qml.measure.Expectation
+        assert out[0].return_type is qml.measurements.Expectation
         assert out[0].obs.name == "Identity"
         assert out[0].obs.wires[0] == 0
 
@@ -1016,7 +1016,7 @@ class TestGetMeasurements:
         out = qcut._get_measurements(group, meas)
 
         assert len(out) == 2
-        assert [o.return_type for o in out] == [qml.measure.Expectation, qml.measure.Expectation]
+        assert [o.return_type for o in out] == [qml.measurements.Expectation, qml.measurements.Expectation]
 
         obs = [o.obs for o in out]
 
