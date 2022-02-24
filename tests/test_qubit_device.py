@@ -25,7 +25,7 @@ from pennylane.operation import Sample, Variance, Expectation, Probability, Stat
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 from pennylane.tape import QuantumTape
-from pennylane.measure import state
+from pennylane.measurements import state
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]

@@ -20,7 +20,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.drawer.representation_resolver import RepresentationResolver
-from pennylane.measure import state
+from pennylane.measurements import state
 
 
 @pytest.fixture
