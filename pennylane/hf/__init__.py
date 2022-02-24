@@ -61,4 +61,4 @@ from .tapering import (
     transform_hamiltonian,
     transform_hf,
 )
-from .transform import fermionic_operator, jordan_wigner, qubit_operator, simplify
+from .observable import fermionic_operator, jordan_wigner, qubit_operator, simplify

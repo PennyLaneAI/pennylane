@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.basis_data import atomic_numbers
 from pennylane.hf.matrices import moment_matrix
-from pennylane.hf.transform import fermionic_operator, qubit_operator
+from pennylane.hf.observable import fermionic_operator, qubit_operator
 
 
 def dipole_integrals(mol, core=None, active=None):

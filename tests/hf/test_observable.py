@@ -17,7 +17,7 @@ Unit tests for functions needed for computing the Hamiltonian.
 import pennylane as qml
 import pytest
 from pennylane import numpy as np
-from pennylane.hf.transform import (
+from pennylane.hf.observable import (
     _pauli_mult,
     _return_pauli,
     fermionic_operator,

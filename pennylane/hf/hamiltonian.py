@@ -19,7 +19,7 @@ import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.hartree_fock import generate_scf, nuclear_energy
-from pennylane.hf.transform import fermionic_operator, qubit_operator
+from pennylane.hf.observable import fermionic_operator, qubit_operator
 
 
 def generate_electron_integrals(mol, core=None, active=None):
