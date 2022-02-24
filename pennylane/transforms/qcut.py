@@ -952,7 +952,7 @@ class CutStrategy:
             ):
                 raise ValueError(
                     "Argument `devices` must be a list or tuple containing elements of type "
-                    f"`qml.Device`"
+                    "`qml.Device`"
                 )
 
             device_wire_sizes = [len(d.wires) for d in devices]
