@@ -52,7 +52,14 @@ def _get_operation_recipe(op, p_idx, shifts):
     # Try to use the stored grad_recipe of the operation
     recipe = op.grad_recipe[p_idx]
     if recipe is not None:
-        return process_shifts(np.array(recipe).T, check_duplicates=False)
+        recipe = np.array(recipe).T
+        # remove all small coefficients and shifts
+        recipe[np.abs(recipe) < 1e-10] = 0
+
+        # remove columns where the coefficients are 0
+        recipe = recipe[:, ~(recipe[0] == 0)]
+        # sort columns according to abs(shift)
+        return recipe[:, np.argsort(np.abs(recipe)[-1])]
 
     # Try to obtain frequencies, either via custom implementation or from generator eigvals
     try:
