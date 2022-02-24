@@ -527,7 +527,7 @@ non_commuting_operations = [
 
 def is_commuting(operation1, operation2):
     r"""Check if two operations are commuting. A lookup table is used to check the commutation between the
-    controlled, targetted part of operation 1 with the controlled, targetted part of operation 2. It supports
+    controlled, targeted part of operation 1 with the controlled, targeted part of operation 2. It supports
     most PennyLane operations that are not CV operations.
 
     Args:
