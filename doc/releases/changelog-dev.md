@@ -69,6 +69,13 @@
   A differentiable tensor contraction function `contract_tensors` has been
   added.
   [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
+  
+  A method has been added that expands a quantum tape over `MeasureNode` and `PrepareNode`
+  configurations.
+  [(#2169)](https://github.com/PennyLaneAI/pennylane/pull/2169)
+
+  The postprocessing function for the `cut_circuit` transform has been added.
+  [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
 
 <h3>Improvements</h3>
 
@@ -120,6 +127,9 @@
   [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
 
 <h3>Deprecations</h3>
+
+* A deprecation warning has been added to the `qml.finite_diff()` method.
+  [#2212](https://github.com/PennyLaneAI/pennylane/pull/2212)
 
 <h3>Bug fixes</h3>
 
