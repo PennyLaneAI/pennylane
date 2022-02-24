@@ -18,12 +18,12 @@ circuits to be distributed across multiple devices.
 
 import copy
 import string
+import uuid
 from itertools import product
 from typing import List, Sequence, Tuple
 
-from networkx import MultiDiGraph, weakly_connected_components
-
 import pennylane as qml
+from networkx import MultiDiGraph, weakly_connected_components
 from pennylane import apply, expval
 from pennylane.grouping import string_to_pauli_word
 from pennylane.measure import MeasurementProcess
@@ -39,12 +39,22 @@ class MeasureNode(Operation):
     num_wires = 1
     grad_method = None
 
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        id = str(uuid.uuid4())
+
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+
 
 class PrepareNode(Operation):
     """Placeholder node for state preparations"""
 
     num_wires = 1
     grad_method = None
+
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        id = str(uuid.uuid4())
+
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
 
 def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
@@ -272,7 +282,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     for node1, node2, wire in graph.edges:
         if isinstance(node1, MeasureNode):
             assert isinstance(node2, PrepareNode)
-            cut_edges.append((node1, node2, wire))
+            cut_edges.append((node1, node2))
             graph_copy.remove_edge(node1, node2, key=wire)
 
     subgraph_nodes = weakly_connected_components(graph_copy)
@@ -281,14 +291,14 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     communication_graph = MultiDiGraph()
     communication_graph.add_nodes_from(range(len(subgraphs)))
 
-    for node1, node2, wire in cut_edges:
+    for node1, node2 in cut_edges:
         for i, subgraph in enumerate(subgraphs):
             if subgraph.has_node(node1):
                 start_fragment = i
             if subgraph.has_node(node2):
                 end_fragment = i
 
-        communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2, wire))
+        communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2))
 
     return subgraphs, communication_graph
 
@@ -658,7 +668,7 @@ def contract_tensors(
                 for pred_edge in pred_edges.values():
                     meas_op, prep_op = pred_edge["pair"]
 
-                    if p is prep_op:
+                    if p.id is prep_op.id:
                         symb = get_symbol(ctr)
                         ctr += 1
                         tensor_indxs[i] += symb
@@ -672,7 +682,7 @@ def contract_tensors(
                 for succ_edge in succ_edges.values():
                     meas_op, _ = succ_edge["pair"]
 
-                    if m is meas_op:
+                    if m.id is meas_op.id:
                         symb = meas_map[meas_op]
                         tensor_indxs[i] += symb
 
