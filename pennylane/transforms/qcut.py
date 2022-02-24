@@ -893,16 +893,26 @@ class CutStrategy:
 
     # pylint: disable=too-many-arguments, too-many-instance-attributes
 
+    #: Initialization argument only, used to derive ``max_free_wires`` and ``min_free_wires``.
     devices: InitVar[Union[qml.Device, Sequence[qml.Device]]] = None
+
+    #: Number of wires for the largest available device.
     max_free_wires: int = None
+    #: Number of wires for the smallest available device.
     min_free_wires: int = None
+    #: The potential (range of) number of fragments for the partitioner to attempt.
     num_fragments_probed: Union[int, Sequence[int]] = None
+    #: Maximum allowed circuit depth for the deepest available device.
     max_free_gates: int = None
+    #: Maximum allowed circuit depth for the shallowest available device.
     min_free_gates: int = None
+    #: The global maximum allowed imbalance for all partition trials.
     imbalance_tolerance: float = None
 
+    #: Class attribute, threshold for warning about too many fragments.
     HIGH_NUM_FRAGMENTS: ClassVar[int] = 20
-    HIGH_PARTITION_ATTEMPS: ClassVar[int] = 20
+    #: Class attribute, threshold for warning about too many partition attempts.
+    HIGH_PARTITION_ATTEMPTS: ClassVar[int] = 20
 
     def __post_init__(
         self,
@@ -1131,7 +1141,7 @@ class CutStrategy:
             # Prepare the list of ks to explore:
             ks = list(range(k_lower, k_upper + 1))
 
-            if len(ks) > self.HIGH_PARTITION_ATTEMPS:
+            if len(ks) > self.HIGH_PARTITION_ATTEMPTS:
                 warnings.warn(
                     f"The numer of partition attempts seems high ({len(ks)}), are you sure?"
                 )
