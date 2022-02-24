@@ -33,7 +33,6 @@ except ImportError:
     CORRECT_TF_VERSION = False
 
 
-@tf.keras.utils.register_keras_serializable(package="pennylane")
 class KerasLayer(Layer):
     """KerasLayer(qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs)
     Converts a :func:`~.QNode` to a Keras
