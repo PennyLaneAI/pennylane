@@ -181,8 +181,8 @@ commutation_map = OrderedDict(
         "BasisState": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     }
 )
-"""OrderedDict[str, array[bool]]: represents the commutation relations between each gate. Positions in the array are 
-the one defined by the position dictionary. True represents commutation and False non commutation."""
+"""OrderedDict[str, list[int]]: Represents the commutation relations between each gate. Positions in the array are
+the one defined by the position dictionary. 1 represents commutation and 0 non-commutation."""
 
 # fmt: on
 
