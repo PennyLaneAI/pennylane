@@ -763,10 +763,10 @@ class MatchingScenarios:
     ):
         """Create a MatchingScenarios class for the Backward match.
         Args:
-            circuit_matched (list): list of matchedwith attributes in the circuit.
-            circuit_blocked (list): list of isblocked attributes in the circuit.
-            pattern_matched (list): list of matchedwith attributes in the pattern.
-            pattern_blocked (list): list of isblocked attributes in the pattern.
+            circuit_matched (list): list representing the matched gates in the circuit.
+            circuit_blocked (list): list representing the blocked gates in the circuit.
+            pattern_matched (list): list representing the matched gates in the pattern.
+            pattern_blocked (list): list representing the blocked gates in the pattern.
             matches (list): list of matches.
             counter (int): counter of the number of circuit gates already considered.
         """
