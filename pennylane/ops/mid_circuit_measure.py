@@ -16,16 +16,17 @@ Mid-circuit measurements and associated operations.
 """
 from typing import TypeVar, Generic, Type
 import uuid
-from pennylane.operation import Operation
+from pennylane.operation import Operation, AnyWires
+from pennylane.queuing import QueuingContext
 
 
-def mid_measure(wire):
+def measure(wire):
     """
     Create a mid-circuit measurement and return an outcome.
 
     .. code-block:: python
 
-        m0 = qml.mid_measure(0)
+        m0 = qml.measure(0)
     """
     measurement_id = str(uuid.uuid4())[:8]
     _MidCircuitMeasure(wire, measurement_id)
@@ -82,31 +83,16 @@ class MeasurementDependantValue(Generic[T]):
         return [self._depends_on]
 
 
-def if_then(expr: MeasurementDependantValue[bool], then_op: Type[Operation]):
+class If(Operation):
     """
-    Run an operation conditionally on the outcome of mid-circuit measurements.
-
-    .. code-block:: python
-
-        m0 = qml.mid_measure(0)
-        qml.if_then(m0, qml.RZ)(1.2, wires=1)
+    If conditional operation wrapper class.
     """
 
-    class _IfOp(Operation):
-        """
-        Helper private class for `if_then` function.
-        """
+    num_wires = AnyWires
 
-        num_wires = then_op.num_wires
-        op: Type[Operation] = then_op
-        branches = expr.branches
-        dependant_measurements = expr.measurements
-
-        def __init__(self, *args, **kwargs):
-            self.then_op = then_op(*args, do_queue=False, **kwargs)
-
-            # TODO: make dynamically inspected or otherwise refactor
-            op_kwargs = {k: v for k, v in kwargs.items() if k in ("wires", "do_queue", "id")}
-            super().__init__(*args, **op_kwargs)
-
-    return _IfOp
+    def __init__(self, expr: MeasurementDependantValue[bool], then_op: Type[Operation], do_queue=True, id=None):
+        self.branches = expr.branches
+        self.dependant_measurements = expr.measurements
+        self.then_op = then_op
+        QueuingContext.remove(then_op)
+        super().__init__(wires=then_op.wires, do_queue=do_queue, id=id)

@@ -36,7 +36,7 @@ class TestQNode:
         @qml.qnode(dev)
         @qml.defer_measurements
         def qnode2():
-            m = qml.mid_measure(1)
+            m = qml.measure(1)
             return qml.expval(qml.PauliZ(0))
 
         res1 = qnode1()
@@ -49,7 +49,7 @@ class TestQNode:
             assert type(op1) == type(op2)
             assert op1.data == op2.data
 
-    def test_mid_measure_between_ops(self):
+    def test_measure_between_ops(self):
         """Test that a quantum function that contains one operation before and
         after a mid-circuit measurement yields the correct results and is
         transformed correctly."""
@@ -62,7 +62,7 @@ class TestQNode:
 
         def func2():
             qml.RY(0.123, wires=0)
-            qml.mid_measure(1)
+            qml.measure(1)
             qml.PauliX(0)
             return qml.expval(qml.PauliZ(0))
 
@@ -86,7 +86,7 @@ class TestQNode:
         dev = qml.device("default.qubit", wires=3)
 
         def qfunc():
-            qml.mid_measure(1)
+            qml.measure(1)
             qml.PauliX(1)
             return qml.expval(qml.PauliZ(0))
 
@@ -102,7 +102,7 @@ class TestQNode:
         dev = qml.device("default.qubit", wires=3)
 
         def qfunc():
-            qml.mid_measure(1)
+            qml.measure(1)
             return qml.expval(qml.PauliZ(1))
 
         tape_deferred_func = qml.defer_measurements(qfunc)
@@ -140,11 +140,11 @@ class TestConditionalOperations:
         @qml.qnode(dev)
         @qml.defer_measurements
         def qnode():
-            m_0 = qml.mid_measure(0)
-            qml.if_then(m_0, qml.RY)(first_par, wires=1)
+            m_0 = qml.measure(0)
+            qml.If(m_0, qml.RY(first_par, wires=1))
 
-            m_1 = qml.mid_measure(2)
-            qml.if_then(m_0, qml.RZ)(sec_par, wires=1)
+            m_1 = qml.measure(2)
+            qml.If(m_0, qml.RZ(sec_par, wires=1))
             return qml.expval(qml.PauliZ(1))
 
         qnode()
@@ -190,13 +190,13 @@ class TestConditionalOperations:
             qml.Hadamard(wires=0)
 
             # Alice measures her qubits, obtaining one of four results, and sends this information to Bob.
-            m_0 = qml.mid_measure(0)
-            m_1 = qml.mid_measure(1)
+            m_0 = qml.measure(0)
+            m_1 = qml.measure(1)
 
             # Given Alice's measurements, Bob performs one of four operations on his half of the EPR pair and
             # recovers the original quantum state.
-            qml.if_then(m_1, qml.RX)(math.pi, wires=2)
-            qml.if_then(m_0, qml.RZ)(math.pi, wires=2)
+            qml.If(m_1, qml.RX(math.pi, wires=2))
+            qml.If(m_0, qml.RZ(math.pi, wires=2))
 
             return qml.probs(wires=2)
 
@@ -223,8 +223,8 @@ class TestConditionalOperations:
         @qml.defer_measurements
         def teleportation_circuit(rads):
             qml.Hadamard(0)
-            m_0 = qml.mid_measure(0)
-            qml.if_then(m_0, op)(rads, wires=1)
+            m_0 = qml.measure(0)
+            qml.If(m_0, op(rads, wires=1))
             return qml.probs(wires=1)
 
         normal_probs = normal_circuit(r)
@@ -249,8 +249,8 @@ class TestConditionalOperations:
         @qml.defer_measurements
         def qnode2(parameters):
             qml.Hadamard(0)
-            m_0 = qml.mid_measure(0)
-            qml.if_then(m_0, op)(phi=par, wires=1)
+            m_0 = qml.measure(0)
+            qml.If(m_0, op(phi=par, wires=1))
             return qml.expval(qml.PauliZ(1))
 
         par = np.array(0.3)
@@ -280,8 +280,8 @@ class TestTemplates:
         @qml.defer_measurements
         def qnode2():
             qml.Hadamard(0)
-            m_0 = qml.mid_measure(0)
-            qml.if_then(m_0, template)(basis_state, wires=range(1, 5))
+            m_0 = qml.measure(0)
+            qml.If(m_0, template(basis_state, wires=range(1, 5)))
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
 
         dev = qml.device("default.qubit", wires=2)
@@ -306,8 +306,8 @@ class TestTemplates:
         @qml.defer_measurements
         def qnode2():
             qml.Hadamard(0)
-            m_0 = qml.mid_measure(0)
-            qml.if_then(m_0, template)(features=feature_vector, wires=range(1, 5), rotation="Z")
+            m_0 = qml.measure(0)
+            qml.If(m_0, template(features=feature_vector, wires=range(1, 5), rotation="Z"))
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
 
         dev = qml.device("default.qubit", wires=2)
@@ -333,8 +333,8 @@ class TestTemplates:
         @qml.defer_measurements
         def qnode2(parameters):
             qml.Hadamard(0)
-            m_0 = qml.mid_measure(0)
-            qml.if_then(m_0, template)(parameters, wires=range(1, 3))
+            m_0 = qml.measure(0)
+            qml.If(m_0, template(parameters, wires=range(1, 3)))
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2))
 
         shape = template.shape(n_layers=2, n_wires=num_wires)
@@ -352,11 +352,11 @@ class TestDrawing:
         that controlled operations are drawn for conditional operations."""
 
         def qfunc():
-            m_0 = qml.mid_measure(0)
-            qml.if_then(m_0, qml.RY)(0.312, wires=1)
+            m_0 = qml.measure(0)
+            qml.If(m_0, qml.RY(0.312, wires=1))
 
-            m_2 = qml.mid_measure(2)
-            qml.if_then(m_2, qml.RY)(0.312, wires=1)
+            m_2 = qml.measure(2)
+            qml.If(m_2, qml.RY(0.312, wires=1))
             return qml.expval(qml.PauliZ(1))
 
         dev = qml.device("default.qubit", wires=4)

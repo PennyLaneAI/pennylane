@@ -41,9 +41,9 @@ from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.tracker import Tracker
 from pennylane.io import *
-from pennylane.measure import density_matrix, expval, probs, sample, state, var
+from pennylane.measurements import density_matrix, expval, probs, sample, state, var
 from pennylane.ops import *
-from pennylane.ops import mid_measure, if_then
+from pennylane.ops import measure, If
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
