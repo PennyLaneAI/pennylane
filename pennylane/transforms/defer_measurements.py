@@ -91,9 +91,7 @@ def defer_measurements(tape):
                 f"Cannot apply operations on {op.wires} as the following wires have been measured already: {op_wires_measured}."
             )
 
-        if isinstance(
-            op, qml.ops.mid_circuit_measure._MidCircuitMeasure  # pylint: disable=protected-access
-        ):
+        if isinstance(op, qml.measurements._MidCircuitMeasure):  # pylint: disable=protected-access
             measured_wires[op.measurement_id] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
