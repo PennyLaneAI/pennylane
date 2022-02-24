@@ -85,6 +85,13 @@ both transforms, and decompositions within the larger PennyLane codebase.
 Transforms for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+This transform accepts tapes and performs circuit cutting.
+
+.. autosummary::
+    :toctree: api
+    
+    ~transforms.cut_circuit
+    
 The following are utility functions that compose the circuit cutting transform.
 
 .. autosummary::
@@ -179,4 +186,5 @@ from .qcut import (
     expand_fragment_tapes,
     contract_tensors,
     qcut_processing_fn,
+    cut_circuit,
 )

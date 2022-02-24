@@ -21,10 +21,8 @@ import string
 import uuid
 from functools import partial
 from itertools import product
-from typing import List, Sequence, Tuple, Optional, Callable, Union
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 
-
-from .batch_transform import batch_transform
 import pennylane as qml
 from networkx import MultiDiGraph, weakly_connected_components
 from pennylane import apply, expval
@@ -34,6 +32,8 @@ from pennylane.operation import Expectation, Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
+
+from .batch_transform import batch_transform
 
 
 class MeasureNode(Operation):
@@ -859,13 +859,63 @@ def qcut_processing_fn(
 
 
 @batch_transform
-def cut_circuit(
-    tape: QuantumTape, method: Optional[Union[str, Callable]] = None, **kwargs
-) -> Tuple[Tuple[QuantumTape], Callable]:
+def cut_circuit(tape: QuantumTape, **kwargs) -> Tuple[Tuple[QuantumTape], Callable]:
     """
-    TODO:Docstring
+    Batch transform for circuit cutting.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow. Check out the
+        :doc:`transforms </code/qml_transforms>` page for more details.
+
+    Args:
+        tape (QuantumTape): The tape of the full circuit to be cut.
+
+    Returns:
+        the tapes corresponding to the circuit fragments as a result of cutting
+        and a post-processing function which combines the results via tensor contractions.
+
+        **Example**
+
+        Consider the following circuit containing a :class:`~.WireCut` operation:
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2)
+
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(x, wires=0)
+                qml.RY(0.543, wires=1)
+                qml.WireCut(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.RZ(0.240, wires=0)
+                qml.RZ(0.133, wires=1)
+                return qml.expval(qml.PauliZ(wires=[0]))
+
+            >>> x = 0.531
+            >>> print(circuit(x))
+            0.8623011058543121
+            >>> print(qml.grad(circuit)(x))
+            -0.506395895364911
+
+        This can be cut using the following transform
+
+        .. code-block:: python
+
+            >>> x = 0.531
+            >>> cut_circuit = qcut.cut_circuit(circuit)
+            >>> cut_circuit(x)
+            0.8623011058543121
+
+        Futhermore, the output of the cut circuit is also differentiable:
+
+        .. code-block:: python
+
+            >>> qml.grad(cut_circuit)(x)
+            -0.506395895364911
     """
-    
+
     g = tape_to_graph(tape)
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
@@ -887,4 +937,4 @@ def cut_circuit(
         communication_graph=communication_graph,
         prepare_nodes=prepare_nodes,
         measure_nodes=measure_nodes,
-    )    
+    )
