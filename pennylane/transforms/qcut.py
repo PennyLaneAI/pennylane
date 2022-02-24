@@ -929,11 +929,12 @@ class CutStrategy:
             devices = (devices,)
 
         if devices is not None:
-            if not isinstance(devices, (list, tuple)) or any(
+            if not isinstance(devices, Sequence) or any(
                 (not isinstance(d, qml.Device) for d in devices)
             ):
                 raise ValueError(
-                    f"Argument `devices` contain at least one `Device` instance, got {type(devices)}."
+                    "Argument `devices` must be a list or tuple containing elements of type "
+                    f"`qml.Device`, got `{type(devices)}`."
                 )
 
             device_wire_sizes = [len(d.wires) for d in devices]
