@@ -149,7 +149,7 @@ from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .adjoint import adjoint
 from .batch_params import batch_params
 from .classical_jacobian import classical_jacobian
-from .condition import cond
+from .condition import cond, Conditional
 from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition

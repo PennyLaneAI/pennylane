@@ -24,14 +24,20 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import (
+    AnyWires,
     Expectation,
     Observable,
+    Operation,
     Probability,
     Sample,
     State,
     Variance,
 )
 from pennylane.wires import Wires
+
+from typing import TypeVar, Generic, Type
+import uuid
+from pennylane.operation import Operation, AnyWires
 
 
 class MeasurementProcess:
@@ -587,3 +593,66 @@ def density_matrix(wires):
     """
     # pylint: disable=protected-access
     return MeasurementProcess(State, wires=qml.wires.Wires(wires))
+
+
+def measure(wire):
+    """
+    Create a mid-circuit measurement and return an outcome.
+
+    .. code-block:: python
+
+        m0 = qml.measurements(0)
+    """
+    measurement_id = str(uuid.uuid4())[:8]
+    _MidCircuitMeasure(wire, measurement_id)
+    return MeasurementDependantValue(measurement_id, 0, 1)
+
+
+class _MidCircuitMeasure(Operation):
+    """
+    Operation to perform mid-circuit measurement.
+    """
+
+    num_wires = 1
+
+    def __init__(self, wires, measurement_id):
+        self.measurement_id = measurement_id
+        super().__init__(wires=wires)
+
+
+T = TypeVar("T")
+
+
+# pylint: disable=protected-access
+class MeasurementDependantValue(Generic[T]):
+    """A class representing unknown measurement outcomes.
+    Since we don't know the actual outcomes at circuit creation time,
+    consider all scenarios.
+
+    supports python __dunder__ mathematical operations.
+    """
+
+    __slots__ = ("_depends_on", "_zero_case", "_one_case")
+
+    def __init__(
+        self,
+        measurement_id: str,
+        zero_case: int,
+        one_case: int,
+    ):
+        self._depends_on = measurement_id
+        self._zero_case = zero_case
+        self._one_case = one_case
+
+    @property
+    def branches(self):
+        """A dictionary representing all the possible outcomes of the MeasurementDependantValue."""
+        branch_dict = {}
+        branch_dict[(0,)] = self._zero_case
+        branch_dict[(1,)] = self._one_case
+        return branch_dict
+
+    @property
+    def measurements(self):
+        """List of all measurements this MeasurementDependantValue depends on."""
+        return [self._depends_on]
