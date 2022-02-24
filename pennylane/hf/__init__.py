@@ -50,6 +50,7 @@ from .matrices import (
     moment_matrix,
 )
 from .molecule import Molecule
+from .observable import fermionic_observable, jordan_wigner, qubit_observable, simplify
 from .particle_number import particle_number
 from .spin import spin2, spinz
 from .tapering import (
@@ -61,4 +62,3 @@ from .tapering import (
     transform_hamiltonian,
     transform_hf,
 )
-from .observable import fermionic_operator, jordan_wigner, qubit_operator, simplify

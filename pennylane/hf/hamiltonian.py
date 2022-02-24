@@ -19,7 +19,7 @@ import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.hartree_fock import generate_scf, nuclear_energy
-from pennylane.hf.observable import fermionic_operator, qubit_operator
+from pennylane.hf.observable import fermionic_observable, qubit_observable
 
 
 def generate_electron_integrals(mol, core=None, active=None):
@@ -174,7 +174,7 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         """
         core_constant, one, two = generate_electron_integrals(mol, core, active)(*args)
 
-        return fermionic_operator(core_constant, one, two, cutoff)
+        return fermionic_observable(core_constant, one, two, cutoff)
 
     return fermionic_hamiltonian
 
@@ -217,6 +217,6 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         """
         h_ferm = generate_fermionic_hamiltonian(mol, cutoff, core, active)(*args)
 
-        return qubit_operator(h_ferm)
+        return qubit_observable(h_ferm)
 
     return hamiltonian

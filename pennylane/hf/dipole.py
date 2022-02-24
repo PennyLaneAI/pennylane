@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.basis_data import atomic_numbers
 from pennylane.hf.matrices import moment_matrix
-from pennylane.hf.observable import fermionic_operator, qubit_operator
+from pennylane.hf.observable import fermionic_observable, qubit_observable
 
 
 def dipole_integrals(mol, core=None, active=None):
@@ -213,7 +213,7 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
 
         f = []
         for i in range(3):
-            coeffs, ops = fermionic_operator(constants[i], integrals[i], cutoff=cutoff)
+            coeffs, ops = fermionic_observable(constants[i], integrals[i], cutoff=cutoff)
             f.append((anp.concatenate((nd[i], coeffs * (-1))), [[]] + ops))
 
         return f
@@ -305,7 +305,7 @@ def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
         d = []
         d_ferm = fermionic_dipole(mol, cutoff, core, active)(*args)
         for i in d_ferm:
-            d.append(qubit_operator(i, cutoff=cutoff))
+            d.append(qubit_observable(i, cutoff=cutoff))
 
         return d
 

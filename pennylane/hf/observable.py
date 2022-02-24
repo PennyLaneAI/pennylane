@@ -19,12 +19,13 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-def fermionic_operator(constant, one=None, two=None, cutoff=1.0e-12):
-    r"""Create a fermionic operator from one-particle molecular orbital integrals.
+def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
+    r"""Create a fermionic observable from molecular orbital integrals.
 
     Args:
         constant (array[float]): the contribution of the core orbitals and nuclei
-        integral (array[float]): the one-particle molecular orbital integrals
+        one (array[float]): the one-particle molecular orbital integrals
+        two (array[float]): the two-particle molecular orbital integrals
         cutoff (float): cutoff value for discarding the negligible integrals
 
     Returns:
@@ -34,7 +35,7 @@ def fermionic_operator(constant, one=None, two=None, cutoff=1.0e-12):
 
     >>> constant = np.array([1.0])
     >>> integral = np.array([[0.5, -0.8270995], [-0.8270995, 0.5]])
-    >>> coeffs, ops = fermionic_one(constant, integral)
+    >>> coeffs, ops = fermionic_observable(constant, integral)
     >>> ops
     [[], [0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2], [3, 1], [3, 3]]
     """
@@ -78,7 +79,7 @@ def fermionic_operator(constant, one=None, two=None, cutoff=1.0e-12):
     return coeffs[indices_sort], sorted(operators)
 
 
-def qubit_operator(o_ferm, cutoff=1.0e-12):
+def qubit_observable(o_ferm, cutoff=1.0e-12):
     r"""Convert a fermionic observable to a PennyLane qubit observable.
 
     The fermionic operator is a tuple containing the fermionic coefficients and operators. For

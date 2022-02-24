@@ -20,9 +20,9 @@ from pennylane import numpy as np
 from pennylane.hf.observable import (
     _pauli_mult,
     _return_pauli,
-    fermionic_operator,
+    fermionic_observable,
     jordan_wigner,
-    qubit_operator,
+    qubit_observable,
     simplify,
 )
 
@@ -89,16 +89,16 @@ from pennylane.hf.observable import (
         ),
     ],
 )
-def test_fermionic_operator(core_constant, integral, f_ref):
-    r"""Test that fermionic_operator returns the correct fermionic observable."""
-    f = fermionic_operator(core_constant, integral)
+def test_fermionic_observable(core_constant, integral, f_ref):
+    r"""Test that fermionic_observable returns the correct fermionic observable."""
+    f = fermionic_observable(core_constant, integral)
 
     assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
     assert f[1] == f_ref[1]  # fermionic operators
 
 
 @pytest.mark.parametrize(
-    ("f_operator", "q_operator"),
+    ("f_observable", "q_observable"),
     [
         (
             (np.array([1.0]), [[0, 0]]),
@@ -137,16 +137,16 @@ def test_fermionic_operator(core_constant, integral, f_ref):
         ),
     ],
 )
-def test_qubit_operator(f_operator, q_operator):
-    r"""Test that qubit_operator returns the correct operator."""
-    h = qubit_operator(f_operator)
-    h_ref = qml.Hamiltonian(q_operator[0], q_operator[1])
+def test_qubit_observable(f_observable, q_observable):
+    r"""Test that qubit_observable returns the correct operator."""
+    h = qubit_observable(f_observable)
+    h_ref = qml.Hamiltonian(q_observable[0], q_observable[1])
 
     assert h.compare(h_ref)
 
 
 @pytest.mark.parametrize(
-    ("f_operator", "q_operator"),
+    ("f_observable", "q_observable"),
     [
         (
             [0, 0],
@@ -156,11 +156,11 @@ def test_qubit_operator(f_operator, q_operator):
         ),
     ],
 )
-def test_jordan_wigner(f_operator, q_operator):
+def test_jordan_wigner(f_observable, q_observable):
     r"""Test that jordan_wigner returns the correct operator."""
-    result = jordan_wigner(f_operator)
+    result = jordan_wigner(f_observable)
 
-    assert result == q_operator
+    assert result == q_observable
 
 
 @pytest.mark.parametrize(
