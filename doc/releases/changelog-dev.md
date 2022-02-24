@@ -28,6 +28,7 @@
   rule is now automatically used by `qml.gradients.param_shift`.
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
   [(#2182)](https://github.com/PennyLaneAI/pennylane/pull/2182)
+  [(#2227)](https://github.com/PennyLaneAI/pennylane/pull/2227)
 
   The frequencies can be used for circuit analysis, optimization
   via the `RotosolveOptimizer` and differentiation with the
@@ -38,14 +39,9 @@
   By default, the frequencies will be obtained from the
   `generator` property (if it is defined).
 
-  When using `qml.gradients.param_shift`, the parameter frequencies
-  are used to obtain the shift rule for the operation.
-
-  For operations that are registered to have an analytic gradient
-  method but that do not provide parameter frequencies, the
-  `grad_recipe` of the operation will be used for differentiation
-  instead. If there is no `grad_recipe`, the standard two-term shift
-  rule will be used.
+  When using `qml.gradients.param_shift`, either a custom `grad_recipe`
+  or the parameter frequencies are used to obtain the shift rule
+  for the operation, in that order of preference.
 
   See [Vidal and Theis (2018)](https://arxiv.org/abs/1812.06323)
   and [Wierichs et al. (2021)](https://arxiv.org/abs/2107.12390)
