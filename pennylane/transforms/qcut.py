@@ -902,12 +902,10 @@ def cut_circuit(tape: QuantumTape, **kwargs) -> Tuple[Tuple[QuantumTape], Callab
 
         This can be cut using the following transform
 
-        .. code-block:: python
-
-            >>> x = 0.531
-            >>> cut_circuit = qcut.cut_circuit(circuit)
-            >>> cut_circuit(x)
-            0.8623011058543121
+        >>> x = 0.531
+        >>> cut_circuit = qcut.cut_circuit(circuit)
+        >>> cut_circuit(x)
+        0.8623011058543121
 
         Futhermore, the output of the cut circuit is also differentiable:
 

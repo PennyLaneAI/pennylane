@@ -82,7 +82,7 @@
   [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
 
   The `cut_circuit` transform has been added.
-  [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216/)
+  [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216)
 
 <h3>Improvements</h3>
 
