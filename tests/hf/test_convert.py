@@ -24,10 +24,10 @@ import pennylane as qml
 from openfermion import QubitOperator
 from pennylane.hf.convert import (
     _process_wires,
-    _qubit_operator_to_terms,
-    _qubit_operators_equivalent,
-    _terms_to_qubit_operator,
-    convert_observable,
+    _openfermion_to_pennylane,
+    _openfermion_pennylane_equivalent,
+    _pennylane_to_openfermion,
+    import_observable,
 )
 
 
@@ -321,24 +321,24 @@ def test_observable_conversion(mol_name, terms_ref, custom_wires, monkeypatch):
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
 
-    vqe_observable = convert_observable(qOp, custom_wires)
+    vqe_observable = import_observable(qOp, custom_wires)
 
     print(vqe_observable)
 
     if isinstance(custom_wires, dict):
         custom_wires = {v: k for k, v in custom_wires.items()}
 
-    assert _qubit_operators_equivalent(qOp, vqe_observable, custom_wires)
+    assert _openfermion_pennylane_equivalent(qOp, vqe_observable, custom_wires)
 
 
-def test_not_xyz_terms_to_qubit_operator():
+def test_not_xyz_pennylane_to_openfermion():
     r"""Test if the conversion complains about non Pauli matrix observables"""
     with pytest.raises(
         ValueError,
         match="Expected only PennyLane observables PauliX/Y/Z or Identity, but also got {"
         "'QuadOperator'}.",
     ):
-        _terms_to_qubit_operator(
+        _pennylane_to_openfermion(
             np.array([0.1 + 0.0j, 0.0]),
             [
                 qml.operation.Tensor(qml.PauliX(0)),
@@ -347,13 +347,13 @@ def test_not_xyz_terms_to_qubit_operator():
         )
 
 
-def test_wires_not_covered_terms_to_qubit_operator():
+def test_wires_not_covered_pennylane_to_openfermion():
     r"""Test if the conversion complains about Supplied wires not covering ops wires"""
     with pytest.raises(
         ValueError,
         match="Supplied `wires` does not cover all wires defined in `ops`.",
     ):
-        _terms_to_qubit_operator(
+        _pennylane_to_openfermion(
             np.array([0.1, 0.2]),
             [
                 qml.operation.Tensor(qml.PauliX(wires=["w0"])),
@@ -364,7 +364,7 @@ def test_wires_not_covered_terms_to_qubit_operator():
 
 
 def test_types_consistency():
-    r"""Test the type consistency of the qubit Hamiltonian constructed by 'convert_observable' from
+    r"""Test the type consistency of the qubit Hamiltonian constructed by 'import_observable' from
     an OpenFermion QubitOperator with respect to the same observable built directly using PennyLane
     operations"""
 
@@ -374,8 +374,8 @@ def test_types_consistency():
     # Corresponding OpenFermion QubitOperator
     of = QubitOperator("", 1) + QubitOperator("Z0 X1", 2)
 
-    # Build PL operator using 'convert_observable'
-    pl = convert_observable(of)
+    # Build PL operator using 'import_observable'
+    pl = import_observable(of)
 
     ops = pl.ops
     ops_ref = pl_ref.ops
@@ -396,17 +396,17 @@ op_2 = QubitOperator("Z0 Y1", 2.23e-10j)
         (op_2, 1e06),
     ],
 )
-def test_exception_convert_observable(qubit_op, tol):
+def test_exception_import_observable(qubit_op, tol):
     r"""Test that an error is raised if the QubitOperator contains complex coefficients.
     Currently the Hamiltonian class does not support complex coefficients.
     """
     with pytest.raises(TypeError, match="The coefficients entering the QubitOperator must be real"):
-        convert_observable(qubit_op, tol=tol)
+        import_observable(qubit_op, tol=tol)
 
 
-def test_identities_terms_to_qubit_operator():
+def test_identities_pennylane_to_openfermion():
     """Test that tensor products that contain Identity instances are handled
-    correctly by the _terms_to_qubit_operator function.
+    correctly by the _pennylane_to_openfermion function.
 
     A decomposition of the following observable was used:
     [[1 0 0 0]
@@ -421,21 +421,21 @@ def test_identities_terms_to_qubit_operator():
         qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1]),
     ]
 
-    op_str = str(_terms_to_qubit_operator(coeffs, obs_list))
+    op_str = str(_pennylane_to_openfermion(coeffs, obs_list))
 
     # Remove new line characters
     op_str = op_str.replace("\n", "")
     assert op_str == "2.5 [] +-1.0 [Z0] +-0.5 [Z1]"
 
 
-def test_terms_to_qubit_operator_no_decomp():
-    """Test the _terms_to_qubit_operator function with custom wires."""
+def test_pennylane_to_openfermion_no_decomp():
+    """Test the _pennylane_to_openfermion function with custom wires."""
     coeffs = np.array([0.1, 0.2])
     ops = [
         qml.operation.Tensor(qml.PauliX(wires=["w0"])),
         qml.operation.Tensor(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w2"])),
     ]
-    op_str = str(_terms_to_qubit_operator(coeffs, ops, wires=qml.wires.Wires(["w0", "w1", "w2"])))
+    op_str = str(_pennylane_to_openfermion(coeffs, ops, wires=qml.wires.Wires(["w0", "w1", "w2"])))
 
     # Remove new line characters
     op_str = op_str.replace("\n", "")
@@ -473,12 +473,12 @@ def test_terms_to_qubit_operator_no_decomp():
 def test_integration_observable_to_vqe_cost(
     monkeypatch, mol_name, terms_ref, expected_cost, custom_wires, tol
 ):
-    r"""Test if `convert_observable()` integrates with `ExpvalCost()` in pennylane"""
+    r"""Test if `import_observable()` integrates with `ExpvalCost()` in pennylane"""
 
     qOp = QubitOperator()
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
-    vqe_observable = convert_observable(qOp, custom_wires)
+    vqe_observable = import_observable(qOp, custom_wires)
 
     num_qubits = len(vqe_observable.wires)
     assert vqe_observable.terms.__repr__()  # just to satisfy codecov

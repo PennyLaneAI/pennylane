@@ -115,7 +115,7 @@ def _process_wires(wires, n_wires=None):
     return wires
 
 
-def _qubit_operator_to_terms(qubit_operator, wires=None):
+def _openfermion_to_pennylane(qubit_operator, wires=None):
     r"""Converts OpenFermion ``QubitOperator`` to a 2-tuple of coefficients and
     PennyLane Pauli observables.
 
@@ -139,7 +139,7 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
     >>> q_op
     0.1 [X0] +
     0.2 [Y0 Z2]
-    >>> _qubit_operator_to_terms(q_op, wires=['w0','w1','w2','extra_wire'])
+    >>> _openfermion_to_pennylane(q_op, wires=['w0','w1','w2','extra_wire'])
     (array([0.1, 0.2]), [PauliX(wires=['w0']), PauliY(wires=['w0']) @ PauliZ(wires=['w2'])])
     """
     n_wires = (
@@ -174,7 +174,7 @@ def _qubit_operator_to_terms(qubit_operator, wires=None):
     return np.real(np.array(coeffs)), list(ops)
 
 
-def _terms_to_qubit_operator(coeffs, ops, wires=None):
+def _pennylane_to_openfermion(coeffs, ops, wires=None):
     r"""Converts a 2-tuple of complex coefficients and PennyLane operations to
     OpenFermion ``QubitOperator``.
 
@@ -202,7 +202,7 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
     ...     qml.operation.Tensor(qml.PauliX(wires=['w0'])),
     ...     qml.operation.Tensor(qml.PauliY(wires=['w0']), qml.PauliZ(wires=['w2']))
     ... ]
-    >>> _terms_to_qubit_operator(coeffs, ops, wires=Wires(['w0', 'w1', 'w2']))
+    >>> _pennylane_to_openfermion(coeffs, ops, wires=Wires(['w0', 'w1', 'w2']))
     0.1 [X0] +
     0.2 [Y0 Z2]
     """
@@ -251,7 +251,7 @@ def _terms_to_qubit_operator(coeffs, ops, wires=None):
     return q_op
 
 
-def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_operator, wires=None):
+def _openfermion_pennylane_equivalent(openfermion_qubit_operator, pennylane_qubit_operator, wires=None):
     r"""Checks equivalence between OpenFermion :class:`~.QubitOperator` and Pennylane  VQE
     ``Hamiltonian`` (Tensor product of Pauli matrices).
 
@@ -273,10 +273,10 @@ def _qubit_operators_equivalent(openfermion_qubit_operator, pennylane_qubit_oper
         (bool): True if equivalent
     """
     coeffs, ops = pennylane_qubit_operator.terms()
-    return openfermion_qubit_operator == _terms_to_qubit_operator(coeffs, ops, wires=wires)
+    return openfermion_qubit_operator == _pennylane_to_openfermion(coeffs, ops, wires=wires)
 
 
-def convert_observable(qubit_observable, wires=None, tol=1e08):
+def import_observable(qubit_observable, wires=None, tol=1e08):
     r"""Converts an OpenFermion :class:`~.QubitOperator` operator to a Pennylane VQE observable
 
     Args:
@@ -300,7 +300,7 @@ def convert_observable(qubit_observable, wires=None, tol=1e08):
 
     >>> from openfermion import QubitOperator
     >>> h_of = QubitOperator('X0 X1 Y2 Y3', -0.0548) + QubitOperator('Z0 Z1', 0.14297)
-    >>> h_pl = convert_observable(h_of)
+    >>> h_pl = import_observable(h_of)
     >>> print(h_pl)
     (0.14297) [Z0 Z1]
     + (-0.0548) [X0 X1 Y2 Y3]
@@ -313,4 +313,4 @@ def convert_observable(qubit_observable, wires=None, tol=1e08):
             f" got complex coefficients in the operator {qubit_observable}"
         )
 
-    return Hamiltonian(*_qubit_operator_to_terms(qubit_observable, wires=wires))
+    return Hamiltonian(*_openfermion_to_pennylane(qubit_observable, wires=wires))
