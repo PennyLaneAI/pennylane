@@ -15,6 +15,8 @@
 Functions for finding the unitary transformations required to diagonalize Pauli partitions in the
 measurement basis, and templates for the circuit implementations.
 """
+import numpy as np
+
 import pennylane as qml
 from pennylane.operation import Tensor
 from pennylane.wires import Wires
@@ -24,7 +26,6 @@ from pennylane.grouping.utils import (
     is_qwc,
     is_pauli_word,
 )
-import numpy as np
 
 
 def qwc_rotation(pauli_operators):
@@ -157,20 +158,16 @@ def diagonalize_qwc_pauli_words(qwc_grouping):
             for sigma in term.obs:
                 if sigma.name != "Identity":
                     if not any(
-                        [
-                            are_identical_pauli_words(sigma, existing_pauli)
-                            for existing_pauli in pauli_operators
-                        ]
+                        are_identical_pauli_words(sigma, existing_pauli)
+                        for existing_pauli in pauli_operators
                     ):
                         pauli_operators.append(sigma)
         elif isinstance(term, paulis_with_identity):
             sigma = term
             if sigma.name != "Identity":
                 if not any(
-                    [
-                        are_identical_pauli_words(sigma, existing_pauli)
-                        for existing_pauli in pauli_operators
-                    ]
+                    are_identical_pauli_words(sigma, existing_pauli)
+                    for existing_pauli in pauli_operators
                 ):
                     pauli_operators.append(sigma)
 

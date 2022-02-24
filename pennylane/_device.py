@@ -374,8 +374,8 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    # pylint: disable=too-many-branches
-    def execute(self, queue, observables, parameters={}, **kwargs):
+    # pylint: disable=too-many-branches,unused-argument
+    def execute(self, queue, observables, parameters=None, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
@@ -402,7 +402,8 @@ class Device(abc.ABC):
         self._op_queue = queue
         self._obs_queue = observables
         self._parameters = {}
-        self._parameters.update(parameters)
+        if parameters is not None:
+            self._parameters.update(parameters)
 
         results = []
         if self._shot_vector is not None:
