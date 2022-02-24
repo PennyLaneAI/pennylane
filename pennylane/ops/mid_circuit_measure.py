@@ -90,7 +90,13 @@ class If(Operation):
 
     num_wires = AnyWires
 
-    def __init__(self, expr: MeasurementDependantValue[bool], then_op: Type[Operation], do_queue=True, id=None):
+    def __init__(
+        self,
+        expr: MeasurementDependantValue[bool],
+        then_op: Type[Operation],
+        do_queue=True,
+        id=None,
+    ):
         self.branches = expr.branches
         self.dependant_measurements = expr.measurements
         self.then_op = then_op

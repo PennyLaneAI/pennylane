@@ -506,7 +506,9 @@ class CircuitGraph:
             operations[wire] = list(
                 filter(
                     lambda op: not (
-                        isinstance(op, (qml.operation.Observable, qml.measurements.MeasurementProcess))
+                        isinstance(
+                            op, (qml.operation.Observable, qml.measurements.MeasurementProcess)
+                        )
                         and op.return_type is not None
                     ),
                     operations[wire],
