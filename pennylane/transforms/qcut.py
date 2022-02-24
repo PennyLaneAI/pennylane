@@ -887,8 +887,6 @@ class CutStrategy:
 
     **Example**
 
-    .. code-block:: python
-
     The following cut strategy specifies that a circuit should be cut into between
     ``2`` to ``5`` fragments, with each fragment having at most ``6`` wires and
     at least ``4`` wires:
@@ -954,7 +952,7 @@ class CutStrategy:
             ):
                 raise ValueError(
                     "Argument `devices` must be a list or tuple containing elements of type "
-                    f"`qml.Device`, got `{type(devices)}`."
+                    f"`qml.Device`"
                 )
 
             device_wire_sizes = [len(d.wires) for d in devices]
@@ -991,7 +989,7 @@ class CutStrategy:
 
         Returns:
             List[Dict[str, Any]]: A list of minimal kwargs being passed to a graph
-                partitioner method.
+            partitioner method.
 
         **Example**
 
@@ -1144,8 +1142,7 @@ class CutStrategy:
 
             if k_lower > self.HIGH_NUM_FRAGMENTS:
                 warnings.warn(
-                    f"The attempted number of fragments seems high with lower bound at {k_lower}, "
-                    "are you sure?"
+                    f"The attempted number of fragments seems high with lower bound at {k_lower}."
                 )
 
             # Prepare the list of ks to explore:
@@ -1153,7 +1150,7 @@ class CutStrategy:
 
             if len(ks) > self.HIGH_PARTITION_ATTEMPTS:
                 warnings.warn(
-                    f"The numer of partition attempts seems high ({len(ks)}), are you sure?"
+                    f"The numer of partition attempts seems high ({len(ks)})."
                 )
         else:
             # When the by-fragment wire and/or gate limits are supplied, derive k and imbalance and
