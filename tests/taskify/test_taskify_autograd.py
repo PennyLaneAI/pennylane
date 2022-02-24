@@ -1,4 +1,4 @@
-# Copyright 2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,17 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the taskify interface with with jax as INTERFACE.
+Tests for the taskify interface with autograd as INTERFACE.
 """
 import pennylane as qml
 import numpy as np
 import pytest
-import os
 
-# Ensure GPU devices disabled if available
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-
-jax = pytest.importorskip("jax", minversion="0.2")
 dist = pytest.importorskip("dask.distributed")
 
 
@@ -36,9 +31,7 @@ dist = pytest.importorskip("dask.distributed")
 )
 @pytest.mark.parametrize(
     "INTERFACE",
-    [
-        ("jax", lambda x: jax.numpy.array(x)),
-    ],
+    [("autograd", lambda x: qml.numpy.array(x, requires_grad=True))],
 )
 def test_taskify_func(dask_setup_teardown, BACKEND, INTERFACE, tol=1e-5):
     """Test that the execution of task-based submission of circuit evaluations"""
@@ -88,9 +81,7 @@ def test_taskify_func(dask_setup_teardown, BACKEND, INTERFACE, tol=1e-5):
 )
 @pytest.mark.parametrize(
     "INTERFACE",
-    [
-        ("jax", lambda x: jax.numpy.array(x)),
-    ],
+    [("autograd", lambda x: qml.numpy.array(x, requires_grad=True))],
 )
 def test_taskify_device(dask_setup_teardown, BACKEND, INTERFACE, tol=1e-5):
     """Test that conversion of a device to `task.qubit` equivalent"""
@@ -140,9 +131,7 @@ def test_taskify_device(dask_setup_teardown, BACKEND, INTERFACE, tol=1e-5):
 )
 @pytest.mark.parametrize(
     "INTERFACE",
-    [
-        ("jax", lambda x: jax.numpy.array(x)),
-    ],
+    [("autograd", lambda x: qml.numpy.array(x, requires_grad=True))],
 )
 def test_untaskify_result(dask_setup_teardown, BACKEND, INTERFACE, tol=1e-5):
     """Test that the sync of results to host"""
@@ -187,6 +176,6 @@ def test_untaskify_result(dask_setup_teardown, BACKEND, INTERFACE, tol=1e-5):
 def test_taskify_result_noclient(METHOD):
     """Test untaskify exception throwing"""
     with pytest.raises(RuntimeError) as ex:
-        f = METHOD(lambda _: "This will fail")([])
+        METHOD(lambda _: "This will fail")([])
 
     assert "No running Dask client detected." in str(ex.value)

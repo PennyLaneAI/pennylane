@@ -1,4 +1,4 @@
-# Copyright 2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ def test_defines_correct_capabilities():
         "supports_reversible_diff": False,
         "supports_inverse_operations": False,
         "supports_analytic_computation": False,
-        "provides_adjoint_method": True,
+        "provides_adjoint_method": False,
         "passthru_devices": {},
         "is_proxy": True,
     }
@@ -119,7 +119,7 @@ def test_return_future(dask_setup_teardown):
 
 
 def test_execute_return_future(dask_setup_teardown):
-    """Test return of futures from device"""
+    """Test the execute method returns a future"""
     wires = 2
     client = dist.Client(address=dask_setup_teardown)
     dev_task = qml.device("task.qubit", wires=wires, backend="default.qubit", future=True)
@@ -146,7 +146,7 @@ def test_execute_return_future(dask_setup_teardown):
 
 
 def test_str_repr_output():
-    "Test device string representation"
+    """Test device string representation"""
     d_path = qml.devices.task_qubit
     wires = 1
     dev_task = qml.device(
@@ -163,7 +163,7 @@ def test_str_repr_output():
 
 
 def test_instance_vs_class_method():
-    "Test the ability to have different return results for class and instance methods with the same name"
+    """Test the ability to have different return results for class and instance methods with the same name"""
 
     class DummyClass:
         def __init__(self):

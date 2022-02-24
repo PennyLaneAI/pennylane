@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -421,11 +421,6 @@ class QNode:
 
     @staticmethod
     def _validate_adjoint_method(device):
-        # The conditions below provide a minimal set of requirements that we can likely improve upon in
-        # future, or alternatively summarize within a single device capability. Moreover, we also
-        # need to inspect the circuit measurements to ensure only expectation values are taken. This
-        # cannot be done here since we don't yet know the composition of the circuit.
-
         supported_device = device.capabilities().get("provides_adjoint_method")
 
         if not supported_device:

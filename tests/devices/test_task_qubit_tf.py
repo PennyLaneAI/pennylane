@@ -1,4 +1,4 @@
-# Copyright 2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,12 +17,6 @@ Tests for the accessibility of the Task-Qubit device
 import pennylane as qml
 import numpy as np
 import pytest
-import os
-
-# from _pytest import monkeypatch
-
-# Ensure GPU devices disabled if available
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 tf = pytest.importorskip("tensorflow", minversion="2.4")
 dist = pytest.importorskip("dask.distributed")
@@ -85,7 +79,7 @@ def test_integration_tf(dask_setup_teardown, BACKEND, tol=1e-5):
 
 
 def test_instance_vs_class_method(dask_setup_teardown):
-    "Test the ability to have different return results for class and instance methods with the same name"
+    """Test the ability to have different return results for class and instance methods with the same name"""
     client = dist.Client(address=dask_setup_teardown)
     expected_cap_instance = {
         "model": "qubit",
@@ -111,7 +105,7 @@ def test_instance_vs_class_method(dask_setup_teardown):
         "supports_finite_shots": False,
         "supports_tensor_observables": True,
         "returns_probs": False,
-        "provides_adjoint_method": True,
+        "provides_adjoint_method": False,
         "supports_reversible_diff": False,
         "supports_inverse_operations": False,
         "supports_analytic_computation": False,

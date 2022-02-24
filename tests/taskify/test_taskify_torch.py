@@ -1,4 +1,4 @@
-# Copyright 2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,10 +17,6 @@ Tests for the taskify interface with torch as INTERFACE.
 import pennylane as qml
 import numpy as np
 import pytest
-import os
-
-# Ensure GPU devices disabled if available
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 torch = pytest.importorskip("torch", minversion="1.8")
 dist = pytest.importorskip("dask.distributed")

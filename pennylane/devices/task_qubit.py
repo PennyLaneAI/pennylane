@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ class ProxyHybridMethod:  # pragma: no cover
     the explicit class method is needed, we can use this as a
     decorator, and select the appropriate call dynamically.
     This is an essential support for accessing backend
-    functionality supports with the proxy `task.qubit`.
+    functionality supports with the proxy ``task.qubit``.
 
     The implementation is based on the Python descriptor guide
     as mentioned at https://stackoverflow.com/questions/28237955/same-name-for-classmethod-and-instancemethod/28238047#28238047
@@ -67,7 +67,8 @@ class ProxyHybridMethod:  # pragma: no cover
 
     def __get__(self, instance, cls):  # pragma: no cover
         """
-        This allows the return of class variables and supported methods to be determined by the chosen backend, or native to the `task.qubit` class itself if not an instance.
+        This allows the return of class variables and supported methods to be determined by
+        the chosen backend, or native to the ``task.qubit`` class itself if not an instance.
         """
         if instance is None or self.finstance is None:
             return self.fclass.__get__(cls, None)
@@ -93,11 +94,11 @@ class TaskQubit(DefaultQubit):
     Args:
         wires (int): The number of wires to initialize the device with.
         backend (str): Indicates the PennyLane device type to use for offloading
-            computation tasks. This is restricted to `default.qubit`, and its subclasses.
+            computation tasks. This is restricted to ``default.qubit``, and its subclasses.
         future (bool): Indicates whether the internal circuit evaluation returns a future
             to a result. This allows building of dependent workflows, but currently only works with
-            explicit calls to `device.batch_execute` with a PennyLane native device type such as
-            (`default.qubit`, `lightning.qubit`).
+            explicit calls to ``device.batch_execute`` with a PennyLane native device type such as
+            (``default.qubit``, ``lightning.qubit``).
         gen_report (bool, str): Indicates whether the backend task-scheduler will generate a performance
             report based on the tasks that were run.
 
@@ -134,7 +135,7 @@ class TaskQubit(DefaultQubit):
     >>> print(qml.taskify(f_submit)(weights))
     tf.Tensor([0.01776833 0.05199685 0.03689981], shape=(3,), dtype=float64)
 
-    For self-encapsulated workflows, the task-based `:func:`qml.taskify <pennylane.taskify>` command can also be employed,
+    For self-encapsulated workflows, the task-based :func:`~taskify <pennylane.taskify>` command can also be employed,
     which will allow automatic offloading using the batch execute support in PennyLane devices. As an example:
 
     .. code-block:: python3
@@ -209,10 +210,10 @@ class TaskQubit(DefaultQubit):
 
     The Dask-based backend here can be used to distribute tasks, within the following list of constraints:
 
-    * Simply evaluating multiple circuits using the `batch_execute` pipeline for forward mode.
-    * Allowing circuit executions that spawn multiple additional tapes to the `batch_execute` pipeline (such as parameter-shift).
+    * Simply evaluating multiple circuits using the ``batch_execute`` pipeline for forward mode.
+    * Allowing circuit executions that spawn multiple additional tapes to the ``batch_execute`` pipeline (such as parameter-shift).
     * Gradient methods such as backprop becomes trickier: in this instance, we are simply queueing the entire end-to-end pipeline on the worker in a data-parallel manner. There is no automatic inherent distribution in this instance, as we are simply relying on the task-based executor to run our job on the available workers.
-    * For mixed client-worker computations, validated depends on the applied computation strategy: if submitting circuit evaluations on the host's client, we can explicitly synchronize the result back from the worker running the function then evaluate; otherwise, we can always resubmit a function evaluation to the worker hosting the data, and have it accept the futures of the circuit evaluations as input, allowing the entire execution to happen asynchronously. For more information, please see the data locality rules of the Dask.distributed runtime http://distributed.dask.org/en/stable/locality.html
+    * For mixed client-worker computations, validation depends on the applied computation strategy: if submitting circuit evaluations on the host's client, we can explicitly synchronize the result back from the worker running the function then evaluate; otherwise, we can always resubmit a function evaluation to the worker hosting the data, and have it accept the futures of the circuit evaluations as input, allowing the entire execution to happen asynchronously. For more information, please see the data locality rules of the Dask.distributed runtime http://distributed.dask.org/en/stable/locality.html
 
     """
 
@@ -321,7 +322,7 @@ class TaskQubit(DefaultQubit):
                         return results
                     res = client.gather(results)
 
-            except Exception:  # pylint: disable=bare-except
+            except ValueError:  # No workers found
                 client = dask.distributed.get_client()
                 for circuit in circuits:
                     results.append(
@@ -350,6 +351,7 @@ class TaskQubit(DefaultQubit):
             supports_reversible_diff=False,
             supports_inverse_operations=False,
             supports_analytic_computation=False,
+            provides_adjoint_method=False,
             returns_state=False,
             returns_probs=False,
             passthru_devices={},
@@ -367,17 +369,20 @@ class TaskQubit(DefaultQubit):
         wires: int,
         circuit: qml.tape.QuantumTape,
     ):
-        "This function provides a carrier function for instantiating and evaluating a tape on a given backend device."
+        """
+        This function provides a carrier function for instantiating and evaluating a tape on a given backend device.
+        """
         dev = qml.device(backend, wires=wires)
         return dev.execute(circuit)
 
     def execute(self, circuit, **kwargs):
-        res = self.batch_execute([circuit])
-        return res[0] if len(res) == 1 else None
+        return self.batch_execute([circuit])[0]
 
     @staticmethod
     def _str_dynamic(base_dev, **kwargs):
-        "Utility function to dynamically define the __str__ attribute of a class"
+        """
+        Utility function to dynamically define the __str__ attribute of a class
+        """
         s = "TaskQubit proxy device interface\n"
         s += base_dev.__str__() + "\n"
         for k, v in kwargs.items():
@@ -387,7 +392,9 @@ class TaskQubit(DefaultQubit):
 
     @staticmethod
     def _repr_dynamic(base_dev, **kwargs):
-        "Utility function to dynamically define the __repr__ attribute of a class"
+        """
+        Utility function to dynamically define the __repr__ attribute of a class
+        """
         s = "TaskQubit proxy device interface\n"
         s += base_dev.__repr__() + "\n"
         for k, v in kwargs.items():
@@ -398,7 +405,7 @@ class TaskQubit(DefaultQubit):
 
 def taskify_dev(dev: qml.Device, return_future: bool = False, gen_report: Union[bool, str] = False):
     """
-    Returns a proxy-qubit device with the device argument as the initiateable backend.
+    Returns a proxy-qubit device with the device argument as the backend.
 
     >>> d_dev = qml.device("default.qubit", wires=["a","b",2])
     >>> t_dev = qml.taskify_dev(dev)
@@ -412,13 +419,13 @@ def taskify_dev(dev: qml.Device, return_future: bool = False, gen_report: Union[
     )
 
 
-def taskify(func, futures=False):
+def taskify(func, futures=False, timeout="10s"):
     """
     Converts a callable function into a scheduled task on the running backend client.
     """
     # submitted from host client only
     try:
-        client = dask.distributed.get_client(timeout="10s")
+        client = dask.distributed.get_client(timeout=timeout)
 
         def client_submit_sync(*args, **kwargs):
             return client.submit(func, *args, **kwargs).result()
@@ -432,13 +439,13 @@ def taskify(func, futures=False):
     return client_submit_sync if not futures else client_submit_async
 
 
-def untaskify(futures):
+def untaskify(futures, timeout="10s"):
     """
     Gathers the results from a list of futures
     """
     # submitted from host client only
     try:
-        client = dask.distributed.get_client(timeout="10s")
+        client = dask.distributed.get_client(timeout=timeout)
 
         def client_gather():
             return client.gather(futures)
