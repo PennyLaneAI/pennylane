@@ -481,7 +481,8 @@ not_supported_operations = [
     "QubitDensityMatrix",
     "CVNeuralNetLayers",
     "ApproxTimeEvolution",
-    "ArbitraryUnitary" "CommutingEvolution",
+    "ArbitraryUnitary",
+    "CommutingEvolution",
     "DisplacementEmbedding",
     "SqueezingEmbedding",
 ]
