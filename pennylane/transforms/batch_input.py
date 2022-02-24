@@ -21,6 +21,7 @@ def batch_input(
     non trainable tensor object where for a rank 1 feature space the shape needs to be (Nt, x)
     where `x` indicates the dimension of the features and `Nt` being the number of examples
     within a batch.
+    Based on https://arxiv.org/abs/2202.10471
 
     * Example *
 

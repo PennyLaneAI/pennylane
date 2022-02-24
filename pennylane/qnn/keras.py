@@ -33,6 +33,7 @@ except ImportError:
     CORRECT_TF_VERSION = False
 
 
+@tf.keras.utils.register_keras_serializable(package="pennylane")
 class KerasLayer(Layer):
     """KerasLayer(qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs)
     Converts a :func:`~.QNode` to a Keras
@@ -56,8 +57,8 @@ class KerasLayer(Layer):
             method and values being the corresponding specification.
         argnum (Union[Sequence[int], int]): Argument location of the non-trainable inputs for
             the circuit. This allows batch execution by creating executable circuits for each
-             input example with the same trainable weights. Default None.
-             See `pennylane.transforms.batch_input` for more details.
+            input example with the same trainable weights. Default ``None``.
+            See :class:`~.pennylane.transforms.batch_input` for more details.
         **kwargs: additional keyword arguments passed to the Layer_ base class
 
     **Example**
@@ -357,9 +358,8 @@ class KerasLayer(Layer):
         """
         Set the name of the input argument.
 
-        Parameters
-        ----------
-        input_name (Text): Name of the input argument
+        Args:
+            input_name (str): Name of the input argument
         """
         KerasLayer._input_arg = input_name
 
@@ -367,9 +367,8 @@ class KerasLayer(Layer):
         """
         Get serialized layer configuration
 
-        Returns
-        -------
-        configuration (dict): layer configuration
+        Returns:
+            dict: layer configuration
         """
         config = super().get_config()
 

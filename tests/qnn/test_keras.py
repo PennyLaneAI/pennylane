@@ -618,9 +618,7 @@ def test_no_attribute():
 
 
 def test_batch_input():
-    """
-    Test input batching in keras
-    """
+    """Test input batching in keras"""
     dev = qml.device("default.qubit.tf", wires=4)
 
     @qml.qnode(dev, diff_method="parameter-shift")
