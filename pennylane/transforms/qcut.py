@@ -23,9 +23,8 @@ from functools import partial
 from itertools import product
 from typing import Callable, List, Optional, Sequence, Tuple, Union
 
-from networkx import MultiDiGraph, weakly_connected_components
-
 import pennylane as qml
+from networkx import MultiDiGraph, weakly_connected_components
 from pennylane import apply, expval
 from pennylane.grouping import string_to_pauli_word
 from pennylane.measure import MeasurementProcess
