@@ -29,6 +29,7 @@ from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadam
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
+INV_SQRT2 = 1 / qml.math.sqrt(2)
 
 class RX(Operation):
     r"""

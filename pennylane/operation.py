@@ -1107,7 +1107,7 @@ class Operation(Operator):
         try:
             self.parameter_frequencies  # pylint:disable=pointless-statement
             return "A"
-        except ParameterFrequenciesUndefinedError:
+        except (ParameterFrequenciesUndefinedError, GeneratorUndefinedError):
             return "F"
 
     grad_recipe = None
@@ -1217,7 +1217,7 @@ class Operation(Operator):
             gen = self.generator()
 
             try:
-                gen_eigvals = tuple(self.generator().eigvals())
+                gen_eigvals = tuple(self.generator().get_eigvals())
                 return qml.gradients.eigvals_to_frequencies(gen_eigvals)
 
             except (MatrixUndefinedError, EigvalsUndefinedError):
@@ -1232,7 +1232,9 @@ class Operation(Operator):
                     eigvals = tuple(np.round(np.linalg.eigvalsh(mat), 8))
                     return qml.gradients.eigvals_to_frequencies(eigvals)
 
-        raise ParameterFrequenciesUndefinedError
+        raise ParameterFrequenciesUndefinedError(
+            f"Operation {self.name} does not have parameter frequencies defined."
+        )
 
     @property
     def inverse(self):
