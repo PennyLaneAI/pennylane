@@ -1835,4 +1835,4 @@ class TestCutCircuitTransform:
         gradient = qml.grad(circuit)(x)
         cut_gradient = qml.grad(cut_circuit)(x)
 
-        assert gradient == cut_gradient
+        assert round(gradient, 8) == round(cut_gradient, 8)
