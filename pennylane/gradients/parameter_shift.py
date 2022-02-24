@@ -95,10 +95,7 @@ def _get_operation_recipe(tape, t_idx, shifts):
     # Try to obtain frequencies, either via custom implementation or from generator eigvals
     try:
         frequencies = op.parameter_frequencies[p_idx]
-    except (
-        qml.operation.ParameterFrequenciesUndefinedError,
-        qml.operation.GeneratorUndefinedError,
-    ):
+    except qml.operation.ParameterFrequenciesUndefinedError:
         raise qml.operation.OperatorPropertyUndefined(
             f"The operation {op.name} does not have a grad_recipe, parameter_frequencies or "
             "a generator defined. No parameter shift rule can be applied."

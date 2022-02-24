@@ -1108,7 +1108,7 @@ class Operation(Operator):
         try:
             self.parameter_frequencies  # pylint:disable=pointless-statement
             return "A"
-        except (ParameterFrequenciesUndefinedError, GeneratorUndefinedError):
+        except ParameterFrequenciesUndefinedError:
             return "F"
 
     grad_recipe = None
@@ -1215,11 +1215,13 @@ class Operation(Operator):
         if self.num_params == 1:
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
-            gen = self.generator()
-
             try:
+                gen = self.generator()
                 gen_eigvals = tuple(self.generator().get_eigvals())
                 return qml.gradients.eigvals_to_frequencies(gen_eigvals)
+
+            except GeneratorUndefinedError:
+                pass
 
             except (MatrixUndefinedError, EigvalsUndefinedError):
 
