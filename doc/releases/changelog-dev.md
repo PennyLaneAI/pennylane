@@ -81,6 +81,9 @@
   The postprocessing function for the `cut_circuit` transform has been added.
   [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
 
+  The `cut_circuit` transform has been added.
+  [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216/)
+
 <h3>Improvements</h3>
 
 * The `gradients` module has been streamlined and special-purpose functions
