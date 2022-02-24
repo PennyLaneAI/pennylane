@@ -96,7 +96,8 @@ def _get_operation_recipe(tape, t_idx, shifts):
     try:
         frequencies = op.parameter_frequencies[p_idx]
     except (
-        qml.operation.ParameterFrequenciesUndefinedError, qml.operation.GeneratorUndefinedError
+        qml.operation.ParameterFrequenciesUndefinedError,
+        qml.operation.GeneratorUndefinedError,
     ):
         raise qml.operation.OperatorPropertyUndefined(
             f"The operation {op.name} does not have a grad_recipe, parameter_frequencies or "

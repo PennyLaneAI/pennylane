@@ -348,7 +348,6 @@ class TestParamShift:
             def parameter_frequencies(self):
                 raise qml.operation.ParameterFrequenciesUndefinedError
 
-
         class NewOp(qml.operation.Operation):
             """This new operation does not overwrite parameter_frequencies
             but does not have a generator, disabling its differentiation."""
