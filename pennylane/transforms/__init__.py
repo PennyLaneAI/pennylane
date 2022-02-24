@@ -50,6 +50,7 @@ containing quantum operations) that are used to construct QNodes.
 
     ~adjoint
     ~ctrl
+    ~defer_measurements
     ~apply_controlled_Q
     ~quantum_monte_carlo
     ~transforms.insert
@@ -111,6 +112,16 @@ more tapes as well as a classical processing function.
     ~transforms.measurement_grouping
     ~transforms.hamiltonian_expand
 
+Transforms that act on operations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+These transforms accept quantum operations that are used in a quantum function.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.cond
+
 Decorators and utility functions
 --------------------------------
 
@@ -138,6 +149,7 @@ from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .adjoint import adjoint
 from .batch_params import batch_params
 from .classical_jacobian import classical_jacobian
+from .condition import cond
 from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition

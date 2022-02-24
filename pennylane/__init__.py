@@ -43,7 +43,7 @@ from pennylane.tracker import Tracker
 from pennylane.io import *
 from pennylane.measurements import density_matrix, expval, probs, sample, state, var
 from pennylane.ops import *
-from pennylane.ops import measure, If
+from pennylane.ops import measure, Conditional
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -63,6 +63,7 @@ from pennylane.transforms import (
     ControlledOperation,
     compile,
     ctrl,
+    cond,
     defer_measurements,
     measurement_grouping,
     metric_tensor,

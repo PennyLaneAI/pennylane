@@ -83,9 +83,9 @@ class MeasurementDependantValue(Generic[T]):
         return [self._depends_on]
 
 
-class If(Operation):
+class Conditional(Operation):
     """
-    If conditional operation wrapper class.
+    Conditional operation wrapper class.
     """
 
     num_wires = AnyWires
@@ -100,5 +100,4 @@ class If(Operation):
         self.branches = expr.branches
         self.dependant_measurements = expr.measurements
         self.then_op = then_op
-        QueuingContext.remove(then_op)
         super().__init__(wires=then_op.wires, do_queue=do_queue, id=id)

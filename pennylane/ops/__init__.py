@@ -23,7 +23,7 @@ from .qubit import *
 from .channel import *
 from .mid_circuit_measure import (
     measure,
-    If,
+    Conditional,
 )
 
 from .cv import __all__ as _cv__all__

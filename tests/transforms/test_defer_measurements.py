@@ -141,10 +141,10 @@ class TestConditionalOperations:
         @qml.defer_measurements
         def qnode():
             m_0 = qml.measure(0)
-            qml.If(m_0, qml.RY(first_par, wires=1))
+            qml.cond(m_0, qml.RY)(first_par, wires=1)
 
             m_1 = qml.measure(2)
-            qml.If(m_0, qml.RZ(sec_par, wires=1))
+            qml.cond(m_0, qml.RZ)(sec_par, wires=1)
             return qml.expval(qml.PauliZ(1))
 
         qnode()
@@ -195,8 +195,8 @@ class TestConditionalOperations:
 
             # Given Alice's measurements, Bob performs one of four operations on his half of the EPR pair and
             # recovers the original quantum state.
-            qml.If(m_1, qml.RX(math.pi, wires=2))
-            qml.If(m_0, qml.RZ(math.pi, wires=2))
+            qml.cond(m_1, qml.RX)(math.pi, wires=2)
+            qml.cond(m_0, qml.RZ)(math.pi, wires=2)
 
             return qml.probs(wires=2)
 
@@ -224,7 +224,7 @@ class TestConditionalOperations:
         def teleportation_circuit(rads):
             qml.Hadamard(0)
             m_0 = qml.measure(0)
-            qml.If(m_0, op(rads, wires=1))
+            qml.cond(m_0, op)(rads, wires=1)
             return qml.probs(wires=1)
 
         normal_probs = normal_circuit(r)
@@ -250,7 +250,7 @@ class TestConditionalOperations:
         def qnode2(parameters):
             qml.Hadamard(0)
             m_0 = qml.measure(0)
-            qml.If(m_0, op(phi=par, wires=1))
+            qml.cond(m_0, op)(phi=par, wires=1)
             return qml.expval(qml.PauliZ(1))
 
         par = np.array(0.3)
@@ -281,7 +281,7 @@ class TestTemplates:
         def qnode2():
             qml.Hadamard(0)
             m_0 = qml.measure(0)
-            qml.If(m_0, template(basis_state, wires=range(1, 5)))
+            qml.cond(m_0, template)(basis_state, wires=range(1, 5))
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
 
         dev = qml.device("default.qubit", wires=2)
@@ -307,7 +307,7 @@ class TestTemplates:
         def qnode2():
             qml.Hadamard(0)
             m_0 = qml.measure(0)
-            qml.If(m_0, template(features=feature_vector, wires=range(1, 5), rotation="Z"))
+            qml.cond(m_0, template)(features=feature_vector, wires=range(1, 5), rotation="Z")
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3) @ qml.PauliZ(4))
 
         dev = qml.device("default.qubit", wires=2)
@@ -334,7 +334,7 @@ class TestTemplates:
         def qnode2(parameters):
             qml.Hadamard(0)
             m_0 = qml.measure(0)
-            qml.If(m_0, template(parameters, wires=range(1, 3)))
+            qml.cond(m_0, template)(parameters, wires=range(1, 3))
             return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2))
 
         shape = template.shape(n_layers=2, n_wires=num_wires)
@@ -353,10 +353,10 @@ class TestDrawing:
 
         def qfunc():
             m_0 = qml.measure(0)
-            qml.If(m_0, qml.RY(0.312, wires=1))
+            qml.cond(m_0, qml.RY)(0.312, wires=1)
 
             m_2 = qml.measure(2)
-            qml.If(m_2, qml.RY(0.312, wires=1))
+            qml.cond(m_2, qml.RY)(0.312, wires=1)
             return qml.expval(qml.PauliZ(1))
 
         dev = qml.device("default.qubit", wires=4)

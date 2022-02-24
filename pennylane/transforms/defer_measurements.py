@@ -54,7 +54,7 @@ def defer_measurements(tape):
             qml.RY(0.123, wires=0)
             qml.Hadamard(wires=1)
             m_0 = qml.measurements(1)
-            qml.If(m_0, qml.RY(par, wires=0))
+            qml.Conditional(m_0, qml.RY(par, wires=0))
             return qml.expval(qml.PauliZ(0))
 
     The ``defer_measurements`` transform allows executing such quantum
@@ -98,7 +98,7 @@ def defer_measurements(tape):
         ):
             measured_wires[op.measurement_id] = op.wires[0]
 
-        elif op.__class__.__name__ == "If":
+        elif op.__class__.__name__ == "Conditional":
             control = [measured_wires[m_id] for m_id in op.dependant_measurements]
             for value in op.branches.values():
                 if value:
