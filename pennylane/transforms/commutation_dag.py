@@ -63,15 +63,19 @@ def commutation_dag(circuit):
     You can access all nodes by using the get_nodes function in the form of a list ``(ID, CommutationDAGNode)``:
 
     >>> nodes = dag.get_nodes()
+    [(0, <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x132b03b20>), ...]
 
     You can also access specific nodes (of type :class:`~.CommutationDAGNode`) by using the :meth:`~.get_node` method. See :class:`~.CommutationDAGNode` for a list of available
     node attributes.
 
     >>> second_node = dag.get_node(2)
+    <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x136f8c4c0>
     >>> second_operation = second_node.op
+    CNOT(wires=[1, 2])
     >>> second_node_successors = second_node.successors
+    [3, 4, 5, 6]
     >>> second_node_predecessors = second_node.predecessors
-
+    []
 
     For more details, see:
 
@@ -113,40 +117,6 @@ def commutation_dag(circuit):
     return wrapper
 
 
-position = OrderedDict(
-    {
-        "Hadamard": 0,
-        "PauliX": 1,
-        "PauliY": 2,
-        "PauliZ": 3,
-        "SWAP": 4,
-        "ctrl": 5,
-        "S": 6,
-        "T": 7,
-        "SX": 8,
-        "ISWAP": 9,
-        "SISWAP": 10,
-        "Barrier": 11,
-        "WireCut": 12,
-        "RX": 13,
-        "RY": 14,
-        "RZ": 15,
-        "PhaseShift": 16,
-        "Rot": 17,
-        "MultiRZ": 18,
-        "Identity": 19,
-        "U1": 20,
-        "U2": 21,
-        "U3": 22,
-        "IsingXX": 23,
-        "IsingYY": 24,
-        "IsingZZ": 25,
-        "QubitStateVector": 26,
-        "BasisState": 27,
-    }
-)
-"""OrderedDict[str, int]: represents the index of each gates in the list of the commutation_map dictionary."""
-
 # fmt: off
 
 commutation_map = OrderedDict(
@@ -185,6 +155,10 @@ commutation_map = OrderedDict(
 the one defined by the position dictionary. 1 represents commutation and 0 non-commutation."""
 
 # fmt: on
+
+
+position = dict(zip(commutation_map, range(len(commutation_map))))
+"""OrderedDict[str, int]: represents the index of each gates in the list of the commutation_map dictionary."""
 
 
 def intersection(wires1, wires2):
@@ -317,13 +291,23 @@ def simplify_u3(u3):
 
 
 def simplify(operation):
-    r"""Simplify a (controlled) rotation into RX, CRX, RY, CRY, RZ, CZ, H and CH.
+    r"""Simplify a (controlled) rotation (Rot, U2, U3, CRot) into RX, CRX, RY, CRY, RZ, CZ, H and CH.
 
     Args:
         operation (pennylane.Operation): Rotation or controlled rotation.
 
     Returns:
          qml.operation: Simplified rotation if possible.
+
+    **Example**
+
+    You can simplify rotation with certain parameters, for example::
+    >>> qml.simplify(qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0))
+    qml.RX(0.1, wires=0)
+
+    But not every rotation can be simplified and it returns the original operation no simplification is possible.
+    >>> qml.simplify(qml.Rot(0.1, 0.2, 0.3, wires=0))
+    qml.Rot(0.1, 0.2, 0.3, wires=0)
     """
     if operation.name not in ["Rot", "U2", "U3", "CRot"]:
         raise qml.QuantumFunctionError(f"{operation.name} is not a Rot, U2, U3 or CRot.")
@@ -340,7 +324,7 @@ def simplify(operation):
     return simplify_controlled_rotation(operation)
 
 
-def two_non_simplified_crot(operation1, operation2):
+def check_commutation_two_non_simplified_crot(operation1, operation2):
     r"""Check commutation for two CRot that were not simplified.
 
     Args:
@@ -388,16 +372,16 @@ def two_non_simplified_crot(operation1, operation2):
     return False
 
 
-def simplify_to_identity(operation1, operation2):
-    r"""Check that a parametric operation can be simplified to the identity operator,
-    if it is the case then return the commutation relation with the second operation.
+def check_simplify_identity_commutation(operation1, operation2):
+    r"""First check that a parametric operation can be simplified to the identity operator, if it is the case then
+     return the commutation relation with the second operation. If simplification is not possible, it returns None.
 
     Args:
         operation1 (pennylane.Operation): First operation.
         operation2 (pennylane.Operation): Second operation.
 
     Returns:
-         Bool: True if commutation, False otherwise.
+         Bool: True if commutation, False non-commmutation and None if not possible to simplify.
     """
     if operation1.data and operation1.name != "U2":
         all_zeros = np.allclose(np.mod(operation1.data, 2 * np.pi), 0)
@@ -408,15 +392,16 @@ def simplify_to_identity(operation1, operation2):
     return None
 
 
-def two_non_simplified_rotations(operation1, operation2):
-    r"""Check commutation for two rotations that were not simplified.
+def check_commutation_two_non_simplified_rotations(operation1, operation2):
+    r"""Check that the operations are two non simplified operations. If it is the case, then it checks commutation
+    for two rotations that were not simplified.
 
     Args:
         operation1 (pennylane.Operation): First operation.
         operation2 (pennylane.Operation): Second operation.
 
     Returns:
-         Bool: True if commutation, False otherwise.
+         Bool: True if commutation, False otherwise, None if not two rotations.
     """
     # Two non simplified rotations
     if (operation1.name in ["U2", "U3", "Rot", "CRot"]) and (
@@ -476,7 +461,7 @@ def two_non_simplified_rotations(operation1, operation2):
     return None
 
 
-not_supported_operations = [
+unsupported_operations = [
     "PauliRot",
     "QubitDensityMatrix",
     "CVNeuralNetLayers",
@@ -528,7 +513,11 @@ non_commuting_operations = [
 def is_commuting(operation1, operation2):
     r"""Check if two operations are commuting. A lookup table is used to check the commutation between the
     controlled, targeted part of operation 1 with the controlled, targeted part of operation 2. It supports
-    most PennyLane operations that are not CV operations.
+    most PennyLane operations that are not CV operations. Unsupported operation are the following:
+
+    :class:`qml.PauliRot`, :class:`qml.QubitDensityMatrix`, :class:`qml.CVNeuralNetLayers`,
+    :class:`qml.ApproxTimeEvolution`, :class:`qml.ArbitraryUnitary`, :class:`qml.CommutingEvolution`,
+    :class:`qml.DisplacementEmbedding` and :class:`qml.SqueezingEmbedding`.
 
     Args:
         operation1 (.Operation): A first quantum operation.
@@ -560,12 +549,12 @@ def is_commuting(operation1, operation2):
         "ControlledOperation": "ControlledOperation",
     }
 
-    if operation1.name in not_supported_operations or isinstance(
+    if operation1.name in unsupported_operations or isinstance(
         operation1, (qml.operation.CVOperation, qml.operation.Channel)
     ):
         raise qml.QuantumFunctionError(f"Operation {operation1.name} not supported.")
 
-    if operation2.name in not_supported_operations or isinstance(
+    if operation2.name in unsupported_operations or isinstance(
         operation2, (qml.operation.CVOperation, qml.operation.Channel)
     ):
         raise qml.QuantumFunctionError(f"Operation {operation2.name} not supported.")
@@ -589,23 +578,27 @@ def is_commuting(operation1, operation2):
 
     # Two CRot that cannot be simplified
     if operation1.name == "CRot" and operation2.name == "CRot":
-        return two_non_simplified_crot(operation1, operation2)
+        return check_commutation_two_non_simplified_crot(operation1, operation2)
 
     # Parametric operation might implement the identity operator
-    simplify_op_1 = simplify_to_identity(operation1, operation2)
-    if simplify_op_1 is not None:
-        return simplify_op_1
+    commutation_identity_simplification_1 = check_simplify_identity_commutation(
+        operation1, operation2
+    )
+    if commutation_identity_simplification_1 is not None:
+        return commutation_identity_simplification_1
 
-    simplify_op_2 = simplify_to_identity(operation2, operation1)
-    if simplify_op_2 is not None:
-        return simplify_op_2
+    commutation_identity_simplification_2 = check_simplify_identity_commutation(
+        operation2, operation1
+    )
+    if commutation_identity_simplification_2 is not None:
+        return commutation_identity_simplification_2
 
     # Operation is in the non commuting list
     if operation1.name in non_commuting_operations or operation2.name in non_commuting_operations:
         return False
 
-    # Two simplified rotations:
-    two_non_simplified_rot = two_non_simplified_rotations(operation1, operation2)
+    # Check if operations are non simplified rotations and return commutation if it is the case.
+    two_non_simplified_rot = check_commutation_two_non_simplified_rotations(operation1, operation2)
     if two_non_simplified_rot is not None:
         return two_non_simplified_rot
 
