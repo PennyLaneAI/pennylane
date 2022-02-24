@@ -150,8 +150,7 @@ class QubitParamShiftTape(JacobianTape):
         op = self._par_info[t_idx]["op"]
         p_idx = self._par_info[t_idx]["p_idx"]
 
-        s = options.get("shift", np.pi / 2)
-        param_shift = op.get_parameter_shift(p_idx, shift=s)
+        param_shift = op.get_parameter_shift(p_idx)
 
         shift = np.zeros_like(params)
         coeffs = []
@@ -346,9 +345,8 @@ class QubitParamShiftTape(JacobianTape):
                 t_idx = list(self.trainable_params)[idx]
                 op = self._par_info[t_idx]["op"]
                 p_idx = self._par_info[t_idx]["p_idx"]
-                s = idx_shifts[idx]
 
-                param_shift = op.get_parameter_shift(p_idx, shift=s)
+                param_shift = op.get_parameter_shift(p_idx)
                 param_shifts.append(param_shift)
 
             for c1, a, s1 in param_shifts[0]:

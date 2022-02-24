@@ -246,6 +246,11 @@ class GeneratorUndefinedError(OperatorPropertyUndefined):
     does not have a generator"""
 
 
+class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
+    """Exception used to indicate that an operator
+    does not have parameter_frequencies"""
+
+
 # =============================================================================
 # Wire types
 # =============================================================================
@@ -1051,17 +1056,29 @@ class Operation(Operator):
 
     Operations define some additional properties, such as differentiation
 
-    The following two class attributes are optional, but in most cases
-    should be clearly defined to avoid unexpected behavior during
-    differentiation.
+    The first optional class attribute is :attr:`~.Operation.grad_recipe`.
+    It allows the definition of a hard-coded differentiation rule, which
+    typically will encode a parameter-shift rule. Note, however, that
+    operations will use ``grad_recipe`` preferably, so that the rule
+    can not be modified dynamically at runtime.
 
-    * :attr:`~.Operation.grad_method`
-    * :attr:`~.Operation.grad_recipe`
+    The second optional attribute is :attr:`~.Operation.parameter_frequencies`.
+    It allows to dynamically create differentiation rules for the operation,
+    respecting runtime settings for shift rules.
+    In addition, certain quantum optimizers can make use of ``parameter_frequencies``.
 
-    Finally, there are some additional optional class attributes
-    that may be set, and used by certain quantum optimizers:
+    The third optional information is :attr:`~.Operation.generator`.
+    On one hand it will be used by quantum-aware optimizers and for Hadamard
+    test-based computation of differentiated quantities like the
+    :func:`~.transforms.metric_tensor`.
+    On the other hand, the eigenvalues of the ``generator`` fully determine the
+    ``parameter_frequencies`` and they will be obtained from it as a fallback
+    method.
 
-    * :attr:`~.Operation.generator`
+    Finally, the optional attribute :attr:`~.Operation.grad_method` can be used
+    to specify the differentiation behaviour. By default, it will be based
+    on whether the operation has parameters and which of the three above
+    attributes it provides.
 
     Args:
         params (tuple[tensor_like]): trainable parameters
@@ -1085,10 +1102,12 @@ class Operation(Operator):
         """
         if self.num_params == 0:
             return None
+        if self.grad_recipe is not None:
+            return "A"
         try:
             self.parameter_frequencies  # pylint:disable=pointless-statement
             return "A"
-        except OperatorPropertyUndefined:
+        except ParameterFrequenciesUndefinedError:
             return "F"
 
     grad_recipe = None
@@ -1140,15 +1159,11 @@ class Operation(Operator):
         """
         raise NotImplementedError
 
-    def get_parameter_shift(self, idx, shift=None):
+    def get_parameter_shift(self, idx):
         r"""Multiplier and shift for the given parameter, based on its gradient recipe.
 
         Args:
-            idx (int): parameter index
-            shift (float or None): The shift value to use for the two-term
-                parameter-shift rule. This is only used if the operation
-                does not have :attr:`Operator.grad_recipe` defined. If ``None``,
-                a shift value of :math:`\pi/2` is used.
+            idx (int): parameter index within the operation
 
         Returns:
             list[[float, float, float]]: list of multiplier, coefficient, shift for each term in the gradient recipe
@@ -1161,20 +1176,8 @@ class Operation(Operator):
         if recipe is not None:
             return recipe
 
-        # Default values
-        if shift is None:
-            shift = np.pi / 2
-        multiplier = 0.5 / np.sin(shift)
-        a = 1
-
-        # We set the following default recipe:
-        # ∂f(x) = c*f(a*x+s) - c*f(a*x-s)
-        # where we express a positive and a negative shift by default
-        default_param_shift = [
-            [multiplier, a, shift],
-            [-multiplier, a, -shift],  # pylint: disable=invalid-unary-operand-type
-        ]
-        return default_param_shift
+        # We no longer assume any default parameter-shift rule to apply.
+        raise OperatorPropertyUndefined
 
     @property
     def parameter_frequencies(self):
@@ -1229,9 +1232,7 @@ class Operation(Operator):
                     eigvals = tuple(np.round(np.linalg.eigvalsh(mat), 8))
                     return qml.gradients.eigvals_to_frequencies(eigvals)
 
-        raise OperatorPropertyUndefined(
-            f"Operation {self.name} does not have parameter frequencies."
-        )
+        raise ParameterFrequenciesUndefinedError
 
     @property
     def inverse(self):

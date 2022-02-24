@@ -30,9 +30,6 @@ from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
 
-INV_SQRT2 = 1 / math.sqrt(2)
-
-
 class RX(Operation):
     r"""
     The single qubit X rotation
@@ -1162,14 +1159,6 @@ class PauliRot(Operation):
         return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires)
 
 
-# Four term gradient recipe for controlled rotations
-c1 = INV_SQRT2 * (np.sqrt(2) + 1) / 4
-c2 = INV_SQRT2 * (np.sqrt(2) - 1) / 4
-a = np.pi / 2
-b = 3 * np.pi / 2
-four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
-
-
 class CRX(Operation):
     r"""
     The controlled-RX operator
@@ -1216,7 +1205,6 @@ class CRX(Operation):
 
     basis = "X"
     grad_method = "A"
-    grad_recipe = four_term_grad_recipe
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
@@ -1366,7 +1354,6 @@ class CRY(Operation):
 
     basis = "Y"
     grad_method = "A"
-    grad_recipe = four_term_grad_recipe
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
@@ -1509,7 +1496,6 @@ class CRZ(Operation):
 
     basis = "Z"
     grad_method = "A"
-    grad_recipe = four_term_grad_recipe
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
@@ -1673,7 +1659,6 @@ class CRot(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
-    grad_recipe = four_term_grad_recipe * 3
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
     def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):

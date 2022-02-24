@@ -73,42 +73,40 @@ def _get_operation_recipe(tape, t_idx, shifts):
 
     This function performs multiple attempts to obtain the recipe:
 
+    - If the operation has a custom ``grad_recipe`` defined, it is used.
+
     - If ``parameter_frequencies`` yield a result, the frequencies are
       used to construct the general parameter-shift rule via
       ``qml.gradients.generate_shift_rule``
+      Note that by default, the generator is used to compute the frequencies
+      if they are not provided by a custom implementation.
 
-    - If ``parameter_frequencies`` raises an error (because the operation
-      has no custom ``parameter_frequencies`` and no ``generator`` is defined),
-      the :meth:`.Operator.get_parameter_shift` method is used.
-      If in turn no custom version of ``get_parameter_shift`` is defined
-      and the operation does not have a ``grad_recipe``, the two-term
-      parameter-shift rule is assumed.
-
-    That is, a default to the two-term rule only is returned if no custom
-    ``parameter_frequencies``, ``generator``, ``get_parameter_shift``,
-    and ``grad_recipe`` are defined.
+    That is, the order of precedence is ``grad_recipe``, custom
+    ``parameter_frequencies`` and finally ``generator`` via the default
+    implementation of the frequencies.
     """
     op, p_idx = tape.get_operation(t_idx)
+
+    # Try to use the stored grad_recipe of the operation
+    recipe = op.grad_recipe[p_idx]
+    if recipe is not None:
+        return process_shifts(np.array(recipe).T, check_duplicates=False)
+
+    # Try to obtain frequencies, either via custom implementation or from generator eigvals
     try:
-        # Obtain frequencies, either via custom implementation or from generator eigvals
         frequencies = op.parameter_frequencies[p_idx]
-        # Create shift rule from frequencies with given shifts
-        coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=1)
-        # The shift rules do not include a rescaling of the parameter, only shifts.
-        mults = np.ones_like(coeffs)
-        return coeffs, mults, shifts
+    except qml.operation.ParameterFrequenciesUndefinedError:
+        raise qml.operation.OperatorPropertyUndefined(
+            f"The operation {op.name} does not have a grad_recipe, parameter_frequencies or "
+            "a generator defined. No parameter shift rule can be applied."
+        )
 
-    except qml.operation.OperatorPropertyUndefined:
-        # if no frequencies could be obtained, use the operation's shift rule if present.
-        # Note that the keyword argument ``shift`` only is used for the default two-term rule
-        if shifts is None:
-            use_shift = None
-        else:
-            use_shift = shifts[0]
+    # Create shift rule from frequencies with given shifts
+    coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=1)
+    # The generated shift rules do not include a rescaling of the parameter, only shifts.
+    mults = np.ones_like(coeffs)
 
-        recipe = np.array(op.get_parameter_shift(p_idx, shift=use_shift)).T
-
-        return process_shifts(recipe, check_duplicates=False)
+    return coeffs, mults, shifts
 
 
 def _gradient_analysis(tape, use_graph=True):
