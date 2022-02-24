@@ -368,9 +368,11 @@ def two_non_simplified_crot(operation1, operation2):
                 np.matmul(operation2.get_matrix(), operation1.get_matrix()),
             )
         )
-    elif control_control and not target_target:
+
+    if control_control and not target_target:
         return True
-    elif not control_control and target_target:
+
+    if not control_control and target_target:
         return np.all(
             np.allclose(
                 np.matmul(
