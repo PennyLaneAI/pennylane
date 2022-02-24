@@ -22,7 +22,8 @@ import autograd.numpy as anp
 import numpy
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.hf.hamiltonian import _generate_qubit_operator, simplify
+from pennylane.hf.arithmetic import simplify
+from pennylane.hf.transform import jordan_wigner
 
 
 def _binary_matrix(terms, num_qubits, wire_map=None):
@@ -540,7 +541,7 @@ def transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires
     fermop_terms = []
     for idx, bit in enumerate(hf):
         if bit:
-            op_coeffs, op_str = _generate_qubit_operator([idx])
+            op_coeffs, op_str = jordan_wigner([idx])
             op_terms = []
             for term in op_str:
                 op_term = pauli_map[term[0][1]](term[0][0])
