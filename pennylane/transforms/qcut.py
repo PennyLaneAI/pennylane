@@ -1149,9 +1149,7 @@ class CutStrategy:
             ks = list(range(k_lower, k_upper + 1))
 
             if len(ks) > self.HIGH_PARTITION_ATTEMPTS:
-                warnings.warn(
-                    f"The numer of partition attempts seems high ({len(ks)})."
-                )
+                warnings.warn(f"The numer of partition attempts seems high ({len(ks)}).")
         else:
             # When the by-fragment wire and/or gate limits are supplied, derive k and imbalance and
             # return a single partition config.
