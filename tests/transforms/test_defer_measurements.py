@@ -93,7 +93,7 @@ class TestQNode:
         tape_deferred_func = qml.defer_measurements(qfunc)
         qnode = qml.QNode(tape_deferred_func, dev)
 
-        with pytest.raises(ValueError, match="Cannot apply operations"):
+        with pytest.raises(ValueError, match="wires have been measured already: {1}"):
             qnode()
 
     def test_already_measured_error_terminal_measurement(self):

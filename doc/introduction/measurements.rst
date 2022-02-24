@@ -166,14 +166,14 @@ mid-circuit measurements:
     def my_quantum_function(x, y):
         qml.RY(x, wires=1)
         qml.CNOT(wires=[0, 1])
-        m_0 = qml.mid_measure(1)
+        m_0 = qml.measure(1)
 
-        qml.if_then(m_0, qml.RY)(y, wires=1)
+        qml.cond(m_0, qml.RY)(y, wires=1)
         return qml.probs(wires=[0])
 
 A quantum function with mid-circuit measurements (defined using
-:func:`~.pennylane.mid_measure`) and conditional operations (defined using
-:func:`~.pennylane.if_then`) can be executed by applying the deferred
+:func:`~.pennylane.measure`) and conditional operations (defined using
+:func:`~.pennylane.cond`) can be executed by applying the deferred
 measurement principle. PennyLane implements the deferred measurement principle
 to transform conditional operations with the
 :func:`~.pennylane.defer_measurements` quantum function transform.
