@@ -317,7 +317,7 @@ def simplify_u3(u3):
 
 
 def simplify(operation):
-    r"""Simplify a rotation/ controlled rotation into RX, CRX, RY, CRY, RZ, CZ, H and CH.
+    r"""Simplify a (controlled) rotation into RX, CRX, RY, CRY, RZ, CZ, H and CH.
 
     Args:
         operation (pennylane.Operation): Rotation or controlled rotation.
