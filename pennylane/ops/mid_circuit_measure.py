@@ -17,7 +17,6 @@ Mid-circuit measurements and associated operations.
 from typing import TypeVar, Generic, Type
 import uuid
 from pennylane.operation import Operation, AnyWires
-from pennylane.queuing import QueuingContext
 
 
 def measure(wire):
