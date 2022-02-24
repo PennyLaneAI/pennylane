@@ -390,7 +390,7 @@ def two_non_simplified_crot(operation1, operation2):
 
 def simplify_to_identity(operation1, operation2):
     r"""Check that a parametric operation can be simplified to the identity operator,
-    if it is the case then return commutation relation wiith the second operation.
+    if it is the case then return the commutation relation with the second operation.
 
     Args:
         operation1 (pennylane.Operation): First operation.
