@@ -17,7 +17,6 @@ circuits to be distributed across multiple devices.
 """
 
 import copy
-from multiprocessing.sharedctypes import Value
 import string
 import warnings
 from typing import Sequence, Tuple, List, Dict, Any, Union, ClassVar
@@ -873,25 +872,12 @@ class CutStrategy:
         min_free_gates (int): Maximum allowed circuit depth for the shallowest available device.
             Optional, defaults to ``max_free_gates``.
         imbalance_tolerance (float): The global maximum allowed imbalance for all partition trials.
-            Optional, defaults to unlimited imbalance. Used only if there's a known hard balacing
+            Optional, defaults to unlimited imbalance. Used only if there's a known hard balancing
             constraint on the partitioning problem.
 
     **Example**
 
     .. code-block:: python
-
-        import pennylane as qml
-
-        dev_a = qml.device('default.qubit', wires=4)
-        dev_b = qml.device('default.qubit', wires=6)
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.4, wires=0)
-            qml.RY(0.9, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(1))
-
-        tape_dag = qml.transforms.tape_to_graph(tape)
 
     The following cut strategy specifies that a circuit should be cut into between
     ``2`` to ``5`` fragments, with each fragment having at most ``6`` wires and
@@ -907,7 +893,7 @@ class CutStrategy:
 
     # pylint: disable=too-many-arguments, too-many-instance-attributes
 
-    devices: InitVar[Sequence[qml.Device]] = None
+    devices: InitVar[Union[qml.Device, Sequence[qml.Device]]] = None
     max_free_wires: int = None
     min_free_wires: int = None
     num_fragments_probed: Union[int, Sequence[int]] = None
@@ -988,8 +974,8 @@ class CutStrategy:
 
         **Example**
 
-        Deriving kwargs for a given circuit and feed it to a custom partitioner along with an extra
-        custom parameter:
+        Deriving kwargs for a given circuit and feeding them to a custom partitioner, along with
+        extra parameters specified using ``extra_kwargs``:
 
         >>> cut_strategy = qcut.CutStrategy(devices=dev)
         >>> cut_kwargs = cut_strategy.get_cut_kwargs(tape_dag)
