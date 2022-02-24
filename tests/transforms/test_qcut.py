@@ -20,13 +20,14 @@ import string
 import sys
 from itertools import product
 
-import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
+from scipy.stats import unitary_group
+
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
-from scipy.stats import unitary_group
 
 I, X, Y, Z = (
     np.eye(2),
@@ -1809,7 +1810,7 @@ class TestCutCircuitTransform:
     Tests for the cut_circuit transform
     """
 
-    def test_simple_cut_circuit(self):
+    def test_simple_cut_circuit(self, mocker):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform.
@@ -1827,10 +1828,12 @@ class TestCutCircuitTransform:
             qml.RZ(0.133, wires=1)
             return qml.expval(qml.PauliZ(wires=[0]))
 
+        spy = mocker.spy(qcut, "qcut_processing_fn")
         x = np.array(0.531, requires_grad=True)
         cut_circuit = qcut.cut_circuit(circuit)
 
         assert round(cut_circuit(x), 8) == round(float(circuit(x)), 8)
+        assert spy.call_count == 1
 
         gradient = qml.grad(circuit)(x)
         cut_gradient = qml.grad(cut_circuit)(x)
