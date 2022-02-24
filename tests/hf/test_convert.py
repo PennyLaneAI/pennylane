@@ -23,10 +23,10 @@ import numpy as np
 import pennylane as qml
 from openfermion import QubitOperator
 from pennylane.hf.convert import (
-    _process_wires,
-    _openfermion_to_pennylane,
     _openfermion_pennylane_equivalent,
+    _openfermion_to_pennylane,
     _pennylane_to_openfermion,
+    _process_wires,
     import_observable,
 )
 

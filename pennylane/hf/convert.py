@@ -251,7 +251,9 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
     return q_op
 
 
-def _openfermion_pennylane_equivalent(openfermion_qubit_operator, pennylane_qubit_operator, wires=None):
+def _openfermion_pennylane_equivalent(
+    openfermion_qubit_operator, pennylane_qubit_operator, wires=None
+):
     r"""Checks equivalence between OpenFermion :class:`~.QubitOperator` and Pennylane  VQE
     ``Hamiltonian`` (Tensor product of Pauli matrices).
 
