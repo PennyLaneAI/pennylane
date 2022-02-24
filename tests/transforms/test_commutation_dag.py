@@ -22,6 +22,85 @@ import pennylane as qml
 from pennylane.transforms.commutation_dag import simplify
 
 
+class TestSimplifyRotation:
+    """Commutation function tests."""
+
+    def test_simplify_rot(self):
+        """Simplify different rot operations with different parameters."""
+
+        rot_x = qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0)
+        simplify_rot_x = simplify(rot_x)
+
+        assert simplify_rot_x.name == "RX"
+        assert simplify_rot_x.data == [0.1]
+        assert np.allclose(simplify_rot_x.get_matrix(), rot_x.get_matrix())
+
+        rot_y = qml.Rot(0, 0.1, 0, wires=0)
+        simplify_rot_y = simplify(rot_y)
+
+        assert simplify_rot_y.name == "RY"
+        assert simplify_rot_y.data == [0.1]
+        assert np.allclose(simplify_rot_y.get_matrix(), rot_y.get_matrix())
+
+        rot_z = qml.Rot(0.1, 0, 0.2, wires=0)
+        simplify_rot_z = simplify(rot_z)
+
+        assert simplify_rot_z.name == "RZ"
+        assert np.allclose(simplify_rot_z.data, [0.3])
+        assert np.allclose(simplify_rot_z.get_matrix(), rot_z.get_matrix())
+
+        rot_h = qml.Rot(np.pi, np.pi / 2, 0, wires=0)
+        simplify_rot_h = simplify(rot_h)
+
+        assert simplify_rot_h.name == "Hadamard"
+        assert np.allclose(simplify_rot_h.get_matrix(), 1.0j * rot_h.get_matrix())
+
+        rot = qml.Rot(0.1, 0.2, 0.3, wires=0)
+        not_simplified_rot = simplify(rot)
+
+        assert not_simplified_rot.name == "Rot"
+        assert np.allclose(not_simplified_rot.get_matrix(), rot.get_matrix())
+
+    def test_simplify_crot(self):
+        """Simplify different CRot operations with different parameters."""
+
+        crot_x = qml.CRot(np.pi / 2, 0.1, -np.pi / 2, wires=[0, 1])
+        simplify_crot_x = simplify(crot_x)
+
+        assert simplify_crot_x.name == "CRX"
+        assert simplify_crot_x.data == [0.1]
+        assert np.allclose(simplify_crot_x.get_matrix(), crot_x.get_matrix())
+
+        crot_y = qml.CRot(0, 0.1, 0, wires=[0, 1])
+        simplify_crot_y = simplify(crot_y)
+
+        assert simplify_crot_y.name == "CRY"
+        assert simplify_crot_y.data == [0.1]
+        assert np.allclose(simplify_crot_y.get_matrix(), crot_y.get_matrix())
+
+        crot_z = qml.CRot(0.1, 0, 0.2, wires=[0, 1])
+        simplify_crot_z = simplify(crot_z)
+
+        assert simplify_crot_z.name == "CRZ"
+        assert np.allclose(simplify_crot_z.data, [0.3])
+        assert np.allclose(simplify_crot_z.get_matrix(), crot_z.get_matrix())
+
+        crot = qml.CRot(0.1, 0.2, 0.3, wires=[0, 1])
+        not_simplified_crot = simplify(crot)
+
+        assert not_simplified_crot.name == "CRot"
+        assert np.allclose(not_simplified_crot.get_matrix(), crot.get_matrix())
+
+    def test_simplify_not_roations(self):
+        """Test that the simplify function returns a warning when giving a non rotation operation as argument."""
+        id = qml.Identity(wires=0)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Identity is not a Rot, U2, U3 or CRot."
+        ):
+            simplify(id)
+
+
 class TestCommutingFunction:
     """Commutation function tests."""
 
@@ -746,15 +825,6 @@ class TestCommutingFunction:
             qml.Barrier(wires=wires[1]), qml.U3(0.0, 0.0, 0.0, wires=wires[0])
         )
         assert commutation == res
-
-    def test_simplify_not_roations(self):
-        """Test that the simplify function returns a warning when giving a non rotation operation as argument."""
-        id = qml.Identity(wires=0)
-
-        with pytest.raises(
-            qml.QuantumFunctionError, match="Identity is not a Rot, U2, U3 or CRot."
-        ):
-            simplify(id)
 
     def test_operation_1_not_supported(self):
         """Test that giving a non supported operation raises an error."""
