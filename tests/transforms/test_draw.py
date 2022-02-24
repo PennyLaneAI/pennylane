@@ -177,7 +177,7 @@ class TestMatrixParameters:
     def test_matrix_parameters_batch_transform(self):
         """Test matrix parameters only printed once after a batch transform."""
 
-        @qml.gradients.param_shift(shift=0.2)
+        @qml.gradients.param_shift(shifts=[(0.2,)])
         @qml.qnode(qml.device("default.qubit", wires=2))
         def matrices_circuit(x):
             qml.QubitStateVector([1.0, 0.0], wires=(0, 1))
