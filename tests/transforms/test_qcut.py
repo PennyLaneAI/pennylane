@@ -1832,10 +1832,10 @@ class TestCutCircuitTransform:
         x = np.array(0.531, requires_grad=True)
         cut_circuit = qcut.cut_circuit(circuit)
 
-        assert round(cut_circuit(x), 8) == round(float(circuit(x)), 8)
+        assert np.isclose(cut_circuit(x), float(circuit(x)))
         assert spy.call_count == 1
 
         gradient = qml.grad(circuit)(x)
         cut_gradient = qml.grad(cut_circuit)(x)
 
-        assert round(gradient, 8) == round(cut_gradient, 8)
+        assert np.isclose(gradient, cut_gradient)
