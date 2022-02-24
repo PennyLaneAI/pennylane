@@ -17,7 +17,14 @@ Unit tests for functions needed for computing the Hamiltonian.
 import pennylane as qml
 import pytest
 from pennylane import numpy as np
-from pennylane.hf.transform import fermionic_operator, jordan_wigner, qubit_operator
+from pennylane.hf.transform import (
+    _pauli_mult,
+    _return_pauli,
+    fermionic_operator,
+    jordan_wigner,
+    qubit_operator,
+    simplify,
+)
 
 
 @pytest.mark.parametrize(
@@ -154,3 +161,80 @@ def test_jordan_wigner(f_operator, q_operator):
     result = jordan_wigner(f_operator)
 
     assert result == q_operator
+
+
+@pytest.mark.parametrize(
+    ("p1", "p2", "p_ref"),
+    [
+        (
+            [(0, "X"), (1, "Y")],  # X_0 @ Y_1
+            [(0, "X"), (2, "Y")],  # X_0 @ Y_2
+            ([(2, "Y"), (1, "Y")], 1.0),  # X_0 @ Y_1 @ X_0 @ Y_2
+        ),
+    ],
+)
+def test_pauli_mult(p1, p2, p_ref):
+    r"""Test that _pauli_mult returns the correct operator."""
+    result = _pauli_mult(p1, p2)
+
+    assert result == p_ref
+
+
+@pytest.mark.parametrize(
+    ("symbol", "operator"),
+    [
+        ("X", qml.PauliX),
+        ("Y", qml.PauliY),
+        ("Z", qml.PauliZ),
+    ],
+)
+def test_return_pauli(symbol, operator):
+    r"""Test that_return_pauli returns the correct operator."""
+    p = _return_pauli(symbol)
+    assert p is operator
+
+
+@pytest.mark.parametrize(
+    ("hamiltonian", "result"),
+    [
+        (
+            qml.Hamiltonian(
+                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)]
+            ),
+            qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.5, -0.5]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
+            ),
+            qml.Hamiltonian([], []),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.0, -0.5]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+            ),
+            qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.25, 0.25, 0.25, -0.25]),
+                [
+                    qml.PauliX(0) @ qml.PauliY(1),
+                    qml.PauliX(0) @ qml.PauliZ(1),
+                    qml.PauliX(0) @ qml.PauliY(1),
+                    qml.PauliX(0) @ qml.PauliY(1),
+                ],
+            ),
+            qml.Hamiltonian(
+                np.array([0.25, 0.25]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+            ),
+        ),
+    ],
+)
+def test_simplify(hamiltonian, result):
+    r"""Test that simplify returns the correct hamiltonian."""
+    h = simplify(hamiltonian)
+    assert h.compare(result)
