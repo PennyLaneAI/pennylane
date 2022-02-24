@@ -168,7 +168,7 @@ mid-circuit measurements:
         qml.CNOT(wires=[0, 1])
         m_0 = qml.measure(1)
 
-        qml.cond(m_0, qml.RY)(y, wires=1)
+        qml.cond(m_0, qml.RY)(y, wires=0)
         return qml.probs(wires=[0])
 
 A quantum function with mid-circuit measurements (defined using
