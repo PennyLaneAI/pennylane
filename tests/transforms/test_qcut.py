@@ -1977,6 +1977,34 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected)
         assert np.isclose(grad, grad_expected)
 
+    def test_with_mid_circuit_measurement(self, mocker, use_opt_einsum):
+        """Tests the full circuit cutting pipeline returns the correct value and gradient for a
+        circuit that contains mid-circuit measurements, using the `cut_circuit` transform."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.RX(np.sin(x) ** 2, wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        spy = mocker.spy(qcut, "qcut_processing_fn")
+        x = np.array(0.531, requires_grad=True)
+        cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
+
+        assert np.isclose(cut_circuit(x), float(circuit(x)))
+        spy.assert_called_once()
+
+        gradient = qml.grad(circuit)(x)
+        cut_gradient = qml.grad(cut_circuit)(x)
+
+        assert np.isclose(gradient, cut_gradient)
+
 
 class TestCutStrategy:
     """Tests for class CutStrategy"""
