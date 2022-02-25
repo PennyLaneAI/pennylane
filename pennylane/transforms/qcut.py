@@ -441,7 +441,7 @@ def _get_measurements(
 
     obs = measurement.obs
 
-    return [expval(obs @ g) for g in group]
+    return [expval(copy.deepcopy(obs) @ g) for g in group]
 
 
 def _prep_zero_state(wire):
@@ -529,6 +529,7 @@ def expand_fragment_tapes(
 
          0: ──H──S──RX(0.5)──┤ ⟨Y⟩
     """
+
     prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
     measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]
 
