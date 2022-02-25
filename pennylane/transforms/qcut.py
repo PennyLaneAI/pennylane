@@ -946,6 +946,7 @@ def cut_circuit(
         communication_graph=communication_graph,
         prepare_nodes=prepare_nodes,
         measure_nodes=measure_nodes,
+        use_opt_einsum=use_opt_einsum,
     )
 
 
