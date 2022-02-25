@@ -26,7 +26,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 import pennylane as qml
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Snapshot
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
 from .._version import __version__
@@ -93,6 +93,7 @@ class DefaultQubit(QubitDevice):
 
     operations = {
         "Identity",
+        "Snapshot",
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
@@ -161,6 +162,7 @@ class DefaultQubit(QubitDevice):
         # state as an array of dimension [2]*wires.
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
+        self.snapshots = {}
 
         self._apply_ops = {
             "PauliX": self._apply_x,
@@ -213,6 +215,11 @@ class DefaultQubit(QubitDevice):
                 self._apply_state_vector(operation.parameters[0], operation.wires)
             elif isinstance(operation, BasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
+            elif isinstance(operation, Snapshot):
+                if operation.tag:
+                    self.snapshots[operation.tag] = self._flatten(self._state)
+                else:
+                    self.snapshots[len(self.snapshots)] = self._flatten(self._state)
             else:
                 self._state = self._apply_operation(self._state, operation)
 

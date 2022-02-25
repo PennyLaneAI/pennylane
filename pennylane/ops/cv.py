@@ -44,6 +44,7 @@ from pennylane.operation import AnyWires, CVOperation, CVObservable
 from pennylane import math as qml_math
 
 from .identity import Identity  #  pylint: disable=unused-import
+from .snapshot import Snapshot  #  pylint: disable=unused-import
 
 
 def _rotation(phi, bare=False):
@@ -1428,6 +1429,7 @@ class FockStateProjector(CVObservable):
 
 ops = {
     "Identity",
+    "Snapshot",
     "Beamsplitter",
     "ControlledAddition",
     "ControlledPhase",
