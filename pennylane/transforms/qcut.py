@@ -365,8 +365,14 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     with QuantumTape() as tape:
         for op in copy_ops:
-            new_wires = [wire_map[w] for w in op.wires]
-            op._wires = Wires(new_wires)  # TODO: find a better way to update operation wires
+            new_wires = Wires([wire_map[w] for w in op.wires])
+
+            # TODO: find a better way to update operation and observable wires
+            if isinstance(op, MeasurementProcess):
+                op.obs._wires = new_wires
+            else:
+                op._wires = new_wires
+
             apply(op)
 
             if isinstance(op, MeasureNode):
