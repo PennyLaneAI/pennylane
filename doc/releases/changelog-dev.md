@@ -81,7 +81,6 @@
   The postprocessing function for the `cut_circuit` transform has been added.
   [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
 
-
   The `cut_circuit` transform has been added.
   [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216)
 
@@ -89,7 +88,6 @@
   constraints with circuit execution requirements to come up with the best sets
   of graph partitioning parameters.
   [(#2168)](https://github.com/PennyLaneAI/pennylane/pull/2168)
-
 
 <h3>Improvements</h3>
 

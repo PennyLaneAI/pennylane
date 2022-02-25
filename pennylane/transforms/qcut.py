@@ -23,7 +23,7 @@ import warnings
 from dataclasses import InitVar, dataclass
 from functools import partial
 from itertools import product
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, ClassVar, Dict, List, Sequence, Tuple, Union
 
 from networkx import MultiDiGraph, weakly_connected_components
 
@@ -861,7 +861,7 @@ def qcut_processing_fn(
     return result
 
 
-@batch_transform
+@qml.batch_transform
 def cut_circuit(tape: QuantumTape, **kwargs) -> Tuple[Tuple[QuantumTape], Callable]:
     """
     Batch transform for circuit cutting.
