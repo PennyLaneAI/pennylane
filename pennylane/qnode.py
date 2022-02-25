@@ -523,7 +523,10 @@ class QNode:
 
         # Apply the deferred measurement principle if the device doesn't
         # support mid-circuit measurements natively
-        if not self.device.supports_operation("_MidCircuitMeasure") and any(isinstance(obj, qml.measurements._MidCircuitMeasure) for obj in self.tape.operations + self.tape.observables):
+        if not self.device.supports_operation("_MidCircuitMeasure") and any(
+            isinstance(obj, qml.measurements._MidCircuitMeasure)
+            for obj in self.tape.operations + self.tape.observables
+        ):
             self._tape = qml.defer_measurements(self._tape)
 
         if self.expansion_strategy == "device":

@@ -795,9 +795,8 @@ class TestIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-
-    @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi-0.3, 3))
-    @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi-0.3, 3))
+    @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
+    @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
     def test_defer_meas_if_mcm_unsupported(self, first_par, sec_par):
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
@@ -809,7 +808,7 @@ class TestIntegration:
             """QNode where we apply a controlled Y-rotation."""
             qml.Hadamard(1)
             qml.RY(x, wires=0)
-            qml.CRY(y, wires=[0,1])
+            qml.CRY(y, wires=[0, 1])
             return qml.expval(qml.PauliZ(1))
 
         @qml.qnode(dev)
@@ -839,6 +838,7 @@ class TestIntegration:
 
         with pytest.raises(ValueError, match="wires have been measured already: {1}"):
             qnode()
+
 
 class TestShots:
     """Unit tests for specifying shots per call."""

@@ -612,6 +612,7 @@ class _MidCircuitMeasure(Operation):
     """
     Operation to perform mid-circuit measurement.
     """
+
     num_wires = 1
 
     def __init__(self, wires, measurement_id):
