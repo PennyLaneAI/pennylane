@@ -1172,6 +1172,10 @@ class Operation(Operator):
         Note that the default value for ``shift`` is None, which is replaced by the
         default shift :math:`\pi/2`.
         """
+        warnings.warn(
+            "The method get_parameter_shift is deprecated. Use the methods of "
+            "the gradients module for general parameter-shift rules instead."
+        )
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
         if recipe is not None:
