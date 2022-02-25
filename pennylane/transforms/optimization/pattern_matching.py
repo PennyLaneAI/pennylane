@@ -96,7 +96,7 @@ def pattern_matching(tape, pattern_tapes):
         # Check the validity of the pattern
         if not isinstance(pattern, qml.tape.QuantumTape):
             raise qml.QuantumFunctionError(
-                f"The pattern {pattern}, does not appear " "to be a valid quantum tape"
+                f"The pattern {pattern}, does not appear to be a valid quantum tape"
             )
 
         # Check that it does not contain a measurement.
@@ -194,47 +194,52 @@ def pattern_matching(tape, pattern_tapes):
             # If some substitutions are possible, we create an optimized circuit.
             if substitution.substitution_list:
                 # Loop over all possible substitutions
-                for group in substitution.substitution_list:
+                with qml.tape.QuantumTape(do_queue=False) as tape_inside:
+                    for group in substitution.substitution_list:
 
-                    circuit_sub = group.circuit_config
-                    template_inverse = group.template_config
+                        circuit_sub = group.circuit_config
+                        template_inverse = group.template_config
 
-                    pred = group.pred_block
+                        pred = group.pred_block
 
-                    # Choose the first configuration
-                    qubit = group.qubit_config[0]
+                        # Choose the first configuration
+                        qubit = group.qubit_config[0]
 
-                    # First add all the predecessors of the given match.
-                    for elem in pred:
-                        node = circuit_dag.get_node(elem)
+                        # First add all the predecessors of the given match.
+                        for elem in pred:
+                            node = circuit_dag.get_node(elem)
+                            inst = copy.deepcopy(node.op)
+                            apply(inst)
+                            already_sub.append(elem)
+
+                        already_sub = already_sub + circuit_sub
+
+                        # Then add the inverse of the template.
+                        for index in template_inverse:
+                            all_qubits = tape.wires.tolist()
+                            all_qubits.sort()
+                            wires_t = group.template_dag.get_node(index).wires
+                            wires_c = [qubit[x] for x in wires_t]
+                            wires = [all_qubits[x] for x in wires_c]
+
+                            node = group.template_dag.get_node(index)
+                            inst = copy.deepcopy(node.op)
+                            inst._wires = Wires(wires)
+                            inst.adjoint()
+
+                    # Add the unmatched gates.
+                    for node_id in substitution.unmatched_list:
+                        node = circuit_dag.get_node(node_id)
                         inst = copy.deepcopy(node.op)
                         apply(inst)
-                        already_sub.append(elem)
 
-                    already_sub = already_sub + circuit_sub
+            tape = tape_inside
 
-                    # Then add the inverse of the template.
-                    for index in template_inverse:
-                        all_qubits = tape.wires.tolist()
-                        all_qubits.sort()
-                        wires_t = group.template_dag.get_node(index).wires
-                        wires_c = [qubit[x] for x in wires_t]
-                        wires = [all_qubits[x] for x in wires_c]
-
-                        node = group.template_dag.get_node(index)
-                        inst = copy.deepcopy(node.op)
-                        inst._wires = Wires(wires)
-                        inst.adjoint()
-
-                # Add the unmatched gates.
-                for node_id in substitution.unmatched_list:
-                    node = circuit_dag.get_node(node_id)
-                    inst = copy.deepcopy(node.op)
-                    apply(inst)
-
-        # After optimization, simply apply the measurements
-        for m in tape.measurements:
-            apply(m)
+    for op in tape.operations:
+        apply(op)
+    # After optimization, simply apply the measurements
+    for m in tape.measurements:
+        apply(m)
 
 
 def _compare_operation_without_qubits(node_1, node_2):

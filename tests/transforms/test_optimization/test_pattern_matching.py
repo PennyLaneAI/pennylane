@@ -59,6 +59,51 @@ class TestPatternMatching:
         assert len(optimized_qnode.qtape.operations) == 7
         assert cnots_optimized_qnode == 3
 
+    def test_multiple_patterns(self):
+        """Test pattern matching algorithm for circuit optimization with three different templates."""
+
+        def circuit():
+            qml.CNOT(wires=[0, 1])
+            qml.PauliZ(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliZ(wires=0)
+            qml.PauliX(wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=1)
+            return qml.expval(qml.PauliX(wires=0))
+
+        with qml.tape.QuantumTape() as template_cnot:
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[0, 1])
+
+        with qml.tape.QuantumTape() as template_x:
+            qml.PauliX(wires=[0])
+            qml.PauliX(wires=[0])
+
+        with qml.tape.QuantumTape() as template_z:
+            qml.PauliZ(wires=[0])
+            qml.PauliZ(wires=[0])
+
+        dev = qml.device("default.qubit", wires=5)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode()
+
+        optimized_qfunc = pattern_matching(pattern_tapes=[template_x, template_z, template_cnot])(
+            circuit
+        )
+        optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        optimized_qnode()
+
+        cnots_qnode = qml.specs(qnode)()["gate_types"]["CNOT"]
+        cnots_optimized_qnode = qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
+
+        assert len(qnode.qtape.operations) == 7
+        assert cnots_qnode == 3
+
+        assert len(optimized_qnode.qtape.operations) == 1
+        assert cnots_optimized_qnode == 1
+
     def test_mod_5_4_pattern_matching(self):
         """Test pattern matching algorithm for mod_5_4 with a CNOTs template."""
 
