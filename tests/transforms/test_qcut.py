@@ -20,13 +20,14 @@ import string
 import sys
 from itertools import product
 
-import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
+from scipy.stats import unitary_group
+
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
-from scipy.stats import unitary_group
 
 I, X, Y, Z = (
     np.eye(2),
@@ -1802,7 +1803,6 @@ class TestQCutProcessingFn:
         ) * f(1)
 
         assert np.allclose(grad, expected_grad)
-
 
 
 class TestCutCircuitTransform:

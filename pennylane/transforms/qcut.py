@@ -18,16 +18,16 @@ circuits to be distributed across multiple devices.
 
 import copy
 import string
-import warnings
 import uuid
-
+import warnings
+from dataclasses import InitVar, dataclass
 from functools import partial
 from itertools import product
-from typing import Callable, List, Optional, Sequence, Tuple, Union, Dict, Any, ClassVar
-from dataclasses import dataclass, InitVar
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Sequence, Tuple, Union
+
+from networkx import MultiDiGraph, weakly_connected_components
 
 import pennylane as qml
-from networkx import MultiDiGraph, weakly_connected_components
 from pennylane import apply, expval
 from pennylane.grouping import string_to_pauli_word
 from pennylane.measure import MeasurementProcess
@@ -861,7 +861,6 @@ def qcut_processing_fn(
     return result
 
 
-
 @batch_transform
 def cut_circuit(tape: QuantumTape, **kwargs) -> Tuple[Tuple[QuantumTape], Callable]:
     """
@@ -940,6 +939,7 @@ def cut_circuit(tape: QuantumTape, **kwargs) -> Tuple[Tuple[QuantumTape], Callab
         prepare_nodes=prepare_nodes,
         measure_nodes=measure_nodes,
     )
+
 
 @dataclass()
 class CutStrategy:
