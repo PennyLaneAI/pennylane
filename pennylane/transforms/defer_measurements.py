@@ -76,6 +76,13 @@ def defer_measurements(tape):
     ...     par, cost = opt.step_and_cost(qnode, par)
     >>> print(par, cost)
     3.018529732412975 -0.0037774828357067247
+
+    .. note::
+
+        When applying the transform on a quantum function that returns
+        `qml.state` as the terminal measurement, the state vector corresponding
+        to the pre-measurement state of the transformed circuit will be
+        obtained. No post-measurement states are considered.
     """
     measured_wires = {}
 
