@@ -18,6 +18,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.tape import QubitParamShiftTape
+from pennylane.tape.qubit_param_shift import _get_operation_recipe
 from pennylane.operation import (
     Operation,
     OperatorPropertyUndefined,
@@ -34,11 +35,14 @@ class TestGetOperationRecipe:
     class DummyOp0(Operation):
         num_params = 1
         num_wires = 1
+        grad_recipe = (None,)
 
     class DummyOp1(Operation):
         num_params = 1
         num_wires = 1
+        grad_recipe = (None,)
 
+        @property
         def parameter_frequencies(self):
             raise ParameterFrequenciesUndefinedError
 
