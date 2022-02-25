@@ -31,7 +31,10 @@ try:
     dask.config.set(scheduler="processes")
 
 except ImportError as e:  # pragma: no cover
-    raise ImportError("task.qubit requires installing Dask.distributed") from e
+    raise ImportError(
+        "task.qubit requires Dask.distributed."
+        "You can install Dask.distributed via \n\n   pip install dask[distributed]"
+    ) from e
 
 
 class ProxyHybridMethod:  # pragma: no cover

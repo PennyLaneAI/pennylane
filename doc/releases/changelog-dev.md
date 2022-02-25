@@ -34,7 +34,7 @@
   We can now submit the task on the running backend client:
 
   ```pycon
-    >>> print(qml.taskify(f_submit)(weights))
+    >>> qml.taskify(f_submit)(weights)
     tf.Tensor([0.01776833 0.05199685 0.03689981], shape=(3,), dtype=float64)
   ```
 
@@ -44,7 +44,7 @@
 
   ```pycon
     >>> results = [qml.taskify(f_submit, futures=True)(tf.Variable(weights*i)) for i in range(3)]
-    >>> print(qml.untaskify(results)())
+    >>> qml.untaskify(results)()
     [<tf.Tensor: shape=(3,), dtype=float64, numpy=array([0., 0., 0.])>, <tf.Tensor: shape=(3,), dtype=float64, numpy=array([-0.16661672, -0.07170375, -0.00387164])>, <tf.Tensor: shape=(3,), dtype=float64, numpy=array([ 0.94292007, -0.14209482, -0.0072056 ])>]
   ```
 

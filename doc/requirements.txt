@@ -3,7 +3,8 @@ pip
 appdirs
 autograd
 autoray
-dask[complete]
+dask[delayed]
+dask[distributed]
 jax==0.2.19
 jaxlib==0.1.71
 mistune==0.8.4

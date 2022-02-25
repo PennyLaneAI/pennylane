@@ -9,7 +9,8 @@ autograd
 toml
 appdirs
 semantic_version==2.6
-dask[complete]
+dask[delayed]
+dask[distributed]
 autoray
 matplotlib
 opt_einsum
