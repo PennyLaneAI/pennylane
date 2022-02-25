@@ -92,6 +92,8 @@ def pattern_matching(tape, pattern_tapes):
     4: ────╰C─╰C────╰C─╰C─┤
 
     """
+    measurements = tape.measurements
+
     for pattern in pattern_tapes:
         # Check the validity of the pattern
         if not isinstance(pattern, qml.tape.QuantumTape):
@@ -238,7 +240,7 @@ def pattern_matching(tape, pattern_tapes):
     for op in tape.operations:
         apply(op)
     # After optimization, simply apply the measurements
-    for m in tape.measurements:
+    for m in measurements:
         apply(m)
 
 
