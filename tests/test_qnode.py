@@ -826,6 +826,20 @@ class TestIntegration:
         r2 = conditional_ry_qnode(first_par, sec_par)
         assert np.allclose(r1, r2)
 
+    def test_already_measured_error_operation(self):
+        """Test that attempting to apply an operation on a wires that has been
+        measured raises an error."""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def qnode():
+            qml.measure(1)
+            qml.PauliX(1)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="wires have been measured already: {1}"):
+            qnode()
+
 class TestShots:
     """Unit tests for specifying shots per call."""
 
