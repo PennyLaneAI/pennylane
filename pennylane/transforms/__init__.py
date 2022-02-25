@@ -90,7 +90,9 @@ uncut circuit
 
 .. autosummary::
     :toctree: api
+
     ~transforms.cut_circuit
+
 The following are utility functions that compose the circuit cutting transform.
 
 .. autosummary::
