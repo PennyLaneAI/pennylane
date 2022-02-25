@@ -49,9 +49,8 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
 
     if one is not None:
         indices_one = anp.argwhere(abs(one) >= cutoff)
-        operators_one = (indices_one * 2).tolist() + (
-            indices_one * 2 + 1
-        ).tolist()  # up-up + down-down terms
+        # up-up + down-down terms
+        operators_one = (indices_one * 2).tolist() + (indices_one * 2 + 1).tolist()
         coeffs_one = anp.tile(one[abs(one) >= cutoff], 2)
         coeffs = anp.concatenate((coeffs, coeffs_one))
         operators = operators + operators_one
@@ -60,14 +59,10 @@ def fermionic_observable(constant, one=None, two=None, cutoff=1.0e-12):
         indices_two = anp.argwhere(abs(two) >= cutoff)
         n = len(indices_two)
         operators_two = (
-            [(indices_two[i] * 2).tolist() for i in range(n)]  # up-up-up-up term
-            + [
-                (indices_two[i] * 2 + [0, 1, 1, 0]).tolist() for i in range(n)
-            ]  # up-down-down-up term
-            + [
-                (indices_two[i] * 2 + [1, 0, 0, 1]).tolist() for i in range(n)
-            ]  # down-up-up-down term
-            + [(indices_two[i] * 2 + 1).tolist() for i in range(n)]  # down-down-down-down term
+            [(indices_two[i] * 2).tolist() for i in range(n)]  # up-up-up-up
+            + [(indices_two[i] * 2 + [0, 1, 1, 0]).tolist() for i in range(n)]  # up-down-down-up
+            + [(indices_two[i] * 2 + [1, 0, 0, 1]).tolist() for i in range(n)]  # down-up-up-down
+            + [(indices_two[i] * 2 + 1).tolist() for i in range(n)]  # down-down-down-down
         )
         coeffs_two = anp.tile(two[abs(two) >= cutoff], 4) / 2
 
