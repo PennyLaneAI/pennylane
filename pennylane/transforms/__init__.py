@@ -86,7 +86,7 @@ Transforms for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This transform accepts QNodes, performs circuit cutting, and returns the result of the original
-uncut circuit
+uncut circuit.
 
 .. autosummary::
     :toctree: api
