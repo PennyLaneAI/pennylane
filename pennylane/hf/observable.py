@@ -14,6 +14,8 @@
 """
 This module contains the functions needed for creating fermionic and qubit observables.
 """
+from functools import reduce
+
 import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
@@ -186,10 +188,8 @@ def jordan_wigner(op):
         if len(term) == 1:
             o[i] = pauli_map[term[0][1]](term[0][0])
         if len(term) > 1:
-            k = pauli_map[term[0][1]](term[0][0])
-            for o_ in term[1:]:
-                k = k @ pauli_map[o_[1]](o_[0])
-            o[i] = k
+            k = [pauli_map[t[1]](t[0]) for t in term]
+            o[i] = reduce(lambda x, y: x @ y, k)
 
     return c, o
 
