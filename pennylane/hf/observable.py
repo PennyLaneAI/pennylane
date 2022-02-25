@@ -180,19 +180,18 @@ def jordan_wigner(op):
                 del c[j]
 
     pauli_map = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
-    op = (c, o)
-    for i, o in enumerate(op[1]):
-        if len(o) == 0:
-            op[1][i] = qml.Identity(0)
-        if len(o) == 1:
-            op[1][i] = pauli_map[o[0][1]](o[0][0])
-        if len(o) > 1:
-            k = pauli_map[o[0][1]](o[0][0])
-            for o_ in o[1:]:
+    for i, term in enumerate(o):
+        if len(term) == 0:
+            o[i] = qml.Identity(0)
+        if len(term) == 1:
+            o[i] = pauli_map[term[0][1]](term[0][0])
+        if len(term) > 1:
+            k = pauli_map[term[0][1]](term[0][0])
+            for o_ in term[1:]:
                 k = k @ pauli_map[o_[1]](o_[0])
-            op[1][i] = k
+            o[i] = k
 
-    return op
+    return c, o
 
 
 def simplify(h, cutoff=1.0e-12):
