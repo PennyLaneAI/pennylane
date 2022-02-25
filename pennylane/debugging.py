@@ -43,20 +43,20 @@ def snapshots(qnode):
         return qml.probs([0, 1])
 
     >>> qml.snapshots(circuit)()
-    {0: tensor([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j], requires_grad=True),
-     'very_important_state': tensor([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j], requires_grad=True),
-     2: tensor([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j], requires_grad=True)}
-
+    {0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),
+    'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
+    2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j])}
     """
+
     def get_snapshots(*args, **kwargs):
         qnode(*args, **kwargs)
         try:
-            snapshots = qnode.device.snapshots
-            if not any(isinstance(s, str) for s in snapshots):
-                return list(snapshots.values())
-            else:
-                return snapshots
-        except:
+            saved_snapshots = qnode.device.snapshots
+            if not any(isinstance(s, str) for s in saved_snapshots):
+                return list(saved_snapshots.values())
+            return saved_snapshots
+        except AttributeError:
+            # pylint: disable=raise-missing-from
             raise DeviceError("Device does not support snapshots.")
 
     return get_snapshots

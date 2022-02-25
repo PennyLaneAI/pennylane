@@ -18,6 +18,7 @@ cv and qubit computing paradigms in PennyLane.
 from pennylane.operation import AnyWires, AllWires, Operation
 
 
+# pylint: disable=unused-argument
 class Snapshot(Operation):
     r"""pennylane.Snapshot()
     The Snapshot operation preserves the internal simulator state at specific
@@ -32,9 +33,9 @@ class Snapshot(Operation):
         self.tag = tag
         super().__init__(wires=AllWires, do_queue=True)
 
-    def label(self):
-        return "Snapshot" + ( "(" + self.tag + ")" if self.tag else "" )
+    def label(self, decimals=None, base_label=None):
+        return "Snapshot" + ("(" + self.tag + ")" if self.tag else "")
 
     @staticmethod
-    def compute_decomposition(wires=None):
+    def compute_decomposition(*params, wires=None, **hyperparameters):
         return []

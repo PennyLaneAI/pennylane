@@ -217,9 +217,9 @@ class DefaultQubit(QubitDevice):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
             elif isinstance(operation, Snapshot):
                 if operation.tag:
-                    self.snapshots[operation.tag] = self._flatten(self._state)
+                    self.snapshots[operation.tag] = np.array(self._flatten(self._state))
                 else:
-                    self.snapshots[len(self.snapshots)] = self._flatten(self._state)
+                    self.snapshots[len(self.snapshots)] = np.array(self._flatten(self._state))
             else:
                 self._state = self._apply_operation(self._state, operation)
 
