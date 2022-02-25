@@ -38,7 +38,7 @@
     tf.Tensor([0.01776833 0.05199685 0.03689981], shape=(3,), dtype=float64)
   ```
 
-  You can also spawn tasks asynchronously, and gather the final results after completion. For the above example, we will asynchronously submit the execution with different weights, and await on the results:
+  We can also spawn tasks asynchronously, and gather the final results after completion. For the above example, we will asynchronously submit the execution with different weights, and await on the results:
 
   Here, we submit 3 separate tasks with the weights scaled, and collect returned futures:
 

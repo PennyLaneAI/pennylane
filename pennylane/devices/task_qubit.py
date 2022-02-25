@@ -216,8 +216,7 @@ class TaskQubit(DefaultQubit):
     * Simply evaluating multiple circuits using the ``batch_execute`` pipeline for forward mode.
     * Allowing circuit executions that spawn multiple additional tapes to the ``batch_execute`` pipeline (such as parameter-shift).
     * Gradient methods such as backprop becomes trickier: in this instance, we are simply queueing the entire end-to-end pipeline on the worker in a data-parallel manner. There is no automatic inherent distribution in this instance, as we are simply relying on the task-based executor to run our job on the available workers.
-    * For mixed client-worker computations, validation depends on the applied computation strategy: if submitting circuit evaluations on the host's client, we can explicitly synchronize the result back from the worker running the function then evaluate; otherwise, we can always resubmit a function evaluation to the worker hosting the data, and have it accept the futures of the circuit evaluations as input, allowing the entire execution to happen asynchronously. For more information, please see the data locality rules of the Dask.distributed runtime http://distributed.dask.org/en/stable/locality.html
-
+    * For mixed client-worker computations, validation depends on the applied computation strategy: if submitting circuit evaluations on the host's client, we can explicitly synchronize the result back from the worker running the function then evaluate; otherwise, we can always resubmit a function evaluation to the worker hosting the data, and have it accept the futures of the circuit evaluations as input, allowing the entire execution to happen asynchronously. For more information, please see the `data locality rules of the Dask.distributed runtime <http://distributed.dask.org/en/stable/locality.html>`__
     """
 
     # pylint: disable=too-many-instance-attributes
