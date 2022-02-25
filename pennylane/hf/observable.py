@@ -108,7 +108,8 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     for n, t in enumerate(o_ferm[1]):
 
         if len(t) == 0:
-            coeffs = np.concatenate((coeffs, np.array([o_ferm[0][n]]) + 0.0))
+            coeffs = anp.array([0.0])
+            coeffs = coeffs + o_ferm[0][n]
             ops = ops + [qml.Identity(0)]
 
         else:
@@ -124,7 +125,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
                         for o_ in o:
                             k = k @ _return_pauli(o_[1])(o_[0])
                         op[1][i] = k
-                coeffs = np.concatenate([coeffs, np.array(op[0]) * o_ferm[0][n]])
+                coeffs = anp.concatenate([coeffs, anp.array(op[0]) * o_ferm[0][n]])
                 ops = ops + op[1]
 
     o_qubit = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
