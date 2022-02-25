@@ -529,7 +529,6 @@ def expand_fragment_tapes(
 
          0: ──H──S──RX(0.5)──┤ ⟨Y⟩
     """
-
     prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
     measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]
 
