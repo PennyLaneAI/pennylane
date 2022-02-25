@@ -53,7 +53,9 @@ def _make_tape(obj, wire_order, *args, **kwargs):
         wires = tape.wires
 
     elif inspect.isclass(obj) and issubclass(obj, qml.operation.Operator):
-        tape = obj(*args, **kwargs)
+        with qml.tape.stop_recording():
+            tape = obj(*args, **kwargs)
+
         wires = tape.wires
 
     elif callable(obj):
