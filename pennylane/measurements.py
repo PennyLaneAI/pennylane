@@ -26,6 +26,7 @@ import pennylane as qml
 from pennylane.operation import (
     AnyWires,
     Expectation,
+    MidMeasure,
     Observable,
     Operation,
     Probability,
@@ -58,9 +59,10 @@ class MeasurementProcess:
 
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, return_type, obs=None, wires=None, eigvals=None):
+    def __init__(self, return_type, obs=None, wires=None, eigvals=None, id=None):
         self.return_type = return_type
         self.obs = obs
+        self.id = id
 
         if wires is not None and obs is not None:
             raise ValueError("Cannot set the wires if an observable is provided.")
@@ -604,20 +606,8 @@ def measure(wire):
         m0 = qml.measurements(0)
     """
     measurement_id = str(uuid.uuid4())[:8]
-    _MidCircuitMeasure(wire, measurement_id)
+    MeasurementProcess(MidMeasure, wires=qml.wires.Wires(wire), id=measurement_id)
     return MeasurementDependantValue(measurement_id, 0, 1)
-
-
-class _MidCircuitMeasure(Operation):
-    """
-    Operation to perform mid-circuit measurement.
-    """
-
-    num_wires = 1
-
-    def __init__(self, wires, measurement_id):
-        self.measurement_id = measurement_id
-        super().__init__(wires=wires)
 
 
 T = TypeVar("T")
