@@ -796,6 +796,36 @@ class TestIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+    @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi-0.3, 3))
+    @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi-0.3, 3))
+    def test_defer_meas_if_mcm_unsupported(self, first_par, sec_par):
+        """Tests that the transform using the deferred measurement principle is
+        applied if the device doesn't support mid-circuit measurements
+        natively."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def cry_qnode(x, y):
+            """QNode where we apply a controlled Y-rotation."""
+            qml.Hadamard(1)
+            qml.RY(x, wires=0)
+            qml.CRY(y, wires=[0,1])
+            return qml.expval(qml.PauliZ(1))
+
+        @qml.qnode(dev)
+        def conditional_ry_qnode(x, y):
+            """QNode where the defer measurements transform is applied by
+            default under the hood."""
+            qml.Hadamard(1)
+            qml.RY(x, wires=0)
+            m_0 = qml.measure(0)
+            qml.cond(m_0, qml.RY)(y, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        r1 = cry_qnode(first_par, sec_par)
+        r2 = conditional_ry_qnode(first_par, sec_par)
+        assert np.allclose(r1, r2)
+
 class TestShots:
     """Unit tests for specifying shots per call."""
 
