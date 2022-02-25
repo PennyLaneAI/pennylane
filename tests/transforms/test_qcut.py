@@ -987,6 +987,41 @@ class TestGraphToTape:
         for tape1, tape2 in zip(tapes1, tapes2):
             compare_tapes(tape1, tape2)
 
+    def test_identity(self):
+        """Tests that the graph_to_tape function correctly performs the inverse of the tape_to_graph
+        function, including converting a tensor product expectation value into separate nodes in the
+        graph returned by tape_to_graph, and then combining those nodes again into a single tensor
+        product in the circuit returned by graph_to_tape"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        graph = qcut.tape_to_graph(tape)
+        tape_out = qcut.graph_to_tape(graph)
+
+        compare_tapes(tape, tape_out)
+        assert len(tape_out.measurements) == 1
+
+    def test_change_obs_wires(self):
+        """Tests that the graph_to_tape function correctly swaps the wires of observables when
+        the tape contains mid-circuit measurements"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.CNOT(wires=[0, 1])
+            qcut.MeasureNode(wires=1)
+            qcut.PrepareNode(wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(1))
+
+        graph = qcut.tape_to_graph(tape)
+        tape_out = qcut.graph_to_tape(graph)
+
+        m = tape_out.measurements
+        assert len(m) == 1
+        assert m[0].wires == Wires([2])
+        assert m[0].obs.name == "PauliZ"
+
 
 class TestGetMeasurements:
     """Tests for the _get_measurements function"""
