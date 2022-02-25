@@ -1908,45 +1908,6 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected)
         assert np.isclose(grad, grad_expected)
 
-    def test_simple_cut_circuit_tf_jit(self, mocker):
-        """
-        Tests the full circuit cutting pipeline returns the correct value and
-        gradient for a simple circuit using the `cut_circuit` transform with the TF interface and
-        using JIT.
-        """
-        tf = pytest.importorskip("tensorflow")
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, interface="tf")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.RY(0.543, wires=1)
-            qml.WireCut(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(0.240, wires=0)
-            qml.RZ(0.133, wires=1)
-            return qml.expval(qml.PauliZ(wires=[0]))
-
-        x = tf.Variable(0.531)
-        cut_circuit_jit = tf.function(qcut.cut_circuit(circuit), jit_compile=True)
-
-        spy = mocker.spy(qcut, "qcut_processing_fn")
-
-        cut_circuit_jit(x)
-        # with tf.GradientTape() as tape:
-        #     res = cut_circuit(x)
-        #
-        # grad = tape.gradient(res, x)
-        #
-        # with tf.GradientTape() as tape:
-        #     res_expected = circuit(x)
-        #
-        # grad_expected = tape.gradient(res_expected, x)
-        #
-        # assert np.isclose(res, res_expected)
-        # assert np.isclose(grad, grad_expected)
-
     def test_simple_cut_circuit_jax(self):
         """
         Tests the full circuit cutting pipeline returns the correct value and
@@ -1978,43 +1939,6 @@ class TestCutCircuitTransform:
         grad_expected = jax.grad(circuit)(x)
 
         assert np.isclose(res, res_expected)
-        assert np.isclose(grad, grad_expected)
-
-    def test_simple_cut_circuit_jax_jit(self, mocker):
-        """
-        Tests the full circuit cutting pipeline returns the correct value and
-        gradient for a simple circuit using the `cut_circuit` transform with the Jax interface.
-        """
-        jax = pytest.importorskip("jax")
-        import jax.numpy as jnp
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, interface="jax")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.RY(0.543, wires=1)
-            qml.WireCut(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(0.240, wires=0)
-            qml.RZ(0.133, wires=1)
-            return qml.expval(qml.PauliZ(wires=[0]))
-
-        x = jnp.array(0.531)
-        cut_circuit_jit = jax.jit(qcut.cut_circuit(circuit))
-
-        spy = mocker.spy(qcut, "qcut_processing_fn")
-
-        cut_circuit_jit(x)
-        res = cut_circuit_jit(x)
-        res_expected = circuit(x)
-
-        spy.assert_called_once()
-        assert np.isclose(res, res_expected)
-
-        grad = jax.grad(cut_circuit_jit)(x)
-        grad_expected = jax.grad(circuit)(x)
-
         assert np.isclose(grad, grad_expected)
 
 
