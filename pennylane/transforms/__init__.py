@@ -105,6 +105,7 @@ The following are utility functions that compose the circuit cutting transform.
     ~transforms.expand_fragment_tapes
     ~transforms.contract_tensors
     ~transforms.qcut_processing_fn
+    ~transforms.CutStrategy
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -187,4 +188,5 @@ from .qcut import (
     contract_tensors,
     qcut_processing_fn,
     cut_circuit,
+    CutStrategy,
 )
