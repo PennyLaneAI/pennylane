@@ -69,10 +69,12 @@ from pennylane.transforms import (
     single_tape_transform,
     quantum_monte_carlo,
     apply_controlled_Q,
+    commutation_dag,
+    is_commuting,
+    simplify,
 )
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
-from pennylane.transforms import is_commuting
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum

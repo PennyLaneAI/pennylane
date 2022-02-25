@@ -22,6 +22,140 @@ import pennylane as qml
 from pennylane.transforms.commutation_dag import simplify
 
 
+class TestSimplifyRotation:
+    """Commutation function tests."""
+
+    def test_simplify_rot(self):
+        """Simplify rot operations with different parameters."""
+
+        rot_x = qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0)
+        simplify_rot_x = simplify(rot_x)
+
+        assert simplify_rot_x.name == "RX"
+        assert simplify_rot_x.data == [0.1]
+        assert np.allclose(simplify_rot_x.get_matrix(), rot_x.get_matrix())
+
+        rot_y = qml.Rot(0, 0.1, 0, wires=0)
+        simplify_rot_y = simplify(rot_y)
+
+        assert simplify_rot_y.name == "RY"
+        assert simplify_rot_y.data == [0.1]
+        assert np.allclose(simplify_rot_y.get_matrix(), rot_y.get_matrix())
+
+        rot_z = qml.Rot(0.1, 0, 0.2, wires=0)
+        simplify_rot_z = simplify(rot_z)
+
+        assert simplify_rot_z.name == "RZ"
+        assert np.allclose(simplify_rot_z.data, [0.3])
+        assert np.allclose(simplify_rot_z.get_matrix(), rot_z.get_matrix())
+
+        rot_h = qml.Rot(np.pi, np.pi / 2, 0, wires=0)
+        simplify_rot_h = simplify(rot_h)
+
+        assert simplify_rot_h.name == "Hadamard"
+        assert np.allclose(simplify_rot_h.get_matrix(), 1.0j * rot_h.get_matrix())
+
+        rot = qml.Rot(0.1, 0.2, 0.3, wires=0)
+        not_simplified_rot = simplify(rot)
+
+        assert not_simplified_rot.name == "Rot"
+        assert np.allclose(not_simplified_rot.get_matrix(), rot.get_matrix())
+
+    def test_simplify_crot(self):
+        """Simplify CRot operations with different parameters."""
+
+        crot_x = qml.CRot(np.pi / 2, 0.1, -np.pi / 2, wires=[0, 1])
+        simplify_crot_x = simplify(crot_x)
+
+        assert simplify_crot_x.name == "CRX"
+        assert simplify_crot_x.data == [0.1]
+        assert np.allclose(simplify_crot_x.get_matrix(), crot_x.get_matrix())
+
+        crot_y = qml.CRot(0, 0.1, 0, wires=[0, 1])
+        simplify_crot_y = simplify(crot_y)
+
+        assert simplify_crot_y.name == "CRY"
+        assert simplify_crot_y.data == [0.1]
+        assert np.allclose(simplify_crot_y.get_matrix(), crot_y.get_matrix())
+
+        crot_z = qml.CRot(0.1, 0, 0.2, wires=[0, 1])
+        simplify_crot_z = simplify(crot_z)
+
+        assert simplify_crot_z.name == "CRZ"
+        assert np.allclose(simplify_crot_z.data, [0.3])
+        assert np.allclose(simplify_crot_z.get_matrix(), crot_z.get_matrix())
+
+        crot = qml.CRot(0.1, 0.2, 0.3, wires=[0, 1])
+        not_simplified_crot = simplify(crot)
+
+        assert not_simplified_crot.name == "CRot"
+        assert np.allclose(not_simplified_crot.get_matrix(), crot.get_matrix())
+
+    def test_simplify_u2(self):
+        """Simplify u2 operations with different parameters."""
+
+        u2_x = qml.U2(-np.pi / 2, np.pi / 2, wires=0)
+        simplify_u2_x = simplify(u2_x)
+
+        assert simplify_u2_x.name == "RX"
+        assert simplify_u2_x.data == [np.pi / 2]
+        assert np.allclose(simplify_u2_x.get_matrix(), u2_x.get_matrix())
+
+        u2_y = qml.U2(-2 * np.pi, 2 * np.pi, wires=0)
+        simplify_u2_y = simplify(u2_y)
+
+        assert simplify_u2_y.name == "RY"
+        assert simplify_u2_y.data == [np.pi / 2]
+        assert np.allclose(simplify_u2_y.get_matrix(), u2_y.get_matrix())
+
+        u2 = qml.U2(0.1, 0.2, wires=0)
+        u2_not_simplified = simplify(u2)
+
+        assert u2_not_simplified.name == "U2"
+        assert u2_not_simplified.data == [0.1, 0.2]
+        assert np.allclose(u2_not_simplified.get_matrix(), u2.get_matrix())
+
+    def test_simplify_u3(self):
+        """Simplify u3 operations with different parameters."""
+
+        u3_x = qml.U3(0.1, -np.pi / 2, np.pi / 2, wires=0)
+        simplify_u3_x = simplify(u3_x)
+
+        assert simplify_u3_x.name == "RX"
+        assert simplify_u3_x.data == [0.1]
+        assert np.allclose(simplify_u3_x.get_matrix(), u3_x.get_matrix())
+
+        u3_y = qml.U3(0.1, 0.0, 0.0, wires=0)
+        simplify_u3_y = simplify(u3_y)
+
+        assert simplify_u3_y.name == "RY"
+        assert simplify_u3_y.data == [0.1]
+        assert np.allclose(simplify_u3_y.get_matrix(), u3_y.get_matrix())
+
+        u3_z = qml.U3(0.0, 0.1, 0.0, wires=0)
+        simplify_u3_z = simplify(u3_z)
+
+        assert simplify_u3_z.name == "PhaseShift"
+        assert simplify_u3_z.data == [0.1]
+        assert np.allclose(simplify_u3_z.get_matrix(), u3_z.get_matrix())
+
+        u3 = qml.U3(0.1, 0.2, 0.3, wires=0)
+        u3_not_simplified = simplify(u3)
+
+        assert u3_not_simplified.name == "U3"
+        assert u3_not_simplified.data == [0.1, 0.2, 0.3]
+        assert np.allclose(u3_not_simplified.get_matrix(), u3.get_matrix())
+
+    def test_simplify_not_rotations(self):
+        """Test that the simplify function returns a warning when giving a non rotation operation as argument."""
+        id = qml.Identity(wires=0)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="Identity is not a Rot, U2, U3 or CRot."
+        ):
+            simplify(id)
+
+
 class TestCommutingFunction:
     """Commutation function tests."""
 
@@ -747,15 +881,6 @@ class TestCommutingFunction:
         )
         assert commutation == res
 
-    def test_simplify_not_roations(self):
-        """Test that the simplify function returns a warning when giving a non rotation operation as argument."""
-        id = qml.Identity(wires=0)
-
-        with pytest.raises(
-            qml.QuantumFunctionError, match="Identity is not a Rot, U2, U3 or CRot."
-        ):
-            simplify(id)
-
     def test_operation_1_not_supported(self):
         """Test that giving a non supported operation raises an error."""
         rho = np.zeros((2**1, 2**1), dtype=np.complex128)
@@ -1025,6 +1150,240 @@ class TestCommutationDAG:
 
         for i in range(0, 12):
             assert dag.get_node(i).op.name == nodes[i].name
+            assert dag.get_node(i).op.wires == nodes[i].wires
+            assert dag.direct_successors(i) == direct_successors[i]
+            assert dag.get_node(i).successors == successors[i] == dag.successors(i)
+            assert dag.direct_predecessors(i) == direct_predecessors[i]
+            assert dag.get_node(i).predecessors == predecessors[i] == dag.predecessors(i)
+
+        for i, edge in enumerate(dag.get_edges()):
+            assert edges[i] == edge
+
+    def test_dag_parameters_autograd(self):
+        "Test a the DAG and its attributes for autograd parameters."
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=0)
+            qml.CNOT(wires=[1, 2])
+            qml.RY(y, wires=1)
+            qml.Hadamard(wires=2)
+            qml.CRZ(z, wires=[2, 0])
+            qml.RY(-y, wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array([np.pi / 4, np.pi / 3, np.pi / 2], requires_grad=False)
+
+        get_dag = qml.transforms.commutation_dag(circuit)
+        dag = get_dag(x[0], x[1], x[2])
+
+        nodes = [
+            qml.RX(x[0], wires=0),
+            qml.RX(x[1], wires=0),
+            qml.CNOT(wires=[1, 2]),
+            qml.RY(x[1], wires=1),
+            qml.Hadamard(wires=2),
+            qml.CRZ(x[2], wires=[2, 0]),
+            qml.RY(-x[1], wires=1),
+        ]
+
+        edges = [
+            (0, 5, {"commute": False}),
+            (1, 5, {"commute": False}),
+            (2, 3, {"commute": False}),
+            (2, 4, {"commute": False}),
+            (2, 6, {"commute": False}),
+            (4, 5, {"commute": False}),
+        ]
+
+        direct_successors = [[5], [5], [3, 4, 6], [], [5], [], []]
+        successors = [[5], [5], [3, 4, 5, 6], [], [5], [], []]
+        direct_predecessors = [[], [], [], [2], [2], [0, 1, 4], [2]]
+        predecessors = [[], [], [], [2], [2], [0, 1, 2, 4], [2]]
+
+        for i in range(0, 7):
+            assert dag.get_node(i).op.name == nodes[i].name
+            assert dag.get_node(i).op.data == nodes[i].data
+            assert dag.get_node(i).op.wires == nodes[i].wires
+            assert dag.direct_successors(i) == direct_successors[i]
+            assert dag.get_node(i).successors == successors[i] == dag.successors(i)
+            assert dag.direct_predecessors(i) == direct_predecessors[i]
+            assert dag.get_node(i).predecessors == predecessors[i] == dag.predecessors(i)
+
+        for i, edge in enumerate(dag.get_edges()):
+            assert edges[i] == edge
+
+    def test_dag_parameters_tf(self):
+        "Test a the DAG and its attributes for tensorflow parameters."
+
+        tf = pytest.importorskip("tensorflow")
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=0)
+            qml.CNOT(wires=[1, 2])
+            qml.RY(y, wires=1)
+            qml.Hadamard(wires=2)
+            qml.CRZ(z, wires=[2, 0])
+            qml.RY(-y, wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+        x = tf.Variable([np.pi / 4, np.pi / 3, np.pi / 2], dtype=tf.float64)
+
+        get_dag = qml.transforms.commutation_dag(circuit)
+        dag = get_dag(x[0], x[1], x[2])
+
+        nodes = [
+            qml.RX(x[0], wires=0),
+            qml.RX(x[1], wires=0),
+            qml.CNOT(wires=[1, 2]),
+            qml.RY(x[1], wires=1),
+            qml.Hadamard(wires=2),
+            qml.CRZ(x[2], wires=[2, 0]),
+            qml.RY(-x[1], wires=1),
+        ]
+
+        edges = [
+            (0, 5, {"commute": False}),
+            (1, 5, {"commute": False}),
+            (2, 3, {"commute": False}),
+            (2, 4, {"commute": False}),
+            (2, 6, {"commute": False}),
+            (4, 5, {"commute": False}),
+        ]
+
+        direct_successors = [[5], [5], [3, 4, 6], [], [5], [], []]
+        successors = [[5], [5], [3, 4, 5, 6], [], [5], [], []]
+        direct_predecessors = [[], [], [], [2], [2], [0, 1, 4], [2]]
+        predecessors = [[], [], [], [2], [2], [0, 1, 2, 4], [2]]
+
+        for i in range(0, 7):
+            assert dag.get_node(i).op.name == nodes[i].name
+            assert dag.get_node(i).op.data == nodes[i].data
+            assert dag.get_node(i).op.wires == nodes[i].wires
+            assert dag.direct_successors(i) == direct_successors[i]
+            assert dag.get_node(i).successors == successors[i] == dag.successors(i)
+            assert dag.direct_predecessors(i) == direct_predecessors[i]
+            assert dag.get_node(i).predecessors == predecessors[i] == dag.predecessors(i)
+
+        for i, edge in enumerate(dag.get_edges()):
+            assert edges[i] == edge
+
+    def test_dag_parameters_torch(self):
+        "Test a the DAG and its attributes for torch parameters."
+
+        torch = pytest.importorskip("torch", minversion="1.8")
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=0)
+            qml.CNOT(wires=[1, 2])
+            qml.RY(y, wires=1)
+            qml.Hadamard(wires=2)
+            qml.CRZ(z, wires=[2, 0])
+            qml.RY(-y, wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+        x = torch.tensor([np.pi / 4, np.pi / 3, np.pi / 2], requires_grad=False)
+
+        get_dag = qml.transforms.commutation_dag(circuit)
+        dag = get_dag(x[0], x[1], x[2])
+
+        nodes = [
+            qml.RX(x[0], wires=0),
+            qml.RX(x[1], wires=0),
+            qml.CNOT(wires=[1, 2]),
+            qml.RY(x[1], wires=1),
+            qml.Hadamard(wires=2),
+            qml.CRZ(x[2], wires=[2, 0]),
+            qml.RY(-x[1], wires=1),
+        ]
+
+        edges = [
+            (0, 5, {"commute": False}),
+            (1, 5, {"commute": False}),
+            (2, 3, {"commute": False}),
+            (2, 4, {"commute": False}),
+            (2, 6, {"commute": False}),
+            (4, 5, {"commute": False}),
+        ]
+
+        direct_successors = [[5], [5], [3, 4, 6], [], [5], [], []]
+        successors = [[5], [5], [3, 4, 5, 6], [], [5], [], []]
+        direct_predecessors = [[], [], [], [2], [2], [0, 1, 4], [2]]
+        predecessors = [[], [], [], [2], [2], [0, 1, 2, 4], [2]]
+
+        for i in range(0, 7):
+            assert dag.get_node(i).op.name == nodes[i].name
+            assert dag.get_node(i).op.data == nodes[i].data
+            assert dag.get_node(i).op.wires == nodes[i].wires
+            assert dag.direct_successors(i) == direct_successors[i]
+            assert dag.get_node(i).successors == successors[i] == dag.successors(i)
+            assert dag.direct_predecessors(i) == direct_predecessors[i]
+            assert dag.get_node(i).predecessors == predecessors[i] == dag.predecessors(i)
+
+        for i, edge in enumerate(dag.get_edges()):
+            assert edges[i] == edge
+
+    def test_dag_parameters_jax(self):
+        "Test a the DAG and its attributes for jax parameters."
+
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=0)
+            qml.CNOT(wires=[1, 2])
+            qml.RY(y, wires=1)
+            qml.Hadamard(wires=2)
+            qml.CRZ(z, wires=[2, 0])
+            qml.RY(-y, wires=1)
+            return qml.expval(qml.PauliZ(0))
+
+        x = jnp.array([np.pi / 4, np.pi / 3, np.pi / 2], dtype=jnp.float64)
+        get_dag = qml.transforms.commutation_dag(circuit)
+        dag = get_dag(x[0], x[1], x[2])
+
+        nodes = [
+            qml.RX(x[0], wires=0),
+            qml.RX(x[1], wires=0),
+            qml.CNOT(wires=[1, 2]),
+            qml.RY(x[1], wires=1),
+            qml.Hadamard(wires=2),
+            qml.CRZ(x[2], wires=[2, 0]),
+            qml.RY(-x[1], wires=1),
+        ]
+
+        edges = [
+            (0, 5, {"commute": False}),
+            (1, 5, {"commute": False}),
+            (2, 3, {"commute": False}),
+            (2, 4, {"commute": False}),
+            (2, 6, {"commute": False}),
+            (4, 5, {"commute": False}),
+        ]
+
+        direct_successors = [[5], [5], [3, 4, 6], [], [5], [], []]
+        successors = [[5], [5], [3, 4, 5, 6], [], [5], [], []]
+        direct_predecessors = [[], [], [], [2], [2], [0, 1, 4], [2]]
+        predecessors = [[], [], [], [2], [2], [0, 1, 2, 4], [2]]
+
+        for i in range(0, 7):
+            assert dag.get_node(i).op.name == nodes[i].name
+            assert dag.get_node(i).op.data == nodes[i].data
             assert dag.get_node(i).op.wires == nodes[i].wires
             assert dag.direct_successors(i) == direct_successors[i]
             assert dag.get_node(i).successors == successors[i] == dag.successors(i)
