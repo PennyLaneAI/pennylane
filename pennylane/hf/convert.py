@@ -23,8 +23,8 @@ from pennylane.wires import Wires
 
 
 def _process_wires(wires, n_wires=None):
-    r"""Checks and consolidates custom user wire mapping into a consistent, direction-free, `Wires`
-    format. Used for converting between OpenFermion qubit numbering and Pennylane wire labels.
+    r"""Checks and consolidates custom user wire mapping into a consistent, direction-free, ``Wires``
+    format. Used for converting between OpenFermion qubit numbering and PennyLane wire labels.
 
     Since OpenFermion's qubit numbering is always consecutive int, simple iterable types such as
     list, tuple, or Wires can be used to specify the 2-way `qubit index` <-> `wire label` mapping
@@ -33,7 +33,7 @@ def _process_wires(wires, n_wires=None):
     `qubit index` -> `wire label` direction.
 
     It is recommended to pass Wires/list/tuple `wires` since it's direction-free, i.e. the same
-    `wires` argument can be used to convert both ways between OpenFermion and Pennylane. Only use
+    `wires` argument can be used to convert both ways between OpenFermion and PennyLane. Only use
     dict for partial or unordered mapping.
 
     Args:
@@ -279,23 +279,23 @@ def _openfermion_pennylane_equivalent(
 
 
 def import_observable(qubit_observable, wires=None, tol=1e08):
-    r"""Converts an OpenFermion :class:`~.QubitOperator` operator to a Pennylane VQE observable
+    r"""Converts an OpenFermion :class:`~.QubitOperator` operator to a Pennylane operator.
 
     Args:
         qubit_observable (QubitOperator): Observable represented as an OpenFermion ``QubitOperator``
-        wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
-            to an observable terms measurable in a PennyLane ansatz.
-            For types Wires/list/tuple, each item in the iterable represents a wire label
-            corresponding to the qubit number equal to its index.
-            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
-            If None, will use identity map (e.g. 0->0, 1->1, ...).
+        wires (.Wires, list, tuple, dict): Custom wire mapping used to convert the ``QubitOperator``
+            to a PennyLane operator.
+            For types ``Wires``/list/tuple, each item in the iterable represents a wire label
+            for the corresponding qubit index.
+            For type dict, only int-keyed dictionaries (for qubit-to-wire conversion) are accepted.
+            If ``None``, the identity map (e.g., ``0->0, 1->1, ...``) will be used.
         tol (float): Tolerance in machine epsilons for the imaginary part of the
             coefficients in ``qubit_observable``. Coefficients with imaginary part
             less than 2.22e-16*tol are considered to be real.
 
     Returns:
-        (pennylane.Hamiltonian): Pennylane VQE observable. PennyLane :class:`~.Hamiltonian`
-        represents any operator expressed as linear combinations of observables, e.g.,
+        (.Hamiltonian): PennyLane :class:`~.Hamiltonian`
+        representing any operator expressed as linear combinations of observables, e.g.,
         :math:`\sum_{k=0}^{N-1} c_k O_k`.
 
     **Example**
