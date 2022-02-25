@@ -1837,12 +1837,13 @@ class TestQCutProcessingFn:
         assert np.allclose(grad, expected_grad)
 
 
+@pytest.mark.parametrize("use_opt_einsum", [True, False])
 class TestCutCircuitTransform:
     """
     Tests for the cut_circuit transform
     """
 
-    def test_simple_cut_circuit(self, mocker):
+    def test_simple_cut_circuit(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform.
@@ -1862,7 +1863,7 @@ class TestCutCircuitTransform:
 
         spy = mocker.spy(qcut, "qcut_processing_fn")
         x = np.array(0.531, requires_grad=True)
-        cut_circuit = qcut.cut_circuit(circuit)
+        cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
 
         assert np.isclose(cut_circuit(x), float(circuit(x)))
         spy.assert_called_once()
@@ -1872,7 +1873,7 @@ class TestCutCircuitTransform:
 
         assert np.isclose(gradient, cut_gradient)
 
-    def test_simple_cut_circuit_torch(self):
+    def test_simple_cut_circuit_torch(self, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the torch interface.
@@ -1892,7 +1893,7 @@ class TestCutCircuitTransform:
             return qml.expval(qml.PauliZ(wires=[0]))
 
         x = torch.tensor(0.531, requires_grad=True)
-        cut_circuit = qcut.cut_circuit(circuit)
+        cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
 
         res = cut_circuit(x)
         res_expected = circuit(x)
@@ -1908,7 +1909,7 @@ class TestCutCircuitTransform:
 
         assert np.isclose(grad, grad_expected)
 
-    def test_simple_cut_circuit_tf(self):
+    def test_simple_cut_circuit_tf(self, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the TF interface.
@@ -1928,7 +1929,7 @@ class TestCutCircuitTransform:
             return qml.expval(qml.PauliZ(wires=[0]))
 
         x = tf.Variable(0.531)
-        cut_circuit = qcut.cut_circuit(circuit)
+        cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
 
         with tf.GradientTape() as tape:
             res = cut_circuit(x)
@@ -1943,7 +1944,7 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected)
         assert np.isclose(grad, grad_expected)
 
-    def test_simple_cut_circuit_jax(self):
+    def test_simple_cut_circuit_jax(self, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the Jax interface and
@@ -1965,7 +1966,7 @@ class TestCutCircuitTransform:
             return qml.expval(qml.PauliZ(wires=[0]))
 
         x = jnp.array(0.531)
-        cut_circuit = qcut.cut_circuit(circuit)
+        cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
 
         res = cut_circuit(x)
         res_expected = circuit(x)
