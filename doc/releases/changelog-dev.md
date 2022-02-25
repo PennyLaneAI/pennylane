@@ -81,6 +81,11 @@
   The postprocessing function for the `cut_circuit` transform has been added.
   [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
 
+  A class `CutStrategy` which acts as an interface and coordinates device/user
+  constraints with circuit execution requirements to come up with the best sets
+  of graph partitioning parameters.
+  [(#2168)](https://github.com/PennyLaneAI/pennylane/pull/2168)
+
 <h3>Improvements</h3>
 
 * The `gradients` module has been streamlined and special-purpose functions
@@ -288,6 +293,6 @@ The Operator class has undergone a major refactor with the following changes:
 This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
-Maria Fernanda Morris, Maria Schuld, Jay Soni, Antal Száva,
+Maria Fernanda Morris, Zeyue Niu, Maria Schuld, Jay Soni, Antal Száva,
 David Wierichs
 
