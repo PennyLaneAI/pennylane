@@ -195,7 +195,7 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
 
 
 @hessian_transform
-def param_shift_hessian(tape, f0=None):
+def param_shift_hessian(tape, ?recipes=None, f0=None):
     r"""Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
     parameters.
 
@@ -207,17 +207,9 @@ def param_shift_hessian(tape, f0=None):
 
     >>> qml.jacobian(qml.grad(cost))(weights)
 
-    .. note::
-
-        Currently, parametric gates are only supported if they obey a two-term shift rule,
-        which includes the following operations:
-
-        "RX", "RY", "RZ", "Rot", "PhaseShift", "ControlledPhaseShift", "MultiRZ", "PauliRot",
-        "U1", "U2", "U3", "SingleExcitationMinus", "SingleExcitationPlus", "DoubleExcitationMinus",
-        "DoubleExcitationPlus", "OrbitalRotation".
-
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        ?recipes :TODO
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the Hessian tapes include the original input tape, the 'f0' value is used
             instead of evaluating the input tape, reducing the number of device invocations.
@@ -298,6 +290,7 @@ def param_shift_hessian(tape, f0=None):
         )
 
     # The parameter-shift Hessian implementation currently doesn't support variance measurements.
+    # TODO: Support variances similar to how param_shift does it
     if any(m.return_type is qml.operation.Variance for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return variances is currently not supported."
@@ -311,36 +304,25 @@ def param_shift_hessian(tape, f0=None):
         )
         return [], lambda _: ()
 
-    # The parameter-shift Hessian implementation currently only supports
-    # the two-term parameter-shift rule. Raise an error for unsupported operations.
-    supported_ops = (
-        "RX",
-        "RY",
-        "RZ",
-        "Rot",
-        "PhaseShift",
-        "ControlledPhaseShift",
-        "MultiRZ",
-        "PauliRot",
-        "U1",
-        "U2",
-        "U3",
-        "SingleExcitationMinus",
-        "SingleExcitationPlus",
-        "DoubleExcitationMinus",
-        "DoubleExcitationPlus",
-        "OrbitalRotation",
-    )
-
     for idx in range(tape.num_params):
         op, _ = tape.get_operation(idx)
         if op.name not in supported_ops:
-            raise ValueError(
-                f"The operation {op.name} is currently not supported for the parameter-shift "
-                f"Hessian. Only two-term parameter shift rules are currently supported."
-            )
 
     _gradient_analysis(tape)
     diff_methods = grad_method_validation("analytic", tape)
+
+    if all(g == "0" for g in diff_methods):
+        # TODO:
+        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+
+    method_map = choose_grad_methods(diff_methods, argnum)
+
+    # TODO: exclude unsupported like this?
+    unsupported_params = {idx for idx, g in method_map.items() if g == "F"}
+    if unsupported_params:
+        raise ValueError(
+            f"The operation {op.name} is currently not supported for the parameter-shift "
+            f"Hessian."
+        )
 
     return compute_hessian_tapes(tape, diff_methods, f0)
