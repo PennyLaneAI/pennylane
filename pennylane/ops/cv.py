@@ -46,7 +46,8 @@ from pennylane import math as qml_math
 from .identity import Identity  #  pylint: disable=unused-import
 
 
-_two_term_shift_rule = [[0.5, 1, np.pi/2], [-0.5, 1, -np.pi/2]]
+_two_term_shift_rule = [[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]
+
 
 def _rotation(phi, bare=False):
     r"""Utility function, returns the Heisenberg transformation of a phase rotation gate.

@@ -28,6 +28,7 @@ from pennylane.math import toarray
 
 from .jacobian_tape import JacobianTape
 
+
 def _get_operation_recipe(op, p_idx, shifts):
     """Utility function to return the parameter-shift rule
     of the operation corresponding to trainable parameter
