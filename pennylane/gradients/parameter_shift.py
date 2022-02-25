@@ -95,11 +95,11 @@ def _get_operation_recipe(tape, t_idx, shifts):
     # Try to obtain frequencies, either via custom implementation or from generator eigvals
     try:
         frequencies = op.parameter_frequencies[p_idx]
-    except qml.operation.ParameterFrequenciesUndefinedError:
+    except qml.operation.ParameterFrequenciesUndefinedError as e:
         raise qml.operation.OperatorPropertyUndefined(
             f"The operation {op.name} does not have a grad_recipe, parameter_frequencies or "
             "a generator defined. No parameter shift rule can be applied."
-        )
+        ) from e
 
     # Create shift rule from frequencies with given shifts
     coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=1)

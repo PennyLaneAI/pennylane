@@ -16,7 +16,6 @@ This submodule contains the discrete-variable quantum operations that come
 from quantum chemistry applications.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
-import math
 import numpy as np
 from scipy.sparse import coo_matrix
 

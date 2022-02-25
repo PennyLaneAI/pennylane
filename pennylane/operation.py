@@ -1178,7 +1178,11 @@ class Operation(Operator):
             return recipe
 
         # We no longer assume any default parameter-shift rule to apply.
-        raise OperatorPropertyUndefined
+        raise OperatorPropertyUndefined(
+            f"The operation {self.name} does not have a parameter-shift recipe defined."
+            " This error might occur if previously the two-term shift rule was assumed"
+            " silently. In this case, consider adding it explicitly to the operation."
+        )
 
     @property
     def parameter_frequencies(self):
