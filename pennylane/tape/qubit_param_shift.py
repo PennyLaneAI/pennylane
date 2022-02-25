@@ -485,9 +485,6 @@ class QubitParamShiftTape(JacobianTape):
 
             # if this variable uses parameter-shift
             if grad_info["grad_method"] == "A":
-
-                # get_parameter_shift returns operation specific derivative formula
-                # for ops with 4-term gradients, the array will contain 4 pieces of data.
                 op = grad_info["op"]
                 p_idx = grad_info["p_idx"]
                 num_executions += len(_get_operation_recipe(op, p_idx, None))
