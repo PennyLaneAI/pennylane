@@ -81,6 +81,9 @@
   The postprocessing function for the `cut_circuit` transform has been added.
   [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
 
+  The `cut_circuit` transform has been added.
+  [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216)
+
   A class `CutStrategy` which acts as an interface and coordinates device/user
   constraints with circuit execution requirements to come up with the best sets
   of graph partitioning parameters.
@@ -153,6 +156,9 @@
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
 
 <h3>Documentation</h3>
+
+* Fixes the example for `qml.QFT`.
+  [(#2232)](https://github.com/PennyLaneAI/pennylane/pull/2232)
 
 * Fixes the example for using `qml.sample` with `jax.jit`.
   [(#2196)](https://github.com/PennyLaneAI/pennylane/pull/2196)
