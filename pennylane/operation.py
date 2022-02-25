@@ -1174,7 +1174,8 @@ class Operation(Operator):
         """
         warnings.warn(
             "The method get_parameter_shift is deprecated. Use the methods of "
-            "the gradients module for general parameter-shift rules instead."
+            "the gradients module for general parameter-shift rules instead.",
+            UserWarning,
         )
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
