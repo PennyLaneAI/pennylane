@@ -106,27 +106,15 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     coeffs = anp.array([])
 
     for n, t in enumerate(o_ferm[1]):
-
         if len(t) == 0:
+            ops = ops + [qml.Identity(0)]
             coeffs = anp.array([0.0])
             coeffs = coeffs + o_ferm[0][n]
-            ops = ops + [qml.Identity(0)]
-
         else:
             op = jordan_wigner(t)
             if op != 0:
-                for i, o in enumerate(op[1]):
-                    if len(o) == 0:
-                        op[1][i] = qml.Identity(0)
-                    if len(o) == 1:
-                        op[1][i] = _return_pauli(o[0][1])(o[0][0])
-                    if len(o) > 1:
-                        k = qml.Identity(0)
-                        for o_ in o:
-                            k = k @ _return_pauli(o_[1])(o_[0])
-                        op[1][i] = k
-                coeffs = anp.concatenate([coeffs, anp.array(op[0]) * o_ferm[0][n]])
                 ops = ops + op[1]
+                coeffs = anp.concatenate([coeffs, anp.array(op[0]) * o_ferm[0][n]])
 
     o_qubit = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 
@@ -196,7 +184,19 @@ def jordan_wigner(op):
                 c[k[0]] = c[k[0]] + c[j]
                 del c[j]
 
-    return c, o
+    op = (c, o)
+    for i, o in enumerate(op[1]):
+        if len(o) == 0:
+            op[1][i] = qml.Identity(0)
+        if len(o) == 1:
+            op[1][i] = _return_pauli(o[0][1])(o[0][0])
+        if len(o) > 1:
+            k = _return_pauli(o[0][1])(o[0][0])
+            for o_ in o[1:]:
+                k = k @ _return_pauli(o_[1])(o_[0])
+            op[1][i] = k
+
+    return op
 
 
 def simplify(h, cutoff=1.0e-12):

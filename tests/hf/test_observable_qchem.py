@@ -139,6 +139,7 @@ def test_fermionic_observable(core_constant, integral, f_ref):
 )
 def test_qubit_observable(f_observable, q_observable):
     r"""Test that qubit_observable returns the correct operator."""
+    print(f_observable)
     h = qubit_observable(f_observable)
     h_ref = qml.Hamiltonian(q_observable[0], q_observable[1])
 
@@ -146,21 +147,20 @@ def test_qubit_observable(f_observable, q_observable):
 
 
 @pytest.mark.parametrize(
-    ("f_observable", "q_observable"),
+    ("f_obs", "q_obs"),
     [
         (
             [0, 0],
             # obtained with openfermion using: jordan_wigner(FermionOperator('0^ 0', 1))
             # reformatted the original openfermion output: (0.5+0j) [] + (-0.5+0j) [Z0]
-            ([(0.5 + 0j), (-0.5 + 0j)], [[], [(0, "Z")]]),
+            ([(0.5 + 0j), (-0.5 + 0j)], [qml.Identity(0), qml.PauliZ(0)]),
         ),
     ],
 )
-def test_jordan_wigner(f_observable, q_observable):
+def test_jordan_wigner(f_obs, q_obs):
     r"""Test that jordan_wigner returns the correct operator."""
-    result = jordan_wigner(f_observable)
-
-    assert result == q_observable
+    res = jordan_wigner(f_obs)
+    assert qml.Hamiltonian(res[0], res[1]).compare(qml.Hamiltonian(q_obs[0], q_obs[1]))
 
 
 @pytest.mark.parametrize(
