@@ -157,6 +157,9 @@
 
 <h3>Documentation</h3>
 
+* Fixes the example for `qml.QFT`.
+  [(#2232)](https://github.com/PennyLaneAI/pennylane/pull/2232)
+
 * Fixes the example for using `qml.sample` with `jax.jit`.
   [(#2196)](https://github.com/PennyLaneAI/pennylane/pull/2196)
 
