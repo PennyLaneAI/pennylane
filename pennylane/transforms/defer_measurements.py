@@ -98,7 +98,10 @@ def defer_measurements(tape):
                 f"Cannot apply operations on {op.wires} as the following wires have been measured already: {op_wires_measured}."
             )
 
-        if isinstance(op, qml.measurements.MeasurementProcess) and op.return_type == qml.operation.MidMeasure:
+        if (
+            isinstance(op, qml.measurements.MeasurementProcess)
+            and op.return_type == qml.operation.MidMeasure
+        ):
             measured_wires[op.id] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":

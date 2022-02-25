@@ -503,7 +503,10 @@ class QNode:
                 "or a nonempty sequence of measurements."
             )
 
-        if not all(ret == m for ret, m in zip(measurement_processes, self.tape.measurements)):
+        terminal_measurements = [
+            m for m in self.tape.measurements if m.return_type != qml.operation.MidMeasure
+        ]
+        if not all(ret == m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )
@@ -523,7 +526,8 @@ class QNode:
 
         # Apply the deferred measurement principle if the device doesn't
         # support mid-circuit measurements natively
-        if any(getattr(obs, "return_type", None) == qml.operation.MidMeasure
+        if any(
+            getattr(obs, "return_type", None) == qml.operation.MidMeasure
             for obs in self.tape.observables
         ):
             self._tape = qml.defer_measurements(self._tape)
