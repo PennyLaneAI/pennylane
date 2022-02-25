@@ -179,16 +179,17 @@ def jordan_wigner(op):
                 c[k[0]] = c[k[0]] + c[j]
                 del c[j]
 
+    pauli_map = {"X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
     op = (c, o)
     for i, o in enumerate(op[1]):
         if len(o) == 0:
             op[1][i] = qml.Identity(0)
         if len(o) == 1:
-            op[1][i] = _return_pauli(o[0][1])(o[0][0])
+            op[1][i] = pauli_map[o[0][1]](o[0][0])
         if len(o) > 1:
-            k = _return_pauli(o[0][1])(o[0][0])
+            k = pauli_map[o[0][1]](o[0][0])
             for o_ in o[1:]:
-                k = k @ _return_pauli(o_[1])(o_[0])
+                k = k @ pauli_map[o_[1]](o_[0])
             op[1][i] = k
 
     return op
@@ -218,14 +219,14 @@ def simplify(h, cutoff=1.0e-12):
 
     c = []
     o = []
-    for i, op in enumerate(h.terms()[1]):
+    for i, op in enumerate(h.ops):
         op = qml.operation.Tensor(op).prune()
         op = qml.grouping.pauli_word_to_string(op, wire_map=wiremap)
         if op not in o:
-            c.append(h.terms()[0][i])
+            c.append(h.coeffs[i])
             o.append(op)
         else:
-            c[o.index(op)] += h.terms()[0][i]
+            c[o.index(op)] += h.coeffs[i]
 
     coeffs = []
     ops = []
