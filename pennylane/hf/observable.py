@@ -294,28 +294,6 @@ def _pauli_mult(p1, p2):
     return k, c
 
 
-def _return_pauli(p):
-    r"""Return the PennyLane Pauli operator.
-
-    Args:
-        args (str): symbol representing the Pauli operator
-
-    Returns:
-        pennylane.ops: the PennyLane Pauli operator
-
-    **Example**
-
-    >>> _return_pauli('X')
-    qml.PauliX
-    """
-    if p == "X":
-        return qml.PauliX
-    if p == "Y":
-        return qml.PauliY
-
-    return qml.PauliZ
-
-
 pauli_mult = {
     "XX": "I",
     "YY": "I",

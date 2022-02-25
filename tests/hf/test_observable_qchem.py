@@ -19,7 +19,6 @@ import pytest
 from pennylane import numpy as np
 from pennylane.hf.observable import (
     _pauli_mult,
-    _return_pauli,
     fermionic_observable,
     jordan_wigner,
     qubit_observable,
@@ -178,20 +177,6 @@ def test_pauli_mult(p1, p2, p_ref):
     result = _pauli_mult(p1, p2)
 
     assert result == p_ref
-
-
-@pytest.mark.parametrize(
-    ("symbol", "operator"),
-    [
-        ("X", qml.PauliX),
-        ("Y", qml.PauliY),
-        ("Z", qml.PauliZ),
-    ],
-)
-def test_return_pauli(symbol, operator):
-    r"""Test that_return_pauli returns the correct operator."""
-    p = _return_pauli(symbol)
-    assert p is operator
 
 
 @pytest.mark.parametrize(
