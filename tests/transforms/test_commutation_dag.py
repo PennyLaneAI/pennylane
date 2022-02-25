@@ -26,7 +26,7 @@ class TestSimplifyRotation:
     """Commutation function tests."""
 
     def test_simplify_rot(self):
-        """Simplify different rot operations with different parameters."""
+        """Simplify rot operations with different parameters."""
 
         rot_x = qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0)
         simplify_rot_x = simplify(rot_x)
@@ -62,7 +62,7 @@ class TestSimplifyRotation:
         assert np.allclose(not_simplified_rot.get_matrix(), rot.get_matrix())
 
     def test_simplify_crot(self):
-        """Simplify different CRot operations with different parameters."""
+        """Simplify CRot operations with different parameters."""
 
         crot_x = qml.CRot(np.pi / 2, 0.1, -np.pi / 2, wires=[0, 1])
         simplify_crot_x = simplify(crot_x)
@@ -91,7 +91,62 @@ class TestSimplifyRotation:
         assert not_simplified_crot.name == "CRot"
         assert np.allclose(not_simplified_crot.get_matrix(), crot.get_matrix())
 
-    def test_simplify_not_roations(self):
+    def test_simplify_u2(self):
+        """Simplify u2 operations with different parameters."""
+
+        u2_x = qml.U2(-np.pi / 2, np.pi / 2, wires=0)
+        simplify_u2_x = simplify(u2_x)
+
+        assert simplify_u2_x.name == "RX"
+        assert simplify_u2_x.data == [np.pi / 2]
+        assert np.allclose(simplify_u2_x.get_matrix(), u2_x.get_matrix())
+
+        u2_y = qml.U2(-2 * np.pi, 2 * np.pi, wires=0)
+        simplify_u2_y = simplify(u2_y)
+
+        assert simplify_u2_y.name == "RY"
+        assert simplify_u2_y.data == [np.pi / 2]
+        assert np.allclose(simplify_u2_y.get_matrix(), u2_y.get_matrix())
+
+        u2 = qml.U2(0.1, 0.2, wires=0)
+        u2_not_simplified = simplify(u2)
+
+        assert u2_not_simplified.name == "U2"
+        assert u2_not_simplified.data == [0.1, 0.2]
+        assert np.allclose(u2_not_simplified.get_matrix(), u2.get_matrix())
+
+    def test_simplify_u3(self):
+        """Simplify u3 operations with different parameters."""
+
+        u3_x = qml.U3(0.1, -np.pi / 2, np.pi / 2, wires=0)
+        simplify_u3_x = simplify(u3_x)
+
+        assert simplify_u3_x.name == "RX"
+        assert simplify_u3_x.data == [0.1]
+        assert np.allclose(simplify_u3_x.get_matrix(), u3_x.get_matrix())
+
+        u3_y = qml.U3(0.1, 0.0, 0.0, wires=0)
+        simplify_u3_y = simplify(u3_y)
+
+        assert simplify_u3_y.name == "RY"
+        assert simplify_u3_y.data == [0.1]
+        assert np.allclose(simplify_u3_y.get_matrix(), u3_y.get_matrix())
+
+        u3_z = qml.U3(0.0, 0.1, 0.0, wires=0)
+        simplify_u3_z = simplify(u3_z)
+
+        assert simplify_u3_z.name == "PhaseShift"
+        assert simplify_u3_z.data == [0.1]
+        assert np.allclose(simplify_u3_z.get_matrix(), u3_z.get_matrix())
+
+        u3 = qml.U3(0.1, 0.2, 0.3, wires=0)
+        u3_not_simplified = simplify(u3)
+
+        assert u3_not_simplified.name == "U3"
+        assert u3_not_simplified.data == [0.1, 0.2, 0.3]
+        assert np.allclose(u3_not_simplified.get_matrix(), u3.get_matrix())
+
+    def test_simplify_not_rotations(self):
         """Test that the simplify function returns a warning when giving a non rotation operation as argument."""
         id = qml.Identity(wires=0)
 

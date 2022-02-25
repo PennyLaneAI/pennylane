@@ -279,7 +279,7 @@ def simplify_u3(u3):
         and np.allclose(np.mod(u3.data[1] + u3.data[2], 2 * np.pi), 0)
         and not np.allclose(np.mod(u3.data[0], 2 * np.pi), 0)
     ):
-        return qml.RX(u3.data[1], wires=u3.wires)
+        return qml.RX(u3.data[0], wires=u3.wires)
     if (
         not np.allclose(np.mod(u3.data[0], 2 * np.pi), 0)
         and np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
