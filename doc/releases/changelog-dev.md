@@ -81,6 +81,9 @@
   The postprocessing function for the `cut_circuit` transform has been added.
   [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
 
+  The `cut_circuit` transform has been added.
+  [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216)
+
   A class `CutStrategy` which acts as an interface and coordinates device/user
   constraints with circuit execution requirements to come up with the best sets
   of graph partitioning parameters.
