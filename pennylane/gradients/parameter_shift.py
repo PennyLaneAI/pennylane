@@ -317,7 +317,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
     # Convert all variance measurements on the tape into expectation values
     for i in var_idx:
         obs = expval_tape._measurements[i].obs
-        expval_tape._measurements[i] = qml.measure.MeasurementProcess(
+        expval_tape._measurements[i] = qml.measurements.MeasurementProcess(
             qml.operation.Expectation, obs=obs
         )
 
@@ -357,7 +357,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
             # We need to calculate d<A^2>/dp; to do so, we replace the
             # involutory observables A in the queue with A^2.
             obs = _square_observable(expval_sq_tape._measurements[i].obs)
-            expval_sq_tape._measurements[i] = qml.measure.MeasurementProcess(
+            expval_sq_tape._measurements[i] = qml.measurements.MeasurementProcess(
                 qml.operation.Expectation, obs=obs
             )
 
