@@ -58,10 +58,10 @@ class QFT(Operation):
         @qml.qnode(dev)
         def circuit_qft(basis_state):
             qml.BasisState(basis_state, wires=range(wires))
-            qml.templates.QFT(wires=range(wires))
+            qml.QFT(wires=range(wires))
             return qml.state()
 
-        circuit_qft([1.0, 0.0, 0.0])
+        circuit_qft(np.array([1.0, 0.0, 0.0], requires_grad=False))
     """
     num_wires = AnyWires
     grad_method = None
