@@ -597,29 +597,20 @@ def density_matrix(wires):
     return MeasurementProcess(State, wires=qml.wires.Wires(wires))
 
 
-def measure(wire):
-    """
-    Create a mid-circuit measurement and return an outcome.
-
-    .. code-block:: python
-
-        m0 = qml.measurements(0)
-    """
-    measurement_id = str(uuid.uuid4())[:8]
-    MeasurementProcess(MidMeasure, wires=qml.wires.Wires(wire), id=measurement_id)
-    return MeasurementDependantValue(measurement_id, 0, 1)
-
-
 T = TypeVar("T")
 
 
-# pylint: disable=protected-access
 class MeasurementDependantValue(Generic[T]):
-    """A class representing unknown measurement outcomes.
-    Since we don't know the actual outcomes at circuit creation time,
-    consider all scenarios.
+    """A class representing unknown measurement outcomes in the qubit model.
 
-    supports python __dunder__ mathematical operations.
+    By default, measurements in the computational basis are assumed.
+
+    Args:
+        measurement_id (str): The id of the measurement that this object depends on.
+        zero_case (float): the measurement outcome in case the first
+            measurement outcome was obtained
+        one_case (float): the measurement outcome in case the second
+            measurement outcome was obtained
     """
 
     __slots__ = ("_depends_on", "_zero_case", "_one_case")
@@ -627,8 +618,8 @@ class MeasurementDependantValue(Generic[T]):
     def __init__(
         self,
         measurement_id: str,
-        zero_case: int,
-        one_case: int,
+        zero_case: float = 0,
+        one_case: float = 1,
     ):
         self._depends_on = measurement_id
         self._zero_case = zero_case
@@ -646,3 +637,16 @@ class MeasurementDependantValue(Generic[T]):
     def measurements(self):
         """List of all measurements this MeasurementDependantValue depends on."""
         return [self._depends_on]
+
+
+def measure(wire):
+    """
+    Create a mid-circuit measurement and return an outcome.
+
+    .. code-block:: python
+
+        m0 = qml.measurements(0)
+    """
+    measurement_id = str(uuid.uuid4())[:8]
+    MeasurementProcess(MidMeasure, wires=qml.wires.Wires(wire), id=measurement_id)
+    return MeasurementDependantValue(measurement_id)

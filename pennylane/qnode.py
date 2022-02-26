@@ -526,9 +526,11 @@ class QNode:
 
         # Apply the deferred measurement principle if the device doesn't
         # support mid-circuit measurements natively
+        # TODO: change once mid-circuit measurements are not considered as tape
+        # operations
         if any(
             getattr(obs, "return_type", None) == qml.operation.MidMeasure
-            for obs in self.tape.observables
+            for obs in self.tape.operations
         ):
             self._tape = qml.defer_measurements(self._tape)
 

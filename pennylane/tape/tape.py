@@ -435,20 +435,30 @@ class QuantumTape(AnnotatedQueue):
                     self._ops.append(obj)
 
             elif isinstance(obj, qml.measurements.MeasurementProcess):
-                # measurement process
-                self._measurements.append(obj)
 
-                # attempt to infer the output dimension
-                if obj.return_type is qml.operation.Probability:
-                    self._output_dim += 2 ** len(obj.wires)
-                elif obj.return_type is qml.operation.State:
-                    continue  # the output_dim is worked out automatically
+                if obj.return_type == qml.operation.MidMeasure:
+
+                    # TODO: for now, consider mid-circuit measurements as tape
+                    # operations such that the order of the operators in the
+                    # tape is correct
+                    self._ops.append(obj)
+
                 else:
-                    self._output_dim += 1
 
-                # check if any sampling is occuring
-                if obj.return_type is qml.operation.Sample:
-                    self.is_sampled = True
+                    # measurement process
+                    self._measurements.append(obj)
+
+                    # attempt to infer the output dimension
+                    if obj.return_type is qml.operation.Probability:
+                        self._output_dim += 2 ** len(obj.wires)
+                    elif obj.return_type is qml.operation.State:
+                        continue  # the output_dim is worked out automatically
+                    else:
+                        self._output_dim += 1
+
+                    # check if any sampling is occuring
+                    if obj.return_type is qml.operation.Sample:
+                        self.is_sampled = True
 
         self._update()
 
