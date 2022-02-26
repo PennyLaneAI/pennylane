@@ -4,6 +4,9 @@
 
 <h3>New features since last release</h3>
 
+* Added the user-interface for mid-circuit measurements.
+  [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
+
 * The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has 
   a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions, 
   deprecation of the `charset` keyword, and minor cosmetic changes.
