@@ -20,22 +20,25 @@ import numpy as np
 import pennylane as qml
 
 
-def _process_shifts(rule, tol=1e-10):
+def process_shifts(rule, tol=1e-10, check_duplicates=True):
     """Utility function to process gradient rules.
 
     Args:
-        rule (array): a ``(N, M)`` array corresponding to ``M`` terms
-            with ``N-1`` simultaneous function shifts. The first row of
+        rule (array): a ``(2, M)`` array corresponding to ``M`` terms
+            with function shifts. The first row of
             the array corresponds to the linear combination coefficients;
-            subsequent rows correspond to parameter shifts for these coefficients.
+            the second row contains the shift values.
         tol (float): floating point tolerance used when comparing shifts/coefficients
+            Terms with coefficients below ``tol`` will be removed.
+        check_duplicates (bool): whether to check the input ``rule`` for duplicate
+            shift values in its second row.
 
     This utility function accepts coefficients and shift values, and performs the following
     processing:
 
-    - Removes all small (within absolute tolerance ``tol``) coefficients and shifts
+    - Sets all small (within absolute tolerance ``tol``) coefficients and shifts to 0
 
-    - Removes terms with the coefficients are 0
+    - Removes terms with the coefficients are 0 (including the ones set to 0 in the previous step)
 
     - Terms with the same shift value are combined into a single term.
 
@@ -48,25 +51,21 @@ def _process_shifts(rule, tol=1e-10):
     # remove columns where the coefficients are 0
     rule = rule[:, ~(rule[0] == 0)]
 
+    if check_duplicates:
+        # determine unique shifts
+        round_decimals = int(-np.log10(tol))
+        rounded_rule = np.round(rule[-1], round_decimals)
+        unique_shifts = np.unique(rounded_rule)
+
+        if rule.shape[-1] != len(unique_shifts):
+            # sum columns that have the same shift value
+            coeffs = [
+                np.sum(rule[:, np.nonzero(rounded_rule == s)[0]], axis=1)[0] for s in unique_shifts
+            ]
+            rule = np.stack([np.stack(coeffs), unique_shifts])
+
     # sort columns according to abs(shift)
-    rule = rule[:, np.argsort(np.abs(rule)[-1])]
-
-    # determine unique shifts
-    round_decimals = int(-np.log10(tol))
-    rounded_rule = np.round(rule[-1], round_decimals)
-    unique_shifts = np.unique(rounded_rule)
-
-    if rule.shape[-1] != len(unique_shifts):
-        # sum columns that have the same shift value
-        coeffs = [
-            np.sum(rule[:, np.nonzero(rounded_rule == s)[0]], axis=1)[0] for s in unique_shifts
-        ]
-        rule = np.stack([np.stack(coeffs), unique_shifts])
-
-        # sort columns according to abs(shift)
-        rule = rule[:, np.argsort(np.abs(rule)[-1])]
-
-    return rule
+    return rule[:, np.argsort(np.abs(rule)[-1])]
 
 
 @functools.lru_cache(maxsize=None)
@@ -170,7 +169,7 @@ def _get_shift_rule(frequencies, shifts=None):
         coeffs = -2 * np.linalg.solve(sin_matr.T, frequencies)
 
     coeffs = np.concatenate((coeffs, -coeffs))
-    shifts = np.concatenate((shifts, -shifts))
+    shifts = np.concatenate((shifts, -shifts))  # pylint: disable=invalid-unary-operand-type
     return np.stack([coeffs, shifts])
 
 
@@ -255,7 +254,7 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
         # array, with coefficients on the first row and shifts on the second row.
         rule = qml.math.stack(combined_rules).T
 
-    return _process_shifts(rule, tol=1e-10)
+    return process_shifts(rule, tol=1e-10)
 
 
 def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
@@ -313,7 +312,7 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
 
     for f, s, o in zip(frequencies, shifts, orders):
         rule = generate_shift_rule(f, shifts=s, order=o)
-        rules.append(_process_shifts(rule).T)
+        rules.append(process_shifts(rule).T)
 
     combined_rules = []
 

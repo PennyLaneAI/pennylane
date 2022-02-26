@@ -21,7 +21,7 @@ try:
     import tensorflow as tf
     from tensorflow.keras.layers import Layer
 
-    CORRECT_TF_VERSION = int(tf.__version__.split(".")[0]) > 1
+    CORRECT_TF_VERSION = int(tf.__version__.split(".", maxsplit=1)[0]) > 1
 except ImportError:
     # The following allows this module to be imported even if TensorFlow is not installed. Users
     # will instead see an ImportError when instantiating the KerasLayer.

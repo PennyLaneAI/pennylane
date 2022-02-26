@@ -15,7 +15,6 @@ r"""
 Contains the Permute template.
 """
 
-import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 from pennylane.ops import SWAP
 
@@ -158,32 +157,48 @@ class Permute(Operation):
             if label not in wires:
                 raise ValueError(f"Cannot permute wire {label} not present in wire set.")
 
-        super().__init__(permutation, wires=wires, do_queue=do_queue, id=id)
+        self._hyperparameters = {"permutation": permutation}
+        super().__init__(wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
-        return 1
+        return 0
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(wires, permutation):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        permutation = self.parameters[0]
+        .. math:: O = O_1 O_2 \dots O_n.
 
-        with qml.tape.QuantumTape() as tape:
-            # Temporary storage to keep track as we permute
-            working_order = self.wires.tolist()
 
-            # Go through the new order and shuffle things one by one
-            for idx_here, here in enumerate(permutation):
-                if working_order[idx_here] != here:
-                    # Where do we need to send the qubit at this location?
-                    idx_there = working_order.index(permutation[idx_here])
 
-                    # SWAP based on the labels of the wires
-                    SWAP(wires=self.wires.subset([idx_here, idx_there]))
+        .. seealso:: :meth:`~.Permute.decomposition`.
 
-                    # Update the working order to account for the SWAP
-                    working_order[idx_here], working_order[idx_there] = (
-                        working_order[idx_there],
-                        working_order[idx_here],
-                    )
-        return tape
+        Args:
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            permutation (list[Any]): A list of wire labels that represents the new ordering of wires
+                after the permutation.
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+        """
+        op_list = []
+
+        # Temporary storage to keep track as we permute
+        working_order = wires.tolist()
+
+        # Go through the new order and shuffle things one by one
+        for idx_here, here in enumerate(permutation):
+            if working_order[idx_here] != here:
+                # Where do we need to send the qubit at this location?
+                idx_there = working_order.index(permutation[idx_here])
+
+                # SWAP based on the labels of the wires
+                op_list.append(SWAP(wires=wires.subset([idx_here, idx_there])))
+
+                # Update the working order to account for the SWAP
+                working_order[idx_here], working_order[idx_there] = (
+                    working_order[idx_there],
+                    working_order[idx_here],
+                )
+        return op_list

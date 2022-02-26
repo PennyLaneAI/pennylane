@@ -85,6 +85,14 @@ both transforms, and decompositions within the larger PennyLane codebase.
 Transforms for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+This transform accepts QNodes, performs circuit cutting, and returns the result of the original
+uncut circuit.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.cut_circuit
+
 The following are utility functions that compose the circuit cutting transform.
 
 .. autosummary::
@@ -94,6 +102,11 @@ The following are utility functions that compose the circuit cutting transform.
     ~transforms.replace_wire_cut_node
     ~transforms.replace_wire_cut_nodes
     ~transforms.fragment_graph
+    ~transforms.graph_to_tape
+    ~transforms.expand_fragment_tapes
+    ~transforms.contract_tensors
+    ~transforms.qcut_processing_fn
+    ~transforms.CutStrategy
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -137,7 +150,7 @@ from .classical_jacobian import classical_jacobian
 from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
-from .draw import draw, draw_mpl
+from .draw import draw, draw_mpl, draw_old
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
@@ -166,4 +179,15 @@ from .tape_expand import (
     create_decomp_expand_fn,
     set_decomposition,
 )
-from .qcut import tape_to_graph, replace_wire_cut_node, replace_wire_cut_nodes, fragment_graph
+from .qcut import (
+    tape_to_graph,
+    replace_wire_cut_node,
+    replace_wire_cut_nodes,
+    fragment_graph,
+    graph_to_tape,
+    expand_fragment_tapes,
+    contract_tensors,
+    qcut_processing_fn,
+    cut_circuit,
+    CutStrategy,
+)

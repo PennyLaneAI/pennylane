@@ -36,6 +36,43 @@ from gate_data import (
 )
 
 
+PARAMETRIZED_QCHEM_OPERATIONS = [
+    qml.SingleExcitation(0.14, wires=[0, 1]),
+    qml.SingleExcitationMinus(0.14, wires=[0, 1]),
+    qml.SingleExcitationPlus(0.14, wires=[0, 1]),
+    qml.DoubleExcitation(0.14, wires=[0, 1, 2, 3]),
+    qml.DoubleExcitationMinus(0.14, wires=[0, 1, 2, 3]),
+    qml.DoubleExcitationPlus(0.14, wires=[0, 1, 2, 3]),
+    qml.OrbitalRotation(0.14, wires=[0, 1, 2, 3]),
+]
+
+
+class TestParameterFrequencies:
+    @pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
+    def test_parameter_frequencies_match_generator(self, op, tol):
+        if not qml.operation.has_gen(op):
+            pytest.skip(f"Operation {op.name} does not have a generator defined to test against.")
+
+        gen = op.generator()
+
+        try:
+            mat = gen.get_matrix()
+        except (AttributeError, qml.operation.MatrixUndefinedError):
+
+            if isinstance(gen, qml.Hamiltonian):
+                mat = qml.utils.sparse_hamiltonian(gen).toarray()
+            elif isinstance(gen, qml.SparseHamiltonian):
+                mat = gen.sparse_matrix().toarray()
+            else:
+                pytest.skip(f"Operation {op.name}'s generator does not define a matrix.")
+
+        gen_eigvals = np.round(np.linalg.eigvalsh(mat), 8)
+        freqs_from_gen = qml.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
+
+        freqs = op.parameter_frequencies
+        assert np.allclose(freqs, np.sort(freqs_from_gen), atol=tol)
+
+
 class TestDecomposition:
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_single_excitation_plus_decomp(self, phi):
@@ -45,32 +82,34 @@ class TestDecomposition:
         and the target is wire 0 in the decomposition. (Not applicable for
         ControlledPhase as it has the same matrix representation regardless of the
         control and target wires.)"""
-        decomp = qml.SingleExcitationPlus(phi, wires=[0, 1]).decompose()
+        decomp1 = qml.SingleExcitationPlus(phi, wires=[0, 1]).decomposition()
+        decomp2 = qml.SingleExcitationPlus.compute_decomposition(phi, wires=[0, 1])
 
-        mats = []
-        for i in reversed(decomp):
-            if i.wires.tolist() == [0]:
-                mats.append(np.kron(i.matrix, np.eye(2)))
-            elif i.wires.tolist() == [1]:
-                mats.append(np.kron(np.eye(2), i.matrix))
-            elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
-                new_mat = np.array(
-                    [
-                        [1, 0, 0, 0],
-                        [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
-                        [0, 0, 1, 0],
-                        [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
-                    ]
-                )
+        for decomp in [decomp1, decomp2]:
+            mats = []
+            for i in reversed(decomp):
+                if i.wires.tolist() == [0]:
+                    mats.append(np.kron(i.get_matrix(), np.eye(2)))
+                elif i.wires.tolist() == [1]:
+                    mats.append(np.kron(np.eye(2), i.get_matrix()))
+                elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
+                    new_mat = np.array(
+                        [
+                            [1, 0, 0, 0],
+                            [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
+                            [0, 0, 1, 0],
+                            [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
+                        ]
+                    )
 
-                mats.append(new_mat)
-            else:
-                mats.append(i.matrix)
+                    mats.append(new_mat)
+                else:
+                    mats.append(i.get_matrix())
 
-        decomposed_matrix = np.linalg.multi_dot(mats)
-        exp = SingleExcitationPlus(phi)
+            decomposed_matrix = np.linalg.multi_dot(mats)
+            exp = SingleExcitationPlus(phi)
 
-        assert np.allclose(decomposed_matrix, exp)
+            assert np.allclose(decomposed_matrix, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_single_excitation_minus_decomp(self, phi):
@@ -80,32 +119,34 @@ class TestDecomposition:
         and the target is wire 0 in the decomposition. (Not applicable for
         ControlledPhase as it has the same matrix representation regardless of the
         control and target wires.)"""
-        decomp = qml.SingleExcitationMinus(phi, wires=[0, 1]).decompose()
+        decomp1 = qml.SingleExcitationMinus(phi, wires=[0, 1]).decomposition()
+        decomp2 = qml.SingleExcitationMinus.compute_decomposition(phi, wires=[0, 1])
 
-        mats = []
-        for i in reversed(decomp):
-            if i.wires.tolist() == [0]:
-                mats.append(np.kron(i.matrix, np.eye(2)))
-            elif i.wires.tolist() == [1]:
-                mats.append(np.kron(np.eye(2), i.matrix))
-            elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
-                new_mat = np.array(
-                    [
-                        [1, 0, 0, 0],
-                        [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
-                        [0, 0, 1, 0],
-                        [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
-                    ]
-                )
+        for decomp in [decomp1, decomp2]:
+            mats = []
+            for i in reversed(decomp):
+                if i.wires.tolist() == [0]:
+                    mats.append(np.kron(i.get_matrix(), np.eye(2)))
+                elif i.wires.tolist() == [1]:
+                    mats.append(np.kron(np.eye(2), i.get_matrix()))
+                elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
+                    new_mat = np.array(
+                        [
+                            [1, 0, 0, 0],
+                            [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
+                            [0, 0, 1, 0],
+                            [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
+                        ]
+                    )
 
-                mats.append(new_mat)
-            else:
-                mats.append(i.matrix)
+                    mats.append(new_mat)
+                else:
+                    mats.append(i.get_matrix())
 
-        decomposed_matrix = np.linalg.multi_dot(mats)
-        exp = SingleExcitationMinus(phi)
+            decomposed_matrix = np.linalg.multi_dot(mats)
+            exp = SingleExcitationMinus(phi)
 
-        assert np.allclose(decomposed_matrix, exp)
+            assert np.allclose(decomposed_matrix, exp)
 
 
 class TestSingleExcitation:
@@ -113,9 +154,11 @@ class TestSingleExcitation:
     def test_single_excitation_matrix(self, phi):
         """Tests that the SingleExcitation operation calculates the correct matrix"""
         op = qml.SingleExcitation(phi, wires=[0, 1])
-        res = op.matrix
+        res_dynamic = op.get_matrix()
+        res_static = qml.SingleExcitation.compute_matrix(phi)
         exp = SingleExcitation(phi)
-        assert np.allclose(res, exp)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_decomp(self, phi):
@@ -123,33 +166,35 @@ class TestSingleExcitation:
 
         Need to consider the matrix of CRY separately, as the control is wire 1
         and the target is wire 0 in the decomposition."""
-        decomp = qml.SingleExcitation(phi, wires=[0, 1]).decompose()
+        decomp1 = qml.SingleExcitation(phi, wires=[0, 1]).decomposition()
+        decomp2 = qml.SingleExcitation.compute_decomposition(phi, wires=[0, 1])
 
-        mats = []
-        for i in reversed(decomp):
-            if i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
-                new_mat = np.array(
-                    [
-                        [1, 0, 0, 0],
-                        [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
-                        [0, 0, 1, 0],
-                        [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
-                    ]
-                )
-                mats.append(new_mat)
-            else:
-                mats.append(i.matrix)
+        for decomp in [decomp1, decomp2]:
+            mats = []
+            for i in reversed(decomp):
+                if i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
+                    new_mat = np.array(
+                        [
+                            [1, 0, 0, 0],
+                            [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
+                            [0, 0, 1, 0],
+                            [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
+                        ]
+                    )
+                    mats.append(new_mat)
+                else:
+                    mats.append(i.get_matrix())
 
-        decomposed_matrix = np.linalg.multi_dot(mats)
-        exp = SingleExcitation(phi)
+            decomposed_matrix = np.linalg.multi_dot(mats)
+            exp = SingleExcitation(phi)
 
-        assert np.allclose(decomposed_matrix, exp)
+            assert np.allclose(decomposed_matrix, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_generator(self, phi):
         """Tests that the SingleExcitation operation calculates the correct generator"""
         op = qml.SingleExcitation(phi, wires=[0, 1])
-        g, a = op.generator
+        g, a = qml.utils.get_generator(op, return_matrix=True)
         res = expm(1j * a * g * phi)
         exp = SingleExcitation(phi)
         assert np.allclose(res, exp)
@@ -158,15 +203,17 @@ class TestSingleExcitation:
     def test_single_excitation_plus_matrix(self, phi):
         """Tests that the SingleExcitationPlus operation calculates the correct matrix"""
         op = qml.SingleExcitationPlus(phi, wires=[0, 1])
-        res = op.matrix
+        res_dynamic = op.get_matrix()
+        res_static = qml.SingleExcitationPlus.compute_matrix(phi)
         exp = SingleExcitationPlus(phi)
-        assert np.allclose(res, exp)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_plus_generator(self, phi):
         """Tests that the SingleExcitationPlus operation calculates the correct generator"""
         op = qml.SingleExcitationPlus(phi, wires=[0, 1])
-        g, a = op.generator
+        g, a = qml.utils.get_generator(op, return_matrix=True)
         res = expm(1j * a * g * phi)
         exp = SingleExcitationPlus(phi)
         assert np.allclose(res, exp)
@@ -175,15 +222,17 @@ class TestSingleExcitation:
     def test_single_excitation_minus_matrix(self, phi):
         """Tests that the SingleExcitationMinus operation calculates the correct matrix"""
         op = qml.SingleExcitationMinus(phi, wires=[0, 1])
-        res = op.matrix
+        res_dynamic = op.get_matrix()
+        res_static = qml.SingleExcitationMinus.compute_matrix(phi)
         exp = SingleExcitationMinus(phi)
-        assert np.allclose(res, exp)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_minus_generator(self, phi):
         """Tests that the SingleExcitationMinus operation calculates the correct generator"""
         op = qml.SingleExcitationMinus(phi, wires=[0, 1])
-        g, a = op.generator
+        g, a = qml.utils.get_generator(op, return_matrix=True)
         res = expm(1j * a * g * phi)
         exp = SingleExcitationMinus(phi)
         assert np.allclose(res, exp)
@@ -294,27 +343,30 @@ class TestDoubleExcitation:
     def test_double_excitation_matrix(self, phi):
         """Tests that the DoubleExcitation operation calculates the correct matrix"""
         op = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
-        res = op.matrix
+        res_dynamic = op.get_matrix()
+        res_static = qml.DoubleExcitation.compute_matrix(phi)
         exp = DoubleExcitation(phi)
-        assert np.allclose(res, exp)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_decomp(self, phi):
         """Tests that the DoubleExcitation operation calculates the correct decomposition"""
-        op = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
-        decomp = op.decomposition()
+        decomp1 = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decomposition()
+        decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0, 1, 2, 3])
 
-        mats = [m.matrix for m in decomp]
-        decomposed_matrix = mats[0] @ mats[1]
-        exp = DoubleExcitation(phi)
+        for decomp in [decomp1, decomp2]:
+            mats = [m.get_matrix() for m in decomp]
+            decomposed_matrix = mats[0] @ mats[1]
+            exp = DoubleExcitation(phi)
 
-        assert np.allclose(decomposed_matrix, exp)
+            assert np.allclose(decomposed_matrix, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_generator(self, phi):
         """Tests that the DoubleExcitation operation calculates the correct generator"""
         op = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
-        g, a = op.generator
+        g, a = qml.utils.get_generator(op, return_matrix=True)
 
         res = expm(1j * a * g * phi)
         exp = DoubleExcitation(phi)
@@ -329,7 +381,8 @@ class TestDoubleExcitation:
         and CNOTs. For each term in the decomposition we need to construct the appropriate
         four-qubit tensor product matrix and then multiply them together.
         """
-        decomp = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decompose()
+        decomp1 = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3]).decomposition()
+        decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0, 1, 2, 3])
 
         from functools import reduce
 
@@ -352,35 +405,38 @@ class TestDoubleExcitation:
             individual_mats = [mat if idx == wire else np.eye(2) for idx in range(4)]
             return reduce(np.kron, individual_mats)
 
-        mats = []
-        for i in reversed(decomp):
-            # Single-qubit gate
-            if len(i.wires.tolist()) == 1:
-                mat = single_mat_four_qubits(i.matrix, i.wires.tolist()[0])
-                mats.append(mat)
-            # Two-qubit gate
-            else:
-                mat = cnot_four_qubits(i.wires.tolist())
-                mats.append(mat)
+        for decomp in [decomp1, decomp2]:
+            mats = []
+            for i in reversed(decomp):
+                # Single-qubit gate
+                if len(i.wires.tolist()) == 1:
+                    mat = single_mat_four_qubits(i.get_matrix(), i.wires.tolist()[0])
+                    mats.append(mat)
+                # Two-qubit gate
+                else:
+                    mat = cnot_four_qubits(i.wires.tolist())
+                    mats.append(mat)
 
-        decomposed_matrix = np.linalg.multi_dot(mats)
-        exp = DoubleExcitation(phi)
+            decomposed_matrix = np.linalg.multi_dot(mats)
+            exp = DoubleExcitation(phi)
 
-        assert np.allclose(decomposed_matrix, exp)
+            assert np.allclose(decomposed_matrix, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_plus_matrix(self, phi):
         """Tests that the DoubleExcitationPlus operation calculates the correct matrix"""
         op = qml.DoubleExcitationPlus(phi, wires=[0, 1, 2, 3])
-        res = op.matrix
+        res_dynamic = op.get_matrix()
+        res_static = qml.DoubleExcitationPlus.compute_matrix(phi)
         exp = DoubleExcitationPlus(phi)
-        assert np.allclose(res, exp)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_plus_generator(self, phi):
         """Tests that the DoubleExcitationPlus operation calculates the correct generator"""
         op = qml.DoubleExcitationPlus(phi, wires=[0, 1, 2, 3])
-        g, a = op.generator
+        g, a = qml.utils.get_generator(op, return_matrix=True)
 
         res = expm(1j * a * g * phi)
         exp = DoubleExcitationPlus(phi)
@@ -391,15 +447,17 @@ class TestDoubleExcitation:
     def test_double_excitation_minus_matrix(self, phi):
         """Tests that the DoubleExcitationMinus operation calculates the correct matrix"""
         op = qml.DoubleExcitationMinus(phi, wires=[0, 1, 2, 3])
-        res = op.matrix
+        res_dynamic = op.get_matrix()
+        res_static = qml.DoubleExcitationMinus.compute_matrix(phi)
         exp = DoubleExcitationMinus(phi)
-        assert np.allclose(res, exp)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_double_excitation_minus_generator(self, phi):
         """Tests that the DoubleExcitationMinus operation calculates the correct generator"""
         op = qml.DoubleExcitationMinus(phi, wires=[0, 1, 2, 3])
-        g, a = op.generator
+        g, a = qml.utils.get_generator(op, return_matrix=True)
 
         res = expm(1j * a * g * phi)
         exp = DoubleExcitationMinus(phi)
@@ -567,20 +625,36 @@ class TestDoubleExcitation:
 class TestOrbitalRotation:
     """Test OrbitalRotation gate operation"""
 
+    def grad_circuit_0(self, phi):
+        qml.PauliX(1)
+        qml.Hadamard(2)
+        qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+        return qml.expval(qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(3))
+
+    def grad_circuit_1(self, phi):
+        qml.PauliX(0)
+        qml.PauliX(1)
+        qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliZ(3))
+
+    def expected_grad_fn(self, phi):
+        return -0.55 * np.sin(3 * phi / 2) * 3 / 2 - 0.7 * np.sin(phi) + 0.55 / 2 * np.sin(phi / 2)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_orbital_rotation_matrix(self, phi):
         """Tests that the OrbitalRotation operation calculates the correct matrix"""
         op = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-        res = op.matrix
+        res_dynamic = op.get_matrix()
+        res_static = qml.OrbitalRotation.compute_matrix(phi)
         exp = OrbitalRotation(phi)
-
-        assert np.allclose(res, exp)
+        assert np.allclose(res_dynamic, exp)
+        assert np.allclose(res_static, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_orbital_rotation_generator(self, phi):
         """Tests that the OrbitalRotation operation calculates the correct generator"""
         op = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-        g, a = op.generator
+        g, a = qml.utils.get_generator(op, return_matrix=True)
 
         res = expm(1j * a * g * phi)
         exp = OrbitalRotation(phi)
@@ -595,7 +669,8 @@ class TestOrbitalRotation:
         and CNOTs. For each term in the decomposition we need to construct the appropriate
         four-qubit tensor product matrix and then multiply them together.
         """
-        decomp = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3]).decompose()
+        decomp1 = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3]).decomposition()
+        decomp2 = qml.OrbitalRotation.compute_decomposition(phi, wires=[0, 1, 2, 3])
 
         from functools import reduce
 
@@ -618,21 +693,22 @@ class TestOrbitalRotation:
             individual_mats = [mat if idx == wire else np.eye(2) for idx in range(4)]
             return reduce(np.kron, individual_mats)
 
-        mats = []
-        for i in reversed(decomp):
-            # Single-qubit gate
-            if len(i.wires.tolist()) == 1:
-                mat = single_mat_four_qubits(i.matrix, i.wires.tolist()[0])
-                mats.append(mat)
-            # Two-qubit gate
-            else:
-                mat = cnot_four_qubits(i.wires.tolist())
-                mats.append(mat)
+        for decomp in [decomp1, decomp2]:
+            mats = []
+            for i in reversed(decomp):
+                # Single-qubit gate
+                if len(i.wires.tolist()) == 1:
+                    mat = single_mat_four_qubits(i.get_matrix(), i.wires.tolist()[0])
+                    mats.append(mat)
+                # Two-qubit gate
+                else:
+                    mat = cnot_four_qubits(i.wires.tolist())
+                    mats.append(mat)
 
-        decomposed_matrix = np.linalg.multi_dot(mats)
-        exp = OrbitalRotation(phi)
+            decomposed_matrix = np.linalg.multi_dot(mats)
+            exp = OrbitalRotation(phi)
 
-        assert np.allclose(decomposed_matrix, exp)
+            assert np.allclose(decomposed_matrix, exp)
 
     def test_adjoint(self):
         """Test that the adjoint correctly inverts the orbital rotation operation"""
@@ -812,7 +888,7 @@ class TestOrbitalRotation:
         "phi",
         [
             pnp.array(-0.1, requires_grad=True),
-            pnp.array(0.1, requires_grad=True),
+            pnp.array(0.1421, requires_grad=True),
         ],
     )
     def test_autograd_grad(self, phi, diff_method):
@@ -823,20 +899,20 @@ class TestOrbitalRotation:
 
         dev = qml.device("default.qubit.autograd", wires=4)
 
-        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
-        def circuit(phi):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
-            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
+        circuit_0 = qml.QNode(
+            self.grad_circuit_0, dev, interface="autograd", diff_method=diff_method
+        )
+        circuit_1 = qml.QNode(
+            self.grad_circuit_1, dev, interface="autograd", diff_method=diff_method
+        )
+        total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
-            return qml.expval(qml.PauliZ(0))
-
-        assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))
+        assert np.allclose(qml.grad(total)(phi), self.expected_grad_fn(phi))
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("phi"),
-        [(-0.1), (0.1)],
+        [-0.1, 0.1421],
     )
     def test_tf_grad(self, phi, diff_method):
         """Tests that gradients are computed correctly using the
@@ -845,28 +921,22 @@ class TestOrbitalRotation:
         tf = pytest.importorskip("tensorflow")
         dev = qml.device("default.qubit.tf", wires=4)
 
-        @qml.qnode(dev, interface="tf", diff_method=diff_method)
-        def circuit(phi):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
-            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-            return qml.expval(qml.PauliZ(0))
+        circuit_0 = qml.QNode(self.grad_circuit_0, dev, interface="tf", diff_method=diff_method)
+        circuit_1 = qml.QNode(self.grad_circuit_1, dev, interface="tf", diff_method=diff_method)
+        total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
         phi_t = tf.Variable(phi, dtype=tf.float64)
         with tf.GradientTape() as tape:
-            res = circuit(phi_t)
+            res = total(phi_t)
 
         grad = tape.gradient(res, phi_t)
 
-        assert np.allclose(grad, np.sin(phi))
+        assert np.allclose(grad, self.expected_grad_fn(phi))
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("phi"),
-        [
-            (-0.1),
-            (0.1),
-        ],
+        [-0.1, 0.1421],
     )
     def test_jax_grad(self, phi, diff_method):
         """Tests that gradients and operations are computed correctly using the
@@ -879,22 +949,18 @@ class TestOrbitalRotation:
 
         dev = qml.device("default.qubit.jax", wires=4)
 
-        @qml.qnode(dev, interface="jax", diff_method=diff_method)
-        def circuit(phi):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
-            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-            return qml.expval(qml.PauliZ(0))
+        circuit_0 = qml.QNode(self.grad_circuit_0, dev, interface="jax", diff_method=diff_method)
+        circuit_1 = qml.QNode(self.grad_circuit_1, dev, interface="jax", diff_method=diff_method)
+        total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
-        assert np.allclose(jax.grad(circuit)(phi), np.sin(phi))
+        phi_j = jax.numpy.array(phi)
+
+        assert np.allclose(jax.grad(total)(phi_j), self.expected_grad_fn(phi))
 
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("phi"),
-        [
-            (-0.1),
-            (0.1),
-        ],
+        [-0.1, 0.1421],
     )
     def test_torch_grad(self, phi, diff_method):
         """Tests that gradients and operations are computed correctly using the
@@ -904,19 +970,15 @@ class TestOrbitalRotation:
 
         dev = qml.device("default.qubit.torch", wires=4)
 
-        @qml.qnode(dev, interface="torch", diff_method=diff_method)
-        def circuit(phi):
-            qml.PauliX(wires=0)
-            qml.PauliX(wires=1)
-            qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-            return qml.expval(qml.PauliZ(0))
+        circuit_0 = qml.QNode(self.grad_circuit_0, dev, interface="torch", diff_method=diff_method)
+        circuit_1 = qml.QNode(self.grad_circuit_1, dev, interface="torch", diff_method=diff_method)
+        total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
         phi_t = torch.tensor(phi, dtype=torch.complex128, requires_grad=True)
-
-        result = circuit(phi_t)
+        result = total(phi_t)
         result.backward()
 
-        assert np.allclose(phi_t.grad, np.sin(phi))
+        assert np.allclose(phi_t.grad, self.expected_grad_fn(phi))
 
 
 label_data = [

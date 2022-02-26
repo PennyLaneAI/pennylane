@@ -48,10 +48,11 @@ class BasicEntanglerLayers(Operation):
 
     Args:
         weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
-                                for the rotation.
+            for the rotation.
         wires (Iterable): wires that the template acts on
         rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use,
-                                            if ``None``, :class:`~pennylane.ops.RX` is used as default
+            if ``None``, :class:`~pennylane.ops.RX` is used as default
+
     Raises:
         ValueError: if inputs do not have the correct format
 
@@ -129,8 +130,6 @@ class BasicEntanglerLayers(Operation):
         interface = qml.math.get_interface(weights)
         weights = qml.math.asarray(weights, like=interface)
 
-        self.rotation = rotation or qml.RX
-
         shape = qml.math.shape(weights)
         if not (len(shape) == 3 or len(shape) == 2):  # 3 is when batching, 2 is no batching
             raise ValueError(
@@ -144,35 +143,59 @@ class BasicEntanglerLayers(Operation):
                 f"Weights tensor must have last dimension of length {len(wires)}; got {shape[-1]}"
             )
 
+        self._hyperparameters = {"rotation": rotation or qml.RX}
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
     @property
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(weights, wires, rotation):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        weights = self.parameters[0]
+        .. math:: O = O_1 O_2 \dots O_n.
 
+
+
+        .. seealso:: :meth:`~.BasicEntanglerLayers.decomposition`.
+
+        Args:
+            weights (tensor_like): Weight tensor of shape ``(L, len(wires))``. Each weight is used as a parameter
+                for the rotation.
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            rotation (pennylane.ops.Operation): one-parameter single-qubit gate to use
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> weights = torch.tensor([[1.2, -0.4], [0.3, -0.2]])
+        >>> qml.BasicEntanglerLayers.compute_decomposition(weights, wires=["a", "b"], rotation=qml.RX)
+        [RX(tensor(1.2000), wires=['a']), RX(tensor(-0.4000), wires=['b']),
+        CNOT(wires=['a', 'b']),
+        RX(tensor(0.3000), wires=['a']), RX(tensor(-0.2000), wires=['b']),
+        CNOT(wires=['a', 'b'])]
+        """
         # first dimension of the weights tensor (second when batching) determines
         # the number of layers
         repeat = qml.math.shape(weights)[-2]
 
-        with qml.tape.QuantumTape() as tape:
+        op_list = []
+        for layer in range(repeat):
+            for i in range(len(wires)):
+                op_list.append(rotation(weights[..., layer, i], wires=wires[i : i + 1]))
 
-            for layer in range(repeat):
-                for i in range(len(self.wires)):
-                    self.rotation(weights[..., layer, i], wires=self.wires[i : i + 1])
+            if len(wires) == 2:
+                op_list.append(qml.CNOT(wires=wires))
 
-                if len(self.wires) == 2:
-                    qml.CNOT(wires=self.wires)
+            elif len(wires) > 2:
+                for i in range(len(wires)):
+                    w = wires.subset([i, i + 1], periodic_boundary=True)
+                    op_list.append(qml.CNOT(wires=w))
 
-                elif len(self.wires) > 2:
-                    for i in range(len(self.wires)):
-                        w = self.wires.subset([i, i + 1], periodic_boundary=True)
-                        qml.CNOT(wires=w)
-
-        return tape
+        return op_list
 
     @staticmethod
     def shape(n_layers, n_wires):

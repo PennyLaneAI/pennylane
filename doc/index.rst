@@ -193,7 +193,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
 
    development/guide
    development/plugins
-   development/adding_templates
+   development/adding_operators
    development/release_notes.md
 
 .. toctree::
@@ -210,6 +210,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_grouping
    code/qml_kernels
    code/qml_math
+   code/qml_numpy
    code/qml_qaoa
    code/qml_hf
    code/qml_qchem

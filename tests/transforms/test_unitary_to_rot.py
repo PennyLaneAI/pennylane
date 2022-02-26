@@ -84,7 +84,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
         """Test that the transform ignores QubitUnitary instances that are too big
         to decompose."""
 
-        tof = qml.Toffoli(wires=[0, 1, 2]).matrix
+        tof = qml.Toffoli(wires=[0, 1, 2]).get_matrix()
 
         def qfunc():
             qml.QubitUnitary(H, wires="a")

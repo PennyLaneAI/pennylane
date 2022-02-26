@@ -40,8 +40,8 @@ single_qubit_decomps = [
     (Z, qml.RZ, [np.pi]),
     (S, qml.RZ, [np.pi / 2]),
     (T, qml.RZ, [np.pi / 4]),
-    (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
-    (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
+    (qml.RZ(0.3, wires=0).get_matrix(), qml.RZ, [0.3]),
+    (qml.RZ(-0.5, wires=0).get_matrix(), qml.RZ, [-0.5]),
     # This is an off-diagonal gate that gets converted to Rot, but one RZ angle is 0
     (
         np.array(
@@ -76,9 +76,9 @@ class TestQubitUnitaryZYZDecomposition:
         assert qml.math.allclose(obtained_gates[0].parameters, expected_params, atol=1e-7)
 
         if obtained_gates[0].num_params == 1:
-            obtained_mat = qml.RZ(obtained_gates[0].parameters[0], wires=0).matrix
+            obtained_mat = qml.RZ(obtained_gates[0].parameters[0], wires=0).get_matrix()
         else:
-            obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix
+            obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).get_matrix()
 
         assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
 
@@ -100,9 +100,9 @@ class TestQubitUnitaryZYZDecomposition:
         )
 
         if obtained_gates[0].num_params == 1:
-            obtained_mat = qml.RZ(obtained_gates[0].parameters[0], wires=0).matrix
+            obtained_mat = qml.RZ(obtained_gates[0].parameters[0], wires=0).get_matrix()
         else:
-            obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix
+            obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).get_matrix()
 
         assert check_matrix_equivalence(obtained_mat, qml.math.unwrap(U), atol=1e-7)
 
@@ -123,9 +123,11 @@ class TestQubitUnitaryZYZDecomposition:
 
         if obtained_gates[0].num_params == 1:
             # With TF and RZ, need to cast since can't just unwrap
-            obtained_mat = qml.RZ(obtained_gates[0].parameters[0].numpy(), wires=0).matrix
+            obtained_mat = qml.RZ(obtained_gates[0].parameters[0].numpy(), wires=0).get_matrix()
         else:
-            obtained_mat = qml.Rot(*qml.math.unwrap(obtained_gates[0].parameters), wires=0).matrix
+            obtained_mat = qml.Rot(
+                *qml.math.unwrap(obtained_gates[0].parameters), wires=0
+            ).get_matrix()
 
         assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
 
@@ -153,9 +155,9 @@ class TestQubitUnitaryZYZDecomposition:
         )
 
         if obtained_gates[0].num_params == 1:
-            obtained_mat = qml.RZ(obtained_gates[0].parameters[0], wires=0).matrix
+            obtained_mat = qml.RZ(obtained_gates[0].parameters[0], wires=0).get_matrix()
         else:
-            obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).matrix
+            obtained_mat = qml.Rot(*obtained_gates[0].parameters, wires=0).get_matrix()
 
         assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
 

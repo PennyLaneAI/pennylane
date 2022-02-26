@@ -20,6 +20,91 @@ import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 
+def grad_method_validation(method, tape):
+    """Validates if the gradient method requested is supported by the trainable
+    parameters of a tape, and returns the allowed parameter gradient methods.
+
+    This method will generate parameter gradient information for the given tape if it
+    has not already been generated, and then proceed to validate the gradient method.
+    In particular:
+
+    * An exception will be raised if there exist non-differentiable trainable
+      parameters on the tape.
+
+    * An exception will be raised if the Jacobian method is ``"analytic"`` but there
+      exist some trainable parameters on the tape that only support numeric differentiation.
+
+    If all validations pass, this method will return a tuple containing the allowed parameter
+    gradient methods for each trainable parameter.
+
+    Args:
+        method (str): the overall Jacobian differentiation method
+        tape (.JacobianTape): the tape with associated parameter information
+
+    Returns:
+        tuple[str, None]: the allowed parameter gradient methods for each trainable parameter
+    """
+
+    diff_methods = {
+        idx: info["grad_method"]
+        for idx, info in tape._par_info.items()  # pylint: disable=protected-access
+        if idx in tape.trainable_params
+    }
+
+    # check and raise an error if any parameters are non-differentiable
+    nondiff_params = {idx for idx, g in diff_methods.items() if g is None}
+
+    if nondiff_params:
+        raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
+
+    numeric_params = {idx for idx, g in diff_methods.items() if g == "F"}
+
+    # If explicitly using analytic mode, ensure that all parameters
+    # support analytic differentiation.
+    if method == "analytic" and numeric_params:
+        raise ValueError(
+            f"The analytic gradient method cannot be used with the parameter(s) {numeric_params}."
+        )
+
+    return tuple(diff_methods.values())
+
+
+def choose_grad_methods(diff_methods, argnum):
+    """Chooses the trainable parameters to use for computing the Jacobian
+    by returning a map of their indices and differentiation methods.
+
+    When there are fewer parameters specified than the total number of
+    trainable parameters, the Jacobian is estimated by using the parameters
+    specified using the ``argnum`` keyword argument.
+
+    Args:
+        diff_methods (list): the ordered list of differentiation methods
+            for each parameter
+        argnum (int, list(int), None): Indices for argument(s) with respect
+            to which to compute the Jacobian.
+
+    Returns:
+        dict: map of the trainable parameter indices and
+        differentiation methods
+    """
+    if argnum is None:
+        return dict(enumerate(diff_methods))
+
+    if isinstance(argnum, int):
+        argnum = [argnum]
+
+    num_params = len(argnum)
+
+    if num_params == 0:
+        warnings.warn(
+            "No trainable parameters were specified for computing the Jacobian.",
+            UserWarning,
+        )
+        return {}
+
+    return {idx: diff_methods[idx] for idx in argnum}
+
+
 class gradient_transform(qml.batch_transform):
     """Decorator for defining quantum gradient transforms.
 

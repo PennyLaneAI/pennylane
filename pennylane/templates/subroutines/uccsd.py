@@ -162,16 +162,12 @@ class UCCSD(Operation):
                 f"Weights tensor must be of shape {(len(s_wires) + len(d_wires),)}; got {shape}."
             )
 
-        # we can extract the numpy representation here
-        # since init_state can never be differentiable
-        self.init_state = qml.math.toarray(init_state)
-        self.s_wires = s_wires
-        self.d_wires = d_wires
+        init_state = qml.math.toarray(init_state)
 
         if init_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
 
-        self.init_state_flipped = np.flip(init_state)
+        self._hyperparameters = {"init_state": init_state, "s_wires": s_wires, "d_wires": d_wires}
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
@@ -179,18 +175,44 @@ class UCCSD(Operation):
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(
+        weights, wires, s_wires, d_wires, init_state
+    ):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        weights = self.parameters[0]
+        .. math:: O = O_1 O_2 \dots O_n.
 
-        with qml.tape.QuantumTape() as tape:
 
-            BasisState(self.init_state_flipped, wires=self.wires)
 
-            for i, (w1, w2) in enumerate(self.d_wires):
-                qml.FermionicDoubleExcitation(weights[len(self.s_wires) + i], wires1=w1, wires2=w2)
+        .. seealso:: :meth:`~.UCCSD.decomposition`.
 
-            for j, s_wires_ in enumerate(self.s_wires):
-                qml.FermionicSingleExcitation(weights[j], wires=s_wires_)
+        Args:
+            weights (tensor_like): Size ``(len(s_wires) + len(d_wires),)`` tensor containing the parameters
+                entering the Z rotation in :func:`~.FermionicSingleExcitation` and :func:`~.FermionicDoubleExcitation`.
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            s_wires (Sequence[Sequence]): Sequence of lists containing the wires ``[r,...,p]``
+                resulting from the single excitation.
+            d_wires (Sequence[Sequence[Sequence]]): Sequence of lists, each containing two lists that
+                specify the indices ``[s, ...,r]`` and ``[q,..., p]`` defining the double excitation.
+            init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
+                HF state. ``init_state`` is used to initialize the wires.
 
-        return tape
+        Returns:
+            list[.Operator]: decomposition of the operator
+        """
+        op_list = []
+
+        init_state_flipped = np.flip(init_state)
+
+        op_list.append(BasisState(init_state_flipped, wires=wires))
+
+        for i, (w1, w2) in enumerate(d_wires):
+            op_list.append(
+                qml.FermionicDoubleExcitation(weights[len(s_wires) + i], wires1=w1, wires2=w2)
+            )
+
+        for j, s_wires_ in enumerate(s_wires):
+            op_list.append(qml.FermionicSingleExcitation(weights[j], wires=s_wires_))
+
+        return op_list
