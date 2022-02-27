@@ -1912,8 +1912,7 @@ class TestCutCircuitTransform:
     def test_simple_cut_circuit_jax(self, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
-        gradient for a simple circuit using the `cut_circuit` transform with the Jax interface and
-        using JIT.
+        gradient for a simple circuit using the `cut_circuit` transform with the Jax interface.
         """
         jax = pytest.importorskip("jax")
         import jax.numpy as jnp
