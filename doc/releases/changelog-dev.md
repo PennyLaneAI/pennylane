@@ -145,6 +145,10 @@
 
 <h3>Bug fixes</h3>
 
+* The ``qml.ctrl`` transform now works correctly with gradient transforms
+  such as the parameter-shift rule.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 * Fixes a bug in which passing required arguments into operations as
   keyword arguments would throw an error because the documented call
   signature didn't match the function definition.
