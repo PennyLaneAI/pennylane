@@ -1982,6 +1982,15 @@ class TestCutCircuitTransformValidation:
             with pytest.raises(ImportError, match="The opt_einsum package is required"):
                 qcut.cut_circuit(tape, use_opt_einsum=True)
 
+    def test_no_cuts_raises(self):
+        """Tests if a ValueError is raised when circuit cutting is to be applied to a circuit
+        without cuts"""
+        with qml.tape.QuantumTape() as tape:
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="to a circuit without any cuts"):
+            qcut.cut_circuit(tape)
+
 
 class TestCutStrategy:
     """Tests for class CutStrategy"""

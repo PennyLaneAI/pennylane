@@ -34,7 +34,6 @@ from pennylane.measure import MeasurementProcess
 from pennylane.operation import Expectation, Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
-from pennylane.transforms import batch_transform
 from pennylane.wires import Wires
 
 from .batch_transform import batch_transform
@@ -945,6 +944,12 @@ def cut_circuit(
                 "True in the cut_circuit function. This package can be "
                 "installed using:\npip install opt_einsum"
             ) from e
+
+    num_cut = len([op for op in tape.operations if isinstance(op, WireCut)])
+    if num_cut == 0:
+        raise ValueError(
+            "Attempting to apply the circuit cutting workflow to a circuit without any cuts"
+        )
 
     g = tape_to_graph(tape)
     replace_wire_cut_nodes(g)
