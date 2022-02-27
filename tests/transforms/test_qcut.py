@@ -1931,7 +1931,9 @@ class TestCutCircuitTransform:
 
         x = torch.tensor(0.531, requires_grad=True)
 
-        cut_circuit_jit = torch.jit.trace(qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum), x)
+        cut_circuit_jit = torch.jit.trace(
+            qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum), x
+        )
 
         spy = mocker.spy(qcut, "qcut_processing_fn")
         res = cut_circuit_jit(x)
@@ -2006,7 +2008,9 @@ class TestCutCircuitTransform:
             return qml.expval(qml.PauliZ(wires=[0]))
 
         x = tf.Variable(0.531)
-        cut_circuit_jit = tf.function(qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum), jit_compile=True)
+        cut_circuit_jit = tf.function(
+            qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum), jit_compile=True
+        )
 
         spy = mocker.spy(qcut, "qcut_processing_fn")
 
