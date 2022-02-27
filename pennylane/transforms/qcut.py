@@ -924,7 +924,7 @@ def cut_circuit(
         >>> qml.grad(cut_circuit)(x)
         -0.506395895364911
     """
-    if len(tape.measurements) > 1:
+    if len(tape.measurements) != 1:
         raise ValueError(
             "The circuit cutting workflow only supports circuits with a single output "
             "measurement"
