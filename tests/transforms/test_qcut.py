@@ -1976,6 +1976,47 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected)
         assert np.isclose(grad, grad_expected)
 
+    def test_simple_cut_circuit_jax_jit(self, mocker, use_opt_einsum):
+        """
+        Tests the full circuit cutting pipeline returns the correct value and
+        gradient for a simple circuit using the `cut_circuit` transform with the Jax interface and
+        using JIT.
+        """
+        jax = pytest.importorskip("jax")
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+        x = jnp.array(0.531)
+        cut_circuit_jit = jax.jit(qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum))
+
+        spy = mocker.spy(qcut, "qcut_processing_fn")
+
+        # Note we call the function twice but assert qcut_processing_fn is called once. We expect
+        # qcut_processing_fn to be called once during JIT compilation, with subsequent calls to
+        # cut_circuit_jit using the compiled code.
+        cut_circuit_jit(x)
+        res = cut_circuit_jit(x)
+        res_expected = circuit(x)
+
+        spy.assert_called_once()
+        assert np.isclose(res, res_expected)
+
+        grad = jax.grad(cut_circuit_jit)(x)
+        grad_expected = jax.grad(circuit)(x)
+
+        assert np.isclose(grad, grad_expected)
+
     def test_with_mid_circuit_measurement(self, mocker, use_opt_einsum):
         """Tests the full circuit cutting pipeline returns the correct value and gradient for a
         circuit that contains mid-circuit measurements, using the `cut_circuit` transform."""
