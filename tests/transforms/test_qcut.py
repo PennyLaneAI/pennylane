@@ -1898,7 +1898,6 @@ class TestCutCircuitTransform:
         res = cut_circuit(x)
         res_expected = circuit(x)
         assert np.isclose(res.detach().numpy(), res_expected.detach().numpy())
-        assert isinstance(res, torch.Tensor)
 
         res.backward()
         grad = x.grad.detach().numpy()
