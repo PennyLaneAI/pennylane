@@ -297,6 +297,10 @@ class op_transform:
 
         return self._tape_fn(obj, *args, **kwargs)
 
+    @property
+    def is_qfunc_transform(self):
+        return isinstance(getattr(self._tape_fn, "tape_fn", None), qml.single_tape_transform)
+
     def tape_transform(self, fn):
         """Register a tape transformation to enable the operator transform
         to apply to datastructures containing multiple operations, such as QNodes, qfuncs,
@@ -373,6 +377,9 @@ class op_transform:
 
                 if isinstance(tape, qml.operation.Operator):
                     return self.fn(tape, *targs, **tkwargs)
+
+                if self.is_qfunc_transform:
+                    return self.tape_fn(obj, *kwargs, **tkwargs)(*args, **kwargs)
 
                 return self.tape_fn(tape, *targs, **tkwargs)
 
