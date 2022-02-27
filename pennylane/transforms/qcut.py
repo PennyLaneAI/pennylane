@@ -924,6 +924,27 @@ def cut_circuit(
         >>> qml.grad(cut_circuit)(x)
         -0.506395895364911
     """
+    if len(tape.measurements) != 1:
+        raise ValueError(
+            "The circuit cutting workflow only supports circuits with a single output "
+            "measurement"
+        )
+
+    if not all([m.return_type is Expectation for m in tape.measurements]):
+        raise ValueError(
+            "The circuit cutting workflow only supports circuits with expectation "
+            "value measurements"
+        )
+
+    if use_opt_einsum:
+        try:
+            import opt_einsum
+        except ImportError as e:
+            raise ImportError(
+                "The opt_einsum package is required when use_opt_einsum is set to "
+                "True in the cut_circuit function. This package can be "
+                "installed using:\npip install opt_einsum"
+            ) from e
 
     g = tape_to_graph(tape)
     replace_wire_cut_nodes(g)
