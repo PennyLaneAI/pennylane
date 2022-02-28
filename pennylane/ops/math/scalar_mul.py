@@ -18,10 +18,9 @@ import pennylane as qml
 
 
 class ScalarMul(qml.operation.Operator):
-
     def __init__(self, scalar, op, do_queue=True, id=None):
-        self.hyperparameters['scalar'] = scalar
-        self.hyperparameters['op'] = op
+        self.hyperparameters["scalar"] = scalar
+        self.hyperparameters["op"] = op
 
         super().__init__(*op.parameters, scalar, wires=op.wires, do_queue=do_queue, id=id)
         self._name = f"{scalar}  {op.name}"
@@ -40,7 +39,7 @@ class ScalarMul(qml.operation.Operator):
 
     @staticmethod
     def compute_matrix(*params, scalar, op, **hyperparams):
-        return scalar*op.get_matrix()
+        return scalar * op.get_matrix()
 
 
 def scalar_multiply(scalar, op):

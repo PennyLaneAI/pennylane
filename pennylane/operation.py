@@ -1088,6 +1088,8 @@ class Operator(abc.ABC):
 
     def __matmul__(self, other):
         return qml.ops.math.MatMul(self, other)
+
+
 # =============================================================================
 # Base Operation class
 # =============================================================================

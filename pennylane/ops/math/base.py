@@ -22,7 +22,7 @@ class OpWrapper(qml.operation.Operator):
 
     def __init__(self, base=None, do_queue=True, id=None):
         self.base = base
-        self.hyperparameters['base'] = base
+        self.hyperparameters["base"] = base
         self.hyperparameters.update(base.hyperparameters)
         super().__init__(*base.parameters, wires=base.wires, do_queue=do_queue, id=id)
         self._name = f"{self.__class__.__name__}({self.base.name})"

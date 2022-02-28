@@ -18,14 +18,15 @@ import pennylane as qml
 
 
 class MatMul(qml.operation.Operator):
-
     def __init__(self, left, right, do_queue=True, id=None):
 
-        self.hyperparameters['left'] = left
-        self.hyperparameters['right'] = right
+        self.hyperparameters["left"] = left
+        self.hyperparameters["right"] = right
 
         combined_wires = qml.wires.Wires.all_wires([left.wires, right.wires])
-        super().__init__(*left.parameters, *right.parameters, wires=combined_wires, do_queue=do_queue, id=id)
+        super().__init__(
+            *left.parameters, *right.parameters, wires=combined_wires, do_queue=do_queue, id=id
+        )
         self._name = f"{right.name} {left.name}"
 
     def __repr__(self):
@@ -44,7 +45,9 @@ class MatMul(qml.operation.Operator):
     def compute_matrix(*params, left, right, **hyperparams):
         # ugly to compute this here again!
         combined_wires = qml.wires.Wires.all_wires([left.wires, right.wires])
-        return left.get_matrix(wire_order=combined_wires) @ right.get_matrix(wire_order=combined_wires)
+        return left.get_matrix(wire_order=combined_wires) @ right.get_matrix(
+            wire_order=combined_wires
+        )
 
 
 def matmul(left, right):

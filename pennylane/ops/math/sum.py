@@ -18,14 +18,15 @@ import pennylane as qml
 
 
 class Sum(qml.operation.Operator):
-
     def __init__(self, left, right, do_queue=True, id=None):
 
-        self.hyperparameters['left'] = left
-        self.hyperparameters['right'] = right
+        self.hyperparameters["left"] = left
+        self.hyperparameters["right"] = right
 
         combined_wires = qml.wires.Wires.all_wires([left.wires, right.wires])
-        super().__init__(*left.parameters, *right.parameters, wires=combined_wires, do_queue=do_queue, id=id)
+        super().__init__(
+            *left.parameters, *right.parameters, wires=combined_wires, do_queue=do_queue, id=id
+        )
         self._name = f"{right.name} + {left.name}"
 
     def __repr__(self):
@@ -38,13 +39,15 @@ class Sum(qml.operation.Operator):
 
     @staticmethod
     def compute_terms(*params, **hyperparams):
-        return [1., 1.], [hyperparams["left"], hyperparams["right"]]
+        return [1.0, 1.0], [hyperparams["left"], hyperparams["right"]]
 
     @staticmethod
     def compute_matrix(*params, left, right, **hyperparams):
         # ugly to compute this here again!
-        combined_wires = qml.wires.Wires.all_wires([right.wires, left.wires]);
-        return left.get_matrix(wire_order=combined_wires) + right.get_matrix(wire_order=combined_wires)
+        combined_wires = qml.wires.Wires.all_wires([right.wires, left.wires])
+        return left.get_matrix(wire_order=combined_wires) + right.get_matrix(
+            wire_order=combined_wires
+        )
 
 
 def sum(left, right):
