@@ -282,12 +282,12 @@ def _openfermion_pennylane_equivalent(
     return openfermion_qubit_operator == _pennylane_to_openfermion(coeffs, ops, wires=wires)
 
 
-def import_observable(qubit_observable, format, wires=None, tol=1e08):
+def import_operator(qubit_observable, format, wires=None, tol=1e08):
     r"""Converts an external operator to a Pennylane operator.
 
     Args:
-        qubit_observable: External qubit observable that will be converted
-        format (str): the format of the observable object to convert from
+        qubit_observable: External qubit operator that will be converted
+        format (str): the format of the operator object to convert from
         wires (.Wires, list, tuple, dict): Custom wire mapping used to convert the ``QubitOperator``
             to a PennyLane operator.
             For types ``Wires``/list/tuple, each item in the iterable represents a wire label
@@ -307,12 +307,12 @@ def import_observable(qubit_observable, format, wires=None, tol=1e08):
 
     >>> from openfermion import QubitOperator
     >>> h_of = QubitOperator('X0 X1 Y2 Y3', -0.0548) + QubitOperator('Z0 Z1', 0.14297)
-    >>> h_pl = import_observable(h_of, format='openfermion')
+    >>> h_pl = import_operator(h_of, format='openfermion')
     >>> print(h_pl)
     (0.14297) [Z0 Z1]
     + (-0.0548) [X0 X1 Y2 Y3]
     """
-    if format not in ["openfermion"]:
+    if format not in ("openfermion"):
         raise TypeError(f"Converter does not exist for {format} format.")
 
     if any(

@@ -29,7 +29,7 @@ from pennylane.hf.convert import (
     _openfermion_to_pennylane,
     _pennylane_to_openfermion,
     _process_wires,
-    import_observable,
+    import_operator,
 )
 
 
@@ -324,7 +324,7 @@ def test_observable_conversion(mol_name, terms_ref, custom_wires, monkeypatch):
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
 
-    vqe_observable = import_observable(qOp, "openfermion", custom_wires)
+    vqe_observable = import_operator(qOp, "openfermion", custom_wires)
 
     print(vqe_observable)
 
@@ -348,7 +348,7 @@ def test_convert_format_not_supported(terms_ref, format, monkeypatch):
         monkeypatch.setattr(qOp, "terms", terms_ref)
 
     with pytest.raises(TypeError, match="Converter does not exist for"):
-        import_observable(qOp, format)
+        import_operator(qOp, format)
 
 
 def test_not_xyz_pennylane_to_openfermion():
@@ -384,7 +384,7 @@ def test_wires_not_covered_pennylane_to_openfermion():
 
 
 def test_types_consistency():
-    r"""Test the type consistency of the qubit Hamiltonian constructed by 'import_observable' from
+    r"""Test the type consistency of the qubit Hamiltonian constructed by 'import_operator' from
     an OpenFermion QubitOperator with respect to the same observable built directly using PennyLane
     operations"""
 
@@ -394,8 +394,8 @@ def test_types_consistency():
     # Corresponding OpenFermion QubitOperator
     of = QubitOperator("", 1) + QubitOperator("Z0 X1", 2)
 
-    # Build PL operator using 'import_observable'
-    pl = import_observable(of, "openfermion")
+    # Build PL operator using 'import_operator'
+    pl = import_operator(of, "openfermion")
 
     ops = pl.ops
     ops_ref = pl_ref.ops
@@ -416,12 +416,12 @@ op_2 = QubitOperator("Z0 Y1", 2.23e-10j)
         (op_2, 1e06),
     ],
 )
-def test_exception_import_observable(qubit_op, tol):
+def test_exception_import_operator(qubit_op, tol):
     r"""Test that an error is raised if the QubitOperator contains complex coefficients.
     Currently the Hamiltonian class does not support complex coefficients.
     """
     with pytest.raises(TypeError, match="The coefficients entering the QubitOperator must be real"):
-        import_observable(qubit_op, "openfermion", tol=tol)
+        import_operator(qubit_op, "openfermion", tol=tol)
 
 
 def test_identities_pennylane_to_openfermion():
@@ -507,12 +507,12 @@ def test_pennylane_to_openfermion_no_decomp():
 def test_integration_observable_to_vqe_cost(
     monkeypatch, mol_name, terms_ref, expected_cost, custom_wires, tol
 ):
-    r"""Test if `import_observable()` integrates with `ExpvalCost()` in pennylane"""
+    r"""Test if `import_operator()` integrates with `ExpvalCost()` in pennylane"""
 
     qOp = QubitOperator()
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
-    vqe_observable = import_observable(qOp, "openfermion", custom_wires)
+    vqe_observable = import_operator(qOp, "openfermion", custom_wires)
 
     num_qubits = len(vqe_observable.wires)
     assert vqe_observable.terms.__repr__()  # just to satisfy codecov
