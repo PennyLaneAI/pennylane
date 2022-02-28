@@ -37,7 +37,7 @@ single_qubit_decomps = [
     (T, qml.RZ, [np.pi / 4]),
     (qml.RZ(0.3, wires=0).get_matrix(), qml.RZ, [0.3]),
     (qml.RZ(-0.5, wires=0).get_matrix(), qml.RZ, [-0.5]),
-    # This is an off-diagonal gate that gets converted to Rot, but one RZ angle is 0
+    # Next set of gates are non-diagonal and decomposed as Rots
     (
         np.array(
             [
@@ -48,7 +48,6 @@ single_qubit_decomps = [
         qml.Rot,
         [-0.18409714468526372, np.pi, 0.18409714468526372],
     ),
-    # Next set of gates are non-diagonal and decomposed as Rots
     (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
     (X, qml.Rot, [np.pi / 2, np.pi, -np.pi / 2]),
     (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
