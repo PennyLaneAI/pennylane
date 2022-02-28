@@ -148,8 +148,9 @@
 
 <h3>Bug fixes</h3>
 
-* The `QubitUnitary` now supports jitting. 
-
+* The `qml.QubitUnitary` operation now supports jitting. 
+  [(#2249)](https://github.com/PennyLaneAI/pennylane/pull/2249)
+  
 * Fixes a bug in which passing required arguments into operations as
   keyword arguments would throw an error because the documented call
   signature didn't match the function definition.
