@@ -600,7 +600,7 @@ def density_matrix(wires):
 T = TypeVar("T")
 
 
-class MeasurementDependantValue(Generic[T]):
+class MeasurementValue(Generic[T]):
     """A class representing unknown measurement outcomes in the qubit model.
 
     By default, measurements in the computational basis are assumed.
@@ -628,7 +628,7 @@ class MeasurementDependantValue(Generic[T]):
 
     @property
     def branches(self):
-        """A dictionary representing all the possible outcomes of the MeasurementDependantValue."""
+        """A dictionary representing all the possible outcomes of the MeasurementValue."""
         branch_dict = {}
         branch_dict[(0,)] = self._zero_case
         branch_dict[(1,)] = self._one_case
@@ -645,7 +645,7 @@ class MeasurementDependantValue(Generic[T]):
 
     @property
     def measurements(self):
-        """List of all measurements this MeasurementDependantValue depends on."""
+        """List of all measurements this MeasurementValue depends on."""
         return [self._depends_on]
 
 
@@ -659,4 +659,4 @@ def measure(wire):
     """
     measurement_id = str(uuid.uuid4())[:8]
     MeasurementProcess(MidMeasure, wires=qml.wires.Wires(wire), id=measurement_id)
-    return MeasurementDependantValue(measurement_id)
+    return MeasurementValue(measurement_id)

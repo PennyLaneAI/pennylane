@@ -19,7 +19,7 @@ from functools import wraps
 import pennylane as qml
 from pennylane.tape import QuantumTape, get_active_tape
 from pennylane.operation import DecompositionUndefinedError, Operation, AnyWires
-from pennylane.measurements import MeasurementDependantValue
+from pennylane.measurements import MeasurementValue
 from pennylane.wires import Wires
 from pennylane.transforms.adjoint import adjoint
 from typing import Type
@@ -34,7 +34,7 @@ class Conditional(Operation):
 
     def __init__(
         self,
-        expr: MeasurementDependantValue[bool],
+        expr: MeasurementValue[bool],
         then_op: Type[Operation],
         else_op = None: Type[Operation],
         do_queue=True,

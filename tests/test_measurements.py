@@ -305,6 +305,12 @@ class TestSample:
 
         circuit()
 
+class TestMeasure:
+    """Tests for the measure function"""
+
+    def test_measure_assertion_error(self, stat_func, return_type, op):
+        """Test that the return_type related info is updated for a
+        measurement"""
 
 @pytest.mark.parametrize(
     "stat_func,return_type", [(expval, Expectation), (var, Variance), (sample, Sample)]
