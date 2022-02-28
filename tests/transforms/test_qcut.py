@@ -785,6 +785,7 @@ class TestFragmentGraph:
         ]
         expected_edges = [
             sub_0_expected_edges,
+            sub_1_expected_edges,
         ]
 
         for subgraph, expected_n in zip(subgraphs, expected_nodes):
