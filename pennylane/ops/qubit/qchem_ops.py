@@ -166,8 +166,8 @@ class SingleExcitation(Operation):
         (phi,) = self.parameters
         return SingleExcitation(-phi, wires=self.wires)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
 
 
 class SingleExcitationMinus(Operation):
@@ -305,8 +305,8 @@ class SingleExcitationMinus(Operation):
         (phi,) = self.parameters
         return SingleExcitationMinus(-phi, wires=self.wires)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G₋")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "G₋", cache=cache)
 
 
 class SingleExcitationPlus(Operation):
@@ -444,8 +444,8 @@ class SingleExcitationPlus(Operation):
         (phi,) = self.parameters
         return SingleExcitationPlus(-phi, wires=self.wires)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G₊")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "G₊", cache=cache)
 
 
 class DoubleExcitation(Operation):
@@ -644,8 +644,8 @@ class DoubleExcitation(Operation):
         (theta,) = self.parameters
         return DoubleExcitation(-theta, wires=self.wires)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G²")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "G²", cache=cache)
 
 
 class DoubleExcitationPlus(Operation):
@@ -739,8 +739,8 @@ class DoubleExcitationPlus(Operation):
         (theta,) = self.parameters
         return DoubleExcitationPlus(-theta, wires=self.wires)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G²₊")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "G²₊", cache=cache)
 
 
 class DoubleExcitationMinus(Operation):
@@ -832,8 +832,8 @@ class DoubleExcitationMinus(Operation):
         (theta,) = self.parameters
         return DoubleExcitationMinus(-theta, wires=self.wires)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "G²₋")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "G²₋", cache=cache)
 
 
 class OrbitalRotation(Operation):
