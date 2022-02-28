@@ -477,3 +477,72 @@ class TestExpansion:
         res = matrix(op)
         assert isinstance(res, np.ndarray)
         assert res.shape == (2**3, 2**3)
+
+
+matrix = qml.op_transform(lambda op, wire_order=None: op.get_matrix(wire_order=wire_order))
+
+
+@matrix.tape_transform
+def matrix_tape(tape, wire_order=None):
+    n_wires = len(wire_order)
+    unitary_matrix = np.eye(2**n_wires)
+
+    for op in tape.operations:
+        unitary_matrix = matrix(op, wire_order=wire_order) @ unitary_matrix
+
+    return unitary_matrix
+
+
+class TestWireOrder:
+    """Test for wire re-ordering"""
+
+    def test_instantiated_operator(self):
+        """Test that wire order can be passed to an instantiated operator"""
+        op = qml.PauliZ(wires=0)
+        res = matrix(op, wire_order=[1, 0])
+        expected = np.kron(np.eye(2), np.diag([1, -1]))
+        assert np.allclose(res, expected)
+
+    def test_single_operator_qfunc(self, mocker):
+        """Test that wire order can be passed to a quantum function"""
+        spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
+        res = matrix(qml.PauliZ, wire_order=["a", 0])(0)
+        expected = np.kron(np.eye(2), np.diag([1, -1]))
+        assert np.allclose(res, expected)
+        assert spy.spy_return[1].tolist() == ["a", 0]
+
+    def test_tape(self, mocker):
+        """Test that wire order can be passed to a tape"""
+        spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliZ(wires=0)
+
+        res = matrix(tape, wire_order=["a", 0])
+        expected = np.kron(np.eye(2), np.diag([1, -1]))
+        assert np.allclose(res, expected)
+        assert spy.spy_return[1].tolist() == ["a", 0]
+
+    def test_inconsistent_wires_tape(self, mocker):
+        """Test that an exception is raised if the wire order and tape wires are inconsistent"""
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliZ(wires=0)
+            qml.PauliY(wires="b")
+
+        with pytest.raises(
+            OperationTransformError,
+            match=r"Wires in circuit .+ inconsistent with those in wire\_order",
+        ):
+            matrix(tape, wire_order=["b", "a"])
+
+    def test_qfunc(self, mocker):
+        """Test that wire order can be passed to a qfunc"""
+        spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
+
+        def qfunc():
+            qml.PauliZ(wires=0)
+
+        res = matrix(qfunc, wire_order=["a", 0])()
+        expected = np.kron(np.eye(2), np.diag([1, -1]))
+        assert np.allclose(res, expected)
+        assert spy.spy_return[1].tolist() == ["a", 0]
