@@ -15,6 +15,8 @@
 Unit tests for functions needed for converting observables obtained from external libraries to a
 PennyLane observable.
 """
+import sys
+
 import pytest
 
 pytest.importorskip("openfermion")
@@ -322,7 +324,7 @@ def test_observable_conversion(mol_name, terms_ref, custom_wires, monkeypatch):
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
 
-    vqe_observable = import_observable(qOp, custom_wires)
+    vqe_observable = import_observable(qOp, "openfermion", custom_wires)
 
     print(vqe_observable)
 
@@ -330,6 +332,23 @@ def test_observable_conversion(mol_name, terms_ref, custom_wires, monkeypatch):
         custom_wires = {v: k for k, v in custom_wires.items()}
 
     assert _openfermion_pennylane_equivalent(qOp, vqe_observable, custom_wires)
+
+
+@pytest.mark.parametrize(
+    ("terms_ref", "format"),
+    [
+        ({((0, "Z"),): (0.155924093421341 + 0j)}, "qiskit"),
+    ],
+)
+def test_convert_format_not_supported(terms_ref, format, monkeypatch):
+    """Test if an ImportError is raised when openfermion is requested but not installed"""
+
+    qOp = QubitOperator()
+    if terms_ref is not None:
+        monkeypatch.setattr(qOp, "terms", terms_ref)
+
+    with pytest.raises(TypeError, match="Converter does not exist for"):
+        import_observable(qOp, format)
 
 
 def test_not_xyz_pennylane_to_openfermion():
@@ -376,7 +395,7 @@ def test_types_consistency():
     of = QubitOperator("", 1) + QubitOperator("Z0 X1", 2)
 
     # Build PL operator using 'import_observable'
-    pl = import_observable(of)
+    pl = import_observable(of, "openfermion")
 
     ops = pl.ops
     ops_ref = pl_ref.ops
@@ -402,7 +421,7 @@ def test_exception_import_observable(qubit_op, tol):
     Currently the Hamiltonian class does not support complex coefficients.
     """
     with pytest.raises(TypeError, match="The coefficients entering the QubitOperator must be real"):
-        import_observable(qubit_op, tol=tol)
+        import_observable(qubit_op, "openfermion", tol=tol)
 
 
 def test_identities_pennylane_to_openfermion():
@@ -493,7 +512,7 @@ def test_integration_observable_to_vqe_cost(
     qOp = QubitOperator()
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
-    vqe_observable = import_observable(qOp, custom_wires)
+    vqe_observable = import_observable(qOp, "openfermion", custom_wires)
 
     num_qubits = len(vqe_observable.wires)
     assert vqe_observable.terms.__repr__()  # just to satisfy codecov
@@ -553,3 +572,19 @@ def test_process_wires_raises():
 
     with pytest.raises(ValueError, match="Length of `wires`"):
         _process_wires([3, 4], 3)
+
+
+def test_fail_import_openfermion(monkeypatch):
+    """Test if an ImportError is raised when openfermion is requested but not installed"""
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "openfermion", None)
+
+        with pytest.raises(ImportError, match="The OpenFermion package is required"):
+            _pennylane_to_openfermion(
+                np.array([0.1 + 0.0j, 0.0]),
+                [
+                    qml.operation.Tensor(qml.PauliX(0)),
+                    qml.operation.Tensor(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
+                ],
+            )

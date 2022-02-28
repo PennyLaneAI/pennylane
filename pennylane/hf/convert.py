@@ -36,7 +36,7 @@ def _process_wires(wires, n_wires=None):
     dict for partial or unordered mapping.
 
     Args:
-        wires (Wires, list, tuple, dict): User wire labels or mapping for Pennylane ansatz.
+        wires (Wires, list, tuple, dict): User wire labels.
             For types Wires, list, or tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) or
@@ -208,7 +208,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
     try:
         import openfermion
     except ImportError:
-        raise ImportError("Cannot import OpenFermion.")
+        raise ImportError("The OpenFermion package is required.")
 
     all_wires = Wires.all_wires([op.wires for op in ops], sort=True)
 
@@ -282,11 +282,12 @@ def _openfermion_pennylane_equivalent(
     return openfermion_qubit_operator == _pennylane_to_openfermion(coeffs, ops, wires=wires)
 
 
-def import_observable(qubit_observable, wires=None, tol=1e08):
-    r"""Converts an OpenFermion :class:`~.QubitOperator` operator to a Pennylane operator.
+def import_observable(qubit_observable, format, wires=None, tol=1e08):
+    r"""Converts an external operator to a Pennylane operator.
 
     Args:
-        qubit_observable (QubitOperator): Observable represented as an OpenFermion ``QubitOperator``
+        qubit_observable: External qubit observable that will be converted
+        format (str): the format of the observable object to convert from
         wires (.Wires, list, tuple, dict): Custom wire mapping used to convert the ``QubitOperator``
             to a PennyLane operator.
             For types ``Wires``/list/tuple, each item in the iterable represents a wire label
@@ -306,11 +307,14 @@ def import_observable(qubit_observable, wires=None, tol=1e08):
 
     >>> from openfermion import QubitOperator
     >>> h_of = QubitOperator('X0 X1 Y2 Y3', -0.0548) + QubitOperator('Z0 Z1', 0.14297)
-    >>> h_pl = import_observable(h_of)
+    >>> h_pl = import_observable(h_of, format='openfermion')
     >>> print(h_pl)
     (0.14297) [Z0 Z1]
     + (-0.0548) [X0 X1 Y2 Y3]
     """
+    if format not in ["openfermion"]:
+        raise TypeError(f"Converter does not exist for {format} format.")
+
     if any(
         np.iscomplex(np.real_if_close(coef, tol=tol)) for coef in qubit_observable.terms.values()
     ):
