@@ -64,7 +64,7 @@ def _make_tape(obj, wire_order, *args, **kwargs):
         wires = tape.wires
 
         # raise exception if it is not a quantum function
-        if len(tape.operations) == 0:
+        if len(tape.operations) == 0 and len(tape.measurements) == 0:
             raise OperationTransformError("Quantum function contains no quantum operations")
 
     else:
