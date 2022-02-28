@@ -51,10 +51,7 @@ def snapshots(qnode):
     def get_snapshots(*args, **kwargs):
         qnode(*args, **kwargs)
         try:
-            saved_snapshots = qnode.device.snapshots
-            if not any(isinstance(s, str) for s in saved_snapshots):
-                return list(saved_snapshots.values())
-            return saved_snapshots
+            return qnode.device.snapshots
         except AttributeError:
             # pylint: disable=raise-missing-from
             raise DeviceError("Device does not support snapshots.")
