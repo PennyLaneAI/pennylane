@@ -89,6 +89,9 @@
   of graph partitioning parameters.
   [(#2168)](https://github.com/PennyLaneAI/pennylane/pull/2168)
 
+  A suite of integration tests has been added.
+  [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
+
 <h3>Improvements</h3>
 
 * The `gradients` module has been streamlined and special-purpose functions
@@ -297,6 +300,8 @@ The Operator class has undergone a major refactor with the following changes:
   for developers.
   [(#2064)](https://github.com/PennyLaneAI/pennylane/pull/2064)
 
+* Moved ``expand()`` from ``Operation`` to ``Operator``.
+  [(#2239)](https://github.com/PennyLaneAI/pennylane/pull/2239)
 
 <h3>Contributors</h3>
 
