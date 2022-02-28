@@ -15,6 +15,7 @@
 This module contains the qml.eigvals function.
 """
 # pylint: disable=protected-access
+from functools import reduce
 import warnings
 
 import pennylane as qml
@@ -63,7 +64,7 @@ def eigvals(op):
     .. UsageDetails::
 
         ``qml.eigvals`` can also be used with QNodes, tapes, or quantum functions that
-        contain multiple operations. However, in this situation, **eigenvalues will
+        contain multiple operations. However, in this situation, **eigenvalues may
         be computed numerically**. This can lead to a large computational overhead
         for a large number of wires.
 
@@ -85,19 +86,41 @@ def eigvals(op):
                -0.92387953+0.38268343j, -0.92387953-0.38268343j])
     """
     if isinstance(op, qml.Hamiltonian):
+        warnings.warn(
+            "For Hamiltonians, the eigenvalues will be computed numerically. "
+            "This may be computationally intensive for a large number of wires.",
+            UserWarning,
+        )
         return qml.math.linalg.eigvalsh(qml.matrix(op))
 
+    # TODO: take into account for wire ordering
     return op.get_eigvals()
 
 
 @eigvals.tape_transform
 def eigvals(tape):
-    if len(tape.operations) == 1:
-        return eigvals(tape.operations[0])
+    op_wires = [op.wires for op in tape.operations]
+    all_wires = qml.wires.Wires.all_wires(op_wires).tolist()
+    unique_wires = qml.wires.Wires.unique_wires(op_wires).tolist()
 
-    warnings.warn(
-        "For multiple operations, the eigenvalues will be computed numerically. "
-        "This may be computationally intensive for a large number of wires.",
-        UserWarning,
-    )
-    return qml.math.linalg.eigvals(qml.matrix(tape))
+    if len(all_wires) != len(unique_wires):
+        warnings.warn(
+            "For multiple operations, the eigenvalues will be computed numerically. "
+            "This may be computationally intensive for a large number of wires.",
+            UserWarning,
+        )
+        return qml.math.linalg.eigvals(qml.matrix(tape))
+
+    # TODO: take into account for wire ordering, by reordering eigenvalues
+    # as per operator wires/wire ordering, and by inserting implicit identity
+    # matrices (eigenvalues [1, 1]) at missing locations.
+
+    ev = []
+
+    for op in tape.operations:
+        ev.append(eigvals(op))
+
+    if len(ev) == 1:
+        return ev[0]
+
+    return reduce(qml.math.kron, ev)
