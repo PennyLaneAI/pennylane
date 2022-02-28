@@ -93,7 +93,7 @@ class TestUI:
         res = my_transform(qml.CRX)(0.5, wires=[0, "a"])
         assert res == "CRX"
 
-        # check wire order
+        # check default wire order
         assert spy.spy_return[1].tolist() == [0, "a"]
 
     def test_multiple_operator_error(self):
@@ -115,10 +115,11 @@ class TestUI:
         ):
             multi_op_qfunc(1.5)
 
-    def test_multiple_operator_tape(self):
+    def test_multiple_operator_tape(self, mocker):
         """Test that a transform can be applied to a quantum function
         with multiple operations as long as it is registered _how_
         the transform applies to multiple operations."""
+        spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
 
         @qml.op_transform
         def my_transform(op):
@@ -130,15 +131,19 @@ class TestUI:
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(1.6, wires=0)
-            qml.RY(0.65, wires=1)
+            qml.RY(0.65, wires="a")
 
         res = my_transform(tape)
         assert res == ["RX", "RY"]
 
-    def test_multiple_operator_qfunc(self):
+        # check default wire order
+        assert spy.spy_return[1].tolist() == [0, "a"]
+
+    def test_multiple_operator_qfunc(self, mocker):
         """Test that a transform can be applied to a quantum function
         with multiple operations as long as it is registered _how_
         the transform applies to multiple operations."""
+        spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
 
         @qml.op_transform
         def my_transform(op):
@@ -152,20 +157,26 @@ class TestUI:
         def multi_op_qfunc(x):
             if x > 1:
                 qml.RX(x, wires=0)
-                qml.RY(0.65, wires=1)
+                qml.RY(0.65, wires="a")
             else:
-                qml.RZ(x, wires=0)
+                qml.RZ(x, wires="b")
 
         res = multi_op_qfunc(1.5)
         assert res == ["RX", "RY"]
+        # check default wire order
+        assert spy.spy_return[1].tolist() == [0, "a"]
 
         res = multi_op_qfunc(0.5)
         assert res == ["RZ"]
+        # check default wire order
+        assert spy.spy_return[1].tolist() == ["b"]
 
-    def test_qnode(self):
+    def test_qnode(self, mocker):
         """Test that a transform can be applied to a QNode
         with multiple operations as long as it is registered _how_
         the transform applies to multiple operations."""
+        dev = qml.device("default.qubit", wires=["a", 0, 3])
+        spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
 
         @qml.op_transform
         def my_transform(op):
@@ -176,21 +187,25 @@ class TestUI:
             return [op.name for op in tape.operations]
 
         @my_transform
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        @qml.qnode(dev)
         def multi_op_qfunc(x):
             if x > 1:
                 qml.RX(x, wires=0)
-                qml.RY(0.65, wires=1)
+                qml.RY(0.65, wires="a")
             else:
                 qml.RZ(x, wires=0)
 
-            return qml.probs(wires=0)
+            return qml.probs(wires="a")
 
         res = multi_op_qfunc(1.5)
         assert res == ["RX", "RY"]
+        # check default wire order
+        assert spy.spy_return[1] == dev.wires
 
         res = multi_op_qfunc(0.5)
         assert res == ["RZ"]
+        # check default wire order
+        assert spy.spy_return[1] == dev.wires
 
 
 class TestTransformParameters:
