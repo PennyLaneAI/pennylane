@@ -180,3 +180,32 @@ class TestUI:
 
         res = multi_op_qfunc(0.5)
         assert res == ["RZ"]
+
+    def test_transform_parameters(self):
+        """Test that transform parameters correctly work"""
+
+        @qml.op_transform
+        def my_transform(op, lower=False):
+            if lower:
+                return op.name.lower()
+            return op.name
+
+        @my_transform.tape_transform
+        def my_transform(tape, lower=False):
+            if lower:
+                return [op.name.lower() for op in tape.operations]
+            return [op.name for op in tape.operations]
+
+        @my_transform(lower=True)
+        def multi_op_qfunc(x):
+            if x > 1:
+                qml.RX(x, wires=0)
+                qml.RY(0.65, wires=1)
+            else:
+                qml.RZ(x, wires=0)
+
+        res = multi_op_qfunc(1.5)
+        assert res == ["rx", "ry"]
+
+        res = multi_op_qfunc(0.5)
+        assert res == ["rz"]
