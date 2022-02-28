@@ -4,10 +4,17 @@
 
 <h3>New features since last release</h3>
 
-* The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has 
-  a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions, 
-  deprecation of the `charset` keyword, and minor cosmetic changes.
+* The text based drawer accessed via `qml.draw` has been overhauled.
   [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
+  [(#2198)](https://github.com/PennyLaneAI/pennylane/pull/2198)
+
+  The new drawer has:
+
+  * a `decimals` keyword for controlling parameter rounding
+  * a `show_matrices` keyword for controlling display of matrices
+  * a different algorithm for determining positions
+  * deprecation of the `charset` keyword
+  * additional minor cosmetic changes
 
   ```
   @qml.qnode(qml.device('lightning.qubit', wires=2))
@@ -88,6 +95,10 @@
   constraints with circuit execution requirements to come up with the best sets
   of graph partitioning parameters.
   [(#2168)](https://github.com/PennyLaneAI/pennylane/pull/2168)
+
+  A suite of integration tests has been added.
+  [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
+  [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
 
 <h3>Improvements</h3>
 
