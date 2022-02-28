@@ -65,9 +65,10 @@ def _add_measurement(m, layer_str, wire_map, decimals, cache):
     """Updates ``layer_str`` with the ``m`` measurement."""
     layer_str = _add_grouping_symbols(m, layer_str, wire_map)
 
-    obs_label = (
-        None if m.obs is None else m.obs.label(decimals=decimals, cache=cache).replace("\n", "")
-    )
+    if m.obs is None:
+        obs_label = None
+    else:
+        obs_label = m.obs.label(decimals=decimals, cache=cache).replace("\n", "")
     meas_label = measurement_label_map[m.return_type](obs_label)
 
     if len(m.wires) == 0:  # state or probability across all wires
