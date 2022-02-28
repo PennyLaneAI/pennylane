@@ -356,14 +356,19 @@ class TestDifferentiation:
 
         assert np.allclose(res, expected)
 
-    def test_jax(self, diff_method):
+    @pytest.mark.parametrize("jax_interface", ["jax", "jax-python", "jax-jit"])
+    def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
+
+        if diff_method == "backprop" and jax_interface != "jax":
+            pytest.skip("The backprop case only accepts interface='jax'")
+
         jax = pytest.importorskip("jax")
         jnp = jax.numpy
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="jax")
+        @qml.qnode(dev, diff_method=diff_method, interface=jax_interface)
         def circuit(b):
             init_state = np.array([1.0, -1.0]) / np.sqrt(2)
             qml.QubitStateVector(init_state, wires=0)
