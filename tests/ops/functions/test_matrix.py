@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.ops.functions.op_transform import OperationTransformError
+from pennylane.transforms.op_transform import OperationTransformError
 
 from gate_data import I, X, Y, Z, H, S, CNOT, Roty as RY
 

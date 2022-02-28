@@ -17,10 +17,8 @@ This module contains the qml.matrix function.
 # pylint: disable=protected-access
 import pennylane as qml
 
-from .op_transform import op_transform
 
-
-@op_transform
+@qml.op_transform
 def matrix(op, *, wire_order=None):
     r"""The matrix representation of an operation or quantum circuit.
 

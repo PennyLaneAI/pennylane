@@ -43,7 +43,6 @@ from pennylane.tracker import Tracker
 from pennylane.io import *
 from pennylane.measure import density_matrix, expval, probs, sample, state, var
 from pennylane.ops import *
-from pennylane.ops.functions import *
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -67,10 +66,12 @@ from pennylane.transforms import (
     metric_tensor,
     specs,
     qfunc_transform,
+    op_transform,
     single_tape_transform,
     quantum_monte_carlo,
     apply_controlled_Q,
 )
+from pennylane.ops.functions import *
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
 
