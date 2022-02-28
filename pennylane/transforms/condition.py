@@ -85,7 +85,7 @@ def cond(measurement, then_op, else_op=None):
             return qml.expval(qml.PauliZ(1))
     """
 
-    @wraps(operation)
+    @wraps(then_op)
     def wrapper(*args, **kwargs):
         # TODO: use else_op
         return Conditional(measurement, then_op(*args, do_queue=False, **kwargs))
