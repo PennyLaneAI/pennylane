@@ -888,6 +888,18 @@ class Operator(abc.ABC):
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
     # =================================
+    # Arithmetics
+    # =================================
+
+    def __add__(self, other):
+        return qml.ops.Sum(self, other)
+
+    def __mul__(self, scalar):
+        return qml.ops.ScalarMul(self, scalar)
+
+    __rmul__ = __mul__
+
+    # =================================
     # Interface with tapes
     # =================================
 
@@ -1402,24 +1414,6 @@ class Observable(Operator):
         raise ValueError(
             "Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."
         )
-
-    def __add__(self, other):
-        r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if isinstance(other, qml.Hamiltonian):
-            return other + self
-        if isinstance(other, (Observable, Tensor)):
-            return qml.Hamiltonian([1, 1], [self, other], simplify=True)
-        raise ValueError(f"Cannot add Observable and {type(other)}")
-
-    def __mul__(self, a):
-        r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
-        if isinstance(a, (int, float)):
-
-            return qml.Hamiltonian([a], [self], simplify=True)
-
-        raise ValueError(f"Cannot multiply Observable by {type(a)}")
-
-    __rmul__ = __mul__
 
     def __sub__(self, other):
         r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
