@@ -169,6 +169,46 @@ class op_transform:
 
     >>> trace(qml.StronglyEntanglingLayers)(weights, wires=[0, 1])
     0.4253851061350833
+
+    If the transformation has purely quantum output, we can register the tape transformation
+    as a qfunc transformation in addition:
+
+    .. code-block:: python
+
+        @qml.op_transform
+        def simplify_rotation(op):
+            if op.name == "Rot":
+                params = op.parameters
+                wires = op.wires
+
+                if qml.math.allclose(params, 0):
+                    return
+
+                if qml.math.allclose(params[1:2], 0):
+                    return qml.RZ(params[0], wires)
+
+            return op
+
+        @simplify_rotation.tape_transform
+        @qml.qfunc_transform
+        def simplify_rotation(tape):
+            for op in tape.operations + tape.measurements:
+                if op.name == "Rot":
+                    simplify_rotation(op)
+                else:
+                    qml.apply(op)
+
+    We can now use this combined operator and quantum function transform in compilation pipelines:
+
+    .. code-block:: python
+
+        @qml.qnode(dev)
+        @qml.compile(pipeline=[simplify_rotation])
+        def circuit(weights):
+            ansatz(weights)
+            qml.CNOT(wires=[0, 1])
+            qml.Rot(0.0, 0.0, 0.0, wires=0)
+            return qml.expval(qml.PauliX(1))
     """
 
     def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
@@ -298,7 +338,10 @@ class op_transform:
     def is_qfunc_transform(self):
         """bool: Returns ``True`` if the operator transform is also a qfunc transform.
         That is, it maps one or more quantum operations to one or more quantum operations, allowing
-        the output of the transform to be used as a quantum function."""
+        the output of the transform to be used as a quantum function.
+
+        .. seealso:: :func:`~.qfunc_transform`
+        """
         return isinstance(getattr(self._tape_fn, "tape_fn", None), qml.single_tape_transform)
 
     def tape_transform(self, fn):
@@ -310,6 +353,13 @@ class op_transform:
 
             The registered tape transform should have the same parameters as the
             original operation transform function.
+
+        .. note::
+
+            If the transformation maps a tape to a tape (or equivalently, a qfunc to a qfunc)
+            then the transformation is simultaneously a :func:`~.qfunc_transform`, and
+            can be declared as such. This enables additional functionality, for example
+            the ability to use the transform in a compilation pipeline.
 
         Args:
             fn (callable): The function to register as the tape transform. This function
@@ -338,6 +388,46 @@ class op_transform:
         ...     qml.CRY(y, wires=[1, 0])
         >>> name(circuit, lower=True)(0.1, 0.8)
         ['rx', 'hadamard', 'cnot', 'cry']
+
+        If the transformation has purely quantum output, we can register the tape transformation
+        as a qfunc transformation in addition:
+
+        .. code-block:: python
+
+            @qml.op_transform
+            def simplify_rotation(op):
+                if op.name == "Rot":
+                    params = op.parameters
+                    wires = op.wires
+
+                    if qml.math.allclose(params, 0):
+                        return
+
+                    if qml.math.allclose(params[1:2], 0):
+                        return qml.RZ(params[0], wires)
+
+                return op
+
+            @simplify_rotation.tape_transform
+            @qml.qfunc_transform
+            def simplify_rotation(tape):
+                for op in tape.operations + tape.measurements:
+                    if op.name == "Rot":
+                        simplify_rotation(op)
+                    else:
+                        qml.apply(op)
+
+        We can now use this combined operator and quantum function transform in compilation pipelines:
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            @qml.compile(pipeline=[simplify_rotation])
+            def circuit(weights):
+                ansatz(weights)
+                qml.CNOT(wires=[0, 1])
+                qml.Rot(0.0, 0.0, 0.0, wires=0)
+                return qml.expval(qml.PauliX(1))
         """
         self._tape_fn = fn
         return self
