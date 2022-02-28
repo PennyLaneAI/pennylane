@@ -18,7 +18,7 @@ from pennylane import DeviceError
 
 
 def snapshots(qnode):
-    """Create a function that retrieves snapshot results from a QNode.
+    r"""Create a function that retrieves snapshot results from a QNode.
 
     Args:
         qnode (.QNode): the input QNode to be simulated

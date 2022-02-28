@@ -20,10 +20,10 @@ from pennylane.operation import AnyWires, AllWires, Operation
 
 # pylint: disable=unused-argument
 class Snapshot(Operation):
-    r"""pennylane.Snapshot()
+    r"""
     The Snapshot operation preserves the internal simulator state at specific
-    points in a circuit. As such it is a pseudo operation as it doesn't affect
-    the quantum state.
+    execution steps of a quantum function. As such it is a pseudo operation
+    with no affect on the quantum state.
     """
     num_wires = AnyWires
     num_params = 0

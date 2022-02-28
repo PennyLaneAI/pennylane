@@ -4,8 +4,31 @@
 
 <h3>New features since last release</h3>
 
-* The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has 
-  a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions, 
+* A new operation `qml.Snapshot` has been added to assist users in debugging quantum progams.
+  The instruction is used to save the internal state of simulator devices at arbitrary points of
+  execution, such as the quantum state vector, density matrix, or covariance matrix. The saved
+  states can be retrieved in the form of a dictionary via the top-level `qml.snapshots` function.
+  [(#2233)](https://github.com/PennyLaneAI/pennylane/pull/2233)
+
+  ```py
+  @qml.qnode(qml.device("default.qubit", wires=2))
+  def circuit():
+      qml.Snapshot()
+      qml.Hadamard(wires=0)
+      qml.Snapshot("very_important_state")
+      qml.CNOT(wires=[0, 1])
+      qml.Snapshot()
+      return qml.expval(qml.PauliX(0))
+  ```
+
+  ```pycon
+  >>> qml.snapshots(circuit)()
+  {0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),
+   'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
+   2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j])}
+  ```
+
+* The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has
   deprecation of the `charset` keyword, and minor cosmetic changes.
   [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
 
