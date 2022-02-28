@@ -1954,41 +1954,6 @@ class TestCutCircuitTransform:
 
         assert np.isclose(grad, grad_expected)
 
-    def test_simple_cut_circuit_tf(self, use_opt_einsum):
-        """
-        Tests the full circuit cutting pipeline returns the correct value and
-        gradient for a simple circuit using the `cut_circuit` transform with the TF interface.
-        """
-        tf = pytest.importorskip("tensorflow")
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, interface="tf")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.RY(0.543, wires=1)
-            qml.WireCut(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(0.240, wires=0)
-            qml.RZ(0.133, wires=1)
-            return qml.expval(qml.PauliZ(wires=[0]))
-
-        x = tf.Variable(0.531)
-        cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
-
-        with tf.GradientTape() as tape:
-            res = cut_circuit(x)
-
-        grad = tape.gradient(res, x)
-
-        with tf.GradientTape() as tape:
-            res_expected = circuit(x)
-
-        grad_expected = tape.gradient(res_expected, x)
-
-        assert np.isclose(res, res_expected)
-        assert np.isclose(grad, grad_expected)
-
     def test_simple_cut_circuit_tf_jit(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
