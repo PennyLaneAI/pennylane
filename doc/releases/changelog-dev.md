@@ -92,7 +92,7 @@
   A suite of integration tests has been added.
   [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
   [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
-  [(#2243)](https://github.com/PennyLaneAI/pennylane/pull/2243)
+  [(#2251)](https://github.com/PennyLaneAI/pennylane/pull/2251)
 
 <h3>Improvements</h3>
 
