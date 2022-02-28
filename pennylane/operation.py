@@ -1041,6 +1041,41 @@ class Operator(abc.ABC):
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
+    def expand(self):
+        """Returns a tape that has recorded the decomposition of the operator.
+
+        Returns:
+            .JacobianTape: quantum tape
+        """
+        tape = qml.tape.QuantumTape(do_queue=False)
+
+        with tape:
+
+            try:
+                self.decomposition()
+
+            except TypeError:
+                if self.num_params == 0:
+                    self.decomposition(wires=self.wires)
+                else:
+                    self.decomposition(*self.parameters, wires=self.wires)
+
+                warnings.warn(
+                    "Operator.decomposition() is now an instance method, and no longer accepts parameters. "
+                    "Either define the static method 'compute_decomposition' instead, or use "
+                    "'self.wires' and 'self.parameters'.",
+                    UserWarning,
+                )
+
+        if not self.data:
+            # original operation has no trainable parameters
+            tape.trainable_params = {}
+
+        if self.inverse:
+            tape.inv()
+
+        return tape
+
 
 # =============================================================================
 # Base Operation class
@@ -1257,41 +1292,6 @@ class Operation(Operator):
     @inverse.setter
     def inverse(self, boolean):
         self._inverse = boolean
-
-    def expand(self):
-        """Returns a tape that has recorded the decomposition of the operator.
-
-        Returns:
-            .JacobianTape: quantum tape
-        """
-        tape = qml.tape.QuantumTape(do_queue=False)
-
-        with tape:
-
-            try:
-                self.decomposition()
-
-            except TypeError:
-                if self.num_params == 0:
-                    self.decomposition(wires=self.wires)
-                else:
-                    self.decomposition(*self.parameters, wires=self.wires)
-
-                warnings.warn(
-                    "Operator.decomposition() is now an instance method, and no longer accepts parameters. "
-                    "Either define the static method 'compute_decomposition' instead, or use "
-                    "'self.wires' and 'self.parameters'.",
-                    UserWarning,
-                )
-
-        if not self.data:
-            # original operation has no trainable parameters
-            tape.trainable_params = {}
-
-        if self.inverse:
-            tape.inv()
-
-        return tape
 
     def inv(self):
         """Inverts the operator.
