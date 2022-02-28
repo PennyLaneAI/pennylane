@@ -600,6 +600,10 @@ def density_matrix(wires):
 T = TypeVar("T")
 
 
+class MeasurementValueError(ValueError):
+    """Error raised when an unknown measurement value is being used."""
+    pass
+
 class MeasurementValue(Generic[T]):
     """A class representing unknown measurement outcomes in the qubit model.
 
@@ -637,8 +641,9 @@ class MeasurementValue(Generic[T]):
 
     def __eq__(self, control_value):
         """Allow asserting measurement values."""
-        if control_value not in (0, 1):
-            raise ValueError("Computational basis measurements can only be asserted for 0 and 1 outcomes.")
+        measurement_outcomes = {self._zero_case, self._one_case}
+        if control_value not in measurement_outcomes:
+            raise MeasurementValueError(f"Unknown measurement value asserted; the set of possible measurement outcomes is: {measurement_outcomes}.")
 
         self._control_value = control_value
         return self

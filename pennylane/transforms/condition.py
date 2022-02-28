@@ -36,7 +36,7 @@ class Conditional(Operation):
         self,
         expr: MeasurementValue[bool],
         then_op: Type[Operation],
-        else_op = None: Type[Operation],
+        else_op: Type[Operation] = None,
         do_queue=True,
         id=None,
     ):
@@ -49,14 +49,17 @@ class Conditional(Operation):
         super().__init__(wires=then_op.wires, do_queue=do_queue, id=id)
 
 
-def cond(measurement, operation, operation=None):
+def cond(measurement, then_op, else_op=None):
     """Create an operation that applies a version of the provided operation
     that is conditioned on a value dependent on quantum measurements.
 
     Args:
         measurement (MeasurementDependentValue): The measurement dependent
             value to consider.
-        operation (Operation): The PennyLane operation to condition.
+        then_op (Operation): The PennyLane operation to apply if the condition
+            applies.
+        else_op (Operation): The PennyLane operation to apply if the condition
+            doesn't apply.
 
     Returns:
         function: A new function that applies the controlled equivalent of ``operation``. The returned
@@ -84,6 +87,7 @@ def cond(measurement, operation, operation=None):
 
     @wraps(operation)
     def wrapper(*args, **kwargs):
-        return Conditional(measurement, operation(*args, do_queue=False, **kwargs))
+        # TODO: use else_op
+        return Conditional(measurement, then_op(*args, do_queue=False, **kwargs))
 
     return wrapper
