@@ -441,7 +441,7 @@ def _get_measurements(
 
     obs = measurement.obs
 
-    return [expval(copy.deepcopy(obs) @ g) for g in group]
+    return [expval(copy.copy(obs) @ g) for g in group]
 
 
 def _prep_zero_state(wire):
