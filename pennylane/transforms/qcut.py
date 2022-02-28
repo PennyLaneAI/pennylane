@@ -929,7 +929,7 @@ def cut_circuit(
             "measurement"
         )
 
-    if not all([m.return_type is Expectation for m in tape.measurements]):
+    if not all(m.return_type is Expectation for m in tape.measurements):
         raise ValueError(
             "The circuit cutting workflow only supports circuits with expectation "
             "value measurements"
@@ -937,7 +937,7 @@ def cut_circuit(
 
     if use_opt_einsum:
         try:
-            import opt_einsum
+            import opt_einsum  # pylint: disable=import-outside-toplevel,unused-import
         except ImportError as e:
             raise ImportError(
                 "The opt_einsum package is required when use_opt_einsum is set to "
