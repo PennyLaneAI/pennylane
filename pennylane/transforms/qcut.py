@@ -25,7 +25,7 @@ from functools import partial
 from itertools import product
 from typing import Any, Callable, ClassVar, Dict, List, Sequence, Tuple, Union
 
-from networkx import MultiDiGraph, weakly_connected_components
+from networkx import MultiDiGraph, weakly_connected_components, has_path
 
 import pennylane as qml
 from pennylane import apply, expval
@@ -285,6 +285,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     graph_copy = graph.copy()
 
     cut_edges = []
+    measure_nodes = [n for n in graph.nodes if isinstance(n, MeasurementProcess)]
 
     for node1, node2, wire in graph.edges:
         if isinstance(node1, MeasureNode):
@@ -307,7 +308,20 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
 
         communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2))
 
-    return subgraphs, communication_graph
+    terminal_indices = [i for i, s in enumerate(subgraphs) for n in measure_nodes if s.has_node(n)]
+
+    subgraphs_connected_to_measurements = []
+    subgraphs_indices_to_remove = []
+
+    for i, s in enumerate(subgraphs):
+        if any(has_path(communication_graph, i, t) for t in terminal_indices):
+            subgraphs_connected_to_measurements.append(s)
+        else:
+            subgraphs_indices_to_remove.append(i)
+
+    communication_graph.remove_nodes_from(subgraphs_indices_to_remove)
+
+    return subgraphs_connected_to_measurements, communication_graph
 
 
 def _find_new_wire(wires: Wires) -> int:
