@@ -311,7 +311,7 @@ def test_controlled_template_and_operations():
     assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
 
 
-@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
 class TestDifferentiation:
     """Tests for differentiation"""
 
