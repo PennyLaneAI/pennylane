@@ -148,6 +148,8 @@
 
 <h3>Bug fixes</h3>
 
+* The `QubitUnitary` now supports jitting. 
+
 * Fixes a bug in which passing required arguments into operations as
   keyword arguments would throw an error because the documented call
   signature didn't match the function definition.

@@ -75,7 +75,7 @@ class QubitUnitary(Operation):
 
             # Check for unitarity; due to variable precision across the different ML frameworks,
             # here we issue a warning to check the operation, instead of raising an error outright.
-            if not qml.math.allclose(
+            if not qml.math.is_abstract(U) and not qml.math.allclose(
                 qml.math.dot(U, qml.math.T(qml.math.conj(U))),
                 qml.math.eye(qml.math.shape(U)[0]),
                 atol=1e-6,
