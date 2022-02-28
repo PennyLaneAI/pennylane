@@ -17,7 +17,7 @@
 import pennylane as qml
 
 
-class Sum(qml.operation.Operator):
+class MatMul(qml.operation.Operator):
 
     def __init__(self, left, right, do_queue=True, id=None):
 
@@ -26,26 +26,26 @@ class Sum(qml.operation.Operator):
 
         combined_wires = qml.wires.Wires.all_wires([left.wires, right.wires])
         super().__init__(*left.parameters, *right.parameters, wires=combined_wires, do_queue=do_queue, id=id)
-        self._name = f"{right.name} + {left.name}"
+        self._name = f"{right.name} {left.name}"
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return f"{self.hyperparameters['left']} \n + {self.hyperparameters['right']}"
+        return f"{self.hyperparameters['left']} \n@ {self.hyperparameters['right']}"
 
     @property
     def num_wires(self):
         return len(self.wires)
 
     @staticmethod
-    def compute_terms(*params, **hyperparams):
-        return [1., 1.], [hyperparams["left"], hyperparams["right"]]
+    def compute_decomposition(*params, left, right, wires=None, **hyperparameters):
+        return [left, right]
 
     @staticmethod
     def compute_matrix(*params, left, right, **hyperparams):
         # ugly to compute this here again!
-        combined_wires = qml.wires.Wires.all_wires([right.wires, left.wires]);
-        return left.get_matrix(wire_order=combined_wires) + right.get_matrix(wire_order=combined_wires)
+        combined_wires = qml.wires.Wires.all_wires([left.wires, right.wires])
+        return left.get_matrix(wire_order=combined_wires) @ right.get_matrix(wire_order=combined_wires)
 
 
-def sum(left, right):
-    return Sum(left, right)
+def matmul(left, right):
+    return MatMul(left, right)

@@ -19,17 +19,29 @@ import pennylane as qml
 
 class ScalarMul(qml.operation.Operator):
 
-    def __init__(self, op, scalar, do_queue=True, id=None):
+    def __init__(self, scalar, op, do_queue=True, id=None):
         self.hyperparameters['scalar'] = scalar
         self.hyperparameters['op'] = op
 
         super().__init__(*op.parameters, scalar, wires=op.wires, do_queue=do_queue, id=id)
         self._name = f"{scalar}  {op.name}"
 
+    def __repr__(self):
+        """Constructor-call-like representation."""
+        return f"{self.hyperparameters['scalar']} {self.hyperparameters['op']}"
+
     @property
     def num_wires(self):
         return len(self.wires)
 
-    @classmethod
-    def compute_terms(cls, *params, **hyperparams):
-        return [hyperparams["scalar"]], [hyperparams["op"]]
+    @staticmethod
+    def compute_terms(*params, scalar, op, **hyperparams):
+        return [scalar], [op]
+
+    @staticmethod
+    def compute_matrix(*params, scalar, op, **hyperparams):
+        return scalar*op.get_matrix()
+
+
+def scalar_multiply(scalar, op):
+    return ScalarMul(scalar, op)
