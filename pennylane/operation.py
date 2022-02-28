@@ -736,14 +736,13 @@ class Operator(abc.ABC):
         Returns:
             tensor_like: eigenvalues
         """
-
         try:
             return self.compute_eigvals(*self.parameters, **self.hyperparameters)
         except EigvalsUndefinedError:
             # By default, compute the eigenvalues from the matrix representation.
             # This will raise a NotImplementedError if the matrix is undefined.
             try:
-                return np.linalg.eigvals(self.get_matrix())
+                return qml.math.linalg.eigvals(self.get_matrix())
             except MatrixUndefinedError as e:
                 raise EigvalsUndefinedError from e
 
