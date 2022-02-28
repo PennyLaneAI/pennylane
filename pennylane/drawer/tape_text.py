@@ -187,7 +187,7 @@ def tape_text(
       1: ─├QFT──RY─╰C─┤ ╰Var[Z@Z] ├Probs
       2: ─╰QFT──RZ────┤           ╰Probs
 
-    Matrix valued parameters are always denoted by `M` followed by an integer corresponding to
+    Matrix valued parameters are always denoted by ``M`` followed by an integer corresponding to
     unique matrices.  The list of unique matrices can be printed at the end of the diagram by
     selecting ``show_matrices=True``:
 
