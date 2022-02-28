@@ -273,6 +273,7 @@ class TestConditionalOperations:
 
         assert qnode() == expected
 
+
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""
 

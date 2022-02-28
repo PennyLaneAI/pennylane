@@ -602,7 +602,9 @@ T = TypeVar("T")
 
 class MeasurementValueError(ValueError):
     """Error raised when an unknown measurement value is being used."""
+
     pass
+
 
 class MeasurementValue(Generic[T]):
     """A class representing unknown measurement outcomes in the qubit model.
@@ -628,7 +630,7 @@ class MeasurementValue(Generic[T]):
         self._depends_on = measurement_id
         self._zero_case = zero_case
         self._one_case = one_case
-        self._control_value = 1 # By default, control on 1
+        self._control_value = 1  # By default, control on 1
 
     @property
     def branches(self):
@@ -638,12 +640,13 @@ class MeasurementValue(Generic[T]):
         branch_dict[(1,)] = self._one_case
         return branch_dict
 
-
     def __eq__(self, control_value):
         """Allow asserting measurement values."""
         measurement_outcomes = {self._zero_case, self._one_case}
         if control_value not in measurement_outcomes:
-            raise MeasurementValueError(f"Unknown measurement value asserted; the set of possible measurement outcomes is: {measurement_outcomes}.")
+            raise MeasurementValueError(
+                f"Unknown measurement value asserted; the set of possible measurement outcomes is: {measurement_outcomes}."
+            )
 
         self._control_value = control_value
         return self

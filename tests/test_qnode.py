@@ -846,8 +846,8 @@ class TestIntegration:
             default under the hood."""
             qml.Hadamard(1)
             qml.RY(1.234, wires=0)
-            #m_0 = qml.measure(0)
-            #qml.cond(m_0, qml.RY)(x, wires=1)
+            # m_0 = qml.measure(0)
+            # qml.cond(m_0, qml.RY)(x, wires=1)
             qml.ctrl(qml.RY, control=0)(x, wires=1)
             return qml.expval(qml.PauliZ(1))
 
@@ -887,8 +887,8 @@ class TestIntegration:
             default under the hood."""
             qml.Hadamard(1)
             qml.RY(1.234, wires=0)
-            #m_0 = qml.measure(0)
-            #qml.cond(m_0, qml.RY)(x, wires=1)
+            # m_0 = qml.measure(0)
+            # qml.cond(m_0, qml.RY)(x, wires=1)
             qml.ctrl(qml.RY, control=0)(x, wires=1)
             return qml.expval(qml.PauliZ(1))
 
@@ -898,9 +898,9 @@ class TestIntegration:
         r1 = cry_qnode(x1)
         r2 = conditional_ry_qnode(x2)
 
-        #assert np.allclose(r1.detach(), r2.detach())
+        # assert np.allclose(r1.detach(), r2.detach())
 
-        #r1.backward()
+        # r1.backward()
         r2.backward()
         print(r2, x2.grad.detach())
         assert np.allclose(x1.grad.detach(), x2.grad.detach())

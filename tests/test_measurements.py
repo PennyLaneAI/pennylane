@@ -36,7 +36,7 @@ from pennylane.measurements import (
     Probability,
     MeasurementProcess,
     MeasurementValue,
-    MeasurementValueError
+    MeasurementValueError,
 )
 
 
@@ -307,11 +307,12 @@ class TestSample:
 
         circuit()
 
+
 class TestMeasurementValue:
     """Tests for the MeasurementValue class"""
 
-    @pytest.mark.parametrize("val_pair", [(0,1), (1,0), (-1,1)])
-    @pytest.mark.parametrize("control_val_idx", [0,1])
+    @pytest.mark.parametrize("val_pair", [(0, 1), (1, 0), (-1, 1)])
+    @pytest.mark.parametrize("control_val_idx", [0, 1])
     def test_measurement_value_assertion(self, val_pair, control_val_idx):
         """Test that asserting the value of a measurement works well."""
         zero_case = val_pair[0]
@@ -327,6 +328,7 @@ class TestMeasurementValue:
 
         with pytest.raises(MeasurementValueError, match="Unknown measurement value asserted"):
             mv == -1
+
 
 @pytest.mark.parametrize(
     "stat_func,return_type", [(expval, Expectation), (var, Variance), (sample, Sample)]
