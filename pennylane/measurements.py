@@ -636,8 +636,9 @@ class MeasurementDependantValue(Generic[T]):
 
 
     def __eq__(self, control_value):
-        if control_value not in (0,1):
-            raise ValueError("Unexpected control value.")
+        """Allow asserting measurement values."""
+        if control_value not in (0, 1):
+            raise ValueError("Computational basis measurements can only be asserted for 0 and 1 outcomes.")
 
         self._control_value = control_value
         return self
