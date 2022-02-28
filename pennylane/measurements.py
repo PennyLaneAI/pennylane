@@ -613,7 +613,7 @@ class MeasurementDependantValue(Generic[T]):
             measurement outcome was obtained
     """
 
-    __slots__ = ("_depends_on", "_zero_case", "_one_case")
+    __slots__ = ("_depends_on", "_zero_case", "_one_case", "_control_value")
 
     def __init__(
         self,
@@ -624,6 +624,7 @@ class MeasurementDependantValue(Generic[T]):
         self._depends_on = measurement_id
         self._zero_case = zero_case
         self._one_case = one_case
+        self._control_value = 1 # By default, control on 1
 
     @property
     def branches(self):
@@ -632,6 +633,14 @@ class MeasurementDependantValue(Generic[T]):
         branch_dict[(0,)] = self._zero_case
         branch_dict[(1,)] = self._one_case
         return branch_dict
+
+
+    def __eq__(self, control_value):
+        if control_value not in (0,1):
+            raise ValueError("Unexpected control value.")
+
+        self._control_value = control_value
+        return self
 
     @property
     def measurements(self):

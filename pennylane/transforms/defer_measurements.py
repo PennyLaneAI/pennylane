@@ -105,12 +105,18 @@ def defer_measurements(tape):
             measured_wires[op.id] = op.wires[0]
 
         elif op.__class__.__name__ == "Conditional":
-            control = [measured_wires[m_id] for m_id in op.dependant_measurements]
-            for value in op.branches.values():
+            control = [measured_wires[m_id] for m_id in op.meas_val.measurements]
+            for value in op.meas_val.branches.values():
+                if op.meas_val._control_value == 0:
+                    qml.PauliX(Wires(control))
+
                 if value:
                     ctrl(
                         lambda: apply(op.then_op),  # pylint: disable=cell-var-from-loop
                         control=Wires(control),
                     )()
+
+                if op.meas_val._control_value == 0:
+                    qml.PauliX(Wires(control))
         else:
             apply(op)

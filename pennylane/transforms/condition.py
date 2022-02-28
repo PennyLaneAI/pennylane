@@ -36,16 +36,20 @@ class Conditional(Operation):
         self,
         expr: MeasurementDependantValue[bool],
         then_op: Type[Operation],
+        else_op = None: Type[Operation],
         do_queue=True,
         id=None,
     ):
-        self.branches = expr.branches
-        self.dependant_measurements = expr.measurements
+        self.meas_val = expr
         self.then_op = then_op
+        self.else_op = else_op
+        if else_op and len(self.then_op.wires) != len(self.else_op.wires):
+            raise ValueError("Number of wires doesn't match.")
+
         super().__init__(wires=then_op.wires, do_queue=do_queue, id=id)
 
 
-def cond(measurement, operation):
+def cond(measurement, operation, operation=None):
     """Create an operation that applies a version of the provided operation
     that is conditioned on a value dependent on quantum measurements.
 
