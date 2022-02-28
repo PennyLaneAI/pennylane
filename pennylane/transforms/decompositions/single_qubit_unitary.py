@@ -44,8 +44,8 @@ def zyz_decomposition(U, wire):
     operations will be converted to a :class:`.Rot` gate that implements the original operation
     up to a global phase in the form :math:`RZ(\omega) RY(\theta) RZ(\phi)`.
 
-    .. warning:: 
-        
+    .. warning::
+
         This decomposition is compatible with ``jax.jit``, however, all unitaries
         will be converted to :class:`.Rot` gates, including those that are diagonal.
 
