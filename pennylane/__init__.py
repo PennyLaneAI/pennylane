@@ -71,6 +71,7 @@ from pennylane.transforms import (
     quantum_monte_carlo,
     apply_controlled_Q,
 )
+from pennylane.ops.functions import *
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
 
