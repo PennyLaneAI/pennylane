@@ -89,6 +89,9 @@
   of graph partitioning parameters.
   [(#2168)](https://github.com/PennyLaneAI/pennylane/pull/2168)
 
+  A suite of integration tests has been added.
+  [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
+
 <h3>Improvements</h3>
 
 * The `gradients` module has been streamlined and special-purpose functions
