@@ -15,16 +15,33 @@
 Unit tests for the `pennylane.qcut` package.
 """
 import copy
+import itertools
 import string
 import sys
+from itertools import product
 
 import pytest
 from networkx import MultiDiGraph
+from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
+
+I, X, Y, Z = (
+    np.eye(2),
+    qml.PauliX.compute_matrix(),
+    qml.PauliY.compute_matrix(),
+    qml.PauliZ.compute_matrix(),
+)
+
+states_pure = [
+    np.array([1, 0]),
+    np.array([0, 1]),
+    np.array([1, 1]) / np.sqrt(2),
+    np.array([1, 1j]) / np.sqrt(2),
+]
 
 with qml.tape.QuantumTape() as tape:
     qml.RX(0.432, wires=0)
@@ -50,6 +67,16 @@ with qml.tape.QuantumTape() as multi_cut_tape:
     qml.RY(0.543, wires=2)
     qml.RZ(0.876, wires=3)
     qml.expval(qml.PauliZ(wires=[0]))
+
+
+def kron(*args):
+    """Multi-argument kronecker product"""
+    if len(args) == 1:
+        return args[0]
+    if len(args) == 2:
+        return np.kron(args[0], args[1])
+    else:
+        return np.kron(args[0], kron(*args[1:]))
 
 
 # tape containing mid-circuit measurements
@@ -122,6 +149,31 @@ def compare_tapes(tape, expected_tape):
         assert meas.return_type.name == exp_meas.return_type.name
         assert meas.obs.name == exp_meas.obs.name
         assert meas.wires.tolist() == exp_meas.wires.tolist()
+
+
+def compare_measurements(meas1, meas2):
+    """
+    Helper function to compare measurements
+    """
+    assert meas1.return_type.name == meas2.return_type.name
+    obs1 = meas1.obs
+    obs2 = meas2.obs
+    assert np.array(obs1.name == obs2.name).all()
+    assert obs1.wires.tolist() == obs2.wires.tolist()
+
+
+def test_node_ids(monkeypatch):
+    """
+    Tests that the `MeasureNode` and `PrepareNode` return the correct id
+    """
+    with monkeypatch.context() as m:
+        m.setattr("uuid.uuid4", lambda: "some_string")
+
+        mn = qcut.MeasureNode(wires=0)
+        pn = qcut.PrepareNode(wires=0)
+
+        assert mn.id == "some_string"
+        assert pn.id == "some_string"
 
 
 class TestTapeToGraph:
@@ -936,13 +988,333 @@ class TestGraphToTape:
             compare_tapes(tape1, tape2)
 
 
+class TestGetMeasurements:
+    """Tests for the _get_measurements function"""
+
+    def test_multiple_measurements_raises(self):
+        """Tests if the function raises a ValueError when more than 1 fixed measurement is
+        specified"""
+        group = [qml.Identity(0)]
+        meas = [qml.expval(qml.PauliX(1)), qml.expval(qml.PauliY(2))]
+
+        with pytest.raises(ValueError, match="with a single output measurement"):
+            qcut._get_measurements(group, meas)
+
+    def test_non_expectation_raises(self):
+        """Tests if the function raises a ValueError when the fixed measurement is not an
+        expectation value"""
+        group = [qml.Identity(0)]
+        meas = [qml.var(qml.PauliX(1))]
+
+        with pytest.raises(ValueError, match="with expectation value measurements"):
+            qcut._get_measurements(group, meas)
+
+    def test_no_measurements(self):
+        """Tests if the function simply processes ``group`` into expectation values when an empty
+        list of fixed measurements is provided"""
+        group = [qml.Identity(0)]
+        meas = []
+
+        out = qcut._get_measurements(group, meas)
+
+        assert len(out) == len(group)
+        assert out[0].return_type is qml.measure.Expectation
+        assert out[0].obs.name == "Identity"
+        assert out[0].obs.wires[0] == 0
+
+    def test_single_measurement(self):
+        """Tests if the function behaves as expected for a typical example"""
+        group = [qml.PauliX(0) @ qml.PauliZ(2), qml.PauliX(0)]
+        meas = [qml.expval(qml.PauliZ(1))]
+
+        out = qcut._get_measurements(group, meas)
+
+        assert len(out) == 2
+        assert [o.return_type for o in out] == [qml.measure.Expectation, qml.measure.Expectation]
+
+        obs = [o.obs for o in out]
+
+        assert obs[0].wires.tolist() == [1, 0, 2]
+        assert obs[1].wires.tolist() == [1, 0]
+
+        assert [o.name for o in obs[0].obs] == ["PauliZ", "PauliX", "PauliZ"]
+        assert [o.name for o in obs[1].obs] == ["PauliZ", "PauliX"]
+
+
+class TestExpandFragmentTapes:
+    """
+    Tests that fragment tapes are correctly expanded to all configurations
+    """
+
+    def test_expand_fragment_tapes(self):
+        """
+        Tests that a fragment tape expands correctly
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RX(0.432, wires=1)
+            qml.RY(0.543, wires=2)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+        fragment_configurations = [qcut.expand_fragment_tapes(tape) for tape in tapes]
+        frag_tapes_meas = fragment_configurations[0][0]
+        frag_tapes_prep = fragment_configurations[1][0]
+
+        assert len(frag_tapes_meas) == 3
+        assert len(frag_tapes_prep) == 4
+
+        frag_meas_ops = [
+            qml.RX(0.432, wires=[0]),
+            qml.RY(0.543, wires=[1]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(0.24, wires=[0]),
+            qml.RZ(0.133, wires=[1]),
+        ]
+
+        with qml.tape.QuantumTape() as tape_00:
+            for op in frag_meas_ops:
+                qml.apply(op)
+            qml.expval(qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1]))
+            qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]))
+
+        with qml.tape.QuantumTape() as tape_01:
+            for op in frag_meas_ops:
+                qml.apply(op)
+            qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]))
+
+        with qml.tape.QuantumTape() as tape_02:
+            for op in frag_meas_ops:
+                qml.apply(op)
+            qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1]))
+
+        frag_meas_expected_tapes = [tape_00, tape_01, tape_02]
+
+        frag_prep_ops = [qml.CNOT(wires=[1, 2]), qml.RX(0.432, wires=[1]), qml.RY(0.543, wires=[2])]
+
+        with qml.tape.QuantumTape() as tape_10:
+            qml.Identity(wires=[1])
+            for op in frag_prep_ops:
+                qml.apply(op)
+            qml.expval(qml.Identity(wires=[1]))
+
+        with qml.tape.QuantumTape() as tape_11:
+            qml.PauliX(wires=[1])
+            for op in frag_prep_ops:
+                qml.apply(op)
+            qml.expval(qml.Identity(wires=[1]))
+
+        with qml.tape.QuantumTape() as tape_12:
+            qml.Hadamard(wires=[1])
+            for op in frag_prep_ops:
+                qml.apply(op)
+            qml.expval(qml.Identity(wires=[1]))
+
+        with qml.tape.QuantumTape() as tape_13:
+            qml.Hadamard(wires=[1])
+            qml.S(wires=[1])
+            for op in frag_prep_ops:
+                qml.apply(op)
+            qml.expval(qml.Identity(wires=[1]))
+
+        frag_prep_expected_tapes = [tape_10, tape_11, tape_12, tape_13]
+
+        for tape_meas, exp_tape_meas in zip(frag_tapes_meas, frag_meas_expected_tapes):
+            compare_tapes(tape_meas, exp_tape_meas)
+
+        for tape_prep, exp_tape_1 in zip(frag_tapes_prep, frag_prep_expected_tapes):
+            compare_tapes(tape_prep, exp_tape_1)
+
+    def test_multi_qubit_expansion_measurements(self):
+        """
+        Tests that a circuit with multiple MeasureNodes gives the correct
+        measurements after expansion
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=[0])
+            qml.RX(0.432, wires=[0])
+            qml.RY(0.543, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qcut.MeasureNode(wires=[1])
+            qcut.PrepareNode(wires=[2])
+            qml.RZ(0.321, wires=[2])
+            qml.CNOT(wires=[0, 2])
+            qcut.MeasureNode(wires=[2])
+            qcut.PrepareNode(wires=[3])
+            qml.CNOT(wires=[0, 3])
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        # Here we have a fragment tape containing 2 MeasureNode and
+        # PrepareNode pairs. This give 3**2 = 9 groups of Pauli measurements
+        # and 4**2 = 16 preparations and thus 9*16 = 144 tapes.
+        fragment_configurations = qcut.expand_fragment_tapes(tape)
+        frag_tapes = fragment_configurations[0]
+
+        assert len(frag_tapes) == 144
+
+        all_expected_groups = [
+            [
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1])),
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[2])),
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1])),
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2])),
+            ],
+            [
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[2])),
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliX(wires=[2])),
+            ],
+            [
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[2])),
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliZ(wires=[1]) @ qml.PauliY(wires=[2])),
+            ],
+            [
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1])),
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliZ(wires=[2])),
+            ],
+            [qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliX(wires=[2]))],
+            [qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]))],
+            [
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1])),
+                qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliZ(wires=[2])),
+            ],
+            [qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliX(wires=[2]))],
+            [qml.expval(qml.PauliZ(wires=[0]) @ qml.PauliY(wires=[1]) @ qml.PauliY(wires=[2]))],
+        ]
+
+        all_measurements = [tape.measurements for tape in frag_tapes]
+
+        # The 9 unique measurements are repeated 16 times since there are 4**2
+        # preparations. This list prepares the indexing.
+        index_list = []
+        for i in range(len(frag_tapes)):
+            if i % 9 == 0:
+                c = 0
+            index_list.append((c, i))
+            c += 1
+
+        for exp_i, i in index_list:
+            expected_group = all_expected_groups[exp_i]
+            group = all_measurements[i]
+            for measurement, expected_measurement in zip(expected_group, group):
+                compare_measurements(measurement, expected_measurement)
+
+    def test_multi_qubit_expansion_preparation(self):
+        """
+        Tests that a circuit with multiple PrepareNodes gives the correct
+        preparation after expansion
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=[0])
+            qml.RX(0.432, wires=[0])
+            qml.RY(0.543, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qcut.MeasureNode(wires=[1])
+            qcut.PrepareNode(wires=[2])
+            qml.RZ(0.321, wires=[2])
+            qml.CNOT(wires=[0, 2])
+            qcut.MeasureNode(wires=[2])
+            qcut.PrepareNode(wires=[3])
+            qml.CNOT(wires=[0, 3])
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        fragment_configurations = qcut.expand_fragment_tapes(tape)
+        frag_tapes = fragment_configurations[0]
+
+        prep_ops = [[qml.Identity], [qml.PauliX], [qml.Hadamard], [qml.Hadamard, qml.S]]
+        prep_combos = list(product(prep_ops, prep_ops))
+        expected_preps = [pc for pc in prep_combos for _ in range(9)]
+
+        for ep, tape in zip(expected_preps, frag_tapes):
+            wire2_ops = [op for op in tape.operations if op.wires == Wires(2)]
+            wire3_ops = [op for op in tape.operations if op.wires == Wires(3)]
+
+            wire2_exp = ep[0]
+            wire3_exp = ep[1]
+
+            wire2_prep_ops = wire2_ops[: len(wire2_exp)]
+            wire3_prep_ops = wire3_ops[: len(wire2_exp)]
+
+            for wire2_prep_op, wire2_exp_op in zip(wire2_prep_ops, wire2_exp):
+                assert type(wire2_prep_op) == wire2_exp_op
+
+            for wire3_prep_op, wire3_exp_op in zip(wire3_prep_ops, wire3_exp):
+                assert type(wire3_prep_op) == wire3_exp_op
+
+    def test_no_measure_node_observables(self):
+        """
+        Tests that a fragment with no MeasureNodes give the correct
+        configurations
+        """
+
+        with qml.tape.QuantumTape() as frag:
+            qml.RY(0.543, wires=[1])
+            qcut.PrepareNode(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.24, wires=[0])
+            qml.RZ(0.133, wires=[1])
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        expanded_tapes, prep_nodes, meas_nodes = qcut.expand_fragment_tapes(frag)
+
+        ops = [
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(0.24, wires=[0]),
+            qml.RZ(0.133, wires=[1]),
+            qml.expval(qml.PauliZ(wires=[0])),
+        ]
+
+        with qml.tape.QuantumTape() as config1:
+            qml.RY(0.543, wires=[1])
+            qml.Identity(wires=[0])
+            for optr in ops:
+                qml.apply(optr)
+
+        with qml.tape.QuantumTape() as config2:
+            qml.RY(0.543, wires=[1])
+            qml.PauliX(wires=[0])
+            for optr in ops:
+                qml.apply(optr)
+
+        with qml.tape.QuantumTape() as config3:
+            qml.RY(0.543, wires=[1])
+            qml.Hadamard(wires=[0])
+            for optr in ops:
+                qml.apply(optr)
+
+        with qml.tape.QuantumTape() as config4:
+            qml.RY(0.543, wires=[1])
+            qml.Hadamard(wires=[0])
+            qml.S(wires=[0])
+            for optr in ops:
+                qml.apply(optr)
+
+        expected_configs = [config1, config2, config3, config4]
+
+        for tape, config in zip(expanded_tapes, expected_configs):
+            compare_tapes(tape, config)
+
+
 class TestContractTensors:
     """Tests for the contract_tensors function"""
 
     t = [np.arange(4), np.arange(4, 8)]
+    # make copies of nodes to ensure id comparisons work correctly
     m = [[qcut.MeasureNode(wires=0)], []]
     p = [[], [qcut.PrepareNode(wires=0)]]
-    edge_dict = {"pair": (m[0][0], p[1][0])}
+    edge_dict = {"pair": (copy.copy(m)[0][0], copy.copy(p)[1][0])}
     g = MultiDiGraph([(0, 1, edge_dict)])
     expected_result = np.dot(*t)
 
@@ -1145,3 +1517,507 @@ class TestContractTensors:
 
         assert eqn == expected_eqn
         assert np.allclose(res, np.einsum(eqn, *t))
+
+
+class TestQCutProcessingFn:
+    """Tests for the qcut_processing_fn and contained functions"""
+
+    def test_to_tensors(self, monkeypatch):
+        """Test that _to_tensors correctly reshapes the flat list of results into the original
+        tensors according to the supplied prepare_nodes and measure_nodes. Uses a mock function
+        for _process_tensor since we do not need to process the tensors."""
+        prepare_nodes = [[None] * 3, [None] * 2, [None] * 1, [None] * 4]
+        measure_nodes = [[None] * 2, [None] * 2, [None] * 3, [None] * 3]
+        tensors = [
+            np.arange(4**5).reshape((4,) * 5),
+            np.arange(4**4).reshape((4,) * 4),
+            np.arange(4**4).reshape((4,) * 4),
+            np.arange(4**7).reshape((4,) * 7),
+        ]
+        results = np.concatenate([t.flatten() for t in tensors])
+
+        def mock_process_tensor(r, np, nm):
+            return qml.math.reshape(r, (4,) * (np + nm))
+
+        with monkeypatch.context() as m:
+            m.setattr(qcut, "_process_tensor", mock_process_tensor)
+            tensors_out = qcut._to_tensors(results, prepare_nodes, measure_nodes)
+
+        for t1, t2 in zip(tensors, tensors_out):
+            assert np.allclose(t1, t2)
+
+    def test_to_tensors_raises(self):
+        """Tests if a ValueError is raised when a results vector is passed to _to_tensors with a
+        size that is incompatible with the prepare_nodes and measure_nodes arguments"""
+        prepare_nodes = [[None] * 3]
+        measure_nodes = [[None] * 2]
+        tensors = [np.arange(4**5).reshape((4,) * 5), np.arange(4)]
+        results = np.concatenate([t.flatten() for t in tensors])
+
+        with pytest.raises(ValueError, match="should be a flat list of length 1024"):
+            qcut._to_tensors(results, prepare_nodes, measure_nodes)
+
+    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
+    @pytest.mark.parametrize("n", [1, 2])
+    def test_process_tensor(self, n, interface):
+        """Test if the tensor returned by _process_tensor is equal to the expected value"""
+        lib = pytest.importorskip(interface)
+
+        U = unitary_group.rvs(2**n, random_state=1967)
+
+        # First, create target process tensor
+        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = itertools.product(range(4), repeat=n)
+
+        results = []
+
+        # Calculates U_{ijkl} = Tr((b[k] x b[l]) U (b[i] x b[j]) U*)
+        # See Sec. II. A. of https://arxiv.org/abs/1909.07534, below Eq. (2).
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[basis[i] for i in inp])
+            output = kron(*[basis[i] for i in out])
+            results.append(np.trace(output @ U @ input @ U.conj().T))
+
+        target_tensor = np.array(results).reshape((4,) * (2 * n))
+
+        # Now, create the input results vector found from executing over the product of |0>, |1>,
+        # |+>, |+i> inputs and using the grouped Pauli terms for measurements
+        dev = qml.device("default.qubit", wires=n)
+
+        @qml.qnode(dev)
+        def f(state, measurement):
+            qml.QubitStateVector(state, wires=range(n))
+            qml.QubitUnitary(U, wires=range(n))
+            return [qml.expval(qml.grouping.string_to_pauli_word(m)) for m in measurement]
+
+        prod_inp = itertools.product(range(4), repeat=n)
+        prod_out = qml.grouping.partition_pauli_group(n)
+
+        results = []
+
+        for inp, out in itertools.product(prod_inp, prod_out):
+            input = kron(*[states_pure[i] for i in inp])
+            results.append(f(input, out))
+
+        results = qml.math.cast_like(np.concatenate(results), lib.ones(1))
+
+        # Now apply _process_tensor
+        tensor = qcut._process_tensor(results, n, n)
+        assert np.allclose(tensor, target_tensor)
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_qcut_processing_fn(self, use_opt_einsum):
+        """Test if qcut_processing_fn returns the expected answer when applied to a simple circuit
+        that is cut up into three fragments:
+        0: ──RX(0.5)─|─RY(0.6)─|─RX(0.8)──┤ ⟨Z⟩
+        """
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        ### Find the expected result
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def f(x, y, z):
+            qml.RX(x, wires=0)
+            ### CUT HERE
+            qml.RY(y, wires=0)
+            ### CUT HERE
+            qml.RX(z, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x, y, z = 0.5, 0.6, 0.8
+        expected_result = f(x, y, z)
+
+        ### Find the result using qcut_processing_fn
+
+        meas_basis = [I, Z, X, Y]
+        states = [np.outer(s, s.conj()) for s in states_pure]
+        zero_proj = states[0]
+
+        u1 = qml.RX.compute_matrix(x)
+        u2 = qml.RY.compute_matrix(y)
+        u3 = qml.RX.compute_matrix(z)
+        t1 = np.array([np.trace(b @ u1 @ zero_proj @ u1.conj().T) for b in meas_basis])
+        t2 = np.array([[np.trace(b @ u2 @ s @ u2.conj().T) for b in meas_basis] for s in states])
+        t3 = np.array([np.trace(Z @ u3 @ s @ u3.conj().T) for s in states])
+
+        res = [t1, t2.flatten(), t3]
+        p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
+        m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
+
+        edges = [
+            (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
+            (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+        ]
+        g = MultiDiGraph(edges)
+
+        result = qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
+        assert np.allclose(result, expected_result)
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_qcut_processing_fn_autograd(self, use_opt_einsum):
+        """Test if qcut_processing_fn handles the gradient as expected in the autograd interface
+        using a simple example"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+
+        x = np.array(0.9, requires_grad=True)
+
+        def f(x):
+            t1 = x * np.arange(4)
+            t2 = x**2 * np.arange(16).reshape((4, 4))
+            t3 = np.sin(x * np.pi / 2) * np.arange(4)
+
+            res = [t1, t2.flatten(), t3]
+            p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
+            m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
+
+            edges = [
+                (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
+                (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+            ]
+            g = MultiDiGraph(edges)
+
+            return qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
+
+        grad = qml.grad(f)(x)
+        expected_grad = (
+            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
+        ) * f(1)
+
+        assert np.allclose(grad, expected_grad)
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_qcut_processing_fn_tf(self, use_opt_einsum):
+        """Test if qcut_processing_fn handles the gradient as expected in the TF interface
+        using a simple example"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        tf = pytest.importorskip("tensorflow")
+
+        x = tf.Variable(0.9, dtype=tf.float64)
+
+        def f(x):
+            x = tf.cast(x, dtype=tf.float64)
+            t1 = x * tf.range(4, dtype=tf.float64)
+            t2 = x**2 * tf.range(16, dtype=tf.float64)
+            t3 = tf.sin(x * np.pi / 2) * tf.range(4, dtype=tf.float64)
+
+            res = [t1, t2, t3]
+            p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
+            m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
+
+            edges = [
+                (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
+                (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+            ]
+            g = MultiDiGraph(edges)
+
+            return qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
+
+        with tf.GradientTape() as tape:
+            res = f(x)
+
+        grad = tape.gradient(res, x)
+        expected_grad = (
+            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
+        ) * f(1)
+
+        assert np.allclose(grad, expected_grad)
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_qcut_processing_fn_torch(self, use_opt_einsum):
+        """Test if qcut_processing_fn handles the gradient as expected in the torch interface
+        using a simple example"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        torch = pytest.importorskip("torch")
+
+        x = torch.tensor(0.9, requires_grad=True, dtype=torch.float64)
+
+        def f(x):
+            t1 = x * torch.arange(4)
+            t2 = x**2 * torch.arange(16)
+            t3 = torch.sin(x * np.pi / 2) * torch.arange(4)
+
+            res = [t1, t2, t3]
+            p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
+            m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
+
+            edges = [
+                (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
+                (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+            ]
+            g = MultiDiGraph(edges)
+
+            return qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
+
+        res = f(x)
+        res.backward()
+        grad = x.grad
+
+        x_ = x.detach().numpy()
+        f1 = f(torch.tensor(1, dtype=torch.float64))
+        expected_grad = (
+            3 * x_**2 * np.sin(x_ * np.pi / 2) + x_**3 * np.cos(x_ * np.pi / 2) * np.pi / 2
+        ) * f1
+
+        assert np.allclose(grad.detach().numpy(), expected_grad)
+
+    @pytest.mark.parametrize("use_opt_einsum", [True, False])
+    def test_qcut_processing_fn_jax(self, use_opt_einsum):
+        """Test if qcut_processing_fn handles the gradient as expected in the jax interface
+        using a simple example"""
+        if use_opt_einsum:
+            pytest.importorskip("opt_einsum")
+        jax = pytest.importorskip("jax")
+        jnp = pytest.importorskip("jax.numpy")
+
+        x = jnp.array(0.9)
+
+        def f(x):
+            t1 = x * jnp.arange(4)
+            t2 = x**2 * jnp.arange(16).reshape((4, 4))
+            t3 = jnp.sin(x * np.pi / 2) * jnp.arange(4)
+
+            res = [t1, t2.flatten(), t3]
+            p = [[], [qcut.PrepareNode(wires=0)], [qcut.PrepareNode(wires=0)]]
+            m = [[qcut.MeasureNode(wires=0)], [qcut.MeasureNode(wires=0)], []]
+
+            edges = [
+                (0, 1, 0, {"pair": (m[0][0], p[1][0])}),
+                (1, 2, 0, {"pair": (m[1][0], p[2][0])}),
+            ]
+            g = MultiDiGraph(edges)
+
+            return qcut.qcut_processing_fn(res, g, p, m, use_opt_einsum=use_opt_einsum)
+
+        grad = jax.grad(f)(x)
+        expected_grad = (
+            3 * x**2 * np.sin(x * np.pi / 2) + x**3 * np.cos(x * np.pi / 2) * np.pi / 2
+        ) * f(1)
+
+        assert np.allclose(grad, expected_grad)
+
+
+class TestCutCircuitTransform:
+    """
+    Tests for the cut_circuit transform
+    """
+
+    def test_simple_cut_circuit(self, mocker):
+        """
+        Tests the full circuit cutting pipeline returns the correct value and
+        gradient for a simple circuit using the `cut_circuit` transform.
+        """
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+        spy = mocker.spy(qcut, "qcut_processing_fn")
+        x = np.array(0.531, requires_grad=True)
+        cut_circuit = qcut.cut_circuit(circuit)
+
+        assert np.isclose(cut_circuit(x), float(circuit(x)))
+        spy.assert_called_once()
+
+        gradient = qml.grad(circuit)(x)
+        cut_gradient = qml.grad(cut_circuit)(x)
+
+        assert np.isclose(gradient, cut_gradient)
+
+
+class TestCutStrategy:
+    """Tests for class CutStrategy"""
+
+    devs = [qml.device("default.qubit", wires=n) for n in [4, 6]]
+    tape_dags = [qcut.tape_to_graph(t) for t in [tape, multi_cut_tape]]
+
+    @pytest.mark.parametrize("devices", [None, 1, devs[0]])
+    @pytest.mark.parametrize("imbalance_tolerance", [None, -1])
+    @pytest.mark.parametrize("num_fragments_probed", [None, 0])
+    def test_init_raises(self, devices, imbalance_tolerance, num_fragments_probed):
+        """Test if ill-initialized instances throw errors."""
+
+        if (
+            isinstance(devices, qml.Device)
+            and imbalance_tolerance is None
+            and num_fragments_probed is None
+        ):
+            return  # skip the only valid combination
+
+        with pytest.raises(ValueError):
+            qcut.CutStrategy(
+                devices=devices,
+                num_fragments_probed=num_fragments_probed,
+                imbalance_tolerance=imbalance_tolerance,
+            )
+
+    @pytest.mark.parametrize("devices", [devs[0], devs])
+    @pytest.mark.parametrize("max_free_wires", [None, 3])
+    @pytest.mark.parametrize("min_free_wires", [None, 2])
+    @pytest.mark.parametrize("num_fragments_probed", [None, 2, (2, 4)])
+    @pytest.mark.parametrize("imbalance_tolerance", [None, 0, 0.1])
+    def test_init(
+        self, devices, max_free_wires, min_free_wires, num_fragments_probed, imbalance_tolerance
+    ):
+        """Test the __post_init__ properly sets defaults based on provided info."""
+
+        strategy = qcut.CutStrategy(
+            devices=devices,
+            max_free_wires=max_free_wires,
+            num_fragments_probed=num_fragments_probed,
+            imbalance_tolerance=imbalance_tolerance,
+        )
+
+        devices = [devices] if not isinstance(devices, list) else devices
+
+        max_dev_wires = max((len(d.wires) for d in devices))
+        assert strategy.max_free_wires == max_free_wires or max_dev_wires or min_free_wires
+        assert strategy.min_free_wires == min_free_wires or max_free_wires or max_dev_wires
+        assert strategy.imbalance_tolerance == imbalance_tolerance
+
+        if num_fragments_probed is not None:
+            assert (
+                strategy.k_lower == num_fragments_probed
+                if isinstance(num_fragments_probed, int)
+                else min(num_fragments_probed)
+            )
+            assert (
+                strategy.k_upper == num_fragments_probed
+                if isinstance(num_fragments_probed, int)
+                else max(num_fragments_probed)
+            )
+        else:
+            assert strategy.k_lower is None
+            assert strategy.k_upper is None
+
+    @pytest.mark.parametrize("k", [4, 5, 6])
+    @pytest.mark.parametrize("imbalance_tolerance", [None, 0, 0.1])
+    def test_infer_wire_imbalance(self, k, imbalance_tolerance):
+        """Test that the imbalance is correctly derived under simple circumstances."""
+
+        num_wires = 10
+        num_gates = 10
+        free_wires = 3
+
+        imbalance = qcut.CutStrategy._infer_imbalance(
+            k=k,
+            num_wires=num_wires,
+            num_gates=num_gates,
+            free_wires=free_wires,
+            free_gates=1000,
+            imbalance_tolerance=imbalance_tolerance,
+        )
+
+        avg_size = int(num_wires / k + 1 - 1e-7)
+        if imbalance_tolerance is not None:
+            assert imbalance <= imbalance_tolerance
+        else:
+            assert imbalance == free_wires / avg_size - 1
+
+    @pytest.mark.parametrize("num_wires", [50, 10])
+    def test_infer_wire_imbalance_raises(
+        self,
+        num_wires,
+    ):
+        """Test that the imbalance correctly raises."""
+
+        k = 2
+        num_gates = 50
+
+        with pytest.raises(ValueError, match=f"`free_{'wires' if num_wires > 40 else 'gates'}`"):
+            qcut.CutStrategy._infer_imbalance(
+                k=k,
+                num_wires=num_wires,
+                num_gates=num_gates,
+                free_wires=20,
+                free_gates=20,
+            )
+
+    @pytest.mark.parametrize("devices", [devs[0], devs])
+    @pytest.mark.parametrize("num_fragments_probed", [None, 4, (4, 6)])
+    @pytest.mark.parametrize("imbalance_tolerance", [None, 0, 0.1])
+    @pytest.mark.parametrize("tape_dag", tape_dags)
+    def test_get_cut_kwargs(self, devices, num_fragments_probed, imbalance_tolerance, tape_dag):
+        """Test that the cut kwargs can be derived."""
+
+        strategy = qcut.CutStrategy(
+            devices=devices,
+            num_fragments_probed=num_fragments_probed,
+            imbalance_tolerance=imbalance_tolerance,
+        )
+
+        all_cut_kwargs = strategy.get_cut_kwargs(tape_dag=tape_dag)
+
+        assert all_cut_kwargs
+        assert all("imbalance" in kwargs and "num_fragments" in kwargs for kwargs in all_cut_kwargs)
+        if imbalance_tolerance is not None:
+            assert all([kwargs["imbalance"] <= imbalance_tolerance for kwargs in all_cut_kwargs])
+
+    @pytest.mark.parametrize(
+        "num_fragments_probed", [1, qcut.CutStrategy.HIGH_NUM_FRAGMENTS + 1, (2, 100)]
+    )
+    def test_get_cut_kwargs_warnings(self, num_fragments_probed):
+        """Test the 3 situations where the get_cut_kwargs pops out a warning."""
+        strategy = qcut.CutStrategy(
+            max_free_wires=2,
+            num_fragments_probed=num_fragments_probed,
+        )
+        k = num_fragments_probed
+        k_lower = k if isinstance(k, int) else k[0]
+        assert strategy.k_lower == k_lower
+
+        with pytest.warns(UserWarning):
+            _ = strategy.get_cut_kwargs(self.tape_dags[1])
+
+    @pytest.mark.parametrize("max_wires_by_fragment", [None, [2, 3]])
+    @pytest.mark.parametrize("max_gates_by_fragment", [[20, 30], [20, 30, 40]])
+    def test_by_fragment_sizes(self, max_wires_by_fragment, max_gates_by_fragment):
+        """Test that the user provided by-fragment limits properly propagates."""
+        strategy = qcut.CutStrategy(
+            min_free_wires=2,
+        )
+        if (
+            max_wires_by_fragment
+            and max_gates_by_fragment
+            and len(max_wires_by_fragment) != len(max_gates_by_fragment)
+        ):
+            with pytest.raises(ValueError):
+                cut_kwargs = strategy.get_cut_kwargs(
+                    self.tape_dags[1],
+                    max_wires_by_fragment=max_wires_by_fragment,
+                    max_gates_by_fragment=max_gates_by_fragment,
+                )
+            return
+
+        cut_kwargs = strategy.get_cut_kwargs(
+            self.tape_dags[1],
+            max_wires_by_fragment=max_wires_by_fragment,
+            max_gates_by_fragment=max_gates_by_fragment,
+        )
+        assert len(cut_kwargs) == 1
+
+        cut_kwargs = cut_kwargs[0]
+        assert cut_kwargs["num_fragments"] == len(max_wires_by_fragment or max_gates_by_fragment)
+
+    @pytest.mark.parametrize("max_wires_by_fragment", [2, ["a", 3], [2, 3], None])
+    @pytest.mark.parametrize("max_gates_by_fragment", [2, ["b", 30]])
+    def test_validate_fragment_sizes(self, max_wires_by_fragment, max_gates_by_fragment):
+        """Test that the user provided by-fragment limits has the right types."""
+        with pytest.raises(ValueError):
+            _ = qcut.CutStrategy._validate_input(
+                max_wires_by_fragment=max_wires_by_fragment,
+                max_gates_by_fragment=max_gates_by_fragment,
+            )

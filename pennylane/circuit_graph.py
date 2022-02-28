@@ -19,9 +19,9 @@ representation of a quantum circuit from an Operator queue.
 from collections import Counter, OrderedDict, namedtuple
 
 import retworkx as rx
+import numpy as np
 
 import pennylane as qml
-import numpy as np
 
 from pennylane.wires import Wires
 from .drawer import CircuitDrawer

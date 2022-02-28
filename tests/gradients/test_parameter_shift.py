@@ -52,7 +52,7 @@ class TestGradAnalysis:
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
-        spy = mocker.spy(tape, "_grad_method")
+        spy = mocker.spy(qml.operation, "has_grad_method")
         _gradient_analysis(tape)
         spy.assert_called()
 
@@ -60,7 +60,7 @@ class TestGradAnalysis:
         assert tape._par_info[1]["grad_method"] == "A"
         assert tape._par_info[2]["grad_method"] == "A"
 
-        spy = mocker.spy(tape, "_grad_method")
+        spy = mocker.spy(qml.operation, "has_grad_method")
         _gradient_analysis(tape)
         spy.assert_not_called()
 
@@ -239,7 +239,7 @@ class TestParamShift:
         assert res.size == 0
         assert np.all(res == np.array([[]]))
 
-    def test_y0(self, mocker):
+    def test_y0(self):
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
@@ -256,7 +256,7 @@ class TestParamShift:
         # one tape per parameter, plus one global call
         assert len(tapes) == tape.num_params + 1
 
-    def test_y0_provided(self, mocker):
+    def test_y0_provided(self):
         """Test that if the original tape output is provided, then
         the tape is executed only once using the current parameter
         values."""
@@ -312,6 +312,10 @@ class TestParamShift:
 
         class RX(qml.RX):
             @property
+            def parameter_frequencies(self):
+                raise qml.operation.OperatorPropertyUndefined
+
+            @property
             def grad_recipe(self):
                 # The gradient is given by [f(2x) - f(0)] / (2 sin(x)), by subsituting
                 # shift = x into the two term parameter-shift rule.
@@ -335,6 +339,39 @@ class TestParamShift:
         grad = fn(dev.batch_execute(tapes))
         assert np.allclose(grad, -np.sin(x))
 
+    @pytest.mark.parametrize("shifts", [None, [(0.1, 0.3, 0.5)]])
+    def test_default_two_term_rule(self, shifts):
+        """Test that the default two-term shift rule is used if no
+        other information is available to obtain the shift rule."""
+
+        class RX(qml.RX):
+            @property
+            def parameter_frequencies(self):
+                raise qml.operation.OperatorPropertyUndefined
+
+            def generator(self):
+                raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
+
+        x = np.array(0.654, requires_grad=True)
+        dev = qml.device("default.qubit", wires=2)
+
+        with qml.tape.JacobianTape() as tape:
+            RX(x, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tapes, fn = qml.gradients.param_shift(tape, shifts=shifts)
+
+        assert len(tapes) == 2
+        if shifts is None:
+            assert tapes[0].operations[0].data[0] == x + np.pi / 2
+            assert tapes[1].operations[0].data[0] == x - np.pi / 2
+        else:
+            assert tapes[0].operations[0].data[0] == x + shifts[0][0]
+            assert tapes[1].operations[0].data[0] == x - shifts[0][0]
+
+        grad = fn(dev.batch_execute(tapes))
+        assert np.allclose(grad, -np.sin(x))
+
 
 class TestParameterShiftRule:
     """Tests for the parameter shift implementation"""
@@ -354,7 +391,7 @@ class TestParameterShiftRule:
 
         tape.trainable_params = {1}
 
-        tapes, fn = qml.gradients.param_shift(tape, shift=shift)
+        tapes, fn = qml.gradients.param_shift(tape, shifts=[(shift,)])
         assert len(tapes) == 2
 
         autograd_val = fn(dev.batch_execute(tapes))
@@ -364,7 +401,7 @@ class TestParameterShiftRule:
         ) / 2
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
 
-        assert spy.call_args[1]["shift"] == shift
+        assert spy.call_args[1]["shifts"] == (shift,)
 
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(tape)
@@ -386,7 +423,7 @@ class TestParameterShiftRule:
 
         tape.trainable_params = {1, 2, 3}
 
-        tapes, fn = qml.gradients.param_shift(tape, shift=shift)
+        tapes, fn = qml.gradients.param_shift(tape, shifts=[(shift,)] * 3)
         assert len(tapes) == 2 * len(tape.trainable_params)
 
         autograd_val = fn(dev.batch_execute(tapes))
@@ -402,7 +439,7 @@ class TestParameterShiftRule:
             manualgrad_val[0, idx] = (forward - backward) / 2
 
         assert np.allclose(autograd_val, manualgrad_val, atol=tol, rtol=0)
-        assert spy.call_args[1]["shift"] == shift
+        assert spy.call_args[1]["shifts"] == (shift,)
 
         # compare to finite differences
         tapes, fn = qml.gradients.finite_diff(tape)

@@ -16,6 +16,7 @@ Unit tests for :mod:`pennylane.operation`.
 """
 import itertools
 from functools import reduce
+import warnings
 
 import pytest
 import numpy as np
@@ -182,6 +183,64 @@ class TestOperationConstruction:
         x = 0.654
         op = DummyOp(x, wires=0)
         assert op.grad_recipe == ([[1.0, 1.0, x], [1.0, 0.0, -x]],)
+
+    def test_default_grad_method_with_frequencies(self):
+        """Test that the correct ``grad_method`` is returned by default
+        if ``parameter_frequencies`` are present.
+        """
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+
+            @property
+            def parameter_frequencies(self):
+                return [(0.4, 1.2)]
+
+        x = 0.654
+        op = DummyOp(x, wires=0)
+        assert op.grad_method == "A"
+
+    def test_default_grad_method_with_generator(self):
+        """Test that the correct ``grad_method`` is returned by default
+        if a generator is present to determine parameter_frequencies from.
+        """
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+
+            def generator(self):
+                return -0.2 * qml.PauliX(wires=self.wires)
+
+        x = 0.654
+        op = DummyOp(x, wires=0)
+        assert op.grad_method == "A"
+
+    def test_default_grad_method_numeric(self):
+        """Test that the correct ``grad_method`` is returned by default
+        if no information is present to deduce an analytic gradient method.
+        """
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+
+        x = 0.654
+        op = DummyOp(x, wires=0)
+        assert op.grad_method == "F"
+
+    def test_default_grad_no_param(self):
+        """Test that the correct ``grad_method`` is returned by default
+        if an operation does not have a parameter.
+        """
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+
+        op = DummyOp(wires=0)
+        assert op.grad_method is None
 
     def test_frequencies_default_single_param(self):
         """Test that an operation with default parameter frequencies
@@ -1787,3 +1846,91 @@ class TestDeprecationWarnings:
             m1 = op.eigvals
 
         assert np.allclose(m1, op.get_eigvals())
+
+    def test_decomposition_deprecation_no_parameters(self):
+        """Test that old-style staticmethod decompositions for an operation
+        with no parameters raises a warning"""
+        dev = qml.device("default.qubit", wires=1)
+
+        class MyOp(Operation):
+            num_wires = 1
+            num_params = 0
+
+            @staticmethod
+            def decomposition(wires):
+                qml.RY(0.5, wires=wires[0])
+
+        @qml.qnode(dev)
+        def qnode():
+            MyOp(wires=0)
+            return qml.state()
+
+        with pytest.warns(UserWarning, match="is now an instance method"):
+            result1 = qnode()
+
+        # using an instance method will not raise a deprecation warning
+
+        class MyOp(Operation):
+            num_wires = 1
+            num_params = 0
+
+            def decomposition(self):
+                qml.RY(0.5, wires=self.wires[0])
+
+        @qml.qnode(dev)
+        def qnode():
+            MyOp(wires=0)
+            return qml.state()
+
+        with warnings.catch_warnings():
+            # any warnings emitted will be raised as errors
+            warnings.simplefilter("error")
+            result2 = qnode()
+
+        assert np.allclose(result1, result2)
+
+    def test_decomposition_deprecation_parameters(self):
+        """Test that old-style staticmethod decompositions for an operation
+        with parameters raises a warning"""
+        dev = qml.device("default.qubit", wires=1)
+
+        class MyOp(Operation):
+            num_wires = 1
+            num_params = 2
+
+            @staticmethod
+            def decomposition(*params, wires):
+                qml.RY(params[0], wires=wires[0])
+                qml.PauliZ(wires=wires[0])
+                qml.RX(params[1], wires=wires[0])
+
+        @qml.qnode(dev)
+        def qnode(*params):
+            MyOp(*params, wires=0)
+            return qml.state()
+
+        with pytest.warns(UserWarning, match="is now an instance method"):
+            result1 = qnode(0.1, 0.2)
+
+        # using an instance method will not raise a deprecation warning
+
+        class MyOp(Operation):
+            num_wires = 1
+            num_params = 2
+
+            def decomposition(self):
+                qml.RY(self.parameters[0], wires=self.wires[0])
+                qml.PauliZ(wires=self.wires[0])
+                qml.RX(self.parameters[1], wires=self.wires[0])
+
+        @qml.qnode(dev)
+        def qnode(*params):
+            MyOp(*params, wires=0)
+            return qml.state()
+
+        with warnings.catch_warnings():
+            # any warnings emitted will be raised as errors
+            warnings.simplefilter("error")
+            result2 = qnode(0.1, 0.2)
+
+        assert np.allclose(result1, result2)

@@ -32,7 +32,7 @@ from .qubit import obs as _qubit__obs__
 
 from .channel import __all__ as _channel__ops__
 
-from .wrappers import *
+from pennylane.ops.math.sum import *
 
 
 class AdjointError(Exception):

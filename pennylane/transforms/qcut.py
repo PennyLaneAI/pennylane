@@ -18,17 +18,26 @@ circuits to be distributed across multiple devices.
 
 import copy
 import string
-from typing import Sequence, Tuple
+import uuid
+import warnings
+from dataclasses import InitVar, dataclass
+from functools import partial
+from itertools import product
+from typing import Any, Callable, ClassVar, Dict, List, Sequence, Tuple, Union
 
 from networkx import MultiDiGraph, weakly_connected_components
 
 import pennylane as qml
-from pennylane import apply
+from pennylane import apply, expval
+from pennylane.grouping import string_to_pauli_word
 from pennylane.measure import MeasurementProcess
-from pennylane.operation import Operation, Operator, Tensor
+from pennylane.operation import Expectation, Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
+from pennylane.transforms import batch_transform
 from pennylane.wires import Wires
+
+from .batch_transform import batch_transform
 
 
 class MeasureNode(Operation):
@@ -37,12 +46,22 @@ class MeasureNode(Operation):
     num_wires = 1
     grad_method = None
 
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        id = str(uuid.uuid4())
+
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
+
 
 class PrepareNode(Operation):
     """Placeholder node for state preparations"""
 
     num_wires = 1
     grad_method = None
+
+    def __init__(self, *params, wires=None, do_queue=True, id=None):
+        id = str(uuid.uuid4())
+
+        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
 
 def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
@@ -270,7 +289,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     for node1, node2, wire in graph.edges:
         if isinstance(node1, MeasureNode):
             assert isinstance(node2, PrepareNode)
-            cut_edges.append((node1, node2, wire))
+            cut_edges.append((node1, node2))
             graph_copy.remove_edge(node1, node2, key=wire)
 
     subgraph_nodes = weakly_connected_components(graph_copy)
@@ -279,14 +298,14 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     communication_graph = MultiDiGraph()
     communication_graph.add_nodes_from(range(len(subgraphs)))
 
-    for node1, node2, wire in cut_edges:
+    for node1, node2 in cut_edges:
         for i, subgraph in enumerate(subgraphs):
             if subgraph.has_node(node1):
                 start_fragment = i
             if subgraph.has_node(node2):
                 end_fragment = i
 
-        communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2, wire))
+        communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2))
 
     return subgraphs, communication_graph
 
@@ -364,6 +383,179 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     return tape
 
 
+def _get_measurements(
+    group: Sequence[Operator], measurements: Sequence[MeasurementProcess]
+) -> List[MeasurementProcess]:
+    """Pairs each observable in ``group`` with the circuit ``measurements``.
+
+    Only a single measurement of an expectation value is currently supported
+    in ``measurements``.
+
+    Args:
+        group (Sequence[Operator]): a collection of observables
+        measurements (Sequence[MeasurementProcess]): measurements from the circuit
+
+    Returns:
+        List[MeasurementProcess]: the expectation values of ``g @ obs``, where ``g`` is iterated
+        over ``group`` and ``obs`` is the observable composing the single measurement
+        in ``measurements``
+    """
+    if len(group) == 0:
+        # This ensures the measurements of the original tape are carried over to the
+        # following tape configurations in the absence of any MeasureNodes in the fragment
+        return measurements
+
+    n_measurements = len(measurements)
+    if n_measurements > 1:
+        raise ValueError(
+            "The circuit cutting workflow only supports circuits with a single output "
+            "measurement"
+        )
+    if n_measurements == 0:
+        return [expval(g) for g in group]
+
+    measurement = measurements[0]
+
+    if measurement.return_type is not Expectation:
+        raise ValueError(
+            "The circuit cutting workflow only supports circuits with expectation "
+            "value measurements"
+        )
+
+    obs = measurement.obs
+
+    return [expval(obs @ g) for g in group]
+
+
+def _prep_zero_state(wire):
+    qml.Identity(wire)
+
+
+def _prep_one_state(wire):
+    qml.PauliX(wire)
+
+
+def _prep_plus_state(wire):
+    qml.Hadamard(wire)
+
+
+def _prep_iplus_state(wire):
+    qml.Hadamard(wire)
+    qml.S(wires=wire)
+
+
+PREPARE_SETTINGS = [_prep_zero_state, _prep_one_state, _prep_plus_state, _prep_iplus_state]
+
+
+def expand_fragment_tapes(
+    tape: QuantumTape,
+) -> Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]:
+    """
+    Expands a fragment tape into a collection of tapes for each configuration of the
+    :class:`MeasureNode` and :class:`PrepareNode` operations.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow. Check out the
+        :doc:`transforms </code/qml_transforms>` page for more details.
+
+    Args:
+        tape (QuantumTape): the fragment tape to be expanded.
+
+    Returns:
+        Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]: the
+        tapes corresponding to each configuration, the preparation nodes and
+        the measurement nodes.
+
+    **Example**
+
+    Consider the following circuit, which contains a :class:`~.MeasureNode` and :class:`~.PrepareNode`
+    operation:
+
+    .. code-block:: python
+
+        from pennylane.transforms import qcut
+
+        with qml.tape.QuantumTape() as tape:
+            qcut.PrepareNode(wires=0)
+            qml.RX(0.5, wires=0)
+            qcut.MeasureNode(wires=0)
+
+    We can expand over the measurement and preparation nodes using:
+
+    .. code-block:: python
+
+        >>> tapes, prep, meas = qml.transforms.expand_fragment_tapes(tape)
+        >>> for t in tapes:
+        ...     print(t.draw())
+         0: ──I──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
+
+         0: ──I──RX(0.5)──┤ ⟨X⟩
+
+         0: ──I──RX(0.5)──┤ ⟨Y⟩
+
+         0: ──X──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
+
+         0: ──X──RX(0.5)──┤ ⟨X⟩
+
+         0: ──X──RX(0.5)──┤ ⟨Y⟩
+
+         0: ──H──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
+
+         0: ──H──RX(0.5)──┤ ⟨X⟩
+
+         0: ──H──RX(0.5)──┤ ⟨Y⟩
+
+         0: ──H──S──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
+
+         0: ──H──S──RX(0.5)──┤ ⟨X⟩
+
+         0: ──H──S──RX(0.5)──┤ ⟨Y⟩
+    """
+    prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
+    measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]
+
+    wire_map = {mn.wires[0]: i for i, mn in enumerate(measure_nodes)}
+
+    n_meas = len(measure_nodes)
+    if n_meas >= 1:
+        measure_combinations = qml.grouping.partition_pauli_group(len(measure_nodes))
+    else:
+        measure_combinations = [[""]]
+
+    tapes = []
+
+    for prepare_settings in product(range(len(PREPARE_SETTINGS)), repeat=len(prepare_nodes)):
+        for measure_group in measure_combinations:
+            if n_meas >= 1:
+                group = [
+                    string_to_pauli_word(paulis, wire_map=wire_map) for paulis in measure_group
+                ]
+            else:
+                group = []
+
+            prepare_mapping = {
+                n: PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
+            }
+
+            with QuantumTape() as tape_:
+                for op in tape.operations:
+                    if isinstance(op, PrepareNode):
+                        w = op.wires[0]
+                        prepare_mapping[op](w)
+                    elif not isinstance(op, MeasureNode):
+                        apply(op)
+
+                with qml.tape.stop_recording():
+                    measurements = _get_measurements(group, tape.measurements)
+                for meas in measurements:
+                    apply(meas)
+
+                tapes.append(tape_)
+
+    return tapes, prepare_nodes, measure_nodes
+
+
 def _get_symbol(i):
     """Finds the i-th ASCII symbol. Works for lowercase and uppercase letters, allowing i up to
     51."""
@@ -423,12 +615,12 @@ def contract_tensors(
             each tensor
         use_opt_einsum (bool): Determines whether to use the
             `opt_einsum <https://dgasmith.github.io/opt_einsum/>`__ package. This package is useful
-            for tensor contractions of large networks but must be installed separately using, e.g.,
-            ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
+            for faster tensor contractions of large networks but must be installed separately using,
+            e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
             differentiable contraction.
 
     Returns:
-        float or array-like: the result of contracting the tensor network
+        float or tensor_like: the result of contracting the tensor network
 
     **Example**
 
@@ -483,7 +675,7 @@ def contract_tensors(
                 for pred_edge in pred_edges.values():
                     meas_op, prep_op = pred_edge["pair"]
 
-                    if p is prep_op:
+                    if p.id is prep_op.id:
                         symb = get_symbol(ctr)
                         ctr += 1
                         tensor_indxs[i] += symb
@@ -497,7 +689,7 @@ def contract_tensors(
                 for succ_edge in succ_edges.values():
                     meas_op, _ = succ_edge["pair"]
 
-                    if m is meas_op:
+                    if m.id is meas_op.id:
                         symb = meas_map[meas_op]
                         tensor_indxs[i] += symb
 
@@ -505,3 +697,575 @@ def contract_tensors(
     kwargs = {} if use_opt_einsum else {"like": tensors[0]}
 
     return contract(eqn, *tensors, **kwargs)
+
+
+CHANGE_OF_BASIS = qml.math.array(
+    [[1.0, 1.0, 0.0, 0.0], [-1.0, -1.0, 2.0, 0.0], [-1.0, -1.0, 0.0, 2.0], [1.0, -1.0, 0.0, 0.0]]
+)
+
+
+def _process_tensor(results, n_prep: int, n_meas: int):
+    """Convert a flat slice of an individual circuit fragment's execution results into a tensor.
+
+    This function performs the following steps:
+
+    1. Reshapes ``results`` into the intermediate shape ``(4,) * n_prep + (4**n_meas,)``
+    2. Shuffles the final axis to follow the standard product over measurement settings. E.g., for
+      ``n_meas = 2`` the standard product is: II, IX, IY, IZ, XI, ..., ZY, ZZ while the input order
+      will be the result of ``qml.grouping.partition_pauli_group(2)``, i.e., II, IZ, ZI, ZZ, ...,
+      YY.
+    3. Reshapes into the final target shape ``(4,) * (n_prep + n_meas)``
+    4. Performs a change of basis for the preparation indices (the first ``n_prep`` indices) from
+       the |0>, |1>, |+>, |+i> basis to the I, X, Y, Z basis using ``CHANGE_OF_BASIS``.
+
+    Args:
+        results (tensor_like): the input execution results
+        n_prep (int): the number of preparation nodes in the corresponding circuit fragment
+        n_meas (int): the number of measurement nodes in the corresponding circuit fragment
+
+    Returns:
+        tensor_like: the corresponding fragment tensor
+    """
+    n = n_prep + n_meas
+    dim_meas = 4**n_meas
+
+    # Step 1
+    intermediate_shape = (4,) * n_prep + (dim_meas,)
+    intermediate_tensor = qml.math.reshape(results, intermediate_shape)
+
+    # Step 2
+    grouped = qml.grouping.partition_pauli_group(n_meas)
+    grouped_flat = [term for group in grouped for term in group]
+    order = qml.math.argsort(grouped_flat)
+
+    if qml.math.get_interface(intermediate_tensor) == "tensorflow":
+        # TensorFlow does not support slicing
+        intermediate_tensor = qml.math.gather(intermediate_tensor, order, axis=-1)
+    else:
+        sl = [slice(None)] * n_prep + [order]
+        intermediate_tensor = intermediate_tensor[tuple(sl)]
+
+    # Step 3
+    final_shape = (4,) * n
+    final_tensor = qml.math.reshape(intermediate_tensor, final_shape)
+
+    # Step 4
+    change_of_basis = qml.math.convert_like(CHANGE_OF_BASIS, intermediate_tensor)
+
+    for i in range(n_prep):
+        axes = [[1], [i]]
+        final_tensor = qml.math.tensordot(change_of_basis, final_tensor, axes=axes)
+
+    axes = list(reversed(range(n_prep))) + list(range(n_prep, n))
+
+    # Use transpose to reorder indices. We must do this because tensordot returns a tensor whose
+    # indices are ordered according to the uncontracted indices of the first tensor, followed
+    # by the uncontracted indices of the second tensor. For example, calculating C_kj T_ij returns
+    # a tensor T'_ki rather than T'_ik.
+    final_tensor = qml.math.transpose(final_tensor, axes=axes)
+
+    final_tensor *= qml.math.power(2, -(n_meas + n_prep) / 2)
+    return final_tensor
+
+
+def _to_tensors(
+    results,
+    prepare_nodes: Sequence[Sequence[PrepareNode]],
+    measure_nodes: Sequence[Sequence[MeasureNode]],
+) -> List:
+    """Process a flat list of execution results from all circuit fragments into the corresponding
+    tensors.
+
+    This function slices ``results`` according to the expected size of fragment tensors derived from
+    the ``prepare_nodes`` and ``measure_nodes`` and then passes onto ``_process_tensor`` for further
+    transformation.
+
+    Args:
+        results (tensor_like): A collection of execution results, provided as a flat tensor,
+            corresponding to the expansion of circuit fragments in the communication graph over
+            measurement and preparation node configurations. These results are processed into
+            tensors by this function.
+        prepare_nodes (Sequence[Sequence[PrepareNode]]): a sequence whose length is equal to the
+            number of circuit fragments, with each element used here to determine the number of
+            preparation nodes in a given fragment
+        measure_nodes (Sequence[Sequence[MeasureNode]]): a sequence whose length is equal to the
+            number of circuit fragments, with each element used here to determine the number of
+            measurement nodes in a given fragment
+
+    Returns:
+        List[tensor_like]: the tensors for each circuit fragment in the communication graph
+    """
+    ctr = 0
+    tensors = []
+
+    for p, m in zip(prepare_nodes, measure_nodes):
+        n_prep = len(p)
+        n_meas = len(m)
+        n = n_prep + n_meas
+
+        dim = 4**n
+        results_slice = results[ctr : dim + ctr]
+
+        tensors.append(_process_tensor(results_slice, n_prep, n_meas))
+
+        ctr += dim
+
+    if len(results) != ctr:
+        raise ValueError(f"The results argument should be a flat list of length {ctr}")
+
+    return tensors
+
+
+def qcut_processing_fn(
+    results: Sequence[Sequence],
+    communication_graph: MultiDiGraph,
+    prepare_nodes: Sequence[Sequence[PrepareNode]],
+    measure_nodes: Sequence[Sequence[MeasureNode]],
+    use_opt_einsum: bool = False,
+):
+    """Processing function for the :func:`cut_circuit` transform.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow. Check out the
+        :doc:`transforms </code/qml_transforms>` page for more details.
+
+    Args:
+        results (Sequence[Sequence]): A collection of execution results corresponding to the
+            expansion of circuit fragments in the ``communication_graph`` over measurement and
+            preparation node configurations. These results are processed into tensors and then
+            contracted.
+        communication_graph (MultiDiGraph): the communication graph determining connectivity between
+            circuit fragments
+        prepare_nodes (Sequence[Sequence[PrepareNode]]): a sequence of size
+            ``len(communication_graph.nodes)`` that determines the order of preparation indices in
+            each tensor
+        measure_nodes (Sequence[Sequence[MeasureNode]]): a sequence of size
+            ``len(communication_graph.nodes)`` that determines the order of measurement indices in
+            each tensor
+        use_opt_einsum (bool): Determines whether to use the
+            `opt_einsum <https://dgasmith.github.io/opt_einsum/>`__ package. This package is useful
+            for faster tensor contractions of large networks but must be installed separately using,
+            e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
+            differentiable contraction.
+
+    Returns:
+        float or tensor_like: the output of the original uncut circuit arising from contracting
+        the tensor network of circuit fragments
+    """
+    flat_results = qml.math.concatenate(results)
+
+    tensors = _to_tensors(flat_results, prepare_nodes, measure_nodes)
+    result = contract_tensors(
+        tensors, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum
+    )
+    return result
+
+
+@batch_transform
+def cut_circuit(
+    tape: QuantumTape, use_opt_einsum: bool = False
+) -> Tuple[Tuple[QuantumTape], Callable]:
+    """
+    Batch transform for circuit cutting.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow. Check out the
+        :doc:`transforms </code/qml_transforms>` page for more details.
+
+    Args:
+        tape (QuantumTape): The tape of the full circuit to be cut.
+        use_opt_einsum (bool): Determines whether to use the
+            `opt_einsum <https://dgasmith.github.io/opt_einsum/>`__ package. This package is useful
+            for faster tensor contractions of large networks but must be installed separately using,
+            e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
+            differentiable contraction.
+
+    Returns:
+        Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a result of cutting
+        and a post-processing function which combines the results via tensor contractions.
+
+    **Example**
+
+    Consider the following circuit containing a :class:`~.WireCut` operation:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+    >>> x = 0.531
+    >>> print(circuit(x))
+    0.8623011058543121
+    >>> print(qml.grad(circuit)(x))
+    -0.506395895364911
+
+    This can be cut using the following transform
+
+    >>> x = 0.531
+    >>> cut_circuit = qcut.cut_circuit(circuit)
+    >>> cut_circuit(x)
+    0.8623011058543121
+
+    Futhermore, the output of the cut circuit is also differentiable:
+
+    .. code-block:: python
+
+        >>> qml.grad(cut_circuit)(x)
+        -0.506395895364911
+    """
+
+    g = tape_to_graph(tape)
+    replace_wire_cut_nodes(g)
+    fragments, communication_graph = fragment_graph(g)
+    fragment_tapes = [graph_to_tape(f) for f in fragments]
+    expanded = [expand_fragment_tapes(t) for t in fragment_tapes]
+
+    configurations = []
+    prepare_nodes = []
+    measure_nodes = []
+    for tapes, p, m in expanded:
+        configurations.append(tapes)
+        prepare_nodes.append(p)
+        measure_nodes.append(m)
+
+    tapes = tuple(tape for c in configurations for tape in c)
+
+    return tapes, partial(
+        qcut_processing_fn,
+        communication_graph=communication_graph,
+        prepare_nodes=prepare_nodes,
+        measure_nodes=measure_nodes,
+        use_opt_einsum=use_opt_einsum,
+    )
+
+
+@dataclass()
+class CutStrategy:
+    """
+    A circuit-cutting distribution policy for executing (large) circuits on available (comparably
+    smaller) devices.
+
+    Args:
+        devices (Union[qml.Device, Sequence[qml.Device]]): Single, or Sequence of, device(s).
+            Optional only when ``max_free_wires`` is provided.
+        max_free_wires (int): Number of wires for the largest available device. Optional only when
+            ``devices`` is provided where it defaults to the maximum number of wires among
+            ``devices``.
+        min_free_wires (int): Number of wires for the smallest available device, or, equivalently,
+            the smallest max fragment-wire-size that the partitioning is allowed to explore.
+            When provided, this parameter will be used to derive an upper-bound to the range of
+            explored number of fragments.  Optional, defaults to ``max_free_wires``.
+        num_fragments_probed (Union[int, Sequence[int]]): Single, or 2-Sequence of, number(s)
+            specifying the potential (range of) number of fragments for the partitioner to attempt.
+            Optional, defaults to probing all valid strategies derivable from the circuit and
+            devices.
+        max_free_gates (int): Maximum allowed circuit depth for the deepest available device.
+            Optional, defaults to unlimited depth.
+        min_free_gates (int): Maximum allowed circuit depth for the shallowest available device.
+            Optional, defaults to ``max_free_gates``.
+        imbalance_tolerance (float): The global maximum allowed imbalance for all partition trials.
+            Optional, defaults to unlimited imbalance. Used only if there's a known hard balancing
+            constraint on the partitioning problem.
+
+    **Example**
+
+    The following cut strategy specifies that a circuit should be cut into between
+    ``2`` to ``5`` fragments, with each fragment having at most ``6`` wires and
+    at least ``4`` wires:
+
+    >>> cut_strategy = qml.transforms.CutStrategy(
+    ...     max_free_wires=6,
+    ...     min_free_wires=4,
+    ...     num_fragments_probed=(2, 5),
+    ... )
+
+    """
+
+    # pylint: disable=too-many-arguments, too-many-instance-attributes
+
+    #: Initialization argument only, used to derive ``max_free_wires`` and ``min_free_wires``.
+    devices: InitVar[Union[qml.Device, Sequence[qml.Device]]] = None
+
+    #: Number of wires for the largest available device.
+    max_free_wires: int = None
+    #: Number of wires for the smallest available device.
+    min_free_wires: int = None
+    #: The potential (range of) number of fragments for the partitioner to attempt.
+    num_fragments_probed: Union[int, Sequence[int]] = None
+    #: Maximum allowed circuit depth for the deepest available device.
+    max_free_gates: int = None
+    #: Maximum allowed circuit depth for the shallowest available device.
+    min_free_gates: int = None
+    #: The global maximum allowed imbalance for all partition trials.
+    imbalance_tolerance: float = None
+
+    #: Class attribute, threshold for warning about too many fragments.
+    HIGH_NUM_FRAGMENTS: ClassVar[int] = 20
+    #: Class attribute, threshold for warning about too many partition attempts.
+    HIGH_PARTITION_ATTEMPTS: ClassVar[int] = 20
+
+    def __post_init__(
+        self,
+        devices,
+    ):
+        """Deriving cutting constraints from given devices and parameters."""
+
+        self.max_free_wires = self.max_free_wires or self.min_free_wires
+        if isinstance(self.num_fragments_probed, int):
+            self.num_fragments_probed = [self.num_fragments_probed]
+        if isinstance(self.num_fragments_probed, (list, tuple)):
+            self.num_fragments_probed = sorted(self.num_fragments_probed)
+            self.k_lower = self.num_fragments_probed[0]
+            self.k_upper = self.num_fragments_probed[-1]
+            if self.k_lower <= 0:
+                raise ValueError("`num_fragments_probed` must be positive int(s)")
+        else:
+            self.k_lower, self.k_upper = None, None
+
+        if devices is None and self.max_free_wires is None:
+            raise ValueError("One of arguments `devices` and max_free_wires` must be provided.")
+
+        if isinstance(devices, qml.Device):
+            devices = (devices,)
+
+        if devices is not None:
+            if not isinstance(devices, Sequence) or any(
+                (not isinstance(d, qml.Device) for d in devices)
+            ):
+                raise ValueError(
+                    "Argument `devices` must be a list or tuple containing elements of type "
+                    "`qml.Device`"
+                )
+
+            device_wire_sizes = [len(d.wires) for d in devices]
+
+            self.max_free_wires = self.max_free_wires or max(device_wire_sizes)
+            self.min_free_wires = self.min_free_wires or min(device_wire_sizes)
+
+        if (self.imbalance_tolerance is not None) and not (
+            isinstance(self.imbalance_tolerance, (float, int)) and self.imbalance_tolerance >= 0
+        ):
+            raise ValueError(
+                "The overall `imbalance_tolerance` is expected to be a non-negative number, "
+                f"got {type(self.imbalance_tolerance)} with value {self.imbalance_tolerance}."
+            )
+
+    def get_cut_kwargs(
+        self,
+        tape_dag: MultiDiGraph,
+        max_wires_by_fragment: Sequence[int] = None,
+        max_gates_by_fragment: Sequence[int] = None,
+    ) -> List[Dict[str, Any]]:
+        """Derive the complete set of arguments, based on a given circuit, for passing to a graph
+        partitioner.
+
+        Args:
+            tape_dag (MultiDiGraph): Graph representing a tape, typically the output of
+                :func:`tape_to_graph`.
+            max_wires_by_fragment (Sequence[int]): User-predetermined list of wire limits by
+                fragment. If supplied, the number of fragments will be derived from it and
+                exploration of other choices will not be made.
+            max_gates_by_fragment (Sequence[int]): User-predetermined list of gate limits by
+                fragment. If supplied, the number of fragments will be derived from it and
+                exploration of other choices will not be made.
+
+        Returns:
+            List[Dict[str, Any]]: A list of minimal kwargs being passed to a graph
+            partitioner method.
+
+        **Example**
+
+        Deriving kwargs for a given circuit and feeding them to a custom partitioner, along with
+        extra parameters specified using ``extra_kwargs``:
+
+        >>> cut_strategy = qcut.CutStrategy(devices=dev)
+        >>> cut_kwargs = cut_strategy.get_cut_kwargs(tape_dag)
+        >>> cut_trials = [
+        ...     my_partition_fn(tape_dag, **kwargs, **extra_kwargs) for kwargs in cut_kwargs
+        ... ]
+
+        """
+        tape_wires = set(w for _, _, w in tape_dag.edges.data("wire"))
+        num_tape_wires = len(tape_wires)
+        num_tape_gates = tape_dag.order()
+        self._validate_input(max_wires_by_fragment, max_gates_by_fragment)
+
+        probed_cuts = self._infer_probed_cuts(
+            num_tape_wires=num_tape_wires,
+            num_tape_gates=num_tape_gates,
+            max_wires_by_fragment=max_wires_by_fragment,
+            max_gates_by_fragment=max_gates_by_fragment,
+        )
+
+        return probed_cuts
+
+    @staticmethod
+    def _infer_imbalance(
+        k, num_wires, num_gates, free_wires, free_gates, imbalance_tolerance=None
+    ) -> float:
+        """Helper function for determining best imbalance limit."""
+        avg_fragment_wires = (num_wires - 1) // k + 1
+        avg_fragment_gates = (num_gates - 1) // k + 1
+        if free_wires < avg_fragment_wires:
+            raise ValueError(
+                "`free_wires` should be no less than the average number of wires per fragment. "
+                f"Got {free_wires} >= {avg_fragment_wires} ."
+            )
+        if free_gates < avg_fragment_gates:
+            raise ValueError(
+                "`free_gates` should be no less than the average number of gates per fragment. "
+                f"Got {free_gates} >= {avg_fragment_gates} ."
+            )
+
+        wire_imbalance = free_wires / avg_fragment_wires - 1
+        gate_imbalance = free_gates / avg_fragment_gates - 1
+        imbalance = min(gate_imbalance, wire_imbalance)
+        if imbalance_tolerance is not None:
+            imbalance = min(imbalance, imbalance_tolerance)
+
+        return imbalance
+
+    @staticmethod
+    def _validate_input(
+        max_wires_by_fragment,
+        max_gates_by_fragment,
+    ):
+        """Helper parameter checker."""
+        if max_wires_by_fragment is not None:
+            if not isinstance(max_wires_by_fragment, (list, tuple)):
+                raise ValueError(
+                    "`max_wires_by_fragment` is expected to be a list or tuple, but got "
+                    f"{type(max_gates_by_fragment)}."
+                )
+            if any(not (isinstance(i, int) and i > 0) for i in max_wires_by_fragment):
+                raise ValueError(
+                    "`max_wires_by_fragment` is expected to contain positive integers only."
+                )
+        if max_gates_by_fragment is not None:
+            if not isinstance(max_gates_by_fragment, (list, tuple)):
+                raise ValueError(
+                    "`max_gates_by_fragment` is expected to be a list or tuple, but got "
+                    f"{type(max_gates_by_fragment)}."
+                )
+            if any(not (isinstance(i, int) and i > 0) for i in max_gates_by_fragment):
+                raise ValueError(
+                    "`max_gates_by_fragment` is expected to contain positive integers only."
+                )
+        if max_wires_by_fragment is not None and max_gates_by_fragment is not None:
+            if len(max_wires_by_fragment) != len(max_gates_by_fragment):
+                raise ValueError(
+                    "The lengths of `max_wires_by_fragment` and `max_gates_by_fragment` should be "
+                    f"equal, but got {len(max_wires_by_fragment)} and {len(max_gates_by_fragment)}."
+                )
+
+    def _infer_probed_cuts(
+        self,
+        num_tape_wires,
+        num_tape_gates,
+        max_wires_by_fragment=None,
+        max_gates_by_fragment=None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Helper function for deriving the minimal set of best default partitioning constraints
+        for the graph partitioner.
+
+        Args:
+            num_tape_wires (int): Number of wires in the circuit tape to be partitioned.
+            num_tape_gates (int): Number of gates in the circuit tape to be partitioned.
+            max_wires_by_fragment (Sequence[int]): User-predetermined list of wire limits by
+                fragment. If supplied, the number of fragments will be derived from it and
+                exploration of other choices will not be made.
+            max_gates_by_fragment (Sequence[int]): User-predetermined list of gate limits by
+                fragment. If supplied, the number of fragments will be derived from it and
+                exploration of other choices will not be made.
+
+        Returns:
+            List[Dict[str, Any]]: A list of minimal set of kwargs being passed to a graph
+                partitioner method.
+        """
+
+        # Assumes unlimited width/depth if not supplied.
+        max_free_wires = self.max_free_wires or num_tape_wires
+        max_free_gates = self.max_free_gates or num_tape_gates
+
+        # Assumes same number of wires/gates across all devices if min_free_* not provided.
+        min_free_wires = self.min_free_wires or max_free_wires
+        min_free_gates = self.min_free_gates or max_free_gates
+
+        # The lower bound of k corresponds to executing each fragment on the largest available device.
+        k_lb = 1 + max(
+            (num_tape_wires - 1) // max_free_wires,  # wire limited
+            (num_tape_gates - 1) // max_free_gates,  # gate limited
+        )
+        # The upper bound of k corresponds to executing each fragment on the smallest available device.
+        k_ub = 1 + max(
+            (num_tape_wires - 1) // min_free_wires,  # wire limited
+            (num_tape_gates - 1) // min_free_gates,  # gate limited
+        )
+
+        # The global imbalance tolerance, if not given, defaults to a very loose upper bound:
+        imbalance_tolerance = k_ub if self.imbalance_tolerance is None else self.imbalance_tolerance
+
+        probed_cuts = []
+
+        if max_gates_by_fragment is None and max_wires_by_fragment is None:
+
+            # k_lower, when supplied by a user, can be higher than k_lb if the the desired k is known:
+            k_lower = self.k_lower if self.k_lower is not None else k_lb
+            # k_upper, when supplied by a user, can be higher than k_ub to encourage exploration:
+            k_upper = self.k_upper if self.k_upper is not None else k_ub
+
+            if k_lower < k_lb:
+                warnings.warn(
+                    f"The provided `k_lower={k_lower}` is less than the lowest allowed value, "
+                    f"will override and set `k_lower={k_lb}`."
+                )
+                k_lower = k_lb
+
+            if k_lower > self.HIGH_NUM_FRAGMENTS:
+                warnings.warn(
+                    f"The attempted number of fragments seems high with lower bound at {k_lower}."
+                )
+
+            # Prepare the list of ks to explore:
+            ks = list(range(k_lower, k_upper + 1))
+
+            if len(ks) > self.HIGH_PARTITION_ATTEMPTS:
+                warnings.warn(f"The numer of partition attempts seems high ({len(ks)}).")
+        else:
+            # When the by-fragment wire and/or gate limits are supplied, derive k and imbalance and
+            # return a single partition config.
+            ks = [len(max_wires_by_fragment or max_gates_by_fragment)]
+
+        for k in ks:
+            imbalance = self._infer_imbalance(
+                k,
+                num_tape_wires,
+                num_tape_gates,
+                max_free_wires if max_wires_by_fragment is None else max(max_wires_by_fragment),
+                max_free_gates if max_gates_by_fragment is None else max(max_gates_by_fragment),
+                imbalance_tolerance,
+            )
+            cut_kwargs = {
+                "num_fragments": k,
+                "imbalance": imbalance,
+            }
+            if max_wires_by_fragment is not None:
+                cut_kwargs["max_wires_by_fragment"] = max_wires_by_fragment
+            if max_gates_by_fragment is not None:
+                cut_kwargs["max_gates_by_fragment"] = max_gates_by_fragment
+
+            probed_cuts.append(cut_kwargs)
+
+        return probed_cuts
