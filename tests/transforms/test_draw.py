@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -146,6 +146,63 @@ class TestDecimals:
 
         expected = "    0: ──RX(x)─┤  <Z>\n    a: ──RY(y)─┤     \n1.234: ──RZ(z)─┤     "
         assert draw(circuit)("x", "y", "z") == expected
+
+
+class TestMatrixParameters:
+    def test_matrix_parameters(self):
+        """Test matrix valued parameters remembered and printed out upon request."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def matrices_circuit():
+            qml.QubitStateVector([1.0, 0.0], wires=(0, 1))
+            qml.QubitUnitary(np.eye(2), wires=0)
+            return qml.expval(qml.Hermitian(np.eye(2), wires=0))
+
+        expected1 = (
+            "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
+            "1: ─╰QubitStateVector(M0)────────┤         "
+        )
+
+        assert draw(matrices_circuit)() == expected1
+
+        expected2 = (
+            "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
+            "1: ─╰QubitStateVector(M0)────────┤         \n"
+            "M0 = \n[1.0, 0.0]\n"
+            "M1 = \n[[1. 0.]\n [0. 1.]]"
+        )
+
+        assert draw(matrices_circuit, show_matrices=True)() == expected2
+
+    def test_matrix_parameters_batch_transform(self):
+        """Test matrix parameters only printed once after a batch transform."""
+
+        @qml.gradients.param_shift(shifts=[(0.2,)])
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def matrices_circuit(x):
+            qml.QubitStateVector([1.0, 0.0], wires=(0, 1))
+            qml.QubitUnitary(np.eye(2, requires_grad=False), wires=0)
+            qml.RX(x, wires=1)
+            return qml.expval(qml.Hermitian(np.eye(2, requires_grad=False), wires=1))
+
+        expected1 = (
+            "0: ─╭QubitStateVector(M0)──U(M1)────┤         \n"
+            "1: ─╰QubitStateVector(M0)──RX(1.20)─┤  <𝓗(M1)>\n\n"
+            "0: ─╭QubitStateVector(M0)──U(M1)────┤         \n"
+            "1: ─╰QubitStateVector(M0)──RX(0.80)─┤  <𝓗(M1)>"
+        )
+
+        assert draw(matrices_circuit)(np.array(1.0, requires_grad=True))
+
+        expected2 = (
+            "0: ─╭QubitStateVector(M0)──U(M1)────┤         \n"
+            "1: ─╰QubitStateVector(M0)──RX(1.20)─┤  <𝓗(M1)>\n\n"
+            "0: ─╭QubitStateVector(M0)──U(M1)────┤         \n"
+            "1: ─╰QubitStateVector(M0)──RX(0.80)─┤  <𝓗(M1)>\n\n"
+            "M0 = \n[1.0, 0.0]\n"
+            "M1 = \n[[1. 0.]\n [0. 1.]]"
+        )
+        assert draw(matrices_circuit, show_matrices=True)(np.array(1.0, requires_grad=True))
 
 
 class TestMaxLength:

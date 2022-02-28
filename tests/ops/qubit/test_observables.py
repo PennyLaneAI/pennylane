@@ -480,6 +480,21 @@ label_data = [
 
 @pytest.mark.parametrize("op, label", label_data)
 def test_label_method(op, label):
+    """Test non-cache label functionality."""
     assert op.label() == label
     assert op.label(decimals=5) == label
     assert op.label(base_label="obs") == "obs"
+
+
+def test_hermitian_labelling_w_cache():
+    """Test hermitian matrix interacts with matrix cache provided to label."""
+
+    op = qml.Hermitian(X, wires=0)
+
+    cache = {"matrices": [Z]}
+    op.label(cache=cache) == "𝓗(M1)"
+    assert qml.math.allclose(cache["matrices"][1], X)
+
+    cache = {"matrices": [Z, Y, X]}
+    op.label(cache=cache) == "𝓗(M2)"
+    assert len(cache["matrices"]) == 3
