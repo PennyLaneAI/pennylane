@@ -75,7 +75,7 @@ class TestSingleOperation:
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_parametric_gates_instantiated(self, op_class):
-        """Verify that the matrices of non-parametric one qubit gates is correct
+        """Verify that the matrix of non-parametric one qubit gates is correct
         when provided as an instantiated operation"""
         op = op_class(0.54, wires=0)
         res = qml.matrix(op)

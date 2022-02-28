@@ -35,7 +35,7 @@ def matrix(op, *, wire_order=None):
 
     **Example**
 
-    Given an operation, ``qml.matrix`` returns the matrix representation:
+    Given an instantiated operator, ``qml.matrix`` returns the matrix representation:
 
     >>> op = qml.RX(0.54, wires=0)
     >>> qml.matrix(op)
@@ -76,9 +76,9 @@ def matrix(op, *, wire_order=None):
         We can use ``qml.matrix`` to generate a new function that returns the unitary matrix
         corresponding to the function ``circuit``:
 
-        >>> get_matrix = qml.matrix(circuit)
+        >>> matrix_fn = qml.matrix(circuit)
         >>> theta = np.pi / 4
-        >>> get_matrix(theta)
+        >>> matrix_fn(theta)
         array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
         [ 0.+0.j,  -0.92387953+0.j,  0.+0.j,  0. +0.38268343j],
         [ 0. -0.38268343j,  0.+0.j,  0.92387953+0.j,  0.+0.j],
