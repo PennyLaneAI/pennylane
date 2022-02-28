@@ -26,6 +26,7 @@ from string import ascii_letters as ABC
 import pennylane.numpy as np
 import pennylane.math as qnp
 from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, QubitDensityMatrix
+from pennylane import Snapshot
 from pennylane.operation import Channel
 from pennylane.wires import Wires
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
@@ -59,6 +60,7 @@ class DefaultMixed(QubitDevice):
 
     operations = {
         "Identity",
+        "Snapshot",
         "BasisState",
         "QubitStateVector",
         "QubitDensityMatrix",
@@ -123,6 +125,7 @@ class DefaultMixed(QubitDevice):
         # Create the initial state.
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
+        self.snapshots = {}
 
     def _create_basis_state(self, index):
         """Return the density matrix representing a computational basis state over all wires.
@@ -467,6 +470,15 @@ class DefaultMixed(QubitDevice):
 
         if isinstance(operation, QubitDensityMatrix):
             self._apply_density_matrix(operation.parameters[0], wires)
+            return
+
+        if isinstance(operation, Snapshot):
+            dim = 2**self.num_wires
+            density_matrix = self._reshape(self._state, (dim, dim))
+            if operation.tag:
+                self.snapshots[operation.tag] = density_matrix
+            else:
+                self.snapshots[len(self.snapshots)] = density_matrix
             return
 
         matrices = self._get_kraus(operation)
