@@ -293,6 +293,8 @@ The Operator class has undergone a major refactor with the following changes:
   for developers.
   [(#2064)](https://github.com/PennyLaneAI/pennylane/pull/2064)
 
+* Moved ``expand()`` from ``Operation`` to ``Operator``.
+  [(#2239)](https://github.com/PennyLaneAI/pennylane/pull/2239)
 
 <h3>Contributors</h3>
 
