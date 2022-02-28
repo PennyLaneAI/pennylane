@@ -29,6 +29,7 @@
   ```
 
 * The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has
+  a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions,
   deprecation of the `charset` keyword, and minor cosmetic changes.
   [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
 

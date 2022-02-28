@@ -32,15 +32,15 @@ def snapshots(qnode):
 
     .. code-block:: python3
 
-    dev = qml.device("default.qubit", wires=2)
-    @qml.qnode(dev)
-    def circuit():
-        qml.Snapshot()
-        qml.Hadamard(wires=0)
-        qml.Snapshot("very_important_state")
-        qml.CNOT(wires=[0, 1])
-        qml.Snapshot()
-        return qml.probs([0, 1])
+        dev = qml.device("default.qubit", wires=2)
+        @qml.qnode(dev)
+        def circuit():
+            qml.Snapshot()
+            qml.Hadamard(wires=0)
+            qml.Snapshot("very_important_state")
+            qml.CNOT(wires=[0, 1])
+            qml.Snapshot()
+            return qml.probs([0, 1])
 
     >>> qml.snapshots(circuit)()
     {0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),

@@ -732,8 +732,8 @@ class DefaultGaussian(Device):
 
         if operation == "Snapshot":
             self.snapshots[len(self.snapshots)] = {
-                "cov_matrix": self._state[0],
-                "means": self._state[1],
+                "cov_matrix": self._state[0].copy(),
+                "means": self._state[1].copy(),
             }
             return  # we are done here
 
