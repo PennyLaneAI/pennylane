@@ -18,21 +18,26 @@ circuits to be distributed across multiple devices.
 
 import copy
 import string
-import warnings
 import uuid
-from typing import Sequence, Tuple, List, Dict, Any, Union, ClassVar
+import warnings
+from dataclasses import InitVar, dataclass
+from functools import partial
 from itertools import product
-from dataclasses import dataclass, InitVar
+from typing import Any, Callable, ClassVar, Dict, List, Sequence, Tuple, Union
+
+from networkx import MultiDiGraph, weakly_connected_components
 
 import pennylane as qml
-from networkx import MultiDiGraph, weakly_connected_components
 from pennylane import apply, expval
 from pennylane.grouping import string_to_pauli_word
 from pennylane.measure import MeasurementProcess
 from pennylane.operation import Expectation, Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
+from pennylane.transforms import batch_transform
 from pennylane.wires import Wires
+
+from .batch_transform import batch_transform
 
 
 class MeasureNode(Operation):
@@ -855,6 +860,94 @@ def qcut_processing_fn(
         tensors, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum
     )
     return result
+
+
+@batch_transform
+def cut_circuit(
+    tape: QuantumTape, use_opt_einsum: bool = False
+) -> Tuple[Tuple[QuantumTape], Callable]:
+    """
+    Batch transform for circuit cutting.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow. Check out the
+        :doc:`transforms </code/qml_transforms>` page for more details.
+
+    Args:
+        tape (QuantumTape): The tape of the full circuit to be cut.
+        use_opt_einsum (bool): Determines whether to use the
+            `opt_einsum <https://dgasmith.github.io/opt_einsum/>`__ package. This package is useful
+            for faster tensor contractions of large networks but must be installed separately using,
+            e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
+            differentiable contraction.
+
+    Returns:
+        Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a result of cutting
+        and a post-processing function which combines the results via tensor contractions.
+
+    **Example**
+
+    Consider the following circuit containing a :class:`~.WireCut` operation:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+    >>> x = 0.531
+    >>> print(circuit(x))
+    0.8623011058543121
+    >>> print(qml.grad(circuit)(x))
+    -0.506395895364911
+
+    This can be cut using the following transform
+
+    >>> x = 0.531
+    >>> cut_circuit = qcut.cut_circuit(circuit)
+    >>> cut_circuit(x)
+    0.8623011058543121
+
+    Futhermore, the output of the cut circuit is also differentiable:
+
+    .. code-block:: python
+
+        >>> qml.grad(cut_circuit)(x)
+        -0.506395895364911
+    """
+
+    g = tape_to_graph(tape)
+    replace_wire_cut_nodes(g)
+    fragments, communication_graph = fragment_graph(g)
+    fragment_tapes = [graph_to_tape(f) for f in fragments]
+    expanded = [expand_fragment_tapes(t) for t in fragment_tapes]
+
+    configurations = []
+    prepare_nodes = []
+    measure_nodes = []
+    for tapes, p, m in expanded:
+        configurations.append(tapes)
+        prepare_nodes.append(p)
+        measure_nodes.append(m)
+
+    tapes = tuple(tape for c in configurations for tape in c)
+
+    return tapes, partial(
+        qcut_processing_fn,
+        communication_graph=communication_graph,
+        prepare_nodes=prepare_nodes,
+        measure_nodes=measure_nodes,
+        use_opt_einsum=use_opt_einsum,
+    )
 
 
 @dataclass()

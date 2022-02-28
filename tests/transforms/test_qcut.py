@@ -20,13 +20,14 @@ import string
 import sys
 from itertools import product
 
-import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
+from scipy.stats import unitary_group
+
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
-from scipy.stats import unitary_group
 
 I, X, Y, Z = (
     np.eye(2),
@@ -1799,6 +1800,42 @@ class TestQCutProcessingFn:
         ) * f(1)
 
         assert np.allclose(grad, expected_grad)
+
+
+class TestCutCircuitTransform:
+    """
+    Tests for the cut_circuit transform
+    """
+
+    def test_simple_cut_circuit(self, mocker):
+        """
+        Tests the full circuit cutting pipeline returns the correct value and
+        gradient for a simple circuit using the `cut_circuit` transform.
+        """
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+        spy = mocker.spy(qcut, "qcut_processing_fn")
+        x = np.array(0.531, requires_grad=True)
+        cut_circuit = qcut.cut_circuit(circuit)
+
+        assert np.isclose(cut_circuit(x), float(circuit(x)))
+        spy.assert_called_once()
+
+        gradient = qml.grad(circuit)(x)
+        cut_gradient = qml.grad(cut_circuit)(x)
+
+        assert np.isclose(gradient, cut_gradient)
 
 
 class TestCutStrategy:
