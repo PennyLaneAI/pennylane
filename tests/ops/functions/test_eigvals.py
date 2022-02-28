@@ -324,13 +324,11 @@ class TestDifferentiation:
 
         x = jax.numpy.array(v)
 
-        l = loss(x)
-        dl = jax.grad(loss)(x)
-
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
-            eigvals = qml.eigvals(circuit)(x)
+            l = loss(x)
+            dl = jax.grad(loss)(x)
 
-        assert isinstance(eigvals, jax.numpy.ndarray)
+        assert isinstance(l, jax.numpy.ndarray)
         assert np.allclose(l, 2 * np.cos(v / 2))
         assert np.allclose(dl, -np.sin(v / 2))
 
@@ -349,14 +347,14 @@ class TestDifferentiation:
             return qml.math.sum(qml.math.real(U))
 
         x = torch.tensor(v, requires_grad=True)
-        l = loss(x)
-        l.backward()
-        dl = x.grad
 
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
-            eigvals = qml.eigvals(circuit)(x)
+            l = loss(x)
+            l.backward()
 
-        assert isinstance(eigvals, torch.Tensor)
+        dl = x.grad
+
+        assert isinstance(l, torch.Tensor)
         assert np.allclose(l.detach(), 2 * np.cos(v / 2))
         assert np.allclose(dl.detach(), -np.sin(v / 2))
 
@@ -376,13 +374,11 @@ class TestDifferentiation:
 
         x = tf.Variable(v)
         with tf.GradientTape() as tape:
-            l = loss(x)
+            with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
+                l = loss(x)
         dl = tape.gradient(l, x)
 
-        with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
-            eigvals = qml.eigvals(circuit)(x)
-
-        assert isinstance(eigvals, tf.Tensor)
+        assert isinstance(l, tf.Tensor)
         assert np.allclose(l, 2 * np.cos(v / 2))
         assert np.allclose(dl, -np.sin(v / 2))
 
@@ -399,12 +395,11 @@ class TestDifferentiation:
             return qml.math.sum(qml.math.real(U))
 
         x = np.array(v, requires_grad=True)
-        l = loss(x)
-        dl = qml.grad(loss)(x)
 
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
-            eigvals = qml.eigvals(circuit)(x)
+            l = loss(x)
+            dl = qml.grad(loss)(x)
 
-        assert isinstance(eigvals, qml.numpy.tensor)
+        assert isinstance(l, qml.numpy.tensor)
         assert np.allclose(l, 2 * np.cos(v / 2))
         assert np.allclose(dl, -np.sin(v / 2))

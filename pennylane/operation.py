@@ -736,6 +736,7 @@ class Operator(abc.ABC):
         Returns:
             tensor_like: eigenvalues
         """
+
         try:
             return self.compute_eigvals(*self.parameters, **self.hyperparameters)
         except EigvalsUndefinedError:

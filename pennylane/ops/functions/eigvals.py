@@ -115,10 +115,7 @@ def eigvals(tape):
     # as per operator wires/wire ordering, and by inserting implicit identity
     # matrices (eigenvalues [1, 1]) at missing locations.
 
-    ev = []
-
-    for op in tape.operations:
-        ev.append(eigvals(op))
+    ev = [eigvals(op) for op in tape.operations]
 
     if len(ev) == 1:
         return ev[0]
