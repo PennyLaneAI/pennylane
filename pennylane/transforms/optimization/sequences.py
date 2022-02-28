@@ -1,0 +1,1130 @@
+# Copyright 2021-2022 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Transform finding all maximal matches of a pattern in a quantum circuit and optimizing the circuit by
+substitution."""
+
+import itertools
+import copy
+import pennylane as qml
+from pennylane import apply
+from pennylane.transforms import qfunc_transform
+from pennylane.transforms.commutation_dag import commutation_dag
+from pennylane.wires import Wires
+from pennylane.ops.qubit.attributes import (
+    symmetric_over_all_wires,
+)
+
+
+@qfunc_transform
+def sequences(tape, number_qubits):
+    r"""Quantum function transform to optimize a circuit by optimizing 1 and/or 2 qubits gates sequences.
+
+    Args:
+        qfunc (function): A quantum function to be optimized.
+        number_qubits(list(int)): List qubits subset where to optimize sequences.
+
+    Returns:
+        function: the transformed quantum function
+
+    **Example**
+
+    Consider the following quantum circuit to be optimized
+
+    .. code-block:: python
+
+        def circuit():
+            qml.Toffoli(wires=[3, 4, 0])
+            qml.CNOT(wires=[1, 4])
+            qml.CNOT(wires=[2, 1])
+            qml.Hadamard(wires=3)
+            qml.PauliZ(wires=1)
+            qml.CNOT(wires=[2, 3])
+            qml.Toffoli(wires=[2, 3, 0])
+            qml.CNOT(wires=[1, 4])
+            return qml.expval(qml.PauliX(wires=0))
+
+    For optimizing the circuit given the given following template of CNOTs we apply the `pattern_matching`
+    transform.
+
+    >>> dev = qml.device('default.qubit', wires=5)
+    >>> optimized_qfunc = sequences(number_qubits=[1, 2])(circuit)
+    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+
+    In our case, it is possible to find three CNOTs and replace this pattern with only two CNOTs and therefore
+    optimizing the circuit. The number of CNOTs in the circuit is reduced by one.
+
+    >>> print(qml.draw(qnode, wire_order=[3,4,0,1,2])())
+
+    3: ─╭C──H───────╭X─╭C────┤
+    4: ─├C─╭X───────│──│──╭X─┤
+    0: ─╰X─│────────│──├X─│──┤  <X>
+    1: ────╰C─╭X──Z─│──│──╰C─┤
+    2: ───────╰C────╰C─╰C────┤
+
+    >>> print(qml.draw(optimized_qnode)())
+
+    0: ─╭C──H───────╭X─╭C─┤
+    1: ─├C─╭X───────│──│──┤
+    2: ─╰X─│────────│──├X─┤  <X>
+    3: ────│──╭X──Z─│──│──┤
+    4: ────╰C─╰C────╰C─╰C─┤
+
+    """
+    measurements = tape.measurements
+
+    for n_qubit in number_qubits:
+
+        # Construct Dag representation of the circuit and the pattern.
+        circuit_dag = commutation_dag(tape)()
+
+        # Match list
+        match_list = []
+
+        # Loop through all possible initial gates
+        for node_c in circuit_dag.get_nodes():
+            # Initial matches between two identical gates (No qubits comparison)
+            circuit_range = range(0, circuit_dag.num_wires)
+
+            # Fix qubits from the first (target fixed and control restrained)
+            not_fixed_qubits_confs = _not_fixed_qubits(
+                circuit_range, node_c[1].wires, n_qubit
+            )
+
+            # Loop over all possible qubits configurations given the first match constrains
+            for not_fixed_qubits_conf in not_fixed_qubits_confs:
+                for not_fixed_qubits_conf_permuted in itertools.permutations(
+                    not_fixed_qubits_conf
+                ):
+                    not_fixed_qubits_conf_permuted = list(not_fixed_qubits_conf_permuted)
+                    for first_match_qubits_conf in _first_match_qubits(
+                        node_c[1], n_qubit
+                    ):
+                        # Qubits mapping between circuit and pattern
+                        qubits_conf = _merge_first_match_and_permutation(
+                            first_match_qubits_conf, not_fixed_qubits_conf_permuted
+                        )
+
+                        # Forward match part of the algorithm
+                        forward = ForwardMatch(
+                            circuit_dag,
+                            node_c[0],
+                            n_qubit,
+                        )
+                        forward.run_forward_match()
+
+                        # Backward match part of the algorithm
+                        backward = BackwardMatch(
+                            circuit_dag,
+                            qubits_conf,
+                            forward.match,
+                            forward.circuit_matched_with,
+                            forward.circuit_blocked,
+                            forward.pattern_matched_with,
+                            node_c[0],
+                        )
+                        backward.run_backward_match()
+
+                        _add_sequence(match_list, backward.match_final)
+
+        match_list.sort(key=lambda x: len(x.match), reverse=True)
+
+        # Extract maximal matches and optimizes the circuit for compatible maximal matches
+        if match_list:
+            maximal = MaximalMatches(match_list)
+            maximal.run_maximal_matches()
+            max_matches = maximal.max_match_list
+
+            # Initialize the optimization by substitution of the different matches
+            substitution = SequenceSubstitution(max_matches, circuit_dag, n_qubit)
+            substitution.substitution()
+
+            already_sub = []
+
+            # If some substitutions are possible, we create an optimized circuit.
+            if substitution.substitution_list:
+                # Loop over all possible substitutions
+                with qml.tape.QuantumTape(do_queue=False) as tape_inside:
+                    for group in substitution.substitution_list:
+
+                        circuit_sub = group.circuit_config
+                        template_inverse = group.template_config
+
+                        pred = group.pred_block
+
+                        # Choose the first configuration
+                        qubit = group.qubit_config[0]
+
+                        # First add all the predecessors of the given match.
+                        for elem in pred:
+                            node = circuit_dag.get_node(elem)
+                            inst = copy.deepcopy(node.op)
+                            apply(inst)
+                            already_sub.append(elem)
+
+                        already_sub = already_sub + circuit_sub
+
+                        # Then add the inverse of the template.
+                        for index in template_inverse:
+                            all_qubits = tape.wires.tolist()
+                            all_qubits.sort()
+                            wires_t = group.template_dag.get_node(index).wires
+                            wires_c = [qubit[x] for x in wires_t]
+                            wires = [all_qubits[x] for x in wires_c]
+
+                            node = group.template_dag.get_node(index)
+                            inst = copy.deepcopy(node.op)
+                            inst._wires = Wires(wires)
+                            inst.adjoint()
+
+                    # Add the unmatched gates.
+                    for node_id in substitution.unmatched_list:
+                        node = circuit_dag.get_node(node_id)
+                        inst = copy.deepcopy(node.op)
+                        apply(inst)
+
+            tape = tape_inside
+
+    for op in tape.operations:
+        apply(op)
+    # After optimization, simply apply the measurements
+    for m in measurements:
+        apply(m)
+
+def _not_fixed_qubits(lst, exclude, length):
+    """
+    Function that returns all possible combinations of qubits given some restrictions and using itertools.
+    Args:
+        lst (list): list of qubits indices from the circuit.
+        exclude (list): list of qubits from the first matched circuit operation that needs to be excluded.
+        length (int): length of the list to be returned (number of qubits in pattern -
+        number of qubits from the first matched operation).
+    Yield:
+        iterator: Iterator of the possible lists.
+    """
+    for sublist in itertools.combinations([e for e in lst if e not in exclude], length):
+        yield list(sublist)
+
+
+def _first_match_qubits(node_c, n_qubit):
+    """
+    Returns the list of qubits for circuit given the first match, the unknown qubit are
+    replaced by -1.
+    Args:
+        node_c (.CommutationDAGNode): First matched node in the circuit.
+        n_qubit (in): Number of qubit in the subset
+    Returns:
+        list: list of qubits to consider in circuit (with specific order).
+    """
+    first_match_qubits = []
+
+    # Controlled gate with more than 1 control wire
+    if len(node_c.op.control_wires) > 1:
+        circuit_control = node_c.op.control_wires
+        circuit_target = node_c.op.target_wires
+        # Not symmetric target gate (target wires cannot be permuted)
+        if node_p.op.is_controlled not in symmetric_over_all_wires:
+            # Permute control
+            for control_permuted in itertools.permutations(circuit_control):
+                control_permuted = list(control_permuted)
+                first_match_qubits_sub = [-1] * n_qubits_p
+                for q in node_p.wires:
+                    node_circuit_perm = control_permuted + circuit_target
+                    first_match_qubits_sub[q] = node_circuit_perm[node_p.wires.index(q)]
+                first_match_qubits.append(first_match_qubits_sub)
+        # Symmetric target gate (target wires cannot be permuted)
+        else:
+            for control_permuted in itertools.permutations(circuit_control):
+                control_permuted = list(control_permuted)
+                for target_permuted in itertools.permutations(circuit_target):
+                    target_permuted = list(target_permuted)
+                    first_match_qubits_sub = [-1] * n_qubits_p
+                    for q in node_p.wires:
+                        node_circuit_perm = control_permuted + target_permuted
+                        first_match_qubits_sub[q] = node_circuit_perm[node_p.wires.index(q)]
+                    first_match_qubits.append(first_match_qubits)
+    # Not controlled
+    else:
+        # Not symmetric gate (target wires cannot be permuted)
+        if node_p.op.name not in symmetric_over_all_wires:
+            first_match_qubits_sub = [-1] * n_qubits_p
+            for q in node_p.wires:
+                first_match_qubits_sub[q] = node_c.wires[node_p.wires.index(q)]
+            first_match_qubits.append(first_match_qubits_sub)
+        # Symmetric target gate (target wires cannot be permuted)
+        else:
+            for perm_q in itertools.permutations(node_c.wires):
+                first_match_qubits_sub = [-1] * n_qubits_p
+                for q in node_p.wires:
+                    first_match_qubits_sub[q] = perm_q[node_p.wires.index(q)]
+                first_match_qubits.append(first_match_qubits_sub)
+    return first_match_qubits
+
+
+def _merge_first_match_and_permutation(list_first_match, permutation):
+    """
+    Function that returns the final qubits configuration given the first match constraints and the permutation of
+    qubits not in the first match.
+
+    Args:
+        list_first_match (list): list of qubits indices for the first match.
+        permutation (list): possible permutation for the circuit qubits not in the first match.
+
+    Returns:
+        list: list of circuit qubits for the given permutation and constraints from the initial match.
+    """
+    list_circuit = []
+
+    counter = 0
+
+    for elem in list_first_match:
+        if elem == -1:
+            list_circuit.append(permutation[counter])
+            counter = counter + 1
+        else:
+            list_circuit.append(elem)
+
+    return list_circuit
+
+
+def _add_sequence(match_list, backward_match_list):
+    """
+    Add a match configuration found by pattern matching if it is not already in final list of matches.
+    If the match is already in the final list, the qubit configuration is added to the existing Match.
+    Args:
+        match_list (list): match from the backward part of the algorithm.
+        backward_match_list (list): List of matches found by the algorithm for a given configuration.
+    """
+
+    already_in = False
+
+    for b_match in backward_match_list:
+        for l_match in match_list:
+            if b_match.match == l_match.match:
+                index = match_list.index(l_match)
+                match_list[index].qubit.append(b_match.qubit[0])
+                already_in = True
+
+        if not already_in:
+            match_list.append(b_match)
+
+
+def _compare_qubits(node1, qubit_subset):
+    """Compare the qubit configurations of two operations. The operations are supposed to be similar up to their
+    qubits configuration.
+    Args:
+        node1 (.CommutationDAGNode): First node.
+        qubit_subset (.Wires): Wires of the first node.
+    """
+    if qubit_subset.issubset(node1.wires.toset()):
+        return True
+    return False
+
+
+class ForwardMatch:
+    """
+    Class to apply pattern matching in the forward direction.
+    """
+
+    def __init__(
+        self, circuit_dag, node_id_c, qubit_subset
+    ):
+        """
+        Create the ForwardMatch class.
+        Args:
+            circuit_dag (.CommutationDAG): circuit as commutation DAG.
+            node_id_c (int): index of the first gate matched in the circuit.
+        """
+
+        # Commutation DAG of the circuit
+        self.circuit_dag = circuit_dag
+
+        # Node ID in the circuit
+        self.node_id_c = node_id_c
+
+        # Qubit sub set
+        self.qubit_subset = qubit_subset
+
+        # Successors to visit
+        self.successors_to_visit = [None] * circuit_dag.size
+
+        # Blocked nodes in the circuit
+        self.circuit_blocked = [None] * circuit_dag.size
+
+        # Matched nodes circuit
+        self.circuit_matched_with = [None] * circuit_dag.size
+
+        # List of match
+        self.sequence = []
+
+        # List of candidates for the forward match
+        self.candidates = []
+
+        # List of nodes in circuit which are matched
+        self.matched_nodes_list = []
+
+    def _init_successors_to_visit(self):
+        """
+        Initialize the list of successors to visit.
+        """
+        for i in range(0, self.circuit_dag.size):
+            if i == self.node_id_c:
+                self.successors_to_visit[i] = self.circuit_dag.direct_successors(i)
+            else:
+                self.successors_to_visit[i] = []
+
+    def _init_matched_with_circuit(self):
+        """
+        Initialize the list of corresponding matches in the pattern for the circuit.
+        """
+        for i in range(0, self.circuit_dag.size):
+            if i == self.node_id_c:
+                self.circuit_matched_with[i] = True
+            else:
+                self.circuit_matched_with[i] = False
+
+    def _init_is_blocked_circuit(self):
+        """
+        Initialize the list of blocked nodes in the circuit.
+        """
+        for i in range(0, self.circuit_dag.size):
+            self.circuit_blocked[i] = False
+
+    def _init_list_match(self):
+        """
+        Initialize the list of matched nodes between the circuit and the pattern with the first match found.
+        """
+        self.match.append([self.node_id_c])
+
+    def _init_matched_nodes(self):
+        """
+        Initialize the list of current matched nodes.
+        """
+        self.matched_nodes_list.append(
+            [
+                self.node_id_c,
+                self.circuit_dag.get_node(self.node_id_c),
+                self.successors_to_visit[self.node_id_c],
+            ]
+        )
+
+    def _get_node_forward(self, list_id):
+        """
+        Return node and successors from the matched_nodes_list for a given ID.
+        Args:
+            list_id (int): considered list id of the desired node.
+        Returns:
+            CommutationDAGNode: Node from the matched_node_list.
+            list(int): List of successors.
+        """
+        node = self.matched_nodes_list[list_id][1]
+        succ = self.matched_nodes_list[list_id][2]
+        return node, succ
+
+    def _remove_node_forward(self, list_id):
+        """Remove a node of the current matched_nodes_list for a given ID.
+        Args:
+            list_id (int): considered list id of the desired node.
+        """
+        self.matched_nodes_list.pop(list_id)
+
+    def run_forward_match(self):
+        """Apply the forward match algorithm and returns the list of matches given an initial match
+        and a qubits configuration.
+        """
+
+        # Initialization
+        self._init_successors_to_visit()
+        self._init_matched_with_circuit()
+        self._init_is_blocked_circuit()
+
+        # Initialize the list of matches and the stack of matched nodes (circuit)
+        self._init_list_match()
+        self._init_matched_nodes()
+
+        # While the list of matched nodes is not empty
+        while self.matched_nodes_list:
+
+            # Return first element of the matched_nodes_list and removes it from the list
+            v_first, successors_to_visit = self._get_node_forward(0)
+            self._remove_node_forward(0)
+
+            # If there is no successors to visit go to the end
+            if not successors_to_visit:
+                continue
+
+            # Get the label and the node of the first successor to visit
+            label = successors_to_visit[0]
+            v = [label, self.circuit_dag.get_node(label)]
+
+            # Update of the successors to visit.
+            successors_to_visit.pop(0)
+
+            # Update the matched_nodes_list with new attribute successor to visit and sort the list.
+            self.matched_nodes_list.append([v_first.node_id, v_first, successors_to_visit])
+            self.matched_nodes_list.sort(key=lambda x: x[2])
+
+            # If the node is blocked and already matched go to the end
+            if self.circuit_blocked[v[0]] | (self.circuit_matched_with[v[0]] != []):
+                continue
+
+            # For loop over the candidates from the pattern to find a match
+            if _compare_qubits(node_circuit, self.qubit_subset):
+
+                node_circuit = self.circuit_dag.get_node(label)
+
+                # A match happens
+                self.circuit_matched_with[label] = True
+                # Append the new match to the list of matches.
+                self.sequence.append([label])
+
+                # Potential successors to visit (circuit) for a given match.
+                potential = self.circuit_dag.direct_successors(label)
+
+                # If the potential successors to visit are blocked or match, it is removed.
+                for potential_id in potential:
+                    if self.circuit_blocked[potential_id] | (
+                        self.circuit_matched_with[potential_id] != []
+                    ):
+                        potential.remove(potential_id)
+
+                sorted_potential = sorted(potential)
+
+                #  Update the successor to visit attribute
+                successorstovisit = sorted_potential
+
+                # Add the updated node to the stack.
+                self.matched_nodes_list.append([v[0], v[1], successorstovisit])
+                self.matched_nodes_list.sort(key=lambda x: x[2])
+
+            # If no match is found, block the node and all the successors.
+            if not match:
+                self.circuit_blocked[label] = True
+                for succ in v[1].successors:
+                    self.circuit_blocked[succ] = True
+                    if self.circuit_matched_with[succ]:
+                        self.match.remove([self.circuit_matched_with[succ][0], succ])
+                        match_id = self.circuit_matched_with[succ][0]
+                        self.pattern_matched_with[match_id] = []
+                        self.circuit_matched_with[succ] = []
+
+
+class Sequence:
+    """
+    Object to represent a sequence and its qubit configurations.
+    """
+
+    def __init__(self, sequence, qubit):
+        """Create a Match class with necessary arguments.
+        Args:
+            sequence (list): sequence of gates.
+            qubit (list): list of qubits configuration.
+        """
+        # Match list
+        self.seequence = sequence
+        # Qubits list for circuit
+        if any(isinstance(el, list) for el in qubit):
+            self.qubit = qubit
+        else:
+            self.qubit = [qubit]
+
+
+class MatchingScenarios:
+    """
+    Class to represent a matching scenario in the Backward part of the algorithm.
+    """
+
+    def __init__(
+        self, circuit_matched, circuit_blocked, pattern_matched, pattern_blocked, sequence, counter
+    ):
+        """Create a MatchingScenarios class for the Backward match.
+        Args:
+            circuit_matched (list): list representing the matched gates in the circuit.
+            circuit_blocked (list): list representing the blocked gates in the circuit.
+            sequence (list): sequence of gates.
+            counter (int): counter of the number of circuit gates already considered.
+        """
+        self.circuit_matched = circuit_matched
+        self.circuit_blocked = circuit_blocked
+        self.sequence = sequence
+        self.counter = counter
+
+
+class MatchingScenariosList:
+    """
+    Object to define a list of MatchingScenarios, with method to append
+    and pop elements.
+    """
+
+    def __init__(self):
+        """
+        Create an empty MatchingScenariosList.
+        """
+        self.matching_scenarios_list = []
+
+    def append_scenario(self, matching):
+        """
+        Append a scenario to the list.
+        Args:
+            matching (MatchingScenarios): a scenario of match.
+        """
+        self.matching_scenarios_list.append(matching)
+
+    def pop_scenario(self):
+        """
+        Pop the first scenario of the list.
+        Returns:
+            MatchingScenarios: a scenario of match.
+        """
+        # Pop the first MatchingScenario and returns it
+        first = self.matching_scenarios_list[0]
+        self.matching_scenarios_list.pop(0)
+        return first
+
+
+class BackwardMatch:
+    """
+    Class BackwardMatch allows to run backward direction part of the pattern matching algorithm.
+    """
+
+    def __init__(
+        self,
+        circuit_dag,
+        pattern_dag,
+        qubits_conf,
+        forward_matches,
+        circuit_matched,
+        circuit_blocked,
+        node_id_c,
+    ):
+        """
+        Create a ForwardMatch class with necessary arguments.
+        Args:
+            circuit_dag (DAGDependency): circuit in the dag dependency form.
+            forward_matches (list): list of match obtained in the forward direction.
+            node_id_c (int): index of the first gate matched in the circuit.
+        """
+        self.circuit_dag = circuit_dag
+        self.pattern_dag = pattern_dag
+        self.circuit_matched = circuit_matched
+        self.circuit_blocked = circuit_blocked
+        self.qubits_conf = qubits_conf
+        self.node_id_c = node_id_c
+        self.forward_matches = forward_matches
+        self.match_final = []
+        self.matching_list = MatchingScenariosList()
+
+    def _gate_indices(self, circuit_matched, circuit_blocked):
+        """Function which returns the list of gates that are not matched and not blocked for the first scenario.
+        Returns:
+            list(int): list of gate id.
+        """
+        gate_indices = []
+
+        for i, (matched, blocked) in enumerate(zip(circuit_matched, circuit_blocked)):
+            if (not matched) and (not blocked):
+                gate_indices.append(i)
+        gate_indices.reverse()
+        return gate_indices
+
+    def run_backward_match(self):
+        """Run the backward match algorithm and returns the list of matches given an initial match, a forward
+        scenario and a circuit qubits configuration.
+        """
+        match_store_list = []
+
+        counter = 1
+
+        # First Scenario is stored in the MatchingScenariosList().
+        first_match = MatchingScenarios(
+            self.circuit_matched,
+            self.circuit_blocked,
+            self.forward_matches,
+            counter,
+        )
+
+        self.matching_list = MatchingScenariosList()
+        self.matching_list.append_scenario(first_match)
+
+        # Set the circuit indices that can be matched.
+        gate_indices = self._gate_indices(self.circuit_matched, self.circuit_blocked)
+
+        number_of_gate_to_match = (
+            self.pattern_dag.size - len(self.forward_matches)
+        )
+
+        # While the scenario stack is not empty.
+        while self.matching_list.matching_scenarios_list:
+
+            scenario = self.matching_list.pop_scenario()
+
+            circuit_matched = scenario.circuit_matched
+            circuit_blocked = scenario.circuit_blocked
+            matches_scenario = scenario.matches
+            counter_scenario = scenario.counter
+
+            # Part of the match list coming from the backward match.
+            match_backward = [
+                match for match in matches_scenario if match not in self.forward_matches
+            ]
+
+            # Matches are stored
+            if (
+                counter_scenario > len(gate_indices)
+                or len(match_backward) == number_of_gate_to_match
+            ):
+                matches_scenario.sort(key=lambda x: x[0])
+                match_store_list.append(Sequence(matches_scenario, self.qubits_conf))
+                continue
+
+            # First circuit candidate.
+            circuit_id = gate_indices[counter_scenario - 1]
+            node_circuit = self.circuit_dag.get_node(circuit_id)
+
+            # If the circuit candidate is blocked, only the counter is changed.
+            if circuit_blocked[circuit_id]:
+                matching_scenario = MatchingScenarios(
+                    circuit_matched,
+                    circuit_blocked,
+                    matches_scenario,
+                    counter_scenario + 1,
+                )
+                self.matching_list.append_scenario(matching_scenario)
+                continue
+
+
+            # Compare two operations
+            if _compare_qubits(node_circuit, self.qubits_conf):
+                # A match happens.
+                # If there is a match the attributes are copied.
+                circuit_matched_match = circuit_matched.copy()
+                circuit_blocked_match = circuit_blocked.copy()
+
+                matches_scenario_match = matches_scenario.copy()
+
+                circuit_matched_match[circuit_id] = True
+                matches_scenario_match.append([circuit_id])
+
+                new_matching_scenario = MatchingScenarios(
+                    circuit_matched_match,
+                    circuit_blocked_match,
+                    matches_scenario_match,
+                    counter_scenario + 1,
+                )
+                self.matching_list.append_scenario(new_matching_scenario)
+
+                global_match = True
+
+            if global_match:
+                circuit_matched_block_s = circuit_matched.copy()
+                circuit_blocked_block_s = circuit_blocked.copy()
+
+                matches_scenario_block_s = matches_scenario.copy()
+
+                circuit_blocked_block_s[circuit_id] = True
+
+                broken_matches = []
+
+                # Second option, not a greedy match, block all successors (push the gate
+                # to the right).
+                for succ in self.circuit_dag.get_node(circuit_id).successors:
+                    circuit_blocked_block_s[succ] = True
+                    if circuit_matched_block_s[succ]:
+                        broken_matches.append(succ)
+                        circuit_matched_block_s[succ] = []
+
+                new_matches_scenario_block_s = [
+                    elem for elem in matches_scenario_block_s if elem[1] not in broken_matches
+                ]
+
+                condition_not_greedy = True
+
+                for back_match in match_backward:
+                    if back_match not in new_matches_scenario_block_s:
+                        condition_not_greedy = False
+                        break
+
+                if (self.node_id_p in new_matches_scenario_block_s) and (
+                    condition_not_greedy or not match_backward
+                ):
+                    new_matching_scenario = MatchingScenarios(
+                        circuit_matched_block_s,
+                        circuit_blocked_block_s,
+                        new_matches_scenario_block_s,
+                        counter_scenario + 1,
+                    )
+                    self.matching_list.append_scenario(new_matching_scenario)
+
+                # Third option: if blocking the succesors breaks a match, we consider
+                # also the possibility to block all predecessors (push the gate to the left).
+                if broken_matches and all(global_broken):
+
+                    circuit_matched_block_p = circuit_matched.copy()
+                    circuit_blocked_block_p = circuit_blocked.copy()
+
+                    pattern_matched_block_p = pattern_matched.copy()
+                    pattern_blocked_block_p = pattern_blocked.copy()
+
+                    matches_scenario_block_p = matches_scenario.copy()
+
+                    circuit_blocked_block_p[circuit_id] = True
+
+                    for pred in self.circuit_dag.get_node(circuit_id).predecessors:
+                        circuit_blocked_block_p[pred] = True
+
+                    matching_scenario = MatchingScenarios(
+                        circuit_matched_block_p,
+                        circuit_blocked_block_p,
+                        pattern_matched_block_p,
+                        pattern_blocked_block_p,
+                        matches_scenario_block_p,
+                        counter_scenario + 1,
+                    )
+                    self.matching_list.append_scenario(matching_scenario)
+
+            # If there is no match then there are three options.
+            if not global_match:
+
+                circuit_blocked[circuit_id] = True
+
+                following_matches = []
+
+                successors = self.circuit_dag.get_node(circuit_id).successors
+                for succ in successors:
+                    if circuit_matched[succ]:
+                        following_matches.append(succ)
+
+                # First option, the circuit gate is not disturbing because there are no
+                # following match and no predecessors.
+                predecessors = self.circuit_dag.get_node(circuit_id).predecessors
+
+                if not predecessors or not following_matches:
+
+                    matching_scenario = MatchingScenarios(
+                        circuit_matched,
+                        circuit_blocked,
+                        matches_scenario,
+                        counter_scenario + 1,
+                    )
+                    self.matching_list.append_scenario(matching_scenario)
+
+                else:
+
+                    circuit_matched_nomatch = circuit_matched.copy()
+                    circuit_blocked_nomatch = circuit_blocked.copy()
+
+                    matches_scenario_nomatch = matches_scenario.copy()
+
+                    # Second option, all predecessors are blocked (circuit gate is
+                    # moved to the left).
+                    for pred in predecessors:
+                        circuit_blocked[pred] = True
+
+                    matching_scenario = MatchingScenarios(
+                        circuit_matched,
+                        circuit_blocked,
+                        matches_scenario,
+                        counter_scenario + 1,
+                    )
+                    self.matching_list.append_scenario(matching_scenario)
+
+                    # Third option, all successors are blocked (circuit gate is
+                    # moved to the right).
+
+                    broken_matches = []
+
+                    successors = self.circuit_dag.get_node(circuit_id).successors
+
+                    for succ in successors:
+                        circuit_blocked_nomatch[succ] = True
+                        if circuit_matched_nomatch[succ]:
+                            broken_matches.append(succ)
+                            circuit_matched_nomatch[succ] = []
+
+                    new_matches_scenario_nomatch = [
+                        elem for elem in matches_scenario_nomatch if elem[1] not in broken_matches
+                    ]
+
+                    condition_block = True
+
+                    for back_match in match_backward:
+                        if back_match not in new_matches_scenario_nomatch:
+                            condition_block = False
+                            break
+
+                    if ([self.node_id_p, self.node_id_c] in matches_scenario_nomatch) and (
+                        condition_block or not match_backward
+                    ):
+                        new_matching_scenario = MatchingScenarios(
+                            circuit_matched_nomatch,
+                            circuit_blocked_nomatch,
+                            new_matches_scenario_nomatch,
+                            counter_scenario + 1,
+                        )
+                        self.matching_list.append_scenario(new_matching_scenario)
+
+        length = max(len(m.match) for m in match_store_list)
+
+        # Store the matches with maximal length.
+        for scenario in match_store_list:
+            if (len(scenario.match) == length) and not any(
+                scenario.match == x.match for x in self.match_final
+            ):
+                self.match_final.append(scenario)
+
+
+class MaximalMatches:
+    """
+    Class MaximalMatches allows to sort and store the maximal matches from the list
+    of matches obtained with the pattern matching algorithm.
+    """
+
+    def __init__(self, pattern_matches):
+        """Initialize MaximalMatches with the necessary arguments.
+        Args:
+            pattern_matches (list): list of matches obtained from running the algorithm.
+        """
+        self.pattern_matches = pattern_matches
+
+        self.max_match_list = []
+
+    def run_maximal_matches(self):
+        """Method that extracts and stores maximal matches in decreasing length order."""
+
+        self.max_match_list = [
+            Match(
+                sorted(self.pattern_matches[0].match),
+                self.pattern_matches[0].qubit,
+            )
+        ]
+
+        for matches in self.pattern_matches[1::]:
+            present = False
+            for max_match in self.max_match_list:
+                for elem in matches.match:
+                    if elem in max_match.match and len(matches.match) <= len(max_match.match):
+                        present = True
+            if not present:
+                self.max_match_list.append(Sequence(sorted(matches.match), matches.qubit))
+
+
+class SubstitutionConfig:
+    """Class to store the configuration of a given match substitution, which circuit gates, template gates,
+    qubits and predecessors of the match in the circuit.
+    """
+
+    def __init__(
+        self,
+        circuit_config,
+        pred_block,
+        qubit_config,
+    ):
+        self.circuit_config = circuit_config
+        self.qubit_config = qubit_config
+        self.pred_block = pred_block
+
+
+class TemplateSubstitution:
+    """Class to run the substitution algorithm from the list of maximal matches."""
+
+    def __init__(self, max_matches, circuit_dag, template_dag, user_cost_dict=None):
+        """
+        Initialize TemplateSubstitution with necessary arguments.
+        Args:
+            max_matches (list(int)): list of maximal matches obtained from the running the pattern matching algorithm.
+            circuit_dag (.CommutationDAG): circuit in the dag dependency form.
+            template_dag (.CommutationDAG): template in the dag dependency form.
+            user_cost_dict (dict): Optional, user provided cost dictionary that will override the default cost
+             dictionary.
+        """
+
+        self.match_stack = max_matches
+        self.circuit_dag = circuit_dag
+
+        self.substitution_list = []
+        self.unmatched_list = []
+
+        if user_cost_dict is not None:
+            self.cost_dict = dict(user_cost_dict)
+        else:
+            self.cost_dict = {
+                "Identity": 0,
+                "PauliX": 1,
+                "PauliY": 1,
+                "PauliZ": 1,
+                "Hadamard": 1,
+                "T": 1,
+                "S": 1,
+                "CNOT": 2,
+                "CZ": 4,
+                "SWAP": 6,
+                "Toffoli": 21,
+            }
+
+    def _pred_block(self, circuit_sublist, index):
+        """It returns the predecessors of a given part of the circuit.
+        Args:
+            circuit_sublist (list): list of the gates matched in the circuit.
+            index (int): Index of the group of matches.
+        Returns:
+            list: List of predecessors of the current match circuit configuration.
+        """
+        predecessors = set()
+        for node_id in circuit_sublist:
+            predecessors = predecessors | set(self.circuit_dag.get_node(node_id).predecessors)
+
+        exclude = set()
+        for elem in self.substitution_list[:index]:
+            exclude = exclude | set(elem.circuit_config) | set(elem.pred_block)
+
+        pred = list(predecessors - set(circuit_sublist) - exclude)
+        pred.sort()
+
+        return pred
+
+    def _quantum_cost(self, left, right):
+        """Compare the two parts of the template and returns True if the quantum cost is reduced.
+        Args:
+            left (list): list of matched nodes in the template.
+            right (list): list of nodes to be replaced.
+        Returns:
+            bool: True if the quantum cost is reduced
+        """
+
+        return True
+
+    def _rules(self, circuit_sublist, template_sublist, template_complement):
+        """Set of rules to decide whether the match is to be substitute or not.
+        Args:
+            circuit_sublist (list): list of the gates matched in the circuit.
+            template_sublist (list): list of matched nodes in the template.
+            template_complement (list): list of gates not matched in the template.
+        Returns:
+            bool: True if the match respects the given rule for replacement, False otherwise.
+        """
+
+        if self._quantum_cost(template_sublist, template_complement):
+            for elem in circuit_sublist:
+                for config in self.substitution_list:
+                    if any(elem == x for x in config.circuit_config):
+                        return False
+            return True
+        else:
+            return False
+
+    def _substitution_sort(self):
+        """Sort the substitution list."""
+        ordered = False
+        while not ordered:
+            ordered = self._permutation()
+
+    def _permutation(self):
+        """Permute two groups of matches if first one has predecessors in the second one.
+        Returns:
+            bool: True if the matches groups are in the right order, False otherwise.
+        """
+        for scenario in self.substitution_list:
+            predecessors = set()
+            for match in scenario.circuit_config:
+                predecessors = predecessors | set(self.circuit_dag.get_node(match).predecessors)
+            predecessors = predecessors - set(scenario.circuit_config)
+            index = self.substitution_list.index(scenario)
+            for scenario_b in self.substitution_list[index::]:
+                if set(scenario_b.circuit_config) & predecessors:
+                    index1 = self.substitution_list.index(scenario)
+                    index2 = self.substitution_list.index(scenario_b)
+
+                    scenario_pop = self.substitution_list.pop(index2)
+                    self.substitution_list.insert(index1, scenario_pop)
+                    return False
+        return True
+
+    def _remove_impossible(self):
+        """Remove matched groups if they both have predecessors in the other one, they are not compatible."""
+        list_predecessors = []
+        remove_list = []
+
+        # Initialize predecessors for each group of matches.
+        for scenario in self.substitution_list:
+            predecessors = set()
+            for index in scenario.circuit_config:
+                predecessors = predecessors | set(self.circuit_dag.get_node(index).predecessors)
+            list_predecessors.append(predecessors)
+
+        # Check if two groups of matches are incompatible.
+        for scenario_a in self.substitution_list:
+            if scenario_a in remove_list:
+                continue
+            index_a = self.substitution_list.index(scenario_a)
+            circuit_a = scenario_a.circuit_config
+            for scenario_b in self.substitution_list[index_a + 1 : :]:
+                if scenario_b in remove_list:
+                    continue
+                index_b = self.substitution_list.index(scenario_b)
+                circuit_b = scenario_b.circuit_config
+                if (set(circuit_a) & list_predecessors[index_b]) and (
+                    set(circuit_b) & list_predecessors[index_a]
+                ):
+                    remove_list.append(scenario_b)
+
+        # Remove the incompatible groups from the list.
+        if remove_list:
+            self.substitution_list = [
+                scenario for scenario in self.substitution_list if scenario not in remove_list
+            ]
+
+    def substitution(self):
+        """From the list of maximal matches, it chooses which one will be used and gives the necessary details for
+        each substitution(template inverse, predecessors of the match).
+        """
+
+        while self.match_stack:
+
+            # Get the first match scenario of the list
+            current = self.match_stack.pop(0)
+
+            current_match = current.match
+            current_qubit = current.qubit
+
+            circuit_sublist = [x[1] for x in current_match]
+            circuit_sublist.sort()
+
+            # If the match obey the rule then it is added to the list.
+            if self._rules(circuit_sublist):
+
+                config = SubstitutionConfig(
+                    circuit_sublist,
+                    current_qubit,
+                    self.template_dag,
+                )
+                self.substitution_list.append(config)
+
+        # Remove incompatible matches.
+        self._remove_impossible()
+
+        # First sort the matches according to the smallest index in the matches (circuit).
+        self.substitution_list.sort(key=lambda x: x.circuit_config[0])
+
+        # Change position of the groups due to predecessors of other groups.
+        self._substitution_sort()
+
+        for scenario in self.substitution_list:
+            index = self.substitution_list.index(scenario)
+            scenario.pred_block = self._pred_block(scenario.circuit_config, index)
+
+        circuit_list = []
+        for elem in self.substitution_list:
+            circuit_list = circuit_list + elem.circuit_config + elem.pred_block
+
+        # Unmatched gates that are not predecessors of any group of matches.
+        self.unmatched_list = sorted(list(set(range(0, self.circuit_dag.size)) - set(circuit_list)))
