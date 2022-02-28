@@ -64,7 +64,7 @@ def _make_tape(obj, wire_order, *args, **kwargs):
         wires = tape.wires
 
         # raise exception if it is not a quantum function
-        if len(tape.operations) == 0:
+        if len(tape.operations) == 0 and len(tape.measurements) == 0:
             raise OperationTransformError("Quantum function contains no quantum operations")
 
     else:
@@ -299,6 +299,9 @@ class op_transform:
 
     @property
     def is_qfunc_transform(self):
+        """bool: Returns ``True`` if the operator transform is also a qfunc transform.
+        That is, it maps one or more quantum operations to one or more quantum operations, allowing
+        the output of the transform to be used as a quantum function."""
         return isinstance(getattr(self._tape_fn, "tape_fn", None), qml.single_tape_transform)
 
     def tape_transform(self, fn):
