@@ -20,13 +20,14 @@ import string
 import sys
 from itertools import product
 
-import pennylane as qml
 import pytest
 from networkx import MultiDiGraph
+from scipy.stats import unitary_group
+
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
-from scipy.stats import unitary_group
 
 I, X, Y, Z = (
     np.eye(2),
@@ -1799,6 +1800,145 @@ class TestQCutProcessingFn:
         ) * f(1)
 
         assert np.allclose(grad, expected_grad)
+
+
+@pytest.mark.parametrize("use_opt_einsum", [True, False])
+class TestCutCircuitTransform:
+    """
+    Tests for the cut_circuit transform
+    """
+
+    def test_simple_cut_circuit(self, mocker, use_opt_einsum):
+        """
+        Tests the full circuit cutting pipeline returns the correct value and
+        gradient for a simple circuit using the `cut_circuit` transform.
+        """
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+        spy = mocker.spy(qcut, "qcut_processing_fn")
+        x = np.array(0.531, requires_grad=True)
+        cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
+
+        assert np.isclose(cut_circuit(x), float(circuit(x)))
+        spy.assert_called_once()
+
+        gradient = qml.grad(circuit)(x)
+        cut_gradient = qml.grad(cut_circuit)(x)
+
+        assert np.isclose(gradient, cut_gradient)
+
+    def test_simple_cut_circuit_torch(self, use_opt_einsum):
+        """
+        Tests the full circuit cutting pipeline returns the correct value and
+        gradient for a simple circuit using the `cut_circuit` transform with the torch interface.
+        """
+        torch = pytest.importorskip("torch")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+        x = torch.tensor(0.531, requires_grad=True)
+        cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
+
+        res = cut_circuit(x)
+        res_expected = circuit(x)
+        assert np.isclose(res.detach().numpy(), res_expected.detach().numpy())
+
+        res.backward()
+        grad = x.grad.detach().numpy()
+
+        x.grad = None
+        res_expected.backward()
+        grad_expected = x.grad.detach().numpy()
+
+        assert np.isclose(grad, grad_expected)
+
+    def test_simple_cut_circuit_tf(self, use_opt_einsum):
+        """
+        Tests the full circuit cutting pipeline returns the correct value and
+        gradient for a simple circuit using the `cut_circuit` transform with the TF interface.
+        """
+        tf = pytest.importorskip("tensorflow")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+        x = tf.Variable(0.531)
+        cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
+
+        with tf.GradientTape() as tape:
+            res = cut_circuit(x)
+
+        grad = tape.gradient(res, x)
+
+        with tf.GradientTape() as tape:
+            res_expected = circuit(x)
+
+        grad_expected = tape.gradient(res_expected, x)
+
+        assert np.isclose(res, res_expected)
+        assert np.isclose(grad, grad_expected)
+
+    def test_simple_cut_circuit_jax(self, use_opt_einsum):
+        """
+        Tests the full circuit cutting pipeline returns the correct value and
+        gradient for a simple circuit using the `cut_circuit` transform with the Jax interface.
+        """
+        jax = pytest.importorskip("jax")
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+        x = jnp.array(0.531)
+        cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
+
+        res = cut_circuit(x)
+        res_expected = circuit(x)
+
+        grad = jax.grad(cut_circuit)(x)
+        grad_expected = jax.grad(circuit)(x)
+
+        assert np.isclose(res, res_expected)
+        assert np.isclose(grad, grad_expected)
 
 
 class TestCutStrategy:
