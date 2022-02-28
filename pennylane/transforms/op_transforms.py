@@ -67,9 +67,6 @@ def _make_tape(obj, wire_order, *args, **kwargs):
         if len(tape.operations) == 0 and len(tape.measurements) == 0:
             raise OperationTransformError("Quantum function contains no quantum operations")
 
-    else:
-        raise OperationTransformError("Input is not an Operator, tape, QNode, or quantum function")
-
     # if no wire ordering is specified, take wire list from tape/device
     wire_order = wires if wire_order is None else qml.wires.Wires(wire_order)
 

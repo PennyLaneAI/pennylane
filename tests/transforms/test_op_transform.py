@@ -56,6 +56,20 @@ class TestValidation:
         def my_transform(op):
             return op.name
 
+        with pytest.raises(
+            OperationTransformError,
+            match="Input is not an Operator, tape, QNode, or quantum function",
+        ):
+            my_transform(5)(5)
+
+    def test_empty_qfunc(self):
+        """Test that an error is raised if the qfunc has no quantum operations
+        (e.g., it is not a qfunc)"""
+
+        @qml.op_transform
+        def my_transform(op):
+            return op.name
+
         def qfunc(x):
             return x**2
 
@@ -64,10 +78,6 @@ class TestValidation:
             match="Quantum function contains no quantum operations",
         ):
             my_transform(qfunc)(0.5)
-
-    def test_empty_qfunc(self):
-        """Test that an error is raised if the qfunc has no quantum operations
-        (e.g., it is not a qfunc)"""
 
 
 class TestUI:
@@ -250,7 +260,7 @@ class TestTransformParameters:
                 return [op.name.lower() for op in tape.operations]
             return [op.name for op in tape.operations]
 
-        @my_transform(lower=True)
+        @my_transform(True)
         def multi_op_qfunc(x):
             if x > 1:
                 qml.RX(x, wires=0)
@@ -300,6 +310,7 @@ class TestQFuncTransformIntegration:
         """Test a qfunc and operator transform applied to
         an op"""
         dev = qml.device("default.qubit", wires=2)
+        assert simplify_rotation.is_qfunc_transform
 
         weights = np.array([0.5, 0, 0])
         op = qml.Rot(*weights, wires=0)
@@ -423,3 +434,46 @@ class TestQFuncTransformIntegration:
 
         with pytest.raises(TypeError):
             circuit(weights)
+
+
+class TestExpansion:
+    """Test for operator and tape expansion"""
+
+    def test_auto_expansion(self, mocker):
+        """Test that an operator is automatically expanded as needed"""
+
+        @qml.op_transform
+        def matrix(op):
+            return op.get_matrix()
+
+        weights = np.ones([2, 3, 3])
+        op = qml.StronglyEntanglingLayers(weights, wires=[0, 2, "a"])
+
+        # strongly entangling layers does not define a matrix representation
+
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            op.get_matrix()
+
+        # attempting to call our operator transform will fail
+
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            matrix(op)
+
+        # if we define how the transform acts on a tape,
+        # then pennylane will automatically expand the object
+        # and apply the tape transform
+
+        @matrix.tape_transform
+        def matrix_tape(tape):
+            n_wires = len(tape.wires)
+            unitary_matrix = np.eye(2**n_wires)
+
+            for op in tape.operations:
+                mat = qml.operation.expand_matrix(matrix(op), op.wires, tape.wires)
+                unitary_matrix = mat @ unitary_matrix
+
+            return unitary_matrix
+
+        res = matrix(op)
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (2**3, 2**3)
