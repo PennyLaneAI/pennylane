@@ -16,7 +16,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.transforms.op_transform import OperationTransformError
+from pennylane.transforms.op_transforms import OperationTransformError
 
 
 class TestValidation:
@@ -84,7 +84,7 @@ class TestUI:
 
     def test_single_operator_qfunc(self, mocker):
         """Test that a transform can be applied to a quantum function"""
-        spy = mocker.spy(qml.transforms, "_make_tape")
+        spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
 
         @qml.op_transform
         def my_transform(op):
