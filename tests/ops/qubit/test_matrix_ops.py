@@ -73,7 +73,7 @@ class TestQubitUnitary:
         # test non-square matrix
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U[1:], wires=range(num_wires)).get_matrix()
- 
+
         # test an error is thrown when constructed with incorrect number of wires
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U, wires=range(num_wires + 1)).get_matrix()
@@ -126,14 +126,14 @@ class TestQubitUnitary:
             qml.QubitUnitary(U, wires=range(num_wires + 1)).get_matrix()
 
     @pytest.mark.parametrize(
-        "U,expected_params",
+        "U,expected_gate,expected_params",
         [
-            (I, [0.0, 0.0, 0.0]),
-            (Z, [np.pi / 2, 0.0, np.pi / 2]),
-            (S, [np.pi / 4, 0.0, np.pi / 4]),
-            (T, [np.pi / 8, 0.0, np.pi / 8]),
-            (qml.RZ(0.3, wires=0).matrix, [0.15, 0.0, 0.15]),
-            (qml.RZ(-0.5, wires=0).matrix, [-0.25, 0.0, -0.25]),
+            (I, qml.RZ, [0.0]),
+            (Z, qml.RZ, [np.pi]),
+            (S, qml.RZ, [np.pi / 2]),
+            (T, qml.RZ, [np.pi / 4]),
+            (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
+            (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
             (
                 np.array(
                     [
@@ -141,21 +141,28 @@ class TestQubitUnitary:
                         [9.831019270939975e-01 + 0.1830590094588862j, 0],
                     ]
                 ),
+                qml.Rot,
                 [-0.18409714468526372, np.pi, 0.18409714468526372],
             ),
-            (H, [np.pi, np.pi / 2, 0.0]),
-            (X, [np.pi / 2, np.pi, -np.pi / 2]),
-            (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, [0.2, 0.5, -0.3]),
-            (np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix, [-1.0, 2.0, -3.0]),
+            (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
+            (X, qml.Rot, [np.pi / 2, np.pi, -np.pi / 2]),
+            (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
+            (
+                np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix,
+                qml.Rot,
+                [-1.0, 2.0, -3.0],
+            ),
         ],
     )
-    def test_qubit_unitary_decomposition(self, U, expected_params):
+    def test_qubit_unitary_decomposition(self, U, expected_gate, expected_params):
         """Tests that single-qubit QubitUnitary decompositions are performed."""
         decomp = qml.QubitUnitary.compute_decomposition(U, wires=0)
         decomp2 = qml.QubitUnitary(U, wires=0).decomposition()
 
         assert len(decomp) == 1
         assert np.allclose(decomp[0].parameters, expected_params, atol=1e-7)
+        assert isinstance(decomp2[0], expected_gate)
+        assert np.allclose(decomp2[0].parameters, expected_params, atol=1e-7)
 
     def test_qubit_unitary_decomposition_multiqubit_invalid(self):
         """Test that QubitUnitary is not decomposed for more than two qubits."""
