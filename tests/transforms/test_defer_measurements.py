@@ -209,6 +209,8 @@ class TestConditionalOperations:
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
     @pytest.mark.parametrize("ops", [(qml.RX, qml.CRX), (qml.RY, qml.CRY), (qml.RZ, qml.CRZ)])
     def test_conditional_rotations(self, device, r, ops):
+        """Test that the quantum conditional operations match the output of
+        controlled rotations."""
         dev = qml.device(device, wires=3)
 
         op, controlled_op = ops
@@ -257,6 +259,19 @@ class TestConditionalOperations:
 
         assert np.allclose(qnode1(par), qnode2(par))
 
+    @pytest.mark.parametrize("control_val, expected", [(0, -1), (1, 1)])
+    def test_condition_using_measurement_outcome(self, control_val, expected):
+        """Apply a conditional bitflip by selecting the measurement
+        outcome."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def qnode():
+            m_0 = qml.measure(0)
+            qml.cond(m_0 == control_val, qml.PauliX)(wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        assert qnode() == expected
 
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""
