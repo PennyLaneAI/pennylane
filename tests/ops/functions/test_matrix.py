@@ -192,6 +192,13 @@ class TestMultipleOperations:
 
 
 class TestCustomWireOrdering:
+    def test_tensor_wire_oder(self):
+        """Test wire order of a tensor product"""
+        H = qml.PauliZ(0) @ qml.PauliX(1)
+        res = qml.matrix(H, wire_order=[0, 2, 1])
+        expected = np.kron(Z, np.kron(I, X))
+        assert np.allclose(res, expected)
+
     def test_tape_wireorder(self):
         """Test changing the wire order when using a tape"""
 

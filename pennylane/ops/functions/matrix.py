@@ -117,6 +117,9 @@ def matrix(op, *, wire_order=None):
         >>> qml.grad(cost)(theta)
         -0.14943813247359922
     """
+    if isinstance(op, qml.operation.Tensor) and wire_order is not None:
+        op = 1.0 * op  # convert to a Hamiltonian
+
     if isinstance(op, qml.Hamiltonian):
         return qml.utils.sparse_hamiltonian(op, wires=wire_order).toarray()
 
