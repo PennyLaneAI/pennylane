@@ -35,6 +35,7 @@ from pennylane.hf.convert import (
     ("mol_name", "terms_ref"),
     [
         ("empty", None),
+        ("singlewire", {((0, "Z"),): (0.155924093421341 + 0j)}),
         (
             "lih [jordan_WIGNER]",
             {
@@ -426,6 +427,20 @@ def test_identities_pennylane_to_openfermion():
     # Remove new line characters
     op_str = op_str.replace("\n", "")
     assert op_str == "2.5 [] +-1.0 [Z0] +-0.5 [Z1]"
+
+
+def test_singlewire_pennylane_to_openfermion():
+    """Test that _pennylane_to_openfermion function returns the correct Hamiltonian for a
+    single-wire case.
+    """
+    coeffs = [0.5]
+    obs_list = [qml.PauliZ(wires=[0])]
+
+    op_str = str(_pennylane_to_openfermion(coeffs, obs_list))
+
+    # Remove new line characters
+    op_str = op_str.replace("\n", "")
+    assert op_str == "0.5 [Z0]"
 
 
 def test_pennylane_to_openfermion_no_decomp():
