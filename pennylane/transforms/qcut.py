@@ -294,7 +294,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
             graph_copy.remove_edge(node1, node2, key=wire)
 
     subgraph_nodes = weakly_connected_components(graph_copy)
-    subgraphs = tuple(graph_copy.subgraph(n) for n in subgraph_nodes)
+    subgraphs = tuple(MultiDiGraph(graph_copy.subgraph(n)) for n in subgraph_nodes)
 
     communication_graph = MultiDiGraph()
     communication_graph.add_nodes_from(range(len(subgraphs)))
@@ -312,14 +312,22 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
 
     subgraphs_connected_to_measurements = []
     subgraphs_indices_to_remove = []
+    prepare_nodes_removed = []
 
     for i, s in enumerate(subgraphs):
         if any(has_path(communication_graph, i, t) for t in terminal_indices):
             subgraphs_connected_to_measurements.append(s)
         else:
             subgraphs_indices_to_remove.append(i)
+            prepare_nodes_removed.extend([n for n in s.nodes if isinstance(n, PrepareNode)])
 
+    measure_nodes_to_remove = [m for p in prepare_nodes_removed for m, p_ in cut_edges if p is p_]
     communication_graph.remove_nodes_from(subgraphs_indices_to_remove)
+
+    for s in subgraphs_connected_to_measurements:
+        for m in measure_nodes_to_remove:
+            if s.has_node(m):
+                s.remove_node(m)
 
     return subgraphs_connected_to_measurements, communication_graph
 

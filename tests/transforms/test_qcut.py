@@ -110,7 +110,7 @@ def compare_nodes(nodes, expected_wires, expected_names):
 
 def compare_fragment_nodes(node_data, expected_data):
     """Helper function to compare nodes of fragment graphs"""
-
+    assert len(node_data) == len(expected_data)
     expected = [(exp_data[0].name, exp_data[0].wires, exp_data[1]) for exp_data in expected_data]
 
     for data in node_data:
@@ -120,7 +120,7 @@ def compare_fragment_nodes(node_data, expected_data):
 
 def compare_fragment_edges(edge_data, expected_data):
     """Helper function to compare fragment edges"""
-
+    assert len(edge_data) == len(expected_data)
     expected = [(exp_data[0].name, exp_data[1].name, exp_data[2]) for exp_data in expected_data]
 
     for data in edge_data:
@@ -761,7 +761,6 @@ class TestFragmentGraph:
         sub_1_expected_nodes = [
             (qml.RY(0.543, wires=["a"]), {"order": 1}),
             (qcut.PrepareNode(wires=[0]), {"order": 2}),
-            (qcut.MeasureNode(wires=["a"]), {"order": 6}),
             (qml.RZ(0.24, wires=[0]), {"order": 4}),
             (qml.CNOT(wires=[0, "a"]), {"order": 3}),
             (qml.expval(qml.PauliZ(wires=[0])), {"order": 13}),
@@ -778,7 +777,6 @@ class TestFragmentGraph:
         sub_1_expected_edges = [
             (qcut.PrepareNode(wires=[0]), qml.CNOT(wires=[0, "a"]), {"wire": 0}),
             (qml.RZ(0.24, wires=[0]), qml.expval(qml.PauliZ(wires=[0])), {"wire": 0}),
-            (qml.RZ(0.133, wires=["a"]), qcut.MeasureNode(wires=["a"]), {"wire": "a"}),
             (qml.CNOT(wires=[0, "a"]), qml.RZ(0.24, wires=[0]), {"wire": 0}),
             (qml.CNOT(wires=[0, "a"]), qml.RZ(0.133, wires=["a"]), {"wire": "a"}),
             (qml.RY(0.543, wires=["a"]), qml.CNOT(wires=[0, "a"]), {"wire": "a"}),
