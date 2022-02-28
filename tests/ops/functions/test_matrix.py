@@ -125,6 +125,25 @@ class TestSingleOperation:
         expected = reduce(np.kron, [CNOT, I, I, I])[:, perm][perm]
         assert np.allclose(res, expected)
 
+    def test_hamiltonian(self):
+        """Test that the matrix of a Hamiltonian is correctly returned"""
+        H = qml.PauliZ(0) @ qml.PauliY(1) - 0.5 * qml.PauliX(1)
+        mat = qml.matrix(H, wire_order=[1, 0, 2])
+        expected = reduce(np.kron, [Y, Z, I]) - 0.5 * reduce(np.kron, [X, I, I])
+
+    @pytest.mark.xfail(
+        reason="This test will fail because Hamiltonians are not queued to tapes yet!"
+    )
+    def test_hamiltonian_qfunc(self):
+        """Test that the matrix of a Hamiltonian is correctly returned"""
+
+        def ansatz(x):
+            return qml.PauliZ(0) @ qml.PauliY(1) - x * qml.PauliX(1)
+
+        x = 0.5
+        mat = qml.matrix(ansatz, wire_order=[1, 0, 2])(x)
+        expected = reduce(np.kron, [Y, Z, I]) - x * reduce(np.kron, [X, I, I])
+
 
 class TestMultipleOperations:
     def test_multiple_operations_tape(self):
