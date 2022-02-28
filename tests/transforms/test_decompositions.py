@@ -162,34 +162,6 @@ class TestQubitUnitaryZYZDecomposition:
         assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
 
 
-class TestQubitUnitaryZYZDecompositionAbstract:
-    """Test that the decompositions are successful in an abstract setting."""
-
-    @pytest.mark.parametrize("U", [decomp[0] for decomp in single_qubit_decomps])
-    def test_zyz_decomposition_jax_jit(self, U):
-        """Test that a one-qubit operation with JAX and jit is correctly decomposed."""
-        jax = pytest.importorskip("jax")
-
-        # Enable float64 support
-        from jax.config import config
-
-        remember = config.read("jax_enable_x64")
-        config.update("jax_enable_x64", True)
-
-        U = jax.numpy.array(U, dtype=jax.numpy.complex128)
-
-        obtained_gates = jax.jit(zyz_decomposition, static_argnums=1)(U, 0)
-
-        # With jax.jit, we always get a Rot gate back
-        assert len(obtained_gates) == 1
-        assert isinstance(obtained_gates[0], qml.Rot)
-        assert obtained_gates[0].wires == Wires(0)
-
-        obtained_mat = obtained_gates[0].matrix
-
-        assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
-
-
 # Randomly generated set (scipy.unitary_group) of five U(4) operations.
 # These require 3 CNOTs each
 samples_3_cnots = [

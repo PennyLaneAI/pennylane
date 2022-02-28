@@ -159,7 +159,8 @@ class TestQubitUnitary:
         decomp = qml.QubitUnitary.compute_decomposition(U, wires=0)
         decomp2 = qml.QubitUnitary(U, wires=0).decomposition()
 
-        assert len(decomp) == 1
+        assert len(decomp) == 1 == len(decomp2)
+        assert isinstance(decomp[0], expected_gate)
         assert np.allclose(decomp[0].parameters, expected_params, atol=1e-7)
         assert isinstance(decomp2[0], expected_gate)
         assert np.allclose(decomp2[0].parameters, expected_params, atol=1e-7)
