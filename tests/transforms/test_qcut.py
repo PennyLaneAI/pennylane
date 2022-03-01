@@ -2077,7 +2077,7 @@ class TestCutCircuitTransform:
         dev = qml.device("default.qubit", wires=1)
 
         @qml.transforms.cut_circuit(use_opt_einsum=use_opt_einsum)
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.RY(x**2, wires=1)
