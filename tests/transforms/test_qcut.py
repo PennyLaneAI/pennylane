@@ -21,7 +21,7 @@ import sys
 from itertools import product
 
 import pytest
-from networkx import MultiDiGraph
+from networkx import MultiDiGraph, number_of_selfloops
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -899,6 +899,23 @@ class TestFragmentGraph:
 
         assert communication_graph_0.nodes == communication_graph_1.nodes
         assert communication_graph_0.edges == communication_graph_1.edges
+
+    def test_contained_cut(self):
+        """Tests that fragmentation ignores `MeasureNode` and `PrepareNode` pairs that do not
+        result in a disconnection"""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RX(0.4, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        fragments, communication_graph = qcut.fragment_graph(g)
+        assert len(fragments) == 1
+        assert number_of_selfloops(communication_graph) == 0
 
 
 class TestGraphToTape:
