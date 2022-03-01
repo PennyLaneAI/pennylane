@@ -98,7 +98,7 @@ def eigvals(op):
 
 
 @eigvals.tape_transform
-def eigvals(tape):
+def _eigvals(tape):
     op_wires = [op.wires for op in tape.operations]
     all_wires = qml.wires.Wires.all_wires(op_wires).tolist()
     unique_wires = qml.wires.Wires.unique_wires(op_wires).tolist()
