@@ -300,7 +300,8 @@ def simplify(operation):
         operation (.Operation): Rotation or controlled rotation.
 
     Returns:
-         qml.operation: Simplified rotation if possible.
+         .Operation: An operation representing the simplified rotation, if possible.
+         Otherwise, the original operation is returned.
 
     **Example**
 
