@@ -15,14 +15,10 @@
 Contains the condition transform.
 """
 from functools import wraps
-
-import pennylane as qml
-from pennylane.tape import QuantumTape, get_active_tape
-from pennylane.operation import DecompositionUndefinedError, Operation, AnyWires
-from pennylane.measurements import MeasurementValue
-from pennylane.wires import Wires
-from pennylane.transforms.adjoint import adjoint
 from typing import Type
+
+from pennylane.operation import Operation, AnyWires
+from pennylane.measurements import MeasurementValue
 
 
 class Conditional(Operation):
