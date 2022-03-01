@@ -659,8 +659,40 @@ class MeasurementValue(Generic[T]):
 
 
 def measure(wires):
-    """
-    Create a mid-circuit measurement and return an outcome.
+    """Perform a mid-circuit measurement in the computational basis on the
+    supplied qubit.
+
+    Measurement outcomes can be obtained and used to conditionally apply
+    operations.
+
+    If a device doesn't support mid-circuit measurements natively, then the
+    QNode will apply the :func:`defer_measurements` transform.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def func(x, y):
+            qml.RY(x, wires=1)
+            qml.CNOT(wires=[0, 1])
+            m_0 = qml.measure(1)
+
+            qml.cond(m_0, qml.RY)(y, wires=0)
+            return qml.probs(wires=[0])
+
+    Executing this QNode:
+    >>> pars = np.array([0.643, 0.246], requires_grad=True)
+    >>> func(*pars)
+    tensor([0.99849698, 0.00150302], requires_grad=True)
+
+    Args:
+        wires (.Wires): The wires the measurement process applies to.
+
+    Raises:
+        QuantumFunctionError: if multiple wires were specified
     """
     wire = qml.wires.Wires(wires)
     if len(wire) > 1:
