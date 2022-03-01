@@ -41,7 +41,7 @@ class Identity(CVObservable, Operation):
 
     ev_order = 1
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
 
     @staticmethod
