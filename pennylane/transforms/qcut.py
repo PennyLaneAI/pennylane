@@ -34,7 +34,6 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Expectation, Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
-from pennylane.transforms import batch_transform
 from pennylane.wires import Wires
 
 from .batch_transform import batch_transform
@@ -361,12 +360,16 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     wire_map = {w: w for w in wires}
     reverse_wire_map = {v: k for k, v in wire_map.items()}
 
-    copy_ops = [copy.copy(op) for _, op in ordered_ops]
+    copy_ops = [copy.copy(op) for _, op in ordered_ops if not isinstance(op, MeasurementProcess)]
+    copy_meas = [copy.copy(op) for _, op in ordered_ops if isinstance(op, MeasurementProcess)]
+    observables = []
 
     with QuantumTape() as tape:
         for op in copy_ops:
-            new_wires = [wire_map[w] for w in op.wires]
-            op._wires = Wires(new_wires)  # TODO: find a better way to update operation wires
+            new_wires = Wires([wire_map[w] for w in op.wires])
+
+            # TODO: find a better way to update operation wires
+            op._wires = new_wires
             apply(op)
 
             if isinstance(op, MeasureNode):
@@ -379,6 +382,19 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 original_wire = reverse_wire_map[measured_wire]
                 wire_map[original_wire] = new_wire
                 reverse_wire_map[new_wire] = original_wire
+
+        for meas in copy_meas:
+            obs = meas.obs
+            obs._wires = Wires([wire_map[w] for w in obs.wires])
+            observables.append(obs)
+
+        # We assume that each MeasurementProcess node in the graph contributes to a single
+        # expectation value of an observable, given by the tensor product over the observables of
+        # each MeasurementProcess.
+        if len(observables) > 1:
+            qml.expval(Tensor(*observables))
+        elif len(observables) == 1:
+            qml.expval(obs)
 
     return tape
 
@@ -424,7 +440,7 @@ def _get_measurements(
 
     obs = measurement.obs
 
-    return [expval(obs @ g) for g in group]
+    return [expval(copy.copy(obs) @ g) for g in group]
 
 
 def _prep_zero_state(wire):
@@ -924,6 +940,31 @@ def cut_circuit(
         >>> qml.grad(cut_circuit)(x)
         -0.506395895364911
     """
+    if len(tape.measurements) != 1:
+        raise ValueError(
+            "The circuit cutting workflow only supports circuits with a single output "
+            "measurement"
+        )
+
+    if not all(m.return_type is Expectation for m in tape.measurements):
+        raise ValueError(
+            "The circuit cutting workflow only supports circuits with expectation "
+            "value measurements"
+        )
+
+    if use_opt_einsum:
+        try:
+            import opt_einsum  # pylint: disable=import-outside-toplevel,unused-import
+        except ImportError as e:
+            raise ImportError(
+                "The opt_einsum package is required when use_opt_einsum is set to "
+                "True in the cut_circuit function. This package can be "
+                "installed using:\npip install opt_einsum"
+            ) from e
+
+    num_cut = len([op for op in tape.operations if isinstance(op, WireCut)])
+    if num_cut == 0:
+        raise ValueError("Cannot apply the circuit cutting workflow to a circuit without any cuts")
 
     g = tape_to_graph(tape)
     replace_wire_cut_nodes(g)

@@ -324,7 +324,7 @@ class TestInternalFunctions:
         # Raises an error if queue or observables are invalid
         dev.check_validity(queue, observables)
 
-    def test_check_validity_with_not_supported_operation_inverse(
+    def test_check_validity_with_unsupported_operation_inverse(
         self, mock_device_supporting_paulis_and_inverse
     ):
         """Tests the function Device.check_validity with an valid queue
