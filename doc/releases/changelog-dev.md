@@ -21,7 +21,7 @@
       qml.RY(-y, wires=1)
       return qml.expval(qml.PauliZ(0))
   ```
-  commutation dag can be returned by using the following code:
+  the commutation DAG can be returned by using the following code:
   ```
   get_dag = commutation_dag(circuit)
   theta = np.pi/4
