@@ -115,6 +115,21 @@ class TestValidation:
         with pytest.raises(qml.QuantumFunctionError, match="is not an observable"):
             qml.generator(op)
 
+    def test_multi_param_op(self):
+        """Test that an error is raised if the operator has more than one parameter"""
+
+        class SomeOp(qml.operation.Operation):
+            num_params = 2
+            num_wires = 1
+
+            def generator(self):
+                return qml.RX(self.data[0], wires=self.wires[0])
+
+        op = SomeOp(0.5, 0.1, wires=0)
+
+        with pytest.raises(ValueError, match="is not written in terms of a single parameter"):
+            qml.generator(op)
+
     def test_unknown_format(self):
         """Raise an exception is the format is unknown"""
         with pytest.raises(ValueError, match="'format' must be one of"):
