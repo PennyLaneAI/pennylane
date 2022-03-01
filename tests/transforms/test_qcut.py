@@ -2182,7 +2182,7 @@ class TestCutCircuitTransform:
         @qml.qnode(dev, interface="jax")
         def circuit(x):
             qml.RX(x, wires=0)
-            qml.RY(x ** 2, wires=1)
+            qml.RY(x**2, wires=1)
             return qml.expval(qml.PauliZ(wires=[0]))
 
         spy = mocker.spy(qcut, "contract_tensors")
