@@ -305,7 +305,6 @@ def simplify(operation):
     You can simplify rotation with certain parameters, for example:
 
     >>> qml.simplify(qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0))
-
     qml.RX(0.1, wires=0)
 
     However, not every rotation can be simplified. The original operation
