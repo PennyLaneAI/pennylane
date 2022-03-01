@@ -270,7 +270,7 @@ class op_transform:
                 raise e1 from None
 
     def tape_fn(self, obj, *args, **kwargs):
-        """Evaluate the underlying tape transform function.
+        """The tape transform function.
 
         This is the function that is called if a datastructure is passed
         that contains multiple operations.
