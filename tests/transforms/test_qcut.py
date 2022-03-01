@@ -2057,11 +2057,11 @@ class TestCutCircuitTransformValidation:
         with pytest.raises(ValueError, match="to a circuit without any cuts"):
             qcut.cut_circuit(tape)
 
-    def test_simple_cut_circuit_torch_jit(self, mocker, use_opt_einsum):
+    def test_simple_cut_circuit_torch_trace(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform with the torch interface and
-        using JIT.
+        using torch tracing.
         """
         torch = pytest.importorskip("torch")
 
