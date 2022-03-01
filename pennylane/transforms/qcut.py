@@ -1025,7 +1025,7 @@ def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
             f"your device."
         )
 
-    wire_map = {w_tape: w_dev for w_tape, w_dev in zip(tape.wires, wires)}
+    wire_map = dict(zip(tape.wires, wires))
     copy_ops = [copy.copy(op) for op in tape.operations]
     copy_meas = [copy.copy(op) for op in tape.measurements]
 
