@@ -16,7 +16,6 @@ This module contains the functions needed for computing the molecular Hamiltonia
 """
 import numpy as np
 import pennylane as qml
-from openfermion import QubitOperator
 from pennylane import Hamiltonian
 from pennylane.wires import Wires
 
