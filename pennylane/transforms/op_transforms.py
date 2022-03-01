@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the @op_transform decorator.
+This module contains the op_transform decorator.
 """
 # pylint: disable=protected-access
 import functools
@@ -24,7 +24,7 @@ import pennylane as qml
 
 
 class OperationTransformError(Exception):
-    """Raised when there is an error with op_transform logic"""
+    """Raised when there is an error with the op_transform logic"""
 
 
 def _make_tape(obj, wire_order, *args, **kwargs):
@@ -38,7 +38,7 @@ def _make_tape(obj, wire_order, *args, **kwargs):
     represented by the object.
 
     The ``wire_order`` argument determines whether a custom wire ordering
-    should be used. It not provided, the wire ordering defaults to the
+    should be used. If not provided, the wire ordering defaults to the
     objects wire ordering accessed via ``obj.wires``.
     """
     if isinstance(obj, qml.QNode):

@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -340,7 +340,7 @@ class TestQFuncTransformIntegration:
 
         @qml.qnode(dev)
         def circuit(weights):
-            simplify_rotation(ansatz)(weights)
+            simplify_rotation(ansatz)(weights)     # <--- qfunc is applied within circuit (inside)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliX(1))
 
@@ -371,7 +371,7 @@ class TestQFuncTransformIntegration:
             qml.CRX(0.5, wires=[0, 1])
 
         @qml.qnode(dev)
-        @simplify_rotation
+        @simplify_rotation     # <--- qfunc is applied to circuit (outside)
         def circuit(weights):
             ansatz(weights)
             qml.CNOT(wires=[0, 1])
