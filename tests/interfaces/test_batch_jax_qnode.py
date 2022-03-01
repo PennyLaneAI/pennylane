@@ -415,7 +415,7 @@ class TestShotsIntegration:
         dev = qml.device("default.qubit", wires=2, shots=100)
         a, b = jnp.array([0.543, -0.654])
 
-        spy = mocker.spy(dev, "execute")
+        spy = mocker.spy(dev, "batch_execute")
 
         @qnode(dev, diff_method=qml.gradients.param_shift, interface=interface)
         def cost_fn(a, b):
@@ -429,7 +429,7 @@ class TestShotsIntegration:
 
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=0.1, rtol=0)
-        print([type(p) for p in spy.call_args[0][0].get_parameters()])
+        assert all(not isinstance(p, jnp.ndarray) for p in spy.call_args[0][0][0].get_parameters())
 
     def test_update_diff_method(self, mocker, interface, tol):
         """Test that temporarily setting the shots updates the diff method"""
