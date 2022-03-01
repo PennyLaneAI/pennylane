@@ -461,7 +461,7 @@ class op_transform:
                 nonlocal wire_order
                 tape, verified_wire_order = _make_tape(obj, wire_order, *args, **kwargs)
 
-                if hasattr(tape, "operations") and len(tape.operations) == 1:
+                if len(getattr(tape, "operations", [])) == 1 and self._tape_fn is None:
                     tape = tape.operations[0]
 
                 if wire_order is not None or (
