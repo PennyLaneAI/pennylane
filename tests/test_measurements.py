@@ -307,14 +307,19 @@ class TestSample:
 
         circuit()
 
+
 class TestMeasure:
     """Tests for the measure function"""
 
     def test_many_wires_error(self):
         """Test that an eror is raised if multiple wires are passed to
         measure."""
-        with pytest.raises(qml.QuantumFunctionError, match="Only a single qubit can be measured in the middle of the circuit"):
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Only a single qubit can be measured in the middle of the circuit",
+        ):
             qml.measure(wires=[0, 1])
+
 
 class TestMeasurementValue:
     """Tests for the MeasurementValue class"""

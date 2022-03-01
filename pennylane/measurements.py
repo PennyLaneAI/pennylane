@@ -663,7 +663,9 @@ def measure(wires):
     """
     wire = qml.wires.Wires(wires)
     if len(wire) > 1:
-        raise qml.QuantumFunctionError("Only a single qubit can be measured in the middle of the circuit")
+        raise qml.QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
 
     measurement_id = str(uuid.uuid4())[:8]
     MeasurementProcess(MidMeasure, wires=wire, id=measurement_id)
