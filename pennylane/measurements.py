@@ -684,6 +684,7 @@ def measure(wires):
             return qml.probs(wires=[0])
 
     Executing this QNode:
+
     >>> pars = np.array([0.643, 0.246], requires_grad=True)
     >>> func(*pars)
     tensor([0.99849698, 0.00150302], requires_grad=True)
