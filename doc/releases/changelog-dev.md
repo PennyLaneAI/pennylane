@@ -32,19 +32,25 @@
   You can access all nodes by using the get_nodes function in the form of a list (ID, CommutationDAGNode):
   ```
   nodes = dag.get_nodes()
-  ```
-  You can also access specific nodes CommutationDAGNode by using get_node function. From the CommutationDAGNode
-  you can directly access all node attributes.
-  ```
-  second_node = dag.get_node(2)
-  second_operation = second_node.op
-  second_node_successors = second_node.successors
-  second_node_predecessors = second_node.predecessors
+  [(0, <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x132b03b20>), ...]
   ```
   
-* The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has 
-  a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions, 
-  deprecation of the `charset` keyword, and minor cosmetic changes.
+  You can also access specific nodes `CommutationDAGNode` by using get_node function. From the CommutationDAGNode
+  you can directly access all node attributes.
+  
+  ```
+  >>> second_node = dag.get_node(2)
+  <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x136f8c4c0>
+  
+  >>> second_operation = second_node.op
+  CNOT(wires=[1, 2])
+  
+  >>> second_node_successors = second_node.successors
+  [3, 4, 5, 6]
+  
+  >>> second_node_predecessors = second_node.predecessors
+  []
+  ```
 
 * The text based drawer accessed via `qml.draw` has been overhauled.
   [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
