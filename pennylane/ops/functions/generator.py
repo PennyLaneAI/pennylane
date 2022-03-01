@@ -92,9 +92,7 @@ def _generator_prefactor(op):
             obs = gen.ops[0]
             prefactor = gen.coeffs[0]
         else:
-            # otherwise, we convert to a sparse array
-            H = qml.utils.sparse_hamiltonian(gen)
-            obs = qml.SparseHamiltonian(H, wires=gen.wires)
+            obs = gen
             prefactor = 1.0
 
     if op.inverse:
@@ -163,6 +161,9 @@ def generator(op, format="prefactor"):
     Projector([1], wires=[0])
     """
     gen = op.generator()
+
+    if op.num_params != 1:
+        raise ValueError(f"Operation {op.name} is not written in terms of a single parameter")
 
     if not isinstance(gen, qml.operation.Observable):
         raise qml.QuantumFunctionError(f"Generator {gen} is not an observable")

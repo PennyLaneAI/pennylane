@@ -461,6 +461,9 @@ class op_transform:
                 nonlocal wire_order
                 tape, verified_wire_order = _make_tape(obj, wire_order, *args, **kwargs)
 
+                if hasattr(tape, "operations") and len(tape.operations) == 1:
+                    tape = tape.operations[0]
+
                 if wire_order is not None or (
                     "wire_order" in self._sig and isinstance(obj, qml.QNode)
                 ):

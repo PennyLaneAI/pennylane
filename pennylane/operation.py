@@ -1250,7 +1250,7 @@ class Operation(Operator):
             gen = self.generator()
 
             try:
-                gen_eigvals = tuple(self.generator().eigvals())
+                gen_eigvals = tuple(self.generator().get_eigvals())
                 return qml.gradients.eigvals_to_frequencies(gen_eigvals)
 
             except (MatrixUndefinedError, EigvalsUndefinedError):
