@@ -29,13 +29,13 @@
   psi = np.pi/2
   dag = get_dag(theta, phi, psi)
   ```
-  You can access all nodes by using the get_nodes function in the form of a list (ID, CommutationDAGNode):
+  You can access all nodes by using the ``get_nodes`` function in the form of a list ``(ID, CommutationDAGNode)``:
   ```
   nodes = dag.get_nodes()
   [(0, <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x132b03b20>), ...]
   ```
-  
-  You can also access specific nodes `CommutationDAGNode` by using get_node function. From the CommutationDAGNode
+
+  You can also access specific nodes ``CommutationDAGNode`` by using the ``get_node`` function. From the ``CommutationDAGNode``
   you can directly access all node attributes.
   
   ```
@@ -51,7 +51,6 @@
   >>> second_node_predecessors = second_node.predecessors
   []
   ```
-
 * The text based drawer accessed via `qml.draw` has been overhauled.
   [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
   [(#2198)](https://github.com/PennyLaneAI/pennylane/pull/2198)
