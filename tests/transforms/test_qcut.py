@@ -2173,6 +2173,25 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected)
         assert np.isclose(grad, grad_expected)
 
+    def test_circuit_with_disconnected_components(self, use_opt_einsum, mocker):
+        """Tests if a circuit that is fragmented into subcircuits such that some of the subcircuits
+        are disconnected from the final terminal measurements is executed correctly"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.transforms.cut_circuit(use_opt_einsum=use_opt_einsum)
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(x ** 2, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+        spy = mocker.spy(qcut, "contract_tensors")
+
+        x = 0.4
+        res = circuit(x)
+        assert np.allclose(res, np.cos(x))
+        assert len(spy.call_args[0][0]) == 1  # check number of tensors
+
 
 class TestCutStrategy:
     """Tests for class CutStrategy"""
