@@ -90,6 +90,11 @@ class ControlledOperation(Operation):
         self.subtape = tape
         """QuantumTape: The tape that defines the underlying operation."""
 
+        if len(self.subtape.operations) == 1:
+            self.control_base = self.subtape.operations[0].name
+        else:
+            self.control_base = "MultipleTargets"
+
         self._control_wires = Wires(control_wires)
         """Wires: The control wires."""
 

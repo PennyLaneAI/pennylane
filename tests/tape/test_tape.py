@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import CircuitGraph
 from pennylane.tape import QuantumTape
-from pennylane.measure import MeasurementProcess, expval, sample, var
+from pennylane.measurements import MeasurementProcess, expval, sample, var
 
 
 def TestOperationMonkeypatching():
