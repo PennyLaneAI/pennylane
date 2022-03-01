@@ -46,7 +46,6 @@
   a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions, 
   deprecation of the `charset` keyword, and minor cosmetic changes.
 
-* The text based drawer accessed via `qml.draw` has been overhauled.
   [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
   [(#2198)](https://github.com/PennyLaneAI/pennylane/pull/2198)
 
