@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ one_qubit_one_parameter = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
 class TestSingleOperation:
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
     def test_non_parametric_instantiated(self, op_class):
-        """Verify that the eigenvalues of non-parametric one qubit gates is correct
+        """Verify that the eigenvalues of non-parametric one-qubit gates are correct
         when provided as an instantiated operation"""
         op = op_class(wires=0)
         res = qml.eigvals(op)
@@ -308,8 +308,11 @@ class TestTemplates:
 
 
 class TestDifferentiation:
+    """Differentiation tests"""
+
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_jax(self, v):
+        """Test that differentiation works correctly when using JAX"""
 
         jax = pytest.importorskip("jax")
 
@@ -334,6 +337,7 @@ class TestDifferentiation:
 
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_torch(self, v):
+        """Test that differentiation works correctly when using Torch"""
 
         torch = pytest.importorskip("torch")
 
@@ -360,6 +364,7 @@ class TestDifferentiation:
 
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_tensorflow(self, v):
+        """Test that differentiation works correctly when using TF"""
 
         tf = pytest.importorskip("tensorflow")
 
@@ -384,7 +389,9 @@ class TestDifferentiation:
 
     @pytest.mark.xfail(reason="np.linalg.eigvals not differentiable using Autograd")
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
-    def test_get_unitary_matrix_autograd_differentiable(self, v):
+    def test_autograd(self, v):
+        """Test that differentiation works correctly when using Autograd"""
+
         def circuit(theta):
             qml.RX(theta, wires=0)
             qml.PauliZ(wires=0)
