@@ -825,10 +825,8 @@ class TestIntegration:
         r2 = conditional_ry_qnode(first_par, sec_par)
         assert np.allclose(r1, r2)
 
-    @pytest.mark.xfail(reason="Fails due to a bug with qml.ctrl")
     def test_conditional_ops_tensorflow(self):
-        """Test that attempting to apply an operation on a wires that has been
-        measured raises an error."""
+        """Test conditional operations with TensorFlow."""
         tf = pytest.importorskip("tensorflow")
         dev = qml.device("default.qubit", wires=2)
 
@@ -847,9 +845,8 @@ class TestIntegration:
             default under the hood."""
             qml.Hadamard(1)
             qml.RY(1.234, wires=0)
-            # m_0 = qml.measure(0)
-            # qml.cond(m_0, qml.RY)(x, wires=1)
-            qml.ctrl(qml.RY, control=0)(x, wires=1)
+            m_0 = qml.measure(0)
+            qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.expval(qml.PauliZ(1))
 
         x_ = -0.654
@@ -868,10 +865,8 @@ class TestIntegration:
         grad2 = tape2.gradient(r2, x2)
         assert np.allclose(grad1, grad2)
 
-    @pytest.mark.xfail(reason="Fails due to a bug with qml.ctrl")
     def test_conditional_ops_torch(self):
-        """Test that attempting to apply an operation on a wires that has been
-        measured raises an error."""
+        """Test conditional operations with Torch."""
         torch = pytest.importorskip("torch")
         dev = qml.device("default.qubit", wires=2)
 
@@ -889,9 +884,8 @@ class TestIntegration:
             default under the hood."""
             qml.Hadamard(1)
             qml.RY(1.234, wires=0)
-            # m_0 = qml.measure(0)
-            # qml.cond(m_0, qml.RY)(x, wires=1)
-            qml.ctrl(qml.RY, control=0)(x, wires=1)
+            m_0 = qml.measure(0)
+            qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.expval(qml.PauliZ(1))
 
         x1 = torch.tensor(-0.654, dtype=torch.float64, requires_grad=True)
@@ -905,6 +899,40 @@ class TestIntegration:
         r1.backward()
         r2.backward()
         assert np.allclose(x1.grad.detach(), x2.grad.detach())
+
+    @pytest.mark.parametrize("jax_interface", ["jax-python", "jax-jit"])
+    def test_conditional_ops_jax(self, jax_interface):
+        """Test conditional operations with JAX."""
+        jax = pytest.importorskip("jax")
+        jnp = jax.numpy
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=jax_interface, diff_method="parameter-shift")
+        def cry_qnode(x):
+            """QNode where we apply a controlled Y-rotation."""
+            qml.Hadamard(1)
+            qml.RY(1.234, wires=0)
+            qml.CRY(x, wires=[0, 1])
+            return qml.expval(qml.PauliZ(1))
+
+        @qml.qnode(dev, interface=jax_interface, diff_method="parameter-shift")
+        def conditional_ry_qnode(x):
+            """QNode where the defer measurements transform is applied by
+            default under the hood."""
+            qml.Hadamard(1)
+            qml.RY(1.234, wires=0)
+            m_0 = qml.measure(0)
+            qml.cond(m_0, qml.RY)(x, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        x1 = jnp.array(-0.654)
+        x2 = jnp.array(-0.654)
+
+        r1 = cry_qnode(x1)
+        r2 = conditional_ry_qnode(x2)
+
+        assert np.allclose(r1, r2)
+        assert np.allclose(jax.grad(cry_qnode)(x1), jax.grad(conditional_ry_qnode)(x2))
 
     def test_already_measured_error_operation(self):
         """Test that attempting to apply an operation on a wires that has been
