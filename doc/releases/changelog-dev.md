@@ -156,6 +156,11 @@
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug in the JAX interface where ``DeviceArray`` objects
+  were not being converted to NumPy arrays before executing an
+  external device.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+
 * The ``qml.ctrl`` transform now works correctly with gradient transforms
   such as the parameter-shift rule.
   [(#2238)](https://github.com/PennyLaneAI/pennylane/pull/2238)
