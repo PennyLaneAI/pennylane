@@ -33,7 +33,7 @@
   ```
   nodes = dag.get_nodes()
   ```
-  You can also access specific nodes CommutationDAGNode by using get_node function. From the CommutationDAGNode
+  You can also access specific nodes ``CommutationDAGNode`` by using the ``get_node`` function. From the ``CommutationDAGNode``
   you can directly access all node attributes.
   ```
   second_node = dag.get_node(2)
