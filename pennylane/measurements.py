@@ -640,6 +640,11 @@ class MeasurementValue(Generic[T]):
         return self
 
     @property
+    def control_value(self):
+        """The control value to consider for the measurement outcome."""
+        return self._control_value
+
+    @property
     def measurements(self):
         """List of all measurements this MeasurementValue depends on."""
         return [self._depends_on]

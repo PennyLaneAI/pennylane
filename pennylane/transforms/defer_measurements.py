@@ -93,7 +93,7 @@ def defer_measurements(tape):
 
     for op in tape.queue:
         op_wires_measured = set(wire for wire in op.wires if wire in measured_wires.values())
-        if 0 < len(op_wires_measured):
+        if len(op_wires_measured) > 0:
             raise ValueError(
                 f"Cannot apply operations on {op.wires} as the following wires have been measured already: {op_wires_measured}."
             )
@@ -107,7 +107,7 @@ def defer_measurements(tape):
         elif op.__class__.__name__ == "Conditional":
             control = [measured_wires[m_id] for m_id in op.meas_val.measurements]
             for value in op.meas_val.branches.values():
-                if op.meas_val._control_value == 0:
+                if op.meas_val.control_value == 0:
                     qml.PauliX(Wires(control))
 
                 if value:
@@ -116,7 +116,7 @@ def defer_measurements(tape):
                         control=Wires(control),
                     )()
 
-                if op.meas_val._control_value == 0:
+                if op.meas_val.control_value == 0:
                     qml.PauliX(Wires(control))
         else:
             apply(op)
