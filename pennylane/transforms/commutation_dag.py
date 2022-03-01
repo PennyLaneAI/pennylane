@@ -317,7 +317,6 @@ def simplify(operation):
     But not every rotation can be simplified and it returns the original operation no simplification is possible.
 
     >>> qml.simplify(qml.Rot(0.1, 0.2, 0.3, wires=0))
-
     qml.Rot(0.1, 0.2, 0.3, wires=0)
     """
     if operation.name not in ["Rot", "U2", "U3", "CRot"]:
