@@ -324,8 +324,8 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     measure_nodes_to_remove = [m for p in prepare_nodes_removed for m, p_ in cut_edges if p is p_]
     communication_graph.remove_nodes_from(subgraphs_indices_to_remove)
 
-    for s in subgraphs_connected_to_measurements:
-        for m in measure_nodes_to_remove:
+    for m in measure_nodes_to_remove:
+        for s in subgraphs_connected_to_measurements:
             if s.has_node(m):
                 s.remove_node(m)
 
