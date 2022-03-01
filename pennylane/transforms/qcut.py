@@ -948,6 +948,7 @@ def cut_circuit(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
+    fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
     expanded = [expand_fragment_tapes(t) for t in fragment_tapes]
 
     configurations = []
@@ -976,6 +977,49 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
     tkwargs.setdefault("device_wires", qnode.device.wires)
     return self.default_qnode_wrapper(qnode, targs, tkwargs)
+
+
+def remap_tape_wires(tape: QuantumTape, wires: Wires) -> QuantumTape:
+    """Map the wires of a tape to a new set of wires.
+
+    Given an :math:`n`-wire ``tape``, this function returns a new :class:`~.QuantumTape` with
+    operations and measurements acting on the first :math:`n` wires provided in the ``wires``
+    argument. The input ``tape`` is left unmodified.
+
+    Args:
+        tape (QuantumTape): the quantum tape whose wires should be remapped
+        wires (Wires): the new set of wires to map to
+
+    Raises:
+        ValueError: if the number of wires in ``tape`` exceeds ``len(wires)``
+    """
+    if len(tape.wires) > len(wires):
+        raise ValueError(f"Attempting to run a {len(tape.wires)}-wire circuit on a "
+                         f"{len(wires)}-wire device. Consider increasing the number of wires in "
+                         f"your device.")
+
+    wire_map = {w_tape: w_dev for w_tape, w_dev in zip(tape.wires, wires)}
+    copy_ops = [copy.copy(op) for op in tape.operations]
+    copy_meas = [copy.copy(op) for op in tape.measurements]
+
+    with QuantumTape() as new_tape:
+        for op in copy_ops:
+            new_wires = Wires([wire_map[w] for w in op.wires])
+            op._wires = new_wires
+            apply(op)
+        for meas in copy_meas:
+            obs = meas.obs
+
+            if isinstance(obs, Tensor):
+                for obs in obs.obs:
+                    new_wires = Wires([wire_map[w] for w in obs.wires])
+                    obs._wires = new_wires
+            else:
+                new_wires = Wires([wire_map[w] for w in obs.wires])
+                obs._wires = new_wires
+            apply(meas)
+
+    return new_tape
 
 
 @dataclass()
