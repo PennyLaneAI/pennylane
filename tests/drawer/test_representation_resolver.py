@@ -20,7 +20,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.drawer.representation_resolver import RepresentationResolver
-from pennylane.measure import state
+from pennylane.measurements import state
 
 
 @pytest.fixture
@@ -211,8 +211,8 @@ class TestRepresentationResolver:
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 1, "X⁻¹"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 0, "C"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 2, "C"),
-            (qml.measure.sample(wires=[0, 1]), 0, "basis"),  # not providing an observable in
-            (qml.measure.sample(wires=[0, 1]), 1, "basis"),  # sample gets displayed as raw
+            (qml.measurements.sample(wires=[0, 1]), 0, "basis"),  # not providing an observable in
+            (qml.measurements.sample(wires=[0, 1]), 1, "basis"),  # sample gets displayed as raw
             (two_wire_quantum_tape(), 0, "QuantumTape:T0"),
             (two_wire_quantum_tape(), 1, "QuantumTape:T0"),
         ],
@@ -355,8 +355,8 @@ class TestRepresentationResolver:
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 1, "X^-1"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 0, "C"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 2, "C"),
-            (qml.measure.sample(wires=[0, 1]), 0, "basis"),  # not providing an observable in
-            (qml.measure.sample(wires=[0, 1]), 1, "basis"),  # sample gets displayed as raw
+            (qml.measurements.sample(wires=[0, 1]), 0, "basis"),  # not providing an observable in
+            (qml.measurements.sample(wires=[0, 1]), 1, "basis"),  # sample gets displayed as raw
             (two_wire_quantum_tape(), 0, "QuantumTape:T0"),
             (two_wire_quantum_tape(), 1, "QuantumTape:T0"),
         ],

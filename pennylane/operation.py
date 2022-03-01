@@ -2443,7 +2443,7 @@ def has_unitary_gen(obj):
 @qml.BooleanFn
 def is_measurement(obj):
     """Returns ``True`` if an operator is a ``MeasurementProcess`` instance."""
-    return isinstance(obj, qml.measure.MeasurementProcess)
+    return isinstance(obj, qml.measurements.MeasurementProcess)
 
 
 @qml.BooleanFn
