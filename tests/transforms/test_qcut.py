@@ -2003,6 +2003,36 @@ class TestCutCircuitTransform:
 
         assert np.isclose(gradient, cut_gradient)
 
+    def test_device_wires(self, use_opt_einsum):
+        """Tests that a 3-qubit circuit is cut into two 2-qubit fragments such that both fragments
+        can be run on a 2-qubit device"""
+
+        def circuit():
+            qml.RX(0.4, wires=0)
+            qml.RX(0.5, wires=1)
+            qml.RX(0.6, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            return qml.expval(qml.PauliX(1) @ qml.PauliY(2))
+
+        dev_uncut = qml.device("default.qubit", wires=3)
+        dev_1 = qml.device("default.qubit", wires=2)
+        dev_2 = qml.device("default.qubit", wires=["Alice", 3.14, "Bob"])
+
+        uncut_circuit = qml.QNode(circuit, dev_uncut)
+        cut_circuit_1 = qml.transforms.cut_circuit(qml.QNode(circuit, dev_1), use_opt_einsum)
+        cut_circuit_2 = qml.transforms.cut_circuit(qml.QNode(circuit, dev_2), use_opt_einsum)
+
+        res_expected = uncut_circuit()
+        res_1 = cut_circuit_1()
+        res_2 = cut_circuit_2()
+
+        assert np.isclose(res_expected, res_1)
+        assert np.isclose(res_expected, res_2)
+
 
 class TestCutStrategy:
     """Tests for class CutStrategy"""
