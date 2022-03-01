@@ -2348,8 +2348,8 @@ def operation_derivative(operation) -> np.ndarray:
         ValueError: if the operation does not have a generator or is not composed of a single
             trainable parameter
     """
-    generator, prefactor = qml.utils.get_generator(operation, return_matrix=True)
-    return 1j * prefactor * generator @ operation.get_matrix()
+    generator = qml.matrix(qml.generator(operation, format="observable"))
+    return 1j * generator @ operation.get_matrix()
 
 
 @qml.BooleanFn

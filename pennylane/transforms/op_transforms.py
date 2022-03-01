@@ -302,7 +302,11 @@ class op_transform:
                 # the tape transform function if defined
                 return self.tape_fn(obj.expand(), *args, **kwargs)
 
-            except (AttributeError, OperationTransformError):
+            except (
+                AttributeError,
+                qml.operation.OperatorPropertyUndefined,
+                OperationTransformError,
+            ):
                 # if obj.expand() does not exist, or the tape transform
                 # function does not exist, simply raise the original exception
                 raise e1 from None

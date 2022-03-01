@@ -12,8 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions that act on operators and tapes.
+Unit tests for the qml.generator transform
 """
-from .eigvals import eigvals
-from .generator import generator
-from .matrix import matrix
