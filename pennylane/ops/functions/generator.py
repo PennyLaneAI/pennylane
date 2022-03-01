@@ -18,13 +18,11 @@ This module contains the qml.generator function.
 import pennylane as qml
 
 
-def _generator_observable(op):
+def _generator_observable(gen, op):
     """Return the generator as type :class:`~.Hermitian`,
     :class:`~.SparseHamiltonian`, or :class:`~.Hamiltonian`,
     as provided by the original gate.
     """
-    gen = op.generator()
-
     if isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
         if not op.inverse:
             return gen
@@ -40,9 +38,8 @@ def _generator_observable(op):
     return gen
 
 
-def _generator_hamiltonian(op):
+def _generator_hamiltonian(gen, op):
     """Return the generator as type :class:`~.Hamiltonian`."""
-    gen = op.generator()
     wires = op.wires
 
     if isinstance(gen, qml.Hamiltonian):
@@ -68,7 +65,7 @@ def _generator_hamiltonian(op):
     return H
 
 
-def _generator_prefactor(op):
+def _generator_prefactor(gen, op):
     r"""Return the generator as ```(prefactor, obs)`` representing
     :math:`G=p \hat{O}`, where
 
@@ -77,8 +74,6 @@ def _generator_prefactor(op):
       :class:`~.SparseHamiltonian`, or a tensor product
       of Pauli words.
     """
-    gen = op.generator()
-
     if isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
         obs = gen
         prefactor = 1.0
@@ -169,12 +164,12 @@ def generator(op, format="prefactor"):
         raise qml.QuantumFunctionError(f"Generator {gen} is not an observable")
 
     if format == "prefactor":
-        return _generator_prefactor(op)
+        return _generator_prefactor(gen, op)
 
     if format == "hamiltonian":
-        return _generator_hamiltonian(op)
+        return _generator_hamiltonian(gen, op)
 
     if format == "observable":
-        return _generator_observable(op)
+        return _generator_observable(gen, op)
 
     raise ValueError("'format' must be one of ('prefactor', 'hamiltonian', 'observable'")

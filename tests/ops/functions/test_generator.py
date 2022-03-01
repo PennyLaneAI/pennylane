@@ -258,7 +258,7 @@ class TestObservableReturn:
         assert np.allclose(res, expected)
 
 
-class TestObservableReturn:
+class TestHamiltonianReturn:
     """Tests for format="hamiltonian". This format always returns the generator
     as a Hamiltonian."""
 
