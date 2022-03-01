@@ -18,27 +18,16 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import copy
+import uuid
 import warnings
+from typing import Generic, TypeVar
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    AnyWires,
-    Expectation,
-    MidMeasure,
-    Observable,
-    Operation,
-    Probability,
-    Sample,
-    State,
-    Variance,
-)
+from pennylane.operation import (Expectation, MidMeasure, Observable,
+                                 Probability, Sample, State, Variance)
 from pennylane.wires import Wires
-
-from typing import TypeVar, Generic, Type
-import uuid
-from pennylane.operation import Operation, AnyWires
 
 
 class MeasurementProcess:
@@ -59,7 +48,7 @@ class MeasurementProcess:
 
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, return_type, obs=None, wires=None, eigvals=None, id=None):
+    def __init__(self, return_type, obs=None, wires=None, eigvals=None, id=None): # pylint: disable=too-many-arguments
         self.return_type = return_type
         self.obs = obs
         self.id = id
@@ -225,7 +214,8 @@ class MeasurementProcess:
         if self.obs is None:
             raise qml.operation.DecompositionUndefinedError
 
-        from pennylane.tape import JacobianTape  # pylint: disable=import-outside-toplevel
+        from pennylane.tape import \
+            JacobianTape  # pylint: disable=import-outside-toplevel
 
         with JacobianTape() as tape:
             self.obs.diagonalizing_gates()
@@ -603,8 +593,6 @@ T = TypeVar("T")
 class MeasurementValueError(ValueError):
     """Error raised when an unknown measurement value is being used."""
 
-    pass
-
 
 class MeasurementValue(Generic[T]):
     """A class representing unknown measurement outcomes in the qubit model.
@@ -667,6 +655,7 @@ def measure(wires):
             "Only a single qubit can be measured in the middle of the circuit"
         )
 
+    # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())[:8]
     MeasurementProcess(MidMeasure, wires=wire, id=measurement_id)
     return MeasurementValue(measurement_id)
