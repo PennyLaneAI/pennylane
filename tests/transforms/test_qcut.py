@@ -2090,6 +2090,31 @@ class TestCutCircuitTransform:
         assert np.allclose(res, np.cos(x))
         assert len(spy.call_args[0][0]) == 1  # check number of tensors
 
+    def test_contained_cut(self, mocker, use_opt_einsum):
+        """Tests that circuit cutting proceeds correctly when there is a fragment that strictly
+        contains a wire cut"""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        x = 0.4
+        res_expected = circuit(x)
+
+        spy = mocker.spy(qcut, "contract_tensors")
+
+        res = qml.transforms.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)(x)
+
+        assert len(spy.call_args[0][0]) == 1  # There should be only one fragment
+        assert np.allclose(res, res_expected)
+
 
 class TestCutStrategy:
     """Tests for class CutStrategy"""
