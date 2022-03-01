@@ -5,7 +5,7 @@
 <h3>New features since last release</h3>
 
 * Transform a circuit from quantum tape, quantum function or quantum node to a pairwise
-  commutation DAG. The node represents the quantum operations, and the edges represent 
+  commutation DAG (directed acyclic graph). The node represents the quantum operations, and the edges represent 
   non commutation.
   [(#1712)](https://github.com/PennyLaneAI/pennylane/pull/1712)
   
