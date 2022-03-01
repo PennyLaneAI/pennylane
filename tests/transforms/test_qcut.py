@@ -2012,6 +2012,9 @@ class TestCutCircuitTransform:
         gradient for a simple circuit using the `cut_circuit` transform with the torch interface and
         using torch tracing.
         """
+        if sys.version_info <= (3, 7):
+            pytest.skip("The circuit cutting pipeline does not work with Torch tracing when using "
+                        "Python 3.7.")
         torch = pytest.importorskip("torch")
 
         dev = qml.device("default.qubit", wires=2)
