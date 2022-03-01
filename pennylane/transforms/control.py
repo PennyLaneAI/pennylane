@@ -83,6 +83,7 @@ class ControlledOperation(Operation):
         control_wires: A wire or set of wires.
     """
 
+    grad_method = None
     num_wires = AnyWires
 
     def __init__(self, tape, control_wires, do_queue=True):
@@ -105,8 +106,11 @@ class ControlledOperation(Operation):
 
     def expand(self):
         tape = self.subtape
+        tape.set_parameters(self.data)
+
         for wire in self.control_wires:
             tape = expand_with_control(tape, wire)
+
         return tape
 
     def adjoint(self):
