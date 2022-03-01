@@ -187,22 +187,18 @@ def simplify_rotation(rot):
     Returns:
          qml.operation: Simplified rotation if possible.
     """
+    wires = rot.wires
+    params = rot.parameters
 
-    if np.allclose(np.mod(rot.data[0], 2 * np.pi), np.pi / 2) and np.allclose(
-        np.mod(rot.data[2], -2 * np.pi), -np.pi / 2
-    ):
-        return qml.RX(rot.data[1], wires=rot.wires)
-    if np.allclose(np.mod(rot.data[0], 2 * np.pi), 0) and np.allclose(
-        np.mod(rot.data[2], 2 * np.pi), 0
-    ):
-        return qml.RY(rot.data[1], wires=rot.wires)
-    if np.allclose(np.mod(rot.data[1], 2 * np.pi), 0):
-        return qml.RZ(rot.data[0] + rot.data[2], wires=rot.wires)
-    if (
-        np.allclose(np.mod(rot.data[0], 2 * np.pi), np.pi)
-        and np.allclose(np.mod(rot.data[1], 2 * np.pi), np.pi / 2)
-        and np.allclose(np.mod(rot.data[2], 2 * np.pi), 0)
-    ):
+    p0, p1, p2 = np.mod(params, 2 * np.pi)
+
+    if np.allclose(p0, np.pi / 2) and np.allclose(np.mod(rot.data[2], -2 * np.pi), -np.pi / 2):
+        return qml.RX(rot.data[1], wires=wires)
+    if np.allclose(p0, 0) and np.allclose(p2, 0):
+        return qml.RY(rot.data[1], wires=wires)
+    if np.allclose(p1, 0):
+        return qml.RZ(rot.data[0] + rot.data[2], wires=wires)
+    if np.allclose(p0, np.pi) and np.allclose(p1, np.pi / 2) and np.allclose(p2, 0):
         return qml.Hadamard(wires=rot.wires)
 
     return rot
@@ -218,22 +214,18 @@ def simplify_controlled_rotation(crot):
          qml.operation: Simplified controlled rotation if possible.
     """
     target_wires = [w for w in crot.wires if w not in crot.control_wires]
+    wires = crot.wires
+    params = crot.parameters
 
-    if np.allclose(np.mod(crot.data[0], 2 * np.pi), np.pi / 2) and np.allclose(
-        np.mod(crot.data[2], -2 * np.pi), -np.pi / 2
-    ):
-        return qml.CRX(crot.data[1], wires=crot.wires)
-    if np.allclose(np.mod(crot.data[0], 2 * np.pi), 0) and np.allclose(
-        np.mod(crot.data[2], 2 * np.pi), 0
-    ):
-        return qml.CRY(crot.data[1], wires=crot.wires)
-    if np.allclose(np.mod(crot.data[1], 2 * np.pi), 0):
-        return qml.CRZ(crot.data[0] + crot.data[2], wires=crot.wires)
-    if (
-        np.allclose(np.mod(crot.data[0], 2 * np.pi), np.pi)
-        and np.allclose(np.mod(crot.data[1], 2 * np.pi), np.pi / 2)
-        and np.allclose(np.mod(crot.data[2], 2 * np.pi), 0)
-    ):
+    p0, p1, p2 = np.mod(params, 2 * np.pi)
+
+    if np.allclose(p0, np.pi / 2) and np.allclose(np.mod(crot.data[2], -2 * np.pi), -np.pi / 2):
+        return qml.CRX(crot.data[1], wires=wires)
+    if np.allclose(p0, 0) and np.allclose(p2, 0):
+        return qml.CRY(crot.data[1], wires=wires)
+    if np.allclose(p1, 0):
+        return qml.CRZ(crot.data[0] + crot.data[2], wires=wires)
+    if np.allclose(p0, np.pi) and np.allclose(p1, np.pi / 2) and np.allclose(p2, 0):
         hadamard = qml.Hadamard
         return qml.ctrl(hadamard, control=crot.control_wires)(wires=target_wires)
 
@@ -249,15 +241,16 @@ def simplify_u2(u2):
     Returns:
          qml.operation: Simplified rotation if possible.
     """
+    wires = u2.wires
 
     if np.allclose(np.mod(u2.data[1], 2 * np.pi), 0) and np.allclose(
         np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
     ):
-        return qml.RY(np.pi / 2, wires=u2.wires)
+        return qml.RY(np.pi / 2, wires=wires)
     if np.allclose(np.mod(u2.data[1], np.pi / 2), 0) and np.allclose(
         np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
     ):
-        return qml.RX(u2.data[1], wires=u2.wires)
+        return qml.RX(u2.data[1], wires=wires)
 
     return u2
 
@@ -271,25 +264,21 @@ def simplify_u3(u3):
     Returns:
          qml.operation: Simplified rotation if possible.
     """
+    wires = u3.wires
+    params = u3.parameters
 
+    p0, p1, p2 = np.mod(params, 2 * np.pi)
+
+    if np.allclose(p0, 0) and not np.allclose(p1, 0) and np.allclose(p2, 0):
+        return qml.PhaseShift(u3.data[1], wires=wires)
     if (
-        np.allclose(np.mod(u3.data[0], 2 * np.pi), 0)
-        and not np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
-        and np.allclose(np.mod(u3.data[2], 2 * np.pi), 0)
-    ):
-        return qml.PhaseShift(u3.data[1], wires=u3.wires)
-    if (
-        np.allclose(np.mod(u3.data[2], 2 * np.pi), np.pi / 2)
+        np.allclose(p2, np.pi / 2)
         and np.allclose(np.mod(u3.data[1] + u3.data[2], 2 * np.pi), 0)
-        and not np.allclose(np.mod(u3.data[0], 2 * np.pi), 0)
+        and not np.allclose(p0, 0)
     ):
-        return qml.RX(u3.data[0], wires=u3.wires)
-    if (
-        not np.allclose(np.mod(u3.data[0], 2 * np.pi), 0)
-        and np.allclose(np.mod(u3.data[1], 2 * np.pi), 0)
-        and np.allclose(np.mod(u3.data[2], 2 * np.pi), 0)
-    ):
-        return qml.RY(u3.data[0], wires=u3.wires)
+        return qml.RX(u3.data[0], wires=wires)
+    if not np.allclose(p0, 0) and np.allclose(p1, 0) and np.allclose(p2, 0):
+        return qml.RY(u3.data[0], wires=wires)
 
     return u3
 
@@ -808,13 +797,21 @@ class CommutationDAGNode:
         node_id=-1,
     ):
         self.op = op
+        """Operation: The operation represented by the nodes."""
         self.wires = wires
+        """Wires: The wires that the operation acts on."""
         self.target_wires = target_wires
+        """Wires: The target wires of the operation."""
         self.control_wires = control_wires if control_wires is not None else []
+        """Wires: The control wires of the operation."""
         self.node_id = node_id
+        """int: The ID of the operation in the DAG."""
         self.successors = successors if successors is not None else []
+        """list(int): List of the node's successors."""
         self.predecessors = predecessors if predecessors is not None else []
+        """list(int): List of the node's predecessors."""
         self.reachable = reachable
+        """bool: Useful attribute to create the commutation DAG."""
 
 
 class CommutationDAG:
