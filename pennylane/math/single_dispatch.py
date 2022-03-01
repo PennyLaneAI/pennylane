@@ -515,7 +515,7 @@ ar.register_function(
     lambda x, index, value: x.at[tuple(index)].add(value),
 )
 ar.register_function("jax", "unstack", list)
-ar.register_function("jax", "cast", _i("jax").numpy.array)
-ar.register_function("jax", "asarray", _i("jax").numpy.array)
+# ar.register_function("jax", "cast", _i("jax").numpy.array)
+# ar.register_function("jax", "asarray", _i("jax").numpy.array)
 ar.register_function("jax", "to", lambda tensor, to: tensor)
 ar.autoray._FUNC_ALIASES["jax", "tensor_diag_part"] = "diag"
