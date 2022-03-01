@@ -979,19 +979,41 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     return self.default_qnode_wrapper(qnode, targs, tkwargs)
 
 
-def remap_tape_wires(tape: QuantumTape, wires: Wires) -> QuantumTape:
+def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
     """Map the wires of a tape to a new set of wires.
 
     Given an :math:`n`-wire ``tape``, this function returns a new :class:`~.QuantumTape` with
     operations and measurements acting on the first :math:`n` wires provided in the ``wires``
     argument. The input ``tape`` is left unmodified.
 
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow. Check out the
+        :doc:`transforms </code/qml_transforms>` page for more details.
+
     Args:
         tape (QuantumTape): the quantum tape whose wires should be remapped
-        wires (Wires): the new set of wires to map to
+        wires (Sequence): the new set of wires to map to
 
     Raises:
         ValueError: if the number of wires in ``tape`` exceeds ``len(wires)``
+
+    **Example**
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.5, wires=2)
+            qml.RY(0.6, wires=3)
+            qml.CNOT(wires=[2, 3])
+            qml.expval(qml.PauliZ(2) @ qml.PauliZ(3))
+
+        new_wires = [0, 1]
+        new_tape = qml.transforms.remap_tape_wires(tape, new_wires)
+
+    >>> print(new_tape.draw())
+     0: ──RX(0.5)──╭C──╭┤ ⟨Z ⊗ Z⟩
+     1: ──RY(0.6)──╰X──╰┤ ⟨Z ⊗ Z⟩
     """
     if len(tape.wires) > len(wires):
         raise ValueError(f"Attempting to run a {len(tape.wires)}-wire circuit on a "
