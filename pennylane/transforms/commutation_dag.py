@@ -751,7 +751,7 @@ def _both_controlled(control_base, operation1, operation2):
             and bool(commutation_map[control_base_1][position[control_base_2]])
         )
 
-    # If no condition was true, return None
+    # If no condition was true, return None.
     return None
 
 
