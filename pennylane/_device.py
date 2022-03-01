@@ -884,7 +884,9 @@ class Device(abc.ABC):
                 "supports_mid_measure", False
             ):
                 raise DeviceError(
-                    f"Mid-circuit measurements are not natively supported on device {self.short_name}"
+                    f"Mid-circuit measurements are not natively supported on device {self.short_name}. "
+                    "Apply the @qml.defer_measurements decorator to your quantum function to "
+                    "simulate the application of mid-circuit measurements on this device."
                 )
 
             if o.inverse:
