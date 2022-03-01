@@ -49,11 +49,9 @@ def snapshots(qnode):
     """
 
     def get_snapshots(*args, **kwargs):
-        qnode(*args, **kwargs)
-        try:
-            return qnode.device.snapshots
-        except AttributeError:
-            # pylint: disable=raise-missing-from
+        if qnode.device.short_name == "lightning.qubit" or not hasattr(qnode.device, "snapshots"):
             raise DeviceError("Device does not support snapshots.")
+        qnode(*args, **kwargs)
+        return qnode.device.snapshots
 
     return get_snapshots

@@ -15,6 +15,8 @@
 This module contains the Snapshot (pseudo) operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
+import numpy as np
+
 from pennylane.operation import AnyWires, AllWires, Operation
 
 
@@ -42,9 +44,13 @@ class Snapshot(Operation):
         self.tag = tag
         super().__init__(wires=AllWires, do_queue=True)
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return "Snapshot" + ("(" + self.tag + ")" if self.tag else "")
 
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
         return []
+
+    @staticmethod
+    def compute_matrix(*params, **hyperparams):
+        return np.eye(2)
