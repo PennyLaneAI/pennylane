@@ -291,7 +291,10 @@ def simplify_u3(u3):
 
 
 def simplify(operation):
-    r"""Simplify a (controlled) rotation (Rot, U2, U3, CRot) into RX, CRX, RY, CRY, RZ, CZ, H and CH.
+    r"""Simplify the (controlled) rotation operations :class:`~.Rot`,
+    :class:`~.U2`, :class:`~.U3`, and :class:`~.CRot` into one of
+    :class:`~.RX`, :class:`~.CRX`, :class:`~.RY`, :class:`~.CRY`, :class:`~.`RZ`,
+    :class:`~.CZ`, :class:`~.H` and :class:`~.CH` where possible.
 
     Args:
         operation (pennylane.Operation): Rotation or controlled rotation.
