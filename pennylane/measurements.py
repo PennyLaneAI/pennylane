@@ -25,8 +25,15 @@ from typing import Generic, TypeVar
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (Expectation, MidMeasure, Observable,
-                                 Probability, Sample, State, Variance)
+from pennylane.operation import (
+    Expectation,
+    MidMeasure,
+    Observable,
+    Probability,
+    Sample,
+    State,
+    Variance,
+)
 from pennylane.wires import Wires
 
 
@@ -48,7 +55,9 @@ class MeasurementProcess:
 
     # pylint: disable=too-few-public-methods
 
-    def __init__(self, return_type, obs=None, wires=None, eigvals=None, id=None): # pylint: disable=too-many-arguments
+    def __init__(
+        self, return_type, obs=None, wires=None, eigvals=None, id=None
+    ):  # pylint: disable=too-many-arguments
         self.return_type = return_type
         self.obs = obs
         self.id = id
@@ -214,8 +223,7 @@ class MeasurementProcess:
         if self.obs is None:
             raise qml.operation.DecompositionUndefinedError
 
-        from pennylane.tape import \
-            JacobianTape  # pylint: disable=import-outside-toplevel
+        from pennylane.tape import JacobianTape  # pylint: disable=import-outside-toplevel
 
         with JacobianTape() as tape:
             self.obs.diagonalizing_gates()
