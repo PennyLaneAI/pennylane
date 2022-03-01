@@ -99,6 +99,10 @@
   A suite of integration tests has been added.
   [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
   [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
+  
+  Circuit cutting now remaps the wires of fragment circuits to match the available wires on the
+  device.
+  [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
 
 <h3>Improvements</h3>
 
