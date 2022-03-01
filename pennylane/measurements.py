@@ -626,7 +626,7 @@ class MeasurementValue(Generic[T]):
         self._depends_on = measurement_id
         self._zero_case = zero_case
         self._one_case = one_case
-        self._control_value = 1  # By default, control on 1
+        self._control_value = one_case  # By default, control on the one case
 
     @property
     def branches(self):
