@@ -308,6 +308,8 @@ class TestTemplates:
 
 
 class TestDifferentiation:
+    "Differentiation tests"""
+
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_jax(self, v):
 
