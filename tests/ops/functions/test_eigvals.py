@@ -337,6 +337,7 @@ class TestDifferentiation:
 
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_torch(self, v):
+        """Test that differentiation works correctly when using Torch"""
 
         torch = pytest.importorskip("torch")
 
