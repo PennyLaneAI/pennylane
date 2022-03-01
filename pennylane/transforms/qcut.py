@@ -306,7 +306,15 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
             if subgraph.has_node(node2):
                 end_fragment = i
 
-        communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2))
+        if start_fragment != end_fragment:
+            communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2))
+        else:
+            # The MeasureNode and PrepareNode pair live in the same fragment and did not result
+            # in a disconnection. We can therefore remove these nodes. Note that we do not need
+            # to worry about adding back an edge between the predecessor to node1 and the successor
+            # to node2 because edge connectivity no longer matters in the subgraphs.
+            subgraph.remove_node(node1)
+            subgraph.remove_node(node2)
 
     terminal_indices = [i for i, s in enumerate(subgraphs) for n in measure_nodes if s.has_node(n)]
 
