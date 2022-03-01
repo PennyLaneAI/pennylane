@@ -26,8 +26,12 @@ from pennylane.wires import Wires
 
 
 def commutation_dag(circuit):
-    r"""Construct the pairwise-commutation DAG representation of a quantum circuit. A node represents a quantum
-    operations and  an edge represent non commutation between two operations. It takes into account that not all
+    r"""Construct the pairwise-commutation DAG (directed acyclic graph) representation of a quantum circuit.
+    
+    In the DAG, each node represents a quantum operation, and edges edge represent
+    non-commutation between two operations.
+    
+    This transform takes into account that not all
     operations can be moved next to each other by pairwise commutation.
 
     Args:
