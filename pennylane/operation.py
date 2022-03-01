@@ -1184,6 +1184,7 @@ class Operation(Operator):
         s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
     """
 
+    # Attributes for compilation transforms
     basis = None
     """str or None: The target operation for controlled gates.
     target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,

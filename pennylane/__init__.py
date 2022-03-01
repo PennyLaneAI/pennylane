@@ -69,6 +69,9 @@ from pennylane.transforms import (
     single_tape_transform,
     quantum_monte_carlo,
     apply_controlled_Q,
+    commutation_dag,
+    is_commuting,
+    simplify,
 )
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost

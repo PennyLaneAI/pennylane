@@ -4,6 +4,53 @@
 
 <h3>New features since last release</h3>
 
+* Transform a circuit from quantum tape, quantum function or quantum node to a pairwise
+  commutation DAG (directed acyclic graph). The node represents the quantum operations, and the edges represent 
+  non commutation between two operations.
+  [(#1712)](https://github.com/PennyLaneAI/pennylane/pull/1712)
+  
+  From the following quantum function,
+  ```
+  def circuit(x, y, z):
+      qml.RX(x, wires=0)
+      qml.RX(y, wires=0)
+      qml.CNOT(wires=[1, 2])
+      qml.RY(y, wires=1)
+      qml.Hadamard(wires=2)
+      qml.CRZ(z, wires=[2, 0])
+      qml.RY(-y, wires=1)
+      return qml.expval(qml.PauliZ(0))
+  ```
+  the commutation DAG can be returned by using the following code:
+  ```
+  get_dag = commutation_dag(circuit)
+  theta = np.pi/4
+  phi = np.pi/3
+  psi = np.pi/2
+  dag = get_dag(theta, phi, psi)
+  ```
+  You can access all nodes by using the ``get_nodes`` function in the form of a list ``(ID, CommutationDAGNode)``:
+  ```
+  nodes = dag.get_nodes()
+  [(0, <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x132b03b20>), ...]
+  ```
+
+  You can also access specific nodes ``CommutationDAGNode`` by using the ``get_node`` function. From the ``CommutationDAGNode``
+  you can directly access all node attributes.
+  
+  ```
+  >>> second_node = dag.get_node(2)
+  <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x136f8c4c0>
+  
+  >>> second_operation = second_node.op
+  CNOT(wires=[1, 2])
+  
+  >>> second_node_successors = second_node.successors
+  [3, 4, 5, 6]
+  
+  >>> second_node_predecessors = second_node.predecessors
+  []
+  ```
 * The text based drawer accessed via `qml.draw` has been overhauled.
   [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
   [(#2198)](https://github.com/PennyLaneAI/pennylane/pull/2198)
@@ -317,6 +364,6 @@ The Operator class has undergone a major refactor with the following changes:
 This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
-Maria Fernanda Morris, Zeyue Niu, Maria Schuld, Jay Soni, Antal Száva,
-David Wierichs
+Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni,
+Antal Száva, David Wierichs
 
