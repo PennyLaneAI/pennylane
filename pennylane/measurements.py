@@ -690,7 +690,7 @@ def measure(wires):
     tensor([0.99849698, 0.00150302], requires_grad=True)
 
     Args:
-        wires (.Wires): The wires the measurement process applies to.
+        wires (Wires): The wires the measurement process applies to.
 
     Raises:
         QuantumFunctionError: if multiple wires were specified
