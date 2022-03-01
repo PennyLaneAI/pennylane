@@ -23,7 +23,7 @@ import pennylane as qml
 
 @qml.op_transform
 def eigvals(op):
-    r"""The matrix representation of an operation or quantum circuit.
+    r"""The eigenvalues of one or more operations.
 
     Args:
         op (.Operator, pennylane.QNode, .QuantumTape, or Callable): An operator, quantum node, tape,
@@ -38,7 +38,7 @@ def eigvals(op):
 
     **Example**
 
-    Given an operation, ``qml.matrix`` returns the matrix representation:
+    Given an operation, ``qml.eigvals`` returns the eigenvalues:
 
     >>> op = qml.PauliZ(0) @ qml.PauliX(1) - 0.5 * qml.PauliY(1)
     >>> qml.eigvals(op)
