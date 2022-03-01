@@ -297,7 +297,7 @@ def simplify(operation):
     :class:`~.CZ`, :class:`~.H` and :class:`~.CH` where possible.
 
     Args:
-        operation (pennylane.Operation): Rotation or controlled rotation.
+        operation (.Operation): Rotation or controlled rotation.
 
     Returns:
          qml.operation: Simplified rotation if possible.
