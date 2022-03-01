@@ -522,9 +522,17 @@ non_commuting_operations = [
 
 
 def is_commuting(operation1, operation2):
-    r"""Check if two operations are commuting. A lookup table is used to check the commutation between the
-    controlled, targeted part of operation 1 with the controlled, targeted part of operation 2. It supports
-    most PennyLane operations that are not CV operations. Unsupported operation are the following:
+    r"""Check if two operations are commuting using a lookup table.
+    
+    A lookup table is used to check the commutation between the
+    controlled, targeted part of operation 1 with the controlled, targeted part of operation 2.
+    
+    .. note::
+    
+        Most qubit-based PennyLane operations are supported --- CV operations
+        are not supported at this time.
+    
+        Unsupported qubit-based operations include:
 
     :class:`qml.PauliRot`, :class:`qml.QubitDensityMatrix`, :class:`qml.CVNeuralNetLayers`,
     :class:`qml.ApproxTimeEvolution`, :class:`qml.ArbitraryUnitary`, :class:`qml.CommutingEvolution`,
