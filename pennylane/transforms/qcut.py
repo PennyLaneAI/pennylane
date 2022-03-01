@@ -23,7 +23,7 @@ import warnings
 from dataclasses import InitVar, dataclass
 from functools import partial
 from itertools import product
-from typing import Any, Callable, ClassVar, Dict, List, Sequence, Tuple, Union, Optional
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Sequence, Tuple, Union
 
 from networkx import MultiDiGraph, weakly_connected_components
 
@@ -1016,9 +1016,11 @@ def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
      1: ──RY(0.6)──╰X──╰┤ ⟨Z ⊗ Z⟩
     """
     if len(tape.wires) > len(wires):
-        raise ValueError(f"Attempting to run a {len(tape.wires)}-wire circuit on a "
-                         f"{len(wires)}-wire device. Consider increasing the number of wires in "
-                         f"your device.")
+        raise ValueError(
+            f"Attempting to run a {len(tape.wires)}-wire circuit on a "
+            f"{len(wires)}-wire device. Consider increasing the number of wires in "
+            f"your device."
+        )
 
     wire_map = {w_tape: w_dev for w_tape, w_dev in zip(tape.wires, wires)}
     copy_ops = [copy.copy(op) for op in tape.operations]
