@@ -657,14 +657,14 @@ class MeasurementValue(Generic[T]):
         return [self._depends_on]
 
 
-def measure(wire):
+def measure(wires):
     """
     Create a mid-circuit measurement and return an outcome.
-
-    .. code-block:: python
-
-        m0 = qml.measurements(0)
     """
+    wire = qml.wires.Wires(wires)
+    if len(wire) > 1:
+        raise ValueError("")
+
     measurement_id = str(uuid.uuid4())[:8]
-    MeasurementProcess(MidMeasure, wires=qml.wires.Wires(wire), id=measurement_id)
+    MeasurementProcess(MidMeasure, wires=wire, id=measurement_id)
     return MeasurementValue(measurement_id)
