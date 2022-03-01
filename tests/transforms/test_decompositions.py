@@ -56,8 +56,12 @@ single_qubit_decomps = [
     # Next set of gates are non-diagonal and decomposed as Rots
     (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
     (X, qml.Rot, [np.pi / 2, np.pi, -np.pi / 2]),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
-    (np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix, qml.Rot, [-1.0, 2.0, -3.0]),
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).get_matrix(), qml.Rot, [0.2, 0.5, -0.3]),
+    (
+        np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).get_matrix(),
+        qml.Rot,
+        [-1.0, 2.0, -3.0],
+    ),
 ]
 
 
