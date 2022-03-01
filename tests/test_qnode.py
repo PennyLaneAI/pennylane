@@ -825,6 +825,7 @@ class TestIntegration:
         r2 = conditional_ry_qnode(first_par, sec_par)
         assert np.allclose(r1, r2)
 
+    @pytest.mark.xfail(reason="Fails due to a bug with qml.ctrl")
     def test_conditional_ops_tensorflow(self):
         """Test that attempting to apply an operation on a wires that has been
         measured raises an error."""
@@ -867,6 +868,7 @@ class TestIntegration:
         grad2 = tape2.gradient(r2, x2)
         assert np.allclose(grad1, grad2)
 
+    @pytest.mark.xfail(reason="Fails due to a bug with qml.ctrl")
     def test_conditional_ops_torch(self):
         """Test that attempting to apply an operation on a wires that has been
         measured raises an error."""
@@ -898,11 +900,10 @@ class TestIntegration:
         r1 = cry_qnode(x1)
         r2 = conditional_ry_qnode(x2)
 
-        # assert np.allclose(r1.detach(), r2.detach())
+        assert np.allclose(r1.detach(), r2.detach())
 
-        # r1.backward()
+        r1.backward()
         r2.backward()
-        print(r2, x2.grad.detach())
         assert np.allclose(x1.grad.detach(), x2.grad.detach())
 
     def test_already_measured_error_operation(self):
