@@ -23,7 +23,7 @@ import warnings
 from dataclasses import InitVar, dataclass
 from functools import partial
 from itertools import product
-from typing import Any, Callable, ClassVar, Dict, List, Sequence, Tuple, Union
+from typing import Any, Callable, ClassVar, Dict, List, Sequence, Tuple, Union, Optional
 
 from networkx import MultiDiGraph, weakly_connected_components
 
@@ -881,7 +881,7 @@ def qcut_processing_fn(
 
 @batch_transform
 def cut_circuit(
-    tape: QuantumTape, use_opt_einsum: bool = False
+    tape: QuantumTape, use_opt_einsum: bool = False, device_wires: Optional[Wires] = None
 ) -> Tuple[Tuple[QuantumTape], Callable]:
     """
     Batch transform for circuit cutting.
@@ -898,10 +898,12 @@ def cut_circuit(
             for faster tensor contractions of large networks but must be installed separately using,
             e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
             differentiable contraction.
+        device_wires (.wires.Wires): Wires of the device that the cut circuits are to be run on
 
     Returns:
-        Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a result of cutting
-        and a post-processing function which combines the results via tensor contractions.
+        Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a
+        result of cutting and a post-processing function which combines the results via tensor
+        contractions.
 
     **Example**
 
