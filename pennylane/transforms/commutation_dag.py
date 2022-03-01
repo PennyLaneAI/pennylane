@@ -314,7 +314,8 @@ def simplify(operation):
     >>> qml.simplify(qml.Rot(np.pi / 2, 0.1, -np.pi / 2, wires=0))
     qml.RX(0.1, wires=0)
 
-    But not every rotation can be simplified and it returns the original operation no simplification is possible.
+    However, not every rotation can be simplified. The original operation
+    is returned if no simplification is possible.
 
     >>> qml.simplify(qml.Rot(0.1, 0.2, 0.3, wires=0))
     qml.Rot(0.1, 0.2, 0.3, wires=0)
