@@ -2121,7 +2121,7 @@ class TestCutCircuitTransformValidation:
             qcut.cut_circuit(tape)
 
     def test_no_measurements_raises(self):
-        """Tests if a ValueError is raised when a tape with multiple measurements is requested
+        """Tests if a ValueError is raised when a tape with no measurement is requested
         to be cut"""
         with pytest.raises(ValueError, match="The circuit cutting workflow only supports circuits"):
             qcut.cut_circuit(qml.tape.QuantumTape())
