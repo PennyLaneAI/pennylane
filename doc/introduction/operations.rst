@@ -252,6 +252,10 @@ solving the minimum clique cover problem, and auxiliary functions, refer to the
 Continuous-variable (CV) operations
 -----------------------------------
 
+If you would like to learn more about the CV model of quantum computing, check out the
+`quantum photonics <https://strawberryfields.ai/photonics/concepts/photonics.html>`_
+page of the strawberry fields documentation.
+
 .. _intro_ref_ops_cvgates:
 
 CV Gates
