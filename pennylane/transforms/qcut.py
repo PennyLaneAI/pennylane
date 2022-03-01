@@ -969,6 +969,15 @@ def cut_circuit(
     )
 
 
+@cut_circuit.custom_qnode_wrapper
+def qnode_execution_wrapper(self, qnode, targs, tkwargs):
+    """Here, we overwrite the QNode execution wrapper in order
+    to access the device wires."""
+
+    tkwargs.setdefault("device_wires", qnode.device.wires)
+    return self.default_qnode_wrapper(qnode, targs, tkwargs)
+
+
 @dataclass()
 class CutStrategy:
     """
