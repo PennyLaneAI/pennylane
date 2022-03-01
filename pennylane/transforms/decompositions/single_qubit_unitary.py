@@ -84,9 +84,7 @@ def zyz_decomposition(U, wire):
         if math.allclose(U[0, 1], 0.0):
             return [qml.RZ(2 * math.angle(U[1, 1]), wires=wire)]
 
-    # Derive theta from the off-diagonal element. We very very carefully rescale
-    # the value to make sure it's between -1 and 1 by subtracting a small number
-    # in the cases where we have a positive-valued element.
+    # Derive theta from the off-diagonal element. Clip to ensure valid arcsin input
     element = math.clip(math.abs(U[0, 1]), 0, 1)
     theta = 2 * math.arcsin(element)
 
