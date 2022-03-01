@@ -172,7 +172,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         tape._ops.extend(rotations)
 
         for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
-            new_m = qml.measure.MeasurementProcess(tape.measurements[i].return_type, obs=o)
+            new_m = qml.measurements.MeasurementProcess(tape.measurements[i].return_type, obs=o)
             tape._measurements[i] = new_m
 
     for queue in ("_prep", "_ops", "_measurements"):
@@ -183,7 +183,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             if not expand_measurements:
                 # Measurements should not be expanded; treat measurements
                 # as a stopping condition
-                stop = stop or isinstance(obj, qml.measure.MeasurementProcess)
+                stop = stop or isinstance(obj, qml.measurements.MeasurementProcess)
 
             if stop:
                 # do not expand out the object; append it to the
@@ -191,7 +191,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 getattr(new_tape, queue).append(obj)
                 continue
 
-            if isinstance(obj, (qml.operation.Operation, qml.measure.MeasurementProcess)):
+            if isinstance(obj, (qml.operation.Operation, qml.measurements.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
@@ -434,7 +434,7 @@ class QuantumTape(AnnotatedQueue):
                 else:
                     self._ops.append(obj)
 
-            elif isinstance(obj, qml.measure.MeasurementProcess):
+            elif isinstance(obj, qml.measurements.MeasurementProcess):
                 # measurement process
                 self._measurements.append(obj)
 
