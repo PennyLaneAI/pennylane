@@ -22,8 +22,25 @@ from pennylane.measurements import MeasurementValue
 
 
 class Conditional(Operation):
-    """
-    Conditional operation wrapper class.
+    """A Conditional Operation.
+
+    Unless you are a Pennylane plugin developer, **you should NOT directly use this class**,
+    instead, use the :func:`qml.cond <.cond>` function.
+
+    The ``Conditional`` class is a container class that defines an operation
+    that should by applied relative to a single measurement value.
+
+    Support for executing ``Conditional`` operations is device-dependent. If a
+    device doesn't support mid-circuit measurements natively, then the QNode
+    will apply the :func:`defer_measurements` transform.
+
+    Args:
+        expr (MeasurementValue): the measurement outcome value to consider
+        then_op (Operation): the PennyLane operation to apply conditionally
+        do_queue (bool): indicates whether the operator should be
+            recorded when created in a tape context
+        id (str): custom label given to an operator instance,
+            can be useful for some applications where the instance has to be identified
     """
 
     num_wires = AnyWires
