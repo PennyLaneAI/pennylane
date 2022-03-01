@@ -29,7 +29,7 @@
   psi = np.pi/2
   dag = get_dag(theta, phi, psi)
   ```
-  You can access all nodes by using the get_nodes function in the form of a list (ID, CommutationDAGNode):
+  You can access all nodes by using the ``get_nodes`` function in the form of a list ``(ID, CommutationDAGNode)``:
   ```
   nodes = dag.get_nodes()
   ```
