@@ -150,8 +150,20 @@ class op_transform:
 
     .. note::
 
-        The registered tape transform should have the same parameters as the
-        original operation transform function.
+        If the operator transform takes additional (optional) transform parameters,
+        then the registered tape transform should take the same transform parameters.
+        
+        E.g., consider a transform that takes the transform parameter ``lower``:
+
+        .. code-block:: python
+
+            @qml.op_transform
+            def name(op, lower=True):
+                return op.name().lower() if lower else op.name()
+
+            @name.tape_transform
+            def name(tape, lower=True):
+                return [name(op, lower=lower) for op in tape.operations]
 
     We can now apply this transform directly to a qfunc:
 
@@ -246,6 +258,8 @@ class op_transform:
         obj = None
 
         if targs:
+            # assume the first argument passed to the transform
+            # is the object we wish to transform
             obj, *targs = targs
 
         if isinstance(obj, (qml.operation.Operator, qml.tape.QuantumTape)) or callable(obj):
@@ -254,6 +268,7 @@ class op_transform:
         # Input is not an operator nor a QNode nor a quantum tape nor a qfunc.
         # Assume Python decorator syntax:
         #
+        # op_func = op_transform(op_func)
         # result = op_func(*transform_args)(obj)(*obj_args)
         #
         # or
@@ -433,6 +448,9 @@ class op_transform:
         return self
 
     def _create_wrapper(self, obj, *targs, wire_order=None, **tkwargs):
+        """Create a wrapper function that, when evaluated, transforms
+        ``obj`` according to transform arguments ``*targs`` and ``**tkwargs``
+        """
 
         if isinstance(obj, qml.operation.Operator):
             # Input is a single operation.
@@ -469,6 +487,8 @@ class op_transform:
                     return self.fn(tape, *targs, **tkwargs)
 
                 if self.is_qfunc_transform:
+                    # we must evaluate the qfunc transform at the original
+                    # function arguments
                     return self.tape_fn(obj, *kwargs, **tkwargs)(*args, **kwargs)
 
                 return self.tape_fn(tape, *targs, **tkwargs)

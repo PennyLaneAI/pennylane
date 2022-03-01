@@ -20,6 +20,7 @@ from pennylane.transforms.op_transforms import OperationTransformError
 
 
 class TestValidation:
+    """Test for validation and exceptions"""
     def test_sphinx_build(self, monkeypatch):
         """Test that op transforms are not created during Sphinx builds"""
 
@@ -81,6 +82,8 @@ class TestValidation:
 
 
 class TestUI:
+    """Test the user interface of the op_transform, and ensure it applies
+    and works well for all combinations of inputs and styles"""
     def test_instantiated_operator(self):
         """Test that a transform can be applied to an instantiated operator"""
 
@@ -93,7 +96,8 @@ class TestUI:
         assert res == "CRX"
 
     def test_single_operator_qfunc(self, mocker):
-        """Test that a transform can be applied to a quantum function"""
+        """Test that a transform can be applied to a quantum function
+        that contains a single operation"""
         spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
 
         @qml.op_transform
