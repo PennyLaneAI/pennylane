@@ -544,8 +544,6 @@ def transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires
 
         fermop_terms.append(op_term)
 
-        print()
-
     ferm_op = functools.reduce(lambda i, j: _observable_mult(i, j), fermop_terms)
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
