@@ -2031,12 +2031,12 @@ class TestCutCircuitTransform:
         # Note that the jit.trace ends up calling qcut_processing_fn multiple times, so below we
         # delay introducing the spy until afterwards and then ensure that qcut_processing_fn is
         # not called again.
-        cut_circuit_jit = torch.jit.trace(
+        cut_circuit_trace = torch.jit.trace(
             qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum), x
         )
 
         spy = mocker.spy(qcut, "qcut_processing_fn")
-        res = cut_circuit_jit(x)
+        res = cut_circuit_trace(x)
 
         spy.assert_not_called()
 
