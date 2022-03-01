@@ -695,7 +695,7 @@ class Operator(abc.ABC):
         .. warning::
 
             The ``eigvals`` property is deprecated and will be removed in
-            an upcoming release.
+            an upcoming release. Please use :class:`qml.eigvals <.pennylane.eigvals>` instead.
 
         **Example:**
 
@@ -707,7 +707,8 @@ class Operator(abc.ABC):
             array: eigvals representation
         """
         warnings.warn(
-            "The 'eigvals' property is deprecated and will be removed in an upcoming release.",
+            "The 'eigvals' property is deprecated and will be removed in an upcoming release. "
+            "Please use 'qml.eigvals' instead.",
             UserWarning,
         )
         return self.get_eigvals()

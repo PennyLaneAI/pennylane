@@ -390,6 +390,7 @@ class TestDifferentiation:
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_autograd(self, v):
         """Test that differentiation works correctly when using Autograd"""
+
         def circuit(theta):
             qml.RX(theta, wires=0)
             qml.PauliZ(wires=0)
