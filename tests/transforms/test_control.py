@@ -309,3 +309,97 @@ def test_controlled_template_and_operations():
     tape = expand_tape(tape)
     assert len(tape.operations) == 10
     assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
+
+
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
+class TestDifferentiation:
+    """Tests for differentiation"""
+
+    def test_autograd(self, diff_method):
+        """Test differentiation using autograd"""
+        from pennylane import numpy as pnp
+
+        dev = qml.device("default.qubit", wires=2)
+        init_state = pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(b):
+            qml.QubitStateVector(init_state, wires=0)
+            qml.ctrl(qml.RY, control=0)(b, wires=[1])
+            return qml.expval(qml.PauliX(0))
+
+        b = pnp.array(0.123, requires_grad=True)
+        res = qml.grad(circuit)(b)
+        expected = np.sin(b / 2) / 2
+
+        assert np.allclose(res, expected)
+
+    def test_torch(self, diff_method):
+        """Test differentiation using torch"""
+        torch = pytest.importorskip("torch")
+
+        dev = qml.device("default.qubit", wires=2)
+        init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+
+        @qml.qnode(dev, diff_method=diff_method, interface="torch")
+        def circuit(b):
+            qml.QubitStateVector(init_state, wires=0)
+            qml.ctrl(qml.RY, control=0)(b, wires=[1])
+            return qml.expval(qml.PauliX(0))
+
+        b = torch.tensor(0.123, requires_grad=True)
+        loss = circuit(b)
+        loss.backward()
+
+        res = b.grad.detach()
+        expected = np.sin(b.detach() / 2) / 2
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize("jax_interface", ["jax", "jax-python", "jax-jit"])
+    def test_jax(self, diff_method, jax_interface):
+        """Test differentiation using JAX"""
+
+        if diff_method == "backprop" and jax_interface != "jax":
+            pytest.skip("The backprop case only accepts interface='jax'")
+
+        jax = pytest.importorskip("jax")
+        jnp = jax.numpy
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method, interface=jax_interface)
+        def circuit(b):
+            init_state = np.array([1.0, -1.0]) / np.sqrt(2)
+            qml.QubitStateVector(init_state, wires=0)
+            qml.ctrl(qml.RY, control=0)(b, wires=[1])
+            return qml.expval(qml.PauliX(0))
+
+        b = jnp.array(0.123)
+        res = jax.grad(circuit)(b)
+        expected = np.sin(b / 2) / 2
+
+        assert np.allclose(res, expected)
+
+    def test_tf(self, diff_method):
+        """Test differentiation using TF"""
+        tf = pytest.importorskip("tensorflow")
+
+        dev = qml.device("default.qubit", wires=2)
+        init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / np.sqrt(2)
+
+        @qml.qnode(dev, diff_method=diff_method, interface="tf")
+        def circuit(b):
+            qml.QubitStateVector(init_state, wires=0)
+            qml.ctrl(qml.RY, control=0)(b, wires=[1])
+            return qml.expval(qml.PauliX(0))
+
+        b = tf.Variable(0.123, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            loss = circuit(b)
+
+        res = tape.gradient(loss, b)
+        expected = np.sin(b / 2) / 2
+
+        assert np.allclose(res, expected)

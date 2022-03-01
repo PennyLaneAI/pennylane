@@ -18,14 +18,16 @@ circuits to be distributed across multiple devices.
 
 import copy
 import string
-import warnings
 import uuid
-from typing import Sequence, Tuple, List, Dict, Any, Union, ClassVar
+import warnings
+from dataclasses import InitVar, dataclass
+from functools import partial
 from itertools import product
-from dataclasses import dataclass, InitVar
+from typing import Any, Callable, ClassVar, Dict, List, Sequence, Tuple, Union
+
+from networkx import MultiDiGraph, weakly_connected_components
 
 import pennylane as qml
-from networkx import MultiDiGraph, weakly_connected_components
 from pennylane import apply, expval
 from pennylane.grouping import string_to_pauli_word
 from pennylane.measure import MeasurementProcess
@@ -33,6 +35,8 @@ from pennylane.operation import Expectation, Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
+
+from .batch_transform import batch_transform
 
 
 class MeasureNode(Operation):
@@ -356,12 +360,16 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     wire_map = {w: w for w in wires}
     reverse_wire_map = {v: k for k, v in wire_map.items()}
 
-    copy_ops = [copy.copy(op) for _, op in ordered_ops]
+    copy_ops = [copy.copy(op) for _, op in ordered_ops if not isinstance(op, MeasurementProcess)]
+    copy_meas = [copy.copy(op) for _, op in ordered_ops if isinstance(op, MeasurementProcess)]
+    observables = []
 
     with QuantumTape() as tape:
         for op in copy_ops:
-            new_wires = [wire_map[w] for w in op.wires]
-            op._wires = Wires(new_wires)  # TODO: find a better way to update operation wires
+            new_wires = Wires([wire_map[w] for w in op.wires])
+
+            # TODO: find a better way to update operation wires
+            op._wires = new_wires
             apply(op)
 
             if isinstance(op, MeasureNode):
@@ -374,6 +382,19 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 original_wire = reverse_wire_map[measured_wire]
                 wire_map[original_wire] = new_wire
                 reverse_wire_map[new_wire] = original_wire
+
+        for meas in copy_meas:
+            obs = meas.obs
+            obs._wires = Wires([wire_map[w] for w in obs.wires])
+            observables.append(obs)
+
+        # We assume that each MeasurementProcess node in the graph contributes to a single
+        # expectation value of an observable, given by the tensor product over the observables of
+        # each MeasurementProcess.
+        if len(observables) > 1:
+            qml.expval(Tensor(*observables))
+        elif len(observables) == 1:
+            qml.expval(obs)
 
     return tape
 
@@ -419,7 +440,7 @@ def _get_measurements(
 
     obs = measurement.obs
 
-    return [expval(obs @ g) for g in group]
+    return [expval(copy.copy(obs) @ g) for g in group]
 
 
 def _prep_zero_state(wire):
@@ -855,6 +876,119 @@ def qcut_processing_fn(
         tensors, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum
     )
     return result
+
+
+@batch_transform
+def cut_circuit(
+    tape: QuantumTape, use_opt_einsum: bool = False
+) -> Tuple[Tuple[QuantumTape], Callable]:
+    """
+    Batch transform for circuit cutting.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow. Check out the
+        :doc:`transforms </code/qml_transforms>` page for more details.
+
+    Args:
+        tape (QuantumTape): The tape of the full circuit to be cut.
+        use_opt_einsum (bool): Determines whether to use the
+            `opt_einsum <https://dgasmith.github.io/opt_einsum/>`__ package. This package is useful
+            for faster tensor contractions of large networks but must be installed separately using,
+            e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
+            differentiable contraction.
+
+    Returns:
+        Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a result of cutting
+        and a post-processing function which combines the results via tensor contractions.
+
+    **Example**
+
+    Consider the following circuit containing a :class:`~.WireCut` operation:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+    >>> x = 0.531
+    >>> print(circuit(x))
+    0.8623011058543121
+    >>> print(qml.grad(circuit)(x))
+    -0.506395895364911
+
+    This can be cut using the following transform
+
+    >>> x = 0.531
+    >>> cut_circuit = qcut.cut_circuit(circuit)
+    >>> cut_circuit(x)
+    0.8623011058543121
+
+    Futhermore, the output of the cut circuit is also differentiable:
+
+    .. code-block:: python
+
+        >>> qml.grad(cut_circuit)(x)
+        -0.506395895364911
+    """
+    if len(tape.measurements) != 1:
+        raise ValueError(
+            "The circuit cutting workflow only supports circuits with a single output "
+            "measurement"
+        )
+
+    if not all(m.return_type is Expectation for m in tape.measurements):
+        raise ValueError(
+            "The circuit cutting workflow only supports circuits with expectation "
+            "value measurements"
+        )
+
+    if use_opt_einsum:
+        try:
+            import opt_einsum  # pylint: disable=import-outside-toplevel,unused-import
+        except ImportError as e:
+            raise ImportError(
+                "The opt_einsum package is required when use_opt_einsum is set to "
+                "True in the cut_circuit function. This package can be "
+                "installed using:\npip install opt_einsum"
+            ) from e
+
+    num_cut = len([op for op in tape.operations if isinstance(op, WireCut)])
+    if num_cut == 0:
+        raise ValueError("Cannot apply the circuit cutting workflow to a circuit without any cuts")
+
+    g = tape_to_graph(tape)
+    replace_wire_cut_nodes(g)
+    fragments, communication_graph = fragment_graph(g)
+    fragment_tapes = [graph_to_tape(f) for f in fragments]
+    expanded = [expand_fragment_tapes(t) for t in fragment_tapes]
+
+    configurations = []
+    prepare_nodes = []
+    measure_nodes = []
+    for tapes, p, m in expanded:
+        configurations.append(tapes)
+        prepare_nodes.append(p)
+        measure_nodes.append(m)
+
+    tapes = tuple(tape for c in configurations for tape in c)
+
+    return tapes, partial(
+        qcut_processing_fn,
+        communication_graph=communication_graph,
+        prepare_nodes=prepare_nodes,
+        measure_nodes=measure_nodes,
+        use_opt_einsum=use_opt_einsum,
+    )
 
 
 @dataclass()
