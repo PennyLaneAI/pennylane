@@ -155,10 +155,10 @@ def generator(op, format="prefactor"):
     >>> qml.generator(op, format="observable")  # ouput will be a simplified obs where possible
     Projector([1], wires=[0])
     """
-    gen = op.generator()
-
     if op.num_params != 1:
         raise ValueError(f"Operation {op.name} is not written in terms of a single parameter")
+
+    gen = op.generator()
 
     if not isinstance(gen, qml.operation.Observable):
         raise qml.QuantumFunctionError(f"Generator {gen} is not an observable")
