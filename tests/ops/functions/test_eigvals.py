@@ -308,10 +308,11 @@ class TestTemplates:
 
 
 class TestDifferentiation:
-    "Differentiation tests"""
+    """Differentiation tests"""
 
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_jax(self, v):
+        """Test that differentiation works correctly when using JAX"""
 
         jax = pytest.importorskip("jax")
 
@@ -362,6 +363,7 @@ class TestDifferentiation:
 
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_tensorflow(self, v):
+        """Test that differentiation works correctly when using TF"""
 
         tf = pytest.importorskip("tensorflow")
 
@@ -386,7 +388,8 @@ class TestDifferentiation:
 
     @pytest.mark.xfail(reason="np.linalg.eigvals not differentiable using Autograd")
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
-    def test_get_unitary_matrix_autograd_differentiable(self, v):
+    def test_autograd(self, v):
+        """Test that differentiation works correctly when using Autograd"""
         def circuit(theta):
             qml.RX(theta, wires=0)
             qml.PauliZ(wires=0)
