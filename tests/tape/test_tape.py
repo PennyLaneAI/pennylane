@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import CircuitGraph
 from pennylane.tape import QuantumTape
-from pennylane.measure import MeasurementProcess, expval, sample, var
+from pennylane.measurements import MeasurementProcess, expval, sample, var
 
 
 def TestOperationMonkeypatching():
@@ -262,6 +262,16 @@ class TestConstruction:
             qml.sample(qml.PauliZ(wires=0))
 
         assert tape.is_sampled
+
+    def test_repr(self):
+        """Test the string representation"""
+
+        with QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+
+        s = tape.__repr__()
+        expected = "<QuantumTape: wires=[0], params=1>"
+        assert s == expected
 
 
 class TestGraph:
@@ -859,7 +869,7 @@ class TestExpand:
         assert [m.obs is r for m, r in zip(new_tape.measurements, expected)]
 
         expected = [None, [1, -1, -1, 1], [0, 5]]
-        assert [m.eigvals is r for m, r in zip(new_tape.measurements, expected)]
+        assert [m.get_eigvals() is r for m, r in zip(new_tape.measurements, expected)]
 
     def test_expand_tape_multiple_wires(self):
         """Test the expand() method when measurements with more than one observable on the same

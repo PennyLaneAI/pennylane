@@ -25,7 +25,7 @@ from pennylane.operation import Sample, Variance, Expectation, Probability, Stat
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 from pennylane.tape import QuantumTape
-from pennylane.measure import state
+from pennylane.measurements import state
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
@@ -268,7 +268,7 @@ class TestObservables:
 
         with qml.tape.QuantumTape() as tape:
             qml.PauliX(wires=0)
-            qml.measure.MeasurementProcess(
+            qml.measurements.MeasurementProcess(
                 return_type="SomeUnsupportedReturnType", obs=qml.PauliZ(0)
             )
 
@@ -475,7 +475,7 @@ class TestExpval:
             m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
             res = dev.expval(obs)
 
-        assert res == (obs.eigvals @ probs).real
+        assert res == (obs.get_eigvals() @ probs).real
 
     def test_non_analytic_expval(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that expval method when the analytic attribute is False
@@ -499,10 +499,23 @@ class TestExpval:
         assert res == obs
 
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
-        """Tests that an error is thrown if expval is called with an observable that does not have eigenvalues defined."""
+        """Tests that an error is thrown if expval is called with an observable that does
+        not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
-        with pytest.raises(ValueError, match="Cannot compute analytic expectations"):
-            dev.expval(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+
+        # observable with no eigenvalue representation defined
+        class MyObs(qml.operation.Observable):
+            num_wires = 1
+
+            def eigvals(self):
+                raise qml.operation.EigvalsUndefinedError
+
+        obs = MyObs(wires=0)
+
+        with pytest.raises(
+            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic expectations"
+        ):
+            dev.expval(obs)
 
 
 class TestVar:
@@ -526,7 +539,7 @@ class TestVar:
             m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
             res = dev.var(obs)
 
-        assert res == (obs.eigvals**2) @ probs - (obs.eigvals @ probs).real ** 2
+        assert res == (obs.get_eigvals() ** 2) @ probs - (obs.get_eigvals() @ probs).real ** 2
 
     def test_non_analytic_var(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that var method when the analytic attribute is False
@@ -552,8 +565,20 @@ class TestVar:
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
         """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
-        with pytest.raises(ValueError, match="Cannot compute analytic variance"):
-            dev.var(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+
+        # observable with no eigenvalue representation defined
+        class MyObs(qml.operation.Observable):
+            num_wires = 1
+
+            def eigvals(self):
+                raise qml.operation.EigvalsUndefinedError
+
+        obs = MyObs(wires=0)
+
+        with pytest.raises(
+            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic variance"
+        ):
+            dev.var(obs)
 
 
 class TestSample:
@@ -590,7 +615,7 @@ class TestSample:
     ):
         """Test that when we sample a device without providing an observable or wires then it
         will return the raw samples"""
-        obs = qml.measure.sample(op=None, wires=None)
+        obs = qml.measurements.sample(op=None, wires=None)
         dev = mock_qubit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 0], [1, 1]])
         dev._samples = generated_samples
@@ -603,7 +628,7 @@ class TestSample:
     ):
         """Test that when we sample a device without providing an observable but we specify
         wires then it returns the generated samples for only those wires"""
-        obs = qml.measure.sample(op=None, wires=[1])
+        obs = qml.measurements.sample(op=None, wires=[1])
         dev = mock_qubit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 0], [1, 1]])
         dev._samples = generated_samples
@@ -617,7 +642,7 @@ class TestSample:
         """Tests that an error is thrown if sample is called with an observable that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[1, 0], [0, 0]])
-        with pytest.raises(ValueError, match="Cannot compute samples"):
+        with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
             dev.sample(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
 
 
@@ -960,7 +985,7 @@ class TestShotList:
         assert circuit.device.shots == total_shots
 
         # test gradient works
-        res = qml.jacobian(circuit)(0.5, 0.1)
+        res = qml.jacobian(circuit, argnum=[0, 1])(0.5, 0.1)
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 2, 2), 16],
@@ -993,7 +1018,7 @@ class TestShotList:
         assert circuit.device.shots == total_shots
 
         # test gradient works
-        res = qml.jacobian(circuit)(0.5, 0.1)
+        res = qml.jacobian(circuit, argnum=[0, 1])(0.5, 0.1)
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], [(), (2,), (3,), (10,)], 16],

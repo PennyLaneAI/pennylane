@@ -35,8 +35,8 @@ single_qubit_decomps = [
     (Z, qml.RZ, [np.pi]),
     (S, qml.RZ, [np.pi / 2]),
     (T, qml.RZ, [np.pi / 4]),
-    (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
-    (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
+    (qml.RZ(0.3, wires=0).get_matrix(), qml.RZ, [0.3]),
+    (qml.RZ(-0.5, wires=0).get_matrix(), qml.RZ, [-0.5]),
     # Next set of gates are non-diagonal and decomposed as Rots
     (
         np.array([[0, -0.98310193 + 0.18305901j], [0.98310193 + 0.18305901j, 0]]),
@@ -45,8 +45,12 @@ single_qubit_decomps = [
     ),
     (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
     (X, qml.Rot, [0.0, -np.pi, -np.pi]),
-    (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
-    (np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix, qml.Rot, [-1.0, 2.0, -3.0]),
+    (qml.Rot(0.2, 0.5, -0.3, wires=0).get_matrix(), qml.Rot, [0.2, 0.5, -0.3]),
+    (
+        np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).get_matrix(),
+        qml.Rot,
+        [-1.0, 2.0, -3.0],
+    ),
 ]
 
 # A simple quantum function for testing
@@ -82,7 +86,7 @@ class TestDecomposeSingleQubitUnitaryTransform:
         """Test that the transform ignores QubitUnitary instances that are too big
         to decompose."""
 
-        tof = qml.Toffoli(wires=[0, 1, 2]).matrix
+        tof = qml.Toffoli(wires=[0, 1, 2]).get_matrix()
 
         def qfunc():
             qml.QubitUnitary(H, wires="a")

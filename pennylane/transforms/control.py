@@ -18,7 +18,7 @@ from functools import wraps
 
 import pennylane as qml
 from pennylane.tape import QuantumTape, get_active_tape
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import DecompositionUndefinedError, Operation, AnyWires
 from pennylane.wires import Wires
 from pennylane.transforms.adjoint import adjoint
 
@@ -52,14 +52,10 @@ def expand_with_control(tape, control_wire):
                 with new_tape.stop_recording():
                     try:
                         tmp_tape = op.expand()
-
-                    except NotImplementedError:
-                        # No decomposition is defined. Create a
-                        # ControlledQubitUnitary gate using the operation
-                        # matrix representation.
+                    except DecompositionUndefinedError:
                         with QuantumTape() as tmp_tape:
                             qml.ControlledQubitUnitary(
-                                op.matrix, control_wires=control_wire, wires=op.wires
+                                op.get_matrix(), control_wires=control_wire, wires=op.wires
                             )
 
                 tmp_tape = expand_with_control(tmp_tape, control_wire)
@@ -87,11 +83,17 @@ class ControlledOperation(Operation):
         control_wires: A wire or set of wires.
     """
 
+    grad_method = None
     num_wires = AnyWires
 
     def __init__(self, tape, control_wires, do_queue=True):
         self.subtape = tape
         """QuantumTape: The tape that defines the underlying operation."""
+
+        if len(self.subtape.operations) == 1:
+            self.control_base = self.subtape.operations[0].name
+        else:
+            self.control_base = "MultipleTargets"
 
         self._control_wires = Wires(control_wires)
         """Wires: The control wires."""
@@ -109,8 +111,11 @@ class ControlledOperation(Operation):
 
     def expand(self):
         tape = self.subtape
+        tape.set_parameters(self.data)
+
         for wire in self.control_wires:
             tape = expand_with_control(tape, wire)
+
         return tape
 
     def adjoint(self):

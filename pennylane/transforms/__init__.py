@@ -81,6 +81,42 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.zyz_decomposition
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
+    ~transforms.simplify
+
+There are also utility functions that take a circuit and return a DAG.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.commutation_dag
+    ~transforms.CommutationDAG
+    ~transforms.CommutationDAGNode
+
+Transforms for circuit cutting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This transform accepts QNodes, performs circuit cutting, and returns the result of the original
+uncut circuit.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.cut_circuit
+
+The following are utility functions that compose the circuit cutting transform.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.tape_to_graph
+    ~transforms.replace_wire_cut_node
+    ~transforms.replace_wire_cut_nodes
+    ~transforms.fragment_graph
+    ~transforms.graph_to_tape
+    ~transforms.expand_fragment_tapes
+    ~transforms.contract_tensors
+    ~transforms.qcut_processing_fn
+    ~transforms.CutStrategy
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -124,7 +160,7 @@ from .classical_jacobian import classical_jacobian
 from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
-from .draw import draw, draw_mpl
+from .draw import draw, draw_mpl, draw_old
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
@@ -144,6 +180,13 @@ from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
 from .get_unitary_matrix import get_unitary_matrix
+from .commutation_dag import (
+    commutation_dag,
+    is_commuting,
+    CommutationDAG,
+    CommutationDAGNode,
+    simplify,
+)
 from .tape_expand import (
     expand_invalid_trainable,
     expand_multipar,
@@ -152,4 +195,16 @@ from .tape_expand import (
     create_expand_fn,
     create_decomp_expand_fn,
     set_decomposition,
+)
+from .qcut import (
+    tape_to_graph,
+    replace_wire_cut_node,
+    replace_wire_cut_nodes,
+    fragment_graph,
+    graph_to_tape,
+    expand_fragment_tapes,
+    contract_tensors,
+    qcut_processing_fn,
+    cut_circuit,
+    CutStrategy,
 )

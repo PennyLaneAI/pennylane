@@ -71,9 +71,9 @@ def test_get_spectrum_complains_no_generator():
     """Test that an error is raised if the operator has no generator defined."""
 
     # Observables have no generator attribute
-    with pytest.raises(ValueError, match="Generator of operation"):
+    with pytest.raises(qml.operation.GeneratorUndefinedError, match="does not have a generator"):
         get_spectrum(qml.P(wires=0), decimals=10)
 
     # CNOT is an operation where generator is an abstract property
-    with pytest.raises(ValueError, match="Generator of operation"):
+    with pytest.raises(qml.operation.GeneratorUndefinedError, match="does not have a generator"):
         get_spectrum(qml.CNOT(wires=[0, 1]), decimals=10)

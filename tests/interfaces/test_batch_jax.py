@@ -48,14 +48,14 @@ class TestJaxExecuteUnitTests:
                 [tape],
                 device,
                 gradient_fn=param_shift,
-                gradient_kwargs={"shift": np.pi / 4},
+                gradient_kwargs={"shifts": [(np.pi / 4,)] * 2},
                 interface=interface,
             )[0][0]
 
         res = jax.grad(cost)(a, device=dev)
 
         for args in spy.call_args_list:
-            assert args[1]["shift"] == np.pi / 4
+            assert args[1]["shifts"] == [(np.pi / 4,)] * 2
 
     def test_incorrect_mode(self, interface):
         """Test that an error is raised if an gradient transform
@@ -548,7 +548,7 @@ class TestJaxExecuteIntegration:
         """Test that the jax interface works correctly
         with a matrix parameter"""
         a = jnp.array(0.1)
-        U = qml.RY(a, wires=0).matrix
+        U = qml.RY(a, wires=0).get_matrix()
 
         def cost(U, device):
             with qml.tape.JacobianTape() as tape:
