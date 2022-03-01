@@ -262,6 +262,12 @@ class TestHamiltonianReturn:
     """Tests for format="hamiltonian". This format always returns the generator
     as a Hamiltonian."""
 
+    def test_observable_no_coeff(self):
+        """Test a generator that returns an observable with no coefficient is correct"""
+        gen = qml.generator(qml.PhaseShift, format="hamiltonian")(0.5, wires=0)
+        assert gen.name == "Hamiltonian"
+        assert gen.compare(1.0 * qml.PhaseShift(0.5, wires=0).generator())
+
     def test_observable(self):
         """Test a generator that returns a single observable is correct"""
         gen = qml.generator(ObservableOp, format="hamiltonian")(0.5, wires=0)
