@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ one_qubit_one_parameter = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
 class TestSingleOperation:
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
     def test_non_parametric_instantiated(self, op_class):
-        """Verify that the eigenvalues of non-parametric one qubit gates is correct
+        """Verify that the eigenvalues of non-parametric one-qubit gates are correct
         when provided as an instantiated operation"""
         op = op_class(wires=0)
         res = qml.eigvals(op)

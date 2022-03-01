@@ -93,7 +93,7 @@ def eigvals(op):
         )
         return qml.math.linalg.eigvalsh(qml.matrix(op))
 
-    # TODO: take into account for wire ordering
+    # TODO: make `get_eigvals` take a `wire_order` argument to mimic `get_matrix`
     return op.get_eigvals()
 
 
@@ -111,7 +111,7 @@ def _eigvals(tape):
         )
         return qml.math.linalg.eigvals(qml.matrix(tape))
 
-    # TODO: take into account for wire ordering, by reordering eigenvalues
+    # TODO: take into account wire ordering, by reordering eigenvalues
     # as per operator wires/wire ordering, and by inserting implicit identity
     # matrices (eigenvalues [1, 1]) at missing locations.
 
