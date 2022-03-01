@@ -36,20 +36,15 @@ class Conditional(Operation):
         self,
         expr: MeasurementValue[bool],
         then_op: Type[Operation],
-        else_op: Type[Operation] = None,
         do_queue=True,
         id=None,
     ):
         self.meas_val = expr
         self.then_op = then_op
-        self.else_op = else_op
-        if else_op and len(self.then_op.wires) != len(self.else_op.wires):
-            raise ValueError("Number of wires doesn't match.")
-
         super().__init__(wires=then_op.wires, do_queue=do_queue, id=id)
 
 
-def cond(measurement, then_op, else_op=None):
+def cond(measurement, then_op):
     """Create an operation that applies a version of the provided operation
     that is conditioned on a value dependent on quantum measurements.
 
@@ -58,8 +53,6 @@ def cond(measurement, then_op, else_op=None):
             value to consider.
         then_op (Operation): The PennyLane operation to apply if the condition
             applies.
-        else_op (Operation): The PennyLane operation to apply if the condition
-            doesn't apply.
 
     Returns:
         function: A new function that applies the controlled equivalent of ``operation``. The returned
@@ -84,10 +77,8 @@ def cond(measurement, then_op, else_op=None):
             qml.cond(m_0, qml.RZ)(sec_par, wires=1)
             return qml.expval(qml.PauliZ(1))
     """
-
     @wraps(then_op)
     def wrapper(*args, **kwargs):
-        # TODO: use else_op
         return Conditional(measurement, then_op(*args, do_queue=False, **kwargs))
 
     return wrapper
