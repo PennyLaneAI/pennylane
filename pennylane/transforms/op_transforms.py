@@ -28,20 +28,20 @@ class OperationTransformError(Exception):
 
 
 class op_transform:
-    r"""Class for registering an operator transform that takes one or more operators,
-    and returns a classical representation.
+    r"""Convert a function that applies to operators into a functional transform.
 
-    Using ``op_transform`` is not necessary in most cases; simply define a
-    standard Python function that accepts an operator and returns the
-    computed quantity.
+    This allows the operator function to be used across PennyLane
+    on both instantiated operators as well as quantum functions.
 
-    However, this registration class is useful if you wish to easily create
-    a function that:
+    By default, this decorator creates functional transforms that
+    accept a single operator. However, you can also register how the
+    transform acts on multiple operators. Once this is defined,
+    the transform can be used anywhere in PennyLane --- at the operator
+    level for operator arithmetic, or at the qfunc/QNode level.
 
-    - Supports datastructures that may contain multiple operations, such as
-      a tape, QNode, or qfunc.
+    .. warning::
 
-    - Supports being used with a functional transform UI.
+        This is an experimental feature, and is subject to change.
 
     Args:
         fn (function): The function to register as the operator transform.
@@ -95,23 +95,6 @@ class op_transform:
             tr = qml.math.trace(qml.matrix(tape))
             return qml.math.real(tr)
 
-    .. note::
-
-        If the operator transform takes additional (optional) transform parameters,
-        then the registered tape transform should take the same transform parameters.
-
-        E.g., consider a transform that takes the transform parameter ``lower``:
-
-        .. code-block:: python
-
-            @qml.op_transform
-            def name(op, lower=True):
-                return op.name().lower() if lower else op.name()
-
-            @name.tape_transform
-            def name(tape, lower=True):
-                return [name(op, lower=lower) for op in tape.operations]
-
     We can now apply this transform directly to a qfunc:
 
     >>> def circuit(x, y):
@@ -128,6 +111,23 @@ class op_transform:
 
     >>> trace(qml.StronglyEntanglingLayers)(weights, wires=[0, 1])
     0.4253851061350833
+
+    .. note::
+
+        If the operator transform takes additional (optional) transform parameters,
+        then the registered tape transform should take the same transform parameters.
+
+        E.g., consider a transform that takes the transform parameter ``lower``:
+
+        .. code-block:: python
+
+            @qml.op_transform
+            def name(op, lower=True):
+                return op.name().lower() if lower else op.name()
+
+            @name.tape_transform
+            def name(tape, lower=True):
+                return [name(op, lower=lower) for op in tape.operations]
 
     If the transformation has purely quantum output, we can register the tape transformation
     as a qfunc transformation in addition:
