@@ -77,6 +77,7 @@ def cond(measurement, then_op):
             qml.cond(m_0, qml.RZ)(sec_par, wires=1)
             return qml.expval(qml.PauliZ(1))
     """
+
     @wraps(then_op)
     def wrapper(*args, **kwargs):
         return Conditional(measurement, then_op(*args, do_queue=False, **kwargs))
