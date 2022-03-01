@@ -199,7 +199,7 @@ The decorator syntax applies equally well:
     def qnode(x, y):
         (...)
 
-Note that we can also conditionally apply an operation and specify an outcome:
+Note that we can also specify an outcome when defining a conditional operation:
 
 .. code-block:: python
 
