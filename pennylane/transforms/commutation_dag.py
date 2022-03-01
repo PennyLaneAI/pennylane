@@ -752,7 +752,7 @@ def _both_controlled(control_base, operation1, operation2):
         )
 
     # If no condition was true, return None.
-    return None
+    return None  # pragma: no cover
 
 
 def _merge_no_duplicates(*iterables):
