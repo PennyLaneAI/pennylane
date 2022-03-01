@@ -2038,7 +2038,7 @@ class TestCutCircuitTransform:
         spy = mocker.spy(qcut, "qcut_processing_fn")
         res = cut_circuit_jit(x)
 
-        assert spy.call_count == 0
+        spy.assert_not_called()
 
         res_expected = circuit(x)
         assert np.isclose(res.detach().numpy(), res_expected.detach().numpy())
