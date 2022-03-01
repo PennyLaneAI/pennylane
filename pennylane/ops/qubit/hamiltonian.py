@@ -215,9 +215,9 @@ class Hamiltonian(Observable):
         # while H.coeffs is the original tensor
         super().__init__(*coeffs_flat, wires=self._wires, id=id, do_queue=do_queue)
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         decimals = None if (len(self.parameters) > 3) else decimals
-        return super().label(decimals=decimals, base_label=base_label or "𝓗")
+        return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
 
     @property
     def coeffs(self):

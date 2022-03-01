@@ -31,7 +31,18 @@
 * The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has
   a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions,
   deprecation of the `charset` keyword, and minor cosmetic changes.
+
+* The text based drawer accessed via `qml.draw` has been overhauled.
   [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
+  [(#2198)](https://github.com/PennyLaneAI/pennylane/pull/2198)
+
+  The new drawer has:
+
+  * a `decimals` keyword for controlling parameter rounding
+  * a `show_matrices` keyword for controlling display of matrices
+  * a different algorithm for determining positions
+  * deprecation of the `charset` keyword
+  * additional minor cosmetic changes
 
   ```
   @qml.qnode(qml.device('lightning.qubit', wires=2))
@@ -105,10 +116,17 @@
   The postprocessing function for the `cut_circuit` transform has been added.
   [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
 
+  The `cut_circuit` transform has been added.
+  [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216)
+
   A class `CutStrategy` which acts as an interface and coordinates device/user
   constraints with circuit execution requirements to come up with the best sets
   of graph partitioning parameters.
   [(#2168)](https://github.com/PennyLaneAI/pennylane/pull/2168)
+
+  A suite of integration tests has been added.
+  [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
+  [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
 
 <h3>Improvements</h3>
 
@@ -166,6 +184,10 @@
 
 <h3>Bug fixes</h3>
 
+* The ``qml.ctrl`` transform now works correctly with gradient transforms
+  such as the parameter-shift rule.
+  [(#2238)](https://github.com/PennyLaneAI/pennylane/pull/2238)
+
 * Fixes a bug in which passing required arguments into operations as
   keyword arguments would throw an error because the documented call
   signature didn't match the function definition.
@@ -177,6 +199,9 @@
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
 
 <h3>Documentation</h3>
+
+* Fixes the example for `qml.QFT`.
+  [(#2232)](https://github.com/PennyLaneAI/pennylane/pull/2232)
 
 * Fixes the example for using `qml.sample` with `jax.jit`.
   [(#2196)](https://github.com/PennyLaneAI/pennylane/pull/2196)
@@ -311,6 +336,8 @@ The Operator class has undergone a major refactor with the following changes:
   for developers.
   [(#2064)](https://github.com/PennyLaneAI/pennylane/pull/2064)
 
+* Moved ``expand()`` from ``Operation`` to ``Operator``.
+  [(#2239)](https://github.com/PennyLaneAI/pennylane/pull/2239)
 
 <h3>Contributors</h3>
 
