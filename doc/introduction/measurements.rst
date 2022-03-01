@@ -174,9 +174,12 @@ mid-circuit measurements:
 A quantum function with mid-circuit measurements (defined using
 :func:`~.pennylane.measure`) and conditional operations (defined using
 :func:`~.pennylane.cond`) can be executed by applying the deferred
-measurement principle. PennyLane implements the deferred measurement principle
-to transform conditional operations with the
-:func:`~.pennylane.defer_measurements` quantum function transform.
+measurement principle. In the example above, we apply the ``qml.RY`` rotation
+if the mid-circuit measurement on qubit 0 yielded the ``1`` as an outcome.
+
+PennyLane implements the deferred measurement principle to transform
+conditional operations with the :func:`~.pennylane.defer_measurements` quantum
+function transform.
 
 .. code-block:: python
 
@@ -195,6 +198,26 @@ The decorator syntax applies equally well:
     @qml.defer_measurements
     def qnode(x, y):
         (...)
+
+Note that we can also conditionally apply an operation and specify an outcome:
+
+.. code-block:: python
+
+    @qml.qnode(dev)
+    @qml.defer_measurements
+    def qnode_conditional_op_on_zero(x, y):
+        qml.RY(x, wires=1)
+        qml.CNOT(wires=[0, 1])
+        m_0 = qml.measure(1)
+
+        qml.cond(m_0 == 0, qml.RY)(y, wires=0)
+        return qml.probs(wires=[0])
+
+    pars = np.array([0.643, 0.246], requires_grad=True)
+
+>>> qnode_conditional_op_on_zero(*pars)
+tensor([0.98645017, 0.01354983], requires_grad=True)
+
 
 Changing the number of shots
 ----------------------------
