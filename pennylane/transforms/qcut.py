@@ -995,6 +995,9 @@ def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
         tape (QuantumTape): the quantum tape whose wires should be remapped
         wires (Sequence): the new set of wires to map to
 
+    Returns:
+        QuantumTape: A remapped copy of the input tape
+
     Raises:
         ValueError: if the number of wires in ``tape`` exceeds ``len(wires)``
 
