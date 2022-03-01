@@ -24,8 +24,8 @@ def snapshots(qnode):
         qnode (.QNode): the input QNode to be simulated
 
     Returns:
-        A function that has the same argument signature as ``qnode``. When called,
-        the function will execute the QNode on the registered device and retrieve
+        A function that has the same argument signature as ``qnode`` and returns a dict.
+        When called, the function will execute the QNode on the registered device and retrieve
         the saved snapshots obtained via the ``qml.Snapshot`` operation.
 
     **Example**

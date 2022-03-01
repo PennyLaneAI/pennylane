@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 import pennylane as qml
 
@@ -91,3 +92,38 @@ class TestSnapshot:
             np.allclose(v1["means"], v2["means"])
             for v1, v2 in zip(result.values(), expected.values())
         )
+
+    def test_unsupported_device(self):
+        """Test that an error is raised on unsupported devices."""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Snapshot()
+            qml.Hadamard(wires=0)
+            qml.Snapshot("very_important_state")
+            qml.CNOT(wires=[0, 1])
+            qml.Snapshot()
+            return qml.expval(qml.PauliX(0))
+
+        # can run the circuit
+        result = circuit()
+        assert result == 0
+
+        with pytest.raises(qml.DeviceError, match="Device does not support snapshots."):
+            qml.snapshots(circuit)()
+
+    def test_empty_snapshots(self):
+        """Test that snapshots function in the absence of any Snapshot operations."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
+
+        result = qml.snapshots(circuit)()
+        expected = {}
+
+        assert result == expected

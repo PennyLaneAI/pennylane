@@ -22,8 +22,17 @@ from pennylane.operation import AnyWires, AllWires, Operation
 class Snapshot(Operation):
     r"""
     The Snapshot operation preserves the internal simulator state at specific
-    execution steps of a quantum function. As such it is a pseudo operation
-    with no affect on the quantum state.
+    execution steps of a quantum function. As such, it is a pseudo operation
+    with no effect on the quantum state.
+
+    **Details:**
+
+    * Number of wires: AllWires
+    * Number of parameters: 0
+
+    Args:
+        tag (str or None): An optional custom tag for the snapshot, used to index it
+                           in the snapshots dictionary.
     """
     num_wires = AnyWires
     num_params = 0

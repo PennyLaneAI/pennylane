@@ -31,8 +31,6 @@
 * The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has
   a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions,
   deprecation of the `charset` keyword, and minor cosmetic changes.
-
-* The text based drawer accessed via `qml.draw` has been overhauled.
   [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
   [(#2198)](https://github.com/PennyLaneAI/pennylane/pull/2198)
 
@@ -108,7 +106,7 @@
   A differentiable tensor contraction function `contract_tensors` has been
   added.
   [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
-  
+
   A method has been added that expands a quantum tape over `MeasureNode` and `PrepareNode`
   configurations.
   [(#2169)](https://github.com/PennyLaneAI/pennylane/pull/2169)
@@ -139,7 +137,7 @@
   efficiently measuring the `N`-qubit Pauli group with `3 ** N`
   qubit-wise commuting terms.
   [(#2185)](https://github.com/PennyLaneAI/pennylane/pull/2185)
-  
+
   ```pycon
   >>> qml.grouping.partition_pauli_group(3)
   [['III', 'IIZ', 'IZI', 'IZZ', 'ZII', 'ZIZ', 'ZZI', 'ZZZ'],
@@ -174,7 +172,7 @@
 <h3>Breaking changes</h3>
 
 * The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
-  The single `wires` keyword should be all the control wires followed by a single target wire. 
+  The single `wires` keyword should be all the control wires followed by a single target wire.
   [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
 
 <h3>Deprecations</h3>
@@ -346,4 +344,3 @@ This release contains contributions from (in alphabetical order):
 Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
 Maria Fernanda Morris, Zeyue Niu, Maria Schuld, Jay Soni, Antal Száva,
 David Wierichs
-
