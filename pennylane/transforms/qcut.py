@@ -965,7 +965,7 @@ def cut_circuit(
     num_cut = len([op for op in tape.operations if isinstance(op, WireCut)])
     if num_cut == 0:
         raise ValueError(
-            "Attempting to apply the circuit cutting workflow to a circuit without any cuts"
+            "Cannot apply the circuit cutting workflow to a circuit without any cuts"
         )
 
     g = tape_to_graph(tape)
