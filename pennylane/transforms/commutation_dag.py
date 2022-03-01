@@ -534,9 +534,9 @@ def is_commuting(operation1, operation2):
     
         Unsupported qubit-based operations include:
 
-    :class:`qml.PauliRot`, :class:`qml.QubitDensityMatrix`, :class:`qml.CVNeuralNetLayers`,
-    :class:`qml.ApproxTimeEvolution`, :class:`qml.ArbitraryUnitary`, :class:`qml.CommutingEvolution`,
-    :class:`qml.DisplacementEmbedding` and :class:`qml.SqueezingEmbedding`.
+    :class:`~.PauliRot`, :class:`~.QubitDensityMatrix`, :class:`~.CVNeuralNetLayers`,
+    :class:`~.ApproxTimeEvolution`, :class:`~.ArbitraryUnitary`, :class:`~.CommutingEvolution`,
+    :class:`~.DisplacementEmbedding` and :class:`~.SqueezingEmbedding`.
 
     Args:
         operation1 (.Operation): A first quantum operation.
