@@ -2006,107 +2006,56 @@ class TestCutCircuitTransform:
 
         assert np.isclose(gradient, cut_gradient)
 
-    def test_simple_cut_circuit_torch(self, use_opt_einsum):
-        """
-        Tests the full circuit cutting pipeline returns the correct value and
-        gradient for a simple circuit using the `cut_circuit` transform with the torch interface.
-        """
-        torch = pytest.importorskip("torch")
 
-        dev = qml.device("default.qubit", wires=2)
+class TestCutCircuitTransformValidation:
+    """Tests of validation checks in the cut_circuit function"""
 
-        @qml.qnode(dev, interface="torch")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.RY(0.543, wires=1)
-            qml.WireCut(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(0.240, wires=0)
-            qml.RZ(0.133, wires=1)
-            return qml.expval(qml.PauliZ(wires=[0]))
+    def test_multiple_measurements_raises(self):
+        """Tests if a ValueError is raised when a tape with multiple measurements is requested
+        to be cut"""
 
-        x = torch.tensor(0.531, requires_grad=True)
-        cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
+        with qml.tape.QuantumTape() as tape:
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(1))
 
-        res = cut_circuit(x)
-        res_expected = circuit(x)
-        assert np.isclose(res.detach().numpy(), res_expected.detach().numpy())
+        with pytest.raises(ValueError, match="The circuit cutting workflow only supports circuits"):
+            qcut.cut_circuit(tape)
 
-        res.backward()
-        grad = x.grad.detach().numpy()
+    def test_no_measurements_raises(self):
+        """Tests if a ValueError is raised when a tape with no measurement is requested
+        to be cut"""
+        with pytest.raises(ValueError, match="The circuit cutting workflow only supports circuits"):
+            qcut.cut_circuit(qml.tape.QuantumTape())
 
-        x.grad = None
-        res_expected.backward()
-        grad_expected = x.grad.detach().numpy()
+    def test_non_expectation_raises(self):
+        """Tests if a ValueError is raised when a tape with measurements that are not expectation
+        values is requested to be cut"""
 
-        assert np.isclose(grad, grad_expected)
+        with qml.tape.QuantumTape() as tape:
+            qml.var(qml.PauliZ(0))
 
-    def test_simple_cut_circuit_tf(self, use_opt_einsum):
-        """
-        Tests the full circuit cutting pipeline returns the correct value and
-        gradient for a simple circuit using the `cut_circuit` transform with the TF interface.
-        """
-        tf = pytest.importorskip("tensorflow")
+        with pytest.raises(ValueError, match="workflow only supports circuits with expectation"):
+            qcut.cut_circuit(tape)
 
-        dev = qml.device("default.qubit", wires=2)
+    def test_fail_import(self, monkeypatch):
+        """Test if an ImportError is raised when opt_einsum is requested but not installed"""
+        with qml.tape.QuantumTape() as tape:
+            qml.expval(qml.PauliZ(0))
 
-        @qml.qnode(dev, interface="tf")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.RY(0.543, wires=1)
-            qml.WireCut(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(0.240, wires=0)
-            qml.RZ(0.133, wires=1)
-            return qml.expval(qml.PauliZ(wires=[0]))
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "opt_einsum", None)
 
-        x = tf.Variable(0.531)
-        cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
+            with pytest.raises(ImportError, match="The opt_einsum package is required"):
+                qcut.cut_circuit(tape, use_opt_einsum=True)
 
-        with tf.GradientTape() as tape:
-            res = cut_circuit(x)
+    def test_no_cuts_raises(self):
+        """Tests if a ValueError is raised when circuit cutting is to be applied to a circuit
+        without cuts"""
+        with qml.tape.QuantumTape() as tape:
+            qml.expval(qml.PauliZ(0))
 
-        grad = tape.gradient(res, x)
-
-        with tf.GradientTape() as tape:
-            res_expected = circuit(x)
-
-        grad_expected = tape.gradient(res_expected, x)
-
-        assert np.isclose(res, res_expected)
-        assert np.isclose(grad, grad_expected)
-
-    def test_simple_cut_circuit_jax(self, use_opt_einsum):
-        """
-        Tests the full circuit cutting pipeline returns the correct value and
-        gradient for a simple circuit using the `cut_circuit` transform with the Jax interface.
-        """
-        jax = pytest.importorskip("jax")
-        import jax.numpy as jnp
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev, interface="jax")
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.RY(0.543, wires=1)
-            qml.WireCut(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RZ(0.240, wires=0)
-            qml.RZ(0.133, wires=1)
-            return qml.expval(qml.PauliZ(wires=[0]))
-
-        x = jnp.array(0.531)
-        cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
-
-        res = cut_circuit(x)
-        res_expected = circuit(x)
-
-        grad = jax.grad(cut_circuit)(x)
-        grad_expected = jax.grad(circuit)(x)
-
-        assert np.isclose(res, res_expected)
-        assert np.isclose(grad, grad_expected)
+        with pytest.raises(ValueError, match="to a circuit without any cuts"):
+            qcut.cut_circuit(tape)
 
 
 class TestCutStrategy:
