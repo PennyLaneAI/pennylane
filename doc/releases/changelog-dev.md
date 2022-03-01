@@ -6,7 +6,7 @@
 
 * Transform a circuit from quantum tape, quantum function or quantum node to a pairwise
   commutation DAG (directed acyclic graph). The node represents the quantum operations, and the edges represent 
-  non commutation.
+  non commutation between two operations.
   [(#1712)](https://github.com/PennyLaneAI/pennylane/pull/1712)
   
   From the following quantum function,
