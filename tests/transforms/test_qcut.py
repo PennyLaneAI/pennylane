@@ -2004,6 +2004,57 @@ class TestCutCircuitTransform:
         assert np.isclose(gradient, cut_gradient)
 
 
+class TestCutCircuitTransformValidation:
+    """Tests of validation checks in the cut_circuit function"""
+
+    def test_multiple_measurements_raises(self):
+        """Tests if a ValueError is raised when a tape with multiple measurements is requested
+        to be cut"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.expval(qml.PauliZ(0))
+            qml.expval(qml.PauliZ(1))
+
+        with pytest.raises(ValueError, match="The circuit cutting workflow only supports circuits"):
+            qcut.cut_circuit(tape)
+
+    def test_no_measurements_raises(self):
+        """Tests if a ValueError is raised when a tape with no measurement is requested
+        to be cut"""
+        with pytest.raises(ValueError, match="The circuit cutting workflow only supports circuits"):
+            qcut.cut_circuit(qml.tape.QuantumTape())
+
+    def test_non_expectation_raises(self):
+        """Tests if a ValueError is raised when a tape with measurements that are not expectation
+        values is requested to be cut"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.var(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="workflow only supports circuits with expectation"):
+            qcut.cut_circuit(tape)
+
+    def test_fail_import(self, monkeypatch):
+        """Test if an ImportError is raised when opt_einsum is requested but not installed"""
+        with qml.tape.QuantumTape() as tape:
+            qml.expval(qml.PauliZ(0))
+
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "opt_einsum", None)
+
+            with pytest.raises(ImportError, match="The opt_einsum package is required"):
+                qcut.cut_circuit(tape, use_opt_einsum=True)
+
+    def test_no_cuts_raises(self):
+        """Tests if a ValueError is raised when circuit cutting is to be applied to a circuit
+        without cuts"""
+        with qml.tape.QuantumTape() as tape:
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="to a circuit without any cuts"):
+            qcut.cut_circuit(tape)
+
+
 class TestCutStrategy:
     """Tests for class CutStrategy"""
 
