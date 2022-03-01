@@ -27,10 +27,10 @@ from pennylane.wires import Wires
 
 def commutation_dag(circuit):
     r"""Construct the pairwise-commutation DAG (directed acyclic graph) representation of a quantum circuit.
-    
+
     In the DAG, each node represents a quantum operation, and edges edge represent
     non-commutation between two operations.
-    
+
     This transform takes into account that not all
     operations can be moved next to each other by pairwise commutation.
 
@@ -523,15 +523,15 @@ non_commuting_operations = [
 
 def is_commuting(operation1, operation2):
     r"""Check if two operations are commuting using a lookup table.
-    
+
     A lookup table is used to check the commutation between the
     controlled, targeted part of operation 1 with the controlled, targeted part of operation 2.
-    
+
     .. note::
-    
+
         Most qubit-based PennyLane operations are supported --- CV operations
         are not supported at this time.
-    
+
         Unsupported qubit-based operations include:
 
     :class:`~.PauliRot`, :class:`~.QubitDensityMatrix`, :class:`~.CVNeuralNetLayers`,
