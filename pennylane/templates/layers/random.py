@@ -101,8 +101,6 @@ class RandomLayers(Operation):
         To change the randomly generated circuit architecture, you have to change the seed passed to the template.
         For example, these two calls of ``RandomLayers`` *do not* create the same circuit:
 
-        .. code-block:: python
-
         >>> @qml.qnode(dev)
         ... def circuit(weights, seed=None):
         ...     qml.RandomLayers(weights=weights, wires=range(2), seed=seed)
