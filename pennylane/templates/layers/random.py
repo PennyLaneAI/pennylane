@@ -237,7 +237,7 @@ class RandomLayers(Operation):
             np.random.seed(seed)
 
         shape = qml.math.shape(weights)
-        n_layers = shape[0]
+        n_layers = qml.math.shape(weights)[0]
         op_list = []
 
         for l in range(n_layers):
