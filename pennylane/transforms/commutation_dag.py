@@ -612,9 +612,7 @@ def is_commuting(operation1, operation2):
 
     # Case 2 both operations are controlled
     if control_base.get(operation1.name) and control_base.get(operation2.name):
-        res = _both_controlled(control_base, operation1, operation2)
-        if res is not None:
-            return res
+        return _both_controlled(control_base, operation1, operation2)
 
     # Case 3: only operation 1 is controlled
     elif control_base.get(operation1.name):
@@ -750,9 +748,6 @@ def _both_controlled(control_base, operation1, operation2):
             and bool(commutation_map["ctrl"][position[control_base_2]])
             and bool(commutation_map[control_base_1][position[control_base_2]])
         )
-
-    # If no condition was true, return None.
-    return None  # pragma: no cover
 
 
 def _merge_no_duplicates(*iterables):
