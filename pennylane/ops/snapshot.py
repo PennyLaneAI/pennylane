@@ -51,6 +51,7 @@ class Snapshot(Operation):
     def compute_decomposition(*params, wires=None, **hyperparameters):
         return []
 
+    #TODO: remove once pennylane-lightning#242 is resolved
     @staticmethod
     def compute_matrix(*params, **hyperparams):
         return np.eye(2)
