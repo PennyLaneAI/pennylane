@@ -1,3 +1,19 @@
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Unit tests for the debugging module.
+"""
 import pytest
 import numpy as np
 import pennylane as qml
@@ -19,11 +35,15 @@ class TestSnapshot:
             qml.Snapshot()
             return qml.expval(qml.PauliX(0))
 
+        circuit()
+        assert dev.debugger is None
+
         result = qml.snapshots(circuit)()
         expected = {
             0: np.array([1, 0, 0, 0]),
             "very_important_state": np.array([1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]),
             2: np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]),
+            "execution_results": np.array(0),
         }
 
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
@@ -42,6 +62,9 @@ class TestSnapshot:
             qml.Snapshot()
             return qml.expval(qml.PauliX(0))
 
+        circuit()
+        assert dev.debugger is None
+
         result = qml.snapshots(circuit)()
         expected = {
             0: np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]),
@@ -49,6 +72,7 @@ class TestSnapshot:
                 [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
             ),
             2: np.array([[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]),
+            "execution_results": np.array(0),
         }
 
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
@@ -67,6 +91,9 @@ class TestSnapshot:
             qml.Snapshot()
             return qml.expval(qml.X(0))
 
+        circuit()
+        assert dev.debugger is None
+
         result = qml.snapshots(circuit)()
         expected = {
             0: {
@@ -81,17 +108,19 @@ class TestSnapshot:
                 "cov_matrix": np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
                 "means": np.array([0.87758256, 0.36668488, 0, 0.30885441]),
             },
+            "execution_results": np.array(0.87758256),
         }
 
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
         assert all(
             np.allclose(v1["cov_matrix"], v2["cov_matrix"])
-            for v1, v2 in zip(result.values(), expected.values())
+            for v1, v2 in zip(result.values()[:-1], expected.values()[:-1])
         )
         assert all(
             np.allclose(v1["means"], v2["means"])
-            for v1, v2 in zip(result.values(), expected.values())
+            for v1, v2 in zip(result.values()[:-1], expected.values()[:-1])
         )
+        assert np.allclose(result["execution_results"], expected["execution_results"])
 
     def test_unsupported_device(self):
         """Test that an error is raised on unsupported devices."""
@@ -124,6 +153,6 @@ class TestSnapshot:
             return qml.expval(qml.PauliX(0))
 
         result = qml.snapshots(circuit)()
-        expected = {}
+        expected = {"execution_results": np.array(0)}
 
         assert result == expected

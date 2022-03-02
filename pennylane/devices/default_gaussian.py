@@ -690,7 +690,7 @@ class DefaultGaussian(Device):
         super().__init__(wires, shots, analytic=analytic)
         self.eng = None
         self.hbar = hbar
-        self.snapshots = {}
+        self.debugger = None
 
         self.reset()
 
@@ -731,10 +731,9 @@ class DefaultGaussian(Device):
             return  # we are done here
 
         if operation == "Snapshot":
-            self.snapshots[len(self.snapshots)] = {
-                "cov_matrix": self._state[0].copy(),
-                "means": self._state[1].copy(),
-            }
+            if self.debugger and self.debugger.active:
+                gaussian = {"cov_matrix": self._state[0].copy(), "means": self._state[1].copy()}
+                self.debugger.snapshots[len(self.debugger.snapshots)] = gaussian
             return  # we are done here
 
         if "State" in operation:

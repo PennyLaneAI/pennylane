@@ -121,11 +121,11 @@ class DefaultMixed(QubitDevice):
 
         # call QubitDevice init
         super().__init__(wires, shots, cache=cache, analytic=analytic)
+        self.debugger = None
 
         # Create the initial state.
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
-        self.snapshots = {}
 
     def _create_basis_state(self, index):
         """Return the density matrix representing a computational basis state over all wires.
@@ -473,12 +473,13 @@ class DefaultMixed(QubitDevice):
             return
 
         if isinstance(operation, Snapshot):
-            dim = 2**self.num_wires
-            density_matrix = self._reshape(self._state, (dim, dim))
-            if operation.tag:
-                self.snapshots[operation.tag] = density_matrix
-            else:
-                self.snapshots[len(self.snapshots)] = density_matrix
+            if self.debugger and self.debugger.active:
+                dim = 2**self.num_wires
+                density_matrix = self._reshape(self._state, (dim, dim))
+                if operation.tag:
+                    self.debugger.snapshots[operation.tag] = density_matrix
+                else:
+                    self.debugger.snapshots[len(self.debugger.snapshots)] = density_matrix
             return
 
         matrices = self._get_kraus(operation)
