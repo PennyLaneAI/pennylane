@@ -24,7 +24,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.measure import MeasurementProcess
+from pennylane.measurements import MeasurementProcess
 from pennylane.tape import QuantumTape
 
 from .qubit_param_shift import QubitParamShiftTape

@@ -25,7 +25,7 @@ from pennylane.drawer.grid import Grid, _transpose
 from pennylane.drawer.charsets import CHARSETS, UnicodeCharSet, AsciiCharSet
 from pennylane.wires import Wires
 
-from pennylane.measure import state
+from pennylane.measurements import state
 
 
 class TestFunctions:

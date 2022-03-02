@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the @op_transform decorator.
+This module contains the op_transform decorator.
 """
 # pylint: disable=protected-access
 import functools
@@ -24,77 +24,24 @@ import pennylane as qml
 
 
 class OperationTransformError(Exception):
-    """Raised when there is an error with op_transform logic"""
-
-
-def _make_tape(obj, wire_order, *args, **kwargs):
-    """Given an input object, which may be:
-
-    - an object such as a tape or a operation, or
-    - a callable such as a QNode or a quantum function
-      (alongside the callable arguments ``args`` and ``kwargs``),
-
-    this function constructs and returns the tape/operation
-    represented by the object.
-
-    The ``wire_order`` argument determines whether a custom wire ordering
-    should be used. It not provided, the wire ordering defaults to the
-    objects wire ordering accessed via ``obj.wires``.
-    """
-    if isinstance(obj, qml.QNode):
-        # user passed a QNode, get the tape
-        obj.construct(args, kwargs)
-        tape = obj.qtape
-        wires = obj.device.wires
-
-    elif isinstance(obj, qml.tape.QuantumTape):
-        # user passed a tape
-        tape = obj
-        wires = tape.wires
-
-    elif inspect.isclass(obj) and issubclass(obj, qml.operation.Operator):
-        with qml.tape.stop_recording():
-            tape = obj(*args, **kwargs)
-
-        wires = tape.wires
-
-    elif callable(obj):
-        # user passed something that is callable but not a tape or QNode.
-        tape = qml.transforms.make_tape(obj)(*args, **kwargs)
-        wires = tape.wires
-
-        # raise exception if it is not a quantum function
-        if len(tape.operations) == 0 and len(tape.measurements) == 0:
-            raise OperationTransformError("Quantum function contains no quantum operations")
-
-    # if no wire ordering is specified, take wire list from tape/device
-    wire_order = wires if wire_order is None else qml.wires.Wires(wire_order)
-
-    # check that all wire labels in the circuit are contained in wire_order
-    if not set(tape.wires).issubset(wire_order):
-        raise OperationTransformError(
-            f"Wires in circuit {tape.wires.tolist()} are inconsistent with "
-            f"those in wire_order {wire_order.tolist()}"
-        )
-
-    return tape, wire_order
+    """Raised when there is an error with the op_transform logic"""
 
 
 class op_transform:
-    r"""Class for registering an operator transform that takes one or more operators,
-    and returns a classical representation.
+    r"""Convert a function that applies to operators into a functional transform.
 
-    Using ``op_transform`` is not necessary in most cases; simply define a
-    standard Python function that accepts an operator and returns the
-    computed quantity.
+    This allows the operator function to be used across PennyLane
+    on both instantiated operators as well as quantum functions.
 
-    However, this registration class is useful if you wish to easily create
-    a function that:
+    By default, this decorator creates functional transforms that
+    accept a single operator. However, you can also register how the
+    transform acts on multiple operators. Once this is defined,
+    the transform can be used anywhere in PennyLane --- at the operator
+    level for operator arithmetic, or at the qfunc/QNode level.
 
-    - Supports datastructures that may contain multiple operations, such as
-      a tape, QNode, or qfunc.
+    .. warning::
 
-    - Supports being used with a functional transform UI.
+        This is an experimental feature, and is subject to change.
 
     Args:
         fn (function): The function to register as the operator transform.
@@ -148,11 +95,6 @@ class op_transform:
             tr = qml.math.trace(qml.matrix(tape))
             return qml.math.real(tr)
 
-    .. note::
-
-        The registered tape transform should have the same parameters as the
-        original operation transform function.
-
     We can now apply this transform directly to a qfunc:
 
     >>> def circuit(x, y):
@@ -169,6 +111,23 @@ class op_transform:
 
     >>> trace(qml.StronglyEntanglingLayers)(weights, wires=[0, 1])
     0.4253851061350833
+
+    .. note::
+
+        If the operator transform takes additional (optional) transform parameters,
+        then the registered tape transform should take the same transform parameters.
+
+        E.g., consider a transform that takes the transform parameter ``lower``:
+
+        .. code-block:: python
+
+            @qml.op_transform
+            def name(op, lower=True):
+                return op.name().lower() if lower else op.name()
+
+            @name.tape_transform
+            def name(tape, lower=True):
+                return [name(op, lower=lower) for op in tape.operations]
 
     If the transformation has purely quantum output, we can register the tape transformation
     as a qfunc transformation in addition:
@@ -246,6 +205,8 @@ class op_transform:
         obj = None
 
         if targs:
+            # assume the first argument passed to the transform
+            # is the object we wish to transform
             obj, *targs = targs
 
         if isinstance(obj, (qml.operation.Operator, qml.tape.QuantumTape)) or callable(obj):
@@ -254,6 +215,7 @@ class op_transform:
         # Input is not an operator nor a QNode nor a quantum tape nor a qfunc.
         # Assume Python decorator syntax:
         #
+        # op_func = op_transform(op_func)
         # result = op_func(*transform_args)(obj)(*obj_args)
         #
         # or
@@ -312,7 +274,7 @@ class op_transform:
                 raise e1 from None
 
     def tape_fn(self, obj, *args, **kwargs):
-        """Evaluate the underlying tape transform function.
+        """The tape transform function.
 
         This is the function that is called if a datastructure is passed
         that contains multiple operations.
@@ -437,6 +399,9 @@ class op_transform:
         return self
 
     def _create_wrapper(self, obj, *targs, wire_order=None, **tkwargs):
+        """Create a wrapper function that, when evaluated, transforms
+        ``obj`` according to transform arguments ``*targs`` and ``**tkwargs``
+        """
 
         if isinstance(obj, qml.operation.Operator):
             # Input is a single operation.
@@ -448,7 +413,7 @@ class op_transform:
 
         elif isinstance(obj, qml.tape.QuantumTape):
             # Input is a quantum tape. Get the quantum tape.
-            tape, verified_wire_order = _make_tape(obj, wire_order)
+            tape, verified_wire_order = self._make_tape(obj, wire_order)
 
             if wire_order is not None:
                 tkwargs["wire_order"] = verified_wire_order
@@ -456,10 +421,11 @@ class op_transform:
             wrapper = self.tape_fn(tape, *targs, **tkwargs)
 
         elif callable(obj):
-            # Input is a QNode, or qfunc. Get the quantum tape.
+            # Input is a QNode, or qfunc (including single-operation qfuncs).
+            # Get the quantum tape.
             def wrapper(*args, **kwargs):
                 nonlocal wire_order
-                tape, verified_wire_order = _make_tape(obj, wire_order, *args, **kwargs)
+                tape, verified_wire_order = self._make_tape(obj, wire_order, *args, **kwargs)
 
                 # HOTFIX: some operator transforms return a tape containing
                 # a single transformed operator. As a result, for now we need
@@ -479,6 +445,8 @@ class op_transform:
                     return self.fn(tape, *targs, **tkwargs)
 
                 if self.is_qfunc_transform:
+                    # we must evaluate the qfunc transform at the original
+                    # function arguments
                     return self.tape_fn(obj, *kwargs, **tkwargs)(*args, **kwargs)
 
                 return self.tape_fn(tape, *targs, **tkwargs)
@@ -489,3 +457,59 @@ class op_transform:
             )
 
         return wrapper
+
+    @staticmethod
+    def _make_tape(obj, wire_order, *args, **kwargs):
+        """Given an input object, which may be:
+
+        - an object such as a tape or a operation, or
+        - a callable such as a QNode or a quantum function
+          (alongside the callable arguments ``args`` and ``kwargs``),
+
+        this function constructs and returns the tape/operation
+        represented by the object.
+
+        The ``wire_order`` argument determines whether a custom wire ordering
+        should be used. If not provided, the wire ordering defaults to the
+        objects wire ordering accessed via ``obj.wires``.
+
+        Returns:
+            tuple[.QuantumTape, Wires]: returns the tape and the verified wire order
+        """
+        if isinstance(obj, qml.QNode):
+            # user passed a QNode, get the tape
+            obj.construct(args, kwargs)
+            tape = obj.qtape
+            wires = obj.device.wires
+
+        elif isinstance(obj, qml.tape.QuantumTape):
+            # user passed a tape
+            tape = obj
+            wires = tape.wires
+
+        elif inspect.isclass(obj) and issubclass(obj, qml.operation.Operator):
+            with qml.tape.stop_recording():
+                tape = obj(*args, **kwargs)
+
+            wires = tape.wires
+
+        elif callable(obj):
+            # user passed something that is callable but not a tape or QNode.
+            tape = qml.transforms.make_tape(obj)(*args, **kwargs)
+            wires = tape.wires
+
+            # raise exception if it is not a quantum function
+            if len(tape.operations) == 0 and len(tape.measurements) == 0:
+                raise OperationTransformError("Quantum function contains no quantum operations")
+
+        # if no wire ordering is specified, take wire list from tape/device
+        wire_order = wires if wire_order is None else qml.wires.Wires(wire_order)
+
+        # check that all wire labels in the circuit are contained in wire_order
+        if not set(tape.wires).issubset(wire_order):
+            raise OperationTransformError(
+                f"Wires in circuit {tape.wires.tolist()} are inconsistent with "
+                f"those in wire_order {wire_order.tolist()}"
+            )
+
+        return tape, wire_order
