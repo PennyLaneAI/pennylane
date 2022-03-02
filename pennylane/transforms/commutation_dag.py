@@ -244,11 +244,11 @@ def simplify_u2(u2):
     wires = u2.wires
 
     if np.allclose(np.mod(u2.data[1], 2 * np.pi), 0) and np.allclose(
-            np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
+        np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
     ):
         return qml.RY(np.pi / 2, wires=wires)
     if np.allclose(np.mod(u2.data[1], np.pi / 2), 0) and np.allclose(
-            np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
+        np.mod(u2.data[0] + u2.data[1], 2 * np.pi), 0
     ):
         return qml.RX(u2.data[1], wires=wires)
 
@@ -272,9 +272,9 @@ def simplify_u3(u3):
     if np.allclose(p0, 0) and not np.allclose(p1, 0) and np.allclose(p2, 0):
         return qml.PhaseShift(u3.data[1], wires=wires)
     if (
-            np.allclose(p2, np.pi / 2)
-            and np.allclose(np.mod(u3.data[1] + u3.data[2], 2 * np.pi), 0)
-            and not np.allclose(p0, 0)
+        np.allclose(p2, np.pi / 2)
+        and np.allclose(np.mod(u3.data[1] + u3.data[2], 2 * np.pi), 0)
+        and not np.allclose(p0, 0)
     ):
         return qml.RX(u3.data[0], wires=wires)
     if not np.allclose(p0, 0) and np.allclose(p1, 0) and np.allclose(p2, 0):
@@ -405,7 +405,7 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
     """
     # Two non simplified rotations
     if (operation1.name in ["U2", "U3", "Rot", "CRot"]) and (
-            operation2.name in ["U2", "U3", "Rot", "CRot"]
+        operation2.name in ["U2", "U3", "Rot", "CRot"]
     ):
         target_wires_1 = qml.wires.Wires(
             [w for w in operation1.wires if w not in operation1.control_wires]
@@ -558,12 +558,12 @@ def is_commuting(operation1, operation2):
     }
 
     if operation1.name in unsupported_operations or isinstance(
-            operation1, (qml.operation.CVOperation, qml.operation.Channel)
+        operation1, (qml.operation.CVOperation, qml.operation.Channel)
     ):
         raise qml.QuantumFunctionError(f"Operation {operation1.name} not supported.")
 
     if operation2.name in unsupported_operations or isinstance(
-            operation2, (qml.operation.CVOperation, qml.operation.Channel)
+        operation2, (qml.operation.CVOperation, qml.operation.Channel)
     ):
         raise qml.QuantumFunctionError(f"Operation {operation2.name} not supported.")
 
@@ -745,9 +745,9 @@ def _both_controlled(control_base, operation1, operation2):
     # Case 2.9: targets and controls overlap with targets and controls
     # equivalent to target_control and control_target and target_target:
     return (
-            bool(commutation_map[control_base_1][position["ctrl"]])
-            and bool(commutation_map["ctrl"][position[control_base_2]])
-            and bool(commutation_map[control_base_1][position[control_base_2]])
+        bool(commutation_map[control_base_1][position["ctrl"]])
+        and bool(commutation_map["ctrl"][position[control_base_2]])
+        and bool(commutation_map[control_base_1][position[control_base_2]])
     )
 
 
@@ -796,15 +796,15 @@ class CommutationDAGNode:
     ]
 
     def __init__(
-            self,
-            op=None,
-            wires=None,
-            target_wires=None,
-            control_wires=None,
-            successors=None,
-            predecessors=None,
-            reachable=None,
-            node_id=-1,
+        self,
+        op=None,
+        wires=None,
+        target_wires=None,
+        control_wires=None,
+        successors=None,
+        predecessors=None,
+        reachable=None,
+        node_id=-1,
     ):
         self.op = op
         """Operation: The operation represented by the nodes."""
@@ -1008,15 +1008,15 @@ class CommutationDAG:
         for node in self.get_nodes():
             wires = ",".join([" " + str(elem) for elem in node[1].op.wires.tolist()])
             label = (
-                    "ID: "
-                    + str(node[0])
-                    + "\n"
-                    + "Op: "
-                    + node[1].op.name
-                    + "\n"
-                    + "Wires: ["
-                    + wires[1::]
-                    + "]"
+                "ID: "
+                + str(node[0])
+                + "\n"
+                + "Op: "
+                + node[1].op.name
+                + "\n"
+                + "Wires: ["
+                + wires[1::]
+                + "]"
             )
             draw_graph.add_node(
                 node[0], label=label, color="blue", style="filled", fillcolor="lightblue"
@@ -1062,7 +1062,7 @@ class CommutationDAG:
 
         for prev_node_id in range(max_node_id - 1, -1, -1):
             if self.get_node(prev_node_id).reachable and not is_commuting(
-                    self.get_node(prev_node_id).op, max_node
+                self.get_node(prev_node_id).op, max_node
             ):
                 self.add_edge(prev_node_id, max_node_id)
                 self._pred_update(max_node_id)
