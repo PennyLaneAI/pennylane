@@ -66,9 +66,9 @@ class Permute(Operation):
 
         >>> print(qml.draw(apply_perm, expansion_strategy="device")())
         0: ─╭SWAP─────────────┤  <Z>
-        1: ─│─────╭SWAP───────┤     
-        2: ─│─────╰SWAP─╭SWAP─┤     
-        3: ─╰SWAP───────╰SWAP─┤     
+        1: ─│─────╭SWAP───────┤
+        2: ─│─────╰SWAP─╭SWAP─┤
+        3: ─╰SWAP───────╰SWAP─┤
 
         ``Permute`` can also be used with quantum tapes. For example, suppose we
         have a tape with 5 wires ``[0, 1, 2, 3, 4]``, and we'd like to reorder them
@@ -84,11 +84,11 @@ class Permute(Operation):
 
         >>> tape_expanded = qml.tape.tape.expand_tape(tape)
         >>> print(qml.drawer.tape_text(tape_expanded, wire_order=range(5)))
-        0: ─╭SWAP───────────────────┤  
-        1: ─│─────╭SWAP─────────────┤  
-        2: ─│─────╰SWAP─╭SWAP───────┤  
-        3: ─│───────────│─────╭SWAP─┤  
-        4: ─╰SWAP───────╰SWAP─╰SWAP─┤  
+        0: ─╭SWAP───────────────────┤
+        1: ─│─────╭SWAP─────────────┤
+        2: ─│─────╰SWAP─╭SWAP───────┤
+        3: ─│───────────│─────╭SWAP─┤
+        4: ─╰SWAP───────╰SWAP─╰SWAP─┤
 
         ``Permute`` can also be applied to wires with arbitrary labels, like so:
 
@@ -106,9 +106,9 @@ class Permute(Operation):
         The permuted circuit is:
 
         >>> print(qml.draw(circuit, expansion_strategy="device")())
-        3: ─╭SWAP─────────────┤     
-        2: ─│─────╭SWAP───────┤     
-        0: ─│─────│─────╭SWAP─┤     
+        3: ─╭SWAP─────────────┤
+        2: ─│─────╭SWAP───────┤
+        0: ─│─────│─────╭SWAP─┤
         c: ─╰SWAP─╰SWAP─╰SWAP─┤  <Z>
 
         It is also possible to permute a subset of wires by
@@ -129,10 +129,10 @@ class Permute(Operation):
         will permute only the second, third, and fifth wires as follows:
 
         >>> print(qml.draw(circuit, expansion_strategy="device", show_all_wires=True)())
-        3: ─────────────┤     
-        2: ─╭SWAP───────┤     
-        a: ─│───────────┤     
-        0: ─│─────╭SWAP─┤     
+        3: ─────────────┤
+        2: ─╭SWAP───────┤
+        a: ─│───────────┤
+        0: ─│─────╭SWAP─┤
         c: ─╰SWAP─╰SWAP─┤  <Z>
 
     """

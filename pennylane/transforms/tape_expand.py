@@ -82,11 +82,11 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
 
     >>> new_tape = expand_fn(tape)
     >>> print(qml.drawer.tape_text(tape, decimals=1))
-    0: ──RX(0.2)───Rot(1.7,0.9,-1.1)─┤  
-    1: ──RX(-2.4)──Rot(-3.1,0.7,1.4)─┤  
+    0: ──RX(0.2)───Rot(1.7,0.9,-1.1)─┤
+    1: ──RX(-2.4)──Rot(-3.1,0.7,1.4)─┤
     >>> print(qml.drawer.tape_text(new_tape, decimals=1))
-    0: ──RX(0.2)───Rot(1.7,0.9,-1.1)───────────────────┤  
-    1: ──RX(-2.4)──RZ(-3.1)───────────RY(0.7)──RZ(1.4)─┤  
+    0: ──RX(0.2)───Rot(1.7,0.9,-1.1)───────────────────┤
+    1: ──RX(-2.4)──RZ(-3.1)───────────RY(0.7)──RZ(1.4)─┤
 
     """
     # pylint: disable=unused-argument
@@ -341,14 +341,14 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
 
     >>> print(qml.draw(circuit)())
     0: ─╭C─┤  <Z>
-    1: ─╰X─┤     
+    1: ─╰X─┤
 
     Now let's set up a context where the custom decomposition will be applied:
 
     >>> with qml.transforms.set_decomposition({qml.CNOT : custom_cnot}, dev):
     ...     print(qml.draw(circuit)())
     0: ────╭C────┤  <Z>
-    1: ──H─╰Z──H─┤     
+    1: ──H─╰Z──H─┤
 
     """
     original_custom_expand_fn = dev.custom_expand_fn

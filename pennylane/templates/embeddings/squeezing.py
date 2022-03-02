@@ -69,9 +69,9 @@ class SqueezingEmbedding(Operation):
         And, the resulting circuit is:
 
         >>> print(qml.draw(circuit)(X))
-        0: ─╭SqueezingEmbedding(M0)──────────┤     
+        0: ─╭SqueezingEmbedding(M0)──────────┤
         1: ─├SqueezingEmbedding(M0)──P(0.10)─┤  <n>
-        2: ─╰SqueezingEmbedding(M0)──────────┤     
+        2: ─╰SqueezingEmbedding(M0)──────────┤
 
         Using different parameters:
 
@@ -93,9 +93,9 @@ class SqueezingEmbedding(Operation):
         And, the resulting circuit is:
 
         >>> print(qml.draw(circuit)(X))
-        0: ─╭SqueezingEmbedding(M0)──────────┤     
+        0: ─╭SqueezingEmbedding(M0)──────────┤
         1: ─├SqueezingEmbedding(M0)──P(0.10)─┤  <n>
-        2: ─╰SqueezingEmbedding(M0)──────────┤     
+        2: ─╰SqueezingEmbedding(M0)──────────┤
 
     """
 
