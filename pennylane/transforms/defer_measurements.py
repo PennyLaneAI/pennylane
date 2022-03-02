@@ -71,13 +71,10 @@ def defer_measurements(tape):
     >>> qnode(par)
     tensor(0.43487747, requires_grad=True)
 
-    We can also optimize parameters passed to conditional operations:
+    We can also differentiate parameters passed to conditional operations:
 
-    >>> steps = 100
-    >>> for _ in range(steps):
-    ...     par, cost = opt.step_and_cost(qnode, par)
-    >>> print(par, cost)
-    3.018529732412975 -0.0037774828357067247
+    >>> qml.grad(qnode)(par)
+    -0.4962225160675968
 
     .. note::
 
