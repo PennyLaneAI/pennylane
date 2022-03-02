@@ -47,14 +47,14 @@ and extracting information.
     ~pennylane.generator
 
 
-All operator transforms can be used on instantiated operators,
+All operator functions can be used on instantiated operators,
 
 >>> op = qml.RX(0.54, wires=0)
 >>> qml.matrix(op)
 [[0.9637709+0.j         0.       -0.26673144j]
 [0.       -0.26673144j 0.9637709+0.j        ]]
 
-Operator transforms can also be used in a functional form:
+Operator functions can also be used in a functional form:
 
 >>> x = torch.tensor(0.6, requires_grad=True)
 >>> matrix_fn = qml.matrix(qml.RX)
@@ -70,7 +70,7 @@ In its functional form, most are fully differentiable with respect to gate argum
 tensor(-0.5910)
 
 Some operator transform can also act on multiple operations, by passing
-quantum functions or tapes:
+quantum functions, qnodes or tapes:
 
 >>> def circuit(theta):
 ...     qml.RX(theta, wires=1)
