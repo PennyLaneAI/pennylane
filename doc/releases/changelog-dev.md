@@ -156,6 +156,9 @@
   [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
   [(#2251)](https://github.com/PennyLaneAI/pennylane/pull/2251)
 
+  Circuit fragments that are disconnected from the terminal measurements are now removed.
+  [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
+
 <h3>Improvements</h3>
 
 * The `gradients` module has been streamlined and special-purpose functions
@@ -211,6 +214,11 @@
   [#2212](https://github.com/PennyLaneAI/pennylane/pull/2212)
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug in the JAX interface where ``DeviceArray`` objects
+  were not being converted to NumPy arrays before executing an
+  external device.
+  [(#2255)](https://github.com/PennyLaneAI/pennylane/pull/2255)
 
 * The ``qml.ctrl`` transform now works correctly with gradient transforms
   such as the parameter-shift rule.
