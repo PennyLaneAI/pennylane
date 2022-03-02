@@ -595,8 +595,9 @@ def is_commuting(operation1, operation2):
     if commutation_identity_simplification_1 is not None:
         return commutation_identity_simplification_1
 
+    # pylint:disable=arguments-out-of-order
     commutation_identity_simplification_2 = check_simplify_identity_commutation(
-        operation2, operation1  # pylint:disable=arguments-out-of-order
+        operation2, operation1
     )
     if commutation_identity_simplification_2 is not None:
         return commutation_identity_simplification_2
