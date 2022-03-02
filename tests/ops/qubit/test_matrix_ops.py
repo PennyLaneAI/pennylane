@@ -147,7 +147,7 @@ class TestQubitUnitary:
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U, wires=range(num_wires + 1)).get_matrix()
 
-    @pytest.mark.parametrize("U, num_wires", [(H,1), (np.kron(H, H), 2)])
+    @pytest.mark.parametrize("U, num_wires", [(H, 1), (np.kron(H, H), 2)])
     def test_qubit_unitary_jax(self, U, num_wires):
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
