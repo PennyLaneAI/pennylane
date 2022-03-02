@@ -1390,14 +1390,13 @@ class Operation(Operator):
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
         # check the grad_recipe validity
-        if self.grad_method == "A":
-            if self.grad_recipe is None:
-                # default recipe for every parameter
-                self.grad_recipe = [None] * self.num_params
-            else:
-                assert (
-                    len(self.grad_recipe) == self.num_params
-                ), "Gradient recipe must have one entry for each parameter!"
+        if self.grad_recipe is None:
+            # default recipe for every parameter
+            self.grad_recipe = [None] * self.num_params
+        else:
+            assert (
+                len(self.grad_recipe) == self.num_params
+            ), "Gradient recipe must have one entry for each parameter!"
 
 
 class Channel(Operation, abc.ABC):
