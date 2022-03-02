@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ from pennylane.transforms.op_transforms import OperationTransformError
 
 
 class TestValidation:
+    """Test for validation and exceptions"""
+
     def test_sphinx_build(self, monkeypatch):
         """Test that op transforms are not created during Sphinx builds"""
 
@@ -81,6 +83,9 @@ class TestValidation:
 
 
 class TestUI:
+    """Test the user interface of the op_transform, and ensure it applies
+    and works well for all combinations of inputs and styles"""
+
     def test_instantiated_operator(self):
         """Test that a transform can be applied to an instantiated operator"""
 
@@ -93,8 +98,9 @@ class TestUI:
         assert res == "CRX"
 
     def test_single_operator_qfunc(self, mocker):
-        """Test that a transform can be applied to a quantum function"""
-        spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
+        """Test that a transform can be applied to a quantum function
+        that contains a single operation"""
+        spy = mocker.spy(qml.op_transform, "_make_tape")
 
         @qml.op_transform
         def my_transform(op):
@@ -129,7 +135,7 @@ class TestUI:
         """Test that a transform can be applied to a quantum function
         with multiple operations as long as it is registered _how_
         the transform applies to multiple operations."""
-        spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
+        spy = mocker.spy(qml.op_transform, "_make_tape")
 
         @qml.op_transform
         def my_transform(op):
@@ -153,7 +159,7 @@ class TestUI:
         """Test that a transform can be applied to a quantum function
         with multiple operations as long as it is registered _how_
         the transform applies to multiple operations."""
-        spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
+        spy = mocker.spy(qml.op_transform, "_make_tape")
 
         @qml.op_transform
         def my_transform(op):
@@ -186,7 +192,7 @@ class TestUI:
         with multiple operations as long as it is registered _how_
         the transform applies to multiple operations."""
         dev = qml.device("default.qubit", wires=["a", 0, 3])
-        spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
+        spy = mocker.spy(qml.op_transform, "_make_tape")
 
         @qml.op_transform
         def my_transform(op):
@@ -340,7 +346,7 @@ class TestQFuncTransformIntegration:
 
         @qml.qnode(dev)
         def circuit(weights):
-            simplify_rotation(ansatz)(weights)
+            simplify_rotation(ansatz)(weights)  # <--- qfunc is applied within circuit (inside)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliX(1))
 
@@ -371,7 +377,7 @@ class TestQFuncTransformIntegration:
             qml.CRX(0.5, wires=[0, 1])
 
         @qml.qnode(dev)
-        @simplify_rotation
+        @simplify_rotation  # <--- qfunc is applied to circuit (outside)
         def circuit(weights):
             ansatz(weights)
             qml.CNOT(wires=[0, 1])
@@ -505,7 +511,7 @@ class TestWireOrder:
 
     def test_single_operator_qfunc(self, mocker):
         """Test that wire order can be passed to a quantum function"""
-        spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
+        spy = mocker.spy(qml.op_transform, "_make_tape")
         res = matrix(qml.PauliZ, wire_order=["a", 0])(0)
         expected = np.kron(np.eye(2), np.diag([1, -1]))
         assert np.allclose(res, expected)
@@ -513,7 +519,7 @@ class TestWireOrder:
 
     def test_tape(self, mocker):
         """Test that wire order can be passed to a tape"""
-        spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
+        spy = mocker.spy(qml.op_transform, "_make_tape")
 
         with qml.tape.QuantumTape() as tape:
             qml.PauliZ(wires=0)
@@ -537,7 +543,7 @@ class TestWireOrder:
 
     def test_qfunc(self, mocker):
         """Test that wire order can be passed to a qfunc"""
-        spy = mocker.spy(qml.transforms.op_transforms, "_make_tape")
+        spy = mocker.spy(qml.op_transform, "_make_tape")
 
         def qfunc():
             qml.PauliZ(wires=0)
