@@ -570,7 +570,7 @@ class Operator(abc.ABC):
         .. warning::
 
             The ``matrix`` property is deprecated and will be removed in
-            an upcoming release.
+            an upcoming release. Please use :class:`qml.matrix <.pennylane.matrix>` instead.
 
         **Example:**
 
@@ -583,7 +583,8 @@ class Operator(abc.ABC):
             array: matrix representation
         """
         warnings.warn(
-            "The 'matrix' property is deprecated and will be removed in an upcoming release.",
+            "The 'matrix' property is deprecated and will be removed in an upcoming release. "
+            "Please use 'qml.matrix' instead.",
             UserWarning,
         )
         return self.get_matrix()
@@ -2443,7 +2444,7 @@ def has_unitary_gen(obj):
 @qml.BooleanFn
 def is_measurement(obj):
     """Returns ``True`` if an operator is a ``MeasurementProcess`` instance."""
-    return isinstance(obj, qml.measure.MeasurementProcess)
+    return isinstance(obj, qml.measurements.MeasurementProcess)
 
 
 @qml.BooleanFn
