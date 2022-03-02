@@ -173,9 +173,10 @@ mid-circuit measurements:
 
 A quantum function with mid-circuit measurements (defined using
 :func:`~.pennylane.measure`) and conditional operations (defined using
-:func:`~.pennylane.cond`) can be executed by applying the deferred
-measurement principle. In the example above, we apply the ``qml.RY`` rotation
-if the mid-circuit measurement on qubit 0 yielded the ``1`` as an outcome.
+:func:`~.pennylane.cond`) can be executed by applying the `deferred measurement
+principle <https://en.wikipedia.org/wiki/Deferred_Measurement_Principle>`__. In
+the example above, we apply the ``qml.RY`` rotation if the mid-circuit
+measurement on qubit 0 yielded the ``1`` as an outcome.
 
 PennyLane implements the deferred measurement principle to transform
 conditional operations with the :func:`~.pennylane.defer_measurements` quantum
