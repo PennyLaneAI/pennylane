@@ -147,6 +147,17 @@ class TestQubitUnitary:
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U, wires=range(num_wires + 1)).get_matrix()
 
+    @pytest.mark.parametrize("U, num_wires", [(H, 1), (np.kron(H, H), 2)])
+    def test_qubit_unitary_jax(self, U, num_wires):
+        """Tests that QubitUnitary works with jitting."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        U = jnp.array(U)
+        f = lambda m: qml.QubitUnitary(m, wires=range(num_wires)).get_matrix()
+        out = jax.jit(f)(U)
+        assert qml.math.allclose(out, qml.QubitUnitary(U, wires=range(num_wires)).get_matrix())
+
     @pytest.mark.parametrize(
         "U,expected_gate,expected_params",
         [  # First set of gates are diagonal and converted to RZ
