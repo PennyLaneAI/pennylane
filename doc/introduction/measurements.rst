@@ -220,6 +220,9 @@ Note that we can also specify an outcome when defining a conditional operation:
 >>> qnode_conditional_op_on_zero(*pars)
 tensor([0.98645017, 0.01354983], requires_grad=True)
 
+The deferred measurement principle provides a natural method to simulate the application of
+mid-circuit measurements in a differentiable and device-independent way. Performing true
+mid-circuit measurements on quantum hardware is currently limited by current capabilities.
 
 Changing the number of shots
 ----------------------------
