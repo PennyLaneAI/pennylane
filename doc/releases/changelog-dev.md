@@ -202,6 +202,7 @@
     [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
     [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
     [(#2251)](https://github.com/PennyLaneAI/pennylane/pull/2251)
+    [(#2265)](https://github.com/PennyLaneAI/pennylane/pull/2265)
 
   Circuit fragments that are disconnected from the terminal measurements are now removed.
   [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
