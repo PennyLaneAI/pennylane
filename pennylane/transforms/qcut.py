@@ -312,8 +312,8 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
             # in a disconnection. We can therefore remove these nodes. Note that we do not need
             # to worry about adding back an edge between the predecessor to node1 and the successor
             # to node2 because edge connectivity no longer matters in the subgraphs.
-            subgraph.remove_node(node1)
-            subgraph.remove_node(node2)
+            subgraphs[start_fragment].remove_node(node1)
+            subgraphs[end_fragment].remove_node(node2)
 
     terminal_indices = [i for i, s in enumerate(subgraphs) for n in measure_nodes if s.has_node(n)]
 

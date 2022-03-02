@@ -2112,7 +2112,7 @@ class TestCutCircuitTransform:
         res = circuit(x)
         assert np.allclose(res, np.cos(x))
         assert len(spy.call_args[0][0]) == 1  # there should be 2 tensors for wire 0
-        assert spy.call_args[0][0][0].shape == (4, 4)
+        assert spy.call_args[0][0][0].shape == ()
 
 
 class TestCutCircuitTransformValidation:
