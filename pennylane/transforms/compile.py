@@ -125,7 +125,7 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
 
         print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
 
-    .. code-block:: raw
+    .. code-block::
 
         0: ──RZ(1.57)──RX(1.57)──RZ(1.57)──RX(0.60)─────────────────────────────────────────────────────
         1: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭X─────────RZ(1.57)─────────────────────────────────────────╭C
