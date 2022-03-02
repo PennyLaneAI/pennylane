@@ -26,7 +26,7 @@ def defer_measurements(tape):
 
     This transform uses the `deferred measurement principle
     <https://en.wikipedia.org/wiki/Deferred_Measurement_Principle>`_ and
-    applies to qubit based quantum functions.
+    applies to qubit-based quantum functions.
 
     .. note::
 
