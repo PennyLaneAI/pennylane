@@ -265,7 +265,7 @@ class MottonenStatePreparation(Operation):
 
             print(qml.draw(circuit, expansion_strategy="device", max_length=80)(state))
 
-        .. code-block:: raw
+        .. code-block::
             0: ──RY(2.35)─╭C───────────╭C──────────────╭C────────────────────────╭C
             1: ──RY(2.09)─╰X──RY(0.21)─╰X─╭C───────────│────────────╭C───────────│─
             2: ──RY(1.88)─────────────────╰X──RY(0.10)─╰X──RY(0.08)─╰X──RY(0.15)─╰X

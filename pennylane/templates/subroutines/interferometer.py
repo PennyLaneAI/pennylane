@@ -145,7 +145,7 @@ class Interferometer(CVOperation):
 
             print(qml.draw(circuit, expansion_strategy="device")(params))
 
-        .. code-block:: raw
+        .. code-block::
 
             0: ──R(0.71)───────────────────────────────╭BS(0.07,0.00)──R(0.36)──────────────────────────────
             1: ──R(0.82)────────────────╭BS(0.80,0.00)─╰BS(0.07,0.00)──R(0.77)───────╭BS(0.77,0.00)──R(0.12)
