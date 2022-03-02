@@ -4,10 +4,72 @@
 
 <h3>New features since last release</h3>
 
+* Added the user-interface for mid-circuit measurements.
+  [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
+
 * The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has 
   a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions, 
   deprecation of the `charset` keyword, and minor cosmetic changes.
+
+* Transform a circuit from quantum tape, quantum function or quantum node to a pairwise
+  commutation DAG (directed acyclic graph). The node represents the quantum operations, and the edges represent 
+  non commutation between two operations.
+  [(#1712)](https://github.com/PennyLaneAI/pennylane/pull/1712)
+  
+  From the following quantum function,
+  ```
+  def circuit(x, y, z):
+      qml.RX(x, wires=0)
+      qml.RX(y, wires=0)
+      qml.CNOT(wires=[1, 2])
+      qml.RY(y, wires=1)
+      qml.Hadamard(wires=2)
+      qml.CRZ(z, wires=[2, 0])
+      qml.RY(-y, wires=1)
+      return qml.expval(qml.PauliZ(0))
+  ```
+  the commutation DAG can be returned by using the following code:
+  ```
+  get_dag = commutation_dag(circuit)
+  theta = np.pi/4
+  phi = np.pi/3
+  psi = np.pi/2
+  dag = get_dag(theta, phi, psi)
+  ```
+  You can access all nodes by using the ``get_nodes`` function in the form of a list ``(ID, CommutationDAGNode)``:
+  ```
+  nodes = dag.get_nodes()
+  [(0, <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x132b03b20>), ...]
+  ```
+
+  You can also access specific nodes ``CommutationDAGNode`` by using the ``get_node`` function. From the ``CommutationDAGNode``
+  you can directly access all node attributes.
+  
+  ```
+  >>> second_node = dag.get_node(2)
+  <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x136f8c4c0>
+  
+  >>> second_operation = second_node.op
+  CNOT(wires=[1, 2])
+  
+  >>> second_node_successors = second_node.successors
+  [3, 4, 5, 6]
+  
+  >>> second_node_predecessors = second_node.predecessors
+  []
+  ```
+
+* The text based drawer accessed via `qml.draw` has been overhauled.
   [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
+  [(#2198)](https://github.com/PennyLaneAI/pennylane/pull/2198)
+
+  The new drawer has:
+
+  * a `decimals` keyword for controlling parameter rounding
+  * a `show_matrices` keyword for controlling display of matrices
+  * a different algorithm for determining positions
+  * deprecation of the `charset` keyword
+  * additional minor cosmetic changes
 
   ```
   @qml.qnode(qml.device('lightning.qubit', wires=2))
@@ -91,6 +153,11 @@
 
   A suite of integration tests has been added.
   [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
+  [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
+  [(#2251)](https://github.com/PennyLaneAI/pennylane/pull/2251)
+
+  Circuit fragments that are disconnected from the terminal measurements are now removed.
+  [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
 
 <h3>Improvements</h3>
 
@@ -151,6 +218,15 @@
 * The `qml.QubitUnitary` operation now supports jitting. 
   [(#2249)](https://github.com/PennyLaneAI/pennylane/pull/2249)
   
+* Fixes a bug in the JAX interface where ``DeviceArray`` objects
+  were not being converted to NumPy arrays before executing an
+  external device.
+  [(#2255)](https://github.com/PennyLaneAI/pennylane/pull/2255)
+
+* The ``qml.ctrl`` transform now works correctly with gradient transforms
+  such as the parameter-shift rule.
+  [(#2238)](https://github.com/PennyLaneAI/pennylane/pull/2238)
+
 * Fixes a bug in which passing required arguments into operations as
   keyword arguments would throw an error because the documented call
   signature didn't match the function definition.
@@ -307,6 +383,6 @@ The Operator class has undergone a major refactor with the following changes:
 This release contains contributions from (in alphabetical order):
 
 Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
-Maria Fernanda Morris, Zeyue Niu, Maria Schuld, Jay Soni, Antal Száva,
-David Wierichs
+Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni,
+Antal Száva, David Wierichs
 

@@ -15,7 +15,7 @@
 import pytest
 
 import pennylane as qml
-from pennylane.measure import expval
+from pennylane.measurements import expval
 from pennylane import qnode, QNode
 from pennylane.devices import DefaultQubit
 from pennylane import numpy as np
