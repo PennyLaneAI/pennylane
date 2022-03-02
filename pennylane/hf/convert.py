@@ -14,9 +14,8 @@
 """
 This module contains the functions needed for computing the molecular Hamiltonian.
 """
-import numpy as np
 import pennylane as qml
-from pennylane import Hamiltonian
+from pennylane import numpy as np
 from pennylane.wires import Wires
 
 
@@ -249,7 +248,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
             )
 
         # This is how one makes QubitOperator in OpenFermion
-        q_op += coeff * openfermion.QubitOperator(term_str)
+        q_op += complex(coeff) * openfermion.QubitOperator(term_str)
 
     return q_op
 
@@ -322,4 +321,4 @@ def import_operator(qubit_observable, format, wires=None, tol=1e08):
             f" got complex coefficients in the operator {qubit_observable}"
         )
 
-    return Hamiltonian(*_openfermion_to_pennylane(qubit_observable, wires=wires))
+    return qml.Hamiltonian(*_openfermion_to_pennylane(qubit_observable, wires=wires))
