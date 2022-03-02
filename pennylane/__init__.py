@@ -68,6 +68,7 @@ from pennylane.transforms import (
     metric_tensor,
     specs,
     qfunc_transform,
+    op_transform,
     single_tape_transform,
     quantum_monte_carlo,
     apply_controlled_Q,
@@ -75,6 +76,7 @@ from pennylane.transforms import (
     is_commuting,
     simplify,
 )
+from pennylane.ops.functions import *
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
 
