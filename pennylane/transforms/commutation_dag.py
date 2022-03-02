@@ -615,7 +615,7 @@ def is_commuting(operation1, operation2):
         return _both_controlled(control_base, operation1, operation2)
 
     # Case 3: only operation 1 is controlled
-    elif control_base.get(operation1.name):
+    if control_base.get(operation1.name):
         if control_base.get(operation1.name) != "ControlledOperation":
             control_base_1 = control_base.get(operation1.name)
         else:
@@ -643,7 +643,7 @@ def is_commuting(operation1, operation2):
             return bool(commutation_map[control_base_1][position[operation2.name]])
 
     # Case 4: only operation 2 is controlled
-    elif control_base.get(operation2.name):
+    if control_base.get(operation2.name):
         if control_base.get(operation2.name) != "ControlledOperation":
             control_base_2 = control_base.get(operation2.name)
         else:
