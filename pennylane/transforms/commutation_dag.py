@@ -742,12 +742,12 @@ def _both_controlled(control_base, operation1, operation2):
         return bool(commutation_map["ctrl"][position[control_base_2]])
 
     # Case 2.9: targets and controls overlap with targets and controls
-    if target_control and control_target and target_target:
-        return (
-            bool(commutation_map[control_base_1][position["ctrl"]])
-            and bool(commutation_map["ctrl"][position[control_base_2]])
-            and bool(commutation_map[control_base_1][position[control_base_2]])
-        )
+    # equivalent to target_control and control_target and target_target:
+    return (
+        bool(commutation_map[control_base_1][position["ctrl"]])
+        and bool(commutation_map["ctrl"][position[control_base_2]])
+        and bool(commutation_map[control_base_1][position[control_base_2]])
+    )
 
 
 def _merge_no_duplicates(*iterables):
