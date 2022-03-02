@@ -62,8 +62,7 @@ def cond(measurement, then_op):
     that is conditioned on a value dependent on quantum measurements.
 
     Args:
-        measurement (MeasurementDependentValue): The measurement dependent
-            value to consider.
+        measurement (MeasurementValue): the measurement value to consider
         then_op (Operation): The PennyLane operation to apply if the condition
             applies.
 
