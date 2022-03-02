@@ -79,7 +79,7 @@ def defer_measurements(tape):
     .. note::
 
         When applying the transform on a quantum function that returns
-        `qml.state` as the terminal measurement, the state vector corresponding
+        :func:`~measurements.state` as the terminal measurement, the state vector corresponding
         to the pre-measurement state of the transformed circuit will be
         obtained. No post-measurement states are considered.
     """
