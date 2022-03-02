@@ -1184,6 +1184,7 @@ class Operation(Operator):
         s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
     """
 
+    # Attributes for compilation transforms
     basis = None
     """str or None: The target operation for controlled gates.
     target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
@@ -2442,7 +2443,7 @@ def has_unitary_gen(obj):
 @qml.BooleanFn
 def is_measurement(obj):
     """Returns ``True`` if an operator is a ``MeasurementProcess`` instance."""
-    return isinstance(obj, qml.measure.MeasurementProcess)
+    return isinstance(obj, qml.measurements.MeasurementProcess)
 
 
 @qml.BooleanFn

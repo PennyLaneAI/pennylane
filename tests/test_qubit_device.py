@@ -25,7 +25,7 @@ from pennylane.operation import Sample, Variance, Expectation, Probability, Stat
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 from pennylane.tape import QuantumTape
-from pennylane.measure import state
+from pennylane.measurements import state
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
@@ -268,7 +268,7 @@ class TestObservables:
 
         with qml.tape.QuantumTape() as tape:
             qml.PauliX(wires=0)
-            qml.measure.MeasurementProcess(
+            qml.measurements.MeasurementProcess(
                 return_type="SomeUnsupportedReturnType", obs=qml.PauliZ(0)
             )
 
@@ -615,7 +615,7 @@ class TestSample:
     ):
         """Test that when we sample a device without providing an observable or wires then it
         will return the raw samples"""
-        obs = qml.measure.sample(op=None, wires=None)
+        obs = qml.measurements.sample(op=None, wires=None)
         dev = mock_qubit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 0], [1, 1]])
         dev._samples = generated_samples
@@ -628,7 +628,7 @@ class TestSample:
     ):
         """Test that when we sample a device without providing an observable but we specify
         wires then it returns the generated samples for only those wires"""
-        obs = qml.measure.sample(op=None, wires=[1])
+        obs = qml.measurements.sample(op=None, wires=[1])
         dev = mock_qubit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 0], [1, 1]])
         dev._samples = generated_samples
