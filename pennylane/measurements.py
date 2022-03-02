@@ -606,7 +606,7 @@ class MeasurementValueError(ValueError):
 class MeasurementValue(Generic[T]):
     """A class representing unknown measurement outcomes in the qubit model.
 
-    By default, measurements in the computational basis are assumed.
+    Measurements on a single qubit in the computational basis are assumed.
 
     Args:
         measurement_id (str): The id of the measurement that this object depends on.
