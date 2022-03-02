@@ -15,7 +15,7 @@
 This module contains the functions needed for computing the particle number observable.
 """
 from pennylane import numpy as np
-from pennylane.hf.dipole import qubit_operator
+from pennylane.hf.observable import qubit_observable
 
 
 def particle_number(orbitals):
@@ -66,4 +66,4 @@ def particle_number(orbitals):
         coeffs = np.concatenate((coeffs, np.array([i[2]])))
         ops.append([int(i[0]), int(i[1])])
 
-    return qubit_operator((coeffs, ops))
+    return qubit_observable((coeffs, ops))

@@ -20,10 +20,6 @@ import pytest
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane.hf.hamiltonian import (
-    _generate_qubit_operator,
-    _pauli_mult,
-    _return_pauli,
-    simplify,
     generate_electron_integrals,
     generate_fermionic_hamiltonian,
     generate_hamiltonian,
@@ -285,55 +281,6 @@ def test_generate_hamiltonian(symbols, geometry, h_ref_data):
     )
 
 
-@pytest.mark.parametrize(
-    ("f_operator", "q_operator"),
-    [
-        (
-            [0, 0],
-            # obtained with openfermion using: jordan_wigner(FermionOperator('0^ 0', 1))
-            # reformatted the original openfermion output: (0.5+0j) [] + (-0.5+0j) [Z0]
-            ([(0.5 + 0j), (-0.5 + 0j)], [[], [(0, "Z")]]),
-        ),
-    ],
-)
-def test_generate_qubit_operator(f_operator, q_operator):
-    r"""Test that _generate_qubit_operator returns the correct operator."""
-    result = _generate_qubit_operator(f_operator)
-
-    assert result == q_operator
-
-
-@pytest.mark.parametrize(
-    ("p1", "p2", "p_ref"),
-    [
-        (
-            [(0, "X"), (1, "Y")],  # X_0 @ Y_1
-            [(0, "X"), (2, "Y")],  # X_0 @ Y_2
-            ([(2, "Y"), (1, "Y")], 1.0),  # X_0 @ Y_1 @ X_0 @ Y_2
-        ),
-    ],
-)
-def test_pauli_mult(p1, p2, p_ref):
-    r"""Test that _generate_qubit_operator returns the correct operator."""
-    result = _pauli_mult(p1, p2)
-
-    assert result == p_ref
-
-
-@pytest.mark.parametrize(
-    ("symbol", "operator"),
-    [
-        ("X", qml.PauliX),
-        ("Y", qml.PauliY),
-        ("Z", qml.PauliZ),
-    ],
-)
-def test_return_pauli(symbol, operator):
-    r"""Test that_return_pauli returns the correct operator."""
-    p = _return_pauli(symbol)
-    assert p is operator
-
-
 def test_gradient_expvalH():
     r"""Test that the gradient of expval(H) computed with ``autograd.grad`` is equal to the value
     obtained with the finite difference method."""
@@ -380,49 +327,3 @@ def test_gradient_expvalH():
     grad_finitediff = (e_2 - e_1) / 0.0002
 
     assert np.allclose(grad_autograd[0][0], grad_finitediff)
-
-
-@pytest.mark.parametrize(
-    ("hamiltonian", "result"),
-    [
-        (
-            qml.Hamiltonian(
-                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)]
-            ),
-            qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.5, -0.5]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
-            ),
-            qml.Hamiltonian([], []),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.0, -0.5]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
-            ),
-            qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
-        ),
-        (
-            qml.Hamiltonian(
-                np.array([0.25, 0.25, 0.25, -0.25]),
-                [
-                    qml.PauliX(0) @ qml.PauliY(1),
-                    qml.PauliX(0) @ qml.PauliZ(1),
-                    qml.PauliX(0) @ qml.PauliY(1),
-                    qml.PauliX(0) @ qml.PauliY(1),
-                ],
-            ),
-            qml.Hamiltonian(
-                np.array([0.25, 0.25]),
-                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
-            ),
-        ),
-    ],
-)
-def test_simplify(hamiltonian, result):
-    r"""Test that simplify returns the correct hamiltonian."""
-    h = simplify(hamiltonian)
-    assert h.compare(result)

@@ -15,7 +15,7 @@
 This module contains the functions needed for computing the spin observables.
 """
 from pennylane import numpy as np
-from pennylane.hf.dipole import qubit_operator
+from pennylane.hf.observable import qubit_observable
 
 
 def _spin2_matrix_elements(sz):
@@ -177,7 +177,7 @@ def spin2(electrons, orbitals):
         s2_coeff = np.concatenate((s2_coeff, np.array([i[4]])))
         s2_op.append([int(i[0]), int(i[1]), int(i[2]), int(i[3])])
 
-    return qubit_operator((s2_coeff, s2_op))
+    return qubit_observable((s2_coeff, s2_op))
 
 
 def spinz(orbitals):
@@ -229,4 +229,4 @@ def spinz(orbitals):
         sz_coeff = np.concatenate((sz_coeff, np.array([i[2]])))
         sz_op.append([int(i[0]), int(i[1])])
 
-    return qubit_operator((sz_coeff, sz_op))
+    return qubit_observable((sz_coeff, sz_op))
