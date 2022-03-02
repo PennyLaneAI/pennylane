@@ -13,7 +13,9 @@
 # limitations under the License.
 
 import pennylane as qml
+import pennylane.numpy as np
 from pennylane.transforms.optimization.pattern_matching import pattern_matching_optimization
+from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 
 
 class TestPatternMatching:
@@ -57,6 +59,8 @@ class TestPatternMatching:
 
         assert len(optimized_qnode.qtape.operations) == 7
         assert cnots_optimized_qnode == 3
+
+        assert np.allclose(get_unitary_matrix(optimized_qnode)(), get_unitary_matrix(qnode)())
 
     def test_multiple_patterns(self):
         """Test pattern matching algorithm for circuit optimization with three different templates."""
@@ -102,6 +106,9 @@ class TestPatternMatching:
 
         assert len(optimized_qnode.qtape.operations) == 1
         assert cnots_optimized_qnode == 1
+
+        assert np.allclose(get_unitary_matrix(optimized_qnode)(), get_unitary_matrix(qnode)())
+
 
     def test_mod_5_4_pattern_matching(self):
         """Test pattern matching algorithm for mod_5_4 with a CNOTs template."""
@@ -184,6 +191,8 @@ class TestPatternMatching:
 
         assert len(optimized_qnode.qtape.operations) == 49
         assert cnots_optimized_qnode == 26
+
+        assert np.allclose(get_unitary_matrix(optimized_qnode)(), get_unitary_matrix(qnode)())
 
     def test_vbe_adder_3_pattern_matching(self):
         """Test pattern matching algorithm for vbe_adder_3 with a CNOTs template."""
@@ -304,3 +313,5 @@ class TestPatternMatching:
 
         assert len(optimized_qnode.qtape.operations) == 84
         assert cnots_optimized_qnode == 45
+
+        assert np.allclose(get_unitary_matrix(optimized_qnode)(), get_unitary_matrix(qnode)())
