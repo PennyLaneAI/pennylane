@@ -27,8 +27,111 @@ from pennylane.hf.observable import (
 
 
 @pytest.mark.parametrize(
-    ("core_constant", "integral", "f_ref"),
+    ("core_constant", "integral_one", "integral_two", "f_ref"),
     [
+        (  # computed with openfermion for H2 (format is modified):
+            # H2 bond length: 1 Angstrom, basis = 'sto-3g', multiplicity = 1, charge = 0
+            # molecule = openfermion.MolecularData(geometry, basis, multiplicity, charge)
+            # run_pyscf(molecule).get_integrals()
+            np.array([0.529177210903]),  # nuclear repulsion 1 / 1.88973 Bohr
+            np.array([[-1.11084418e00, 1.01781501e-16], [7.32122533e-17, -5.89121004e-01]]),
+            np.array(
+                [
+                    [
+                        [[6.26402500e-01, -1.84129592e-16], [-2.14279171e-16, 1.96790583e-01]],
+                        [[-2.14279171e-16, 1.96790583e-01], [6.21706763e-01, -1.84062159e-17]],
+                    ],
+                    [
+                        [[-1.84129592e-16, 6.21706763e-01], [1.96790583e-01, -5.28427412e-17]],
+                        [[1.96790583e-01, -5.28427412e-17], [-1.84062159e-17, 6.53070747e-01]],
+                    ],
+                ]
+            ),
+            # computed with openfermion for H2 (format is modified):
+            # get_fermion_operator(run_pyscf(molecule).get_molecular_hamiltonian())
+            (
+                np.array(
+                    [
+                        0.52917721092,
+                        -1.1108441798837276,
+                        0.31320124976475916,
+                        0.09839529174273519,
+                        0.31320124976475916,
+                        0.09839529174273519,
+                        0.09839529174273519,
+                        0.3108533815598568,
+                        0.09839529174273519,
+                        0.3108533815598568,
+                        0.31320124976475916,
+                        0.09839529174273519,
+                        -1.1108441798837276,
+                        0.31320124976475916,
+                        0.09839529174273519,
+                        0.09839529174273519,
+                        0.3108533815598568,
+                        0.09839529174273519,
+                        0.3108533815598568,
+                        0.3108533815598569,
+                        0.09839529174273519,
+                        0.3108533815598569,
+                        0.09839529174273519,
+                        -0.5891210037060831,
+                        0.09839529174273519,
+                        0.32653537347128725,
+                        0.09839529174273519,
+                        0.32653537347128725,
+                        0.3108533815598569,
+                        0.09839529174273519,
+                        0.3108533815598569,
+                        0.09839529174273519,
+                        0.09839529174273519,
+                        0.32653537347128725,
+                        -0.5891210037060831,
+                        0.09839529174273519,
+                        0.32653537347128725,
+                    ]
+                ),
+                [
+                    [],
+                    [0, 0],
+                    [0, 0, 0, 0],
+                    [0, 0, 2, 2],
+                    [0, 1, 1, 0],
+                    [0, 1, 3, 2],
+                    [0, 2, 0, 2],
+                    [0, 2, 2, 0],
+                    [0, 3, 1, 2],
+                    [0, 3, 3, 0],
+                    [1, 0, 0, 1],
+                    [1, 0, 2, 3],
+                    [1, 1],
+                    [1, 1, 1, 1],
+                    [1, 1, 3, 3],
+                    [1, 2, 0, 3],
+                    [1, 2, 2, 1],
+                    [1, 3, 1, 3],
+                    [1, 3, 3, 1],
+                    [2, 0, 0, 2],
+                    [2, 0, 2, 0],
+                    [2, 1, 1, 2],
+                    [2, 1, 3, 0],
+                    [2, 2],
+                    [2, 2, 0, 0],
+                    [2, 2, 2, 2],
+                    [2, 3, 1, 0],
+                    [2, 3, 3, 2],
+                    [3, 0, 0, 3],
+                    [3, 0, 2, 1],
+                    [3, 1, 1, 3],
+                    [3, 1, 3, 1],
+                    [3, 2, 0, 1],
+                    [3, 2, 2, 3],
+                    [3, 3],
+                    [3, 3, 1, 1],
+                    [3, 3, 3, 3],
+                ],
+            ),
+        ),
         (
             np.array([2.869]),
             np.array(
@@ -38,6 +141,7 @@ from pennylane.hf.observable import (
                     [-0.53222294, 0.23469918, 0.48381955],
                 ]
             ),
+            None,
             # computed with PL-QChem dipole (format is modified)
             (
                 np.array(
@@ -88,10 +192,10 @@ from pennylane.hf.observable import (
         ),
     ],
 )
-def test_fermionic_observable(core_constant, integral, f_ref):
+def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
     r"""Test that fermionic_observable returns the correct fermionic observable."""
-    f = fermionic_observable(core_constant, integral)
-
+    f = fermionic_observable(core_constant, integral_one, integral_two)
+    print(f)
     assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
     assert f[1] == f_ref[1]  # fermionic operators
 
