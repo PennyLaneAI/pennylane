@@ -216,8 +216,7 @@ def simplify(h, cutoff=1.0e-12):
     """
     wiremap = dict(zip(h.wires, range(len(h.wires) + 1)))
 
-    c = []
-    o = []
+    c, o = [], []
     for i, op in enumerate(h.ops):
         op = qml.operation.Tensor(op).prune()
         op = qml.grouping.pauli_word_to_string(op, wire_map=wiremap)
@@ -227,8 +226,7 @@ def simplify(h, cutoff=1.0e-12):
         else:
             c[o.index(op)] += h.coeffs[i]
 
-    coeffs = []
-    ops = []
+    coeffs, ops = [], []
     nonzero_ind = np.argwhere(abs(np.array(c)) > cutoff).flatten()
     for i in nonzero_ind:
         coeffs.append(c[i])
