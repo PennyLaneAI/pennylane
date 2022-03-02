@@ -28,6 +28,10 @@ def defer_measurements(tape):
     <https://en.wikipedia.org/wiki/Deferred_Measurement_Principle>`_ and
     applies to qubit-based quantum functions.
 
+    Support for mid-circuit measurements is device-dependent. If a device
+    doesn't support mid-circuit measurements natively, then the QNode will
+    apply this transform.
+
     .. note::
 
         The transform uses the :func:`~.ctrl` transform to implement operations
