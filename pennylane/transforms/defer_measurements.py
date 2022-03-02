@@ -62,9 +62,7 @@ def defer_measurements(tape):
             return qml.expval(qml.PauliZ(0))
 
     The ``defer_measurements`` transform allows executing such quantum
-    functions without having to perform mid-circuit measurements.
-
-    The original circuit is:
+    functions without having to perform mid-circuit measurements:
 
     >>> dev = qml.device('default.qubit', wires=2)
     >>> transformed_qfunc = qml.defer_measurements(qfunc)
@@ -73,18 +71,15 @@ def defer_measurements(tape):
     >>> qnode(par)
     tensor(0.43487747, requires_grad=True)
 
-    We can also optimize parameters passed to conditional operations:
+    We can also differentiate parameters passed to conditional operations:
 
-    >>> steps = 100
-    >>> for _ in range(steps):
-    ...     par, cost = opt.step_and_cost(qnode, par)
-    >>> print(par, cost)
-    3.018529732412975 -0.0037774828357067247
+    >>> qml.grad(qnode)(par)
+    -0.4962225160675968
 
     .. note::
 
         When applying the transform on a quantum function that returns
-        `qml.state` as the terminal measurement, the state vector corresponding
+        :func:`~measurements.state` as the terminal measurement, the state vector corresponding
         to the pre-measurement state of the transformed circuit will be
         obtained. No post-measurement states are considered.
     """
