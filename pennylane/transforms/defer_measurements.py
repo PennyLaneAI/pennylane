@@ -62,9 +62,7 @@ def defer_measurements(tape):
             return qml.expval(qml.PauliZ(0))
 
     The ``defer_measurements`` transform allows executing such quantum
-    functions without having to perform mid-circuit measurements.
-
-    The original circuit is:
+    functions without having to perform mid-circuit measurements:
 
     >>> dev = qml.device('default.qubit', wires=2)
     >>> transformed_qfunc = qml.defer_measurements(qfunc)
