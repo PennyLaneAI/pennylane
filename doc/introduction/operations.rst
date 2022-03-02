@@ -254,7 +254,7 @@ Continuous-Variable (CV) operations
 
 If you would like to learn more about the CV model of quantum computing, check out the
 `quantum photonics <https://strawberryfields.ai/photonics/concepts/photonics.html>`_
-page of the [Strawberry Fields](https://strawberryfields.ai/) documentation.
+page of the `Strawberry Fields <https://strawberryfields.ai/>`__ documentation.
 
 .. _intro_ref_ops_cvgates:
 
