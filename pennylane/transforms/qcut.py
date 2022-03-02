@@ -23,7 +23,7 @@ import warnings
 from dataclasses import InitVar, dataclass
 from functools import partial
 from itertools import product
-from typing import Any, Callable, ClassVar, Dict, List, Sequence, Tuple, Union
+from typing import Any, Callable, ClassVar, Dict, List, Sequence, Tuple, Union, Optional
 
 from networkx import MultiDiGraph, weakly_connected_components, has_path
 
@@ -340,7 +340,7 @@ def _find_new_wire(wires: Wires) -> int:
 
 
 # pylint: disable=protected-access
-def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
+def graph_to_tape(graph: MultiDiGraph, measurement_positions: Optional[Sequence[int]] = None) -> QuantumTape:
     """
     Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
 
@@ -354,6 +354,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     Args:
         graph (MultiDiGraph): directed multigraph to be converted to a tape
+        measurement_positions: TODO
 
     Returns:
         QuantumTape: the quantum tape corresponding to the input graph
@@ -377,14 +378,14 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     wires = Wires.all_wires([n.wires for n in graph.nodes])
 
     ordered_ops = sorted(
-        [(order, op) for op, order in graph.nodes(data="order")], key=lambda x: x[0]
+        [(order, copy.copy(op)) for op, order in graph.nodes(data="order")], key=lambda x: x[0]
     )
     wire_map = {w: w for w in wires}
     reverse_wire_map = {v: k for k, v in wire_map.items()}
 
-    copy_ops = [copy.copy(op) for _, op in ordered_ops if not isinstance(op, MeasurementProcess)]
-    copy_meas = [copy.copy(op) for _, op in ordered_ops if isinstance(op, MeasurementProcess)]
-    observables = []
+    copy_ops = [op for _, op in ordered_ops if not isinstance(op, MeasurementProcess)]
+    copy_meas = [pair for pair in ordered_ops if isinstance(pair[1], MeasurementProcess)]
+    observables = {pos: [] for pos in measurement_positions}
 
     with QuantumTape() as tape:
         for op in copy_ops:
@@ -405,18 +406,18 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 wire_map[original_wire] = new_wire
                 reverse_wire_map[new_wire] = original_wire
 
-        for meas in copy_meas:
+        for ord, meas in copy_meas:
             obs = meas.obs
             obs._wires = Wires([wire_map[w] for w in obs.wires])
-            observables.append(obs)
+            observables[ord].append(obs)
 
-        # We assume that each MeasurementProcess node in the graph contributes to a single
-        # expectation value of an observable, given by the tensor product over the observables of
-        # each MeasurementProcess.
-        if len(observables) > 1:
-            qml.expval(Tensor(*observables))
-        elif len(observables) == 1:
-            qml.expval(obs)
+        for obs in observables.values():
+            if len(obs) > 1:
+                qml.expval(Tensor(*obs))
+            elif len(obs) == 1:
+                qml.expval(obs[0])
+            else:
+                qml.expval(qml.Identity(wires[0]))
 
     return tape
 
@@ -438,31 +439,23 @@ def _get_measurements(
         over ``group`` and ``obs`` is the observable composing the single measurement
         in ``measurements``
     """
+
     if len(group) == 0:
         # This ensures the measurements of the original tape are carried over to the
         # following tape configurations in the absence of any MeasureNodes in the fragment
         return measurements
 
-    n_measurements = len(measurements)
-    if n_measurements > 1:
-        raise ValueError(
-            "The circuit cutting workflow only supports circuits with a single output "
-            "measurement"
-        )
-    if n_measurements == 0:
+    if len(measurements) == 0:
         return [expval(g) for g in group]
 
-    measurement = measurements[0]
+    expvals = []
 
-    if measurement.return_type is not Expectation:
-        raise ValueError(
-            "The circuit cutting workflow only supports circuits with expectation "
-            "value measurements"
-        )
+    for m in measurements:
+        for g in group:
+            obs = copy.copy(m.obs)
+            expvals.append(qml.expval(obs @ g))
 
-    obs = measurement.obs
-
-    return [expval(copy.copy(obs) @ g) for g in group]
+    return expvals
 
 
 def _prep_zero_state(wire):
@@ -810,6 +803,7 @@ def _to_tensors(
     results,
     prepare_nodes: Sequence[Sequence[PrepareNode]],
     measure_nodes: Sequence[Sequence[MeasureNode]],
+    num_measurements: int,
 ) -> List:
     """Process a flat list of execution results from all circuit fragments into the corresponding
     tensors.
@@ -829,6 +823,7 @@ def _to_tensors(
         measure_nodes (Sequence[Sequence[MeasureNode]]): a sequence whose length is equal to the
             number of circuit fragments, with each element used here to determine the number of
             measurement nodes in a given fragment
+        num_measurements: TODO
 
     Returns:
         List[tensor_like]: the tensors for each circuit fragment in the communication graph
@@ -848,7 +843,7 @@ def _to_tensors(
 
         ctr += dim
 
-    if len(results) != ctr:
+    if len(results) != num_measurements * ctr:
         raise ValueError(f"The results argument should be a flat list of length {ctr}")
 
     return tensors
@@ -860,6 +855,7 @@ def qcut_processing_fn(
     prepare_nodes: Sequence[Sequence[PrepareNode]],
     measure_nodes: Sequence[Sequence[MeasureNode]],
     use_opt_einsum: bool = False,
+    measurement_positions: Optional[Sequence[int]] = None,
 ):
     """Processing function for the :func:`cut_circuit` transform.
 
@@ -886,6 +882,7 @@ def qcut_processing_fn(
             for faster tensor contractions of large networks but must be installed separately using,
             e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
             differentiable contraction.
+        measurement_positions: TODO
 
     Returns:
         float or tensor_like: the output of the original uncut circuit arising from contracting
@@ -893,7 +890,7 @@ def qcut_processing_fn(
     """
     flat_results = qml.math.concatenate(results)
 
-    tensors = _to_tensors(flat_results, prepare_nodes, measure_nodes)
+    tensors = _to_tensors(flat_results, prepare_nodes, measure_nodes, len(measurement_positions))
     result = contract_tensors(
         tensors, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum
     )
@@ -962,16 +959,24 @@ def cut_circuit(
         >>> qml.grad(cut_circuit)(x)
         -0.506395895364911
     """
-    if len(tape.measurements) != 1:
-        raise ValueError(
-            "The circuit cutting workflow only supports circuits with a single output "
-            "measurement"
-        )
-
     if not all(m.return_type is Expectation for m in tape.measurements):
         raise ValueError(
             "The circuit cutting workflow only supports circuits with expectation "
             "value measurements"
+        )
+
+    all_pauli_words = all(qml.grouping.is_pauli_word(m.obs) for m in tape.measurements)
+
+    if len(tape.measurements) > 1 and not all_pauli_words:
+
+        raise ValueError(
+            "The circuit cutting workflow only supports returning either: (i) an expectation value "
+            "of a single observable (ii) expectation values of a group of qubit-wise commuting "
+            "Pauli words."
+        )
+    if len(tape.measurements) == 0:
+        raise ValueError(
+            "At least one measurement must be returned in the circuit cutting workflow"
         )
 
     if use_opt_einsum:
@@ -989,11 +994,17 @@ def cut_circuit(
         raise ValueError("Cannot apply the circuit cutting workflow to a circuit without any cuts")
 
     g = tape_to_graph(tape)
+    pos = set(n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess))
+
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
-    fragment_tapes = [graph_to_tape(f) for f in fragments]
+    fragment_tapes = [graph_to_tape(f, measurement_positions=pos) for f in fragments]
+    # for t in fragment_tapes:
+    #     print(t.draw())
     expanded = [expand_fragment_tapes(t) for t in fragment_tapes]
-
+    for exp in expanded:
+        for t in exp[0]:
+            print(t.draw())
     configurations = []
     prepare_nodes = []
     measure_nodes = []
@@ -1010,6 +1021,7 @@ def cut_circuit(
         prepare_nodes=prepare_nodes,
         measure_nodes=measure_nodes,
         use_opt_einsum=use_opt_einsum,
+        measurement_positions=pos,
     )
 
 
