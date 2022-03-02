@@ -596,7 +596,7 @@ def is_commuting(operation1, operation2):
         return commutation_identity_simplification_1
 
     commutation_identity_simplification_2 = check_simplify_identity_commutation(
-        operation2, operation1
+        operation2, operation1  # pylint:disable=arguments-out-of-order
     )
     if commutation_identity_simplification_2 is not None:
         return commutation_identity_simplification_2
@@ -612,73 +612,9 @@ def is_commuting(operation1, operation2):
 
     # Case 2 both operations are controlled
     if control_base.get(operation1.name) and control_base.get(operation2.name):
-        if control_base.get(operation1.name) != "ControlledOperation":
-            control_base_1 = control_base.get(operation1.name)
-        else:
-            control_base_1 = operation1.control_base
-
-        if control_base.get(operation2.name) != "ControlledOperation":
-            control_base_2 = control_base.get(operation2.name)
-        else:
-            control_base_2 = operation2.control_base
-
-        target_wires_1 = qml.wires.Wires(
-            [w for w in operation1.wires if w not in operation1.control_wires]
-        )
-        target_wires_2 = qml.wires.Wires(
-            [w for w in operation2.wires if w not in operation2.control_wires]
-        )
-
-        control_control = intersection(operation1.control_wires, operation2.control_wires)
-        target_target = intersection(target_wires_1, target_wires_2)
-        control_target = intersection(operation1.control_wires, target_wires_2)
-        target_control = intersection(target_wires_1, operation2.control_wires)
-
-        # Case 2.1: disjoint targets
-        if control_control and not target_target and not control_target and not target_control:
-            return True
-
-        # Case 2.2: disjoint controls
-        if not control_control and target_target and not control_target and not target_control:
-            return bool(commutation_map[control_base_1][position[control_base_2]])
-
-        # Case 2.3: targets overlap and controls overlap
-        if target_target and control_control and not control_target and not target_control:
-            return bool(commutation_map[control_base_1][position[control_base_2]])
-
-        # Case 2.4: targets and controls overlap
-        if control_target and target_control and not target_target:
-            return bool(commutation_map["ctrl"][position[control_base_2]]) and bool(
-                commutation_map[control_base_1][position["ctrl"]]
-            )
-
-        # Case 2.5: targets overlap with and controls and targets
-        if control_target and not target_control and target_target:
-            return bool(commutation_map["ctrl"][position[control_base_2]]) and bool(
-                commutation_map[control_base_1][position[control_base_2]]
-            )
-
-        # Case 2.6: targets overlap with and controls and targets
-        if target_control and not control_target and target_target:
-            return bool(commutation_map[control_base_1][position["ctrl"]]) and bool(
-                commutation_map[control_base_1][position[control_base_2]]
-            )
-
-        # Case 2.7: targets overlap with control
-        if target_control and not control_target and not target_target:
-            return bool(commutation_map[control_base_1][position["ctrl"]])
-
-        # Case 2.8: targets overlap with control
-        if not target_control and control_target and not target_target:
-            return bool(commutation_map["ctrl"][position[control_base_2]])
-
-        # Case 2.9: targets and controls overlap with targets and controls
-        if target_control and control_target and target_target:
-            return (
-                bool(commutation_map[control_base_1][position["ctrl"]])
-                and bool(commutation_map["ctrl"][position[control_base_2]])
-                and bool(commutation_map[control_base_1][position[control_base_2]])
-            )
+        res = _both_controlled(control_base, operation1, operation2)
+        if res is not None:
+            return res
 
     # Case 3: only operation 1 is controlled
     elif control_base.get(operation1.name):
@@ -739,6 +675,84 @@ def is_commuting(operation1, operation2):
     # Case 5: no controlled operations
     # Case 5.1: no controlled operations we simply check the commutation table
     return bool(commutation_map[operation1.name][position[operation2.name]])
+
+
+def _both_controlled(control_base, operation1, operation2):
+    """Auxiliary function to the is_commuting function for the case when both
+    operations are controlled."""
+    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-return-statements
+
+    if control_base.get(operation1.name) != "ControlledOperation":
+        control_base_1 = control_base.get(operation1.name)
+    else:
+        control_base_1 = operation1.control_base
+
+    if control_base.get(operation2.name) != "ControlledOperation":
+        control_base_2 = control_base.get(operation2.name)
+    else:
+        control_base_2 = operation2.control_base
+
+    target_wires_1 = qml.wires.Wires(
+        [w for w in operation1.wires if w not in operation1.control_wires]
+    )
+    target_wires_2 = qml.wires.Wires(
+        [w for w in operation2.wires if w not in operation2.control_wires]
+    )
+
+    control_control = intersection(operation1.control_wires, operation2.control_wires)
+    target_target = intersection(target_wires_1, target_wires_2)
+    control_target = intersection(operation1.control_wires, target_wires_2)
+    target_control = intersection(target_wires_1, operation2.control_wires)
+
+    # Case 2.1: disjoint targets
+    if control_control and not target_target and not control_target and not target_control:
+        return True
+
+    # Case 2.2: disjoint controls
+    if not control_control and target_target and not control_target and not target_control:
+        return bool(commutation_map[control_base_1][position[control_base_2]])
+
+    # Case 2.3: targets overlap and controls overlap
+    if target_target and control_control and not control_target and not target_control:
+        return bool(commutation_map[control_base_1][position[control_base_2]])
+
+    # Case 2.4: targets and controls overlap
+    if control_target and target_control and not target_target:
+        return bool(commutation_map["ctrl"][position[control_base_2]]) and bool(
+            commutation_map[control_base_1][position["ctrl"]]
+        )
+
+    # Case 2.5: targets overlap with and controls and targets
+    if control_target and not target_control and target_target:
+        return bool(commutation_map["ctrl"][position[control_base_2]]) and bool(
+            commutation_map[control_base_1][position[control_base_2]]
+        )
+
+    # Case 2.6: targets overlap with and controls and targets
+    if target_control and not control_target and target_target:
+        return bool(commutation_map[control_base_1][position["ctrl"]]) and bool(
+            commutation_map[control_base_1][position[control_base_2]]
+        )
+
+    # Case 2.7: targets overlap with control
+    if target_control and not control_target and not target_target:
+        return bool(commutation_map[control_base_1][position["ctrl"]])
+
+    # Case 2.8: targets overlap with control
+    if not target_control and control_target and not target_target:
+        return bool(commutation_map["ctrl"][position[control_base_2]])
+
+    # Case 2.9: targets and controls overlap with targets and controls
+    if target_control and control_target and target_target:
+        return (
+            bool(commutation_map[control_base_1][position["ctrl"]])
+            and bool(commutation_map["ctrl"][position[control_base_2]])
+            and bool(commutation_map[control_base_1][position[control_base_2]])
+        )
+
+    # If no condition was true, return None.
+    return None  # pragma: no cover
 
 
 def _merge_no_duplicates(*iterables):
