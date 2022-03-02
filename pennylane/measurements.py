@@ -611,8 +611,7 @@ class MeasurementValue(Generic[T]):
     Args:
         measurement_id (str): The id of the measurement that this object depends on.
         zero_case (float): the first measurement outcome value
-        one_case (float): the measurement outcome in case the second
-            measurement outcome was obtained
+        one_case (float): the second measurement outcome value
     """
 
     __slots__ = ("_depends_on", "_zero_case", "_one_case", "_control_value")
