@@ -68,7 +68,7 @@ def cond(measurement, then_op):
 
     Returns:
         function: A new function that applies the conditional equivalent of ``then_op``. The returned
-        operation takes the same input arguments as ``operation``.
+        function takes the same input arguments as ``then_op``.
 
     **Example**
 
