@@ -66,6 +66,7 @@ from pennylane.transforms import (
     metric_tensor,
     specs,
     qfunc_transform,
+    op_transform,
     single_tape_transform,
     quantum_monte_carlo,
     apply_controlled_Q,
