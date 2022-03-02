@@ -15,12 +15,20 @@
 A transform to obtain the matrix representation of a quantum circuit.
 """
 from functools import wraps
+import warnings
+
 from pennylane.wires import Wires
 import pennylane as qml
 
 
 def get_unitary_matrix(circuit, wire_order=None):
     r"""Construct the matrix representation of a quantum circuit.
+
+    .. warning::
+
+        ``get_unitary_matrix`` is deprecated, and will be removed in an
+        upcoming release. For extracting matrices of operations and quantum functions,
+        please use :func:`qml.matrix() <.pennylane.matrix>`.
 
     Args:
         circuit (pennylane.QNode, .QuantumTape, or Callable): A quantum node, tape,
@@ -92,6 +100,12 @@ def get_unitary_matrix(circuit, wire_order=None):
     >>> qml.grad(cost)(theta)
     -0.14943813247359922
     """
+    warnings.warn(
+        "get_unitary_matrix is deprecated, and will be removed in an "
+        "upcoming release. For extracting matrices of operations and quantum functions, "
+        "please use qml.matrix().",
+        UserWarning,
+    )
 
     wires = wire_order
 
