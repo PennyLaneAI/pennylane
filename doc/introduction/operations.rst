@@ -46,7 +46,6 @@ and extracting information.
     ~pennylane.eigvals
     ~pennylane.generator
 
-
 All operator functions can be used on instantiated operators,
 
 >>> op = qml.RX(0.54, wires=0)
