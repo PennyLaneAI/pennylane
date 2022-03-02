@@ -2185,6 +2185,47 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected)
         assert np.allclose(grad, grad_expected)
 
+    def test_standard_circuit(self, mocker, use_opt_einsum):
+        """
+        Tests that the full circuit cutting pipeline returns the correct value for a typical
+        scenario. The circuit is drawn below:
+
+        0: ─╭U(M1)───────────────────╭U(M4)─┤ ╭<Z@X>
+        1: ─╰U(M1)──//─╭U(M2)──//────╰U(M4)─┤ │
+        2: ─╭U(M0)─────╰U(M2)─╭U(M3)────────┤ │
+        3: ─╰U(M0)────────────╰U(M3)────────┤ ╰<Z@X>
+        """
+        dev_original = qml.device("default.qubit", wires=4)
+
+        # We need a 3-qubit device
+        dev_cut = qml.device("default.qubit", wires=4)  # TODO: Change to 3 once PR2257 is merged
+        us = [unitary_group.rvs(2 ** 2, random_state=i) for i in range(5)]
+
+        def f():
+            qml.QubitUnitary(us[0], wires=[0, 1])
+            qml.QubitUnitary(us[1], wires=[2, 3])
+
+            qml.WireCut(wires=[1])
+
+            qml.QubitUnitary(us[2], wires=[1, 2])
+
+            qml.WireCut(wires=[1])
+
+            qml.QubitUnitary(us[3], wires=[0, 1])
+            qml.QubitUnitary(us[4], wires=[2, 3])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(3))
+
+        circuit = qml.QNode(f, dev_original)
+        cut_circuit = qcut.cut_circuit(qml.QNode(f, dev_cut), use_opt_einsum=use_opt_einsum)
+
+        res_expected = circuit()
+
+        spy = mocker.spy(qcut, "qcut_processing_fn")
+        res = cut_circuit()
+        spy.assert_called_once()
+
+        assert np.isclose(res, res_expected)
+
 
 class TestCutCircuitTransformValidation:
     """Tests of validation checks in the cut_circuit function"""
