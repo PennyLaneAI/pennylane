@@ -98,7 +98,7 @@ def _generator_prefactor(gen, op):
 
 @qml.op_transform
 def generator(op, format="prefactor"):
-    r"""Returns the generator of operation.
+    r"""Returns the generator of an operation.
 
     Args:
         op (.Operator or Callable): A single operator, or a function that
@@ -124,7 +124,7 @@ def generator(op, format="prefactor"):
           :class:`~.SparseHamiltonian`, or :class:`~.Hamiltonian`.
 
         * ``"hamiltonian"``: Similar to ``"observable"``, however the returned observable
-          will always be converted into :class:`~.Hamiltonian` irregardless of how ``op``
+          will always be converted into :class:`~.Hamiltonian` regardless of how ``op``
           encodes the generator.
 
     **Example**
@@ -172,4 +172,4 @@ def generator(op, format="prefactor"):
     if format == "observable":
         return _generator_observable(gen, op)
 
-    raise ValueError("'format' must be one of ('prefactor', 'hamiltonian', 'observable'")
+    raise ValueError("format must be one of ('prefactor', 'hamiltonian', 'observable')")

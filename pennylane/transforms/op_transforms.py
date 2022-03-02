@@ -307,8 +307,8 @@ class op_transform:
                 qml.operation.OperatorPropertyUndefined,
                 OperationTransformError,
             ):
-                # if obj.expand() does not exist, or the tape transform
-                # function does not exist, simply raise the original exception
+                # if obj.expand() does not exist, a required operation property was not found,
+                # or the tape transform function does not exist, simply raise the original exception
                 raise e1 from None
 
     def tape_fn(self, obj, *args, **kwargs):
@@ -461,6 +461,9 @@ class op_transform:
                 nonlocal wire_order
                 tape, verified_wire_order = _make_tape(obj, wire_order, *args, **kwargs)
 
+                # HOTFIX: some operator transforms return a tape containing
+                # a single transformed operator. As a result, for now we need
+                # to treat a tape with a single operation as a single operation.
                 if len(getattr(tape, "operations", [])) == 1 and self._tape_fn is None:
                     tape = tape.operations[0]
 
