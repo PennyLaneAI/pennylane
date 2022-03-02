@@ -895,7 +895,7 @@ class Device(abc.ABC):
                 )
 
         for o in observables:
-            if isinstance(o, qml.measure.MeasurementProcess) and o.obs is not None:
+            if isinstance(o, qml.measurements.MeasurementProcess) and o.obs is not None:
                 o = o.obs
 
             if isinstance(o, Tensor):
