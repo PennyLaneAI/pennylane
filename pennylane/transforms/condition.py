@@ -58,8 +58,7 @@ class Conditional(Operation):
 
 
 def cond(measurement, then_op):
-    """Create an operation that applies a version of the provided operation
-    that is conditioned on a value dependent on quantum measurements.
+    """Condition a quantum operation on the results of mid-circuit qubit measurements.
 
     Args:
         measurement (MeasurementDependentValue): The measurement dependent
