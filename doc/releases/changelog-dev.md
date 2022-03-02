@@ -4,6 +4,13 @@
 
 <h3>New features since last release</h3>
 
+* Added the user-interface for mid-circuit measurements.
+  [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
+
+* The text based drawer accessed via `qml.draw` has been overhauled. The new drawer has 
+  a `decimals` keyword for controlling parameter rounding, a different algorithm for determining positions, 
+  deprecation of the `charset` keyword, and minor cosmetic changes.
+
 * Transform a circuit from quantum tape, quantum function or quantum node to a pairwise
   commutation DAG (directed acyclic graph). The node represents the quantum operations, and the edges represent 
   non commutation between two operations.
@@ -52,6 +59,7 @@
   >>> second_node_predecessors = second_node.predecessors
   []
   ```
+
 * The text based drawer accessed via `qml.draw` has been overhauled.
 
   [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
@@ -205,6 +213,11 @@
   [#2212](https://github.com/PennyLaneAI/pennylane/pull/2212)
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug in the JAX interface where ``DeviceArray`` objects
+  were not being converted to NumPy arrays before executing an
+  external device.
+  [(#2255)](https://github.com/PennyLaneAI/pennylane/pull/2255)
 
 * The ``qml.ctrl`` transform now works correctly with gradient transforms
   such as the parameter-shift rule.
