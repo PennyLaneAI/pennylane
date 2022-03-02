@@ -417,7 +417,8 @@ class op_transform:
             wrapper = self.tape_fn(tape, *targs, **tkwargs)
 
         elif callable(obj):
-            # Input is a QNode, or qfunc. Get the quantum tape.
+            # Input is a QNode, or qfunc (including single-operation qfuncs).
+            # Get the quantum tape.
             def wrapper(*args, **kwargs):
                 nonlocal wire_order
                 tape, verified_wire_order = self._make_tape(obj, wire_order, *args, **kwargs)
