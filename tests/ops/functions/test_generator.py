@@ -142,26 +142,26 @@ class TestPrefactorReturn:
 
     def test_observable(self):
         """Test a generator that returns a single observable is correct"""
-        prefactor, gen = qml.generator(ObservableOp, format="prefactor")(0.5, wires=0)
+        gen, prefactor = qml.generator(ObservableOp, format="prefactor")(0.5, wires=0)
         assert prefactor == -0.6
         assert gen.name == "PauliX"
 
     def test_tensor_observable(self):
         """Test a generator that returns a tensor observable is correct"""
-        prefactor, gen = qml.generator(TensorOp, format="prefactor")(0.5, wires=[0, 1])
+        gen, prefactor = qml.generator(TensorOp, format="prefactor")(0.5, wires=[0, 1])
         assert prefactor == 0.5
         assert gen.name == ["PauliX", "PauliY"]
 
     def test_hamiltonian(self):
         """Test a generator that returns a Hamiltonian"""
-        prefactor, gen = qml.generator(HamiltonianOp, format="prefactor")(0.5, wires=[0, 1])
+        gen, prefactor = qml.generator(HamiltonianOp, format="prefactor")(0.5, wires=[0, 1])
         assert prefactor == 1.0
         assert gen.name == "Hamiltonian"
 
     def test_hermitian(self):
         """Test a generator that returns a Hermitian observable
         is correct"""
-        prefactor, gen = qml.generator(HermitianOp, format="prefactor")(0.5, wires=0)
+        gen, prefactor = qml.generator(HermitianOp, format="prefactor")(0.5, wires=0)
         assert prefactor == 1.0
         assert gen.name == "Hermitian"
         assert np.all(gen.parameters[0] == HermitianOp.H)
@@ -169,7 +169,7 @@ class TestPrefactorReturn:
     def test_sparse_hamiltonian(self):
         """Test a generator that returns a SparseHamiltonian observable
         is correct"""
-        prefactor, gen = qml.generator(SparseOp, format="prefactor")(0.5, wires=0)
+        gen, prefactor = qml.generator(SparseOp, format="prefactor")(0.5, wires=0)
         assert prefactor == 1.0
         assert gen.name == "SparseHamiltonian"
         assert np.all(gen.parameters[0].toarray() == SparseOp.H.toarray())
@@ -177,11 +177,11 @@ class TestPrefactorReturn:
     def test_inverse(self):
         """Test an inverted generator is correct"""
 
-        prefactor, gen = qml.generator(qml.adjoint(ObservableOp), format="prefactor")(0.5, wires=0)
+        gen, prefactor = qml.generator(qml.adjoint(ObservableOp), format="prefactor")(0.5, wires=0)
         assert prefactor == 0.6
         assert gen.name == "PauliX"
 
-        prefactor, gen = qml.generator(ObservableOp(0.5, wires=0).inv(), format="prefactor")
+        gen, prefactor = qml.generator(ObservableOp(0.5, wires=0).inv(), format="prefactor")
         assert prefactor == 0.6
         assert gen.name == "PauliX"
 

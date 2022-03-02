@@ -390,7 +390,7 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
 
         # for each operation in the layer, get the generator
         for op in curr_ops:
-            s, obs = qml.generator(op)
+            obs, s = qml.generator(op)
             obs_list[-1].append(obs)
             coeffs_list[-1].append(s)
 
