@@ -2012,11 +2012,6 @@ class TestCutCircuitTransform:
         gradient for a simple circuit using the `cut_circuit` transform with the torch interface and
         using torch tracing.
         """
-        if sys.version_info <= (3, 7):
-            pytest.skip(
-                "The circuit cutting pipeline does not work with Torch tracing when using "
-                "Python 3.7."
-            )
         torch = pytest.importorskip("torch")
 
         dev = qml.device("default.qubit", wires=2)
@@ -2031,7 +2026,7 @@ class TestCutCircuitTransform:
             qml.RZ(0.133, wires=1)
             return qml.expval(qml.PauliZ(wires=[0]))
 
-        x = torch.tensor(0.531, requires_grad=True)
+        x = torch.tensor(0.531, requires_grad=True, dtype=torch.complex128)
 
         # Note that the jit.trace ends up calling qcut_processing_fn multiple times, so below we
         # delay introducing the spy until afterwards and then ensure that qcut_processing_fn is
