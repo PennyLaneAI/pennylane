@@ -312,7 +312,8 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
             # The MeasureNode and PrepareNode pair live in the same fragment and did not result
             # in a disconnection. We can therefore remove these nodes. Note that we do not need
             # to worry about adding back an edge between the predecessor to node1 and the successor
-            # to node2 because edge connectivity no longer matters in the subgraphs.
+            # to node2 because our next step is to convert the fragment circuit graphs to tapes,
+            # a process that does not depend on edge connections in the subgraph.
             subgraphs[start_fragment].remove_node(node1)
             subgraphs[end_fragment].remove_node(node2)
 
