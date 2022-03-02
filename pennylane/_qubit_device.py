@@ -38,7 +38,7 @@ from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires
 
-from pennylane.measure import MeasurementProcess
+from pennylane.measurements import MeasurementProcess
 
 
 class QubitDevice(Device):

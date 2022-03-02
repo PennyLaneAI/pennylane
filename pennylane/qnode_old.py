@@ -586,7 +586,9 @@ class QNode:
         else:
             measurement_processes = self.qfunc_output
 
-        if not all(isinstance(m, qml.measure.MeasurementProcess) for m in measurement_processes):
+        if not all(
+            isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
+        ):
             raise qml.QuantumFunctionError(
                 "A quantum function must return either a single measurement, "
                 "or a nonempty sequence of measurements."
