@@ -50,6 +50,7 @@ containing quantum operations) that are used to construct QNodes.
 
     ~adjoint
     ~ctrl
+    ~transforms.cond
     ~defer_measurements
     ~apply_controlled_Q
     ~quantum_monte_carlo
@@ -130,16 +131,6 @@ more tapes as well as a classical processing function.
 
     ~transforms.measurement_grouping
     ~transforms.hamiltonian_expand
-
-Transforms that act on operations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-These transforms accept quantum operations that are used in a quantum function.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.cond
 
 Decorators and utility functions
 --------------------------------
