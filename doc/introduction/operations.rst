@@ -44,6 +44,7 @@ and extracting information.
     ~pennylane.ctrl
     ~pennylane.matrix
     ~pennylane.eigvals
+    ~pennylane.generator
 
 
 All operator transforms can be used on instantiated operators,

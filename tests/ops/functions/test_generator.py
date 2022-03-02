@@ -132,7 +132,7 @@ class TestValidation:
 
     def test_unknown_format(self):
         """Raise an exception is the format is unknown"""
-        with pytest.raises(ValueError, match="'format' must be one of"):
+        with pytest.raises(ValueError, match="format must be one of"):
             qml.generator(qml.RX, format=None)(0.5, wires=0)
 
 
