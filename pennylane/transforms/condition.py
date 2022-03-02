@@ -84,7 +84,6 @@ def cond(measurement, then_op):
         sec_par = 0.3
 
         @qml.qnode(dev)
-        @qml.defer_measurements
         def qnode():
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.RY)(first_par, wires=1)
