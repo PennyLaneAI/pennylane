@@ -60,8 +60,13 @@ class Conditional(Operation):
 def cond(measurement, then_op):
     """Condition a quantum operation on the results of mid-circuit qubit measurements.
 
+    Support for using :func:`~.cond` is device-dependent. If a device doesn't
+    support mid-circuit measurements natively, then the QNode will apply the
+    :func:`defer_measurements` transform.
+
     Args:
-        measurement (MeasurementValue): the measurement value to consider
+        measurement (MeasurementValue): a measurement value to consider, for
+            example the output of calling :func:`qml.measure`
         then_op (Operation): The PennyLane operation to apply if the condition
             applies.
 
