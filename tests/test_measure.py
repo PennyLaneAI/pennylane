@@ -22,7 +22,7 @@ from pennylane.devices import DefaultQubit
 from pennylane.operation import DecompositionUndefinedError
 
 from pennylane.queuing import AnnotatedQueue
-from pennylane.measure import (
+from pennylane.measurements import (
     expval,
     var,
     sample,

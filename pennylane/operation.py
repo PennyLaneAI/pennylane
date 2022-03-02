@@ -804,13 +804,15 @@ class Operator(abc.ABC):
     def name(self, value):
         self._name = value
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 
         Args:
             decimals=None (int): If ``None``, no parameters are included. Else,
                 specifies how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
 
         Returns:
             str: label to use in drawings
@@ -830,16 +832,58 @@ class Operator(abc.ABC):
         >>> op.label()
         "RX⁻¹"
 
+        If the operation has a matrix-valued parameter and a cache dictionary is provided,
+        unique matrices will be cached in the ``'matrices'`` key list. The label will contain
+        the index of the matrix in the ``'matrices'`` list.
+
+        >>> op2 = qml.QubitUnitary(np.eye(2), wires=0)
+        >>> cache = {'matrices': []}
+        >>> op2.label(cache=cache)
+        'U(M0)'
+        >>> cache['matrices']
+        [tensor([[1., 0.],
+         [0., 1.]], requires_grad=True)]
+        >>> op3 = qml.QubitUnitary(np.eye(4), wires=(0,1))
+        >>> op3.label(cache=cache)
+        'U(M1)'
+        >>> cache['matrices']
+        [tensor([[1., 0.],
+                [0., 1.]], requires_grad=True),
+        tensor([[1., 0., 0., 0.],
+                [0., 1., 0., 0.],
+                [0., 0., 1., 0.],
+                [0., 0., 0., 1.]], requires_grad=True)]
+
         """
         op_label = base_label or self.__class__.__name__
 
-        if decimals is None or self.num_params == 0:
+        if self.num_params == 0:
             return op_label
 
         params = self.parameters
 
-        # matrix parameters not rendered
         if len(qml.math.shape(params[0])) != 0:
+            # assume that if the first parameter is matrix-valued, there is only a single parameter
+            # this holds true for all current operations and templates
+            if (
+                cache is None
+                or not isinstance(cache.get("matrices", None), list)
+                or len(params) != 1
+            ):
+                return op_label
+
+            for i, mat in enumerate(cache["matrices"]):
+                if qml.math.shape(params[0]) == qml.math.shape(mat) and qml.math.allclose(
+                    params[0], mat
+                ):
+                    return f"{op_label}(M{i})"
+
+            # matrix not in cache
+            mat_num = len(cache["matrices"])
+            cache["matrices"].append(params[0])
+            return f"{op_label}(M{mat_num})"
+
+        if decimals is None:
             return op_label
 
         def _format(x):
@@ -848,9 +892,6 @@ class Operator(abc.ABC):
             except ValueError:
                 # If the parameter can't be displayed as a float
                 return format(x)
-
-        if self.num_params == 1:
-            return op_label + f"\n({_format(params[0])})"
 
         param_string = ",\n".join(_format(p) for p in params)
         return op_label + f"\n({param_string})"
@@ -1046,6 +1087,41 @@ class Operator(abc.ABC):
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
+    def expand(self):
+        """Returns a tape that has recorded the decomposition of the operator.
+
+        Returns:
+            .JacobianTape: quantum tape
+        """
+        tape = qml.tape.QuantumTape(do_queue=False)
+
+        with tape:
+
+            try:
+                self.decomposition()
+
+            except TypeError:
+                if self.num_params == 0:
+                    self.decomposition(wires=self.wires)
+                else:
+                    self.decomposition(*self.parameters, wires=self.wires)
+
+                warnings.warn(
+                    "Operator.decomposition() is now an instance method, and no longer accepts parameters. "
+                    "Either define the static method 'compute_decomposition' instead, or use "
+                    "'self.wires' and 'self.parameters'.",
+                    UserWarning,
+                )
+
+        if not self.data:
+            # original operation has no trainable parameters
+            tape.trainable_params = {}
+
+        if self.inverse:
+            tape.inv()
+
+        return tape
+
 
 # =============================================================================
 # Base Operation class
@@ -1127,6 +1203,7 @@ class Operation(Operator):
         s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
     """
 
+    # Attributes for compilation transforms
     basis = None
     """str or None: The target operation for controlled gates.
     target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
@@ -1272,41 +1349,6 @@ class Operation(Operator):
     def inverse(self, boolean):
         self._inverse = boolean
 
-    def expand(self):
-        """Returns a tape that has recorded the decomposition of the operator.
-
-        Returns:
-            .JacobianTape: quantum tape
-        """
-        tape = qml.tape.QuantumTape(do_queue=False)
-
-        with tape:
-
-            try:
-                self.decomposition()
-
-            except TypeError:
-                if self.num_params == 0:
-                    self.decomposition(wires=self.wires)
-                else:
-                    self.decomposition(*self.parameters, wires=self.wires)
-
-                warnings.warn(
-                    "Operator.decomposition() is now an instance method, and no longer accepts parameters. "
-                    "Either define the static method 'compute_decomposition' instead, or use "
-                    "'self.wires' and 'self.parameters'.",
-                    UserWarning,
-                )
-
-        if not self.data:
-            # original operation has no trainable parameters
-            tape.trainable_params = {}
-
-        if self.inverse:
-            tape.inv()
-
-        return tape
-
     def inv(self):
         """Inverts the operator.
 
@@ -1356,11 +1398,11 @@ class Operation(Operator):
         """Name of the operator."""
         return self._name + ".inv" if self.inverse else self._name
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         if self.inverse:
             base_label = base_label or self.__class__.__name__
             base_label += "⁻¹"
-        return super().label(decimals=decimals, base_label=base_label)
+        return super().label(decimals=decimals, base_label=base_label, cache=cache)
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
 
@@ -1619,7 +1661,7 @@ class Tensor(Observable):
         self._args = args
         self.queue(init=True)
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         r"""How the operator is represented in diagrams and drawings.
 
         Args:
@@ -1627,6 +1669,8 @@ class Tensor(Observable):
                 how to round the parameters.
             base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
                 Must be same length as ``obs`` attribute.
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
 
         Returns:
             str: label to use in drawings
@@ -2413,7 +2457,7 @@ def has_unitary_gen(obj):
 @qml.BooleanFn
 def is_measurement(obj):
     """Returns ``True`` if an operator is a ``MeasurementProcess`` instance."""
-    return isinstance(obj, qml.measure.MeasurementProcess)
+    return isinstance(obj, qml.measurements.MeasurementProcess)
 
 
 @qml.BooleanFn
