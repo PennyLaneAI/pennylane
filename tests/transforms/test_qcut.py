@@ -2091,10 +2091,29 @@ class TestCutCircuitTransform:
 
         assert np.isclose(gradient, cut_gradient)
 
-    def test_circuit_with_disconnected_components(self, use_opt_einsum, mocker):
-        """Tests if a circuit that is fragmented into subcircuits such that some of the subcircuits
-        are disconnected from the final terminal measurements is executed correctly"""
+    def test_circuit_with_disconnected_components(self, use_opt_einsum):
+        """Tests the correct execution of a cut circuit with a fragment whose wires are not acted
+        upon by the observable"""
         dev = qml.device("default.qubit", wires=3)
+
+        @qml.transforms.cut_circuit(use_opt_einsum=use_opt_einsum)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RY(x**2, wires=2)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+        x = 0.4
+        res = circuit(x)
+        assert np.allclose(res, np.cos(x))
+
+    def test_circuit_with_trivial_wire_cut(self, use_opt_einsum, mocker):
+        """Tests that a circuit with a trivial wire cut (not separating the circuit into
+        fragments) is executed correctly"""
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.transforms.cut_circuit(use_opt_einsum=use_opt_einsum)
         @qml.qnode(dev)
@@ -2103,7 +2122,6 @@ class TestCutCircuitTransform:
             qml.CNOT(wires=[0, 1])
             qml.WireCut(wires=0)
             qml.CNOT(wires=[0, 1])
-            qml.RY(x**2, wires=2)
             return qml.expval(qml.PauliZ(wires=[0]))
 
         spy = mocker.spy(qcut, "contract_tensors")
@@ -2111,7 +2129,7 @@ class TestCutCircuitTransform:
         x = 0.4
         res = circuit(x)
         assert np.allclose(res, np.cos(x))
-        assert len(spy.call_args[0][0]) == 1  # there should be 2 tensors for wire 0
+        assert len(spy.call_args[0][0]) == 1  # there should be 1 tensor for wire 0
         assert spy.call_args[0][0][0].shape == ()
 
     def test_complicated_circuit(self, mocker, use_opt_einsum):
@@ -2199,7 +2217,7 @@ class TestCutCircuitTransform:
 
         # We need a 3-qubit device
         dev_cut = qml.device("default.qubit", wires=4)  # TODO: Change to 3 once PR2257 is merged
-        us = [unitary_group.rvs(2 ** 2, random_state=i) for i in range(5)]
+        us = [unitary_group.rvs(2**2, random_state=i) for i in range(5)]
 
         def f():
             qml.QubitUnitary(us[0], wires=[0, 1])
