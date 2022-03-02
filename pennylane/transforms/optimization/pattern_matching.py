@@ -17,6 +17,7 @@ substitution."""
 import itertools
 import copy
 import pennylane as qml
+from collections import OrderedDict
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.commutation_dag import commutation_dag
@@ -27,7 +28,7 @@ from pennylane.ops.qubit.attributes import (
 
 
 @qfunc_transform
-def pattern_matching(tape, pattern_tapes):
+def pattern_matching_optimization(tape, pattern_tapes):
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
     Args:
@@ -69,30 +70,29 @@ def pattern_matching(tape, pattern_tapes):
     transform.
 
     >>> dev = qml.device('default.qubit', wires=5)
-    >>> optimized_qfunc = pattern_matching(pattern_tapes=[template])(circuit)
+    >>> qnode = qml.QNode(circuit, dev)
+    >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
     In our case, it is possible to find three CNOTs and replace this pattern with only two CNOTs and therefore
     optimizing the circuit. The number of CNOTs in the circuit is reduced by one.
 
-    >>> print(qml.draw(qnode, wire_order=[3,4,0,1,2])())
-
-    3: ─╭C──H───────╭X─╭C────┤
-    4: ─├C─╭X───────│──│──╭X─┤
-    0: ─╰X─│────────│──├X─│──┤  <X>
-    1: ────╰C─╭X──Z─│──│──╰C─┤
-    2: ───────╰C────╰C─╰C────┤
+    >>> print(qml.draw(qnode)())
+    0: ─╭X──────────╭X────┤  <X>
+    1: ─│──╭C─╭X──Z─│──╭C─┤
+    2: ─│──│──╰C─╭C─├C─│──┤
+    3: ─├C─│───H─╰X─╰C─│──┤
+    4: ─╰C─╰X──────────╰X─┤
 
     >>> print(qml.draw(optimized_qnode)())
-
-    0: ─╭C──H───────╭X─╭C─┤
-    1: ─├C─╭X───────│──│──┤
-    2: ─╰X─│────────│──├X─┤  <X>
-    3: ────│──╭X──Z─│──│──┤
-    4: ────╰C─╰C────╰C─╰C─┤
-
+    0: ─╭X──────────╭X─┤  <X>
+    1: ─│─────╭X──Z─│──┤
+    2: ─│──╭C─╰C─╭C─├C─┤
+    3: ─├C─│───H─╰X─╰C─┤
+    4: ─╰C─╰X──────────┤
     """
     measurements = tape.measurements
+    observables = tape.observables
 
     for pattern in pattern_tapes:
         # Check the validity of the pattern
@@ -113,80 +113,13 @@ def pattern_matching(tape, pattern_tapes):
         circuit_dag = commutation_dag(tape)()
         pattern_dag = commutation_dag(pattern)()
 
-        # Match list
-        match_list = []
+        consecutive_wires = Wires(range(len(tape.wires)))
+        inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
 
-        # Loop through all possible initial matches
-        for node_c in circuit_dag.get_nodes():
-            for node_p in pattern_dag.get_nodes():
-                # Initial matches between two identical gates (No qubits comparison)
-                if _compare_operation_without_qubits(node_c[1], node_p[1]):
+        max_matches = pattern_matching(circuit_dag, pattern_dag)
 
-                    circuit_range = range(0, circuit_dag.num_wires)
-
-                    # Fix qubits from the first (target fixed and control restrained)
-                    not_fixed_qubits_confs = _not_fixed_qubits(
-                        circuit_range, node_c[1].wires, pattern_dag.num_wires - len(node_p[1].wires)
-                    )
-
-                    # Loop over all possible qubits configurations given the first match constrains
-                    for not_fixed_qubits_conf in not_fixed_qubits_confs:
-                        for not_fixed_qubits_conf_permuted in itertools.permutations(
-                            not_fixed_qubits_conf
-                        ):
-                            not_fixed_qubits_conf_permuted = list(not_fixed_qubits_conf_permuted)
-                            for first_match_qubits_conf in _first_match_qubits(
-                                node_c[1], node_p[1], pattern_dag.num_wires
-                            ):
-                                # Qubits mapping between circuit and pattern
-                                qubits_conf = _merge_first_match_and_permutation(
-                                    first_match_qubits_conf, not_fixed_qubits_conf_permuted
-                                )
-
-                                # Update wires, target_wires, control_wires
-                                wires, target_wires, control_wires = _update_qubits(
-                                    circuit_dag, qubits_conf
-                                )
-
-                                # Forward match part of the algorithm
-                                forward = ForwardMatch(
-                                    circuit_dag,
-                                    pattern_dag,
-                                    node_c[0],
-                                    node_p[0],
-                                    wires,
-                                    target_wires,
-                                    control_wires,
-                                )
-                                forward.run_forward_match()
-
-                                # Backward match part of the algorithm
-                                backward = BackwardMatch(
-                                    circuit_dag,
-                                    pattern_dag,
-                                    qubits_conf,
-                                    forward.match,
-                                    forward.circuit_matched_with,
-                                    forward.circuit_blocked,
-                                    forward.pattern_matched_with,
-                                    node_c[0],
-                                    node_p[0],
-                                    wires,
-                                    control_wires,
-                                    target_wires,
-                                )
-                                backward.run_backward_match()
-
-                                _add_match(match_list, backward.match_final)
-
-        match_list.sort(key=lambda x: len(x.match), reverse=True)
-
-        # Extract maximal matches and optimizes the circuit for compatible maximal matches
-        if match_list:
-            maximal = MaximalMatches(match_list)
-            maximal.run_maximal_matches()
-            max_matches = maximal.max_match_list
-
+        # Optimizes the circuit for compatible maximal matches
+        if max_matches:
             # Initialize the optimization by substitution of the different matches
             substitution = TemplateSubstitution(max_matches, circuit_dag, pattern_dag)
             substitution.substitution()
@@ -195,8 +128,9 @@ def pattern_matching(tape, pattern_tapes):
 
             # If some substitutions are possible, we create an optimized circuit.
             if substitution.substitution_list:
-                # Loop over all possible substitutions
+                # Create a tape that does not affect the outside context.
                 with qml.tape.QuantumTape(do_queue=False) as tape_inside:
+                    # Loop over all possible substitutions
                     for group in substitution.substitution_list:
 
                         circuit_sub = group.circuit_config
@@ -238,10 +172,103 @@ def pattern_matching(tape, pattern_tapes):
             tape = tape_inside
 
     for op in tape.operations:
+        op._wires = Wires([inverse_wires_map[wire] for wire in op.wires.tolist()])
         apply(op)
+
     # After optimization, simply apply the measurements
+    for obs in observables:
+        obs._wires = Wires([inverse_wires_map[wire] for wire in obs.wires.tolist()])
+
     for m in measurements:
         apply(m)
+
+
+def pattern_matching(circuit_dag, pattern_dag):
+    r"""Function that applies the pattern matching algorithm and returns the list of maximal matches.
+
+    Args:
+        circuit_dag (.CommutationDAG): A commutation DAG representing the circuit to be optimized.
+        pattern_dag(.CommutationDAG): A commutation DAG representing the pattern.
+
+    Returns:
+        list(Match): the list of maximal matches.
+    """
+    # Match list
+    match_list = []
+
+    # Loop through all possible initial matches
+    for node_c in circuit_dag.get_nodes():
+        for node_p in pattern_dag.get_nodes():
+            # Initial matches between two identical gates (No qubits comparison)
+            if _compare_operation_without_qubits(node_c[1], node_p[1]):
+
+                circuit_range = range(0, circuit_dag.num_wires)
+
+                # Fix qubits from the first (target fixed and control restrained)
+                not_fixed_qubits_confs = _not_fixed_qubits(
+                    circuit_range, node_c[1].wires, pattern_dag.num_wires - len(node_p[1].wires)
+                )
+
+                # Loop over all possible qubits configurations given the first match constrains
+                for not_fixed_qubits_conf in not_fixed_qubits_confs:
+                    for not_fixed_qubits_conf_permuted in itertools.permutations(
+                            not_fixed_qubits_conf
+                    ):
+                        not_fixed_qubits_conf_permuted = list(not_fixed_qubits_conf_permuted)
+                        for first_match_qubits_conf in _first_match_qubits(
+                                node_c[1], node_p[1], pattern_dag.num_wires
+                        ):
+                            # Qubits mapping between circuit and pattern
+                            qubits_conf = _merge_first_match_and_permutation(
+                                first_match_qubits_conf, not_fixed_qubits_conf_permuted
+                            )
+
+                            # Update wires, target_wires, control_wires
+                            wires, target_wires, control_wires = _update_qubits(
+                                circuit_dag, qubits_conf
+                            )
+
+                            # Forward match part of the algorithm
+                            forward = ForwardMatch(
+                                circuit_dag,
+                                pattern_dag,
+                                node_c[0],
+                                node_p[0],
+                                wires,
+                                target_wires,
+                                control_wires,
+                            )
+                            forward.run_forward_match()
+
+                            # Backward match part of the algorithm
+                            backward = BackwardMatch(
+                                circuit_dag,
+                                pattern_dag,
+                                qubits_conf,
+                                forward.match,
+                                forward.circuit_matched_with,
+                                forward.circuit_blocked,
+                                forward.pattern_matched_with,
+                                node_c[0],
+                                node_p[0],
+                                wires,
+                                control_wires,
+                                target_wires,
+                            )
+                            backward.run_backward_match()
+
+                            _add_match(match_list, backward.match_final)
+
+    match_list.sort(key=lambda x: len(x.match), reverse=True)
+
+    # Extract maximal matches and optimizes the circuit for compatible maximal matches
+    if match_list:
+        maximal = MaximalMatches(match_list)
+        maximal.run_maximal_matches()
+        max_matches = maximal.max_match_list
+        return max_matches
+
+    return match_list
 
 
 def _compare_operation_without_qubits(node_1, node_2):

@@ -71,6 +71,8 @@ from pennylane.transforms import (
     apply_controlled_Q,
     commutation_dag,
     is_commuting,
+    pattern_matching,
+    pattern_matching_optimization,
     simplify,
 )
 from pennylane.optimize import *

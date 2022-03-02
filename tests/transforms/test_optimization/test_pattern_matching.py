@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pennylane as qml
-from pennylane.transforms.optimization.pattern_matching import pattern_matching
+from pennylane.transforms.optimization.pattern_matching import pattern_matching_optimization
 
 
 class TestPatternMatching:
@@ -45,7 +45,7 @@ class TestPatternMatching:
         qnode = qml.QNode(circuit, dev)
         qnode()
 
-        optimized_qfunc = pattern_matching(pattern_tapes=[template])(circuit)
+        optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -88,7 +88,7 @@ class TestPatternMatching:
         qnode = qml.QNode(circuit, dev)
         qnode()
 
-        optimized_qfunc = pattern_matching(pattern_tapes=[template_x, template_z, template_cnot])(
+        optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template_x, template_z, template_cnot])(
             circuit
         )
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
@@ -172,7 +172,7 @@ class TestPatternMatching:
         qnode = qml.QNode(mod_5_4, dev)
         qnode()
 
-        optimized_qfunc = pattern_matching(pattern_tapes=[template])(mod_5_4)
+        optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(mod_5_4)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -292,7 +292,7 @@ class TestPatternMatching:
         qnode = qml.QNode(vbe_adder_3, dev)
         qnode()
 
-        optimized_qfunc = pattern_matching(pattern_tapes=[template])(vbe_adder_3)
+        optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(vbe_adder_3)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
