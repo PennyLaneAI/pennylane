@@ -149,6 +149,7 @@ class TestQubitUnitary:
 
     @pytest.mark.parametrize("U, num_wires", [(H, 1), (np.kron(H, H), 2)])
     def test_qubit_unitary_jax(self, U, num_wires):
+        """Tests that QubitUnitary works with jitting."""
         jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
