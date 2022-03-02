@@ -797,7 +797,8 @@ class TestIntegration:
 
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
-    def test_defer_meas_if_mcm_unsupported(self, first_par, sec_par):
+    @pytest.mark.parametrize("return_type", [qml.expval(qml.PauliZ(1)), qml.var(qml.PauliZ(1)), qml.probs(wires=[1])])
+    def test_defer_meas_if_mcm_unsupported(self, first_par, sec_par, return_type):
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
         natively."""
@@ -809,7 +810,7 @@ class TestIntegration:
             qml.Hadamard(1)
             qml.RY(x, wires=0)
             qml.CRY(y, wires=[0, 1])
-            return qml.expval(qml.PauliZ(1))
+            return qml.apply(return_type)
 
         @qml.qnode(dev)
         def conditional_ry_qnode(x, y):
@@ -819,10 +820,38 @@ class TestIntegration:
             qml.RY(x, wires=0)
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.RY)(y, wires=1)
-            return qml.expval(qml.PauliZ(1))
+            return qml.apply(return_type)
 
         r1 = cry_qnode(first_par, sec_par)
         r2 = conditional_ry_qnode(first_par, sec_par)
+        assert np.allclose(r1, r2)
+
+    @pytest.mark.parametrize("basis_state", [[1,0],[0,1]])
+    def test_sampling_with_mcm(self, basis_state):
+        """Tests that a QNode with qml.sample and mid-circuit measurements
+        returns the expected results."""
+        dev = qml.device("default.qubit", wires=2, shots=1000)
+
+        first_par = np.pi
+
+        @qml.qnode(dev)
+        def cry_qnode(x):
+            """QNode where we apply a controlled Y-rotation."""
+            qml.BasisStatePreparation(basis_state, wires=[0,1])
+            qml.CRY(x, wires=[0, 1])
+            return qml.sample(qml.PauliZ(1))
+
+        @qml.qnode(dev)
+        def conditional_ry_qnode(x):
+            """QNode where the defer measurements transform is applied by
+            default under the hood."""
+            qml.BasisStatePreparation(basis_state, wires=[0,1])
+            m_0 = qml.measure(0)
+            qml.cond(m_0, qml.RY)(x, wires=1)
+            return qml.sample(qml.PauliZ(1))
+
+        r1 = cry_qnode(first_par)
+        r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
 
     def test_conditional_ops_tensorflow(self):
