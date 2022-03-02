@@ -4,6 +4,56 @@
 
 <h3>New features since last release</h3>
 
+* New functions and transforms of operators have been added. These include:
+
+  - `qml.matrix()` for computing the matrix representation of one or more unitary operators.
+    [(#2241)](https://github.com/PennyLaneAI/pennylane/pull/2241)
+    
+  - `qml.eigvals()` for computing the eigenvalues of one or more operators.
+    [(#2248)](https://github.com/PennyLaneAI/pennylane/pull/2248)
+
+  All operator transforms can be used on instantiated operators,
+
+  ```pycon
+  >>> op = qml.RX(0.54, wires=0)
+  >>> qml.matrix(op)
+  [[0.9637709+0.j         0.       -0.26673144j]
+  [0.       -0.26673144j 0.9637709+0.j        ]]
+  ```
+
+  Operator transforms can also be used in a functional form:
+
+  ```pycon
+  >>> x = torch.tensor(0.6, requires_grad=True)
+  >>> matrix_fn = qml.matrix(qml.RX)
+  >>> matrix_fn(x)
+  tensor([[0.9553+0.0000j, 0.0000-0.2955j],
+          [0.0000-0.2955j, 0.9553+0.0000j]], grad_fn=<AddBackward0>)
+  ```
+
+  In its functional form, it is fully differentiable with respect to gate arguments:
+
+  ```pycon
+  >>> loss = torch.real(torch.trace(matrix_fn(x, wires=0)))
+  >>> loss.backward()
+  >>> x.grad
+  tensor(-0.5910)
+  ```
+
+  Some operator transform can also act on multiple operations, by passing
+  quantum functions or tapes:
+
+  ```pycon
+  >>> def circuit(theta):
+  ...     qml.RX(theta, wires=1)
+  ...     qml.PauliZ(wires=0)
+  >>> qml.matrix(circuit)(np.pi / 4)
+  array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
+  [ 0.+0.j,  -0.92387953+0.j,  0.+0.j,  0. +0.38268343j],
+  [ 0. -0.38268343j,  0.+0.j,  0.92387953+0.j,  0.+0.j],
+  [ 0.+0.j,  0.+0.38268343j,  0.+0.j,  -0.92387953+0.j]])
+  ```
+
 * Added the user-interface for mid-circuit measurements.
   [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
 
@@ -193,6 +243,11 @@
   `qml.gradients.finite_diff()` can be used to compute purely quantum gradients
   (that is, gradients of tapes or QNode).
   [#2212](https://github.com/PennyLaneAI/pennylane/pull/2212)
+
+* `qml.transforms.get_unitary_matrix()` has been deprecated and will be removed
+  in a future release. For extracting matrices of operations and quantum functions,
+  please use `qml.matrix()`.
+  [(#2248)](https://github.com/PennyLaneAI/pennylane/pull/2248)
 
 <h3>Bug fixes</h3>
 

@@ -696,7 +696,7 @@ class Operator(abc.ABC):
         .. warning::
 
             The ``eigvals`` property is deprecated and will be removed in
-            an upcoming release.
+            an upcoming release. Please use :class:`qml.eigvals <.pennylane.eigvals>` instead.
 
         **Example:**
 
@@ -708,7 +708,8 @@ class Operator(abc.ABC):
             array: eigvals representation
         """
         warnings.warn(
-            "The 'eigvals' property is deprecated and will be removed in an upcoming release.",
+            "The 'eigvals' property is deprecated and will be removed in an upcoming release. "
+            "Please use 'qml.eigvals' instead.",
             UserWarning,
         )
         return self.get_eigvals()
@@ -744,7 +745,7 @@ class Operator(abc.ABC):
             # By default, compute the eigenvalues from the matrix representation.
             # This will raise a NotImplementedError if the matrix is undefined.
             try:
-                return np.linalg.eigvals(self.get_matrix())
+                return qml.math.linalg.eigvals(self.get_matrix())
             except MatrixUndefinedError as e:
                 raise EigvalsUndefinedError from e
 
