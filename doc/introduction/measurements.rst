@@ -164,7 +164,7 @@ mid-circuit measurements:
 .. code-block:: python
 
     def my_quantum_function(x, y):
-        qml.RY(x, wires=1)
+        qml.RY(x, wires=0)
         qml.CNOT(wires=[0, 1])
         m_0 = qml.measure(1)
 
