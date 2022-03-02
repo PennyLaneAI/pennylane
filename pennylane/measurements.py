@@ -610,8 +610,7 @@ class MeasurementValue(Generic[T]):
 
     Args:
         measurement_id (str): The id of the measurement that this object depends on.
-        zero_case (float): the measurement outcome in case the first
-            measurement outcome was obtained
+        zero_case (float): the first measurement outcome value
         one_case (float): the measurement outcome in case the second
             measurement outcome was obtained
     """
