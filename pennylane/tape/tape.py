@@ -416,7 +416,7 @@ class QuantumTape(AnnotatedQueue):
             elif isinstance(obj, qml.operation.Operation) and not info.get("owner", False):
                 # operation objects with no owners
 
-                if any(m for m in self._measurements if m.return_type != qml.operation.MidMeasure):
+                if self._measurements:
                     raise ValueError(
                         f"Quantum operation {obj} must occur prior to any measurements."
                     )
