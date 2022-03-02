@@ -233,6 +233,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     return graph
 
 
+# pylint: disable=too-many-branches
 def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
     """
     Fragments a graph into a collection of subgraphs as well as returning
