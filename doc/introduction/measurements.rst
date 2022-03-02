@@ -180,7 +180,7 @@ measurement on qubit 1 yielded the ``1`` as an outcome, otherwise doing nothing
 for the ``0`` measurement outcome..
 
 PennyLane implements the deferred measurement principle to transform
-conditional operations with the :func:`~.pennylane.defer_measurements` quantum
+conditional operations with the :func:`~.pennylane.transforms.defer_measurements` quantum
 function transform.
 
 .. code-block:: python
