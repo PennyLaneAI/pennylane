@@ -196,6 +196,9 @@
 
 <h3>Bug fixes</h3>
 
+* The `qml.QubitUnitary` operation now supports jitting. 
+  [(#2249)](https://github.com/PennyLaneAI/pennylane/pull/2249)
+  
 * Fixes a bug in the JAX interface where ``DeviceArray`` objects
   were not being converted to NumPy arrays before executing an
   external device.
