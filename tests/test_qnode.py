@@ -797,7 +797,9 @@ class TestIntegration:
 
     @pytest.mark.parametrize("first_par", np.linspace(0.15, np.pi - 0.3, 3))
     @pytest.mark.parametrize("sec_par", np.linspace(0.15, np.pi - 0.3, 3))
-    @pytest.mark.parametrize("return_type", [qml.expval(qml.PauliZ(1)), qml.var(qml.PauliZ(1)), qml.probs(wires=[1])])
+    @pytest.mark.parametrize(
+        "return_type", [qml.expval(qml.PauliZ(1)), qml.var(qml.PauliZ(1)), qml.probs(wires=[1])]
+    )
     def test_defer_meas_if_mcm_unsupported(self, first_par, sec_par, return_type):
         """Tests that the transform using the deferred measurement principle is
         applied if the device doesn't support mid-circuit measurements
@@ -826,7 +828,7 @@ class TestIntegration:
         r2 = conditional_ry_qnode(first_par, sec_par)
         assert np.allclose(r1, r2)
 
-    @pytest.mark.parametrize("basis_state", [[1,0],[0,1]])
+    @pytest.mark.parametrize("basis_state", [[1, 0], [0, 1]])
     def test_sampling_with_mcm(self, basis_state):
         """Tests that a QNode with qml.sample and mid-circuit measurements
         returns the expected results."""
@@ -837,7 +839,7 @@ class TestIntegration:
         @qml.qnode(dev)
         def cry_qnode(x):
             """QNode where we apply a controlled Y-rotation."""
-            qml.BasisStatePreparation(basis_state, wires=[0,1])
+            qml.BasisStatePreparation(basis_state, wires=[0, 1])
             qml.CRY(x, wires=[0, 1])
             return qml.sample(qml.PauliZ(1))
 
@@ -845,7 +847,7 @@ class TestIntegration:
         def conditional_ry_qnode(x):
             """QNode where the defer measurements transform is applied by
             default under the hood."""
-            qml.BasisStatePreparation(basis_state, wires=[0,1])
+            qml.BasisStatePreparation(basis_state, wires=[0, 1])
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.RY)(x, wires=1)
             return qml.sample(qml.PauliZ(1))
