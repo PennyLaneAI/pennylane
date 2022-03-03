@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module provides the circuit cutting functionality that allows large
-circuits to be distributed across multiple devices.
+Functions for performing quantum circuit cutting.
 """
 
 import copy

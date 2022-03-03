@@ -92,32 +92,18 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
-Transforms for circuit cutting
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transform for circuit cutting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This transform accepts QNodes, performs circuit cutting, and returns the result of the original
-uncut circuit.
+This transform accepts a QNode and returns a new function that cuts the original circuit into
+fragments that can be run on smaller devices.
 
 .. autosummary::
     :toctree: api
 
     ~transforms.cut_circuit
 
-The following are utility functions that compose the circuit cutting transform.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.tape_to_graph
-    ~transforms.replace_wire_cut_node
-    ~transforms.replace_wire_cut_nodes
-    ~transforms.fragment_graph
-    ~transforms.graph_to_tape
-    ~transforms.expand_fragment_tapes
-    ~transforms.contract_tensors
-    ~transforms.qcut_processing_fn
-    ~transforms.remap_tape_wires
-    ~transforms.CutStrategy
+The supporting functionality for circuit cutting is provided in the :mod:`~.qcut` module.
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
