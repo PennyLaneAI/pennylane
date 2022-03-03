@@ -160,6 +160,30 @@ class TestConditionalOperations:
         assert isinstance(sec_ctrl_op.queue[0], qml.CRZ)
         assert sec_ctrl_op.data == [sec_par]
 
+    def test_correct_ops_in_tape_inversion(self):
+        """Test that the underlying tape contains the correct operations if a
+        measurement value was inverted."""
+        dev = qml.device("default.qubit", wires=3)
+
+        first_par = 0.1
+        sec_par = 0.3
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode():
+            m_0 = qml.measure(0)
+            qml.cond(~m_0, qml.RY)(first_par, wires=1)
+            return qml.expval(qml.PauliZ(1))
+
+        qnode()
+        assert len(qnode.qtape.queue) == 7  # observable and measurement queued separately queued
+
+        print(qnode.qtape.queue)
+        first_ctrl_op = qnode.qtape.queue[0].expand()
+        assert len(first_ctrl_op.queue) == 1
+        assert isinstance(first_ctrl_op.queue[0], qml.CRY)
+        assert first_ctrl_op.data == [first_par]
+
     @pytest.mark.parametrize("r", np.linspace(0.0, 1.6, 10))
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_quantum_teleportation(self, device, r):
