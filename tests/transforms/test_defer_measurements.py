@@ -337,10 +337,10 @@ class TestConditionalOperations:
         @qml.qnode(dev)
         def normal_circuit(rads):
             qml.Hadamard(0)
-            controlled_op1(rads, wires=[0,1])
+            controlled_op1(rads, wires=[0, 1])
 
             qml.PauliX(0)
-            controlled_op2(rads, wires=[0,1])
+            controlled_op2(rads, wires=[0, 1])
             qml.PauliX(0)
             return qml.probs(wires=1)
 
