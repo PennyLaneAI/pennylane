@@ -1317,10 +1317,16 @@ class TestOperationDerivative:
 
     def test_no_generator_raise(self):
         """Tests if the function raises an exception if the input operation has no generator"""
-        op = qml.Rot(0.1, 0.2, 0.3, wires=0)
+
+        class CustomOp(qml.operation.Operation):
+            num_wires = 1
+            num_params = 1
+
+        op = CustomOp(0.5, wires=0)
 
         with pytest.raises(
-            qml.operation.GeneratorUndefinedError, match="Operation Rot does not have a generator"
+            qml.operation.GeneratorUndefinedError,
+            match="Operation CustomOp does not have a generator",
         ):
             operation_derivative(op)
 

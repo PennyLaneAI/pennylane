@@ -264,9 +264,13 @@ class op_transform:
                 # the tape transform function if defined
                 return self.tape_fn(obj.expand(), *args, **kwargs)
 
-            except (AttributeError, OperationTransformError):
-                # if obj.expand() does not exist, or the tape transform
-                # function does not exist, simply raise the original exception
+            except (
+                AttributeError,
+                qml.operation.OperatorPropertyUndefined,
+                OperationTransformError,
+            ):
+                # if obj.expand() does not exist, a required operation property was not found,
+                # or the tape transform function does not exist, simply raise the original exception
                 raise e1 from None
 
     def tape_fn(self, obj, *args, **kwargs):
@@ -422,6 +426,12 @@ class op_transform:
             def wrapper(*args, **kwargs):
                 nonlocal wire_order
                 tape, verified_wire_order = self._make_tape(obj, wire_order, *args, **kwargs)
+
+                # HOTFIX: some operator transforms return a tape containing
+                # a single transformed operator. As a result, for now we need
+                # to treat a tape with a single operation as a single operation.
+                if len(getattr(tape, "operations", [])) == 1 and self._tape_fn is None:
+                    tape = tape.operations[0]
 
                 if wire_order is not None or (
                     "wire_order" in self._sig and isinstance(obj, qml.QNode)
