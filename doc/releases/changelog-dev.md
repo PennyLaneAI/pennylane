@@ -265,6 +265,9 @@
 
 <h3>Bug fixes</h3>
 
+* The `qml.RandomLayers` template now decomposes when the weights are a list of lists.
+  [(#2266)](https://github.com/PennyLaneAI/pennylane/pull/2266/)
+
 * The `qml.QubitUnitary` operation now supports jitting. 
   [(#2249)](https://github.com/PennyLaneAI/pennylane/pull/2249)
   
