@@ -47,7 +47,7 @@ from pennylane.hf.molecule import Molecule
     ],
 )
 def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_tensor):
-    r"""Test that generate_scf returns the correct values."""
+    r"""Test that scf returns the correct values."""
     mol = Molecule(symbols, geometry)
     v, c, f, h, e = scf(mol)()
 
