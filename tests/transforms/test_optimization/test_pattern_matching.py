@@ -557,6 +557,8 @@ class TestPatternMatchingOptimization:
         assert np.allclose(get_unitary_matrix(optimized_qnode)(), get_unitary_matrix(qnode)())
 
     def test_wrong_pattern_type(self):
+        """Test that we cannot give a quantum function as pattern."""
+
         def circuit():
             qml.Toffoli(wires=[3, 4, 0])
             qml.CNOT(wires=[1, 4])
@@ -580,6 +582,35 @@ class TestPatternMatchingOptimization:
         with pytest.raises(
             qml.QuantumFunctionError, match="The pattern is not a valid quantum tape."
         ):
+            optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
+            optimized_qnode = qml.QNode(optimized_qfunc, dev)
+            optimized_qnode()
+
+    def test_pattern_measurements(self):
+        """Test that pattern cannot contain measurements."""
+
+        def circuit():
+            qml.Toffoli(wires=[3, 4, 0])
+            qml.CNOT(wires=[1, 4])
+            qml.CNOT(wires=[2, 1])
+            qml.Hadamard(wires=3)
+            qml.PauliZ(wires=1)
+            qml.CNOT(wires=[2, 3])
+            qml.Toffoli(wires=[2, 3, 0])
+            qml.CNOT(wires=[1, 4])
+            return qml.expval(qml.PauliX(wires=0))
+
+        with qml.tape.QuantumTape() as template:
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[0, 2])
+            qml.expval(qml.PauliX(wires=0))
+
+        dev = qml.device("default.qubit", wires=10)
+
+        with pytest.raises(qml.QuantumFunctionError, match="The pattern contains measurements."):
             optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
             optimized_qnode = qml.QNode(optimized_qfunc, dev)
             optimized_qnode()

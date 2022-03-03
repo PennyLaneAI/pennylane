@@ -104,11 +104,11 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
     for pattern in pattern_tapes:
         # Check the validity of the pattern
         if not isinstance(pattern, qml.tape.QuantumTape):
-            raise qml.QuantumFunctionError(f"The pattern is not a valid quantum tape.")
+            raise qml.QuantumFunctionError("The pattern is not a valid quantum tape.")
 
         # Check that it does not contain a measurement.
         if pattern.measurements:
-            raise qml.QuantumFunctionError(f"The pattern {pattern}, contains measurements. ")
+            raise qml.QuantumFunctionError("The pattern contains measurements.")
 
         # Verify that the pattern is implementing the identity #TODO
 
