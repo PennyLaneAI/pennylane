@@ -2140,7 +2140,6 @@ class TestCutCircuitTransform:
 
         spy.assert_not_called()
 
-    @pytest.mark.xfail(reason="Retracing is happening upon every call")
     def test_simple_cut_circuit_tf_jit(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
@@ -2164,7 +2163,7 @@ class TestCutCircuitTransform:
         x = tf.Variable(0.531)
         cut_circuit_jit = tf.function(
             qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum), jit_compile=True,
-            input_signature=(tf.TensorSpec(shape=[None], dtype=tf.float32),)
+            input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),)
         )
 
         # Run once with original value
@@ -2191,8 +2190,8 @@ class TestCutCircuitTransform:
         assert np.isclose(grad, grad_expected)
 
         # Run more times over a range of values
-        for x in np.linspace(-1, 1, 2):
-            x = tf.Variable(x)
+        for x in np.linspace(-1, 1, 10):
+            x = tf.Variable(x, dtype=tf.float32)
 
             cut_circuit_jit(x)
 
@@ -2209,7 +2208,7 @@ class TestCutCircuitTransform:
             assert np.isclose(res, res_expected)
             assert np.isclose(grad, grad_expected)
 
-        assert spy.call_count == 1
+        spy.assert_called_once()
 
     def test_simple_cut_circuit_jax_jit(self, mocker, use_opt_einsum):
         """
