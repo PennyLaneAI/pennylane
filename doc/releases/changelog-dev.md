@@ -60,9 +60,7 @@
 * Added the user-interface for mid-circuit measurements.
   [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
 
-* A new transform has been added to construct the pairwise-commutation directed acyclic graph (
-
-)
+* A new transform has been added to construct the pairwise-commutation directed acyclic graph (DAG)
   representation of a quantum circuit.
   [(#1712)](https://github.com/PennyLaneAI/pennylane/pull/1712)
 

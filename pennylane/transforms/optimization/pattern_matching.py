@@ -16,8 +16,9 @@ substitution."""
 
 import itertools
 import copy
-import pennylane as qml
 from collections import OrderedDict
+
+import pennylane as qml
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.commutation_dag import commutation_dag
@@ -321,6 +322,7 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
     Returns:
         list: list of qubits to consider in circuit (with specific order).
     """
+    # pylint: disable=too-many-branches
     control_base = {
         "CNOT": "PauliX",
         "CZ": "PauliZ",
@@ -489,24 +491,21 @@ def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2)
         control2 (list(int)): Control wires of the second node.
         target2 (list(int)): Target wires of the second node.
     """
-    # pylint: disable=too-many-instance-attributes
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-instance-attributes, too-many-arguments
     if control1 and set(control1) == set(control2):
         if node1.op.name in symmetric_over_all_wires and set(target1) == set(target2):
             return True
-        else:
-            if target1 == target2:
-                return True
+        if target1 == target2:
+            return True
     else:
         if node1.op.name in symmetric_over_all_wires and set(wires1) == set(wires2):
             return True
-        else:
-            if wires1 == wires2:
-                return True
+        if wires1 == wires2:
+            return True
     return False
 
 
-class ForwardMatch:
+class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
     """
     Class to apply pattern matching in the forward direction.
     """
@@ -522,6 +521,7 @@ class ForwardMatch:
             node_id_c (int): index of the first gate matched in the circuit.
             node_id_p (int): index of the first gate matched in the pattern.
         """
+        # pylint: disable=too-many-branches, too-many-arguments
 
         # Commutation DAG of the circuit
         self.circuit_dag = circuit_dag
@@ -616,10 +616,7 @@ class ForwardMatch:
         Args:
             node_id_p (int): Node ID in pattern.
         """
-        matches = []
-
-        for i in range(0, len(self.match)):
-            matches.append(self.match[i][0])
+        matches = [i[0] for i in self.match]
 
         pred = matches.copy()
 
@@ -679,6 +676,7 @@ class ForwardMatch:
         """Apply the forward match algorithm and returns the list of matches given an initial match
         and a qubits configuration.
         """
+        # pylint: disable=too-many-branches
 
         # Initialization
         self._init_successors_to_visit()
@@ -790,9 +788,9 @@ class ForwardMatch:
                         self.circuit_matched_with[succ] = []
 
 
-class Match:
+class Match:  # pylint: disable=too-few-public-methods
     """
-    Object to represent a match and its qubit configurations.
+    Object to represent a match and its qubits configurations.
     """
 
     def __init__(self, match, qubit):
@@ -810,7 +808,7 @@ class Match:
             self.qubit = [qubit]
 
 
-class MatchingScenarios:
+class MatchingScenarios:  # pylint: disable=too-few-public-methods
     """
     Class to represent a matching scenario in the Backward part of the algorithm.
     """
@@ -827,6 +825,8 @@ class MatchingScenarios:
             matches (list): list of matches.
             counter (int): counter of the number of circuit gates already considered.
         """
+        # pylint: disable=too-many-arguments
+
         self.circuit_matched = circuit_matched
         self.pattern_matched = pattern_matched
         self.circuit_blocked = circuit_blocked
@@ -867,7 +867,7 @@ class MatchingScenariosList:
         return first
 
 
-class BackwardMatch:
+class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
     """
     Class BackwardMatch allows to run backward direction part of the pattern matching algorithm.
     """
@@ -899,6 +899,8 @@ class BackwardMatch:
             control_wires (list):
             target_wires (list):
         """
+        # pylint: disable=too-many-arguments
+
         self.circuit_dag = circuit_dag
         self.pattern_dag = pattern_dag
         self.circuit_matched = circuit_matched
@@ -914,18 +916,6 @@ class BackwardMatch:
         self.match_final = []
         self.matching_list = MatchingScenariosList()
 
-    def _gate_indices(self, circuit_matched, circuit_blocked):
-        """Function which returns the list of gates that are not matched and not blocked for the first scenario.
-        Returns:
-            list(int): list of gate id.
-        """
-        gate_indices = []
-
-        for i, (matched, blocked) in enumerate(zip(circuit_matched, circuit_blocked)):
-            if (not matched) and (not blocked):
-                gate_indices.append(i)
-        gate_indices.reverse()
-        return gate_indices
 
     def _find_backward_candidates(self, pattern_blocked, matches):
         """Function which returns the list possible backward candidates in the pattern dag.
@@ -959,6 +949,7 @@ class BackwardMatch:
         """Run the backward match algorithm and returns the list of matches given an initial match, a forward
         scenario and a circuit qubits configuration.
         """
+        # pylint: disable=too-many-branches, too-many-statements
         match_store_list = []
 
         counter = 1
@@ -980,7 +971,7 @@ class BackwardMatch:
         self.matching_list.append_scenario(first_match)
 
         # Set the circuit indices that can be matched.
-        gate_indices = self._gate_indices(self.circuit_matched, self.circuit_blocked)
+        gate_indices = _gate_indices(self.circuit_matched, self.circuit_blocked)
 
         number_of_gate_to_match = (
             self.pattern_dag.size - (self.node_id_p - 1) - len(self.forward_matches)
@@ -1306,7 +1297,7 @@ class BackwardMatch:
                 self.match_final.append(scenario)
 
 
-class MaximalMatches:
+class MaximalMatches:  # pylint: disable=too-few-public-methods
     """
     Class MaximalMatches allows to sort and store the maximal matches from the list
     of matches obtained with the pattern matching algorithm.
@@ -1341,7 +1332,7 @@ class MaximalMatches:
                 self.max_match_list.append(Match(sorted(matches.match), matches.qubit))
 
 
-class SubstitutionConfig:
+class SubstitutionConfig:  # pylint: disable=too-many-arguments, too-few-public-methods
     """Class to store the configuration of a given match substitution, which circuit gates, template gates,
     qubits and predecessors of the match in the circuit.
     """
@@ -1361,7 +1352,21 @@ class SubstitutionConfig:
         self.pred_block = pred_block
 
 
-class TemplateSubstitution:
+def _gate_indices(circuit_matched, circuit_blocked):
+    """Function which returns the list of gates that are not matched and not blocked for the first scenario.
+    Returns:
+        list(int): list of gate id.
+    """
+    gate_indices = []
+
+    for i, (matched, blocked) in enumerate(zip(circuit_matched, circuit_blocked)):
+        if (not matched) and (not blocked):
+            gate_indices.append(i)
+    gate_indices.reverse()
+    return gate_indices
+
+
+class TemplateSubstitution:  # pylint: disable=too-few-public-methods
     """Class to run the substitution algorithm from the list of maximal matches."""
 
     def __init__(self, max_matches, circuit_dag, template_dag, custom_quantum_cost=None):
@@ -1456,8 +1461,7 @@ class TemplateSubstitution:
                     if any(elem == x for x in config.circuit_config):
                         return False
             return True
-        else:
-            return False
+        return False
 
     def _template_inverse(self, template_list, template_sublist, template_complement):
         """The template circuit realizes the identity operator, then given the list of matches in the template,
