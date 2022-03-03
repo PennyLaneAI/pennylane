@@ -23,8 +23,10 @@ from pennylane.measurements import MeasurementValue
 from pennylane.transforms import make_tape
 from copy import copy
 
+
 class ConditionalTransformError(ValueError):
     """Error for using qml.cond incorrectly"""
+
 
 class Conditional(Operation):
     """A Conditional Operation.
@@ -118,7 +120,9 @@ def cond(measurement, then_func, else_func=None):
 
     elif callable(then_func):
 
-        with_meas_err = "Only quantum functions that contain no measurements can be applied conditionally."
+        with_meas_err = (
+            "Only quantum functions that contain no measurements can be applied conditionally."
+        )
 
         if else_func is None:
 
@@ -161,6 +165,8 @@ def cond(measurement, then_func, else_func=None):
                     Conditional(inverted_m, op)
 
     else:
-        raise ConditionalTransformError("Only operations and quantum functions with no measurements can be applied conditionally.")
+        raise ConditionalTransformError(
+            "Only operations and quantum functions with no measurements can be applied conditionally."
+        )
 
     return wrapper

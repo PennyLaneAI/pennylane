@@ -434,7 +434,7 @@ class TestConditionalOperations:
     def test_cond_qfunc_with_else(self, device):
         """Test that a qfunc can also used with qml.cond even when an else
         qfunc is provided."""
-        dev = qml.device('default.qubit', wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         x = 0.3
         y = 3.123
@@ -468,6 +468,7 @@ class TestConditionalOperations:
             return qml.probs(wires=[0])
 
         assert np.allclose(normal_circuit(x, y), cond_qnode(x, y))
+
 
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""
