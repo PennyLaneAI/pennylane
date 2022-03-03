@@ -20,9 +20,9 @@ import pytest
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane.hf.hamiltonian import (
-    generate_electron_integrals,
-    generate_fermionic_hamiltonian,
-    generate_hamiltonian,
+    electron_integrals,
+    fermionic_hamiltonian,
+    molecular_hamiltonian,
 )
 from pennylane.hf.molecule import Molecule
 
@@ -97,12 +97,12 @@ from pennylane.hf.molecule import Molecule
         ),
     ],
 )
-def test_generate_electron_integrals(symbols, geometry, core, active, e_core, one_ref, two_ref):
-    r"""Test that generate_electron_integrals returns the correct values."""
+def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, two_ref):
+    r"""Test that electron_integrals returns the correct values."""
     mol = Molecule(symbols, geometry)
     args = []
 
-    e, one, two = generate_electron_integrals(mol, core=core, active=active)(*args)
+    e, one, two = electron_integrals(mol, core=core, active=active)(*args)
 
     assert np.allclose(e, e_core)
     assert np.allclose(one, one_ref)
@@ -205,11 +205,11 @@ def test_generate_electron_integrals(symbols, geometry, core, active, e_core, on
         )
     ],
 )
-def test_generate_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref):
-    r"""Test that generate_fermionic_hamiltonian returns the correct Hamiltonian."""
+def test_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref):
+    r"""Test that fermionic_hamiltonian returns the correct Hamiltonian."""
     mol = Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
-    h = generate_fermionic_hamiltonian(mol)(*args)
+    h = fermionic_hamiltonian(mol)(*args)
 
     assert np.allclose(h[0], coeffs_h_ref)
     assert h[1] == ops_h_ref
@@ -267,12 +267,12 @@ def test_generate_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, 
         )
     ],
 )
-def test_generate_hamiltonian(symbols, geometry, h_ref_data):
-    r"""Test that generate_hamiltonian returns the correct Hamiltonian."""
+def test_molecular_hamiltonian(symbols, geometry, h_ref_data):
+    r"""Test that molecular_hamiltonian returns the correct Hamiltonian."""
 
     mol = Molecule(symbols, geometry)
     args = []
-    h = generate_hamiltonian(mol)(*args)
+    h = molecular_hamiltonian(mol)(*args)
     h_ref = qml.Hamiltonian(h_ref_data[0], h_ref_data[1])
 
     assert np.allclose(h.terms()[0], h_ref.terms()[0])
@@ -304,7 +304,7 @@ def test_gradient_expvalH():
             qml.PauliX(0)
             qml.PauliX(1)
             qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-            h_qubit = generate_hamiltonian(mol)(*args)
+            h_qubit = molecular_hamiltonian(mol)(*args)
             return qml.expval(h_qubit)
 
         return circuit

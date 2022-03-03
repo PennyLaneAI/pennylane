@@ -18,11 +18,11 @@ This module contains the functions needed for computing the molecular Hamiltonia
 import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.hf.hartree_fock import generate_scf, nuclear_energy
+from pennylane.hf.hartree_fock import nuclear_energy, scf
 from pennylane.hf.observable import fermionic_observable, qubit_observable
 
 
-def generate_electron_integrals(mol, core=None, active=None):
+def electron_integrals(mol, core=None, active=None):
     r"""Return a function that computes the one- and two-electron integrals in the molecular orbital
     basis.
 
@@ -85,7 +85,7 @@ def generate_electron_integrals(mol, core=None, active=None):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> generate_electron_integrals(mol)(*args)
+    >>> electron_integrals(mol)(*args)
     (1.0,
      array([[-1.3902192695e+00,  0.0000000000e+00],
             [-4.4408920985e-16, -2.9165331336e-01]]),
@@ -99,7 +99,7 @@ def generate_electron_integrals(mol, core=None, active=None):
               [ 6.6613381478e-16,  7.3883668974e-01]]]]))
     """
 
-    def electron_integrals(*args):
+    def _electron_integrals(*args):
         r"""Compute the one- and two-electron integrals in the molecular orbital basis.
 
         Args:
@@ -108,7 +108,7 @@ def generate_electron_integrals(mol, core=None, active=None):
         Returns:
             tuple[array[float]]: 1D tuple containing core constant, one- and two-electron integrals
         """
-        _, coeffs, _, h_core, repulsion_tensor = generate_scf(mol)(*args)
+        _, coeffs, _, h_core, repulsion_tensor = scf(mol)(*args)
         one = anp.einsum("qr,rs,st->qt", coeffs.T, h_core, coeffs)
         two = anp.swapaxes(
             anp.einsum(
@@ -139,10 +139,10 @@ def generate_electron_integrals(mol, core=None, active=None):
 
         return core_constant, one, two
 
-    return electron_integrals
+    return _electron_integrals
 
 
-def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
+def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the fermionic hamiltonian.
 
     Args:
@@ -160,10 +160,10 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> h = generate_fermionic_hamiltonian(mol)(*args)
+    >>> h = fermionic_hamiltonian(mol)(*args)
     """
 
-    def fermionic_hamiltonian(*args):
+    def _fermionic_hamiltonian(*args):
         r"""Compute the fermionic hamiltonian.
 
         Args:
@@ -172,14 +172,14 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         Returns:
             tuple(array[float], list[list[int]]): the Hamiltonian coefficients and operators
         """
-        core_constant, one, two = generate_electron_integrals(mol, core, active)(*args)
+        core_constant, one, two = electron_integrals(mol, core, active)(*args)
 
         return fermionic_observable(core_constant, one, two, cutoff)
 
-    return fermionic_hamiltonian
+    return _fermionic_hamiltonian
 
 
-def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
+def molecular_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the qubit hamiltonian.
 
     Args:
@@ -197,7 +197,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> h = generate_hamiltonian(mol)(*args)
+    >>> h = molecular_hamiltonian(mol)(*args)
     >>> h.coeffs
     tensor([ 0.29817879+0.j,  0.20813365+0.j,  0.20813365+0.j,
              0.17860977+0.j,  0.04256036+0.j, -0.04256036+0.j,
@@ -206,7 +206,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
              0.17546329+0.j,  0.13290293+0.j,  0.18470917+0.j], requires_grad=True)
     """
 
-    def hamiltonian(*args):
+    def _molecular_hamiltonian(*args):
         r"""Compute the qubit hamiltonian.
 
         Args:
@@ -215,8 +215,8 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         Returns:
             Hamiltonian: the qubit Hamiltonian
         """
-        h_ferm = generate_fermionic_hamiltonian(mol, cutoff, core, active)(*args)
+        h_ferm = fermionic_hamiltonian(mol, cutoff, core, active)(*args)
 
         return qubit_observable(h_ferm)
 
-    return hamiltonian
+    return _molecular_hamiltonian
