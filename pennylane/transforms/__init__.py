@@ -31,6 +31,7 @@ that compute the desired quantity.
 
     ~transforms.classical_jacobian
     ~batch_params
+    ~batch_input
     ~draw
     ~draw_mpl
     ~transforms.get_unitary_matrix
