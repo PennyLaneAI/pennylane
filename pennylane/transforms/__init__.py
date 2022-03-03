@@ -116,6 +116,7 @@ The following are utility functions that compose the circuit cutting transform.
     ~transforms.expand_fragment_tapes
     ~transforms.contract_tensors
     ~transforms.qcut_processing_fn
+    ~transforms.remap_tape_wires
     ~transforms.CutStrategy
 
 Transforms that act on tapes
@@ -142,6 +143,7 @@ to help build custom QNode, quantum function, and tape transforms:
     ~single_tape_transform
     ~batch_transform
     ~qfunc_transform
+    ~op_transform
     ~transforms.make_tape
     ~transforms.map_batch_transform
     ~transforms.create_expand_fn
@@ -154,6 +156,7 @@ to help build custom QNode, quantum function, and tape transforms:
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
+from .op_transforms import op_transform
 from .adjoint import adjoint
 from .batch_params import batch_params
 from .classical_jacobian import classical_jacobian
@@ -206,5 +209,6 @@ from .qcut import (
     contract_tensors,
     qcut_processing_fn,
     cut_circuit,
+    remap_tape_wires,
     CutStrategy,
 )
