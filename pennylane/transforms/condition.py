@@ -99,13 +99,13 @@ def cond(measurement, then_op, else_op=None):
     def wrapper(*args, **kwargs):
         ops = []
         if else_op:
-            print('in else op')
+            print("in else op")
             else_cond = Conditional(~measurement, else_op(*args, do_queue=False, **kwargs))
             ops.append(else_cond)
 
         cond = Conditional(measurement, then_op(*args, do_queue=False, **kwargs))
         ops.append(cond)
-        print('ops created by qml.cond: ', ops)
+        print("ops created by qml.cond: ", ops)
         return ops
 
     return wrapper
