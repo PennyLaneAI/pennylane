@@ -55,13 +55,16 @@
   ```
 
 * The user-interface for mid-circuit measurements and conditional operations
-  has been added.
+  has been added to support use cases like quantum teleportation.
   [(#2211)](https://github.com/PennyLaneAI/pennylane/pull/2211)
   [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
 
   The addition includes the `defer_measurements` device-independent transform
   that can be applied on devices that have no native mid-circuit measurements
-  capabilities. This transform is applied by default when evaluating a QNode.
+  capabilities.
+
+  This transform is applied by default when evaluating a QNode, for example to
+  teleport a qubit:
 
   ```python
   from scipy.stats import unitary_group
