@@ -206,9 +206,9 @@
     [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
     [(#2244)](https://github.com/PennyLaneAI/pennylane/pull/2244)
     [(#2251)](https://github.com/PennyLaneAI/pennylane/pull/2251)
-
-  - Circuit fragments that are disconnected from the terminal measurements are now removed.
-    [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
+  
+  - `WireCut` operations that do not lead to a disconnection are now being removed.
+    [(#2260)](https://github.com/PennyLaneAI/pennylane/pull/2260)
 
 <h3>Improvements</h3>
 
