@@ -556,7 +556,7 @@ def draw_mpl(
 
         try:
             qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-            tapes = qnode.construct(args, kwargs_qnode)
+            qnode.construct(args, kwargs_qnode)
         finally:
             qnode.expansion_strategy = original_expansion_strategy
 
