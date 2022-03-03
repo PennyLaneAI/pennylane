@@ -214,6 +214,9 @@
 
 <h3>Improvements</h3>
 
+* The `qml.draw_mpl` transform supports a `expansion_strategy` keyword argument.
+  [(#2271)](https://github.com/PennyLaneAI/pennylane/pull/2271/)
+
 * The `qml.gradients` module has been streamlined and special-purpose functions
   moved closer to their use cases, while preserving existing behaviour.
   [(#2200)](https://github.com/PennyLaneAI/pennylane/pull/2200)
