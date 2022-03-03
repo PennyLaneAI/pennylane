@@ -8,7 +8,7 @@
 
   - `qml.matrix()` for computing the matrix representation of one or more unitary operators.
     [(#2241)](https://github.com/PennyLaneAI/pennylane/pull/2241)
-    
+
   - `qml.eigvals()` for computing the eigenvalues of one or more operators.
     [(#2248)](https://github.com/PennyLaneAI/pennylane/pull/2248)
 
@@ -54,8 +54,57 @@
   [ 0.+0.j,  0.+0.38268343j,  0.+0.j,  -0.92387953+0.j]])
   ```
 
-* Added the user-interface for mid-circuit measurements.
+* The user-interface for mid-circuit measurements and conditional operations
+  has been added.
+  [(#2211)](https://github.com/PennyLaneAI/pennylane/pull/2211)
   [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
+
+  The addition includes the `defer_measurements` device-independent transform
+  that can be applied on devices that have no native mid-circuit measurements
+  capabilities. This transform is applied by default when evaluating a QNode.
+
+  ```python
+  from scipy.stats import unitary_group
+
+  random_state = unitary_group.rvs(2, random_state=1967)[0]
+
+  dev = qml.device("default.mixed", wires=3)
+
+  @qml.qnode(dev)
+  def teleport(state):
+      # Prepare input state
+      qml.QubitStateVector(state, wires=0)
+
+      # Prepare Bell state
+      qml.Hadamard(wires=1)
+      qml.CNOT(wires=[1, 2])
+
+      # Apply gates
+      qml.CNOT(wires=[0, 1])
+      qml.Hadamard(wires=0)
+
+      # Measure first two wires
+      m1 = qml.measure(0)
+      m2 = qml.measure(1)
+
+      # Condition final wire on results
+      qml.cond(m2 == 1, qml.PauliX)(wires=2)
+      qml.cond(m1 == 1, qml.PauliZ)(wires=2)
+
+      # Return state on final wire
+      return qml.density_matrix(wires=2)
+
+  output_projector = teleport(random_state)
+  overlap = random_state.conj() @ output_projector @ random_state
+  ```
+  ```pycon
+  >>> overlap
+  tensor(1.+0.j, requires_grad=True)
+  ```
+
+  For further examples, refer to the [Mid-circuit measurements and conditional
+  operations](https://pennylane.readthedocs.io/en/latest/introduction/measurements.html#mid-circuit-measurements-and-conditional-operations)
+  section in the documentation.
 
 * A new transform has been added to construct the pairwise-commutation directed acyclic graph (DAG)
   representation of a quantum circuit.
@@ -66,7 +115,7 @@
 
   This transform takes into account that not all operations can be moved next to each other by
   pairwise commutation:
-  
+
   ```pycon
   >>> def circuit(x, y, z):
   ...     qml.RX(x, wires=0)
@@ -81,7 +130,7 @@
   >>> dag = dag_fn(np.pi / 4, np.pi / 3, np.pi / 2)
   ```
 
-  Nodes in the commutation DAG can be accessed via the `get_nodes()` method, returning a list of 
+  Nodes in the commutation DAG can be accessed via the `get_nodes()` method, returning a list of
   the  form `(ID, CommutationDAGNode)`:
 
   ```pycon
@@ -90,7 +139,7 @@
   ```
 
   Specific nodes in the commutation DAG can be accessed via the `get_node()` method:
-  
+
   ```
   >>> second_node = dag.get_node(2)
   >>> second_node
@@ -182,7 +231,7 @@
   - A differentiable tensor contraction function `contract_tensors` has been
     added.
     [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
-  
+
   - A method has been added that expands a quantum tape over `MeasureNode` and `PrepareNode`
     configurations.
     [(#2169)](https://github.com/PennyLaneAI/pennylane/pull/2169)
@@ -216,7 +265,7 @@
   efficiently measuring the `N`-qubit Pauli group with `3 ** N`
   qubit-wise commuting terms.
   [(#2185)](https://github.com/PennyLaneAI/pennylane/pull/2185)
-  
+
   ```pycon
   >>> qml.grouping.partition_pauli_group(2)
   [['II', 'IZ', 'ZI', 'ZZ'],
@@ -233,7 +282,7 @@
 <h3>Breaking changes</h3>
 
 * The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
-  The single `wires` keyword should be all the control wires followed by a single target wire. 
+  The single `wires` keyword should be all the control wires followed by a single target wire.
   [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
 
 <h3>Deprecations</h3>
@@ -251,9 +300,9 @@
 
 <h3>Bug fixes</h3>
 
-* The `qml.QubitUnitary` operation now supports jitting. 
+* The `qml.QubitUnitary` operation now supports jitting.
   [(#2249)](https://github.com/PennyLaneAI/pennylane/pull/2249)
-  
+
 * Fixes a bug in the JAX interface where ``DeviceArray`` objects
   were not being converted to NumPy arrays before executing an
   external device.
