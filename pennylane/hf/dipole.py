@@ -18,8 +18,8 @@ import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.basis_data import atomic_numbers
-from pennylane.hf.hamiltonian import _generate_qubit_operator, _return_pauli, simplify
 from pennylane.hf.matrices import moment_matrix
+from pennylane.hf.observable import fermionic_observable, qubit_observable
 
 
 def dipole_integrals(mol, core=None, active=None):
@@ -213,7 +213,7 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
 
         f = []
         for i in range(3):
-            coeffs, ops = fermionic_one(constants[i], integrals[i], cutoff=cutoff)
+            coeffs, ops = fermionic_observable(constants[i], integrals[i], cutoff=cutoff)
             f.append((anp.concatenate((nd[i], coeffs * (-1))), [[]] + ops))
 
         return f
@@ -305,98 +305,8 @@ def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
         d = []
         d_ferm = fermionic_dipole(mol, cutoff, core, active)(*args)
         for i in d_ferm:
-            d.append(qubit_operator(i, cutoff=cutoff))
+            d.append(qubit_observable(i, cutoff=cutoff))
 
         return d
 
     return _dipole
-
-
-def fermionic_one(constant, integral, cutoff=1.0e-12):
-    r"""Create a fermionic operator from one-particle molecular orbital integrals.
-
-    Args:
-        constant (array[float]): the contribution of the core orbitals and nuclei
-        integral (array[float]): the one-particle molecular orbital integrals
-        cutoff (float): cutoff value for discarding the negligible integrals
-
-    Returns:
-        tuple(array[float], list[int]): fermionic coefficients and operators
-
-    **Example**
-
-    >>> constant = np.array([1.0])
-    >>> integral = np.array([[0.5, -0.8270995], [-0.8270995, 0.5]])
-    >>> coeffs, ops = fermionic_one(constant, integral)
-    >>> ops
-    [[], [0, 0], [0, 2], [1, 1], [1, 3], [2, 0], [2, 2], [3, 1], [3, 3]]
-    """
-    coeffs = anp.array([])
-
-    if constant != anp.array([0.0]):
-        coeffs = anp.concatenate((coeffs, constant))
-        operators = [[]]
-    else:
-        operators = []
-
-    for d in [integral]:
-        i = anp.argwhere(abs(d) >= cutoff)
-        operators = operators + (i * 2).tolist() + (i * 2 + 1).tolist()  # up-up + down-down terms
-        coeffs = anp.concatenate((coeffs, anp.tile(d[abs(d) >= cutoff], 2)))
-
-    indices_sort = [operators.index(i) for i in sorted(operators)]
-
-    return coeffs[indices_sort], sorted(operators)
-
-
-def qubit_operator(o_ferm, cutoff=1.0e-12):
-    r"""Convert a fermionic observable to a PennyLane qubit observable.
-
-    The fermionic operator is a tuple containing the fermionic coefficients and operators. For
-    instance, the one-body fermionic operator :math:`a_2^\dagger a_0` is specified as [2, 0] and the
-    two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` is specified as [4, 3, 2, 1].
-
-    Args:
-        o_ferm tuple(array[float], list[int]): fermionic operator
-        cutoff (float): cutoff value for discarding the negligible terms
-
-    Returns:
-        Hamiltonian: Simplified PennyLane Hamiltonian
-
-    **Example**
-
-    >>> coeffs = np.array([1.0, 1.0])
-    >>> ops = [[0, 0], [0, 0]]
-    >>> f = (coeffs, ops)
-    >>> print(qubit_operator(f))
-    ((-1+0j)) [Z0]
-    + ((1+0j)) [I0]
-    """
-    ops = []
-    coeffs = anp.array([])
-
-    for n, t in enumerate(o_ferm[1]):
-
-        if len(t) == 0:
-            coeffs = np.concatenate((coeffs, np.array([o_ferm[0][n]]) + 0.0))
-            ops = ops + [qml.Identity(0)]
-
-        else:
-            op = _generate_qubit_operator(t)
-            if op != 0:
-                for i, o in enumerate(op[1]):
-                    if len(o) == 0:
-                        op[1][i] = qml.Identity(0)
-                    if len(o) == 1:
-                        op[1][i] = _return_pauli(o[0][1])(o[0][0])
-                    if len(o) > 1:
-                        k = qml.Identity(0)
-                        for o_ in o:
-                            k = k @ _return_pauli(o_[1])(o_[0])
-                        op[1][i] = k
-                coeffs = np.concatenate([coeffs, np.array(op[0]) * o_ferm[0][n]])
-                ops = ops + op[1]
-
-    o_qubit = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
-
-    return o_qubit

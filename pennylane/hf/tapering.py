@@ -22,7 +22,7 @@ import autograd.numpy as anp
 import numpy
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.hf.hamiltonian import _generate_qubit_operator, simplify
+from pennylane.hf.observable import jordan_wigner, simplify
 
 
 def _binary_matrix(terms, num_qubits, wire_map=None):
@@ -530,9 +530,6 @@ def transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires
     ...                 n_elec, n_qubits)
     tensor([1, 1], requires_grad=True)
     """
-
-    pauli_map = {"I": qml.Identity, "X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
-
     # build the untapered Hartree Fock state
     hf = np.where(np.arange(num_wires) < num_electrons, 1, 0)
 
@@ -540,16 +537,11 @@ def transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires
     fermop_terms = []
     for idx, bit in enumerate(hf):
         if bit:
-            op_coeffs, op_str = _generate_qubit_operator([idx])
-            op_terms = []
-            for term in op_str:
-                op_term = pauli_map[term[0][1]](term[0][0])
-                for tm in term[1:]:
-                    op_term @= pauli_map[tm[1]](tm[0])
-                op_terms.append(op_term)
+            op_coeffs, op_terms = jordan_wigner([idx])
             op_term = qml.Hamiltonian(np.array(op_coeffs), op_terms)
         else:
             op_term = qml.Hamiltonian([1], [qml.Identity(idx)])
+
         fermop_terms.append(op_term)
 
     ferm_op = functools.reduce(lambda i, j: _observable_mult(i, j), fermop_terms)
