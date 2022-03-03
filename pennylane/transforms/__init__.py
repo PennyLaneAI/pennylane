@@ -96,14 +96,13 @@ Transform for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This transform accepts a QNode and returns a new function that cuts the original circuit into
-smaller fragments.
+smaller fragments. The supporting functionality for circuit cutting is provided in the
+:doc:`qcut </code/qml_transforms_qcut>` module.
 
 .. autosummary::
     :toctree: api
 
     ~transforms.cut_circuit
-
-The supporting functionality for circuit cutting is provided in the :mod:`~.qcut` module.
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
