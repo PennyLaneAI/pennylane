@@ -91,6 +91,7 @@ class RandomLayers(Operation):
         >>> print(qml.draw(circuit1, expansion_strategy="device")(weights))
         0: ──────────────────────╭X─╭X──RZ(1.40)─┤  <Z>
         1: ──RX(0.10)──RX(-2.10)─╰C─╰C───────────┤
+        
         >>> print(qml.draw(circuit2, expansion_strategy="device")(weights))
         0: ──────────────────────╭X─╭X──RZ(1.40)─┤  <Z>
         1: ──RX(0.10)──RX(-2.10)─╰C─╰C───────────┤
