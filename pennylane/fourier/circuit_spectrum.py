@@ -102,8 +102,8 @@ def circuit_spectrum(qnode, encoding_gates=None, decimals=8):
         def circuit(x, w):
             for l in range(n_layers):
                 for i in range(n_qubits):
-                    qml.RX(x[i], wires=0, id="x"+str(i))
-                    qml.Rot(w[l,i,0], w[l,i,1], w[l,i,2], wires=0)
+                    qml.RX(x[i], wires=i, id="x"+str(i))
+                    qml.Rot(w[l,i,0], w[l,i,1], w[l,i,2], wires=i)
             qml.RZ(x[0], wires=0, id="x0")
             return qml.expval(qml.PauliZ(wires=0))
 
@@ -112,9 +112,9 @@ def circuit_spectrum(qnode, encoding_gates=None, decimals=8):
         res = qml.fourier.circuit_spectrum(circuit)(x, w)
 
     >>> print(qml.draw(circuit)(x, w))
-    0: ──RX(1)──Rot(0.863, 0.611, 0.281)───RX(1)──Rot(0.47, 0.158, 0.648)───RZ(1)──┤ ⟨Z⟩
-    1: ──RX(2)──Rot(0.0781, 0.971, 0.457)──RX(2)──Rot(0.896, 0.224, 0.731)─────────┤
-    2: ──RX(3)──Rot(0.462, 0.286, 0.929)───RX(3)──Rot(0.879, 0.399, 0.215)─────────┤
+    0: ──RX(1.00)──Rot(0.53,0.70,0.90)──RX(1.00)──Rot(0.81,0.38,0.43)──RZ(1.00)─┤  <Z>
+    1: ──RX(2.00)──Rot(0.56,0.61,0.96)──RX(2.00)──Rot(0.32,0.49,0.77)───────────┤
+    2: ──RX(3.00)──Rot(0.11,0.63,0.31)──RX(3.00)──Rot(0.52,0.46,0.83)───────────┤
 
     >>> for inp, freqs in res.items():
     >>>     print(f"{inp}: {freqs}")
