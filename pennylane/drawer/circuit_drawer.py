@@ -63,7 +63,9 @@ class CircuitDrawer:
         max_length=None,
         _label_offsets=None,
     ):
-        warnings.warn("CircuitDrawer is deprecated. Please see qml.drawer.tape_text instead.", UserWarning)
+        warnings.warn(
+            "CircuitDrawer is deprecated. Please see qml.drawer.tape_text instead.", UserWarning
+        )
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
         self.wires = wires

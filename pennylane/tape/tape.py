@@ -1088,8 +1088,7 @@ class QuantumTape(AnnotatedQueue):
 
         return self._specs
 
-    def draw(self, wire_order=None, show_all_wires=False, max_length=100, decimals=None,
-        show_matrices=False):
+    def draw(self, **kwargs):
         """Draw the quantum tape as a circuit diagram.
 
         Keyword Args:
@@ -1115,28 +1114,16 @@ class QuantumTape(AnnotatedQueue):
         We can draw the tape after construction:
 
         >>> print(tape.draw())
-        0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
-        1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
-        >>> print(tape.draw(charset="ascii"))
-        0: --H--+C----------------------------+C---------+| <Z @ Z>
-        1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z>
-
-        Args:
-            charset (str, optional): The charset that should be used. Currently, "unicode" and
-                "ascii" are supported.
-            wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
-            show_all_wires (bool): If True, all wires, including empty wires, are printed.
-            max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
-
-        Raises:
-            ValueError: if the given charset is not supported
+        0: ──H─╭C───────╭C──┤ ╭<Z@Z>
+        1: ────╰RX──Rot─╰RX─┤ ╰<Z@Z>
 
         Returns:
             str: the circuit representation of the tape
         """
-        warnings.warn("tape.draw will be deprecated. Please use `qml.drawer.tape_text` instead.", UserWarning)
-        return qml.drawer.tape_text(self, wire_order=wire_order, show_all_wires=show_all_wires,
-            max_length=max_length, decimals=decimals, show_matrices=show_matrices)
+        warnings.warn(
+            "tape.draw will be deprecated. Please use `qml.drawer.tape_text` instead.", UserWarning
+        )
+        return qml.drawer.tape_text(self, **kwargs)
 
     def to_openqasm(self, wires=None, rotations=True, measure_all=True, precision=None):
         """Serialize the circuit as an OpenQASM 2.0 program.
