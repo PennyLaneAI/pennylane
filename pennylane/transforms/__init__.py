@@ -102,7 +102,7 @@ smaller fragments. The supporting functionality for circuit cutting is provided 
 .. autosummary::
     :toctree: api
 
-    ~transforms.cut_circuit
+    ~cut_circuit
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
