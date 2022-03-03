@@ -16,12 +16,13 @@ This module contains functions for computing the parameter-shift hessian
 of a qubit-based quantum tape.
 """
 import warnings
+import itertools as it
 import numpy as np
 
 import pennylane as qml
 
 from .parameter_shift import _gradient_analysis
-from .gradient_transform import grad_method_validation
+from .gradient_transform import grad_method_validation, choose_grad_methods
 from .hessian_transform import hessian_transform
 
 
@@ -29,7 +30,7 @@ def _process_hessian_recipe(hessian_recipe, tol=1e-10):
     """Utility function to process Hessian recipes."""
 
     hessian_recipe = np.array(hessian_recipe).T
-    # remove all small coefficients, shifts, and multipliers
+    # set all small coefficients, shifts, and multipliers to 0
     hessian_recipe[np.abs(hessian_recipe) < tol] = 0
     # remove columns where the coefficients are 0
     hessian_recipe = hessian_recipe[:, :, ~(hessian_recipe[0, 0] == 0)]
@@ -72,7 +73,7 @@ def generate_multishifted_tapes(tape, idx, shifts):
     return tapes
 
 
-def compute_hessian_tapes(tape, diff_methods, f0=None):
+def expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_diagonal_shifts, f0):
     r"""Generate the Hessian tapes that are used in the computation of the second derivative of a
     quantum tape, using analytical parameter-shift rules to do so exactly. Also define a
     post-processing function to combine the results of evaluating the Hessian tapes.
@@ -91,7 +92,7 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
             addition to a post-processing function to be applied to the results of the evaluated
             tapes.
     """
-    h_dim = tape.num_params
+    argnum = tape.trainable_params if argnum is None else argnum
 
     hessian_tapes = []
     hessian_coeffs = []
@@ -104,13 +105,10 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
     #       [[coeff, dummy], [mult, dummy], [shift1, shift2]]    (dummy values for ndarray creation)
     # Each corresponding to one term in the parameter-shift formula:
     #       didj f(x) = coeff * f(mult*x + shift1*ei + shift2*ej) + ...
-    diag_recipe = [[[0.5], [1], [np.pi]], [[-0.5], [1], [0]]]
-    off_diag_recipe = [
-        [[0.25, 1], [1, 1], [np.pi / 2, np.pi / 2]],
-        [[-0.25, 1], [1, 1], [-np.pi / 2, np.pi / 2]],
-        [[-0.25, 1], [1, 1], [np.pi / 2, -np.pi / 2]],
-        [[0.25, 1], [1, 1], [-np.pi / 2, -np.pi / 2]],
-    ]
+
+    hess_recipes = {}
+    for i in argnum:
+
 
     for i in range(h_dim):
         # optimization: skip partial derivatives that are zero
@@ -195,7 +193,7 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
 
 
 @hessian_transform
-def param_shift_hessian(tape, ?recipes=None, f0=None):
+def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None):
     r"""Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
     parameters.
 
@@ -209,7 +207,20 @@ def param_shift_hessian(tape, ?recipes=None, f0=None):
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
-        ?recipes :TODO
+        argnum (int or list[int] or None): Trainable parameter indices to differentiate
+            with respect to. If not provided, the derivative with respect to all
+            trainable indices are returned.
+        diagonal_shifts (list[tuple[int or float]]): List containing tuples of shift values
+            for the Hessian diagonal.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple should match the number of frequencies for that parameter.
+            If unspecified, equidistant shifts are assumed.
+        off_diagonal_shifts (list[tuple[int or float]]): List containing tuples of shift
+            values for the off-diagonal entries of the Hessian.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple should match the number of frequencies for that parameter.
+            The combination of shifts into bivariate shifts is performed automatically.
+            If unspecified, equidistant shifts are assumed.
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the Hessian tapes include the original input tape, the 'f0' value is used
             instead of evaluating the input tape, reducing the number of device invocations.
@@ -296,33 +307,34 @@ def param_shift_hessian(tape, ?recipes=None, f0=None):
             "Computing the Hessian of circuits that return variances is currently not supported."
         )
 
-    if not tape.trainable_params:
+    if argnum is None and not tape.trainable_params:
         warnings.warn(
             "Attempted to compute the hessian of a tape with no trainable parameters. "
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return [], lambda _: ()
-
-    for idx in range(tape.num_params):
-        op, _ = tape.get_operation(idx)
-        if op.name not in supported_ops:
+        return [], lambda _: qml.math.zeros((tape.output_dim, 0, 0))
 
     _gradient_analysis(tape)
-    diff_methods = grad_method_validation("analytic", tape)
+    # If argnum is given, the grad_method_validation may allow parameters with
+    # finite-difference as method. If they are among the requested argnum, we catch this
+    # further below (as no fallback function analogue to `parameter_shift` is used currently).
+    method = "analytic" if argnum is None else "best"
+    diff_methods = grad_method_validation(method, tape)
 
     if all(g == "0" for g in diff_methods):
-        # TODO:
-        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+        par_dim = len(tape.trainable_params)
+        return [], lambda _: qml.math.zeros([tape.output_dim, par_dim, par_dim])
 
     method_map = choose_grad_methods(diff_methods, argnum)
 
-    # TODO: exclude unsupported like this?
     unsupported_params = {idx for idx, g in method_map.items() if g == "F"}
     if unsupported_params:
         raise ValueError(
-            f"The operation {op.name} is currently not supported for the parameter-shift "
-            f"Hessian."
+            "The parameter-shift Hessian currently does not support the operations "
+            f"for parameter(s) {unsupported_params}."
         )
 
-    return compute_hessian_tapes(tape, diff_methods, f0)
+    argnum = list(method_map.key())
+
+    return expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_diagonal_shifts, f0)

@@ -216,7 +216,7 @@ class TestParameterShiftHessian:
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
-            qml.RZ(z, wires=1)
+            qml.SingleExcitation(z, wires=[1, 0])
             qml.RY(y, wires=0)
             qml.RX(x, wires=0)
             return qml.probs(wires=[0, 1])
@@ -247,7 +247,7 @@ class TestParameterShiftHessian:
         def circuit(x, y, z):
             qml.RX(x[0], wires=1)
             qml.RY(y[0], wires=0)
-            qml.RZ(z[0] + z[1], wires=1)
+            qml.CRZ(z[0] + z[1], wires=[1, 0])
             qml.RY(y[1], wires=1)
             qml.RX(x[1], wires=0)
             return qml.probs(wires=[0, 1])
@@ -309,7 +309,7 @@ class TestParameterShiftHessian:
             qml.RY(z[0] + z[1], wires=0)
             qml.CNOT(wires=[0, 1])
             qml.RX(y[1, 0], wires=0)
-            qml.RY(y[0, 1], wires=0)
+            qml.CRY(y[0, 1], wires=[0, 1])
             return qml.probs(wires=0), qml.probs(wires=1)
 
         x = np.array(0.1, requires_grad=True)
@@ -426,22 +426,55 @@ class TestParameterShiftHessian:
         assert hessian_qruns <= 2**2 * 6  # 6 = (3+2-1)C(2)
         assert hessian_qruns <= 3**3
 
-    def test_error_unsupported_operation(self):
-        """Test that the correct error is thrown for unsopperted operations"""
+    def test_error_unsupported_operation_without_argnum(self):
+        """Test that the correct error is thrown for unsupported operations when
+        no argnum is given."""
 
         dev = qml.device("default.qubit", wires=2)
+
+        class DummyOp(qml.CRZ):
+
+            grad_method = "F"
 
         @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
-            qml.CRZ(x[2], wires=[0, 1])
+            DummyOp(x[2], wires=[0, 1])
             return qml.probs(wires=1)
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
-        with pytest.raises(ValueError, match=r"The operation .+ is currently not supported"):
+        with pytest.raises(
+            ValueError,
+            match=r"The analytic gradient method cannot be used with the parameter\(s\)",
+        ):
             qml.gradients.param_shift_hessian(circuit)(x)
+
+    def test_error_unsupported_operation_with_argnum(self):
+        """Test that the correct error is thrown for unsupported operations when
+        argnum is given."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        class DummyOp(qml.CRZ):
+
+            grad_method = "F"
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            qml.RX(x[0], wires=0)
+            qml.RY(x[1], wires=0)
+            DummyOp(x[2], wires=[0, 1])
+            return qml.probs(wires=1)
+
+        x = np.array([0.1, 0.2, 0.3], requires_grad=True)
+
+        with pytest.raises(
+            ValueError,
+            match="The parameter-shift Hessian currently does not support",
+        ):
+            qml.gradients.param_shift_hessian(circuit, argnum=[0, 2])(x)
 
     def test_error_unsupported_variance_measurement(self):
         """Test that the correct error is thrown for variance measurements"""
@@ -540,7 +573,8 @@ class TestParameterShiftHessian:
         res = post_processing(qml.execute(h_tapes, dev, None))
 
         assert h_tapes == []
-        assert res == ()
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (1, 0, 0)
 
     def test_f0_argument(self):
         """Test that we can provide the results of a QNode to save on quantum invocations"""
