@@ -18,15 +18,10 @@ This module contains the functions needed for performing the self-consistent-fie
 import itertools
 
 import autograd.numpy as anp
-from pennylane.hf.matrices import (
-    core_matrix,
-    mol_density_matrix,
-    overlap_matrix,
-    repulsion_tensor,
-)
+from pennylane.hf.matrices import core_matrix, mol_density_matrix, overlap_matrix, repulsion_tensor
 
 
-def generate_scf(mol, n_steps=50, tol=1e-8):
+def scf(mol, n_steps=50, tol=1e-8):
     r"""Return a function that performs the self-consistent-field calculations.
 
     In the Hartree-Fock method, molecular orbitals are typically constructed as a linear combination
@@ -105,12 +100,12 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> v_fock, coeffs, fock_matrix, h_core, rep_tensor = generate_scf(mol)(*args)
+    >>> v_fock, coeffs, fock_matrix, h_core, rep_tensor = scf(mol)(*args)
     >>> v_fock
     array([-0.67578019,  0.94181155])
     """
 
-    def scf(*args):
+    def _scf(*args):
         r"""Perform the self-consistent-field iterations.
 
         Args:
@@ -168,7 +163,7 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
 
         return eigvals, coeffs, fock_matrix, h_core, rep_tensor
 
-    return scf
+    return _scf
 
 
 def nuclear_energy(charges, r):
@@ -201,7 +196,7 @@ def nuclear_energy(charges, r):
     4.5
     """
 
-    def nuclear(*args):
+    def _nuclear_energy(*args):
         r"""Compute the nuclear-repulsion energy.
 
         Args:
@@ -220,7 +215,7 @@ def nuclear_energy(charges, r):
                 e = e + (charges[i] * charges[i + j + 1] / anp.linalg.norm(r1 - r2))
         return e
 
-    return nuclear
+    return _nuclear_energy
 
 
 def hf_energy(mol):
@@ -244,7 +239,7 @@ def hf_energy(mol):
     -1.065999461545263
     """
 
-    def energy(*args):
+    def _hf_energy(*args):
         r"""Compute the Hartree-Fock energy.
 
         Args:
@@ -260,4 +255,4 @@ def hf_energy(mol):
         )
         return e_elec + e_rep
 
-    return energy
+    return _hf_energy
