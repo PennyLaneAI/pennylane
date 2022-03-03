@@ -161,7 +161,7 @@ class TestConditionalOperations:
         assert sec_ctrl_op.data == [sec_par]
 
     @pytest.mark.parametrize("r", np.linspace(0.0, 1.6, 10))
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_quantum_teleportation(self, device, r):
         """Test quantum teleportation."""
         dev = qml.device(device, wires=3)
