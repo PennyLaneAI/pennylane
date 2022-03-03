@@ -112,15 +112,17 @@ class TestSnapshot:
         }
 
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
+        assert np.allclose(result["execution_results"], expected["execution_results"])
+        del result["execution_results"]
+        del expected["execution_results"]
         assert all(
             np.allclose(v1["cov_matrix"], v2["cov_matrix"])
-            for v1, v2 in zip(result.values()[:-1], expected.values()[:-1])
+            for v1, v2 in zip(result.values(), expected.values())
         )
         assert all(
             np.allclose(v1["means"], v2["means"])
-            for v1, v2 in zip(result.values()[:-1], expected.values()[:-1])
+            for v1, v2 in zip(result.values(), expected.values())
         )
-        assert np.allclose(result["execution_results"], expected["execution_results"])
 
     def test_unsupported_device(self):
         """Test that an error is raised on unsupported devices."""
