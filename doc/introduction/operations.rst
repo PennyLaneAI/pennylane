@@ -45,7 +45,7 @@ and extracting information.
     ~pennylane.cond
     ~pennylane.matrix
     ~pennylane.eigvals
-
+    ~pennylane.generator
 
 All operator functions can be used on instantiated operators,
 
