@@ -212,8 +212,15 @@
   
   `WireCut` operations that do not lead to a disconnection are now being removed.
   [(#2260)](https://github.com/PennyLaneAI/pennylane/pull/2260)
+  
+  - Circuit cutting now remaps the wires of fragment circuits to match the available wires on the
+    device.
+    [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
 
 <h3>Improvements</h3>
+
+* The `qml.draw_mpl` transform supports a `expansion_strategy` keyword argument.
+  [(#2271)](https://github.com/PennyLaneAI/pennylane/pull/2271/)
 
 * The `qml.gradients` module has been streamlined and special-purpose functions
   moved closer to their use cases, while preserving existing behaviour.

@@ -250,9 +250,9 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
     >>> z = -1.8
     >>> w = np.random.random((2, n_qubits, 3))
     >>> print(qml.draw(circuit)(x, y, z, w))
-    0: ──RX(0.5)──Rot(0.598, 0.949, 0.346)───RY(0.23)──Rot(0.693, 0.0738, 0.246)──RX(-1.8)──┤ ⟨Z⟩
-    1: ──RX(1)────Rot(0.0711, 0.701, 0.445)──RY(0.69)──Rot(0.32, 0.0482, 0.437)───RX(-1.8)──┤
-    2: ──RX(1.5)──Rot(0.401, 0.0795, 0.731)──RY(1.15)──Rot(0.756, 0.38, 0.38)─────RX(-1.8)──┤
+    0: ──RX(0.50)──Rot(0.09,0.46,0.54)──RY(0.23)──Rot(0.59,0.22,0.05)──RX(-1.80)─┤  <Z>
+    1: ──RX(1.00)──Rot(0.98,0.61,0.07)──RY(0.69)──Rot(0.62,0.00,0.28)──RX(-1.80)─┤
+    2: ──RX(1.50)──Rot(0.65,0.07,0.36)──RY(1.15)──Rot(0.74,0.27,0.24)──RX(-1.80)─┤
 
     Applying the ``qnode_spectrum`` function to the circuit for
     the non-trainable parameters, we obtain:
