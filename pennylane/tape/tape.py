@@ -19,6 +19,7 @@ from collections import Counter, deque, defaultdict
 import contextlib
 import copy
 from threading import RLock
+import warnings
 
 import numpy as np
 
@@ -1087,8 +1088,18 @@ class QuantumTape(AnnotatedQueue):
 
         return self._specs
 
-    def draw(self, charset="unicode", wire_order=None, show_all_wires=False, max_length=None):
+    def draw(self, wire_order=None, show_all_wires=False, max_length=100, decimals=None,
+        show_matrices=False):
         """Draw the quantum tape as a circuit diagram.
+
+        Keyword Args:
+            wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
+            show_all_wires (bool): If True, all wires, including empty wires, are printed.
+            decimals (int): How many decimal points to include when formatting operation parameters.
+                Default ``None`` will omit parameters from operation labels.
+            max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
+                begin anew beneath the previous lines.
+            show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
 
         Consider the following circuit as an example:
 
@@ -1123,12 +1134,9 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             str: the circuit representation of the tape
         """
-        return self.graph.draw(
-            charset=charset,
-            wire_order=wire_order,
-            show_all_wires=show_all_wires,
-            max_length=max_length,
-        )
+        warnings.warn("tape.draw will be deprecated. Please use `qml.drawer.tape_text` instead.", UserWarning)
+        return qml.drawer.tape_text(self, wire_order=wire_order, show_all_wires=show_all_wires,
+            max_length=max_length, decimals=decimals, show_matrices=show_matrices)
 
     def to_openqasm(self, wires=None, rotations=True, measure_all=True, precision=None):
         """Serialize the circuit as an OpenQASM 2.0 program.

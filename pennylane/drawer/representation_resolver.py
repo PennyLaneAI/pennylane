@@ -17,6 +17,7 @@ Operations to their string representations.
 """
 import numpy as np
 import pennylane as qml
+import warnings
 
 from .charsets import UnicodeCharSet
 
@@ -30,6 +31,7 @@ class RepresentationResolver:
     """
 
     def __init__(self, charset=UnicodeCharSet, label_offsets=None):
+        warnings.warn("RepresentationResolver is deprecated. Please see qml.operation.Operator.label instead.", UserWarning)
         self.charset = charset
         if not label_offsets:
             label_offsets = {"matrix": 0, "unitary": 0, "hermitian": 0, "tape": 0}

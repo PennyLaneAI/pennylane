@@ -15,6 +15,7 @@
 This module contains the CircuitDrawer class which is used to draw CircuitGraph instances.
 """
 from collections import OrderedDict
+import warnings
 
 from pennylane.wires import Wires
 from pennylane.utils import _flatten
@@ -62,6 +63,7 @@ class CircuitDrawer:
         max_length=None,
         _label_offsets=None,
     ):
+        warnings.warn("CircuitDrawer is deprecated. Please see qml.drawer.tape_text instead.", UserWarning)
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
         self.wires = wires
