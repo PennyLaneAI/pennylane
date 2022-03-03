@@ -323,8 +323,8 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     measure_nodes_to_remove = [m for p in prepare_nodes_removed for m, p_ in cut_edges if p is p_]
     communication_graph.remove_nodes_from(subgraphs_indices_to_remove)
 
-    for m in measure_nodes_to_remove:
-        for s in subgraphs_connected_to_measurements:
+    for s in subgraphs_connected_to_measurements:
+        for m in measure_nodes_to_remove:
             if s.has_node(m):
                 s.remove_node(m)
 
@@ -724,7 +724,10 @@ def contract_tensors(
                         symb = meas_map[meas_op]
                         tensor_indxs[i] += symb
 
-    eqn = ",".join(tensor_indxs)
+    symb = get_symbol(ctr)
+    tensor_indxs = [t + symb for t in tensor_indxs]
+
+    eqn = ",".join(tensor_indxs) + "->" + symb
     kwargs = {} if use_opt_einsum else {"like": tensors[0]}
 
     return contract(eqn, *tensors, **kwargs)
@@ -735,7 +738,7 @@ CHANGE_OF_BASIS = qml.math.array(
 )
 
 
-def _process_tensor(results, n_prep: int, n_meas: int):
+def _process_tensor(results, n_prep: int, n_meas: int, num_measurements: int):
     """Convert a flat slice of an individual circuit fragment's execution results into a tensor.
 
     This function performs the following steps:
@@ -753,6 +756,7 @@ def _process_tensor(results, n_prep: int, n_meas: int):
         results (tensor_like): the input execution results
         n_prep (int): the number of preparation nodes in the corresponding circuit fragment
         n_meas (int): the number of measurement nodes in the corresponding circuit fragment
+        num_measurements: TODO
 
     Returns:
         tensor_like: the corresponding fragment tensor
@@ -761,7 +765,7 @@ def _process_tensor(results, n_prep: int, n_meas: int):
     dim_meas = 4**n_meas
 
     # Step 1
-    intermediate_shape = (4,) * n_prep + (dim_meas,)
+    intermediate_shape = (4,) * n_prep + (dim_meas, num_measurements)
     intermediate_tensor = qml.math.reshape(results, intermediate_shape)
 
     # Step 2
@@ -771,13 +775,13 @@ def _process_tensor(results, n_prep: int, n_meas: int):
 
     if qml.math.get_interface(intermediate_tensor) == "tensorflow":
         # TensorFlow does not support slicing
-        intermediate_tensor = qml.math.gather(intermediate_tensor, order, axis=-1)
+        intermediate_tensor = qml.math.gather(intermediate_tensor, order, axis=-2)
     else:
-        sl = [slice(None)] * n_prep + [order]
+        sl = [slice(None)] * (n_prep) + [order, slice(None)]
         intermediate_tensor = intermediate_tensor[tuple(sl)]
 
     # Step 3
-    final_shape = (4,) * n
+    final_shape = (4,) * n + (num_measurements,)
     final_tensor = qml.math.reshape(intermediate_tensor, final_shape)
 
     # Step 4
@@ -787,7 +791,7 @@ def _process_tensor(results, n_prep: int, n_meas: int):
         axes = [[1], [i]]
         final_tensor = qml.math.tensordot(change_of_basis, final_tensor, axes=axes)
 
-    axes = list(reversed(range(n_prep))) + list(range(n_prep, n))
+    axes = list(reversed(range(n_prep))) + list(range(n_prep, n + 1))
 
     # Use transpose to reorder indices. We must do this because tensordot returns a tensor whose
     # indices are ordered according to the uncontracted indices of the first tensor, followed
@@ -837,13 +841,13 @@ def _to_tensors(
         n = n_prep + n_meas
 
         dim = 4**n
-        results_slice = results[ctr : dim + ctr]
+        results_slice = results[ctr : num_measurements * dim + ctr]
 
-        tensors.append(_process_tensor(results_slice, n_prep, n_meas))
+        tensors.append(_process_tensor(results_slice, n_prep, n_meas, num_measurements))
 
-        ctr += dim
+        ctr += num_measurements * dim
 
-    if len(results) != num_measurements * ctr:
+    if len(results) != ctr:
         raise ValueError(f"The results argument should be a flat list of length {ctr}")
 
     return tensors
@@ -894,7 +898,7 @@ def qcut_processing_fn(
     result = contract_tensors(
         tensors, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum
     )
-    return result
+    return result if len(results) > 1 else result[0]
 
 
 @batch_transform
@@ -999,12 +1003,8 @@ def cut_circuit(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f, measurement_positions=pos) for f in fragments]
-    # for t in fragment_tapes:
-    #     print(t.draw())
     expanded = [expand_fragment_tapes(t) for t in fragment_tapes]
-    for exp in expanded:
-        for t in exp[0]:
-            print(t.draw())
+
     configurations = []
     prepare_nodes = []
     measure_nodes = []
