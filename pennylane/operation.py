@@ -1409,12 +1409,8 @@ class Operation(Operator):
 
         # check the grad_recipe validity
         if self.grad_recipe is None:
-            # Make sure grad_recipe always is an iterable of correct length
+            # Make sure grad_recipe is an iterable of correct length instead of None
             self.grad_recipe = [None] * self.num_params
-        else:
-            assert (
-                len(self.grad_recipe) == self.num_params
-            ), "Gradient recipe must have one entry for each parameter!"
 
 
 class Channel(Operation, abc.ABC):
