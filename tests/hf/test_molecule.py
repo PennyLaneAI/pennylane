@@ -19,7 +19,7 @@ import pytest
 from pennylane import numpy as np
 from pennylane.hf.molecule import Molecule
 from pennylane.hf.basis_set import BasisFunction
-from pennylane.hf.hartree_fock import generate_scf
+from pennylane.hf.hartree_fock import scf
 
 
 class TestMolecule:
@@ -249,7 +249,7 @@ class TestMolecule:
         mol = Molecule(symbols, geometry)
 
         x, y, z = position
-        _ = generate_scf(mol)()
+        _ = scf(mol)()
         mo = mol.molecular_orbital(index)
         mo_value = mo(x, y, z)
 
