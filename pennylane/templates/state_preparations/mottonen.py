@@ -263,12 +263,17 @@ class MottonenStatePreparation(Operation):
             state = np.array([1, 2j, 3, 4j, 5, 6j, 7, 8j])
             state = state / np.linalg.norm(state)
 
-        The resulting circuit is:
+            print(qml.draw(circuit, expansion_strategy="device", max_length=80)(state))
 
-        >>> print(qml.draw(circuit)(state))
-            0: ──RY(2.35)──╭C─────────────╭C─────────────────╭C─────────────────────────────╭C──╭C─────────╭C──────╭C──────╭C──╭┤ State
-            1: ──RY(2.09)──╰X──RY(0.213)──╰X──╭C─────────────│───────────────╭C─────────────│───╰X─────────╰X──╭C──│───╭C──│───├┤ State
-            2: ──RY(1.88)─────────────────────╰X──RY(0.102)──╰X──RY(0.0779)──╰X──RY(0.153)──╰X───RZ(1.57)──────╰X──╰X──╰X──╰X──╰┤ State
+        .. code-block::
+
+            0: ──RY(2.35)─╭C───────────╭C──────────────╭C────────────────────────╭C
+            1: ──RY(2.09)─╰X──RY(0.21)─╰X─╭C───────────│────────────╭C───────────│─
+            2: ──RY(1.88)─────────────────╰X──RY(0.10)─╰X──RY(0.08)─╰X──RY(0.15)─╰X
+
+            ──╭C────────╭C────╭C────╭C─┤  State
+            ──╰X────────╰X─╭C─│──╭C─│──┤  State
+            ───RZ(1.57)────╰X─╰X─╰X─╰X─┤  State
 
         The state preparation can be checked by running:
 
