@@ -255,7 +255,7 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     return s
 
 
-def generate_overlap(basis_a, basis_b):
+def overlap_integral(basis_a, basis_b):
     r"""Return a function that computes the overlap integral for two contracted Gaussian functions.
 
     Args:
@@ -271,11 +271,11 @@ def generate_overlap(basis_a, basis_b):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> mol = qml.hf.Molecule(symbols, geometry)
     >>> args = []
-    >>> generate_overlap(mol.basis_set[0], mol.basis_set[0])(*args)
+    >>> overlap_integral(mol.basis_set[0], mol.basis_set[0])(*args)
     1.0
     """
 
-    def overlap_integral(*args):
+    def _overlap_integral(*args):
         r"""Normalize and compute the overlap integral for two contracted Gaussian functions.
 
         Args:
@@ -305,7 +305,7 @@ def generate_overlap(basis_a, basis_b):
             ).sum()
         )
 
-    return overlap_integral
+    return _overlap_integral
 
 
 def hermite_moment(alpha, beta, t, order, r):
@@ -613,7 +613,7 @@ def gaussian_kinetic(la, lb, ra, rb, alpha, beta):
     return -0.5 * (t1 + t2 + t3)
 
 
-def generate_kinetic(basis_a, basis_b):
+def kinetic_integral(basis_a, basis_b):
     r"""Return a function that computes the kinetic integral for two contracted Gaussian functions.
 
     Args:
@@ -631,11 +631,11 @@ def generate_kinetic(basis_a, basis_b):
     >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [mol.alpha]
-    >>> generate_kinetic(mol.basis_set[0], mol.basis_set[1])(*args)
+    >>> kinetic_integral(mol.basis_set[0], mol.basis_set[1])(*args)
     0.38325367405312843
     """
 
-    def kinetic_integral(*args):
+    def _kinetic_integral(*args):
         r"""Compute the kinetic integral for two contracted Gaussian functions.
 
         Args:
@@ -664,7 +664,7 @@ def generate_kinetic(basis_a, basis_b):
             ).sum()
         )
 
-    return kinetic_integral
+    return _kinetic_integral
 
 
 def _boys(n, t):
@@ -814,7 +814,7 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     return a
 
 
-def generate_attraction(r, basis_a, basis_b):
+def attraction_integral(r, basis_a, basis_b):
     r"""Return a function that computes the nuclear attraction integral for two contracted Gaussian
     functions.
 
@@ -836,11 +836,11 @@ def generate_attraction(r, basis_a, basis_b):
     >>> basis_a = mol.basis_set[0]
     >>> basis_b = mol.basis_set[1]
     >>> args = [mol.alpha]
-    >>> generate_attraction(geometry[0], basis_a, basis_b)(*args)
+    >>> attraction_integral(geometry[0], basis_a, basis_b)(*args)
     0.801208332328965
     """
 
-    def attraction_integral(*args):
+    def _attraction_integral(*args):
         r"""Compute the electron-nuclear attraction integral for two contracted Gaussian functions.
 
         Args:
@@ -879,7 +879,7 @@ def generate_attraction(r, basis_a, basis_b):
         )
         return v
 
-    return attraction_integral
+    return _attraction_integral
 
 
 def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta):
@@ -958,7 +958,7 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
     return g
 
 
-def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
+def repulsion_integral(basis_a, basis_b, basis_c, basis_d):
     r"""Return a function that computes the electron-electron repulsion integral for four contracted
     Gaussian functions.
 
@@ -982,11 +982,11 @@ def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
     >>> basis_a = mol.basis_set[0]
     >>> basis_b = mol.basis_set[1]
     >>> args = [mol.alpha]
-    >>> generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*args)
+    >>> repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*args)
     0.45590152106593573
     """
 
-    def repulsion_integral(*args):
+    def _repulsion_integral(*args):
         r"""Compute the electron-electron repulsion integral for four contracted Gaussian functions.
 
         Args:
@@ -1045,4 +1045,4 @@ def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
         )
         return e
 
-    return repulsion_integral
+    return _repulsion_integral
