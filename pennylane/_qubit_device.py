@@ -130,9 +130,9 @@ class QubitDevice(Device):
 
         if cache > 0:
             warnings.warn(
-                 "The caching ability of QubitDevice is being deprecated, passing a "
-                 "dictionary as the cache argument to the QNode is preferred.",
-                 UserWarning,
+                "The caching ability of QubitDevice is being deprecated, passing a "
+                "dictionary as the cache argument to the QNode is preferred.",
+                UserWarning,
             )
 
         self._cache = cache
