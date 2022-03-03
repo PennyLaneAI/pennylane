@@ -49,7 +49,7 @@ class Hadamard(Observable, Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "H"
 
     @staticmethod
@@ -181,7 +181,7 @@ class PauliX(Observable, Operation):
 
     basis = "X"
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
 
     @staticmethod
@@ -318,7 +318,7 @@ class PauliY(Observable, Operation):
 
     basis = "Y"
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
 
     @staticmethod
@@ -455,7 +455,7 @@ class PauliZ(Observable, Operation):
 
     basis = "Z"
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
 
     @staticmethod
@@ -902,7 +902,7 @@ class CNOT(Operation):
 
     basis = "X"
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
 
     @staticmethod
@@ -966,7 +966,7 @@ class CZ(Operation):
 
     basis = "Z"
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"
 
     @staticmethod
@@ -1052,7 +1052,7 @@ class CY(Operation):
 
     basis = "Y"
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
 
     @staticmethod
@@ -1478,7 +1478,7 @@ class CSWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "SWAP"
 
     @staticmethod
@@ -1586,7 +1586,7 @@ class Toffoli(Operation):
 
     basis = "X"
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
 
     @staticmethod
@@ -1790,6 +1790,9 @@ class MultiControlledX(Operation):
 
         super().__init__(wires=total_wires, do_queue=do_queue)
 
+    def label(self, decimals=None, base_label=None, cache=None):
+        return base_label or "X"
+
     # pylint: disable=unused-argument
     @staticmethod
     def compute_matrix(
@@ -1846,9 +1849,6 @@ class MultiControlledX(Operation):
     @property
     def control_wires(self):
         return self.wires[:~0]
-
-    def label(self, decimals=None, base_label=None):
-        return base_label or "X"
 
     def adjoint(self):
         return MultiControlledX(
@@ -2050,7 +2050,7 @@ class Barrier(Operation):
         """
         return []
 
-    def label(self, decimals=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return "||"
 
     def adjoint(self):
@@ -2092,7 +2092,7 @@ class WireCut(Operation):
         """
         return []
 
-    def label(self, decimals=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return "//"
 
     def adjoint(self):
