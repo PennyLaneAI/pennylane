@@ -28,9 +28,10 @@ def batch_input(
 
     Args:
         tape (.tape.JacobianTape or .QNode): Input quantum circuit to batch
-        argnum (Sequence[int] or int): One or more location indices indicating the
-            location of the non-trainable batched inputs within the input argument sequence
-            of the circuit. By default first argument is assumed to be the only batched input.
+        argnum (Sequence[int] or int): One or more index value on all gate parameters
+            indicating the location of the non-trainable batched inputs within the input
+            argument sequence of the circuit. By default first argument is assumed to be
+            the only batched input.
 
     Returns:
         Sequence[Sequence[.tape.JacobianTape], Callable]: list of tapes arranged
