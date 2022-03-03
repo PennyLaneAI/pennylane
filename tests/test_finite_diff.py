@@ -27,7 +27,7 @@ grad3 = np.array(
 def catch_warn_finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
     """Computes the finite diff and catches the initial deprecation warning."""
 
-    with pytest.warns(UserWarning, match="The black-box finite_diff function will be deprecated,"):
+    with pytest.warns(UserWarning, match="The black-box finite_diff function is deprecated"):
         res = qml.finite_diff(f, N, argnum, idx, delta)
     return res
 
