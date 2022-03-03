@@ -108,17 +108,17 @@ class TestExpval:
             return qml.expval(obs)
 
         obs_lst = [
-            qml.PauliX(wires=0)@qml.PauliY(wires=1),
-            qml.PauliX(wires=1)@qml.PauliY(wires=0),
-            qml.PauliX(wires=1)@qml.PauliZ(wires=2),
-            qml.PauliX(wires=2)@qml.PauliZ(wires=1),
+            qml.PauliX(wires=0) @ qml.PauliY(wires=1),
+            qml.PauliX(wires=1) @ qml.PauliY(wires=0),
+            qml.PauliX(wires=1) @ qml.PauliZ(wires=2),
+            qml.PauliX(wires=2) @ qml.PauliZ(wires=1),
         ]
 
         obs_permuted_lst = [
-            qml.PauliY(wires=1)@qml.PauliX(wires=0),
-            qml.PauliY(wires=0)@qml.PauliX(wires=1),
-            qml.PauliZ(wires=2)@qml.PauliX(wires=1),
-            qml.PauliZ(wires=1)@qml.PauliX(wires=2),
+            qml.PauliY(wires=1) @ qml.PauliX(wires=0),
+            qml.PauliY(wires=0) @ qml.PauliX(wires=1),
+            qml.PauliZ(wires=2) @ qml.PauliX(wires=1),
+            qml.PauliZ(wires=1) @ qml.PauliX(wires=2),
         ]
 
         for obs, permuted_obs in zip(obs_lst, obs_permuted_lst):
@@ -181,17 +181,17 @@ class TestVar:
             return qml.var(obs)
 
         obs_lst = [
-            qml.PauliX(wires=0)@qml.PauliY(wires=1),
-            qml.PauliX(wires=1)@qml.PauliY(wires=0),
-            qml.PauliX(wires=1)@qml.PauliZ(wires=2),
-            qml.PauliX(wires=2)@qml.PauliZ(wires=1),
+            qml.PauliX(wires=0) @ qml.PauliY(wires=1),
+            qml.PauliX(wires=1) @ qml.PauliY(wires=0),
+            qml.PauliX(wires=1) @ qml.PauliZ(wires=2),
+            qml.PauliX(wires=2) @ qml.PauliZ(wires=1),
         ]
 
         obs_permuted_lst = [
-            qml.PauliY(wires=1)@qml.PauliX(wires=0),
-            qml.PauliY(wires=0)@qml.PauliX(wires=1),
-            qml.PauliZ(wires=2)@qml.PauliX(wires=1),
-            qml.PauliZ(wires=1)@qml.PauliX(wires=2),
+            qml.PauliY(wires=1) @ qml.PauliX(wires=0),
+            qml.PauliY(wires=0) @ qml.PauliX(wires=1),
+            qml.PauliZ(wires=2) @ qml.PauliX(wires=1),
+            qml.PauliZ(wires=1) @ qml.PauliX(wires=2),
         ]
 
         for obs, permuted_obs in zip(obs_lst, obs_permuted_lst):
