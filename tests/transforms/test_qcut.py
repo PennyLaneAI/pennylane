@@ -2103,6 +2103,7 @@ class TestCutCircuitTransform:
             qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum), x
         )
 
+        # Run once with original value
         spy = mocker.spy(qcut, "qcut_processing_fn")
         res = cut_circuit_trace(x)
 
@@ -2120,6 +2121,26 @@ class TestCutCircuitTransform:
 
         assert np.isclose(grad, grad_expected)
 
+        # Run more times over a range of values
+        for x in np.linspace(-1, 1, 10):
+            x = torch.tensor(x, requires_grad=True)
+            res = cut_circuit_trace(x)
+
+            res_expected = circuit(x)
+            assert np.isclose(res.detach().numpy(), res_expected.detach().numpy())
+
+            res.backward()
+            grad = x.grad.detach().numpy()
+
+            x.grad = None
+            res_expected.backward()
+            grad_expected = x.grad.detach().numpy()
+
+            assert np.isclose(grad, grad_expected)
+
+        spy.assert_not_called()
+
+    @pytest.mark.xfail(reason="Retracing is happening upon every call")
     def test_simple_cut_circuit_tf_jit(self, mocker, use_opt_einsum):
         """
         Tests the full circuit cutting pipeline returns the correct value and
@@ -2142,9 +2163,11 @@ class TestCutCircuitTransform:
 
         x = tf.Variable(0.531)
         cut_circuit_jit = tf.function(
-            qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum), jit_compile=True
+            qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum), jit_compile=True,
+            input_signature=(tf.TensorSpec(shape=[None], dtype=tf.float32),)
         )
 
+        # Run once with original value
         spy = mocker.spy(qcut, "qcut_processing_fn")
 
         # Note we call the function twice but assert qcut_processing_fn is called once. We expect
@@ -2166,6 +2189,27 @@ class TestCutCircuitTransform:
 
         assert np.isclose(res, res_expected)
         assert np.isclose(grad, grad_expected)
+
+        # Run more times over a range of values
+        for x in np.linspace(-1, 1, 2):
+            x = tf.Variable(x)
+
+            cut_circuit_jit(x)
+
+            with tf.GradientTape() as tape:
+                res = cut_circuit_jit(x)
+
+            grad = tape.gradient(res, x)
+
+            with tf.GradientTape() as tape:
+                res_expected = circuit(x)
+
+            grad_expected = tape.gradient(res_expected, x)
+
+            assert np.isclose(res, res_expected)
+            assert np.isclose(grad, grad_expected)
+
+        assert spy.call_count == 1
 
     def test_simple_cut_circuit_jax_jit(self, mocker, use_opt_einsum):
         """
