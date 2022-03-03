@@ -2179,8 +2179,9 @@ class TestCutCircuitTransform:
 
         x = tf.Variable(0.531)
         cut_circuit_jit = tf.function(
-            qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum), jit_compile=True,
-            input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),)
+            qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum),
+            jit_compile=True,
+            input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),),
         )
 
         # Run once with original value
