@@ -168,11 +168,13 @@ class TestInterfaces:
         op = qml.RandomLayers(weights, wires=range(3), seed=42)
 
         decomp = op.decomposition()
-        expected = [qml.RX(weights[0][0], wires=1),
-                    qml.RX(weights[0][1], wires=0),
-                    qml.CNOT(wires=[1,0]),
-                    qml.RZ(weights[0][2], wires=2)]
-        
+        expected = [
+            qml.RX(weights[0][0], wires=1),
+            qml.RX(weights[0][1], wires=0),
+            qml.CNOT(wires=[1, 0]),
+            qml.RZ(weights[0][2], wires=2),
+        ]
+
         for op1, op2 in zip(decomp, expected):
             assert op1.name == op2.name
             assert op1.data == op2.data
