@@ -2185,7 +2185,7 @@ class TestCutCircuitTransform:
         dev_original = qml.device("default.qubit", wires=5)
 
         # We need a 4-qubit device to account for mid-circuit measurements
-        dev_cut = qml.device("default.qubit", wires=5)  # TODO: Change to 4 once PR2257 is merged
+        dev_cut = qml.device("default.qubit", wires=4)
 
         def two_qubit_unitary(param, wires):
             qml.Hadamard(wires=[wires[0]])
@@ -2248,7 +2248,7 @@ class TestCutCircuitTransform:
         dev_original = qml.device("default.qubit", wires=4)
 
         # We need a 3-qubit device
-        dev_cut = qml.device("default.qubit", wires=4)  # TODO: Change to 3 once PR2257 is merged
+        dev_cut = qml.device("default.qubit", wires=3)
         us = [unitary_group.rvs(2**2, random_state=i) for i in range(5)]
 
         def f():
