@@ -2234,6 +2234,7 @@ class TestCutCircuitTransform:
         x = jnp.array(0.531)
         cut_circuit_jit = jax.jit(qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum))
 
+        # Run once with original value
         spy = mocker.spy(qcut, "qcut_processing_fn")
 
         # Note we call the function twice but assert qcut_processing_fn is called once. We expect
@@ -2250,6 +2251,24 @@ class TestCutCircuitTransform:
         grad_expected = jax.grad(circuit)(x)
 
         assert np.isclose(grad, grad_expected)
+        assert spy.call_count == 2
+
+        # Run more times over a range of values
+        for x in np.linspace(-1, 1, 10):
+            x = jnp.array(x)
+
+            cut_circuit_jit(x)
+            res = cut_circuit_jit(x)
+            res_expected = circuit(x)
+
+            assert np.isclose(res, res_expected)
+
+            grad = jax.grad(cut_circuit_jit)(x)
+            grad_expected = jax.grad(circuit)(x)
+
+            assert np.isclose(grad, grad_expected)
+
+        assert spy.call_count == 4
 
     def test_circuit_with_disconnected_components(self, use_opt_einsum, mocker):
         """Tests if a circuit that is fragmented into subcircuits such that some of the subcircuits
