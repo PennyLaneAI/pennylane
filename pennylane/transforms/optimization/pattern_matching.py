@@ -916,7 +916,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
         self.match_final = []
         self.matching_list = MatchingScenariosList()
 
-
     def _find_backward_candidates(self, pattern_blocked, matches):
         """Function which returns the list possible backward candidates in the pattern dag.
         Args:
