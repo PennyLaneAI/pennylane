@@ -21,7 +21,7 @@ from pennylane.hf.matrices import (
     attraction_matrix,
     core_matrix,
     kinetic_matrix,
-    molecular_density_matrix,
+    mol_density_matrix,
     moment_matrix,
     overlap_matrix,
     repulsion_tensor,
@@ -42,7 +42,7 @@ from pennylane.hf.molecule import Molecule
 )
 def test_molecular_density_matrix(n_electron, c, p_ref):
     r"""Test that molecular_density_matrix returns the correct matrix."""
-    p = molecular_density_matrix(n_electron, c)
+    p = mol_density_matrix(n_electron, c)
     assert np.allclose(p, p_ref)
 
 

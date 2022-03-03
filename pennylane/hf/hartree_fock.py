@@ -20,7 +20,7 @@ import itertools
 import autograd.numpy as anp
 from pennylane.hf.matrices import (
     core_matrix,
-    molecular_density_matrix,
+    mol_density_matrix,
     overlap_matrix,
     repulsion_tensor,
 )
@@ -144,7 +144,7 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
         eigvals, w_fock = anp.linalg.eigh(x.T @ h_core @ x)  # initial guess for the scf problem
         coeffs = x @ w_fock
 
-        p = molecular_density_matrix(n_electron, coeffs)
+        p = mol_density_matrix(n_electron, coeffs)
 
         for _ in range(n_steps):
 
@@ -157,7 +157,7 @@ def generate_scf(mol, n_steps=50, tol=1e-8):
 
             coeffs = x @ w_fock
 
-            p_update = molecular_density_matrix(n_electron, coeffs)
+            p_update = mol_density_matrix(n_electron, coeffs)
 
             if anp.linalg.norm(p_update - p) <= tol:
                 break
@@ -256,7 +256,7 @@ def hf_energy(mol):
         _, coeffs, fock_matrix, h_core, _ = generate_scf(mol)(*args)
         e_rep = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
         e_elec = anp.einsum(
-            "pq,qp", fock_matrix + h_core, molecular_density_matrix(mol.n_electrons, coeffs)
+            "pq,qp", fock_matrix + h_core, mol_density_matrix(mol.n_electrons, coeffs)
         )
         return e_elec + e_rep
 

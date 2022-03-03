@@ -46,7 +46,7 @@ from .matrices import (
     kinetic_matrix,
     overlap_matrix,
     repulsion_tensor,
-    molecular_density_matrix,
+    mol_density_matrix,
     moment_matrix,
 )
 from .molecule import Molecule

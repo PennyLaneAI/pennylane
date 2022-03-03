@@ -27,7 +27,7 @@ from pennylane.hf.integrals import (
 )
 
 
-def molecular_density_matrix(n_electron, c):
+def mol_density_matrix(n_electron, c):
     r"""Compute the molecular density matrix.
 
     The density matrix :math:`P` is computed from the molecular orbital coefficients :math:`C` as
@@ -51,7 +51,7 @@ def molecular_density_matrix(n_electron, c):
 
     >>> c = np.array([[-0.54828771,  1.21848441], [-0.54828771, -1.21848441]])
     >>> n_electron = 2
-    >>> molecular_density_matrix(n_electron, c)
+    >>> mol_density_matrix(n_electron, c)
     array([[0.30061941, 0.30061941], [0.30061941, 0.30061941]])
     """
     p = anp.dot(c[:, : n_electron // 2], anp.conjugate(c[:, : n_electron // 2]).T)
