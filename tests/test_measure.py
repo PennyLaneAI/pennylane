@@ -38,6 +38,29 @@ from pennylane.measurements import (
 )
 
 
+obs_lst = [
+    qml.PauliX(wires=0) @ qml.PauliY(wires=1),
+    qml.PauliX(wires=1) @ qml.PauliY(wires=0),
+    qml.PauliX(wires=1) @ qml.PauliZ(wires=2),
+    qml.PauliX(wires=2) @ qml.PauliZ(wires=1),
+]
+
+obs_permuted_lst = [
+    qml.PauliY(wires=1) @ qml.PauliX(wires=0),
+    qml.PauliY(wires=0) @ qml.PauliX(wires=1),
+    qml.PauliZ(wires=2) @ qml.PauliX(wires=1),
+    qml.PauliZ(wires=1) @ qml.PauliX(wires=2),
+]
+
+
+def sub_routine():
+    qml.Hadamard(wires=0)
+    qml.CNOT(wires=[0, 1])
+    qml.RX(0.12, wires=1)
+    qml.CNOT(wires=[1, 2])
+    qml.RY(3.45, wires=2)
+
+
 def test_no_measure(tol):
     """Test that failing to specify a measurement
     raises an exception"""
@@ -100,26 +123,8 @@ class TestExpval:
 
         @qml.qnode(dev)
         def circ(obs):
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RX(0.12, wires=1)
-            qml.CNOT(wires=[1, 2])
-            qml.RY(3.45, wires=2)
+            sub_routine()
             return qml.expval(obs)
-
-        obs_lst = [
-            qml.PauliX(wires=0) @ qml.PauliY(wires=1),
-            qml.PauliX(wires=1) @ qml.PauliY(wires=0),
-            qml.PauliX(wires=1) @ qml.PauliZ(wires=2),
-            qml.PauliX(wires=2) @ qml.PauliZ(wires=1),
-        ]
-
-        obs_permuted_lst = [
-            qml.PauliY(wires=1) @ qml.PauliX(wires=0),
-            qml.PauliY(wires=0) @ qml.PauliX(wires=1),
-            qml.PauliZ(wires=2) @ qml.PauliX(wires=1),
-            qml.PauliZ(wires=1) @ qml.PauliX(wires=2),
-        ]
 
         for obs, permuted_obs in zip(obs_lst, obs_permuted_lst):
             assert np.allclose(circ(obs), circ(permuted_obs), atol=tol, rtol=0)
@@ -173,26 +178,8 @@ class TestVar:
 
         @qml.qnode(dev)
         def circ(obs):
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.RX(0.12, wires=1)
-            qml.CNOT(wires=[1, 2])
-            qml.RY(3.45, wires=2)
+            sub_routine()
             return qml.var(obs)
-
-        obs_lst = [
-            qml.PauliX(wires=0) @ qml.PauliY(wires=1),
-            qml.PauliX(wires=1) @ qml.PauliY(wires=0),
-            qml.PauliX(wires=1) @ qml.PauliZ(wires=2),
-            qml.PauliX(wires=2) @ qml.PauliZ(wires=1),
-        ]
-
-        obs_permuted_lst = [
-            qml.PauliY(wires=1) @ qml.PauliX(wires=0),
-            qml.PauliY(wires=0) @ qml.PauliX(wires=1),
-            qml.PauliZ(wires=2) @ qml.PauliX(wires=1),
-            qml.PauliZ(wires=1) @ qml.PauliX(wires=2),
-        ]
 
         for obs, permuted_obs in zip(obs_lst, obs_permuted_lst):
             assert np.allclose(circ(obs), circ(permuted_obs), atol=tol, rtol=0)
