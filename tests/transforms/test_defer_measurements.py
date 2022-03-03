@@ -192,7 +192,6 @@ class TestConditionalOperations:
         sec_x = qnode.qtape.queue[2]
         assert isinstance(sec_x, qml.PauliX)
 
-
     @pytest.mark.parametrize("r", np.linspace(0.0, 1.6, 10))
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_quantum_teleportation(self, device, r):
