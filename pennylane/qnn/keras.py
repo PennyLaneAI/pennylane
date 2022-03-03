@@ -54,7 +54,7 @@ class KerasLayer(Layer):
             arguments of the `add_weight()
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
             method and values being the corresponding specification.
-        argnum (Union[Sequence[int], int]): Argument location of the non-trainable inputs for
+        batch_idx (Union[Sequence[int], int]): Argument location of the non-trainable inputs for
             the circuit. This allows batch execution by creating executable circuits for each
             input example with the same trainable weights. Default ``None``.
             See :class:`~.pennylane.transforms.batch_input` for more details.
@@ -207,7 +207,7 @@ class KerasLayer(Layer):
         weight_shapes: dict,
         output_dim,
         weight_specs: Optional[dict] = None,
-        argnum: Union[Sequence[int], int] = None,
+        batch_idx: Union[Sequence[int], int] = None,
         **kwargs,
     ):
         # pylint: disable=too-many-arguments
@@ -226,11 +226,11 @@ class KerasLayer(Layer):
 
         self._signature_validation(qnode, weight_shapes)
 
-        self.argnum = argnum
-        if argnum is None:
+        self.argnum = batch_idx
+        if batch_idx is None:
             self.qnode = qnode
         else:
-            self.qnode = batch_input(qnode, argnum=argnum)
+            self.qnode = batch_input(qnode, argnum=batch_idx)
 
         dtype = tf.float32 if tf.keras.backend.floatx() == tf.float32 else tf.float64
 
