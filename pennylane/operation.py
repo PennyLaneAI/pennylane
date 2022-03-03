@@ -1181,7 +1181,7 @@ class Operation(Operator):
         """
         if self.num_params == 0:
             return None
-        if self.grad_recipe is not None:
+        if self.grad_recipe != [None] * self.num_params:
             return "A"
         try:
             self.parameter_frequencies  # pylint:disable=pointless-statement
@@ -1303,11 +1303,18 @@ class Operation(Operator):
         if self.num_params == 1:
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
+            try:
+                gen = qml.generator(self, format="observable")
+            except GeneratorUndefinedError as e:
+                raise ParameterFrequenciesUndefinedError(
+                    f"Operation {self.name} does not have parameter frequencies defined."
+                ) from e
+
             with warnings.catch_warnings():
                 warnings.filterwarnings(
                     action="ignore", message=r".+ eigenvalues will be computed numerically\."
                 )
-                eigvals = qml.eigvals(qml.generator(self, format="observable"))
+                eigvals = qml.eigvals(gen)
 
             eigvals = tuple(np.round(eigvals, 8))
             return qml.gradients.eigvals_to_frequencies(eigvals)
@@ -1402,7 +1409,7 @@ class Operation(Operator):
 
         # check the grad_recipe validity
         if self.grad_recipe is None:
-            # default recipe for every parameter
+            # Make sure grad_recipe always is an iterable of correct length
             self.grad_recipe = [None] * self.num_params
         else:
             assert (
