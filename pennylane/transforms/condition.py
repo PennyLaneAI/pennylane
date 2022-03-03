@@ -15,13 +15,13 @@
 Contains the condition transform.
 """
 import inspect
+from copy import copy
 from functools import wraps
 from typing import Type
 
-from pennylane.operation import Operator, Operation, AnyWires
 from pennylane.measurements import MeasurementValue
+from pennylane.operation import AnyWires, Operation, Operator
 from pennylane.transforms import make_tape
-from copy import copy
 
 
 class ConditionalTransformError(ValueError):
