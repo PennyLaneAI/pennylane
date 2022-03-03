@@ -2235,7 +2235,8 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected)
         assert np.allclose(grad, grad_expected)
 
-    def test_standard_circuit(self, mocker, use_opt_einsum):
+    @pytest.mark.parametrize("shots", [None, int(1e7)])
+    def test_standard_circuit(self, mocker, use_opt_einsum, shots):
         """
         Tests that the full circuit cutting pipeline returns the correct value for a typical
         scenario. The circuit is drawn below:
@@ -2248,7 +2249,7 @@ class TestCutCircuitTransform:
         dev_original = qml.device("default.qubit", wires=4)
 
         # We need a 3-qubit device
-        dev_cut = qml.device("default.qubit", wires=3)
+        dev_cut = qml.device("default.qubit", wires=3, shots=shots)
         us = [unitary_group.rvs(2**2, random_state=i) for i in range(5)]
 
         def f():
@@ -2274,7 +2275,8 @@ class TestCutCircuitTransform:
         res = cut_circuit()
         spy.assert_called_once()
 
-        assert np.isclose(res, res_expected)
+        atol = 1e-2 if shots else 1e-8
+        assert np.isclose(res, res_expected, atol=atol)
 
 
 class TestRemapTapeWires:
