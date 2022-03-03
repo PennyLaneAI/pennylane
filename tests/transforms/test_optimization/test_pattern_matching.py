@@ -577,7 +577,9 @@ class TestPatternMatchingOptimization:
 
         dev = qml.device("default.qubit", wires=10)
 
-        with pytest.raises(qml.QuantumFunctionError, match="The pattern is not a valid quantum tape."):
+        with pytest.raises(
+            qml.QuantumFunctionError, match="The pattern is not a valid quantum tape."
+        ):
             optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
             optimized_qnode = qml.QNode(optimized_qfunc, dev)
             optimized_qnode()
