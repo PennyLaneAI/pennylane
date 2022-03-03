@@ -63,10 +63,10 @@ class AngleEmbedding(Operation):
         Here, we have also used rotation angles :class:`RZ`. If not specified, :class:`RX` is used as default.
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit)(X))
-            0: ──RZ(1)──H──╭┤ Probs
-            1: ──RZ(2)─────├┤ Probs
-            2: ──RZ(3)─────╰┤ Probs
+        >>> print(qml.draw(circuit, expansion_strategy="device")(X))
+        0: ──RZ(1.00)──H─┤ ╭Probs
+        1: ──RZ(2.00)────┤ ├Probs
+        2: ──RZ(3.00)────┤ ╰Probs
 
     """
 

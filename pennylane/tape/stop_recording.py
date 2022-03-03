@@ -46,7 +46,7 @@ def stop_recording():
     ...     qml.apply(ops[-1])  # apply only the last operation from the list
     ...     return qml.expval(qml.PauliZ(0))
     >>> print(qml.draw(circuit)([1, 2, 3]))
-     0: ──RX(1)──RY(2)──RZ(3)──┤ ⟨Z⟩
+    0: ──RX(1.00)──RY(2.00)──RZ(3.00)──RZ(3.00)─┤  <Z>
 
     Using the ``stop_recording`` context manager, all logic
     contained within is not queued or recorded by the QNode:
@@ -58,7 +58,7 @@ def stop_recording():
     ...     qml.apply(ops[-1])
     ...     return qml.expval(qml.PauliZ(0))
     >>> print(qml.draw(circuit)([1, 2, 3]))
-     0: ──RZ(3)──┤ ⟨Z⟩
+    0: ──RZ(3.00)─┤  <Z>
 
     ``stop_recording`` can also be used as a decorator. Decorated
     functions, when executed, will inhibit any internal
@@ -77,7 +77,8 @@ def stop_recording():
     ...     qml.apply(ops[-1])
     ...     return qml.expval(qml.PauliZ(0))
     >>> print(qml.draw(circuit)([1, 2, 3]))
-     0: ──RZ(3)──┤ ⟨Z⟩
+    0: ──RZ(3.00)─┤  <Z>
+
     """
     tape = get_active_tape()
 
