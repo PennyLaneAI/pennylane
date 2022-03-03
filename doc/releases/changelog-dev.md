@@ -12,6 +12,9 @@
   - `qml.eigvals()` for computing the eigenvalues of one or more operators.
     [(#2248)](https://github.com/PennyLaneAI/pennylane/pull/2248)
 
+  - `qml.generator()` for computing the generator of a single-parameter unitary operation.
+    [(#2256)](https://github.com/PennyLaneAI/pennylane/pull/2256)
+
   All operator transforms can be used on instantiated operators,
 
   ```pycon
@@ -205,6 +208,9 @@
 
   Circuit fragments that are disconnected from the terminal measurements are now removed.
   [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
+  
+  `WireCut` operations that do not lead to a disconnection are now being removed.
+  [(#2260)](https://github.com/PennyLaneAI/pennylane/pull/2260)
 
 <h3>Improvements</h3>
 
@@ -274,6 +280,9 @@
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
 
 <h3>Documentation</h3>
+
+* Link to the strawberry fields docs for information on the CV model.
+  [(#2259)](https://github.com/PennyLaneAI/pennylane/pull/2259)
 
 * Fixes the documentation example for `qml.QFT`.
   [(#2232)](https://github.com/PennyLaneAI/pennylane/pull/2232)
