@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.transforms.commutation_dag import commutation_dag
@@ -555,6 +556,32 @@ class TestPatternMatchingOptimization:
 
         assert np.allclose(get_unitary_matrix(optimized_qnode)(), get_unitary_matrix(qnode)())
 
+    def test_wrong_pattern_type(self):
+        def circuit():
+            qml.Toffoli(wires=[3, 4, 0])
+            qml.CNOT(wires=[1, 4])
+            qml.CNOT(wires=[2, 1])
+            qml.Hadamard(wires=3)
+            qml.PauliZ(wires=1)
+            qml.CNOT(wires=[2, 3])
+            qml.Toffoli(wires=[2, 3, 0])
+            qml.CNOT(wires=[1, 4])
+            return qml.expval(qml.PauliX(wires=0))
+
+        def template():
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[0, 2])
+
+        dev = qml.device("default.qubit", wires=10)
+
+        with pytest.raises(qml.QuantumFunctionError, match="The pattern is not a valid quantum tape."):
+            optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
+            optimized_qnode = qml.QNode(optimized_qfunc, dev)
+            optimized_qnode()
+
 
 class TestPatternMatching:
     """Pattern matching tests."""
@@ -688,3 +715,30 @@ class TestPatternMatching:
         assert backward_match_1_expected == backward_match_1
         assert backward_match_2_expected == backward_match_2
         assert qubits == backward_match_qubit_1 == backward_match_qubit_2
+
+    def test_forward_diamond_pattern(self):
+        """Test for a pattern with a diamond shape graph."""
+
+        def circuit():
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 3])
+            qml.CNOT(wires=[0, 3])
+            qml.CNOT(wires=[2, 1])
+            qml.CNOT(wires=[1, 3])
+            qml.PauliX(wires=2)
+            qml.PauliX(wires=0)
+            return qml.expval(qml.PauliX(wires=0))
+
+        with qml.tape.QuantumTape() as pattern:
+            qml.CNOT(wires=[1, 0])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=[0])
+
+        circuit_dag = commutation_dag(circuit)()
+        pattern_dag = commutation_dag(pattern)()
+
+        max_matches = pattern_matching(circuit_dag, pattern_dag)
+        expected_longest_match = [[1, 1], [2, 2], [3, 6]]
+
+        assert expected_longest_match == max_matches[0].match

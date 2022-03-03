@@ -104,9 +104,7 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
     for pattern in pattern_tapes:
         # Check the validity of the pattern
         if not isinstance(pattern, qml.tape.QuantumTape):
-            raise qml.QuantumFunctionError(
-                f"The pattern {pattern}, does not appear to be a valid quantum tape"
-            )
+            raise qml.QuantumFunctionError(f"The pattern is not a valid quantum tape.")
 
         # Check that it does not contain a measurement.
         if pattern.measurements:
@@ -1296,6 +1294,20 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
                 self.match_final.append(scenario)
 
 
+def _gate_indices(circuit_matched, circuit_blocked):
+    """Function which returns the list of gates that are not matched and not blocked for the first scenario.
+    Returns:
+        list(int): list of gate id.
+    """
+    gate_indices = []
+
+    for i, (matched, blocked) in enumerate(zip(circuit_matched, circuit_blocked)):
+        if (not matched) and (not blocked):
+            gate_indices.append(i)
+    gate_indices.reverse()
+    return gate_indices
+
+
 class MaximalMatches:  # pylint: disable=too-few-public-methods
     """
     Class MaximalMatches allows to sort and store the maximal matches from the list
@@ -1349,20 +1361,6 @@ class SubstitutionConfig:  # pylint: disable=too-many-arguments, too-few-public-
         self.template_config = template_config
         self.qubit_config = qubit_config
         self.pred_block = pred_block
-
-
-def _gate_indices(circuit_matched, circuit_blocked):
-    """Function which returns the list of gates that are not matched and not blocked for the first scenario.
-    Returns:
-        list(int): list of gate id.
-    """
-    gate_indices = []
-
-    for i, (matched, blocked) in enumerate(zip(circuit_matched, circuit_blocked)):
-        if (not matched) and (not blocked):
-            gate_indices.append(i)
-    gate_indices.reverse()
-    return gate_indices
 
 
 class TemplateSubstitution:  # pylint: disable=too-few-public-methods
@@ -1511,7 +1509,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
         while not ordered:
             ordered = self._permutation()
 
-    def _permutation(self):
+    def _permutation(self):  # pragma: no cover
         """Permute two groups of matches if first one has predecessors in the second one.
         Returns:
             bool: True if the matches groups are in the right order, False otherwise.
@@ -1532,7 +1530,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                     return False
         return True
 
-    def _remove_impossible(self):
+    def _remove_impossible(self):  # pragma: no cover
         """Remove matched groups if they both have predecessors in the other one, they are not compatible."""
         list_predecessors = []
         remove_list = []
