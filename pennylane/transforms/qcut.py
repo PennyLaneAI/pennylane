@@ -45,7 +45,7 @@ class MeasureNode(Operation):
     grad_method = None
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
-        id = str(uuid.uuid4())
+        id = id or str(uuid.uuid4())
 
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
@@ -57,7 +57,7 @@ class PrepareNode(Operation):
     grad_method = None
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
-        id = str(uuid.uuid4())
+        id = id or str(uuid.uuid4())
 
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
