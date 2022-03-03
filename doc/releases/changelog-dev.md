@@ -219,6 +219,9 @@
   rule. This now has to be made explicit for custom operations
   by adding any of the above attributes.
 
+* The `qml.draw_mpl` transform supports a `expansion_strategy` keyword argument.
+  [(#2271)](https://github.com/PennyLaneAI/pennylane/pull/2271/)
+
 * The `qml.gradients` module has been streamlined and special-purpose functions
   moved closer to their use cases, while preserving existing behaviour.
   [(#2200)](https://github.com/PennyLaneAI/pennylane/pull/2200)
