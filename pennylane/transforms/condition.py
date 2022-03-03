@@ -57,7 +57,7 @@ class Conditional(Operation):
         super().__init__(wires=then_op.wires, do_queue=do_queue, id=id)
 
 
-def cond(measurement, then_op):
+def cond(measurement, then_op, else_op=None):
     """Condition a quantum operation on the results of mid-circuit qubit measurements.
 
     Support for using :func:`~.cond` is device-dependent. If a device doesn't
@@ -69,6 +69,8 @@ def cond(measurement, then_op):
             example the output of calling :func:`qml.measure`
         then_op (Operation): The PennyLane operation to apply if the condition
             applies.
+        else_op (Operation): The PennyLane operation to apply if the condition
+            doesn't apply.
 
     Returns:
         function: A new function that applies the conditional equivalent of ``then_op``. The returned
@@ -95,6 +97,13 @@ def cond(measurement, then_op):
 
     @wraps(then_op)
     def wrapper(*args, **kwargs):
-        return Conditional(measurement, then_op(*args, do_queue=False, **kwargs))
+        ops = []
+        if else_op:
+            else_cond = Conditional(~measurement, else_op(*args, do_queue=False, **kwargs))
+            ops.append(else_cond)
+
+        cond = Conditional(measurement, then_op(*args, do_queue=False, **kwargs))
+        ops.append(cond)
+        return ops
 
     return wrapper
