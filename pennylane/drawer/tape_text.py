@@ -49,6 +49,10 @@ def _add_op(op, layer_str, wire_map, decimals, cache):
         if w not in control_wires:
             layer_str[wire_map[w]] += label
 
+    if len(op.wires) == 0:  # operation (e.g. barrier, snapshot) across all wires
+        for i, s in enumerate(layer_str):
+            layer_str[i] = s + label
+
     return layer_str
 
 

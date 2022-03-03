@@ -24,5 +24,5 @@ def test_decomposition():
 
 def test_label_method():
     """Test the label method for the Snapshot operation."""
-    assert Snapshot("my_label").label() == "Snapshot(my_label)"
-    assert Snapshot().label() == "Snapshot"
+    assert Snapshot().label() == "|S|"
+    assert Snapshot("my_label").label() == "|S|"
