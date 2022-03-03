@@ -210,6 +210,15 @@
 
 <h3>Improvements</h3>
 
+* No two-term parameter-shift rule is assumed anymore by default.
+  [(#2227)](https://github.com/PennyLaneAI/pennylane/pull/2227)
+
+  Previously, operations marked for analytic differentiation that
+  do not provide a `generator`, `parameter_frequencies` or a
+  custom `grad_recipe` were assumed to satisfy the two-term shift
+  rule. This now has to be made explicit for custom operations
+  by adding any of the above attributes.
+
 * The `qml.gradients` module has been streamlined and special-purpose functions
   moved closer to their use cases, while preserving existing behaviour.
   [(#2200)](https://github.com/PennyLaneAI/pennylane/pull/2200)
