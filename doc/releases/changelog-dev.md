@@ -39,6 +39,9 @@
   - `qml.eigvals()` for computing the eigenvalues of one or more operators.
     [(#2248)](https://github.com/PennyLaneAI/pennylane/pull/2248)
 
+  - `qml.generator()` for computing the generator of a single-parameter unitary operation.
+    [(#2256)](https://github.com/PennyLaneAI/pennylane/pull/2256)
+
   All operator transforms can be used on instantiated operators,
 
   ```pycon
@@ -228,12 +231,23 @@
   - A suite of integration tests has been added.
     [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
     [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
+    [(#2244)](https://github.com/PennyLaneAI/pennylane/pull/2244)
     [(#2251)](https://github.com/PennyLaneAI/pennylane/pull/2251)
 
-  Circuit fragments that are disconnected from the terminal measurements are now removed.
-  [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
+  - Circuit fragments that are disconnected from the terminal measurements are now removed.
+    [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
+  
+  - `WireCut` operations that do not lead to a disconnection are now being removed.
+    [(#2260)](https://github.com/PennyLaneAI/pennylane/pull/2260)
+  
+  - Circuit cutting now remaps the wires of fragment circuits to match the available wires on the
+    device.
+    [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
 
 <h3>Improvements</h3>
+
+* The `qml.draw_mpl` transform supports a `expansion_strategy` keyword argument.
+  [(#2271)](https://github.com/PennyLaneAI/pennylane/pull/2271/)
 
 * The `qml.gradients` module has been streamlined and special-purpose functions
   moved closer to their use cases, while preserving existing behaviour.
