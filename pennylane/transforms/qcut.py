@@ -23,7 +23,7 @@ import warnings
 from dataclasses import InitVar, dataclass
 from functools import partial
 from itertools import product
-from typing import Any, Callable, ClassVar, Dict, List, Sequence, Tuple, Union
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Sequence, Tuple, Union
 
 from networkx import MultiDiGraph, weakly_connected_components, has_path
 
@@ -902,7 +902,7 @@ def qcut_processing_fn(
 
 @batch_transform
 def cut_circuit(
-    tape: QuantumTape, use_opt_einsum: bool = False
+    tape: QuantumTape, use_opt_einsum: bool = False, device_wires: Optional[Wires] = None
 ) -> Tuple[Tuple[QuantumTape], Callable]:
     """
     Batch transform for circuit cutting.
@@ -919,10 +919,12 @@ def cut_circuit(
             for faster tensor contractions of large networks but must be installed separately using,
             e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
             differentiable contraction.
+        device_wires (.wires.Wires): Wires of the device that the cut circuits are to be run on
 
     Returns:
-        Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a result of cutting
-        and a post-processing function which combines the results via tensor contractions.
+        Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a
+        result of cutting and a post-processing function which combines the results via tensor
+        contractions.
 
     **Example**
 
@@ -992,6 +994,7 @@ def cut_circuit(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
+    fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
     expanded = [expand_fragment_tapes(t) for t in fragment_tapes]
 
     configurations = []
@@ -1011,6 +1014,85 @@ def cut_circuit(
         measure_nodes=measure_nodes,
         use_opt_einsum=use_opt_einsum,
     )
+
+
+@cut_circuit.custom_qnode_wrapper
+def qnode_execution_wrapper(self, qnode, targs, tkwargs):
+    """Here, we overwrite the QNode execution wrapper in order
+    to access the device wires."""
+
+    tkwargs.setdefault("device_wires", qnode.device.wires)
+    return self.default_qnode_wrapper(qnode, targs, tkwargs)
+
+
+def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
+    """Map the wires of a tape to a new set of wires.
+
+    Given an :math:`n`-wire ``tape``, this function returns a new :class:`~.QuantumTape` with
+    operations and measurements acting on the first :math:`n` wires provided in the ``wires``
+    argument. The input ``tape`` is left unmodified.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow. Check out the
+        :doc:`transforms </code/qml_transforms>` page for more details.
+
+    Args:
+        tape (QuantumTape): the quantum tape whose wires should be remapped
+        wires (Sequence): the new set of wires to map to
+
+    Returns:
+        QuantumTape: A remapped copy of the input tape
+
+    Raises:
+        ValueError: if the number of wires in ``tape`` exceeds ``len(wires)``
+
+    **Example**
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.5, wires=2)
+            qml.RY(0.6, wires=3)
+            qml.CNOT(wires=[2, 3])
+            qml.expval(qml.PauliZ(2) @ qml.PauliZ(3))
+
+        new_wires = [0, 1]
+        new_tape = qml.transforms.remap_tape_wires(tape, new_wires)
+
+    >>> print(new_tape.draw())
+     0: ──RX(0.5)──╭C──╭┤ ⟨Z ⊗ Z⟩
+     1: ──RY(0.6)──╰X──╰┤ ⟨Z ⊗ Z⟩
+    """
+    if len(tape.wires) > len(wires):
+        raise ValueError(
+            f"Attempting to run a {len(tape.wires)}-wire circuit on a "
+            f"{len(wires)}-wire device. Consider increasing the number of wires in "
+            f"your device."
+        )
+
+    wire_map = dict(zip(tape.wires, wires))
+    copy_ops = [copy.copy(op) for op in tape.operations]
+    copy_meas = [copy.copy(op) for op in tape.measurements]
+
+    with QuantumTape() as new_tape:
+        for op in copy_ops:
+            new_wires = Wires([wire_map[w] for w in op.wires])
+            op._wires = new_wires
+            apply(op)
+        for meas in copy_meas:
+            obs = meas.obs
+
+            if isinstance(obs, Tensor):
+                for obs in obs.obs:
+                    new_wires = Wires([wire_map[w] for w in obs.wires])
+                    obs._wires = new_wires
+            else:
+                new_wires = Wires([wire_map[w] for w in obs.wires])
+                obs._wires = new_wires
+            apply(meas)
+
+    return new_tape
 
 
 @dataclass()

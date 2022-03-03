@@ -211,6 +211,10 @@
   
   `WireCut` operations that do not lead to a disconnection are now being removed.
   [(#2260)](https://github.com/PennyLaneAI/pennylane/pull/2260)
+  
+  - Circuit cutting now remaps the wires of fragment circuits to match the available wires on the
+    device.
+    [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
 
 <h3>Improvements</h3>
 

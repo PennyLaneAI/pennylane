@@ -2091,6 +2091,36 @@ class TestCutCircuitTransform:
 
         assert np.isclose(gradient, cut_gradient)
 
+    def test_device_wires(self, use_opt_einsum):
+        """Tests that a 3-qubit circuit is cut into two 2-qubit fragments such that both fragments
+        can be run on a 2-qubit device"""
+
+        def circuit():
+            qml.RX(0.4, wires=0)
+            qml.RX(0.5, wires=1)
+            qml.RX(0.6, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            return qml.expval(qml.PauliX(1) @ qml.PauliY(2))
+
+        dev_uncut = qml.device("default.qubit", wires=3)
+        dev_1 = qml.device("default.qubit", wires=2)
+        dev_2 = qml.device("default.qubit", wires=["Alice", 3.14, "Bob"])
+
+        uncut_circuit = qml.QNode(circuit, dev_uncut)
+        cut_circuit_1 = qml.transforms.cut_circuit(qml.QNode(circuit, dev_1), use_opt_einsum)
+        cut_circuit_2 = qml.transforms.cut_circuit(qml.QNode(circuit, dev_2), use_opt_einsum)
+
+        res_expected = uncut_circuit()
+        res_1 = cut_circuit_1()
+        res_2 = cut_circuit_2()
+
+        assert np.isclose(res_expected, res_1)
+        assert np.isclose(res_expected, res_2)
+
     def test_circuit_with_disconnected_components(self, use_opt_einsum, mocker):
         """Tests if a circuit that is fragmented into subcircuits such that some of the subcircuits
         are disconnected from the final terminal measurements is executed correctly"""
@@ -2113,6 +2143,59 @@ class TestCutCircuitTransform:
         assert np.allclose(res, np.cos(x))
         assert len(spy.call_args[0][0]) == 1  # there should be 2 tensors for wire 0
         assert spy.call_args[0][0][0].shape == ()
+
+
+class TestRemapTapeWires:
+    """Tests for the remap_tape_wires function"""
+
+    def test_raises(self):
+        """Test if a ValueError is raised when too few wires are provided"""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.5, wires=2)
+            qml.RY(0.6, wires=3)
+            qml.CNOT(wires=[2, 3])
+            qml.expval(qml.PauliZ(2) @ qml.PauliZ(3))
+
+        with pytest.raises(ValueError, match="a 2-wire circuit on a 1-wire device"):
+            qcut.remap_tape_wires(tape, [0])
+
+    def test_mapping(self):
+        """Test if the function returns the expected tape when an observable measurement is
+        used"""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.5, wires=2)
+            qml.RY(0.6, wires=3)
+            qml.CNOT(wires=[2, 3])
+            qml.expval(qml.PauliZ(2))
+
+        with qml.tape.QuantumTape() as expected_tape:
+            qml.RX(0.5, wires=0)
+            qml.RY(0.6, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0))
+
+        new_tape = qcut.remap_tape_wires(tape, [0, 1])
+
+        compare_tapes(expected_tape, new_tape)
+
+    def test_mapping_tensor(self):
+        """Test if the function returns the expected tape when a tensor product measurement is
+        used"""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.5, wires=2)
+            qml.RY(0.6, wires=3)
+            qml.CNOT(wires=[2, 3])
+            qml.expval(qml.PauliZ(2) @ qml.PauliZ(3))
+
+        with qml.tape.QuantumTape() as expected_tape:
+            qml.RX(0.5, wires=0)
+            qml.RY(0.6, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        new_tape = qcut.remap_tape_wires(tape, [0, 1])
+
+        compare_tapes(expected_tape, new_tape)
 
 
 class TestCutCircuitTransformValidation:
