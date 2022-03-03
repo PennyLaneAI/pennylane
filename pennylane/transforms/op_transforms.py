@@ -402,6 +402,7 @@ class op_transform:
         """Create a wrapper function that, when evaluated, transforms
         ``obj`` according to transform arguments ``*targs`` and ``**tkwargs``
         """
+        print(obj)
 
         if isinstance(obj, qml.operation.Operator):
             # Input is a single operation.
