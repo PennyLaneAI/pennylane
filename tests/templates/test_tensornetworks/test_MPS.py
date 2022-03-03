@@ -239,7 +239,7 @@ class TestTemplateOutputs:
         SELWeights = np.array(
             [[[weights[0], weights[1], weights[2]], [weights[0], weights[1], weights[2]]]]
         )
-        qml.StronglyEntanglingLayers(SELWeights, wires)
+        return qml.StronglyEntanglingLayers(SELWeights, wires)
 
     def circuit2_MPS(weights, wires):
         SELWeights1 = np.array(

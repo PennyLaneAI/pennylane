@@ -1264,12 +1264,13 @@ class Operation(Operator):
             .JacobianTape: quantum tape
         """
 
-        ops = self.decompose()
+        ops = self.decomposition()
         if isinstance(ops, Operation):
             ops = [ops]
         with qml.tape.QuantumTape(do_queue=False) as tape:
             for op in ops:
-                op.queue()
+                if op:
+                    op.queue()
 
         if not self.data:
             # original operation has no trainable parameters

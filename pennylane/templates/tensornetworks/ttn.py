@@ -209,16 +209,17 @@ class TTN(Operation):
         Returns:
             list[.Operator]: decomposition of the operator
         """
-        op_list = []
-        if block.__code__.co_argcount > 2:
-            for idx, w in enumerate(ind_gates):
-                op_list.append(block(*weights[idx], wires=w))
-        elif block.__code__.co_argcount == 2:
-            for idx, w in enumerate(ind_gates):
-                op_list.append(block(weights[idx], wires=w))
-        else:
-            for idx, w in enumerate(ind_gates):
-                op_list.append(block(wires=w))
+
+        with qml.tape.QuantumTape(do_queue = False):
+            if block.__code__.co_argcount > 2:
+                for idx, w in enumerate(ind_gates):
+                    op_list.append(block(*weights[idx], wires=w))
+            elif block.__code__.co_argcount == 2:
+                for idx, w in enumerate(ind_gates):
+                    op_list.append(block(weights[idx], wires=w))
+            else:
+                for idx, w in enumerate(ind_gates):
+                    op_list.append(block(wires=w))
 
         return op_list
 
