@@ -119,7 +119,7 @@ class TestExpval:
         circuit()
 
     def test_wire_order_in_tensor_prod_observables(self, tol):
-        dev = qml.device("defaul.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def circ(obs):
@@ -174,7 +174,7 @@ class TestVar:
         circuit()
 
     def test_wire_order_in_tensor_prod_observables(self, tol):
-        dev = qml.device("defaul.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
         def circ(obs):
