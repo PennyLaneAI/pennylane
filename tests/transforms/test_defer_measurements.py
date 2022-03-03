@@ -221,7 +221,7 @@ class TestConditionalOperations:
         sec_x = qnode.qtape.queue[2]
         assert isinstance(sec_x, qml.PauliX)
 
-    @pytest.mark.parametrize("r", np.linspace(0.0, 1.6, 10))
+    @pytest.mark.parametrize("r", np.linspace(0.0, np.pi, 3))
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     def test_quantum_teleportation(self, device, r):
         """Test quantum teleportation."""
@@ -295,13 +295,13 @@ class TestConditionalOperations:
 
         assert np.allclose(normal_probs, cond_probs)
 
-    @pytest.mark.parametrize("r", np.linspace(0.1, 2 * np.pi - 0.1, 4))
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("ops", [(qml.RX, qml.CRX), (qml.RY, qml.CRY), (qml.RZ, qml.CRZ)])
-    def test_conditional_rotations_assert_zero_state(self, device, r, ops):
+    def test_conditional_rotations_assert_zero_state(self, device, ops):
         """Test that the quantum conditional operations applied by controlling
         on the zero outcome match the output of controlled rotations."""
         dev = qml.device(device, wires=3)
+        r = 2.345
 
         op, controlled_op = ops
 
@@ -324,6 +324,38 @@ class TestConditionalOperations:
         cond_probs = quantum_control_circuit(r)
 
         assert np.allclose(normal_probs, cond_probs)
+
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    def test_conditional_rotations_with_else(self, device):
+        """Test that an else operation can also defined using qml.cond."""
+        dev = qml.device(device, wires=2)
+        r = 2.345
+
+        op1, controlled_op1 = qml.RY, qml.CRY
+        op2, controlled_op2 = qml.RX, qml.CRX
+
+        @qml.qnode(dev)
+        def normal_circuit(rads):
+            qml.Hadamard(0)
+            controlled_op1(rads, wires=[0,1])
+
+            qml.PauliX(0)
+            controlled_op2(rads, wires=[0,1])
+            qml.PauliX(0)
+            return qml.probs(wires=1)
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def quantum_control_circuit(rads):
+            qml.Hadamard(0)
+            m_0 = qml.measure(0)
+            qml.cond(m_0, op1, op2)(rads, wires=1)
+            return qml.probs(wires=1)
+
+        exp = normal_circuit(r)
+        cond_probs = quantum_control_circuit(r)
+
+        assert np.allclose(exp, cond_probs)
 
     def test_keyword_syntax(self):
         """Test that passing an argument to the conditioned operation using the

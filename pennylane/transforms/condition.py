@@ -19,6 +19,7 @@ from typing import Type
 
 from pennylane.operation import Operation, AnyWires
 from pennylane.measurements import MeasurementValue
+from copy import copy
 
 
 class Conditional(Operation):
@@ -94,18 +95,16 @@ def cond(measurement, then_op, else_op=None):
             qml.cond(m_0, qml.RZ)(sec_par, wires=1)
             return qml.expval(qml.PauliZ(1))
     """
-
     @wraps(then_op)
     def wrapper(*args, **kwargs):
         ops = []
         if else_op:
-            print("in else op")
-            else_cond = Conditional(~measurement, else_op(*args, do_queue=False, **kwargs))
+            inverted_m = copy(measurement)
+            else_cond = Conditional(~inverted_m, else_op(*args, do_queue=False, **kwargs))
             ops.append(else_cond)
 
         cond = Conditional(measurement, then_op(*args, do_queue=False, **kwargs))
         ops.append(cond)
-        print("ops created by qml.cond: ", ops)
         return ops
 
     return wrapper
