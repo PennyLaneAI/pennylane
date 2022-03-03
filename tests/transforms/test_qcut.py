@@ -2091,6 +2091,203 @@ class TestCutCircuitTransform:
 
         assert np.isclose(gradient, cut_gradient)
 
+    def test_simple_cut_circuit_torch_trace(self, mocker, use_opt_einsum):
+        """
+        Tests the full circuit cutting pipeline returns the correct value and
+        gradient for a simple circuit using the `cut_circuit` transform with the torch interface and
+        using torch tracing.
+        """
+        torch = pytest.importorskip("torch")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+        x = torch.tensor(0.531, requires_grad=True, dtype=torch.complex128)
+
+        # Note that the jit.trace ends up calling qcut_processing_fn multiple times, so below we
+        # delay introducing the spy until afterwards and then ensure that qcut_processing_fn is
+        # not called again.
+        cut_circuit_trace = torch.jit.trace(
+            qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum), x
+        )
+
+        # Run once with original value
+        spy = mocker.spy(qcut, "qcut_processing_fn")
+        res = cut_circuit_trace(x)
+
+        spy.assert_not_called()
+
+        res_expected = circuit(x)
+        assert np.isclose(res.detach().numpy(), res_expected.detach().numpy())
+
+        res.backward()
+        grad = x.grad.detach().numpy()
+
+        x.grad = None
+        res_expected.backward()
+        grad_expected = x.grad.detach().numpy()
+
+        assert np.isclose(grad, grad_expected)
+
+        # Run more times over a range of values
+        for x in np.linspace(-1, 1, 10):
+            x = torch.tensor(x, requires_grad=True)
+            res = cut_circuit_trace(x)
+
+            res_expected = circuit(x)
+            assert np.isclose(res.detach().numpy(), res_expected.detach().numpy())
+
+            res.backward()
+            grad = x.grad.detach().numpy()
+
+            x.grad = None
+            res_expected.backward()
+            grad_expected = x.grad.detach().numpy()
+
+            assert np.isclose(grad, grad_expected)
+
+        spy.assert_not_called()
+
+    def test_simple_cut_circuit_tf_jit(self, mocker, use_opt_einsum):
+        """
+        Tests the full circuit cutting pipeline returns the correct value and
+        gradient for a simple circuit using the `cut_circuit` transform with the TF interface and
+        using JIT.
+        """
+        tf = pytest.importorskip("tensorflow")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+        x = tf.Variable(0.531)
+        cut_circuit_jit = tf.function(
+            qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum),
+            jit_compile=True,
+            input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),),
+        )
+
+        # Run once with original value
+        spy = mocker.spy(qcut, "qcut_processing_fn")
+
+        # Note we call the function twice but assert qcut_processing_fn is called once. We expect
+        # qcut_processing_fn to be called once during JIT compilation, with subsequent calls to
+        # cut_circuit_jit using the compiled code.
+        cut_circuit_jit(x)
+
+        with tf.GradientTape() as tape:
+            res = cut_circuit_jit(x)
+
+        grad = tape.gradient(res, x)
+
+        spy.assert_called_once()
+
+        with tf.GradientTape() as tape:
+            res_expected = circuit(x)
+
+        grad_expected = tape.gradient(res_expected, x)
+
+        assert np.isclose(res, res_expected)
+        assert np.isclose(grad, grad_expected)
+
+        # Run more times over a range of values
+        for x in np.linspace(-1, 1, 10):
+            x = tf.Variable(x, dtype=tf.float32)
+
+            cut_circuit_jit(x)
+
+            with tf.GradientTape() as tape:
+                res = cut_circuit_jit(x)
+
+            grad = tape.gradient(res, x)
+
+            with tf.GradientTape() as tape:
+                res_expected = circuit(x)
+
+            grad_expected = tape.gradient(res_expected, x)
+
+            assert np.isclose(res, res_expected)
+            assert np.isclose(grad, grad_expected)
+
+        spy.assert_called_once()
+
+    def test_simple_cut_circuit_jax_jit(self, mocker, use_opt_einsum):
+        """
+        Tests the full circuit cutting pipeline returns the correct value and
+        gradient for a simple circuit using the `cut_circuit` transform with the Jax interface and
+        using JIT.
+        """
+        jax = pytest.importorskip("jax")
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires=1)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+        x = jnp.array(0.531)
+        cut_circuit_jit = jax.jit(qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum))
+
+        # Run once with original value
+        spy = mocker.spy(qcut, "qcut_processing_fn")
+
+        # Note we call the function twice but assert qcut_processing_fn is called once. We expect
+        # qcut_processing_fn to be called once during JIT compilation, with subsequent calls to
+        # cut_circuit_jit using the compiled code.
+        cut_circuit_jit(x)
+        res = cut_circuit_jit(x)
+        res_expected = circuit(x)
+
+        spy.assert_called_once()
+        assert np.isclose(res, res_expected)
+
+        grad = jax.grad(cut_circuit_jit)(x)
+        grad_expected = jax.grad(circuit)(x)
+
+        assert np.isclose(grad, grad_expected)
+        assert spy.call_count == 2
+
+        # Run more times over a range of values
+        for x in np.linspace(-1, 1, 10):
+            x = jnp.array(x)
+
+            cut_circuit_jit(x)
+            res = cut_circuit_jit(x)
+            res_expected = circuit(x)
+
+            assert np.isclose(res, res_expected)
+
+            grad = jax.grad(cut_circuit_jit)(x)
+            grad_expected = jax.grad(circuit)(x)
+
+            assert np.isclose(grad, grad_expected)
+
+        assert spy.call_count == 4
+
     def test_device_wires(self, use_opt_einsum):
         """Tests that a 3-qubit circuit is cut into two 2-qubit fragments such that both fragments
         can be run on a 2-qubit device"""

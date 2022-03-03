@@ -848,7 +848,7 @@ def _to_tensors(
 
         ctr += dim
 
-    if len(results) != ctr:
+    if results.shape[0] != ctr:
         raise ValueError(f"The results argument should be a flat list of length {ctr}")
 
     return tensors
