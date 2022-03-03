@@ -141,9 +141,10 @@ class single_tape_transform:
     ...     qml.Hadamard(wires=0)
     ...     qml.CRX(-0.5, wires=[0, 1])
     >>> new_tape = my_transform(tape, 1., 2.)
-    >>> print(new_tape.draw())
-     0: ──H───────────────╭Z──┤
-     1: ──RX(0.5)──RY(1)──╰C──┤
+    >>> print(qml.drawer.tape_text(new_tape, decimals=1))
+    0: ──H────────────────╭Z─┤
+    1: ──RX(0.5)──RY(1.0)─╰C─┤
+
     """
 
     def __init__(self, transform_fn):
@@ -255,8 +256,8 @@ def qfunc_transform(tape_transform):
     >>> dev = qml.device("default.qubit", wires=2)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(2.5))
-     0: ──H───────────────────╭Z──┤
-     1: ──RX(1.5)──RY(0.158)──╰C──┤
+    0: ──H──────────────────╭Z─┤
+    1: ──RX(1.50)──RY(0.16)─╰C─┤
 
     The transform weights provided to a qfunc transform are fully differentiable,
     allowing the transform itself to be differentiated and trained. For more details,
@@ -331,8 +332,8 @@ def qfunc_transform(tape_transform):
         >>> x = np.array(0.5, requires_grad=True)
         >>> y = np.array([0.1, 0.2], requires_grad=True)
         >>> print(qml.draw(circuit)(x, y))
-         0: ──RX(0.1)───H──────────╭Z──┤
-         1: ──RX(0.05)──RY(0.141)──╰C──┤ ⟨Z⟩
+        0: ──RX(0.10)──H────────╭Z─┤
+        1: ──RX(0.05)──RY(0.14)─╰C─┤  <Z>
 
         Evaluating the QNode, as well as the derivative, with respect to the gate
         parameter *and* the transform weights:

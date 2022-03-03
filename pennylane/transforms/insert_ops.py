@@ -116,8 +116,8 @@ def insert(
     >>> f(0.9, 0.4, 0.5, 0.6)
     tensor(0.754847, requires_grad=True)
     >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
-     0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.2)──╭┤ ⟨Z ⊗ Z⟩
-     1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.2)──╰┤ ⟨Z ⊗ Z⟩
+    0: ──RX(0.90)─╭C──RY(0.50)──AmplitudeDamping(0.20)─┤ ╭<Z@Z>
+    1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.20)─┤ ╰<Z@Z>
 
     .. UsageDetails::
 
@@ -151,8 +151,8 @@ def insert(
         To check this, let's print out the circuit:
 
         >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
-         0: ──RX(0.9)──╭C──RY(0.5)──RX(0.2)──Rϕ(0.3)──╭┤ ⟨Z ⊗ Z⟩
-         1: ──RY(0.4)──╰X──RX(0.6)──RX(0.2)──Rϕ(0.3)──╰┤ ⟨Z ⊗ Z⟩
+        0: ──RX(0.90)─╭C──RY(0.50)──RX(0.20)──Rϕ(0.30)─┤ ╭<Z@Z>
+        1: ──RY(0.40)─╰X──RX(0.60)──RX(0.20)──Rϕ(0.30)─┤ ╰<Z@Z>
 
         **Transforming tapes:**
 
@@ -172,22 +172,15 @@ def insert(
 
         >>> from pennylane.transforms import insert
         >>> noisy_tape = insert(qml.AmplitudeDamping, 0.05, position="end")(tape)
-        >>> print(noisy_tape.draw())
-         0: ──RX(0.9)──╭C──RY(0.5)──AmplitudeDamping(0.05)──╭┤ ⟨Z ⊗ Z⟩
-         1: ──RY(0.4)──╰X──RX(0.6)──AmplitudeDamping(0.05)──╰┤ ⟨Z ⊗ Z⟩
+        >>> print(qml.drawer.tape_text(noisy_tape, decimals=2))
+        0: ──RX(0.90)─╭C──RY(0.50)──AmplitudeDamping(0.05)─┤ ╭<Z@Z>
+        1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.05)─┤ ╰<Z@Z>
 
         **Transforming devices:**
-
-        .. warning::
-
-            Using this transform on devices is a beta feature. Use the :class:`pennylane.beta.QNode`
-            decorator to create compatible QNodes.
 
         Consider the following QNode:
 
         .. code-block:: python3
-
-            from pennylane.beta import QNode
 
             dev = qml.device("default.mixed", wires=2)
 
@@ -199,7 +192,7 @@ def insert(
                 qml.RX(z, wires=1)
                 return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-            qnode = QNode(f, dev)
+            qnode = qml.QNode(f, dev)
 
         Execution of the circuit on ``dev`` will be noise-free:
 
@@ -209,7 +202,7 @@ def insert(
         However, noise can be easily added to the device:
 
         >>> dev_noisy = qml.transforms.insert(qml.AmplitudeDamping, 0.2)(dev)
-        >>> qnode_noisy = QNode(f, dev_noisy)
+        >>> qnode_noisy = qml.QNode(f, dev_noisy)
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
         tensor(0.72945434, requires_grad=True)
     """
