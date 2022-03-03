@@ -396,6 +396,78 @@ class TestConditionalOperations:
 
         assert qnode() == expected
 
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    def test_cond_qfunc(self, device):
+        """Test that a qfunc can also used with qml.cond."""
+        dev = qml.device(device, wires=2)
+
+        r = 2.324
+
+        @qml.qnode(dev)
+        def normal_circuit(rads):
+            qml.Hadamard(0)
+
+            qml.CNOT(wires=[0, 1])
+            qml.CRY(rads, wires=[0, 1])
+            qml.CZ(wires=[0, 1])
+            return qml.probs(wires=1)
+
+        def f(x):
+            qml.PauliX(1)
+            qml.RY(x, wires=1)
+            qml.PauliZ(1)
+
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def quantum_control_circuit(rads):
+            qml.Hadamard(0)
+            m_0 = qml.measure(0)
+            qml.cond(m_0, f)(r)
+            return qml.probs(wires=1)
+
+        exp = normal_circuit(r)
+        cond_probs = quantum_control_circuit(r)
+
+        assert np.allclose(exp, cond_probs)
+
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
+    def test_cond_qfunc_with_else(self, device):
+        """Test that a qfunc can also used with qml.cond even when an else
+        qfunc is provided."""
+        dev = qml.device('default.qubit', wires=2)
+
+        x = 0.3
+        y = 3.123
+
+        @qml.qnode(dev)
+        def normal_circuit(x, y):
+            qml.RY(x, wires=1)
+
+            qml.ctrl(f, 1)(y)
+
+            # Flip the qubit before/after to control on 0
+            qml.PauliX(1)
+            qml.ctrl(g, 1)(y)
+            qml.PauliX(1)
+            return qml.probs(wires=[0])
+
+        def f(a):
+            qml.PauliX(0)
+            qml.RY(a, wires=0)
+            qml.PauliZ(0)
+
+        def g(a):
+            qml.RX(a, wires=0)
+            qml.PhaseShift(a, wires=0)
+
+        @qml.qnode(dev)
+        def cond_qnode(x, y):
+            qml.RY(x, wires=1)
+            m_0 = qml.measure(1)
+            qml.cond(m_0, f, g)(y)
+            return qml.probs(wires=[0])
+
+        assert np.allclose(normal_circuit(x, y), cond_qnode(x, y))
 
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""

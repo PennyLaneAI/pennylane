@@ -14,13 +14,17 @@
 """
 Contains the condition transform.
 """
+import inspect
 from functools import wraps
 from typing import Type
 
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import Operator, Operation, AnyWires
 from pennylane.measurements import MeasurementValue
+from pennylane.transforms import make_tape
 from copy import copy
 
+class ConditionalTransformError(ValueError):
+    """Error for using qml.cond incorrectly"""
 
 class Conditional(Operation):
     """A Conditional Operation.
@@ -37,7 +41,7 @@ class Conditional(Operation):
 
     Args:
         expr (MeasurementValue): the measurement outcome value to consider
-        then_op (Operation): the PennyLane operation to apply conditionally
+        then_func (Operation): the PennyLane operation to apply conditionally
         do_queue (bool): indicates whether the operator should be
             recorded when created in a tape context
         id (str): custom label given to an operator instance,
@@ -49,16 +53,16 @@ class Conditional(Operation):
     def __init__(
         self,
         expr: MeasurementValue[bool],
-        then_op: Type[Operation],
+        then_func: Type[Operation],
         do_queue=True,
         id=None,
     ):
         self.meas_val = expr
-        self.then_op = then_op
-        super().__init__(wires=then_op.wires, do_queue=do_queue, id=id)
+        self.then_func = then_func
+        super().__init__(wires=then_func.wires, do_queue=do_queue, id=id)
 
 
-def cond(measurement, then_op, else_op=None):
+def cond(measurement, then_func, else_func=None):
     """Condition a quantum operation on the results of mid-circuit qubit measurements.
 
     Support for using :func:`~.cond` is device-dependent. If a device doesn't
@@ -68,14 +72,14 @@ def cond(measurement, then_op, else_op=None):
     Args:
         measurement (MeasurementValue): a measurement value to consider, for
             example the output of calling :func:`qml.measure`
-        then_op (Operation): The PennyLane operation to apply if the condition
+        then_func (Operation): The PennyLane operation to apply if the condition
             applies.
-        else_op (Operation): The PennyLane operation to apply if the condition
+        else_func (Operation): The PennyLane operation to apply if the condition
             doesn't apply.
 
     Returns:
-        function: A new function that applies the conditional equivalent of ``then_op``. The returned
-        function takes the same input arguments as ``then_op``.
+        function: A new function that applies the conditional equivalent of ``then_func``. The returned
+        function takes the same input arguments as ``then_func``.
 
     **Example**
 
@@ -96,16 +100,67 @@ def cond(measurement, then_op, else_op=None):
             return qml.expval(qml.PauliZ(1))
     """
 
-    @wraps(then_op)
-    def wrapper(*args, **kwargs):
-        ops = []
-        if else_op:
-            inverted_m = copy(measurement)
-            else_cond = Conditional(~inverted_m, else_op(*args, do_queue=False, **kwargs))
-            ops.append(else_cond)
+    if inspect.isclass(then_func) and issubclass(then_func, Operator):
 
-        cond = Conditional(measurement, then_op(*args, do_queue=False, **kwargs))
-        ops.append(cond)
-        return ops
+        @wraps(then_func)
+        def wrapper(*args, **kwargs):
+            ops = []
+            cond = Conditional(measurement, then_func(*args, do_queue=False, **kwargs))
+            ops.append(cond)
+            if else_func:
+
+                # Copy the MV such that the external state is not changed
+                inverted_m = copy(measurement)
+                else_cond = Conditional(~inverted_m, else_func(*args, do_queue=False, **kwargs))
+                ops.append(else_cond)
+
+            return ops
+
+    elif callable(then_func):
+
+        with_meas_err = "Only quantum functions that contain no measurements can be applied conditionally."
+
+        if else_func is None:
+
+            @wraps(then_func)
+            def wrapper(*args, **kwargs):
+                # We assume that the callable is a quantum function
+                tape = make_tape(then_func)(*args, **kwargs)
+
+                if tape.measurements:
+                    raise ConditionalTransformError(with_meas_err)
+
+                for op in tape.operations:
+                    Conditional(measurement, op)
+
+        else:
+
+            @wraps(then_func)
+            def wrapper(*args, **kwargs):
+                # We assume that the callable is a quantum function
+
+                # 1. Apply then_func conditionally
+                tape = make_tape(then_func)(*args, **kwargs)
+
+                if tape.measurements:
+                    raise ConditionalTransformError(with_meas_err)
+
+                for op in tape.operations:
+                    Conditional(measurement, op)
+
+                # 2. Apply else_func conditionally
+                else_tape = make_tape(else_func)(*args, **kwargs)
+
+                if else_tape.measurements:
+                    raise ConditionalTransformError(with_meas_err)
+
+                inverted_m = copy(measurement)
+                inverted_m = ~inverted_m
+
+                for op in else_tape.operations:
+                    Conditional(inverted_m, op)
+
+    else:
+        raise ConditionalTransformError("Only operations and quantum functions with no measurements can be applied conditionally.")
 
     return wrapper
