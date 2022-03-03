@@ -209,6 +209,9 @@
   Circuit fragments that are disconnected from the terminal measurements are now removed.
   [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
 
+* A method to batch the non-trainable inputs for machine learning applications has been added. 
+[(#2069)](https://github.com/PennyLaneAI/pennylane/pull/2069)
+
 <h3>Improvements</h3>
 
 * The `qml.gradients` module has been streamlined and special-purpose functions
@@ -424,7 +427,7 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
+Jack Y. Araz, Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
 Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni,
 Antal Száva, David Wierichs
 
