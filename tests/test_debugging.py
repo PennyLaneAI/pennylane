@@ -124,8 +124,8 @@ class TestSnapshot:
             for v1, v2 in zip(result.values(), expected.values())
         )
 
-    def test_unsupported_device(self):
-        """Test that an error is raised on unsupported devices."""
+    def test_lightning_qubit(self):
+        """Test that an error is (currently) raised on the lightning simulator."""
         dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -144,6 +144,32 @@ class TestSnapshot:
         with pytest.raises(qml.DeviceError, match="Device does not support snapshots."):
             qml.snapshots(circuit)()
 
+    def test_unsupported_device(self):
+        """Test that an error is raised on unsupported devices."""
+        dev = qml.device("default.qubit", wires=2)
+        # remove attributes to simulate unsupported device
+        delattr(dev, "debugger")
+        dev.operations.remove("Snapshot")
+
+        @qml.qnode(dev, interface=None)  # iterface=None prevents new device creation internally
+        def circuit():
+            qml.Snapshot()
+            qml.Hadamard(wires=0)
+            qml.Snapshot("very_important_state")
+            qml.CNOT(wires=[0, 1])
+            qml.Snapshot()
+            return qml.expval(qml.PauliX(0))
+
+        # can run the circuit
+        result = circuit()
+        assert result == 0
+
+        with pytest.raises(qml.DeviceError, match="Device does not support snapshots."):
+            qml.snapshots(circuit)()
+
+        # need to revert change to not affect other tests (since operations a static attribute)
+        dev.operations.add("Snapshot")
+
     def test_empty_snapshots(self):
         """Test that snapshots function in the absence of any Snapshot operations."""
         dev = qml.device("default.qubit", wires=2)
@@ -158,3 +184,71 @@ class TestSnapshot:
         expected = {"execution_results": np.array(0)}
 
         assert result == expected
+
+    @pytest.mark.parametrize("shots", [None, 0, 1, 100])
+    def test_different_shots(self, shots):
+        """Test that snapshots are returned correctly with different QNode shot values."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, shots=shots)
+        def circuit():
+            qml.Snapshot()
+            qml.Hadamard(wires=0)
+            qml.Snapshot("very_important_state")
+            qml.CNOT(wires=[0, 1])
+            qml.Snapshot()
+            return qml.expval(qml.PauliX(0))
+
+        result = qml.snapshots(circuit)()
+        expected = {
+            0: np.array([1, 0, 0, 0]),
+            "very_important_state": np.array([1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]),
+            2: np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]),
+            "execution_results": np.array(0),
+        }
+
+        assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
+        assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
+
+    @pytest.mark.parametrize(
+        "m,expected_result",
+        [
+            ("expval", np.array(0)),
+            ("var", np.array(1)),
+            ("probs", np.array([0.5, 0, 0, 0.5])),
+            ("state", np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)])),
+        ],
+    )
+    def test_different_measurements(self, m, expected_result):
+        """Test that snapshots are returned correctly with different QNode measurements."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=None)
+        def circuit():
+            qml.Snapshot()
+            qml.Hadamard(wires=0)
+            qml.Snapshot("very_important_state")
+            qml.CNOT(wires=[0, 1])
+            qml.Snapshot()
+            if m == "expval":
+                return qml.expval(qml.PauliZ(0))
+            elif m == "var":
+                return qml.var(qml.PauliY(1))
+            elif m == "probs":
+                return qml.probs([0, 1])
+            else:
+                return qml.state()
+
+        result = qml.snapshots(circuit)()
+        expected = {
+            0: np.array([1, 0, 0, 0]),
+            "very_important_state": np.array([1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]),
+            2: np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]),
+            "execution_results": expected_result,
+        }
+
+        assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
+        assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
+
+        if m == "state":
+            assert np.allclose(result[2], result["execution_results"])
