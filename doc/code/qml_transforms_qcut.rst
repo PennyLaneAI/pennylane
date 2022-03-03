@@ -5,7 +5,8 @@ qml.transforms.qcut
 
 This module provides support for quantum circuit cutting, allowing larger circuits to be split into
 smaller circuits that are compatible with devices that have a restricted number of qubits. The main
-entrypoint to circuit cutting is through the :func:`~.cut_circuit` batch transform.
+entrypoint to circuit cutting is through the :func:`qml.cut_circuit() <pennylane.cut_circuit>`
+batch transform.
 
 .. currentmodule:: pennylane
 
