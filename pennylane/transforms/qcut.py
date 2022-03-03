@@ -953,7 +953,7 @@ def cut_circuit(
     This can be cut using the following transform
 
     >>> x = 0.531
-    >>> cut_circuit = qcut.cut_circuit(circuit)
+    >>> cut_circuit = qml.cut_circuit(circuit)
     >>> cut_circuit(x)
     0.8623011058543121
 

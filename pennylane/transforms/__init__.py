@@ -199,16 +199,5 @@ from .tape_expand import (
     create_decomp_expand_fn,
     set_decomposition,
 )
-from .qcut import (
-    tape_to_graph,
-    replace_wire_cut_node,
-    replace_wire_cut_nodes,
-    fragment_graph,
-    graph_to_tape,
-    expand_fragment_tapes,
-    contract_tensors,
-    qcut_processing_fn,
-    cut_circuit,
-    remap_tape_wires,
-    CutStrategy,
-)
+import pennylane.transforms.qcut
+from pennylane.transforms.qcut import cut_circuit
