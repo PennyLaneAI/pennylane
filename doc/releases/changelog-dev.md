@@ -212,6 +212,8 @@
 
 <h3>Bug fixes</h3>
 
+* The `qml.RandomLayers` template now decomposes when the weights are a list of lists.
+
 * The ``qml.ctrl`` transform now works correctly with gradient transforms
   such as the parameter-shift rule.
   [(#2238)](https://github.com/PennyLaneAI/pennylane/pull/2238)
