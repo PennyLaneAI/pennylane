@@ -20,7 +20,9 @@ This module contains the :class:`QubitDevice` abstract base class.
 # pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, arguments-renamed
 import abc
 from collections import OrderedDict
+import contextlib
 import itertools
+from unittest import mock
 import warnings
 
 import numpy as np
@@ -198,7 +200,26 @@ class QubitDevice(Device):
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
+        close_contexts = lambda: None
+
+        if self.capabilities().get("supports_native_hermitian", False):
+            # HOTFIX: mock Hermitian operations so that they compute
+            # an expensive eigenvector decomposition to determine diagonalizing gates.
+            hermitian_obs = [o for o in circuit.observables if isinstance(o, qml.Hermitian)]
+
+            with contextlib.ExitStack() as stack:
+
+                def mock_method():
+                    raise qml.operation.DiagGatesUndefinedError()
+
+                contexts = [
+                    stack.enter_context(mock.patch.object(o, "diagonalizing_gates", mock_method))
+                    for o in hermitian_obs
+                ]
+                close_contexts = stack.pop_all().close
+
         self.apply(circuit.operations, rotations=circuit.diagonalizing_gates, **kwargs)
+        close_contexts()
 
         # generate computational basis samples
         if self.shots is not None or circuit.is_sampled:

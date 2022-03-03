@@ -472,7 +472,7 @@ class DefaultQubit(QubitDevice):
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
         # to a component that can be re-used by devices as needed.
-        if observable.name in ("Hamiltonian", "SparseHamiltonian"):
+        if observable.name in ("Hamiltonian", "SparseHamiltonian", "Hermitian"):
             assert self.shots is None, f"{observable.name} must be used with shots=None"
 
             backprop_mode = (
@@ -514,7 +514,9 @@ class DefaultQubit(QubitDevice):
                 # Coefficients and the state are not trainable, we can be more
                 # efficient in how we compute the Hamiltonian sparse matrix.
 
-                if observable.name == "Hamiltonian":
+                if observable.name == "Hermitian":
+                    Hmat = coo_matrix(observable.get_matrix())
+                elif observable.name == "Hamiltonian":
                     Hmat = qml.utils.sparse_hamiltonian(observable, wires=self.wires)
                 elif observable.name == "SparseHamiltonian":
                     Hmat = observable.sparse_matrix()
@@ -556,6 +558,7 @@ class DefaultQubit(QubitDevice):
             supports_reversible_diff=True,
             supports_inverse_operations=True,
             supports_analytic_computation=True,
+            supports_native_hermitian=True,
             returns_state=True,
             passthru_devices={
                 "tf": "default.qubit.tf",
