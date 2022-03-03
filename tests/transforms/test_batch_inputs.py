@@ -40,3 +40,32 @@ def test_simple_circuit():
 
     res = circuit(inputs, weights)
     assert res.shape == (batch_size,)
+
+
+def test_value_error():
+    """Test if the batch_input raises relevant errors correctly"""
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.batch_input(argnum=0)
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit(input1, input2, weights):
+        qml.AngleEmbedding(input1, wires=range(2), rotation="Y")
+        qml.RY(input2[0], wires=0)
+        qml.RY(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        return qml.expval(qml.PauliZ(1))
+
+    batch_size = 5
+    input1 = np.random.uniform(0, np.pi, (batch_size, 2))
+    input1.requires_grad = False
+    input2 = np.random.uniform(0, np.pi, (4, 1))
+    input2.requires_grad = False
+    weights = np.random.uniform(-np.pi, np.pi, (2,))
+
+    try:
+        res = circuit(input1, input2, weights)
+    except ValueError as err:
+        pass
+    except Exception as err:
+        raise Exception(err)
