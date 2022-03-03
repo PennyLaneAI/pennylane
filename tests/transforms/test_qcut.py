@@ -1931,13 +1931,14 @@ class TestCutCircuitTransform:
     Tests for the cut_circuit transform
     """
 
-    def test_simple_cut_circuit(self, mocker, use_opt_einsum):
+    @pytest.mark.parametrize("shots", [None, int(1e7)])
+    def test_simple_cut_circuit(self, mocker, use_opt_einsum, shots):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform.
         """
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -1953,13 +1954,14 @@ class TestCutCircuitTransform:
         x = np.array(0.531, requires_grad=True)
         cut_circuit = qcut.cut_circuit(circuit, use_opt_einsum=use_opt_einsum)
 
-        assert np.isclose(cut_circuit(x), float(circuit(x)))
+        atol = 1e-2 if shots else 1e-8
+        assert np.isclose(cut_circuit(x), float(circuit(x)), atol=atol)
         spy.assert_called_once()
 
         gradient = qml.grad(circuit)(x)
         cut_gradient = qml.grad(cut_circuit)(x)
 
-        assert np.isclose(gradient, cut_gradient)
+        assert np.isclose(gradient, cut_gradient, atol=atol)
 
     def test_simple_cut_circuit_torch(self, use_opt_einsum):
         """
