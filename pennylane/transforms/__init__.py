@@ -96,7 +96,7 @@ Transform for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This transform accepts a QNode and returns a new function that cuts the original circuit into
-fragments that can be run on smaller devices.
+smaller fragments.
 
 .. autosummary::
     :toctree: api
