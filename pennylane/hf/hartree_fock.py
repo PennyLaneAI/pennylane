@@ -248,7 +248,7 @@ def hf_energy(mol):
         Returns:
             float: the Hartree-Fock energy
         """
-        _, coeffs, fock_matrix, h_core, _ = generate_scf(mol)(*args)
+        _, coeffs, fock_matrix, h_core, _ = scf(mol)(*args)
         e_rep = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
         e_elec = anp.einsum(
             "pq,qp", fock_matrix + h_core, mol_density_matrix(mol.n_electrons, coeffs)
