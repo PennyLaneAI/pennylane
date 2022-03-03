@@ -375,7 +375,7 @@ def test_gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc, ref):
     ],
 )
 def test_moment_integral(symbols, geometry, e, idx, ref):
-    r"""Test that generate_moment function returns a correct value for the moment integral."""
+    r"""Test that moment_integral function returns a correct value for the moment integral."""
     mol = Molecule(symbols, geometry)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
