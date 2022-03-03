@@ -22,18 +22,18 @@ from pennylane.hf.integrals import (
     _diff2,
     _generate_params,
     _hermite_coulomb,
+    attraction_integral,
     contracted_norm,
     expansion,
     gaussian_kinetic,
     gaussian_moment,
     gaussian_overlap,
-    attraction_integral,
-    kinetic_integral,
-    overlap_integral,
-    repulsion_integral,
     hermite_moment,
+    kinetic_integral,
     moment_integral,
+    overlap_integral,
     primitive_norm,
+    repulsion_integral,
 )
 from pennylane.hf.molecule import Molecule
 

@@ -16,6 +16,7 @@ This module contains the functions needed for computing integrals over basis fun
 """
 # pylint: disable= unbalanced-tuple-unpacking, too-many-arguments
 import itertools as it
+
 import autograd.numpy as anp
 import autograd.scipy as asp
 from scipy.special import factorial2 as fac2

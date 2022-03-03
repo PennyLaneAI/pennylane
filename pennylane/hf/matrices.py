@@ -21,9 +21,9 @@ import autograd.numpy as anp
 from pennylane.hf.integrals import (
     attraction_integral,
     kinetic_integral,
+    moment_integral,
     overlap_integral,
     repulsion_integral,
-    moment_integral,
 )
 
 
@@ -254,16 +254,12 @@ def attraction_matrix(basis_functions, charges, r):
                 for k, c in enumerate(r):
                     if c.requires_grad:
                         args_ab = [args[0][k]] + args_ab
-                    integral = integral - charges[k] * attraction_integral(
-                        c, a, b
-                    )(*args_ab)
+                    integral = integral - charges[k] * attraction_integral(c, a, b)(*args_ab)
                     if c.requires_grad:
                         args_ab = args_ab[1:]
             else:
                 for k, c in enumerate(r):
-                    integral = (
-                        integral - charges[k] * attraction_integral(c, a, b)()
-                    )
+                    integral = integral - charges[k] * attraction_integral(c, a, b)()
 
             o = anp.zeros((n, n))
             o[i, j] = o[j, i] = 1.0

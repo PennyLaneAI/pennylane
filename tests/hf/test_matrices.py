@@ -21,10 +21,10 @@ from pennylane.hf.matrices import (
     attraction_matrix,
     core_matrix,
     kinetic_matrix,
-    overlap_matrix,
-    repulsion_tensor,
     molecular_density_matrix,
     moment_matrix,
+    overlap_matrix,
+    repulsion_tensor,
 )
 from pennylane.hf.molecule import Molecule
 

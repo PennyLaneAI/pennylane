@@ -20,9 +20,9 @@ import itertools
 import autograd.numpy as anp
 from pennylane.hf.matrices import (
     core_matrix,
+    molecular_density_matrix,
     overlap_matrix,
     repulsion_tensor,
-    molecular_density_matrix,
 )
 
 
