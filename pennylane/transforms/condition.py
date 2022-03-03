@@ -43,7 +43,7 @@ class Conditional(Operation):
 
     Args:
         expr (MeasurementValue): the measurement outcome value to consider
-        then_func (Operation): the PennyLane operation to apply conditionally
+        then_op (Operation): the PennyLane operation to apply conditionally
         do_queue (bool): indicates whether the operator should be
             recorded when created in a tape context
         id (str): custom label given to an operator instance,
@@ -55,13 +55,13 @@ class Conditional(Operation):
     def __init__(
         self,
         expr: MeasurementValue[bool],
-        then_func: Type[Operation],
+        then_op: Type[Operation],
         do_queue=True,
         id=None,
     ):
         self.meas_val = expr
-        self.then_func = then_func
-        super().__init__(wires=then_func.wires, do_queue=do_queue, id=id)
+        self.then_op = then_op
+        super().__init__(wires=then_op.wires, do_queue=do_queue, id=id)
 
 
 def cond(measurement, then_func, else_func=None):
@@ -74,9 +74,9 @@ def cond(measurement, then_func, else_func=None):
     Args:
         measurement (MeasurementValue): a measurement value to consider, for
             example the output of calling :func:`qml.measure`
-        then_func (Operation): The PennyLane operation to apply if the condition
+        then_func (Operation): The quantum function or PennyLane operation to apply if the condition
             applies.
-        else_func (Operation): The PennyLane operation to apply if the condition
+        else_func (Operation): The quantum function or PennyLane operation to apply if the condition
             doesn't apply.
 
     Returns:
@@ -107,14 +107,15 @@ def cond(measurement, then_func, else_func=None):
         @wraps(then_func)
         def wrapper(*args, **kwargs):
             ops = []
-            cond = Conditional(measurement, then_func(*args, do_queue=False, **kwargs))
-            ops.append(cond)
+            then_cond_op = Conditional(measurement, then_func(*args, do_queue=False, **kwargs))
+            ops.append(then_cond_op)
+
             if else_func:
 
                 # Copy the MV such that the external state is not changed
                 inverted_m = copy(measurement)
-                else_cond = Conditional(~inverted_m, else_func(*args, do_queue=False, **kwargs))
-                ops.append(else_cond)
+                else_cond_op = Conditional(~inverted_m, else_func(*args, do_queue=False, **kwargs))
+                ops.append(else_cond_op)
 
             return ops
 

@@ -111,7 +111,7 @@ def defer_measurements(tape):
                         qml.PauliX(Wires(control_wire))
 
                     ctrl(
-                        lambda: apply(op.then_func),  # pylint: disable=cell-var-from-loop
+                        lambda: apply(op.then_op),  # pylint: disable=cell-var-from-loop
                         control=Wires(control_wire),
                     )()
 
