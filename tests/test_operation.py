@@ -261,6 +261,20 @@ class TestOperationConstruction:
         op = DummyOp(x, wires=0)
         assert op.grad_method == "F"
 
+    def test_default_grad_method_with_grad_recipe(self):
+        """Test that the correct ``grad_method`` is returned by default
+        if a grad_recipe is present.
+        """
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            grad_recipe = ["not a recipe"]
+
+        x = 0.654
+        op = DummyOp(x, wires=0)
+        assert op.grad_method == "A"
+
     def test_default_grad_no_param(self):
         """Test that the correct ``grad_method`` is returned by default
         if an operation does not have a parameter.
