@@ -179,7 +179,7 @@ from .optimization import (
     remove_barrier,
     undo_swaps,
     pattern_matching,
-    pattern_matching_optimization
+    pattern_matching_optimization,
 )
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo

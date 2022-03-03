@@ -28,12 +28,13 @@ from pennylane.ops.qubit.attributes import (
 
 
 @qfunc_transform
-def pattern_matching_optimization(tape, pattern_tapes):
+def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None):
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
 
     Args:
         qfunc (function): A quantum function to be optimized.
         pattern_tapes(list(.QuantumTape)): List of quantum tapes that implement the identity.
+        custom_quantum_cost (dict): Optional, quantum cost that overrides the default cost dictionnary.
 
     Returns:
         function: the transformed quantum function
@@ -91,8 +92,13 @@ def pattern_matching_optimization(tape, pattern_tapes):
     3: ─├C─│───H─╰X─╰C─┤
     4: ─╰C─╰X──────────┤
     """
+    # pylint: disable=protected-access
+
     measurements = tape.measurements
     observables = tape.observables
+
+    consecutive_wires = Wires(range(len(tape.wires)))
+    inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
 
     for pattern in pattern_tapes:
         # Check the validity of the pattern
@@ -113,17 +119,15 @@ def pattern_matching_optimization(tape, pattern_tapes):
         circuit_dag = commutation_dag(tape)()
         pattern_dag = commutation_dag(pattern)()
 
-        consecutive_wires = Wires(range(len(tape.wires)))
-        inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
-
         max_matches = pattern_matching(circuit_dag, pattern_dag)
 
         # Optimizes the circuit for compatible maximal matches
         if max_matches:
             # Initialize the optimization by substitution of the different matches
-            substitution = TemplateSubstitution(max_matches, circuit_dag, pattern_dag)
+            substitution = TemplateSubstitution(
+                max_matches, circuit_dag, pattern_dag, custom_quantum_cost
+            )
             substitution.substitution()
-
             already_sub = []
 
             # If some substitutions are possible, we create an optimized circuit.
@@ -169,7 +173,7 @@ def pattern_matching_optimization(tape, pattern_tapes):
                         inst = copy.deepcopy(node.op)
                         apply(inst)
 
-            tape = tape_inside
+                tape = tape_inside
 
     for op in tape.operations:
         op._wires = Wires([inverse_wires_map[wire] for wire in op.wires.tolist()])
@@ -212,11 +216,11 @@ def pattern_matching(circuit_dag, pattern_dag):
                 # Loop over all possible qubits configurations given the first match constrains
                 for not_fixed_qubits_conf in not_fixed_qubits_confs:
                     for not_fixed_qubits_conf_permuted in itertools.permutations(
-                            not_fixed_qubits_conf
+                        not_fixed_qubits_conf
                     ):
                         not_fixed_qubits_conf_permuted = list(not_fixed_qubits_conf_permuted)
                         for first_match_qubits_conf in _first_match_qubits(
-                                node_c[1], node_p[1], pattern_dag.num_wires
+                            node_c[1], node_p[1], pattern_dag.num_wires
                         ):
                             # Qubits mapping between circuit and pattern
                             qubits_conf = _merge_first_match_and_permutation(
@@ -282,10 +286,12 @@ def _compare_operation_without_qubits(node_1, node_2):
     """
     operation_1 = node_1.op
     operation_2 = node_2.op
-    if operation_1.name == operation_2.name:
-        if operation_1.num_params == operation_2.num_params:
-            if operation_1.data == operation_2.data:
-                return True
+    if (
+        operation_1.name == operation_2.name
+        and operation_1.num_params == operation_2.num_params
+        and operation_1.data == operation_2.data
+    ):
+        return True
     return False
 
 
@@ -315,14 +321,31 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
     Returns:
         list: list of qubits to consider in circuit (with specific order).
     """
+    control_base = {
+        "CNOT": "PauliX",
+        "CZ": "PauliZ",
+        "CY": "PauliY",
+        "CSWAP": "SWAP",
+        "Toffoli": "PauliX",
+        "ControlledPhaseShift": "PhaseShift",
+        "CRX": "RX",
+        "CRY": "RY",
+        "CRZ": "RZ",
+        "CRot": "Rot",
+        "MultiControlledX": "PauliX",
+        "ControlledOperation": "ControlledOperation",
+    }
+
     first_match_qubits = []
 
-    # Controlled gate with more than 1 control wire
-    if len(node_c.op.control_wires) > 1:
+    # Controlled gate
+    if len(node_c.op.control_wires) >= 1:
         circuit_control = node_c.op.control_wires
-        circuit_target = node_c.op.target_wires
-        # Not symmetric target gate (target wires cannot be permuted)
-        if node_p.op.is_controlled not in symmetric_over_all_wires:
+        circuit_target = qml.wires.Wires(
+            [w for w in node_c.op.wires if w not in node_c.op.control_wires]
+        )
+        # Not symmetric target gate or acting on 1 wire (target wires cannot be permuted) (For example Toffoli)
+        if control_base[node_p.op.name] not in symmetric_over_all_wires:
             # Permute control
             for control_permuted in itertools.permutations(circuit_control):
                 control_permuted = list(control_permuted)
@@ -331,8 +354,8 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
                     node_circuit_perm = control_permuted + circuit_target
                     first_match_qubits_sub[q] = node_circuit_perm[node_p.wires.index(q)]
                 first_match_qubits.append(first_match_qubits_sub)
-        # Symmetric target gate (target wires cannot be permuted)
-        else:
+        # Symmetric target gate (target wires can be permuted) (For example CCSWAP)
+        else:  # pragma: no cover
             for control_permuted in itertools.permutations(circuit_control):
                 control_permuted = list(control_permuted)
                 for target_permuted in itertools.permutations(circuit_target):
@@ -399,6 +422,7 @@ def _update_qubits(circuit_dag, qubits_conf):
         list(list(int)): Target wires
         list(list(int)): Control wires
     """
+    # pylint: disable=too-many-arguments
     wires = []
     control_wires = []
     target_wires = []
@@ -465,18 +489,17 @@ def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2)
         control2 (list(int)): Control wires of the second node.
         target2 (list(int)): Target wires of the second node.
     """
-    if control1:
-        if set(control1) == set(control2):
-            if node1.op.name in symmetric_over_all_wires:
-                if set(target1) == set(target2):
-                    return True
-            else:
-                if target1 == target2:
-                    return True
-    else:
-        if node1.op.name in symmetric_over_all_wires:
-            if set(wires1) == set(wires2):
+    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-arguments
+    if control1 and set(control1) == set(control2):
+        if node1.op.name in symmetric_over_all_wires and set(target1) == set(target2):
+            return True
+        else:
+            if target1 == target2:
                 return True
+    else:
+        if node1.op.name in symmetric_over_all_wires and set(wires1) == set(wires2):
+            return True
         else:
             if wires1 == wires2:
                 return True
@@ -1341,15 +1364,14 @@ class SubstitutionConfig:
 class TemplateSubstitution:
     """Class to run the substitution algorithm from the list of maximal matches."""
 
-    def __init__(self, max_matches, circuit_dag, template_dag, user_cost_dict=None):
+    def __init__(self, max_matches, circuit_dag, template_dag, custom_quantum_cost=None):
         """
         Initialize TemplateSubstitution with necessary arguments.
         Args:
             max_matches (list(int)): list of maximal matches obtained from the running the pattern matching algorithm.
             circuit_dag (.CommutationDAG): circuit in the dag dependency form.
             template_dag (.CommutationDAG): template in the dag dependency form.
-            user_cost_dict (dict): Optional, user provided cost dictionary that will override the default cost
-             dictionary.
+            custom_quantum_cost (dict): Optional, quantum cost that overrides the default cost dictionnary.
         """
 
         self.match_stack = max_matches
@@ -1359,14 +1381,17 @@ class TemplateSubstitution:
         self.substitution_list = []
         self.unmatched_list = []
 
-        if user_cost_dict is not None:
-            self.cost_dict = dict(user_cost_dict)
+        if custom_quantum_cost is not None:
+            self.quantum_cost = dict(custom_quantum_cost)
         else:
-            self.cost_dict = {
+            self.quantum_cost = {
                 "Identity": 0,
                 "PauliX": 1,
                 "PauliY": 1,
                 "PauliZ": 1,
+                "RX": 1,
+                "RY": 1,
+                "RZ": 1,
                 "Hadamard": 1,
                 "T": 1,
                 "S": 1,
@@ -1407,11 +1432,11 @@ class TemplateSubstitution:
         """
         cost_left = 0
         for i in left:
-            cost_left += self.cost_dict[self.template_dag.get_node(i).op.name]
+            cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name]
 
         cost_right = 0
         for j in right:
-            cost_right += self.cost_dict[self.template_dag.get_node(j).op.name]
+            cost_right += self.quantum_cost[self.template_dag.get_node(j).op.name]
 
         return cost_left > cost_right
 
