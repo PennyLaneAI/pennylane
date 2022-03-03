@@ -203,7 +203,8 @@ class QubitDevice(Device):
         close_contexts = lambda: None
 
         if self.capabilities().get("supports_native_hermitian", False):
-            # HOTFIX: mock Hermitian operations so that they compute
+            # HOTFIX: Underlying device natively supports Hermitian observables
+            # without diagonalization. Mock Hermitian operations so that they do not compute
             # an expensive eigenvector decomposition to determine diagonalizing gates.
             hermitian_obs = [o for o in circuit.observables if isinstance(o, qml.Hermitian)]
 
