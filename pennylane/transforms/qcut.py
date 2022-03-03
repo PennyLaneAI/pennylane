@@ -535,30 +535,20 @@ def expand_fragment_tapes(
 
         >>> tapes, prep, meas = qml.transforms.expand_fragment_tapes(tape)
         >>> for t in tapes:
-        ...     print(t.draw())
-         0: ──I──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
+        ...     print(qml.drawer.tape_text(t, decimals=1))
+        0: ──I──RX(0.5)─┤  <I>  <Z>
+        0: ──I──RX(0.5)─┤  <X>
+        0: ──I──RX(0.5)─┤  <Y>
+        0: ──X──RX(0.5)─┤  <I>  <Z>
+        0: ──X──RX(0.5)─┤  <X>
+        0: ──X──RX(0.5)─┤  <Y>
+        0: ──H──RX(0.5)─┤  <I>  <Z>
+        0: ──H──RX(0.5)─┤  <X>
+        0: ──H──RX(0.5)─┤  <Y>
+        0: ──H──S──RX(0.5)─┤  <I>  <Z>
+        0: ──H──S──RX(0.5)─┤  <X>
+        0: ──H──S──RX(0.5)─┤  <Y>
 
-         0: ──I──RX(0.5)──┤ ⟨X⟩
-
-         0: ──I──RX(0.5)──┤ ⟨Y⟩
-
-         0: ──X──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
-
-         0: ──X──RX(0.5)──┤ ⟨X⟩
-
-         0: ──X──RX(0.5)──┤ ⟨Y⟩
-
-         0: ──H──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
-
-         0: ──H──RX(0.5)──┤ ⟨X⟩
-
-         0: ──H──RX(0.5)──┤ ⟨Y⟩
-
-         0: ──H──S──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
-
-         0: ──H──S──RX(0.5)──┤ ⟨X⟩
-
-         0: ──H──S──RX(0.5)──┤ ⟨Y⟩
     """
     prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
     measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]
