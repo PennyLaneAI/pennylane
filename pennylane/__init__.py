@@ -76,6 +76,7 @@ from pennylane.transforms import (
     pattern_matching_optimization,
     simplify,
 )
+from pennylane.ops.functions import *
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
 

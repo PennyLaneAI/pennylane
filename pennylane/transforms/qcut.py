@@ -25,7 +25,7 @@ from functools import partial
 from itertools import product
 from typing import Any, Callable, ClassVar, Dict, List, Sequence, Tuple, Union
 
-from networkx import MultiDiGraph, weakly_connected_components
+from networkx import MultiDiGraph, weakly_connected_components, has_path
 
 import pennylane as qml
 from pennylane import apply, expval
@@ -233,6 +233,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     return graph
 
 
+# pylint: disable=too-many-branches
 def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
     """
     Fragments a graph into a collection of subgraphs as well as returning
@@ -284,6 +285,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     graph_copy = graph.copy()
 
     cut_edges = []
+    measure_nodes = [n for n in graph.nodes if isinstance(n, MeasurementProcess)]
 
     for node1, node2, wire in graph.edges:
         if isinstance(node1, MeasureNode):
@@ -292,7 +294,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
             graph_copy.remove_edge(node1, node2, key=wire)
 
     subgraph_nodes = weakly_connected_components(graph_copy)
-    subgraphs = tuple(graph_copy.subgraph(n) for n in subgraph_nodes)
+    subgraphs = tuple(MultiDiGraph(graph_copy.subgraph(n)) for n in subgraph_nodes)
 
     communication_graph = MultiDiGraph()
     communication_graph.add_nodes_from(range(len(subgraphs)))
@@ -304,9 +306,39 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
             if subgraph.has_node(node2):
                 end_fragment = i
 
-        communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2))
+        if start_fragment != end_fragment:
+            communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2))
+        else:
+            # The MeasureNode and PrepareNode pair live in the same fragment and did not result
+            # in a disconnection. We can therefore remove these nodes. Note that we do not need
+            # to worry about adding back an edge between the predecessor to node1 and the successor
+            # to node2 because our next step is to convert the fragment circuit graphs to tapes,
+            # a process that does not depend on edge connections in the subgraph.
+            subgraphs[start_fragment].remove_node(node1)
+            subgraphs[end_fragment].remove_node(node2)
 
-    return subgraphs, communication_graph
+    terminal_indices = [i for i, s in enumerate(subgraphs) for n in measure_nodes if s.has_node(n)]
+
+    subgraphs_connected_to_measurements = []
+    subgraphs_indices_to_remove = []
+    prepare_nodes_removed = []
+
+    for i, s in enumerate(subgraphs):
+        if any(has_path(communication_graph, i, t) for t in terminal_indices):
+            subgraphs_connected_to_measurements.append(s)
+        else:
+            subgraphs_indices_to_remove.append(i)
+            prepare_nodes_removed.extend([n for n in s.nodes if isinstance(n, PrepareNode)])
+
+    measure_nodes_to_remove = [m for p in prepare_nodes_removed for m, p_ in cut_edges if p is p_]
+    communication_graph.remove_nodes_from(subgraphs_indices_to_remove)
+
+    for m in measure_nodes_to_remove:
+        for s in subgraphs_connected_to_measurements:
+            if s.has_node(m):
+                s.remove_node(m)
+
+    return subgraphs_connected_to_measurements, communication_graph
 
 
 def _find_new_wire(wires: Wires) -> int:

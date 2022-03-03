@@ -28,7 +28,7 @@ from pennylane.wires import Wires
 def commutation_dag(circuit):
     r"""Construct the pairwise-commutation DAG (directed acyclic graph) representation of a quantum circuit.
 
-    In the DAG, each node represents a quantum operation, and edges edge represent
+    In the DAG, each node represents a quantum operation, and edges represent
     non-commutation between two operations.
 
     This transform takes into account that not all
@@ -58,27 +58,27 @@ def commutation_dag(circuit):
 
     The commutation dag can be returned by using the following code:
 
-    >>> get_dag = commutation_dag(circuit)
-    >>> theta = np.pi/4
-    >>> phi = np.pi/3
-    >>> psi = np.pi/2
-    >>> dag = get_dag(theta, phi, psi)
+    >>> dag_fn = commutation_dag(circuit)
+    >>> dag = dag_fn(np.pi / 4, np.pi / 3, np.pi / 2)
 
-    You can access all nodes by using the get_nodes function in the form of a list ``(ID, CommutationDAGNode)``:
+    Nodes in the commutation DAG can be accessed via the :meth:`~.get_nodes` method, returning a list of
+    the  form ``(ID, CommutationDAGNode)``:
 
     >>> nodes = dag.get_nodes()
     [(0, <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x132b03b20>), ...]
 
-    You can also access specific nodes (of type :class:`~.CommutationDAGNode`) by using the :meth:`~.get_node` method. See :class:`~.CommutationDAGNode` for a list of available
+    You can also access specific nodes (of type :class:`~.CommutationDAGNode`) by using the :meth:`~.get_node`
+    method. See :class:`~.CommutationDAGNode` for a list of available
     node attributes.
 
     >>> second_node = dag.get_node(2)
+    >>> second_node
     <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x136f8c4c0>
-    >>> second_operation = second_node.op
+    >>> second_node.op
     CNOT(wires=[1, 2])
-    >>> second_node_successors = second_node.successors
+    >>> second_node.successors
     [3, 4, 5, 6]
-    >>> second_node_predecessors = second_node.predecessors
+    >>> second_node.predecessors
     []
 
     For more details, see:
@@ -599,8 +599,9 @@ def is_commuting(operation1, operation2):
     if commutation_identity_simplification_1 is not None:
         return commutation_identity_simplification_1
 
+    # pylint:disable=arguments-out-of-order
     commutation_identity_simplification_2 = check_simplify_identity_commutation(
-        operation2, operation1  # pylint:disable=arguments-out-of-order
+        operation2, operation1
     )
     if commutation_identity_simplification_2 is not None:
         return commutation_identity_simplification_2
@@ -616,12 +617,10 @@ def is_commuting(operation1, operation2):
 
     # Case 2 both operations are controlled
     if control_base.get(operation1.name) and control_base.get(operation2.name):
-        res = _both_controlled(control_base, operation1, operation2)
-        if res is not None:
-            return res
+        return _both_controlled(control_base, operation1, operation2)
 
     # Case 3: only operation 1 is controlled
-    elif control_base.get(operation1.name):
+    if control_base.get(operation1.name):
         if control_base.get(operation1.name) != "ControlledOperation":
             control_base_1 = control_base.get(operation1.name)
         else:
@@ -649,7 +648,7 @@ def is_commuting(operation1, operation2):
             return bool(commutation_map[control_base_1][position[operation2.name]])
 
     # Case 4: only operation 2 is controlled
-    elif control_base.get(operation2.name):
+    if control_base.get(operation2.name):
         if control_base.get(operation2.name) != "ControlledOperation":
             control_base_2 = control_base.get(operation2.name)
         else:
@@ -748,15 +747,12 @@ def _both_controlled(control_base, operation1, operation2):
         return bool(commutation_map["ctrl"][position[control_base_2]])
 
     # Case 2.9: targets and controls overlap with targets and controls
-    if target_control and control_target and target_target:
-        return (
-            bool(commutation_map[control_base_1][position["ctrl"]])
-            and bool(commutation_map["ctrl"][position[control_base_2]])
-            and bool(commutation_map[control_base_1][position[control_base_2]])
-        )
-
-    # If no condition was true, return None.
-    return None  # pragma: no cover
+    # equivalent to target_control and control_target and target_target:
+    return (
+        bool(commutation_map[control_base_1][position["ctrl"]])
+        and bool(commutation_map["ctrl"][position[control_base_2]])
+        and bool(commutation_map[control_base_1][position[control_base_2]])
+    )
 
 
 def _merge_no_duplicates(*iterables):
