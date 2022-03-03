@@ -14,7 +14,14 @@
 
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.transforms.optimization.pattern_matching import pattern_matching_optimization
+from pennylane.transforms.commutation_dag import commutation_dag
+from pennylane.transforms.optimization.pattern_matching import (
+    pattern_matching,
+    pattern_matching_optimization,
+    ForwardMatch,
+    BackwardMatch,
+    _update_qubits,
+)
 from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 
 
@@ -550,19 +557,134 @@ class TestPatternMatchingOptimization:
 
 
 class TestPatternMatching:
-    """Pattern matching circuit optimization tests."""
+    """Pattern matching tests."""
 
-    def forward_match_paper_example(self):
-        """Test results of the forward match for the paper example."""
-        return True
+    def test_pattern_matching_paper_example(self):
+        """Test results of the pattern matching for the paper example."""
 
-    def backward_match_paper_example(self):
-        """Test results of the backward match for the paper example."""
-        return True
+        def circuit():
+            qml.CNOT(wires=[6, 7])
+            qml.CNOT(wires=[7, 5])
+            qml.CNOT(wires=[6, 7])
+            qml.Toffoli(wires=[7, 6, 5])
+            qml.CNOT(wires=[6, 7])
+            qml.CNOT(wires=[1, 4])
+            qml.CNOT(wires=[6, 3])
+            qml.CNOT(wires=[3, 4])
+            qml.CNOT(wires=[4, 5])
+            qml.CNOT(wires=[0, 5])
+            qml.PauliZ(wires=3)
+            qml.PauliX(wires=4)
+            qml.CNOT(wires=[4, 3])
+            qml.CNOT(wires=[3, 1])
+            qml.PauliX(wires=4)
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[3, 1])
+            qml.CNOT(wires=[3, 5])
+            qml.CNOT(wires=[3, 6])
+            qml.PauliX(wires=3)
+            qml.CNOT(wires=[4, 5])
+            return qml.expval(qml.PauliX(wires=0))
 
-    def pattern_matching_paper_example(self):
-        """Test results of the backward match for the paper example."""
-        return True
+        with qml.tape.QuantumTape() as pattern:
+            qml.CNOT(wires=[3, 0])
+            qml.PauliX(wires=4)
+            qml.PauliZ(wires=0)
+            qml.CNOT(wires=[4, 2])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[3, 4])
+            qml.CNOT(wires=[1, 2])
+            qml.PauliX(wires=1)
+            qml.CNOT(wires=[1, 0])
+            qml.PauliX(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.CNOT(wires=[0, 3])
 
-    def test_wrong_pattern_type(self):
-        assert True == True
+        circuit_dag = commutation_dag(circuit)()
+        pattern_dag = commutation_dag(pattern)()
+
+        wires, target_wires, control_wires = _update_qubits(circuit_dag, [0, 5, 1, 2, 4])
+
+        forward = ForwardMatch(
+            circuit_dag,
+            pattern_dag,
+            6,
+            0,
+            wires,
+            target_wires,
+            control_wires,
+        )
+        forward.run_forward_match()
+
+        forward_match = forward.match
+        forward_match.sort()
+
+        forward_match_expected = [
+            [0, 6],
+            [2, 10],
+            [4, 7],
+            [6, 8],
+            [7, 11],
+            [8, 12],
+            [9, 14],
+            [10, 20],
+            [11, 18],
+        ]
+
+        assert forward_match_expected == forward_match
+        qubits = [0, 5, 1, 2, 4]
+
+        backward = BackwardMatch(
+            circuit_dag,
+            pattern_dag,
+            qubits,
+            forward.match,
+            forward.circuit_matched_with,
+            forward.circuit_blocked,
+            forward.pattern_matched_with,
+            6,
+            0,
+            wires,
+            control_wires,
+            target_wires,
+        )
+        backward.run_backward_match()
+
+        # Figure 5 in the paper
+        backward_match_1 = backward.match_final[0].match
+        backward_match_qubit_1 = backward.match_final[0].qubit[0]
+        backward_match_1.sort()
+
+        # Figure 6 in the paper
+        backward_match_2 = backward.match_final[1].match
+        backward_match_qubit_2 = backward.match_final[0].qubit[0]
+        backward_match_2.sort()
+
+        backward_match_1_expected = [
+            [0, 6],
+            [2, 10],
+            [4, 7],
+            [5, 4],
+            [6, 8],
+            [7, 11],
+            [8, 12],
+            [9, 14],
+            [10, 20],
+            [11, 18],
+        ]
+        backward_match_2_expected = [
+            [0, 6],
+            [2, 10],
+            [3, 1],
+            [4, 7],
+            [5, 2],
+            [6, 8],
+            [7, 11],
+            [8, 12],
+            [9, 14],
+            [10, 20],
+        ]
+
+        assert backward_match_1_expected == backward_match_1
+        assert backward_match_2_expected == backward_match_2
+        assert qubits == backward_match_qubit_1 == backward_match_qubit_2
