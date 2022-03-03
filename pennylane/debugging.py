@@ -63,6 +63,7 @@ def snapshots(qnode):
     .. code-block:: python3
 
         dev = qml.device("default.qubit", wires=2)
+
         @qml.qnode(dev, interface=None)
         def circuit():
             qml.Snapshot()
@@ -70,7 +71,7 @@ def snapshots(qnode):
             qml.Snapshot("very_important_state")
             qml.CNOT(wires=[0, 1])
             qml.Snapshot()
-            return qml.probs([0, 1])
+            return qml.expval(qml.PauliX(0))
 
     >>> qml.snapshots(circuit)()
     {0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),

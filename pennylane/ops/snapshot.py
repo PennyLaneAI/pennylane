@@ -23,7 +23,7 @@ from pennylane.operation import AnyWires, Operation
 # pylint: disable=unused-argument
 class Snapshot(Operation):
     r"""
-    The Snapshot operation preserves the internal simulator state at specific
+    The Snapshot operation saves the internal simulator state at specific
     execution steps of a quantum function. As such, it is a pseudo operation
     with no effect on the quantum state.
 

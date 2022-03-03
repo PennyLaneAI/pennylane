@@ -6,12 +6,14 @@
 
 * A new operation `qml.Snapshot` has been added to assist users in debugging quantum progams.
   The instruction is used to save the internal state of simulator devices at arbitrary points of
-  execution, such as the quantum state vector, density matrix, or covariance matrix. The saved
-  states can be retrieved in the form of a dictionary via the top-level `qml.snapshots` function.
+  execution, such as the quantum state vector and density matrix in the qubit case, or the
+  covariance matrix and vector of means in the continuous variable case. The saved states can be
+  retrieved in the form of a dictionary via the top-level `qml.snapshots` function.
   [(#2233)](https://github.com/PennyLaneAI/pennylane/pull/2233)
 
   ```py
-  @qml.qnode(qml.device("default.qubit", wires=2), interface=None)
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev, interface=None)
   def circuit():
       qml.Snapshot()
       qml.Hadamard(wires=0)
