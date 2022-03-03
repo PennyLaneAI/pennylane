@@ -233,6 +233,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     return graph
 
 
+# pylint: disable=too-many-branches
 def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
     """
     Fragments a graph into a collection of subgraphs as well as returning
@@ -305,7 +306,16 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
             if subgraph.has_node(node2):
                 end_fragment = i
 
-        communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2))
+        if start_fragment != end_fragment:
+            communication_graph.add_edge(start_fragment, end_fragment, pair=(node1, node2))
+        else:
+            # The MeasureNode and PrepareNode pair live in the same fragment and did not result
+            # in a disconnection. We can therefore remove these nodes. Note that we do not need
+            # to worry about adding back an edge between the predecessor to node1 and the successor
+            # to node2 because our next step is to convert the fragment circuit graphs to tapes,
+            # a process that does not depend on edge connections in the subgraph.
+            subgraphs[start_fragment].remove_node(node1)
+            subgraphs[end_fragment].remove_node(node2)
 
     terminal_indices = [i for i, s in enumerate(subgraphs) for n in measure_nodes if s.has_node(n)]
 
@@ -525,30 +535,20 @@ def expand_fragment_tapes(
 
         >>> tapes, prep, meas = qml.transforms.expand_fragment_tapes(tape)
         >>> for t in tapes:
-        ...     print(t.draw())
-         0: ──I──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
+        ...     print(qml.drawer.tape_text(t, decimals=1))
+        0: ──I──RX(0.5)─┤  <I>  <Z>
+        0: ──I──RX(0.5)─┤  <X>
+        0: ──I──RX(0.5)─┤  <Y>
+        0: ──X──RX(0.5)─┤  <I>  <Z>
+        0: ──X──RX(0.5)─┤  <X>
+        0: ──X──RX(0.5)─┤  <Y>
+        0: ──H──RX(0.5)─┤  <I>  <Z>
+        0: ──H──RX(0.5)─┤  <X>
+        0: ──H──RX(0.5)─┤  <Y>
+        0: ──H──S──RX(0.5)─┤  <I>  <Z>
+        0: ──H──S──RX(0.5)─┤  <X>
+        0: ──H──S──RX(0.5)─┤  <Y>
 
-         0: ──I──RX(0.5)──┤ ⟨X⟩
-
-         0: ──I──RX(0.5)──┤ ⟨Y⟩
-
-         0: ──X──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
-
-         0: ──X──RX(0.5)──┤ ⟨X⟩
-
-         0: ──X──RX(0.5)──┤ ⟨Y⟩
-
-         0: ──H──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
-
-         0: ──H──RX(0.5)──┤ ⟨X⟩
-
-         0: ──H──RX(0.5)──┤ ⟨Y⟩
-
-         0: ──H──S──RX(0.5)──┤ ⟨I⟩ ┤ ⟨Z⟩
-
-         0: ──H──S──RX(0.5)──┤ ⟨X⟩
-
-         0: ──H──S──RX(0.5)──┤ ⟨Y⟩
     """
     prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
     measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]

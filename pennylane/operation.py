@@ -1291,23 +1291,15 @@ class Operation(Operator):
         if self.num_params == 1:
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
-            gen = self.generator()
 
-            try:
-                gen_eigvals = tuple(self.generator().eigvals())
-                return qml.gradients.eigvals_to_frequencies(gen_eigvals)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    action="ignore", message=r".+ eigenvalues will be computed numerically\."
+                )
+                eigvals = qml.eigvals(qml.generator(self, format="observable"))
 
-            except (MatrixUndefinedError, EigvalsUndefinedError):
-
-                if isinstance(gen, qml.Hamiltonian):
-                    mat = qml.utils.sparse_hamiltonian(gen).toarray()
-                    eigvals = tuple(np.round(np.linalg.eigvalsh(mat), 8))
-                    return qml.gradients.eigvals_to_frequencies(eigvals)
-
-                if isinstance(gen, qml.SparseHamiltonian):
-                    mat = gen.sparse_matrix().toarray()
-                    eigvals = tuple(np.round(np.linalg.eigvalsh(mat), 8))
-                    return qml.gradients.eigvals_to_frequencies(eigvals)
+            eigvals = tuple(np.round(eigvals, 8))
+            return qml.gradients.eigvals_to_frequencies(eigvals)
 
         raise OperatorPropertyUndefined(
             f"Operation {self.name} does not have parameter frequencies."
@@ -1398,14 +1390,13 @@ class Operation(Operator):
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
         # check the grad_recipe validity
-        if self.grad_method == "A":
-            if self.grad_recipe is None:
-                # default recipe for every parameter
-                self.grad_recipe = [None] * self.num_params
-            else:
-                assert (
-                    len(self.grad_recipe) == self.num_params
-                ), "Gradient recipe must have one entry for each parameter!"
+        if self.grad_recipe is None:
+            # default recipe for every parameter
+            self.grad_recipe = [None] * self.num_params
+        else:
+            assert (
+                len(self.grad_recipe) == self.num_params
+            ), "Gradient recipe must have one entry for each parameter!"
 
 
 class Channel(Operation, abc.ABC):
@@ -2394,8 +2385,8 @@ def operation_derivative(operation) -> np.ndarray:
         ValueError: if the operation does not have a generator or is not composed of a single
             trainable parameter
     """
-    generator, prefactor = qml.utils.get_generator(operation, return_matrix=True)
-    return 1j * prefactor * generator @ operation.get_matrix()
+    generator = qml.matrix(qml.generator(operation, format="observable"))
+    return 1j * generator @ operation.get_matrix()
 
 
 @qml.BooleanFn
