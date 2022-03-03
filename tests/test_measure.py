@@ -95,6 +95,35 @@ class TestExpval:
 
         circuit()
 
+    def test_wire_order_in_tensor_prod_observables(self, tol):
+        dev = qml.device("defaul.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circ(obs):
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RX(0.12, wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RY(3.45, wires=2)
+            return qml.expval(obs)
+
+        obs_lst = [
+            qml.PauliX(wires=0)@qml.PauliY(wires=1),
+            qml.PauliX(wires=1)@qml.PauliY(wires=0),
+            qml.PauliX(wires=1)@qml.PauliZ(wires=2),
+            qml.PauliX(wires=2)@qml.PauliZ(wires=1),
+        ]
+
+        obs_permuted_lst = [
+            qml.PauliY(wires=1)@qml.PauliX(wires=0),
+            qml.PauliY(wires=0)@qml.PauliX(wires=1),
+            qml.PauliZ(wires=2)@qml.PauliX(wires=1),
+            qml.PauliZ(wires=1)@qml.PauliX(wires=2),
+        ]
+
+        for obs, permuted_obs in zip(obs_lst, obs_permuted_lst):
+            assert np.allclose(circ(obs), circ(permuted_obs), atol=tol, rtol=0)
+
 
 class TestVar:
     """Tests for the var function"""
@@ -138,6 +167,35 @@ class TestVar:
             return res
 
         circuit()
+
+    def test_wire_order_in_tensor_prod_observables(self, tol):
+        dev = qml.device("defaul.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circ(obs):
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RX(0.12, wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RY(3.45, wires=2)
+            return qml.var(obs)
+
+        obs_lst = [
+            qml.PauliX(wires=0)@qml.PauliY(wires=1),
+            qml.PauliX(wires=1)@qml.PauliY(wires=0),
+            qml.PauliX(wires=1)@qml.PauliZ(wires=2),
+            qml.PauliX(wires=2)@qml.PauliZ(wires=1),
+        ]
+
+        obs_permuted_lst = [
+            qml.PauliY(wires=1)@qml.PauliX(wires=0),
+            qml.PauliY(wires=0)@qml.PauliX(wires=1),
+            qml.PauliZ(wires=2)@qml.PauliX(wires=1),
+            qml.PauliZ(wires=1)@qml.PauliX(wires=2),
+        ]
+
+        for obs, permuted_obs in zip(obs_lst, obs_permuted_lst):
+            assert np.allclose(circ(obs), circ(permuted_obs), atol=tol, rtol=0)
 
 
 class TestSample:

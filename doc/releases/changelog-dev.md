@@ -287,6 +287,11 @@
   using the parameter-shift rule.
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
 
+* Fixed convention when computing `expval` or `var` of tensor product observables 
+  (i.e `qml.expval(qml.PauliZ(wires=1) @ qml.PauliX(wires=0)`) such that the wires 
+  provided dictate the form of the observable.
+  [(#2276)](https://github.com/PennyLaneAI/pennylane/pull/2276)
+
 <h3>Documentation</h3>
 
 * Link to the strawberry fields docs for information on the CV model.
