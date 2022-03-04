@@ -14,11 +14,18 @@
 """
 Contains the condition transform.
 """
+import inspect
+from copy import copy
 from functools import wraps
 from typing import Type
 
-from pennylane.operation import Operation, AnyWires
 from pennylane.measurements import MeasurementValue
+from pennylane.operation import AnyWires, Operation, Operator
+from pennylane.transforms import make_tape
+
+
+class ConditionalTransformError(ValueError):
+    """Error for using qml.cond incorrectly"""
 
 
 class Conditional(Operation):
@@ -57,7 +64,7 @@ class Conditional(Operation):
         super().__init__(wires=then_op.wires, do_queue=do_queue, id=id)
 
 
-def cond(measurement, then_op):
+def cond(condition, true_fn, false_fn=None):
     """Condition a quantum operation on the results of mid-circuit qubit measurements.
 
     Support for using :func:`~.cond` is device-dependent. If a device doesn't
@@ -65,14 +72,16 @@ def cond(measurement, then_op):
     :func:`defer_measurements` transform.
 
     Args:
-        measurement (MeasurementValue): a measurement value to consider, for
-            example the output of calling :func:`~.measure`
-        then_op (Operation): The PennyLane operation to apply if the condition
-            applies.
+        condition (.MeasurementValue[bool]): a conditional expression involving a mid-circuit
+           measurement value (see :func:`.pennylane.measure`)
+        true_fn (callable): The quantum function of PennyLane operation to
+            apply if ``condition`` is ``True``
+        false_fn (callable): The quantum function of PennyLane operation to
+            apply if ``condition`` is ``False``
 
     Returns:
-        function: A new function that applies the conditional equivalent of ``then_op``. The returned
-        function takes the same input arguments as ``then_op``.
+        function: A new function that applies the conditional equivalent of ``true_fn``. The returned
+        function takes the same input arguments as ``true_fn``.
 
     **Example**
 
@@ -92,9 +101,42 @@ def cond(measurement, then_op):
             qml.cond(m_0, qml.RZ)(sec_par, wires=1)
             return qml.expval(qml.PauliZ(1))
     """
+    if callable(true_fn):
+        # We assume that the callable is an operation or a quantum function
 
-    @wraps(then_op)
-    def wrapper(*args, **kwargs):
-        return Conditional(measurement, then_op(*args, do_queue=False, **kwargs))
+        with_meas_err = (
+            "Only quantum functions that contain no measurements can be applied conditionally."
+        )
+
+        @wraps(true_fn)
+        def wrapper(*args, **kwargs):
+            # We assume that the callable is a quantum function
+
+            # 1. Apply true_fn conditionally
+            tape = make_tape(true_fn)(*args, **kwargs)
+
+            if tape.measurements:
+                raise ConditionalTransformError(with_meas_err)
+
+            for op in tape.operations:
+                Conditional(condition, op)
+
+            if false_fn is not None:
+                # 2. Apply false_fn conditionally
+                else_tape = make_tape(false_fn)(*args, **kwargs)
+
+                if else_tape.measurements:
+                    raise ConditionalTransformError(with_meas_err)
+
+                inverted_m = copy(condition)
+                inverted_m = ~inverted_m
+
+                for op in else_tape.operations:
+                    Conditional(inverted_m, op)
+
+    else:
+        raise ConditionalTransformError(
+            "Only operations and quantum functions with no measurements can be applied conditionally."
+        )
 
     return wrapper

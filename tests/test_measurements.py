@@ -334,6 +334,23 @@ class TestMeasurementValue:
         mv == val_pair[control_val_idx]
         assert mv._control_value == val_pair[control_val_idx]
 
+    @pytest.mark.parametrize("val_pair", [(0, 1), (1, 0), (-1, 1)])
+    @pytest.mark.parametrize("num_inv, expected_idx", [(1, 0), (2, 1), (3, 0)])
+    def test_measurement_value_inversion(self, val_pair, num_inv, expected_idx):
+        """Test that inverting the value of a measurement works well even with
+        multiple inversions.
+
+        Double-inversion should leave the control value of the measurement
+        value in place.
+        """
+        zero_case = val_pair[0]
+        one_case = val_pair[1]
+        mv = MeasurementValue(measurement_id="1234", zero_case=zero_case, one_case=one_case)
+        for _ in range(num_inv):
+            mv = mv.__invert__()
+
+        assert mv._control_value == val_pair[expected_idx]
+
     def test_measurement_value_assertion_error(self):
         """Test that the return_type related info is updated for a
         measurement."""
