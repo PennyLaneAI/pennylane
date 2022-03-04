@@ -4,6 +4,34 @@
 
 <h3>New features since last release</h3>
 
+* A new operation `qml.Snapshot` has been added to assist users in debugging quantum progams.
+  The instruction is used to save the internal state of simulator devices at arbitrary points of
+  execution, such as the quantum state vector and density matrix in the qubit case, or the
+  covariance matrix and vector of means in the continuous variable case. The saved states can be
+  retrieved in the form of a dictionary via the top-level `qml.snapshots` function.
+  [(#2233)](https://github.com/PennyLaneAI/pennylane/pull/2233)
+
+  ```py
+  dev = qml.device("default.qubit", wires=2)
+  
+  @qml.qnode(dev, interface=None)
+  def circuit():
+      qml.Snapshot()
+      qml.Hadamard(wires=0)
+      qml.Snapshot("very_important_state")
+      qml.CNOT(wires=[0, 1])
+      qml.Snapshot()
+      return qml.expval(qml.PauliX(0))
+  ```
+
+  ```pycon
+  >>> qml.snapshots(circuit)()
+  {0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),
+   'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
+   2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
+   'execution_results': array(0.)}
+  ```
+
 * New functions and transforms of operators have been added. These include:
 
   - `qml.matrix()` for computing the matrix representation of one or more unitary operators.
@@ -188,7 +216,7 @@
 
   - The postprocessing function for the `cut_circuit` transform has been added.
     [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
-
+    
   - The `cut_circuit` transform has been added.
     [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216)
 
@@ -236,7 +264,7 @@
   efficiently measuring the `N`-qubit Pauli group with `3 ** N`
   qubit-wise commuting terms.
   [(#2185)](https://github.com/PennyLaneAI/pennylane/pull/2185)
-  
+
   ```pycon
   >>> qml.grouping.partition_pauli_group(2)
   [['II', 'IZ', 'ZI', 'ZZ'],
@@ -253,7 +281,7 @@
 <h3>Breaking changes</h3>
 
 * The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
-  The single `wires` keyword should be all the control wires followed by a single target wire. 
+  The single `wires` keyword should be all the control wires followed by a single target wire.
   [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
 
 <h3>Deprecations</h3>
@@ -452,7 +480,6 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee, Angus Lowe,
+Thomas Bromley, Anthony Hayes, David Ittah, Josh Izaac, Christina Lee, Angus Lowe,
 Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni,
 Antal Száva, David Wierichs
-
