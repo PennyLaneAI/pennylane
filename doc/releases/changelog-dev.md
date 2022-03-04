@@ -220,6 +220,10 @@
 
 <h3>Improvements</h3>
 
+* Most compilation transforms, and relevant subroutines, have been updated to
+  support just-in-time compilation with `jax.jit`.
+  [(#1894)](https://github.com/PennyLaneAI/pennylane/pull/1894/)
+
 * The `qml.draw_mpl` transform supports a `expansion_strategy` keyword argument.
   [(#2271)](https://github.com/PennyLaneAI/pennylane/pull/2271/)
 
@@ -439,7 +443,7 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee, Angus Lowe,
+Thomas Bromley, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Christina Lee, Angus Lowe,
 Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni,
 Antal Száva, David Wierichs
 
