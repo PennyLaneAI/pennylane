@@ -28,6 +28,6 @@ the tape to perform circuit cutting using the following functionality:
     fragment_graph
     graph_to_tape
     remap_tape_wires
-    expand_fragment_tapes
+    expand_fragment_tape
     qcut_processing_fn
     CutStrategy

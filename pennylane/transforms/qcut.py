@@ -530,7 +530,7 @@ def _prep_iplus_state(wire):
 PREPARE_SETTINGS = [_prep_zero_state, _prep_one_state, _prep_plus_state, _prep_iplus_state]
 
 
-def expand_fragment_tapes(
+def expand_fragment_tape(
     tape: QuantumTape,
 ) -> Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]:
     """
@@ -566,7 +566,7 @@ def expand_fragment_tapes(
 
     We can expand over the measurement and preparation nodes using:
 
-    >>> tapes, prep, meas = qml.transforms.expand_fragment_tapes(tape)
+    >>> tapes, prep, meas = qml.transforms.expand_fragment_tape(tape)
     >>> for t in tapes:
     ...     print(qml.drawer.tape_text(t, decimals=1))
     0: ──I──RX(0.5)─┤  <I>  <Z>
@@ -1025,7 +1025,7 @@ def cut_circuit(
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
     fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
-    expanded = [expand_fragment_tapes(t) for t in fragment_tapes]
+    expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
     configurations = []
     prepare_nodes = []
