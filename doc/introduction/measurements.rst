@@ -208,7 +208,7 @@ Note that we can also specify an outcome when defining a conditional operation:
     @qml.qnode(dev)
     @qml.defer_measurements
     def qnode_conditional_op_on_zero(x, y):
-        qml.RY(x, wires=1)
+        qml.RY(x, wires=0)
         qml.CNOT(wires=[0, 1])
         m_0 = qml.measure(1)
 
