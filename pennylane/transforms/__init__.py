@@ -50,6 +50,8 @@ containing quantum operations) that are used to construct QNodes.
 
     ~adjoint
     ~ctrl
+    ~transforms.cond
+    ~defer_measurements
     ~apply_controlled_Q
     ~quantum_monte_carlo
     ~transforms.insert
@@ -160,9 +162,11 @@ from .op_transforms import op_transform
 from .adjoint import adjoint
 from .batch_params import batch_params
 from .classical_jacobian import classical_jacobian
+from .condition import cond, Conditional
 from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
+from .defer_measurements import defer_measurements
 from .draw import draw, draw_mpl, draw_old
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
