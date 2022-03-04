@@ -70,7 +70,7 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
     Args:
         node (WireCut): the  :class:`~.WireCut` node to be replaced with a :class:`~.MeasureNode`
             and :class:`~.PrepareNode`
-        graph (MultiDiGraph): the graph containing the node to be replaced
+        graph (nx.MultiDiGraph): the graph containing the node to be replaced
 
     **Example**
 
@@ -136,7 +136,7 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
     :class:`~.MeasureNode` and :class:`~.PrepareNode`.
 
     Args:
-        graph (MultiDiGraph): The graph containing the :class:`~.WireCut` nodes
+        graph (nx.MultiDiGraph): The graph containing the :class:`~.WireCut` nodes
             to be replaced
 
     **Example**
@@ -194,7 +194,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
         tape (QuantumTape): tape to be converted into a directed multigraph
 
     Returns:
-        MultiDiGraph: a directed multigraph that captures the circuit structure
+        nx.MultiDiGraph: a directed multigraph that captures the circuit structure
         of the input tape
 
     **Example**
@@ -246,11 +246,11 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     denote the flow of qubits between fragments.
 
     Args:
-        graph (MultiDiGraph): directed multigraph containing measure and prepare
+        graph (nx.MultiDiGraph): directed multigraph containing measure and prepare
             nodes at cut locations
 
     Returns:
-        Tuple[Tuple[MultiDiGraph], MultiDiGraph]: the subgraphs of the cut graph
+        Tuple[Tuple[nx.MultiDiGraph], nx.MultiDiGraph]: the subgraphs of the cut graph
         and the communication graph.
 
     **Example**
@@ -367,7 +367,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
         Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
-        graph (MultiDiGraph): directed multigraph to be converted to a tape
+        graph (nx.MultiDiGraph): directed multigraph to be converted to a tape
 
     Returns:
         QuantumTape: the quantum tape corresponding to the input graph
@@ -647,8 +647,8 @@ def contract_tensors(
 
     Args:
         tensors (Sequence): the tensors to be contracted
-        communication_graph (MultiDiGraph): the communication graph determining connectivity between
-            the tensors
+        communication_graph (nx.MultiDiGraph): the communication graph determining connectivity
+            between the tensors
         prepare_nodes (Sequence[Sequence[PrepareNode]]): a sequence of size
             ``len(communication_graph.nodes)`` that determines the order of preparation indices in
             each tensor
@@ -877,8 +877,8 @@ def qcut_processing_fn(
             expansion of circuit fragments in the ``communication_graph`` over measurement and
             preparation node configurations. These results are processed into tensors and then
             contracted.
-        communication_graph (MultiDiGraph): the communication graph determining connectivity between
-            circuit fragments
+        communication_graph (nx.MultiDiGraph): the communication graph determining connectivity
+            between circuit fragments
         prepare_nodes (Sequence[Sequence[PrepareNode]]): a sequence of size
             ``len(communication_graph.nodes)`` that determines the order of preparation indices in
             each tensor
@@ -1220,7 +1220,7 @@ class CutStrategy:
         partitioner.
 
         Args:
-            tape_dag (MultiDiGraph): Graph representing a tape, typically the output of
+            tape_dag (nx.MultiDiGraph): Graph representing a tape, typically the output of
                 :func:`tape_to_graph`.
             max_wires_by_fragment (Sequence[int]): User-predetermined list of wire limits by
                 fragment. If supplied, the number of fragments will be derived from it and
