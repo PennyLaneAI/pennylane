@@ -218,7 +218,7 @@ Note that we can also specify an outcome when defining a conditional operation:
     pars = np.array([0.643, 0.246], requires_grad=True)
 
 >>> qnode_conditional_op_on_zero(*pars)
-tensor([0.98645017, 0.01354983], requires_grad=True)
+tensor([0.88660045, 0.11339955], requires_grad=True)
 
 The deferred measurement principle provides a natural method to simulate the
 application of mid-circuit measurements and conditional operations in a
