@@ -154,6 +154,78 @@ so corresponds to a :math:`99.75\%` probability of measuring
 state :math:`|00\rangle`, and a :math:`0.25\%` probability of
 measuring state :math:`|01\rangle`.
 
+Mid-circuit measurements and conditional operations
+---------------------------------------------------
+
+PennyLane allows specifying measurements in the middle of the circuit.
+Operations can then be conditioned on the measurement outcome of such
+mid-circuit measurements:
+
+.. code-block:: python
+
+    def my_quantum_function(x, y):
+        qml.RY(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        m_0 = qml.measure(1)
+
+        qml.cond(m_0, qml.RY)(y, wires=0)
+        return qml.probs(wires=[0])
+
+A quantum function with mid-circuit measurements (defined using
+:func:`~.pennylane.measure`) and conditional operations (defined using
+:func:`~.pennylane.cond`) can be executed by applying the `deferred measurement
+principle <https://en.wikipedia.org/wiki/Deferred_Measurement_Principle>`__. In
+the example above, we apply the :class:`~.RY` rotation if the mid-circuit
+measurement on qubit 1 yielded ``1`` as an outcome, otherwise doing nothing
+for the ``0`` measurement outcome.
+
+PennyLane implements the deferred measurement principle to transform
+conditional operations with the :func:`defer_measurements` quantum
+function transform.
+
+.. code-block:: python
+
+    transformed_qfunc = qml.transforms.defer_measurements(my_quantum_function)
+    transformed_qnode = qml.QNode(transformed_qfunc, dev)
+    pars = np.array([0.643, 0.246], requires_grad=True)
+
+>>> transformed_qnode(*pars)
+tensor([0.90165331, 0.09834669], requires_grad=True)
+
+The decorator syntax applies equally well:
+
+.. code-block:: python
+
+    @qml.qnode(dev)
+    @qml.defer_measurements
+    def qnode(x, y):
+        (...)
+
+Note that we can also specify an outcome when defining a conditional operation:
+
+.. code-block:: python
+
+    @qml.qnode(dev)
+    @qml.defer_measurements
+    def qnode_conditional_op_on_zero(x, y):
+        qml.RY(x, wires=0)
+        qml.CNOT(wires=[0, 1])
+        m_0 = qml.measure(1)
+
+        qml.cond(m_0 == 0, qml.RY)(y, wires=0)
+        return qml.probs(wires=[0])
+
+    pars = np.array([0.643, 0.246], requires_grad=True)
+
+>>> qnode_conditional_op_on_zero(*pars)
+tensor([0.88660045, 0.11339955], requires_grad=True)
+
+The deferred measurement principle provides a natural method to simulate the
+application of mid-circuit measurements and conditional operations in a
+differentiable and device-independent way. Performing true mid-circuit
+measurements and conditional operations is dependent on the
+quantum hardware and PennyLane device capabilities.
+
 Changing the number of shots
 ----------------------------
 
