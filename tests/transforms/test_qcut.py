@@ -21,6 +21,7 @@ import sys
 from itertools import product
 
 import pytest
+from flaky import flaky
 from networkx import MultiDiGraph, number_of_selfloops
 from scipy.stats import unitary_group
 
@@ -1931,8 +1932,9 @@ class TestCutCircuitTransform:
     Tests for the cut_circuit transform
     """
 
+    @flaky(max_runs=10)
     @pytest.mark.parametrize("shots", [None, int(1e7)])
-    def test_simple_cut_circuit(self, mocker, use_opt_einsum, shots):
+    def test_simple_cut_circuit_f(self, mocker, use_opt_einsum, shots):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform.
@@ -2432,6 +2434,7 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected)
         assert np.allclose(grad, grad_expected)
 
+    @flaky(max_runs=10)
     @pytest.mark.parametrize("shots", [None, int(1e7)])
     def test_standard_circuit(self, mocker, use_opt_einsum, shots):
         """
@@ -2472,7 +2475,7 @@ class TestCutCircuitTransform:
         res = cut_circuit()
         spy.assert_called_once()
 
-        atol = 1e-2 if shots else 1e-8
+        atol = 1e-3 if shots else 1e-8
         assert np.isclose(res, res_expected, atol=atol)
 
 
