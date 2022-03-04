@@ -13,6 +13,14 @@
 # limitations under the License.
 """
 Unit tests for the cond transforms.
+
+Note: integration tests use the defer_measurements transform and a QNode and
+are located in the:
+
+* tests/transforms/test_defer_measurements.py
+* tests/test_qnode.py
+
+files.
 """
 
 import pytest
