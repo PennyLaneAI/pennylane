@@ -247,7 +247,7 @@ class RandomLayers(Operation):
                     # apply a random rotation gate to a random wire
                     gate = np.random.choice(rotations)
                     rnd_wire = wires.select_random(1)
-                    op_list.append(gate(weights[l, i], wires=rnd_wire))
+                    op_list.append(gate(weights[l][i], wires=rnd_wire))
                     i += 1
 
                 else:
