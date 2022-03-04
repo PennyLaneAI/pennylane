@@ -176,7 +176,7 @@ class TestConditionalOperations:
             return qml.expval(qml.PauliZ(1))
 
         qnode()
-        assert len(qnode.qtape.queue) == 5  # observable and measurement queued separately queued
+        assert len(qnode.qtape.queue) == 5  # observable and measurement queued separately
 
         # We flip the control qubit
         sec_x = qnode.qtape.queue[0]
