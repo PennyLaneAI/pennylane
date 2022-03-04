@@ -1390,6 +1390,25 @@ class TestOperationDerivative:
         )
         assert np.allclose(derivative, expected_derivative)
 
+    def test_cry_non_consecutive(self):
+        """Test if the function correctly returns the derivative of CRY
+        if the wires are not consecutive. This is expected behaviour, since
+        without any other context, the operation derivative should make no
+        assumption about the wire ordering."""
+        p = 0.3
+        op = qml.CRY(p, wires=[1, 0])
+
+        derivative = operation_derivative(op)
+        expected_derivative = 0.5 * np.array(
+            [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, -np.sin(p / 2), -np.cos(p / 2)],
+                [0, 0, np.cos(p / 2), -np.sin(p / 2)],
+            ]
+        )
+        assert np.allclose(derivative, expected_derivative)
+
 
 class TestCVOperation:
     """Test the CVOperation class"""
