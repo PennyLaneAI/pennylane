@@ -108,7 +108,7 @@ def fuse_rot_angles(angles_1, angles_2):
     if is_abstract(angles_1) or is_abstract(angles_2):
         interface = _multi_dispatch([angles_1, angles_2])
 
-        # TODO: implement something similar for orch and tensorflow interfaces
+        # TODO: implement something similar for torch and tensorflow interfaces
         # If the interface is JAX, use jax.lax.cond so that we can jit even with conditionals
         if interface == "jax":
             from jax.lax import cond
