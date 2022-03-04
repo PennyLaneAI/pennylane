@@ -892,7 +892,7 @@ def qcut_processing_fn(
     measure_nodes: Sequence[Sequence[MeasureNode]],
     use_opt_einsum: bool = False,
 ):
-    """Processing function for the :func:`cut_circuit` transform.
+    """Processing function for the :func:`cut_circuit() <pennylane.cut_circuit>` transform.
 
     .. note::
 
@@ -900,10 +900,9 @@ def qcut_processing_fn(
         Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
-        results (Sequence[Sequence]): A collection of execution results corresponding to the
-            expansion of circuit fragments in the ``communication_graph`` over measurement and
-            preparation node configurations. These results are processed into tensors and then
-            contracted.
+        results (Sequence[Sequence]): A collection of execution results generated from the
+            expansion of circuit fragments over measurement and preparation node configurations.
+            These results are processed into tensors and then contracted.
         communication_graph (nx.MultiDiGraph): the communication graph determining connectivity
             between circuit fragments
         prepare_nodes (Sequence[Sequence[PrepareNode]]): a sequence of size
