@@ -71,7 +71,7 @@ class TestSingleQubitFusion:
             qml.RX(-0.2, wires=0)
             qml.RZ(-0.1, wires=0)
 
-        transformed_qfunc = single_qubit_fusion()(qfunc)
+        transformed_qfunc = single_qubit_fusion(atol=1e-7)(qfunc)
         transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
         assert len(transformed_ops) == 0
 

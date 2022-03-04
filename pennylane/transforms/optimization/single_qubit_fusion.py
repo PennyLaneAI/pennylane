@@ -137,12 +137,18 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
         # If we are tracing/jitting, don't perform any conditional checks and
-        # apply the rotation regardless of the angles. If not tracing/jitting, we
-        # apply the rotation only if the angles are not all 0s.
+        # apply the rotation regardless of the angles.
         if is_abstract(cumulative_angles):
             Rot(*cumulative_angles, wires=current_gate.wires)
+        # If not tracing, check whether all angles are 0 (or equivalently, if the RY
+        # angle is close to 0, and so is the sum of the RZ angles
         else:
-            if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=atol, rtol=0):
+            if not allclose(
+                stack([cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]),
+                [0.0, 0.0],
+                atol=atol,
+                rtol=0,
+            ):
                 Rot(*cumulative_angles, wires=current_gate.wires)
 
         # Remove the starting gate from the list
