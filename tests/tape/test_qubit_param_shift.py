@@ -18,6 +18,42 @@ import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.tape import QubitParamShiftTape
+from pennylane.tape.qubit_param_shift import _get_operation_recipe
+from pennylane.operation import (
+    Operation,
+    OperatorPropertyUndefined,
+    ParameterFrequenciesUndefinedError,
+)
+
+
+class TestGetOperationRecipe:
+    """Tests special cases for the _get_operation_recipe
+    copy in qubit_param_shift.py, the original is in
+    gradients/parameter_shift.py
+    """
+
+    class DummyOp0(Operation):
+        num_params = 1
+        num_wires = 1
+        grad_recipe = (None,)
+
+    class DummyOp1(Operation):
+        num_params = 1
+        num_wires = 1
+        grad_recipe = (None,)
+
+        @property
+        def parameter_frequencies(self):
+            raise ParameterFrequenciesUndefinedError
+
+    @pytest.mark.parametrize("Op", [DummyOp0, DummyOp1])
+    def test_error_no_grad_info(self, Op):
+        op = Op(0.1, wires=0)
+        with pytest.raises(
+            OperatorPropertyUndefined,
+            match=f"The operation {op.name} does not have a grad_recipe,",
+        ):
+            _get_operation_recipe(op, 0, None)
 
 
 class TestGradMethod:
