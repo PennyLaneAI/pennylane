@@ -176,11 +176,11 @@ A quantum function with mid-circuit measurements (defined using
 :func:`~.pennylane.cond`) can be executed by applying the `deferred measurement
 principle <https://en.wikipedia.org/wiki/Deferred_Measurement_Principle>`__. In
 the example above, we apply the :class:`~.RY` rotation if the mid-circuit
-measurement on qubit 1 yielded the ``1`` as an outcome, otherwise doing nothing
-for the ``0`` measurement outcome..
+measurement on qubit 1 yielded ``1`` as an outcome, otherwise doing nothing
+for the ``0`` measurement outcome.
 
 PennyLane implements the deferred measurement principle to transform
-conditional operations with the :func:`~.pennylane.transforms.defer_measurements` quantum
+conditional operations with the :func:`defer_measurements` quantum
 function transform.
 
 .. code-block:: python
@@ -190,7 +190,7 @@ function transform.
     pars = np.array([0.643, 0.246], requires_grad=True)
 
 >>> transformed_qnode(*pars)
-tensor([0.99849698, 0.00150302], requires_grad=True)
+tensor([0.90165331, 0.09834669], requires_grad=True)
 
 The decorator syntax applies equally well:
 
@@ -208,7 +208,7 @@ Note that we can also specify an outcome when defining a conditional operation:
     @qml.qnode(dev)
     @qml.defer_measurements
     def qnode_conditional_op_on_zero(x, y):
-        qml.RY(x, wires=1)
+        qml.RY(x, wires=0)
         qml.CNOT(wires=[0, 1])
         m_0 = qml.measure(1)
 
@@ -218,12 +218,12 @@ Note that we can also specify an outcome when defining a conditional operation:
     pars = np.array([0.643, 0.246], requires_grad=True)
 
 >>> qnode_conditional_op_on_zero(*pars)
-tensor([0.98645017, 0.01354983], requires_grad=True)
+tensor([0.88660045, 0.11339955], requires_grad=True)
 
 The deferred measurement principle provides a natural method to simulate the
 application of mid-circuit measurements and conditional operations in a
 differentiable and device-independent way. Performing true mid-circuit
-measurements and conditional operations on quantum hardware is dependent on the
+measurements and conditional operations is dependent on the
 quantum hardware and PennyLane device capabilities.
 
 Changing the number of shots

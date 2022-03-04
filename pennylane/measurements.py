@@ -684,7 +684,7 @@ def measure(wires):
 
         @qml.qnode(dev)
         def func(x, y):
-            qml.RY(x, wires=1)
+            qml.RY(x, wires=0)
             qml.CNOT(wires=[0, 1])
             m_0 = qml.measure(1)
 
@@ -695,7 +695,7 @@ def measure(wires):
 
     >>> pars = np.array([0.643, 0.246], requires_grad=True)
     >>> func(*pars)
-    tensor([0.99849698, 0.00150302], requires_grad=True)
+    tensor([0.90165331, 0.09834669], requires_grad=True)
 
     Args:
         wires (Wires): The wires the measurement process applies to.

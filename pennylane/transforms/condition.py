@@ -73,7 +73,7 @@ def cond(measurement, then_func, else_func=None):
 
     Args:
         measurement (MeasurementValue): a measurement value to consider, for
-            example the output of calling :func:`qml.measure`
+            example the output of calling :func:`~.measure`
         then_func (Operation): The quantum function or PennyLane operation to apply if the condition
             applies.
         else_func (Operation): The quantum function or PennyLane operation to apply if the condition
