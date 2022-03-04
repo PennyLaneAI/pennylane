@@ -16,21 +16,11 @@ This submodule contains the discrete-variable quantum operations that come
 from quantum chemistry applications.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
-import math
 import numpy as np
 from scipy.sparse import coo_matrix
 
 import pennylane as qml
 from pennylane.operation import Operation
-
-INV_SQRT2 = 1 / math.sqrt(2)
-
-# Four term gradient recipe for controlled rotations
-c1 = INV_SQRT2 * (np.sqrt(2) + 1) / 4
-c2 = INV_SQRT2 * (np.sqrt(2) - 1) / 4
-a = np.pi / 2
-b = 3 * np.pi / 2
-four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
 class SingleExcitation(Operation):
@@ -90,10 +80,8 @@ class SingleExcitation(Operation):
     grad_method = "A"
     """Gradient computation method."""
 
-    grad_recipe = four_term_grad_recipe
-    """Gradient recipe for the parameter-shift method."""
-
     parameter_frequencies = [(0.5, 1.0)]
+    """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
         w1, w2 = self.wires
@@ -206,6 +194,7 @@ class SingleExcitationMinus(Operation):
     """Gradient computation method."""
 
     parameter_frequencies = [(1,)]
+    """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
         w1, w2 = self.wires
@@ -345,6 +334,7 @@ class SingleExcitationPlus(Operation):
     """Gradient computation method."""
 
     parameter_frequencies = [(1,)]
+    """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
         w1, w2 = self.wires
@@ -507,10 +497,8 @@ class DoubleExcitation(Operation):
     grad_method = "A"
     """Gradient computation method."""
 
-    grad_recipe = four_term_grad_recipe
-    """Gradient recipe for the parameter-shift method."""
-
     parameter_frequencies = [(0.5, 1.0)]
+    """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
@@ -688,6 +676,7 @@ class DoubleExcitationPlus(Operation):
     """Gradient computation method."""
 
     parameter_frequencies = [(1,)]
+    """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
         G = -1 * np.eye(16, dtype=np.complex64)
@@ -783,6 +772,7 @@ class DoubleExcitationMinus(Operation):
     """Gradient computation method."""
 
     parameter_frequencies = [(1,)]
+    """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
         G = np.eye(16, dtype=np.complex64)
@@ -900,24 +890,7 @@ class OrbitalRotation(Operation):
     """Gradient computation method."""
 
     parameter_frequencies = [(0.5, 1.0, 1.5, 2.0)]
-
-    @property
-    def grad_recipe(self):
-        r"""tuple(list[list[float]]): Gradient recipe for the
-        parameter-shift method.
-
-        This is a tuple with one nested list per operation parameter. For
-        parameter :math:`\phi_k`, the nested list contains elements of the form
-        :math:`[c_i, a_i, s_i]` where :math:`i` is the index of the
-        term, resulting in a gradient recipe of
-
-        .. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i} c_i f(a_i \phi_k + s_i).
-
-        Since the ``OrbitalRotation`` operation has four parameter frequencies, this
-        corresponds to a parameter-shift rule with eight terms.
-        """
-        coeffs, shifts = qml.gradients.generate_shift_rule(self.parameter_frequencies[0])
-        return [np.stack([coeffs, np.ones_like(coeffs), shifts]).T]
+    """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
