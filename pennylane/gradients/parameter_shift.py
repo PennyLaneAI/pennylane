@@ -482,7 +482,7 @@ def param_shift(
         \frac{(-1)^{\mu-1}}{4R\sin^2\left(\frac{2\mu-1}{4R}\pi\right)}
 
     Here, :math:`R` is the number of frequencies with which the parameter :math:`\mathbf{p}`
-    enters the function :math`f` via the operation :math:`U` and we assumed that these
+    enters the function :math:`f` via the operation :math:`U`, and we assumed that these
     frequencies are equidistant.
     For more general shift rules, both regarding the shifts and the frequencies, and
     for more technical details, see
