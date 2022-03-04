@@ -233,7 +233,6 @@ def pattern_matching(circuit_dag, pattern_dag):
             # Loop over all possible qubits configurations given the first match constrains
             for not_fixed_qubits_conf in not_fixed_qubits_confs:
                 for not_fixed_qubits_conf_permuted in itertools.permutations(not_fixed_qubits_conf):
-                    not_fixed_qubits_conf_permuted = not_fixed_qubits_conf_permuted
                     for first_match_qubits_conf in _first_match_qubits(
                         node_c[1], node_p[1], pattern_dag.num_wires
                     ):
