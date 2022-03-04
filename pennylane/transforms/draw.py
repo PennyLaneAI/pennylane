@@ -357,7 +357,9 @@ def draw(
     return wrapper
 
 
-def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
+def draw_mpl(
+    qnode, wire_order=None, show_all_wires=False, decimals=None, expansion_strategy=None, **kwargs
+):
     """Draw a qnode with matplotlib
 
     Args:
@@ -375,6 +377,16 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
         label_options (dict): matplotlib formatting options for the wire labels
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
+        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
+            are required.
+
+            - ``gradient``: The QNode will attempt to decompose
+              the internal circuit such that all circuit operations are supported by the gradient
+              method.
+
+            - ``device``: The QNode will attempt to decompose the internal circuit
+              such that all circuit operations are natively supported by the device.
+
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
@@ -540,7 +552,13 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        qnode.construct(args, kwargs_qnode)
+        original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+
+        try:
+            qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
+            qnode.construct(args, kwargs_qnode)
+        finally:
+            qnode.expansion_strategy = original_expansion_strategy
 
         _wire_order = wire_order or qnode.device.wires
 
