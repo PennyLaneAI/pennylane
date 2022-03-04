@@ -157,7 +157,7 @@ class DefaultQubit(QubitDevice):
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         super().__init__(wires, shots, cache=cache, analytic=analytic)
-        self.debugger = None
+        self._debugger = None
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.
@@ -216,12 +216,12 @@ class DefaultQubit(QubitDevice):
             elif isinstance(operation, BasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
             elif isinstance(operation, Snapshot):
-                if self.debugger and self.debugger.active:
+                if self._debugger and self._debugger.active:
                     state_vector = np.array(self._flatten(self._state))
                     if operation.tag:
-                        self.debugger.snapshots[operation.tag] = state_vector
+                        self._debugger.snapshots[operation.tag] = state_vector
                     else:
-                        self.debugger.snapshots[len(self.debugger.snapshots)] = state_vector
+                        self._debugger.snapshots[len(self._debugger.snapshots)] = state_vector
             else:
                 self._state = self._apply_operation(self._state, operation)
 

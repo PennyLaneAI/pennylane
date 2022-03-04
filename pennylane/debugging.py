@@ -28,13 +28,13 @@ class _Debugger:
     """
 
     def __init__(self, dev):
-        if dev.short_name == "lightning.qubit" or not hasattr(dev, "debugger"):
+        if dev.short_name == "lightning.qubit" or not hasattr(dev, "_debugger"):
             raise DeviceError("Device does not support snapshots.")
 
         self.snapshots = {}
         self.active = False
         self.device = dev
-        dev.debugger = self
+        dev._debugger = self
 
     def __enter__(self):
         self.active = True
@@ -42,7 +42,7 @@ class _Debugger:
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         self.active = False
-        self.device.debugger = None
+        self.device._debugger = None
 
 
 def snapshots(qnode):

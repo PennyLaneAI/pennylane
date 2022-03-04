@@ -36,7 +36,7 @@ class TestSnapshot:
             return qml.expval(qml.PauliX(0))
 
         circuit()
-        assert dev.debugger is None
+        assert dev._debugger is None
 
         result = qml.snapshots(circuit)()
         expected = {
@@ -63,7 +63,7 @@ class TestSnapshot:
             return qml.expval(qml.PauliX(0))
 
         circuit()
-        assert dev.debugger is None
+        assert dev._debugger is None
 
         result = qml.snapshots(circuit)()
         expected = {
@@ -92,7 +92,7 @@ class TestSnapshot:
             return qml.expval(qml.X(0))
 
         circuit()
-        assert dev.debugger is None
+        assert dev._debugger is None
 
         result = qml.snapshots(circuit)()
         expected = {
@@ -148,7 +148,7 @@ class TestSnapshot:
         """Test that an error is raised on unsupported devices."""
         dev = qml.device("default.qubit", wires=2)
         # remove attributes to simulate unsupported device
-        delattr(dev, "debugger")
+        delattr(dev, "_debugger")
         dev.operations.remove("Snapshot")
 
         @qml.qnode(dev, interface=None)  # iterface=None prevents new device creation internally
