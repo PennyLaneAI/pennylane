@@ -44,7 +44,7 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
 
     Raises:
         QuantumFunctionError: The pattern provided is not a valid QuantumTape or the pattern contains measurements or
-        the pattern does not implement identity or the circuit has less qubits than the pattern.
+            the pattern does not implement identity or the circuit has less qubits than the pattern.
 
     **Example**
 
