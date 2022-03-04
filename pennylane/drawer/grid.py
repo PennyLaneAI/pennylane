@@ -38,6 +38,10 @@ class Grid:
 
     Args:
         raw_grid (list, optional): Raw grid from which the Grid instance is built.
+
+    .. warning::
+
+        ``Grid`` is deprecated. Please use :func:`~.drawer.drawable_layers` instead.
     """
 
     def __init__(self, raw_grid=None):

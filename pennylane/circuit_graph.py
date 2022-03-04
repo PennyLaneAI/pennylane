@@ -636,6 +636,10 @@ class CircuitGraph:
 
         Returns:
             str: The circuit diagram representation of the ``CircuitGraph``
+
+        .. warning::
+
+            ``CircuitGraph.draw`` is deprecated. Please use :func:`~.drawer.tape_text` instead.
         """
         warnings.warn(
             "CircuitGraph.draw is deprecated. Please see qml.drawer.tape_text instead.", UserWarning

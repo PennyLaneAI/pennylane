@@ -51,6 +51,10 @@ class CircuitDrawer:
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
         _label_offsets (dict[strin, int], optional): Offset the printed index of different symbol types in nested circuits.
+
+    .. warning::
+
+            ``CircuitDrawer`` is deprecated. Please use :func:`~.drawer.tape_text` instead.
     """
 
     def __init__(

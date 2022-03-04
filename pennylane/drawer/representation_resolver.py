@@ -28,6 +28,10 @@ class RepresentationResolver:
     Args:
         charset (CharSet, optional): The CharSet to be used for representation resolution.
         label_offsets (dict[string, int], optional): Offset the printed index of different symbol types in nested circuits.
+
+    .. warning::
+
+        ``RepresentationResolver`` is deprecated. Please use :meth:`~.operation.Operator.label` instead.
     """
 
     def __init__(self, charset=UnicodeCharSet, label_offsets=None):
