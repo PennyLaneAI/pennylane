@@ -636,7 +636,7 @@ class MeasurementValue(Generic[T]):
         return branch_dict
 
     def __invert__(self):
-        """Inverts the value of the measurement value."""
+        """Inverts the control value of the measurement."""
         zero = self._zero_case
         one = self._one_case
 
