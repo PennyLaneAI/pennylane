@@ -534,7 +534,7 @@ def expand_fragment_tape(
     tape: QuantumTape,
 ) -> Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]:
     """
-    Expands a fragment tape into a collection of tapes for each configuration of the
+    Expands a fragment tape into a sequence of tapes for each configuration of the contained
     :class:`MeasureNode` and :class:`PrepareNode` operations.
 
     .. note::
@@ -543,30 +543,29 @@ def expand_fragment_tape(
         Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
-        tape (QuantumTape): the fragment tape to be expanded.
+        tape (QuantumTape): the fragment tape containing :class:`MeasureNode` and
+            :class:`PrepareNode` operations to be expanded
 
     Returns:
         Tuple[List[QuantumTape], List[PrepareNode], List[MeasureNode]]: the
-        tapes corresponding to each configuration, the preparation nodes and
-        the measurement nodes.
+        tapes corresponding to each configuration and the order of preparation nodes and
+        measurement nodes used in the expansion
 
     **Example**
 
-    Consider the following circuit, which contains a :class:`~.MeasureNode` and :class:`~.PrepareNode`
-    operation:
+    Consider the following circuit, which contains a :class:`~.MeasureNode` and
+    :class:`~.PrepareNode` operation:
 
     .. code-block:: python
 
-        from pennylane.transforms import qcut
-
         with qml.tape.QuantumTape() as tape:
-            qcut.PrepareNode(wires=0)
+            qml.transforms.qcut.PrepareNode(wires=0)
             qml.RX(0.5, wires=0)
-            qcut.MeasureNode(wires=0)
+            qml.transforms.qcut.MeasureNode(wires=0)
 
     We can expand over the measurement and preparation nodes using:
 
-    >>> tapes, prep, meas = qml.transforms.expand_fragment_tape(tape)
+    >>> tapes, prep, meas = qml.transforms.qcut.expand_fragment_tape(tape)
     >>> for t in tapes:
     ...     print(qml.drawer.tape_text(t, decimals=1))
     0: ──I──RX(0.5)─┤  <I>  <Z>
