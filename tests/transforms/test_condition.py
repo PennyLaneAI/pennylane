@@ -151,3 +151,103 @@ class TestCond:
         ):
             m_0 = qml.measure(1)
             qml.cond(m_0, inp)()
+
+class TestOtherTransforms:
+    """Tests that qml.cond works correctly with other transforms."""
+
+    def test_cond_queues_with_adjoint(self):
+        """Test that qml.cond queues Conditional operations as expected with
+        qml.adjoint."""
+        r = 1.234
+
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(0)
+            qml.cond(m_0, qml.adjoint(qml.RX), qml.RX)(r, wires=1)
+            qml.probs(wires=1)
+
+        ops = tape.queue
+        target_wire = qml.wires.Wires(1)
+
+        assert len(ops) == 4
+        assert ops[0].return_type == qml.operation.MidMeasure
+
+        assert isinstance(ops[1], qml.transforms.condition.Conditional)
+        assert isinstance(ops[1].then_op, qml.RX)
+        assert ops[1].then_op.data == [-r] # adjoint
+        assert ops[1].then_op.wires == target_wire
+
+        assert isinstance(ops[2], qml.transforms.condition.Conditional)
+        assert isinstance(ops[2].then_op, qml.RX)
+        assert ops[2].then_op.data == [r]
+        assert ops[2].then_op.wires == target_wire
+
+        assert ops[3].return_type == qml.operation.Probability
+
+
+    def test_cond_queues_with_ctrl(self):
+        """Test that qml.cond queues Conditional operations as expected with
+        qml.ctrl."""
+        r = 1.234
+
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(0)
+            qml.cond(m_0, qml.ctrl(qml.RX, 1), qml.ctrl(qml.RY, 1))(r, wires=2)
+            qml.probs(wires=[1, 2])
+
+        ops = tape.queue
+        target_wire = qml.wires.Wires(2)
+
+        assert len(ops) == 4
+        assert ops[0].return_type == qml.operation.MidMeasure
+
+        assert isinstance(ops[1], qml.transforms.condition.Conditional)
+        assert isinstance(ops[1].then_op, qml.transforms.control.ControlledOperation)
+
+        assert len(ops[1].then_op.subtape.queue) == 1
+        controlled_op = ops[1].then_op.subtape.queue[0]
+        assert isinstance(controlled_op, qml.RX)
+        assert controlled_op.data == [r]
+        assert controlled_op.wires == target_wire
+
+        assert isinstance(ops[2], qml.transforms.condition.Conditional)
+        assert isinstance(ops[2].then_op, qml.transforms.control.ControlledOperation)
+
+        assert len(ops[2].then_op.subtape.queue) == 1
+        controlled_op = ops[2].then_op.subtape.queue[0]
+        assert isinstance(controlled_op, qml.RY)
+        assert controlled_op.data == [r]
+        assert controlled_op.wires == target_wire
+
+        assert ops[3].return_type == qml.operation.Probability
+
+
+    def test_ctrl_queues_with_cond(self):
+        """Test that qml.cond queues Conditional operations as expected with
+        qml.ctrl."""
+        r = 1.234
+
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(0)
+            qml.ctrl(qml.cond(m_0, qml.RX, qml.RY), 1)(r, wires=0)
+            qml.probs(wires=[1, 2])
+
+        ops = tape.queue
+        target_wire = qml.wires.Wires(2)
+
+        assert len(ops) == 3
+        assert ops[0].return_type == qml.operation.MidMeasure
+
+        assert isinstance(ops[1], qml.transforms.control.ControlledOperation)
+        assert len(ops[1].subtape.queue) == 2
+
+        op1 = ops[1].subtape.queue[0]
+        assert isinstance(op1, qml.transforms.condition.Conditional)
+        assert isinstance(op1.then_op, qml.RX)
+        assert op1.then_op.data == [r]
+
+        op2 = ops[1].subtape.queue[1]
+        assert isinstance(op2, qml.transforms.condition.Conditional)
+        assert isinstance(op2.then_op, qml.RY)
+        assert op1.then_op.data == [r]
+
+        assert ops[2].return_type == qml.operation.Probability

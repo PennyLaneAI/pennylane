@@ -126,7 +126,6 @@ class TestQNode:
         ):
             qnode()
 
-
 class TestConditionalOperations:
     """Tests conditional operations"""
 
