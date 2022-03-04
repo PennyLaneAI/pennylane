@@ -541,17 +541,18 @@ def param_shift(
         ``param_shift`` performs multiple attempts to obtain the gradient recipes for
         each operation:
 
-        - If an operation has a custom :attr:`~.grad_recipe` defined, it is used.
+        - If an operation has a custom :attr:`~.operation.Operation.grad_recipe` defined,
+          it is used.
 
-        - If :attr:`.parameter_frequencies` yields a result, the frequencies are
-          used to construct the general parameter-shift rule via
+        - If :attr:`~.operation.Operation.parameter_frequencies` yields a result, the frequencies
+          are used to construct the general parameter-shift rule via
           :func:`.generate_shift_rule`.
           Note that by default, the generator is used to compute the parameter frequencies
           if they are not provided via a custom implementation.
 
-        That is, the order of precedence is :meth:`~.grad_recipe`, custom
-        :attr:`~.parameter_frequencies`, and finally :meth:`.generator` via the default
-        implementation of the frequencies.
+        That is, the order of precedence is :attr:`~.operation.Operation.grad_recipe`, custom
+        :attr:`~.operation.Operation.parameter_frequencies`, and finally
+        :meth:`~.operation.Operation.generator` via the default implementation of the frequencies.
 
     .. UsageDetails::
 
