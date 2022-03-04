@@ -256,13 +256,19 @@
   - A suite of integration tests has been added.
     [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
     [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
+    [(#2244)](https://github.com/PennyLaneAI/pennylane/pull/2244)
     [(#2251)](https://github.com/PennyLaneAI/pennylane/pull/2251)
+    [(#2265)](https://github.com/PennyLaneAI/pennylane/pull/2265)
 
-  Circuit fragments that are disconnected from the terminal measurements are now removed.
-  [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
+  - Circuit fragments that are disconnected from the terminal measurements are now removed.
+    [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
   
-  `WireCut` operations that do not lead to a disconnection are now being removed.
-  [(#2260)](https://github.com/PennyLaneAI/pennylane/pull/2260)
+  - `WireCut` operations that do not lead to a disconnection are now being removed.
+    [(#2260)](https://github.com/PennyLaneAI/pennylane/pull/2260)
+  
+  - Circuit cutting now remaps the wires of fragment circuits to match the available wires on the
+    device.
+    [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
 
 <h3>Improvements</h3>
 
@@ -312,7 +318,10 @@
 
 <h3>Bug fixes</h3>
 
-* The `qml.QubitUnitary` operation now supports jitting.
+* The `qml.RandomLayers` template now decomposes when the weights are a list of lists.
+  [(#2266)](https://github.com/PennyLaneAI/pennylane/pull/2266/)
+
+* The `qml.QubitUnitary` operation now supports jitting. 
   [(#2249)](https://github.com/PennyLaneAI/pennylane/pull/2249)
 
 * Fixes a bug in the JAX interface where ``DeviceArray`` objects
@@ -482,7 +491,7 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Sam Banning, Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
+Sam Banning, Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee, Angus Lowe,
 Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni,
 Antal Száva, David Wierichs
 
