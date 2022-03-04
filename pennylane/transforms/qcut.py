@@ -956,7 +956,7 @@ def cut_circuit(
             for faster tensor contractions of large networks but must be installed separately using,
             e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
             differentiable contraction.
-        device_wires (Wires): Wires of the device that the cut circuits are to be run on
+        device_wires (Wires): wires of the device that the cut circuits are to be run on
 
     Returns:
         Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a
