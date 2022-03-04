@@ -74,7 +74,7 @@ def defer_measurements(tape):
     We can also differentiate parameters passed to conditional operations:
 
     >>> qml.grad(qnode)(par)
-    -0.4962225160675968
+    -0.9924450321351936
 
     .. note::
 
