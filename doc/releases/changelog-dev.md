@@ -295,6 +295,9 @@
     device.
     [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
 
+  - The documentation has been polished.
+    [(#2279)](https://github.com/PennyLaneAI/pennylane/pull/2279)
+
 <h3>Improvements</h3>
 
 * No two-term parameter-shift rule is assumed anymore by default.
