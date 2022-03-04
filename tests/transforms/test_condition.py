@@ -23,6 +23,87 @@ from pennylane.transforms.condition import ConditionalTransformError
 class TestCond:
     """Tests that verify that the cond transform works as expect."""
 
+    def test_cond_queues(self):
+        """Test that qml.cond queues Conditional operations as expected."""
+        r = 1.234
+
+        def f(x):
+            qml.PauliX(1)
+            qml.RY(x, wires=1)
+            qml.PauliZ(1)
+
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(0)
+            qml.cond(m_0, f)(r)
+            qml.probs(wires=1)
+
+        ops = tape.queue
+        target_wire = qml.wires.Wires(1)
+
+        assert len(ops) == 5
+        assert ops[0].return_type == qml.operation.MidMeasure
+
+        assert isinstance(ops[1], qml.transforms.condition.Conditional)
+        assert isinstance(ops[1].then_op, qml.PauliX)
+        assert ops[1].then_op.wires == target_wire
+
+        assert isinstance(ops[2], qml.transforms.condition.Conditional)
+        assert isinstance(ops[2].then_op, qml.RY)
+        assert ops[2].then_op.wires == target_wire
+        assert ops[2].then_op.data == [r]
+
+        assert isinstance(ops[3], qml.transforms.condition.Conditional)
+        assert isinstance(ops[3].then_op, qml.PauliZ)
+        assert ops[3].then_op.wires == target_wire
+
+        assert ops[4].return_type == qml.operation.Probability
+
+
+    def test_cond_queues_with_else(self):
+        """Test that qml.cond queues Conditional operations as expected when an
+        else qfunc is also provided."""
+        r = 1.234
+
+        def f(x):
+            qml.PauliX(1)
+            qml.RY(x, wires=1)
+            qml.PauliZ(1)
+
+        def g(x):
+            qml.PauliY(1)
+
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(0)
+            qml.cond(m_0, f, g)(r)
+            qml.probs(wires=1)
+
+        ops = tape.queue
+        target_wire = qml.wires.Wires(1)
+
+        assert len(ops) == 6
+
+        assert ops[0].return_type == qml.operation.MidMeasure
+
+        assert isinstance(ops[1], qml.transforms.condition.Conditional)
+        assert isinstance(ops[1].then_op, qml.PauliX)
+        assert ops[1].then_op.wires == target_wire
+
+        assert isinstance(ops[2], qml.transforms.condition.Conditional)
+        assert isinstance(ops[2].then_op, qml.RY)
+        assert ops[2].then_op.wires == target_wire
+        assert ops[2].then_op.data == [r]
+
+        assert isinstance(ops[3], qml.transforms.condition.Conditional)
+        assert isinstance(ops[3].then_op, qml.PauliZ)
+        assert ops[3].then_op.wires == target_wire
+
+        assert isinstance(ops[4], qml.transforms.condition.Conditional)
+        assert isinstance(ops[4].then_op, qml.PauliY)
+        assert ops[4].then_op.wires == target_wire
+
+        assert ops[5].return_type == qml.operation.Probability
+
+
     def test_cond_error(self):
         """Test that an error is raised when the qfunc has a measurement."""
         dev = qml.device("default.qubit", wires=3)
