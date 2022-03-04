@@ -151,7 +151,7 @@ def circuit_template(weights):
 def circuit_decomposed(weights):
     # this structure is only true for a seed of 42 and 3 wires
     qml.RX(weights[0, 0], wires=1)
-    qml.RX(weights[0, 1], wires=0)
+    qml.RX(weights[0][1], wires=0)
     qml.CNOT(wires=[1, 0])
     qml.RZ(weights[0, 2], wires=2)
     return qml.expval(qml.PauliZ(0))
@@ -160,6 +160,25 @@ def circuit_decomposed(weights):
 class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
+
+    def test_list_lists(self):
+        """Tests the weights as a list of lists."""
+        weights = [[0.1, -2.1, 1.4]]
+
+        op = qml.RandomLayers(weights, wires=range(3), seed=42)
+
+        decomp = op.decomposition()
+        expected = [
+            qml.RX(weights[0][0], wires=1),
+            qml.RX(weights[0][1], wires=0),
+            qml.CNOT(wires=[1, 0]),
+            qml.RZ(weights[0][2], wires=2),
+        ]
+
+        for op1, op2 in zip(decomp, expected):
+            assert op1.name == op2.name
+            assert op1.data == op2.data
+            assert op1.wires == op2.wires
 
     def test_autograd(self, tol):
         """Tests the autograd interface."""

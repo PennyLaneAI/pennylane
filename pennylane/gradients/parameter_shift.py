@@ -73,42 +73,40 @@ def _get_operation_recipe(tape, t_idx, shifts):
 
     This function performs multiple attempts to obtain the recipe:
 
-    - If ``parameter_frequencies`` yield a result, the frequencies are
+    - If the operation has a custom :attr:`~.grad_recipe` defined, it is used.
+
+    - If :attr:`.parameter_frequencies` yields a result, the frequencies are
       used to construct the general parameter-shift rule via
-      ``qml.gradients.generate_shift_rule``
+      :func:`.generate_shift_rule`.
+      Note that by default, the generator is used to compute the parameter frequencies
+      if they are not provided by a custom implementation.
 
-    - If ``parameter_frequencies`` raises an error (because the operation
-      has no custom ``parameter_frequencies`` and no ``generator`` is defined),
-      the :meth:`.Operator.get_parameter_shift` method is used.
-      If in turn no custom version of ``get_parameter_shift`` is defined
-      and the operation does not have a ``grad_recipe``, the two-term
-      parameter-shift rule is assumed.
-
-    That is, a default to the two-term rule only is returned if no custom
-    ``parameter_frequencies``, ``generator``, ``get_parameter_shift``,
-    and ``grad_recipe`` are defined.
+    That is, the order of precedence is :meth:`~.grad_recipe`, custom
+    :attr:`~.parameter_frequencies`, and finally :meth:`.generator` via the default
+    implementation of the frequencies.
     """
     op, p_idx = tape.get_operation(t_idx)
+
+    # Try to use the stored grad_recipe of the operation
+    recipe = op.grad_recipe[p_idx]
+    if recipe is not None:
+        return process_shifts(np.array(recipe).T, check_duplicates=False)
+
+    # Try to obtain frequencies, either via custom implementation or from generator eigvals
     try:
-        # Obtain frequencies, either via custom implementation or from generator eigvals
         frequencies = op.parameter_frequencies[p_idx]
-        # Create shift rule from frequencies with given shifts
-        coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=1)
-        # The shift rules do not include a rescaling of the parameter, only shifts.
-        mults = np.ones_like(coeffs)
-        return coeffs, mults, shifts
+    except qml.operation.ParameterFrequenciesUndefinedError as e:
+        raise qml.operation.OperatorPropertyUndefined(
+            f"The operation {op.name} does not have a grad_recipe, parameter_frequencies or "
+            "a generator defined. No parameter shift rule can be applied."
+        ) from e
 
-    except qml.operation.OperatorPropertyUndefined:
-        # if no frequencies could be obtained, use the operation's shift rule if present.
-        # Note that the keyword argument ``shift`` only is used for the default two-term rule
-        if shifts is None:
-            use_shift = None
-        else:
-            use_shift = shifts[0]
+    # Create shift rule from frequencies with given shifts
+    coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=1)
+    # The generated shift rules do not include a rescaling of the parameter, only shifts.
+    mults = np.ones_like(coeffs)
 
-        recipe = np.array(op.get_parameter_shift(p_idx, shift=use_shift)).T
-
-        return process_shifts(recipe, check_duplicates=False)
+    return coeffs, mults, shifts
 
 
 def _gradient_analysis(tape, use_graph=True):
@@ -475,13 +473,21 @@ def param_shift(
         U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p}) \vert 0\rangle.
 
 
-    The gradient of this expectation value can be calculated using :math:`2N` expectation
-    values using the parameter-shift rule:
+    The gradient of this expectation value can be calculated via the parameter-shift rule:
 
     .. math::
 
-        \frac{\partial f}{\partial \mathbf{p}} = \frac{1}{2\sin s} \left[ f(\mathbf{p} + s) -
-        f(\mathbf{p} -s) \right].
+        \frac{\partial f}{\partial \mathbf{p}} = \sum_{\mu=1}^{2R}
+        f\left(\mathbf{p}+\frac{2\mu-1}{2R}\pi\right)
+        \frac{(-1)^{\mu-1}}{4R\sin^2\left(\frac{2\mu-1}{4R}\pi\right)}
+
+    Here, :math:`R` is the number of frequencies with which the parameter :math:`\mathbf{p}`
+    enters the function :math:`f` via the operation :math:`U`, and we assumed that these
+    frequencies are equidistant.
+    For more general shift rules, both regarding the shifts and the frequencies, and
+    for more technical details, see
+    `Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_ and
+    `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
 
     **Gradients of variances**
 
@@ -502,17 +508,16 @@ def param_shift(
         \mathbf{p}} \langle \hat{O}^2 \rangle (\mathbf{p})
         - 2 f(\mathbf{p}) \frac{\partial f}{\partial \mathbf{p}}.
 
-    This results in :math:`4N + 1` evaluations.
+    The derivatives in the expression on the right hand side can be computed via
+    the shift rule as above, allowing for the computation of the variance derivative.
 
-    In the case where :math:`O` is involutory (:math:`\hat{O}^2 = I`), the first term in the above
-    expression vanishes, and we are simply left with
+    In the case where :math:`O` is involutory (:math:`\hat{O}^2 = I`), the first
+    term in the above expression vanishes, and we are simply left with
 
     .. math::
 
       \frac{\partial g}{\partial \mathbf{p}} = - 2 f(\mathbf{p})
-      \frac{\partial f}{\partial \mathbf{p}},
-
-    allowing us to compute the gradient using :math:`2N + 1` evaluations.
+      \frac{\partial f}{\partial \mathbf{p}}.
 
     **Example**
 
@@ -530,6 +535,24 @@ def param_shift(
     >>> qml.jacobian(circuit)(params)
     tensor([[-0.38751725, -0.18884792, -0.38355708],
             [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
+
+    .. note::
+
+        ``param_shift`` performs multiple attempts to obtain the gradient recipes for
+        each operation:
+
+        - If an operation has a custom :attr:`~.operation.Operation.grad_recipe` defined,
+          it is used.
+
+        - If :attr:`~.operation.Operation.parameter_frequencies` yields a result, the frequencies
+          are used to construct the general parameter-shift rule via
+          :func:`.generate_shift_rule`.
+          Note that by default, the generator is used to compute the parameter frequencies
+          if they are not provided via a custom implementation.
+
+        That is, the order of precedence is :attr:`~.operation.Operation.grad_recipe`, custom
+        :attr:`~.operation.Operation.parameter_frequencies`, and finally
+        :meth:`~.operation.Operation.generator` via the default implementation of the frequencies.
 
     .. UsageDetails::
 

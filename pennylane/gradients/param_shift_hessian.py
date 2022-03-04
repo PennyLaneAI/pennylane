@@ -281,14 +281,15 @@ def param_shift_hessian(tape, f0=None):
         gate arguments generated from parameter-shift rules:
 
         >>> for h_tape in hessian_tapes:
-        ...     print(h_tape.draw())
-        0: ──RX(0.1)──RY(0.2)──┤ ⟨Z⟩
-        0: ──RX(3.24)──RY(0.2)──┤ ⟨Z⟩
-        0: ──RX(1.67)──RY(1.77)──┤ ⟨Z⟩
-        0: ──RX(-1.47)──RY(1.77)──┤ ⟨Z⟩
-        0: ──RX(1.67)──RY(-1.37)──┤ ⟨Z⟩
-        0: ──RX(-1.47)──RY(-1.37)──┤ ⟨Z⟩
-        0: ──RX(0.1)──RY(3.34)──┤ ⟨Z⟩
+        ...     print(qml.drawer.tape_text(h_tape, decimals=1))
+        0: ──RX(0.1)──RY(0.2)─┤  <Z>
+        0: ──RX(3.2)──RY(0.2)─┤  <Z>
+        0: ──RX(1.7)──RY(1.8)─┤  <Z>
+        0: ──RX(-1.5)──RY(1.8)─┤  <Z>
+        0: ──RX(1.7)──RY(-1.4)─┤  <Z>
+        0: ──RX(-1.5)──RY(-1.4)─┤  <Z>
+        0: ──RX(0.1)──RY(3.3)─┤  <Z>
+
     """
 
     # Perform input validation before generating tapes.
