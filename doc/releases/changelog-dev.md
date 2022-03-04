@@ -4,6 +4,34 @@
 
 <h3>New features since last release</h3>
 
+* A new operation `qml.Snapshot` has been added to assist users in debugging quantum progams.
+  The instruction is used to save the internal state of simulator devices at arbitrary points of
+  execution, such as the quantum state vector and density matrix in the qubit case, or the
+  covariance matrix and vector of means in the continuous variable case. The saved states can be
+  retrieved in the form of a dictionary via the top-level `qml.snapshots` function.
+  [(#2233)](https://github.com/PennyLaneAI/pennylane/pull/2233)
+
+  ```py
+  dev = qml.device("default.qubit", wires=2)
+  
+  @qml.qnode(dev, interface=None)
+  def circuit():
+      qml.Snapshot()
+      qml.Hadamard(wires=0)
+      qml.Snapshot("very_important_state")
+      qml.CNOT(wires=[0, 1])
+      qml.Snapshot()
+      return qml.expval(qml.PauliX(0))
+  ```
+
+  ```pycon
+  >>> qml.snapshots(circuit)()
+  {0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),
+   'very_important_state': array([0.70710678+0.j, 0.        +0.j, 0.70710678+0.j, 0.        +0.j]),
+   2: array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j]),
+   'execution_results': array(0.)}
+  ```
+
 * New functions and transforms of operators have been added. These include:
 
   - `qml.matrix()` for computing the matrix representation of one or more unitary operators.
@@ -140,6 +168,7 @@
   rule is now automatically used by `qml.gradients.param_shift`.
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
   [(#2182)](https://github.com/PennyLaneAI/pennylane/pull/2182)
+  [(#2227)](https://github.com/PennyLaneAI/pennylane/pull/2227)
 
   The frequencies can be used for circuit analysis, optimization
   via the `RotosolveOptimizer` and differentiation with the
@@ -150,14 +179,9 @@
   By default, the frequencies will be obtained from the
   `generator` property (if it is defined).
 
-  When using `qml.gradients.param_shift`, the parameter frequencies
-  are used to obtain the shift rule for the operation.
-
-  For operations that are registered to have an analytic gradient
-  method but that do not provide parameter frequencies, the
-  `grad_recipe` of the operation will be used for differentiation
-  instead. If there is no `grad_recipe`, the standard two-term shift
-  rule will be used.
+  When using `qml.gradients.param_shift`, either a custom `grad_recipe`
+  or the parameter frequencies are used to obtain the shift rule
+  for the operation, in that order of preference.
 
   See [Vidal and Theis (2018)](https://arxiv.org/abs/1812.06323)
   and [Wierichs et al. (2021)](https://arxiv.org/abs/2107.12390)
@@ -192,7 +216,7 @@
 
   - The postprocessing function for the `cut_circuit` transform has been added.
     [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
-
+    
   - The `cut_circuit` transform has been added.
     [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216)
 
@@ -224,6 +248,15 @@
   support just-in-time compilation with `jax.jit`.
   [(#1894)](https://github.com/PennyLaneAI/pennylane/pull/1894/)
 
+* No two-term parameter-shift rule is assumed anymore by default.
+  [(#2227)](https://github.com/PennyLaneAI/pennylane/pull/2227)
+
+  Previously, operations marked for analytic differentiation that
+  do not provide a `generator`, `parameter_frequencies` or a
+  custom `grad_recipe` were assumed to satisfy the two-term shift
+  rule. This now has to be made explicit for custom operations
+  by adding any of the above attributes.
+
 * The `qml.draw_mpl` transform supports a `expansion_strategy` keyword argument.
   [(#2271)](https://github.com/PennyLaneAI/pennylane/pull/2271/)
 
@@ -235,7 +268,7 @@
   efficiently measuring the `N`-qubit Pauli group with `3 ** N`
   qubit-wise commuting terms.
   [(#2185)](https://github.com/PennyLaneAI/pennylane/pull/2185)
-  
+
   ```pycon
   >>> qml.grouping.partition_pauli_group(2)
   [['II', 'IZ', 'ZI', 'ZZ'],
@@ -252,10 +285,18 @@
 <h3>Breaking changes</h3>
 
 * The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
-  The single `wires` keyword should be all the control wires followed by a single target wire. 
+  The single `wires` keyword should be all the control wires followed by a single target wire.
   [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
 
 <h3>Deprecations</h3>
+
+* The `qml.operation.Operation.get_parameter_shift` method has been deprecated
+  and will be removed in a future release.
+  [#2227](https://github.com/PennyLaneAI/pennylane/pull/2227)
+
+  Instead, the functionalities for general parameter-shift rules in the
+  `qml.gradients` module should be used, together with the operation attributes
+  `parameter_frequencies` or `grad_recipe`.
 
 * The `qml.finite_diff()` function has been deprecated and will be removed
   in an upcoming release. Instead,
@@ -443,7 +484,6 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Olivia Di Matteo, Anthony Hayes, Josh Izaac, Christina Lee, Angus Lowe,
+Thomas Bromley, Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Christina Lee, Angus Lowe,
 Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni,
 Antal Száva, David Wierichs
-
