@@ -526,8 +526,11 @@ class QNode:
 
         # Apply the deferred measurement principle if the device doesn't
         # support mid-circuit measurements natively
-        # TODO: change once mid-circuit measurements are not considered as tape
+        # TODO:
+        # 1. Change once mid-circuit measurements are not considered as tape
         # operations
+        # 2. Move this expansion to Device (e.g., default_expand_fn or
+        # batch_transform method)
         if any(
             getattr(obs, "return_type", None) == qml.operation.MidMeasure
             for obs in self.tape.operations
