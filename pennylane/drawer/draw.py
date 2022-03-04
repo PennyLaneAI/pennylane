@@ -86,195 +86,22 @@ def _add_measurement(m, layer_str, wire_map, decimals, cache):
 # pylint: disable=too-many-arguments
 @multimethod
 def draw(
-    tape: qml.tape.QuantumTape,
+    circuit: qml.tape.QuantumTape,
     wire_order=None,
     show_all_wires=False,
-    decimals=None,
+    decimals=2,
     max_length=100,
     show_matrices=False,
     cache=None,
+    expansion_strategy=None
 ):
-    """Text based diagram for a Quantum Tape.
-
-    Args:
-        tape (QuantumTape): the operations and measurements to draw
-
-    Keyword Args:
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
-        show_all_wires (bool): If True, all wires, including empty wires, are printed.
-        decimals (int): How many decimal points to include when formatting operation parameters.
-            Default ``None`` will omit parameters from operation labels.
-        max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
-            begin anew beneath the previous lines.
-        show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
-        cache (dict): Used to store information between recursive calls. Necessary keys are ``'tape_offset'``
-            and ``'matrices'``.
-
-    Returns:
-        str : String based graphic of the circuit.
-
-    **Example:**
-
-    .. code-block:: python
-
-        with qml.tape.QuantumTape() as tape:
-            qml.QFT(wires=(0, 1, 2))
-            qml.RX(1.234, wires=0)
-            qml.RY(1.234, wires=1)
-            qml.RZ(1.234, wires=2)
-            qml.Toffoli(wires=(0, 1, "aux"))
-
-            qml.expval(qml.PauliZ("aux"))
-            qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
-            qml.probs(wires=(0, 1, 2, "aux"))
-
-    >>> print(tape_text(tape))
-      0: ─╭QFT──RX─╭C─┤ ╭Var[Z@Z] ╭Probs
-      1: ─├QFT──RY─├C─┤ ╰Var[Z@Z] ├Probs
-      2: ─╰QFT──RZ─│──┤           ├Probs
-    aux: ──────────╰X─┤  <Z>      ╰Probs
-
-    .. UsageDetails::
-
-    By default, parameters are omitted. By specifying the ``decimals`` keyword, parameters
-    are displayed to the specified precision. Matrix-valued parameters are never displayed.
-
-    >>> print(tape_text(tape, decimals=2))
-      0: ─╭QFT──RX(1.23)─╭C─┤ ╭Var[Z@Z] ╭Probs
-      1: ─├QFT──RY(1.23)─├C─┤ ╰Var[Z@Z] ├Probs
-      2: ─╰QFT──RZ(1.23)─│──┤           ├Probs
-    aux: ────────────────╰X─┤  <Z>      ╰Probs
-
-
-    The ``max_length`` keyword wraps long circuits:
-
-    .. code-block:: python
-
-        rng = np.random.default_rng(seed=42)
-        shape = qml.StronglyEntanglingLayers.shape(n_wires=5, n_layers=5)
-        params = rng.random(shape)
-        tape2 = qml.StronglyEntanglingLayers(params, wires=range(5)).expand()
-        print(tape_text(tape2, max_length=60))
-
-
-    .. code-block:: none
-
-        0: ──Rot─╭C──────────╭X──Rot─╭C───────╭X──Rot──────╭C────╭X
-        1: ──Rot─╰X─╭C───────│───Rot─│──╭C────│──╭X────Rot─│──╭C─│─
-        2: ──Rot────╰X─╭C────│───Rot─╰X─│──╭C─│──│─────Rot─│──│──╰C
-        3: ──Rot───────╰X─╭C─│───Rot────╰X─│──╰C─│─────Rot─╰X─│────
-        4: ──Rot──────────╰X─╰C──Rot───────╰X────╰C────Rot────╰X───
-
-        ───Rot───────────╭C─╭X──Rot──────╭C──────────────╭X─┤
-        ──╭X────Rot──────│──╰C─╭X────Rot─╰X───╭C─────────│──┤
-        ──│────╭X────Rot─│─────╰C───╭X────Rot─╰X───╭C────│──┤
-        ──╰C───│─────Rot─│──────────╰C───╭X────Rot─╰X─╭C─│──┤
-        ───────╰C────Rot─╰X──────────────╰C────Rot────╰X─╰C─┤
-
-
-    The ``wire_order`` keyword specifies the order of the wires from
-    top to bottom:
-
-    >>> print(tape_text(tape, wire_order=["aux", 2, 1, 0]))
-    aux: ──────────╭X─┤  <Z>      ╭Probs
-      2: ─╭QFT──RZ─│──┤           ├Probs
-      1: ─├QFT──RY─├C─┤ ╭Var[Z@Z] ├Probs
-      0: ─╰QFT──RX─╰C─┤ ╰Var[Z@Z] ╰Probs
-
-    If the wire order contains empty wires, they are only shown if the ``show_all_wires=True``.
-
-    >>> print(tape_text(tape, wire_order=["a", "b", "aux", 0, 1, 2], show_all_wires=True))
-      a: ─────────────┤
-      b: ─────────────┤
-    aux: ──────────╭X─┤  <Z>      ╭Probs
-      0: ─╭QFT──RX─├C─┤ ╭Var[Z@Z] ├Probs
-      1: ─├QFT──RY─╰C─┤ ╰Var[Z@Z] ├Probs
-      2: ─╰QFT──RZ────┤           ╰Probs
-
-    Matrix valued parameters are always denoted by ``M`` followed by an integer corresponding to
-    unique matrices.  The list of unique matrices can be printed at the end of the diagram by
-    selecting ``show_matrices=True``:
-
-    .. code-block:: python
-
-        with qml.tape.QuantumTape() as tape:
-            qml.QubitUnitary(np.eye(2), wires=0)
-            qml.QubitUnitary(np.eye(2), wires=1)
-            qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))
-
-    >>> print(tape_text(tape, show_matrices=True))
-    0: ──U(M0)─┤ ╭<𝓗(M1)>
-    1: ──U(M0)─┤ ╰<𝓗(M1)>
-    M0 =
-    [[1. 0.]
-    [0. 1.]]
-    M1 =
-    [[1. 0. 0. 0.]
-    [0. 1. 0. 0.]
-    [0. 0. 1. 0.]
-    [0. 0. 0. 1.]]
-
-    An existing matrix cache can be passed via the ``cache`` keyword. Note that the dictionary
-    passed to ``cache`` will be modified during execution to contain any new matrices and the
-    tape offset.
-
-    >>> cache = {'matrices': [-np.eye(3)]}
-    >>> print(tape_text(tape, show_matrices=True, cache=cache))
-    0: ──U(M1)─┤ ╭<𝓗(M2)>
-    1: ──U(M1)─┤ ╰<𝓗(M2)>
-    M0 =
-    [[-1. -0. -0.]
-    [-0. -1. -0.]
-    [-0. -0. -1.]]
-    M1 =
-    [[1. 0.]
-    [0. 1.]]
-    M2 =
-    [[1. 0. 0. 0.]
-    [0. 1. 0. 0.]
-    [0. 0. 1. 0.]
-    [0. 0. 0. 1.]]
-    >>> cache
-    {'matrices': [tensor([[-1., -0., -0.],
-        [-0., -1., -0.],
-        [-0., -0., -1.]], requires_grad=True), tensor([[1., 0.],
-        [0., 1.]], requires_grad=True), tensor([[1., 0., 0., 0.],
-        [0., 1., 0., 0.],
-        [0., 0., 1., 0.],
-        [0., 0., 0., 1.]], requires_grad=True)], 'tape_offset': 0}
-
-    When the provided tape has nested tapes inside, this function is called recursively.
-    To maintain numbering of tapes to arbitrary levels of nesting, the ``cache`` keyword
-    uses the ``"tape_offset"`` value to determine numbering. Note that the value is updated
-    during the call.
-
-    .. code-block:: python
-
-        with qml.tape.QuantumTape() as tape:
-            with qml.tape.QuantumTape() as tape_inner:
-                qml.PauliX(0)
-
-        cache = {'tape_offset': 3}
-        print(tape_text(tape, cache=cache))
-        print("New tape offset: ", cache['tape_offset'])
-
-
-    .. code-block:: none
-
-        0: ──Tape:3─┤
-
-        Tape:3
-        0: ──X─┤
-        New tape offset:  4
-
-    """
     cache = cache or {}
     cache.setdefault("tape_offset", 0)
     cache.setdefault("matrices", [])
     tape_cache = []
 
     wire_map = convert_wire_order(
-        tape.operations + tape.measurements, wire_order=wire_order, show_all_wires=show_all_wires
+        circuit.operations + circuit.measurements, wire_order=wire_order, show_all_wires=show_all_wires
     )
     n_wires = len(wire_map)
     if n_wires == 0:
@@ -288,8 +115,8 @@ def draw(
     finished_lines = []
 
     layers_list = [
-        drawable_layers(tape.operations, wire_map=wire_map),
-        drawable_layers(tape.measurements, wire_map=wire_map),
+        drawable_layers(circuit.operations, wire_map=wire_map),
+        drawable_layers(circuit.measurements, wire_map=wire_map),
     ]
     add_list = [_add_op, _add_measurement]
     fillers = ["─", " "]
@@ -352,25 +179,28 @@ def draw(
 
 @multimethod
 def draw(
-    qnode: qml.QNode,
+    circuit: qml.QNode,
     wire_order=None,
     show_all_wires=False,
     decimals=2,
     max_length=100,
     show_matrices=False,
     expansion_strategy=None,
+    cache=None
 ):
     """Create a function that draws the given qnode.
 
      Args:
-         qnode (.QNode): the input QNode that is to be drawn.
+         circuit (qml.QNode/ qml.tape.QuantumTape): the input QNode or Quantum Tape that is to be drawn
          wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
          show_all_wires (bool): If True, all wires, including empty wires, are printed.
          decimals (int): How many decimal points to include when formatting operation parameters.
              ``None`` will omit parameters from operation labels.
          max_length (int): Maximum string width (columns) when printing the circuit
          show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
-         expansion_strategy (str): The strategy to use when circuit expansions or decompositions
+        cache (dict): QuantumTape input only. Used to store information between recursive calls. Keys are ``'tape_offset'``
+            and ``'matrices'``.
+         expansion_strategy (str): QNode input only. The strategy to use when circuit expansions or decompositions
              are required.
 
              - ``gradient``: The QNode will attempt to decompose
@@ -509,18 +339,18 @@ def draw(
          0: ──RX(0.90)─┤  <Z>
 
      """
-    @wraps(qnode)
+    @wraps(circuit)
     def wrapper(*args, **kwargs):
 
-        original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+        original_expansion_strategy = getattr(circuit, "expansion_strategy", None)
 
         try:
-            qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-            tapes = qnode.construct(args, kwargs)
+            circuit.expansion_strategy = expansion_strategy or original_expansion_strategy
+            tapes = circuit.construct(args, kwargs)
         finally:
-            qnode.expansion_strategy = original_expansion_strategy
+            circuit.expansion_strategy = original_expansion_strategy
 
-        _wire_order = wire_order or qnode.device.wires
+        _wire_order = wire_order or circuit.device.wires
 
         if tapes is not None:
             cache = {"tape_offset": 0, "matrices": []}
@@ -544,7 +374,7 @@ def draw(
             return "\n\n".join(res)
 
         return draw(
-            qnode.qtape,
+            circuit.tape,
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
