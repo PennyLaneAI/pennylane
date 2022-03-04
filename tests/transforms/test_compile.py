@@ -90,11 +90,10 @@ class TestCompile:
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
         transformed_result = transformed_qnode(0.3, 0.4, 0.5)
 
-        names_expected = ["Hadamard", "CNOT", "RZ", "RX", "CY", "PauliY"]
+        names_expected = ["Hadamard", "CNOT", "RX", "CY", "PauliY"]
         wires_expected = [
             Wires(wires[0]),
             Wires([wires[2], wires[1]]),
-            Wires(wires[2]),
             Wires(wires[0]),
             Wires([wires[1], wires[2]]),
             Wires(wires[2]),
@@ -185,11 +184,10 @@ class TestCompileIntegration:
         transformed_result = transformed_qnode(0.3, 0.4, 0.5)
         assert np.allclose(original_result, transformed_result)
 
-        names_expected = ["Hadamard", "CNOT", "RZ", "RX", "CY", "PauliY"]
+        names_expected = ["Hadamard", "CNOT", "RX", "CY", "PauliY"]
         wires_expected = [
             Wires(wires[0]),
             Wires([wires[2], wires[1]]),
-            Wires(wires[2]),
             Wires(wires[0]),
             Wires([wires[1], wires[2]]),
             Wires(wires[2]),
@@ -209,7 +207,7 @@ class TestCompileIntegration:
         pipeline = [
             commute_controlled(direction="left"),
             cancel_inverses,
-            merge_rotations(),
+            merge_rotations(atol=1e-6),
         ]
 
         transformed_qfunc = compile(pipeline=pipeline)(qfunc)
@@ -219,10 +217,9 @@ class TestCompileIntegration:
         transformed_result = transformed_qnode(0.3, 0.4, 0.5)
         assert np.allclose(original_result, transformed_result)
 
-        names_expected = ["Hadamard", "RZ", "CNOT", "RX", "PauliY", "CY"]
+        names_expected = ["Hadamard", "CNOT", "RX", "PauliY", "CY"]
         wires_expected = [
             Wires(wires[0]),
-            Wires(wires[2]),
             Wires([wires[2], wires[1]]),
             Wires(wires[0]),
             Wires(wires[2]),
@@ -251,10 +248,9 @@ class TestCompileIntegration:
         transformed_result = transformed_qnode(0.3, 0.4, 0.5)
         assert np.allclose(original_result, transformed_result)
 
-        names_expected = ["Hadamard", "RZ", "CNOT", "RX", "PauliY", "CY"]
+        names_expected = ["Hadamard", "CNOT", "RX", "PauliY", "CY"]
         wires_expected = [
             Wires(wires[0]),
-            Wires(wires[2]),
             Wires([wires[2], wires[1]]),
             Wires(wires[0]),
             Wires(wires[2]),
