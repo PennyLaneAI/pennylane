@@ -18,6 +18,8 @@ import itertools
 import copy
 from collections import OrderedDict
 
+import numpy as np
+
 import pennylane as qml
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
@@ -110,9 +112,13 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
         if pattern.measurements:
             raise qml.QuantumFunctionError("The pattern contains measurements.")
 
-        # Verify that the pattern is implementing the identity #TODO
+        # Verify that the pattern is implementing the identity
+        if not np.allclose(qml.matrix(pattern), np.eye(2**pattern.num_wires)):
+            raise qml.QuantumFunctionError("Pattern is not valid, it does not implement identity.")
 
-        # Verify that the pattern has less qubits and less gates #TODO
+        # Verify that the pattern has less qubits or same number of qubits
+        if tape.num_wires < pattern.num_wires:
+            raise qml.QuantumFunctionError("Circuit has less qubits than the pattern.")
 
         # Construct Dag representation of the circuit and the pattern.
         circuit_dag = commutation_dag(tape)()
@@ -225,7 +231,6 @@ def pattern_matching(circuit_dag, pattern_dag):
                             qubits_conf = _merge_first_match_and_permutation(
                                 first_match_qubits_conf, not_fixed_qubits_conf_permuted
                             )
-
                             # Update wires, target_wires, control_wires
                             wires, target_wires, control_wires = _update_qubits(
                                 circuit_dag, qubits_conf
@@ -354,8 +359,8 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
                     node_circuit_perm = control_permuted + circuit_target
                     first_match_qubits_sub[q] = node_circuit_perm[node_p.wires.index(q)]
                 first_match_qubits.append(first_match_qubits_sub)
-        # Symmetric target gate (target wires can be permuted) (For example CCSWAP)
-        else:  # pragma: no cover
+        # Symmetric target gate (target wires can be permuted) (For example CSWAP)
+        else:
             for control_permuted in itertools.permutations(circuit_control):
                 control_permuted = list(control_permuted)
                 for target_permuted in itertools.permutations(circuit_target):
@@ -364,7 +369,7 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
                     for q in node_p.wires:
                         node_circuit_perm = control_permuted + target_permuted
                         first_match_qubits_sub[q] = node_circuit_perm[node_p.wires.index(q)]
-                    first_match_qubits.append(first_match_qubits)
+                    first_match_qubits.append(first_match_qubits_sub)
     # Not controlled
     else:
         # Not symmetric gate (target wires cannot be permuted)
@@ -490,8 +495,24 @@ def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2)
         target2 (list(int)): Target wires of the second node.
     """
     # pylint: disable=too-many-instance-attributes, too-many-arguments
+
+    control_base = {
+        "CNOT": "PauliX",
+        "CZ": "PauliZ",
+        "CY": "PauliY",
+        "CSWAP": "SWAP",
+        "Toffoli": "PauliX",
+        "ControlledPhaseShift": "PhaseShift",
+        "CRX": "RX",
+        "CRY": "RY",
+        "CRZ": "RZ",
+        "CRot": "Rot",
+        "MultiControlledX": "PauliX",
+        "ControlledOperation": "ControlledOperation",
+    }
+
     if control1 and set(control1) == set(control2):
-        if node1.op.name in symmetric_over_all_wires and set(target1) == set(target2):
+        if control_base[node1.op.name] in symmetric_over_all_wires and set(target1) == set(target2):
             return True
         if target1 == target2:
             return True
@@ -719,7 +740,6 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
 
             # For loop over the candidates from the pattern to find a match.
             for i in self.candidates:
-
                 # Break the for loop if a match is found.
                 if match:
                     break
@@ -779,11 +799,6 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
                 self.circuit_blocked[label] = True
                 for succ in v[1].successors:
                     self.circuit_blocked[succ] = True
-                    if self.circuit_matched_with[succ]:
-                        self.match.remove([self.circuit_matched_with[succ][0], succ])
-                        match_id = self.circuit_matched_with[succ][0]
-                        self.pattern_matched_with[match_id] = []
-                        self.circuit_matched_with[succ] = []
 
 
 class Match:  # pylint: disable=too-few-public-methods
@@ -1035,6 +1050,7 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
                 wires2 = self.pattern_dag.get_node(pattern_id).wires
                 control_wires2 = self.pattern_dag.get_node(pattern_id).control_wires
                 target_wires2 = self.pattern_dag.get_node(pattern_id).target_wires
+
                 # Necessary but not sufficient conditions for a match to happen.
                 if (
                     len(wires1) != len(wires2)
@@ -1042,7 +1058,6 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
                     or node_circuit.op.name != node_pattern.op.name
                 ):
                     continue
-
                 # Compare two operations
                 if _compare_operation_without_qubits(node_circuit, node_pattern):
                     if _compare_qubits(
@@ -1400,6 +1415,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 "CNOT": 2,
                 "CZ": 4,
                 "SWAP": 6,
+                "CSWAP": 63,
                 "Toffoli": 21,
             }
 
