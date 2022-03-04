@@ -108,33 +108,20 @@ def cond(measurement, then_func, else_func=None):
             "Only quantum functions that contain no measurements can be applied conditionally."
         )
 
-        if else_func is None:
+        @wraps(then_func)
+        def wrapper(*args, **kwargs):
+            # We assume that the callable is a quantum function
 
-            @wraps(then_func)
-            def wrapper(*args, **kwargs):
-                # We assume that the callable is a quantum function
-                tape = make_tape(then_func)(*args, **kwargs)
+            # 1. Apply then_func conditionally
+            tape = make_tape(then_func)(*args, **kwargs)
 
-                if tape.measurements:
-                    raise ConditionalTransformError(with_meas_err)
+            if tape.measurements:
+                raise ConditionalTransformError(with_meas_err)
 
-                for op in tape.operations:
-                    Conditional(measurement, op)
+            for op in tape.operations:
+                Conditional(measurement, op)
 
-        else:
-
-            @wraps(then_func)
-            def wrapper(*args, **kwargs):
-
-                # 1. Apply then_func conditionally
-                tape = make_tape(then_func)(*args, **kwargs)
-
-                if tape.measurements:
-                    raise ConditionalTransformError(with_meas_err)
-
-                for op in tape.operations:
-                    Conditional(measurement, op)
-
+            if else_func is not None:
                 # 2. Apply else_func conditionally
                 else_tape = make_tape(else_func)(*args, **kwargs)
 
