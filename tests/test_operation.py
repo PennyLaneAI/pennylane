@@ -152,20 +152,6 @@ class TestOperatorConstruction:
 class TestOperationConstruction:
     """Test custom operations construction."""
 
-    def test_incorrect_grad_recipe_length(self):
-        """Test that an exception is raised if len(grad_recipe)!=len(num_params)"""
-
-        class DummyOp(qml.operation.CVOperation):
-            r"""Dummy custom operation"""
-            num_wires = 2
-            grad_method = "A"
-            grad_recipe = [(0.5, 0.1), (0.43, 0.1)]
-
-        with pytest.raises(
-            AssertionError, match="Gradient recipe must have one entry for each parameter"
-        ):
-            DummyOp(0.5, wires=[0, 1])
-
     def test_grad_recipe_parameter_dependent(self):
         """Test that an operation with a gradient recipe that depends on
         its instantiated parameter values works correctly"""
