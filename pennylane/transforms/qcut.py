@@ -937,11 +937,6 @@ def cut_circuit(
     """
     Batch transform for circuit cutting.
 
-    .. note::
-
-        This function is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
-
     Args:
         tape (QuantumTape): The tape of the full circuit to be cut.
         use_opt_einsum (bool): Determines whether to use the
