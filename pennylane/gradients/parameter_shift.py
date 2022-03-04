@@ -473,13 +473,21 @@ def param_shift(
         U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p}) \vert 0\rangle.
 
 
-    The gradient of this expectation value can be calculated using :math:`2N` expectation
-    values using the parameter-shift rule:
+    The gradient of this expectation value can be calculated via the parameter-shift rule:
 
     .. math::
 
-        \frac{\partial f}{\partial \mathbf{p}} = \frac{1}{2\sin s} \left[ f(\mathbf{p} + s) -
-        f(\mathbf{p} -s) \right].
+        \frac{\partial f}{\partial \mathbf{p}} = \sum_{\mu=1}^{2R}
+        f\left(\mathbf{p}+\frac{2\mu-1}{2R}\pi\right)
+        \frac{(-1)^{\mu-1}}{4R\sin^2\left(\frac{2\mu-1}{4R}\pi\right)}
+
+    Here, :math:`R` is the number of frequencies with which the parameter :math:`\mathbf{p}`
+    enters the function :math`f` via the operation :math:`U` and we assumed that these
+    frequencies are equidistant.
+    For more general shift rules, both regarding the shifts and the frequencies, and
+    for more technical details, see
+    `Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_ and
+    `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
 
     **Gradients of variances**
 
@@ -500,17 +508,16 @@ def param_shift(
         \mathbf{p}} \langle \hat{O}^2 \rangle (\mathbf{p})
         - 2 f(\mathbf{p}) \frac{\partial f}{\partial \mathbf{p}}.
 
-    This results in :math:`4N + 1` evaluations.
+    The derivatives in the expression on the right hand side can be computed via
+    the shift rule as above, allowing for the computation of the variance derivative.
 
-    In the case where :math:`O` is involutory (:math:`\hat{O}^2 = I`), the first term in the above
-    expression vanishes, and we are simply left with
+    In the case where :math:`O` is involutory (:math:`\hat{O}^2 = I`), the first
+    term in the above expression vanishes, and we are simply left with
 
     .. math::
 
       \frac{\partial g}{\partial \mathbf{p}} = - 2 f(\mathbf{p})
-      \frac{\partial f}{\partial \mathbf{p}},
-
-    allowing us to compute the gradient using :math:`2N + 1` evaluations.
+      \frac{\partial f}{\partial \mathbf{p}}.
 
     **Example**
 
@@ -528,6 +535,23 @@ def param_shift(
     >>> qml.jacobian(circuit)(params)
     tensor([[-0.38751725, -0.18884792, -0.38355708],
             [ 0.69916868,  0.34072432,  0.69202365]], requires_grad=True)
+
+    .. note::
+
+        ``param_shift`` performs multiple attempts to obtain the gradient recipes for
+        each operation:
+
+        - If an operation has a custom :attr:`~.grad_recipe` defined, it is used.
+
+        - If :attr:`.parameter_frequencies` yields a result, the frequencies are
+          used to construct the general parameter-shift rule via
+          :func:`.generate_shift_rule`.
+          Note that by default, the generator is used to compute the parameter frequencies
+          if they are not provided via a custom implementation.
+
+        That is, the order of precedence is :meth:`~.grad_recipe`, custom
+        :attr:`~.parameter_frequencies`, and finally :meth:`.generator` via the default
+        implementation of the frequencies.
 
     .. UsageDetails::
 

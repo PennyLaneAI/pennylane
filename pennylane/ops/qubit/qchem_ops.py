@@ -81,7 +81,7 @@ class SingleExcitation(Operation):
     """Gradient computation method."""
 
     parameter_frequencies = [(0.5, 1.0)]
-    """Frequencies with which parameter enter circuit."""
+    """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
         w1, w2 = self.wires
@@ -194,7 +194,7 @@ class SingleExcitationMinus(Operation):
     """Gradient computation method."""
 
     parameter_frequencies = [(1,)]
-    """Frequencies with which parameter enter circuit."""
+    """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
         w1, w2 = self.wires
@@ -334,7 +334,7 @@ class SingleExcitationPlus(Operation):
     """Gradient computation method."""
 
     parameter_frequencies = [(1,)]
-    """Frequencies with which parameter enter circuit."""
+    """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
         w1, w2 = self.wires
@@ -498,7 +498,7 @@ class DoubleExcitation(Operation):
     """Gradient computation method."""
 
     parameter_frequencies = [(0.5, 1.0)]
-    """Frequencies with which parameter enter circuit."""
+    """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
         w0, w1, w2, w3 = self.wires
@@ -676,7 +676,7 @@ class DoubleExcitationPlus(Operation):
     """Gradient computation method."""
 
     parameter_frequencies = [(1,)]
-    """Frequencies with which parameter enter circuit."""
+    """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
         G = -1 * np.eye(16, dtype=np.complex64)
@@ -772,7 +772,7 @@ class DoubleExcitationMinus(Operation):
     """Gradient computation method."""
 
     parameter_frequencies = [(1,)]
-    """Frequencies with which parameter enter circuit."""
+    """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
         G = np.eye(16, dtype=np.complex64)
@@ -890,7 +890,7 @@ class OrbitalRotation(Operation):
     """Gradient computation method."""
 
     parameter_frequencies = [(0.5, 1.0, 1.5, 2.0)]
-    """Frequencies with which parameter enter circuit."""
+    """Frequencies of the operation parameter with respect to an expectation value."""
 
     def generator(self):
         w0, w1, w2, w3 = self.wires

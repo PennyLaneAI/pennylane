@@ -257,6 +257,14 @@
 
 <h3>Deprecations</h3>
 
+* The `qml.operation.Operation.get_parameter_shift` method has been deprecated
+  and will be removed in a future release.
+  [#2227](https://github.com/PennyLaneAI/pennylane/pull/2227)
+
+  Instead, the functionalities for general parameter-shift rules in the
+  `qml.gradients` module should be used, together with the operation attributes
+  `parameter_frequencies` or `grad_recipe`.
+
 * The `qml.finite_diff()` function has been deprecated and will be removed
   in an upcoming release. Instead,
   `qml.gradients.finite_diff()` can be used to compute purely quantum gradients

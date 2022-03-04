@@ -196,6 +196,7 @@ class QubitParamShiftTape(JacobianTape):
             in addition to a post-processing function to be applied to the evaluated
             tapes.
         """
+        # pylint: disable=unused-argument
         op, p_idx = self.get_operation(idx)
         param_shift = _get_operation_recipe(op, p_idx, None)
 

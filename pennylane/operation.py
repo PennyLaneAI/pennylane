@@ -1136,29 +1136,20 @@ class Operation(Operator):
     Operations define some additional properties, that are used for external
     transformations such as gradient transforms.
 
-    The first optional class attribute is :attr:`~.Operation.grad_recipe`.
-    It allows the definition of a hard-coded differentiation rule, which
-    typically will encode a parameter-shift rule. Note, however, that
-    operations will use ``grad_recipe`` preferably, so that the rule
-    can not be modified dynamically at runtime.
+    The following three class attributes are optional, but in most cases
+    at least one should be clearly defined to avoid unexpected behavior during
+    differentiation.
 
-    The second optional attribute is :attr:`~.Operation.parameter_frequencies`.
-    It allows to dynamically create differentiation rules for the operation,
-    respecting runtime settings for shift rules.
-    In addition, certain quantum optimizers can make use of ``parameter_frequencies``.
+    * :attr:`~.Operation.grad_recipe`
+    * :attr:`~.Operation.parameter_frequencies`
+    * :attr:`~.Operation.generator`
 
-    The third optional information is :attr:`~.Operation.generator`.
-    On one hand it will be used by quantum-aware optimizers and for Hadamard
-    test-based computation of differentiated quantities like the
-    :func:`~.transforms.metric_tensor`.
-    On the other hand, the eigenvalues of the ``generator`` fully determine the
-    ``parameter_frequencies`` and they will be obtained from it as a fallback
-    method.
-
-    Finally, the optional attribute :attr:`~.Operation.grad_method` can be used
-    to specify the differentiation behaviour. By default, it will be based
-    on whether the operation has parameters and which of the three above
-    attributes it provides.
+    Note that ``grad_recipe`` takes precedence when computing parameter-shift
+    derivatives. Finally, these optional class attributes are used by certain
+    transforms, quantum optimizers, and gradient methods.
+    For details on how they are used during differentiation and other transforms,
+    please see the documentation for :class:`~.gradients.param_shift`,
+    :class:`~.metric_tensor`, :func:`~.reconstruct`.
 
     Args:
         params (tuple[tensor_like]): trainable parameters
@@ -1321,7 +1312,8 @@ class Operation(Operator):
             return qml.gradients.eigvals_to_frequencies(eigvals)
 
         raise ParameterFrequenciesUndefinedError(
-            f"Operation {self.name} does not have parameter frequencies defined."
+            f"Operation {self.name} does not have parameter frequencies defined, "
+            "and parameter frequencies can not be computed as no generator is defined."
         )
 
     @property

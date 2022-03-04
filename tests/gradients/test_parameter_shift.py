@@ -305,11 +305,16 @@ class TestParamShift:
         assert np.allclose(j1, [exp, 0])
         assert np.allclose(j2, [0, exp])
 
-    def test_grad_recipe_parameter_dependent(self):
+    def test_grad_recipe_parameter_dependent(self, monkeypatch):
         """Test that an operation with a gradient recipe that depends on
         its instantiated parameter values works correctly within the parameter
         shift rule. Also tests that grad_recipes supersedes paramter_frequencies.
         """
+
+        def fail(*args, **kwargs):
+            raise qml.operation.ParameterFrequenciesUndefinedError
+
+        monkeypatch.setattr(qml.RX, "parameter_frequencies", fail)
 
         class RX(qml.RX):
             @property
