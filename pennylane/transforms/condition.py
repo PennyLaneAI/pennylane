@@ -101,25 +101,8 @@ def cond(measurement, then_func, else_func=None):
             qml.cond(m_0, qml.RZ)(sec_par, wires=1)
             return qml.expval(qml.PauliZ(1))
     """
-
-    if inspect.isclass(then_func) and issubclass(then_func, Operator):
-
-        @wraps(then_func)
-        def wrapper(*args, **kwargs):
-            ops = []
-            then_cond_op = Conditional(measurement, then_func(*args, do_queue=False, **kwargs))
-            ops.append(then_cond_op)
-
-            if else_func:
-
-                # Copy the MV such that the external state is not changed
-                inverted_m = copy(measurement)
-                else_cond_op = Conditional(~inverted_m, else_func(*args, do_queue=False, **kwargs))
-                ops.append(else_cond_op)
-
-            return ops
-
-    elif callable(then_func):
+    if callable(then_func):
+        # We assume that the callable is an operation or a quantum function
 
         with_meas_err = (
             "Only quantum functions that contain no measurements can be applied conditionally."
@@ -142,7 +125,6 @@ def cond(measurement, then_func, else_func=None):
 
             @wraps(then_func)
             def wrapper(*args, **kwargs):
-                # We assume that the callable is a quantum function
 
                 # 1. Apply then_func conditionally
                 tape = make_tape(then_func)(*args, **kwargs)
