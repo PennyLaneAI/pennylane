@@ -223,7 +223,7 @@ def _custom_decomp_context(custom_decomps):
         if isinstance(obj, str):
             obj = getattr(qml, obj)
 
-        original_decomp_method = obj.decomposition
+        original_decomp_method = obj.compute_decomposition
 
         try:
             # Explicitly set the new compute_decomposition method

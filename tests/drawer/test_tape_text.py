@@ -76,6 +76,8 @@ class TestHelperFunctions:
             (qml.CNOT(wires=(0, 2)), ["╭C", "│", "╰X", "─"]),
             (qml.Toffoli(wires=(0, 1, 3)), ["╭C", "├C", "│", "╰X"]),
             (qml.IsingXX(1.23, wires=(0, 2)), ["╭IsingXX", "│", "╰IsingXX", "─"]),
+            (qml.Snapshot(), ["─|S|", "─|S|", "─|S|", "─|S|"]),
+            (qml.Barrier(), ["─||", "─||", "─||", "─||"]),
         ],
     )
     def test_add_op(self, op, out):
