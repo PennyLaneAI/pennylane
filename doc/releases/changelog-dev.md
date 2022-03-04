@@ -140,6 +140,7 @@
   rule is now automatically used by `qml.gradients.param_shift`.
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
   [(#2182)](https://github.com/PennyLaneAI/pennylane/pull/2182)
+  [(#2227)](https://github.com/PennyLaneAI/pennylane/pull/2227)
 
   The frequencies can be used for circuit analysis, optimization
   via the `RotosolveOptimizer` and differentiation with the
@@ -150,14 +151,9 @@
   By default, the frequencies will be obtained from the
   `generator` property (if it is defined).
 
-  When using `qml.gradients.param_shift`, the parameter frequencies
-  are used to obtain the shift rule for the operation.
-
-  For operations that are registered to have an analytic gradient
-  method but that do not provide parameter frequencies, the
-  `grad_recipe` of the operation will be used for differentiation
-  instead. If there is no `grad_recipe`, the standard two-term shift
-  rule will be used.
+  When using `qml.gradients.param_shift`, either a custom `grad_recipe`
+  or the parameter frequencies are used to obtain the shift rule
+  for the operation, in that order of preference.
 
   See [Vidal and Theis (2018)](https://arxiv.org/abs/1812.06323)
   and [Wierichs et al. (2021)](https://arxiv.org/abs/2107.12390)
@@ -220,6 +216,15 @@
 
 <h3>Improvements</h3>
 
+* No two-term parameter-shift rule is assumed anymore by default.
+  [(#2227)](https://github.com/PennyLaneAI/pennylane/pull/2227)
+
+  Previously, operations marked for analytic differentiation that
+  do not provide a `generator`, `parameter_frequencies` or a
+  custom `grad_recipe` were assumed to satisfy the two-term shift
+  rule. This now has to be made explicit for custom operations
+  by adding any of the above attributes.
+
 * The `qml.draw_mpl` transform supports a `expansion_strategy` keyword argument.
   [(#2271)](https://github.com/PennyLaneAI/pennylane/pull/2271/)
 
@@ -252,6 +257,14 @@
   [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
 
 <h3>Deprecations</h3>
+
+* The `qml.operation.Operation.get_parameter_shift` method has been deprecated
+  and will be removed in a future release.
+  [#2227](https://github.com/PennyLaneAI/pennylane/pull/2227)
+
+  Instead, the functionalities for general parameter-shift rules in the
+  `qml.gradients` module should be used, together with the operation attributes
+  `parameter_frequencies` or `grad_recipe`.
 
 * The `qml.finite_diff()` function has been deprecated and will be removed
   in an upcoming release. Instead,

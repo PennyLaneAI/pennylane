@@ -305,16 +305,18 @@ class TestParamShift:
         assert np.allclose(j1, [exp, 0])
         assert np.allclose(j2, [0, exp])
 
-    def test_grad_recipe_parameter_dependent(self):
+    def test_grad_recipe_parameter_dependent(self, monkeypatch):
         """Test that an operation with a gradient recipe that depends on
         its instantiated parameter values works correctly within the parameter
-        shift rule"""
+        shift rule. Also tests that grad_recipes supersedes paramter_frequencies.
+        """
+
+        def fail(*args, **kwargs):
+            raise qml.operation.ParameterFrequenciesUndefinedError
+
+        monkeypatch.setattr(qml.RX, "parameter_frequencies", fail)
 
         class RX(qml.RX):
-            @property
-            def parameter_frequencies(self):
-                raise qml.operation.OperatorPropertyUndefined
-
             @property
             def grad_recipe(self):
                 # The gradient is given by [f(2x) - f(0)] / (2 sin(x)), by subsituting
@@ -339,38 +341,38 @@ class TestParamShift:
         grad = fn(dev.batch_execute(tapes))
         assert np.allclose(grad, -np.sin(x))
 
-    @pytest.mark.parametrize("shifts", [None, [(0.1, 0.3, 0.5)]])
-    def test_default_two_term_rule(self, shifts):
-        """Test that the default two-term shift rule is used if no
-        other information is available to obtain the shift rule."""
+    def test_error_no_diff_info(self):
+        """Test that an error is raised if no grad_recipe, no parameter_frequencies
+        and no generator are found."""
 
         class RX(qml.RX):
+            """This copy of RX overwrites parameter_frequencies to report
+            missing information, disabling its differentiation."""
+
             @property
             def parameter_frequencies(self):
-                raise qml.operation.OperatorPropertyUndefined
+                raise qml.operation.ParameterFrequenciesUndefinedError
 
-            def generator(self):
-                raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
+        class NewOp(qml.operation.Operation):
+            """This new operation does not overwrite parameter_frequencies
+            but does not have a generator, disabling its differentiation."""
+
+            num_params = 1
+            grad_method = "A"
+            num_wires = 1
 
         x = np.array(0.654, requires_grad=True)
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape:
-            RX(x, wires=0)
-            qml.expval(qml.PauliZ(0))
+        for op in [RX, NewOp]:
+            with qml.tape.JacobianTape() as tape:
+                op(x, wires=0)
+                qml.expval(qml.PauliZ(0))
 
-        tapes, fn = qml.gradients.param_shift(tape, shifts=shifts)
-
-        assert len(tapes) == 2
-        if shifts is None:
-            assert tapes[0].operations[0].data[0] == x + np.pi / 2
-            assert tapes[1].operations[0].data[0] == x - np.pi / 2
-        else:
-            assert tapes[0].operations[0].data[0] == x + shifts[0][0]
-            assert tapes[1].operations[0].data[0] == x - shifts[0][0]
-
-        grad = fn(dev.batch_execute(tapes))
-        assert np.allclose(grad, -np.sin(x))
+            with pytest.raises(
+                qml.operation.OperatorPropertyUndefined, match="does not have a grad_recipe"
+            ):
+                qml.gradients.param_shift(tape)
 
 
 class TestParameterShiftRule:
