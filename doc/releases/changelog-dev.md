@@ -4,6 +4,62 @@
 
 <h3>New features since last release</h3>
 
+* A new transform for circuit optimization has been added. The pattern matching
+  transform takes a pattern as argument and look for all possibles matches in the
+  quantum circuit. It optimizes the circuit by gate replacement where it is possible.
+  [(#2032)](https://github.com/PennyLaneAI/pennylane/pull/2032)
+  
+  First we create a quantum circuit to be optimized.
+  ```pycon
+  def circuit():
+      qml.Toffoli(wires=[3, 4, 0])
+      qml.CNOT(wires=[1, 4])
+      qml.CNOT(wires=[2, 1])
+      qml.Hadamard(wires=3)
+      qml.PauliZ(wires=1)
+      qml.CNOT(wires=[2, 3])
+      qml.Toffoli(wires=[2, 3, 0])
+      qml.CNOT(wires=[1, 4])
+      return qml.expval(qml.PauliX(wires=0))
+  ```
+
+  Then we define a pattern that implement the identity:
+  ```pycon
+  with qml.tape.QuantumTape() as pattern:
+      qml.CNOT(wires=[1, 2])
+      qml.CNOT(wires=[0, 1])
+      qml.CNOT(wires=[1, 2])
+      qml.CNOT(wires=[0, 1])
+      qml.CNOT(wires=[0, 2])
+  ```
+
+  For optimizing the circuit given the given following pattern of CNOTs we apply the `pattern_matching_optimization`
+  transform.
+  ```pycon
+  >>> dev = qml.device('default.qubit', wires=5)
+  >>> qnode = qml.QNode(circuit, dev)
+  >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
+  >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+  ```
+
+  In our case, it is possible to find three CNOTs and replace this pattern with only two CNOTs and therefore
+  optimizing the circuit. The number of CNOTs in the circuit is reduced by one.
+  ```pycon
+  >>> print(qml.draw(qnode)())
+  0: ─╭X──────────╭X────┤  <X>
+  1: ─│──╭C─╭X──Z─│──╭C─┤
+  2: ─│──│──╰C─╭C─├C─│──┤
+  3: ─├C─│───H─╰X─╰C─│──┤
+  4: ─╰C─╰X──────────╰X─┤
+
+  >>> print(qml.draw(optimized_qnode)())
+  0: ─╭X──────────╭X─┤  <X>
+  1: ─│─────╭X──Z─│──┤
+  2: ─│──╭C─╰C─╭C─├C─┤
+  3: ─├C─│───H─╰X─╰C─┤
+  4: ─╰C─╰X──────────┤
+  ```
+
 * New functions and transforms of operators have been added. These include:
 
   - `qml.matrix()` for computing the matrix representation of one or more unitary operators.

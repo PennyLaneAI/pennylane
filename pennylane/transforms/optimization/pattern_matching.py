@@ -59,11 +59,11 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
             qml.CNOT(wires=[1, 4])
             return qml.expval(qml.PauliX(wires=0))
 
-    We define a template that implement the identity:
+    We define a pattern that implement the identity:
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as template:
+        with qml.tape.QuantumTape() as pattern:
             qml.CNOT(wires=[1, 2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
@@ -75,7 +75,7 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
 
     >>> dev = qml.device('default.qubit', wires=5)
     >>> qnode = qml.QNode(circuit, dev)
-    >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
+    >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
     In our case, it is possible to find three CNOTs and replace this pattern with only two CNOTs and therefore
