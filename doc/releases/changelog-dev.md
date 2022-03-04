@@ -64,10 +64,10 @@
 
   The addition includes the `defer_measurements` device-independent transform
   that can be applied on devices that have no native mid-circuit measurements
-  capabilities.
-
-  This transform is applied by default when evaluating a QNode, for example to
-  teleport a qubit:
+  capabilities. This transform is applied by default when evaluating a QNode on a
+  device that doesn't support mid-circuit measurements.
+  
+  For example, the code below shows how to teleport a qubit:
 
   ```python
   from scipy.stats import unitary_group
