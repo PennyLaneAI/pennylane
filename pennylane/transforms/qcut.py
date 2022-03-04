@@ -935,16 +935,28 @@ def cut_circuit(
     tape: QuantumTape, use_opt_einsum: bool = False, device_wires: Optional[Wires] = None
 ) -> Tuple[Tuple[QuantumTape], Callable]:
     """
-    Batch transform for circuit cutting.
+    Cut up a quantum circuit into smaller circuit fragments.
+
+    Following the approach outlined in Theorem 2 of
+    `Peng et al. <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.125.150504>`, strategic
+    placement of :class:`~.WireCut` operations can allow a quantum circuit to be split into
+    disconnected circuit fragments. Each circuit fragment is then executed multiple times by varying
+    the state preparations and measurements at incoming and outgoing cut locations, respectively,
+    resulting in a process tensor describing the action of the fragment. The process tensors are
+    then contracted to provide the result of the original uncut circuit.
+
+    .. note::
+
+        Only circuits that return a single expectation value are supported.
 
     Args:
-        tape (QuantumTape): The tape of the full circuit to be cut.
+        tape (QuantumTape): the tape of the full circuit to be cut
         use_opt_einsum (bool): Determines whether to use the
             `opt_einsum <https://dgasmith.github.io/opt_einsum/>`__ package. This package is useful
             for faster tensor contractions of large networks but must be installed separately using,
             e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
             differentiable contraction.
-        device_wires (.wires.Wires): Wires of the device that the cut circuits are to be run on
+        device_wires (Wires): Wires of the device that the cut circuits are to be run on
 
     Returns:
         Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a
@@ -953,7 +965,8 @@ def cut_circuit(
 
     **Example**
 
-    Consider the following circuit containing a :class:`~.WireCut` operation:
+    The following :math:`3`-qubit circuit containins a :class:`~.WireCut` operation. When decorated
+    with `@qml.cut_circuit`, we can cut the circuit into two :math:`2`-qubit fragments:
 
     .. code-block:: python
 
@@ -969,23 +982,17 @@ def cut_circuit(
             qml.RZ(0.133, wires=1)
             return qml.expval(qml.PauliZ(wires=[0]))
 
-    >>> x = 0.531
-    >>> print(circuit(x))
-    0.8623011058543121
-    >>> print(qml.grad(circuit)(x))
-    -0.506395895364911
+    Executing ``circuit`` will run multiple configurations of the :math:`2`-qubit fragments which
+    are then postprocessed to give the result of the original circuit:
 
-    This can be cut using the following transform
-
-    >>> x = 0.531
-    >>> cut_circuit = qml.cut_circuit(circuit)
-    >>> cut_circuit(x)
-    0.8623011058543121
+    >>> x = np.array(0.531, requires_grad=True)
+    >>> circuit(0.531)
+    0.47165198882111165
 
     Futhermore, the output of the cut circuit is also differentiable:
 
-    >>> qml.grad(cut_circuit)(x)
-    -0.506395895364911
+    >>> qml.grad(circuit)(x)
+    -0.276982865449393
     """
     if len(tape.measurements) != 1:
         raise ValueError(
