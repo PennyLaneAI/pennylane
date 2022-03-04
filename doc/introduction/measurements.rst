@@ -223,7 +223,7 @@ tensor([0.88660045, 0.11339955], requires_grad=True)
 The deferred measurement principle provides a natural method to simulate the
 application of mid-circuit measurements and conditional operations in a
 differentiable and device-independent way. Performing true mid-circuit
-measurements and conditional operations on quantum hardware is dependent on the
+measurements and conditional operations is dependent on the
 quantum hardware and PennyLane device capabilities.
 
 Changing the number of shots
