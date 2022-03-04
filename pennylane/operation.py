@@ -1133,7 +1133,8 @@ class Operator(abc.ABC):
 class Operation(Operator):
     r"""Base class representing quantum gates or channels applied to quantum states.
 
-    Operations define some additional properties, such as differentiation
+    Operations define some additional properties, that are used for external
+    transformations such as gradient transforms.
 
     The first optional class attribute is :attr:`~.Operation.grad_recipe`.
     It allows the definition of a hard-coded differentiation rule, which

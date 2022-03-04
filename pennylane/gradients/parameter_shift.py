@@ -73,16 +73,16 @@ def _get_operation_recipe(tape, t_idx, shifts):
 
     This function performs multiple attempts to obtain the recipe:
 
-    - If the operation has a custom ``grad_recipe`` defined, it is used.
+    - If the operation has a custom :attr:`~.grad_recipe` defined, it is used.
 
-    - If ``parameter_frequencies`` yield a result, the frequencies are
+    - If :attr:`.parameter_frequencies` yields a result, the frequencies are
       used to construct the general parameter-shift rule via
-      ``qml.gradients.generate_shift_rule``
-      Note that by default, the generator is used to compute the frequencies
+      :func:`.generate_shift_rule`.
+      Note that by default, the generator is used to compute the parameter frequencies
       if they are not provided by a custom implementation.
 
-    That is, the order of precedence is ``grad_recipe``, custom
-    ``parameter_frequencies`` and finally ``generator`` via the default
+    That is, the order of precedence is :meth:`~.grad_recipe`, custom
+    :attr:`~.parameter_frequencies`, and finally :meth:`.generator` via the default
     implementation of the frequencies.
     """
     op, p_idx = tape.get_operation(t_idx)
