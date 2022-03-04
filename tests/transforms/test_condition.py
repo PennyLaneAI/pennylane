@@ -24,8 +24,7 @@ class TestCond:
     """Tests that verify that the cond transform works as expect."""
 
     def test_cond_error(self):
-        """Test that a qfunc can also used with qml.cond even when an else
-        qfunc is provided."""
+        """Test that an error is raised when the qfunc has a measurement."""
         dev = qml.device("default.qubit", wires=3)
 
         def f():
@@ -38,8 +37,8 @@ class TestCond:
             qml.cond(m_0, f)()
 
     def test_cond_error_else(self):
-        """Test that a qfunc can also used with qml.cond even when an else
-        qfunc is provided."""
+        """Test that an error is raised when one of the qfuncs has a
+        measurement."""
         dev = qml.device("default.qubit", wires=3)
 
         def f():
@@ -54,10 +53,15 @@ class TestCond:
             m_0 = qml.measure(1)
             qml.cond(m_0, f, g)()
 
+        with pytest.raises(
+            ConditionalTransformError, match="contain no measurements can be applied conditionally"
+        ):
+            m_0 = qml.measure(1)
+            qml.cond(m_0, g, f)() # Check that the same error is raised when f and g are swapped
+
     @pytest.mark.parametrize("inp", [1, "string", qml.PauliZ(0)])
     def test_cond_error_unrecognized_input(self, inp):
-        """Test that a qfunc can also used with qml.cond even when an else
-        qfunc is provided."""
+        """Test that an error is raised when the input is not recognized."""
         dev = qml.device("default.qubit", wires=3)
 
         with pytest.raises(
