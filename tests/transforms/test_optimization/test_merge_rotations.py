@@ -28,7 +28,7 @@ class TestMergeRotations:
         ("theta_1", "theta_2", "expected_ops"),
         [
             (0.3, -0.2, [qml.RZ(0.1, wires=0)]),
-            (0.15, 0.14, [qml.RZ(0.29, wires=0)]),
+            (0.15, -0.15, []),
         ],
     )
     def test_one_qubit_rotation_merge(self, theta_1, theta_2, expected_ops):
@@ -49,6 +49,27 @@ class TestMergeRotations:
         for op_obtained, op_expected in zip(ops, expected_ops):
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
+
+    def test_two_qubits_rotation_merge_tolerance(self):
+        """Test whether tolerance argument is respected for merging."""
+
+        def qfunc():
+            qml.RZ(1e-7, wires=0)
+            qml.RZ(-2e-7, wires=0)
+
+        # Try with default tolerance; these ops should still be applied
+        transformed_qfunc = merge_rotations()(qfunc)
+
+        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+
+        assert len(ops) == 1
+        assert ops[0].name == "RZ"
+        assert ops[0].parameters[0] == -1e-7
+
+        # Now try with higher tolerance threshold; the ops should cancel
+        transformed_qfunc = merge_rotations(atol=1e-5)(qfunc)
+        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        assert len(ops) == 0
 
     @pytest.mark.parametrize(
         ("theta_1", "theta_2", "expected_ops"),
@@ -79,7 +100,7 @@ class TestMergeRotations:
         ("theta_11", "theta_12", "theta_21", "theta_22", "expected_ops"),
         [
             (0.3, -0.2, 0.5, -0.8, [qml.RX(0.1, wires=0), qml.RY(-0.3, wires=1)]),
-            (0.3, 0.3, 0.7, -0.1, [qml.RX(0.6, wires=0), qml.RY(0.6, wires=1)]),
+            (0.3, -0.3, 0.7, -0.1, [qml.RY(0.6, wires=1)]),
         ],
     )
     def test_two_qubits_merge(self, theta_11, theta_12, theta_21, theta_22, expected_ops):
@@ -196,7 +217,7 @@ class TestMergeRotations:
         ("theta_1", "theta_2", "expected_ops"),
         [
             (0.3, -0.2, [qml.CRY(0.1, wires=["w1", "w2"])]),
-            (0.15, 0.14, [qml.CRY(0.29, wires=["w1", "w2"])]),
+            (0.15, -0.15, []),
         ],
     )
     def test_controlled_rotation_merge(self, theta_1, theta_2, expected_ops):
@@ -375,3 +396,28 @@ class TestMergeRotationsInterfaces:
         # Check operation list
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
+
+    def test_merge_rotations_jax_jit(self):
+        """Test that when using jax.jit, the conditional statement that checks for
+        0 rotation angles does not break things."""
+
+        jax = pytest.importorskip("jax")
+
+        # Enable float64 support
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=["w1", "w2"])
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def qfunc():
+            qml.CRX(0.2, wires=["w1", "w2"])
+            qml.CRX(-0.2, wires=["w1", "w2"])
+            return qml.expval(qml.PauliZ("w1"))
+
+        res = qfunc()
+
+        assert qml.math.allclose(res, [1.0])

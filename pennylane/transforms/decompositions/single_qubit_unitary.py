@@ -46,8 +46,8 @@ def zyz_decomposition(U, wire):
 
     .. warning::
 
-        This decomposition is compatible with ``jax.jit``, however, all unitaries
-        will be converted to :class:`.Rot` gates, including those that are diagonal.
+        When used with ``jax.jit``, all unitaries will be converted to :class:`.Rot` gates,
+        including those that are diagonal.
 
     Args:
         U (tensor): A 2 x 2 unitary matrix.

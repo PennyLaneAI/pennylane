@@ -15,14 +15,14 @@
 
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
-from pennylane.math import stack, cast_like
+from pennylane.math import allclose, stack, cast_like, zeros, is_abstract
 
 from pennylane.ops.qubit.attributes import composable_rotations
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
 @qfunc_transform
-def merge_rotations(tape, include_gates=None):
+def merge_rotations(tape, atol=1e-8, include_gates=None):
     r"""Quantum function transform to combine rotation gates of the same type
     that act sequentially.
 
@@ -31,6 +31,8 @@ def merge_rotations(tape, include_gates=None):
 
     Args:
         qfunc (function): A quantum function.
+        atol (float): After fusion of gates, if the fused angle :math:`\theta` is such that
+            :math:`|\theta|\leq \text{atol}`, no rotation gate will be applied.
         include_gates (None or list[str]): A list of specific operations to merge. If
             set to ``None`` (default), all operations in the
             `~.pennylane.ops.qubit.attributes.composable_rotations` attribute will be merged. Otherwise,
@@ -144,7 +146,16 @@ def merge_rotations(tape, include_gates=None):
             # If we did merge, look now at the next gate
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
-        current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
+        # If we are tracing/jitting, don't perform any conditional checks and
+        # apply the operation regardless of the angles.
+        if is_abstract(cumulative_angles):
+            current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
+            continue
+
+        # If we are not tracing/jitting, we can easily check if the cumulative
+        # angle is 0 to within our tolerance, and ignore the gate entirely if it is
+        if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=atol, rtol=0):
+            current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
 
         # Remove the first gate gate from the working list
         list_copy.pop(0)
