@@ -50,27 +50,6 @@ class TestMergeRotations:
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
-    def test_two_qubits_rotation_merge_tolerance(self):
-        """Test whether tolerance argument is respected for merging."""
-
-        def qfunc():
-            qml.RZ(1e-7, wires=0)
-            qml.RZ(-2e-7, wires=0)
-
-        # Try with default tolerance; these ops should still be applied
-        transformed_qfunc = merge_rotations()(qfunc)
-
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
-
-        assert len(ops) == 1
-        assert ops[0].name == "RZ"
-        assert ops[0].parameters[0] == -1e-7
-
-        # Now try with higher tolerance threshold; the ops should cancel
-        transformed_qfunc = merge_rotations(atol=1e-5)(qfunc)
-        ops = qml.transforms.make_tape(transformed_qfunc)().operations
-        assert len(ops) == 0
-
     @pytest.mark.parametrize(
         ("theta_1", "theta_2", "expected_ops"),
         [
@@ -96,6 +75,28 @@ class TestMergeRotations:
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
+   def test_two_qubits_rotation_merge_tolerance(self):
+        """Test whether tolerance argument is respected for merging."""
+
+        def qfunc():
+            qml.RZ(1e-7, wires=0)
+            qml.RZ(-2e-7, wires=0)
+
+        # Try with default tolerance; these ops should still be applied
+        transformed_qfunc = merge_rotations()(qfunc)
+
+        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+
+        assert len(ops) == 1
+        assert ops[0].name == "RZ"
+        assert ops[0].parameters[0] == -1e-7
+
+        # Now try with higher tolerance threshold; the ops should cancel
+        transformed_qfunc = merge_rotations(atol=1e-5)(qfunc)
+        ops = qml.transforms.make_tape(transformed_qfunc)().operations
+        assert len(ops) == 0
+
+            
     @pytest.mark.parametrize(
         ("theta_11", "theta_12", "theta_21", "theta_22", "expected_ops"),
         [
