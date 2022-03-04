@@ -58,7 +58,6 @@ class TestCond:
 
         assert ops[4].return_type == qml.operation.Probability
 
-
     def test_cond_queues_with_else(self):
         """Test that qml.cond queues Conditional operations as expected when an
         else qfunc is also provided."""
@@ -102,7 +101,6 @@ class TestCond:
         assert ops[4].then_op.wires == target_wire
 
         assert ops[5].return_type == qml.operation.Probability
-
 
     def test_cond_error(self):
         """Test that an error is raised when the qfunc has a measurement."""
@@ -152,6 +150,7 @@ class TestCond:
             m_0 = qml.measure(1)
             qml.cond(m_0, inp)()
 
+
 class TestOtherTransforms:
     """Tests that qml.cond works correctly with other transforms."""
 
@@ -173,7 +172,7 @@ class TestOtherTransforms:
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
         assert isinstance(ops[1].then_op, qml.RX)
-        assert ops[1].then_op.data == [-r] # adjoint
+        assert ops[1].then_op.data == [-r]  # adjoint
         assert ops[1].then_op.wires == target_wire
 
         assert isinstance(ops[2], qml.transforms.condition.Conditional)
@@ -182,7 +181,6 @@ class TestOtherTransforms:
         assert ops[2].then_op.wires == target_wire
 
         assert ops[3].return_type == qml.operation.Probability
-
 
     def test_cond_queues_with_ctrl(self):
         """Test that qml.cond queues Conditional operations as expected with
@@ -219,7 +217,6 @@ class TestOtherTransforms:
         assert controlled_op.wires == target_wire
 
         assert ops[3].return_type == qml.operation.Probability
-
 
     def test_ctrl_queues_with_cond(self):
         """Test that qml.cond queues Conditional operations as expected with
