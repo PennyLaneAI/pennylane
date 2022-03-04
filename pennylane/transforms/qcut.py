@@ -67,6 +67,11 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
     Replace a :class:`~.WireCut` node in the graph with a :class:`~.MeasureNode`
     and :class:`~.PrepareNode`.
 
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow.
+        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+
     Args:
         node (WireCut): the  :class:`~.WireCut` node to be replaced with a :class:`~.MeasureNode`
             and :class:`~.PrepareNode`
@@ -88,8 +93,8 @@ def replace_wire_cut_node(node: WireCut, graph: MultiDiGraph):
 
     We can find the circuit graph and remove the wire cut node using:
 
-    >>> graph = qml.transforms.tape_to_graph(tape)
-    >>> qml.transforms.replace_wire_cut_node(wire_cut, graph)
+    >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+    >>> qml.transforms.qcut.replace_wire_cut_node(wire_cut, graph)
     """
     predecessors = graph.pred[node]
     successors = graph.succ[node]
@@ -135,6 +140,11 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
     Replace each :class:`~.WireCut` node in the graph with a
     :class:`~.MeasureNode` and :class:`~.PrepareNode`.
 
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow.
+        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+
     Args:
         graph (nx.MultiDiGraph): The graph containing the :class:`~.WireCut` nodes
             to be replaced
@@ -161,8 +171,8 @@ def replace_wire_cut_nodes(graph: MultiDiGraph):
 
     We can find the circuit graph and remove all the wire cut nodes using:
 
-    >>> graph = qml.transforms.tape_to_graph(tape)
-    >>> qml.transforms.replace_wire_cut_nodes(graph)
+    >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+    >>> qml.transforms.qcut.replace_wire_cut_nodes(graph)
     """
     for op in list(graph.nodes):
         if isinstance(op, WireCut):
@@ -241,9 +251,19 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
     """
     Fragments a graph into a collection of subgraphs as well as returning
-    the communication/`quotient <https://en.wikipedia.org/wiki/Quotient_graph>`__
-    graph. Each node of the communication graph represents a fragment and the edges
-    denote the flow of qubits between fragments.
+    the communication (`quotient <https://en.wikipedia.org/wiki/Quotient_graph>`__)
+    graph.
+
+    The input ``graph`` is fragmented by disconnecting each :class:`~.MeasureNode` and
+    :class:`~.PrepareNode` pair and finding the resultant disconnected subgraph fragments.
+    Each node of the communication graph represents a subgraph fragment and the edges
+    denote the flow of qubits between fragments due to the removed :class:`~.MeasureNode` and
+    :class:`~.PrepareNode` pairs.
+
+    .. note::
+
+        This operation is designed for use as part of the circuit cutting workflow.
+        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         graph (nx.MultiDiGraph): directed multigraph containing measure and prepare
@@ -276,9 +296,9 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     We can find the corresponding graph, remove all the wire cut nodes, and
     find the subgraphs and communication graph by using:
 
-    >>> graph = qml.transforms.tape_to_graph(tape)
-    >>> qml.transforms.replace_wire_cut_nodes(graph)
-    >>> qml.transforms.fragment_graph(graph)
+    >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+    >>> qml.transforms.qcut.replace_wire_cut_nodes(graph)
+    >>> qml.transforms.qcut.fragment_graph(graph)
     ((<networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311940>,
       <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b2311c10>,
       <networkx.classes.multidigraph.MultiDiGraph object at 0x7fb3b23e2820>,
