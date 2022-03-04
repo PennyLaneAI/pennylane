@@ -1087,49 +1087,6 @@ class QuantumTape(AnnotatedQueue):
 
         return self._specs
 
-    def draw(self, charset="unicode", wire_order=None, show_all_wires=False, max_length=None):
-        """Draw the quantum tape as a circuit diagram.
-
-        Consider the following circuit as an example:
-
-        .. code-block:: python3
-
-            with QuantumTape() as tape:
-                qml.Hadamard(0)
-                qml.CRX(2.3, wires=[0, 1])
-                qml.Rot(1.2, 3.2, 0.7, wires=[1])
-                qml.CRX(-2.3, wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        We can draw the tape after construction:
-
-        >>> print(tape.draw())
-        0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
-        1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
-        >>> print(tape.draw(charset="ascii"))
-        0: --H--+C----------------------------+C---------+| <Z @ Z>
-        1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z>
-
-        Args:
-            charset (str, optional): The charset that should be used. Currently, "unicode" and
-                "ascii" are supported.
-            wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
-            show_all_wires (bool): If True, all wires, including empty wires, are printed.
-            max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
-
-        Raises:
-            ValueError: if the given charset is not supported
-
-        Returns:
-            str: the circuit representation of the tape
-        """
-        return self.graph.draw(
-            charset=charset,
-            wire_order=wire_order,
-            show_all_wires=show_all_wires,
-            max_length=max_length,
-        )
-
     def to_openqasm(self, wires=None, rotations=True, measure_all=True, precision=None):
         """Serialize the circuit as an OpenQASM 2.0 program.
 

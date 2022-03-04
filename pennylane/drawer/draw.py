@@ -15,6 +15,9 @@
 This module contains logic for the text based circuit drawer through the ``tape_text`` function.
 """
 
+from multimethod import multimethod
+from functools import wraps
+
 import pennylane as qml
 from pennylane.operation import Expectation, Probability, Sample, Variance, State
 
@@ -81,8 +84,9 @@ def _add_measurement(m, layer_str, wire_map, decimals, cache):
 
 
 # pylint: disable=too-many-arguments
-def tape_text(
-    tape,
+@multimethod
+def draw(
+    tape: qml.tape.QuantumTape,
     wire_order=None,
     show_all_wires=False,
     decimals=None,
@@ -345,3 +349,58 @@ def tape_text(
         return tape_totals + mat_str
 
     return tape_totals
+
+@multimethod
+def draw(
+    qnode: qml.QNode,
+    wire_order=None,
+    show_all_wires=False,
+    decimals=2,
+    max_length=100,
+    show_matrices=False,
+    expansion_strategy=None,
+):
+    @wraps(qnode)
+    def wrapper(*args, **kwargs):
+
+        original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+
+        try:
+            qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
+            tapes = qnode.construct(args, kwargs)
+        finally:
+            qnode.expansion_strategy = original_expansion_strategy
+
+        _wire_order = wire_order or qnode.device.wires
+
+        if tapes is not None:
+            cache = {"tape_offset": 0, "matrices": []}
+            res = [
+                draw(
+                    t,
+                    wire_order=_wire_order,
+                    show_all_wires=show_all_wires,
+                    decimals=decimals,
+                    show_matrices=False,
+                    max_length=max_length,
+                    cache=cache,
+                )
+                for t in tapes[0]
+            ]
+            if show_matrices:
+                mat_str = "\n"
+                for i, mat in enumerate(cache["matrices"]):
+                    mat_str += f"\nM{i} = \n{mat}"
+                return "\n\n".join(res) + mat_str
+            return "\n\n".join(res)
+
+        return draw(
+            qnode.qtape,
+            wire_order=_wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            show_matrices=show_matrices,
+            max_length=max_length,
+        )
+
+    return wrapper

@@ -57,8 +57,6 @@ from pennylane.transforms import (
     adjoint_metric_tensor,
     batch_params,
     batch_transform,
-    draw,
-    draw_mpl,
     ControlledOperation,
     compile,
     ctrl,
@@ -77,6 +75,8 @@ from pennylane.transforms import (
 from pennylane.ops.functions import *
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
+import pennylane.drawer
+from pennylane.drawer import draw
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum

@@ -19,8 +19,8 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-from pennylane.drawer import tape_text
-from pennylane.drawer.tape_text import _add_grouping_symbols, _add_op, _add_measurement
+from pennylane.drawer import draw
+from pennylane.drawer.draw import _add_grouping_symbols, _add_op, _add_measurement
 from pennylane.tape import QuantumTape
 
 default_wire_map = {0: 0, 1: 1, 2: 2, 3: 3}
@@ -109,12 +109,12 @@ class TestHelperFunctions:
 class TestEmptyTapes:
     def test_empty_tape(self):
         """Test using an empty tape returns a blank string"""
-        assert tape_text(QuantumTape()) == ""
+        assert draw(QuantumTape()) == ""
 
     def test_empty_tape_wire_order(self):
         """Test wire order and show_all_wires shows wires with empty tape."""
         expected = "a: ───┤  \nb: ───┤  "
-        out = tape_text(QuantumTape(), wire_order=["a", "b"], show_all_wires=True)
+        out = draw(QuantumTape(), wire_order=["a", "b"], show_all_wires=True)
         assert expected == out
 
 
@@ -122,7 +122,7 @@ class TestLabeling:
     def test_any_wire_labels(self):
         """Test wire labels with different kinds of objects."""
 
-        split_str = tape_text(tape).split("\n")
+        split_str = draw(tape).split("\n")
         assert split_str[0][0:6] == "    0:"
         assert split_str[1][0:6] == "    a:"
         assert split_str[2][0:6] == "1.234:"
@@ -130,7 +130,7 @@ class TestLabeling:
     def test_wire_order(self):
         """Test wire_order keyword changes order of the wires"""
 
-        split_str = tape_text(tape, wire_order=[1.234, "a", 0, "b"]).split("\n")
+        split_str = draw(tape, wire_order=[1.234, "a", 0, "b"]).split("\n")
         assert split_str[2][0:6] == "    0:"
         assert split_str[1][0:6] == "    a:"
         assert split_str[0][0:6] == "1.234:"
@@ -139,7 +139,7 @@ class TestLabeling:
         """Test wire_order constains unused wires, show_all_wires
         forces them to display."""
 
-        split_str = tape_text(tape, wire_order=["b"], show_all_wires=True).split("\n")
+        split_str = draw(tape, wire_order=["b"], show_all_wires=True).split("\n")
 
         assert split_str[0][0:6] == "    b:"
         assert split_str[1][0:6] == "    0:"
@@ -155,7 +155,7 @@ class TestDecimals:
 
         expected = "    0: ──RX(1.23)─┤  \n    a: ──RY(2.35)─┤  \n1.234: ──RZ(3.46)─┤  "
 
-        assert tape_text(tape, decimals=2) == expected
+        assert draw(tape, decimals=2) == expected
 
     def test_decimals_multiparameters(self):
         """Tests decimals also displays parameters when the operation has multiple parameters."""
@@ -164,14 +164,14 @@ class TestDecimals:
             qml.Rot(1.2345, 2.3456, 3.4566, wires=0)
 
         expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
-        assert tape_text(tape_rot, decimals=2) == expected
+        assert draw(tape_rot, decimals=2) == expected
 
     def test_decimals_0(self):
         """Test decimals=0 rounds to integers"""
 
         expected = "    0: ──RX(1)─┤  \n" "    a: ──RY(2)─┤  \n" "1.234: ──RZ(3)─┤  "
 
-        assert tape_text(tape, decimals=0) == expected
+        assert draw(tape, decimals=0) == expected
 
     def test_torch_parameters(self):
         """Test torch parameters in tape display as normal numbers."""
@@ -180,7 +180,7 @@ class TestDecimals:
             qml.Rot(torch.tensor(1.234), torch.tensor(2.345), torch.tensor(3.456), wires=0)
 
         expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
-        assert tape_text(tape_torch, decimals=2) == expected
+        assert draw(tape_torch, decimals=2) == expected
 
     def test_tensorflow_parameters(self):
         """Test tensorflow parameters display as normal numbers."""
@@ -189,7 +189,7 @@ class TestDecimals:
             qml.Rot(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456), wires=0)
 
         expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
-        assert tape_text(tape_tf, decimals=2) == expected
+        assert draw(tape_tf, decimals=2) == expected
 
     def test_jax_parameters(self):
         """Test jax parameters in tape display as normal numbers."""
@@ -199,7 +199,7 @@ class TestDecimals:
             qml.Rot(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456), wires=0)
 
         expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
-        assert tape_text(tape_jax, decimals=2) == expected
+        assert draw(tape_jax, decimals=2) == expected
 
 
 class TestMaxLength:
@@ -215,7 +215,7 @@ class TestMaxLength:
             for _ in range(3):
                 qml.sample()
 
-        out = tape_text(tape_ml)
+        out = draw(tape_ml)
         assert 95 <= max(len(s) for s in out.split("\n")) <= 100
 
     @pytest.mark.parametrize("ml", [10, 15, 20])
@@ -230,7 +230,7 @@ class TestMaxLength:
             for _ in range(3):
                 qml.sample()
 
-        out = tape_text(tape, max_length=ml)
+        out = draw(tape, max_length=ml)
         assert max(len(s) for s in out.split("\n")) <= ml
 
 
@@ -279,7 +279,7 @@ def test_single_ops(op, expected):
     with QuantumTape() as tape:
         qml.apply(op)
 
-    assert tape_text(tape, decimals=2) == expected
+    assert draw(tape, decimals=2) == expected
 
 
 class TestLayering:
@@ -293,7 +293,7 @@ class TestLayering:
             qml.PauliX(1)
             qml.PauliX(2)
 
-        assert tape_text(tape) == "0: ──X─┤  \n1: ──X─┤  \n2: ──X─┤  "
+        assert draw(tape) == "0: ──X─┤  \n1: ──X─┤  \n2: ──X─┤  "
 
     def test_blocking_ops(self):
         """Test single qubit gates on same wire line up."""
@@ -303,7 +303,7 @@ class TestLayering:
             qml.PauliX(0)
             qml.PauliX(0)
 
-        assert tape_text(tape) == "0: ──X──X──X─┤  "
+        assert draw(tape) == "0: ──X──X──X─┤  "
 
     def test_blocking_multiwire_gate(self):
         """Tests gate gets blocked by multi-wire gate."""
@@ -315,7 +315,7 @@ class TestLayering:
 
         expected = "0: ──X─╭IsingXX────┤  \n1: ────│─────────X─┤  \n2: ────╰IsingXX────┤  "
 
-        assert tape_text(tape, wire_order=[0, 1, 2]) == expected
+        assert draw(tape, wire_order=[0, 1, 2]) == expected
 
 
 with qml.tape.QuantumTape() as tape_matrices:
@@ -335,7 +335,7 @@ class TestShowMatrices:
             "1: ─╰QubitStateVector(M0)────────┤         "
         )
 
-        assert tape_text(tape_matrices) == expected
+        assert draw(tape_matrices) == expected
 
     def test_show_matrices(self):
         """Test matrices included when requested."""
@@ -347,7 +347,7 @@ class TestShowMatrices:
             "M1 = \n[[1. 0.]\n [0. 1.]]"
         )
 
-        assert tape_text(tape_matrices, show_matrices=True) == expected
+        assert draw(tape_matrices, show_matrices=True) == expected
 
     def test_matrix_parameters_provided_cache(self):
         """Providing an existing matrix cache determines numbering order of matrices.
@@ -363,7 +363,7 @@ class TestShowMatrices:
             "M2 = \n[1.0, 0.0]"
         )
 
-        assert tape_text(tape_matrices, show_matrices=True, cache=cache) == expected
+        assert draw(tape_matrices, show_matrices=True, cache=cache) == expected
         assert cache["matrices"][2] == [1.0, 0.0]
 
 
@@ -379,7 +379,7 @@ class TestNestedTapes:
 
         expected = "0: ──Tape:3─┤  \n" "\nTape:3\n" "0: ──X─┤  "
 
-        assert tape_text(tape, cache={"tape_offset": 3}) == expected
+        assert draw(tape, cache={"tape_offset": 3}) == expected
 
     def test_multiple_nested_tapes(self):
         """Test numbers consistent with multiple nested tapes and
@@ -409,7 +409,7 @@ class TestNestedTapes:
             "0: ──Z─┤  "
         )
 
-        assert tape_text(tape) == expected
+        assert draw(tape) == expected
 
     def test_nested_tapes_decimals(self):
         """Test decimals keyword passed to nested tapes."""
@@ -421,7 +421,7 @@ class TestNestedTapes:
 
         expected = "0: ──RX(1.2)──Tape:0─┤  \n" "\nTape:0\n" "0: ──Rot(1.2,2.3,3.5)─┤  "
 
-        assert tape_text(tape, decimals=1) == expected
+        assert draw(tape, decimals=1) == expected
 
     def test_nested_tapes_wire_order(self):
         """Test wire order preserved in nested tapes."""
@@ -437,7 +437,7 @@ class TestNestedTapes:
             "1: ──Y─╭Tape:0─┤  \n" "0: ──X─╰Tape:0─┤  \n" "\nTape:0\n" "1: ──Y─┤  \n0: ──X─┤  "
         )
 
-        assert tape_text(tape, wire_order=[1, 0]) == expected
+        assert draw(tape, wire_order=[1, 0]) == expected
 
     def test_nested_tapes_max_length(self):
         """Test max length passes to recursive tapes."""
@@ -452,6 +452,6 @@ class TestNestedTapes:
             "0: ──X──Tape:0─┤  \n" "\nTape:0\n" "0: ──X──X──X──X──X\n" "\n───X──X──X──X──X─┤  "
         )
 
-        out = tape_text(tape, max_length=20)
+        out = draw(tape, max_length=20)
         assert out == expected
         assert max(len(s) for s in out.split("\n")) <= 20
