@@ -95,7 +95,7 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
     3: ─├C─│───H─╰X─╰C─┤
     4: ─╰C─╰X──────────┤
     """
-    # pylint: disable=protected-access
+    # pylint: disable=protected-access, too-many-branches
 
     measurements = tape.measurements
     observables = tape.observables
