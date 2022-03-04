@@ -246,6 +246,11 @@ class GeneratorUndefinedError(OperatorPropertyUndefined):
     does not have a generator"""
 
 
+class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
+    """Exception used to indicate that an operator
+    does not have parameter_frequencies"""
+
+
 # =============================================================================
 # Wire types
 # =============================================================================
@@ -1128,19 +1133,23 @@ class Operator(abc.ABC):
 class Operation(Operator):
     r"""Base class representing quantum gates or channels applied to quantum states.
 
-    Operations define some additional properties, such as differentiation
+    Operations define some additional properties, that are used for external
+    transformations such as gradient transforms.
 
-    The following two class attributes are optional, but in most cases
-    should be clearly defined to avoid unexpected behavior during
+    The following three class attributes are optional, but in most cases
+    at least one should be clearly defined to avoid unexpected behavior during
     differentiation.
 
-    * :attr:`~.Operation.grad_method`
     * :attr:`~.Operation.grad_recipe`
-
-    Finally, there are some additional optional class attributes
-    that may be set, and used by certain quantum optimizers:
-
+    * :attr:`~.Operation.parameter_frequencies`
     * :attr:`~.Operation.generator`
+
+    Note that ``grad_recipe`` takes precedence when computing parameter-shift
+    derivatives. Finally, these optional class attributes are used by certain
+    transforms, quantum optimizers, and gradient methods.
+    For details on how they are used during differentiation and other transforms,
+    please see the documentation for :class:`~.gradients.param_shift`,
+    :class:`~.metric_tensor`, :func:`~.reconstruct`.
 
     Args:
         params (tuple[tensor_like]): trainable parameters
@@ -1164,10 +1173,12 @@ class Operation(Operator):
         """
         if self.num_params == 0:
             return None
+        if self.grad_recipe != [None] * self.num_params:
+            return "A"
         try:
             self.parameter_frequencies  # pylint:disable=pointless-statement
             return "A"
-        except OperatorPropertyUndefined:
+        except ParameterFrequenciesUndefinedError:
             return "F"
 
     grad_recipe = None
@@ -1220,15 +1231,11 @@ class Operation(Operator):
         """
         raise NotImplementedError
 
-    def get_parameter_shift(self, idx, shift=None):
+    def get_parameter_shift(self, idx):
         r"""Multiplier and shift for the given parameter, based on its gradient recipe.
 
         Args:
-            idx (int): parameter index
-            shift (float or None): The shift value to use for the two-term
-                parameter-shift rule. This is only used if the operation
-                does not have :attr:`Operator.grad_recipe` defined. If ``None``,
-                a shift value of :math:`\pi/2` is used.
+            idx (int): parameter index within the operation
 
         Returns:
             list[[float, float, float]]: list of multiplier, coefficient, shift for each term in the gradient recipe
@@ -1236,25 +1243,22 @@ class Operation(Operator):
         Note that the default value for ``shift`` is None, which is replaced by the
         default shift :math:`\pi/2`.
         """
+        warnings.warn(
+            "The method get_parameter_shift is deprecated. Use the methods of "
+            "the gradients module for general parameter-shift rules instead.",
+            UserWarning,
+        )
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
         if recipe is not None:
             return recipe
 
-        # Default values
-        if shift is None:
-            shift = np.pi / 2
-        multiplier = 0.5 / np.sin(shift)
-        a = 1
-
-        # We set the following default recipe:
-        # ∂f(x) = c*f(a*x+s) - c*f(a*x-s)
-        # where we express a positive and a negative shift by default
-        default_param_shift = [
-            [multiplier, a, shift],
-            [-multiplier, a, -shift],  # pylint: disable=invalid-unary-operand-type
-        ]
-        return default_param_shift
+        # We no longer assume any default parameter-shift rule to apply.
+        raise OperatorPropertyUndefined(
+            f"The operation {self.name} does not have a parameter-shift recipe defined."
+            " This error might occur if previously the two-term shift rule was assumed"
+            " silently. In this case, consider adding it explicitly to the operation."
+        )
 
     @property
     def parameter_frequencies(self):
@@ -1291,18 +1295,25 @@ class Operation(Operator):
         if self.num_params == 1:
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
+            try:
+                gen = qml.generator(self, format="observable")
+            except GeneratorUndefinedError as e:
+                raise ParameterFrequenciesUndefinedError(
+                    f"Operation {self.name} does not have parameter frequencies defined."
+                ) from e
 
             with warnings.catch_warnings():
                 warnings.filterwarnings(
                     action="ignore", message=r".+ eigenvalues will be computed numerically\."
                 )
-                eigvals = qml.eigvals(qml.generator(self, format="observable"))
+                eigvals = qml.eigvals(gen)
 
             eigvals = tuple(np.round(eigvals, 8))
             return qml.gradients.eigvals_to_frequencies(eigvals)
 
-        raise OperatorPropertyUndefined(
-            f"Operation {self.name} does not have parameter frequencies."
+        raise ParameterFrequenciesUndefinedError(
+            f"Operation {self.name} does not have parameter frequencies defined, "
+            "and parameter frequencies can not be computed as no generator is defined."
         )
 
     @property
@@ -1391,12 +1402,8 @@ class Operation(Operator):
 
         # check the grad_recipe validity
         if self.grad_recipe is None:
-            # default recipe for every parameter
+            # Make sure grad_recipe is an iterable of correct length instead of None
             self.grad_recipe = [None] * self.num_params
-        else:
-            assert (
-                len(self.grad_recipe) == self.num_params
-            ), "Gradient recipe must have one entry for each parameter!"
 
 
 class Channel(Operation, abc.ABC):
