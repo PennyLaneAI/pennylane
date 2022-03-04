@@ -185,6 +185,11 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     """
     Converts a quantum tape to a directed multigraph.
 
+    .. note::
+
+        This operation is designed for use as part of the circuit cutting workflow.
+        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+
     Args:
         tape (QuantumTape): tape to be converted into a directed multigraph
 
@@ -206,7 +211,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
     Its corresponding circuit graph can be found using
 
-    >>> qml.transforms.tape_to_graph(tape)
+    >>> qml.transforms.qcut.tape_to_graph(tape)
     <networkx.classes.multidigraph.MultiDiGraph at 0x7fe41cbd7210>
     """
     graph = MultiDiGraph()
@@ -359,7 +364,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     .. note::
 
         This function is designed for use as part of the circuit cutting workflow.
-        Check out the :doc:`transforms </code/qml_transforms>` page for more details.
+        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         graph (MultiDiGraph): directed multigraph to be converted to a tape
@@ -503,8 +508,8 @@ def expand_fragment_tapes(
 
     .. note::
 
-        This function is designed for use as part of the circuit cutting workflow. Check out the
-        :doc:`transforms </code/qml_transforms>` page for more details.
+        This function is designed for use as part of the circuit cutting workflow.
+        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         tape (QuantumTape): the fragment tape to be expanded.
@@ -616,8 +621,8 @@ def contract_tensors(
 
     .. note::
 
-        This function is designed for use as part of the circuit cutting workflow. Check out the
-        :doc:`transforms </code/qml_transforms>` page for more details.
+        This function is designed for use as part of the circuit cutting workflow.
+        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Consider the three tensors :math:`T^{(1)}`, :math:`T^{(2)}`, and :math:`T^{(3)}`, along with
     their contraction equation
@@ -864,8 +869,8 @@ def qcut_processing_fn(
 
     .. note::
 
-        This function is designed for use as part of the circuit cutting workflow. Check out the
-        :doc:`transforms </code/qml_transforms>` page for more details.
+        This function is designed for use as part of the circuit cutting workflow.
+        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         results (Sequence[Sequence]): A collection of execution results corresponding to the
@@ -908,8 +913,8 @@ def cut_circuit(
 
     .. note::
 
-        This function is designed for use as part of the circuit cutting workflow. Check out the
-        :doc:`transforms </code/qml_transforms>` page for more details.
+        This function is designed for use as part of the circuit cutting workflow.
+        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         tape (QuantumTape): The tape of the full circuit to be cut.
@@ -1033,8 +1038,8 @@ def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
 
     .. note::
 
-        This function is designed for use as part of the circuit cutting workflow. Check out the
-        :doc:`transforms </code/qml_transforms>` page for more details.
+        This function is designed for use as part of the circuit cutting workflow.
+        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         tape (QuantumTape): the quantum tape whose wires should be remapped
