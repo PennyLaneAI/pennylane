@@ -1079,6 +1079,8 @@ def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
 
     **Example**
 
+    Consider the following circuit that operates on wires ``[2, 3]``:
+
     .. code-block:: python
 
         with qml.tape.QuantumTape() as tape:
@@ -1087,9 +1089,10 @@ def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
             qml.CNOT(wires=[2, 3])
             qml.expval(qml.PauliZ(2) @ qml.PauliZ(3))
 
-        new_wires = [0, 1]
-        new_tape = qml.transforms.remap_tape_wires(tape, new_wires)
+    We can map from wires ``[2, 3]`` to ``[0, 1]`` using:
 
+    >>> new_wires = [0, 1]
+    >>> new_tape = qml.transforms.qcut.remap_tape_wires(tape, new_wires)
     >>> print(new_tape.draw())
      0: ──RX(0.5)──╭C──╭┤ ⟨Z ⊗ Z⟩
      1: ──RY(0.6)──╰X──╰┤ ⟨Z ⊗ Z⟩
