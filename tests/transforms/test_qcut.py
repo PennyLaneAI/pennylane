@@ -1932,7 +1932,7 @@ class TestCutCircuitTransform:
     Tests for the cut_circuit transform
     """
 
-    @flaky(max_runs=10)
+    @flaky(max_runs=3)
     @pytest.mark.parametrize("shots", [None, int(1e7)])
     def test_simple_cut_circuit_f(self, mocker, use_opt_einsum, shots):
         """
@@ -2434,7 +2434,7 @@ class TestCutCircuitTransform:
         assert np.isclose(res, res_expected)
         assert np.allclose(grad, grad_expected)
 
-    @flaky(max_runs=10)
+    @flaky(max_runs=3)
     @pytest.mark.parametrize("shots", [None, int(1e7)])
     def test_standard_circuit(self, mocker, use_opt_einsum, shots):
         """
