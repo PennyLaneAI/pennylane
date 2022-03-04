@@ -75,7 +75,7 @@ class TestMergeRotations:
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
 
-   def test_two_qubits_rotation_merge_tolerance(self):
+    def test_two_qubits_rotation_merge_tolerance(self):
         """Test whether tolerance argument is respected for merging."""
 
         def qfunc():
@@ -96,7 +96,6 @@ class TestMergeRotations:
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
         assert len(ops) == 0
 
-            
     @pytest.mark.parametrize(
         ("theta_11", "theta_12", "theta_21", "theta_22", "expected_ops"),
         [
@@ -127,7 +126,7 @@ class TestMergeRotations:
         ("theta_11", "theta_12", "theta_21", "theta_22", "expected_ops"),
         [
             (0.3, -0.2, 0.5, -0.8, [qml.CRX(0.5, wires=[0, 1]), qml.RY(-1.3, wires=1)]),
-            (0.3, -0.4, 0.7, -0.1, [qml.CRX(0.7, wires=[0, 1]), qml.RY(-0.8, wires=1)]),
+            (0.3, 0.3, 0.7, -0.1, [qml.RY(-0.8, wires=1)]),
         ],
     )
     def test_two_qubits_merge_with_adjoint(
