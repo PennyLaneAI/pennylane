@@ -413,6 +413,7 @@ class TestMergeRotationsInterfaces:
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
+        @merge_rotations()
         def qfunc():
             qml.CRX(0.2, wires=["w1", "w2"])
             qml.CRX(-0.2, wires=["w1", "w2"])
