@@ -16,7 +16,7 @@
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
 from pennylane.ops.qubit import Rot
-from pennylane.math import allclose, stack, is_abstract, zeros
+from pennylane.math import allclose, stack, is_abstract
 
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
