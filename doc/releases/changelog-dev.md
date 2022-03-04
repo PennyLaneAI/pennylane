@@ -13,6 +13,7 @@
 
   ```py
   dev = qml.device("default.qubit", wires=2)
+  
   @qml.qnode(dev, interface=None)
   def circuit():
       qml.Snapshot()
@@ -233,6 +234,7 @@
     [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
     [(#2244)](https://github.com/PennyLaneAI/pennylane/pull/2244)
     [(#2251)](https://github.com/PennyLaneAI/pennylane/pull/2251)
+    [(#2265)](https://github.com/PennyLaneAI/pennylane/pull/2265)
 
   - Circuit fragments that are disconnected from the terminal measurements are now removed.
     [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
@@ -291,6 +293,9 @@
   [(#2248)](https://github.com/PennyLaneAI/pennylane/pull/2248)
 
 <h3>Bug fixes</h3>
+
+* The `qml.RandomLayers` template now decomposes when the weights are a list of lists.
+  [(#2266)](https://github.com/PennyLaneAI/pennylane/pull/2266/)
 
 * The `qml.QubitUnitary` operation now supports jitting. 
   [(#2249)](https://github.com/PennyLaneAI/pennylane/pull/2249)
@@ -462,6 +467,6 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Anthony Hayes, David Ittah, Josh Izaac, Christina Lee,
+Thomas Bromley, Anthony Hayes, David Ittah, Josh Izaac, Christina Lee, Angus Lowe,
 Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni,
 Antal Száva, David Wierichs
