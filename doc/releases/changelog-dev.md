@@ -45,6 +45,12 @@
   In our case, it is possible to find three CNOTs and replace this pattern with only two CNOTs and therefore
   optimizing the circuit. The number of CNOTs in the circuit is reduced by one.
   ```pycon
+  >>> qml.specs(qnode)()["gate_types"]["CNOT"]
+  3
+
+  >>> qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
+  2
+  
   >>> print(qml.draw(qnode)())
   0: ─╭X──────────╭X────┤  <X>
   1: ─│──╭C─╭X──Z─│──╭C─┤
