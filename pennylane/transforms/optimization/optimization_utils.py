@@ -113,13 +113,12 @@ def fuse_rot_angles(angles_1, angles_2):
         if interface == "jax":
             from jax.lax import cond
 
-            # Not sure why, but I needed to split this into 2 checks; one for the Y angle in the
-            # first Rot, and then combining this with the second one.
-            first_y_cond = cond(
-                allclose(angles_1[1], 0.0), lambda x: True, lambda x: False, angles_1
-            )
             return cond(
-                first_y_cond * allclose(angles_2[1], 0.0), _no_fuse, _fuse, angles_1, angles_2
+                allclose(angles_1[1], 0.0) * allclose(angles_2[1], 0.0),
+                _no_fuse,
+                _fuse,
+                angles_1,
+                angles_2,
             )
 
     # For other interfaces where we would not be jitting or tracing, we can simply check
