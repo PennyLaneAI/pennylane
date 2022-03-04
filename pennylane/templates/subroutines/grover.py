@@ -142,8 +142,7 @@ class GroverOperator(Operation):
         op_list.append(
             MultiControlledX(
                 control_values=ctrl_str,
-                control_wires=wires[:-1],
-                wires=wires[-1],
+                wires=wires,
                 work_wires=work_wires,
             )
         )
