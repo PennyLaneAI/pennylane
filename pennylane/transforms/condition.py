@@ -14,13 +14,12 @@
 """
 Contains the condition transform.
 """
-import inspect
 from copy import copy
 from functools import wraps
 from typing import Type
 
 from pennylane.measurements import MeasurementValue
-from pennylane.operation import AnyWires, Operation, Operator
+from pennylane.operation import AnyWires, Operation
 from pennylane.transforms import make_tape
 
 
