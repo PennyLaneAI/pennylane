@@ -993,6 +993,37 @@ def cut_circuit(
 
     >>> qml.grad(circuit)(x)
     -0.276982865449393
+
+    .. UsageDetails::
+
+        Consider the circuit below:
+
+        .. code-block:: python
+
+            with qml.tape.QuantumTape() as tape:
+                qml.RX(0.531, wires=0)
+                qml.RY(0.9, wires=1)
+                qml.RX(0.3, wires=2)
+
+                qml.CZ(wires=[0, 1])
+                qml.RY(-0.4, wires=0)
+
+                qml.WireCut(wires=1)
+
+                qml.CZ(wires=[1, 2])
+
+                qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+
+        >>> print(tape.draw())
+         0: ──RX(0.531)──╭C──RY(-0.4)──────╭┤ ⟨Z ⊗ Z ⊗ Z⟩
+         1: ──RY(0.9)────╰Z──//────────╭C──├┤ ⟨Z ⊗ Z ⊗ Z⟩
+         2: ──RX(0.3)──────────────────╰Z──╰┤ ⟨Z ⊗ Z ⊗ Z⟩
+
+        To cut the circuit, we first convert convert it to its graph representation:
+
+        >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+
+
     """
     if len(tape.measurements) != 1:
         raise ValueError(
