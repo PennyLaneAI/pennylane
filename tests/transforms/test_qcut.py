@@ -1934,7 +1934,7 @@ class TestCutCircuitTransform:
 
     @flaky(max_runs=3)
     @pytest.mark.parametrize("shots", [None, int(1e7)])
-    def test_simple_cut_circuit_f(self, mocker, use_opt_einsum, shots):
+    def test_simple_cut_circuit(self, mocker, use_opt_einsum, shots):
         """
         Tests the full circuit cutting pipeline returns the correct value and
         gradient for a simple circuit using the `cut_circuit` transform.
@@ -2475,7 +2475,7 @@ class TestCutCircuitTransform:
         res = cut_circuit()
         spy.assert_called_once()
 
-        atol = 1e-3 if shots else 1e-8
+        atol = 1e-2 if shots else 1e-8
         assert np.isclose(res, res_expected, atol=atol)
 
 
