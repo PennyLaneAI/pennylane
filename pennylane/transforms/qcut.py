@@ -378,8 +378,9 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     """
     Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
 
-    Each node in the graph should have an order attribute specifying the topological order of
-    the operations.
+    To account for the possibility of needing to perform mid-circuit measurements, if any operations
+    follow a :class:`MeasureNode` operation on a given wire then these operations are mapped to a
+    new wire.
 
     .. note::
 
@@ -394,18 +395,28 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     **Example**
 
-    Consider the following, where ``graph`` contains :class:`~.MeasureNode` and
-    :class:`~.PrepareNode` pairs that divide the full circuit graph into five subgraphs.
-    We can find the circuit fragments by using:
+    Consider the following circuit:
 
     .. code-block:: python
 
-        >>> subgraphs, communication_graph = qml.transforms.fragment_graph(graph)
-        >>> tapes = [qml.transforms.graph_to_tape(sg) for sg in subgraphs]
-        >>> tapes
-        [<QuantumTape: wires=[0], params=1>, <QuantumTape: wires=[0, 1], params=1>,
-         <QuantumTape: wires=[1], params=1>, <QuantumTape: wires=[0], params=0>,
-         <QuantumTape: wires=[1], params=0>]
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.4, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.transforms.qcut.MeasureNode(wires=1)
+            qml.transforms.qcut.PrepareNode(wires=1)
+            qml.CNOT(wires=[1, 0])
+            qml.expval(qml.PauliZ(0))
+
+    This circuit contains operations that follow a :class:`~.MeasureNode`. These operations will
+    subsequently act on wire ``2`` instead of wire ``1``:
+
+    >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+    >>> tape = qml.transforms.qcut.graph_to_tape(graph)
+    >>> print(tape.draw())
+     0: ──RX(0.4)──────╭C───────────────╭X──┤ ⟨Z⟩
+     1: ──RY(0.5)──────╰X──MeasureNode──│───┤
+     2: ──PrepareNode───────────────────╰C──┤
     """
 
     wires = Wires.all_wires([n.wires for n in graph.nodes])
@@ -555,24 +566,21 @@ def expand_fragment_tapes(
 
     We can expand over the measurement and preparation nodes using:
 
-    .. code-block:: python
-
-        >>> tapes, prep, meas = qml.transforms.expand_fragment_tapes(tape)
-        >>> for t in tapes:
-        ...     print(qml.drawer.tape_text(t, decimals=1))
-        0: ──I──RX(0.5)─┤  <I>  <Z>
-        0: ──I──RX(0.5)─┤  <X>
-        0: ──I──RX(0.5)─┤  <Y>
-        0: ──X──RX(0.5)─┤  <I>  <Z>
-        0: ──X──RX(0.5)─┤  <X>
-        0: ──X──RX(0.5)─┤  <Y>
-        0: ──H──RX(0.5)─┤  <I>  <Z>
-        0: ──H──RX(0.5)─┤  <X>
-        0: ──H──RX(0.5)─┤  <Y>
-        0: ──H──S──RX(0.5)─┤  <I>  <Z>
-        0: ──H──S──RX(0.5)─┤  <X>
-        0: ──H──S──RX(0.5)─┤  <Y>
-
+    >>> tapes, prep, meas = qml.transforms.expand_fragment_tapes(tape)
+    >>> for t in tapes:
+    ...     print(qml.drawer.tape_text(t, decimals=1))
+    0: ──I──RX(0.5)─┤  <I>  <Z>
+    0: ──I──RX(0.5)─┤  <X>
+    0: ──I──RX(0.5)─┤  <Y>
+    0: ──X──RX(0.5)─┤  <I>  <Z>
+    0: ──X──RX(0.5)─┤  <X>
+    0: ──X──RX(0.5)─┤  <Y>
+    0: ──H──RX(0.5)─┤  <I>  <Z>
+    0: ──H──RX(0.5)─┤  <X>
+    0: ──H──RX(0.5)─┤  <Y>
+    0: ──H──S──RX(0.5)─┤  <I>  <Z>
+    0: ──H──S──RX(0.5)─┤  <X>
+    0: ──H──S──RX(0.5)─┤  <Y>
     """
     prepare_nodes = [o for o in tape.operations if isinstance(o, PrepareNode)]
     measure_nodes = [o for o in tape.operations if isinstance(o, MeasureNode)]
@@ -983,10 +991,8 @@ def cut_circuit(
 
     Futhermore, the output of the cut circuit is also differentiable:
 
-    .. code-block:: python
-
-        >>> qml.grad(cut_circuit)(x)
-        -0.506395895364911
+    >>> qml.grad(cut_circuit)(x)
+    -0.506395895364911
     """
     if len(tape.measurements) != 1:
         raise ValueError(
