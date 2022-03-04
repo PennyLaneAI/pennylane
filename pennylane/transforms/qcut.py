@@ -1133,6 +1133,12 @@ class CutStrategy:
     A circuit-cutting distribution policy for executing (large) circuits on available (comparably
     smaller) devices.
 
+    .. note::
+
+        This class is part of a work-in-progress feature to support automatic cut placement in the
+        circuit cutting workflow. Currently only manual placement of cuts is supported,
+        check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+
     Args:
         devices (Union[qml.Device, Sequence[qml.Device]]): Single, or Sequence of, device(s).
             Optional only when ``max_free_wires`` is provided.
