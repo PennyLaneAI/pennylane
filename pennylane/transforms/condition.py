@@ -72,7 +72,7 @@ def cond(condition, true_fn, false_fn=None):
     :func:`defer_measurements` transform.
 
     Args:
-        condition (MeasurementValue[bool]): a conditional expression involving a mid-circuit
+        condition (.MeasurementValue[bool]): a conditional expression involving a mid-circuit
            measurement value (see :func:`.pennylane.measure`)
         true_fn (callable): The quantum function of PennyLane operation to
             apply if ``condition`` is ``True``
