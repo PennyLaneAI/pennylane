@@ -54,10 +54,9 @@ class MeasurementProcess:
     """
 
     # pylint: disable=too-few-public-methods
+    # pylint: disable=too-many-arguments
 
-    def __init__(
-        self, return_type, obs=None, wires=None, eigvals=None, id=None
-    ):  # pylint: disable=too-many-arguments
+    def __init__(self, return_type, obs=None, wires=None, eigvals=None, id=None):
         self.return_type = return_type
         self.obs = obs
         self.id = id
