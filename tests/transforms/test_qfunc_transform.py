@@ -302,6 +302,35 @@ class TestQFuncTransforms:
         assert np.allclose(normal_result, transformed_result)
         assert normal_result.shape == transformed_result.shape
 
+    def test_sphinx_build(self, monkeypatch):
+        """Test that qfunc transforms are not created during Sphinx builds"""
+
+        @qml.qfunc_transform
+        def my_transform(tape):
+            for op in tape.operations + tape.measurements:
+                if op.name == "Hadamard":
+                    qml.RZ(np.pi, wires=op.wires)
+                    qml.RY(np.pi / 2, wires=op.wires)
+                else:
+                    op.queue()
+
+        assert hasattr(my_transform, "tape_fn")
+
+        monkeypatch.setenv("SPHINX_BUILD", "1")
+
+        with pytest.warns(UserWarning, match="qfunc transformations have been disabled"):
+
+            @qml.qfunc_transform
+            def my_transform(tape):
+                for op in tape.operations + tape.measurements:
+                    if op.name == "Hadamard":
+                        qml.RZ(np.pi, wires=op.wires)
+                        qml.RY(np.pi / 2, wires=op.wires)
+                    else:
+                        op.queue()
+
+        assert not hasattr(my_transform, "tape_fn")
+
 
 ############################################
 # Test transform, ansatz, and qfunc function
