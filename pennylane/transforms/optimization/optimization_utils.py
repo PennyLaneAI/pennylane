@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility functions for circuit optimization."""
-# pylint: disable=too-many-return-statements
+# pylint: disable=too-many-return-statements,import-outside-toplevel
 from pennylane.math import allclose, sin, cos, arccos, arctan2, stack, _multi_dispatch, is_abstract
 from pennylane.wires import Wires
 
