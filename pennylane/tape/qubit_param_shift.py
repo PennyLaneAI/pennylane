@@ -22,11 +22,61 @@ and any gate with an involutory generator.
 import numpy as np
 
 import pennylane as qml
-from pennylane.measure import MeasurementProcess
+from pennylane.measurements import MeasurementProcess
 from pennylane.tape import QuantumTape
 from pennylane.math import toarray
 
 from .jacobian_tape import JacobianTape
+
+
+def _get_operation_recipe(op, p_idx, shifts):
+    """Utility function to return the parameter-shift rule
+    of the operation corresponding to trainable parameter
+    t_idx on tape. This is a copy from qml.gradients that
+    is replicated here to avoid circular dependencies, and
+    that can soon be removed together with QubitParamShiftTape.
+
+    This function performs multiple attempts to obtain the recipe:
+
+    - If the operation has a custom ``grad_recipe`` defined, it is used.
+
+    - If ``parameter_frequencies`` yield a result, the frequencies are
+      used to construct the general parameter-shift rule via
+      ``qml.gradients.generate_shift_rule``
+      Note that by default, the generator is used to compute the frequencies
+      if they are not provided by a custom implementation.
+
+    That is, the order of precedence is ``grad_recipe``, custom
+    ``parameter_frequencies`` and finally ``generator`` via the default
+    implementation of the frequencies.
+    """
+    # Try to use the stored grad_recipe of the operation
+    recipe = op.grad_recipe[p_idx]
+    if recipe is not None:
+        recipe = np.array(recipe).T
+        # remove all small coefficients and shifts
+        recipe[np.abs(recipe) < 1e-10] = 0
+
+        # remove columns where the coefficients are 0
+        recipe = recipe[:, ~(recipe[0] == 0)]
+        # sort columns according to abs(shift)
+        return recipe[:, np.argsort(np.abs(recipe)[-1])]
+
+    # Try to obtain frequencies, either via custom implementation or from generator eigvals
+    try:
+        frequencies = op.parameter_frequencies[p_idx]
+    except qml.operation.ParameterFrequenciesUndefinedError as e:
+        raise qml.operation.OperatorPropertyUndefined(
+            f"The operation {op.name} does not have a grad_recipe, parameter_frequencies or "
+            "a generator defined. No parameter shift rule can be applied."
+        ) from e
+
+    # Create shift rule from frequencies with given shifts
+    coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=1)
+    # The generated shift rules do not include a rescaling of the parameter, only shifts.
+    mults = np.ones_like(coeffs)
+
+    return coeffs, mults, shifts
 
 
 class QubitParamShiftTape(JacobianTape):
@@ -146,18 +196,15 @@ class QubitParamShiftTape(JacobianTape):
             in addition to a post-processing function to be applied to the evaluated
             tapes.
         """
-        t_idx = list(self.trainable_params)[idx]
-        op = self._par_info[t_idx]["op"]
-        p_idx = self._par_info[t_idx]["p_idx"]
-
-        s = options.get("shift", np.pi / 2)
-        param_shift = op.get_parameter_shift(p_idx, shift=s)
+        # pylint: disable=unused-argument
+        op, p_idx = self.get_operation(idx)
+        param_shift = _get_operation_recipe(op, p_idx, None)
 
         shift = np.zeros_like(params)
         coeffs = []
         tapes = []
 
-        for c, a, s in param_shift:
+        for c, a, s in zip(*param_shift):
             shift[idx] = s
             shifted_tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
             shifted_tape.set_parameters(a * params + shift)
@@ -343,16 +390,12 @@ class QubitParamShiftTape(JacobianTape):
         else:
             # No optimizations can be made, generate all 4 tapes
             for idx in idxs:
-                t_idx = list(self.trainable_params)[idx]
-                op = self._par_info[t_idx]["op"]
-                p_idx = self._par_info[t_idx]["p_idx"]
-                s = idx_shifts[idx]
-
-                param_shift = op.get_parameter_shift(p_idx, shift=s)
+                op, p_idx = self.get_operation(idx)
+                param_shift = _get_operation_recipe(op, p_idx, None)
                 param_shifts.append(param_shift)
 
-            for c1, a, s1 in param_shifts[0]:
-                for c2, _, s2 in param_shifts[1]:
+            for c1, a, s1 in zip(*param_shifts[0]):
+                for c2, _, s2 in zip(*param_shifts[1]):
                     c = c1 * c2
                     s = s1 * shift[i] + s2 * shift[j]
                     shifted_tape = self.copy(copy_operations=True, tape_cls=QuantumTape)
@@ -443,10 +486,9 @@ class QubitParamShiftTape(JacobianTape):
 
             # if this variable uses parameter-shift
             if grad_info["grad_method"] == "A":
-
-                # get_parameter_shift returns operation specific derivative formula
-                # for ops with 4-term gradients, the array will contain 4 pieces of data.
-                num_executions += len(grad_info["op"].get_parameter_shift(grad_info["p_idx"]))
+                op = grad_info["op"]
+                p_idx = grad_info["p_idx"]
+                num_executions += len(_get_operation_recipe(op, p_idx, None))
 
         info["num_parameter_shift_executions"] = num_executions
 

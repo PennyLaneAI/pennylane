@@ -18,13 +18,16 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import copy
+import uuid
 import warnings
+from typing import Generic, TypeVar
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.operation import (
     Expectation,
+    MidMeasure,
     Observable,
     Probability,
     Sample,
@@ -51,10 +54,12 @@ class MeasurementProcess:
     """
 
     # pylint: disable=too-few-public-methods
+    # pylint: disable=too-many-arguments
 
-    def __init__(self, return_type, obs=None, wires=None, eigvals=None):
+    def __init__(self, return_type, obs=None, wires=None, eigvals=None, id=None):
         self.return_type = return_type
         self.obs = obs
+        self.id = id
 
         if wires is not None and obs is not None:
             raise ValueError("Cannot set the wires if an observable is provided.")
@@ -128,7 +133,7 @@ class MeasurementProcess:
 
         .. warning::
             The ``eigvals`` property is deprecated and will be removed in
-            an upcoming release.
+            an upcoming release. Please use :class:`qml.eigvals <.pennylane.eigvals>` instead.
 
         If the measurement process has an associated observable,
         the eigenvalues will correspond to this observable. Otherwise,
@@ -148,7 +153,8 @@ class MeasurementProcess:
             array: eigvals representation
         """
         warnings.warn(
-            "The 'eigvals' property is deprecated and will be removed in an upcoming release.",
+            "The 'eigvals' property is deprecated and will be removed in an upcoming release. "
+            "Please use 'qml.eigvals' instead.",
             UserWarning,
         )
         return self.get_eigvals()
@@ -587,3 +593,122 @@ def density_matrix(wires):
     """
     # pylint: disable=protected-access
     return MeasurementProcess(State, wires=qml.wires.Wires(wires))
+
+
+T = TypeVar("T")
+
+
+class MeasurementValueError(ValueError):
+    """Error raised when an unknown measurement value is being used."""
+
+
+class MeasurementValue(Generic[T]):
+    """A class representing unknown measurement outcomes in the qubit model.
+
+    Measurements on a single qubit in the computational basis are assumed.
+
+    Args:
+        measurement_id (str): The id of the measurement that this object depends on.
+        zero_case (float): the first measurement outcome value
+        one_case (float): the second measurement outcome value
+    """
+
+    __slots__ = ("_depends_on", "_zero_case", "_one_case", "_control_value")
+
+    def __init__(
+        self,
+        measurement_id: str,
+        zero_case: float = 0,
+        one_case: float = 1,
+    ):
+        self._depends_on = measurement_id
+        self._zero_case = zero_case
+        self._one_case = one_case
+        self._control_value = one_case  # By default, control on the one case
+
+    @property
+    def branches(self):
+        """A dictionary representing all the possible outcomes of the MeasurementValue."""
+        branch_dict = {}
+        branch_dict[(0,)] = self._zero_case
+        branch_dict[(1,)] = self._one_case
+        return branch_dict
+
+    def __invert__(self):
+        """Inverts the control value of the measurement."""
+        zero = self._zero_case
+        one = self._one_case
+
+        self._control_value = one if self._control_value == zero else zero
+
+        return self
+
+    def __eq__(self, control_value):
+        """Allow asserting measurement values."""
+        measurement_outcomes = {self._zero_case, self._one_case}
+        if control_value not in measurement_outcomes:
+            raise MeasurementValueError(
+                f"Unknown measurement value asserted; the set of possible measurement outcomes is: {measurement_outcomes}."
+            )
+
+        self._control_value = control_value
+        return self
+
+    @property
+    def control_value(self):
+        """The control value to consider for the measurement outcome."""
+        return self._control_value
+
+    @property
+    def measurements(self):
+        """List of all measurements this MeasurementValue depends on."""
+        return [self._depends_on]
+
+
+def measure(wires):
+    """Perform a mid-circuit measurement in the computational basis on the
+    supplied qubit.
+
+    Measurement outcomes can be obtained and used to conditionally apply
+    operations.
+
+    If a device doesn't support mid-circuit measurements natively, then the
+    QNode will apply the :func:`defer_measurements` transform.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def func(x, y):
+            qml.RY(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            m_0 = qml.measure(1)
+
+            qml.cond(m_0, qml.RY)(y, wires=0)
+            return qml.probs(wires=[0])
+
+    Executing this QNode:
+
+    >>> pars = np.array([0.643, 0.246], requires_grad=True)
+    >>> func(*pars)
+    tensor([0.90165331, 0.09834669], requires_grad=True)
+
+    Args:
+        wires (Wires): The wires the measurement process applies to.
+
+    Raises:
+        QuantumFunctionError: if multiple wires were specified
+    """
+    wire = qml.wires.Wires(wires)
+    if len(wire) > 1:
+        raise qml.QuantumFunctionError(
+            "Only a single qubit can be measured in the middle of the circuit"
+        )
+
+    # Create a UUID and a map between MP and MV to support serialization
+    measurement_id = str(uuid.uuid4())[:8]
+    MeasurementProcess(MidMeasure, wires=wire, id=measurement_id)
+    return MeasurementValue(measurement_id)

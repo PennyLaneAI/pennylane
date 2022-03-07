@@ -44,6 +44,10 @@ from pennylane.operation import AnyWires, CVOperation, CVObservable
 from pennylane import math as qml_math
 
 from .identity import Identity  #  pylint: disable=unused-import
+from .snapshot import Snapshot  #  pylint: disable=unused-import
+
+
+_two_term_shift_rule = [[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]
 
 
 def _rotation(phi, bare=False):
@@ -104,6 +108,7 @@ class Rotation(CVOperation):
     num_params = 1
     num_wires = 1
     grad_method = "A"
+    grad_recipe = (_two_term_shift_rule,)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -115,8 +120,8 @@ class Rotation(CVOperation):
     def adjoint(self, do_queue=True):
         return Rotation(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "R")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "R", cache=cache)
 
 
 class Squeezing(CVOperation):
@@ -158,7 +163,7 @@ class Squeezing(CVOperation):
     shift = 0.1
     multiplier = 0.5 / math.sinh(shift)
     a = 1
-    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
     def __init__(self, r, phi, wires, do_queue=True, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
@@ -173,8 +178,8 @@ class Squeezing(CVOperation):
         new_phi = (phi + np.pi) % (2 * np.pi)
         return Squeezing(r, new_phi, wires=self.wires, do_queue=do_queue)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "S")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "S", cache=cache)
 
 
 class Displacement(CVOperation):
@@ -215,7 +220,7 @@ class Displacement(CVOperation):
     shift = 0.1
     multiplier = 0.5 / shift
     a = 1
-    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
     def __init__(self, a, phi, wires, do_queue=True, id=None):
         super().__init__(a, phi, wires=wires, do_queue=do_queue, id=id)
@@ -232,8 +237,8 @@ class Displacement(CVOperation):
         new_phi = (phi + np.pi) % (2 * np.pi)
         return Displacement(a, new_phi, wires=self.wires, do_queue=do_queue)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "D")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "D", cache=cache)
 
 
 class Beamsplitter(CVOperation):
@@ -274,6 +279,7 @@ class Beamsplitter(CVOperation):
     num_params = 2
     num_wires = 2
     grad_method = "A"
+    grad_recipe = (_two_term_shift_rule, _two_term_shift_rule)
 
     def __init__(self, theta, phi, wires, do_queue=True, id=None):
         super().__init__(theta, phi, wires=wires, do_queue=do_queue, id=id)
@@ -294,8 +300,8 @@ class Beamsplitter(CVOperation):
         theta, phi = self.parameters
         return Beamsplitter(-theta, phi, wires=self.wires, do_queue=do_queue)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "BS")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "BS", cache=cache)
 
 
 class TwoModeSqueezing(CVOperation):
@@ -342,7 +348,7 @@ class TwoModeSqueezing(CVOperation):
     shift = 0.1
     multiplier = 0.5 / math.sinh(shift)
     a = 1
-    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
     def __init__(self, r, phi, wires, do_queue=True, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
@@ -364,8 +370,8 @@ class TwoModeSqueezing(CVOperation):
         new_phi = (phi + np.pi) % (2 * np.pi)
         return TwoModeSqueezing(r, new_phi, wires=self.wires, do_queue=do_queue)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "S")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "S", cache=cache)
 
 
 class QuadraticPhase(CVOperation):
@@ -417,8 +423,8 @@ class QuadraticPhase(CVOperation):
         U[2, 1] = p[0]
         return U
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "P")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "P", cache=cache)
 
 
 class ControlledAddition(CVOperation):
@@ -476,8 +482,8 @@ class ControlledAddition(CVOperation):
     def adjoint(self, do_queue=True):
         return ControlledAddition(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "X")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "X", cache=cache)
 
 
 class ControlledPhase(CVOperation):
@@ -535,8 +541,8 @@ class ControlledPhase(CVOperation):
     def adjoint(self, do_queue=True):
         return ControlledPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "Z")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Z", cache=cache)
 
 
 class Kerr(CVOperation):
@@ -631,8 +637,8 @@ class CubicPhase(CVOperation):
     def adjoint(self, do_queue=True):
         return CubicPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "V")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "V", cache=cache)
 
 
 class InterferometerUnitary(CVOperation):
@@ -699,8 +705,8 @@ class InterferometerUnitary(CVOperation):
             qml_math.T(qml_math.conj(U)), wires=self.wires, do_queue=do_queue
         )
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "U")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
 # =============================================================================
@@ -822,8 +828,8 @@ class ThermalState(CVOperation):
     def __init__(self, nbar, wires, do_queue=True, id=None):
         super().__init__(nbar, wires=wires, do_queue=do_queue, id=id)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "Thermal")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Thermal", cache=cache)
 
 
 class GaussianState(CVOperation):
@@ -852,8 +858,8 @@ class GaussianState(CVOperation):
     def __init__(self, V, r, wires, do_queue=True, id=None):
         super().__init__(V, r, wires=wires, do_queue=do_queue, id=id)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "Gaussian")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Gaussian", cache=cache)
 
 
 class FockState(CVOperation):
@@ -880,13 +886,15 @@ class FockState(CVOperation):
     def __init__(self, n, wires, do_queue=True, id=None):
         super().__init__(n, wires=wires, do_queue=do_queue, id=id)
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 
         Args:
             decimals=None (int): If ``None``, no parameters are included. Else,
                 specifies how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
 
         Returns:
             str: label to use in drawings
@@ -970,13 +978,15 @@ class FockStateVector(CVOperation):
     def __init__(self, state, wires, do_queue=True, id=None):
         super().__init__(state, wires=wires, do_queue=do_queue, id=id)
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 
         Args:
             decimals=None (int): If ``None``, no parameters are included. Else,
                 specifies how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
 
         Returns:
             str: label to use in drawings
@@ -1100,7 +1110,7 @@ class NumberOperator(CVObservable):
         hbar = 2
         return np.diag([-0.5, 0.5 / hbar, 0.5 / hbar])
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "n"
 
 
@@ -1157,7 +1167,7 @@ class TensorN(CVObservable):
 
         return super().__new__(cls)
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         if base_label is not None:
             return base_label
         return "⊗".join("n" for _ in self.wires)
@@ -1268,13 +1278,15 @@ class QuadOperator(CVObservable):
         phi = p[0]
         return np.array([0, math.cos(phi), math.sin(phi)])  # TODO check
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 
         Args:
             decimals=None (int): If ``None``, no parameters are included. Else,
                 specifies how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
 
         Returns:
             str: label to use in drawings
@@ -1292,7 +1304,7 @@ class QuadOperator(CVObservable):
         """
 
         if base_label is not None:
-            return super().label(decimals=decimals, base_label=base_label)
+            return super().label(decimals=decimals, base_label=base_label, cache=cache)
 
         if decimals is None:
             p = "φ"
@@ -1401,13 +1413,15 @@ class FockStateProjector(CVObservable):
     def __init__(self, n, wires, do_queue=True, id=None):
         super().__init__(n, wires=wires, do_queue=do_queue, id=id)
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 
         Args:
             decimals=None (int): If ``None``, no parameters are included. Else,
                 specifies how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
 
         Returns:
             str: label to use in drawings
@@ -1420,7 +1434,7 @@ class FockStateProjector(CVObservable):
         """
 
         if base_label is not None:
-            return super().label(decimals=decimals, base_label=base_label)
+            return super().label(decimals=decimals, base_label=base_label, cache=cache)
 
         basis_string = "".join(str(int(i)) for i in self.parameters[0])
         return f"|{basis_string}⟩⟨{basis_string}|"
@@ -1428,6 +1442,7 @@ class FockStateProjector(CVObservable):
 
 ops = {
     "Identity",
+    "Snapshot",
     "Beamsplitter",
     "ControlledAddition",
     "ControlledPhase",

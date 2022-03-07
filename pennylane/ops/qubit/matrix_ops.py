@@ -75,7 +75,7 @@ class QubitUnitary(Operation):
 
             # Check for unitarity; due to variable precision across the different ML frameworks,
             # here we issue a warning to check the operation, instead of raising an error outright.
-            if not qml.math.allclose(
+            if not qml.math.is_abstract(U) and not qml.math.allclose(
                 qml.math.dot(U, qml.math.T(qml.math.conj(U))),
                 qml.math.eye(qml.math.shape(U)[0]),
                 atol=1e-6,
@@ -156,8 +156,8 @@ class QubitUnitary(Operation):
     def _controlled(self, wire):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "U")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
 class ControlledQubitUnitary(QubitUnitary):
@@ -439,5 +439,5 @@ class DiagonalQubitUnitary(Operation):
             wires=Wires(control) + self.wires,
         )
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "U")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)

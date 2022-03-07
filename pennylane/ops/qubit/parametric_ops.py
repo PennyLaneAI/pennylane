@@ -29,7 +29,6 @@ from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadam
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
 
-
 INV_SQRT2 = 1 / math.sqrt(2)
 
 
@@ -341,8 +340,8 @@ class PhaseShift(Operation):
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "Rϕ")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -483,8 +482,8 @@ class ControlledPhaseShift(Operation):
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "Rϕ")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
 
     @staticmethod
     def compute_matrix(phi):  # pylint: disable=arguments-differ
@@ -952,13 +951,15 @@ class PauliRot(Operation):
                 f"The given Pauli word has length {len(pauli_word)}, length {num_wires} was expected for wires {wires}"
             )
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 
         Args:
             decimals=None (int): If ``None``, no parameters are included. Else,
                 specifies how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
 
         Returns:
             str: label to use in drawings
@@ -1162,14 +1163,6 @@ class PauliRot(Operation):
         return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires)
 
 
-# Four term gradient recipe for controlled rotations
-c1 = INV_SQRT2 * (np.sqrt(2) + 1) / 4
-c2 = INV_SQRT2 * (np.sqrt(2) - 1) / 4
-a = np.pi / 2
-b = 3 * np.pi / 2
-four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
-
-
 class CRX(Operation):
     r"""
     The controlled-RX operator
@@ -1216,7 +1209,6 @@ class CRX(Operation):
 
     basis = "X"
     grad_method = "A"
-    grad_recipe = four_term_grad_recipe
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
@@ -1225,8 +1217,8 @@ class CRX(Operation):
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "RX")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "RX", cache=cache)
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -1366,7 +1358,6 @@ class CRY(Operation):
 
     basis = "Y"
     grad_method = "A"
-    grad_recipe = four_term_grad_recipe
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
@@ -1375,8 +1366,8 @@ class CRY(Operation):
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "RY")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "RY", cache=cache)
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -1509,7 +1500,6 @@ class CRZ(Operation):
 
     basis = "Z"
     grad_method = "A"
-    grad_recipe = four_term_grad_recipe
     parameter_frequencies = [(0.5, 1.0)]
 
     def generator(self):
@@ -1518,8 +1508,8 @@ class CRZ(Operation):
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "RZ")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "RZ", cache=cache)
 
     @staticmethod
     def compute_matrix(theta):  # pylint: disable=arguments-differ
@@ -1673,14 +1663,13 @@ class CRot(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
-    grad_recipe = four_term_grad_recipe * 3
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
     def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
         super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "Rot")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rot", cache=cache)
 
     @staticmethod
     def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ

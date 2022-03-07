@@ -152,20 +152,6 @@ class TestOperatorConstruction:
 class TestOperationConstruction:
     """Test custom operations construction."""
 
-    def test_incorrect_grad_recipe_length(self):
-        """Test that an exception is raised if len(grad_recipe)!=len(num_params)"""
-
-        class DummyOp(qml.operation.CVOperation):
-            r"""Dummy custom operation"""
-            num_wires = 2
-            grad_method = "A"
-            grad_recipe = [(0.5, 0.1), (0.43, 0.1)]
-
-        with pytest.raises(
-            AssertionError, match="Gradient recipe must have one entry for each parameter"
-        ):
-            DummyOp(0.5, wires=[0, 1])
-
     def test_grad_recipe_parameter_dependent(self):
         """Test that an operation with a gradient recipe that depends on
         its instantiated parameter values works correctly"""
@@ -183,6 +169,37 @@ class TestOperationConstruction:
         x = 0.654
         op = DummyOp(x, wires=0)
         assert op.grad_recipe == ([[1.0, 1.0, x], [1.0, 0.0, -x]],)
+
+    def test_warning_get_parameter_shift(self):
+        """Test that ``get_parameter_shift`` issues a deprecation
+        warning."""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            grad_recipe = ("Dummy recipe",)
+
+        op = DummyOp(0.1, wires=0)
+        with pytest.warns(UserWarning, match="get_parameter_shift is deprecated"):
+            assert op.get_parameter_shift(0) == "Dummy recipe"
+
+    def test_error_get_parameter_shift_no_recipe(self):
+        """Test that ``get_parameter_shift`` raises an Error if no grad_recipe
+        is available, as we no longer assume the two-term rule by default."""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            num_params = 1
+            grad_recipe = (None,)
+
+        op = DummyOp(0.1, wires=0)
+        with pytest.raises(
+            qml.operation.OperatorPropertyUndefined,
+            match="The operation DummyOp does not have a parameter-shift recipe",
+        ):
+            op.get_parameter_shift(0)
 
     def test_default_grad_method_with_frequencies(self):
         """Test that the correct ``grad_method`` is returned by default
@@ -230,6 +247,20 @@ class TestOperationConstruction:
         op = DummyOp(x, wires=0)
         assert op.grad_method == "F"
 
+    def test_default_grad_method_with_grad_recipe(self):
+        """Test that the correct ``grad_method`` is returned by default
+        if a grad_recipe is present.
+        """
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            grad_recipe = ["not a recipe"]
+
+        x = 0.654
+        op = DummyOp(x, wires=0)
+        assert op.grad_method == "A"
+
     def test_default_grad_no_param(self):
         """Test that the correct ``grad_method`` is returned by default
         if an operation does not have a parameter.
@@ -271,7 +302,7 @@ class TestOperationConstruction:
         x = [0.654, 2.31, 0.1]
         op = DummyOp(*x, wires=0)
         with pytest.raises(
-            qml.operation.OperatorPropertyUndefined, match="does not have parameter"
+            qml.operation.OperatorPropertyUndefined, match="DummyOp does not have parameter"
         ):
             op.parameter_frequencies
 
@@ -1317,10 +1348,16 @@ class TestOperationDerivative:
 
     def test_no_generator_raise(self):
         """Tests if the function raises an exception if the input operation has no generator"""
-        op = qml.Rot(0.1, 0.2, 0.3, wires=0)
+
+        class CustomOp(qml.operation.Operation):
+            num_wires = 1
+            num_params = 1
+
+        op = CustomOp(0.5, wires=0)
 
         with pytest.raises(
-            qml.operation.GeneratorUndefinedError, match="Operation Rot does not have a generator"
+            qml.operation.GeneratorUndefinedError,
+            match="Operation CustomOp does not have a generator",
         ):
             operation_derivative(op)
 
@@ -1372,6 +1409,25 @@ class TestOperationDerivative:
         """Test if the function correctly returns the derivative of CRY"""
         p = 0.3
         op = qml.CRY(p, wires=[0, 1])
+
+        derivative = operation_derivative(op)
+        expected_derivative = 0.5 * np.array(
+            [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, -np.sin(p / 2), -np.cos(p / 2)],
+                [0, 0, np.cos(p / 2), -np.sin(p / 2)],
+            ]
+        )
+        assert np.allclose(derivative, expected_derivative)
+
+    def test_cry_non_consecutive(self):
+        """Test if the function correctly returns the derivative of CRY
+        if the wires are not consecutive. This is expected behaviour, since
+        without any other context, the operation derivative should make no
+        assumption about the wire ordering."""
+        p = 0.3
+        op = qml.CRY(p, wires=[1, 0])
 
         derivative = operation_derivative(op)
         expected_derivative = 0.5 * np.array(

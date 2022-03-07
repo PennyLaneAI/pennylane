@@ -324,7 +324,7 @@ class TestInternalFunctions:
         # Raises an error if queue or observables are invalid
         dev.check_validity(queue, observables)
 
-    def test_check_validity_with_not_supported_operation_inverse(
+    def test_check_validity_with_unsupported_operation_inverse(
         self, mock_device_supporting_paulis_and_inverse
     ):
         """Tests the function Device.check_validity with an valid queue
@@ -526,6 +526,36 @@ class TestInternalFunctions:
 
         # The number of hits increased
         assert dev.map_wires.cache_info().hits > original_hits
+
+    def test_mcm_unsupported_error(self, monkeypatch, mock_device_with_paulis_and_methods):
+        """Test that an error is raised if mid-circuit measurements are not
+        supported natively"""
+        dev = mock_device_with_paulis_and_methods(wires=2)
+
+        # mid-circuit measurements are part of the queue (for now)
+        with qml.tape.QuantumTape() as tape:
+            qml.measure(1)
+            qml.PauliZ(0)
+
+        # Raises an error for device that doesn't support mid-circuit measurements natively
+        with pytest.raises(DeviceError, match="Mid-circuit measurements are not natively"):
+            dev.check_validity(tape.operations, tape.observables)
+
+    def test_conditional_ops_unsupported_error(
+        self, monkeypatch, mock_device_with_paulis_and_methods
+    ):
+        """Test that an error is raised for conditional operations if
+        mid-circuit measurements are not supported natively"""
+        dev = mock_device_with_paulis_and_methods(wires=2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.cond(0, qml.RY)(0.3, wires=0)
+            qml.PauliZ(0)
+
+        # Raises an error for device that doesn't support conditional
+        # operations natively
+        with pytest.raises(DeviceError, match="Gate Conditional not supported on device"):
+            dev.check_validity(tape.operations, tape.observables)
 
 
 class TestClassmethods:

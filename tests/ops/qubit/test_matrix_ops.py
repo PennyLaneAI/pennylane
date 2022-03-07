@@ -147,25 +147,44 @@ class TestQubitUnitary:
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U, wires=range(num_wires + 1)).get_matrix()
 
+    @pytest.mark.parametrize("U, num_wires", [(H, 1), (np.kron(H, H), 2)])
+    def test_qubit_unitary_jax(self, U, num_wires):
+        """Tests that QubitUnitary works with jitting."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        U = jnp.array(U)
+        f = lambda m: qml.QubitUnitary(m, wires=range(num_wires)).get_matrix()
+        out = jax.jit(f)(U)
+        assert qml.math.allclose(out, qml.QubitUnitary(U, wires=range(num_wires)).get_matrix())
+
     @pytest.mark.parametrize(
         "U,expected_gate,expected_params",
-        [  # First set of gates are diagonal and converted to RZ
-            (I, qml.RZ, [0]),
+        [
+            (I, qml.RZ, [0.0]),
             (Z, qml.RZ, [np.pi]),
             (S, qml.RZ, [np.pi / 2]),
             (T, qml.RZ, [np.pi / 4]),
-            (qml.RZ(0.3, wires=0).get_matrix(), qml.RZ, [0.3]),
-            (qml.RZ(-0.5, wires=0).get_matrix(), qml.RZ, [-0.5]),
-            # Next set of gates are non-diagonal and decomposed as Rots
+            (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
+            (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
             (
-                np.array([[0, -0.98310193 + 0.18305901j], [0.98310193 + 0.18305901j, 0]]),
+                np.array(
+                    [
+                        [0, -9.831019270939975e-01 + 0.1830590094588862j],
+                        [9.831019270939975e-01 + 0.1830590094588862j, 0],
+                    ]
+                ),
                 qml.Rot,
-                [0, -np.pi, -5.914991017809059],
+                [-0.18409714468526372, np.pi, 0.18409714468526372],
             ),
-            (H, qml.Rot, [np.pi, np.pi / 2, 0]),
-            (X, qml.Rot, [0.0, -np.pi, -np.pi]),
-            (qml.Rot(0.2, 0.5, -0.3, wires=0).get_matrix(), qml.Rot, [0.2, 0.5, -0.3]),
-            (np.exp(1j * 0.02) * qml.Rot(-1, 2, -3, wires=0).get_matrix(), qml.Rot, [-1, 2, -3]),
+            (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
+            (X, qml.Rot, [np.pi / 2, np.pi, -np.pi / 2]),
+            (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
+            (
+                np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix,
+                qml.Rot,
+                [-1.0, 2.0, -3.0],
+            ),
         ],
     )
     def test_qubit_unitary_decomposition(self, U, expected_gate, expected_params):
@@ -175,9 +194,9 @@ class TestQubitUnitary:
 
         assert len(decomp) == 1 == len(decomp2)
         assert isinstance(decomp[0], expected_gate)
-        assert np.allclose(decomp[0].parameters, expected_params)
+        assert np.allclose(decomp[0].parameters, expected_params, atol=1e-7)
         assert isinstance(decomp2[0], expected_gate)
-        assert np.allclose(decomp2[0].parameters, expected_params)
+        assert np.allclose(decomp2[0].parameters, expected_params, atol=1e-7)
 
     def test_qubit_unitary_decomposition_multiqubit_invalid(self):
         """Test that QubitUnitary is not decomposed for more than two qubits."""
@@ -444,18 +463,90 @@ class TestControlledQubitUnitary:
 
 
 label_data = [
-    (qml.QubitUnitary(X, wires=0), "U"),
-    (qml.DiagonalQubitUnitary([1, 1], wires=1), "U"),
-    (qml.ControlledQubitUnitary(X, control_wires=0, wires=1), "U"),
+    (X, qml.QubitUnitary(X, wires=0)),
+    (X, qml.ControlledQubitUnitary(X, control_wires=0, wires=1)),
+    ([1, 1], qml.DiagonalQubitUnitary([1, 1], wires=0)),
 ]
 
 
-@pytest.mark.parametrize("op, label", label_data)
-def test_label(op, label):
-    assert op.label() == label
-    assert op.label(decimals=5) == label
-    op.inv()
-    assert op.label() == label + "⁻¹"
+@pytest.mark.parametrize("mat, op", label_data)
+class TestUnitaryLabels:
+    def test_no_cache(self, mat, op):
+        """Test labels work without a provided cache."""
+        assert op.label() == "U"
+
+    def test_matrices_not_in_cache(self, mat, op):
+        """Test provided cache doesn't have a 'matrices' keyword."""
+        assert op.label(cache={}) == "U"
+
+    def test_cache_matrices_not_list(self, mat, op):
+        """Test 'matrices' key pair is not a list."""
+        assert op.label(cache={"matrices": 0}) == "U"
+
+    def test_empty_cache_list(self, mat, op):
+        """Test matrices list is provided, but empty. Operation should have `0` label and matrix
+        should be added to cache."""
+        cache = {"matrices": []}
+        assert op.label(cache=cache) == "U(M0)"
+        assert qml.math.allclose(cache["matrices"][0], mat)
+
+    def test_something_in_cache_list(self, mat, op):
+        """If something exists in the matrix list, but parameter is not in the list, then parameter
+        added to list and label given number of its position."""
+        cache = {"matrices": [Z]}
+        assert op.label(cache=cache) == "U(M1)"
+
+        assert len(cache["matrices"]) == 2
+        assert qml.math.allclose(cache["matrices"][1], mat)
+
+    def test_matrix_already_in_cache_list(self, mat, op):
+        """If the parameter already exists in the matrix cache, then the label uses that index and the
+        matrix cache is unchanged."""
+        cache = {"matrices": [Z, mat, S]}
+        assert op.label(cache=cache) == "U(M1)"
+
+        assert len(cache["matrices"]) == 3
+
+
+class TestInterfaceMatricesLabel:
+    """Test different interface matrices with qubit."""
+
+    def check_interface(self, mat):
+        """Interface independent helper method."""
+
+        op = qml.QubitUnitary(mat, wires=0)
+
+        cache = {"matrices": []}
+        assert op.label(cache=cache) == "U(M0)"
+        assert qml.math.allclose(cache["matrices"][0], mat)
+
+        cache = {"matrices": [0, mat, 0]}
+        assert op.label(cache=cache) == "U(M1)"
+        assert len(cache["matrices"]) == 3
+
+    def test_labelling_torch_tensor(self):
+        """Test matrix cache labelling with torch interface."""
+
+        torch = pytest.importorskip("torch")
+
+        mat = torch.tensor([[1, 0], [0, -1]])
+        self.check_interface(mat)
+
+    def test_labelling_tf_variable(self):
+        """Test matrix cache labelling with tf interface."""
+
+        tf = pytest.importorskip("tensorflow")
+        mat = tf.Variable([[1, 0], [0, -1]])
+
+        self.check_interface(mat)
+
+    def test_labelling_jax_variable(self):
+        """Test matrix cache labelling with jax interface."""
+
+        jnp = pytest.importorskip("jax.numpy")
+        mat = jnp.array([[1, 0], [0, -1]])
+
+        self.check_interface(mat)
 
 
 control_data = [

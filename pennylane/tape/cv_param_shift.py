@@ -24,10 +24,10 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.measure import MeasurementProcess
+from pennylane.measurements import MeasurementProcess
 from pennylane.tape import QuantumTape
 
-from .qubit_param_shift import QubitParamShiftTape
+from .qubit_param_shift import QubitParamShiftTape, _get_operation_recipe
 
 
 class CVParamShiftTape(QubitParamShiftTape):
@@ -230,16 +230,13 @@ class CVParamShiftTape(QubitParamShiftTape):
             tapes.
         """
 
-        t_idx = list(self.trainable_params)[idx]
-        op = self._par_info[t_idx]["op"]
-        p_idx = self._par_info[t_idx]["p_idx"]
-
-        param_shift = op.get_parameter_shift(p_idx)
+        op, p_idx = self.get_operation(idx)
+        param_shift = _get_operation_recipe(op, p_idx, None)
         shift = np.zeros_like(params)
 
         coeffs = []
         tapes = []
-        for c, _a, s in param_shift:
+        for c, _a, s in zip(*param_shift):
 
             shift[idx] = s
 
@@ -281,15 +278,12 @@ class CVParamShiftTape(QubitParamShiftTape):
             tapes.
         """
 
-        t_idx = list(self.trainable_params)[idx]
-        op = self._par_info[t_idx]["op"]
-        p_idx = self._par_info[t_idx]["p_idx"]
+        op, p_idx = self.get_operation(idx)
+        param_shift = _get_operation_recipe(op, p_idx, None)
 
         dev_wires = options["dev_wires"]
 
-        param_shift = op.get_parameter_shift(p_idx)
-
-        if len(param_shift) != 2:
+        if len(param_shift[0]) != 2:
             # The 2nd order CV parameter-shift rule only accepts two-term shifts
             raise NotImplementedError(
                 "Taking the analytic gradient for order-2 operators is "
@@ -297,8 +291,9 @@ class CVParamShiftTape(QubitParamShiftTape):
                 "gradient recipe of more than two terms."
             )
 
-        c1, a1, s1 = param_shift[0]
-        c2, a2, s2 = param_shift[1]
+        c1, c2 = param_shift[0]
+        a1, a2 = param_shift[1]
+        s1, s2 = param_shift[2]
 
         shift = np.zeros_like(params)
         shift[idx] = s1
