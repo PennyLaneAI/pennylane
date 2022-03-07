@@ -18,7 +18,6 @@ import pennylane as qml
 
 
 class ScalarProd(qml.operation.Operator):
-
     def __init__(self, scalar, op, do_queue=True, id=None):
         self.hyperparameters["scalar"] = scalar
         self.hyperparameters["op"] = op

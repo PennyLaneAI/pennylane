@@ -18,15 +18,12 @@ import pennylane as qml
 
 
 class Pow(qml.operation.Operator):
-
     def __init__(self, op, exponent, do_queue=True, id=None):
 
         self.hyperparameters["base"] = op
         self.hyperparameters["exponent"] = exponent
 
-        super().__init__(
-            *op.parameters, wires=op.wires, do_queue=do_queue, id=id
-        )
+        super().__init__(*op.parameters, wires=op.wires, do_queue=do_queue, id=id)
         self._name = f"Pow({op}, {exponent})"
 
     def __repr__(self):
@@ -44,20 +41,27 @@ class Pow(qml.operation.Operator):
             return []
         if isinstance(exponent, int):
             if exponent > 0:
-                return [base]*exponent
+                return [base] * exponent
             if exponent < 0:
-                return [qml.inverse(base)]*abs(exponent) # is this correct? A^(-n) = A^(-1)A^(-1)...
+                return [qml.inverse(base)] * abs(
+                    exponent
+                )  # is this correct? A^(-n) = A^(-1)A^(-1)...
 
         if exponent == 0.5:
             return [qml.ops.math.Sqrt(base)]
         else:
-            raise ValueError("Taking non-integer-valued powers of operators other than 1/2 (i.e., the square root) "
-                             "is currently not supported.")
+            raise ValueError(
+                "Taking non-integer-valued powers of operators other than 1/2 (i.e., the square root) "
+                "is currently not supported."
+            )
 
     @staticmethod
-    def compute_matrix(*params,  exponent=None, base=None, **hyperparams):
-        return base.get_matrix()**exponent  # check if this covers all cases
+    def compute_matrix(*params, exponent=None, base=None, **hyperparams):
+        return base.get_matrix() ** exponent  # check if this covers all cases
 
 
-def pow(op, exponent,):
+def pow(
+    op,
+    exponent,
+):
     return Pow(op, exponent)

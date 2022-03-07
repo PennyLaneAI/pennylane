@@ -18,7 +18,6 @@ import pennylane as qml
 
 
 class Prod(qml.operation.Operator):
-
     def __init__(self, left, right, do_queue=True, id=None):
 
         self.hyperparameters["left"] = left

@@ -18,14 +18,11 @@ import pennylane as qml
 
 
 class Exp(qml.operation.Operator):
-
     def __init__(self, op, do_queue=True, id=None):
 
         self.hyperparameters["base"] = op
 
-        super().__init__(
-            *op.parameters, wires=op.wires, do_queue=do_queue, id=id
-        )
+        super().__init__(*op.parameters, wires=op.wires, do_queue=do_queue, id=id)
         self._name = f"Exp({op})"
 
     def __repr__(self):

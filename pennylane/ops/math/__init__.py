@@ -23,4 +23,3 @@ from .scalar_prod import ScalarProd, scalar_prod
 from .prod import Prod, matmul
 from .exp import Exp, exp
 from .pow import Pow, pow
-

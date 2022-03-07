@@ -17,18 +17,18 @@
 import pennylane as qml
 
 
-def simplify_decomposition(decomp):
+def flatten_decomposition(decomp):
     """unpacks nested lists of operator products"""
     if not decomp:  # empty list
         return decomp
     if isinstance(decomp[0], qml.ops.math.MatMul):
-        return simplify_decomposition(
+        return flatten_decomposition(
             [decomp[0].hyperparameters["left"], decomp[0].hyperparameters["right"]]
-        ) + simplify_decomposition(decomp[1:])
-    return decomp[:1] + simplify_decomposition(decomp[1:])
+        ) + flatten_decomposition(decomp[1:])
+    return decomp[:1] + flatten_decomposition(decomp[1:])
 
 
-def simplify_terms(coeffs, ops):
+def flatten_terms(coeffs, ops):
     """unpacks nested lists of operator products"""
 
     if not ops:  # empty list
@@ -36,22 +36,20 @@ def simplify_terms(coeffs, ops):
 
     if isinstance(ops[0], qml.ops.math.Sum):
         # extract ops from sum and distribute coefficient associatively
-        first_coeffs, first_ops = simplify_terms(
+        first_coeffs, first_ops = flatten_terms(
             [coeffs[0], coeffs[0]],
             [ops[0].hyperparameters["left"], ops[0].hyperparameters["right"]],
         )
-        remainder_coeffs, remainder_ops = simplify_terms(coeffs[1:], ops[1:])
+        remainder_coeffs, remainder_ops = flatten_terms(coeffs[1:], ops[1:])
         return first_coeffs + remainder_coeffs, first_ops + remainder_ops
 
     if isinstance(ops[0], qml.ops.math.ScalarProd):
         # extract op and scalar simplify again
-        first_coeff, first_op = simplify_terms(
+        first_coeff, first_op = flatten_terms(
             [ops[0].hyperparameters["scalar"]], [ops[0].hyperparameters["op"]]
         )
-        remainder_coeffs, remainder_ops = simplify_terms(coeffs[1:], ops[1:])
+        remainder_coeffs, remainder_ops = flatten_terms(coeffs[1:], ops[1:])
         return first_coeff + remainder_coeffs, first_op + remainder_ops
 
-    remainder_coeffs, remainder_ops = simplify_terms(coeffs[1:], ops[1:])
+    remainder_coeffs, remainder_ops = flatten_terms(coeffs[1:], ops[1:])
     return coeffs[:1] + remainder_coeffs, ops[:1] + remainder_ops
-
-
