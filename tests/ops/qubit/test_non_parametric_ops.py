@@ -978,7 +978,7 @@ label_data = [
     (qml.SQISW(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
     (qml.Toffoli(wires=(0, 1, 2)), "X", "X"),
-    (qml.MultiControlledX(control_wires=(0, 1, 2, 3), wires=(3)), "X", "X"),
+    (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "X", "X"),
     (qml.MultiControlledX(wires=(0, 1, 2, 3)), "X", "X"),
     (qml.Barrier(0), "||", "||"),
     (qml.WireCut(wires=0), "//", "//"),
