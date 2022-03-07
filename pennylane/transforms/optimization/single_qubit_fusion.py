@@ -16,7 +16,7 @@
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
 from pennylane.ops.qubit import Rot
-from pennylane.math import allclose, stack, is_abstract
+from pennylane.math import allclose, cast_like, stack, zeros
 
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
@@ -127,29 +127,20 @@ def single_qubit_fusion(tape, atol=1e-8, exclude_gates=None):
             # the gate in question, only valid single-qubit gates on the same
             # wire as the current gate will be fused.
             try:
-                next_gate_angles = stack(next_gate.single_qubit_rot_angles())
+                next_gate_angles = next_gate.single_qubit_rot_angles()
             except (NotImplementedError, AttributeError):
                 break
 
-            cumulative_angles = fuse_rot_angles(cumulative_angles, stack(next_gate_angles))
+            cumulative_angles = fuse_rot_angles(
+                cumulative_angles, cast_like(stack(next_gate_angles), cumulative_angles)
+            )
 
             list_copy.pop(next_gate_idx + 1)
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
-        # If we are tracing/jitting, don't perform any conditional checks and
-        # apply the rotation regardless of the angles.
-        if is_abstract(cumulative_angles):
+        # Only apply if the cumulative angle is not close to 0
+        if not allclose(cumulative_angles, zeros(3), atol=atol, rtol=0):
             Rot(*cumulative_angles, wires=current_gate.wires)
-        # If not tracing, check whether all angles are 0 (or equivalently, if the RY
-        # angle is close to 0, and so is the sum of the RZ angles
-        else:
-            if not allclose(
-                stack([cumulative_angles[0] + cumulative_angles[2], cumulative_angles[1]]),
-                [0.0, 0.0],
-                atol=atol,
-                rtol=0,
-            ):
-                Rot(*cumulative_angles, wires=current_gate.wires)
 
         # Remove the starting gate from the list
         list_copy.pop(0)

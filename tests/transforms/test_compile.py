@@ -20,13 +20,7 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 from pennylane.transforms.compile import compile
-from pennylane.transforms import unitary_to_rot
-from pennylane.transforms.optimization import (
-    cancel_inverses,
-    commute_controlled,
-    merge_rotations,
-    single_qubit_fusion,
-)
+from pennylane.transforms.optimization import cancel_inverses, commute_controlled, merge_rotations
 
 from test_optimization.utils import compare_operation_lists
 
@@ -507,45 +501,3 @@ class TestCompileInterfaces:
         # Check operation list
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
-
-    @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-    def test_compile_jax_jit(self, diff_method):
-        """Test that compilation pipelines work with jax.jit, unitary_to_rot, and fusion."""
-        jax = pytest.importorskip("jax")
-        from jax import numpy as jnp
-
-        from jax.config import config
-
-        remember = config.read("jax_enable_x64")
-        config.update("jax_enable_x64", True)
-
-        dev = qml.device("default.qubit", wires=2)
-
-        def test_qfunc(x):
-            qml.Rot(x, x + 1, x + 2, wires=0)
-            qml.RX(2 * x, wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.QubitUnitary(qml.RX.compute_matrix(x), wires=1)
-            qml.QubitUnitary(qml.RZ.compute_matrix(x + 1), wires=1)
-            return qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
-
-        original_qnode = qml.QNode(test_qfunc, dev, interface="jax", diff_method=diff_method)
-
-        pipeline = [cancel_inverses, unitary_to_rot, single_qubit_fusion]
-
-        compiled_qfunc = qml.compile(pipeline=pipeline)(test_qfunc)
-        compiled_qnode = qml.QNode(compiled_qfunc, dev, interface="jax", diff_method=diff_method)
-
-        jitted_compiled_qnode = jax.jit(compiled_qnode)
-
-        x = jnp.array(0.1, dtype=jnp.float64)
-
-        # Check that the numerical output is the same
-        assert qml.math.allclose(original_qnode(x), jitted_compiled_qnode(x))
-
-        # Check that the gradient is the same
-        assert qml.math.allclose(
-            jax.grad(original_qnode)(x),
-            jax.grad(jitted_compiled_qnode)(x),
-            atol=1e-7,
-        )
