@@ -57,7 +57,7 @@ class KerasLayer(Layer):
         batch_idx (Union[Sequence[int], int]): Argument location of the non-trainable inputs for
             the circuit. This allows batch execution by creating executable circuits for each
             input example with the same trainable weights. Default ``None``.
-            See :class:`~.pennylane.transforms.batch_input` for more details.
+            See :func:`~.pennylane.transforms.batch_input` for more details.
         **kwargs: additional keyword arguments passed to the Layer_ base class
 
     **Example**

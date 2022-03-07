@@ -217,8 +217,8 @@
     device.
     [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
 
-* A method to batch the non-trainable inputs for machine learning applications has been added. 
-[(#2069)](https://github.com/PennyLaneAI/pennylane/pull/2069)
+* A method to batch the non-trainable inputs for machine learning applications has been added.
+  [(#2069)](https://github.com/PennyLaneAI/pennylane/pull/2069)
 
 <h3>Improvements</h3>
 

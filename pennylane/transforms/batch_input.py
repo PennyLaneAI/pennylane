@@ -27,6 +27,7 @@ def batch_input(
 ) -> Tuple[Sequence[qml.tape.JacobianTape], Callable]:
     """
     Transform a QNode to support an initial batch dimension for gate inputs.
+
     In a classical ML application one needs to batch the non-trainable inputs of the network.
     This function executes the same analogue for a quantum circuit:
     separate circuit executions are created for each input, which are then executed
@@ -36,7 +37,7 @@ def batch_input(
     non trainable tensor object. For a rank 1 feature space, the shape needs to be ``(Nt, x)``
     where ``x`` indicates the dimension of the features and ``Nt`` being the number of examples
     within a batch.
-    Based on `arXiv:2202.10471 <https://arxiv.org/abs/2202.10471>__.
+    Based on `arXiv:2202.10471 <https://arxiv.org/abs/2202.10471>`__.
 
     Args:
         tape (.tape.JacobianTape or .QNode): Input quantum circuit to batch
@@ -53,23 +54,23 @@ def batch_input(
 
     .. code-block:: python
 
-            dev = qml.device("default.qubit", wires = 2, shots=None)
+        dev = qml.device("default.qubit", wires = 2, shots=None)
 
-            @batch_input(argnum=0)
-            @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
-            def circuit(inputs, weights):
-                qml.AngleEmbedding(inputs, wires = range(2), rotation="Y")
-                qml.RY(weights[0], wires=0)
-                qml.RY(weights[1], wires=1)
-                return qml.expval(qml.PauliZ(1))
+        @batch_input(argnum=0)
+        @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+        def circuit(inputs, weights):
+            qml.AngleEmbedding(inputs, wires = range(2), rotation="Y")
+            qml.RY(weights[0], wires=0)
+            qml.RY(weights[1], wires=1)
+            return qml.expval(qml.PauliZ(1))
 
-        >>> x = np.random.uniform(0,1,(10,2))
-        >>> x.requires_grad = False
-        >>> w = np.random.uniform(0,1,2)
-        >>> circuit(x, w)
-        <tf.Tensor: shape=(10,), dtype=float64, numpy=
-        array([0.17926078, 0.7480163 , 0.47816999, 0.50381628, 0.349178  ,
-               0.17511444, 0.03769436, 0.19180259, 0.75867188, 0.55335748])>
+    >>> x = np.random.uniform(0,1,(10,2))
+    >>> x.requires_grad = False
+    >>> w = np.random.uniform(0,1,2)
+    >>> circuit(x, w)
+    <tf.Tensor: shape=(10,), dtype=float64, numpy=
+    array([0.17926078, 0.7480163 , 0.47816999, 0.50381628, 0.349178  ,
+           0.17511444, 0.03769436, 0.19180259, 0.75867188, 0.55335748])>
 
     .. seealso:: :func:`~.batch_params`
     """
@@ -86,8 +87,7 @@ def batch_input(
 
     if len(np.unique([qml.math.shape(x)[0] for x in non_trainable])) != 1:
         raise ValueError(
-            "Batch dimension for all gate arguments "
-            "specified by 'argnum' must be the same."
+            "Batch dimension for all gate arguments " "specified by 'argnum' must be the same."
         )
 
     outputs = []

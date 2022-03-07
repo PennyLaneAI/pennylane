@@ -63,9 +63,5 @@ def test_value_error():
     input2.requires_grad = False
     weights = np.random.uniform(-np.pi, np.pi, (2,))
 
-    try:
+    with pytest.raises(ValueError, match="Batch dimension for all gate arguments"):
         res = circuit(input1, input2, weights)
-    except ValueError as err:
-        pass
-    except Exception as err:
-        raise Exception(err)
