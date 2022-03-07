@@ -99,7 +99,7 @@ Transform for circuit cutting
 
 This transform accepts a QNode and returns a new function that cuts the original circuit into
 smaller fragments. The supporting functionality for circuit cutting is provided in the
-:doc:`qcut </code/qml_transforms_qcut>` module.
+:doc:`qml.transforms.qcut </code/qml_transforms_qcut>` module.
 
 .. autosummary::
     :toctree: api
