@@ -405,6 +405,10 @@
   usage of the passed `substep_optimizer` and its keyword arguments.
   [(#2160)](https://github.com/PennyLaneAI/pennylane/pull/2160)
 
+* Ensures that signatures of `@qml.qfunc_transform` decorated functions
+  display correctly in the docs.
+  [(#2286)](https://github.com/PennyLaneAI/pennylane/pull/2286)
+
 <h3>Operator class refactor</h3>
 
 The Operator class has undergone a major refactor with the following changes:
