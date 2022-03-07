@@ -18,6 +18,8 @@ import pennylane as qml
 
 
 class Pow(qml.operation.Operator):
+    """Arithmetic operator class representing the power of an operator."""
+
     def __init__(self, op, exponent, do_queue=True, id=None):
 
         self.hyperparameters["base"] = op
@@ -57,7 +59,7 @@ class Pow(qml.operation.Operator):
 
     @staticmethod
     def compute_matrix(*params, exponent=None, base=None, **hyperparams):
-        return base.get_matrix() ** exponent  # check if this covers all cases
+        return base.get_matrix() ** exponent  # check if this works for non-integer exponents
 
 
 def pow(

@@ -18,6 +18,8 @@ import pennylane as qml
 
 
 class Sum(qml.operation.Operator):
+    """Arithmetic operator class representing the sum of two operators"""
+
     def __init__(self, left, right, do_queue=True, id=None):
 
         self.hyperparameters["left"] = left
@@ -38,12 +40,12 @@ class Sum(qml.operation.Operator):
         return len(self.wires)
 
     @staticmethod
-    def compute_terms(*params, **hyperparams):
-        return [1.0, 1.0], [hyperparams["left"], hyperparams["right"]]
+    def compute_terms(*params, left=None, right=None, **hyperparams):
+        return [1.0, 1.0], [left, right]
 
     @staticmethod
     def compute_matrix(*params, left, right, **hyperparams):
-        # ugly to compute this here again!
+        # ugly to compute this here again! Should we have passed wires to the matrix methods in the first place?
         combined_wires = qml.wires.Wires.all_wires([right.wires, left.wires])
         return left.get_matrix(wire_order=combined_wires) + right.get_matrix(
             wire_order=combined_wires

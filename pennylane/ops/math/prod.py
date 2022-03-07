@@ -18,6 +18,8 @@ import pennylane as qml
 
 
 class Prod(qml.operation.Operator):
+    """Arithmetic operator class representing the product of two operators."""
+
     def __init__(self, left, right, do_queue=True, id=None):
 
         self.hyperparameters["left"] = left
@@ -43,7 +45,6 @@ class Prod(qml.operation.Operator):
 
     @staticmethod
     def compute_matrix(*params, left=None, right=None, **hyperparams):
-        # ugly to compute this here again!
         combined_wires = qml.wires.Wires.all_wires([left.wires, right.wires])
         return left.get_matrix(wire_order=combined_wires) @ right.get_matrix(
             wire_order=combined_wires

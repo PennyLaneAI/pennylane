@@ -18,6 +18,8 @@ import pennylane as qml
 
 
 class Exp(qml.operation.Operator):
+    """Arithmetic operator class representing the exponential of an operator."""
+
     def __init__(self, op, do_queue=True, id=None):
 
         self.hyperparameters["base"] = op
@@ -27,7 +29,7 @@ class Exp(qml.operation.Operator):
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return f"e^{self.hyperparameters['base']}"
+        return f"exp({self.hyperparameters['base']})"
 
     @property
     def num_wires(self):
@@ -38,11 +40,11 @@ class Exp(qml.operation.Operator):
 
     @staticmethod
     def compute_matrix(*params, base=None, **hyperparams):
-        return qml.math.expm1(base.get_matrix())  # check if this covers all cases
+        return qml.math.expm1(base.get_matrix())  # check if this gets dispatched correctly
 
     @staticmethod
     def compute_eigvals(*params, scalar=None, op=None, **hyperparams):
-        return qml.math.exp(op.get_eigvals())
+        return qml.math.exp(op.get_eigvals()) # check if this gets dispatched correctly
 
 
 def exp(op):

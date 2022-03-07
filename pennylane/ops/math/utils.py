@@ -18,7 +18,7 @@ import pennylane as qml
 
 
 def flatten_decomposition(decomp):
-    """unpacks nested lists of operator products"""
+    """Unpack nested lists of operator products."""
     if not decomp:  # empty list
         return decomp
     if isinstance(decomp[0], qml.ops.math.MatMul):
@@ -29,7 +29,15 @@ def flatten_decomposition(decomp):
 
 
 def flatten_terms(coeffs, ops):
-    """unpacks nested lists of operator products"""
+    """Unpack nested terms.
+
+    Args:
+        coeffs [tensor_like]: coefficients
+        ops [list[~.Operator]]: list of operators
+
+    Returns:
+        tensor_like, list[~.Operator]: flattened terms
+    """
 
     if not ops:  # empty list
         return coeffs, ops
@@ -44,7 +52,7 @@ def flatten_terms(coeffs, ops):
         return first_coeffs + remainder_coeffs, first_ops + remainder_ops
 
     if isinstance(ops[0], qml.ops.math.ScalarProd):
-        # extract op and scalar simplify again
+        # extract op and scalar to simplify again
         first_coeff, first_op = flatten_terms(
             [ops[0].hyperparameters["scalar"]], [ops[0].hyperparameters["op"]]
         )
