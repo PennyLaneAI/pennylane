@@ -42,7 +42,7 @@ class Snapshot(Operation):
 
     def __init__(self, tag=None):
         self.tag = tag
-        super().__init__(wires=AllWires, do_queue=True)
+        super().__init__(wires=[], do_queue=True)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "|S|"
