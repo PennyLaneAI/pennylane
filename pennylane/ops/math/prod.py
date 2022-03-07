@@ -33,7 +33,7 @@ class Prod(qml.operation.Operator):
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return f"{self.hyperparameters['left']} \n@ {self.hyperparameters['right']}"
+        return f"{self.hyperparameters['left']} @ {self.hyperparameters['right']}"
 
     @property
     def num_wires(self):
