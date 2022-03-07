@@ -81,6 +81,8 @@ class ControlledOperation(Operation):
         tape: A QuantumTape. This tape defines the unitary that should be applied relative
             to the control wires.
         control_wires: A wire or set of wires.
+        control_values: An int or list of ints indicating the values each control wire should
+            take.
     """
 
     grad_method = None
@@ -249,6 +251,23 @@ def ctrl(fn, control, control_values=None):
             # These two ops are equivalent.
             op1 = qml.ctrl(qml.ctrl(my_ops, 1), 2)
             op2 = qml.ctrl(my_ops, [2, 1])
+
+        **Control Value Assignment**
+
+        Control values can be assigned as follows.
+
+        .. code-block:: python3
+            op = qml.ctrl(qml.ctrl(my_ops, 1), 2, control_values=0)
+            op()
+
+        This is equivalent to the following.
+
+        .. code-block:: python3
+            qml.PauliX(wires=2)
+            op = qml.ctrl(qml.ctrl(my_ops, 1), 2)
+            op()
+            qml.PauliX(wires=2)
+
     """
 
     @wraps(fn)
