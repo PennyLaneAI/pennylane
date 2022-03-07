@@ -337,6 +337,17 @@
 
 <h3>Breaking changes</h3>
 
+* Old circuit drawing infrastructure is being deprecated. This includes the following methods and classes:
+  [(#2277)](https://github.com/PennyLaneAI/pennylane/pull/2277)
+
+  - `qml.tape.QuantumTape.draw`: Use `qml.drawer.tape_text` instead
+  - `qml.CircuitGraph.draw`: Use `qml.drawer.tape_text` instead. Note that it does not accept `CircuitGraph` objects but
+    does work on tapes.
+  - `qml.drawer.CHARSETS`: We now assume everyone has unicode support.
+  - `qml.drawer.CircuitDrawer`: See `qml.drawer.tape_text` instead.
+  - `qml.drawer.Grid`: We now use a simple list of sets to represent locations for operations in a circuit drawer.
+  - `qml.drawer.RepresentationResolver`: Please use the `Operator.label` method intead.
+
 * The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
   The single `wires` keyword should be all the control wires followed by a single target wire.
   [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
