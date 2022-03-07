@@ -297,6 +297,10 @@
 
 <h3>Improvements</h3>
 
+* Most compilation transforms, and relevant subroutines, have been updated to
+  support just-in-time compilation with `jax.jit`.
+  [(#1894)](https://github.com/PennyLaneAI/pennylane/pull/1894/)
+
 * No two-term parameter-shift rule is assumed anymore by default.
   [(#2227)](https://github.com/PennyLaneAI/pennylane/pull/2227)
 
@@ -333,6 +337,13 @@
 
 <h3>Breaking changes</h3>
 
+* The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
+  The single `wires` keyword should be all the control wires followed by a single target wire.
+  [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
+  [(#2278)](https://github.com/PennyLaneAI/pennylane/pull/2278)
+
+<h3>Deprecations</h3>
+
 * Old circuit drawing infrastructure is being deprecated. This includes the following methods and classes:
   [(#2277)](https://github.com/PennyLaneAI/pennylane/pull/2277)
 
@@ -343,13 +354,6 @@
   - `qml.drawer.CircuitDrawer`: See `qml.drawer.tape_text` instead.
   - `qml.drawer.Grid`: We now use a simple list of sets to represent locations for operations in a circuit drawer.
   - `qml.drawer.RepresentationResolver`: Please use the `Operator.label` method intead.
-
-* The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
-  The single `wires` keyword should be all the control wires followed by a single target wire.
-  [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
-  [(#2278)](https://github.com/PennyLaneAI/pennylane/pull/2278)
-
-<h3>Deprecations</h3>
 
 * The `qml.operation.Operation.get_parameter_shift` method has been deprecated
   and will be removed in a future release.
