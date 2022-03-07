@@ -297,6 +297,10 @@
 
 <h3>Improvements</h3>
 
+* Some error messages have been improved and operation properties made
+  more consistent.
+  [(#2287)](https://github.com/PennyLaneAI/pennylane/pull/2287/)
+
 * Most compilation transforms, and relevant subroutines, have been updated to
   support just-in-time compilation with `jax.jit`.
   [(#1894)](https://github.com/PennyLaneAI/pennylane/pull/1894/)
@@ -364,6 +368,10 @@
   [(#2248)](https://github.com/PennyLaneAI/pennylane/pull/2248)
 
 <h3>Bug fixes</h3>
+
+* The `basis` property of `qml.SWAP` was set to `"X"`, which is incorrect; it is
+  now set to `None`.
+  [(#2287)](https://github.com/PennyLaneAI/pennylane/pull/2287/)
 
 * The `qml.RandomLayers` template now decomposes when the weights are a list of lists.
   [(#2266)](https://github.com/PennyLaneAI/pennylane/pull/2266/)
