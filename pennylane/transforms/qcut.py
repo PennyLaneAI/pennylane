@@ -1050,7 +1050,6 @@ def cut_circuit(
 
         We now convert the ``fragments`` back to :class:`~.QuantumTape` objects
 
-        >>> dev = qml.device("default.qubit", wires=2)
         >>> fragment_tapes = [qml.transforms.qcut.graph_to_tape(f) for f in fragments]
 
         The circuit fragments can now be visualized:
@@ -1065,6 +1064,7 @@ def cut_circuit(
 
         Additionally, we must remap the tape wires to match those available on our device.
 
+        >>> dev = qml.device("default.qubit", wires=2)
         >>> fragment_tapes = [
         ...     qml.transforms.qcut.remap_tape_wires(t, dev.wires) for t in fragment_tapes
         ... ]
