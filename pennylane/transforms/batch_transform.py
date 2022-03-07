@@ -107,10 +107,10 @@ class batch_transform:
     ...     qml.RX(-0.5, wires=0)
     ...     qml.expval(qml.PauliX(0))
     >>> tapes, fn = my_transform(tape, 0.65, 2.5)
-    >>> print(tapes[0].draw())
-     0: ──H──RY(0.325)──┤ ⟨X⟩
-    >>> print(tapes[1].draw())
-     0: ──H──RZ(1.25)──┤ ⟨X⟩
+    >>> print(qml.drawer.tape_text(tapes[0], decimals=2))
+    0: ──H──RY(0.33)─┤  <X>
+    >>> print(qml.drawer.tape_text(tapes[1], decimals=2))
+    0: ──H──RZ(1.25)─┤  <X>
 
     We can execute these tapes manually:
 

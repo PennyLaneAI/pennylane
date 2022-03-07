@@ -878,6 +878,17 @@ class Device(abc.ABC):
 
             operation_name = o.name
 
+            if getattr(
+                o, "return_type", None
+            ) == qml.operation.MidMeasure and not self.capabilities().get(
+                "supports_mid_measure", False
+            ):
+                raise DeviceError(
+                    f"Mid-circuit measurements are not natively supported on device {self.short_name}. "
+                    "Apply the @qml.defer_measurements decorator to your quantum function to "
+                    "simulate the application of mid-circuit measurements on this device."
+                )
+
             if o.inverse:
                 # TODO: update when all capabilities keys changed to "supports_inverse_operations"
                 supports_inv = self.capabilities().get(

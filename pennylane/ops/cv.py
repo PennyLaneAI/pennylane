@@ -44,6 +44,10 @@ from pennylane.operation import AnyWires, CVOperation, CVObservable
 from pennylane import math as qml_math
 
 from .identity import Identity  #  pylint: disable=unused-import
+from .snapshot import Snapshot  #  pylint: disable=unused-import
+
+
+_two_term_shift_rule = [[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]
 
 
 def _rotation(phi, bare=False):
@@ -104,6 +108,7 @@ class Rotation(CVOperation):
     num_params = 1
     num_wires = 1
     grad_method = "A"
+    grad_recipe = (_two_term_shift_rule,)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -158,7 +163,7 @@ class Squeezing(CVOperation):
     shift = 0.1
     multiplier = 0.5 / math.sinh(shift)
     a = 1
-    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
     def __init__(self, r, phi, wires, do_queue=True, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
@@ -215,7 +220,7 @@ class Displacement(CVOperation):
     shift = 0.1
     multiplier = 0.5 / shift
     a = 1
-    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
     def __init__(self, a, phi, wires, do_queue=True, id=None):
         super().__init__(a, phi, wires=wires, do_queue=do_queue, id=id)
@@ -274,6 +279,7 @@ class Beamsplitter(CVOperation):
     num_params = 2
     num_wires = 2
     grad_method = "A"
+    grad_recipe = (_two_term_shift_rule, _two_term_shift_rule)
 
     def __init__(self, theta, phi, wires, do_queue=True, id=None):
         super().__init__(theta, phi, wires=wires, do_queue=do_queue, id=id)
@@ -342,7 +348,7 @@ class TwoModeSqueezing(CVOperation):
     shift = 0.1
     multiplier = 0.5 / math.sinh(shift)
     a = 1
-    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
     def __init__(self, r, phi, wires, do_queue=True, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
@@ -1436,6 +1442,7 @@ class FockStateProjector(CVObservable):
 
 ops = {
     "Identity",
+    "Snapshot",
     "Beamsplitter",
     "ControlledAddition",
     "ControlledPhase",
