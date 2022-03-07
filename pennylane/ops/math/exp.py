@@ -35,7 +35,7 @@ class Exp(qml.operation.Operator):
     def num_wires(self):
         return len(self.wires)
 
-    def get_generator(self):
+    def generator(self):
         return self.hyperparameters["base"]
 
     @staticmethod

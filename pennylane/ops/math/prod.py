@@ -44,6 +44,10 @@ class Prod(qml.operation.Operator):
         return [left, right]
 
     @staticmethod
+    def get_generator(*params, wires=None, left=None, right=None, **hyperparameters):
+        return [left, right]
+
+    @staticmethod
     def compute_matrix(*params, left=None, right=None, **hyperparams):
         combined_wires = qml.wires.Wires.all_wires([left.wires, right.wires])
         return left.get_matrix(wire_order=combined_wires) @ right.get_matrix(

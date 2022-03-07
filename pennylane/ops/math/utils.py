@@ -21,7 +21,7 @@ def flatten_decomposition(decomp):
     """Unpack nested lists of operator products."""
     if not decomp:  # empty list
         return decomp
-    if isinstance(decomp[0], qml.ops.math.MatMul):
+    if isinstance(decomp[0], qml.ops.math.Prod):
         return flatten_decomposition(
             [decomp[0].hyperparameters["left"], decomp[0].hyperparameters["right"]]
         ) + flatten_decomposition(decomp[1:])
