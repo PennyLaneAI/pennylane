@@ -105,6 +105,7 @@ class ControlledOperation(Operation):
                 self._control_values = [control_values]
             else:
                 self._control_values = control_values
+            """list[int]: The values each control wire should take."""
 
             len_ctrl_wires = len(self.control_wires)
             len_ctrl_values = len(self.control_values)
@@ -257,12 +258,14 @@ def ctrl(fn, control, control_values=None):
         Control values can be assigned as follows.
 
         .. code-block:: python3
+
             op = qml.ctrl(qml.ctrl(my_ops, 1), 2, control_values=0)
             op()
 
         This is equivalent to the following.
 
         .. code-block:: python3
+
             qml.PauliX(wires=2)
             op = qml.ctrl(qml.ctrl(my_ops, 1), 2)
             op()
