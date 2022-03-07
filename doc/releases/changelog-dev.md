@@ -129,6 +129,10 @@
 
 <h3>Improvements</h3>
 
+* Most compilation transforms, and relevant subroutines, have been updated to
+  support just-in-time compilation with `jax.jit`.
+  [(#1894)](https://github.com/PennyLaneAI/pennylane/pull/1894/)
+
 * `default.qubit` and `default.mixed` now skip over identity operators instead of performing matrix multiplication
   with the identity.
   [(#2356)](https://github.com/PennyLaneAI/pennylane/pull/2356)
@@ -288,5 +292,5 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
-Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
+Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
 Jay Soni, Antal Száva, Maurice Weber.
