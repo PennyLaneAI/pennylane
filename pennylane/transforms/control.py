@@ -130,6 +130,12 @@ class ControlledOperation(Operation):
 
     @property
     def control_values(self):
+        r"""Values the control wires should take.
+        For operations that have control wires which are all ``1``,
+        this can be set to None.
+        Returns:
+            list[int]: The values each control wire should take.
+        """
         return self._control_values
 
     def expand(self):

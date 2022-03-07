@@ -4,6 +4,23 @@
 
 <h3>New features since last release</h3>
 
+* The function `qml.ctrl` was given the optional argument `control_values=None`.
+  If overridden, `control_values` takes an integer or a list of integers corresponding to
+  the binary value that each control value should take. The same change is reflected in
+  `ControlledOperation`. Control values of `0` are implemented by `qml.PauliX` applied
+  before and after the controlled operation. [(#2288)](https://github.com/PennyLaneAI/pennylane/pull/2288)
+  ```py
+  op = qml.ctrl(my_ops, [2, 1], control_values=[0, 1])
+  op()
+  ```
+  This is now equivalent to the following:
+  ```py
+  qml.PauliX(wires=2)
+  op = qml.ctrl(my_ops, [2, 1])
+  op()
+  qml.PauliX(wires=2)
+  ```
+
 * A new operation `qml.Snapshot` has been added to assist users in debugging quantum progams.
   The instruction is used to save the internal state of simulator devices at arbitrary points of
   execution, such as the quantum state vector and density matrix in the qubit case, or the
@@ -542,6 +559,6 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Sam Banning, Thomas Bromley, Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Christina Lee, Angus Lowe,
+Karim Alaa El-Din, Sam Banning, Thomas Bromley, Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Christina Lee, Angus Lowe,
 Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni,
 Antal Száva, David Wierichs
