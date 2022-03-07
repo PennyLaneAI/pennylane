@@ -19,11 +19,7 @@ import pennylane as qml
 import pytest
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
-from pennylane.hf.hamiltonian import (
-    electron_integrals,
-    fermionic_hamiltonian,
-    molecular_hamiltonian,
-)
+from pennylane.hf.hamiltonian import electron_integrals, fermionic_hamiltonian, mol_hamiltonian
 from pennylane.hf.molecule import Molecule
 
 
@@ -267,12 +263,12 @@ def test_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref
         )
     ],
 )
-def test_molecular_hamiltonian(symbols, geometry, h_ref_data):
-    r"""Test that molecular_hamiltonian returns the correct Hamiltonian."""
+def test_mol_hamiltonian(symbols, geometry, h_ref_data):
+    r"""Test that mol_hamiltonian returns the correct Hamiltonian."""
 
     mol = Molecule(symbols, geometry)
     args = []
-    h = molecular_hamiltonian(mol)(*args)
+    h = mol_hamiltonian(mol)(*args)
     h_ref = qml.Hamiltonian(h_ref_data[0], h_ref_data[1])
 
     assert np.allclose(h.terms()[0], h_ref.terms()[0])
@@ -304,7 +300,7 @@ def test_gradient_expvalH():
             qml.PauliX(0)
             qml.PauliX(1)
             qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-            h_qubit = molecular_hamiltonian(mol)(*args)
+            h_qubit = mol_hamiltonian(mol)(*args)
             return qml.expval(h_qubit)
 
         return circuit

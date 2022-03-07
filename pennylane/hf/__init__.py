@@ -18,7 +18,7 @@ Hartree-Fock calculations.
 from .basis_data import STO3G, atomic_numbers
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .dipole import dipole_integrals, dipole_moment, fermionic_dipole
-from .hamiltonian import electron_integrals, fermionic_hamiltonian, molecular_hamiltonian
+from .hamiltonian import electron_integrals, fermionic_hamiltonian, mol_hamiltonian
 from .hartree_fock import hf_energy, nuclear_energy, scf
 from .integrals import (
     attraction_integral,
