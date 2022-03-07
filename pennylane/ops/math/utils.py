@@ -28,15 +28,6 @@ def simplify_decomposition(decomp):
     return decomp[:1] + simplify_decomposition(decomp[1:])
 
 
-# def test_simplify_decomposition():
-#     op = qml.Hadamard(wires=1) @ qml.PauliX(wires=0) @ qml.PauliX(wires=5) @ qml.PauliX(wires=10) @ qml.PauliX(wires=1)
-#     expected = [qml.Hadamard(wires=1), qml.PauliX(wires=0), qml.PauliX(wires=5), qml.PauliX(wires=10), qml.PauliX(wires=1)]
-#     res = simplify_decomposition(op.decomposition())
-#     for op, op_expected in zip(res, expected):
-#         assert op.name == op_expected.name
-#         assert op.wires == op_expected.wires
-
-
 def simplify_terms(coeffs, ops):
     """unpacks nested lists of operator products"""
 
@@ -64,13 +55,3 @@ def simplify_terms(coeffs, ops):
     return coeffs[:1] + remainder_coeffs, ops[:1] + remainder_ops
 
 
-# op = (
-#     qml.Hadamard(wires=1)
-#     + 2.0 * qml.PauliX(wires=0)
-#     + qml.PauliX(wires=5)
-#     + 3 * (1.0j * qml.PauliX(wires=10) + qml.PauliX(wires=1))
-# )
-# print(op.terms()[0], "\n", op.terms()[1])
-# print()
-# res = simplify_terms(*op.terms())
-# print(res[0], "\n", res[1])

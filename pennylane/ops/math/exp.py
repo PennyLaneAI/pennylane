@@ -45,7 +45,7 @@ class Exp(qml.operation.Operator):
 
     @staticmethod
     def compute_eigvals(*params, scalar=None, op=None, **hyperparams):
-        return None # TODO: exponentiate each eigenval
+        return qml.math.exp(op.get_eigvals())
 
 
 def exp(op):
