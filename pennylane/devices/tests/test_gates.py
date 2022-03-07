@@ -38,6 +38,7 @@ np.random.seed(42)
 # gates for which device support is tested
 ops = {
     "Identity": qml.Identity(wires=[0]),
+    "Snapshot": qml.Snapshot("label"),
     "BasisState": qml.BasisState(np.array([0]), wires=[0]),
     "CNOT": qml.CNOT(wires=[0, 1]),
     "CRX": qml.CRX(0, wires=[0, 1]),
