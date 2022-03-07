@@ -107,8 +107,9 @@ class ControlledOperation(Operation):
             len_ctrl_wires = len(self.control_wires)
             len_ctrl_values = len(self.control_values)
 
-            assert len_ctrl_wires == len_ctrl_values, \
-                f"ControlledOperation: length of control values and wires must match, \
+            assert (
+                len_ctrl_wires == len_ctrl_values
+            ), f"ControlledOperation: length of control values and wires must match, \
                 but are {len_ctrl_values} and {len_ctrl_wires}"
         else:
             self._control_values = None
@@ -166,7 +167,11 @@ class ControlledOperation(Operation):
         return ControlledOperation(new_tape, self.control_wires, control_values=self.control_values)
 
     def _controlled(self, wires):
-        ControlledOperation(tape=self.subtape, control_wires=Wires(wires) + self.control_wires, control_values=self.control_values)
+        ControlledOperation(
+            tape=self.subtape,
+            control_wires=Wires(wires) + self.control_wires,
+            control_values=self.control_values,
+        )
 
 
 def ctrl(fn, control, control_values=None):

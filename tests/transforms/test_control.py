@@ -431,7 +431,7 @@ def test_control_values_sanity_check():
         qml.CNOT(wires=[1, 2]),
         qml.CY(wires=[1, 4]),
         qml.CZ(wires=[1, 0]),
-        qml.PauliX(wires=1)
+        qml.PauliX(wires=1),
     ]
     assert len(tape.operations) == 1
     ctrl_op = tape.operations[0]
@@ -442,12 +442,7 @@ def test_control_values_sanity_check():
 
 def test_multi_control_values():
     """Test control with a list of wires and control values."""
-    ctrl_values = [
-        [0, 0],
-        [0, 1],
-        [1, 0],
-        [1, 1]
-    ]
+    ctrl_values = [[0, 0], [0, 1], [1, 0], [1, 1]]
 
     def expected_ops(ctrl_val):
         exp_op = []
