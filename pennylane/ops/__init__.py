@@ -31,8 +31,7 @@ from .qubit import ops as _qubit__ops__
 from .qubit import obs as _qubit__obs__
 
 from .channel import __all__ as _channel__ops__
-
-from pennylane.ops.math.sum import *
+from .math import *
 
 
 class AdjointError(Exception):

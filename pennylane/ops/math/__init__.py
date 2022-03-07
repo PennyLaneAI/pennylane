@@ -19,5 +19,8 @@ This module contains functionality for arithmetic operations
 applied to operators, such as addition and inversion.
 """
 from .sum import Sum, sum
-from .scalar_mul import ScalarMul, scalar_multiply
-from .matmul import MatMul, matmul
+from .scalar_prod import ScalarProd, scalar_prod
+from .prod import Prod, matmul
+from .exp import Exp, exp
+from .pow import Pow, pow
+

@@ -52,7 +52,7 @@ def simplify_terms(coeffs, ops):
         remainder_coeffs, remainder_ops = simplify_terms(coeffs[1:], ops[1:])
         return first_coeffs + remainder_coeffs, first_ops + remainder_ops
 
-    if isinstance(ops[0], qml.ops.math.ScalarMul):
+    if isinstance(ops[0], qml.ops.math.ScalarProd):
         # extract op and scalar simplify again
         first_coeff, first_op = simplify_terms(
             [ops[0].hyperparameters["scalar"]], [ops[0].hyperparameters["op"]]
@@ -64,13 +64,13 @@ def simplify_terms(coeffs, ops):
     return coeffs[:1] + remainder_coeffs, ops[:1] + remainder_ops
 
 
-op = (
-    qml.Hadamard(wires=1)
-    + 2.0 * qml.PauliX(wires=0)
-    + qml.PauliX(wires=5)
-    + 3 * (1.0j * qml.PauliX(wires=10) + qml.PauliX(wires=1))
-)
-print(op.terms()[0], "\n", op.terms()[1])
-print()
-res = simplify_terms(*op.terms())
-print(res[0], "\n", res[1])
+# op = (
+#     qml.Hadamard(wires=1)
+#     + 2.0 * qml.PauliX(wires=0)
+#     + qml.PauliX(wires=5)
+#     + 3 * (1.0j * qml.PauliX(wires=10) + qml.PauliX(wires=1))
+# )
+# print(op.terms()[0], "\n", op.terms()[1])
+# print()
+# res = simplify_terms(*op.terms())
+# print(res[0], "\n", res[1])

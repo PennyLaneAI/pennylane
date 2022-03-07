@@ -1047,7 +1047,7 @@ class Operator(abc.ABC):
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
-        return qml.ops.math.ScalarMul(a, self)
+        return qml.ops.math.ScalarProd(a, self)
 
     __rmul__ = __mul__
 
@@ -1087,7 +1087,11 @@ class Operator(abc.ABC):
         return tape
 
     def __matmul__(self, other):
-        return qml.ops.math.MatMul(self, other)
+        return qml.ops.math.Prod(self, other)
+
+    def __pow__(self, a):
+        return qml.ops.math.Pow(self, a)
+
 
 
 # =============================================================================

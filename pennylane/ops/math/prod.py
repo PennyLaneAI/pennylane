@@ -17,7 +17,8 @@
 import pennylane as qml
 
 
-class MatMul(qml.operation.Operator):
+class Prod(qml.operation.Operator):
+
     def __init__(self, left, right, do_queue=True, id=None):
 
         self.hyperparameters["left"] = left
@@ -27,7 +28,7 @@ class MatMul(qml.operation.Operator):
         super().__init__(
             *left.parameters, *right.parameters, wires=combined_wires, do_queue=do_queue, id=id
         )
-        self._name = f"{right.name} {left.name}"
+        self._name = f"MatMul({right.name}, {left.name})"
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -38,11 +39,11 @@ class MatMul(qml.operation.Operator):
         return len(self.wires)
 
     @staticmethod
-    def compute_decomposition(*params, left, right, wires=None, **hyperparameters):
+    def compute_decomposition(*params, wires=None, left=None, right=None, **hyperparameters):
         return [left, right]
 
     @staticmethod
-    def compute_matrix(*params, left, right, **hyperparams):
+    def compute_matrix(*params, left=None, right=None, **hyperparams):
         # ugly to compute this here again!
         combined_wires = qml.wires.Wires.all_wires([left.wires, right.wires])
         return left.get_matrix(wire_order=combined_wires) @ right.get_matrix(
@@ -51,4 +52,4 @@ class MatMul(qml.operation.Operator):
 
 
 def matmul(left, right):
-    return MatMul(left, right)
+    return Prod(left, right)
