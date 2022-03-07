@@ -23,6 +23,12 @@ from pennylane.drawer.representation_resolver import RepresentationResolver
 from pennylane.measurements import state
 
 
+def test_deprecation_warning():
+    """Test representation resolver raises a deprecation warning."""
+    with pytest.warns(UserWarning):
+        RepresentationResolver()
+
+
 @pytest.fixture
 def unicode_representation_resolver():
     """An instance of a RepresentationResolver with unicode charset."""
@@ -139,16 +145,32 @@ class TestRepresentationResolver:
             (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 1, "|0⟩"),
             (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 2, "|1⟩"),
             (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 3, "|0⟩"),
-            (qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]), 1, "QubitStateVector(M0)"),
-            (qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]), 2, "QubitStateVector(M0)"),
+            (
+                qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]),
+                1,
+                "QubitStateVector(M0)",
+            ),
+            (
+                qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]),
+                2,
+                "QubitStateVector(M0)",
+            ),
             (qml.QubitUnitary(np.eye(2), wires=[1]), 1, "U0"),
             (qml.QubitUnitary(np.eye(4), wires=[1, 2]), 2, "U0"),
             (qml.Kerr(3.14, wires=[1]), 1, "Kerr(3.14)"),
             (qml.CrossKerr(3.14, wires=[1, 2]), 1, "CrossKerr(3.14)"),
             (qml.CrossKerr(3.14, wires=[1, 2]), 2, "CrossKerr(3.14)"),
             (qml.CubicPhase(3.14, wires=[1]), 1, "V(3.14)"),
-            (qml.InterferometerUnitary(np.eye(4), wires=[1, 3]), 1, "InterferometerUnitary(M0)"),
-            (qml.InterferometerUnitary(np.eye(4), wires=[1, 3]), 3, "InterferometerUnitary(M0)"),
+            (
+                qml.InterferometerUnitary(np.eye(4), wires=[1, 3]),
+                1,
+                "InterferometerUnitary(M0)",
+            ),
+            (
+                qml.InterferometerUnitary(np.eye(4), wires=[1, 3]),
+                3,
+                "InterferometerUnitary(M0)",
+            ),
             (qml.CatState(3.14, 2.14, 1, wires=[1]), 1, "CatState(3.14, 2.14, 1)"),
             (qml.CoherentState(3.14, 2.14, wires=[1]), 1, "CoherentState(3.14, 2.14)"),
             (
@@ -175,7 +197,11 @@ class TestRepresentationResolver:
             (qml.Hermitian(np.eye(4), wires=[1, 2]), 2, "H0"),
             (qml.X(wires=[1]), 1, "x"),
             (qml.P(wires=[1]), 1, "p"),
-            (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "|4,5,7╳4,5,7|"),
+            (
+                qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]),
+                1,
+                "|4,5,7╳4,5,7|",
+            ),
             (
                 qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]),
                 2,
@@ -183,7 +209,8 @@ class TestRepresentationResolver:
             ),
             (
                 qml.PolyXP(
-                    np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                    np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]),
+                    wires=[1],
                 ),
                 1,
                 "1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀",
@@ -211,8 +238,16 @@ class TestRepresentationResolver:
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 1, "X⁻¹"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 0, "C"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 2, "C"),
-            (qml.measurements.sample(wires=[0, 1]), 0, "basis"),  # not providing an observable in
-            (qml.measurements.sample(wires=[0, 1]), 1, "basis"),  # sample gets displayed as raw
+            (
+                qml.measurements.sample(wires=[0, 1]),
+                0,
+                "basis",
+            ),  # not providing an observable in
+            (
+                qml.measurements.sample(wires=[0, 1]),
+                1,
+                "basis",
+            ),  # sample gets displayed as raw
             (two_wire_quantum_tape(), 0, "QuantumTape:T0"),
             (two_wire_quantum_tape(), 1, "QuantumTape:T0"),
         ],
@@ -282,16 +317,32 @@ class TestRepresentationResolver:
             (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 1, "|0>"),
             (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 2, "|1>"),
             (qml.BasisState(np.array([0, 1, 0]), wires=[1, 2, 3]), 3, "|0>"),
-            (qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]), 1, "QubitStateVector(M0)"),
-            (qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]), 2, "QubitStateVector(M0)"),
+            (
+                qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]),
+                1,
+                "QubitStateVector(M0)",
+            ),
+            (
+                qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[1, 2]),
+                2,
+                "QubitStateVector(M0)",
+            ),
             (qml.QubitUnitary(np.eye(2), wires=[1]), 1, "U0"),
             (qml.QubitUnitary(np.eye(4), wires=[1, 2]), 2, "U0"),
             (qml.Kerr(3.14, wires=[1]), 1, "Kerr(3.14)"),
             (qml.CrossKerr(3.14, wires=[1, 2]), 1, "CrossKerr(3.14)"),
             (qml.CrossKerr(3.14, wires=[1, 2]), 2, "CrossKerr(3.14)"),
             (qml.CubicPhase(3.14, wires=[1]), 1, "V(3.14)"),
-            (qml.InterferometerUnitary(np.eye(4), wires=[1, 3]), 1, "InterferometerUnitary(M0)"),
-            (qml.InterferometerUnitary(np.eye(4), wires=[1, 3]), 3, "InterferometerUnitary(M0)"),
+            (
+                qml.InterferometerUnitary(np.eye(4), wires=[1, 3]),
+                1,
+                "InterferometerUnitary(M0)",
+            ),
+            (
+                qml.InterferometerUnitary(np.eye(4), wires=[1, 3]),
+                3,
+                "InterferometerUnitary(M0)",
+            ),
             (qml.CatState(3.14, 2.14, 1, wires=[1]), 1, "CatState(3.14, 2.14, 1)"),
             (qml.CoherentState(3.14, 2.14, wires=[1]), 1, "CoherentState(3.14, 2.14)"),
             (
@@ -318,7 +369,11 @@ class TestRepresentationResolver:
             (qml.Hermitian(np.eye(4), wires=[1, 2]), 2, "H0"),
             (qml.X(wires=[1]), 1, "x"),
             (qml.P(wires=[1]), 1, "p"),
-            (qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]), 1, "|4,5,7X4,5,7|"),
+            (
+                qml.FockStateProjector(np.array([4, 5, 7]), wires=[1, 2, 3]),
+                1,
+                "|4,5,7X4,5,7|",
+            ),
             (
                 qml.PolyXP(np.array([1, 2, 0, -1.3, 6]), wires=[1]),
                 2,
@@ -326,7 +381,8 @@ class TestRepresentationResolver:
             ),
             (
                 qml.PolyXP(
-                    np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                    np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]),
+                    wires=[1],
                 ),
                 1,
                 "1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0",
@@ -355,8 +411,16 @@ class TestRepresentationResolver:
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 1, "X^-1"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 0, "C"),
             (qml.Toffoli(wires=[0, 2, 1]).inv(), 2, "C"),
-            (qml.measurements.sample(wires=[0, 1]), 0, "basis"),  # not providing an observable in
-            (qml.measurements.sample(wires=[0, 1]), 1, "basis"),  # sample gets displayed as raw
+            (
+                qml.measurements.sample(wires=[0, 1]),
+                0,
+                "basis",
+            ),  # not providing an observable in
+            (
+                qml.measurements.sample(wires=[0, 1]),
+                1,
+                "basis",
+            ),  # sample gets displayed as raw
             (two_wire_quantum_tape(), 0, "QuantumTape:T0"),
             (two_wire_quantum_tape(), 1, "QuantumTape:T0"),
         ],
@@ -390,13 +454,18 @@ class TestRepresentationResolver:
             (
                 qml.expval(
                     qml.PolyXP(
-                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]),
+                        wires=[1],
                     )
                 ),
                 1,
                 "⟨1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀⟩",
             ),
-            (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "⟨cos(3.14)x+sin(3.14)p⟩"),
+            (
+                qml.expval(qml.QuadOperator(3.14, wires=[1])),
+                1,
+                "⟨cos(3.14)x+sin(3.14)p⟩",
+            ),
             (qml.var(qml.PauliX(wires=[1])), 1, "Var[X]"),
             (qml.var(qml.PauliY(wires=[1])), 1, "Var[Y]"),
             (qml.var(qml.PauliZ(wires=[1])), 1, "Var[Z]"),
@@ -419,13 +488,18 @@ class TestRepresentationResolver:
             (
                 qml.var(
                     qml.PolyXP(
-                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]),
+                        wires=[1],
                     )
                 ),
                 1,
                 "Var[1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀]",
             ),
-            (qml.var(qml.QuadOperator(3.14, wires=[1])), 1, "Var[cos(3.14)x+sin(3.14)p]"),
+            (
+                qml.var(qml.QuadOperator(3.14, wires=[1])),
+                1,
+                "Var[cos(3.14)x+sin(3.14)p]",
+            ),
             (qml.sample(qml.PauliX(wires=[1])), 1, "Sample[X]"),
             (qml.sample(qml.PauliY(wires=[1])), 1, "Sample[Y]"),
             (qml.sample(qml.PauliZ(wires=[1])), 1, "Sample[Z]"),
@@ -448,13 +522,18 @@ class TestRepresentationResolver:
             (
                 qml.sample(
                     qml.PolyXP(
-                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]),
+                        wires=[1],
                     )
                 ),
                 1,
                 "Sample[1.2+1.1x₀+3.2p₀+1.2x₀²+2.3p₀²+3x₀p₀]",
             ),
-            (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[cos(3.14)x+sin(3.14)p]"),
+            (
+                qml.sample(qml.QuadOperator(3.14, wires=[1])),
+                1,
+                "Sample[cos(3.14)x+sin(3.14)p]",
+            ),
             (
                 qml.expval(qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliZ(wires=[3])),
                 1,
@@ -545,13 +624,18 @@ class TestRepresentationResolver:
             (
                 qml.expval(
                     qml.PolyXP(
-                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]),
+                        wires=[1],
                     )
                 ),
                 1,
                 "<1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0>",
             ),
-            (qml.expval(qml.QuadOperator(3.14, wires=[1])), 1, "<cos(3.14)x+sin(3.14)p>"),
+            (
+                qml.expval(qml.QuadOperator(3.14, wires=[1])),
+                1,
+                "<cos(3.14)x+sin(3.14)p>",
+            ),
             (qml.var(qml.PauliX(wires=[1])), 1, "Var[X]"),
             (qml.var(qml.PauliY(wires=[1])), 1, "Var[Y]"),
             (qml.var(qml.PauliZ(wires=[1])), 1, "Var[Z]"),
@@ -574,13 +658,18 @@ class TestRepresentationResolver:
             (
                 qml.var(
                     qml.PolyXP(
-                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]),
+                        wires=[1],
                     )
                 ),
                 1,
                 "Var[1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0]",
             ),
-            (qml.var(qml.QuadOperator(3.14, wires=[1])), 1, "Var[cos(3.14)x+sin(3.14)p]"),
+            (
+                qml.var(qml.QuadOperator(3.14, wires=[1])),
+                1,
+                "Var[cos(3.14)x+sin(3.14)p]",
+            ),
             (qml.sample(qml.PauliX(wires=[1])), 1, "Sample[X]"),
             (qml.sample(qml.PauliY(wires=[1])), 1, "Sample[Y]"),
             (qml.sample(qml.PauliZ(wires=[1])), 1, "Sample[Z]"),
@@ -603,13 +692,18 @@ class TestRepresentationResolver:
             (
                 qml.sample(
                     qml.PolyXP(
-                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]), wires=[1]
+                        np.array([[1.2, 2.3, 4.5], [-1.2, 1.2, -1.5], [-1.3, 4.5, 2.3]]),
+                        wires=[1],
                     )
                 ),
                 1,
                 "Sample[1.2+1.1x_0+3.2p_0+1.2x_0^2+2.3p_0^2+3x_0p_0]",
             ),
-            (qml.sample(qml.QuadOperator(3.14, wires=[1])), 1, "Sample[cos(3.14)x+sin(3.14)p]"),
+            (
+                qml.sample(qml.QuadOperator(3.14, wires=[1])),
+                1,
+                "Sample[cos(3.14)x+sin(3.14)p]",
+            ),
             (
                 qml.expval(qml.PauliX(wires=[1]) @ qml.PauliY(wires=[2]) @ qml.PauliZ(wires=[3])),
                 1,
@@ -684,7 +778,10 @@ class TestRepresentationResolver:
 
         unicode_representation_resolver.element_representation(obs, wire)
 
-        assert unicode_representation_resolver.output_representation.call_args[0] == (obs, wire)
+        assert unicode_representation_resolver.output_representation.call_args[0] == (
+            obs,
+            wire,
+        )
 
     def test_element_representation_calls_operator(self, unicode_representation_resolver):
         """Test that element_representation calls operator_representation for all operators that are not returned."""
@@ -696,4 +793,7 @@ class TestRepresentationResolver:
 
         unicode_representation_resolver.element_representation(op, wire)
 
-        assert unicode_representation_resolver.operator_representation.call_args[0] == (op, wire)
+        assert unicode_representation_resolver.operator_representation.call_args[0] == (
+            op,
+            wire,
+        )
