@@ -1095,14 +1095,26 @@ class Operator(abc.ABC):
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
     def __add__(self, other):
-        r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
+        r"""The addition operation between operators."""
         return qml.ops.math.Sum(self, other)
 
+    def __sub__(self, other):
+        r"""The subtraction operation between operators."""
+        return self.__add__(other.__mul__(-1))
+
     def __mul__(self, a):
-        r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
+        r"""The scalar multiplication for operators."""
         return qml.ops.math.ScalarProd(a, self)
 
     __rmul__ = __mul__
+
+    def __matmul__(self, other):
+        r"""The multiplication between operators."""
+        return qml.ops.math.Prod(self, other)
+
+    def __pow__(self, a):
+        r"""The power of an operator."""
+        return qml.ops.math.Pow(self, a)
 
     def expand(self):
         """Returns a tape that has recorded the decomposition of the operator.
@@ -1138,12 +1150,6 @@ class Operator(abc.ABC):
             tape.inv()
 
         return tape
-
-    def __matmul__(self, other):
-        return qml.ops.math.Prod(self, other)
-
-    def __pow__(self, a):
-        return qml.ops.math.Pow(self, a)
 
 
 # =============================================================================
@@ -1603,12 +1609,6 @@ class Observable(Operator):
         raise ValueError(
             "Can only compare an Observable/Tensor, and a Hamiltonian/Observable/Tensor."
         )
-
-    def __sub__(self, other):
-        r"""The subtraction operation between Observables/Tensors/qml.Hamiltonian objects."""
-        if isinstance(other, (Observable, Tensor, qml.Hamiltonian)):
-            return self.__add__(other.__mul__(-1))
-        raise ValueError(f"Cannot subtract {type(other)} from Observable")
 
 
 class Tensor(Observable):
