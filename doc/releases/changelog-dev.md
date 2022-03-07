@@ -9,7 +9,7 @@
   execution, such as the quantum state vector and density matrix in the qubit case, or the
   covariance matrix and vector of means in the continuous variable case. The saved states can be
   retrieved in the form of a dictionary via the top-level `qml.snapshots` function.
-  [(#2233)](https://github.com/PennyLaneAI/pennylane/pull/2233)
+  [(#2233)](https://github.com/PennyLaneAI/pennylane/pull/2233) 
   [(#2289)](https://github.com/PennyLaneAI/pennylane/pull/2289)
 
   ```py
