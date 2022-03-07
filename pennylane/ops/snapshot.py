@@ -17,7 +17,7 @@ cv and qubit computing paradigms in PennyLane.
 """
 import numpy as np
 
-from pennylane.operation import AllWires, AnyWires, Operation
+from pennylane.operation import AnyWires, Operation
 
 
 # pylint: disable=unused-argument
