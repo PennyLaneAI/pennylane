@@ -252,3 +252,28 @@ class TestSnapshot:
 
         if m == "state":
             assert np.allclose(result[2], result["execution_results"])
+
+    @pytest.mark.parametrize("method", [None, "backprop", "parameter-shift", "adjoint"])
+    def test_different_diff_methods(self, method):
+        """Test that snapshots work with different differentiation methods."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method=method)
+        def circuit():
+            qml.Snapshot()
+            qml.Hadamard(wires=0)
+            qml.Snapshot("very_important_state")
+            qml.CNOT(wires=[0, 1])
+            qml.Snapshot()
+            return qml.expval(qml.PauliZ(0))
+
+        result = qml.snapshots(circuit)()
+        expected = {
+            0: np.array([1, 0, 0, 0]),
+            "very_important_state": np.array([1 / np.sqrt(2), 0, 1 / np.sqrt(2), 0]),
+            2: np.array([1 / np.sqrt(2), 0, 0, 1 / np.sqrt(2)]),
+            "execution_results": np.array(0),
+        }
+
+        assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
+        assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
