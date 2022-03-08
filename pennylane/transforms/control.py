@@ -101,7 +101,7 @@ class ControlledOperation(Operation):
         """Wires: The control wires."""
 
         if control_values is not None:
-           self._control_values = [control_values] if isinstance(control_values, int) else control_values
+            self._control_values = [control_values] if isinstance(control_values, int) else control_values
 
             len_ctrl_wires = len(self.control_wires)
             len_ctrl_values = len(self.control_values)
