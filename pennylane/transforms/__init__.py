@@ -31,6 +31,7 @@ that compute the desired quantity.
 
     ~transforms.classical_jacobian
     ~batch_params
+    ~batch_input
     ~draw
     ~draw_mpl
     ~transforms.get_unitary_matrix
@@ -161,6 +162,7 @@ from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .op_transforms import op_transform
 from .adjoint import adjoint
 from .batch_params import batch_params
+from .batch_input import batch_input
 from .classical_jacobian import classical_jacobian
 from .condition import cond, Conditional
 from .compile import compile
