@@ -40,15 +40,17 @@ def batch_input(
     Based on `arXiv:2202.10471 <https://arxiv.org/abs/2202.10471>`__.
 
     Args:
-        tape (.tape.JacobianTape or .QNode): Input quantum circuit to batch
+        tape (.tape.QuantumTape or .QNode): Input quantum circuit to batch
         argnum (Sequence[int] or int): One or more index value on all gate parameters
             indicating the location of the non-trainable batched inputs within the input
             argument sequence of the circuit. By default first argument is assumed to be
             the only batched input.
 
     Returns:
-        Sequence[Sequence[.tape.JacobianTape], Callable]: list of tapes arranged
+        Sequence[Sequence[.tape.QuantumTape], Callable]: list of tapes arranged
         according to unbatched inputs and a callable function to batch the results.
+
+    .. seealso:: :func:`~.batch_params`
 
     **Example**
 
@@ -71,8 +73,6 @@ def batch_input(
     <tf.Tensor: shape=(10,), dtype=float64, numpy=
     array([0.17926078, 0.7480163 , 0.47816999, 0.50381628, 0.349178  ,
            0.17511444, 0.03769436, 0.19180259, 0.75867188, 0.55335748])>
-
-    .. seealso:: :func:`~.batch_params`
     """
     parameters = tape.get_parameters(trainable_only=False)
 
