@@ -785,7 +785,6 @@ class QubitDevice(Device):
             # sorted_wires = Wires(
             #     sorted(obs_wires, key=lambda x: str(x))
             # )  # wires need to be sorted to match eigvals
-
             # prob = self.probability(wires=sorted_wires)
             prob = self.probability(wires=observable.wires)
             print(f"\nprob vector: {prob}")
