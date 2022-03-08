@@ -625,13 +625,12 @@ class TestExpand:
         with pytest.raises(ValueError, match="Vector parameter must be of length"):
             pu.expand_vector(TestExpand.VECTOR1, [0, 1], 4)
 
-    def test_get_unit(self):
-
-        x = [0, 0, 0]
-        y = [0, 0, 1]
-
+    @pytest.mark.parametrize("x", [[0, 0, 0], [0, 1, 0], [1, 0, 0]])
+    @pytest.mark.parametrize("y", [[0, 0, 1], [0, 1, 1], [1, 1, 1]])
+    @pytest.mark.parametrize("p", [0, 1, 2, 3])
+    def test_get_unitary_preparing_superposition(self, x, y, p):
+        """Test"""
         dev = qml.device("default.qubit", wires=len(x))
-        p = 0
         tape = pu.get_unitary_preparing_superposition(x, y, p)
 
         @qml.qnode(dev)
@@ -653,5 +652,6 @@ class TestExpand:
             y_state = get_state_vector_from_bitstring(y)
             return (np.array(x_state) + 1j**p * np.array(y_state)) / np.sqrt(2)
 
+        res = circuit()
         state = state_to_create(x, y, p)
-        np.allclose(circuit(), state)
+        assert np.allclose(res, state)

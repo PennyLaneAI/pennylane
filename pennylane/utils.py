@@ -454,12 +454,12 @@ def apply_gate_G(p, qubit):
     # if p == 0: do nothing
 
     if p == 1:
-        qml.S(qubit)
+        qml.S(wires=[qubit])
     elif p == 2:
         qml.PauliZ(qubit)
     elif p == 3:
         qml.PauliZ(qubit)
-        qml.S(qubit)
+        qml.S(wires=[qubit])
 
 
 from copy import copy
