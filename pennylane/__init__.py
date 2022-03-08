@@ -41,7 +41,7 @@ from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.tracker import Tracker
 from pennylane.io import *
-from pennylane.measurements import density_matrix, expval, probs, sample, state, var
+from pennylane.measurements import density_matrix, measure, expval, probs, sample, state, var
 from pennylane.ops import *
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
@@ -56,12 +56,15 @@ from pennylane.transforms import (
     adjoint,
     adjoint_metric_tensor,
     batch_params,
+    batch_input,
     batch_transform,
     draw,
     draw_mpl,
     ControlledOperation,
     compile,
     ctrl,
+    cond,
+    defer_measurements,
     measurement_grouping,
     metric_tensor,
     specs,
@@ -77,6 +80,7 @@ from pennylane.transforms import (
 from pennylane.ops.functions import *
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
+from pennylane.debugging import snapshots
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
