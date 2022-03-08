@@ -426,3 +426,80 @@ def expand_vector(vector, original_wires, expanded_wires):
     )
 
     return qml.math.reshape(expanded_tensor, 2**M)
+
+
+def create_S(x, y, k):
+    S = []
+    for idx, (i, j) in enumerate(zip(x, y)):
+        if idx == k:
+            break
+        else:
+            if i != j:
+                S.append(idx)
+    return S
+
+
+def create_T(y):
+    indices = np.where(np.array(y) == 1)
+    return set(indices[0].flatten())
+
+
+def apply_gate_G(p, qubit):
+
+    if p not in {0, 1, 2, 3}:
+        raise ValueError("Incorrect p specified.")
+
+    qml.Hadamard(qubit)
+
+    # if p == 0: do nothing
+
+    if p == 1:
+        qml.S(qubit)
+    elif p == 2:
+        qml.PauliZ(qubit)
+    elif p == 3:
+        qml.PauliZ(qubit)
+        qml.S(qubit)
+
+
+from copy import copy
+
+
+def get_unitary_preparing_superposition(x_bitstring, y_bitstring, p):
+    """Get the unitary that prepares a specific superposition state.
+
+    This is a method proposed in https://arxiv.org/pdf/2104.10220.pdf as a
+    state initialization routine.
+    """
+    x = copy(x_bitstring)
+    y = copy(y_bitstring)
+
+    for k in range(len(x)):
+
+        if x[k] != y[k]:
+            continue
+
+    if x[k] == 1:
+        # Swap x and y
+        x, y = y, x
+        p = -p % 4
+
+    S = create_S(x, y, 2)
+    T = create_T(x)
+
+    with qml.tape.QuantumTape() as tape:
+
+        # Step 4.
+        if T:
+            for t in T:
+                qml.PauliX(t)
+
+        # Step 5.
+        apply_gate_G(p, k)
+
+        # Step 6.
+        if S:
+            for l in S:
+                qml.CNOT(wires=[k, l])
+
+    return tape

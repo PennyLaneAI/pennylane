@@ -624,3 +624,34 @@ class TestExpand:
         """Test exception raised if incorrect sized vector provided."""
         with pytest.raises(ValueError, match="Vector parameter must be of length"):
             pu.expand_vector(TestExpand.VECTOR1, [0, 1], 4)
+
+    def test_get_unit(self):
+
+        x = [0, 0, 0]
+        y = [0, 0, 1]
+
+        dev = qml.device("default.qubit", wires=len(x))
+        p = 0
+        tape = pu.get_unitary_preparing_superposition(x, y, p)
+
+        @qml.qnode(dev)
+        def circuit():
+            for op in tape._ops:
+                qml.apply(op)
+            return qml.state()
+
+        from functools import reduce
+
+        def get_state_vector_from_bitstring(bitstring):
+            zero = [1, 0]
+            one = [0, 1]
+            x_state = [zero if a == 0 else one for a in bitstring]
+            return reduce(np.kron, x_state)
+
+        def state_to_create(x, y, p):
+            x_state = get_state_vector_from_bitstring(x)
+            y_state = get_state_vector_from_bitstring(y)
+            return (np.array(x_state) + 1j**p * np.array(y_state)) / np.sqrt(2)
+
+        state = state_to_create(x, y, p)
+        np.allclose(circuit(), state)
