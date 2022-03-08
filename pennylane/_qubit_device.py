@@ -788,8 +788,8 @@ class QubitDevice(Device):
             # )  # wires need to be sorted to match eigvals
             # prob = self.probability(wires=sorted_wires)
             prob = self.probability(wires=observable.wires)
-            print(f"\nprob vector: {prob}")
-            print(f"\neigvals: {eigvals}\n")
+            print(f"\n prob vector: {prob}")
+            print(f"\n eigvals: {eigvals}\n")
             return self._dot(eigvals, prob)
 
         # estimate the ev
@@ -959,7 +959,7 @@ class QubitDevice(Device):
                         'the "adjoint" differentiation method'
                     )
             else:
-                if op.name not in ("QubitStateVector", "BasisState"):
+                if op.name not in ("QubitStateVector", "BasisState", "Snapshot"):
                     expanded_ops.append(op)
 
         jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
