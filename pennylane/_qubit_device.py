@@ -787,8 +787,8 @@ class QubitDevice(Device):
             # )  # wires need to be sorted to match eigvals
             # prob = self.probability(wires=sorted_wires)
             prob = self.probability(wires=observable.wires)
-            print(f"\nprob vector: {prob}")
-            print(f"\neigvals: {eigvals}\n")
+            print(f"\n prob vector: {prob}")
+            print(f"\n eigvals: {eigvals}\n")
             return self._dot(eigvals, prob)
 
         # estimate the ev
