@@ -299,8 +299,9 @@
   0.47165198882111165
   ```
   
-  To understand the theory behind this approach, check out the
-  [qcut](https://pennylane.readthedocs.io/en/stable/code/qml_transforms_qcut.html) module page or read the
+  To understand this approach more, check out the
+  [qml.transforms.qcut](https://pennylane.readthedocs.io/en/stable/code/qml_transforms_qcut.html)
+  module page or read the
   [Peng et. al](https://arxiv.org/abs/1904.00102) paper.
   
   Circuit cutting support is also differentiable:
