@@ -296,6 +296,9 @@
     device.
     [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
 
+* A method to batch the non-trainable inputs for machine learning applications has been added.
+  [(#2069)](https://github.com/PennyLaneAI/pennylane/pull/2069)
+
 <h3>Improvements</h3>
 
 * Some error messages have been improved and operation properties made
@@ -547,6 +550,6 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Sam Banning, Thomas Bromley, Anthony Hayes, David Ittah, Josh Izaac, Christina Lee, Angus Lowe,
-Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni,
+Jack Y. Araz, Sam Banning, Thomas Bromley, Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac,
+Christina Lee, Angus Lowe, Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni,
 Antal Száva, David Wierichs

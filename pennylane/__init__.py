@@ -56,6 +56,7 @@ from pennylane.transforms import (
     adjoint,
     adjoint_metric_tensor,
     batch_params,
+    batch_input,
     batch_transform,
     draw,
     draw_mpl,
