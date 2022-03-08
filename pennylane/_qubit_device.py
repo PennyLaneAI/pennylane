@@ -781,12 +781,15 @@ class QubitDevice(Device):
                     f"Cannot compute analytic expectations of {observable.name}."
                 ) from e
 
-            obs_wires = observable.wires.labels
-            sorted_wires = Wires(
-                sorted(obs_wires, key=lambda x: str(x))
-            )  # wires need to be sorted to match eigvals
+            # obs_wires = observable.wires.labels
+            # sorted_wires = Wires(
+            #     sorted(obs_wires, key=lambda x: str(x))
+            # )  # wires need to be sorted to match eigvals
 
-            prob = self.probability(wires=sorted_wires)
+            # prob = self.probability(wires=sorted_wires)
+            prob = self.probability(wires=observable.wires)
+            print(f"\nprob vector: {prob}")
+            print(f"\neigvals: {eigvals}\n")
             return self._dot(eigvals, prob)
 
         # estimate the ev
