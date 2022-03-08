@@ -221,6 +221,7 @@ class DefaultQubit(QubitDevice):
 
         # apply the circuit rotations
         for operation in rotations:
+            print(f"\nrotations: {rotations}\n")
             self._state = self._apply_operation(self._state, operation)
 
     def _apply_operation(self, state, operation):

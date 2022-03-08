@@ -731,6 +731,7 @@ class QubitDevice(Device):
             return prob
 
         wires = Wires(wires)
+        print(f"\nwires: {wires}\n")
         # determine which subsystems are to be summed over
         inactive_wires = Wires.unique_wires([self.wires, wires])
 
