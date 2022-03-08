@@ -770,11 +770,11 @@ class MultiRZ(Operation):
 
     def __init__(self, theta, wires=None, do_queue=True, id=None):
         wires = Wires(wires)
-        self.hyperparameters["n_wires"] = len(wires)
+        self.hyperparameters["num_wires"] = len(wires)
         super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
 
     @staticmethod
-    def compute_matrix(theta, n_wires):  # pylint: disable=arguments-differ
+    def compute_matrix(theta, num_wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -784,7 +784,7 @@ class MultiRZ(Operation):
 
         Args:
             theta (tensor_like or float): rotation angle
-            n_wires (int): number of wires the rotation acts on
+            num_wires (int): number of wires the rotation acts on
 
         Returns:
             tensor_like: canonical matrix
@@ -797,7 +797,7 @@ class MultiRZ(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]])
         """
-        eigs = qml.math.convert_like(pauli_eigs(n_wires), theta)
+        eigs = qml.math.convert_like(pauli_eigs(num_wires), theta)
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
@@ -810,7 +810,7 @@ class MultiRZ(Operation):
         return -0.5 * functools.reduce(matmul, [qml.PauliZ(w) for w in self.wires])
 
     @staticmethod
-    def compute_eigvals(theta, n_wires):  # pylint: disable=arguments-differ
+    def compute_eigvals(theta, num_wires):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
@@ -827,7 +827,7 @@ class MultiRZ(Operation):
 
         Args:
             theta (tensor_like or float): rotation angle
-            n_wires (int): number of wires the rotation acts on
+            num_wires (int): number of wires the rotation acts on
 
         Returns:
             tensor_like: eigenvalues
@@ -838,7 +838,7 @@ class MultiRZ(Operation):
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j,
                 0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j])
         """
-        eigs = qml.math.convert_like(pauli_eigs(n_wires), theta)
+        eigs = qml.math.convert_like(pauli_eigs(num_wires), theta)
 
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)

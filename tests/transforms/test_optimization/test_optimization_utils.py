@@ -17,12 +17,9 @@ import pytest
 import pennylane as qml
 from pennylane.transforms.optimization.optimization_utils import (
     find_next_gate,
-    _zyz_to_quat,
-    _quaternion_product,
+    _yzy_to_zyz,
     fuse_rot_angles,
 )
-
-from pennylane import numpy as np
 
 from utils import check_matrix_equivalence
 from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
@@ -57,39 +54,32 @@ class TestRotGateFusion:
     """Test that utility functions for fusing two qml.Rot gates function as expected."""
 
     @pytest.mark.parametrize(
-        ("angles", "expected_quat"),
-        # Examples generated at https://www.mathworks.com/help/robotics/ref/eul2quat.html
-        [
-            (
-                [0.15, 0.25, -0.90],
-                [0.923247491800509, -0.062488597726915, 0.107884031713695, -0.363414748929363],
-            ),
-            ([np.pi / 2, 0.0, 0.0], [1 / np.sqrt(2), 0.0, 0.0, 1 / np.sqrt(2)]),
-            ([0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]),
-            ([0.15, 0, -0.90], [0.930507621912314, 0.0, 0.0, -0.366272529086048]),
-            ([0.0, 0.2, 0.0], [0.995004165278026, 0.0, 0.099833416646828, 0.0]),
-        ],
+        ("angles"),
+        [([0.15, 0.25, -0.90]), ([0.0, 0.0, 0.0]), ([0.15, 0.25, -0.90]), ([0.05, -1.34, 4.12])],
     )
-    def test_zyz_to_quat(self, angles, expected_quat):
-        """Test that ZYZ Euler angles are correctly converted to quaternions."""
-        obtained_quat = _zyz_to_quat(angles)
-        assert qml.math.allclose(obtained_quat, expected_quat)
+    def test_yzy_to_zyz(self, angles):
+        """Test that a set of rotations of the form YZY is correctly converted
+        to a sequence of the form ZYZ."""
 
-    @pytest.mark.parametrize(
-        ("angles_1", "angles_2", "expected_quat"),
-        # Examples generated at https://www.vcalc.com/wiki/vCalc/Quaternion+Multiplication
-        [
-            ([0.0, 0.0, 0.0, 0.0], [0.1, 0.2, 0.3, 0.4], [0.0, 0.0, 0.0, 0.0]),
-            ([1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]),
-            ([1.0, 2.0, 3.0, 4.0], [5.0, 6.0, 7.0, 8.0], [-60.0, 12.0, 30.0, 24.0]),
-            ([0.1, 0.0, -0.2, 0.15], [1.0, 0.05, 1.65, -0.25], [0.4675, -0.1925, -0.0275, 0.135]),
-            ([0.1, 0.0, 0.0, 0.15], [1.0, 0.0, 0.0, -0.25], [0.1375, 0.0, 0.0, 0.125]),
-        ],
-    )
-    def test_quaternion_product(self, angles_1, angles_2, expected_quat):
-        """Test that products of quaternions produce expected results."""
-        obtained_quat = _quaternion_product(angles_1, angles_2)
-        assert qml.math.allclose(obtained_quat, expected_quat)
+        def original_ops():
+            qml.RY(angles[0], wires=0),
+            qml.RZ(angles[1], wires=0),
+            qml.RY(angles[2], wires=0),
+
+        compute_matrix = get_unitary_matrix(original_ops, [0])
+        product_yzy = compute_matrix()
+
+        z1, y, z2 = _yzy_to_zyz(angles)
+
+        def transformed_ops():
+            qml.RZ(z1, wires=0)
+            qml.RY(y, wires=0)
+            qml.RZ(z2, wires=0)
+
+        compute_transformed_matrix = get_unitary_matrix(transformed_ops, [0])
+        product_zyz = compute_transformed_matrix()
+
+        assert check_matrix_equivalence(product_yzy, product_zyz)
 
     @pytest.mark.parametrize(
         ("angles_1", "angles_2"),

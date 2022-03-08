@@ -298,9 +298,9 @@
 
 <h3>Improvements</h3>
 
-* Most compilation transforms, and relevant subroutines, have been updated to
-  support just-in-time compilation with `jax.jit`.
-  [(#1894)](https://github.com/PennyLaneAI/pennylane/pull/1894/)
+* Some error messages have been improved and operation properties made
+  more consistent.
+  [(#2287)](https://github.com/PennyLaneAI/pennylane/pull/2287/)
 
 * No two-term parameter-shift rule is assumed anymore by default.
   [(#2227)](https://github.com/PennyLaneAI/pennylane/pull/2227)
@@ -365,6 +365,10 @@
   [(#2248)](https://github.com/PennyLaneAI/pennylane/pull/2248)
 
 <h3>Bug fixes</h3>
+
+* The `basis` property of `qml.SWAP` was set to `"X"`, which is incorrect; it is
+  now set to `None`.
+  [(#2287)](https://github.com/PennyLaneAI/pennylane/pull/2287/)
 
 * The `qml.RandomLayers` template now decomposes when the weights are a list of lists.
   [(#2266)](https://github.com/PennyLaneAI/pennylane/pull/2266/)
@@ -543,6 +547,6 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Sam Banning, Thomas Bromley, Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Christina Lee, Angus Lowe,
+Sam Banning, Thomas Bromley, Anthony Hayes, David Ittah, Josh Izaac, Christina Lee, Angus Lowe,
 Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni,
 Antal Száva, David Wierichs
