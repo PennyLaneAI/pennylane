@@ -190,5 +190,5 @@ from .tape_expand import (
     create_decomp_expand_fn,
     set_decomposition,
 )
-import pennylane.transforms.qcut
-from pennylane.transforms.qcut import cut_circuit
+from . import qcut
+from .qcut import cut_circuit
