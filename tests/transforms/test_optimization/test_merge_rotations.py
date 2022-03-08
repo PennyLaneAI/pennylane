@@ -103,7 +103,9 @@ class TestMergeRotations:
             (0.3, -0.3, 0.7, -0.1, [qml.RY(0.6, wires=1)]),
         ],
     )
-    def test_two_qubits_merge(self, theta_11, theta_12, theta_21, theta_22, expected_ops):
+    def test_two_qubits_rotation_no_merge(
+        self, theta_11, theta_12, theta_21, theta_22, expected_ops
+    ):
         """Test that a two-qubit circuit with rotations on different qubits get merged."""
 
         def qfunc():
@@ -396,29 +398,3 @@ class TestMergeRotationsInterfaces:
         # Check operation list
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
-
-    def test_merge_rotations_jax_jit(self):
-        """Test that when using jax.jit, the conditional statement that checks for
-        0 rotation angles does not break things."""
-
-        jax = pytest.importorskip("jax")
-
-        # Enable float64 support
-        from jax.config import config
-
-        remember = config.read("jax_enable_x64")
-        config.update("jax_enable_x64", True)
-
-        dev = qml.device("default.qubit", wires=["w1", "w2"])
-
-        @jax.jit
-        @qml.qnode(dev, interface="jax")
-        @merge_rotations()
-        def qfunc():
-            qml.CRX(0.2, wires=["w1", "w2"])
-            qml.CRX(-0.2, wires=["w1", "w2"])
-            return qml.expval(qml.PauliZ("w1"))
-
-        res = qfunc()
-
-        assert qml.math.allclose(res, [1.0])

@@ -160,31 +160,23 @@ class TestQubitUnitary:
 
     @pytest.mark.parametrize(
         "U,expected_gate,expected_params",
-        [
-            (I, qml.RZ, [0.0]),
+        [  # First set of gates are diagonal and converted to RZ
+            (I, qml.RZ, [0]),
             (Z, qml.RZ, [np.pi]),
             (S, qml.RZ, [np.pi / 2]),
             (T, qml.RZ, [np.pi / 4]),
-            (qml.RZ(0.3, wires=0).matrix, qml.RZ, [0.3]),
-            (qml.RZ(-0.5, wires=0).matrix, qml.RZ, [-0.5]),
+            (qml.RZ(0.3, wires=0).get_matrix(), qml.RZ, [0.3]),
+            (qml.RZ(-0.5, wires=0).get_matrix(), qml.RZ, [-0.5]),
+            # Next set of gates are non-diagonal and decomposed as Rots
             (
-                np.array(
-                    [
-                        [0, -9.831019270939975e-01 + 0.1830590094588862j],
-                        [9.831019270939975e-01 + 0.1830590094588862j, 0],
-                    ]
-                ),
+                np.array([[0, -0.98310193 + 0.18305901j], [0.98310193 + 0.18305901j, 0]]),
                 qml.Rot,
-                [-0.18409714468526372, np.pi, 0.18409714468526372],
+                [0, -np.pi, -5.914991017809059],
             ),
-            (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
-            (X, qml.Rot, [np.pi / 2, np.pi, -np.pi / 2]),
-            (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix, qml.Rot, [0.2, 0.5, -0.3]),
-            (
-                np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix,
-                qml.Rot,
-                [-1.0, 2.0, -3.0],
-            ),
+            (H, qml.Rot, [np.pi, np.pi / 2, 0]),
+            (X, qml.Rot, [0.0, -np.pi, -np.pi]),
+            (qml.Rot(0.2, 0.5, -0.3, wires=0).get_matrix(), qml.Rot, [0.2, 0.5, -0.3]),
+            (np.exp(1j * 0.02) * qml.Rot(-1, 2, -3, wires=0).get_matrix(), qml.Rot, [-1, 2, -3]),
         ],
     )
     def test_qubit_unitary_decomposition(self, U, expected_gate, expected_params):
@@ -194,9 +186,9 @@ class TestQubitUnitary:
 
         assert len(decomp) == 1 == len(decomp2)
         assert isinstance(decomp[0], expected_gate)
-        assert np.allclose(decomp[0].parameters, expected_params, atol=1e-7)
+        assert np.allclose(decomp[0].parameters, expected_params)
         assert isinstance(decomp2[0], expected_gate)
-        assert np.allclose(decomp2[0].parameters, expected_params, atol=1e-7)
+        assert np.allclose(decomp2[0].parameters, expected_params)
 
     def test_qubit_unitary_decomposition_multiqubit_invalid(self):
         """Test that QubitUnitary is not decomposed for more than two qubits."""
