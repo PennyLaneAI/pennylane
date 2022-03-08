@@ -67,7 +67,7 @@ To cut the circuit, we first convert convert it to its graph representation:
 
 >>> graph = qml.transforms.qcut.tape_to_graph(tape)
 
-.. figure:: ../../_static/qcut_graph.svg
+.. figure:: ../_static/qcut_graph.svg
     :align: center
     :width: 60%
     :target: javascript:void(0);
