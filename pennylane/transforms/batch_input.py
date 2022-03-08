@@ -87,7 +87,7 @@ def batch_input(
 
     if len(np.unique([qml.math.shape(x)[0] for x in non_trainable])) != 1:
         raise ValueError(
-            "Batch dimension for all gate arguments " "specified by 'argnum' must be the same."
+            "Batch dimension for all gate arguments specified by 'argnum' must be the same."
         )
 
     outputs = []
