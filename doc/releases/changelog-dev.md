@@ -267,7 +267,7 @@
   [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
   [(#2279)](https://github.com/PennyLaneAI/pennylane/pull/2279)
   
-  The example below shows how a three qubit circuit can be run on a two qubit device:
+  The example below shows how a three-qubit circuit can be run on a two-qubit device:
   
   ```python
   dev = qml.device("default.qubit", wires=2)
