@@ -267,7 +267,7 @@
   [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
   [(#2279)](https://github.com/PennyLaneAI/pennylane/pull/2279)
   
-  The example below shows how a `3`-qubit circuit can be run on a `2`-qubit device:
+  The example below shows how a three qubit circuit can be run on a two qubit device:
   
   ```python
   dev = qml.device("default.qubit", wires=2)
@@ -289,8 +289,8 @@
       return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
   ```
   
-  Now, instead of executing the circuit directly, PennyLane will partition it into smaller fragments
-  according to the `WireCut` locations and execute those fragments multiple times. Combining the
+  Instead of executing the circuit directly, it will be partitioned into smaller fragments
+  according to the `WireCut` locations, and each fragment executed multiple times. Combining the
   results of the fragment executions will recover the expected output of the original uncut circuit.
   
     ```pycon
@@ -299,10 +299,9 @@
   0.47165198882111165
   ```
   
-  To understand this approach more, check out the
+  For more details on circuit cutting, check out the
   [qml.transforms.qcut](https://pennylane.readthedocs.io/en/stable/code/qml_transforms_qcut.html)
-  module page or read the
-  [Peng et. al](https://arxiv.org/abs/1904.00102) paper.
+  module page or [Peng et. al](https://arxiv.org/abs/1904.00102).
   
   Circuit cutting support is also differentiable:
   
