@@ -401,7 +401,7 @@ class TestTensorExpval:
         def qfunc():
             qml.RX(theta, wires=0)
             qml.RX(phi, wires=1)
-            qml.RX(phi, wires=2)
+            qml.RX(varphi, wires=2)
 
         @qml.qnode(dev)
         def circuit(o):
