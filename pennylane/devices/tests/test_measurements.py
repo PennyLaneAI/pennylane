@@ -387,6 +387,49 @@ class TestTensorExpval:
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
+    def test_pauliz_identity(self, device, tol, skip_if):
+        """Test that a tensor product involving identities and PauliZ works
+        correctly, regardless of the order of terms in the tensor product"""
+        n_wires = 3
+        dev = device(n_wires)
+        skip_if(dev, {"supports_tensor_observables": False})
+
+        theta = 0.432
+        phi = 0.123
+        varphi = -0.543
+
+        observables = [qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)]
+
+        def qfunc():
+            qml.RX(theta, wires=0)
+            qml.RX(phi, wires=1)
+            qml.RX(varphi, wires=2)
+
+        @qml.qnode(dev)
+        def circuit(o):
+            qfunc()
+            return qml.expval(qml.apply(o))
+
+        obs1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
+        obs2 = qml.Identity(wires=1) @ qml.Identity(wires=0) @ qml.PauliZ(wires=2)
+
+        obs3 = qml.Identity(wires=0) @ qml.PauliZ(wires=2) @ qml.Identity(wires=1)
+        obs4 = qml.Identity(wires=1) @ qml.PauliZ(wires=2) @ qml.Identity(wires=0)
+
+        obs5 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
+        obs6 = qml.PauliZ(wires=2) @ qml.Identity(wires=1) @ qml.Identity(wires=0)
+
+        res1, res2 = circuit(obs1), circuit(obs2)
+        res3, res4 = circuit(obs3), circuit(obs4)
+        res5, res6 = circuit(obs5), circuit(obs6)
+
+        # transitivity applies while checking
+        assert np.allclose(res1, res2, atol=tol(dev.shots))
+        assert np.allclose(res2, res3, atol=tol(dev.shots))
+        assert np.allclose(res3, res4, atol=tol(dev.shots))
+        assert np.allclose(res4, res5, atol=tol(dev.shots))
+        assert np.allclose(res5, res6, atol=tol(dev.shots))
+
     def test_pauliz_hadamard(self, device, tol, skip_if):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
