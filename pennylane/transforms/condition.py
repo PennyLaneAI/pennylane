@@ -14,7 +14,6 @@
 """
 Contains the condition transform.
 """
-from copy import copy
 from functools import wraps
 from typing import Type
 
@@ -127,11 +126,12 @@ def cond(condition, true_fn, false_fn=None):
             >>> qnode()
             tensor(0.45008329, requires_grad=True)
 
-        **Else quantum function**
+        **Passing a quantum function for the False case too**
 
-        In addition, an the ``false_fn`` can further be passed to ``cond`` such
-        that a qfunc is applied conditioned on obtaining the inverse of the
-        measurement value:
+        In the qubit model, single-qubit measurements may result in one of two
+        outcomes. The expression involving a mid-circuit measurement value
+        passed to ``cond`` may also have two outcomes. ``cond`` allows passing
+        a quantum functions for both cases at the same time:
 
         .. code-block:: python3
 
@@ -146,16 +146,35 @@ def cond(condition, true_fn, false_fn=None):
                 qml.RZ(par, wires[0])
 
             @qml.qnode(dev)
-            def qnode():
+            def qnode1():
                 qml.Hadamard(0)
                 m_0 = qml.measure(0)
-                qml.cond(m_0, qfunc1, qfunc2)(first_par, wires=[1])
+                qml.cond(m_0, qfunc1, qfunc2)(par, wires=[1])
                 return qml.expval(qml.PauliZ(1))
 
         .. code-block :: pycon
 
             >>> par = np.array(0.3, requires_grad=True)
-            >>> qnode()
+            >>> qnode1()
+            tensor(-0.04991671, requires_grad=True)
+
+        The previous QNode is equivalent to using ``cond`` twice, inverting the
+        measurement value using the ``~`` unary operator in the second case:
+
+        .. code-block:: python3
+
+            @qml.qnode(dev)
+            def qnode2():
+                qml.Hadamard(0)
+                m_0 = qml.measure(0)
+                qml.cond(m_0, qfunc1)(par, wires=[1])
+                qml.cond(~m_0, qfunc2)(par, wires=[1])
+                return qml.expval(qml.PauliZ(1))
+
+        .. code-block :: pycon
+
+            >>> par = np.array(0.3, requires_grad=True)
+            >>> qnode2()
             tensor(-0.04991671, requires_grad=True)
     """
     if callable(true_fn):
@@ -185,11 +204,10 @@ def cond(condition, true_fn, false_fn=None):
                 if else_tape.measurements:
                     raise ConditionalTransformError(with_meas_err)
 
-                inverted_m = copy(condition)
-                inverted_m = ~inverted_m
+                inverted_condition = ~condition
 
                 for op in else_tape.operations:
-                    Conditional(inverted_m, op)
+                    Conditional(inverted_condition, op)
 
     else:
         raise ConditionalTransformError(
