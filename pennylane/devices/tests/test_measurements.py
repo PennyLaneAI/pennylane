@@ -387,8 +387,17 @@ class TestTensorExpval:
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    def test_pauliz_hadamard(self, device, tol, skip_if):
-        """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
+    tensor_obs = [
+        qml.PauliZ(wires=0) @ qml.Hadamard(wires=1) @ qml.PauliY(wires=2),
+        qml.Hadamard(wires=1) @ qml.PauliY(wires=2) @ qml.PauliZ(wires=0),
+        qml.PauliY(wires=2) @ qml.PauliZ(wires=0) @ qml.Hadamard(wires=1),
+    ]
+
+    @pytest.mark.parametrize("obs", tensor_obs)
+    def test_pauliz_hadamard(self, device, obs, tol, skip_if):
+        """Test that a tensor product involving PauliZ and PauliY and hadamard
+        works correctly, regardless of the order of terms in the tensor
+        product"""
         n_wires = 3
         dev = device(n_wires)
         skip_if(dev, {"supports_tensor_observables": False})
@@ -404,7 +413,7 @@ class TestTensorExpval:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.PauliZ(wires=0) @ qml.Hadamard(wires=1) @ qml.PauliY(wires=2))
+            return qml.expval(qml.apply(obs))
 
         res = circuit()
 
