@@ -99,6 +99,64 @@ def cond(condition, true_fn, false_fn=None):
             m_1 = qml.measure(2)
             qml.cond(m_0, qml.RZ)(sec_par, wires=1)
             return qml.expval(qml.PauliZ(1))
+
+    .. UsageDetails::
+
+        **Conditional quantum functions**
+
+        The ``cond`` transform allows conditioning quantum functions too:
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit", wires=2)
+
+            def qfunc(par, wires):
+                qml.Hadamard(wires[0])
+                qml.RY(par, wires[0])
+
+            @qml.qnode(dev)
+            def qnode():
+                qml.Hadamard(0)
+                m_0 = qml.measure(0)
+                qml.cond(m_0, qfunc)(first_par, wires=[1])
+                return qml.expval(qml.PauliZ(1))
+
+        .. code-block :: pycon
+
+            >>> par = np.array(0.3, requires_grad=True)
+            >>> qnode()
+            tensor(0.45008329, requires_grad=True)
+
+        **Else quantum function**
+
+        In addition, an the ``false_fn`` can further be passed to ``cond`` such
+        that a qfunc is applied conditioned on obtaining the inverse of the
+        measurement value:
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit", wires=2)
+
+            def qfunc1(par, wires):
+                qml.Hadamard(wires[0])
+                qml.RY(par, wires[0])
+
+            def qfunc2(par, wires):
+                qml.Hadamard(wires[0])
+                qml.RZ(par, wires[0])
+
+            @qml.qnode(dev)
+            def qnode():
+                qml.Hadamard(0)
+                m_0 = qml.measure(0)
+                qml.cond(m_0, qfunc1, qfunc2)(first_par, wires=[1])
+                return qml.expval(qml.PauliZ(1))
+
+        .. code-block :: pycon
+
+            >>> par = np.array(0.3, requires_grad=True)
+            >>> qnode()
+            tensor(-0.04991671, requires_grad=True)
     """
     if callable(true_fn):
         # We assume that the callable is an operation or a quantum function
