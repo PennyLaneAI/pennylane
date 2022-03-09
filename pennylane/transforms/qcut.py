@@ -1459,6 +1459,16 @@ class FragmentGraph:
                 self.graph, cut_edges=list(self.cut_edges)
             )
 
+    def place_cuts(self):
+        cut_graph = self.graph.copy()
+        for i, ((n0, n1), wire) in enumerate(self.cut_edges.items()):
+            cut_graph.remove_edge(n0, n1, edge_key)  # TODO: where to get edge_key?
+            wirecut_op = WireCut(wires=wire, id=i)
+            cut_graph.add_node(wirecut_op)
+            cut_graph.add_edge(n0, wirecut_op, wire=wire)
+            cut_graph.add_edge(wirecut_op, n1, wire=wire)
+        return cut_graph
+
     @property
     def nodes(self) -> Dict[Any, int]:
         return {op: order for op, order in self.graph.nodes(data="order")}
@@ -1542,7 +1552,7 @@ class FragmentGraph:
         return [len(nodes) for nodes in self.fragment_nodes]
 
 
-def find_cuts(
+def find_and_place_cuts(
     graph: MultiDiGraph,
     cut_strategy: CutStrategy,
     cut_method: Union[str, Callable] = "kahypar",
@@ -1562,7 +1572,10 @@ def find_cuts(
 
     probed_cut_kwargs = cut_strategy.get_cut_kwargs(graph)
 
-    return [cut_method(graph, **cut_kwargs, **kwargs) for cut_kwargs in probed_cut_kwargs]
+    cut_trials = [cut_method(graph, **cut_kwargs, **kwargs) for cut_kwargs in probed_cut_kwargs]
+    best_cut = sorted(cut_trials, key=lambda fg: fg.cost)[0]
+
+    return best_cut.place_cuts()
 
 
 class KaHyParGraph(FragmentGraph):
