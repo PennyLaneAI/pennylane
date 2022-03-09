@@ -15,7 +15,6 @@
 This module contains the CircuitDrawer class which is used to draw CircuitGraph instances.
 """
 from collections import OrderedDict
-import warnings
 
 from pennylane.wires import Wires
 from pennylane.utils import _flatten
@@ -51,10 +50,6 @@ class CircuitDrawer:
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
         max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
         _label_offsets (dict[strin, int], optional): Offset the printed index of different symbol types in nested circuits.
-
-    .. warning::
-
-            ``CircuitDrawer`` is deprecated. Please use :func:`~.drawer.tape_text` instead.
     """
 
     def __init__(
@@ -67,9 +62,6 @@ class CircuitDrawer:
         max_length=None,
         _label_offsets=None,
     ):
-        warnings.warn(
-            "CircuitDrawer is deprecated. Please see qml.drawer.tape_text instead.", UserWarning
-        )
         self.operation_grid = Grid(raw_operation_grid)
         self.observable_grid = Grid(raw_observable_grid)
         self.wires = wires

@@ -57,8 +57,7 @@ class TestGrid:
 
     def test_empty_init(self):
         """Test that the Grid class is initialized correctly when no raw_grid is given."""
-        with pytest.warns(UserWarning):
-            grid = Grid()
+        grid = Grid()
 
         assert grid.num_layers == 0
         assert grid.num_wires == 0
@@ -85,8 +84,7 @@ class TestGrid:
         """Test that the Grid class is initialized correctly."""
 
         with pytest.raises(
-            ValueError,
-            match="The entered raw grid was not parsed as two-dimensional array",
+            ValueError, match="The entered raw grid was not parsed as two-dimensional array"
         ):
             grid = Grid(raw_grid)
 
@@ -267,7 +265,6 @@ class TestGrid:
         grid = Grid()
 
         with pytest.raises(
-            AttributeError,
-            match="Can't replace layer. The Grid has not yet been initialized.",
+            AttributeError, match="Can't replace layer. The Grid has not yet been initialized."
         ):
             grid.replace_layer(1, [1, 2, 3])

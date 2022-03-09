@@ -18,7 +18,6 @@ This module contains the base quantum tape.
 from collections import Counter, deque, defaultdict
 import contextlib
 import copy
-import warnings
 from threading import RLock
 
 import numpy as np
@@ -1133,14 +1132,7 @@ class QuantumTape(AnnotatedQueue):
 
         Returns:
             str: the circuit representation of the tape
-
-        .. warning::
-
-            ``QuantumTape.draw`` is deprecated. Please use :func:`~.drawer.tape_text` instead.
         """
-        warnings.warn(
-            "tape.draw will be deprecated. Please use `qml.drawer.tape_text` instead.", UserWarning
-        )
         return self.graph.draw(
             charset=charset,
             wire_order=wire_order,

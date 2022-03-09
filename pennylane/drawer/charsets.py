@@ -18,7 +18,7 @@ import abc
 
 
 class CharSet(abc.ABC):
-    """Charset base class. Is deprecated and will be soon deleted."""
+    """Charset base class."""
 
     # pylint: disable=too-few-public-methods
 

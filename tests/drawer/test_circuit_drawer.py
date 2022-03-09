@@ -28,14 +28,6 @@ from pennylane.wires import Wires
 from pennylane.measurements import state
 
 
-def test_circuitgraph_draw_deprecation():
-    """Test draw on circuitgraph raises a deprecation warning."""
-    tape = qml.tape.QuantumTape()
-    graph = tape.graph
-    with pytest.warns(UserWarning):
-        graph.draw()
-
-
 class TestFunctions:
     """Test the helper functions."""
 
@@ -77,13 +69,9 @@ dummy_raw_observable_grid = [
 class TestInitialization:
     def test_charset_default(self):
 
-        with pytest.warns(UserWarning):
-            drawer_None = CircuitDrawer(
-                dummy_raw_operation_grid,
-                dummy_raw_observable_grid,
-                Wires(range(6)),
-                charset=None,
-            )
+        drawer_None = CircuitDrawer(
+            dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=None
+        )
 
         assert drawer_None.charset is UnicodeCharSet
 
@@ -91,10 +79,7 @@ class TestInitialization:
     def test_charset_string(self, charset):
 
         drawer_str = CircuitDrawer(
-            dummy_raw_operation_grid,
-            dummy_raw_observable_grid,
-            Wires(range(6)),
-            charset=charset,
+            dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=charset
         )
 
         assert drawer_str.charset is CHARSETS[charset]
@@ -103,10 +88,7 @@ class TestInitialization:
     def test_charset_class(self, charset):
 
         drawer_class = CircuitDrawer(
-            dummy_raw_operation_grid,
-            dummy_raw_observable_grid,
-            Wires(range(6)),
-            charset=charset,
+            dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=charset
         )
 
         assert drawer_class.charset is charset
@@ -115,10 +97,7 @@ class TestInitialization:
 
         with pytest.raises(ValueError, match=r"Charset 'nope' is not supported."):
             CircuitDrawer(
-                dummy_raw_operation_grid,
-                dummy_raw_observable_grid,
-                Wires(range(6)),
-                charset="nope",
+                dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset="nope"
             )
 
 
@@ -200,14 +179,7 @@ class TestCircuitDrawer:
                 assert (op, idx) in args_tuples
 
     interlocking_multiwire_gate_grid = to_grid(
-        [
-            [
-                qml.CNOT(wires=[0, 4]),
-                qml.CNOT(wires=[1, 5]),
-                qml.Toffoli(wires=[2, 3, 6]),
-            ]
-        ],
-        7,
+        [[qml.CNOT(wires=[0, 4]), qml.CNOT(wires=[1, 5]), qml.Toffoli(wires=[2, 3, 6])]], 7
     )
     interlocking_multiwire_gate_representation_grid = Grid(
         [
@@ -222,14 +194,7 @@ class TestCircuitDrawer:
     )
 
     multiwire_and_single_wire_gate_grid = to_grid(
-        [
-            [
-                qml.Toffoli(wires=[0, 3, 4]),
-                qml.PauliX(wires=[1]),
-                qml.Hadamard(wires=[2]),
-            ]
-        ],
-        5,
+        [[qml.Toffoli(wires=[0, 3, 4]), qml.PauliX(wires=[1]), qml.Hadamard(wires=[2])]], 5
     )
     multiwire_and_single_wire_gate_representation_grid = Grid([["╭"], ["│"], ["│"], ["├"], ["╰"]])
 
@@ -282,23 +247,14 @@ class TestCircuitDrawer:
     @pytest.mark.parametrize(
         "grid,target_representation_grid",
         [
-            (
-                interlocking_multiwire_gate_grid,
-                interlocking_multiwire_gate_representation_grid,
-            ),
+            (interlocking_multiwire_gate_grid, interlocking_multiwire_gate_representation_grid),
             (
                 multiwire_and_single_wire_gate_grid,
                 multiwire_and_single_wire_gate_representation_grid,
             ),
-            (
-                all_wire_state_preparation_grid,
-                all_wire_state_preparation_representation_grid,
-            ),
+            (all_wire_state_preparation_grid, all_wire_state_preparation_representation_grid),
             (multiwire_gate_grid, multiwire_gate_representation_grid),
-            (
-                multi_and_single_wire_gate_grid,
-                multi_and_single_wire_gate_representation_grid,
-            ),
+            (multi_and_single_wire_gate_grid, multi_and_single_wire_gate_representation_grid),
         ],
     )
     def test_resolve_decorations(self, grid, target_representation_grid):
@@ -483,9 +439,7 @@ def wide_cv_tape():
 
     with qml.tape.QuantumTape() as tape:
         qml.GaussianState(
-            2 * np.eye(16),
-            np.array([(2 * i + 2) // 2 for i in range(16)]),
-            wires=list(range(8)),
+            2 * np.eye(16), np.array([(2 * i + 2) // 2 for i in range(16)]), wires=list(range(8))
         )
         [qml.Beamsplitter(0.4, 0, wires=[2 * i, 2 * i + 1]) for i in range(4)]
         [qml.Beamsplitter(0.25475, 0.2312344, wires=[i, i + 4]) for i in range(4)]
@@ -697,14 +651,11 @@ class TestCircuitDrawerIntegration:
         self, parameterized_qubit_tape, drawn_parameterized_qubit_circuit_with_values
     ):
         """Test that a parametrized qubit circuit renders correctly with values."""
-        with pytest.warns(UserWarning):
-            output = parameterized_qubit_tape.draw(wire_order=qml.wires.Wires(range(5)))
+        output = parameterized_qubit_tape.draw(wire_order=qml.wires.Wires(range(5)))
         assert output == drawn_parameterized_qubit_circuit_with_values
 
     def test_wide_qubit_circuit_with_values(
-        self,
-        parameterized_wide_qubit_tape,
-        drawn_parameterized_wide_qubit_tape_with_values,
+        self, parameterized_wide_qubit_tape, drawn_parameterized_wide_qubit_tape_with_values
     ):
         """Test that a wide parametrized qubit circuit renders correctly with values."""
         output = parameterized_wide_qubit_tape.draw()
@@ -712,9 +663,7 @@ class TestCircuitDrawerIntegration:
         assert output == drawn_parameterized_wide_qubit_tape_with_values
 
     def test_qubit_circuit_with_interesting_wires(
-        self,
-        qubit_circuit_with_interesting_wires,
-        drawn_qubit_circuit_with_interesting_wires,
+        self, qubit_circuit_with_interesting_wires, drawn_qubit_circuit_with_interesting_wires
     ):
         """Test that non-consecutive wires show correctly."""
         output = qubit_circuit_with_interesting_wires.draw(
@@ -864,9 +813,7 @@ class TestCircuitDrawerIntegration:
                 qml.CNOT(wires=[0, 2])
                 with qml.tape.QuantumTape():
                     qml.QuantumPhaseEstimation(
-                        qml.PauliY.compute_matrix(),
-                        target_wires=[1],
-                        estimation_wires=[2],
+                        qml.PauliY.compute_matrix(), target_wires=[1], estimation_wires=[2]
                     )
                     qml.CNOT(wires=[1, 2])
             qml.Hadamard(1)
