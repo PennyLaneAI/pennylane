@@ -143,6 +143,8 @@ class QubitDevice(Device):
         """OrderedDict[int: Any]: Mapping from hashes of the circuit to results of executing the
         device."""
 
+        self.apply_wire_map = True
+
     @classmethod
     def capabilities(cls):
 
@@ -754,7 +756,8 @@ class QubitDevice(Device):
         # it corresponds to the orders of the wires passed.
         num_wires = len(device_wires)
         basis_states = self.generate_basis_states(num_wires)
-        basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
+        if self.apply_wire_map:
+            basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
 
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
         perm = basis_states @ powers_of_two
@@ -779,7 +782,10 @@ class QubitDevice(Device):
                     f"Cannot compute analytic expectations of {observable.name}."
                 ) from e
 
+
+            self.apply_wire_map = False
             prob = self.probability(wires=observable.wires)
+            self.apply_wire_map = True
             return self._dot(eigvals, prob)
 
         # estimate the ev

@@ -794,15 +794,6 @@ class TestTensor:
         t = t.get_eigvals()
         assert np.allclose(t, d, atol=tol, rtol=0)
 
-    def test_eigvals_op_order_matters_eigvals(self, tol):
-        """Test that by default the get_eigvals method  doesn't use the wire
-        labels, but provides eigenvalues based on the order of terms in the
-        tensor product."""
-        a = qml.PauliZ(wires=1) @ qml.Identity(wires=0)
-        b = qml.Identity(wires=0) @ qml.PauliZ(wires=1)
-
-        assert not np.allclose(a.get_eigvals(), b.get_eigvals(), atol=tol, rtol=0)
-
     def test_eigvals_identity_and_hermitian(self, tol):
         """Test that the correct eigenvalues are returned for the Tensor containing
         multiple types of observables"""
