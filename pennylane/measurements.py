@@ -651,7 +651,9 @@ class MeasurementValue(Generic[T]):
         measurement_outcomes = {self._zero_case, self._one_case}
 
         if not isinstance(control_value, tuple(type(val) for val in measurement_outcomes)):
-            raise MeasurementValueError(f"The equality operator is used to assert measurement outcomes, but got a value with type {type(control_value)}.")
+            raise MeasurementValueError(
+                f"The equality operator is used to assert measurement outcomes, but got a value with type {type(control_value)}."
+            )
 
         if control_value not in measurement_outcomes:
             raise MeasurementValueError(
