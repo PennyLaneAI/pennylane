@@ -52,13 +52,7 @@ class Pow(qml.operation.Operator):
                     exponent
                 )  # is this correct? A^(-n) = A^(-1)A^(-1)...
 
-        if exponent == 0.5:
-            return [qml.ops.math.Sqrt(base)]
-        else:
-            raise ValueError(
-                "Taking non-integer-valued powers of operators other than 1/2 (i.e., the square root) "
-                "is currently not supported."
-            )
+        return qml.operation.DecompositionUndefinedError
 
     @staticmethod
     def compute_matrix(*params, exponent=None, base=None, **hyperparams):
