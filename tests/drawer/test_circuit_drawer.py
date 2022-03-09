@@ -28,6 +28,21 @@ from pennylane.wires import Wires
 from pennylane.measurements import state
 
 
+def test_circuitgraph_draw_deprecation():
+    """Test draw on circuitgraph raises a deprecation warning."""
+    tape = qml.tape.QuantumTape()
+    graph = tape.graph
+    with pytest.warns(UserWarning):
+        graph.draw()
+
+
+def test_tape_draw_deprecation():
+    """Tests draw on tape raises a deprecation warning."""
+    tape = qml.tape.QuantumTape()
+    with pytest.warns(UserWarning):
+        tape.draw()
+
+
 class TestFunctions:
     """Test the helper functions."""
 
@@ -69,9 +84,10 @@ dummy_raw_observable_grid = [
 class TestInitialization:
     def test_charset_default(self):
 
-        drawer_None = CircuitDrawer(
-            dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=None
-        )
+        with pytest.warns(UserWarning):
+            drawer_None = CircuitDrawer(
+                dummy_raw_operation_grid, dummy_raw_observable_grid, Wires(range(6)), charset=None
+            )
 
         assert drawer_None.charset is UnicodeCharSet
 

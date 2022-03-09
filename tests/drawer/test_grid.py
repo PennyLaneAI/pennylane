@@ -57,7 +57,8 @@ class TestGrid:
 
     def test_empty_init(self):
         """Test that the Grid class is initialized correctly when no raw_grid is given."""
-        grid = Grid()
+        with pytest.warns(UserWarning):
+            grid = Grid()
 
         assert grid.num_layers == 0
         assert grid.num_wires == 0

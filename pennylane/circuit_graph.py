@@ -17,6 +17,7 @@ representation of a quantum circuit from an Operator queue.
 """
 # pylint: disable=too-many-branches,too-many-arguments,too-many-instance-attributes
 from collections import Counter, OrderedDict, namedtuple
+import warnings
 
 import retworkx as rx
 import numpy as np
@@ -635,7 +636,14 @@ class CircuitGraph:
 
         Returns:
             str: The circuit diagram representation of the ``CircuitGraph``
+
+        .. warning::
+
+            ``CircuitGraph.draw`` is deprecated. Please use :func:`~.drawer.tape_text` instead.
         """
+        warnings.warn(
+            "CircuitGraph.draw is deprecated. Please use qml.drawer.tape_text instead.", UserWarning
+        )
         if wire_order is not None:
             wire_order = qml.wires.Wires.all_wires([wire_order, self.wires])
 

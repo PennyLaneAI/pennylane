@@ -14,6 +14,7 @@
 """
 This module contains the Grid class which emulates a 2D array.
 """
+import warnings
 import numpy as np
 
 
@@ -37,9 +38,14 @@ class Grid:
 
     Args:
         raw_grid (list, optional): Raw grid from which the Grid instance is built.
+
+    .. warning::
+
+        ``Grid`` is deprecated. Please use a list of sets instead.
     """
 
     def __init__(self, raw_grid=None):
+        warnings.warns("Grid is deprecated. Please use a list of sets instead.", UserWarning)
         if raw_grid is None:
             # Let initialization pend until first data is entered
             self.raw_grid = None

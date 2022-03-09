@@ -23,6 +23,12 @@ from pennylane.drawer.representation_resolver import RepresentationResolver
 from pennylane.measurements import state
 
 
+def test_deprecation_warning():
+    """Test representation resolver raises a deprecation warning."""
+    with pytest.warns(UserWarning):
+        RepresentationResolver()
+
+
 @pytest.fixture
 def unicode_representation_resolver():
     """An instance of a RepresentationResolver with unicode charset."""

@@ -15,6 +15,7 @@
 This module contains the RepresentationResolver class which is used to map
 Operations to their string representations.
 """
+import warnings
 import numpy as np
 import pennylane as qml
 
@@ -27,9 +28,15 @@ class RepresentationResolver:
     Args:
         charset (CharSet, optional): The CharSet to be used for representation resolution.
         label_offsets (dict[string, int], optional): Offset the printed index of different symbol types in nested circuits.
+
+    .. warning::
+
+        ``RepresentationResolver`` is deprecated. Please use the ``Operator.label`` instead.
+
     """
 
     def __init__(self, charset=UnicodeCharSet, label_offsets=None):
+        warnings.warn("RepresentationResolver is deprecated. Please use Operator.label instead.")
         self.charset = charset
         if not label_offsets:
             label_offsets = {"matrix": 0, "unitary": 0, "hermitian": 0, "tape": 0}
