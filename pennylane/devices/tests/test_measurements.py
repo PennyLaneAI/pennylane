@@ -387,17 +387,41 @@ class TestTensorExpval:
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    tensor_prod = [
-        qml.PauliZ(wires=0) @ qml.Hadamard(wires=1) @ qml.PauliY(wires=2),
-        qml.Hadamard(wires=1) @ qml.PauliY(wires=2) @ qml.PauliZ(wires=0),
-        qml.PauliY(wires=2) @ qml.PauliZ(wires=0) @ qml.Hadamard(wires=1),
-    ]
+    def test_pauliz_identity(self, device, tol, skip_if):
+        """Test that a tensor product involving identities and PauliZ works
+        correctly, regardless of the order of terms in the tensor product"""
+        n_wires = 3
+        dev = device(n_wires)
+        skip_if(dev, {"supports_tensor_observables": False})
 
-    @pytest.mark.parametrize("tensor_prod", tensor_prod)
-    def test_pauliz_hadamard(self, device, tensor_prod, tol, skip_if):
-        """Test that a tensor product involving PauliZ and PauliY and hadamard
-        works correctly, regardless of the order of terms in the tensor
-        product"""
+        theta = 0.432
+        phi = 0.123
+        varphi = -0.543
+
+        def qfunc():
+            qml.RX(theta, wires=0)
+            qml.RX(phi, wires=1)
+            qml.RX(phi, wires=2)
+
+        @qml.qnode(dev)
+        def circuit(o):
+            qfunc()
+            return qml.expval(qml.apply(o))
+
+        obs1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
+        obs2 = qml.Identity(wires=0) @ qml.PauliZ(wires=2) @ qml.Identity(wires=1)
+        obs3 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
+
+        res1 = circuit(obs1)
+        res2 = circuit(obs2)
+        res3 = circuit(obs3)
+
+        assert np.allclose(res1, res2, atol=tol(dev.shots))
+        assert np.allclose(res2, res3, atol=tol(dev.shots))
+        assert np.allclose(res3, res1, atol=tol(dev.shots))
+
+    def test_pauliz_hadamard(self, device, tol, skip_if):
+        """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         n_wires = 3
         dev = device(n_wires)
         skip_if(dev, {"supports_tensor_observables": False})
@@ -413,7 +437,7 @@ class TestTensorExpval:
             qml.RX(varphi, wires=[2])
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[1, 2])
-            return qml.expval(qml.apply(tensor_prod))
+            return qml.expval(qml.PauliZ(wires=0) @ qml.Hadamard(wires=1) @ qml.PauliY(wires=2))
 
         res = circuit()
 
