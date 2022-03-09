@@ -310,8 +310,7 @@ class TestParameterShiftLogic:
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
-        assert res.size == 0
-        assert np.all(res == np.array([[]]))
+        assert res == ()
 
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
