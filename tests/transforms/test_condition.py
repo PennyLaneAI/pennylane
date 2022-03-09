@@ -71,6 +71,7 @@ class TestCond:
 
 
     def tape_with_else(f, g, r):
+        """Tape that uses cond by passing both a true and false func."""
         with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(0)
             qml.cond(m_0, f, g)(r)
@@ -79,6 +80,8 @@ class TestCond:
         return tape
 
     def tape_uses_cond_twice(f, g, r):
+        """Tape that uses cond twice such that it's equivalent to using cond
+        with two functions being passed (tape_with_else)."""
         with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(0)
             qml.cond(m_0, f)(r)
