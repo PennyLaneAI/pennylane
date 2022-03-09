@@ -22,10 +22,12 @@ class Prod(qml.operation.Operator):
 
     def __init__(self, left, right, do_queue=True, id=None):
 
+        combined_wires = qml.wires.Wires.all_wires([left.wires, right.wires])
+
         self.hyperparameters["left"] = left
         self.hyperparameters["right"] = right
+        self.hyperparameters["combined_wires"] = combined_wires
 
-        combined_wires = qml.wires.Wires.all_wires([left.wires, right.wires])
         super().__init__(
             *left.parameters, *right.parameters, wires=combined_wires, do_queue=do_queue, id=id
         )
@@ -48,8 +50,7 @@ class Prod(qml.operation.Operator):
         return [left, right]
 
     @staticmethod
-    def compute_matrix(*params, left=None, right=None, **hyperparams):
-        combined_wires = qml.wires.Wires.all_wires([left.wires, right.wires])
+    def compute_matrix(*params, left=None, right=None, combined_wires=None, **hyperparams):
         return left.get_matrix(wire_order=combined_wires) @ right.get_matrix(
             wire_order=combined_wires
         )
