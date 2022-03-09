@@ -1518,12 +1518,20 @@ class FragmentGraph:
 
     @property
     def fragment_wires(self) -> List[Set[Any]]:
-        return [{w for _, _, w in g.edges(data="wire")} for g in self.fragments] if self.is_cut else [self.wires]
+        return (
+            [{w for _, _, w in g.edges(data="wire")} for g in self.fragments]
+            if self.is_cut
+            else [self.wires]
+        )
 
     @property
     def fragment_nodes(self) -> List[Dict[Any, int]]:
         """List of fragment nodes."""
-        return [{op: order for op, order in g.nodes(data="order")} for g in self.fragments] if self.is_cut else [self.nodes]
+        return (
+            [{op: order for op, order in g.nodes(data="order")} for g in self.fragments]
+            if self.is_cut
+            else [self.nodes]
+        )
 
     @property
     def wire_sizes(self) -> List[int]:
@@ -1676,7 +1684,9 @@ class KaHyParGraph(FragmentGraph):
             )
 
         else:
-            hypergraph = kahypar.Hypergraph(nv, ne, hyperedge_splits, adjacent_vertices, num_fragments)
+            hypergraph = kahypar.Hypergraph(
+                nv, ne, hyperedge_splits, adjacent_vertices, num_fragments
+            )
 
         config_path = config_path or str(Path(__file__).parent / "_cut_kKaHyPar_sea20.ini")
         context = kahypar.Context()
