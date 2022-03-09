@@ -113,7 +113,7 @@ class ControlledOperation(Operation):
             ), f"ControlledOperation: length of control values and wires must match, \
                 but are {len_ctrl_values} and {len_ctrl_wires}"
         else:
-            self._control_values = None
+            self._control_values = [1] * len(self.control_wires)
         wires = self.control_wires + tape.wires
         super().__init__(*tape.get_parameters(), wires=wires, do_queue=do_queue)
 
@@ -174,10 +174,11 @@ class ControlledOperation(Operation):
         return ControlledOperation(new_tape, self.control_wires, control_values=self.control_values)
 
     def _controlled(self, wires):
+        new_values = [1] * len(Wires(wires))
         ControlledOperation(
             tape=self.subtape,
             control_wires=Wires(wires) + self.control_wires,
-            control_values=self.control_values,
+            control_values=new_values + self.control_values,
         )
 
 
