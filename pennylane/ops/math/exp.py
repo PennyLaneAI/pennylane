@@ -36,7 +36,7 @@ class Exp(qml.operation.Operator):
         return len(self.wires)
 
     def generator(self):
-        return self.hyperparameters["base"]
+        return -1j * self.hyperparameters["base"]
 
     @staticmethod
     def compute_matrix(*params, base=None, **hyperparams):
