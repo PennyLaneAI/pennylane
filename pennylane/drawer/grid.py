@@ -45,7 +45,7 @@ class Grid:
     """
 
     def __init__(self, raw_grid=None):
-        warnings.warns("Grid is deprecated. Please use a list of sets instead.", UserWarning)
+        warnings.warn("Grid is deprecated. Please use a list of sets instead.", UserWarning)
         if raw_grid is None:
             # Let initialization pend until first data is entered
             self.raw_grid = None
