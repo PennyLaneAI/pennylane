@@ -310,6 +310,9 @@
   [qml.transforms.qcut](https://pennylane.readthedocs.io/en/stable/code/qml_transforms_qcut.html)
   module page or [Peng et. al](https://arxiv.org/abs/1904.00102).
 
+  - The documentation has been polished.
+    [(#2279)](https://github.com/PennyLaneAI/pennylane/pull/2279)
+
 * A method to batch the non-trainable inputs for machine learning applications has been added.
   [(#2069)](https://github.com/PennyLaneAI/pennylane/pull/2069)
 
