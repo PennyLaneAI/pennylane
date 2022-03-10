@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,9 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Unit tests for the Snapshot operation."""
+from pennylane import Snapshot
 
-"""
-Version number (major.minor.patch[-label])
-"""
 
-__version__ = "0.23.0-dev"
+def test_decomposition():
+    """Test the decomposition of the Snapshot operation."""
+
+    assert Snapshot.compute_decomposition() == []
+    assert Snapshot().decomposition() == []
+
+
+def test_label_method():
+    """Test the label method for the Snapshot operation."""
+    assert Snapshot().label() == "|S|"
+    assert Snapshot("my_label").label() == "|S|"
