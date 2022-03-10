@@ -94,8 +94,9 @@ def cond(condition, true_fn, false_fn=None):
             qml.cond(m_0, qml.RY)(x, wires=1)
 
             qml.Hadamard(2)
+            qml.RY(-np.pi/2, wires=[2])
             m_1 = qml.measure(2)
-            qml.cond(m_0, qml.RZ)(y, wires=1)
+            qml.cond(m_1 == 0, qml.RX)(y, wires=1)
             return qml.expval(qml.PauliZ(1))
 
     .. code-block :: pycon
@@ -103,7 +104,13 @@ def cond(condition, true_fn, false_fn=None):
         >>> first_par = np.array(0.3, requires_grad=True)
         >>> sec_par = np.array(1.23, requires_grad=True)
         >>> qnode(first_par, sec_par)
-        tensor(0.97766824, requires_grad=True)
+        tensor(0.32677361, requires_grad=True)
+
+    .. note::
+
+        If a measurement value is passed as the conditional expression (e.g.,
+        ``m_0`` in ``qml.cond(m_0, qml.RY)``), then it resolves to the ``m_0 ==
+        1`` conditional expression internally.
 
     .. UsageDetails::
 
@@ -132,12 +139,15 @@ def cond(condition, true_fn, false_fn=None):
             >>> qnode(par)
             tensor(0.3522399, requires_grad=True)
 
-        **Passing a quantum function for the False case too**
+        **Conditional quantum functions in the ``False`` case**
 
         In the qubit model, single-qubit measurements may result in one of two
-        outcomes. The expression involving a mid-circuit measurement value
-        passed to ``cond`` may also have two outcomes. ``cond`` allows passing
-        a quantum functions for both cases at the same time:
+        outcomes. Such measurement outcomes may then be used to create
+        conditional expressions.
+
+        According to the truth value of the conditional expression passed to
+        ``cond``, the transform can apply a quantum function in both the
+        ``True`` and ``False`` case:
 
         .. code-block:: python3
 
@@ -165,7 +175,8 @@ def cond(condition, true_fn, false_fn=None):
             tensor(-0.1477601, requires_grad=True)
 
         The previous QNode is equivalent to using ``cond`` twice, inverting the
-        measurement value using the ``~`` unary operator in the second case:
+        conditional expression in the second case using the ``~`` unary
+        operator:
 
         .. code-block:: python3
 
@@ -181,10 +192,12 @@ def cond(condition, true_fn, false_fn=None):
 
             >>> qnode2(par)
             tensor(-0.1477601, requires_grad=True)
+
+        **Applying two quantum functions conditionally**
+
     """
     if callable(true_fn):
         # We assume that the callable is an operation or a quantum function
-
         with_meas_err = (
             "Only quantum functions that contain no measurements can be applied conditionally."
         )
