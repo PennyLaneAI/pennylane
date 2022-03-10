@@ -343,4 +343,9 @@ def param_shift_hessian(tape, f0=None):
     _gradient_analysis(tape)
     diff_methods = grad_method_validation("analytic", tape)
 
+    if all(g == "0" for g in diff_methods):
+        return [], lambda _: np.zeros(
+            [tape.output_dim, len(tape.trainable_params), len(tape.trainable_params)]
+        )
+
     return compute_hessian_tapes(tape, diff_methods, f0)
