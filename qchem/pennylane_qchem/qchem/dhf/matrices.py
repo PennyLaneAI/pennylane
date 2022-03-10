@@ -18,7 +18,7 @@ This module contains the functions needed for computing matrices.
 import itertools as it
 
 import autograd.numpy as anp
-from pennylane.hf.integrals import (
+from .integrals import (
     attraction_integral,
     kinetic_integral,
     moment_integral,

@@ -17,9 +17,9 @@ This module contains the functions needed for computing the dipole moment.
 import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.hf.basis_data import atomic_numbers
-from pennylane.hf.matrices import moment_matrix
-from pennylane.hf.observable import fermionic_observable, qubit_observable
+from .basis_data import atomic_numbers
+from .matrices import moment_matrix
+from .observable import fermionic_observable, qubit_observable
 
 
 def dipole_integrals(mol, core=None, active=None):

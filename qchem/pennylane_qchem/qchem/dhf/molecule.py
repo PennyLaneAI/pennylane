@@ -19,9 +19,9 @@ import itertools
 
 # pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
 from pennylane import numpy as np
-from pennylane.hf.basis_data import atomic_numbers
-from pennylane.hf.basis_set import BasisFunction, mol_basis_data
-from pennylane.hf.integrals import contracted_norm, primitive_norm
+from .basis_data import atomic_numbers
+from .basis_set import BasisFunction, mol_basis_data
+from .integrals import contracted_norm, primitive_norm
 
 
 class Molecule:

@@ -18,7 +18,7 @@ This module contains the functions needed for performing the self-consistent-fie
 import itertools
 
 import autograd.numpy as anp
-from pennylane.hf.matrices import core_matrix, mol_density_matrix, overlap_matrix, repulsion_tensor
+from .matrices import core_matrix, mol_density_matrix, overlap_matrix, repulsion_tensor
 
 
 def scf(mol, n_steps=50, tol=1e-8):

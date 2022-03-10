@@ -18,8 +18,8 @@ This module contains the functions needed for computing the molecular Hamiltonia
 import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.hf.hartree_fock import nuclear_energy, scf
-from pennylane.hf.observable import fermionic_observable, qubit_observable
+from .hartree_fock import nuclear_energy, scf
+from .observable import fermionic_observable, qubit_observable
 
 
 def electron_integrals(mol, core=None, active=None):

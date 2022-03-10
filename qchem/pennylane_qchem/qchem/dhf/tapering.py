@@ -22,7 +22,7 @@ import autograd.numpy as anp
 import numpy
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.hf.observable import jordan_wigner, simplify
+from .observable import jordan_wigner, simplify
 
 
 def _binary_matrix(terms, num_qubits, wire_map=None):

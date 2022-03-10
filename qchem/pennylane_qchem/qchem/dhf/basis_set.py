@@ -16,7 +16,7 @@ This module contains functions and classes to create a BasisFunction object from
 such as STO-3G.
 """
 # pylint: disable=too-few-public-methods
-from pennylane.hf.basis_data import STO3G
+from .basis_data import STO3G
 
 
 class BasisFunction:
