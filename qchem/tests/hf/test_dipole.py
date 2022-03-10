@@ -80,9 +80,9 @@ from pennylane import qchem
 )
 def test_dipole_integrals(symbols, geometry, charge, core, active, core_ref, int_ref):
     r"""Test that generate_electron_integrals returns the correct values."""
-    mol = qchem.dhf.Molecule(symbols, geometry, charge=charge)
+    mol = qchem.hf.Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
-    constants, integrals = qchem.dhf.dipole_integrals(mol, core=core, active=active)(*args)
+    constants, integrals = qchem.hf.dipole_integrals(mol, core=core, active=active)(*args)
 
     for i in range(3):  # loop on x, y, z components
         assert np.allclose(constants[i], core_ref[i])
@@ -192,9 +192,9 @@ def test_dipole_integrals(symbols, geometry, charge, core, active, core_ref, int
 )
 def test_fermionic_dipole(symbols, geometry, core, charge, active, f_ref):
     r"""Test that generate_electron_integrals returns the correct values."""
-    mol = qchem.dhf.Molecule(symbols, geometry, charge=charge)
+    mol = qchem.hf.Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
-    f = qchem.dhf.fermionic_dipole(mol, core=core, active=active)(*args)[0]
+    f = qchem.hf.fermionic_dipole(mol, core=core, active=active)(*args)[0]
 
     assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
     assert f[1] == f_ref[1]  # fermionic operators
@@ -227,9 +227,9 @@ def test_fermionic_dipole(symbols, geometry, core, charge, active, f_ref):
 )
 def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
     r"""Test that generate_electron_integrals returns the correct values."""
-    mol = qchem.dhf.Molecule(symbols, geometry, charge=charge)
+    mol = qchem.hf.Molecule(symbols, geometry, charge=charge)
     args = [p for p in [geometry] if p.requires_grad]
-    d = qchem.dhf.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
+    d = qchem.hf.dipole_moment(mol, core=core, active=active, cutoff=1.0e-8)(*args)[0]
     d_ref = qml.Hamiltonian(coeffs, ops)
 
     assert np.allclose(sorted(d.coeffs), sorted(d_ref.coeffs))
@@ -255,7 +255,7 @@ def test_dipole_moment(symbols, geometry, core, charge, active, coeffs, ops):
 )
 def test_expvalD(symbols, geometry, core, charge, active, d_ref):
     r"""Test that expval(D) is correct."""
-    mol = qchem.dhf.Molecule(symbols, geometry)
+    mol = qchem.hf.Molecule(symbols, geometry)
     args = []
     dev = qml.device("default.qubit", wires=6)
 
@@ -266,7 +266,7 @@ def test_expvalD(symbols, geometry, core, charge, active, d_ref):
             qml.PauliX(1)
             qml.DoubleExcitation(0.0, wires=[0, 1, 2, 3])
             qml.DoubleExcitation(0.0, wires=[0, 1, 4, 5])
-            d_qubit = qchem.dhf.dipole_moment(mol)(*args)[idx]
+            d_qubit = qchem.hf.dipole_moment(mol)(*args)[idx]
             return qml.expval(d_qubit)
 
         return circuit
@@ -290,7 +290,7 @@ def test_gradient_expvalD():
         requires_grad=True,
     )
 
-    mol = qchem.dhf.Molecule(symbols, geometry, charge=1, alpha=alpha)
+    mol = qchem.hf.Molecule(symbols, geometry, charge=1, alpha=alpha)
     args = [mol.alpha]
     dev = qml.device("default.qubit", wires=6)
 
@@ -301,7 +301,7 @@ def test_gradient_expvalD():
             qml.PauliX(1)
             qml.DoubleExcitation(0.0, wires=[0, 1, 2, 3])
             qml.DoubleExcitation(0.0, wires=[0, 1, 4, 5])
-            d_qubit = qchem.dhf.dipole_moment(mol)(*args)
+            d_qubit = qchem.hf.dipole_moment(mol)(*args)
             return qml.expval(d_qubit[0])
 
         return circuit
