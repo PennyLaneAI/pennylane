@@ -188,7 +188,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
 
         if op.name == "Hamiltonian":
             # operation is a Hamiltonian
-            if op.return_type is not qml.operation.Expectation:
+            if op.return_type is not qml.measurements.Expectation:
                 raise ValueError(
                     "Can only differentiate Hamiltonian "
                     f"coefficients for expectations, not {op.return_type.value}"

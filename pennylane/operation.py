@@ -275,48 +275,6 @@ subsystem. It is equivalent to an integer with value -1."""
 
 
 # =============================================================================
-# ObservableReturnTypes types
-# =============================================================================
-
-
-class ObservableReturnTypes(Enum):
-    """Enumeration class to represent the return types of an observable."""
-
-    Sample = "sample"
-    Variance = "var"
-    Expectation = "expval"
-    Probability = "probs"
-    State = "state"
-    MidMeasure = "measure"
-
-    def __repr__(self):
-        """String representation of the return types."""
-        return str(self.value)
-
-
-Sample = ObservableReturnTypes.Sample
-"""Enum: An enumeration which represents sampling an observable."""
-
-Variance = ObservableReturnTypes.Variance
-"""Enum: An enumeration which represents returning the variance of
-an observable on specified wires."""
-
-Expectation = ObservableReturnTypes.Expectation
-"""Enum: An enumeration which represents returning the expectation
-value of an observable on specified wires."""
-
-Probability = ObservableReturnTypes.Probability
-"""Enum: An enumeration which represents returning probabilities
-of all computational basis states."""
-
-State = ObservableReturnTypes.State
-"""Enum: An enumeration which represents returning the state in the computational basis."""
-
-MidMeasure = ObservableReturnTypes.MidMeasure
-"""Enum: An enumeration which represents returning sampling the computational
-basis in the middle of the circuit."""
-
-# =============================================================================
 # Class property
 # =============================================================================
 

@@ -20,7 +20,7 @@ import jax
 from jax.experimental import host_callback
 import jax.numpy as jnp
 from pennylane.queuing import AnnotatedQueue
-from pennylane.operation import Variance, Expectation
+from pennylane.measurements import Variance, Expectation
 
 
 class JAXInterface(AnnotatedQueue):

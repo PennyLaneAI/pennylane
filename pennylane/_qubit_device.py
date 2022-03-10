@@ -26,14 +26,8 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Sample,
-    Variance,
-    Expectation,
-    Probability,
-    State,
-    operation_derivative,
-)
+from pennylane.operation import operation_derivative
+from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires

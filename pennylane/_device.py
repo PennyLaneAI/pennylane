@@ -28,13 +28,9 @@ import pennylane as qml
 from pennylane.operation import (
     Operation,
     Observable,
-    Sample,
-    State,
-    Variance,
-    Expectation,
-    Probability,
     Tensor,
 )
+from pennylane.measurements import Sample, State, Variance, Expectation, Probability
 from pennylane.wires import Wires, WireError
 
 
@@ -880,7 +876,7 @@ class Device(abc.ABC):
 
             if getattr(
                 o, "return_type", None
-            ) == qml.operation.MidMeasure and not self.capabilities().get(
+            ) == qml.measurements.MidMeasure and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
                 raise DeviceError(

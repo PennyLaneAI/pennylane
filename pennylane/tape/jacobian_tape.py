@@ -23,7 +23,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import State
+from pennylane.measurements import State
 from pennylane.tape import QuantumTape
 
 # CV ops still need to support state preparation operations prior to any

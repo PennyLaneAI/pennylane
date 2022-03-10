@@ -26,7 +26,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import Device
 
-from pennylane.operation import State
+from pennylane.measurements import State
 
 from pennylane.interfaces.autograd import AutogradInterface, np as anp
 from pennylane.tape import (
