@@ -62,6 +62,7 @@ Utility functions
 .. autosummary::
     :toctree: api
 
+    process_shifts
     finite_diff_coeffs
     generate_shifted_tapes
     generate_shift_rule

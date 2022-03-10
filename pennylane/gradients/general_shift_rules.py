@@ -21,7 +21,7 @@ import pennylane as qml
 
 
 def process_shifts(rule, tol=1e-10, check_duplicates=True):
-    """Utility function to process gradient rules.
+    r"""Utility function to process gradient rules.
 
     Args:
         rule (array): a ``(2, M)`` array corresponding to ``M`` terms
