@@ -98,9 +98,9 @@ There are also utility functions that take a circuit and return a DAG.
 Transform for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This transform accepts a QNode and returns a new function that cuts the original circuit into
-smaller fragments. The supporting functionality for circuit cutting is provided in the
-:doc:`qml.transforms.qcut </code/qml_transforms_qcut>` module.
+This transform accepts a QNode and returns a new function that cuts the original circuit,
+allowing larger circuits to be split into smaller circuits that are compatible with devices that
+have a restricted number of qubits.
 
 .. autosummary::
     :toctree: api
