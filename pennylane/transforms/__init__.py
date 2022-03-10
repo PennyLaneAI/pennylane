@@ -107,6 +107,20 @@ have a restricted number of qubits.
 
     ~cut_circuit
 
+There are also low-level functions that can be used to build up the circuit cutting functionalities:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.qcut.tape_to_graph
+    ~transforms.qcut.replace_wire_cut_nodes
+    ~transforms.qcut.fragment_graph
+    ~transforms.qcut.graph_to_tape
+    ~transforms.qcut.remap_tape_wires
+    ~transforms.qcut.expand_fragment_tape
+    ~transforms.qcut.qcut_processing_fn
+    ~transforms.qcut.CutStrategy
+
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

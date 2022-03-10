@@ -1007,19 +1007,17 @@ def cut_circuit(
         advanced users also have the option to work directly with a :class:`~.QuantumTape` and
         manipulate the tape to perform circuit cutting using the below functionality:
 
-        .. currentmodule:: pennylane.transforms.qcut
-
         .. autosummary::
-            :toctree: api
+            :toctree:
 
-            ~.qcut.tape_to_graph
-            ~.qcut.replace_wire_cut_nodes
-            ~.qcut.fragment_graph
-            ~.qcut.graph_to_tape
-            ~.qcut.remap_tape_wires
-            ~.qcut.expand_fragment_tape
-            ~.qcut.qcut_processing_fn
-            ~.qcut.CutStrategy
+            ~transforms.qcut.tape_to_graph
+            ~transforms.qcut.replace_wire_cut_nodes
+            ~transforms.qcut.fragment_graph
+            ~transforms.qcut.graph_to_tape
+            ~transforms.qcut.remap_tape_wires
+            ~transforms.qcut.expand_fragment_tape
+            ~transforms.qcut.qcut_processing_fn
+            ~transforms.qcut.CutStrategy
 
         The following shows how these elementary steps are combined as part of the
         ``cut_circuit()`` transform.
