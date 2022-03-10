@@ -773,8 +773,12 @@ def test_gradient_repulsion(symbols, geometry, alpha, coeff):
     basis_b = mol.basis_set[1]
     args = [mol.alpha, mol.coeff]
 
-    g_alpha = autograd.grad(qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=0)(*args)
-    g_coeff = autograd.grad(qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=1)(*args)
+    g_alpha = autograd.grad(
+        qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=0
+    )(*args)
+    g_coeff = autograd.grad(
+        qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=1
+    )(*args)
 
     # compute repulsion gradients with respect to alpha and coeff using finite diff
     delta = 0.0001
@@ -788,16 +792,24 @@ def test_gradient_repulsion(symbols, geometry, alpha, coeff):
             alpha_plus = alpha.copy()
             alpha_minus[i][j] = alpha_minus[i][j] - delta
             alpha_plus[i][j] = alpha_plus[i][j] + delta
-            e_minus = qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha_minus, coeff])
-            e_plus = qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha_plus, coeff])
+            e_minus = qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                *[alpha_minus, coeff]
+            )
+            e_plus = qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                *[alpha_plus, coeff]
+            )
             g_ref_alpha[i][j] = (e_plus - e_minus) / (2 * delta)
 
             coeff_minus = coeff.copy()
             coeff_plus = coeff.copy()
             coeff_minus[i][j] = coeff_minus[i][j] - delta
             coeff_plus[i][j] = coeff_plus[i][j] + delta
-            e_minus = qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha, coeff_minus])
-            e_plus = qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha, coeff_plus])
+            e_minus = qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                *[alpha, coeff_minus]
+            )
+            e_plus = qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                *[alpha, coeff_plus]
+            )
             g_ref_coeff[i][j] = (e_plus - e_minus) / (2 * delta)
 
     assert np.allclose(g_alpha, g_ref_alpha)

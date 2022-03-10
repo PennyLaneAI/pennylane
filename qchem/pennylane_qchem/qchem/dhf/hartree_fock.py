@@ -18,6 +18,7 @@ This module contains the functions needed for performing the self-consistent-fie
 import itertools
 
 import autograd.numpy as anp
+
 from .matrices import core_matrix, mol_density_matrix, overlap_matrix, repulsion_tensor
 
 

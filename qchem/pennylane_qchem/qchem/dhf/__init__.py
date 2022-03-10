@@ -17,15 +17,21 @@ Hartree-Fock calculations.
 """
 from .basis_data import STO3G, atomic_numbers
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
-from .convert import (import_operator,
-                      _process_wires,
-                      _pennylane_to_openfermion,
-                      _openfermion_pennylane_equivalent,
-                      _openfermion_to_pennylane)
+from .convert import (
+    _openfermion_pennylane_equivalent,
+    _openfermion_to_pennylane,
+    _pennylane_to_openfermion,
+    _process_wires,
+    import_operator,
+)
 from .dipole import dipole_integrals, dipole_moment, fermionic_dipole
 from .hamiltonian import electron_integrals, fermionic_hamiltonian, mol_hamiltonian
 from .hartree_fock import hf_energy, nuclear_energy, scf
 from .integrals import (
+    _boys,
+    _diff2,
+    _generate_params,
+    _hermite_coulomb,
     attraction_integral,
     contracted_norm,
     electron_repulsion,
@@ -39,7 +45,7 @@ from .integrals import (
     nuclear_attraction,
     overlap_integral,
     primitive_norm,
-    repulsion_integral, _boys, _diff2, _generate_params, _hermite_coulomb
+    repulsion_integral,
 )
 from .matrices import (
     attraction_matrix,
@@ -51,15 +57,6 @@ from .matrices import (
     repulsion_tensor,
 )
 from .molecule import Molecule
-from .observable import fermionic_observable, jordan_wigner, qubit_observable, simplify, _pauli_mult
+from .observable import _pauli_mult, fermionic_observable, jordan_wigner, qubit_observable, simplify
 from .particle_number import particle_number
-from .spin import spin2, spinz, _spin2_matrix_elements
-from .tapering import (
-    clifford,
-    generate_paulis,
-    generate_symmetries,
-    get_generators,
-    optimal_sector,
-    transform_hamiltonian,
-    transform_hf,
-)
+from .spin import _spin2_matrix_elements, spin2, spinz

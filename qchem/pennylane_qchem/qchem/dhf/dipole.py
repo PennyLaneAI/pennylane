@@ -17,10 +17,11 @@ This module contains the functions needed for computing the dipole moment.
 import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
+
 from .basis_data import atomic_numbers
+from .hartree_fock import scf
 from .matrices import moment_matrix
 from .observable import fermionic_observable, qubit_observable
-from .hartree_fock import scf
 
 
 def dipole_integrals(mol, core=None, active=None):

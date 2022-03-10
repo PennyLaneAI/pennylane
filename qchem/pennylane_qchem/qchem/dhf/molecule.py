@@ -19,6 +19,7 @@ import itertools
 
 # pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
 from pennylane import numpy as np
+
 from .basis_data import atomic_numbers
 from .basis_set import BasisFunction, mol_basis_data
 from .integrals import contracted_norm, primitive_norm

@@ -462,7 +462,9 @@ def test_pennylane_to_openfermion_no_decomp():
         qml.operation.Tensor(qml.PauliX(wires=["w0"])),
         qml.operation.Tensor(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w2"])),
     ]
-    op_str = str(qchem.dhf._pennylane_to_openfermion(coeffs, ops, wires=qml.wires.Wires(["w0", "w1", "w2"])))
+    op_str = str(
+        qchem.dhf._pennylane_to_openfermion(coeffs, ops, wires=qml.wires.Wires(["w0", "w1", "w2"]))
+    )
 
     # Remove new line characters
     op_str = op_str.replace("\n", "")
@@ -551,7 +553,9 @@ def test_process_wires(custom_wires, n_wires):
         if not isinstance(custom_wires, dict):
             assert wires == qchem.dhf._process_wires(custom_wires[:n_wires], n_wires)
         else:
-            assert wires == qchem.dhf._process_wires({k: v for k, v in custom_wires.items()}, n_wires)
+            assert wires == qchem.dhf._process_wires(
+                {k: v for k, v in custom_wires.items()}, n_wires
+            )
 
 
 def test_process_wires_raises():

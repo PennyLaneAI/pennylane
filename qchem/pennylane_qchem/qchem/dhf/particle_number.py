@@ -15,6 +15,7 @@
 This module contains the functions needed for computing the particle number observable.
 """
 from pennylane import numpy as np
+
 from .observable import qubit_observable
 
 
