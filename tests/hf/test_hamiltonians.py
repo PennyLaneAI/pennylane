@@ -19,7 +19,15 @@ import pennylane as qml
 import pytest
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
-from pennylane.hf.hamiltonian import electron_integrals, fermionic_hamiltonian, mol_hamiltonian
+from pennylane.hf.hamiltonian import (
+    _generate_qubit_operator,
+    _pauli_mult,
+    _return_pauli,
+    simplify,
+    generate_electron_integrals,
+    generate_fermionic_hamiltonian,
+    generate_hamiltonian,
+)
 from pennylane.hf.molecule import Molecule
 
 
@@ -93,12 +101,12 @@ from pennylane.hf.molecule import Molecule
         ),
     ],
 )
-def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, two_ref):
-    r"""Test that electron_integrals returns the correct values."""
+def test_generate_electron_integrals(symbols, geometry, core, active, e_core, one_ref, two_ref):
+    r"""Test that generate_electron_integrals returns the correct values."""
     mol = Molecule(symbols, geometry)
     args = []
 
-    e, one, two = electron_integrals(mol, core=core, active=active)(*args)
+    e, one, two = generate_electron_integrals(mol, core=core, active=active)(*args)
 
     assert np.allclose(e, e_core)
     assert np.allclose(one, one_ref)
@@ -201,11 +209,11 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
         )
     ],
 )
-def test_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref):
-    r"""Test that fermionic_hamiltonian returns the correct Hamiltonian."""
+def test_generate_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref):
+    r"""Test that generate_fermionic_hamiltonian returns the correct Hamiltonian."""
     mol = Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
-    h = fermionic_hamiltonian(mol)(*args)
+    h = generate_fermionic_hamiltonian(mol)(*args)
 
     assert np.allclose(h[0], coeffs_h_ref)
     assert h[1] == ops_h_ref
@@ -263,18 +271,67 @@ def test_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref
         )
     ],
 )
-def test_mol_hamiltonian(symbols, geometry, h_ref_data):
-    r"""Test that mol_hamiltonian returns the correct Hamiltonian."""
+def test_generate_hamiltonian(symbols, geometry, h_ref_data):
+    r"""Test that generate_hamiltonian returns the correct Hamiltonian."""
 
     mol = Molecule(symbols, geometry)
     args = []
-    h = mol_hamiltonian(mol)(*args)
+    h = generate_hamiltonian(mol)(*args)
     h_ref = qml.Hamiltonian(h_ref_data[0], h_ref_data[1])
 
     assert np.allclose(h.terms()[0], h_ref.terms()[0])
     assert qml.Hamiltonian(np.ones(len(h.terms()[0])), h.terms()[1]).compare(
         qml.Hamiltonian(np.ones(len(h_ref.terms()[0])), h_ref.terms()[1])
     )
+
+
+@pytest.mark.parametrize(
+    ("f_operator", "q_operator"),
+    [
+        (
+            [0, 0],
+            # obtained with openfermion using: jordan_wigner(FermionOperator('0^ 0', 1))
+            # reformatted the original openfermion output: (0.5+0j) [] + (-0.5+0j) [Z0]
+            ([(0.5 + 0j), (-0.5 + 0j)], [[], [(0, "Z")]]),
+        ),
+    ],
+)
+def test_generate_qubit_operator(f_operator, q_operator):
+    r"""Test that _generate_qubit_operator returns the correct operator."""
+    result = _generate_qubit_operator(f_operator)
+
+    assert result == q_operator
+
+
+@pytest.mark.parametrize(
+    ("p1", "p2", "p_ref"),
+    [
+        (
+            [(0, "X"), (1, "Y")],  # X_0 @ Y_1
+            [(0, "X"), (2, "Y")],  # X_0 @ Y_2
+            ([(2, "Y"), (1, "Y")], 1.0),  # X_0 @ Y_1 @ X_0 @ Y_2
+        ),
+    ],
+)
+def test_pauli_mult(p1, p2, p_ref):
+    r"""Test that _generate_qubit_operator returns the correct operator."""
+    result = _pauli_mult(p1, p2)
+
+    assert result == p_ref
+
+
+@pytest.mark.parametrize(
+    ("symbol", "operator"),
+    [
+        ("X", qml.PauliX),
+        ("Y", qml.PauliY),
+        ("Z", qml.PauliZ),
+    ],
+)
+def test_return_pauli(symbol, operator):
+    r"""Test that_return_pauli returns the correct operator."""
+    p = _return_pauli(symbol)
+    assert p is operator
 
 
 def test_gradient_expvalH():
@@ -300,7 +357,7 @@ def test_gradient_expvalH():
             qml.PauliX(0)
             qml.PauliX(1)
             qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-            h_qubit = mol_hamiltonian(mol)(*args)
+            h_qubit = generate_hamiltonian(mol)(*args)
             return qml.expval(h_qubit)
 
         return circuit
@@ -323,3 +380,49 @@ def test_gradient_expvalH():
     grad_finitediff = (e_2 - e_1) / 0.0002
 
     assert np.allclose(grad_autograd[0][0], grad_finitediff)
+
+
+@pytest.mark.parametrize(
+    ("hamiltonian", "result"),
+    [
+        (
+            qml.Hamiltonian(
+                np.array([0.5, 0.5]), [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)]
+            ),
+            qml.Hamiltonian(np.array([1.0]), [qml.PauliX(0) @ qml.PauliY(1)]),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.5, -0.5]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)],
+            ),
+            qml.Hamiltonian([], []),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.0, -0.5]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+            ),
+            qml.Hamiltonian(np.array([-0.5]), [qml.PauliX(0) @ qml.PauliZ(1)]),
+        ),
+        (
+            qml.Hamiltonian(
+                np.array([0.25, 0.25, 0.25, -0.25]),
+                [
+                    qml.PauliX(0) @ qml.PauliY(1),
+                    qml.PauliX(0) @ qml.PauliZ(1),
+                    qml.PauliX(0) @ qml.PauliY(1),
+                    qml.PauliX(0) @ qml.PauliY(1),
+                ],
+            ),
+            qml.Hamiltonian(
+                np.array([0.25, 0.25]),
+                [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliZ(1)],
+            ),
+        ),
+    ],
+)
+def test_simplify(hamiltonian, result):
+    r"""Test that simplify returns the correct hamiltonian."""
+    h = simplify(hamiltonian)
+    assert h.compare(result)

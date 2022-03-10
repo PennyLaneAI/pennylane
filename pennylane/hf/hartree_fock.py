@@ -18,10 +18,15 @@ This module contains the functions needed for performing the self-consistent-fie
 import itertools
 
 import autograd.numpy as anp
-from pennylane.hf.matrices import core_matrix, mol_density_matrix, overlap_matrix, repulsion_tensor
+from pennylane.hf.matrices import (
+    generate_core_matrix,
+    generate_overlap_matrix,
+    generate_repulsion_tensor,
+    molecular_density_matrix,
+)
 
 
-def scf(mol, n_steps=50, tol=1e-8):
+def generate_scf(mol, n_steps=50, tol=1e-8):
     r"""Return a function that performs the self-consistent-field calculations.
 
     In the Hartree-Fock method, molecular orbitals are typically constructed as a linear combination
@@ -100,12 +105,12 @@ def scf(mol, n_steps=50, tol=1e-8):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> v_fock, coeffs, fock_matrix, h_core, rep_tensor = scf(mol)(*args)
+    >>> v_fock, coeffs, fock_matrix, h_core, repulsion_tensor = generate_scf(mol)(*args)
     >>> v_fock
     array([-0.67578019,  0.94181155])
     """
 
-    def _scf(*args):
+    def scf(*args):
         r"""Perform the self-consistent-field iterations.
 
         Args:
@@ -123,13 +128,13 @@ def scf(mol, n_steps=50, tol=1e-8):
         if r.requires_grad:
             args_r = [[args[0][i]] * mol.n_basis[i] for i in range(len(mol.n_basis))]
             args_ = [*args] + [anp.vstack(list(itertools.chain(*args_r)))]
-            rep_tensor = repulsion_tensor(basis_functions)(*args_[1:])
-            s = overlap_matrix(basis_functions)(*args_[1:])
-            h_core = core_matrix(basis_functions, charges, r)(*args_)
+            repulsion_tensor = generate_repulsion_tensor(basis_functions)(*args_[1:])
+            s = generate_overlap_matrix(basis_functions)(*args_[1:])
+            h_core = generate_core_matrix(basis_functions, charges, r)(*args_)
         else:
-            rep_tensor = repulsion_tensor(basis_functions)(*args)
-            s = overlap_matrix(basis_functions)(*args)
-            h_core = core_matrix(basis_functions, charges, r)(*args)
+            repulsion_tensor = generate_repulsion_tensor(basis_functions)(*args)
+            s = generate_overlap_matrix(basis_functions)(*args)
+            h_core = generate_core_matrix(basis_functions, charges, r)(*args)
 
         s = s + anp.diag(anp.random.rand(len(s)) * 1.0e-12)
 
@@ -139,12 +144,12 @@ def scf(mol, n_steps=50, tol=1e-8):
         eigvals, w_fock = anp.linalg.eigh(x.T @ h_core @ x)  # initial guess for the scf problem
         coeffs = x @ w_fock
 
-        p = mol_density_matrix(n_electron, coeffs)
+        p = molecular_density_matrix(n_electron, coeffs)
 
         for _ in range(n_steps):
 
-            j = anp.einsum("pqrs,rs->pq", rep_tensor, p)
-            k = anp.einsum("psqr,rs->pq", rep_tensor, p)
+            j = anp.einsum("pqrs,rs->pq", repulsion_tensor, p)
+            k = anp.einsum("psqr,rs->pq", repulsion_tensor, p)
 
             fock_matrix = h_core + 2 * j - k
 
@@ -152,7 +157,7 @@ def scf(mol, n_steps=50, tol=1e-8):
 
             coeffs = x @ w_fock
 
-            p_update = mol_density_matrix(n_electron, coeffs)
+            p_update = molecular_density_matrix(n_electron, coeffs)
 
             if anp.linalg.norm(p_update - p) <= tol:
                 break
@@ -161,9 +166,9 @@ def scf(mol, n_steps=50, tol=1e-8):
 
         mol.mo_coefficients = coeffs
 
-        return eigvals, coeffs, fock_matrix, h_core, rep_tensor
+        return eigvals, coeffs, fock_matrix, h_core, repulsion_tensor
 
-    return _scf
+    return scf
 
 
 def nuclear_energy(charges, r):
@@ -196,7 +201,7 @@ def nuclear_energy(charges, r):
     4.5
     """
 
-    def _nuclear_energy(*args):
+    def nuclear(*args):
         r"""Compute the nuclear-repulsion energy.
 
         Args:
@@ -209,13 +214,13 @@ def nuclear_energy(charges, r):
             coor = args[0]
         else:
             coor = r
-        e = anp.array([0.0])
+        e = 0
         for i, r1 in enumerate(coor):
             for j, r2 in enumerate(coor[i + 1 :]):
                 e = e + (charges[i] * charges[i + j + 1] / anp.linalg.norm(r1 - r2))
         return e
 
-    return _nuclear_energy
+    return nuclear
 
 
 def hf_energy(mol):
@@ -239,7 +244,7 @@ def hf_energy(mol):
     -1.065999461545263
     """
 
-    def _hf_energy(*args):
+    def energy(*args):
         r"""Compute the Hartree-Fock energy.
 
         Args:
@@ -248,11 +253,11 @@ def hf_energy(mol):
         Returns:
             float: the Hartree-Fock energy
         """
-        _, coeffs, fock_matrix, h_core, _ = scf(mol)(*args)
+        _, coeffs, fock_matrix, h_core, _ = generate_scf(mol)(*args)
         e_rep = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
         e_elec = anp.einsum(
-            "pq,qp", fock_matrix + h_core, mol_density_matrix(mol.n_electrons, coeffs)
+            "pq,qp", fock_matrix + h_core, molecular_density_matrix(mol.n_electrons, coeffs)
         )
         return e_elec + e_rep
 
-    return _hf_energy
+    return energy

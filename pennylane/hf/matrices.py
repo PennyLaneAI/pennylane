@@ -19,15 +19,14 @@ import itertools as it
 
 import autograd.numpy as anp
 from pennylane.hf.integrals import (
-    attraction_integral,
-    kinetic_integral,
-    moment_integral,
-    overlap_integral,
-    repulsion_integral,
+    generate_attraction,
+    generate_kinetic,
+    generate_overlap,
+    generate_repulsion,
 )
 
 
-def mol_density_matrix(n_electron, c):
+def molecular_density_matrix(n_electron, c):
     r"""Compute the molecular density matrix.
 
     The density matrix :math:`P` is computed from the molecular orbital coefficients :math:`C` as
@@ -51,14 +50,14 @@ def mol_density_matrix(n_electron, c):
 
     >>> c = np.array([[-0.54828771,  1.21848441], [-0.54828771, -1.21848441]])
     >>> n_electron = 2
-    >>> mol_density_matrix(n_electron, c)
+    >>> molecular_density_matrix(n_electron, c)
     array([[0.30061941, 0.30061941], [0.30061941, 0.30061941]])
     """
     p = anp.dot(c[:, : n_electron // 2], anp.conjugate(c[:, : n_electron // 2]).T)
     return p
 
 
-def overlap_matrix(basis_functions):
+def generate_overlap_matrix(basis_functions):
     r"""Return a function that computes the overlap matrix for a given set of basis functions.
 
     Args:
@@ -75,7 +74,7 @@ def overlap_matrix(basis_functions):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> overlap_matrix(mol.basis_set)(*args)
+    >>> generate_overlap_matrix(mol.basis_set)(*args)
     array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]])
     """
 
@@ -89,76 +88,24 @@ def overlap_matrix(basis_functions):
             array[array[float]]: the overlap matrix
         """
         n = len(basis_functions)
-        matrix = anp.eye(n)
+        overlap_matrix = anp.eye(len(basis_functions))
 
         for (i, a), (j, b) in it.combinations(enumerate(basis_functions), r=2):
             args_ab = []
             if args:
                 args_ab.extend(arg[[i, j]] for arg in args)
-            integral = overlap_integral(a, b)(*args_ab)
+            overlap_integral = generate_overlap(a, b)(*args_ab)
 
             o = anp.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
-            matrix = matrix + integral * o
+            overlap_matrix = overlap_matrix + overlap_integral * o
 
-        return matrix
+        return overlap_matrix
 
     return overlap
 
 
-def moment_matrix(basis_functions, order, idx):
-    r"""Return a function that computes the multipole moment matrix for a set of basis functions.
-
-    Args:
-        basis_functions (list[BasisFunction]): basis functions
-        order (integer): exponent of the position component
-        idx (integer): index determining the dimension of the multipole moment integral
-
-    Returns:
-        function: function that computes the multipole moment matrix
-
-    **Example**
-
-    >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad = False)
-    >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-    >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
-    >>> args = [alpha]
-    >>> order, idx = 1, 0
-    >>> moment_matrix(mol.basis_set, order, idx)(*args)
-    tensor([[0.0, 0.4627777], [0.4627777, 2.0]], requires_grad=True)
-    """
-
-    def _moment_matrix(*args):
-        r"""Construct the multipole moment matrix for a given set of basis functions.
-
-        Args:
-            args (array[array[float]]): initial values of the differentiable parameters
-
-        Returns:
-            array[array[float]]: the multipole moment matrix
-        """
-        n = len(basis_functions)
-        matrix = anp.zeros((n, n))
-
-        for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
-
-            args_ab = []
-            if args:
-                args_ab.extend(arg[[i, j]] for arg in args)
-            integral = moment_integral(a, b, order, idx)(*args_ab)
-
-            o = anp.zeros((n, n))
-            o[i, j] = o[j, i] = 1.0
-            matrix = matrix + integral * o
-
-        return matrix
-
-    return _moment_matrix
-
-
-def kinetic_matrix(basis_functions):
+def generate_kinetic_matrix(basis_functions):
     r"""Return a function that computes the kinetic matrix for a given set of basis functions.
 
     Args:
@@ -175,7 +122,7 @@ def kinetic_matrix(basis_functions):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> kinetic_integral_matrix(mol.basis_set)(*args)
+    >>> generate_kinetic_matrix(mol.basis_set)(*args)
     array([[0.76003189, 0.38325367], [0.38325367, 0.76003189]])
     """
 
@@ -189,24 +136,24 @@ def kinetic_matrix(basis_functions):
             array[array[float]]: the kinetic matrix
         """
         n = len(basis_functions)
-        matrix = anp.zeros((n, n))
+        kinetic_matrix = anp.zeros((n, n))
 
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
             args_ab = []
             if args:
                 args_ab.extend(arg[[i, j]] for arg in args)
-            integral = kinetic_integral(a, b)(*args_ab)
+            kinetic_integral = generate_kinetic(a, b)(*args_ab)
 
             o = anp.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
-            matrix = matrix + integral * o
+            kinetic_matrix = kinetic_matrix + kinetic_integral * o
 
-        return matrix
+        return kinetic_matrix
 
     return kinetic
 
 
-def attraction_matrix(basis_functions, charges, r):
+def generate_attraction_matrix(basis_functions, charges, r):
     r"""Return a function that computes the electron-nuclear attraction matrix for a given set of
     basis functions.
 
@@ -226,7 +173,7 @@ def attraction_matrix(basis_functions, charges, r):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    >>> generate_attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     array([[-2.03852057, -1.60241667], [-1.60241667, -2.03852057]])
     """
 
@@ -240,9 +187,9 @@ def attraction_matrix(basis_functions, charges, r):
             array[array[float]]: the electron-nuclear attraction matrix
         """
         n = len(basis_functions)
-        matrix = anp.zeros((n, n))
+        attraction_matrix = anp.zeros((n, n))
         for (i, a), (j, b) in it.combinations_with_replacement(enumerate(basis_functions), r=2):
-            integral = 0
+            attraction_integral = 0
             if args:
                 args_ab = []
 
@@ -254,23 +201,27 @@ def attraction_matrix(basis_functions, charges, r):
                 for k, c in enumerate(r):
                     if c.requires_grad:
                         args_ab = [args[0][k]] + args_ab
-                    integral = integral - charges[k] * attraction_integral(c, a, b)(*args_ab)
+                    attraction_integral = attraction_integral - charges[k] * generate_attraction(
+                        c, a, b
+                    )(*args_ab)
                     if c.requires_grad:
                         args_ab = args_ab[1:]
             else:
                 for k, c in enumerate(r):
-                    integral = integral - charges[k] * attraction_integral(c, a, b)()
+                    attraction_integral = (
+                        attraction_integral - charges[k] * generate_attraction(c, a, b)()
+                    )
 
             o = anp.zeros((n, n))
             o[i, j] = o[j, i] = 1.0
-            matrix = matrix + integral * o
+            attraction_matrix = attraction_matrix + attraction_integral * o
 
-        return matrix
+        return attraction_matrix
 
     return attraction
 
 
-def repulsion_tensor(basis_functions):
+def generate_repulsion_tensor(basis_functions):
     r"""Return a function that computes the electron repulsion tensor for a given set of basis
     functions.
 
@@ -288,7 +239,7 @@ def repulsion_tensor(basis_functions):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> repulsion_tensor(mol.basis_set)(*args)
+    >>> generate_repulsion_tensor(mol.basis_set)(*args)
     array([[[[0.77460595, 0.56886144], [0.56886144, 0.65017747]],
             [[0.56886144, 0.45590152], [0.45590152, 0.56886144]]],
            [[[0.56886144, 0.45590152], [0.45590152, 0.56886144]],
@@ -308,7 +259,7 @@ def repulsion_tensor(basis_functions):
             array[array[float]]: the electron repulsion tensor
         """
         n = len(basis_functions)
-        tensor = anp.zeros((n, n, n, n))
+        repulsion_tensor = anp.zeros((n, n, n, n))
         e_calc = []
 
         for (i, a), (j, b), (k, c), (l, d) in it.product(enumerate(basis_functions), repeat=4):
@@ -316,7 +267,7 @@ def repulsion_tensor(basis_functions):
                 args_abcd = []
                 if args:
                     args_abcd.extend(arg[[i, j, k, l]] for arg in args)
-                integral = repulsion_integral(a, b, c, d)(*args_abcd)
+                repulsion_integral = generate_repulsion(a, b, c, d)(*args_abcd)
 
                 permutations = [
                     (i, j, k, l),
@@ -332,14 +283,14 @@ def repulsion_tensor(basis_functions):
                 o = anp.zeros((n, n, n, n))
                 for perm in permutations:
                     o[perm] = 1.0
-                tensor = tensor + integral * o
+                repulsion_tensor = repulsion_tensor + repulsion_integral * o
                 e_calc = e_calc + permutations
-        return tensor
+        return repulsion_tensor
 
     return repulsion
 
 
-def core_matrix(basis_functions, charges, r):
+def generate_core_matrix(basis_functions, charges, r):
     r"""Return a function that computes the core matrix for a given set of basis functions.
 
     The core matrix is computed as a sum of the kinetic and electron-nuclear attraction matrices.
@@ -360,7 +311,7 @@ def core_matrix(basis_functions, charges, r):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    >>> generate_core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     array([[-1.27848869, -1.21916299], [-1.21916299, -1.27848869]])
     """
 
@@ -374,11 +325,11 @@ def core_matrix(basis_functions, charges, r):
             array[array[float]]: the core matrix
         """
         if r.requires_grad:
-            t = kinetic_matrix(basis_functions)(*args[1:])
+            t = generate_kinetic_matrix(basis_functions)(*args[1:])
         else:
-            t = kinetic_matrix(basis_functions)(*args)
+            t = generate_kinetic_matrix(basis_functions)(*args)
 
-        a = attraction_matrix(basis_functions, charges, r)(*args)
+        a = generate_attraction_matrix(basis_functions, charges, r)(*args)
         return t + a
 
     return core
