@@ -236,8 +236,25 @@ class TestParamShift:
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
-        assert res.size == 0
-        assert np.all(res == np.array([[]]))
+        assert res == ()
+
+    def test_all_zero_diff_methods(self):
+        """Test that the transform works correctly when the diff method for every parameter is
+        identified to be 0, and that no tapes were generated."""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.Rot(*params, wires=0)
+            return qml.probs([2, 3])
+
+        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+
+        result = qml.gradients.param_shift(circuit)(params)
+        assert np.allclose(result, np.zeros((4, 3)), atol=0, rtol=0)
+
+        tapes, _ = qml.gradients.param_shift(circuit.tape)
+        assert tapes == []
 
     def test_y0(self):
         """Test that if the gradient recipe has a zero-shift component, then

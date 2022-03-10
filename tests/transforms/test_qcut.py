@@ -1170,7 +1170,7 @@ class TestExpandFragmentTapes:
     Tests that fragment tapes are correctly expanded to all configurations
     """
 
-    def test_expand_fragment_tapes(self):
+    def test_expand_fragment_tape(self):
         """
         Tests that a fragment tape expands correctly
         """
@@ -1192,7 +1192,7 @@ class TestExpandFragmentTapes:
         subgraphs, communication_graph = qcut.fragment_graph(g)
         tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
 
-        fragment_configurations = [qcut.expand_fragment_tapes(tape) for tape in tapes]
+        fragment_configurations = [qcut.expand_fragment_tape(tape) for tape in tapes]
         frag_tapes_meas = fragment_configurations[0][0]
         frag_tapes_prep = fragment_configurations[1][0]
 
@@ -1283,7 +1283,7 @@ class TestExpandFragmentTapes:
         # Here we have a fragment tape containing 2 MeasureNode and
         # PrepareNode pairs. This give 3**2 = 9 groups of Pauli measurements
         # and 4**2 = 16 preparations and thus 9*16 = 144 tapes.
-        fragment_configurations = qcut.expand_fragment_tapes(tape)
+        fragment_configurations = qcut.expand_fragment_tape(tape)
         frag_tapes = fragment_configurations[0]
 
         assert len(frag_tapes) == 144
@@ -1354,7 +1354,7 @@ class TestExpandFragmentTapes:
             qml.CNOT(wires=[0, 3])
             qml.expval(qml.PauliZ(wires=[0]))
 
-        fragment_configurations = qcut.expand_fragment_tapes(tape)
+        fragment_configurations = qcut.expand_fragment_tape(tape)
         frag_tapes = fragment_configurations[0]
 
         prep_ops = [[qml.Identity], [qml.PauliX], [qml.Hadamard], [qml.Hadamard, qml.S]]
@@ -1391,7 +1391,7 @@ class TestExpandFragmentTapes:
             qml.RZ(0.133, wires=[1])
             qml.expval(qml.PauliZ(wires=[0]))
 
-        expanded_tapes, prep_nodes, meas_nodes = qcut.expand_fragment_tapes(frag)
+        expanded_tapes, prep_nodes, meas_nodes = qcut.expand_fragment_tape(frag)
 
         ops = [
             qml.CNOT(wires=[0, 1]),
