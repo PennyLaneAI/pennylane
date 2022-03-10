@@ -185,7 +185,9 @@ def cond(condition, true_fn, false_fn=None):
     if callable(true_fn):
         # We assume that the callable is an operation or a quantum function
 
-        with_meas_err = "Only quantum functions that contain no measurements can be applied conditionally."
+        with_meas_err = (
+            "Only quantum functions that contain no measurements can be applied conditionally."
+        )
 
         @wraps(true_fn)
         def wrapper(*args, **kwargs):
