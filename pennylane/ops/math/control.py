@@ -145,6 +145,10 @@ class Controlled(Operator):
         return self.base.wires
 
     @property
+    def control_values(self):
+        return self._control_values
+
+    @property
     def parameters(self):
         return self.base.parameters
     
@@ -190,4 +194,7 @@ class Controlled(Operator):
         proj_ones = np.ones(len(self.control_wires), requires_grad=False)
         proj = qml.Projector(proj_ones, wires=self.control_wires)
         return (1.0*proj @ sub_gen)
+
+    def adjoint(self):
+        return Controlled(self.base.adjoint(), self.control_wires, self.control_values, self.work_wires)
 
