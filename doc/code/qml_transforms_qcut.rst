@@ -63,7 +63,7 @@ The following discusses the elementary steps taken by the
  1: ──RY(0.9)────╰Z──//────────╭C──├┤ ⟨Z ⊗ Z ⊗ Z⟩
  2: ──RX(0.3)──────────────────╰Z──╰┤ ⟨Z ⊗ Z ⊗ Z⟩
 
-To cut the circuit, we first convert convert it to its graph representation:
+To cut the circuit, we first convert it to its graph representation:
 
 >>> graph = qml.transforms.qcut.tape_to_graph(tape)
 
