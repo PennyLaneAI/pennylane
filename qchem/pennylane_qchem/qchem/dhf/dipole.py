@@ -20,6 +20,7 @@ from pennylane import numpy as np
 from .basis_data import atomic_numbers
 from .matrices import moment_matrix
 from .observable import fermionic_observable, qubit_observable
+from .hartree_fock import scf
 
 
 def dipole_integrals(mol, core=None, active=None):
@@ -103,7 +104,7 @@ def dipole_integrals(mol, core=None, active=None):
             tuple[array[float]]: tuple containing the core orbital contributions and the dipole
             moment integrals
         """
-        _, coeffs, _, _, _ = qml.hf.scf(mol)(*args)
+        _, coeffs, _, _, _ = scf(mol)(*args)
 
         # x, y, z components
         d_x = anp.einsum(

@@ -17,25 +17,7 @@ Unit tests for functions needed to computing integrals over basis functions.
 import autograd
 import pytest
 from pennylane import numpy as np
-from pennylane.hf.integrals import (
-    _boys,
-    _diff2,
-    _generate_params,
-    _hermite_coulomb,
-    attraction_integral,
-    contracted_norm,
-    expansion,
-    gaussian_kinetic,
-    gaussian_moment,
-    gaussian_overlap,
-    hermite_moment,
-    kinetic_integral,
-    moment_integral,
-    overlap_integral,
-    primitive_norm,
-    repulsion_integral,
-)
-from pennylane.hf.molecule import Molecule
+from pennylane import qchem
 
 
 @pytest.mark.parametrize(
@@ -47,7 +29,7 @@ from pennylane.hf.molecule import Molecule
 )
 def test_gaussian_norm(l, alpha, n):
     r"""Test that the computed normalization constant of a Gaussian function is correct."""
-    assert np.allclose(primitive_norm(l, alpha), n)
+    assert np.allclose(qchem.dhf.primitive_norm(l, alpha), n)
 
 
 @pytest.mark.parametrize(
@@ -65,7 +47,7 @@ def test_gaussian_norm(l, alpha, n):
 )
 def test_contraction_norm(l, alpha, a, n):
     r"""Test that the computed normalization constant of a contracted Gaussian function is correct."""
-    assert np.allclose(contracted_norm(l, alpha, a), n)
+    assert np.allclose(qchem.dhf.contracted_norm(l, alpha, a), n)
 
 
 @pytest.mark.parametrize(
@@ -87,7 +69,7 @@ def test_generate_params(alpha, coeff, r):
     r"""Test that test_generate_params returns correct basis set parameters."""
     params = [alpha, coeff, r]
     args = [p for p in [alpha, coeff, r] if p.requires_grad]
-    basis_params = _generate_params(params, args)
+    basis_params = qchem.dhf._generate_params(params, args)
 
     assert np.allclose(basis_params, (alpha, coeff, r))
 
@@ -129,9 +111,9 @@ def test_generate_params(alpha, coeff, r):
 )
 def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
     r"""Test that expansion function returns correct value."""
-    assert np.allclose(expansion(la, lb, ra, rb, alpha, beta, t), c)
-    assert np.allclose(expansion(la, lb, ra, rb, alpha, beta, -1), np.array([0.0]))
-    assert np.allclose(expansion(0, 1, ra, rb, alpha, beta, 2), np.array([0.0]))
+    assert np.allclose(qchem.dhf.expansion(la, lb, ra, rb, alpha, beta, t), c)
+    assert np.allclose(qchem.dhf.expansion(la, lb, ra, rb, alpha, beta, -1), np.array([0.0]))
+    assert np.allclose(qchem.dhf.expansion(0, 1, ra, rb, alpha, beta, 2), np.array([0.0]))
 
 
 @pytest.mark.parametrize(
@@ -169,7 +151,7 @@ def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
 )
 def test_gaussian_overlap(la, lb, ra, rb, alpha, beta, o):
     r"""Test that gaussian overlap function returns a correct value."""
-    assert np.allclose(gaussian_overlap(la, lb, ra, rb, alpha, beta), o)
+    assert np.allclose(qchem.dhf.gaussian_overlap(la, lb, ra, rb, alpha, beta), o)
 
 
 @pytest.mark.parametrize(
@@ -221,12 +203,12 @@ def test_gaussian_overlap(la, lb, ra, rb, alpha, beta, o):
 )
 def test_overlap_integral(symbols, geometry, alpha, coef, r, o_ref):
     r"""Test that overlap_integral function returns a correct value for the overlap integral."""
-    mol = Molecule(symbols, geometry)
+    mol = qchem.dhf.Molecule(symbols, geometry)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [p for p in [alpha, coef, r] if p.requires_grad]
 
-    o = overlap_integral(basis_a, basis_b)(*args)
+    o = qchem.dhf.overlap_integral(basis_a, basis_b)(*args)
     assert np.allclose(o, o_ref)
 
 
@@ -249,13 +231,13 @@ def test_overlap_integral(symbols, geometry, alpha, coef, r, o_ref):
 )
 def test_gradient_overlap(symbols, geometry, alpha, coeff):
     r"""Test that the overlap gradient computed with respect to the basis parameters is correct."""
-    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = qchem.dhf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [mol.alpha, mol.coeff]
 
-    g_alpha = autograd.grad(overlap_integral(basis_a, basis_b), argnum=0)(*args)
-    g_coeff = autograd.grad(overlap_integral(basis_a, basis_b), argnum=1)(*args)
+    g_alpha = autograd.grad(qchem.dhf.overlap_integral(basis_a, basis_b), argnum=0)(*args)
+    g_coeff = autograd.grad(qchem.dhf.overlap_integral(basis_a, basis_b), argnum=1)(*args)
 
     # compute overlap gradients with respect to alpha and coeff using finite diff
     delta = 0.0001
@@ -269,16 +251,16 @@ def test_gradient_overlap(symbols, geometry, alpha, coeff):
             alpha_plus = alpha.copy()
             alpha_minus[i][j] = alpha_minus[i][j] - delta
             alpha_plus[i][j] = alpha_plus[i][j] + delta
-            o_minus = overlap_integral(basis_a, basis_b)(*[alpha_minus, coeff])
-            o_plus = overlap_integral(basis_a, basis_b)(*[alpha_plus, coeff])
+            o_minus = qchem.dhf.overlap_integral(basis_a, basis_b)(*[alpha_minus, coeff])
+            o_plus = qchem.dhf.overlap_integral(basis_a, basis_b)(*[alpha_plus, coeff])
             g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
 
             coeff_minus = coeff.copy()
             coeff_plus = coeff.copy()
             coeff_minus[i][j] = coeff_minus[i][j] - delta
             coeff_plus[i][j] = coeff_plus[i][j] + delta
-            o_minus = overlap_integral(basis_a, basis_b)(*[alpha, coeff_minus])
-            o_plus = overlap_integral(basis_a, basis_b)(*[alpha, coeff_plus])
+            o_minus = qchem.dhf.overlap_integral(basis_a, basis_b)(*[alpha, coeff_minus])
+            o_plus = qchem.dhf.overlap_integral(basis_a, basis_b)(*[alpha, coeff_plus])
             g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
 
     assert np.allclose(g_alpha, g_ref_alpha)
@@ -324,7 +306,7 @@ def test_gradient_overlap(symbols, geometry, alpha, coeff):
 )
 def test_hermite_moment(alpha, beta, t, e, rc, ref):
     r"""Test that hermite_moment function returns correct values."""
-    assert np.allclose(hermite_moment(alpha, beta, t, e, rc), ref)
+    assert np.allclose(qchem.dhf.hermite_moment(alpha, beta, t, e, rc), ref)
 
 
 @pytest.mark.parametrize(
@@ -345,7 +327,7 @@ def test_hermite_moment(alpha, beta, t, e, rc, ref):
 )
 def test_gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc, ref):
     r"""Test that gaussian_moment function returns correct values."""
-    assert np.allclose(gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc), ref)
+    assert np.allclose(qchem.dhf.gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc), ref)
 
 
 @pytest.mark.parametrize(
@@ -376,11 +358,11 @@ def test_gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc, ref):
 )
 def test_moment_integral(symbols, geometry, e, idx, ref):
     r"""Test that moment_integral function returns a correct value for the moment integral."""
-    mol = Molecule(symbols, geometry)
+    mol = qchem.dhf.Molecule(symbols, geometry)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [p for p in [geometry] if p.requires_grad]
-    s = moment_integral(basis_a, basis_b, e, idx)(*args)
+    s = qchem.dhf.moment_integral(basis_a, basis_b, e, idx)(*args)
 
     assert np.allclose(s, ref)
 
@@ -406,13 +388,13 @@ def test_moment_integral(symbols, geometry, e, idx, ref):
 )
 def test_gradient_moment(symbols, geometry, alpha, coeff, e, idx):
     r"""Test that the moment gradient computed with respect to the basis parameters is correct."""
-    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = qchem.dhf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [mol.alpha, mol.coeff]
 
-    g_alpha = autograd.grad(moment_integral(basis_a, basis_b, e, idx), argnum=0)(*args)
-    g_coeff = autograd.grad(moment_integral(basis_a, basis_b, e, idx), argnum=1)(*args)
+    g_alpha = autograd.grad(qchem.dhf.moment_integral(basis_a, basis_b, e, idx), argnum=0)(*args)
+    g_coeff = autograd.grad(qchem.dhf.moment_integral(basis_a, basis_b, e, idx), argnum=1)(*args)
 
     # compute moment gradients with respect to alpha and coeff using finite diff
     delta = 0.0001
@@ -426,16 +408,16 @@ def test_gradient_moment(symbols, geometry, alpha, coeff, e, idx):
             alpha_plus = alpha.copy()
             alpha_minus[i][j] = alpha_minus[i][j] - delta
             alpha_plus[i][j] = alpha_plus[i][j] + delta
-            o_minus = moment_integral(basis_a, basis_b, e, idx)(*[alpha_minus, coeff])
-            o_plus = moment_integral(basis_a, basis_b, e, idx)(*[alpha_plus, coeff])
+            o_minus = qchem.dhf.moment_integral(basis_a, basis_b, e, idx)(*[alpha_minus, coeff])
+            o_plus = qchem.dhf.moment_integral(basis_a, basis_b, e, idx)(*[alpha_plus, coeff])
             g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
 
             coeff_minus = coeff.copy()
             coeff_plus = coeff.copy()
             coeff_minus[i][j] = coeff_minus[i][j] - delta
             coeff_plus[i][j] = coeff_plus[i][j] + delta
-            o_minus = moment_integral(basis_a, basis_b, e, idx)(*[alpha, coeff_minus])
-            o_plus = moment_integral(basis_a, basis_b, e, idx)(*[alpha, coeff_plus])
+            o_minus = qchem.dhf.moment_integral(basis_a, basis_b, e, idx)(*[alpha, coeff_minus])
+            o_plus = qchem.dhf.moment_integral(basis_a, basis_b, e, idx)(*[alpha, coeff_plus])
             g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
 
     assert np.allclose(g_alpha, g_ref_alpha)
@@ -469,7 +451,7 @@ def test_gradient_moment(symbols, geometry, alpha, coeff, e, idx):
 )
 def test_diff2(i, j, ri, rj, alpha, beta, d):
     r"""Test that _diff2 function returns a correct value."""
-    assert np.allclose(_diff2(i, j, ri, rj, alpha, beta), d)
+    assert np.allclose(qchem.dhf._diff2(i, j, ri, rj, alpha, beta), d)
 
 
 @pytest.mark.parametrize(
@@ -489,7 +471,7 @@ def test_diff2(i, j, ri, rj, alpha, beta, d):
 )
 def test_gaussian_kinetic(la, lb, ra, rb, alpha, beta, t):
     r"""Test that gaussian_kinetic function returns a correct value."""
-    assert np.allclose(gaussian_kinetic(la, lb, ra, rb, alpha, beta), t)
+    assert np.allclose(qchem.dhf.gaussian_kinetic(la, lb, ra, rb, alpha, beta), t)
 
 
 @pytest.mark.parametrize(
@@ -527,12 +509,12 @@ def test_gaussian_kinetic(la, lb, ra, rb, alpha, beta, t):
 )
 def test_kinetic_integral(symbols, geometry, alpha, coeff, t_ref):
     r"""Test that kinetic_integral function returns a correct value for the kinetic integral."""
-    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = qchem.dhf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [p for p in [alpha, coeff] if p.requires_grad]
 
-    t = kinetic_integral(basis_a, basis_b)(*args)
+    t = qchem.dhf.kinetic_integral(basis_a, basis_b)(*args)
     assert np.allclose(t, t_ref)
 
 
@@ -555,13 +537,13 @@ def test_kinetic_integral(symbols, geometry, alpha, coeff, t_ref):
 )
 def test_gradient_kinetic(symbols, geometry, alpha, coeff):
     r"""Test that the kinetic gradient computed with respect to the basis parameters is correct."""
-    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = qchem.dhf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [mol.alpha, mol.coeff]
 
-    g_alpha = autograd.grad(kinetic_integral(basis_a, basis_b), argnum=0)(*args)
-    g_coeff = autograd.grad(kinetic_integral(basis_a, basis_b), argnum=1)(*args)
+    g_alpha = autograd.grad(qchem.dhf.kinetic_integral(basis_a, basis_b), argnum=0)(*args)
+    g_coeff = autograd.grad(qchem.dhf.kinetic_integral(basis_a, basis_b), argnum=1)(*args)
 
     # compute kinetic gradients with respect to alpha, coeff and r using finite diff
     delta = 0.0001
@@ -575,16 +557,16 @@ def test_gradient_kinetic(symbols, geometry, alpha, coeff):
             alpha_plus = alpha.copy()
             alpha_minus[i][j] = alpha_minus[i][j] - delta
             alpha_plus[i][j] = alpha_plus[i][j] + delta
-            t_minus = kinetic_integral(basis_a, basis_b)(*[alpha_minus, coeff])
-            t_plus = kinetic_integral(basis_a, basis_b)(*[alpha_plus, coeff])
+            t_minus = qchem.dhf.kinetic_integral(basis_a, basis_b)(*[alpha_minus, coeff])
+            t_plus = qchem.dhf.kinetic_integral(basis_a, basis_b)(*[alpha_plus, coeff])
             g_ref_alpha[i][j] = (t_plus - t_minus) / (2 * delta)
 
             coeff_minus = coeff.copy()
             coeff_plus = coeff.copy()
             coeff_minus[i][j] = coeff_minus[i][j] - delta
             coeff_plus[i][j] = coeff_plus[i][j] + delta
-            t_minus = kinetic_integral(basis_a, basis_b)(*[alpha, coeff_minus])
-            t_plus = kinetic_integral(basis_a, basis_b)(*[alpha, coeff_plus])
+            t_minus = qchem.dhf.kinetic_integral(basis_a, basis_b)(*[alpha, coeff_minus])
+            t_plus = qchem.dhf.kinetic_integral(basis_a, basis_b)(*[alpha, coeff_plus])
             g_ref_coeff[i][j] = (t_plus - t_minus) / (2 * delta)
 
     assert np.allclose(g_alpha, g_ref_alpha)
@@ -626,7 +608,7 @@ def test_gradient_kinetic(symbols, geometry, alpha, coeff):
 )
 def test_attraction_integral(symbols, geometry, alpha, coeff, a_ref):
     r"""Test that attraction_integral function returns a correct value for the kinetic integral."""
-    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = qchem.dhf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [p for p in [alpha, coeff] if p.requires_grad]
@@ -634,7 +616,7 @@ def test_attraction_integral(symbols, geometry, alpha, coeff, a_ref):
     if geometry.requires_grad:
         args = [geometry[0]] + args + [geometry]
 
-    a = attraction_integral(geometry[0], basis_a, basis_b)(*args)
+    a = qchem.dhf.attraction_integral(geometry[0], basis_a, basis_b)(*args)
     assert np.allclose(a, a_ref)
 
 
@@ -657,14 +639,14 @@ def test_attraction_integral(symbols, geometry, alpha, coeff, a_ref):
 )
 def test_gradient_attraction(symbols, geometry, alpha, coeff):
     r"""Test that the attraction gradient computed with respect to the basis parameters is correct."""
-    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = qchem.dhf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [mol.alpha, mol.coeff]
     r_nuc = geometry[0]
 
-    g_alpha = autograd.grad(attraction_integral(r_nuc, basis_a, basis_b), argnum=0)(*args)
-    g_coeff = autograd.grad(attraction_integral(r_nuc, basis_a, basis_b), argnum=1)(*args)
+    g_alpha = autograd.grad(qchem.dhf.attraction_integral(r_nuc, basis_a, basis_b), argnum=0)(*args)
+    g_coeff = autograd.grad(qchem.dhf.attraction_integral(r_nuc, basis_a, basis_b), argnum=1)(*args)
 
     # compute attraction gradients with respect to alpha and coeff using finite diff
     delta = 0.0001
@@ -678,16 +660,16 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff):
             alpha_plus = alpha.copy()
             alpha_minus[i][j] = alpha_minus[i][j] - delta
             alpha_plus[i][j] = alpha_plus[i][j] + delta
-            a_minus = attraction_integral(r_nuc, basis_a, basis_b)(*[alpha_minus, coeff])
-            a_plus = attraction_integral(r_nuc, basis_a, basis_b)(*[alpha_plus, coeff])
+            a_minus = qchem.dhf.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha_minus, coeff])
+            a_plus = qchem.dhf.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha_plus, coeff])
             g_ref_alpha[i][j] = (a_plus - a_minus) / (2 * delta)
 
             coeff_minus = coeff.copy()
             coeff_plus = coeff.copy()
             coeff_minus[i][j] = coeff_minus[i][j] - delta
             coeff_plus[i][j] = coeff_plus[i][j] + delta
-            a_minus = attraction_integral(r_nuc, basis_a, basis_b)(*[alpha, coeff_minus])
-            a_plus = attraction_integral(r_nuc, basis_a, basis_b)(*[alpha, coeff_plus])
+            a_minus = qchem.dhf.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha, coeff_minus])
+            a_plus = qchem.dhf.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha, coeff_plus])
             g_ref_coeff[i][j] = (a_plus - a_minus) / (2 * delta)
 
     assert np.allclose(g_alpha, g_ref_alpha)
@@ -747,12 +729,12 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff):
 )
 def test_repulsion_integral(symbols, geometry, alpha, coeff, e_ref):
     r"""Test that repulsion_integral function returns a correct value for the repulsion integral."""
-    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = qchem.dhf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [p for p in [alpha, coeff] if p.requires_grad]
 
-    a = repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*args)
+    a = qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*args)
 
     assert np.allclose(a, e_ref)
 
@@ -786,13 +768,13 @@ def test_repulsion_integral(symbols, geometry, alpha, coeff, e_ref):
 )
 def test_gradient_repulsion(symbols, geometry, alpha, coeff):
     r"""Test that the repulsion gradient computed with respect to the basis parameters is correct."""
-    mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = qchem.dhf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [mol.alpha, mol.coeff]
 
-    g_alpha = autograd.grad(repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=0)(*args)
-    g_coeff = autograd.grad(repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=1)(*args)
+    g_alpha = autograd.grad(qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=0)(*args)
+    g_coeff = autograd.grad(qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=1)(*args)
 
     # compute repulsion gradients with respect to alpha and coeff using finite diff
     delta = 0.0001
@@ -806,16 +788,16 @@ def test_gradient_repulsion(symbols, geometry, alpha, coeff):
             alpha_plus = alpha.copy()
             alpha_minus[i][j] = alpha_minus[i][j] - delta
             alpha_plus[i][j] = alpha_plus[i][j] + delta
-            e_minus = repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha_minus, coeff])
-            e_plus = repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha_plus, coeff])
+            e_minus = qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha_minus, coeff])
+            e_plus = qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha_plus, coeff])
             g_ref_alpha[i][j] = (e_plus - e_minus) / (2 * delta)
 
             coeff_minus = coeff.copy()
             coeff_plus = coeff.copy()
             coeff_minus[i][j] = coeff_minus[i][j] - delta
             coeff_plus[i][j] = coeff_plus[i][j] + delta
-            e_minus = repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha, coeff_minus])
-            e_plus = repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha, coeff_plus])
+            e_minus = qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha, coeff_minus])
+            e_plus = qchem.dhf.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha, coeff_plus])
             g_ref_coeff[i][j] = (e_plus - e_minus) / (2 * delta)
 
     assert np.allclose(g_alpha, g_ref_alpha)
@@ -828,7 +810,7 @@ def test_gradient_repulsion(symbols, geometry, alpha, coeff):
 )
 def test_boys(n, t, f_ref):
     r"""Test that the Boys function is evaluated correctly."""
-    f = _boys(n, t)
+    f = qchem.dhf._boys(n, t)
     assert np.allclose(f, f_ref)
 
 
@@ -846,5 +828,5 @@ def test_boys(n, t, f_ref):
 )
 def test_hermite_coulomb(t, u, v, n, p, dr, h_ref):
     r"""Test that the _hermite_coulomb function returns a correct value."""
-    h = _hermite_coulomb(t, u, v, n, p, dr)
+    h = qchem.dhf._hermite_coulomb(t, u, v, n, p, dr)
     assert np.allclose(h, h_ref)

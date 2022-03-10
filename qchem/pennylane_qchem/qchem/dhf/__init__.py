@@ -39,7 +39,7 @@ from .integrals import (
     nuclear_attraction,
     overlap_integral,
     primitive_norm,
-    repulsion_integral,
+    repulsion_integral, _boys, _diff2, _generate_params, _hermite_coulomb
 )
 from .matrices import (
     attraction_matrix,
@@ -51,9 +51,9 @@ from .matrices import (
     repulsion_tensor,
 )
 from .molecule import Molecule
-from .observable import fermionic_observable, jordan_wigner, qubit_observable, simplify
+from .observable import fermionic_observable, jordan_wigner, qubit_observable, simplify, _pauli_mult
 from .particle_number import particle_number
-from .spin import spin2, spinz
+from .spin import spin2, spinz, _spin2_matrix_elements
 from .tapering import (
     clifford,
     generate_paulis,

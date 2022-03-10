@@ -18,7 +18,7 @@ import pennylane as qml
 import pytest
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
-from pennylane.hf.particle_number import particle_number
+from pennylane import qchem
 
 
 @pytest.mark.parametrize(
@@ -54,7 +54,7 @@ def test_particle_number(orbitals, coeffs_ref, ops_ref):
     r"""Tests the correctness of the :math:`\hat{S}_z` observable built by the
     function `'spin_z'`.
     """
-    n = particle_number(orbitals)
+    n = qchem.dhf.particle_number(orbitals)
     n_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
 
     assert n.compare(n_ref)
@@ -72,4 +72,4 @@ def test_exception_particle_number(orbitals, msg_match):
     number of orbitals is less than zero."""
 
     with pytest.raises(ValueError, match=msg_match):
-        particle_number(orbitals)
+        qchem.dhf.particle_number(orbitals)
