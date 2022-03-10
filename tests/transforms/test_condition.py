@@ -69,7 +69,6 @@ class TestCond:
 
         assert ops[4].return_type == qml.operation.Probability
 
-
     def tape_with_else(f, g, r):
         """Tape that uses cond by passing both a true and false func."""
         with qml.tape.QuantumTape() as tape:

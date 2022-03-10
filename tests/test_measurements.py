@@ -362,7 +362,10 @@ class TestMeasurementValue:
         mv1 = MeasurementValue(measurement_id="1111")
         mv2 = MeasurementValue(measurement_id="2222")
 
-        with pytest.raises(MeasurementValueError, match="The equality operator is used to assert measurement outcomes, but got a value with type"):
+        with pytest.raises(
+            MeasurementValueError,
+            match="The equality operator is used to assert measurement outcomes, but got a value with type",
+        ):
             mv1 == mv2
 
     def test_measurement_value_assertion_error(self):
