@@ -80,7 +80,8 @@ Our next step is to remove the :class:`~.WireCut` nodes in the graph and replace
 The :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs are placeholder operations that
 allow us to cut the circuit graph and then iterate over measurement and preparation
 configurations at cut locations. First, the :func:`~.fragment_graph` function pulls apart
-the graph into disconnected components as well as returning the ``communication_graph``
+the graph into disconnected components as well as returning the
+`communication_graph <https://en.wikipedia.org/wiki/Quotient_graph>`__
 detailing the connectivity between the components.
 
 >>> fragments, communication_graph = qml.transforms.qcut.fragment_graph(graph)
