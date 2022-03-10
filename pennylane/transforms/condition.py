@@ -87,17 +87,23 @@ def cond(condition, true_fn, false_fn=None):
 
         dev = qml.device("default.qubit", wires=3)
 
-        first_par = 0.1
-        sec_par = 0.3
-
         @qml.qnode(dev)
-        def qnode():
+        def qnode(x, y):
+            qml.Hadamard(0)
             m_0 = qml.measure(0)
-            qml.cond(m_0, qml.RY)(first_par, wires=1)
+            qml.cond(m_0, qml.RY)(x, wires=1)
 
+            qml.Hadamard(2)
             m_1 = qml.measure(2)
-            qml.cond(m_0, qml.RZ)(sec_par, wires=1)
+            qml.cond(m_0, qml.RZ)(y, wires=1)
             return qml.expval(qml.PauliZ(1))
+
+    .. code-block :: pycon
+
+        >>> first_par = np.array(0.3, requires_grad=True)
+        >>> sec_par = np.array(1.23, requires_grad=True)
+        >>> qnode(first_par, sec_par)
+        tensor(0.97766824, requires_grad=True)
 
     .. UsageDetails::
 
@@ -114,17 +120,17 @@ def cond(condition, true_fn, false_fn=None):
                 qml.RY(par, wires[0])
 
             @qml.qnode(dev)
-            def qnode():
+            def qnode(x):
                 qml.Hadamard(0)
                 m_0 = qml.measure(0)
-                qml.cond(m_0, qfunc)(first_par, wires=[1])
+                qml.cond(m_0, qfunc)(x, wires=[1])
                 return qml.expval(qml.PauliZ(1))
 
         .. code-block :: pycon
 
             >>> par = np.array(0.3, requires_grad=True)
             >>> qnode(par)
-            tensor(0.45008329, requires_grad=True)
+            tensor(0.3522399, requires_grad=True)
 
         **Passing a quantum function for the False case too**
 
@@ -137,16 +143,16 @@ def cond(condition, true_fn, false_fn=None):
 
             dev = qml.device("default.qubit", wires=2)
 
-            def qfunc1(par, wires):
+            def qfunc1(x, wires):
                 qml.Hadamard(wires[0])
-                qml.RY(par, wires[0])
+                qml.RY(x, wires[0])
 
-            def qfunc2(par, wires):
+            def qfunc2(x, wires):
                 qml.Hadamard(wires[0])
-                qml.RZ(par, wires[0])
+                qml.RZ(x, wires[0])
 
             @qml.qnode(dev)
-            def qnode1(x):
+            def qnode(x):
                 qml.Hadamard(0)
                 m_0 = qml.measure(0)
                 qml.cond(m_0, qfunc1, qfunc2)(x, wires=[1])
@@ -164,18 +170,17 @@ def cond(condition, true_fn, false_fn=None):
         .. code-block:: python3
 
             @qml.qnode(dev)
-            def qnode2():
+            def qnode2(x):
                 qml.Hadamard(0)
                 m_0 = qml.measure(0)
-                qml.cond(m_0, qfunc1)(par, wires=[1])
-                qml.cond(~m_0, qfunc2)(par, wires=[1])
+                qml.cond(m_0, qfunc1)(x, wires=[1])
+                qml.cond(~m_0, qfunc2)(x, wires=[1])
                 return qml.expval(qml.PauliZ(1))
 
         .. code-block :: pycon
 
-            >>> par = np.array(0.3, requires_grad=True)
-            >>> qnode2()
-            tensor(-0.04991671, requires_grad=True)
+            >>> qnode2(par)
+            tensor(-0.1477601, requires_grad=True)
     """
     if callable(true_fn):
         # We assume that the callable is an operation or a quantum function
