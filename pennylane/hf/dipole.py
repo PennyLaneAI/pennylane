@@ -103,7 +103,7 @@ def dipole_integrals(mol, core=None, active=None):
             tuple[array[float]]: tuple containing the core orbital contributions and the dipole
             moment integrals
         """
-        _, coeffs, _, _, _ = qml.hf.generate_scf(mol)(*args)
+        _, coeffs, _, _, _ = qml.hf.scf(mol)(*args)
 
         # x, y, z components
         d_x = anp.einsum(

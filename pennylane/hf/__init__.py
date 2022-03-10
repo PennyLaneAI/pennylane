@@ -18,36 +18,32 @@ Hartree-Fock calculations.
 from .basis_data import STO3G, atomic_numbers
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
 from .dipole import dipole_integrals, dipole_moment, fermionic_dipole
-from .hamiltonian import (
-    generate_electron_integrals,
-    generate_fermionic_hamiltonian,
-    generate_hamiltonian,
-)
-from .hartree_fock import generate_scf, hf_energy, nuclear_energy
+from .hamiltonian import electron_integrals, fermionic_hamiltonian, mol_hamiltonian
+from .hartree_fock import hf_energy, nuclear_energy, scf
 from .integrals import (
+    attraction_integral,
     contracted_norm,
     electron_repulsion,
     expansion,
     gaussian_kinetic,
     gaussian_moment,
     gaussian_overlap,
-    generate_attraction,
-    generate_kinetic,
-    generate_overlap,
-    generate_repulsion,
     hermite_moment,
+    kinetic_integral,
     moment_integral,
     nuclear_attraction,
+    overlap_integral,
     primitive_norm,
+    repulsion_integral,
 )
 from .matrices import (
-    generate_attraction_matrix,
-    generate_core_matrix,
-    generate_kinetic_matrix,
-    generate_overlap_matrix,
-    generate_repulsion_tensor,
-    molecular_density_matrix,
+    attraction_matrix,
+    core_matrix,
+    kinetic_matrix,
+    mol_density_matrix,
     moment_matrix,
+    overlap_matrix,
+    repulsion_tensor,
 )
 from .molecule import Molecule
 from .observable import fermionic_observable, jordan_wigner, qubit_observable, simplify

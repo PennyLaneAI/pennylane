@@ -22,18 +22,18 @@ from pennylane.hf.integrals import (
     _diff2,
     _generate_params,
     _hermite_coulomb,
+    attraction_integral,
     contracted_norm,
     expansion,
     gaussian_kinetic,
     gaussian_moment,
     gaussian_overlap,
-    generate_attraction,
-    generate_kinetic,
-    generate_overlap,
-    generate_repulsion,
     hermite_moment,
+    kinetic_integral,
     moment_integral,
+    overlap_integral,
     primitive_norm,
+    repulsion_integral,
 )
 from pennylane.hf.molecule import Molecule
 
@@ -219,14 +219,14 @@ def test_gaussian_overlap(la, lb, ra, rb, alpha, beta, o):
         ),
     ],
 )
-def test_generate_overlap(symbols, geometry, alpha, coef, r, o_ref):
-    r"""Test that generate_overlap function returns a correct value for the overlap integral."""
+def test_overlap_integral(symbols, geometry, alpha, coef, r, o_ref):
+    r"""Test that overlap_integral function returns a correct value for the overlap integral."""
     mol = Molecule(symbols, geometry)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [p for p in [alpha, coef, r] if p.requires_grad]
 
-    o = generate_overlap(basis_a, basis_b)(*args)
+    o = overlap_integral(basis_a, basis_b)(*args)
     assert np.allclose(o, o_ref)
 
 
@@ -254,8 +254,8 @@ def test_gradient_overlap(symbols, geometry, alpha, coeff):
     basis_b = mol.basis_set[1]
     args = [mol.alpha, mol.coeff]
 
-    g_alpha = autograd.grad(generate_overlap(basis_a, basis_b), argnum=0)(*args)
-    g_coeff = autograd.grad(generate_overlap(basis_a, basis_b), argnum=1)(*args)
+    g_alpha = autograd.grad(overlap_integral(basis_a, basis_b), argnum=0)(*args)
+    g_coeff = autograd.grad(overlap_integral(basis_a, basis_b), argnum=1)(*args)
 
     # compute overlap gradients with respect to alpha and coeff using finite diff
     delta = 0.0001
@@ -269,16 +269,16 @@ def test_gradient_overlap(symbols, geometry, alpha, coeff):
             alpha_plus = alpha.copy()
             alpha_minus[i][j] = alpha_minus[i][j] - delta
             alpha_plus[i][j] = alpha_plus[i][j] + delta
-            o_minus = generate_overlap(basis_a, basis_b)(*[alpha_minus, coeff])
-            o_plus = generate_overlap(basis_a, basis_b)(*[alpha_plus, coeff])
+            o_minus = overlap_integral(basis_a, basis_b)(*[alpha_minus, coeff])
+            o_plus = overlap_integral(basis_a, basis_b)(*[alpha_plus, coeff])
             g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
 
             coeff_minus = coeff.copy()
             coeff_plus = coeff.copy()
             coeff_minus[i][j] = coeff_minus[i][j] - delta
             coeff_plus[i][j] = coeff_plus[i][j] + delta
-            o_minus = generate_overlap(basis_a, basis_b)(*[alpha, coeff_minus])
-            o_plus = generate_overlap(basis_a, basis_b)(*[alpha, coeff_plus])
+            o_minus = overlap_integral(basis_a, basis_b)(*[alpha, coeff_minus])
+            o_plus = overlap_integral(basis_a, basis_b)(*[alpha, coeff_plus])
             g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
 
     assert np.allclose(g_alpha, g_ref_alpha)
@@ -375,7 +375,7 @@ def test_gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc, ref):
     ],
 )
 def test_moment_integral(symbols, geometry, e, idx, ref):
-    r"""Test that generate_moment function returns a correct value for the moment integral."""
+    r"""Test that moment_integral function returns a correct value for the moment integral."""
     mol = Molecule(symbols, geometry)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
@@ -495,7 +495,7 @@ def test_gaussian_kinetic(la, lb, ra, rb, alpha, beta, t):
 @pytest.mark.parametrize(
     ("symbols", "geometry", "alpha", "coeff", "t_ref"),
     [
-        # generate_kinetic must return 0.0 for two Gaussians centered far apart
+        # kinetic_integral must return 0.0 for two Gaussians centered far apart
         (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
@@ -525,14 +525,14 @@ def test_gaussian_kinetic(la, lb, ra, rb, alpha, beta, t):
         ),
     ],
 )
-def test_generate_kinetic(symbols, geometry, alpha, coeff, t_ref):
-    r"""Test that generate_kinetic function returns a correct value for the kinetic integral."""
+def test_kinetic_integral(symbols, geometry, alpha, coeff, t_ref):
+    r"""Test that kinetic_integral function returns a correct value for the kinetic integral."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [p for p in [alpha, coeff] if p.requires_grad]
 
-    t = generate_kinetic(basis_a, basis_b)(*args)
+    t = kinetic_integral(basis_a, basis_b)(*args)
     assert np.allclose(t, t_ref)
 
 
@@ -560,8 +560,8 @@ def test_gradient_kinetic(symbols, geometry, alpha, coeff):
     basis_b = mol.basis_set[1]
     args = [mol.alpha, mol.coeff]
 
-    g_alpha = autograd.grad(generate_kinetic(basis_a, basis_b), argnum=0)(*args)
-    g_coeff = autograd.grad(generate_kinetic(basis_a, basis_b), argnum=1)(*args)
+    g_alpha = autograd.grad(kinetic_integral(basis_a, basis_b), argnum=0)(*args)
+    g_coeff = autograd.grad(kinetic_integral(basis_a, basis_b), argnum=1)(*args)
 
     # compute kinetic gradients with respect to alpha, coeff and r using finite diff
     delta = 0.0001
@@ -575,16 +575,16 @@ def test_gradient_kinetic(symbols, geometry, alpha, coeff):
             alpha_plus = alpha.copy()
             alpha_minus[i][j] = alpha_minus[i][j] - delta
             alpha_plus[i][j] = alpha_plus[i][j] + delta
-            t_minus = generate_kinetic(basis_a, basis_b)(*[alpha_minus, coeff])
-            t_plus = generate_kinetic(basis_a, basis_b)(*[alpha_plus, coeff])
+            t_minus = kinetic_integral(basis_a, basis_b)(*[alpha_minus, coeff])
+            t_plus = kinetic_integral(basis_a, basis_b)(*[alpha_plus, coeff])
             g_ref_alpha[i][j] = (t_plus - t_minus) / (2 * delta)
 
             coeff_minus = coeff.copy()
             coeff_plus = coeff.copy()
             coeff_minus[i][j] = coeff_minus[i][j] - delta
             coeff_plus[i][j] = coeff_plus[i][j] + delta
-            t_minus = generate_kinetic(basis_a, basis_b)(*[alpha, coeff_minus])
-            t_plus = generate_kinetic(basis_a, basis_b)(*[alpha, coeff_plus])
+            t_minus = kinetic_integral(basis_a, basis_b)(*[alpha, coeff_minus])
+            t_plus = kinetic_integral(basis_a, basis_b)(*[alpha, coeff_plus])
             g_ref_coeff[i][j] = (t_plus - t_minus) / (2 * delta)
 
     assert np.allclose(g_alpha, g_ref_alpha)
@@ -624,8 +624,8 @@ def test_gradient_kinetic(symbols, geometry, alpha, coeff):
         ),
     ],
 )
-def test_generate_attraction(symbols, geometry, alpha, coeff, a_ref):
-    r"""Test that generate_attraction function returns a correct value for the kinetic integral."""
+def test_attraction_integral(symbols, geometry, alpha, coeff, a_ref):
+    r"""Test that attraction_integral function returns a correct value for the kinetic integral."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
@@ -634,7 +634,7 @@ def test_generate_attraction(symbols, geometry, alpha, coeff, a_ref):
     if geometry.requires_grad:
         args = [geometry[0]] + args + [geometry]
 
-    a = generate_attraction(geometry[0], basis_a, basis_b)(*args)
+    a = attraction_integral(geometry[0], basis_a, basis_b)(*args)
     assert np.allclose(a, a_ref)
 
 
@@ -663,8 +663,8 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff):
     args = [mol.alpha, mol.coeff]
     r_nuc = geometry[0]
 
-    g_alpha = autograd.grad(generate_attraction(r_nuc, basis_a, basis_b), argnum=0)(*args)
-    g_coeff = autograd.grad(generate_attraction(r_nuc, basis_a, basis_b), argnum=1)(*args)
+    g_alpha = autograd.grad(attraction_integral(r_nuc, basis_a, basis_b), argnum=0)(*args)
+    g_coeff = autograd.grad(attraction_integral(r_nuc, basis_a, basis_b), argnum=1)(*args)
 
     # compute attraction gradients with respect to alpha and coeff using finite diff
     delta = 0.0001
@@ -678,16 +678,16 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff):
             alpha_plus = alpha.copy()
             alpha_minus[i][j] = alpha_minus[i][j] - delta
             alpha_plus[i][j] = alpha_plus[i][j] + delta
-            a_minus = generate_attraction(r_nuc, basis_a, basis_b)(*[alpha_minus, coeff])
-            a_plus = generate_attraction(r_nuc, basis_a, basis_b)(*[alpha_plus, coeff])
+            a_minus = attraction_integral(r_nuc, basis_a, basis_b)(*[alpha_minus, coeff])
+            a_plus = attraction_integral(r_nuc, basis_a, basis_b)(*[alpha_plus, coeff])
             g_ref_alpha[i][j] = (a_plus - a_minus) / (2 * delta)
 
             coeff_minus = coeff.copy()
             coeff_plus = coeff.copy()
             coeff_minus[i][j] = coeff_minus[i][j] - delta
             coeff_plus[i][j] = coeff_plus[i][j] + delta
-            a_minus = generate_attraction(r_nuc, basis_a, basis_b)(*[alpha, coeff_minus])
-            a_plus = generate_attraction(r_nuc, basis_a, basis_b)(*[alpha, coeff_plus])
+            a_minus = attraction_integral(r_nuc, basis_a, basis_b)(*[alpha, coeff_minus])
+            a_plus = attraction_integral(r_nuc, basis_a, basis_b)(*[alpha, coeff_plus])
             g_ref_coeff[i][j] = (a_plus - a_minus) / (2 * delta)
 
     assert np.allclose(g_alpha, g_ref_alpha)
@@ -745,14 +745,14 @@ def test_gradient_attraction(symbols, geometry, alpha, coeff):
         ),
     ],
 )
-def test_generate_repulsion(symbols, geometry, alpha, coeff, e_ref):
-    r"""Test that generate_repulsion function returns a correct value for the repulsion integral."""
+def test_repulsion_integral(symbols, geometry, alpha, coeff, e_ref):
+    r"""Test that repulsion_integral function returns a correct value for the repulsion integral."""
     mol = Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     basis_a = mol.basis_set[0]
     basis_b = mol.basis_set[1]
     args = [p for p in [alpha, coeff] if p.requires_grad]
 
-    a = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*args)
+    a = repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*args)
 
     assert np.allclose(a, e_ref)
 
@@ -791,8 +791,8 @@ def test_gradient_repulsion(symbols, geometry, alpha, coeff):
     basis_b = mol.basis_set[1]
     args = [mol.alpha, mol.coeff]
 
-    g_alpha = autograd.grad(generate_repulsion(basis_a, basis_b, basis_a, basis_b), argnum=0)(*args)
-    g_coeff = autograd.grad(generate_repulsion(basis_a, basis_b, basis_a, basis_b), argnum=1)(*args)
+    g_alpha = autograd.grad(repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=0)(*args)
+    g_coeff = autograd.grad(repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=1)(*args)
 
     # compute repulsion gradients with respect to alpha and coeff using finite diff
     delta = 0.0001
@@ -806,16 +806,16 @@ def test_gradient_repulsion(symbols, geometry, alpha, coeff):
             alpha_plus = alpha.copy()
             alpha_minus[i][j] = alpha_minus[i][j] - delta
             alpha_plus[i][j] = alpha_plus[i][j] + delta
-            e_minus = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*[alpha_minus, coeff])
-            e_plus = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*[alpha_plus, coeff])
+            e_minus = repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha_minus, coeff])
+            e_plus = repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha_plus, coeff])
             g_ref_alpha[i][j] = (e_plus - e_minus) / (2 * delta)
 
             coeff_minus = coeff.copy()
             coeff_plus = coeff.copy()
             coeff_minus[i][j] = coeff_minus[i][j] - delta
             coeff_plus[i][j] = coeff_plus[i][j] + delta
-            e_minus = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*[alpha, coeff_minus])
-            e_plus = generate_repulsion(basis_a, basis_b, basis_a, basis_b)(*[alpha, coeff_plus])
+            e_minus = repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha, coeff_minus])
+            e_plus = repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*[alpha, coeff_plus])
             g_ref_coeff[i][j] = (e_plus - e_minus) / (2 * delta)
 
     assert np.allclose(g_alpha, g_ref_alpha)

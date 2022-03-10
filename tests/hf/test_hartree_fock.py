@@ -17,7 +17,7 @@ Unit tests for for Hartree-Fock functions.
 import autograd
 import pytest
 from pennylane import numpy as np
-from pennylane.hf.hartree_fock import generate_scf, hf_energy, nuclear_energy
+from pennylane.hf.hartree_fock import hf_energy, nuclear_energy, scf
 from pennylane.hf.molecule import Molecule
 
 
@@ -47,9 +47,9 @@ from pennylane.hf.molecule import Molecule
     ],
 )
 def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_tensor):
-    r"""Test that generate_scf returns the correct values."""
+    r"""Test that scf returns the correct values."""
     mol = Molecule(symbols, geometry)
-    v, c, f, h, e = generate_scf(mol)()
+    v, c, f, h, e = scf(mol)()
 
     assert np.allclose(v, v_fock)
     assert np.allclose(c, coeffs)
