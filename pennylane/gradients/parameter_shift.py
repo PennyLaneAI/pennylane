@@ -18,6 +18,7 @@ of a qubit-based quantum tape.
 # pylint: disable=protected-access,too-many-arguments,too-many-statements
 import warnings
 import numpy as np
+from collections.abc import Sequence
 
 import pennylane as qml
 
@@ -234,6 +235,10 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         shapes.append(len(g_tapes))
 
     def processing_fn(results):
+        # Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+            results = qml.math.squeeze(qml.math.stack(results))
+
         grads = []
         start = 1 if unshifted_coeffs and f0 is None else 0
         r0 = f0 or results[0]
@@ -368,6 +373,10 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
         gradient_tapes.extend(pdA2_tapes)
 
     def processing_fn(results):
+        # Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+            results = qml.math.squeeze(qml.math.stack(results))
+
         # We need to expand the dimensions of the variance mask,
         # and convert it to be the same type as the results.
         res = results[0]

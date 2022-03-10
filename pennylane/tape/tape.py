@@ -323,6 +323,7 @@ class QuantumTape(AnnotatedQueue):
         self._specs = None
         self._depth = None
         self._output_dim = 0
+        self._qfunc_output = None
 
         self.wires = qml.wires.Wires([])
         self.num_wires = 0

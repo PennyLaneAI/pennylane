@@ -17,6 +17,7 @@ of a qubit-based quantum tape.
 """
 import warnings
 import numpy as np
+from collections.abc import Sequence
 
 import pennylane as qml
 
@@ -151,9 +152,13 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
             shapes.append(((i, j), len(h_tapes)))
 
     def processing_fn(results):
+        # Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+            results = qml.math.squeeze(qml.math.stack(results))
+
         # The first results dimension is the number of terms/tapes in the parameter-shift
         # rule, the remaining ones are the QNode output dimensions.
-        out_dim = qml.math.shape(qml.math.stack(results))[1:]
+        out_dim = qml.math.shape(results)[1:]
         # The desired shape of the Hessian is:
         #       (QNode output dimensions, # trainable gate args, # trainable gate args),
         # but first we accumulate all elements into a list, since no array assingment is possible.

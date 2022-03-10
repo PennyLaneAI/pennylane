@@ -318,12 +318,6 @@ class batch_transform:
                 **execute_kwargs,
             )
 
-            # Apply the same squeezing as in qml.QNode to make the transform ouput consistent.
-            for i, r in enumerate(res):
-                # pylint: disable=protected-access
-                if not isinstance(qnode._qfunc_output, Sequence):
-                    res[i] = qml.math.squeeze(r)
-
             return processing_fn(res)
 
         return _wrapper

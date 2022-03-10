@@ -18,6 +18,7 @@ of a quantum tape.
 # pylint: disable=protected-access,too-many-arguments
 import functools
 import warnings
+from collections.abc import Sequence
 
 import numpy as np
 from scipy.special import factorial
@@ -347,6 +348,10 @@ def finite_diff(
         shapes.append(len(g_tapes))
 
     def processing_fn(results):
+        # Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+            results = qml.math.squeeze(qml.math.stack(results))
+
         grads = []
         start = 1 if c0 is not None and f0 is None else 0
         r0 = f0 or results[0]
