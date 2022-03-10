@@ -1012,14 +1012,14 @@ def cut_circuit(
         .. autosummary::
             :toctree: api
 
-            tape_to_graph
-            replace_wire_cut_nodes
-            fragment_graph
-            graph_to_tape
-            remap_tape_wires
-            expand_fragment_tape
-            qcut_processing_fn
-            CutStrategy
+            ~.qcut.tape_to_graph
+            ~.qcut.replace_wire_cut_nodes
+            ~.qcut.fragment_graph
+            ~.qcut.graph_to_tape
+            ~.qcut.remap_tape_wires
+            ~.qcut.expand_fragment_tape
+            ~.qcut.qcut_processing_fn
+            ~.qcut.CutStrategy
 
         The following shows how these elementary steps are combined as part of the
         ``cut_circuit()`` transform.
