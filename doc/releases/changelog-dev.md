@@ -296,6 +296,9 @@
     device.
     [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
 
+  - The documentation has been polished.
+    [(#2279)](https://github.com/PennyLaneAI/pennylane/pull/2279)
+
 * A method to batch the non-trainable inputs for machine learning applications has been added.
   [(#2069)](https://github.com/PennyLaneAI/pennylane/pull/2069)
 
