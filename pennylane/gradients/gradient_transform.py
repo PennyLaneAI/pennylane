@@ -47,7 +47,7 @@ def grad_method_validation(method, tape):
 
     diff_methods = {
         idx: info["grad_method"]
-        for idx, info in tape._par_info.items()
+        for idx, info in tape._par_info.items()  # pylint: disable=protected-access
         if idx in tape.trainable_params
     }
 

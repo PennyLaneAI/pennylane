@@ -170,18 +170,17 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
             # Compute the elements of the Hessian as the linear combination of
             # results and coefficients, barring optimization cases.
             if j < i:
-                g = hessian[j * h_dim + i]
+                hess = hessian[j * h_dim + i]
             elif s == 0:
-                g = qml.math.zeros(out_dim)
+                hess = qml.math.zeros(out_dim)
             else:
                 res = qml.math.stack(res)
-                hess = qml.math.convert_like(hessian_coeffs[k], res)
-                hess = qml.math.cast(hess, res.dtype)
-                g = qml.math.tensordot(res, hess, [[0], [0]])
+                coeffs = qml.math.cast(qml.math.convert_like(hessian_coeffs[k], res), res.dtype)
+                hess = qml.math.tensordot(res, coeffs, [[0], [0]])
                 if (i, j) in unshifted_coeffs:
-                    g += unshifted_coeffs[(i, j)] * r0
+                    hess = hess + unshifted_coeffs[(i, j)] * r0
 
-            hessian.append(g)
+            hessian.append(hess)
 
         # Reshape the Hessian to have the QNode output dimensions on the outside, that is:
         #    (h_dim*h_dim, *out_dims) -> (h_dim, h_dim, *out_dims) -> (*out_dims, h_dim, h_dim)
@@ -282,14 +281,15 @@ def param_shift_hessian(tape, f0=None):
         gate arguments generated from parameter-shift rules:
 
         >>> for h_tape in hessian_tapes:
-        ...     print(h_tape.draw())
-        0: ──RX(0.1)──RY(0.2)──┤ ⟨Z⟩
-        0: ──RX(3.24)──RY(0.2)──┤ ⟨Z⟩
-        0: ──RX(1.67)──RY(1.77)──┤ ⟨Z⟩
-        0: ──RX(-1.47)──RY(1.77)──┤ ⟨Z⟩
-        0: ──RX(1.67)──RY(-1.37)──┤ ⟨Z⟩
-        0: ──RX(-1.47)──RY(-1.37)──┤ ⟨Z⟩
-        0: ──RX(0.1)──RY(3.34)──┤ ⟨Z⟩
+        ...     print(qml.drawer.tape_text(h_tape, decimals=1))
+        0: ──RX(0.1)──RY(0.2)─┤  <Z>
+        0: ──RX(3.2)──RY(0.2)─┤  <Z>
+        0: ──RX(1.7)──RY(1.8)─┤  <Z>
+        0: ──RX(-1.5)──RY(1.8)─┤  <Z>
+        0: ──RX(1.7)──RY(-1.4)─┤  <Z>
+        0: ──RX(-1.5)──RY(-1.4)─┤  <Z>
+        0: ──RX(0.1)──RY(3.3)─┤  <Z>
+
     """
 
     # Perform input validation before generating tapes.
@@ -343,5 +343,10 @@ def param_shift_hessian(tape, f0=None):
 
     _gradient_analysis(tape)
     diff_methods = grad_method_validation("analytic", tape)
+
+    if all(g == "0" for g in diff_methods):
+        return [], lambda _: np.zeros(
+            [tape.output_dim, len(tape.trainable_params), len(tape.trainable_params)]
+        )
 
     return compute_hessian_tapes(tape, diff_methods, f0)

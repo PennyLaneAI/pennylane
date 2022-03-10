@@ -88,8 +88,8 @@ def layer(template, depth, *args, **kwargs):
         This creates the following circuit:
 
         >>> print(qml.draw(circuit)())
-        0: ──H──╭C──H──╭C──H──╭C─────┤ ⟨Z⟩
-        1: ─────╰X──X──╰X──X──╰X──X──┤ ⟨Z⟩
+        0: ──H─╭C──H─╭C──H─╭C────┤  <Z>
+        1: ────╰X──X─╰X──X─╰X──X─┤  <Z>
 
         **Static Arguments**
 
@@ -118,8 +118,8 @@ def layer(template, depth, *args, **kwargs):
         which yields the following circuit:
 
         >>> print(qml.draw(circuit)())
-        1: ──H──╭C──H──╭C──H──╭C─────┤ ⟨Z⟩
-        2: ─────╰X──X──╰X──X──╰X──X──┤ ⟨Z⟩
+        1: ──H─╭C──H─╭C──H─╭C────┤  <Z>
+        2: ────╰X──X─╰X──X─╰X──X─┤  <Z>
 
         **Dynamic Arguments**
 
@@ -159,8 +159,8 @@ def layer(template, depth, *args, **kwargs):
         which yields the following circuit:
 
         >>> print(qml.draw(circuit)(params))
-        0: ──RX(0.5)──╭RZ(0.5)──RX(0.4)──╭RZ(0.4)───────────┤ ⟨Z⟩
-        1: ───────────╰RZ(0.5)──RY(0.5)──╰RZ(0.4)──RY(0.4)──┤ ⟨Z⟩
+        0: ──RX(0.50)─╭MultiRZ(0.50)──RX(0.40)─╭MultiRZ(0.40)───────────┤  <Z>
+        1: ───────────╰MultiRZ(0.50)──RY(0.50)─╰MultiRZ(0.40)──RY(0.40)─┤  <Z>
 
         **Passing Multiple Static and Dynamic Arguments**
 
@@ -200,8 +200,9 @@ def layer(template, depth, *args, **kwargs):
         This gives us the following circuit:
 
         >>> print(qml.draw(circuit)(param1, param2))
-        1: ──RX(0.1)──╭RZ(0.3)──RX(0.2)──╭RZ(0.4)─────┤ ⟨Z⟩
-        2: ───────────╰RZ(0.3)──H────────╰RZ(0.4)──H──┤ ⟨Z⟩
+        1: ──RX(0.10)─╭MultiRZ(0.30)──RX(0.20)─╭MultiRZ(0.40)────┤  <Z>
+        2: ───────────╰MultiRZ(0.30)──H────────╰MultiRZ(0.40)──H─┤  <Z>
+
     """
 
     _preprocess(args, depth)

@@ -390,7 +390,7 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
 
         # for each operation in the layer, get the generator
         for op in curr_ops:
-            obs, s = qml.utils.get_generator(op)
+            obs, s = qml.generator(op)
             obs_list[-1].append(obs)
             coeffs_list[-1].append(s)
 
@@ -460,8 +460,8 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
 
     except KeyError as e:
         if allow_nonunitary:
-            gen, coeff = qml.utils.get_generator(op, return_matrix=True)
-            return qml.ControlledQubitUnitary(coeff * gen, control_wires=aux_wire, wires=op.wires)
+            mat = qml.matrix(qml.generator(op, format="observable"))
+            return qml.ControlledQubitUnitary(mat, control_wires=aux_wire, wires=op.wires)
 
         raise ValueError(
             f"Generator for operation {op} not known and non-unitary operations "
