@@ -153,7 +153,8 @@ Each configuration is drawn below:
      1: ──H────────S──╰C──╰┤ ⟨Z ⊗ Z⟩
 
 The last step is to execute the tapes and postprocess the results using
-:func:`~.qcut_processing_fn`, which converts the results into a tensor network contraction.
+:func:`~.qcut_processing_fn`, which processes the results to the original full circuit output via a
+tensor network contraction
 
 >>> results = qml.execute(tapes, dev, gradient_fn=None)
 >>> qml.transforms.qcut.qcut_processing_fn(
