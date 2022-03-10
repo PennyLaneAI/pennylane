@@ -237,7 +237,7 @@ class TestCVGradient:
 
     def test_cv_gradients_parameters_inside_array(self, gaussian_dev, tol):
         "Tests that free parameters inside an array passed to an Operation yield correct gradients."
-        par = [0.4, 1.3]
+        par = anp.array([0.4, 1.3], requires_grad=True)
 
         def qf(x, y):
             qml.Displacement(0.5, 0, wires=[0])
