@@ -413,7 +413,7 @@ class QuantumTape(AnnotatedQueue):
             if isinstance(obj, QuantumTape):
                 self._ops.append(obj)
 
-            elif isinstance(obj, qml.operation.Operation) and not info.get("owner", False):
+            elif isinstance(obj, qml.operation.Operator) and not info.get("owner", False):
                 # operation objects with no owners
 
                 if self._measurements:
@@ -422,7 +422,8 @@ class QuantumTape(AnnotatedQueue):
                     )
 
                 # invert the operation if required
-                obj.inverse = info.get("inverse", obj.inverse)
+                if isinstance(obj, qml.operation.Operation):
+                    obj.inverse = info.get("inverse", obj.inverse)
 
                 if isinstance(obj, STATE_PREP_OPS):
                     if self._ops:

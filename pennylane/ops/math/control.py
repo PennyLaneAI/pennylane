@@ -105,6 +105,42 @@ def c1_decomp(op: Rot):
         ]
 
 class Controlled(Operator):
+    r"""Wrapper denoting a controlled operation.
+
+    Args:
+        base (Operator): operation that is controlled
+        control_wires (Any): the wires to control the operation on
+        control_values (Bool, Iterable[Bool]): The values to control on, denoted by ``0``, ``1``,
+            ``True``, or ``False``.  Must be same length as ``control_wires``
+        work_wires (Any): optional work wires used to decompose the operation
+
+    **Example:**
+
+    The following is a CNOT gate:
+
+    >>> op = Controlled(qml.PauliX(1), 0)
+    >>> op.base
+    PauliX(wires=[1])
+    >>> op.get_matrix()
+    array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+       [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+       [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
+       [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
+    >>> op.control_wires
+    <Wires = [0]>
+
+    Integration doesn't work yet as device doesn't know what to do with it. We need to determine
+    simulator support based on a ``has_matrix`` property.
+
+    ... code-block:: python
+
+        @qml.qnode(qml.device('default.qubit', wires=(0,1)))
+        def circuit():
+            qml.PauliX(0)
+            Controlled(qml.PauliX(1), 0)
+            return qml.state()
+
+    """
     
     num_wires = AnyWires
 
@@ -134,24 +170,33 @@ class Controlled(Operator):
 
     @property
     def control_wires(self):
+        """The control wires."""
         return self._control_wires
 
     @property
     def work_wires(self):
+        """Any work wires."""
         return self._work_wires
 
     @property
     def target_wires(self):
+        """Wires of the base gate."""
         return self.base.wires
 
     @property
     def control_values(self):
+        """The values to control on."""
         return self._control_values
 
     @property
-    def parameters(self):
-        return self.base.parameters
+    def data(self):
+        """Base gate data."""
+        return self.base.data
     
+    @property
+    def basis(self):
+        return self.base.basis
+
     def label(self, decimals=None, base_label=None):
         return self.base.label(decimals=decimals, base_label=base_label)
     
@@ -188,6 +233,10 @@ class Controlled(Operator):
             except NoDecompositionShortcut:
                 pass
         return qml.operation.DecompositionUndefinedError
+
+    @staticmethod
+    def compute_eigvals(*args, **kwargs):
+        raise qml.operation.EigvalsUndefinedError
 
     def generator(self):
         sub_gen = self.base.generator()
