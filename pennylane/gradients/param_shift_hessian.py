@@ -16,8 +16,9 @@ This module contains functions for computing the parameter-shift hessian
 of a qubit-based quantum tape.
 """
 import warnings
-import numpy as np
 from collections.abc import Sequence
+
+import numpy as np
 
 import pennylane as qml
 
@@ -153,6 +154,7 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
 
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        # pylint: disable=protected-access
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
             results = qml.math.squeeze(qml.math.stack(results))
 
@@ -192,9 +194,7 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
         # Remember: h_dim = num_gate_args
         hessian = qml.math.reshape(qml.math.stack(hessian), (h_dim, h_dim) + out_dim)
         reordered_axes = list(range(2, len(out_dim) + 2)) + [0, 1]
-        hessian = qml.math.transpose(hessian, axes=reordered_axes)
-
-        return hessian
+        return qml.math.transpose(hessian, axes=reordered_axes)
 
     return hessian_tapes, processing_fn
 

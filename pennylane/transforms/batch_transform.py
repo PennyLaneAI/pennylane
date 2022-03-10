@@ -19,7 +19,6 @@ import inspect
 import os
 import types
 import warnings
-from collections.abc import Sequence
 
 import pennylane as qml
 

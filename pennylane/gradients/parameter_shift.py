@@ -17,8 +17,9 @@ of a qubit-based quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-statements
 import warnings
-import numpy as np
 from collections.abc import Sequence
+
+import numpy as np
 
 import pennylane as qml
 
@@ -236,6 +237,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
 
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        # pylint: disable=protected-access
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
             results = qml.math.squeeze(qml.math.stack(results))
 
@@ -374,6 +376,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
 
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        # pylint: disable=protected-access
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
             results = qml.math.squeeze(qml.math.stack(results))
 
