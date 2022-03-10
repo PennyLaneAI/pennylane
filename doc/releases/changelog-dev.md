@@ -397,6 +397,10 @@
   the four-term parameter shift rule. The correct eight-term rule will now be used when
   using the parameter-shift rule.
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
+  
+* Fixes a bug where `qml.gradients.param_shift_hessian` would produce an
+  error whenever all elements of the Hessian are known in advance to be 0.
+  [(#2299)](https://github.com/PennyLaneAI/pennylane/pull/2299)
 
 <h3>Documentation</h3>
 
