@@ -17,13 +17,7 @@ Unit tests for functions needed for computing the Hamiltonian.
 import pennylane as qml
 import pytest
 from pennylane import numpy as np
-from pennylane.hf.observable import (
-    _pauli_mult,
-    fermionic_observable,
-    jordan_wigner,
-    qubit_observable,
-    simplify,
-)
+from pennylane import qchem
 
 
 @pytest.mark.parametrize(
@@ -194,7 +188,7 @@ from pennylane.hf.observable import (
 )
 def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
     r"""Test that fermionic_observable returns the correct fermionic observable."""
-    f = fermionic_observable(core_constant, integral_one, integral_two)
+    f = qchem.hf.fermionic_observable(core_constant, integral_one, integral_two)
     print(f)
     assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
     assert f[1] == f_ref[1]  # fermionic operators
@@ -243,7 +237,7 @@ def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
 def test_qubit_observable(f_observable, q_observable):
     r"""Test that qubit_observable returns the correct operator."""
     print(f_observable)
-    h = qubit_observable(f_observable)
+    h = qchem.hf.qubit_observable(f_observable)
     h_ref = qml.Hamiltonian(q_observable[0], q_observable[1])
 
     assert h.compare(h_ref)
@@ -299,7 +293,7 @@ def test_qubit_observable(f_observable, q_observable):
 )
 def test_jordan_wigner(f_obs, q_obs):
     r"""Test that jordan_wigner returns the correct operator."""
-    res = jordan_wigner(f_obs)
+    res = qchem.hf.jordan_wigner(f_obs)
     assert qml.Hamiltonian(res[0], res[1]).compare(qml.Hamiltonian(q_obs[0], q_obs[1]))
 
 
@@ -315,7 +309,7 @@ def test_jordan_wigner(f_obs, q_obs):
 )
 def test_jordan_wigner_zero_output(f_obs, q_obs):
     r"""Test that jordan_wigner returns the correct operator."""
-    res = jordan_wigner(f_obs)
+    res = qchem.hf.jordan_wigner(f_obs)
     assert res == q_obs
 
 
@@ -331,7 +325,7 @@ def test_jordan_wigner_zero_output(f_obs, q_obs):
 )
 def test_pauli_mult(p1, p2, p_ref):
     r"""Test that _pauli_mult returns the correct operator."""
-    result = _pauli_mult(p1, p2)
+    result = qchem.hf._pauli_mult(p1, p2)
 
     assert result == p_ref
 
@@ -378,5 +372,5 @@ def test_pauli_mult(p1, p2, p_ref):
 )
 def test_simplify(hamiltonian, result):
     r"""Test that simplify returns the correct hamiltonian."""
-    h = simplify(hamiltonian)
+    h = qchem.hf.simplify(hamiltonian)
     assert h.compare(result)

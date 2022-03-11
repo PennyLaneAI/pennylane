@@ -18,7 +18,7 @@ import pennylane as qml
 import pytest
 from pennylane import Identity, PauliX, PauliY, PauliZ
 from pennylane import numpy as np
-from pennylane.hf.spin import _spin2_matrix_elements, spin2, spinz
+from pennylane import qchem
 
 
 @pytest.mark.parametrize(
@@ -108,7 +108,7 @@ def test_spin2_matrix_elements(n_spin_orbs, matrix_ref):
 
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
-    s2_me_result = _spin2_matrix_elements(sz)
+    s2_me_result = qchem.hf._spin2_matrix_elements(sz)
 
     assert np.allclose(s2_me_result, matrix_ref)
 
@@ -170,7 +170,7 @@ def test_spin2(electrons, orbitals, coeffs_ref, ops_ref):
     r"""Tests the correctness of the total spin observable :math:`\hat{S}^2`
     built by the function `'spin2'`.
     """
-    s2 = spin2(electrons, orbitals)
+    s2 = qchem.hf.spin2(electrons, orbitals)
     s2_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
 
     assert s2.compare(s2_ref)
@@ -190,7 +190,7 @@ def test_exception_spin2(electrons, orbitals, msg_match):
     number of electrons or the number of orbitals is less than zero."""
 
     with pytest.raises(ValueError, match=msg_match):
-        spin2(electrons, orbitals)
+        qchem.hf.spin2(electrons, orbitals)
 
 
 @pytest.mark.parametrize(
@@ -219,7 +219,7 @@ def test_spinz(orbitals, coeffs_ref, ops_ref):
     r"""Tests the correctness of the :math:`\hat{S}_z` observable built by the
     function `'spin_z'`.
     """
-    sz = spinz(orbitals)
+    sz = qchem.hf.spinz(orbitals)
     sz_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
 
     assert sz.compare(sz_ref)
@@ -237,4 +237,4 @@ def test_exception_spinz(orbitals, msg_match):
     number of orbitals is less than zero."""
 
     with pytest.raises(ValueError, match=msg_match):
-        spinz(orbitals)
+        qchem.hf.spinz(orbitals)

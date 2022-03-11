@@ -17,8 +17,7 @@ Unit tests for for Hartree-Fock functions.
 import autograd
 import pytest
 from pennylane import numpy as np
-from pennylane.hf.hartree_fock import generate_scf, hf_energy, nuclear_energy
-from pennylane.hf.molecule import Molecule
+from pennylane import qchem
 
 
 @pytest.mark.parametrize(
@@ -47,9 +46,9 @@ from pennylane.hf.molecule import Molecule
     ],
 )
 def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_tensor):
-    r"""Test that generate_scf returns the correct values."""
-    mol = Molecule(symbols, geometry)
-    v, c, f, h, e = generate_scf(mol)()
+    r"""Test that scf returns the correct values."""
+    mol = qchem.hf.Molecule(symbols, geometry)
+    v, c, f, h, e = qchem.hf.scf(mol)()
 
     assert np.allclose(v, v_fock)
     assert np.allclose(c, coeffs)
@@ -86,8 +85,8 @@ def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_t
 )
 def test_hf_energy(symbols, geometry, charge, e_ref):
     r"""Test that hf_energy returns the correct energy."""
-    mol = Molecule(symbols, geometry, charge=charge)
-    e = hf_energy(mol)()
+    mol = qchem.hf.Molecule(symbols, geometry, charge=charge)
+    e = qchem.hf.hf_energy(mol)()
     assert np.allclose(e, e_ref)
 
 
@@ -111,9 +110,9 @@ def test_hf_energy(symbols, geometry, charge, e_ref):
 def test_hf_energy_gradient(symbols, geometry, g_ref):
     r"""Test that the gradient of the Hartree-Fock energy wrt differentiable parameters is
     correct."""
-    mol = Molecule(symbols, geometry)
+    mol = qchem.hf.Molecule(symbols, geometry)
     args = [mol.coordinates]
-    g = autograd.grad(hf_energy(mol))(*args)
+    g = autograd.grad(qchem.hf.hf_energy(mol))(*args)
 
     assert np.allclose(g, g_ref)
 
@@ -141,9 +140,9 @@ def test_hf_energy_gradient(symbols, geometry, g_ref):
 )
 def test_nuclear_energy(symbols, geometry, e_ref):
     r"""Test that nuclear_energy returns the correct energy."""
-    mol = Molecule(symbols, geometry)
+    mol = qchem.hf.Molecule(symbols, geometry)
     args = [mol.coordinates]
-    e = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
+    e = qchem.hf.nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(e, e_ref)
 
 
@@ -165,7 +164,7 @@ def test_nuclear_energy(symbols, geometry, e_ref):
 )
 def test_nuclear_energy_gradient(symbols, geometry, g_ref):
     r"""Test that nuclear energy gradients are correct."""
-    mol = Molecule(symbols, geometry)
+    mol = qchem.hf.Molecule(symbols, geometry)
     args = [mol.coordinates]
-    g = autograd.grad(nuclear_energy(mol.nuclear_charges, mol.coordinates))(*args)
+    g = autograd.grad(qchem.hf.nuclear_energy(mol.nuclear_charges, mol.coordinates))(*args)
     assert np.allclose(g, g_ref)

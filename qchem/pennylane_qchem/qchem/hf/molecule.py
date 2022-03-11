@@ -19,9 +19,10 @@ import itertools
 
 # pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
 from pennylane import numpy as np
-from pennylane.hf.basis_data import atomic_numbers
-from pennylane.hf.basis_set import BasisFunction, mol_basis_data
-from pennylane.hf.integrals import primitive_norm, contracted_norm
+
+from .basis_data import atomic_numbers
+from .basis_set import BasisFunction, mol_basis_data
+from .integrals import contracted_norm, primitive_norm
 
 
 class Molecule:
@@ -172,7 +173,7 @@ class Molecule:
         >>> symbols  = ['H', 'H']
         >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
         >>> mol = qml.hf.Molecule(symbols, geometry)
-        >>> qml.hf.generate_scf(mol)() # run scf to obtain the optimized molecular orbitals
+        >>> qml.hf.scf(mol)() # run scf to obtain the optimized molecular orbitals
         >>> mo = mol.molecular_orbital(1)
         >>> mo(0.0, 0.0, 0.0)
         0.01825128

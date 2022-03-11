@@ -17,9 +17,11 @@ This module contains the functions needed for computing the dipole moment.
 import autograd.numpy as anp
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.hf.basis_data import atomic_numbers
-from pennylane.hf.matrices import moment_matrix
-from pennylane.hf.observable import fermionic_observable, qubit_observable
+
+from .basis_data import atomic_numbers
+from .hartree_fock import scf
+from .matrices import moment_matrix
+from .observable import fermionic_observable, qubit_observable
 
 
 def dipole_integrals(mol, core=None, active=None):
@@ -103,7 +105,7 @@ def dipole_integrals(mol, core=None, active=None):
             tuple[array[float]]: tuple containing the core orbital contributions and the dipole
             moment integrals
         """
-        _, coeffs, _, _, _ = qml.hf.scf(mol)(*args)
+        _, coeffs, _, _, _ = scf(mol)(*args)
 
         # x, y, z components
         d_x = anp.einsum(
@@ -136,7 +138,7 @@ def dipole_integrals(mol, core=None, active=None):
     return _dipole_integrals
 
 
-def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
+def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
     r"""Return a function that builds the fermionic dipole moment observable.
 
     The dipole operator in the second-quantized form is
@@ -221,7 +223,7 @@ def fermionic_dipole(mol, cutoff=1.0e-12, core=None, active=None):
     return _fermionic_dipole
 
 
-def dipole_moment(mol, cutoff=1.0e-12, core=None, active=None):
+def dipole_moment(mol, cutoff=1.0e-18, core=None, active=None):
     r"""Return a function that computes the qubit dipole moment observable.
 
     The dipole operator in the second-quantized form is
