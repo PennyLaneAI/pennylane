@@ -409,6 +409,10 @@
   `qml.gradients` module should be used, together with the operation attributes
   `parameter_frequencies` or `grad_recipe`.
 
+* The `Operator.decomposition` method has been deprecated and
+  `Operator.compute_decomposition` should be used instead.
+  [#2214](https://github.com/PennyLaneAI/pennylane/pull/2214)
+
 * The `qml.finite_diff()` function has been deprecated and will be removed
   in an upcoming release. Instead,
   `qml.gradients.finite_diff()` can be used to compute purely quantum gradients
@@ -612,6 +616,6 @@ The Operator class has undergone a major refactor with the following changes:
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Jack Y. Araz, Sam Banning, Thomas Bromley, Olivia Di
-Matteo, Anthony Hayes, David Ittah, Josh Izaac, Christina Lee, Angus Lowe,
-Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni, Antal
-Száva, David Wierichs
+Matteo, Christian Gogolin, Diego Guala, Anthony Hayes, David Ittah, Josh Izaac,
+Nathan Killoran, Christina Lee, Angus Lowe, Maria Fernanda Morris, Romain
+Moyard, Zeyue Niu, Maria Schuld, Jay Soni, Antal Száva, David Wierichs
