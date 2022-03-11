@@ -66,9 +66,8 @@ def batch_input(
             qml.RY(weights[1], wires=1)
             return qml.expval(qml.PauliZ(1))
 
-    >>> x = np.random.uniform(0,1,(10,2))
-    >>> x.requires_grad = False
-    >>> w = np.random.uniform(0,1,2)
+    >>> x = np.random.uniform(0, 1, (10, 2), requires_grad=False)
+    >>> w = np.random.uniform(0, 1, 2, requires_grad=True)
     >>> circuit(x, w)
     <tf.Tensor: shape=(10,), dtype=float64, numpy=
     array([0.17926078, 0.7480163 , 0.47816999, 0.50381628, 0.349178  ,
