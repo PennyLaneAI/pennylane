@@ -205,7 +205,8 @@ def simplify_rotation(rot):
 
 
 def simplify_controlled_rotation(crot):
-    r"""Simplify a general one qubit controlled rotation into CRX, CRY, CRZ and CH.
+    r"""Simplify a general one qubit controlled rotation into CRX, CRY, CRZ and
+    Controlled Hadamard.
 
     Args:
         crot (pennylane.CRot): One qubit controlled rotation.
@@ -286,8 +287,8 @@ def simplify_u3(u3):
 def simplify(operation):
     r"""Simplify the (controlled) rotation operations :class:`~.Rot`,
     :class:`~.U2`, :class:`~.U3`, and :class:`~.CRot` into one of
-    :class:`~.RX`, :class:`~.CRX`, :class:`~.RY`, :class:`~.CRY`, :class:`~.`RZ`,
-    :class:`~.CZ`, :class:`~.H` and :class:`~.CH` where possible.
+    :class:`~.RX`, :class:`~.CRX`, :class:`~.RY`, :class:`~.CRY`, :class:`~.RZ`,
+    :class:`~.CZ`, :class:`~.Hadamard` and controlled Hadamard where possible.
 
     Args:
         operation (.Operation): Rotation or controlled rotation.
