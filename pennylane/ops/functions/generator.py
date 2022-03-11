@@ -107,10 +107,10 @@ def generator(op, format="prefactor"):
             ``'observable'``, or ``'hamiltonian'``. See below for more details.
 
     Returns:
-        .Observable or tuple[float, .Observable]: The returned generator, with format/type
+        .Observable or tuple[.Observable, float]: The returned generator, with format/type
         dependent on the ``format`` argument.
 
-        * ``"prefactor"``: Return the generator as ```(obs, prefactor)`` (representing
+        * ``"prefactor"``: Return the generator as ``(obs, prefactor)`` (representing
           :math:`G=p \hat{O}`), where:
 
           - observable :math:`\hat{O}` is one of :class:`~.Hermitian`,
