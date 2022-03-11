@@ -364,14 +364,14 @@
 
 * Executing tapes using `tape.execute(dev)` is deprecated.
   Please use the `qml.execute([tape], dev)` function instead.
-  [(#)]()
+  [(#2306)](https://github.com/PennyLaneAI/pennylane/pull/2306)
 
 * The subclasses of the quantum tape, including `JacobianTape`, `QubitParamShiftTape`,
   `CVParamShiftTape`, and `ReversibleTape` are deprecated. Instead of calling
   `JacobianTape.jacobian()` and `JacobianTape.hessian()`,
   please use a standard `QuantumTape`, and apply gradient transforms using
   the `qml.gradients` module.
-  [(#)]()
+  [(#2306)](https://github.com/PennyLaneAI/pennylane/pull/2306)
 
 * The `qml.operation.Operation.get_parameter_shift` method has been deprecated
   and will be removed in a future release.
