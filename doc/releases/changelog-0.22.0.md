@@ -20,6 +20,7 @@
   [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
   [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216)
   [(#2168)](https://github.com/PennyLaneAI/pennylane/pull/2168)
+  [(#2223)](https://github.com/PennyLaneAI/pennylane/pull/2223)
   [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
   [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
   [(#2244)](https://github.com/PennyLaneAI/pennylane/pull/2244)
@@ -354,6 +355,10 @@
 
 <h3>Improvements</h3>
 
+* Most compilation transforms, and relevant subroutines, have been updated to
+  support just-in-time compilation with `jax.jit`.
+  [(#1894)](https://github.com/PennyLaneAI/pennylane/pull/1894/)
+
 * The `qml.draw_mpl` transform supports a `expansion_strategy` keyword argument.
   [(#2271)](https://github.com/PennyLaneAI/pennylane/pull/2271/)
 
@@ -398,6 +403,9 @@
   The single `wires` keyword should be all the control wires followed by a single target wire.
   [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
   [(#2278)](https://github.com/PennyLaneAI/pennylane/pull/2278)
+
+* Renamed the `pennylane.measure.py` file to `pennylane.measurements.py`.
+  [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
 
 <h3>Deprecations</h3>
 
@@ -482,6 +490,9 @@
 * Ensures that signatures of `@qml.qfunc_transform` decorated functions
   display correctly in the docs.
   [(#2286)](https://github.com/PennyLaneAI/pennylane/pull/2286)
+
+* Docstring examples now display using the updated text-based circuit drawer.
+  [(#2252)](https://github.com/PennyLaneAI/pennylane/pull/2252)
 
 * Add docstring to `OrbitalRotation.grad_recipe`.
   [(#2193)](https://github.com/PennyLaneAI/pennylane/pull/2193)
@@ -615,7 +626,9 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Jack Y. Araz, Sam Banning, Thomas Bromley, Olivia Di
-Matteo, Christian Gogolin, Diego Guala, Anthony Hayes, David Ittah, Josh Izaac,
-Nathan Killoran, Christina Lee, Angus Lowe, Maria Fernanda Morris, Romain
-Moyard, Zeyue Niu, Maria Schuld, Jay Soni, Antal Száva, David Wierichs
+Catalina Albornoz, Juan Miguel Arrazola, Jack Y. Araz, Ali Asadi, Utkarsh Azad,
+Sam Banning, Thomas Bromley, Olivia Di Matteo, Christian Gogolin, Diego Guala,
+Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Nathan Killoran,
+Christina Lee, Angus Lowe, Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Lee
+James O'Riordan, Chae-Yeun Park, Maria Schuld, Jay Soni, Antal Száva, David
+Wierichs
