@@ -112,6 +112,7 @@ There are also low-level functions that can be used to build up the circuit cutt
 .. autosummary::
     :toctree: api
 
+    ~transforms.qcut.contract_tensors
     ~transforms.qcut.tape_to_graph
     ~transforms.qcut.replace_wire_cut_nodes
     ~transforms.qcut.fragment_graph
