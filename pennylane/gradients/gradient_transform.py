@@ -22,7 +22,30 @@ from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 def gradient_analysis(tape, use_graph=True, grad_fn=None):
     """Update the parameter information dictionary of the tape with
-    gradient information of each parameter."""
+    gradient information of each parameter.
+
+    Parameter gradient methods include:
+
+    * ``None``: the parameter does not support differentiation.
+
+    * ``"0"``: the variational circuit output does not depend on this
+      parameter (the partial derivative is zero).
+
+    In addition, the operator might define its own grad method
+    via :attr:`.Operator.grad_method`.
+
+    Note that this function modifies the input tape in-place.
+
+    Args:
+        tape (.QuantumTape): the quantum tape to analyze
+        use_graph (bool): whether to use a directed-acyclic graph to determine
+            if the parameter has a gradient of 0
+        grad_fn (None or callable): The gradient transform performing the analysis.
+            This is an optional argument; if provided, and the tape has already
+            been analyzed for the gradient information by the same gradient transform,
+            the cached gradient analysis will be used.
+    """
+    # pylint:disable=protected-access
     if grad_fn is not None and getattr(tape, "_gradient_fn", None) is grad_fn:
         # gradient analysis has already been performed on this tape
         return
