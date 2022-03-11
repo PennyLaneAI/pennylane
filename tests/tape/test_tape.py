@@ -1710,6 +1710,7 @@ class TestHashing:
 
         assert tape1.hash == tape2.hash
 
+
 class TestTapeDraw:
     """Test the tape draw method."""
 
