@@ -24,7 +24,6 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.wires import Wires
-from .drawer import CircuitDrawer
 
 
 def _by_idx(x):
@@ -620,37 +619,6 @@ class CircuitGraph:
 
         self._operations = self.operations_in_order
         self._observables = self.observables_in_order
-
-    def draw(self, charset="unicode", wire_order=None, show_all_wires=False, max_length=None):
-        """Draw the CircuitGraph as a circuit diagram.
-
-        Args:
-            charset (str, optional): The charset that should be used. Currently, "unicode" and "ascii" are supported.
-            wire_order (Wires or None): the order (from top to bottom) to print the wires of the circuit
-            show_all_wires (bool): If True, all wires, including empty wires, are printed.
-            max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
-
-        Raises:
-            ValueError: If the given charset is not supported
-
-        Returns:
-            str: The circuit diagram representation of the ``CircuitGraph``
-        """
-        if wire_order is not None:
-            wire_order = qml.wires.Wires.all_wires([wire_order, self.wires])
-
-        grid, obs = self.greedy_layers(wire_order=wire_order, show_all_wires=show_all_wires)
-
-        drawer = CircuitDrawer(
-            grid,
-            obs,
-            wires=wire_order or self.wires,
-            charset=charset,
-            show_all_wires=show_all_wires,
-            max_length=max_length,
-        )
-
-        return drawer.draw()
 
     def get_depth(self):
         """Depth of the quantum circuit (longest path in the DAG)."""

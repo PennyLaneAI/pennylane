@@ -10,8 +10,13 @@
 
 <h3>Deprecations</h3>
 
+* `qml.drawer.CircuitDrawer`, `qml.drawer.CHARSETS`, `qml.drawer.drawable_grid`, `RepresentationResolver`,
+  `Grid`, `qml.transforms.draw_old` and `qml.CircuitGraph.draw` have all been deleted. `qml.tape.QuantumTape.draw` calls `qml.drawer.tape_text`, the prefered way to draw a Quantum Tape.
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
+
+Christina Lee

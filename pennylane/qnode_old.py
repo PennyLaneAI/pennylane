@@ -732,7 +732,7 @@ class QNode:
         return qml.math.squeeze(res)
 
     def draw(
-        self, charset="unicode", wire_order=None, show_all_wires=False, max_length=None
+        self, wire_order=None, show_all_wires=False, max_length=100
     ):  # pylint: disable=unused-argument
         """Draw the quantum tape as a circuit diagram.
 
@@ -828,7 +828,6 @@ class QNode:
             )
 
         return self.qtape.draw(
-            charset=charset,
             wire_order=wire_order,
             show_all_wires=show_all_wires,
             max_length=max_length,
