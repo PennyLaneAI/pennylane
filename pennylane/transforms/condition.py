@@ -162,7 +162,7 @@ def cond(condition, true_fn, false_fn=None):
                 qml.RZ(x, wires[0])
 
             @qml.qnode(dev)
-            def qnode(x):
+            def qnode1(x):
                 qml.Hadamard(0)
                 m_0 = qml.measure(0)
                 qml.cond(m_0, qfunc1, qfunc2)(x, wires=[1])
@@ -171,7 +171,7 @@ def cond(condition, true_fn, false_fn=None):
         .. code-block :: pycon
 
             >>> par = np.array(0.3, requires_grad=True)
-            >>> qnode(par)
+            >>> qnode1(par)
             tensor(-0.1477601, requires_grad=True)
 
         The previous QNode is equivalent to using ``cond`` twice, inverting the
@@ -191,7 +191,7 @@ def cond(condition, true_fn, false_fn=None):
         .. code-block :: pycon
 
             >>> qnode2(par)
-            tensor(0.97766824, requires_grad=True)
+            tensor(-0.1477601, requires_grad=True)
 
         **Quantum functions with different signatures**
 
