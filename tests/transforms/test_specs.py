@@ -14,6 +14,7 @@
 """Unit tests for the specs transform"""
 import pytest
 from collections import defaultdict
+from contextlib import nullcontext
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -180,8 +181,13 @@ class TestSpecsTransformBetaQNode:
         def circ():
             return qml.expval(qml.PauliZ(0))
 
-        info_func = qml.specs(circ)
-        info = info_func()
+        with (
+            pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters")
+            if diff_method == "parameter-shift"
+            else nullcontext()
+        ):
+            info_func = qml.specs(circ)
+            info = info_func()
         assert len(info) == len_info
 
         assert info["gate_sizes"] == defaultdict(int)
@@ -313,7 +319,8 @@ class TestSpecsTransformBetaQNode:
         def circuit():
             return qml.probs(wires=0)
 
-        info = qml.specs(circuit)()
+        with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
+            info = qml.specs(circuit)()
         assert info["diff_method"] == "pennylane.gradients.parameter_shift.param_shift"
         assert info["gradient_fn"] == "pennylane.gradients.parameter_shift.param_shift"
 

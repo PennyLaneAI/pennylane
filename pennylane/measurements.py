@@ -193,7 +193,7 @@ class MeasurementProcess:
         rotation and a measurement in the computational basis.
 
         Returns:
-            .JacobianTape: a quantum tape containing the operations
+            .QuantumTape: a quantum tape containing the operations
             required to diagonalize the observable
 
         **Example**
@@ -224,9 +224,7 @@ class MeasurementProcess:
         if self.obs is None:
             raise qml.operation.DecompositionUndefinedError
 
-        from pennylane.tape import JacobianTape  # pylint: disable=import-outside-toplevel
-
-        with JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             self.obs.diagonalizing_gates()
             MeasurementProcess(
                 self.return_type, wires=self.obs.wires, eigvals=self.obs.get_eigvals()

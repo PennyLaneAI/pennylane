@@ -242,59 +242,73 @@
   for theoretical background information on the general
   parameter-shift rule.
 
-* Continued development of the circuit-cutting compiler:
+* Support for circuit cutting has been added ✂️
 
-  - A method for converting a quantum tape to a directed multigraph that is amenable
-    to graph partitioning algorithms for circuit cutting has been added.
-    [(#2107)](https://github.com/PennyLaneAI/pennylane/pull/2107)
-
-  - A method to replace `WireCut` nodes in a directed multigraph with `MeasureNode`
-    and `PrepareNode` placeholders has been added.
-    [(#2124)](https://github.com/PennyLaneAI/pennylane/pull/2124)
-
-  - A method has been added that takes a directed multigraph with `MeasureNode` and
-    `PrepareNode` placeholders and fragments into subgraphs and a communication graph.
-    [(#2153)](https://github.com/PennyLaneAI/pennylane/pull/2153)
-
-  - A method has been added that takes a directed multigraph with `MeasureNode`
-    and `PrepareNode` placeholder nodes and converts it into a tape.
-    [(#2165)](https://github.com/PennyLaneAI/pennylane/pull/2165)
-
-  - A differentiable tensor contraction function `contract_tensors` has been
-    added.
-    [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
-
-  - A method has been added that expands a quantum tape over `MeasureNode` and `PrepareNode`
-    configurations.
-    [(#2169)](https://github.com/PennyLaneAI/pennylane/pull/2169)
-
-  - The postprocessing function for the `cut_circuit` transform has been added.
-    [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
-    
-  - The `cut_circuit` transform has been added.
-    [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216)
-
-  - A class `CutStrategy` which acts as an interface and coordinates device/user
-    constraints with circuit execution requirements to come up with the best sets
-    of graph partitioning parameters.
-    [(#2168)](https://github.com/PennyLaneAI/pennylane/pull/2168)
-
-  - A suite of integration tests has been added.
-    [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
-    [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
-    [(#2244)](https://github.com/PennyLaneAI/pennylane/pull/2244)
-    [(#2251)](https://github.com/PennyLaneAI/pennylane/pull/2251)
-    [(#2265)](https://github.com/PennyLaneAI/pennylane/pull/2265)
-
-  - Circuit fragments that are disconnected from the terminal measurements are now removed.
-    [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
+  Users can now run `N`-qubit circuits on devices with fewer than `N` qubits by strategically
+  placing `WireCut` operations that allow their circuit to be partitioned into smaller fragments,
+  at a cost of needing to perform a greater number of device executions. Circuit cutting is enabled
+  by decorating a QNode with the `@qml.cut_circuit` transform.
+  [(#2107)](https://github.com/PennyLaneAI/pennylane/pull/2107)
+  [(#2124)](https://github.com/PennyLaneAI/pennylane/pull/2124)
+  [(#2153)](https://github.com/PennyLaneAI/pennylane/pull/2153)
+  [(#2165)](https://github.com/PennyLaneAI/pennylane/pull/2165)
+  [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
+  [(#2169)](https://github.com/PennyLaneAI/pennylane/pull/2169)
+  [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
+  [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216)
+  [(#2168)](https://github.com/PennyLaneAI/pennylane/pull/2168)
+  [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
+  [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
+  [(#2244)](https://github.com/PennyLaneAI/pennylane/pull/2244)
+  [(#2251)](https://github.com/PennyLaneAI/pennylane/pull/2251)
+  [(#2265)](https://github.com/PennyLaneAI/pennylane/pull/2265)
+  [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
+  [(#2260)](https://github.com/PennyLaneAI/pennylane/pull/2260)
+  [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
+  [(#2279)](https://github.com/PennyLaneAI/pennylane/pull/2279)
   
-  - `WireCut` operations that do not lead to a disconnection are now being removed.
-    [(#2260)](https://github.com/PennyLaneAI/pennylane/pull/2260)
+  The example below shows how a three-qubit circuit can be run on a two-qubit device:
   
-  - Circuit cutting now remaps the wires of fragment circuits to match the available wires on the
-    device.
-    [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.cut_circuit
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.RY(0.9, wires=1)
+      qml.RX(0.3, wires=2)
+
+      qml.CZ(wires=[0, 1])
+      qml.RY(-0.4, wires=0)
+
+      qml.WireCut(wires=1)
+
+      qml.CZ(wires=[1, 2])
+
+      return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+  ```
+  
+  Instead of executing the circuit directly, it will be partitioned into smaller fragments
+  according to the `WireCut` locations, and each fragment executed multiple times. Combining the
+  results of the fragment executions will recover the expected output of the original uncut circuit.
+  
+    ```pycon
+  >>> x = np.array(0.531, requires_grad=True)
+  >>> circuit(0.531)
+  0.47165198882111165
+  ```
+
+  Circuit cutting support is also differentiable:
+  
+  ```pycon
+  >>> qml.grad(circuit)(x)
+  -0.276982865449393
+  ```
+  
+  For more details on circuit cutting, check out the
+  [qml.cut_circuit](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.cut_circuit.html)
+  documentation page or [Peng et. al](https://arxiv.org/abs/1904.00102).
 
 * A method to batch the non-trainable inputs for machine learning applications has been added.
   [(#2069)](https://github.com/PennyLaneAI/pennylane/pull/2069)
@@ -348,6 +362,17 @@
 
 <h3>Deprecations</h3>
 
+* Executing tapes using `tape.execute(dev)` is deprecated.
+  Please use the `qml.execute([tape], dev)` function instead.
+  [(#2306)](https://github.com/PennyLaneAI/pennylane/pull/2306)
+
+* The subclasses of the quantum tape, including `JacobianTape`, `QubitParamShiftTape`,
+  `CVParamShiftTape`, and `ReversibleTape` are deprecated. Instead of calling
+  `JacobianTape.jacobian()` and `JacobianTape.hessian()`,
+  please use a standard `QuantumTape`, and apply gradient transforms using
+  the `qml.gradients` module.
+  [(#2306)](https://github.com/PennyLaneAI/pennylane/pull/2306)
+
 * The `qml.operation.Operation.get_parameter_shift` method has been deprecated
   and will be removed in a future release.
   [#2227](https://github.com/PennyLaneAI/pennylane/pull/2227)
@@ -397,6 +422,10 @@
   the four-term parameter shift rule. The correct eight-term rule will now be used when
   using the parameter-shift rule.
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
+  
+* Fixes a bug where `qml.gradients.param_shift_hessian` would produce an
+  error whenever all elements of the Hessian are known in advance to be 0.
+  [(#2299)](https://github.com/PennyLaneAI/pennylane/pull/2299)
 
 <h3>Documentation</h3>
 
