@@ -139,7 +139,7 @@ def cond(condition, true_fn, false_fn=None):
             >>> qnode(par)
             tensor(0.3522399, requires_grad=True)
 
-        **Conditional quantum functions in the ``False`` case**
+        **Passing two quantum functions**
 
         In the qubit model, single-qubit measurements may result in one of two
         outcomes. Such measurement outcomes may then be used to create
@@ -195,8 +195,8 @@ def cond(condition, true_fn, false_fn=None):
 
         **Quantum functions with different signatures**
 
-        It may be that the two quantum functions passed to `qml.cond` have
-        different signatures. In such a case `lambda` functions taking no
+        It may be that the two quantum functions passed to ``qml.cond`` have
+        different signatures. In such a case, ``lambda`` functions taking no
         arguments can be used with Python closure:
 
         .. code-block:: python3
