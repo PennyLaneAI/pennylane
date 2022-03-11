@@ -33,6 +33,29 @@ class Snapshot(Operation):
     Args:
         tag (str or None): An optional custom tag for the snapshot, used to index it
                            in the snapshots dictionary.
+
+    **Example**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=None)
+        def circuit():
+            qml.Snapshot()
+            qml.Hadamard(wires=0)
+            qml.Snapshot("very_important_state")
+            qml.CNOT(wires=[0, 1])
+            qml.Snapshot()
+            return qml.expval(qml.PauliX(0))
+
+    >>> qml.snapshots(circuit)()
+    {0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),
+    'very_important_state': array([0.70710678+0.j, 0.+0.j, 0.70710678+0.j, 0.+0.j]),
+    2: array([0.70710678+0.j, 0.+0.j, 0.+0.j, 0.70710678+0.j]),
+    'execution_results': array(0.)}
+
+    .. seealso:: :meth:`~.snapshots`
     """
     num_wires = AnyWires
     num_params = 0
