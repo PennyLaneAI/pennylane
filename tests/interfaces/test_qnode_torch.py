@@ -148,33 +148,6 @@ class TestQNode:
         assert np.allclose(res1, res2.detach().numpy(), atol=tol, rtol=0)
         assert np.allclose(grad1, grad2, atol=tol, rtol=0)
 
-    def test_drawing(self, dev_name, diff_method):
-        """Test circuit drawing when using the torch interface"""
-
-        x = torch.tensor(0.1, requires_grad=True)
-        y = torch.tensor([0.2, 0.3], requires_grad=True)
-        z = torch.tensor(0.4, requires_grad=True)
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qnode(dev, interface="torch")
-        def circuit(p1, p2=y, **kwargs):
-            qml.RX(p1, wires=0)
-            qml.RY(p2[0] * p2[1], wires=1)
-            qml.RX(kwargs["p3"], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=0), qml.var(qml.PauliZ(1))
-
-        circuit(p1=x, p3=z)
-
-        result = circuit.draw()
-        expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──┤ Probs  
- 1: ──RY(0.06)───────────╰X──┤ Var[Z] 
-"""
-
-        assert result == expected
-
     def test_jacobian(self, dev_name, diff_method, mocker, tol):
         """Test jacobian calculation"""
         spy = mocker.spy(JacobianTape, "jacobian")
