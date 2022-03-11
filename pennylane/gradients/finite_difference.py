@@ -387,9 +387,9 @@ def finite_diff(
         # In the future, we might want to change this so that only tuples
         # of arrays are returned.
         for i, g in enumerate(grads):
-            g = qml.math.convert_like(g, results[0])
             if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
-                grads[i] = qml.math.hstack(g)
+                if qml.math.ndim(g) > 0:
+                    grads[i] = qml.math.hstack(g)
 
         return qml.math.T(qml.math.stack(grads))
 

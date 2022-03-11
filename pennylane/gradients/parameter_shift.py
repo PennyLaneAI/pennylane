@@ -278,9 +278,9 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         # In the future, we might want to change this so that only tuples
         # of arrays are returned.
         for i, g in enumerate(grads):
-            g = qml.math.convert_like(g, res[0])
             if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
-                grads[i] = qml.math.hstack(g)
+                if qml.math.ndim(g) > 0:
+                    grads[i] = qml.math.hstack(g)
 
         return qml.math.T(qml.math.stack(grads))
 
@@ -397,7 +397,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
             shape = qml.math.shape(r)
             mask.append(array_func(shape, dtype=bool))
 
-        if ragged:
+        if ragged and qml.math.ndim(res) > 0:
             res = qml.math.hstack(res)
             mask = qml.math.hstack(mask)
 

@@ -799,7 +799,8 @@ class TestHessian:
 class TestObservableWithObjectReturnType:
     """Unit tests for differentiation of observables returning an object"""
 
-    def test_special_observable_qnode_differentiation(self, qn):
+    @pytest.mark.parametrize("m", ["finite-diff", "parameter-shift"])
+    def test_special_observable_qnode_differentiation(self, qn, m):
         """Test differentiation of a QNode on a device supporting a
         special observable that returns an object rathern than a nummber."""
 
@@ -838,6 +839,30 @@ class TestObservableWithObjectReturnType:
             def __radd__(self, other):
                 return self + other
 
+            def __truediv__(self, other):
+                new = SpecialObject(self.val)
+                new /= other
+                return new
+
+            def __itruediv__(self, other):
+                self.val /= other
+                return self
+
+            def __rtruediv__(self, other):
+                return self / other
+
+            def __isub__(self, other):
+                self.val -= other.val if isinstance(other, self.__class__) else other
+                return self
+
+            def __sub__(self, other):
+                new = SpecialObject(self.val)
+                new -= other.val if isinstance(other, self.__class__) else other
+                return new
+
+            def __rsub__(self, other):
+                return self - other
+
         class SpecialObservable(Observable):
             """SpecialObservable"""
 
@@ -863,12 +888,12 @@ class TestObservableWithObjectReturnType:
 
         # force diff_method='parameter-shift' because otherwise
         # PennyLane swaps out dev for default.qubit.autograd
-        @qn(dev, diff_method="parameter-shift")
+        @qn(dev, diff_method=m)
         def qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(SpecialObservable(wires=0))
 
-        @qn(dev, diff_method="parameter-shift")
+        @qn(dev, diff_method=m)
         def reference_qnode(x):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(wires=0))
