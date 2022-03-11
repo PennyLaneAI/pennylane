@@ -362,6 +362,9 @@
 
 <h3>Deprecations</h3>
 
+* Executing tapes using `tape.execute(dev)` is deprecated.
+  Please use the `qml.execute([tape], dev)` function instead.
+
 * The `qml.operation.Operation.get_parameter_shift` method has been deprecated
   and will be removed in a future release.
   [#2227](https://github.com/PennyLaneAI/pennylane/pull/2227)

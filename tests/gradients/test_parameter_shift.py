@@ -17,7 +17,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
-from pennylane.gradients.parameter_shift import _gradient_analysis
+from pennylane.gradients.gradient_transform import gradient_analysis
 
 
 class TestGradAnalysis:
@@ -35,7 +35,7 @@ class TestGradAnalysis:
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
-        _gradient_analysis(tape)
+        gradient_analysis(tape)
 
         assert tape._par_info[0]["grad_method"] is None
         assert tape._par_info[1]["grad_method"] == "A"
@@ -53,7 +53,7 @@ class TestGradAnalysis:
             qml.probs(wires=[0, 1])
 
         spy = mocker.spy(qml.operation, "has_grad_method")
-        _gradient_analysis(tape)
+        gradient_analysis(tape)
         spy.assert_called()
 
         assert tape._par_info[0]["grad_method"] is None
@@ -61,7 +61,7 @@ class TestGradAnalysis:
         assert tape._par_info[2]["grad_method"] == "A"
 
         spy = mocker.spy(qml.operation, "has_grad_method")
-        _gradient_analysis(tape)
+        gradient_analysis(tape)
         spy.assert_not_called()
 
     def test_independent(self):
@@ -73,7 +73,7 @@ class TestGradAnalysis:
             qml.RY(-0.654, wires=[1])
             qml.expval(qml.PauliY(0))
 
-        _gradient_analysis(tape)
+        gradient_analysis(tape)
 
         assert tape._par_info[0]["grad_method"] == "A"
         assert tape._par_info[1]["grad_method"] == "0"
@@ -87,7 +87,7 @@ class TestGradAnalysis:
             qml.RY(-0.654, wires=[1])
             qml.expval(qml.PauliY(0))
 
-        _gradient_analysis(tape, use_graph=False)
+        gradient_analysis(tape, use_graph=False)
 
         assert tape._par_info[0]["grad_method"] == "A"
         assert tape._par_info[1]["grad_method"] == "A"
@@ -105,7 +105,7 @@ class TestGradAnalysis:
             qml.CNOT(wires=[0, 1])
             qml.probs(wires=[0, 1])
 
-        _gradient_analysis(tape)
+        gradient_analysis(tape)
 
         assert tape._par_info[0]["grad_method"] is None
         assert tape._par_info[1]["grad_method"] == "F"
