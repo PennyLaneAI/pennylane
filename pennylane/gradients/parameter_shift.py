@@ -611,7 +611,7 @@ def param_shift(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+        return [], lambda _: ()
 
     _gradient_analysis(tape)
     method = "analytic" if fallback_fn is None else "best"
