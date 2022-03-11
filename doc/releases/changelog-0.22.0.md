@@ -1,20 +1,149 @@
 :orphan:
 
-# Release 0.22.0-dev (development release)
+# Release 0.22.0-dev (current release)
 
 <h3>New features since last release</h3>
 
+<h4>Quantum circuit cutting ✂️</h4>
+
+* Users can now run `N`-qubit circuits on devices with fewer than `N` qubits by
+  strategically placing `WireCut` operations that allow their circuit to be
+  partitioned into smaller fragments, at a cost of needing to perform a greater
+  number of device executions. Circuit cutting is enabled by decorating a QNode
+  with the `@qml.cut_circuit` transform.
+  [(#2107)](https://github.com/PennyLaneAI/pennylane/pull/2107)
+  [(#2124)](https://github.com/PennyLaneAI/pennylane/pull/2124)
+  [(#2153)](https://github.com/PennyLaneAI/pennylane/pull/2153)
+  [(#2165)](https://github.com/PennyLaneAI/pennylane/pull/2165)
+  [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
+  [(#2169)](https://github.com/PennyLaneAI/pennylane/pull/2169)
+  [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
+  [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216)
+  [(#2168)](https://github.com/PennyLaneAI/pennylane/pull/2168)
+  [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
+  [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
+  [(#2244)](https://github.com/PennyLaneAI/pennylane/pull/2244)
+  [(#2251)](https://github.com/PennyLaneAI/pennylane/pull/2251)
+  [(#2265)](https://github.com/PennyLaneAI/pennylane/pull/2265)
+  [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
+  [(#2260)](https://github.com/PennyLaneAI/pennylane/pull/2260)
+  [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
+  [(#2279)](https://github.com/PennyLaneAI/pennylane/pull/2279)
+
+  The example below shows how a three-qubit circuit can be run on a two-qubit device:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.cut_circuit
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.RY(0.9, wires=1)
+      qml.RX(0.3, wires=2)
+
+      qml.CZ(wires=[0, 1])
+      qml.RY(-0.4, wires=0)
+
+      qml.WireCut(wires=1)
+
+      qml.CZ(wires=[1, 2])
+
+      return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+  ```
+
+  Instead of executing the circuit directly, it will be partitioned into smaller fragments
+  according to the `WireCut` locations, and each fragment executed multiple times. Combining the
+  results of the fragment executions will recover the expected output of the original uncut circuit.
+
+    ```pycon
+  >>> x = np.array(0.531, requires_grad=True)
+  >>> circuit(0.531)
+  0.47165198882111165
+  ```
+
+  Circuit cutting support is also differentiable:
+
+  ```pycon
+  >>> qml.grad(circuit)(x)
+  -0.276982865449393
+  ```
+
+  For more details on circuit cutting, check out the
+  [qml.cut_circuit](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.cut_circuit.html)
+  documentation page or [Peng et. al](https://arxiv.org/abs/1904.00102).
+
+<h4>🌀 Quantum teleportation unlocked via conditional operations 🌀</h4>
+
+* The user-interface for mid-circuit measurements and conditional operations
+  has been added to support use cases like quantum teleportation.
+  [(#2211)](https://github.com/PennyLaneAI/pennylane/pull/2211)
+  [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
+  [(#2275)](https://github.com/PennyLaneAI/pennylane/pull/2275)
+
+  The addition includes the `defer_measurements` device-independent transform
+  that can be applied on devices that have no native mid-circuit measurements
+  capabilities. This transform is applied by default when evaluating a QNode on a
+  device that doesn't support mid-circuit measurements.
+
+  For example, the code below shows how to teleport a qubit:
+
+  ```python
+  from scipy.stats import unitary_group
+
+  random_state = unitary_group.rvs(2, random_state=1967)[0]
+
+  dev = qml.device("default.mixed", wires=3)
+
+  @qml.qnode(dev)
+  def teleport(state):
+      # Prepare input state
+      qml.QubitStateVector(state, wires=0)
+
+      # Prepare Bell state
+      qml.Hadamard(wires=1)
+      qml.CNOT(wires=[1, 2])
+
+      # Apply gates
+      qml.CNOT(wires=[0, 1])
+      qml.Hadamard(wires=0)
+
+      # Measure first two wires
+      m1 = qml.measure(0)
+      m2 = qml.measure(1)
+
+      # Condition final wire on results
+      qml.cond(m2 == 1, qml.PauliX)(wires=2)
+      qml.cond(m1 == 1, qml.PauliZ)(wires=2)
+
+      # Return state on final wire
+      return qml.density_matrix(wires=2)
+
+  output_projector = teleport(random_state)
+  overlap = random_state.conj() @ output_projector @ random_state
+  ```
+  ```pycon
+  >>> overlap
+  tensor(1.+0.j, requires_grad=True)
+  ```
+
+  For further examples, refer to the [Mid-circuit measurements and conditional
+  operations](https://pennylane.readthedocs.io/en/latest/introduction/measurements.html#mid-circuit-measurements-and-conditional-operations)
+  section in the documentation.
+
+<h4>Take a mid-circuit quantum snapshot 📷</h4>
+
 * A new operation `qml.Snapshot` has been added to assist users in debugging quantum progams.
-  The instruction is used to save the internal state of simulator devices at arbitrary points of
-  execution, such as the quantum state vector and density matrix in the qubit case, or the
-  covariance matrix and vector of means in the continuous variable case. The saved states can be
-  retrieved in the form of a dictionary via the top-level `qml.snapshots` function.
-  [(#2233)](https://github.com/PennyLaneAI/pennylane/pull/2233) 
+  [(#2233)](https://github.com/PennyLaneAI/pennylane/pull/2233)
   [(#2289)](https://github.com/PennyLaneAI/pennylane/pull/2289)
 
+  The instruction is used to save the internal state of simulator devices at
+  arbitrary points of execution, such as the quantum state vector and density
+  matrix in the qubit case, or the covariance matrix and vector of means in the
+  continuous variable case.
   ```py
   dev = qml.device("default.qubit", wires=2)
-  
+
   @qml.qnode(dev, interface=None)
   def circuit():
       qml.Snapshot()
@@ -24,7 +153,8 @@
       qml.Snapshot()
       return qml.expval(qml.PauliX(0))
   ```
-
+  The saved states can be retrieved in the form of a dictionary via the
+  top-level `qml.snapshots` function.
   ```pycon
   >>> qml.snapshots(circuit)()
   {0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),
@@ -33,7 +163,39 @@
    'execution_results': array(0.)}
   ```
 
-* New functions and transforms of operators have been added. These include:
+<h4>Batched non-trainable inputs 📦</h4>
+
+* Added the `batch_input` transform to enable batching non-trainable inputs to
+  QNodes for machine learning applications and to upgrade the `qml.KerasLayer`
+  class.
+  [(#2069)](https://github.com/PennyLaneAI/pennylane/pull/2069)
+
+  As with other transforms, `batch_input` can be used to decorate QNodes:
+  ```python
+  dev = qml.device("default.qubit", wires = 2, shots=None)
+
+  @batch_input(argnum=0)
+  @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
+  def circuit(inputs, weights):
+      qml.AngleEmbedding(inputs, wires = range(2), rotation="Y")
+      qml.RY(weights[0], wires=0)
+      qml.RY(weights[1], wires=1)
+      return qml.expval(qml.PauliZ(1))
+  ```
+  Then, batched input parameters can be passed for QNode evaluation:
+  ```pycon
+  >>> x = np.random.uniform(0,1,(10,2))
+  >>> x.requires_grad = False
+  >>> w = np.random.uniform(0,1,2)
+  >>> circuit(x, w)
+  <tf.Tensor: shape=(10,), dtype=float64, numpy=
+  array([0.17926078, 0.7480163 , 0.47816999, 0.50381628, 0.349178  ,
+         0.17511444, 0.03769436, 0.19180259, 0.75867188, 0.55335748])>
+  ```
+
+<h4>Mighty quantum information transforms 🐛➡🦋</h4>
+
+* New functions and transforms of operators have been added:
 
   - `qml.matrix()` for computing the matrix representation of one or more unitary operators.
     [(#2241)](https://github.com/PennyLaneAI/pennylane/pull/2241)
@@ -86,62 +248,6 @@
   [ 0.+0.j,  0.+0.38268343j,  0.+0.j,  -0.92387953+0.j]])
   ```
 
-* The user-interface for mid-circuit measurements and conditional operations
-  has been added to support use cases like quantum teleportation.
-  [(#2211)](https://github.com/PennyLaneAI/pennylane/pull/2211)
-  [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
-  [(#2275)](https://github.com/PennyLaneAI/pennylane/pull/2275)
-
-  The addition includes the `defer_measurements` device-independent transform
-  that can be applied on devices that have no native mid-circuit measurements
-  capabilities. This transform is applied by default when evaluating a QNode on a
-  device that doesn't support mid-circuit measurements.
-  
-  For example, the code below shows how to teleport a qubit:
-
-  ```python
-  from scipy.stats import unitary_group
-
-  random_state = unitary_group.rvs(2, random_state=1967)[0]
-
-  dev = qml.device("default.mixed", wires=3)
-
-  @qml.qnode(dev)
-  def teleport(state):
-      # Prepare input state
-      qml.QubitStateVector(state, wires=0)
-
-      # Prepare Bell state
-      qml.Hadamard(wires=1)
-      qml.CNOT(wires=[1, 2])
-
-      # Apply gates
-      qml.CNOT(wires=[0, 1])
-      qml.Hadamard(wires=0)
-
-      # Measure first two wires
-      m1 = qml.measure(0)
-      m2 = qml.measure(1)
-
-      # Condition final wire on results
-      qml.cond(m2 == 1, qml.PauliX)(wires=2)
-      qml.cond(m1 == 1, qml.PauliZ)(wires=2)
-
-      # Return state on final wire
-      return qml.density_matrix(wires=2)
-
-  output_projector = teleport(random_state)
-  overlap = random_state.conj() @ output_projector @ random_state
-  ```
-  ```pycon
-  >>> overlap
-  tensor(1.+0.j, requires_grad=True)
-  ```
-
-  For further examples, refer to the [Mid-circuit measurements and conditional
-  operations](https://pennylane.readthedocs.io/en/latest/introduction/measurements.html#mid-circuit-measurements-and-conditional-operations)
-  section in the documentation.
-
 * A new transform has been added to construct the pairwise-commutation directed acyclic graph (DAG)
   representation of a quantum circuit.
   [(#1712)](https://github.com/PennyLaneAI/pennylane/pull/1712)
@@ -188,7 +294,9 @@
   []
   ```
 
-* The text based drawer accessed via `qml.draw` has been overhauled.
+<h4>Improved text-based circuit drawer 🖌️</h4>
+
+* The text-based drawer accessed via `qml.draw` has been improved.
   [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
   [(#2198)](https://github.com/PennyLaneAI/pennylane/pull/2198)
 
@@ -216,102 +324,41 @@
   1: ────╰RX(2.30)──Rot(1.20,3.20,0.70)─╰RX(-2.30)─┤ ╰<Z@Z>
   ```
 
-* Parametric operations now have the `parameter_frequencies`
-  method that returns the frequencies with which a parameter
-  enters a circuit. In addition, the general parameter-shift
-  rule is now automatically used by `qml.gradients.param_shift`.
+<h4>Operations equipped with parameter frequencies ∿</h4>
+
+* The frequencies of gate parameters are now accessible as an operation
+  property and can be used for circuit analysis, optimization via the
+  `RotosolveOptimizer` and differentiation with the parameter-shift rule
+  (including the general shift rule).
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
   [(#2182)](https://github.com/PennyLaneAI/pennylane/pull/2182)
   [(#2227)](https://github.com/PennyLaneAI/pennylane/pull/2227)
 
-  The frequencies can be used for circuit analysis, optimization
-  via the `RotosolveOptimizer` and differentiation with the
-  parameter-shift rule. They assume that the circuit returns
-  expectation values or probabilities, for a variance
-  measurement the frequencies will differ.
+  ```pycon
+  >>> op = qml.CRot(0.4, 0.1, 0.3, wires=[0, 1])
+  >>> op.parameter_frequencies
+  [(0.5, 1), (0.5, 1), (0.5, 1)]
+  ```
 
-  By default, the frequencies will be obtained from the
-  `generator` property (if it is defined).
+  For operators that define a generator, the parameter frequencies are directly
+  related to the eigenvalues of the generator:
+
+  ```pycon
+  >>> op = qml.ControlledPhaseShift(0.1, wires=[0, 1])
+  >>> op.parameter_frequencies
+  [(1,)]
+  >>> gen_eigvals = tuple(np.linalg.eigvals(op.generator[0] * op.generator[1]))
+  >>> qml.gradients.eigvals_to_frequencies(gen_eigvals)
+  (tensor(1., requires_grad=True),)
+  ```
 
   When using `qml.gradients.param_shift`, either a custom `grad_recipe`
   or the parameter frequencies are used to obtain the shift rule
   for the operation, in that order of preference.
 
-  See [Vidal and Theis (2018)](https://arxiv.org/abs/1812.06323)
-  and [Wierichs et al. (2021)](https://arxiv.org/abs/2107.12390)
-  for theoretical background information on the general
-  parameter-shift rule.
-
-* Support for circuit cutting has been added ✂️
-
-  Users can now run `N`-qubit circuits on devices with fewer than `N` qubits by strategically
-  placing `WireCut` operations that allow their circuit to be partitioned into smaller fragments,
-  at a cost of needing to perform a greater number of device executions. Circuit cutting is enabled
-  by decorating a QNode with the `@qml.cut_circuit` transform.
-  [(#2107)](https://github.com/PennyLaneAI/pennylane/pull/2107)
-  [(#2124)](https://github.com/PennyLaneAI/pennylane/pull/2124)
-  [(#2153)](https://github.com/PennyLaneAI/pennylane/pull/2153)
-  [(#2165)](https://github.com/PennyLaneAI/pennylane/pull/2165)
-  [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
-  [(#2169)](https://github.com/PennyLaneAI/pennylane/pull/2169)
-  [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
-  [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216)
-  [(#2168)](https://github.com/PennyLaneAI/pennylane/pull/2168)
-  [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
-  [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
-  [(#2244)](https://github.com/PennyLaneAI/pennylane/pull/2244)
-  [(#2251)](https://github.com/PennyLaneAI/pennylane/pull/2251)
-  [(#2265)](https://github.com/PennyLaneAI/pennylane/pull/2265)
-  [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
-  [(#2260)](https://github.com/PennyLaneAI/pennylane/pull/2260)
-  [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
-  [(#2279)](https://github.com/PennyLaneAI/pennylane/pull/2279)
-  
-  The example below shows how a three-qubit circuit can be run on a two-qubit device:
-  
-  ```python
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.cut_circuit
-  @qml.qnode(dev)
-  def circuit(x):
-      qml.RX(x, wires=0)
-      qml.RY(0.9, wires=1)
-      qml.RX(0.3, wires=2)
-
-      qml.CZ(wires=[0, 1])
-      qml.RY(-0.4, wires=0)
-
-      qml.WireCut(wires=1)
-
-      qml.CZ(wires=[1, 2])
-
-      return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
-  ```
-  
-  Instead of executing the circuit directly, it will be partitioned into smaller fragments
-  according to the `WireCut` locations, and each fragment executed multiple times. Combining the
-  results of the fragment executions will recover the expected output of the original uncut circuit.
-  
-    ```pycon
-  >>> x = np.array(0.531, requires_grad=True)
-  >>> circuit(0.531)
-  0.47165198882111165
-  ```
-
-  Circuit cutting support is also differentiable:
-  
-  ```pycon
-  >>> qml.grad(circuit)(x)
-  -0.276982865449393
-  ```
-  
-  For more details on circuit cutting, check out the
-  [qml.cut_circuit](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.cut_circuit.html)
-  documentation page or [Peng et. al](https://arxiv.org/abs/1904.00102).
-
-* A method to batch the non-trainable inputs for machine learning applications has been added.
-  [(#2069)](https://github.com/PennyLaneAI/pennylane/pull/2069)
+  See [Vidal and Theis (2018)](https://arxiv.org/abs/1812.06323) and [Wierichs
+  et al. (2021)](https://arxiv.org/abs/2107.12390) for theoretical background
+  information on the general parameter-shift rule.
 
 <h3>Improvements</h3>
 
@@ -390,7 +437,7 @@
 * The `qml.RandomLayers` template now decomposes when the weights are a list of lists.
   [(#2266)](https://github.com/PennyLaneAI/pennylane/pull/2266/)
 
-* The `qml.QubitUnitary` operation now supports jitting. 
+* The `qml.QubitUnitary` operation now supports jitting.
   [(#2249)](https://github.com/PennyLaneAI/pennylane/pull/2249)
 
 * Fixes a bug in the JAX interface where ``DeviceArray`` objects
@@ -411,7 +458,7 @@
   the four-term parameter shift rule. The correct eight-term rule will now be used when
   using the parameter-shift rule.
   [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
-  
+
 * Fixes a bug where `qml.gradients.param_shift_hessian` would produce an
   error whenever all elements of the Hessian are known in advance to be 0.
   [(#2299)](https://github.com/PennyLaneAI/pennylane/pull/2299)
