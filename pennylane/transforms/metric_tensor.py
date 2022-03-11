@@ -606,10 +606,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
         # Initialize off block-diagonal tensor using the stored ids
         first_term = qml.math.zeros_like(diag_mt)
         if ids:
-            if qml.math.ndim(off_diag_res[0]) > 0:
-                off_diag_res = qml.math.stack(off_diag_res, 1)[0]
-            else:
-                off_diag_res = qml.math.stack(off_diag_res)
+            off_diag_res = qml.math.stack(off_diag_res, 1)[0]
             inv_ids = [_id[::-1] for _id in ids]
             first_term = qml.math.scatter_element_add(first_term, list(zip(*ids)), off_diag_res)
             first_term = qml.math.scatter_element_add(first_term, list(zip(*inv_ids)), off_diag_res)
