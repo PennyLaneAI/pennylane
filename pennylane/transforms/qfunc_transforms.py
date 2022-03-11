@@ -139,7 +139,7 @@ class single_tape_transform:
 
     We can apply this transform to a quantum tape:
 
-    >>> with qml.tape.JacobianTape() as tape:
+    >>> with qml.tape.QuantumTape() as tape:
     ...     qml.Hadamard(wires=0)
     ...     qml.CRX(-0.5, wires=[0, 1])
     >>> new_tape = my_transform(tape, 1., 2.)

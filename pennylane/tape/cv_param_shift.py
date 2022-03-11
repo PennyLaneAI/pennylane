@@ -33,6 +33,12 @@ from .qubit_param_shift import QubitParamShiftTape, _get_operation_recipe
 class CVParamShiftTape(QubitParamShiftTape):
     r"""Quantum tape for CV parameter-shift analytic differentiation method.
 
+    .. warning::
+
+        The ``CVParamShiftTape`` is deprecated.
+        Please use a standard :class:`~.QuantumTape`, and apply gradient transforms using
+        the :mod:`.gradients` module to compute parameter-shift gradients.
+
     This class extends the :class:`~.jacobian` method of the quantum tape
     to support analytic gradients of Gaussian CV operations using the parameter-shift rule.
     This gradient method returns *exact* gradients, and can be computed directly
