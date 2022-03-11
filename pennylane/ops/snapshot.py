@@ -55,7 +55,7 @@ class Snapshot(Operation):
     2: array([0.70710678+0.j, 0.+0.j, 0.+0.j, 0.70710678+0.j]),
     'execution_results': array(0.)}
 
-    .. seealso:: :meth:`~.snapshots`
+    .. seealso:: :func:`~.snapshots`
     """
     num_wires = AnyWires
     num_params = 0
