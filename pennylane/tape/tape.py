@@ -259,6 +259,7 @@ class QuantumTape(AnnotatedQueue):
 
     >>> dev = qml.device("default.qubit", wires=[0, 'a'])
     >>> qml.execute([tape], dev, gradient_fn=None)
+    [array([0.77750694])]
 
     The trainable parameters of the tape can be explicitly set, and the values of
     the parameters modified in-place:
