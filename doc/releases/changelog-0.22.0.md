@@ -74,18 +74,19 @@
   [qml.cut_circuit](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.cut_circuit.html)
   documentation page or [Peng et. al](https://arxiv.org/abs/1904.00102).
 
-<h4>🌀 Quantum teleportation unlocked via conditional operations 🌀</h4>
+<h4>Conditional operations: quantum teleportation unlocked 🔓🌀</h4>
 
 * The user-interface for mid-circuit measurements and conditional operations
-  has been added to support use cases like quantum teleportation.
+  has been added to support use cases like quantum teleportation, quantum error
+  correction and quantum error mitigation.
   [(#2211)](https://github.com/PennyLaneAI/pennylane/pull/2211)
   [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
   [(#2275)](https://github.com/PennyLaneAI/pennylane/pull/2275)
 
   The addition includes the `defer_measurements` device-independent transform
-  that can be applied on devices that have no native mid-circuit measurements
-  capabilities. This transform is applied by default when evaluating a QNode on a
-  device that doesn't support mid-circuit measurements.
+  that can be applied to QNodes with devices that have no native mid-circuit
+  measurements capabilities. This transform is applied by default when
+  evaluating a QNode on a device that doesn't support mid-circuit measurements.
 
   For example, the code below shows how to teleport a qubit:
 
@@ -167,7 +168,7 @@
    'execution_results': array(0.)}
   ```
 
-<h4>Batched non-trainable inputs 📦</h4>
+<h4>Batch input data 📦</h4>
 
 * Added the `batch_input` transform to enable batching non-trainable inputs to
   QNodes for machine learning applications and to upgrade the `qml.KerasLayer`
