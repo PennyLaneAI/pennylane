@@ -171,7 +171,7 @@ def cond(condition, true_fn, false_fn=None):
         .. code-block :: pycon
 
             >>> par = np.array(0.3, requires_grad=True)
-            >>> qnode1(par)
+            >>> qnode(par)
             tensor(-0.1477601, requires_grad=True)
 
         The previous QNode is equivalent to using ``cond`` twice, inverting the
@@ -191,7 +191,7 @@ def cond(condition, true_fn, false_fn=None):
         .. code-block :: pycon
 
             >>> qnode2(par)
-            tensor(-0.1477601, requires_grad=True)
+            tensor(0.97766824, requires_grad=True)
 
         **Quantum functions with different signatures**
 
