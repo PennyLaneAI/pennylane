@@ -120,14 +120,17 @@
       return qml.density_matrix(wires=2)
 
   output_projector = teleport(random_state)
-  overlap = random_state.conj() @ output_projector @ random_state
   ```
+  We can double-check that the qubit has been teleported by computing the
+  overlap between the input state and the resulting state on qubit 2:
   ```pycon
+  >>> overlap = random_state.conj() @ output_projector @ random_state
   >>> overlap
   tensor(1.+0.j, requires_grad=True)
   ```
 
-  For further examples, refer to the [Mid-circuit measurements and conditional
+  For a full description of new capabilities, refer to the [Mid-circuit
+  measurements and conditional
   operations](https://pennylane.readthedocs.io/en/latest/introduction/measurements.html#mid-circuit-measurements-and-conditional-operations)
   section in the documentation.
 
@@ -172,25 +175,25 @@
 
   As with other transforms, `batch_input` can be used to decorate QNodes:
   ```python
-  dev = qml.device("default.qubit", wires = 2, shots=None)
+  dev = qml.device("default.qubit", wires=2, shots=None)
 
-  @batch_input(argnum=0)
+  @qml.batch_input(argnum=0)
   @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
   def circuit(inputs, weights):
-      qml.AngleEmbedding(inputs, wires = range(2), rotation="Y")
+      qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
       qml.RY(weights[0], wires=0)
       qml.RY(weights[1], wires=1)
       return qml.expval(qml.PauliZ(1))
   ```
   Then, batched input parameters can be passed for QNode evaluation:
   ```pycon
-  >>> x = np.random.uniform(0,1,(10,2))
-  >>> x.requires_grad = False
-  >>> w = np.random.uniform(0,1,2)
+  >>> np.random.seed(42)
+  >>> x = np.random.uniform(0, 1, (10, 2), requires_grad=False)
+  >>> w = np.random.uniform(0, 1, 2, requires_grad=True)
   >>> circuit(x, w)
   <tf.Tensor: shape=(10,), dtype=float64, numpy=
-  array([0.17926078, 0.7480163 , 0.47816999, 0.50381628, 0.349178  ,
-         0.17511444, 0.03769436, 0.19180259, 0.75867188, 0.55335748])>
+  array([0.46230079, 0.73971315, 0.95666004, 0.5355225 , 0.66180948,
+         0.44519553, 0.93874261, 0.9483197 , 0.78737918, 0.90866411])>
   ```
 
 <h4>Mighty quantum information transforms 🐛➡🦋</h4>
@@ -220,7 +223,7 @@
   ```pycon
   >>> x = torch.tensor(0.6, requires_grad=True)
   >>> matrix_fn = qml.matrix(qml.RX)
-  >>> matrix_fn(x)
+  >>> matrix_fn(x, wires=[0])
   tensor([[0.9553+0.0000j, 0.0000-0.2955j],
           [0.0000-0.2955j, 0.9553+0.0000j]], grad_fn=<AddBackward0>)
   ```
@@ -231,7 +234,7 @@
   >>> loss = torch.real(torch.trace(matrix_fn(x, wires=0)))
   >>> loss.backward()
   >>> x.grad
-  tensor(-0.5910)
+  tensor(-0.2955)
   ```
 
   Some operator transform can also act on multiple operations, by passing
@@ -268,7 +271,7 @@
   ...     qml.CRZ(z, wires=[2, 0])
   ...     qml.RY(-y, wires=1)
   ...     return qml.expval(qml.PauliZ(0))
-  >>> dag_fn = commutation_dag(circuit)
+  >>> dag_fn = qml.commutation_dag(circuit)
   >>> dag = dag_fn(np.pi / 4, np.pi / 3, np.pi / 2)
   ```
 
@@ -276,8 +279,9 @@
   the  form `(ID, CommutationDAGNode)`:
 
   ```pycon
-  nodes = dag.get_nodes()
-  [(0, <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x132b03b20>), ...]
+  >>> nodes = dag.get_nodes()
+  >>> nodes
+  NodeDataView({0: <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x7f461c4bb580>, ...}, data='node')
   ```
 
   Specific nodes in the commutation DAG can be accessed via the `get_node()` method:
@@ -337,24 +341,12 @@
   ```pycon
   >>> op = qml.CRot(0.4, 0.1, 0.3, wires=[0, 1])
   >>> op.parameter_frequencies
-  [(0.5, 1), (0.5, 1), (0.5, 1)]
+  [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
   ```
 
-  For operators that define a generator, the parameter frequencies are directly
-  related to the eigenvalues of the generator:
-
-  ```pycon
-  >>> op = qml.ControlledPhaseShift(0.1, wires=[0, 1])
-  >>> op.parameter_frequencies
-  [(1,)]
-  >>> gen_eigvals = tuple(np.linalg.eigvals(op.generator[0] * op.generator[1]))
-  >>> qml.gradients.eigvals_to_frequencies(gen_eigvals)
-  (tensor(1., requires_grad=True),)
-  ```
-
-  When using `qml.gradients.param_shift`, either a custom `grad_recipe`
-  or the parameter frequencies are used to obtain the shift rule
-  for the operation, in that order of preference.
+  When using `qml.gradients.param_shift`, either a custom `grad_recipe` or the
+  parameter frequencies are used to obtain the shift rule for the operation, in
+  that order of preference.
 
   See [Vidal and Theis (2018)](https://arxiv.org/abs/1812.06323) and [Wierichs
   et al. (2021)](https://arxiv.org/abs/2107.12390) for theoretical background
