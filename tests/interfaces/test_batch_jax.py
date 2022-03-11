@@ -39,7 +39,7 @@ class TestJaxExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -65,7 +65,7 @@ class TestJaxExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -90,7 +90,7 @@ class TestJaxExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -111,7 +111,7 @@ class TestJaxExecuteUnitTests:
         spy = mocker.spy(dev, "execute_and_gradients")
 
         def cost(a):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -141,7 +141,7 @@ class TestJaxExecuteUnitTests:
         spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")
 
         def cost(a):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -176,7 +176,7 @@ class TestJaxExecuteUnitTests:
             InterfaceUnsupportedError,
             match="The JAX interface only supports first order derivatives.",
         ):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -201,7 +201,7 @@ class TestCaching:
         spy = mocker.spy(qml.interfaces.batch, "cache_execute")
 
         def cost(a, cachesize):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -228,7 +228,7 @@ class TestCaching:
         spy = mocker.spy(qml.interfaces.batch, "cache_execute")
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -253,12 +253,12 @@ class TestCaching:
         b = jnp.array(0.2)
 
         def cost(a, b, cache):
-            with qml.tape.JacobianTape() as tape1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.JacobianTape() as tape2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -284,7 +284,7 @@ class TestCaching:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -326,7 +326,7 @@ class TestCaching:
         params = jnp.array([0.1, 0.2, 0.3])
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
@@ -382,12 +382,12 @@ class TestJaxExecuteIntegration:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, b):
-            with qml.tape.JacobianTape() as tape1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.JacobianTape() as tape2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -408,7 +408,7 @@ class TestJaxExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         def cost(a):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
             return execute([tape], dev, interface=interface, **execute_kwargs)[0][0]
@@ -417,7 +417,7 @@ class TestJaxExecuteIntegration:
         assert res.shape == ()
 
         # compare to standard tape jacobian
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
@@ -435,7 +435,7 @@ class TestJaxExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -479,7 +479,7 @@ class TestJaxExecuteIntegration:
         c = jnp.array(0.3)
 
         def cost(a, b, c, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
                 qml.RX(c + c**2 + jnp.sin(a), wires=0)
@@ -498,13 +498,13 @@ class TestJaxExecuteIntegration:
         params = jax.numpy.array([0.3, 0.2])
 
         def cost_fn(x):
-            with qml.tape.JacobianTape() as tape1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.Hadamard(0)
                 qml.RY(x[0], wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.JacobianTape() as tape2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.Hadamard(0)
                 qml.CRX(2 * x[0] * x[1], wires=[0, 1])
                 qml.RX(2 * x[1], wires=[1])
@@ -524,13 +524,13 @@ class TestJaxExecuteIntegration:
         params = jax.numpy.array([0.3, 0.2])
 
         def cost_fn(x):
-            with qml.tape.JacobianTape() as tape1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.Hadamard(0)
                 qml.RY(x[0], wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.JacobianTape() as tape2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.Hadamard(0)
                 qml.CRX(2 * x[0] * x[1], wires=[0, 1])
                 qml.RX(2 * x[1], wires=[1])
@@ -551,7 +551,7 @@ class TestJaxExecuteIntegration:
         U = qml.RY(a, wires=0).get_matrix()
 
         def cost(U, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.PauliX(0)
                 qml.QubitUnitary(U, wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -573,7 +573,7 @@ class TestJaxExecuteIntegration:
 
         class U3(qml.U3):
             def expand(self):
-                tape = qml.tape.JacobianTape()
+                tape = qml.tape.QuantumTape()
                 theta, phi, lam = self.data
                 wires = self.wires
                 tape._ops += [
@@ -583,7 +583,7 @@ class TestJaxExecuteIntegration:
                 return tape
 
         def cost_fn(a, p, device):
-            tape = qml.tape.JacobianTape()
+            tape = qml.tape.QuantumTape()
 
             with tape:
                 qml.RX(a, wires=0)
@@ -624,7 +624,7 @@ class TestJaxExecuteIntegration:
         params = jnp.array([0.1, 0.2, 0.3])
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
@@ -652,7 +652,7 @@ class TestJaxExecuteIntegration:
         params = jnp.array([0.1, 0.2, 0.3])
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
@@ -686,7 +686,7 @@ class TestVectorValued:
         params = jnp.array([0.1, 0.2, 0.3])
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
@@ -712,7 +712,7 @@ class TestVectorValued:
         params = jnp.array([0.1])
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
@@ -732,14 +732,14 @@ class TestVectorValued:
             pytest.skip("The forward mode is tested separately as it should raise an error.")
 
         def cost(x, y, device, interface, ek):
-            with qml.tape.JacobianTape() as tape1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
-            with qml.tape.JacobianTape() as tape2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -777,14 +777,14 @@ class TestVectorValued:
             pytest.skip("The adjoint diff method doesn't support probabilities.")
 
         def cost(x, y, device, interface, ek):
-            with qml.tape.JacobianTape() as tape1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
-            with qml.tape.JacobianTape() as tape2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -820,7 +820,7 @@ class TestVectorValued:
         params = jnp.array([0.1, 0.2, 0.3])
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)

@@ -1098,7 +1098,7 @@ class Operator(abc.ABC):
         """Returns a tape that has recorded the decomposition of the operator.
 
         Returns:
-            .JacobianTape: quantum tape
+            .QuantumTape: quantum tape
         """
         tape = qml.tape.QuantumTape(do_queue=False)
 

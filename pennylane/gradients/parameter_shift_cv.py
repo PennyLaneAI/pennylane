@@ -593,7 +593,7 @@ def param_shift_cv(
     to use during autodifferentiation:
 
     >>> dev = qml.device("default.gaussian", wires=2)
-    >>> @qml.qnode(dev, gradient_fn=qml.gradients.param_shift_cv)
+    >>> @qml.qnode(dev, diff_method="parameter-shift")
     ... def circuit(params):
     ...     qml.Squeezing(params[0], params[1], wires=[0])
     ...     qml.Squeezing(params[2], params[3], wires=[0])
@@ -621,16 +621,16 @@ def param_shift_cv(
         function, which together define the gradient are directly returned:
 
         >>> r0, phi0, r1, phi1 = [0.4, -0.3, -0.7, 0.2]
-        >>> with qml.tape.JacobianTape() as tape:
+        >>> with qml.tape.QuantumTape() as tape:
         ...     qml.Squeezing(r0, phi0, wires=[0])
         ...     qml.Squeezing(r1, phi1, wires=[0])
         ...     qml.expval(qml.NumberOperator(0))  # second-order
         >>> gradient_tapes, fn = qml.gradients.param_shift_cv(tape, dev)
         >>> gradient_tapes
-        [<JacobianTape: wires=[0], params=4>,
-         <JacobianTape: wires=[0], params=4>,
-         <JacobianTape: wires=[0], params=4>,
-         <JacobianTape: wires=[0], params=4>]
+        [<QuantumTape: wires=[0], params=4>,
+         <QuantumTape: wires=[0], params=4>,
+         <QuantumTape: wires=[0], params=4>,
+         <QuantumTape: wires=[0], params=4>]
 
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
