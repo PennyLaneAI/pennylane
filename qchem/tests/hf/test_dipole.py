@@ -280,7 +280,7 @@ def test_gradient_expvalD():
     r"""Test that the gradient of expval(D) computed with ``autograd.grad`` is equal to the value
     obtained with the finite difference method."""
     symbols = ["H", "H", "H"]
-    geometry = np.array([[0.0, 0.0, 0.0], [1.0, 2.0, 0.0], [2.0, 0.0, 0.0]], requires_grad=False)
+    geometry = np.array([[0.0, 0.0, 0.0], [1.0, 1.7, 0.0], [2.0, 0.0, 0.0]], requires_grad=False)
     alpha = np.array(
         [
             [3.42525091, 0.62391373, 0.1688554],
