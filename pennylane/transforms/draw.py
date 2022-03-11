@@ -19,7 +19,6 @@ Contains the drawing function.
 from functools import wraps
 
 from pennylane.drawer import tape_mpl, tape_text
-from pennylane.wires import Wires
 
 
 def draw(
