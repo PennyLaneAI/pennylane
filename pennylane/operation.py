@@ -561,7 +561,7 @@ class Operator(abc.ABC):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.Operator.matrix`
+        .. seealso:: :meth:`~.Operator.get_matrix` and :func:`~.matrix`
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -686,7 +686,7 @@ class Operator(abc.ABC):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.Operator.eigvals`
+        .. seealso:: :meth:`~.Operator.get_eigvals` and :func:`~.eigvals`
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
