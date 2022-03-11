@@ -65,7 +65,8 @@ def commutation_dag(circuit):
     the  form ``(ID, CommutationDAGNode)``:
 
     >>> nodes = dag.get_nodes()
-    [(0, <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x132b03b20>), ...]
+    >>> nodes
+    NodeDataView({0: <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x7f461c4bb580>, ...}, data='node')
 
     You can also access specific nodes (of type :class:`~.CommutationDAGNode`) by using the :meth:`~.get_node`
     method. See :class:`~.CommutationDAGNode` for a list of available
@@ -756,10 +757,10 @@ def _merge_no_duplicates(*iterables):
     """Merge K list without duplicate using python heapq ordered merging.
 
     Args:
-        *iterables: A list of k sorted lists
+        *iterables: A list of k sorted lists.
 
     Yields:
-        Iterator: List from the merging of the k ones (without duplicates)
+        Iterator: List from the merging of the k ones (without duplicates).
     """
     last = object()
     for val in heapq.merge(*iterables):
@@ -898,7 +899,7 @@ class CommutationDAG:
         return self._multi_graph.nodes(data="node")[node_id]
 
     def get_nodes(self):
-        """Return iterable to loop through all the nodes in the DAG
+        """Return iterable to loop through all the nodes in the DAG.
 
         Returns:
             networkx.classes.reportviews.NodeDataView: Iterable nodes.
