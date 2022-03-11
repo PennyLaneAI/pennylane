@@ -24,7 +24,7 @@ from functools import partial
 from itertools import product
 from typing import Any, Callable, ClassVar, Dict, List, Optional, Sequence, Tuple, Union
 
-from networkx import MultiDiGraph, weakly_connected_components, has_path
+from networkx import MultiDiGraph, has_path, weakly_connected_components
 
 import pennylane as qml
 from pennylane import apply, expval
@@ -239,7 +239,10 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
                 m_ = MeasurementProcess(m.return_type, obs=o)
 
                 _add_operator_node(graph, m_, order, wire_latest_node)
-
+        elif m.return_type.name == "Sample":
+            for w in m.wires.tolist():
+                s_ = qml.sample(qml.Projector([1], wires=w))
+                _add_operator_node(graph, s_, order, wire_latest_node)
         else:
             _add_operator_node(graph, m, order, wire_latest_node)
             order += 1

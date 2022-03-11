@@ -382,6 +382,37 @@ class TestTapeToGraph:
             assert node_obs.wires == exp_obs.wires
             assert node_obs.obs.name == exp_obs.obs.name
 
+    def test_split_sample_measurement(self):
+        """
+        Test that a circuit with single sample measuremnt over all wires is
+        correctly converted to a graph with a distinct node for each wire sampled
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.sample(wires=[0, 1, 2])
+
+        g = qcut.tape_to_graph(tape)
+
+        expected_nodes = [
+            qml.Hadamard(wires=[0]),
+            qml.CNOT(wires=[0, 1]),
+            qml.PauliX(wires=[1]),
+            qml.WireCut(wires=[1]),
+            qml.CNOT(wires=[1, 2]),
+            qml.sample(qml.Projector([1], wires=[0])),
+            qml.sample(qml.Projector([1], wires=[1])),
+            qml.sample(qml.Projector([1], wires=[2])),
+        ]
+
+        for node, expected_node in zip(list(g.nodes), expected_nodes):
+            assert node.name == expected_node.name
+            assert node.wires == expected_node.wires
+
 
 class TestReplaceWireCut:
     """
