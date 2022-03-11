@@ -457,7 +457,8 @@
 
 <h3>Documentation</h3>
 
-* Link to the strawberry fields docs for information on the CV model.
+* Links to the Strawberry Fields docuementation for information on the CV
+  model.
   [(#2259)](https://github.com/PennyLaneAI/pennylane/pull/2259)
 
 * Fixes the documentation example for `qml.QFT`.
