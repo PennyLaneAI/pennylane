@@ -354,9 +354,12 @@
 
 <h3>Improvements</h3>
 
-* Some error messages have been improved and operation properties made
-  more consistent.
-  [(#2287)](https://github.com/PennyLaneAI/pennylane/pull/2287/)
+* The `qml.draw_mpl` transform supports a `expansion_strategy` keyword argument.
+  [(#2271)](https://github.com/PennyLaneAI/pennylane/pull/2271/)
+
+* The `qml.gradients` module has been streamlined and special-purpose functions
+  moved closer to their use cases, while preserving existing behaviour.
+  [(#2200)](https://github.com/PennyLaneAI/pennylane/pull/2200)
 
 * No two-term parameter-shift rule is assumed anymore by default.
   [(#2227)](https://github.com/PennyLaneAI/pennylane/pull/2227)
@@ -366,13 +369,6 @@
   custom `grad_recipe` were assumed to satisfy the two-term shift
   rule. This now has to be made explicit for custom operations
   by adding any of the above attributes.
-
-* The `qml.draw_mpl` transform supports a `expansion_strategy` keyword argument.
-  [(#2271)](https://github.com/PennyLaneAI/pennylane/pull/2271/)
-
-* The `qml.gradients` module has been streamlined and special-purpose functions
-  moved closer to their use cases, while preserving existing behaviour.
-  [(#2200)](https://github.com/PennyLaneAI/pennylane/pull/2200)
 
 * Added a new `partition_pauli_group` function to the `grouping` module for
   efficiently measuring the `N`-qubit Pauli group with `3 ** N`
@@ -391,6 +387,10 @@
    ['YX'],
    ['YY']]
   ```
+
+* Some error messages have been improved and operation properties made
+  more consistent.
+  [(#2287)](https://github.com/PennyLaneAI/pennylane/pull/2287/)
 
 <h3>Breaking changes</h3>
 
