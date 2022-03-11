@@ -25,7 +25,7 @@ class TestCreateExpandFn:
 
     crit_0 = (~qml.operation.is_trainable) | (qml.operation.has_gen & qml.operation.is_trainable)
     doc_0 = "Test docstring."
-    with qml.tape.JacobianTape() as tape:
+    with qml.tape.QuantumTape() as tape:
         qml.RX(0.2, wires=0)
         qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
         qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
@@ -63,7 +63,7 @@ class TestCreateExpandFn:
         dev = qml.device("default.qubit", wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=self.crit_0)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.U1(0.2, wires=0)
             qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
 
@@ -80,7 +80,7 @@ class TestCreateExpandFn:
         dev = qml.device("default.qubit", wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.U1(0.2, wires=0)
             qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
 
@@ -96,7 +96,7 @@ class TestCreateExpandFn:
         """Test that passing a depth simply expands to that depth"""
         dev = qml.device("default.qubit", wires=0)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.2, wires=0)
             qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
             qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
@@ -169,7 +169,7 @@ class TestExpandNonunitaryGen:
     def test_do_not_expand(self):
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.2, wires=0)
             qml.Hadamard(0)
             qml.PauliRot(0.9, "XY", wires=[0, 1])
@@ -182,7 +182,7 @@ class TestExpandNonunitaryGen:
     def test_expand_multi_par(self):
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.2, wires=0)
             qml.Hadamard(0)
             qml.Rot(0.9, 1.2, -0.6, wires=0)
@@ -209,7 +209,7 @@ class TestExpandNonunitaryGen:
             def generator(self):
                 return None
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.2, wires=0)
             qml.Hadamard(0)
             _PhaseShift(2.1, wires=1)
@@ -225,7 +225,7 @@ class TestExpandNonunitaryGen:
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.2, wires=0)
             qml.Hadamard(0)
             qml.PhaseShift(2.1, wires=1)

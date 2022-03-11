@@ -41,7 +41,7 @@ class TestAutogradExecuteUnitTests:
 
         dev = qml.device("default.qubit", wires=2, shots=None)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.expval(qml.PauliY(1))
 
         with pytest.raises(
@@ -60,7 +60,7 @@ class TestAutogradExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -85,7 +85,7 @@ class TestAutogradExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -104,7 +104,7 @@ class TestAutogradExecuteUnitTests:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -120,7 +120,7 @@ class TestAutogradExecuteUnitTests:
         spy = mocker.spy(dev, "execute_and_gradients")
 
         def cost(a):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -146,7 +146,7 @@ class TestAutogradExecuteUnitTests:
         spy_gradients = mocker.spy(qml.devices.DefaultQubit, "gradients")
 
         def cost(a):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -182,7 +182,7 @@ class TestBatchTransformExecution:
         x = 0.6
         y = 0.2
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -209,7 +209,7 @@ class TestCaching:
         spy = mocker.spy(qml.interfaces.batch, "cache_execute")
 
         def cost(a, cachesize):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
@@ -230,7 +230,7 @@ class TestCaching:
         spy = mocker.spy(qml.interfaces.batch, "cache_execute")
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
@@ -250,7 +250,7 @@ class TestCaching:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
@@ -294,7 +294,7 @@ class TestCaching:
         N = len(params)
 
         def cost(x, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
 
@@ -345,7 +345,7 @@ class TestCaching:
         params = np.array([0.1, 0.2, 0.3])
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
@@ -400,12 +400,12 @@ class TestAutogradExecuteIntegration:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, b):
-            with qml.tape.JacobianTape() as tape1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.JacobianTape() as tape2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -426,7 +426,7 @@ class TestAutogradExecuteIntegration:
         dev = qml.device("default.qubit", wires=2)
 
         def cost(a):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
             return execute([tape], dev, **execute_kwargs)[0]
@@ -435,7 +435,7 @@ class TestAutogradExecuteIntegration:
         assert res.shape == (1,)
 
         # compare to standard tape jacobian
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
@@ -452,7 +452,7 @@ class TestAutogradExecuteIntegration:
         b = np.array(0.2, requires_grad=True)
 
         def cost(a, b, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
@@ -480,15 +480,15 @@ class TestAutogradExecuteIntegration:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(params):
-            with qml.tape.JacobianTape() as tape1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.Hadamard(0)
                 qml.expval(qml.PauliX(0))
 
-            with qml.tape.JacobianTape() as tape2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.RY(np.array(0.5, requires_grad=False), wires=0)
                 qml.expval(qml.PauliZ(0))
 
-            with qml.tape.JacobianTape() as tape3:
+            with qml.tape.QuantumTape() as tape3:
                 qml.RY(params[0], wires=0)
                 qml.RX(params[1], wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -513,7 +513,7 @@ class TestAutogradExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -554,7 +554,7 @@ class TestAutogradExecuteIntegration:
         c = np.array(0.3, requires_grad=True)
 
         def cost(a, b, c, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a * c, wires=0)
                 qml.RZ(b, wires=0)
                 qml.RX(c + c**2 + np.sin(a), wires=0)
@@ -575,7 +575,7 @@ class TestAutogradExecuteIntegration:
         b = np.array(0.2, requires_grad=False)
 
         def cost(a, b, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=0)
                 qml.CNOT(wires=[0, 1])
@@ -606,7 +606,7 @@ class TestAutogradExecuteIntegration:
         a = np.array(0.1, requires_grad=True)
 
         def cost(a, U, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.QubitUnitary(U, wires=0)
                 qml.RY(a, wires=0)
                 qml.expval(qml.PauliZ(0))
@@ -626,7 +626,7 @@ class TestAutogradExecuteIntegration:
 
         class U3(qml.U3):
             def expand(self):
-                tape = qml.tape.JacobianTape()
+                tape = qml.tape.QuantumTape()
                 theta, phi, lam = self.data
                 wires = self.wires
                 tape._ops += [
@@ -636,7 +636,7 @@ class TestAutogradExecuteIntegration:
                 return tape
 
         def cost_fn(a, p, device):
-            tape = qml.tape.JacobianTape()
+            tape = qml.tape.QuantumTape()
 
             with tape:
                 qml.RX(a, wires=0)
@@ -678,7 +678,7 @@ class TestAutogradExecuteIntegration:
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(x, y, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -731,7 +731,7 @@ class TestAutogradExecuteIntegration:
             pytest.skip("Adjoint differentiation does not yet support probabilities")
 
         def cost(x, y, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(x, wires=[0])
                 qml.RY(y, wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -769,7 +769,7 @@ class TestAutogradExecuteIntegration:
             pytest.skip("Adjoint differentiation does not support samples")
 
         def cost(x, device):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.Hadamard(wires=[0])
                 qml.CNOT(wires=[0, 1])
                 qml.sample(qml.PauliZ(0))
@@ -801,13 +801,13 @@ class TestHigherOrderDerivatives:
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
-            with qml.tape.JacobianTape() as tape1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            with qml.tape.JacobianTape() as tape2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.RX(x[0], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
@@ -847,7 +847,7 @@ class TestHigherOrderDerivatives:
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -876,13 +876,13 @@ class TestHigherOrderDerivatives:
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
-            with qml.tape.JacobianTape() as tape1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            with qml.tape.JacobianTape() as tape2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.RX(x[0], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
@@ -917,7 +917,7 @@ class TestOverridingShots:
         dev = qml.device("default.qubit", wires=2, shots=None)
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -947,7 +947,7 @@ class TestOverridingShots:
         dev = qml.device("default.qubit", wires=2, shots=123)
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -980,7 +980,7 @@ class TestOverridingShots:
 
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -1003,7 +1003,7 @@ class TestOverridingShots:
         a, b = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(a, b, shots):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a, wires=0)
                 qml.RX(b, wires=1)
                 qml.CNOT(wires=[0, 1])
@@ -1045,7 +1045,7 @@ class TestHamiltonianWorkflows:
             obs2 = [qml.PauliZ(0)]
             H2 = qml.Hamiltonian(coeffs2, obs2)
 
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(weights[0], wires=0)
                 qml.RY(weights[1], wires=1)
                 qml.CNOT(wires=[0, 1])

@@ -479,7 +479,7 @@ class TestKerasLayer:
         with tf.GradientTape() as tape:
             out = tf.reduce_sum(qlayer(inputs))
 
-        spy = mocker.spy(qml.tape.QubitParamShiftTape, "jacobian")
+        spy = mocker.spy(qml.gradients, "param_shift")
 
         grad = tape.gradient(out, qlayer.trainable_weights)
         assert grad is not None
