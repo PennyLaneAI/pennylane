@@ -479,6 +479,9 @@
   display correctly in the docs.
   [(#2286)](https://github.com/PennyLaneAI/pennylane/pull/2286)
 
+* Add docstring to `OrbitalRotation.grad_recipe`.
+  [(#2193)](https://github.com/PennyLaneAI/pennylane/pull/2193)
+
 <h3>Operator class refactor</h3>
 
 The Operator class has undergone a major refactor with the following changes:
@@ -608,6 +611,7 @@ The Operator class has undergone a major refactor with the following changes:
 
 This release contains contributions from (in alphabetical order):
 
-Jack Y. Araz, Sam Banning, Thomas Bromley, Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac,
-Christina Lee, Angus Lowe, Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni,
-Antal Száva, David Wierichs
+Juan Miguel Arrazola, Jack Y. Araz, Sam Banning, Thomas Bromley, Olivia Di
+Matteo, Anthony Hayes, David Ittah, Josh Izaac, Christina Lee, Angus Lowe,
+Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni, Antal
+Száva, David Wierichs
