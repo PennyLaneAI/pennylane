@@ -15,6 +15,11 @@
 This module contains the qml.generator function.
 """
 # pylint: disable=protected-access
+import inspect
+import warnings
+
+import numpy as np
+
 import pennylane as qml
 
 
@@ -96,6 +101,28 @@ def _generator_prefactor(gen, op):
     return obs, prefactor
 
 
+def _generator_backcompatibility(op):
+    r"""Preserve backwards compatibility behaviour for PennyLane
+    versions <=0.22, where generators returned List[type or ndarray, float].
+    This function raises a deprecation warning, and converts to the new
+    format where an instantiated Operator is returned."""
+    warnings.warn(
+        "The Operator.generator property is deprecated. Please update the operator so that "
+        "\n\t1. Operator.generator() is a method, and"
+        "\n\t2. Operator.generator() returns an Operator instance representing the operator.",
+        UserWarning,
+    )
+    gen = op.generator
+
+    if inspect.isclass(gen[0]):
+        gen = gen[1] * gen[0](wires=op.wires)
+
+    elif isinstance(gen[0], np.ndarray):
+        gen = gen[1] * qml.Hermitian(gen[0], wires=op.wires)
+
+    return gen
+
+
 @qml.op_transform
 def generator(op, format="prefactor"):
     r"""Returns the generator of an operation.
@@ -161,7 +188,12 @@ def generator(op, format="prefactor"):
     if op.num_params != 1:
         raise ValueError(f"Operation {op.name} is not written in terms of a single parameter")
 
-    gen = op.generator()
+    try:
+        gen = op.generator()
+    except TypeError:
+        # For backwards compatibility with PennyLane
+        # versions <=0.22, assume op.generator is a property
+        gen = _generator_backcompatibility(op)
 
     if not isinstance(gen, qml.operation.Observable):
         raise qml.QuantumFunctionError(
