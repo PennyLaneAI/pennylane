@@ -51,6 +51,12 @@ class JacobianTape(QuantumTape):
 
         See :mod:`pennylane.tape` for more details.
 
+    .. warning::
+
+        The ``JacobianTape`` as well as the ``JacobianTape.jacobian()`` method is deprecated.
+        Please use a standard :class:`~.QuantumTape`, and apply gradient transforms using
+        the :mod:`.gradients` module to compute Jacobians.
+
     Args:
         name (str): a name given to the quantum tape
         do_queue (bool): Whether to queue this tape in a parent tape context.
@@ -439,6 +445,12 @@ class JacobianTape(QuantumTape):
     def jacobian(self, device, params=None, **options):
         r"""Compute the Jacobian of the parametrized quantum circuit recorded by the quantum tape.
 
+        .. warning::
+
+            The ``JacobianTape`` as well as the ``JacobianTape.jacobian()`` method is deprecated.
+            Please use a standard :class:`~.QuantumTape`, and apply gradient transforms using
+            the :mod:`.gradients` module to compute Jacobians.
+
         The quantum tape can be interpreted as a simple :math:`\mathbb{R}^m \to \mathbb{R}^n` function,
         mapping :math:`m` (trainable) gate parameters to :math:`n` measurement statistics,
         such as expectation values or probabilities.
@@ -543,6 +555,13 @@ class JacobianTape(QuantumTape):
         array([], shape=(4, 0), dtype=float64)
         """
         # pylint: disable=too-many-statements
+
+        warnings.warn(
+            "Differentiating tapes using JacobianTape.jacobian() is deprecated. "
+            "Please use ta standard QuantumTape with gradient transforms from "
+            "the qml.gradients module instead."
+        )
+
         if any(m.return_type is State for m in self.measurements):
             raise ValueError("The jacobian method does not support circuits that return the state")
 
@@ -665,6 +684,12 @@ class JacobianTape(QuantumTape):
     def hessian(self, device, params=None, **options):
         r"""Compute the Hessian of the parametrized quantum circuit recorded by the quantum tape.
 
+        .. warning::
+
+            The ``JacobianTape`` as well as the ``JacobianTape.hessian()`` method is deprecated.
+            Please use a standard :class:`~.QuantumTape`, and apply gradient transforms using
+            the :mod:`.gradients` module to compute Hessians.
+
         The quantum tape can be interpreted as a simple :math:`\mathbb{R}^m \to \mathbb{R}^n` function,
         mapping :math:`m` (trainable) gate parameters to :math:`n` measurement statistics,
         such as expectation values or probabilities.
@@ -738,6 +763,12 @@ class JacobianTape(QuantumTape):
         >>> tape.hessian(dev)
         array([], shape=(0, 0), dtype=float64)
         """
+        warnings.warn(
+            "Differentiating tapes using JacobianTape.hessian() is deprecated. "
+            "Please use ta standard QuantumTape with gradient transforms from "
+            "the qml.gradients module instead."
+        )
+
         if any(m.return_type is State for m in self.measurements):
             raise ValueError("The Hessian method does not support circuits that return the state")
 

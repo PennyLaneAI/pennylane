@@ -1361,6 +1361,11 @@ class QuantumTape(AnnotatedQueue):
 
         For more details on differentiable tape execution, see :meth:`~.execute`.
 
+        .. warning::
+
+            Executing tapes using ``tape.execute(dev)`` is deprecated.
+            Please use the :func:`~.execute` function instead.
+
         Args:
             device (~.Device): a PennyLane device
                 that can execute quantum operations and return measurement statistics
