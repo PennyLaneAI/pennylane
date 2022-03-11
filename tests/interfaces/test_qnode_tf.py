@@ -162,33 +162,6 @@ class TestQNode:
         assert np.allclose(res1, res2, atol=tol, rtol=0)
         assert np.allclose(grad1, grad2, atol=tol, rtol=0)
 
-    def test_drawing(self, dev_name, diff_method):
-        """Test circuit drawing when using the TF interface"""
-
-        x = tf.Variable(0.1, dtype=tf.float64)
-        y = tf.Variable([0.2, 0.3], dtype=tf.float64)
-        z = tf.Variable(0.4, dtype=tf.float64)
-
-        dev = qml.device(dev_name, wires=2)
-
-        @qnode(dev, interface="tf", diff_method=diff_method)
-        def circuit(p1, p2=y, **kwargs):
-            qml.RX(p1, wires=0)
-            qml.RY(p2[0] * p2[1], wires=1)
-            qml.RX(kwargs["p3"], wires=0)
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        circuit(p1=x, p3=z)
-
-        result = circuit.draw()
-        expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ State 
- 1: ──RY(0.06)───────────╰X──╰┤ State 
-"""
-
-        assert result == expected
-
     def test_jacobian(self, dev_name, diff_method, mocker, tol):
         """Test jacobian calculation"""
         spy = mocker.spy(JacobianTape, "jacobian")
