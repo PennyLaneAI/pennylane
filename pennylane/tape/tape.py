@@ -1098,7 +1098,14 @@ class QuantumTape(AnnotatedQueue):
         return self._specs
 
     # pylint: disable=too-many-arguments
-    def draw(self, wire_order=None, show_all_wires=False, decimals=None, max_length=100, show_matrices=False):
+    def draw(
+        self,
+        wire_order=None,
+        show_all_wires=False,
+        decimals=None,
+        max_length=100,
+        show_matrices=False,
+    ):
         """Draw the quantum tape as a circuit diagram. See :func:`~.drawer.tape_text` for more information.
 
         Keyword Args:
@@ -1113,8 +1120,14 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             str: the circuit representation of the tape
         """
-        return qml.drawer.tape_text(self, wire_order=wire_order, show_all_wires=show_all_wires, decimals=decimals,
-            max_length=max_length, show_matrices=show_matrices)
+        return qml.drawer.tape_text(
+            self,
+            wire_order=wire_order,
+            show_all_wires=show_all_wires,
+            decimals=decimals,
+            max_length=max_length,
+            show_matrices=show_matrices,
+        )
 
     def to_openqasm(self, wires=None, rotations=True, measure_all=True, precision=None):
         """Serialize the circuit as an OpenQASM 2.0 program.
