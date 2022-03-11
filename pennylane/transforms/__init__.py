@@ -31,6 +31,7 @@ that compute the desired quantity.
 
     ~transforms.classical_jacobian
     ~batch_params
+    ~batch_input
     ~draw
     ~draw_mpl
     ~transforms.get_unitary_matrix
@@ -94,32 +95,31 @@ There are also utility functions that take a circuit and return a DAG.
     ~transforms.CommutationDAG
     ~transforms.CommutationDAGNode
 
-Transforms for circuit cutting
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Transform for circuit cutting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This transform accepts QNodes, performs circuit cutting, and returns the result of the original
-uncut circuit.
-
-.. autosummary::
-    :toctree: api
-
-    ~transforms.cut_circuit
-
-The following are utility functions that compose the circuit cutting transform.
+This transform accepts a QNode and returns a new function that cuts the original circuit,
+allowing larger circuits to be split into smaller circuits that are compatible with devices that
+have a restricted number of qubits.
 
 .. autosummary::
     :toctree: api
 
-    ~transforms.tape_to_graph
-    ~transforms.replace_wire_cut_node
-    ~transforms.replace_wire_cut_nodes
-    ~transforms.fragment_graph
-    ~transforms.graph_to_tape
-    ~transforms.expand_fragment_tapes
-    ~transforms.contract_tensors
-    ~transforms.qcut_processing_fn
-    ~transforms.remap_tape_wires
-    ~transforms.CutStrategy
+    ~cut_circuit
+
+There are also low-level functions that can be used to build up the circuit cutting functionalities:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.qcut.tape_to_graph
+    ~transforms.qcut.replace_wire_cut_nodes
+    ~transforms.qcut.fragment_graph
+    ~transforms.qcut.graph_to_tape
+    ~transforms.qcut.remap_tape_wires
+    ~transforms.qcut.expand_fragment_tape
+    ~transforms.qcut.qcut_processing_fn
+    ~transforms.qcut.CutStrategy
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -161,6 +161,7 @@ from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .op_transforms import op_transform
 from .adjoint import adjoint
 from .batch_params import batch_params
+from .batch_input import batch_input
 from .classical_jacobian import classical_jacobian
 from .condition import cond, Conditional
 from .compile import compile
@@ -203,16 +204,5 @@ from .tape_expand import (
     create_decomp_expand_fn,
     set_decomposition,
 )
-from .qcut import (
-    tape_to_graph,
-    replace_wire_cut_node,
-    replace_wire_cut_nodes,
-    fragment_graph,
-    graph_to_tape,
-    expand_fragment_tapes,
-    contract_tensors,
-    qcut_processing_fn,
-    cut_circuit,
-    remap_tape_wires,
-    CutStrategy,
-)
+from . import qcut
+from .qcut import cut_circuit

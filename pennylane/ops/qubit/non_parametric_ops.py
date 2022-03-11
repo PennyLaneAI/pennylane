@@ -1140,8 +1140,6 @@ class SWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    basis = "X"
-
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -1758,14 +1756,17 @@ class MultiControlledX(Operation):
                 wires = Wires(wires[-1])
             else:
                 raise ValueError(
-                    "MultiControlledX: wrong number of wires. 1 wire given. Need at least 2."
+                    "MultiControlledX: wrong number of wires. "
+                    f"{len(wires)} wire(s) given. Need at least 2."
                 )
         else:
             wires = Wires(wires)
             control_wires = Wires(control_wires)
 
             warnings.warn(
-                "The control_wires keyword will be removed soon. Use wires = (control_wires,target_wire). See the documentation for more information.",
+                "The control_wires keyword will be removed soon. "
+                "Use wires = (control_wires, target_wire) instead. "
+                "See the documentation for more information.",
                 category=UserWarning,
             )
 
@@ -1773,10 +1774,9 @@ class MultiControlledX(Operation):
                 raise ValueError("MultiControlledX accepts a single target wire.")
 
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
+        total_wires = control_wires + wires
 
-        if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires(
-            [control_wires, work_wires]
-        ):
+        if Wires.shared_wires([total_wires, work_wires]):
             raise ValueError("The work wires must be different from the control and target wires")
 
         if not control_values:
@@ -1785,8 +1785,6 @@ class MultiControlledX(Operation):
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["control_values"] = control_values
-
-        total_wires = control_wires + wires
 
         super().__init__(wires=total_wires, do_queue=do_queue)
 
@@ -1834,12 +1832,12 @@ class MultiControlledX(Operation):
                 raise ValueError("Length of control bit string must equal number of control wires.")
 
             # Make sure all values are either 0 or 1
-            if any(x not in ["0", "1"] for x in control_values):
+            if not set(control_values).issubset({"1", "0"}):
                 raise ValueError("String of control values can contain only '0' or '1'.")
 
             control_int = int(control_values, 2)
         else:
-            raise ValueError("Alternative control values must be passed as a binary string.")
+            raise ValueError("Control values must be passed as a string.")
 
         padding_left = control_int * 2
         padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
@@ -1852,8 +1850,7 @@ class MultiControlledX(Operation):
 
     def adjoint(self):
         return MultiControlledX(
-            control_wires=self.wires[:-1],
-            wires=self.wires[-1],
+            wires=self.wires,
             control_values=self.hyperparameters["control_values"],
         )
 
@@ -2059,7 +2056,12 @@ class Barrier(Operation):
 
 class WireCut(Operation):
     r"""WireCut(wires)
-    The wire cut operator, used to manually mark locations for wire cuts.
+    The wire cut operation, used to manually mark locations for wire cuts.
+
+    .. note::
+
+        This operation is designed for use as part of the circuit cutting workflow.
+        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     **Details:**
 
@@ -2069,6 +2071,7 @@ class WireCut(Operation):
     Args:
         wires (Sequence[int] or int): the wires the operation acts on
     """
+    num_params = 0
     num_wires = AnyWires
     grad_method = None
 

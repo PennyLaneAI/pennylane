@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for merging adjacent rotations of the same type in a quantum circuit."""
-# pylint: disable=too-many-branches
+
 from pennylane import apply
 from pennylane.transforms import qfunc_transform
-from pennylane.math import allclose, stack, cast_like, zeros, is_abstract
+from pennylane.math import allclose, stack, cast_like, zeros
 
 from pennylane.ops.qubit.attributes import composable_rotations
 from .optimization_utils import find_next_gate, fuse_rot_angles
@@ -146,14 +146,8 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
             # If we did merge, look now at the next gate
             next_gate_idx = find_next_gate(current_gate.wires, list_copy[1:])
 
-        # If we are tracing/jitting, don't perform any conditional checks and
-        # apply the operation regardless of the angles. Otherwise, only apply if
-        # the rotation angle is non-trivial.
-        if is_abstract(cumulative_angles):
+        if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=atol, rtol=0):
             current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
-        else:
-            if not allclose(cumulative_angles, zeros(len(cumulative_angles)), atol=atol, rtol=0):
-                current_gate.__class__(*cumulative_angles, wires=current_gate.wires)
 
         # Remove the first gate gate from the working list
         list_copy.pop(0)

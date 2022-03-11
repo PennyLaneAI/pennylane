@@ -1,11 +1,11 @@
 # Copyright 2018-2021 Xanadu Quantum Technologies Inc.
-
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,7 +15,9 @@
 API."""
 import inspect
 from collections.abc import Iterable
-from typing import Optional
+from typing import Optional, Union, Sequence, Text
+
+from pennylane.transforms.batch_input import batch_input
 
 try:
     import tensorflow as tf
@@ -52,6 +54,10 @@ class KerasLayer(Layer):
             arguments of the `add_weight()
             <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer#add_weight>`__
             method and values being the corresponding specification.
+        batch_idx (Union[Sequence[int], int]): Argument location of the non-trainable inputs for
+            the circuit. This allows batch execution by creating executable circuits for each
+            input example with the same trainable weights. Default ``None``.
+            See :func:`~.pennylane.transforms.batch_input` for more details.
         **kwargs: additional keyword arguments passed to the Layer_ base class
 
     **Example**
@@ -196,8 +202,15 @@ class KerasLayer(Layer):
     """
 
     def __init__(
-        self, qnode, weight_shapes: dict, output_dim, weight_specs: Optional[dict] = None, **kwargs
+        self,
+        qnode,
+        weight_shapes: dict,
+        output_dim,
+        weight_specs: Optional[dict] = None,
+        batch_idx: Union[Sequence[int], int] = None,
+        **kwargs,
     ):
+        # pylint: disable=too-many-arguments
         if not CORRECT_TF_VERSION:
             raise ImportError(
                 "KerasLayer requires TensorFlow version 2 or above. The latest "
@@ -212,7 +225,12 @@ class KerasLayer(Layer):
         }
 
         self._signature_validation(qnode, weight_shapes)
-        self.qnode = qnode
+
+        self.argnum = batch_idx
+        if batch_idx is None:
+            self.qnode = qnode
+        else:
+            self.qnode = batch_input(qnode, argnum=batch_idx)
 
         dtype = tf.float32 if tf.keras.backend.floatx() == tf.float32 else tf.float64
 
@@ -281,7 +299,7 @@ class KerasLayer(Layer):
         Returns:
             tensor: output data
         """
-        if len(tf.shape(inputs)) > 1:
+        if len(tf.shape(inputs)) > 1 and self.argnum is None:
             # If the input size is not 1-dimensional, unstack the input along its first dimension,
             # recursively call the forward pass on each of the yielded tensors, and then stack the
             # outputs back into the correct shape
@@ -301,7 +319,10 @@ class KerasLayer(Layer):
         Returns:
             tensor: output datapoint
         """
-        kwargs = {**{self.input_arg: x}, **{k: 1.0 * w for k, w in self.qnode_weights.items()}}
+        kwargs = {
+            **{self.input_arg: x},
+            **{k: 1.0 * w for k, w in self.qnode_weights.items()},
+        }
         return self.qnode(**kwargs)
 
     def compute_output_shape(self, input_shape):
@@ -330,3 +351,32 @@ class KerasLayer(Layer):
         `Layer <https://www.tensorflow.org/api_docs/python/tf/keras/layers/Layer>`__. Set to
         ``"inputs"``."""
         return self._input_arg
+
+    @staticmethod
+    def set_input_argument(input_name: Text = "inputs") -> None:
+        """
+        Set the name of the input argument.
+
+        Args:
+            input_name (str): Name of the input argument
+        """
+        KerasLayer._input_arg = input_name
+
+    def get_config(self) -> dict:
+        """
+        Get serialized layer configuration
+
+        Returns:
+            dict: layer configuration
+        """
+        config = super().get_config()
+
+        config.update(
+            {
+                "output_dim": self.output_dim,
+                "weight_specs": self.weight_specs,
+                "weight_shapes": self.weight_shapes,
+                "argnum": self.argnum,
+            }
+        )
+        return config

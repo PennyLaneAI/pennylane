@@ -660,7 +660,7 @@ def param_shift_cv(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+        return gradient_tapes, lambda _: ()
 
     def _update(data):
         """Utility function to update the list of gradient tapes,
