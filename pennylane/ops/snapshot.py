@@ -15,8 +15,6 @@
 This module contains the Snapshot (pseudo) operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
-import numpy as np
-
 from pennylane.operation import AnyWires, Operation
 
 
@@ -50,8 +48,3 @@ class Snapshot(Operation):
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
         return []
-
-    # TODO: remove once pennylane-lightning#242 is resolved
-    @staticmethod
-    def compute_matrix(*params, **hyperparams):
-        return np.eye(2)
