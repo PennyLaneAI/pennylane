@@ -115,12 +115,12 @@ def _generator_backcompatibility(op):
     gen = op.generator
 
     if inspect.isclass(gen[0]):
-        gen = gen[1] * gen[0](wires=op.wires)
+        return gen[1] * gen[0](wires=op.wires)
 
-    elif isinstance(gen[0], np.ndarray):
-        gen = gen[1] * qml.Hermitian(gen[0], wires=op.wires)
+    if isinstance(gen[0], np.ndarray) and len(gen[0].shape) == 2:
+        return gen[1] * qml.Hermitian(gen[0], wires=op.wires)
 
-    return gen
+    raise qml.operation.GeneratorUndefinedError
 
 
 @qml.op_transform
