@@ -17,6 +17,7 @@ This module contains the functions for computing different types of measurement
 outcomes from quantum observables - expectation values, variances of expectations,
 and measurement samples using AnnotatedQueues.
 """
+# pylint: disable=too-many-instance-attributes
 import copy
 import uuid
 import warnings
