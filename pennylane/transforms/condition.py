@@ -193,8 +193,39 @@ def cond(condition, true_fn, false_fn=None):
             >>> qnode2(par)
             tensor(-0.1477601, requires_grad=True)
 
-        **Applying two quantum functions conditionally**
+        **Quantum functions with different signatures**
 
+        It may be that the two quantum functions passed to `qml.cond` have
+        different signatures. In such a case `lambda` functions taking no
+        arguments can be used with Python closure:
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit", wires=2)
+
+            def qfunc1(x, wire):
+                qml.Hadamard(wire)
+                qml.RY(x, wire)
+
+            def qfunc2(x, y, z, wire):
+                qml.Hadamard(wire)
+                qml.Rot(x, y, z, wire)
+
+            @qml.qnode(dev)
+            def qnode(a, x, y, z):
+                qml.Hadamard(0)
+                m_0 = qml.measure(0)
+                qml.cond(m_0, lambda: qfunc1(a, wire=1), lambda: qfunc2(x, y, z, wire=1))()
+                return qml.expval(qml.PauliZ(1))
+
+        .. code-block :: pycon
+
+            >>> par = np.array(0.3, requires_grad=True)
+            >>> x = np.array(1.2, requires_grad=True)
+            >>> y = np.array(1.1, requires_grad=True)
+            >>> z = np.array(0.3, requires_grad=True)
+            >>> qnode(par, x, y, z)
+            tensor(-0.30922805, requires_grad=True)
     """
     if callable(true_fn):
         # We assume that the callable is an operation or a quantum function
