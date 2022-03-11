@@ -55,3 +55,9 @@ class Snapshot(Operation):
     @staticmethod
     def compute_matrix(*params, **hyperparams):
         return np.eye(2)
+
+    def _controlled(self, _):
+        return Snapshot(tag=self.tag)
+
+    def adjoint(self):
+        return Snapshot(tag=self.tag)

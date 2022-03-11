@@ -116,6 +116,7 @@ class ControlledOperation(Operation):
         for wire in self.control_wires:
             tape = expand_with_control(tape, wire)
 
+        print(tape._ops)
         return tape
 
     def adjoint(self):
