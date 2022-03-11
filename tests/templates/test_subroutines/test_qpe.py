@@ -64,7 +64,7 @@ class TestDecomposition:
 
             tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
 
-            res = tape.execute(dev).flatten()
+            res = dev.execute(tape).flatten()
             initial_estimate = np.argmax(res) / 2 ** (wires - 1)
 
             # We need to rescale because RX is exp(- i theta X / 2) and we expect a unitary of the
@@ -112,7 +112,7 @@ class TestDecomposition:
                 qml.probs(estimation_wires)
 
             tape = tape.expand(depth=2, stop_at=lambda obj: obj.name in dev.operations)
-            res = tape.execute(dev).flatten()
+            res = dev.execute(tape).flatten()
 
             if phase < 0:
                 estimate = np.argmax(res) / 2 ** (wires - 2) - 1

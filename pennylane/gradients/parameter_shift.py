@@ -25,6 +25,7 @@ from .gradient_transform import (
     gradient_transform,
     grad_method_validation,
     choose_grad_methods,
+    gradient_analysis,
 )
 from .finite_difference import finite_diff, generate_shifted_tapes
 from .general_shift_rules import process_shifts
@@ -107,37 +108,6 @@ def _get_operation_recipe(tape, t_idx, shifts):
     mults = np.ones_like(coeffs)
 
     return coeffs, mults, shifts
-
-
-def _gradient_analysis(tape, use_graph=True):
-    """Update the parameter information dictionary of the tape with
-    gradient information of each parameter."""
-
-    if getattr(tape, "_gradient_fn", None) is param_shift:
-        # gradient analysis has already been performed on this tape
-        return
-
-    tape._gradient_fn = param_shift
-
-    for idx, info in tape._par_info.items():
-
-        if idx not in tape.trainable_params:
-            # non-trainable parameters do not require a grad_method
-            info["grad_method"] = None
-        else:
-            op = tape._par_info[idx]["op"]
-
-            if not qml.operation.has_grad_method(op):
-                # no differentiation method is registered for this operation
-                info["grad_method"] = None
-
-            elif (tape._graph is not None) or use_graph:
-                if not any(tape.graph.has_path(op, ob) for ob in tape.observables):
-                    # there is no influence of this operation on any of the observables
-                    info["grad_method"] = "0"
-                    continue
-
-            info["grad_method"] = op.grad_method
 
 
 def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0=None):
@@ -573,7 +543,7 @@ def param_shift(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> with qml.tape.JacobianTape() as tape:
+        >>> with qml.tape.QuantumTape() as tape:
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
@@ -581,12 +551,12 @@ def param_shift(
         ...     qml.var(qml.PauliZ(0))
         >>> gradient_tapes, fn = qml.gradients.param_shift(tape)
         >>> gradient_tapes
-        [<JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>]
+        [<QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>]
 
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
@@ -613,7 +583,7 @@ def param_shift(
         )
         return [], lambda _: ()
 
-    _gradient_analysis(tape)
+    gradient_analysis(tape, grad_fn=param_shift)
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = grad_method_validation(method, tape)
 
