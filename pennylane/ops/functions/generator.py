@@ -111,15 +111,12 @@ def generator(op, format="prefactor"):
         dependent on the ``format`` argument.
 
         * ``"prefactor"``: Return the generator as ```(obs, prefactor)`` (representing
-          :math:`G=p \hat{O}`), where
+          :math:`G=p \hat{O}`), where:
 
-          - observable `\hat{O}` is one of :class:`~.Hermitian`,
+          - observable :math:`\hat{O}` is one of :class:`~.Hermitian`,
             :class:`~.SparseHamiltonian`, or a tensor product
             of Pauli words.
-          - prefactor :math:`p` is a float
-
-          The prefactor will in most cases be :math:`\pm 1.0`, unless the generator is a single Pauli
-          word, in which case the prefactor is the coefficient of the Pauli word.
+          - prefactor :math:`p` is a float.
 
         * ``"observable"``: Return the generator as a single observable as directly defined
           by ``op``. Returned generators may be any type of observable, including
@@ -152,11 +149,12 @@ def generator(op, format="prefactor"):
 
     >>> op = qml.RX(0.2, wires=0)
     >>> qml.generator(op, format="prefactor")  # output will always be (prefactor, obs)
-    (Projector([1], wires=[0]), 1.0)
+    (PauliX(wires=[0]), -0.5)
     >>> qml.generator(op, format="hamiltonian")  # output will always be a Hamiltonian
     <Hamiltonian: terms=1, wires=[0]>
-    >>> qml.generator(op, format="observable")  # ouput will be a simplified obs where possible
+    >>> qml.generator(qml.PhaseShift(0.1, wires=0), format="observable")  # ouput will be a simplified obs where possible
     Projector([1], wires=[0])
+
     """
     if op.num_params != 1:
         raise ValueError(f"Operation {op.name} is not written in terms of a single parameter")
