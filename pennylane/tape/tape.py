@@ -19,6 +19,7 @@ from collections import Counter, deque, defaultdict
 import contextlib
 import copy
 from threading import RLock
+import warnings
 
 import numpy as np
 
@@ -254,19 +255,10 @@ class QuantumTape(AnnotatedQueue):
     <pennylane.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
 
     Once constructed, the quantum tape can be executed directly on a supported
-    device:
+    device via the :func:`~.execute` function:
 
     >>> dev = qml.device("default.qubit", wires=[0, 'a'])
-
-    Execution can take place either using the in-place constructed parameters,
-
-    >>> tape.execute(dev)
-    [0.77750694]
-
-    or by providing parameters at run time:
-
-    >>> tape.execute(dev, params=[0.1, 0.1, 0.1])
-    [0.99003329]
+    >>> qml.execute([tape], dev, gradient_fn=None)
 
     The trainable parameters of the tape can be explicitly set, and the values of
     the parameters modified in-place:

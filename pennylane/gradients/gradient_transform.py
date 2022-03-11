@@ -23,8 +23,7 @@ from pennylane.transforms.tape_expand import expand_invalid_trainable
 def gradient_analysis(tape, use_graph=True, grad_fn=None):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter."""
-
-    if getattr(tape, "_gradient_fn", None) is grad_fn:
+    if grad_fn is not None and getattr(tape, "_gradient_fn", None) is grad_fn:
         # gradient analysis has already been performed on this tape
         return
 

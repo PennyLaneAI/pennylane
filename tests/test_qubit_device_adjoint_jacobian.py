@@ -220,7 +220,7 @@ class TestAdjointJacobian:
 
         dM1 = dev.adjoint_jacobian(tape)
 
-        tape.execute(dev)
+        qml.execute([tape], dev, None)
         dM2 = dev.adjoint_jacobian(tape, use_device_state=True)
 
         assert np.allclose(dM1, dM2, atol=tol, rtol=0)
@@ -239,7 +239,7 @@ class TestAdjointJacobian:
 
         dM1 = dev.adjoint_jacobian(tape)
 
-        tape.execute(dev)
+        qml.execute([tape], dev, None)
         dM2 = dev.adjoint_jacobian(tape, starting_state=dev._pre_rotated_state)
 
         assert np.allclose(dM1, dM2, atol=tol, rtol=0)
