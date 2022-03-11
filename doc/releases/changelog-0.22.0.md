@@ -42,6 +42,7 @@
 
   - `qml.generator()` for computing the generator of a single-parameter unitary operation.
     [(#2256)](https://github.com/PennyLaneAI/pennylane/pull/2256)
+    [(#2304)](https://github.com/PennyLaneAI/pennylane/pull/2304)
 
   All operator transforms can be used on instantiated operators,
 
