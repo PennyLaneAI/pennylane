@@ -128,7 +128,7 @@ def tape_text(
             qml.var(qml.PauliZ(0) @ qml.PauliZ(1))
             qml.probs(wires=(0, 1, 2, "aux"))
 
-    >>> print(tape_text(tape))
+    >>> print(qml.drawer.tape_text(tape))
       0: ─╭QFT──RX─╭C─┤ ╭Var[Z@Z] ╭Probs
       1: ─├QFT──RY─├C─┤ ╰Var[Z@Z] ├Probs
       2: ─╰QFT──RZ─│──┤           ├Probs
@@ -139,7 +139,7 @@ def tape_text(
     By default, parameters are omitted. By specifying the ``decimals`` keyword, parameters
     are displayed to the specified precision. Matrix-valued parameters are never displayed.
 
-    >>> print(tape_text(tape, decimals=2))
+    >>> print(qml.drawer.tape_text(tape, decimals=2))
       0: ─╭QFT──RX(1.23)─╭C─┤ ╭Var[Z@Z] ╭Probs
       1: ─├QFT──RY(1.23)─├C─┤ ╰Var[Z@Z] ├Probs
       2: ─╰QFT──RZ(1.23)─│──┤           ├Probs
@@ -154,7 +154,7 @@ def tape_text(
         shape = qml.StronglyEntanglingLayers.shape(n_wires=5, n_layers=5)
         params = rng.random(shape)
         tape2 = qml.StronglyEntanglingLayers(params, wires=range(5)).expand()
-        print(tape_text(tape2, max_length=60))
+        print(qml.drawer.tape_text(tape2, max_length=60))
 
 
     .. code-block:: none
@@ -175,7 +175,7 @@ def tape_text(
     The ``wire_order`` keyword specifies the order of the wires from
     top to bottom:
 
-    >>> print(tape_text(tape, wire_order=["aux", 2, 1, 0]))
+    >>> print(qml.drawer.tape_text(tape, wire_order=["aux", 2, 1, 0]))
     aux: ──────────╭X─┤  <Z>      ╭Probs
       2: ─╭QFT──RZ─│──┤           ├Probs
       1: ─├QFT──RY─├C─┤ ╭Var[Z@Z] ├Probs
@@ -183,7 +183,7 @@ def tape_text(
 
     If the wire order contains empty wires, they are only shown if the ``show_all_wires=True``.
 
-    >>> print(tape_text(tape, wire_order=["a", "b", "aux", 0, 1, 2], show_all_wires=True))
+    >>> print(qml.drawer.tape_text(tape, wire_order=["a", "b", "aux", 0, 1, 2], show_all_wires=True))
       a: ─────────────┤
       b: ─────────────┤
     aux: ──────────╭X─┤  <Z>      ╭Probs
@@ -202,7 +202,7 @@ def tape_text(
             qml.QubitUnitary(np.eye(2), wires=1)
             qml.expval(qml.Hermitian(np.eye(4), wires=(0,1)))
 
-    >>> print(tape_text(tape, show_matrices=True))
+    >>> print(qml.drawer.tape_text(tape, show_matrices=True))
     0: ──U(M0)─┤ ╭<𝓗(M1)>
     1: ──U(M0)─┤ ╰<𝓗(M1)>
     M0 =
@@ -219,7 +219,7 @@ def tape_text(
     tape offset.
 
     >>> cache = {'matrices': [-np.eye(3)]}
-    >>> print(tape_text(tape, show_matrices=True, cache=cache))
+    >>> print(qml.drawer.tape_text(tape, show_matrices=True, cache=cache))
     0: ──U(M1)─┤ ╭<𝓗(M2)>
     1: ──U(M1)─┤ ╰<𝓗(M2)>
     M0 =
@@ -255,7 +255,7 @@ def tape_text(
                 qml.PauliX(0)
 
         cache = {'tape_offset': 3}
-        print(tape_text(tape, cache=cache))
+        print(qml.drawer.tape_text(tape, cache=cache))
         print("New tape offset: ", cache['tape_offset'])
 
 
