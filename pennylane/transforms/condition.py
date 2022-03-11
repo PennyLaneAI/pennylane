@@ -108,9 +108,9 @@ def cond(condition, true_fn, false_fn=None):
 
     .. note::
 
-        If a measurement value is passed as the conditional expression (e.g.,
-        ``m_0`` in ``qml.cond(m_0, qml.RY)``), then it resolves to the ``m_0 ==
-        1`` conditional expression internally.
+        If the first argument of ``cond`` is a measurement value (e.g., ``m_0``
+        in ``qml.cond(m_0, qml.RY)``), then ``m_0 == 1`` is considered
+        internally.
 
     .. UsageDetails::
 
