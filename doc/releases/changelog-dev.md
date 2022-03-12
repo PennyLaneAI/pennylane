@@ -9,6 +9,7 @@
 
   - The existing `qcut.tape_to_graph()` method has been extended to convert a
     sample measurements over all circuit wires to distinct sample nodes for each wire
+    [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
 
 <h3>Improvements</h3>
 
