@@ -357,6 +357,55 @@
 
 <h3>Improvements</h3>
 
+* The Operator class has undergone a major refactor with the following changes:
+
+  * The static `compute_decomposition` method defines the decomposition
+    of an operator into a product of simpler operators, and the instance method
+    `decomposition()` computes this for a given instance. When a custom
+    decomposition does not exist, the code now raises a custom `NoDecompositionError`
+    instead of `NotImplementedError`.
+    [(#2024)](https://github.com/PennyLaneAI/pennylane/pull/2024)
+
+  * The `diagonalizing_gates()` representation has been moved to the highest-level
+    `Operator` class and is therefore available to all subclasses. A condition
+    `qml.operation.defines_diagonalizing_gates` has been added, which can be used
+    in tape contexts without queueing.
+    [(#1985)](https://github.com/PennyLaneAI/pennylane/pull/1985)
+
+  * A static `compute_diagonalizing_gates` method has been added, which is called
+    by default in `diagonalizing_gates()`.
+    [(#1993)](https://github.com/PennyLaneAI/pennylane/pull/1993)
+
+  * A `hyperparameters` attribute was added to the operator class.
+    [(#2017)](https://github.com/PennyLaneAI/pennylane/pull/2017)
+
+  * The `string_for_inverse` attribute is removed.
+    [(#2021)](https://github.com/PennyLaneAI/pennylane/pull/2021)
+
+  * A `terms()` method and a `compute_terms()` static method were added to `Operator`.
+    Currently, only the `Hamiltonian` class overwrites `compute_terms` to store
+    coefficients and operators. The `Hamiltonian.terms` property hence becomes
+    a proper method called by `Hamiltonian.terms()`.
+
+  * Decompositions are now defined in `compute_decomposition`, instead of `expand`.
+    [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
+
+  * The `expand` method was moved to the main `Operator` class.
+    [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
+
+  * A `sparse_matrix` method and a `compute_sparse_matrix` static method were added
+    to the `Operator` class. The sparse representation of `SparseHamiltonian`
+    is moved to this method, so that its `matrix` method now returns a dense matrix.
+    [(#2050)](https://github.com/PennyLaneAI/pennylane/pull/2050)
+
+  * Custom errors subclassing ``OperatorPropertyUndefined`` are raised if a representation
+    has not been defined. This replaces the ``NotImplementedError`` and allows finer control
+    for developers.
+    [(#2064)](https://github.com/PennyLaneAI/pennylane/pull/2064)
+
+  * Moved ``expand()`` from ``Operation`` to ``Operator``.
+    [(#2239)](https://github.com/PennyLaneAI/pennylane/pull/2239)
+
 * Most compilation transforms, and relevant subroutines, have been updated to
   support just-in-time compilation with `jax.jit`.
   [(#1894)](https://github.com/PennyLaneAI/pennylane/pull/1894/)
@@ -401,6 +450,76 @@
 
 <h3>Breaking changes</h3>
 
+* The representation of an operator as a matrix has been overhauled.
+
+  The `matrix()` method now accepts a
+  `wire_order` argument and calculates the correct numerical representation
+  with respect to that ordering.
+
+  ```pycon
+  >>> op = qml.RX(0.5, wires="b")
+  >>> op.matrix()
+  [[0.96891242+0.j         0.        -0.24740396j]
+   [0.        -0.24740396j 0.96891242+0.j        ]]
+  >>> op.matrix(wire_order=["a", "b"])
+  [[0.9689+0.j  0.-0.2474j 0.+0.j         0.+0.j]
+   [0.-0.2474j  0.9689+0.j 0.+0.j         0.+0.j]
+   [0.+0.j          0.+0.j 0.9689+0.j 0.-0.2474j]
+   [0.+0.j          0.+0.j 0.-0.2474j 0.9689+0.j]]
+  ```
+
+  The "canonical matrix", which is independent of wires,
+  is now defined in the static method `compute_matrix()` instead of `_matrix`.
+  By default, this method is assumed to take all parameters and non-trainable
+  hyperparameters that define the operation.
+
+  ```pycon
+  >>> qml.RX.compute_matrix(0.5)
+  [[0.96891242+0.j         0.        -0.24740396j]
+   [0.        -0.24740396j 0.96891242+0.j        ]]
+  ```
+
+  If no canonical matrix is specified for a gate, `compute_matrix()`
+  raises a `NotImplementedError`.
+
+  The new `matrix()` method is now used in the
+  `pennylane.transforms.get_qubit_unitary()` transform.
+  [(#1996)](https://github.com/PennyLaneAI/pennylane/pull/1996)
+
+* The generator property has been updated to an instance method,
+  `Operator.generator()`. It now returns an instantiated operation,
+  representing the generator of the instantiated operator.
+  [(#2030)](https://github.com/PennyLaneAI/pennylane/pull/2030)
+  [(#2061)](https://github.com/PennyLaneAI/pennylane/pull/2061)
+
+  Various operators have been updated to specify the generator as either
+  an `Observable`, `Tensor`, `Hamiltonian`, `SparseHamiltonian`, or `Hermitian`
+  operator.
+
+  In addition, a temporary utility function `get_generator` has been added
+  to the utils module, to automate:
+
+  - Extracting the matrix representation
+  - Extracting the 'coefficient' if possible (only occurs if the generator is a single Pauli word)
+  - Converting a Hamiltonian to a sparse matrix if there are more than 1 Pauli word present.
+  - Negating the coefficient/taking the adjoint of the matrix if the operation was inverted
+
+  This utility logic is currently needed because:
+
+  - Extracting the matrix representation is not supported natively on
+    Hamiltonians and SparseHamiltonians.
+  - By default, calling `op.generator()` does not take into account `op.inverse()`.
+  - If the generator is a single Pauli word, it is convenient to have access to
+    both the coefficient and the observable separately.
+
+* The argument `wires` in `heisenberg_obs`, `heisenberg_expand` and `heisenberg_tr`
+  was renamed to `wire_order` to be consistent with other matrix representations.
+  [(#2051)](https://github.com/PennyLaneAI/pennylane/pull/2051)
+
+* The property `kraus_matrices` has been changed to a method, and `_kraus_matrices` renamed to
+  `compute_kraus_matrices`, which is now a static method.
+  [(#2055)](https://github.com/PennyLaneAI/pennylane/pull/2055)
+
 * The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
   The single `wires` keyword should be all the control wires followed by a single target wire.
   [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
@@ -430,10 +549,6 @@
   `qml.gradients` module should be used, together with the operation attributes
   `parameter_frequencies` or `grad_recipe`.
 
-* The `Operator.decomposition` method has been deprecated and
-  `Operator.compute_decomposition` should be used instead.
-  [#2214](https://github.com/PennyLaneAI/pennylane/pull/2214)
-
 * The `qml.finite_diff()` function has been deprecated and will be removed
   in an upcoming release. Instead,
   `qml.gradients.finite_diff()` can be used to compute purely quantum gradients
@@ -444,6 +559,10 @@
   in a future release. For extracting matrices of operations and quantum functions,
   please use `qml.matrix()`.
   [(#2248)](https://github.com/PennyLaneAI/pennylane/pull/2248)
+
+* The `Operator.decomposition` method has been deprecated and
+  `Operator.compute_decomposition` should be used instead.
+  [#2214](https://github.com/PennyLaneAI/pennylane/pull/2214)
 
 <h3>Bug fixes</h3>
 
@@ -482,6 +601,10 @@
 
 <h3>Documentation</h3>
 
+* The developer guide on adding templates and the architecture overview were rewritten
+  to reflect the past and planned changes of the operator refactor.
+  [(#2066)](https://github.com/PennyLaneAI/pennylane/pull/2066)
+
 * Links to the Strawberry Fields docuementation for information on the CV
   model.
   [(#2259)](https://github.com/PennyLaneAI/pennylane/pull/2259)
@@ -509,131 +632,6 @@
 
 * Add docstring to `OrbitalRotation.grad_recipe`.
   [(#2193)](https://github.com/PennyLaneAI/pennylane/pull/2193)
-
-<h3>Operator class refactor</h3>
-
-The Operator class has undergone a major refactor with the following changes:
-
-* The static `compute_decomposition` method defines the decomposition
-  of an operator into a product of simpler operators, and the instance method
-  `decomposition()` computes this for a given instance. When a custom
-  decomposition does not exist, the code now raises a custom `NoDecompositionError`
-  instead of `NotImplementedError`.
-  [(#2024)](https://github.com/PennyLaneAI/pennylane/pull/2024)
-
-* The `diagonalizing_gates()` representation has been moved to the highest-level
-  `Operator` class and is therefore available to all subclasses. A condition
-  `qml.operation.defines_diagonalizing_gates` has been added, which can be used
-  in tape contexts without queueing.
-  [(#1985)](https://github.com/PennyLaneAI/pennylane/pull/1985)
-
-* A static `compute_diagonalizing_gates` method has been added, which is called
-  by default in `diagonalizing_gates()`.
-  [(#1993)](https://github.com/PennyLaneAI/pennylane/pull/1993)
-
-* A `hyperparameters` attribute was added to the operator class.
-  [(#2017)](https://github.com/PennyLaneAI/pennylane/pull/2017)
-
-* The representation of an operator as a matrix has been overhauled.
-
-  The `matrix()` method now accepts a
-  `wire_order` argument and calculates the correct numerical representation
-  with respect to that ordering.
-
-  ```pycon
-  >>> op = qml.RX(0.5, wires="b")
-  >>> op.matrix()
-  [[0.96891242+0.j         0.        -0.24740396j]
-   [0.        -0.24740396j 0.96891242+0.j        ]]
-  >>> op.matrix(wire_order=["a", "b"])
-  [[0.9689+0.j  0.-0.2474j 0.+0.j         0.+0.j]
-   [0.-0.2474j  0.9689+0.j 0.+0.j         0.+0.j]
-   [0.+0.j          0.+0.j 0.9689+0.j 0.-0.2474j]
-   [0.+0.j          0.+0.j 0.-0.2474j 0.9689+0.j]]
-  ```
-
-  The "canonical matrix", which is independent of wires,
-  is now defined in the static method `compute_matrix()` instead of `_matrix`.
-  By default, this method is assumed to take all parameters and non-trainable
-  hyperparameters that define the operation.
-
-  ```pycon
-  >>> qml.RX.compute_matrix(0.5)
-  [[0.96891242+0.j         0.        -0.24740396j]
-   [0.        -0.24740396j 0.96891242+0.j        ]]
-  ```
-
-  If no canonical matrix is specified for a gate, `compute_matrix()`
-  raises a `NotImplementedError`.
-
-  The new `matrix()` method is now used in the
-  `pennylane.transforms.get_qubit_unitary()` transform.
-  [(#1996)](https://github.com/PennyLaneAI/pennylane/pull/1996)
-
-* The `string_for_inverse` attribute is removed.
-  [(#2021)](https://github.com/PennyLaneAI/pennylane/pull/2021)
-
-* A `terms()` method and a `compute_terms()` static method were added to `Operator`.
-  Currently, only the `Hamiltonian` class overwrites `compute_terms` to store
-  coefficients and operators. The `Hamiltonian.terms` property hence becomes
-  a proper method called by `Hamiltonian.terms()`.
-
-* The generator property has been updated to an instance method,
-  `Operator.generator()`. It now returns an instantiated operation,
-  representing the generator of the instantiated operator.
-  [(#2030)](https://github.com/PennyLaneAI/pennylane/pull/2030)
-  [(#2061)](https://github.com/PennyLaneAI/pennylane/pull/2061)
-
-  Various operators have been updated to specify the generator as either
-  an `Observable`, `Tensor`, `Hamiltonian`, `SparseHamiltonian`, or `Hermitian`
-  operator.
-
-  In addition, a temporary utility function get_generator has been added
-  to the utils module, to automate:
-
-  - Extracting the matrix representation
-  - Extracting the 'coefficient' if possible (only occurs if the generator is a single Pauli word)
-  - Converting a Hamiltonian to a sparse matrix if there are more than 1 Pauli word present.
-  - Negating the coefficient/taking the adjoint of the matrix if the operation was inverted
-
-  This utility logic is currently needed because:
-
-  - Extracting the matrix representation is not supported natively on
-    Hamiltonians and SparseHamiltonians.
-  - By default, calling `op.generator()` does not take into account `op.inverse()`.
-  - If the generator is a single Pauli word, it is convenient to have access to
-    both the coefficient and the observable separately.
-
-* Decompositions are now defined in `compute_decomposition`, instead of `expand`.
-  [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
-
-* The `expand` method was moved to the main `Operator` class.
-  [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
-
-* A `sparse_matrix` method and a `compute_sparse_matrix` static method were added
-  to the `Operator` class. The sparse representation of `SparseHamiltonian`
-  is moved to this method, so that its `matrix` method now returns a dense matrix.
-  [(#2050)](https://github.com/PennyLaneAI/pennylane/pull/2050)
-
-* The argument `wires` in `heisenberg_obs`, `heisenberg_expand` and `heisenberg_tr`
-  was renamed to `wire_order` to be consistent with other matrix representations.
-  [(#2051)](https://github.com/PennyLaneAI/pennylane/pull/2051)
-
-* The property `kraus_matrices` has been changed to a method, and `_kraus_matrices` renamed to
-  `compute_kraus_matrices`, which is now a static method.
-  [(#2055)](https://github.com/PennyLaneAI/pennylane/pull/2055)
-
-* The developer guide on adding templates and the architecture overview were rewritten
-  to reflect the past and planned changes of the operator refactor.
-  [(#2066)](https://github.com/PennyLaneAI/pennylane/pull/2066)
-
-* Custom errors subclassing ``OperatorPropertyUndefined`` are raised if a representation
-  has not been defined. This replaces the ``NotImplementedError`` and allows finer control
-  for developers.
-  [(#2064)](https://github.com/PennyLaneAI/pennylane/pull/2064)
-
-* Moved ``expand()`` from ``Operation`` to ``Operator``.
-  [(#2239)](https://github.com/PennyLaneAI/pennylane/pull/2239)
 
 <h3>Contributors</h3>
 
