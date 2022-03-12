@@ -14,7 +14,6 @@
 """
 Contains the condition transform.
 """
-from copy import copy
 from functools import wraps
 from typing import Type
 
@@ -88,21 +87,148 @@ def cond(condition, true_fn, false_fn=None):
 
         dev = qml.device("default.qubit", wires=3)
 
-        first_par = 0.1
-        sec_par = 0.3
-
         @qml.qnode(dev)
-        def qnode():
+        def qnode(x, y):
+            qml.Hadamard(0)
             m_0 = qml.measure(0)
-            qml.cond(m_0, qml.RY)(first_par, wires=1)
+            qml.cond(m_0, qml.RY)(x, wires=1)
 
+            qml.Hadamard(2)
+            qml.RY(-np.pi/2, wires=[2])
             m_1 = qml.measure(2)
-            qml.cond(m_0, qml.RZ)(sec_par, wires=1)
+            qml.cond(m_1 == 0, qml.RX)(y, wires=1)
             return qml.expval(qml.PauliZ(1))
+
+    .. code-block :: pycon
+
+        >>> first_par = np.array(0.3, requires_grad=True)
+        >>> sec_par = np.array(1.23, requires_grad=True)
+        >>> qnode(first_par, sec_par)
+        tensor(0.32677361, requires_grad=True)
+
+    .. note::
+
+        If the first argument of ``cond`` is a measurement value (e.g., ``m_0``
+        in ``qml.cond(m_0, qml.RY)``), then ``m_0 == 1`` is considered
+        internally.
+
+    .. UsageDetails::
+
+        **Conditional quantum functions**
+
+        The ``cond`` transform allows conditioning quantum functions too:
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit", wires=2)
+
+            def qfunc(par, wires):
+                qml.Hadamard(wires[0])
+                qml.RY(par, wires[0])
+
+            @qml.qnode(dev)
+            def qnode(x):
+                qml.Hadamard(0)
+                m_0 = qml.measure(0)
+                qml.cond(m_0, qfunc)(x, wires=[1])
+                return qml.expval(qml.PauliZ(1))
+
+        .. code-block :: pycon
+
+            >>> par = np.array(0.3, requires_grad=True)
+            >>> qnode(par)
+            tensor(0.3522399, requires_grad=True)
+
+        **Passing two quantum functions**
+
+        In the qubit model, single-qubit measurements may result in one of two
+        outcomes. Such measurement outcomes may then be used to create
+        conditional expressions.
+
+        According to the truth value of the conditional expression passed to
+        ``cond``, the transform can apply a quantum function in both the
+        ``True`` and ``False`` case:
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit", wires=2)
+
+            def qfunc1(x, wires):
+                qml.Hadamard(wires[0])
+                qml.RY(x, wires[0])
+
+            def qfunc2(x, wires):
+                qml.Hadamard(wires[0])
+                qml.RZ(x, wires[0])
+
+            @qml.qnode(dev)
+            def qnode1(x):
+                qml.Hadamard(0)
+                m_0 = qml.measure(0)
+                qml.cond(m_0, qfunc1, qfunc2)(x, wires=[1])
+                return qml.expval(qml.PauliZ(1))
+
+        .. code-block :: pycon
+
+            >>> par = np.array(0.3, requires_grad=True)
+            >>> qnode1(par)
+            tensor(-0.1477601, requires_grad=True)
+
+        The previous QNode is equivalent to using ``cond`` twice, inverting the
+        conditional expression in the second case using the ``~`` unary
+        operator:
+
+        .. code-block:: python3
+
+            @qml.qnode(dev)
+            def qnode2(x):
+                qml.Hadamard(0)
+                m_0 = qml.measure(0)
+                qml.cond(m_0, qfunc1)(x, wires=[1])
+                qml.cond(~m_0, qfunc2)(x, wires=[1])
+                return qml.expval(qml.PauliZ(1))
+
+        .. code-block :: pycon
+
+            >>> qnode2(par)
+            tensor(-0.1477601, requires_grad=True)
+
+        **Quantum functions with different signatures**
+
+        It may be that the two quantum functions passed to ``qml.cond`` have
+        different signatures. In such a case, ``lambda`` functions taking no
+        arguments can be used with Python closure:
+
+        .. code-block:: python3
+
+            dev = qml.device("default.qubit", wires=2)
+
+            def qfunc1(x, wire):
+                qml.Hadamard(wire)
+                qml.RY(x, wire)
+
+            def qfunc2(x, y, z, wire):
+                qml.Hadamard(wire)
+                qml.Rot(x, y, z, wire)
+
+            @qml.qnode(dev)
+            def qnode(a, x, y, z):
+                qml.Hadamard(0)
+                m_0 = qml.measure(0)
+                qml.cond(m_0, lambda: qfunc1(a, wire=1), lambda: qfunc2(x, y, z, wire=1))()
+                return qml.expval(qml.PauliZ(1))
+
+        .. code-block :: pycon
+
+            >>> par = np.array(0.3, requires_grad=True)
+            >>> x = np.array(1.2, requires_grad=True)
+            >>> y = np.array(1.1, requires_grad=True)
+            >>> z = np.array(0.3, requires_grad=True)
+            >>> qnode(par, x, y, z)
+            tensor(-0.30922805, requires_grad=True)
     """
     if callable(true_fn):
         # We assume that the callable is an operation or a quantum function
-
         with_meas_err = (
             "Only quantum functions that contain no measurements can be applied conditionally."
         )
@@ -127,11 +253,10 @@ def cond(condition, true_fn, false_fn=None):
                 if else_tape.measurements:
                     raise ConditionalTransformError(with_meas_err)
 
-                inverted_m = copy(condition)
-                inverted_m = ~inverted_m
+                inverted_condition = ~condition
 
                 for op in else_tape.operations:
-                    Conditional(inverted_m, op)
+                    Conditional(inverted_condition, op)
 
     else:
         raise ConditionalTransformError(

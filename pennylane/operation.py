@@ -788,7 +788,7 @@ class Operator(abc.ABC):
 
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
-                and list of operations :math:`O_i`
+            and list of operations :math:`O_i`
         """
         return self.compute_terms(*self.parameters, **self.hyperparameters)
 

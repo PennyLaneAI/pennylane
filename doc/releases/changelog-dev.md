@@ -92,6 +92,7 @@
   [(#2211)](https://github.com/PennyLaneAI/pennylane/pull/2211)
   [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
   [(#2275)](https://github.com/PennyLaneAI/pennylane/pull/2275)
+  [(#2294)](https://github.com/PennyLaneAI/pennylane/pull/2294)
 
   The addition includes the `defer_measurements` device-independent transform
   that can be applied on devices that have no native mid-circuit measurements
