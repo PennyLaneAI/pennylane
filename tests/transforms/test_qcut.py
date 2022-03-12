@@ -384,7 +384,7 @@ class TestTapeToGraph:
 
     def test_split_sample_measurement(self):
         """
-        Test that a circuit with single sample measuremnt over all wires is
+        Test that a circuit with single sample measurement over all wires is
         correctly converted to a graph with a distinct node for each wire sampled
         """
 
@@ -948,6 +948,68 @@ class TestFragmentGraph:
         fragments, communication_graph = qcut.fragment_graph(g)
         assert len(fragments) == 1
         assert number_of_selfloops(communication_graph) == 0
+
+    def test_fragment_sample_circuit(self):
+        """
+        Test that a circuit containing a sample measurement is fragmented
+        correctly
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.sample(wires=[0, 1, 2])
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        fragments, communication_graph = qcut.fragment_graph(g)
+
+        sub_0_expected_nodes = [
+            (qml.Hadamard(wires=[0]), {"order": 0}),
+            (qml.CNOT(wires=[0, 1]), {"order": 1}),
+            (qml.PauliX(wires=[1]), {"order": 2}),
+            (qml.sample(qml.Projector([1], wires=[0])), {"order": 5}),
+            (qcut.MeasureNode(wires=[1]), {"order": 3}),
+        ]
+
+        sub_1_expected_nodes = [
+            (qml.sample(qml.Projector([1], wires=[2])), {"order": 5}),
+            (qml.sample(qml.Projector([1], wires=[1])), {"order": 5}),
+            (qcut.PrepareNode(wires=[1]), {"order": 3}),
+            (qml.CNOT(wires=[1, 2]), {"order": 4}),
+        ]
+
+        expected_nodes = [
+            sub_0_expected_nodes,
+            sub_1_expected_nodes,
+        ]
+
+        sub_0_expected_edges = [
+            (qml.Hadamard(wires=[0]), qml.CNOT(wires=[0, 1]), {"wire": 0}),
+            (qml.CNOT(wires=[0, 1]), qml.PauliX(wires=[1]), {"wire": 1}),
+            (qml.CNOT(wires=[0, 1]), qml.sample(qml.Projector([1], wires=[0])), {"wire": 0}),
+            (qml.PauliX(wires=[1]), qcut.MeasureNode(wires=[1]), {"wire": 1}),
+        ]
+
+        sub_1_expected_edges = [
+            (qcut.PrepareNode(wires=[1]), qml.CNOT(wires=[1, 2]), {"wire": 1}),
+            (qml.CNOT(wires=[1, 2]), qml.sample(qml.Projector([1], wires=[1])), {"wire": 1}),
+            (qml.CNOT(wires=[1, 2]), qml.sample(qml.Projector([1], wires=[2])), {"wire": 2}),
+        ]
+
+        expected_edges = [
+            sub_0_expected_edges,
+            sub_1_expected_edges,
+        ]
+
+        for fragment, expected_n in zip(fragments, expected_nodes):
+            compare_fragment_nodes(list(fragment.nodes(data=True)), expected_n)
+
+        for fragment, expected_e in zip(fragments, expected_edges):
+            compare_fragment_edges(list(fragment.edges(data=True)), expected_e)
 
 
 class TestGraphToTape:
