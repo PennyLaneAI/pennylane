@@ -141,6 +141,7 @@
 * A new operation `qml.Snapshot` has been added to assist users in debugging quantum progams.
   [(#2233)](https://github.com/PennyLaneAI/pennylane/pull/2233)
   [(#2289)](https://github.com/PennyLaneAI/pennylane/pull/2289)
+  [(#2291)](https://github.com/PennyLaneAI/pennylane/pull/2291)
 
   The instruction is used to save the internal state of simulator devices at
   arbitrary points of execution, such as the quantum state vector and density
@@ -409,6 +410,17 @@
   [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
 
 <h3>Deprecations</h3>
+
+* Executing tapes using `tape.execute(dev)` is deprecated.
+  Please use the `qml.execute([tape], dev)` function instead.
+  [(#2306)](https://github.com/PennyLaneAI/pennylane/pull/2306)
+
+* The subclasses of the quantum tape, including `JacobianTape`, `QubitParamShiftTape`,
+  `CVParamShiftTape`, and `ReversibleTape` are deprecated. Instead of calling
+  `JacobianTape.jacobian()` and `JacobianTape.hessian()`,
+  please use a standard `QuantumTape`, and apply gradient transforms using
+  the `qml.gradients` module.
+  [(#2306)](https://github.com/PennyLaneAI/pennylane/pull/2306)
 
 * The `qml.operation.Operation.get_parameter_shift` method has been deprecated
   and will be removed in a future release.

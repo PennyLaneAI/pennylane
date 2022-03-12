@@ -561,7 +561,7 @@ class Operator(abc.ABC):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.CNOT.matrix`
+        .. seealso:: :meth:`~.Operator.get_matrix` and :func:`~.matrix`
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -633,7 +633,7 @@ class Operator(abc.ABC):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.SparseHamiltonian.sparse_matrix`
+        .. seealso:: :meth:`~.Operator.sparse_matrix`
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -657,7 +657,7 @@ class Operator(abc.ABC):
 
         A ``SparseMatrixUndefinedError`` is raised if the sparse matrix representation has not been defined.
 
-        .. seealso:: :meth:`~.SparseHamiltonian.compute_sparse_matrix`
+        .. seealso:: :meth:`~.Operator.compute_sparse_matrix`
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
@@ -686,7 +686,7 @@ class Operator(abc.ABC):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.RZ.eigvals`
+        .. seealso:: :meth:`~.Operator.get_eigvals` and :func:`~.eigvals`
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -765,7 +765,7 @@ class Operator(abc.ABC):
 
         .. math:: O = \sum_i c_i O_i
 
-        .. seealso:: :meth:`~.Hamiltonian.terms`
+        .. seealso:: :meth:`~.Operator.terms`
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -784,11 +784,11 @@ class Operator(abc.ABC):
 
         A ``TermsUndefinedError`` is raised if no representation by terms is defined.
 
-        .. seealso:: :meth:`~.Hamiltonian.compute_terms`
+        .. seealso:: :meth:`~.Operator.compute_terms`
 
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
-                and list of operations :math:`O_i`
+            and list of operations :math:`O_i`
         """
         return self.compute_terms(*self.parameters, **self.hyperparameters)
 
@@ -993,7 +993,7 @@ class Operator(abc.ABC):
 
         A ``DecompositionUndefinedError`` is raised if no representation by decomposition is defined.
 
-        .. seealso:: :meth:`~.operation.Operator.compute_decomposition`.
+        .. seealso:: :meth:`~.Operator.compute_decomposition`.
 
         Returns:
             list[Operator]: decomposition of the operator
@@ -1008,7 +1008,7 @@ class Operator(abc.ABC):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        .. seealso:: :meth:`~.operation.Operator.decomposition`.
+        .. seealso:: :meth:`~.Operator.decomposition`.
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -1033,7 +1033,7 @@ class Operator(abc.ABC):
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
 
-        .. seealso:: :meth:`~.PauliX.diagonalizing_gates`.
+        .. seealso:: :meth:`~.Operator.diagonalizing_gates`.
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -1098,7 +1098,7 @@ class Operator(abc.ABC):
         """Returns a tape that has recorded the decomposition of the operator.
 
         Returns:
-            .JacobianTape: quantum tape
+            .QuantumTape: quantum tape
         """
         tape = qml.tape.QuantumTape(do_queue=False)
 
