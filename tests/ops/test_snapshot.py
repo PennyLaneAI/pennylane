@@ -35,5 +35,6 @@ def test_control():
 
 
 def test_adjoint():
+    """Test the adjoint method for the Snapshot operation."""
     assert isinstance(Snapshot().adjoint(), Snapshot)
     assert Snapshot("my_label").adjoint().tag == Snapshot("my_label").tag
