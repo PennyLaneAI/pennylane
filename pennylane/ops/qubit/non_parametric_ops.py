@@ -2053,7 +2053,7 @@ class Barrier(Operation):
     def _controlled(self, _):
         return Barrier(wires=self.wires)
 
-    def adjoint(self):
+    def adjoint(self, do_queue=False):
         return Barrier(wires=self.wires)
 
 
