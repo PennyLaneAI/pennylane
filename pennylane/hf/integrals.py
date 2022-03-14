@@ -488,15 +488,20 @@ def _boys(n, t):
 
     Args:
         n (float): order of the Boys function
-        t (float): exponent of the Boys function
+        t (array[float]): exponent of the Boys function
 
     Returns:
         float: value of the Boys function
     """
-    if t == 0.0:
-        return 1 / (2 * n + 1)
+    eps = 1e-30
+    tf = t.flatten() + eps
 
-    return asp.special.gammainc(n + 0.5, t) * asp.special.gamma(n + 0.5) / (2 * t ** (n + 0.5))
+    f = asp.special.gammainc(n + 0.5, tf) * asp.special.gamma(n + 0.5) / (2 * tf ** (n + 0.5))
+    o_z = anp.ones(len(tf))
+    o_z[tf == 0] = 0.0
+    o_v = anp.zeros(len(tf))
+    o_v[tf == 0] = 1 / (2 * n + 1)
+    return (f * o_z + o_v).reshape(t.shape)
 
 
 def _hermite_coulomb(t, u, v, n, p, dr):
@@ -543,10 +548,7 @@ def _hermite_coulomb(t, u, v, n, p, dr):
     r = 0
 
     if t == u == v == 0:
-        f = []
-        for term in T.flatten():
-            f.append(_boys(n, term))
-        return ((-2 * p) ** n) * anp.array(f).reshape(T.shape)
+        return ((-2 * p) ** n) * _boys(n, T)
 
     if t == u == 0:
         if v > 1:
@@ -733,24 +735,21 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
         + delta * rd[:, anp.newaxis, anp.newaxis, anp.newaxis, anp.newaxis]
     ) / (gamma + delta)
 
+    g_t = [expansion(l1, l2, ra[0], rb[0], alpha, beta, t) for t in range(l1 + l2 + 1)]
+    g_u = [expansion(m1, m2, ra[1], rb[1], alpha, beta, u) for u in range(m1 + m2 + 1)]
+    g_v = [expansion(n1, n2, ra[2], rb[2], alpha, beta, v) for v in range(n1 + n2 + 1)]
+    g_r = [expansion(l3, l4, rc[0], rd[0], gamma, delta, r) for r in range(l3 + l4 + 1)]
+    g_s = [expansion(m3, m4, rc[1], rd[1], gamma, delta, s) for s in range(m3 + m4 + 1)]
+    g_w = [expansion(n3, n4, rc[2], rd[2], gamma, delta, w) for w in range(n3 + n4 + 1)]
+
     g = 0.0
     lengths = [l1 + l2 + 1, m1 + m2 + 1, n1 + n2 + 1, l3 + l4 + 1, m3 + m4 + 1, n3 + n4 + 1]
     for t, u, v, r, s, w in it.product(*[range(length) for length in lengths]):
-        g = g + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * expansion(
-            m1, m2, ra[1], rb[1], alpha, beta, u
-        ) * expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * expansion(
-            l3, l4, rc[0], rd[0], gamma, delta, r
-        ) * expansion(
-            m3, m4, rc[1], rd[1], gamma, delta, s
-        ) * expansion(
-            n3, n4, rc[2], rd[2], gamma, delta, w
-        ) * (
-            (-1) ** (r + s + w)
-        ) * _hermite_coulomb(
-            t + r, u + s, v + w, 0, (p * q) / (p + q), p_ab - p_cd
-        )
-
-    g = g * 2 * (anp.pi**2.5) / (p * q * anp.sqrt(p + q))
+        g_exp = g_t[t] * g_u[u] * g_v[v] * g_r[r] * g_s[s] * g_w[w] * ((-1) ** (r + s + w))
+        g_hc = _hermite_coulomb(t + r, u + s, v + w, 0, (p * q) / (p + q), p_ab - p_cd)
+        g = g + g_exp * g_hc
+        # g = g + g_exp
+    g = g * 2 * (anp.pi ** 2.5) / (p * q * anp.sqrt(p + q))
 
     return g
 
