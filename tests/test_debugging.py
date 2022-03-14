@@ -269,7 +269,7 @@ class TestSnapshot:
         @qml.qnode(dev)
         def qnode(params):
             qml.Hadamard(0)
-            qml.ctrl(lambda: circuit(params, wire=1), 0)()
+            qml.ctrl(circuit, 0)(params, wire=1)
             return qml.expval(qml.PauliZ(1))
 
         params = np.array([1.3, 1.4, 0.2])
