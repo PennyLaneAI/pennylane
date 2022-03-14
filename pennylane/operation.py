@@ -1859,8 +1859,8 @@ class Tensor(Observable):
             # Tensor product of observables contains a mixture
             # of standard and non-standard observables
             self._eigvals_cache = np.array([1])
-            # for k, g in itertools.groupby(self.obs, lambda x: x.name in standard_observables):
-            for k, g in itertools.groupby(obs_sorted, lambda x: x.name in standard_observables):
+            for k, g in itertools.groupby(self.obs, lambda x: x.name in standard_observables):
+            # for k, g in itertools.groupby(obs_sorted, lambda x: x.name in standard_observables):
                 if k:
                     # Subgroup g contains only standard observables.
                     self._eigvals_cache = np.kron(self._eigvals_cache, pauli_eigs(len(list(g))))

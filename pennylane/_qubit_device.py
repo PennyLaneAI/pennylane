@@ -755,11 +755,21 @@ class QubitDevice(Device):
         # it corresponds to the orders of the wires passed.
         num_wires = len(device_wires)
         basis_states = self.generate_basis_states(num_wires)
-        basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
+        print(f"\n ----- basis states: ----- \n{basis_states} ")
+        print(f"\ndevice wires: \n {device_wires}")
+        print(f"\ndevice wires sort: \n {np.argsort(device_wires)}")
+        print(f"\ndevice wires sort2: \n {np.argsort(np.argsort(device_wires))}")
+        # basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
+        basis_states = basis_states[:, np.argsort(device_wires)]
+        print(f"\nnew_basis states:\n {basis_states}")
+
 
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
+        print(f"powers of 2: \n {powers_of_two}")
         perm = basis_states @ powers_of_two
-        return self._gather(prob, perm)
+        print(f"perm: \n{perm}")
+        print(f"prob: \n{prob}")
+        return self._gather(prob, perm), perm
 
     def expval(self, observable, shot_range=None, bin_size=None):
 
@@ -782,14 +792,40 @@ class QubitDevice(Device):
                     f"Cannot compute analytic expectations of {observable.name}."
                 ) from e
 
+
+            # num_wires = len(observable.wires)
+            # ordered_wires = self.get_ordered_subset_wires(observable.wires)
+            # basis_states = self.generate_basis_states(num_wires)
+            # basis_states = basis_states[:, np.argsort(np.argsort(ordered_wires))]
+            # powers_of_two = 2 ** np.arange(num_wires)[::-1]
+            # perm = basis_states @ powers_of_two
+            # eigvals = self._gather(eigvals, perm)
+
+
             # obs_wires = observable.wires.labels
             # sorted_wires = Wires(
             #     sorted(obs_wires, key=lambda x: str(x))
             # )  # wires need to be sorted to match eigvals
             # prob = self.probability(wires=sorted_wires)
-            prob = self.probability(wires=observable.wires)
+
+            prob, perm = self.probability(wires=observable.wires)
+
+            # prob, perm = self.probability(wires=ordered_wires)
+
+            y = lambda arr, ind: arr[ind]
             print(f"\n prob vector: {prob}")
-            print(f"\n eigvals: {eigvals}\n")
+            print(f"\n eigvals: \n{eigvals}\n")
+            print(f"\n perm eigvals: \n{y(eigvals, perm)}")
+
+            sum=0
+            for i, j in zip(prob, eigvals):
+                sum += i*j
+
+            print(sum)
+
+            print(f"wires: \n{self.wires}")
+            print(f"wire map: \n{self.wire_map}")
+
             return self._dot(eigvals, prob)
 
         # estimate the ev
