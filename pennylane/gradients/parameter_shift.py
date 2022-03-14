@@ -66,7 +66,7 @@ def _square_observable(obs):
     return NONINVOLUTORY_OBS[obs.name](obs)
 
 
-def _get_operation_recipe(tape, t_idx, shifts):
+def _get_operation_recipe(tape, t_idx, shifts, order=1):
     """Utility function to return the parameter-shift rule
     of the operation corresponding to trainable parameter
     t_idx on tape.
@@ -84,12 +84,21 @@ def _get_operation_recipe(tape, t_idx, shifts):
     That is, the order of precedence is :meth:`~.grad_recipe`, custom
     :attr:`~.parameter_frequencies`, and finally :meth:`.generator` via the default
     implementation of the frequencies.
+
+    If order is set to 2, the rule for the second-order derivative is obtained instead.
     """
+    if order not in {1, 2}:
+        raise NotImplementedError("_get_operation_recipe only is implemented for orders 1 and 2.")
+
     op, p_idx = tape.get_operation(t_idx)
 
     # Try to use the stored grad_recipe of the operation
     recipe = op.grad_recipe[p_idx]
     if recipe is not None:
+        if order==2:
+            raise NotImplementedError(
+                "Using fixed grad_recipes together with order=2 is not implemented yet."
+            )
         return process_shifts(np.array(recipe).T, check_duplicates=False)
 
     # Try to obtain frequencies, either via custom implementation or from generator eigvals
@@ -102,7 +111,7 @@ def _get_operation_recipe(tape, t_idx, shifts):
         ) from e
 
     # Create shift rule from frequencies with given shifts
-    coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=1)
+    coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=order)
     # The generated shift rules do not include a rescaling of the parameter, only shifts.
     mults = np.ones_like(coeffs)
 

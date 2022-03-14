@@ -21,9 +21,11 @@ import numpy as np
 
 import pennylane as qml
 
-from .parameter_shift import _gradient_analysis
+from .parameter_shift import _gradient_analysis, _get_operation_recipe
 from .gradient_transform import grad_method_validation, choose_grad_methods
 from .hessian_transform import hessian_transform
+from .finite_difference import generate_shifted_tapes
+from .general_shift_rules import _combine_shift_rules
 
 
 def _process_hessian_recipe(hessian_recipe, tol=1e-10):
@@ -94,10 +96,13 @@ def expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_
     """
     argnum = tape.trainable_params if argnum is None else argnum
 
+    #TODO: ASSERT len(diagonal_shits)=="len(off_diagonal_shifts)"==len(argnum)
+
     hessian_tapes = []
     hessian_coeffs = []
+    num_tapes = []
     unshifted_coeffs = {}
-    shapes = []
+    add_unshifted = f0 is None
 
     # The Hessian for a 2-term parameter-shift rule can be expressed via the following recipes.
     # Off-diagonal elements of the Hessian require shifts to two different parameter indices.
@@ -107,76 +112,112 @@ def expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_
     #       didj f(x) = coeff * f(mult*x + shift1*ei + shift2*ej) + ...
 
     hess_recipes = {}
-    for i in argnum:
 
-
+    diag_recipes = []
+    partial_offdiag_recipes = []
+    h_dim = tape.num_params
     for i in range(h_dim):
-        # optimization: skip partial derivatives that are zero
-        if diff_methods[i] == "0":
-            # We may fill in coefficients and shapes for the entire row.
-            hessian_coeffs.extend([[]] * h_dim)
-            shapes.extend(((i, j), 0) for j in range(h_dim))
+
+        if i not in argnum or diff_methods[i] == "0":
+            # hessian will be set to 0 for this row/column
+            diag_recipes.append(None)
+            partial_offdiag_recipes.append((None, None, None))
             continue
 
-        # Prefill Hessian in the lower triangular part for optimization below
-        hessian_coeffs.extend([[]] * i)
-        shapes.extend(((i, j), 0) for j in range(i))
+        # Get the diagonal second-order derivative recipe
+        diag_shifts = None if diagonal_shifts is None else diagonal_shifts[i]
+        diag_recipes.append(_get_operation_recipe(tape, i, diag_shifts, order=2))
 
-        # optimization: only generate tapes for upper triangular matrix (j >= i)
-        for j in range(i, h_dim):
-            # optimization: skip partial derivatives that are zero
-            if diff_methods[j] == "0":
-                hessian_coeffs.append([])
-                shapes.append(((i, j), 0))
+        # Create the first-order gradient recipes per parameter
+        _shifts = None if off_diagonal_shifts is None else off_diagonal_shifts[i]
+        partial_offdiag_recipes.append(_get_operation_recipe(tape, i, _shifts, order=1))
+
+    for i in range(h_dim):
+        if diag_recipes[i] is None:
+            hessian_coeffs.extend([None] * (h_dim - i))
+            num_tapes.extend([0] * (h_dim - i))
+            continue
+
+        dc_i, dm_i, ds_i = diag_recipes[i]
+        if ds_i[0] == 0 and dm_i[0] == 1.:
+            if add_unshifted:
+                hessian_tapes.insert(0, tape)
+                add_unshifted = False
+            unshifted_coeffs[(i, i)] = dc_i[0]
+            dc_i, dm_i, ds_i = dc_i[1:], dm_i[1:], ds_i[1:]
+
+        # Create the shifted tapes for the diagonal entries
+        diag_tapes = generate_shifted_tapes(tape, i, ds_i, dm_i)
+        hessian_tapes.extend(diag_tapes)
+        print(f"extending hessian_tapes by {len(diag_tapes)} tapes, now has length {len(hessian_tapes)}")
+        hessian_coeffs.append(dc_i)
+        num_tapes.append(len(diag_tapes))
+
+        c_i, m_i, s_i = partial_offdiag_recipes[i]
+        for j in range(i + 1, h_dim):
+            c_j, m_j, s_j = partial_offdiag_recipes[j]
+            if c_j is None:
+                hessian_coeffs.append(None)
+                num_tapes.append(0)
                 continue
 
-            recipe = diag_recipe if i == j else off_diag_recipe
-            coeffs, _, shifts = _process_hessian_recipe(recipe)
-
-            # optimization: only compute the unshifted tape once
-            if all(np.array(shifts[0]) == 0):
-                if not unshifted_coeffs and f0 is None:
+            c_ij, *s_ij = _combine_shift_rules([(c_i, s_i), (c_j, s_j)])
+            if s_ij[0][0] == s_ij[1][0] == 0:
+                if add_unshifted:
                     hessian_tapes.insert(0, tape)
+                    add_unshifted = False
+                unshifted_coeffs[(i, j)] = c_ij
+                c_ij, s_ij = c_ij[1:], s_ij[1:]
 
-                unshifted_coeffs[(i, j)] = coeffs[0]
-                coeffs, shifts = coeffs[1:], shifts[1:]
+            h_tapes = generate_multishifted_tapes(tape, (i, j), zip(*s_ij))
 
-            # generate the Hessian tapes
-            hessian_coeffs.append(coeffs)
-            h_tapes = generate_multishifted_tapes(tape, (i, j), shifts)
-
+            print(c_ij, s_ij)
             hessian_tapes.extend(h_tapes)
-            shapes.append(((i, j), len(h_tapes)))
+            print(f"extending hessian_tapes by {len(generate_multishifted_tapes(tape, (i, j), zip(*s_ij)))} tapes, now has length {len(hessian_tapes)}")
+            print(hessian_tapes)
+            hessian_coeffs.append(c_ij)
+            print(hessian_coeffs[-1])
+            num_tapes.append(len(h_tapes))
 
     def processing_fn(results):
+        print(f"len(all results): {len(results)}")
+        print(f"all shapes: {num_tapes}")
         # The first results dimension is the number of terms/tapes in the parameter-shift
         # rule, the remaining ones are the QNode output dimensions.
         out_dim = qml.math.shape(qml.math.stack(results))[1:]
         # The desired shape of the Hessian is:
         #       (QNode output dimensions, # trainable gate args, # trainable gate args),
-        # but first we accumulate all elements into a list, since no array assingment is possible.
+        # but first we accumulate all elements into a list, since no array assignment is possible.
         hessian = []
         # Keep track of tape results already consumed.
-        start = 1 if unshifted_coeffs and f0 is None else 0
+        start = int(bool(unshifted_coeffs) and f0 is None)
+        print(f"start: {start}")
         # Results of the unshifted tape.
         r0 = results[0] if start == 1 else f0
 
-        for k, ((i, j), s) in enumerate(shapes):
-            res = results[start : start + s]
-            start = start + s
-
-            # Compute the elements of the Hessian as the linear combination of
-            # results and coefficients, barring optimization cases.
+        for i, j in it.product(range(h_dim), repeat=2):
             if j < i:
-                hess = hessian[j * h_dim + i]
-            elif s == 0:
-                hess = qml.math.zeros(out_dim)
-            else:
-                res = qml.math.stack(res)
-                coeffs = qml.math.cast(qml.math.convert_like(hessian_coeffs[k], res), res.dtype)
-                hess = qml.math.tensordot(res, coeffs, [[0], [0]])
-                if (i, j) in unshifted_coeffs:
-                    hess = hess + unshifted_coeffs[(i, j)] * r0
+                hessian.append(hessian[j * h_dim + i])
+                continue
+            k = i * h_dim + j - i * (i + 1) // 2
+            _num_tapes = num_tapes[k]
+            if _num_tapes == 0:
+                hessian.append(qml.math.zeros(out_dim))
+                continue
+
+            res = results[start : start + _num_tapes]
+            print(f"using results {start}:{start+_num_tapes}")
+            start = start + _num_tapes
+
+            print(f"i, j, k: {i}, {j}, {k}")
+            print(f"len(res): {len(res)}")
+            res = qml.math.stack(res)
+            coeffs = qml.math.cast(qml.math.convert_like(hessian_coeffs[k], res), res.dtype)
+            print(f"len(coeffs): {len(coeffs)}")
+            hess = qml.math.tensordot(res, coeffs, [[0], [0]])
+            if (i, j) in unshifted_coeffs:
+                print(f"Using the unshifted tape for (i,j)={(i,j)}")
+                hess = hess + unshifted_coeffs[(i, j)] * r0
 
             hessian.append(hess)
 
@@ -335,6 +376,6 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
             f"for parameter(s) {unsupported_params}."
         )
 
-    argnum = list(method_map.key())
+    argnum = list(method_map.keys())
 
     return expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_diagonal_shifts, f0)

@@ -257,6 +257,19 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
     return process_shifts(rule, tol=1e-10)
 
 
+def _combine_shift_rules(rules):
+    r"""Helper method to combine shift rules for multiple parameters into simultaneous
+    multivariate shift rules."""
+
+    combined_rules = []
+
+    for partial_rules in itertools.product(*rules):
+        c, s = np.stack(partial_rules).T
+        combined = np.concatenate([[np.prod(c)], s])
+        combined_rules.append(np.stack(combined))
+
+    return np.stack(combined_rules).T
+
 def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
     r"""Computes the parameter shift rule with respect to two parametrized unitaries,
     given their generator's eigenvalue frequency spectrum. This corresponds to a
@@ -314,11 +327,4 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
         rule = generate_shift_rule(f, shifts=s, order=o)
         rules.append(process_shifts(rule).T)
 
-    combined_rules = []
-
-    for partial_rules in itertools.product(*rules):
-        c, s = np.stack(partial_rules).T
-        combined = np.concatenate([[np.prod(c)], s])
-        combined_rules.append(np.stack(combined))
-
-    return np.stack(combined_rules).T
+    return _combine_shift_rules(rules)
