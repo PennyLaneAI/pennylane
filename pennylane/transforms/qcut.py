@@ -474,8 +474,6 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 getattr(qml, meas_names[meas_return_type])(Tensor(*observables))
             elif len(observables) == 1:
                 getattr(qml, meas_names[meas_return_type])(obs)
-            elif len(observables) == 0:
-                getattr(qml, meas_names[meas_return_type])(wires=meas_wires)
 
     return tape
 
