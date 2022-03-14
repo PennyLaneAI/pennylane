@@ -6,7 +6,7 @@
 
 <h4>Quantum circuit cutting ✂️</h4>
 
-* You can now run `N`-wire circuits on devices with fewer than `N` wire, by
+* You can now run `N`-wire circuits on devices with fewer than `N` wires, by
   strategically placing `WireCut` operations that allow their circuit to be
   partitioned into smaller fragments, at a cost of needing to perform a greater
   number of device executions. Circuit cutting is enabled by decorating a QNode
