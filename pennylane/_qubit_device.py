@@ -754,9 +754,7 @@ class QubitDevice(Device):
         # it corresponds to the orders of the wires passed.
         num_wires = len(device_wires)
         basis_states = self.generate_basis_states(num_wires)
-        # basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
-        basis_states = basis_states[:, np.argsort(device_wires)]
-
+        basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
 
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
         perm = basis_states @ powers_of_two
@@ -781,7 +779,12 @@ class QubitDevice(Device):
                     f"Cannot compute analytic expectations of {observable.name}."
                 ) from e
 
-            prob = self.probability(wires=observable.wires)
+            # the probability vector must be permuted to account for the permuted wire order of the observable
+            obs_wire_lst = observable.wires.tolist()
+            permuted_wires = Wires(sorted(obs_wire_lst, key=lambda label:self.wire_map[label]))
+
+            prob = self.probability(wires=permuted_wires)
+            # prob = self.probability(wires=observable.wires)
             return self._dot(eigvals, prob)
 
         # estimate the ev
