@@ -68,6 +68,21 @@ def test_standard_use():
     plt.close()
 
 
+@pytest.mark.parametrize(
+    "strategy, initial_strategy, n_patches", [("gradient", "device", 4), ("device", "gradient", 9)]
+)
+def test_expansion_strategy(strategy, initial_strategy, n_patches):
+    @qml.qnode(qml.device("default.qubit", wires=range(2)), expansion_strategy=initial_strategy)
+    def circuit():
+        qml.GroverOperator(wires=range(2))
+        return qml.expval(qml.PauliZ(0))
+
+    fig, ax = qml.draw_mpl(circuit, expansion_strategy=strategy)()
+
+    assert len(ax.patches) == n_patches
+    assert circuit.expansion_strategy == initial_strategy
+
+
 class TestKwargs:
     """Test various keywords arguments that can be passed to modify graphic."""
 

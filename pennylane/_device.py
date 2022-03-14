@@ -374,8 +374,8 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    # pylint: disable=too-many-branches
-    def execute(self, queue, observables, parameters={}, **kwargs):
+    # pylint: disable=too-many-branches,unused-argument
+    def execute(self, queue, observables, parameters=None, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
@@ -402,7 +402,8 @@ class Device(abc.ABC):
         self._op_queue = queue
         self._obs_queue = observables
         self._parameters = {}
-        self._parameters.update(parameters)
+        if parameters is not None:
+            self._parameters.update(parameters)
 
         results = []
         if self._shot_vector is not None:
@@ -877,6 +878,17 @@ class Device(abc.ABC):
 
             operation_name = o.name
 
+            if getattr(
+                o, "return_type", None
+            ) == qml.operation.MidMeasure and not self.capabilities().get(
+                "supports_mid_measure", False
+            ):
+                raise DeviceError(
+                    f"Mid-circuit measurements are not natively supported on device {self.short_name}. "
+                    "Apply the @qml.defer_measurements decorator to your quantum function to "
+                    "simulate the application of mid-circuit measurements on this device."
+                )
+
             if o.inverse:
                 # TODO: update when all capabilities keys changed to "supports_inverse_operations"
                 supports_inv = self.capabilities().get(
@@ -894,7 +906,7 @@ class Device(abc.ABC):
                 )
 
         for o in observables:
-            if isinstance(o, qml.measure.MeasurementProcess) and o.obs is not None:
+            if isinstance(o, qml.measurements.MeasurementProcess) and o.obs is not None:
                 o = o.obs
 
             if isinstance(o, Tensor):

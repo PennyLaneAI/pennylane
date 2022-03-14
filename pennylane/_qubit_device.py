@@ -38,7 +38,7 @@ from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires
 
-from pennylane.measure import MeasurementProcess
+from pennylane.measurements import MeasurementProcess
 
 
 class QubitDevice(Device):
@@ -942,7 +942,7 @@ class QubitDevice(Device):
                         'the "adjoint" differentiation method'
                     )
             else:
-                if op.name not in ("QubitStateVector", "BasisState"):
+                if op.name not in ("QubitStateVector", "BasisState", "Snapshot"):
                     expanded_ops.append(op)
 
         jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
