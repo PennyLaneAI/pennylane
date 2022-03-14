@@ -4,6 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* Development of a circuit-cutting compiler extension to circuits with sampling
+  measurements has begun:
+
+  - The existing `qcut.tape_to_graph()` method has been extended to convert a
+    sample measurement without an observable specified to multiple single-qubit sample
+    nodes.
+    [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
+
 <h3>Improvements</h3>
 
 * The function `qml.ctrl` was given the optional argument `control_values=None`.
@@ -22,4 +30,5 @@
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
-Karim Alaa El-Din
+
+Karim Alaa El-Din, Anthony Hayes
