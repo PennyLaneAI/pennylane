@@ -1481,7 +1481,7 @@ class Observable(Operator):
         if self.return_type is None:
             return temp
 
-        if self.return_type is Probability:
+        if self.return_type is qml.measurements.Probability:
             return repr(self.return_type) + f"(wires={self.wires.tolist()})"
 
         return repr(self.return_type) + "(" + temp + ")"
@@ -1685,7 +1685,7 @@ class Tensor(Observable):
         if self.return_type is None:
             return s
 
-        if self.return_type is Probability:
+        if self.return_type is qml.measurements.Probability:
             return repr(self.return_type) + f"(wires={self.wires.tolist()})"
 
         return repr(self.return_type) + "(" + s + ")"

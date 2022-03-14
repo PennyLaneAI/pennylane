@@ -306,7 +306,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
     argnum = argnum or tape.trainable_params
 
     # Determine the locations of any variance measurements in the measurement queue.
-    var_mask = [m.return_type is qml.operation.Variance for m in tape.measurements]
+    var_mask = [m.return_type is qml.measurements.Variance for m in tape.measurements]
     var_idx = np.where(var_mask)[0]
 
     # Get <A>, the expectation value of the tape with unshifted parameters.
@@ -316,7 +316,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
     for i in var_idx:
         obs = expval_tape._measurements[i].obs
         expval_tape._measurements[i] = qml.measurements.MeasurementProcess(
-            qml.operation.Expectation, obs=obs
+            qml.measurements.Expectation, obs=obs
         )
 
     gradient_tapes = [expval_tape]
@@ -356,7 +356,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
             # involutory observables A in the queue with A^2.
             obs = _square_observable(expval_sq_tape._measurements[i].obs)
             expval_sq_tape._measurements[i] = qml.measurements.MeasurementProcess(
-                qml.operation.Expectation, obs=obs
+                qml.measurements.Expectation, obs=obs
             )
 
         # Non-involutory observables are present; the partial derivative of <A^2>
@@ -600,7 +600,7 @@ def param_shift(
          [ 0.69916862  0.34072424  0.69202359]]
     """
 
-    if any(m.return_type is qml.operation.State for m in tape.measurements):
+    if any(m.return_type is qml.measurements.State for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of circuits that return the state is not supported."
         )
@@ -643,7 +643,7 @@ def param_shift(
     if gradient_recipes is None:
         gradient_recipes = [None] * len(argnum)
 
-    if any(m.return_type is qml.operation.Variance for m in tape.measurements):
+    if any(m.return_type is qml.measurements.Variance for m in tape.measurements):
         g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0)
     else:
         g_tapes, fn = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0)
