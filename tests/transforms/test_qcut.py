@@ -413,6 +413,23 @@ class TestTapeToGraph:
             assert node.name == expected_node.name
             assert node.wires == expected_node.wires
 
+    def test_sample_tensor_obs(self):
+        """
+        Test that a circuit with a sample measurement of a tensor product of
+        observables raises the correct error.
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.sample(qml.PauliX(0) @ qml.PauliY(1))
+
+        with pytest.raises(ValueError, match="Sampling from tensor products of observables "):
+            g = qcut.tape_to_graph(tape)
+
 
 class TestReplaceWireCut:
     """

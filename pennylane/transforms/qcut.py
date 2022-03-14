@@ -30,7 +30,7 @@ import pennylane as qml
 from pennylane import apply, expval
 from pennylane.grouping import string_to_pauli_word
 from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Expectation, Operation, Operator, Tensor
+from pennylane.operation import Expectation, Operation, Operator, Sample, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
@@ -235,6 +235,11 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     for m in tape.measurements:
         obs = getattr(m, "obs", None)
         if obs is not None and isinstance(obs, Tensor):
+            if m.return_type is Sample:
+                raise ValueError(
+                    "Sampling from tensor products of observables "
+                    "is not supported in circuit cutting"
+                )
             for o in obs.obs:
                 m_ = MeasurementProcess(m.return_type, obs=o)
 
