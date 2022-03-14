@@ -384,7 +384,7 @@ class TestTapeToGraph:
 
     def test_split_sample_measurement(self):
         """
-        Test that a circuit with single sample measurement over all wires is
+        Test that a circuit with a single sample measurement over all wires is
         correctly converted to a graph with a distinct node for each wire sampled
         """
 
@@ -409,9 +409,13 @@ class TestTapeToGraph:
             qml.sample(qml.Projector([1], wires=[2])),
         ]
 
-        for node, expected_node in zip(list(g.nodes), expected_nodes):
+        for node, expected_node in zip(g.nodes, expected_nodes):
             assert node.name == expected_node.name
             assert node.wires == expected_node.wires
+
+            if getattr(node, "obs", None) is not None:
+                assert node.return_type is qml.operation.Sample
+                assert node.obs.name == expected_node.obs.name
 
     def test_sample_tensor_obs(self):
         """
@@ -428,7 +432,7 @@ class TestTapeToGraph:
             qml.sample(qml.PauliX(0) @ qml.PauliY(1))
 
         with pytest.raises(ValueError, match="Sampling from tensor products of observables "):
-            g = qcut.tape_to_graph(tape)
+            qcut.tape_to_graph(tape)
 
     def test_multiple_obs_samples(self):
         """
@@ -459,9 +463,13 @@ class TestTapeToGraph:
             qml.sample(qml.PauliZ(wires=[2])),
         ]
 
-        for node, expected_node in zip(list(g.nodes), expected_nodes):
+        for node, expected_node in zip(g.nodes, expected_nodes):
             assert node.name == expected_node.name
             assert node.wires == expected_node.wires
+
+            if getattr(node, "obs", None) is not None:
+                assert node.return_type is qml.operation.Sample
+                assert node.obs.name == expected_node.obs.name
 
 
 class TestReplaceWireCut:
