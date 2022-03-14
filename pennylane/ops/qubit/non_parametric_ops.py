@@ -2050,7 +2050,10 @@ class Barrier(Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return "||"
 
-    def adjoint(self):
+    def _controlled(self, _):
+        return Barrier(wires=self.wires)
+
+    def adjoint(self, do_queue=False):
         return Barrier(wires=self.wires)
 
 
