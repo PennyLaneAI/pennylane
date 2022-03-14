@@ -26,8 +26,13 @@ from .gradient_transform import (
     grad_method_validation,
     choose_grad_methods,
 )
-from .finite_difference import finite_diff, generate_shifted_tapes
-from .general_shift_rules import process_shifts, _iterate_shift_rule, frequencies_to_period
+from .finite_difference import finite_diff
+from .general_shift_rules import (
+    process_shifts,
+    _iterate_shift_rule,
+    frequencies_to_period,
+    generate_shifted_tapes,
+)
 
 
 NONINVOLUTORY_OBS = {

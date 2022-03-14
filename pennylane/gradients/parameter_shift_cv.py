@@ -28,9 +28,9 @@ from .gradient_transform import (
     grad_method_validation,
     choose_grad_methods,
 )
-from .finite_difference import finite_diff, generate_shifted_tapes
+from .finite_difference import finite_diff
 from .parameter_shift import expval_param_shift, _get_operation_recipe
-from .general_shift_rules import process_shifts
+from .general_shift_rules import process_shifts, generate_shifted_tapes
 
 
 def _grad_method(tape, idx):
@@ -118,7 +118,7 @@ def _grad_method(tape, idx):
     return "A"
 
 
-def _gradient_analysis(tape):
+def _gradient_analysis_cv(tape):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter."""
 
@@ -649,7 +649,7 @@ def param_shift_cv(
             "Computing the gradient of circuits that return the state is not supported."
         )
 
-    _gradient_analysis(tape)
+    _gradient_analysis_cv(tape)
     gradient_tapes = []
     shapes = []
     fns = []

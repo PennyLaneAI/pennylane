@@ -21,6 +21,7 @@ from pennylane.gradients.general_shift_rules import (
     generate_shift_rule,
     _get_shift_rule,
     generate_multi_shift_rule,
+    generate_shifted_tapes,
 )
 
 
@@ -170,15 +171,8 @@ class TestGenerateShiftRule:
 
         frequencies = (1, 2, 3, 4, 5, 67)
 
-        with pytest.warns(None) as warnings:
+        with pytest.warns(UserWarning, match="Solving linear problem with near zero determinant"):
             generate_shift_rule(frequencies)
-
-        raised_warning = False
-        for warning in warnings:
-            if "Solving linear problem with near zero determinant" in str(warning):
-                raised_warning = True
-
-        assert raised_warning
 
     def test_second_order_two_term_shift_rule(self):
         """Test that the second order shift rule is correct and
@@ -313,3 +307,45 @@ class TestEigvalsToFrequency:
         res = qml.gradients.eigvals_to_frequencies((0.453, 0.65, -1.2, 0))
         expected = (0.453, 1.2, 1.85, 1.653, 0.65, 0.197)
         assert res == expected
+
+
+class TestShiftedTapes:
+    """Tests for the generate_shifted_tapes function"""
+
+    def test_behaviour(self):
+        """Test that the function behaves as expected"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliZ(0)
+            qml.RX(1.0, wires=0)
+            qml.CNOT(wires=[0, 2])
+            qml.Rot(2.0, 3.0, 4.0, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 2}
+        shifts = [0.1, -0.2, 1.6]
+        res = generate_shifted_tapes(tape, 1, shifts=shifts)
+
+        assert len(res) == len(shifts)
+        assert res[0].get_parameters(trainable_only=False) == [1.0, 2.0, 3.1, 4.0]
+        assert res[1].get_parameters(trainable_only=False) == [1.0, 2.0, 2.8, 4.0]
+        assert res[2].get_parameters(trainable_only=False) == [1.0, 2.0, 4.6, 4.0]
+
+    def test_multipliers(self):
+        """Test that the function behaves as expected when multipliers are used"""
+
+        with qml.tape.JacobianTape() as tape:
+            qml.PauliZ(0)
+            qml.RX(1.0, wires=0)
+            qml.CNOT(wires=[0, 2])
+            qml.Rot(2.0, 3.0, 4.0, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 2}
+        shifts = [0.3, 0.6]
+        multipliers = [0.2, 0.5]
+        res = generate_shifted_tapes(tape, 0, shifts=shifts, multipliers=multipliers)
+
+        assert len(res) == 2
+        assert res[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
+        assert res[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]

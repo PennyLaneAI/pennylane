@@ -54,10 +54,10 @@ def process_shifts(rule, tol=1e-10, check_duplicates=True):
     if check_duplicates:
         # determine unique shifts
         round_decimals = int(-np.log10(tol))
-        rounded_rule = np.round(rule[1], round_decimals)
+        rounded_rule = np.round(rule[-1], round_decimals)
         unique_shifts = np.unique(rounded_rule)
 
-        if rule.shape[1] != len(unique_shifts):
+        if rule.shape[-1] != len(unique_shifts):
             # sum columns that have the same shift value
             coeffs = [
                 np.sum(rule[:, np.nonzero(rounded_rule == s)[0]], axis=1)[0] for s in unique_shifts
@@ -65,7 +65,7 @@ def process_shifts(rule, tol=1e-10, check_duplicates=True):
             rule = np.stack([np.stack(coeffs), unique_shifts])
 
     # sort columns according to abs(shift)
-    return rule[:, np.argsort(np.abs(rule)[1])]
+    return rule[:, np.argsort(np.abs(rule)[-1])]
 
 
 @functools.lru_cache(maxsize=None)
@@ -191,6 +191,20 @@ def _iterate_shift_rule(rule, order, period=None):
     return qml.math.stack(combined_rules)
 
 
+def _combine_shift_rules(rules):
+    r"""Helper method to combine shift rules for multiple parameters into
+    simultaneous multivariate shift rules."""
+
+    combined_rules = []
+
+    for partial_rules in itertools.product(*rules):
+        c, s = np.stack(partial_rules).T
+        combined = np.concatenate([[np.prod(c)], s])
+        combined_rules.append(np.stack(combined))
+
+    return np.stack(combined_rules).T
+
+
 @functools.lru_cache()
 def generate_shift_rule(frequencies, shifts=None, order=1):
     r"""Computes the parameter shift rule for a unitary based on its generator's eigenvalue
@@ -266,20 +280,6 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
     return process_shifts(rule, tol=1e-10)
 
 
-def _combine_shift_rules(rules):
-    r"""Helper method to combine shift rules for multiple parameters into simultaneous
-    multivariate shift rules."""
-
-    combined_rules = []
-
-    for partial_rules in itertools.product(*rules):
-        c, s = np.stack(partial_rules).T
-        combined = np.concatenate([[np.prod(c)], s])
-        combined_rules.append(np.stack(combined))
-
-    return np.stack(combined_rules).T
-
-
 def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
     r"""Computes the parameter shift rule with respect to two parametrized unitaries,
     given their generator's eigenvalue frequency spectrum. This corresponds to a
@@ -338,3 +338,71 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
         rules.append(process_shifts(rule).T)
 
     return _combine_shift_rules(rules)
+
+
+def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
+    r"""Generate a list of tapes where the corresponding trainable parameter
+    index has been shifted by the values given.
+
+    Args:
+        tape (.QuantumTape): input quantum tape
+        idx (int): trainable parameter index to shift the parameter of
+        shifts (Sequence[float or int]): sequence of shift values
+        multipliers (Sequence[float or int]): Sequence of multiplier values to
+            scale the parameter by. If not provided, the parameter will
+            not be scaled.
+
+    Returns:
+        list[QuantumTape]: List of quantum tapes. Each tape has parameter
+        ``idx`` shifted by consecutive values of ``shift``. The length
+        of the returned list of tapes will match the length of ``shifts``.
+    """
+    params = list(tape.get_parameters())
+    tapes = []
+
+    for i, s in enumerate(shifts):
+        new_params = params.copy()
+        shifted_tape = tape.copy(copy_operations=True)
+
+        if multipliers is not None:
+            m = multipliers[i]
+            new_params[idx] = new_params[idx] * qml.math.convert_like(m, new_params[idx])
+
+        new_params[idx] = new_params[idx] + qml.math.convert_like(s, new_params[idx])
+        shifted_tape.set_parameters(new_params)
+        tapes.append(shifted_tape)
+
+    return tapes
+
+
+def generate_multishifted_tapes(tape, idx, shifts):
+    r"""Generate a list of tapes where the corresponding trainable parameter
+    indices have been shifted by the values given.
+
+    Args:
+        tape (.QuantumTape): input quantum tape
+        idx (list[int]): trainable parameter indices to shift the parameters of
+        shifts (list[list[float or int]]): nested list of shift values, each
+            list containing a value for each index
+
+    Returns:
+        list[QuantumTape]: List of quantum tapes. Each tape has multiple parameters
+            (indicated by ``idx``) shifted by the values of ``shifts``. The length
+            of the returned list of tapes will match the length of ``shifts``.
+    """
+    params = list(tape.get_parameters())
+    tapes = []
+
+    for shift in shifts:
+        new_params = params.copy()
+        shifted_tape = tape.copy(copy_operations=True)
+
+        for id_, s in zip(idx, shift):
+            dtype = new_params[id_].dtype
+            new_params[id_] = new_params[id_] + qml.math.convert_like(s, new_params[id_])
+            new_params[id_] = qml.math.cast(new_params[id_], dtype)
+
+        shifted_tape.set_parameters(new_params)
+        tapes.append(shifted_tape)
+
+    return tapes

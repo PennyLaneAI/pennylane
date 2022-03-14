@@ -29,6 +29,7 @@ from .gradient_transform import (
     grad_method_validation,
     choose_grad_methods,
 )
+from .general_shift_rules import generate_shifted_tapes
 
 
 @functools.lru_cache(maxsize=None)
@@ -149,41 +150,6 @@ def finite_diff_coeffs(n, approx_order, strategy):
     # sort columns in ascending order according to abs(shift)
     coeffs_and_shifts = coeffs_and_shifts[:, np.argsort(np.abs(coeffs_and_shifts)[1])]
     return coeffs_and_shifts
-
-
-def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
-    r"""Generate a list of tapes where the corresponding trainable parameter
-    index has been shifted by the values given.
-
-    Args:
-        tape (.QuantumTape): input quantum tape
-        idx (int): trainable parameter index to shift the parameter of
-        shifts (Sequence[float or int]): sequence of shift values
-        multipliers (Sequence[float or int]): Sequence of multiplier values to
-            scale the parameter by. If not provided, the parameter will
-            not be scaled.
-
-    Returns:
-        list[QuantumTape]: List of quantum tapes. Each tape has parameter
-        ``idx`` shifted by consecutive values of ``shift``. The length
-        of the returned list of tapes will match the length of ``shifts``.
-    """
-    params = list(tape.get_parameters())
-    tapes = []
-
-    for i, s in enumerate(shifts):
-        new_params = params.copy()
-        shifted_tape = tape.copy(copy_operations=True)
-
-        if multipliers is not None:
-            m = multipliers[i]
-            new_params[idx] = new_params[idx] * qml.math.convert_like(m, new_params[idx])
-
-        new_params[idx] = new_params[idx] + qml.math.convert_like(s, new_params[idx])
-        shifted_tape.set_parameters(new_params)
-        tapes.append(shifted_tape)
-
-    return tapes
 
 
 @gradient_transform
