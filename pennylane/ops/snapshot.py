@@ -75,5 +75,5 @@ class Snapshot(Operation):
     def _controlled(self, _):
         return Snapshot(tag=self.tag)
 
-    def adjoint(self):
+    def adjoint(self, do_queue=False):
         return Snapshot(tag=self.tag)
