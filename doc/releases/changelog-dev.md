@@ -462,6 +462,7 @@ The Operator class has undergone a major refactor with the following changes:
   decomposition does not exist, the code now raises a custom `NoDecompositionError`
   instead of `NotImplementedError`.
   [(#2024)](https://github.com/PennyLaneAI/pennylane/pull/2024)
+  [(#2320)](https://github.com/PennyLaneAI/pennylane/pull/2320)
 
 * The `diagonalizing_gates()` representation has been moved to the highest-level
   `Operator` class and is therefore available to all subclasses. A condition
