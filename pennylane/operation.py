@@ -1291,9 +1291,10 @@ class Operation(Operator):
         >>> op = qml.ControlledPhaseShift(0.1, wires=[0, 1])
         >>> op.parameter_frequencies
         [(1,)]
-        >>> gen_eigvals = tuple(np.linalg.eigvals(op.generator[0] * op.generator[1]))
-        >>> qml.gradients.eigvals_to_frequencies(gen_eigvals)
-        (tensor(1., requires_grad=True),)
+        >>> gen = qml.generator(op, format="observable")
+        >>> gen_eigvals = qml.eigvals(gen)
+        >>> qml.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
+        (1.0,)
 
         For more details on this relationship, see :func:`.eigvals_to_frequencies`.
         """
