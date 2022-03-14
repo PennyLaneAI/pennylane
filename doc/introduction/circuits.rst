@@ -218,8 +218,8 @@ To view the quantum circuit given specific parameter values, we can use the :fun
 transform:
 
 >>> print(qml.draw(circuit)(np.pi/4, 0.7))
- wire1: ──RZ(0.785)──╭C───────────┤     
- wire2: ─────────────╰X──RY(0.7)──┤ ⟨Z⟩ 
+wire1: ──RZ(0.79)─╭C───────────┤     
+wire2: ───────────╰X──RY(0.70)─┤  <Z>
 
 .. _intro_vcirc_decorator:
 

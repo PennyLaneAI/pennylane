@@ -26,7 +26,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 import pennylane as qml
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Snapshot
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
 from .._version import __version__
@@ -93,6 +93,7 @@ class DefaultQubit(QubitDevice):
 
     operations = {
         "Identity",
+        "Snapshot",
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
@@ -156,6 +157,7 @@ class DefaultQubit(QubitDevice):
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         super().__init__(wires, shots, cache=cache, analytic=analytic)
+        self._debugger = None
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.
@@ -196,6 +198,7 @@ class DefaultQubit(QubitDevice):
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
 
+    # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 
@@ -212,6 +215,13 @@ class DefaultQubit(QubitDevice):
                 self._apply_state_vector(operation.parameters[0], operation.wires)
             elif isinstance(operation, BasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
+            elif isinstance(operation, Snapshot):
+                if self._debugger and self._debugger.active:
+                    state_vector = np.array(self._flatten(self._state))
+                    if operation.tag:
+                        self._debugger.snapshots[operation.tag] = state_vector
+                    else:
+                        self._debugger.snapshots[len(self._debugger.snapshots)] = state_vector
             else:
                 self._state = self._apply_operation(self._state, operation)
 

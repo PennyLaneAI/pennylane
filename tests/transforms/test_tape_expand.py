@@ -730,3 +730,24 @@ class TestCreateCustomDecompExpandFn:
         assert len(circuit.qtape.operations) == 1
         assert circuit.qtape.operations[0].name == "CNOT"
         assert dev.custom_expand_fn is None
+
+    def test_custom_decomp_used_twice(self):
+        """Test that creating a custom decomposition includes overwriting the
+        correct method under the hood and produces expected results."""
+        res = []
+        for i in range(2):
+
+            custom_decomps = {"MultiRZ": qml.MultiRZ.compute_decomposition}
+            dev = qml.device("lightning.qubit", wires=2, custom_decomps=custom_decomps)
+
+            @qml.qnode(dev, diff_method="adjoint")
+            def cost(theta):
+                qml.Hadamard(wires=0)
+                qml.Hadamard(wires=1)
+                qml.MultiRZ(theta, wires=[1, 0])
+                return qml.expval(qml.PauliX(1))
+
+            x = np.array(0.5)
+            res.append(cost(x))
+
+        assert res[0] == res[1]

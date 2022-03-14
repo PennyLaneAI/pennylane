@@ -14,6 +14,7 @@
 r"""
 Contains the ``Interferometer`` template.
 """
+from itertools import product
 import pennylane as qml
 
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
@@ -123,10 +124,10 @@ class Interferometer(CVOperation):
         Using these random parameters, the resulting circuit is:
 
         >>> print(qml.draw(circuit, expansion_strategy="device")(params))
-            0: ──╭BS(0.0522, 0.0472)────────────────────╭BS(0.438, 0.222)───R(0.606)────────────────────┤ ⟨I⟩
-            1: ──╰BS(0.0522, 0.0472)──╭BS(0.994, 0.59)──╰BS(0.438, 0.222)──╭BS(0.823, 0.623)──R(0.221)──┤
-            2: ──╭BS(0.636, 0.298)────╰BS(0.994, 0.59)──╭BS(0.0818, 0.72)──╰BS(0.823, 0.623)──R(0.807)──┤
-            3: ──╰BS(0.636, 0.298)──────────────────────╰BS(0.0818, 0.72)───R(0.854)────────────────────┤
+        0: ─╭BS(0.97,0.09)────────────────╭BS(0.89,0.33)──R(0.83)────────────────┤  <I>
+        1: ─╰BS(0.97,0.09)─╭BS(0.94,0.05)─╰BS(0.89,0.33)─╭BS(0.92,0.27)──R(0.36)─┤
+        2: ─╭BS(0.78,0.20)─╰BS(0.94,0.05)─╭BS(0.60,0.39)─╰BS(0.92,0.27)──R(0.28)─┤
+        3: ─╰BS(0.78,0.20)────────────────╰BS(0.60,0.39)──R(0.54)────────────────┤
 
         Using different values for optional arguments:
 
@@ -142,14 +143,19 @@ class Interferometer(CVOperation):
             for shape in shapes:
                 params.append(np.random.random(shape))
 
-        The resulting circuit in this case is:
+            print(qml.draw(circuit, expansion_strategy="device")(params))
 
-        >>> print(qml.draw(circuit, expansion_strategy="device")(params))
-            0: ──R(0.713)──────────────────────────────────╭BS(0.213, 0)───R(0.681)──────────────────────────────────────────────────────────┤ ⟨I⟩
-            1: ──R(0.00912)─────────────────╭BS(0.239, 0)──╰BS(0.213, 0)───R(0.388)──────╭BS(0.622, 0)──R(0.567)─────────────────────────────┤
-            2: ──R(0.43)─────╭BS(0.534, 0)──╰BS(0.239, 0)───R(0.189)──────╭BS(0.809, 0)──╰BS(0.622, 0)──R(0.309)──╭BS(0.00845, 0)──R(0.757)──┤
-            3: ──────────────╰BS(0.534, 0)────────────────────────────────╰BS(0.809, 0)───────────────────────────╰BS(0.00845, 0)──R(0.527)──┤
+        .. code-block::
 
+            0: ──R(0.71)───────────────────────────────╭BS(0.07,0.00)──R(0.36)──────────────────────────────
+            1: ──R(0.82)────────────────╭BS(0.80,0.00)─╰BS(0.07,0.00)──R(0.77)───────╭BS(0.77,0.00)──R(0.12)
+            2: ──R(0.01)─╭BS(0.14,0.00)─╰BS(0.80,0.00)──R(0.73)───────╭BS(0.99,0.00)─╰BS(0.77,0.00)──R(0.07)
+            3: ──────────╰BS(0.14,0.00)───────────────────────────────╰BS(0.99,0.00)────────────────────────
+
+            ──────────────────────────┤  <I>
+            ──────────────────────────┤
+            ──╭BS(0.20,0.00)──R(0.86)─┤
+            ──╰BS(0.20,0.00)──R(0.62)─┤
     """
 
     num_wires = AnyWires
@@ -227,20 +233,17 @@ class Interferometer(CVOperation):
             if mesh == "rectangular":
                 # Apply the Clements beamsplitter array
                 # The array depth is N
-                for l in range(M):
-                    for k, (w1, w2) in enumerate(zip(wires[:-1], wires[1:])):
-                        # skip even or odd pairs depending on layer
-                        if (l + k) % 2 != 1:
-                            if beamsplitter == "clements":
-                                op_list.append(Rotation(phi[n], wires=Wires(w1)))
-                                op_list.append(Beamsplitter(theta[n], 0, wires=Wires([w1, w2])))
-                            elif beamsplitter == "pennylane":
-                                op_list.append(
-                                    Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2]))
-                                )
-                            else:
-                                raise ValueError(f"did not recognize beamsplitter {beamsplitter}")
-                            n += 1
+                for l, (k, (w1, w2)) in product(range(M), enumerate(zip(wires[:-1], wires[1:]))):
+                    # skip even or odd pairs depending on layer
+                    if (l + k) % 2 != 1:
+                        if beamsplitter == "clements":
+                            op_list.append(Rotation(phi[n], wires=Wires(w1)))
+                            op_list.append(Beamsplitter(theta[n], 0, wires=Wires([w1, w2])))
+                        elif beamsplitter == "pennylane":
+                            op_list.append(Beamsplitter(theta[n], phi[n], wires=Wires([w1, w2])))
+                        else:
+                            raise ValueError(f"did not recognize beamsplitter {beamsplitter}")
+                        n += 1
 
             elif mesh == "triangular":
                 # apply the Reck beamsplitter array
