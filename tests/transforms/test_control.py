@@ -440,9 +440,9 @@ def test_control_values_sanity_check():
     assert_equal_operations(expanded.operations, expected)
 
 
-def test_multi_control_values():
+@pytest.mark.parametrize("ctrl_values", [[0, 0], [0, 1], [1, 0], [1, 1]])
+def test_multi_control_values(ctrl_values):
     """Test control with a list of wires and control values."""
-    ctrl_values = [[0, 0], [0, 1], [1, 0], [1, 1]]
 
     def expected_ops(ctrl_val):
         exp_op = []
@@ -457,12 +457,11 @@ def test_multi_control_values():
 
         return exp_op
 
-    for ctrl_val in ctrl_values:
-        with QuantumTape() as tape:
-            CCX = ctrl(qml.PauliX, control=[3, 7], control_values=ctrl_val)
-            CCX(wires=0)
-        assert len(tape.operations) == 1
-        op = tape.operations[0]
-        assert isinstance(op, ControlledOperation)
-        new_tape = expand_tape(tape, 1)
-        assert_equal_operations(new_tape.operations, expected_ops(ctrl_val))
+    with QuantumTape() as tape:
+        CCX = ctrl(qml.PauliX, control=[3, 7], control_values=ctrl_values)
+        CCX(wires=0)
+    assert len(tape.operations) == 1
+    op = tape.operations[0]
+    assert isinstance(op, ControlledOperation)
+    new_tape = expand_tape(tape, 1)
+    assert_equal_operations(new_tape.operations, expected_ops(ctrl_values))
