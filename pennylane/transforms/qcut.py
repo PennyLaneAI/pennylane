@@ -22,8 +22,20 @@ import uuid
 import warnings
 from dataclasses import InitVar, dataclass
 from functools import partial
-from itertools import product
-from typing import Any, Callable, ClassVar, Dict, List, Set, Optional, Sequence, Tuple, Union
+from itertools import product, compress
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    List,
+    Set,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+    Iterable,
+)
 from pathlib import Path
 
 from networkx import MultiDiGraph, weakly_connected_components, has_path
@@ -1420,328 +1432,392 @@ class CutStrategy:
         return probed_cuts
 
 
-@dataclass()
-class FragmentedGraph:
-    """
-    Representation of a cut graph.
+# @dataclass()
+# class FragmentGraph:
+#     """
+#     Representation of a cut graph.
+
+#     Args:
+#         graph (MultiDiGraph): The original (circuit) graph to be cut.
+#         cut_edges (Dict[Tuple[Any, Any], Any]): The collection of cut edges as an `{edge: wire}`
+#             dict. Defaults to None which represents a graph not yet cut
+#         eager (bool): Whether to compute at initialization the fragmented subgraphs and the
+#             communication graph. Defaults to False which is when only the cut cost is needed.
+
+#     """
+
+#     #: The original graph to be cut.
+#     graph: MultiDiGraph
+#     #: The collection of cut edges as an `{edge: wire}` dict.
+#     cut_edges: Dict[Tuple[Any, Any], Any] = None
+#     #: Whether to compute at initialization the fragmented subgraphs and the communication graph.
+#     eager: bool = False
+
+#     def __post_init__(self):
+#         if not isinstance(self.graph, MultiDiGraph):
+#             raise ValueError("`graph` must be of type `MultiDiGraph`.")
+
+#         # cache the 2 most computation intensive properties.
+#         self._fragments = None
+#         self._communication_graph = None
+#         if self.eager:
+#             self.fragment()
+
+#     def fragment(self):
+
+#         if self.is_cut and (self._fragments is None or self._communication_graph is None):
+#             self._fragments, self._communication_graph = fragment_graph(
+#                 self.graph, cut_edges=list(self.cut_edges)
+#             )
+
+#     def place_cuts(self):
+#         cut_graph = self.graph.copy()
+#         for i, ((n0, n1), wire) in enumerate(self.cut_edges.items()):
+#             cut_graph.remove_edge(n0, n1, edge_key)  # TODO: where to get edge_key?
+#             wirecut_op = WireCut(wires=wire, id=i)
+#             cut_graph.add_node(wirecut_op)
+#             cut_graph.add_edge(n0, wirecut_op, wire=wire)
+#             cut_graph.add_edge(wirecut_op, n1, wire=wire)
+#         return cut_graph
+
+#     @property
+#     def nodes(self) -> Dict[Any, int]:
+#         return {op: order for op, order in self.graph.nodes(data="order")}
+
+#     @property
+#     def edges(self) -> Dict[Tuple[Any, Any], Any]:
+#         # return [(data["wire"], (op0, op1)) for op0, op1, data in self.graph.edges(data='wire')]
+#         return {(op0, op1): wire for op0, op1, wire in self.graph.edges(data="wire")}
+
+#     @property
+#     def num_nodes(self) -> int:
+#         return self.graph.number_of_nodes
+
+#     @property
+#     def num_edges(self) -> int:
+#         return self.graph.number_of_edges
+
+#     @property
+#     def wires(self) -> Set[Any]:
+#         return {w for w, _ in self.edges}
+
+#     @property
+#     def num_wires(self) -> int:
+#         return len(self.wires)
+
+#     @property
+#     def num_cuts(self) -> int:
+#         """Property: the number of cut edges."""
+#         return len(self.cut_edges) if isinstance(self.cut_edges, dict) else 0
+
+#     @property
+#     def is_cut(self) -> bool:
+#         return self.num_cuts > 0
+
+#     @property
+#     def fragments(self) -> Tuple[MultiDiGraph]:
+#         if self._fragments is None:
+#             self.fragment()
+#         return self._fragments
+
+#     @property
+#     def communication_graph(self) -> MultiDiGraph:
+#         if self._communication_graph is None:
+#             self.fragment()
+#         return self._communication_graph
+
+#     @property
+#     def num_fragments(self) -> int:
+#         """Property: the number of partitions."""
+#         return len(self.fragments) if self.is_cut else 1
+
+#     @property
+#     def cost(self) -> int:
+#         """Property: cost of circuit cut"""
+#         # TODO: should be different for gate cut
+#         return self.num_cuts / 2 if self.is_cut else None
+
+#     @property
+#     def fragment_wires(self) -> List[Set[Any]]:
+#         return (
+#             [{w for _, _, w in g.edges(data="wire")} for g in self.fragments]
+#             if self.is_cut
+#             else [self.wires]
+#         )
+
+#     @property
+#     def fragment_nodes(self) -> List[Dict[Any, int]]:
+#         """List of fragment nodes."""
+#         return (
+#             [{op: order for op, order in g.nodes(data="order")} for g in self.fragments]
+#             if self.is_cut
+#             else [self.nodes]
+#         )
+
+#     @property
+#     def wire_sizes(self) -> List[int]:
+#         return [len(wires) for wires in self.fragment_wires]
+
+#     @property
+#     def node_sizes(self) -> List[int]:
+#         return [len(nodes) for nodes in self.fragment_nodes]
+
+
+# def find_and_place_cuts(
+#     graph: MultiDiGraph,
+#     cut_strategy: CutStrategy,
+#     cut_method: Union[str, Callable] = "kahypar",
+#     **kwargs,
+# ) -> List[FragmentGraph]:
+#     AVAILABLE_CUTTERS = {
+#         "kahypar": KaHyParGraph.cut_graph,
+#     }
+
+#     if isinstance(cut_method, str):
+#         cut_method = AVAILABLE_CUTTERS[cut_method.lower()]
+#     if not callable(cut_method):
+#         raise ValueError(
+#             "`cut_method` must be a callable or one of the available string cutter names: "
+#             f"{list(AVAILABLE_CUTTERS.keys())}"
+#         )
+
+#     probed_cut_kwargs = cut_strategy.get_cut_kwargs(graph)
+
+#     cut_trials = [cut_method(graph, **cut_kwargs, **kwargs) for cut_kwargs in probed_cut_kwargs]
+#     best_cut = sorted(cut_trials, key=lambda fg: fg.cost)[0]
+
+#     return best_cut.place_cuts()
+
+
+# class KaHyParFragmentGraph(FragmentGraph):
+#     def __init__(
+#         self,
+#         graph: MultiDiGraph,
+#         hyperwire_weight: Union[int, float] = None,
+#     ):
+
+#         super().__init__(graph=graph)
+
+#         self.hyperwire_weight = hyperwire_weight
+
+#     @property
+#     def hyperedges(self):
+#         """A 3-tuple of lists that represent a hypergraph conforming to KaHyPar's input format.
+
+#         Returns:
+#             (Tuple[List,List,List]): The 3 lists are, respectively:
+#             adjacent_vertices: Flattened list of connected vertex groups (or "nets").
+#             hyperedge_splits: List of starting index of each edge in ``adjacent_vertices``. For
+#                 regular non-hypergraphs, it's simply [0, 2, 4, 6, ... ]
+#             hyperedge_weights: List of numerical weights assigned to each edge. None if
+#                 ``hyperwire_weight`` not specified.
+#         """
+#         edges, vertices = self.edges, self.nodes
+#         adjacent_vertices = [vertices[v] for e in edges for v in e]
+#         hyperedge_splits = np.cumsum([0] + [len(e) for e in edges]).tolist()
+#         hyperedge_weights = None
+
+#         if self.hyperwire_weight:
+#             hyperwires = {w: set() for w in self.wires}
+#             num_wires = len(hyperwires)
+
+#             for (v0, v1), wire in edges.items():
+#                 hyperwires[wire].update([vertices[v0], vertices[v1]])
+
+#             for wire, vertices_on_wire in hyperwires.items():
+#                 nwv = len(vertices_on_wire)
+#                 hyperedge_splits.append(nwv + hyperedge_splits[-1])
+#                 adjacent_vertices = adjacent_vertices + list(vertices_on_wire)
+#             assert len(hyperedge_splits) == len(edges) + num_wires + 1
+
+#             if isinstance(self.hyperwire_weight, (int, float)):
+#                 # assumes original edges having weight 1.
+#                 wire_weights = [self.hyperwire_weight] * num_wires
+#                 hyperedge_weights = ([1] * len(edges)) + wire_weights
+
+#         return adjacent_vertices, hyperedge_splits, hyperedge_weights
+
+#     def cut(self, **kwargs) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
+#         adjacent_vertices, hyperedge_splits, hyperedge_weights = self.hyperedges
+
+#         self.cut_edges = self.kahypar_cut(
+#             adjacent_vertices=adjacent_vertices,
+#             hyperedge_splits=hyperedge_splits,
+#             hyperedge_weights=hyperedge_weights,
+#             **kwargs,
+#         )
+
+#         self.fragment()
+
+#         return self
+
+#     @classmethod
+#     def cut_graph(cls, graph, **kwargs):
+#         return cls(graph).cut(**kwargs)
+
+
+def graph_to_hmetis(
+    graph, hyperwire_weight=0
+) -> Tuple[List[int], List[int], List[Union[int, float]]]:
+    """Converts a MultiDiGraph into the hMETIS hypergraph format, conforming to KaHyPar's signature.
 
     Args:
-        graph (MultiDiGraph): The original (circuit) graph to be cut.
-        cut_edges (Dict[Tuple[Any, Any], Any]): The collection of cut edges as an `{edge: wire}`
-            dict. Defaults to None which represents a graph not yet cut
-        eager (bool): Whether to compute at initialization the fragmented subgraphs and the
-            communication graph. Defaults to False which is when only the cut cost is needed.
+        graph (MultiDiGraph): The original (tape-converted) graph to be cut.
+        hyperwire_weight (int): Weight on the artificially appended hyperedges representing wires.
+            Defaults to 0 which leads to no such insersion. If greater than 0, hyperedges will be
+            appended with the provided weight, assuming all other edges having weights 1.
 
+    Returns:
+        (Tuple[List,List,List]): The 3 lists representing an optionally weighted hypergraph:
+        - Flattened list of adjacent node indices.
+        - List of starting indices for edges in the above adjacent-nodes-list. For regular
+            non-hypergraphs, it's simply [0, 2, 4, 6, ... ].
+        - Optional list of numerical weights assigned to each edge. None if ``hyperwire_weight``
+            is equal to 0.
     """
+    nodes = {op: order for op, order in graph.nodes(data="order")}
+    edges = {(op0, op1): wire for op0, op1, wire in graph.edges(data="wire")}
+    wires = {w for w, _ in edges}
 
-    #: The original graph to be cut.
-    graph: MultiDiGraph
-    #: The collection of cut edges as an `{edge: wire}` dict.
-    cut_edges: Dict[Tuple[Any, Any], Any] = None
-    #: Whether to compute at initialization the fragmented subgraphs and the communication graph.
-    eager: bool = False
+    adj_nodes = [nodes[v] for e in edges for v in e]
+    edge_splits = np.cumsum([0] + [len(e) for e in edges]).tolist()
+    edge_weights = None
 
-    def __post_init__(self):
-        if not isinstance(self.graph, MultiDiGraph):
-            raise ValueError("`graph` must be of type `MultiDiGraph`.")
+    if hyperwire_weight:
+        hyperwires = {w: set() for w in wires}
+        num_wires = len(hyperwires)
 
-        # cache the 2 most computation intensive properties.
-        self._fragments = None
-        self._communication_graph = None
-        if self.eager:
-            self.fragment()
+        for (v0, v1), wire in edges.items():
+            hyperwires[wire].update([nodes[v0], nodes[v1]])
 
-    def fragment(self):
+        for wire, nodes_on_wire in hyperwires.items():
+            nwv = len(nodes_on_wire)
+            edge_splits.append(nwv + edge_splits[-1])
+            adj_nodes = adj_nodes + list(nodes_on_wire)
+        assert len(edge_splits) == len(edges) + num_wires + 1
 
-        if self.is_cut and (self._fragments is None or self._communication_graph is None):
-            self._fragments, self._communication_graph = fragment_graph(
-                self.graph, cut_edges=list(self.cut_edges)
-            )
+        if isinstance(hyperwire_weight, (int, float)):
+            # assumes original edges having weight 1.
+            wire_weights = [hyperwire_weight] * num_wires
+            edge_weights = ([1] * len(edges)) + wire_weights
 
-    def place_cuts(self):
-        cut_graph = self.graph.copy()
-        for i, ((n0, n1), wire) in enumerate(self.cut_edges.items()):
-            cut_graph.remove_edge(n0, n1, edge_key)  # TODO: where to get edge_key?
-            wirecut_op = WireCut(wires=wire, id=i)
-            cut_graph.add_node(wirecut_op)
-            cut_graph.add_edge(n0, wirecut_op, wire=wire)
-            cut_graph.add_edge(wirecut_op, n1, wire=wire)
-        return cut_graph
+    return adj_nodes, edge_splits, edge_weights
 
-    @property
-    def nodes(self) -> Dict[Any, int]:
-        return {op: order for op, order in self.graph.nodes(data="order")}
 
-    @property
-    def edges(self) -> Dict[Tuple[Any, Any], Any]:
-        # return [(data["wire"], (op0, op1)) for op0, op1, data in self.graph.edges(data='wire')]
-        return {(op0, op1): wire for op0, op1, wire in self.graph.edges(data="wire")}
+def kahypar_cut(
+    num_fragments: int,
+    adjacent_nodes: List[int],
+    edge_splits: List[int],
+    imbalance: int = None,
+    edge_weights: List[Union[int, float]] = None,
+    node_weights: List[Union[int, float]] = None,
+    block_weights: List[Union[int, float]] = None,
+    edges: Iterable[Any] = None,
+    seed: int = None,
+    config_path: Union[str, Path] = None,
+    trial: int = None,
+    verbose: bool = False,
+) -> List[Union[int, Any]]:
+    """Calls KaHyPar to partition a graph.
 
-    @property
-    def num_nodes(self) -> int:
-        return self.graph.number_of_nodes
+    Args:
+        num_fragments (int): Desired number of fragments.
+        adjacent_nodes (List[int]): Flattened list of adjacent node indicies per hMETIS format.
+        edge_splits (List[int]): List of starting indices for edges in the ``adjacent_nodes``.
+        imbalance (int): Imbalance factor of the partitioning. Defaults to KaHyPar's default
+            selection.
+        edge_weights (List[Union[int, float]]): Weights for edges. Defaults to unit-weighted edges.
+        node_weights (List[Union[int, float]]): Weights for nodes. Defaults to unit-weighted nodes.
+        fragment_weights (List[Union[int, float]]): Maximum size constraints by fragment. Defaults
+            to no such constraints, with ``imbalance`` the only parameter affecting fragment sizes.
+        edges (Iterable[Any]): Mapping for returning actual cut edge objects instead of cut edge
+            indices. Defaults to None which will return cut edge indices.
+        seed (int): KaHyPar's seed. Defaults to the seed in the config file which defaults to -1,
+            i.e. no seed.
+        config_path (str): KaHyPar's .ini config file path. Defaults to its SEA20 paper config.
+        trial (int): trial id for summary label creation. Defaults to None.
+        verbose (bool): Flag for printing KaHyPar's output summary. Defaults to False.
 
-    @property
-    def num_edges(self) -> int:
-        return self.graph.number_of_edges
+    Returns:
+        List[Union[int, Any]]: List of cut edges.
+    """
+    import kahypar
 
-    @property
-    def wires(self) -> Set[Any]:
-        return {w for w, _ in self.edges}
+    trial = 0 if trial is None else trial
+    ne = len(edge_splits) - 1
+    nv = max(adjacent_nodes) + 1
 
-    @property
-    def num_wires(self) -> int:
-        return len(self.wires)
-
-    @property
-    def num_cuts(self) -> int:
-        """Property: the number of cut edges."""
-        return len(self.cut_edges) if isinstance(self.cut_edges, dict) else 0
-
-    @property
-    def is_cut(self) -> bool:
-        return self.num_cuts > 0
-
-    @property
-    def fragments(self) -> Tuple[MultiDiGraph]:
-        if self._fragments is None:
-            self.fragment()
-        return self._fragments
-
-    @property
-    def communication_graph(self) -> MultiDiGraph:
-        if self._communication_graph is None:
-            self.fragment()
-        return self._communication_graph
-
-    @property
-    def num_fragments(self) -> int:
-        """Property: the number of partitions."""
-        return len(self.fragments) if self.is_cut else 1
-
-    @property
-    def cost(self) -> int:
-        """Property: cost of circuit cut"""
-        # TODO: should be different for gate cut
-        return self.num_cuts / 2 if self.is_cut else None
-
-    @property
-    def fragment_wires(self) -> List[Set[Any]]:
-        return (
-            [{w for _, _, w in g.edges(data="wire")} for g in self.fragments]
-            if self.is_cut
-            else [self.wires]
+    if edge_weights is not None or node_weights is not None:
+        edge_weights = edge_weights or [1] * ne
+        node_weights = node_weights or [1] * nv
+        hypergraph = kahypar.Hypergraph(
+            nv,
+            ne,
+            edge_splits,
+            adjacent_nodes,
+            num_fragments,
+            edge_weights,
+            node_weights,
         )
 
-    @property
-    def fragment_nodes(self) -> List[Dict[Any, int]]:
-        """List of fragment nodes."""
-        return (
-            [{op: order for op, order in g.nodes(data="order")} for g in self.fragments]
-            if self.is_cut
-            else [self.nodes]
-        )
+    else:
+        hypergraph = kahypar.Hypergraph(nv, ne, edge_splits, adjacent_nodes, num_fragments)
 
-    @property
-    def wire_sizes(self) -> List[int]:
-        return [len(wires) for wires in self.fragment_wires]
+    context = kahypar.Context()
 
-    @property
-    def node_sizes(self) -> List[int]:
-        return [len(nodes) for nodes in self.fragment_nodes]
-
-
-def find_and_place_cuts(
-    graph: MultiDiGraph,
-    cut_strategy: CutStrategy,
-    cut_method: Union[str, Callable] = "kahypar",
-    **kwargs,
-) -> List[FragmentedGraph]:
-    AVAILABLE_CUTTERS = {
-        "kahypar": KaHyParGraph.cut_graph,
-    }
-
-    if isinstance(cut_method, str):
-        cut_method = AVAILABLE_CUTTERS[cut_method.lower()]
-    if not callable(cut_method):
-        raise ValueError(
-            "`cut_method` must be a callable or one of the available string cutter names: "
-            f"{list(AVAILABLE_CUTTERS.keys())}"
-        )
-
-    probed_cut_kwargs = cut_strategy.get_cut_kwargs(graph)
-
-    cut_trials = [cut_method(graph, **cut_kwargs, **kwargs) for cut_kwargs in probed_cut_kwargs]
-    best_cut = sorted(cut_trials, key=lambda fg: fg.cost)[0]
-
-    return best_cut.place_cuts()
-
-
-class KaHyParGraph(FragmentedGraph):
-    def __init__(
-        self,
-        graph: MultiDiGraph,
-        hyperwire_weight: Union[int, float] = None,
-    ):
-
-        super().__init__(graph=graph)
-
-        self.hyperwire_weight = hyperwire_weight
-
-    @property
-    def hyperedges(self):
-        """A 3-tuple of lists that represent a hypergraph conforming to KaHyPar's input format.
-
-        Returns:
-            (Tuple[List,List,List]): The 3 lists are, respectively:
-            adjacent_vertices: Flattened list of connected vertex groups (or "nets").
-            hyperedge_splits: List of starting index of each edge in ``adjacent_vertices``. For
-                regular non-hypergraphs, it's simply [0, 2, 4, 6, ... ]
-            hyperedge_weights: List of numerical weights assigned to each edge. None if
-                ``hyperwire_weight`` not specified.
-        """
-        edges, vertices = self.edges, self.nodes
-        adjacent_vertices = [vertices[v] for e in edges for v in e]
-        hyperedge_splits = np.cumsum([0] + [len(e) for e in edges]).tolist()
-        hyperedge_weights = None
-
-        if hyperedge_weights:
-            hyperwires = {w: set() for w in self.wires}
-            num_wires = len(hyperwires)
-
-            for (v0, v1), wire in edges.items():
-                hyperwires[wire].update([vertices[v0], vertices[v1]])
-
-            for wire, vertices_on_wire in hyperwires.items():
-                nwv = len(vertices_on_wire)
-                hyperedge_splits.append(nwv + hyperedge_splits[-1])
-                adjacent_vertices = adjacent_vertices + list(vertices_on_wire)
-            assert len(hyperedge_splits) == len(edges) + num_wires + 1
-
-            if isinstance(self.hyperwire_weight, (int, float)):
-                # assumes original edges having weight 1.
-                wire_weights = [self.hyperwire_weight] * num_wires
-                hyperedge_weights = ([1] * len(edges)) + wire_weights
-
-        return adjacent_vertices, hyperedge_splits, hyperedge_weights
-
-    def cut(self, **kwargs) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
-        adjacent_vertices, hyperedge_splits, hyperedge_weights = self.hyperedges
-
-        self.cut_edges = self.kahypar_cut(
-            adjacent_vertices=adjacent_vertices,
-            hyperedge_splits=hyperedge_splits,
-            hyperedge_weights=hyperedge_weights,
-            **kwargs,
-        )
-
-        self.fragment()
-
-        return self
-
-    @classmethod
-    def cut_graph(cls, graph, **kwargs):
-        return cls(graph).cut(**kwargs)
-
-    @staticmethod
-    def kahypar_cut(
-        adjacent_vertices,
-        hyperedge_splits,
-        num_fragments,
-        imbalance,
-        hyperedge_weights=None,
-        node_weights=None,
-        block_weights=None,
-        seed=None,
-        config_path=None,
-        trial=None,
-        return_hypergraph=False,
-    ):
-        """Calls KaHyPar to partition a graph.
-
-        Args:
-            hyperedge_indices (List[int]): Starting indices of edges in `hyperedges`.
-            hyperedges (List[int]): Flattened list of connected vertex indicies.
-            num_fragments (int): Desired number of fragments.
-            seed (int): KaHyPar's seed. Defaults to the seed in the config file.
-            config_path (str): KaHyPar's .ini config file path. Defaults to its SEA20 paper config.
-            trial (int): trial id for summary label creation.
-            return_hypergraph (bool): Include the partitioned ``kahypar.Hypergraph`` in the result dict if True.
-
-        Returns:
-            Result dict with:
-                - id of the trial
-                - k
-                - cut cost in terms of number of edges cut
-                - list of inter-partition edges
-                - dict of list of vertices for each partition
-        """
-        import kahypar
-
-        trial = 0 if trial is None else trial
-        ne = len(hyperedge_splits) - 1
-        nv = max(adjacent_vertices) + 1
-
-        if hyperedge_weights is not None or node_weights is not None:
-            hyperedge_weights = hyperedge_weights or [1] * ne
-            node_weights = node_weights or [1] * nv
-            hypergraph = kahypar.Hypergraph(
-                nv,
-                ne,
-                hyperedge_splits,
-                adjacent_vertices,
-                num_fragments,
-                hyperedge_weights,
-                node_weights,
-            )
-
-        else:
-            hypergraph = kahypar.Hypergraph(
-                nv, ne, hyperedge_splits, adjacent_vertices, num_fragments
-            )
-
-        config_path = config_path or str(Path(__file__).parent / "_cut_kKaHyPar_sea20.ini")
-        context = kahypar.Context()
+    if config_path is not None:
+        context.loadINIconfiguration(config_path)
+    else:
+        config_path = str(Path(__file__).parent / "_cut_kKaHyPar_sea20.ini")
         if block_weights is None:
             context.loadINIconfiguration(config_path)
         else:
-            context.loadINIconfiguration(config_path.split(".ini")[0] + "_blockWeights.ini")
-
-        context.setK(num_fragments)
-        context.setEpsilon(imbalance)
-        if isinstance(block_weights, list) and len(block_weights) == num_fragments:
-            context.setCustomTargetBlockWeights(block_weights)
-        if isinstance(seed, int):
-            context.setSeed(int(seed))
-
-        kahypar.partition(hypergraph, context)
-
-        cut_cost = kahypar.cut(hypergraph)
-        partition_sizes = [hypergraph.blockSize(p) for p in range(num_fragments)]
-        if isinstance(block_weights, list) and len(block_weights) == num_fragments:
-            assert all(
-                [size_p <= capacity_p for size_p, capacity_p in zip(partition_sizes, block_weights)]
+            # Need to modify the config file and save it temporarily for kahypar to load.
+            temp_config = _temp_update_kahypar_ini(
+                config_path, updates={"use-individual-part-weights": "ture"}
             )
+            context.loadINIconfiguration(temp_config.name)
+            temp_config.close()
 
-        partition_ids = [hypergraph.blockID(v) for v in range(nv)]
-        partitioned_nodes = {
-            partition: np.array([v for v, p in enumerate(partition_ids) if p == partition])
-            for partition in range(num_fragments)
-        }  # switch to np or pd aggretation.
+    context.setK(num_fragments)
 
-        cut_edges = np.array(list(hypergraph.edges()))[
-            [hypergraph.connectivity(e) > 1 for e in hypergraph.edges()]
-        ]
+    if isinstance(imbalance, float):
+        context.setEpsilon(imbalance)
+    if isinstance(block_weights, list) and len(block_weights) == num_fragments:
+        context.setCustomTargetBlockWeights(block_weights)
+    if isinstance(seed, int):
+        context.setSeed(int(seed))
+    if not verbose:
+        context.suppressOutput(True)
 
-        # cut_result = {
-        #     "trial_id": (num_fragments, trial),
-        #     "k": num_fragments,
-        #     "cut_cost": cut_cost,
-        #     "cut_edges": cut_edges,
-        #     "partitioned_nodes": partitioned_nodes,
-        # }
+    kahypar.partition(hypergraph, context)
 
-        # if return_hypergraph:
-        #     cut_result["hypergraph"] = hypergraph
+    # cut_cost = kahypar.cut(hypergraph)
+    partition_sizes = [hypergraph.blockSize(p) for p in range(num_fragments)]
+    if isinstance(block_weights, list) and len(block_weights) == num_fragments:
+        assert all(
+            [size_p <= capacity_p for size_p, capacity_p in zip(partition_sizes, block_weights)]
+        )
 
-        return cut_edges
+    cut_edge_mask = [hypergraph.connectivity(e) > 1 for e in hypergraph.edges()]
+
+    edges = edges if isinstance(edges, Iterable) else hypergraph.edges()
+    cut_edges = list(compress(edges, cut_edge_mask))
+    return cut_edges
+
+
+def _temp_update_kahypar_ini(ini_path: Union[Path, str], updates: Dict[str, str]):
+    import tempfile
+
+    with open(ini_path, "r") as f:
+        lines = f.readlines()
+
+    for i, l in enumerate(lines):
+        k, *_ = l.strip().split("=")
+        if k in updates:
+            lines[i] = f"{k}={updates[k]}\n"
+
+    f = tempfile.NamedTemporaryFile(mode="wt", suffix=".ini")
+    f.writelines(lines)
+
+    return f
