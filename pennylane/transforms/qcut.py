@@ -37,7 +37,6 @@ from pennylane.operation import Expectation, Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
-from tests.templates.test_embeddings.test_amplitude import circuit_decomposed
 
 from .batch_transform import batch_transform
 
@@ -1422,7 +1421,7 @@ class CutStrategy:
 
 
 @dataclass()
-class FragmentGraph:
+class FragmentedGraph:
     """
     Representation of a cut graph.
 
@@ -1557,7 +1556,7 @@ def find_and_place_cuts(
     cut_strategy: CutStrategy,
     cut_method: Union[str, Callable] = "kahypar",
     **kwargs,
-) -> List[FragmentGraph]:
+) -> List[FragmentedGraph]:
     AVAILABLE_CUTTERS = {
         "kahypar": KaHyParGraph.cut_graph,
     }
@@ -1578,7 +1577,7 @@ def find_and_place_cuts(
     return best_cut.place_cuts()
 
 
-class KaHyParGraph(FragmentGraph):
+class KaHyParGraph(FragmentedGraph):
     def __init__(
         self,
         graph: MultiDiGraph,
