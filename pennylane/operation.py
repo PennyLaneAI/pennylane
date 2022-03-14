@@ -169,7 +169,7 @@ def expand_matrix(base_matrix, wires, wire_order):
     ...                                   [3., 4.]], requires_grad=True)
     >>> res = expand_matrix(base_matrix_torch, wires=["b"], wire_order=["a", "b"])
     >>> type(res)
-    <class 'torch.Tensor'>
+    torch.Tensor
     >>> res.requires_grad
     True
     """
