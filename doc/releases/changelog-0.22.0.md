@@ -418,7 +418,7 @@
   [(#2227)](https://github.com/PennyLaneAI/pennylane/pull/2227)
 
   Previously, operations marked for analytic differentiation that
-  do not provide a `generator`, `parameter_frequencies` or a
+  did not provide a `generator`, `parameter_frequencies` or a
   custom `grad_recipe` were assumed to satisfy the two-term shift
   rule. This now has to be made explicit for custom operations
   by adding any of the above attributes.
