@@ -251,7 +251,6 @@
   Batched input parameters can then be passed during QNode evaluation:
 
   ```pycon
-  >>> import tensorflow as tf
   >>> x = tf.random.uniform((10, 2), 0, 1)
   >>> w = tf.random.uniform((2,), 0, 1)
   >>> circuit(x, w)
