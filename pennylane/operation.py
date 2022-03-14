@@ -572,6 +572,11 @@ class Operator(abc.ABC):
         """
         raise MatrixUndefinedError
 
+    @classmethod
+    def has_matrix(cls):
+        return cls.compute_matrix != Operator.compute_matrix
+
+
     @property
     def matrix(self):
         r"""Matrix representation of an instantiated operator

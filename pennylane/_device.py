@@ -567,7 +567,7 @@ class Device(abc.ABC):
         and observable) and returns ``True`` if supported by the device."""
         return qml.BooleanFn(
             lambda obj: not isinstance(obj, qml.tape.QuantumTape)
-            and self.supports_operation(obj.name)
+            and self.supports_operation(obj)
         )
 
     def custom_expand(self, fn):
@@ -900,7 +900,7 @@ class Device(abc.ABC):
                     )
                 operation_name = o.base_name
 
-            if not self.supports_operation(operation_name):
+            if not self.supports_operation(o):
                 raise DeviceError(
                     f"Gate {operation_name} not supported on device {self.short_name}"
                 )
