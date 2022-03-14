@@ -70,7 +70,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        c, s = qml.gradients.generate_shift_rule((0.5, 1)) 
+        c, s = qml.gradients.generate_shift_rule((0.5, 1))
         recipe = list(zip(c, np.ones_like(c), s))
 
         class DummyOp(qml.CRX):

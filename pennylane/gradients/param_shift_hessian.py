@@ -75,7 +75,9 @@ def generate_multishifted_tapes(tape, idx, shifts):
     return tapes
 
 
-def expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_diagonal_shifts, f0):
+def expval_hessian_param_shift(
+    tape, argnum, diff_methods, diagonal_shifts, off_diagonal_shifts, f0
+):
     r"""Generate the Hessian tapes that are used in the computation of the second derivative of a
     quantum tape, using analytical parameter-shift rules to do so exactly. Also define a
     post-processing function to combine the results of evaluating the Hessian tapes.
@@ -96,7 +98,6 @@ def expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_
     """
     argnum = tape.trainable_params if argnum is None else argnum
     h_dim = tape.num_params
-
 
     unshifted_coeffs = {}
     add_unshifted = f0 is None
@@ -132,7 +133,7 @@ def expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_
             continue
 
         dc_i, dm_i, ds_i = diag_recipes[i]
-        if ds_i[0] == 0 and dm_i[0] == 1.:
+        if ds_i[0] == 0 and dm_i[0] == 1.0:
             if add_unshifted:
                 hessian_tapes.insert(0, tape)
                 add_unshifted = False
@@ -154,7 +155,8 @@ def expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_
                 continue
 
             c_ij, *s_ij = _combine_shift_rules(
-                [qml.math.stack([c_i, s_i]).T, qml.math.stack([c_j, s_j]).T])
+                [qml.math.stack([c_i, s_i]).T, qml.math.stack([c_j, s_j]).T]
+            )
             if s_ij[0][0] == s_ij[1][0] == 0:
                 if add_unshifted:
                     hessian_tapes.insert(0, tape)
@@ -377,4 +379,6 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
 
     argnum = list(method_map.keys())
 
-    return expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_diagonal_shifts, f0)
+    return expval_hessian_param_shift(
+        tape, argnum, diff_methods, diagonal_shifts, off_diagonal_shifts, f0
+    )

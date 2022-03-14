@@ -96,7 +96,7 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     recipe = op.grad_recipe[p_idx]
     if recipe is not None:
         recipe = qml.math.array(recipe)
-        if order==1:
+        if order == 1:
             # TODO: The following only works because `process_shifts` does not notice that
             # recipe.T has 3 instead of 2 rows, because we don't use the check for duplicates
             # This should be improved.
@@ -109,7 +109,7 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
             period = None
 
         # Iterate the custom recipe to obtain the second-order recipe
-        iter_c, iter_s = process_shifts(_iterate_shift_rule(recipe[:,::2], order, period).T)
+        iter_c, iter_s = process_shifts(_iterate_shift_rule(recipe[:, ::2], order, period).T)
         return qml.math.stack([iter_c, qml.math.ones_like(iter_c), iter_s])
 
     # Try to obtain frequencies, either via custom implementation or from generator eigvals

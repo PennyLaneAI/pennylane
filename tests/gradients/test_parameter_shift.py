@@ -111,21 +111,21 @@ class TestGradAnalysis:
         assert tape._par_info[1]["grad_method"] == "F"
         assert tape._par_info[2]["grad_method"] == "A"
 
-class TestGetOperationRecipe:
 
+class TestGetOperationRecipe:
     @pytest.mark.parametrize("order", [0, 3])
     def test_error_wrong_order(self, order):
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.2, wires=0)
 
         with pytest.raises(NotImplementedError, match="is implemented for orders 1 and 2."):
-            _get_operation_recipe(tape, 0, [-np.pi/2, np.pi/2], order)
+            _get_operation_recipe(tape, 0, [-np.pi / 2, np.pi / 2], order)
 
     @pytest.mark.parametrize(
         "orig_op, frequencies, shifts",
         [
-            (qml.RX, (1.,), None),
-            (qml.RX, (1.,), (np.pi/2,)),
+            (qml.RX, (1.0,), None),
+            (qml.RX, (1.0,), (np.pi / 2,)),
             (qml.CRY, (0.5, 1), None),
             (qml.CRY, (0.5, 1), (0.4, 0.8)),
         ],
@@ -154,8 +154,8 @@ class TestGetOperationRecipe:
     @pytest.mark.parametrize(
         "orig_op, frequencies, shifts",
         [
-            (qml.RX, (1.,), None),
-            (qml.RX, (1.,), (np.pi/2,)),
+            (qml.RX, (1.0,), None),
+            (qml.RX, (1.0,), (np.pi / 2,)),
             (qml.CRY, (0.5, 1), None),
             (qml.CRY, (0.5, 1), (0.4, 0.8)),
         ],
@@ -175,6 +175,7 @@ class TestGetOperationRecipe:
         assert qml.math.allclose(out_recipe[0], c2)
         assert qml.math.allclose(out_recipe[1], np.ones_like(c2))
         assert qml.math.allclose(out_recipe[2], s2)
+
 
 def grad_fn(tape, dev, fn=qml.gradients.param_shift, **kwargs):
     """Utility function to automate execution and processing of gradient tapes"""

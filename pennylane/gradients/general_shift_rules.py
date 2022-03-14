@@ -172,6 +172,7 @@ def _get_shift_rule(frequencies, shifts=None):
     shifts = np.concatenate((shifts, -shifts))  # pylint: disable=invalid-unary-operand-type
     return np.stack([coeffs, shifts])
 
+
 def _iterate_shift_rule(rule, order, period=None):
     r"""Helper method to repeat a shift rule multiple times along the same
     parameter axis for higher-order derivatives."""
@@ -188,6 +189,7 @@ def _iterate_shift_rule(rule, order, period=None):
     # combine all terms in the linear combination into a single
     # array, with coefficients on the first column and shifts on the second column.
     return qml.math.stack(combined_rules)
+
 
 @functools.lru_cache()
 def generate_shift_rule(frequencies, shifts=None, order=1):
@@ -276,6 +278,7 @@ def _combine_shift_rules(rules):
         combined_rules.append(np.stack(combined))
 
     return np.stack(combined_rules).T
+
 
 def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
     r"""Computes the parameter shift rule with respect to two parametrized unitaries,
