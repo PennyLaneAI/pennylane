@@ -191,6 +191,7 @@
   [(#2233)](https://github.com/PennyLaneAI/pennylane/pull/2233)
   [(#2289)](https://github.com/PennyLaneAI/pennylane/pull/2289)
   [(#2291)](https://github.com/PennyLaneAI/pennylane/pull/2291)
+  [(#2315)](https://github.com/PennyLaneAI/pennylane/pull/2315)
 
   `qml.Snapshot` saves the internal state of devices at arbitrary points of execution.
 
