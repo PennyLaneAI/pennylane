@@ -889,7 +889,7 @@ class QubitDevice(Device):
         dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:
-            if m.return_type is not qml.operation.Expectation:
+            if m.return_type is not qml.measurements.Expectation:
                 raise qml.QuantumFunctionError(
                     "Adjoint differentiation method does not support"
                     f" measurement {m.return_type.value}"
