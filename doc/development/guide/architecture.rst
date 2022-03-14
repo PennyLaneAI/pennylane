@@ -96,7 +96,7 @@ details in the documentation on :doc:`adding operations </development/adding_ope
 
     The ``op.get_matrix()`` method is temporary and will be renamed to ``op.matrix()`` in an
     upcoming release. Where possible it is recommended to use higher-level functions such as
-    ``qml.matrix(op)``.
+    :func:`~.matrix`.
 
 Devices query operators for their properties and representations to
 gain information on how to implement the operator.
