@@ -18,7 +18,7 @@ from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane import qnode, QNode
-from pennylane.tape import JacobianTape
+from pennylane.tape import QuantumTape
 from pennylane.interfaces.batch import InterfaceUnsupportedError
 
 qubit_device_and_diff_method = [
@@ -176,7 +176,7 @@ class TestQNode:
                 theta, phi, lam = self.data
                 wires = self.wires
 
-                with JacobianTape() as tape:
+                with QuantumTape() as tape:
                     qml.Rot(lam, theta, -lam, wires=wires)
                     qml.PhaseShift(phi + lam, wires=wires)
 

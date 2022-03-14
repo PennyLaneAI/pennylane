@@ -193,7 +193,7 @@ class MeasurementProcess:
         rotation and a measurement in the computational basis.
 
         Returns:
-            .JacobianTape: a quantum tape containing the operations
+            .QuantumTape: a quantum tape containing the operations
             required to diagonalize the observable
 
         **Example**
@@ -224,9 +224,7 @@ class MeasurementProcess:
         if self.obs is None:
             raise qml.operation.DecompositionUndefinedError
 
-        from pennylane.tape import JacobianTape  # pylint: disable=import-outside-toplevel
-
-        with JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             self.obs.diagonalizing_gates()
             MeasurementProcess(
                 self.return_type, wires=self.obs.wires, eigvals=self.obs.get_eigvals()
@@ -636,17 +634,25 @@ class MeasurementValue(Generic[T]):
         return branch_dict
 
     def __invert__(self):
-        """Inverts the control value of the measurement."""
+        """Return a copy of the measurement value with an inverted control
+        value."""
+        inverted_self = copy.copy(self)
         zero = self._zero_case
         one = self._one_case
 
-        self._control_value = one if self._control_value == zero else zero
+        inverted_self._control_value = one if self._control_value == zero else zero
 
-        return self
+        return inverted_self
 
     def __eq__(self, control_value):
         """Allow asserting measurement values."""
         measurement_outcomes = {self._zero_case, self._one_case}
+
+        if not isinstance(control_value, tuple(type(val) for val in measurement_outcomes)):
+            raise MeasurementValueError(
+                f"The equality operator is used to assert measurement outcomes, but got a value with type {type(control_value)}."
+            )
+
         if control_value not in measurement_outcomes:
             raise MeasurementValueError(
                 f"Unknown measurement value asserted; the set of possible measurement outcomes is: {measurement_outcomes}."
@@ -698,7 +704,7 @@ def measure(wires):
     tensor([0.90165331, 0.09834669], requires_grad=True)
 
     Args:
-        wires (Wires): The wires the measurement process applies to.
+        wires (Wires): The wire of the qubit the measurement process applies to.
 
     Raises:
         QuantumFunctionError: if multiple wires were specified
