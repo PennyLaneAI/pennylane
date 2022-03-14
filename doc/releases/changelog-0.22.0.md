@@ -6,7 +6,7 @@
 
 <h4>Quantum circuit cutting ✂️</h4>
 
-* Users can now run `N`-qubit circuits on devices with fewer than `N` qubits by
+* You can now run `N`-wire circuits on devices with fewer than `N` wire, by
   strategically placing `WireCut` operations that allow their circuit to be
   partitioned into smaller fragments, at a cost of needing to perform a greater
   number of device executions. Circuit cutting is enabled by decorating a QNode
@@ -31,7 +31,7 @@
   [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
   [(#2279)](https://github.com/PennyLaneAI/pennylane/pull/2279)
 
-  The example below shows how a three-qubit circuit can be run on a two-qubit device:
+  The example below shows how a three-wire circuit can be run on a two-wire device:
 
   ```python
   dev = qml.device("default.qubit", wires=2)
@@ -76,26 +76,25 @@
 
 <h4>Conditional operations: quantum teleportation unlocked 🔓🌀</h4>
 
-* The user-interface for mid-circuit measurements and conditional operations
-  has been added to support use cases like quantum teleportation, quantum error
+* Support for mid-circuit measurements and conditional operations
+  has been added, to enable use cases like quantum teleportation, quantum error
   correction and quantum error mitigation.
   [(#2211)](https://github.com/PennyLaneAI/pennylane/pull/2211)
   [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
   [(#2275)](https://github.com/PennyLaneAI/pennylane/pull/2275)
 
-  The addition includes the `defer_measurements` device-independent transform
-  that can be applied to QNodes with devices that have no native mid-circuit
-  measurements capabilities. This transform is applied by default when
-  evaluating a QNode on a device that doesn't support mid-circuit measurements.
+  Two new functions have been added to support this capability:
 
-  For example, the code below shows how to teleport a qubit:
+  - `qml.measure()` places mid-circuit measurements in the middle of a quantum function.
+
+  - `qml.cond()` allows operations and quantum functions to be conditioned on the result of a
+    previous measurement.
+
+  For example, the code below shows how to teleport a qubit from wire 0 to wire 2:
 
   ```python
-  from scipy.stats import unitary_group
-
-  random_state = unitary_group.rvs(2, random_state=1967)[0]
-
-  dev = qml.device("default.mixed", wires=3)
+  dev = qml.device("default.qubit", wires=3)
+  input_state = np.array([1, -1], requires_grad=False) / np.sqrt(2)
 
   @qml.qnode(dev)
   def teleport(state):
@@ -120,14 +119,17 @@
 
       # Return state on final wire
       return qml.density_matrix(wires=2)
-
-  output_projector = teleport(random_state)
   ```
+
   We can double-check that the qubit has been teleported by computing the
-  overlap between the input state and the resulting state on qubit 2:
+  overlap between the input state and the resulting state on wire 2:
+
   ```pycon
-  >>> overlap = random_state.conj() @ output_projector @ random_state
-  >>> overlap
+  >>> output_state = teleport(input_state)
+  >>> output_state
+  tensor([[ 0.5+0.j, -0.5+0.j],
+          [-0.5+0.j,  0.5+0.j]], requires_grad=True)
+  >>> input_state.conj() @ output_state @ input_state
   tensor(1.+0.j, requires_grad=True)
   ```
 
@@ -136,18 +138,71 @@
   operations](https://pennylane.readthedocs.io/en/latest/introduction/measurements.html#mid-circuit-measurements-and-conditional-operations)
   section in the documentation.
 
-<h4>Take a mid-circuit quantum snapshot 📷</h4>
+* Train mid-circuit measurements by deferring them, via the new
+  `@qml.defer_measurements` transform.
+  [(#2211)](https://github.com/PennyLaneAI/pennylane/pull/2211)
+  [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
+  [(#2275)](https://github.com/PennyLaneAI/pennylane/pull/2275)
 
-* A new operation `qml.Snapshot` has been added to assist users in debugging quantum progams.
+  If a device doesn't natively support mid-circuit measurements, the `@qml.defer_measurements`
+  transform can be applied to the QNode to transform the QNode into one with _terminal_ measurements
+  and _controlled_ operations:
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  @qml.defer_measurements
+  def circuit(x):
+      qml.Hadamard(wires=0)
+
+      m = qml.measure(0)
+
+      def op_if_true():
+          return qml.RX(x**2, wires=1)
+
+      def op_if_false()
+          return qml.RY(x, wires=1)
+
+      qml.cond(m==1, op_if_true, op_if_false)()
+
+      return qml.expval(qml.PauliZ(1))
+  ```
+
+  ```pycon
+  >>> x = np.array(0.7, requires_grad=True)
+  >>> print(qml.draw(circuit, expansion_strategy="device")(x))
+  0: ──H─╭C─────────X─╭C─────────X─┤
+  1: ────╰RX(0.49)────╰RY(0.70)────┤  <Z>
+  >>> circuit(x)
+  tensor(0.82358752, requires_grad=True)
+  ```
+
+  Deferring mid-circuit measurements also enables differentiation:
+
+  ```pycon
+  >>> qml.grad(circuit)(x)
+  -0.651546965338656
+  ```
+
+<h4>Debug with mid-circuit quantum snapshots 📷</h4>
+
+* A new operation `qml.Snapshot` has been added to assist in debugging quantum functions.
   [(#2233)](https://github.com/PennyLaneAI/pennylane/pull/2233)
   [(#2289)](https://github.com/PennyLaneAI/pennylane/pull/2289)
   [(#2291)](https://github.com/PennyLaneAI/pennylane/pull/2291)
 
-  The instruction is used to save the internal state of simulator devices at
-  arbitrary points of execution, such as the quantum state vector and density
-  matrix in the qubit case, or the covariance matrix and vector of means in the
-  continuous variable case.
-  ```py
+  `qml.Snapshot` saves the internal state of devices at arbitrary points of execution.
+
+  Currently supported devices include:
+
+  - `default.qubit`: each snapshot saves the quantum state vector
+  - `default.mixed`: each snapshot saves the density matrix
+  - `default.gaussian`: each snapshot saves the covariance matrix and vector of means
+
+  During normal execution, the snapshots are ignored:
+
+  ```python
   dev = qml.device("default.qubit", wires=2)
 
   @qml.qnode(dev, interface=None)
@@ -159,8 +214,11 @@
       qml.Snapshot()
       return qml.expval(qml.PauliX(0))
   ```
-  The saved states can be retrieved in the form of a dictionary via the
-  top-level `qml.snapshots` function.
+
+  However, when using the `qml.snapshots`
+  transform, intermediate device states will be stored and returned alongside the
+  results.
+
   ```pycon
   >>> qml.snapshots(circuit)()
   {0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),
@@ -169,37 +227,40 @@
    'execution_results': array(0.)}
   ```
 
-<h4>Batch input data 📦</h4>
+<h4>Batch embedding and state preparation data 📦</h4>
 
-* Added the `batch_input` transform to enable batching non-trainable inputs to
-  QNodes for machine learning applications and to upgrade the `qml.KerasLayer`
-  class.
+* Added the `@qml.batch_input` transform to enable batching non-trainable gate parameters.
+  In addition, the `qml.qnn.KerasLayer` class has been updated to natively support
+  batched training data.
   [(#2069)](https://github.com/PennyLaneAI/pennylane/pull/2069)
 
-  As with other transforms, `batch_input` can be used to decorate QNodes:
+  As with other transforms, `@qml.batch_input` can be used to decorate QNodes:
   ```python
   dev = qml.device("default.qubit", wires=2, shots=None)
 
   @qml.batch_input(argnum=0)
   @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
   def circuit(inputs, weights):
+      # add a batch dimension to the embedding data
       qml.AngleEmbedding(inputs, wires=range(2), rotation="Y")
       qml.RY(weights[0], wires=0)
       qml.RY(weights[1], wires=1)
       return qml.expval(qml.PauliZ(1))
   ```
-  Then, batched input parameters can be passed for QNode evaluation:
+
+  Batched input parameters can then be passed during QNode evaluation:
+
   ```pycon
-  >>> np.random.seed(42)
-  >>> x = np.random.uniform(0, 1, (10, 2), requires_grad=False)
-  >>> w = np.random.uniform(0, 1, 2, requires_grad=True)
+  >>> import tensorflow as tf
+  >>> x = tf.random.uniform((10, 2), 0, 1)
+  >>> w = tf.random.uniform((2,), 0, 1)
   >>> circuit(x, w)
   <tf.Tensor: shape=(10,), dtype=float64, numpy=
   array([0.46230079, 0.73971315, 0.95666004, 0.5355225 , 0.66180948,
-         0.44519553, 0.93874261, 0.9483197 , 0.78737918, 0.90866411])>
+          0.44519553, 0.93874261, 0.9483197 , 0.78737918, 0.90866411])>
   ```
 
-<h4>Mighty quantum information transforms 🐛➡🦋</h4>
+<h4>Even more mighty quantum transforms 🐛➡🦋</h4>
 
 * New functions and transforms of operators have been added:
 
@@ -301,9 +362,9 @@
   []
   ```
 
-<h4>Improved text-based circuit drawer 🖌️</h4>
+<h3>Improvements</h3>
 
-* The text-based drawer accessed via `qml.draw` has been improved.
+* The text-based drawer accessed via `qml.draw()` has been optimized and improved.
   [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
   [(#2198)](https://github.com/PennyLaneAI/pennylane/pull/2198)
 
@@ -331,8 +392,6 @@
   1: ────╰RX(2.30)──Rot(1.20,3.20,0.70)─╰RX(-2.30)─┤ ╰<Z@Z>
   ```
 
-<h4>Operations equipped with parameter frequencies ∿</h4>
-
 * The frequencies of gate parameters are now accessible as an operation
   property and can be used for circuit analysis, optimization via the
   `RotosolveOptimizer` and differentiation with the parameter-shift rule
@@ -355,56 +414,14 @@
   et al. (2021)](https://arxiv.org/abs/2107.12390) for theoretical background
   information on the general parameter-shift rule.
 
-<h3>Improvements</h3>
+* No two-term parameter-shift rule is assumed anymore by default.
+  [(#2227)](https://github.com/PennyLaneAI/pennylane/pull/2227)
 
-* The Operator class has undergone a major refactor with the following changes:
-
-  * The static `compute_decomposition` method defines the decomposition
-    of an operator into a product of simpler operators, and the instance method
-    `decomposition()` computes this for a given instance. When a custom
-    decomposition does not exist, the code now raises a custom `NoDecompositionError`
-    instead of `NotImplementedError`.
-    [(#2024)](https://github.com/PennyLaneAI/pennylane/pull/2024)
-
-  * The `diagonalizing_gates()` representation has been moved to the highest-level
-    `Operator` class and is therefore available to all subclasses. A condition
-    `qml.operation.defines_diagonalizing_gates` has been added, which can be used
-    in tape contexts without queueing.
-    [(#1985)](https://github.com/PennyLaneAI/pennylane/pull/1985)
-
-  * A static `compute_diagonalizing_gates` method has been added, which is called
-    by default in `diagonalizing_gates()`.
-    [(#1993)](https://github.com/PennyLaneAI/pennylane/pull/1993)
-
-  * A `hyperparameters` attribute was added to the operator class.
-    [(#2017)](https://github.com/PennyLaneAI/pennylane/pull/2017)
-
-  * The `string_for_inverse` attribute is removed.
-    [(#2021)](https://github.com/PennyLaneAI/pennylane/pull/2021)
-
-  * A `terms()` method and a `compute_terms()` static method were added to `Operator`.
-    Currently, only the `Hamiltonian` class overwrites `compute_terms` to store
-    coefficients and operators. The `Hamiltonian.terms` property hence becomes
-    a proper method called by `Hamiltonian.terms()`.
-
-  * Decompositions are now defined in `compute_decomposition`, instead of `expand`.
-    [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
-
-  * The `expand` method was moved to the main `Operator` class.
-    [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
-
-  * A `sparse_matrix` method and a `compute_sparse_matrix` static method were added
-    to the `Operator` class. The sparse representation of `SparseHamiltonian`
-    is moved to this method, so that its `matrix` method now returns a dense matrix.
-    [(#2050)](https://github.com/PennyLaneAI/pennylane/pull/2050)
-
-  * Custom errors subclassing ``OperatorPropertyUndefined`` are raised if a representation
-    has not been defined. This replaces the ``NotImplementedError`` and allows finer control
-    for developers.
-    [(#2064)](https://github.com/PennyLaneAI/pennylane/pull/2064)
-
-  * Moved ``expand()`` from ``Operation`` to ``Operator``.
-    [(#2239)](https://github.com/PennyLaneAI/pennylane/pull/2239)
+  Previously, operations marked for analytic differentiation that
+  do not provide a `generator`, `parameter_frequencies` or a
+  custom `grad_recipe` were assumed to satisfy the two-term shift
+  rule. This now has to be made explicit for custom operations
+  by adding any of the above attributes.
 
 * Most compilation transforms, and relevant subroutines, have been updated to
   support just-in-time compilation with `jax.jit`.
@@ -417,56 +434,127 @@
   moved closer to their use cases, while preserving existing behaviour.
   [(#2200)](https://github.com/PennyLaneAI/pennylane/pull/2200)
 
-* No two-term parameter-shift rule is assumed anymore by default.
-  [(#2227)](https://github.com/PennyLaneAI/pennylane/pull/2227)
-
-  Previously, operations marked for analytic differentiation that
-  do not provide a `generator`, `parameter_frequencies` or a
-  custom `grad_recipe` were assumed to satisfy the two-term shift
-  rule. This now has to be made explicit for custom operations
-  by adding any of the above attributes.
-
 * Added a new `partition_pauli_group` function to the `grouping` module for
   efficiently measuring the `N`-qubit Pauli group with `3 ** N`
   qubit-wise commuting terms.
   [(#2185)](https://github.com/PennyLaneAI/pennylane/pull/2185)
 
-  ```pycon
-  >>> qml.grouping.partition_pauli_group(2)
-  [['II', 'IZ', 'ZI', 'ZZ'],
-   ['IX', 'ZX'],
-   ['IY', 'ZY'],
-   ['XI', 'XZ'],
-   ['XX'],
-   ['XY'],
-   ['YI', 'YZ'],
-   ['YX'],
-   ['YY']]
-  ```
+* The Operator class has undergone a major refactor with the following changes:
 
-* Some error messages have been improved and operation properties made
-  more consistent.
-  [(#2287)](https://github.com/PennyLaneAI/pennylane/pull/2287/)
+  * How operators define their representations has been overhauled.
+
+    - **Matrices**: the static method `Operator.compute_matrices()` defines the matrix representation
+      of the operator, and the function `qml.matrix(op)` computes this for a given
+      instance.
+
+    - **Eigvals**: the static method `Operator.compute_eigvals()` defines the matrix representation
+      of the operator, and the function `qml.eigvals(op)` computes this for a given
+      instance.
+
+    - **Decompositions**: the static method `Operator.compute_decomposition()` defines the matrix representation
+      of the operator, and the method `op.decomposition` computes this for a given
+      instance.
+      [(#2024)](https://github.com/PennyLaneAI/pennylane/pull/2024)
+      [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
+
+    - **Sparse matrices**: the static method `Operator.compute_sparse_matrix()` defines the sparse
+      matrix representation of the operator, and the method `op.sparse_matrix()` computes this for a
+      given instance.
+      [(#2050)](https://github.com/PennyLaneAI/pennylane/pull/2050)
+
+    - **Linear combinations of operators**: The static method `compute_terms()`, used for representing
+      the linear combination of coefficients and operators representing the operator, has been added.
+      The method `op.terms()` computes this for a given instance.
+      Currently, only the `Hamiltonian` class overwrites `compute_terms` to store
+      coefficients and operators. The `Hamiltonian.terms` property hence becomes
+      a proper method called by `Hamiltonian.terms()`.
+
+    - **Diagonalization**: The `diagonalizing_gates()` representation has been moved to the
+      highest-level `Operator` class and is therefore available to all subclasses. A condition
+      `qml.operation.defines_diagonalizing_gates` has been added, which can be used in tape contexts
+      without queueing. In addition, a static `compute_diagonalizing_gates` method has been added,
+      which is called by default in `diagonalizing_gates()`.
+      [(#1985)](https://github.com/PennyLaneAI/pennylane/pull/1985)
+      [(#1993)](https://github.com/PennyLaneAI/pennylane/pull/1993)
+
+  * Error handling has been improved for Operator representations. Custom errors subclassing
+    `OperatorPropertyUndefined` are raised if a representation has not been defined. This replaces
+    the `NotImplementedError` and allows finer control for developers.
+    [(#2064)](https://github.com/PennyLaneAI/pennylane/pull/2064)
+    [(#2287)](https://github.com/PennyLaneAI/pennylane/pull/2287/)
+
+  * A `Operator.hyperparameters` attribute, used for storing operation parameters that are *never*
+    trainable, has been added to the operator class.
+    [(#2017)](https://github.com/PennyLaneAI/pennylane/pull/2017)
+
+  * The `string_for_inverse` attribute is removed.
+    [(#2021)](https://github.com/PennyLaneAI/pennylane/pull/2021)
+
+  * The `expand()` method was moved from the `Operation` class to the main `Operator` class.
+    [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
+    [(#2239)](https://github.com/PennyLaneAI/pennylane/pull/2239)
+
+<h3>Deprecations</h3>
+
+* There are several important changes when creating custom operations:
+  [#2214](https://github.com/PennyLaneAI/pennylane/pull/2214)
+  [#2227](https://github.com/PennyLaneAI/pennylane/pull/2227)
+  [(#2030)](https://github.com/PennyLaneAI/pennylane/pull/2030)
+  [(#2061)](https://github.com/PennyLaneAI/pennylane/pull/2061)
+
+  - The `Operator.matrix` method has been deprecated and `Operator.compute_matrix`
+    should be defined instead. Operator matrices should be accessed using `qml.matrix(op)`.
+    If you were previously defining the class method `Operator._matrix()`, this is a a **breaking
+    change** --- please update your operation to instead overwrite `Operator.compute_matrix`.
+
+  - The `Operator.decomposition` method has been deprecated and `Operator.compute_decomposition`
+    should be defined instead. Operator decompositions should be accessed using `Operator.decomposition()`.
+
+  - The `Operator.eigvals` method has been deprecated and `Operator.compute_eigvals`
+    should be defined instead. Operator eigenvalues should be accessed using `qml.eigvals(op)`.
+
+  - The `Operator.generator` property is now a method, and should return an *operator instance*
+    representing the generator. Note that unlike the other representations above, this is a
+    **breaking change**. Operator generators should be accessed using `qml.generator(op)`.
+
+  - The `Operation.get_parameter_shift` method has been deprecated
+    and will be removed in a future release.
+
+    Instead, the functionalities for general parameter-shift rules in the
+    `qml.gradients` module should be used, together with the operation attributes
+    `parameter_frequencies` or `grad_recipe`.
+
+* Executing tapes using `tape.execute(dev)` is deprecated.
+  Please use the `qml.execute([tape], dev)` function instead.
+  [(#2306)](https://github.com/PennyLaneAI/pennylane/pull/2306)
+
+* The subclasses of the quantum tape, including `JacobianTape`, `QubitParamShiftTape`,
+  `CVParamShiftTape`, and `ReversibleTape` are deprecated. Instead of calling
+  `JacobianTape.jacobian()` and `JacobianTape.hessian()`,
+  please use a standard `QuantumTape`, and apply gradient transforms using
+  the `qml.gradients` module.
+  [(#2306)](https://github.com/PennyLaneAI/pennylane/pull/2306)
+
+* `qml.transforms.get_unitary_matrix()` has been deprecated and will be removed
+  in a future release. For extracting matrices of operations and quantum functions,
+  please use `qml.matrix()`.
+  [(#2248)](https://github.com/PennyLaneAI/pennylane/pull/2248)
+
+* The `qml.finite_diff()` function has been deprecated and will be removed
+  in an upcoming release. Instead,
+  `qml.gradients.finite_diff()` can be used to compute purely quantum gradients
+  (that is, gradients of tapes or QNode).
+  [#2212](https://github.com/PennyLaneAI/pennylane/pull/2212)
+
+* The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
+  The single `wires` keyword should be all the control wires followed by a single target wire.
+  [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
+  [(#2278)](https://github.com/PennyLaneAI/pennylane/pull/2278)
 
 <h3>Breaking changes</h3>
 
 * The representation of an operator as a matrix has been overhauled.
-
-  The `matrix()` method now accepts a
-  `wire_order` argument and calculates the correct numerical representation
-  with respect to that ordering.
-
-  ```pycon
-  >>> op = qml.RX(0.5, wires="b")
-  >>> qml.matrix(op)
-  [[0.96891242+0.j         0.        -0.24740396j]
-   [0.        -0.24740396j 0.96891242+0.j        ]]
-  >>> qml.matrix(op, wire_order=["a", "b"])
-  [[0.9689+0.j  0.-0.2474j 0.+0.j         0.+0.j]
-   [0.-0.2474j  0.9689+0.j 0.+0.j         0.+0.j]
-   [0.+0.j          0.+0.j 0.9689+0.j 0.-0.2474j]
-   [0.+0.j          0.+0.j 0.-0.2474j 0.9689+0.j]]
-  ```
+  [(#1996)](https://github.com/PennyLaneAI/pennylane/pull/1996)
 
   The "canonical matrix", which is independent of wires,
   is now defined in the static method `compute_matrix()` instead of `_matrix`.
@@ -480,11 +568,7 @@
   ```
 
   If no canonical matrix is specified for a gate, `compute_matrix()`
-  raises a `NotImplementedError`.
-
-  The new `matrix()` method is now used in the
-  `pennylane.transforms.get_qubit_unitary()` transform.
-  [(#1996)](https://github.com/PennyLaneAI/pennylane/pull/1996)
+  raises a `MatrixUndefinedError`.
 
 * The generator property has been updated to an instance method,
   `Operator.generator()`. It now returns an instantiated operation,
@@ -496,21 +580,8 @@
   an `Observable`, `Tensor`, `Hamiltonian`, `SparseHamiltonian`, or `Hermitian`
   operator.
 
-  In addition, a temporary utility function `get_generator` has been added
-  to the utils module, to automate:
-
-  - Extracting the matrix representation
-  - Extracting the 'coefficient' if possible (only occurs if the generator is a single Pauli word)
-  - Converting a Hamiltonian to a sparse matrix if there are more than 1 Pauli word present.
-  - Negating the coefficient/taking the adjoint of the matrix if the operation was inverted
-
-  This utility logic is currently needed because:
-
-  - Extracting the matrix representation is not supported natively on
-    Hamiltonians and SparseHamiltonians.
-  - By default, calling `op.generator()` does not take into account `op.inverse()`.
-  - If the generator is a single Pauli word, it is convenient to have access to
-    both the coefficient and the observable separately.
+  In addition, `qml.generator(operation)` has been added to aid in retrieving
+  generator representations of operators.
 
 * The argument `wires` in `heisenberg_obs`, `heisenberg_expand` and `heisenberg_tr`
   was renamed to `wire_order` to be consistent with other matrix representations.
@@ -520,49 +591,8 @@
   `compute_kraus_matrices`, which is now a static method.
   [(#2055)](https://github.com/PennyLaneAI/pennylane/pull/2055)
 
-* The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
-  The single `wires` keyword should be all the control wires followed by a single target wire.
-  [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
-  [(#2278)](https://github.com/PennyLaneAI/pennylane/pull/2278)
-
-* Renamed the `pennylane.measure.py` file to `pennylane.measurements.py`.
+* The `pennylane.measure` module has been renamed to `pennylane.measurements`.
   [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
-
-<h3>Deprecations</h3>
-
-* Executing tapes using `tape.execute(dev)` is deprecated.
-  Please use the `qml.execute([tape], dev)` function instead.
-  [(#2306)](https://github.com/PennyLaneAI/pennylane/pull/2306)
-
-* The subclasses of the quantum tape, including `JacobianTape`, `QubitParamShiftTape`,
-  `CVParamShiftTape`, and `ReversibleTape` are deprecated. Instead of calling
-  `JacobianTape.jacobian()` and `JacobianTape.hessian()`,
-  please use a standard `QuantumTape`, and apply gradient transforms using
-  the `qml.gradients` module.
-  [(#2306)](https://github.com/PennyLaneAI/pennylane/pull/2306)
-
-* The `qml.operation.Operation.get_parameter_shift` method has been deprecated
-  and will be removed in a future release.
-  [#2227](https://github.com/PennyLaneAI/pennylane/pull/2227)
-
-  Instead, the functionalities for general parameter-shift rules in the
-  `qml.gradients` module should be used, together with the operation attributes
-  `parameter_frequencies` or `grad_recipe`.
-
-* The `qml.finite_diff()` function has been deprecated and will be removed
-  in an upcoming release. Instead,
-  `qml.gradients.finite_diff()` can be used to compute purely quantum gradients
-  (that is, gradients of tapes or QNode).
-  [#2212](https://github.com/PennyLaneAI/pennylane/pull/2212)
-
-* `qml.transforms.get_unitary_matrix()` has been deprecated and will be removed
-  in a future release. For extracting matrices of operations and quantum functions,
-  please use `qml.matrix()`.
-  [(#2248)](https://github.com/PennyLaneAI/pennylane/pull/2248)
-
-* The `Operator.decomposition` method has been deprecated and
-  `Operator.compute_decomposition` should be used instead.
-  [#2214](https://github.com/PennyLaneAI/pennylane/pull/2214)
 
 <h3>Bug fixes</h3>
 
@@ -573,15 +603,15 @@
 * The `qml.RandomLayers` template now decomposes when the weights are a list of lists.
   [(#2266)](https://github.com/PennyLaneAI/pennylane/pull/2266/)
 
-* The `qml.QubitUnitary` operation now supports jitting.
+* The `qml.QubitUnitary` operation now supports just-in-time compilation using JAX.
   [(#2249)](https://github.com/PennyLaneAI/pennylane/pull/2249)
 
-* Fixes a bug in the JAX interface where ``DeviceArray`` objects
+* Fixes a bug in the JAX interface where `DeviceArray` objects
   were not being converted to NumPy arrays before executing an
   external device.
   [(#2255)](https://github.com/PennyLaneAI/pennylane/pull/2255)
 
-* The ``qml.ctrl`` transform now works correctly with gradient transforms
+* The `qml.ctrl` transform now works correctly with gradient transforms
   such as the parameter-shift rule.
   [(#2238)](https://github.com/PennyLaneAI/pennylane/pull/2238)
 
@@ -605,7 +635,7 @@
   to reflect the past and planned changes of the operator refactor.
   [(#2066)](https://github.com/PennyLaneAI/pennylane/pull/2066)
 
-* Links to the Strawberry Fields docuementation for information on the CV
+* Links to the Strawberry Fields documentation for information on the CV
   model.
   [(#2259)](https://github.com/PennyLaneAI/pennylane/pull/2259)
 
@@ -642,4 +672,4 @@ Sam Banning, Thomas Bromley, Olivia Di Matteo, Christian Gogolin, Diego Guala,
 Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Nathan Killoran,
 Christina Lee, Angus Lowe, Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Lee
 James O'Riordan, Chae-Yeun Park, Maria Schuld, Jay Soni, Antal Száva, David
-Wierichs
+Wierichs.
