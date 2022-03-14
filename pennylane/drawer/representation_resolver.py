@@ -328,7 +328,7 @@ class RepresentationResolver:
         Returns:
             str: String representation of the Operator
         """
-        if isinstance(op, qml.measure.MeasurementProcess):
+        if isinstance(op, qml.measurements.MeasurementProcess):
             if op.obs is not None:
                 op = op.obs
             else:
@@ -511,7 +511,7 @@ class RepresentationResolver:
         if isinstance(element, str):
             return element
         if (
-            isinstance(element, (qml.operation.Observable, qml.measure.MeasurementProcess))
+            isinstance(element, (qml.operation.Observable, qml.measurements.MeasurementProcess))
             and element.return_type is not None
         ):
             return self.output_representation(element, wire)

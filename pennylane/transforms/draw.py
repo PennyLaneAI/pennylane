@@ -158,6 +158,7 @@ def draw(
     show_all_wires=False,
     decimals=2,
     max_length=100,
+    show_matrices=False,
     expansion_strategy=None,
 ):
     """Create a function that draws the given qnode.
@@ -169,6 +170,7 @@ def draw(
         decimals (int): How many decimal points to include when formatting operation parameters.
             ``None`` will omit parameters from operation labels.
         max_length (int): Maximum string width (columns) when printing the circuit
+        show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
         expansion_strategy (str): The strategy to use when circuit expansions or decompositions
             are required.
 
@@ -203,8 +205,7 @@ def draw(
     .. UsageDetails::
 
 
-    By specifying the ``decimals`` keyword, parameters
-    are displayed to the specified precision. Matrix-valued parameters are never displayed.
+    By specifying the ``decimals`` keyword, parameters are displayed to the specified precision.
 
     >>> print(qml.draw(circuit, decimals=4)(a=2.3, w=[1.2, 3.2, 0.7]))
     0: ──H─╭C─────────────────────────────────────╭C───────────┤ ╭<Z@Z>
@@ -225,6 +226,28 @@ def draw(
     ...     return qml.expval(qml.PauliZ(0))
     >>> print(qml.draw(circuit2)("x"))
     0: ──RX(x)─┤  <Z>
+
+    When requested with ``show_matrices=True``, matrix valued parameters are printed below the
+    circuit:
+
+    .. code-block:: python
+
+    >>> @qml.qnode(qml.device('default.qubit', wires=2))
+    ... def circuit():
+    ...     qml.QubitUnitary(np.eye(2), wires=0)
+    ...     qml.QubitUnitary(-np.eye(4), wires=(0,1))
+    ...     return qml.expval(qml.Hermitian(np.eye(2), wires=1))
+    >>> print(qml.draw(circuit, show_matrices=True)())
+    0: ──U(M0)─╭U(M1)─┤
+    1: ────────╰U(M1)─┤  <𝓗(M0)>
+    M0 =
+    [[1. 0.]
+    [0. 1.]]
+    M1 =
+    [[-1. -0. -0. -0.]
+    [-0. -1. -0. -0.]
+    [-0. -0. -1. -0.]
+    [-0. -0. -0. -1.]]
 
     The ``max_length`` keyword warps long circuits:
 
@@ -302,18 +325,24 @@ def draw(
         _wire_order = wire_order or qnode.device.wires
 
         if tapes is not None:
-            cache = {"tape_offset": 0}
+            cache = {"tape_offset": 0, "matrices": []}
             res = [
                 tape_text(
                     t,
                     wire_order=_wire_order,
                     show_all_wires=show_all_wires,
                     decimals=decimals,
+                    show_matrices=False,
                     max_length=max_length,
                     cache=cache,
                 )
                 for t in tapes[0]
             ]
+            if show_matrices:
+                mat_str = "\n"
+                for i, mat in enumerate(cache["matrices"]):
+                    mat_str += f"\nM{i} = \n{mat}"
+                return "\n\n".join(res) + mat_str
             return "\n\n".join(res)
 
         return tape_text(
@@ -321,13 +350,16 @@ def draw(
             wire_order=_wire_order,
             show_all_wires=show_all_wires,
             decimals=decimals,
+            show_matrices=show_matrices,
             max_length=max_length,
         )
 
     return wrapper
 
 
-def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwargs):
+def draw_mpl(
+    qnode, wire_order=None, show_all_wires=False, decimals=None, expansion_strategy=None, **kwargs
+):
     """Draw a qnode with matplotlib
 
     Args:
@@ -345,6 +377,16 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
         label_options (dict): matplotlib formatting options for the wire labels
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
+        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
+            are required.
+
+            - ``gradient``: The QNode will attempt to decompose
+              the internal circuit such that all circuit operations are supported by the gradient
+              method.
+
+            - ``device``: The QNode will attempt to decompose the internal circuit
+              such that all circuit operations are natively supported by the device.
+
 
     Returns:
         A function that has the same argument signature as ``qnode``. When called,
@@ -510,7 +552,13 @@ def draw_mpl(qnode, wire_order=None, show_all_wires=False, decimals=None, **kwar
 
     @wraps(qnode)
     def wrapper(*args, **kwargs_qnode):
-        qnode.construct(args, kwargs_qnode)
+        original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
+
+        try:
+            qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
+            qnode.construct(args, kwargs_qnode)
+        finally:
+            qnode.expansion_strategy = original_expansion_strategy
 
         _wire_order = wire_order or qnode.device.wires
 
