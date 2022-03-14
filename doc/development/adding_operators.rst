@@ -82,7 +82,7 @@ The basic components of operators are the following:
     .. note::
 
         The :meth:`.Operator.get_eigvals` method is temporary and will be renamed to :meth:`.Operator.eigvals` in an
-        upcoming release. It is recommended to use the higher-level ``qml.eigvals(op)`` function where possible.
+        upcoming release. It is recommended to use the higher-level :func:`~.eigvals` function where possible.
 
    * Representation as a **matrix** (:meth:`.Operator.get_matrix`), as specified by a global wire order that tells us where the
      wires are found on a register:
@@ -97,7 +97,7 @@ The basic components of operators are the following:
     .. note::
 
         The :meth:`.Operator.get_matrix` method is temporary and will be renamed to :meth:`.Operator.matrix` in an
-        upcoming release. It is recommended to use the higher-level ``qml.matrix(op)`` function where possible.
+        upcoming release. It is recommended to use the higher-level :func:`~.matrix` function where possible.
 
    * Representation as a **sparse matrix** (:meth:`.Operator.sparse_matrix`):
 
