@@ -71,7 +71,7 @@
   ```
 
   For more details on circuit cutting, check out the
-  [qml.cut_circuit](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.cut_circuit.html)
+  [qml.cut_circuit](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.cut_circuit.html)
   documentation page or [Peng et. al](https://arxiv.org/abs/1904.00102).
 
 <h4>Conditional operations: quantum teleportation unlocked 🔓🌀</h4>
@@ -441,41 +441,42 @@
 
 * The Operator class has undergone a major refactor with the following changes:
 
-  * How operators define their representations has been overhauled.
+  * **Matrices**: the static method `Operator.compute_matrices()` defines the matrix representation
+    of the operator, and the function `qml.matrix(op)` computes this for a given
+    instance.
+    [(#1996)](https://github.com/PennyLaneAI/pennylane/pull/1996)
 
-    - **Matrices**: the static method `Operator.compute_matrices()` defines the matrix representation
-      of the operator, and the function `qml.matrix(op)` computes this for a given
-      instance.
+  * **Eigvals**: the static method `Operator.compute_eigvals()` defines the matrix representation
+    of the operator, and the function `qml.eigvals(op)` computes this for a given
+    instance.
+    [(#2048)](https://github.com/PennyLaneAI/pennylane/pull/2048)
 
-    - **Eigvals**: the static method `Operator.compute_eigvals()` defines the matrix representation
-      of the operator, and the function `qml.eigvals(op)` computes this for a given
-      instance.
+  * **Decompositions**: the static method `Operator.compute_decomposition()` defines the matrix representation
+    of the operator, and the method `op.decomposition` computes this for a given
+    instance.
+    [(#2024)](https://github.com/PennyLaneAI/pennylane/pull/2024)
+    [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
 
-    - **Decompositions**: the static method `Operator.compute_decomposition()` defines the matrix representation
-      of the operator, and the method `op.decomposition` computes this for a given
-      instance.
-      [(#2024)](https://github.com/PennyLaneAI/pennylane/pull/2024)
-      [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
+  * **Sparse matrices**: the static method `Operator.compute_sparse_matrix()` defines the sparse
+    matrix representation of the operator, and the method `op.sparse_matrix()` computes this for a
+    given instance.
+    [(#2050)](https://github.com/PennyLaneAI/pennylane/pull/2050)
 
-    - **Sparse matrices**: the static method `Operator.compute_sparse_matrix()` defines the sparse
-      matrix representation of the operator, and the method `op.sparse_matrix()` computes this for a
-      given instance.
-      [(#2050)](https://github.com/PennyLaneAI/pennylane/pull/2050)
+  * **Linear combinations of operators**: The static method `compute_terms()`, used for representing
+    the linear combination of coefficients and operators representing the operator, has been added.
+    The method `op.terms()` computes this for a given instance.
+    Currently, only the `Hamiltonian` class overwrites `compute_terms` to store
+    coefficients and operators. The `Hamiltonian.terms` property hence becomes
+    a proper method called by `Hamiltonian.terms()`.
+    [(#2036)](https://github.com/PennyLaneAI/pennylane/pull/2036)
 
-    - **Linear combinations of operators**: The static method `compute_terms()`, used for representing
-      the linear combination of coefficients and operators representing the operator, has been added.
-      The method `op.terms()` computes this for a given instance.
-      Currently, only the `Hamiltonian` class overwrites `compute_terms` to store
-      coefficients and operators. The `Hamiltonian.terms` property hence becomes
-      a proper method called by `Hamiltonian.terms()`.
-
-    - **Diagonalization**: The `diagonalizing_gates()` representation has been moved to the
-      highest-level `Operator` class and is therefore available to all subclasses. A condition
-      `qml.operation.defines_diagonalizing_gates` has been added, which can be used in tape contexts
-      without queueing. In addition, a static `compute_diagonalizing_gates` method has been added,
-      which is called by default in `diagonalizing_gates()`.
-      [(#1985)](https://github.com/PennyLaneAI/pennylane/pull/1985)
-      [(#1993)](https://github.com/PennyLaneAI/pennylane/pull/1993)
+  * **Diagonalization**: The `diagonalizing_gates()` representation has been moved to the
+    highest-level `Operator` class and is therefore available to all subclasses. A condition
+    `qml.operation.defines_diagonalizing_gates` has been added, which can be used in tape contexts
+    without queueing. In addition, a static `compute_diagonalizing_gates` method has been added,
+    which is called by default in `diagonalizing_gates()`.
+    [(#1985)](https://github.com/PennyLaneAI/pennylane/pull/1985)
+    [(#1993)](https://github.com/PennyLaneAI/pennylane/pull/1993)
 
   * Error handling has been improved for Operator representations. Custom errors subclassing
     `OperatorPropertyUndefined` are raised if a representation has not been defined. This replaces
@@ -497,8 +498,8 @@
 <h3>Deprecations</h3>
 
 * There are several important changes when creating custom operations:
-  [#2214](https://github.com/PennyLaneAI/pennylane/pull/2214)
-  [#2227](https://github.com/PennyLaneAI/pennylane/pull/2227)
+  [(#2214)](https://github.com/PennyLaneAI/pennylane/pull/2214)
+  [(#2227)](https://github.com/PennyLaneAI/pennylane/pull/2227)
   [(#2030)](https://github.com/PennyLaneAI/pennylane/pull/2030)
   [(#2061)](https://github.com/PennyLaneAI/pennylane/pull/2061)
 
@@ -544,7 +545,7 @@
   in an upcoming release. Instead,
   `qml.gradients.finite_diff()` can be used to compute purely quantum gradients
   (that is, gradients of tapes or QNode).
-  [#2212](https://github.com/PennyLaneAI/pennylane/pull/2212)
+  [(#2212)](https://github.com/PennyLaneAI/pennylane/pull/2212)
 
 * The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
   The single `wires` keyword should be all the control wires followed by a single target wire.
