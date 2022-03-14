@@ -452,7 +452,7 @@
     [(#2048)](https://github.com/PennyLaneAI/pennylane/pull/2048)
 
   * **Decompositions**: the static method `Operator.compute_decomposition()` defines the matrix representation
-    of the operator, and the method `op.decomposition` computes this for a given
+    of the operator, and the method `op.decomposition()` computes this for a given
     instance.
     [(#2024)](https://github.com/PennyLaneAI/pennylane/pull/2024)
     [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
@@ -465,7 +465,7 @@
   * **Linear combinations of operators**: The static method `compute_terms()`, used for representing
     the linear combination of coefficients and operators representing the operator, has been added.
     The method `op.terms()` computes this for a given instance.
-    Currently, only the `Hamiltonian` class overwrites `compute_terms` to store
+    Currently, only the `Hamiltonian` class overwrites `compute_terms()` to store
     coefficients and operators. The `Hamiltonian.terms` property hence becomes
     a proper method called by `Hamiltonian.terms()`.
     [(#2036)](https://github.com/PennyLaneAI/pennylane/pull/2036)
