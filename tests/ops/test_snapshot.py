@@ -29,6 +29,7 @@ def test_label_method():
 
 
 def test_control():
+    """Test the control method for the Snapshot operation."""
     assert isinstance(Snapshot()._controlled(0), Snapshot)
     assert Snapshot("my_label")._controlled(0).tag == Snapshot("my_label").tag
 
