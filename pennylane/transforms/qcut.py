@@ -239,8 +239,8 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
                 m_ = MeasurementProcess(m.return_type, obs=o)
 
                 _add_operator_node(graph, m_, order, wire_latest_node)
-        elif m.return_type.name == "Sample":
-            for w in m.wires.tolist():
+        elif m.return_type is Sample and obs is None:
+            for w in m.wires:
                 s_ = qml.sample(qml.Projector([1], wires=w))
                 _add_operator_node(graph, s_, order, wire_latest_node)
         else:

@@ -8,7 +8,8 @@
   measurements has begun:
 
   - The existing `qcut.tape_to_graph()` method has been extended to convert a
-    sample measurements over all circuit wires to distinct sample nodes for each wire
+    sample measurement without an observable specified to multiple single-qubit sample
+    nodes.
     [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
 
 <h3>Improvements</h3>
