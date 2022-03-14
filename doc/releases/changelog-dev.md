@@ -9,12 +9,13 @@
   execution, such as the quantum state vector and density matrix in the qubit case, or the
   covariance matrix and vector of means in the continuous variable case. The saved states can be
   retrieved in the form of a dictionary via the top-level `qml.snapshots` function.
-  [(#2233)](https://github.com/PennyLaneAI/pennylane/pull/2233) 
+  [(#2233)](https://github.com/PennyLaneAI/pennylane/pull/2233)
   [(#2289)](https://github.com/PennyLaneAI/pennylane/pull/2289)
+  [(#2291)](https://github.com/PennyLaneAI/pennylane/pull/2291)
 
   ```py
   dev = qml.device("default.qubit", wires=2)
-  
+
   @qml.qnode(dev, interface=None)
   def circuit():
       qml.Snapshot()
@@ -91,6 +92,7 @@
   [(#2211)](https://github.com/PennyLaneAI/pennylane/pull/2211)
   [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
   [(#2275)](https://github.com/PennyLaneAI/pennylane/pull/2275)
+  [(#2294)](https://github.com/PennyLaneAI/pennylane/pull/2294)
 
   The addition includes the `defer_measurements` device-independent transform
   that can be applied on devices that have no native mid-circuit measurements
@@ -361,6 +363,17 @@
   [(#2278)](https://github.com/PennyLaneAI/pennylane/pull/2278)
 
 <h3>Deprecations</h3>
+
+* Executing tapes using `tape.execute(dev)` is deprecated.
+  Please use the `qml.execute([tape], dev)` function instead.
+  [(#2306)](https://github.com/PennyLaneAI/pennylane/pull/2306)
+
+* The subclasses of the quantum tape, including `JacobianTape`, `QubitParamShiftTape`,
+  `CVParamShiftTape`, and `ReversibleTape` are deprecated. Instead of calling
+  `JacobianTape.jacobian()` and `JacobianTape.hessian()`,
+  please use a standard `QuantumTape`, and apply gradient transforms using
+  the `qml.gradients` module.
+  [(#2306)](https://github.com/PennyLaneAI/pennylane/pull/2306)
 
 * The `qml.operation.Operation.get_parameter_shift` method has been deprecated
   and will be removed in a future release.
