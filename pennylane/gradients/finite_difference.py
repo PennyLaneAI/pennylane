@@ -302,7 +302,7 @@ def finite_diff(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+        return [], lambda _: ()
 
     if validate_params:
         if "grad_method" not in tape._par_info[0]:
