@@ -42,6 +42,55 @@ class TestParameterShiftHessian:
 
         assert np.allclose(expected, hessian)
 
+    def test_single_multi_term_gate(self):
+        """Test that the correct hessian is calculated for a QNode with single operation
+        with more than two terms in the shift rule, parameter frequencies defined,
+        and single expectation value output (0d -> 0d)"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            qml.Hadamard(wires=1)
+            qml.CRX(x, wires=[1, 0])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array(0.1, requires_grad=True)
+
+        expected = qml.jacobian(qml.grad(circuit))(x)
+        hessian = qml.gradients.param_shift_hessian(circuit)(x)
+
+        assert np.allclose(expected, hessian)
+
+    def test_single_gate_custom_recipe(self):
+        """Test that the correct hessian is calculated for a QNode with single operation
+        with more than two terms in the shift rule, parameter frequencies defined,
+        and single expectation value output (0d -> 0d)"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        c, s = qml.gradients.generate_shift_rule((0.5, 1)) 
+        recipe = list(zip(c, np.ones_like(c), s))
+
+        class DummyOp(qml.CRX):
+
+            grad_recipe = (recipe,)
+
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        def circuit(x):
+            qml.Hadamard(wires=1)
+            DummyOp(x, wires=[1, 0])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array(0.1, requires_grad=True)
+
+        expected = qml.jacobian(qml.grad(circuit))(x)
+        hessian = qml.gradients.param_shift_hessian(circuit)(x)
+
+        assert np.allclose(expected, hessian)
+
     def test_single_two_term_gate_vector_output(self):
         """Test that the correct hessian is calculated for a QNode with single RY operator
         and probabilies as output (0d -> 1d)"""
@@ -72,9 +121,10 @@ class TestParameterShiftHessian:
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
             qml.CNOT(wires=[0, 1])
+            qml.RY(x[2], wires=1)
             return qml.expval(qml.PauliZ(1))
 
-        x = np.array([0.1, 0.2], requires_grad=True)
+        x = np.array([0.1, 0.2, -0.8], requires_grad=True)
 
         expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
@@ -92,9 +142,10 @@ class TestParameterShiftHessian:
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
             qml.CNOT(wires=[0, 1])
+            qml.RY(x[2], wires=1)
             return qml.probs(wires=1)
 
-        x = np.array([0.1, 0.2], requires_grad=True)
+        x = np.array([0.1, 0.2, -0.8], requires_grad=True)
 
         expected = qml.jacobian(qml.jacobian(circuit))(x)
         hessian = qml.gradients.param_shift_hessian(circuit)(x)
@@ -221,16 +272,15 @@ class TestParameterShiftHessian:
             qml.RX(x, wires=0)
             return qml.probs(wires=[0, 1])
 
+        wrapper = lambda X: circuit(*X)
+
         x = np.array(0.1, requires_grad=True)
         y = np.array(0.5, requires_grad=True)
         z = np.array(0.3, requires_grad=True)
+        X = qml.math.stack([x, y, z])
 
-        expected = tuple(
-            jax.jacobian(jax.jacobian(circuit, argnums=i), argnums=i)(
-                jax.numpy.array(x), jax.numpy.array(y), jax.numpy.array(z)
-            )
-            for i in range(3)
-        )
+        expected = jax.jacobian(jax.jacobian(wrapper))(X)
+        expected = tuple(expected[:, i, i] for i in range(3))
         circuit.interface = "autograd"
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
@@ -252,16 +302,16 @@ class TestParameterShiftHessian:
             qml.RX(x[1], wires=0)
             return qml.probs(wires=[0, 1])
 
+        wrapper = lambda X: circuit(*X)
+
         x = np.array([0.1, 0.3], requires_grad=True)
         y = np.array([0.5, 0.7], requires_grad=True)
         z = np.array([0.3, 0.2], requires_grad=True)
+        X = qml.math.stack([x, y, z])
 
-        expected = tuple(
-            jax.jacobian(jax.jacobian(circuit, argnums=i), argnums=i)(
-                jax.numpy.array(x), jax.numpy.array(y), jax.numpy.array(z)
-            )
-            for i in range(3)
-        )
+        expected = jax.jacobian(jax.jacobian(wrapper))(X)
+        expected = tuple(expected[:, i, :, i] for i in range(3))
+
         circuit.interface = "autograd"
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
@@ -278,21 +328,21 @@ class TestParameterShiftHessian:
         def circuit(x, y, z):
             qml.RX(x[0, 0], wires=0)
             qml.RY(y[0, 0], wires=1)
-            qml.RZ(z[0, 0] + z[1, 1], wires=1)
+            qml.CRZ(z[0, 0] + z[1, 1], wires=[1, 0])
             qml.RY(y[1, 0], wires=0)
             qml.RX(x[1, 0], wires=1)
             return qml.probs(wires=[0, 1])
 
+        wrapper = lambda X: circuit(*X)
+
         x = np.array([[0.1, 0.3], [0.2, 0.4]], requires_grad=True)
         y = np.array([[0.5, 0.7], [0.2, 0.4]], requires_grad=True)
         z = np.array([[0.3, 0.2], [0.2, 0.4]], requires_grad=True)
+        X = qml.math.stack([x, y, z])
 
-        expected = tuple(
-            jax.jacobian(jax.jacobian(circuit, argnums=i), argnums=i)(
-                jax.numpy.array(x), jax.numpy.array(y), jax.numpy.array(z)
-            )
-            for i in range(3)
-        )
+        expected = jax.jacobian(jax.jacobian(wrapper))(X)
+        expected = tuple(expected[:, i, :, :, i] for i in range(3))
+
         circuit.interface = "autograd"
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 

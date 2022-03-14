@@ -54,10 +54,10 @@ def process_shifts(rule, tol=1e-10, check_duplicates=True):
     if check_duplicates:
         # determine unique shifts
         round_decimals = int(-np.log10(tol))
-        rounded_rule = np.round(rule[-1], round_decimals)
+        rounded_rule = np.round(rule[1], round_decimals)
         unique_shifts = np.unique(rounded_rule)
 
-        if rule.shape[-1] != len(unique_shifts):
+        if rule.shape[1] != len(unique_shifts):
             # sum columns that have the same shift value
             coeffs = [
                 np.sum(rule[:, np.nonzero(rounded_rule == s)[0]], axis=1)[0] for s in unique_shifts
@@ -65,7 +65,7 @@ def process_shifts(rule, tol=1e-10, check_duplicates=True):
             rule = np.stack([np.stack(coeffs), unique_shifts])
 
     # sort columns according to abs(shift)
-    return rule[:, np.argsort(np.abs(rule)[-1])]
+    return rule[:, np.argsort(np.abs(rule)[1])]
 
 
 @functools.lru_cache(maxsize=None)
@@ -172,6 +172,22 @@ def _get_shift_rule(frequencies, shifts=None):
     shifts = np.concatenate((shifts, -shifts))  # pylint: disable=invalid-unary-operand-type
     return np.stack([coeffs, shifts])
 
+def _iterate_shift_rule(rule, order, period=None):
+    r"""Helper method to repeat a shift rule multiple times along the same
+    parameter axis for higher-order derivatives."""
+
+    combined_rules = []
+
+    for partial_rule in itertools.product(rule, repeat=order):
+        c, s = np.stack(partial_rule).T
+        cumul_shift = sum(s)
+        if period is not None:
+            cumul_shift = np.mod(cumul_shift + 0.5 * period, period) - 0.5 * period
+        combined_rules.append(np.stack([np.prod(c), cumul_shift]))
+
+    # combine all terms in the linear combination into a single
+    # array, with coefficients on the first column and shifts on the second column.
+    return qml.math.stack(combined_rules)
 
 @functools.lru_cache()
 def generate_shift_rule(frequencies, shifts=None, order=1):
@@ -242,17 +258,8 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
     rule = _get_shift_rule(frequencies, shifts=shifts)
 
     if order > 1:
-        combined_rules = []
         T = frequencies_to_period(frequencies)
-
-        for partial_rule in itertools.product(rule.T, repeat=order):
-            c, s = np.stack(partial_rule).T
-            new_shift = np.mod(sum(s) + 0.5 * T, T) - 0.5 * T
-            combined_rules.append(np.stack([np.prod(c), new_shift]))
-
-        # combine all terms in the linear combination into a single
-        # array, with coefficients on the first row and shifts on the second row.
-        rule = qml.math.stack(combined_rules).T
+        rule = _iterate_shift_rule(rule.T, order, period=T).T
 
     return process_shifts(rule, tol=1e-10)
 

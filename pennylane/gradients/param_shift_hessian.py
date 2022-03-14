@@ -95,28 +95,18 @@ def expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_
             tapes.
     """
     argnum = tape.trainable_params if argnum is None else argnum
+    h_dim = tape.num_params
 
-    #TODO: ASSERT len(diagonal_shits)=="len(off_diagonal_shifts)"==len(argnum)
 
-    hessian_tapes = []
-    hessian_coeffs = []
-    num_tapes = []
     unshifted_coeffs = {}
     add_unshifted = f0 is None
-
-    # The Hessian for a 2-term parameter-shift rule can be expressed via the following recipes.
-    # Off-diagonal elements of the Hessian require shifts to two different parameter indices.
-    # A recipe can thus be expressed via the tape patterns:
-    #       [[coeff, dummy], [mult, dummy], [shift1, shift2]]    (dummy values for ndarray creation)
-    # Each corresponding to one term in the parameter-shift formula:
-    #       didj f(x) = coeff * f(mult*x + shift1*ei + shift2*ej) + ...
-
-    hess_recipes = {}
-
     diag_recipes = []
     partial_offdiag_recipes = []
-    h_dim = tape.num_params
     for i in range(h_dim):
+        if argnum is not None:
+            idx = argnum.index(i)
+        else:
+            idx = i
 
         if i not in argnum or diff_methods[i] == "0":
             # hessian will be set to 0 for this row/column
@@ -125,13 +115,16 @@ def expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_
             continue
 
         # Get the diagonal second-order derivative recipe
-        diag_shifts = None if diagonal_shifts is None else diagonal_shifts[i]
+        diag_shifts = None if diagonal_shifts is None else diagonal_shifts[idx]
         diag_recipes.append(_get_operation_recipe(tape, i, diag_shifts, order=2))
 
         # Create the first-order gradient recipes per parameter
-        _shifts = None if off_diagonal_shifts is None else off_diagonal_shifts[i]
+        _shifts = None if off_diagonal_shifts is None else off_diagonal_shifts[idx]
         partial_offdiag_recipes.append(_get_operation_recipe(tape, i, _shifts, order=1))
 
+    hessian_tapes = []
+    hessian_coeffs = []
+    num_tapes = []
     for i in range(h_dim):
         if diag_recipes[i] is None:
             hessian_coeffs.extend([None] * (h_dim - i))
@@ -149,7 +142,6 @@ def expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_
         # Create the shifted tapes for the diagonal entries
         diag_tapes = generate_shifted_tapes(tape, i, ds_i, dm_i)
         hessian_tapes.extend(diag_tapes)
-        print(f"extending hessian_tapes by {len(diag_tapes)} tapes, now has length {len(hessian_tapes)}")
         hessian_coeffs.append(dc_i)
         num_tapes.append(len(diag_tapes))
 
@@ -161,7 +153,8 @@ def expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_
                 num_tapes.append(0)
                 continue
 
-            c_ij, *s_ij = _combine_shift_rules([(c_i, s_i), (c_j, s_j)])
+            c_ij, *s_ij = _combine_shift_rules(
+                [qml.math.stack([c_i, s_i]).T, qml.math.stack([c_j, s_j]).T])
             if s_ij[0][0] == s_ij[1][0] == 0:
                 if add_unshifted:
                     hessian_tapes.insert(0, tape)
@@ -171,17 +164,11 @@ def expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_
 
             h_tapes = generate_multishifted_tapes(tape, (i, j), zip(*s_ij))
 
-            print(c_ij, s_ij)
             hessian_tapes.extend(h_tapes)
-            print(f"extending hessian_tapes by {len(generate_multishifted_tapes(tape, (i, j), zip(*s_ij)))} tapes, now has length {len(hessian_tapes)}")
-            print(hessian_tapes)
             hessian_coeffs.append(c_ij)
-            print(hessian_coeffs[-1])
             num_tapes.append(len(h_tapes))
 
     def processing_fn(results):
-        print(f"len(all results): {len(results)}")
-        print(f"all shapes: {num_tapes}")
         # The first results dimension is the number of terms/tapes in the parameter-shift
         # rule, the remaining ones are the QNode output dimensions.
         out_dim = qml.math.shape(qml.math.stack(results))[1:]
@@ -191,7 +178,6 @@ def expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_
         hessian = []
         # Keep track of tape results already consumed.
         start = int(bool(unshifted_coeffs) and f0 is None)
-        print(f"start: {start}")
         # Results of the unshifted tape.
         r0 = results[0] if start == 1 else f0
 
@@ -206,17 +192,12 @@ def expval_hessian_param_shift(tape, argnum, diff_methods, diagonal_shifts, off_
                 continue
 
             res = results[start : start + _num_tapes]
-            print(f"using results {start}:{start+_num_tapes}")
             start = start + _num_tapes
 
-            print(f"i, j, k: {i}, {j}, {k}")
-            print(f"len(res): {len(res)}")
             res = qml.math.stack(res)
             coeffs = qml.math.cast(qml.math.convert_like(hessian_coeffs[k], res), res.dtype)
-            print(f"len(coeffs): {len(coeffs)}")
             hess = qml.math.tensordot(res, coeffs, [[0], [0]])
             if (i, j) in unshifted_coeffs:
-                print(f"Using the unshifted tape for (i,j)={(i,j)}")
                 hess = hess + unshifted_coeffs[(i, j)] * r0
 
             hessian.append(hess)
@@ -355,6 +336,24 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
         return [], lambda _: qml.math.zeros((tape.output_dim, 0, 0))
+
+    if argnum is None:
+        compare_to = tape.num_params
+        compare_to_str = f"trainable tape parameters ({compare_to})"
+    else:
+        compare_to = len(argnum)
+        compare_to_str = f"provided arguments to differentiate ({compare_to})"
+
+    if diagonal_shifts is not None and len(diagonal_shifts) != compare_to:
+        raise ValueError(
+            "The number of provided sets of shift values for diagonal entries "
+            f"({len(diagonal_shifts)}) does not match the number of {compare_to_str}."
+        )
+    if off_diagonal_shifts is not None and len(off_diagonal_shifts) != compare_to:
+        raise ValueError(
+            "The number of provided sets of shift values for off-diagonal entries "
+            f"({len(off_diagonal_shifts)}) does not match the number of {compare_to_str}."
+        )
 
     _gradient_analysis(tape)
     # If argnum is given, the grad_method_validation may allow parameters with

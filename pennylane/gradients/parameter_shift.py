@@ -27,7 +27,7 @@ from .gradient_transform import (
     choose_grad_methods,
 )
 from .finite_difference import finite_diff, generate_shifted_tapes
-from .general_shift_rules import process_shifts
+from .general_shift_rules import process_shifts, _iterate_shift_rule, frequencies_to_period
 
 
 NONINVOLUTORY_OBS = {
@@ -95,11 +95,22 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     # Try to use the stored grad_recipe of the operation
     recipe = op.grad_recipe[p_idx]
     if recipe is not None:
-        if order==2:
-            raise NotImplementedError(
-                "Using fixed grad_recipes together with order=2 is not implemented yet."
-            )
-        return process_shifts(np.array(recipe).T, check_duplicates=False)
+        recipe = qml.math.array(recipe)
+        if order==1:
+            # TODO: The following only works because `process_shifts` does not notice that
+            # recipe.T has 3 instead of 2 rows, because we don't use the check for duplicates
+            # This should be improved.
+            return process_shifts(recipe.T, check_duplicates=False)
+
+        # Try to obtain the period of the operator frequencies for iteration of custom recipe
+        try:
+            period = frequencies_to_period(op.parameter_frequencies[p_idx])
+        except qml.operation.ParameterFrequenciesUndefinedError as e:
+            period = None
+
+        # Iterate the custom recipe to obtain the second-order recipe
+        iter_c, iter_s = process_shifts(_iterate_shift_rule(recipe[:,::2], order, period).T)
+        return qml.math.stack([iter_c, qml.math.ones_like(iter_c), iter_s])
 
     # Try to obtain frequencies, either via custom implementation or from generator eigvals
     try:
