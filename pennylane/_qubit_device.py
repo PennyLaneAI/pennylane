@@ -775,34 +775,13 @@ class QubitDevice(Device):
         # exact expectation value
         if self.shots is None:
             try:
-                eigvals = self._asarray(
-                    observable.get_eigvals(), dtype=self.R_DTYPE
-                )  # implicitly sorts wires
+                eigvals = self._asarray(observable.get_eigvals(), dtype=self.R_DTYPE)
             except qml.operation.EigvalsUndefinedError as e:
                 raise qml.operation.EigvalsUndefinedError(
                     f"Cannot compute analytic expectations of {observable.name}."
                 ) from e
 
-
-            # num_wires = len(observable.wires)
-            # ordered_wires = self.get_ordered_subset_wires(observable.wires)
-            # basis_states = self.generate_basis_states(num_wires)
-            # basis_states = basis_states[:, np.argsort(np.argsort(ordered_wires))]
-            # powers_of_two = 2 ** np.arange(num_wires)[::-1]
-            # perm = basis_states @ powers_of_two
-            # eigvals = self._gather(eigvals, perm)
-
-
-            # obs_wires = observable.wires.labels
-            # sorted_wires = Wires(
-            #     sorted(obs_wires, key=lambda x: str(x))
-            # )  # wires need to be sorted to match eigvals
-            # prob = self.probability(wires=sorted_wires)
-
             prob = self.probability(wires=observable.wires)
-
-            # prob, perm = self.probability(wires=ordered_wires)
-
             return self._dot(eigvals, prob)
 
         # estimate the ev
@@ -822,20 +801,15 @@ class QubitDevice(Device):
         # exact variance value
         if self.shots is None:
             try:
-                eigvals = self._asarray(
-                    observable.get_eigvals(), dtype=self.R_DTYPE
-                )  # implicitly sorts wires
+                eigvals = self._asarray(observable.get_eigvals(), dtype=self.R_DTYPE)
             except qml.operation.EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
                 raise qml.operation.EigvalsUndefinedError(
                     f"Cannot compute analytic variance of {observable.name}."
                 ) from e
-            obs_wires = observable.wires.labels
-            sorted_wires = Wires(
-                sorted(obs_wires, key=lambda x: str(x))
-            )  # wires need to be sorted to match eigvals
 
-            prob = self.probability(wires=sorted_wires)
+
+            prob = self.probability(wires=observable.wires)
             return self._dot((eigvals**2), prob) - self._dot(eigvals, prob) ** 2
 
         # estimate the variance

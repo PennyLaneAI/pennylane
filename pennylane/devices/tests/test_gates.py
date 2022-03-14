@@ -334,8 +334,6 @@ class TestGatesQubit:
 
         expected = np.zeros([2**n_wires])
         expected[np.ravel_multi_index(basis_state, [2] * n_wires)] = 1
-        print(f"expected: {expected}")
-        print(f"result: {res}")
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
     def test_qubit_state_vector(self, device, init_state, tol, skip_if):
