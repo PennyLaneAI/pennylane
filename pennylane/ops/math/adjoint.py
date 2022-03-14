@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,18 +15,18 @@
 This submodule defines an operation modifier that indicates the adjoint of an operator.
 """
 import pennylane as qml
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import Operator, AnyWires
 
-class Modifier(Operation):
-    
+
+class Adjoint(Operator):
+
     num_wires = AnyWires
-    
+
     def __init__(self, base=None, do_queue=True, id=None):
         self.base = base
         self.hyperparameters['base'] = base
-        self.hyperparameters['base_hyperparameters'] = base.hyperparameters
         super().__init__(*base.parameters, wires=base.wires, do_queue=do_queue, id=id)
-        self._name = f"{self.__class__.__name__}({self.base.name})"
+        self._name = f"Adjoint({self.base.name})"
 
     def queue(self, context=qml.QueuingContext):
         try:
@@ -38,10 +38,6 @@ class Modifier(Operation):
         context.append(self, owns=self.base)
 
         return self
-
-    @property
-    def num_wires(self):
-        return self.base.num_wires
     
     @property
     def num_params(self):
@@ -54,9 +50,6 @@ class Modifier(Operation):
     @property
     def wires(self):
         return self.base.wires
-
-class Adjoint(Modifier):
-
 
     def label(self, decimals=None, base_label=None):
         return self.base.label(decimals, base_label)+"†"
@@ -98,39 +91,3 @@ class Adjoint(Modifier):
 
     # generator
 
-
-class Inverse(Modifier):
-    
-    def label(self, decimals=None, base_label=None):
-        return self.base.label(decimals, base_label)+"⁻¹"
-    
-    @staticmethod
-    def compute_matrix(*params, base=None, base_hyperparameters=None):
-        base_matrix = base.compute_matrix(*params, **base_hyperparameters)
-        return qml.math.linalg.inv(base_matrix)
-    
-    @classmethod
-    def compute_decomposition(cls, *params, wires, base=None, base_hyperparameters=None):
-        try:
-            return base.get_inverse()
-        except qml.operation.InverseUndefinedError:
-            base_decomp = base.compute_decomposition(*params, wires, **base_hyperparameters)
-            return [Inverse(op) for op in reversed(base_decomp)]
-        
-    @staticmethod
-    def compute_sparse_matrix(*params, base=None, base_hyperparameters=None):
-        base_matrix = base.compute_sparse_matrix(*params, **base_hyperparameters)
-        return qml.math.linalg.inv(base_matrix)
-    
-    @staticmethod
-    def compute_eigvals(*params, base=None, base_hyperparameters=None):
-        base_eigvals = base.compute_eigvals(*params, **base_hyperparameters)
-        return [1/x for x in base_eigvals]
-
-    def generator(self):
-        H = self.base.generator()
-        return qml.Hamiltonian([-c for c in H.coeffs], H.ops)
-
-    @property
-    def parameter_frequencies(self):
-        return self.base.parameter_frequencies

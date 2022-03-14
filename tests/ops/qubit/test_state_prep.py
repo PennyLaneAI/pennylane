@@ -31,7 +31,7 @@ class TestOperations:
         ],
     )
     def test_adjoint_error_exception(self, op, tol):
-        with pytest.raises(qml.ops.AdjointError):
+        with pytest.raises(qml.operation.AdjointUndefinedError):
             op.adjoint()
 
 

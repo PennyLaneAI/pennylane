@@ -85,9 +85,6 @@ class BasisState(Operation):
         """
         return [BasisStatePreparation(n, wires)]
 
-    def adjoint(self):
-        raise qml.ops.AdjointError("No adjoint exists for BasisState operations.")
-
 
 class QubitStateVector(Operation):
     r"""QubitStateVector(state, wires)
@@ -150,10 +147,6 @@ class QubitStateVector(Operation):
         """
         return [MottonenStatePreparation(state, wires)]
 
-    def adjoint(self):
-        raise qml.ops.AdjointError("No adjoint exists for QubitStateVector operations.")
-
-
 class QubitDensityMatrix(Operation):
     r"""QubitDensityMatrix(state, wires)
     Prepare subsystems using the given density matrix.
@@ -206,6 +199,3 @@ class QubitDensityMatrix(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
-
-    def adjoint(self):
-        raise qml.ops.AdjointError("No adjoint exists for QubitDensityMatrix operations.")

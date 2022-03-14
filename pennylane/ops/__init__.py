@@ -32,12 +32,7 @@ from .qubit import obs as _qubit__obs__
 
 from .channel import __all__ as _channel__ops__
 
-from .op_modifiers import *
-
-class AdjointError(Exception):
-    """Exception for non-adjointable operations."""
-
-    pass
+from .math import *
 
 
 __all__ = _cv__all__ + _qubit__all__ + _channel__ops__
