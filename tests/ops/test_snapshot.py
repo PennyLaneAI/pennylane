@@ -26,3 +26,13 @@ def test_label_method():
     """Test the label method for the Snapshot operation."""
     assert Snapshot().label() == "|S|"
     assert Snapshot("my_label").label() == "|S|"
+
+
+def test_control():
+    assert isinstance(Snapshot()._controlled(0), Snapshot)
+    assert Snapshot("my_label")._controlled(0).tag == Snapshot("my_label").tag
+
+
+def test_adjoint():
+    assert isinstance(Snapshot().adjoint(), Snapshot)
+    assert Snapshot("my_label").adjoint().tag == Snapshot("my_label").tag
