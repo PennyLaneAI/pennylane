@@ -71,3 +71,9 @@ class Snapshot(Operation):
     @staticmethod
     def compute_decomposition(*params, wires=None, **hyperparameters):
         return []
+
+    def _controlled(self, _):
+        return Snapshot(tag=self.tag)
+
+    def adjoint(self, do_queue=False):
+        return Snapshot(tag=self.tag)
