@@ -161,7 +161,7 @@
       def op_if_true():
           return qml.RX(x**2, wires=1)
 
-      def op_if_false()
+      def op_if_false():
           return qml.RY(x, wires=1)
 
       qml.cond(m==1, op_if_true, op_if_false)()
