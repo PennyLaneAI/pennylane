@@ -615,3 +615,21 @@ def test_no_attribute():
     """Test that the qnn module raises an AttributeError if accessing an unavailable attribute"""
     with pytest.raises(AttributeError, match="module 'pennylane.qnn' has no attribute 'random'"):
         qml.qnn.random
+
+
+def test_batch_input():
+    """Test input batching in keras"""
+    dev = qml.device("default.qubit.tf", wires=4)
+
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit(x, weights):
+        qml.AngleEmbedding(x, wires=range(4), rotation="Y")
+        qml.RY(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        return qml.probs(op=qml.PauliZ(1))
+
+    KerasLayer.set_input_argument("x")
+    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,), batch_idx=0)
+    conf = layer.get_config()
+    layer.build((None, 2))
+    assert layer(np.random.uniform(0, 1, (10, 4))).shape == (10, 2)

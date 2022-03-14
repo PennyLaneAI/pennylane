@@ -215,7 +215,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     # Convert all variance measurements on the tape into expectation values
     for i in var_idx:
         obs = expval_tape._measurements[i].obs
-        expval_tape._measurements[i] = qml.measure.MeasurementProcess(
+        expval_tape._measurements[i] = qml.measurements.MeasurementProcess(
             qml.operation.Expectation, obs=obs
         )
 
@@ -245,7 +245,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
         # with itself, to get a square symmetric matrix representing
         # the square of the observable
         obs = qml.PolyXP(np.outer(A, A), wires=obs.wires)
-        expval_sq_tape._measurements[i] = qml.measure.MeasurementProcess(
+        expval_sq_tape._measurements[i] = qml.measurements.MeasurementProcess(
             qml.operation.Expectation, obs=obs
         )
 
@@ -402,7 +402,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
 
             constants.append(constant)
 
-            g_tape._measurements[idx] = qml.measure.MeasurementProcess(
+            g_tape._measurements[idx] = qml.measurements.MeasurementProcess(
                 qml.operation.Expectation, _transform_observable(obs, Z, dev_wires)
             )
 
@@ -660,7 +660,7 @@ def param_shift_cv(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+        return gradient_tapes, lambda _: ()
 
     def _update(data):
         """Utility function to update the list of gradient tapes,

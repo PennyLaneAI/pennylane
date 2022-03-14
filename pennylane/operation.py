@@ -246,6 +246,11 @@ class GeneratorUndefinedError(OperatorPropertyUndefined):
     does not have a generator"""
 
 
+class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
+    """Exception used to indicate that an operator
+    does not have parameter_frequencies"""
+
+
 # =============================================================================
 # Wire types
 # =============================================================================
@@ -282,6 +287,7 @@ class ObservableReturnTypes(Enum):
     Expectation = "expval"
     Probability = "probs"
     State = "state"
+    MidMeasure = "measure"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -305,6 +311,10 @@ of all computational basis states."""
 
 State = ObservableReturnTypes.State
 """Enum: An enumeration which represents returning the state in the computational basis."""
+
+MidMeasure = ObservableReturnTypes.MidMeasure
+"""Enum: An enumeration which represents returning sampling the computational
+basis in the middle of the circuit."""
 
 # =============================================================================
 # Class property
@@ -500,6 +510,7 @@ class Operator(abc.ABC):
     -0.9999987318946099
 
     """
+    # pylint: disable=too-many-public-methods
 
     def __copy__(self):
         cls = self.__class__
@@ -569,7 +580,7 @@ class Operator(abc.ABC):
         .. warning::
 
             The ``matrix`` property is deprecated and will be removed in
-            an upcoming release.
+            an upcoming release. Please use :class:`qml.matrix <.pennylane.matrix>` instead.
 
         **Example:**
 
@@ -582,7 +593,8 @@ class Operator(abc.ABC):
             array: matrix representation
         """
         warnings.warn(
-            "The 'matrix' property is deprecated and will be removed in an upcoming release.",
+            "The 'matrix' property is deprecated and will be removed in an upcoming release. "
+            "Please use 'qml.matrix' instead.",
             UserWarning,
         )
         return self.get_matrix()
@@ -694,7 +706,7 @@ class Operator(abc.ABC):
         .. warning::
 
             The ``eigvals`` property is deprecated and will be removed in
-            an upcoming release.
+            an upcoming release. Please use :class:`qml.eigvals <.pennylane.eigvals>` instead.
 
         **Example:**
 
@@ -706,7 +718,8 @@ class Operator(abc.ABC):
             array: eigvals representation
         """
         warnings.warn(
-            "The 'eigvals' property is deprecated and will be removed in an upcoming release.",
+            "The 'eigvals' property is deprecated and will be removed in an upcoming release. "
+            "Please use 'qml.eigvals' instead.",
             UserWarning,
         )
         return self.get_eigvals()
@@ -742,7 +755,7 @@ class Operator(abc.ABC):
             # By default, compute the eigenvalues from the matrix representation.
             # This will raise a NotImplementedError if the matrix is undefined.
             try:
-                return np.linalg.eigvals(self.get_matrix())
+                return qml.math.linalg.eigvals(self.get_matrix())
             except MatrixUndefinedError as e:
                 raise EigvalsUndefinedError from e
 
@@ -775,7 +788,7 @@ class Operator(abc.ABC):
 
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
-                and list of operations :math:`O_i`
+            and list of operations :math:`O_i`
         """
         return self.compute_terms(*self.parameters, **self.hyperparameters)
 
@@ -798,13 +811,15 @@ class Operator(abc.ABC):
     def name(self, value):
         self._name = value
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
 
         Args:
             decimals=None (int): If ``None``, no parameters are included. Else,
                 specifies how to round the parameters.
             base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
 
         Returns:
             str: label to use in drawings
@@ -824,16 +839,58 @@ class Operator(abc.ABC):
         >>> op.label()
         "RX⁻¹"
 
+        If the operation has a matrix-valued parameter and a cache dictionary is provided,
+        unique matrices will be cached in the ``'matrices'`` key list. The label will contain
+        the index of the matrix in the ``'matrices'`` list.
+
+        >>> op2 = qml.QubitUnitary(np.eye(2), wires=0)
+        >>> cache = {'matrices': []}
+        >>> op2.label(cache=cache)
+        'U(M0)'
+        >>> cache['matrices']
+        [tensor([[1., 0.],
+         [0., 1.]], requires_grad=True)]
+        >>> op3 = qml.QubitUnitary(np.eye(4), wires=(0,1))
+        >>> op3.label(cache=cache)
+        'U(M1)'
+        >>> cache['matrices']
+        [tensor([[1., 0.],
+                [0., 1.]], requires_grad=True),
+        tensor([[1., 0., 0., 0.],
+                [0., 1., 0., 0.],
+                [0., 0., 1., 0.],
+                [0., 0., 0., 1.]], requires_grad=True)]
+
         """
         op_label = base_label or self.__class__.__name__
 
-        if decimals is None or self.num_params == 0:
+        if self.num_params == 0:
             return op_label
 
         params = self.parameters
 
-        # matrix parameters not rendered
         if len(qml.math.shape(params[0])) != 0:
+            # assume that if the first parameter is matrix-valued, there is only a single parameter
+            # this holds true for all current operations and templates
+            if (
+                cache is None
+                or not isinstance(cache.get("matrices", None), list)
+                or len(params) != 1
+            ):
+                return op_label
+
+            for i, mat in enumerate(cache["matrices"]):
+                if qml.math.shape(params[0]) == qml.math.shape(mat) and qml.math.allclose(
+                    params[0], mat
+                ):
+                    return f"{op_label}(M{i})"
+
+            # matrix not in cache
+            mat_num = len(cache["matrices"])
+            cache["matrices"].append(params[0])
+            return f"{op_label}(M{mat_num})"
+
+        if decimals is None:
             return op_label
 
         def _format(x):
@@ -842,9 +899,6 @@ class Operator(abc.ABC):
             except ValueError:
                 # If the parameter can't be displayed as a float
                 return format(x)
-
-        if self.num_params == 1:
-            return op_label + f"\n({_format(params[0])})"
 
         param_string = ",\n".join(_format(p) for p in params)
         return op_label + f"\n({param_string})"
@@ -1040,6 +1094,42 @@ class Operator(abc.ABC):
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
+    def expand(self):
+        """Returns a tape that has recorded the decomposition of the operator.
+
+        Returns:
+            .JacobianTape: quantum tape
+        """
+        try:
+            ops =  self.decomposition()
+
+        except TypeError:
+            if self.num_params == 0:
+                ops = self.decomposition(wires=self.wires)
+            else:
+                ops = self.decomposition(*self.parameters, wires=self.wires)
+
+            warnings.warn(
+                "Operator.decomposition() is now an instance method, and no longer accepts parameters. "
+                "Either define the static method 'compute_decomposition' instead, or use "
+                "'self.wires' and 'self.parameters'.",
+                UserWarning,
+            )
+
+        with qml.tape.QuantumTape(do_queue=False) as tape:
+            for op in ops:
+                if op:
+                    op.queue()
+
+        if not self.data:
+            # original operation has no trainable parameters
+            tape.trainable_params = {}
+
+        if self.inverse:
+            tape.inv()
+
+        return tape
+
 
 # =============================================================================
 # Base Operation class
@@ -1049,19 +1139,23 @@ class Operator(abc.ABC):
 class Operation(Operator):
     r"""Base class representing quantum gates or channels applied to quantum states.
 
-    Operations define some additional properties, such as differentiation
+    Operations define some additional properties, that are used for external
+    transformations such as gradient transforms.
 
-    The following two class attributes are optional, but in most cases
-    should be clearly defined to avoid unexpected behavior during
+    The following three class attributes are optional, but in most cases
+    at least one should be clearly defined to avoid unexpected behavior during
     differentiation.
 
-    * :attr:`~.Operation.grad_method`
     * :attr:`~.Operation.grad_recipe`
-
-    Finally, there are some additional optional class attributes
-    that may be set, and used by certain quantum optimizers:
-
+    * :attr:`~.Operation.parameter_frequencies`
     * :attr:`~.Operation.generator`
+
+    Note that ``grad_recipe`` takes precedence when computing parameter-shift
+    derivatives. Finally, these optional class attributes are used by certain
+    transforms, quantum optimizers, and gradient methods.
+    For details on how they are used during differentiation and other transforms,
+    please see the documentation for :class:`~.gradients.param_shift`,
+    :class:`~.metric_tensor`, :func:`~.reconstruct`.
 
     Args:
         params (tuple[tensor_like]): trainable parameters
@@ -1085,10 +1179,12 @@ class Operation(Operator):
         """
         if self.num_params == 0:
             return None
+        if self.grad_recipe != [None] * self.num_params:
+            return "A"
         try:
             self.parameter_frequencies  # pylint:disable=pointless-statement
             return "A"
-        except OperatorPropertyUndefined:
+        except ParameterFrequenciesUndefinedError:
             return "F"
 
     grad_recipe = None
@@ -1107,6 +1203,7 @@ class Operation(Operator):
         s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
     """
 
+    # Attributes for compilation transforms
     basis = None
     """str or None: The target operation for controlled gates.
     target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
@@ -1140,15 +1237,11 @@ class Operation(Operator):
         """
         raise NotImplementedError
 
-    def get_parameter_shift(self, idx, shift=None):
+    def get_parameter_shift(self, idx):
         r"""Multiplier and shift for the given parameter, based on its gradient recipe.
 
         Args:
-            idx (int): parameter index
-            shift (float or None): The shift value to use for the two-term
-                parameter-shift rule. This is only used if the operation
-                does not have :attr:`Operator.grad_recipe` defined. If ``None``,
-                a shift value of :math:`\pi/2` is used.
+            idx (int): parameter index within the operation
 
         Returns:
             list[[float, float, float]]: list of multiplier, coefficient, shift for each term in the gradient recipe
@@ -1156,25 +1249,22 @@ class Operation(Operator):
         Note that the default value for ``shift`` is None, which is replaced by the
         default shift :math:`\pi/2`.
         """
+        warnings.warn(
+            "The method get_parameter_shift is deprecated. Use the methods of "
+            "the gradients module for general parameter-shift rules instead.",
+            UserWarning,
+        )
         # get the gradient recipe for this parameter
         recipe = self.grad_recipe[idx]
         if recipe is not None:
             return recipe
 
-        # Default values
-        if shift is None:
-            shift = np.pi / 2
-        multiplier = 0.5 / np.sin(shift)
-        a = 1
-
-        # We set the following default recipe:
-        # ∂f(x) = c*f(a*x+s) - c*f(a*x-s)
-        # where we express a positive and a negative shift by default
-        default_param_shift = [
-            [multiplier, a, shift],
-            [-multiplier, a, -shift],  # pylint: disable=invalid-unary-operand-type
-        ]
-        return default_param_shift
+        # We no longer assume any default parameter-shift rule to apply.
+        raise OperatorPropertyUndefined(
+            f"The operation {self.name} does not have a parameter-shift recipe defined."
+            " This error might occur if previously the two-term shift rule was assumed"
+            " silently. In this case, consider adding it explicitly to the operation."
+        )
 
     @property
     def parameter_frequencies(self):
@@ -1211,26 +1301,25 @@ class Operation(Operator):
         if self.num_params == 1:
             # if the operator has a single parameter, we can query the
             # generator, and if defined, use its eigenvalues.
-            gen = self.generator()
-
             try:
-                gen_eigvals = tuple(self.generator().eigvals())
-                return qml.gradients.eigvals_to_frequencies(gen_eigvals)
+                gen = qml.generator(self, format="observable")
+            except GeneratorUndefinedError as e:
+                raise ParameterFrequenciesUndefinedError(
+                    f"Operation {self.name} does not have parameter frequencies defined."
+                ) from e
 
-            except (MatrixUndefinedError, EigvalsUndefinedError):
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    action="ignore", message=r".+ eigenvalues will be computed numerically\."
+                )
+                eigvals = qml.eigvals(gen)
 
-                if isinstance(gen, qml.Hamiltonian):
-                    mat = qml.utils.sparse_hamiltonian(gen).toarray()
-                    eigvals = tuple(np.round(np.linalg.eigvalsh(mat), 8))
-                    return qml.gradients.eigvals_to_frequencies(eigvals)
+            eigvals = tuple(np.round(eigvals, 8))
+            return qml.gradients.eigvals_to_frequencies(eigvals)
 
-                if isinstance(gen, qml.SparseHamiltonian):
-                    mat = gen.sparse_matrix().toarray()
-                    eigvals = tuple(np.round(np.linalg.eigvalsh(mat), 8))
-                    return qml.gradients.eigvals_to_frequencies(eigvals)
-
-        raise OperatorPropertyUndefined(
-            f"Operation {self.name} does not have parameter frequencies."
+        raise ParameterFrequenciesUndefinedError(
+            f"Operation {self.name} does not have parameter frequencies defined, "
+            "and parameter frequencies can not be computed as no generator is defined."
         )
 
     @property
@@ -1256,30 +1345,6 @@ class Operation(Operator):
     @inverse.setter
     def inverse(self, boolean):
         self._inverse = boolean
-
-    def expand(self):
-        """Returns a tape that has recorded the decomposition of the operator.
-
-        Returns:
-            .JacobianTape: quantum tape
-        """
-
-        ops = self.decomposition()
-        if isinstance(ops, Operation):
-            ops = [ops]
-        with qml.tape.QuantumTape(do_queue=False) as tape:
-            for op in ops:
-                if op:
-                    op.queue()
-
-        if not self.data:
-            # original operation has no trainable parameters
-            tape.trainable_params = {}
-
-        if self.inverse:
-            tape.inv()
-
-        return tape
 
     def inv(self):
         """Inverts the operator.
@@ -1330,11 +1395,11 @@ class Operation(Operator):
         """Name of the operator."""
         return self._name + ".inv" if self.inverse else self._name
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         if self.inverse:
             base_label = base_label or self.__class__.__name__
             base_label += "⁻¹"
-        return super().label(decimals=decimals, base_label=base_label)
+        return super().label(decimals=decimals, base_label=base_label, cache=cache)
 
     def __init__(self, *params, wires=None, do_queue=True, id=None):
 
@@ -1342,14 +1407,9 @@ class Operation(Operator):
         super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
         # check the grad_recipe validity
-        if self.grad_method == "A":
-            if self.grad_recipe is None:
-                # default recipe for every parameter
-                self.grad_recipe = [None] * self.num_params
-            else:
-                assert (
-                    len(self.grad_recipe) == self.num_params
-                ), "Gradient recipe must have one entry for each parameter!"
+        if self.grad_recipe is None:
+            # Make sure grad_recipe is an iterable of correct length instead of None
+            self.grad_recipe = [None] * self.num_params
 
 
 class Channel(Operation, abc.ABC):
@@ -1593,7 +1653,7 @@ class Tensor(Observable):
         self._args = args
         self.queue(init=True)
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         r"""How the operator is represented in diagrams and drawings.
 
         Args:
@@ -1601,6 +1661,8 @@ class Tensor(Observable):
                 how to round the parameters.
             base_label=None (Iterable[str]): overwrite the non-parameter component of the label.
                 Must be same length as ``obs`` attribute.
+            cache=None (dict): dictionary that caries information between label calls
+                in the same drawing
 
         Returns:
             str: label to use in drawings
@@ -2336,8 +2398,10 @@ def operation_derivative(operation) -> np.ndarray:
         ValueError: if the operation does not have a generator or is not composed of a single
             trainable parameter
     """
-    generator, prefactor = qml.utils.get_generator(operation, return_matrix=True)
-    return 1j * prefactor * generator @ operation.get_matrix()
+    generator = qml.matrix(
+        qml.generator(operation, format="observable"), wire_order=operation.wires
+    )
+    return 1j * generator @ operation.get_matrix()
 
 
 @qml.BooleanFn
@@ -2387,7 +2451,7 @@ def has_unitary_gen(obj):
 @qml.BooleanFn
 def is_measurement(obj):
     """Returns ``True`` if an operator is a ``MeasurementProcess`` instance."""
-    return isinstance(obj, qml.measure.MeasurementProcess)
+    return isinstance(obj, qml.measurements.MeasurementProcess)
 
 
 @qml.BooleanFn

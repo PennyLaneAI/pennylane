@@ -14,9 +14,9 @@
 """Contains transforms and helpers functions for decomposing arbitrary unitary
 operations into elementary gates.
 """
+import numpy as np
 import pennylane as qml
 from pennylane import math
-import numpy as np
 
 
 def _convert_to_su2(U):

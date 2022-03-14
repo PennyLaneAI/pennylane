@@ -24,6 +24,14 @@ grad3 = np.array(
 )
 
 
+def catch_warn_finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
+    """Computes the finite diff and catches the initial deprecation warning."""
+
+    with pytest.warns(UserWarning, match="The black-box finite_diff function is deprecated"):
+        res = qml.finite_diff(f, N, argnum, idx, delta)
+    return res
+
+
 @pytest.mark.parametrize(
     ("x", "y", "argnum", "idx", "delta", "exp_grad"),
     [
@@ -47,7 +55,7 @@ def test_first_finit_diff(x, y, argnum, idx, delta, exp_grad):
     def f(x, y):
         return np.sin(x) / x**4 + y**-3
 
-    grad = qml.finite_diff(f, argnum=argnum, idx=idx, delta=delta)(x, y)
+    grad = catch_warn_finite_diff(f, argnum=argnum, idx=idx, delta=delta)(x, y)
 
     if grad.ndim != 0:
         idx = list(np.ndindex(*grad.shape))
@@ -86,7 +94,7 @@ def test_second_order_finite_diff(x, y, argnum, idx, delta, exp_deriv2):
     def f(x, y):
         return np.sin(x) / x**4 + y**-3
 
-    deriv2 = qml.finite_diff(f, N=2, argnum=argnum, idx=idx, delta=delta)(x, y)
+    deriv2 = catch_warn_finite_diff(f, N=2, argnum=argnum, idx=idx, delta=delta)(x, y)
 
     assert np.allclose(deriv2, exp_deriv2)
 
@@ -108,10 +116,10 @@ def test_exceptions_finite_diff(N, delta, func, msg_match):
 
     if N != 0:
         with pytest.raises(ValueError, match=msg_match):
-            qml.finite_diff(f, N=N, delta=delta)
+            catch_warn_finite_diff(f, N=N, delta=delta)
     elif N == 0:
         with pytest.raises(TypeError, match=msg_match):
-            qml.finite_diff(f(0.5), N=N, delta=delta)
+            catch_warn_finite_diff(f(0.5), N=N, delta=delta)
 
 
 @pytest.mark.parametrize(
@@ -140,11 +148,11 @@ def test_exceptions(which, argnum, idx, msg_match):
 
     if which == "both":
         with pytest.raises(ValueError, match=msg_match):
-            qml.finite_diff(f, argnum=argnum, idx=idx)(x, y)
+            catch_warn_finite_diff(f, argnum=argnum, idx=idx)(x, y)
 
         with pytest.raises(ValueError, match=msg_match):
-            qml.finite_diff(f, N=2, argnum=argnum, idx=idx)(x, y)
+            catch_warn_finite_diff(f, N=2, argnum=argnum, idx=idx)(x, y)
 
     if which == "second":
         with pytest.raises(ValueError, match=msg_match):
-            qml.finite_diff(f, N=2, argnum=argnum, idx=idx)(x, y)
+            catch_warn_finite_diff(f, N=2, argnum=argnum, idx=idx)(x, y)

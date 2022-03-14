@@ -457,6 +457,12 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
     second-order derivative of the callable function ``f`` using a centered finite
     difference approximation.
 
+    .. warning::
+
+        The ``qml.finite_diff()`` function is deprecated and will be removed in an
+        upcoming release. To compute *quantum* gradients using finite-differences
+        (that is, gradients of tapes or QNode), please see :func:`.gradients.finite_diff`.
+
     The first-order derivatives :math:`\frac{\partial f(x)}{\partial x_i}` entering
     the gradient of the input function are given by,
 
@@ -524,6 +530,12 @@ def finite_diff(f, N=1, argnum=0, idx=None, delta=0.01):
     >>> print(second_derivative(x, y))
     -0.372062798810191
     """
+    warnings.warn(
+        "The black-box finite_diff function is deprecated and will be removed in an upcoming release. "
+        "To compute quantum gradients of tapes or QNodes using finite-differences "
+        "please see qml.gradients.finite_diff.",
+        UserWarning,
+    )
 
     if not callable(f):
         error_message = f"{type(f)} object is not callable. \n'f' should be a callable function"

@@ -142,10 +142,11 @@ class TTN(Operation):
                 return qml.expval(qml.PauliZ(wires=n_wires-1))
 
         >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
-        0: ──╭C──RY(0.1)─────────────────┤
-        1: ──╰X──RY(-0.3)──╭C──RY(0.1)───┤
-        2: ──╭C──RY(0.1)───│─────────────┤
-        3: ──╰X──RY(-0.3)──╰X──RY(-0.3)──┤ ⟨Z⟩
+        0: ─╭C──RY(0.10)────────────────┤
+        1: ─╰X──RY(-0.30)─╭C──RY(0.10)──┤
+        2: ─╭C──RY(0.10)──│─────────────┤
+        3: ─╰X──RY(-0.30)─╰X──RY(-0.30)─┤  <Z>
+
     """
 
     num_wires = AnyWires

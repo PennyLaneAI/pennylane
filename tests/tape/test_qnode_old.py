@@ -151,14 +151,14 @@ class TestValidation:
             QNode._validate_backprop_method(dev, "another_interface")
 
     def test_parameter_shift_tape_qubit_device(self):
-        """Test that the get_parameter_shift_method method correctly and
+        """Test that the get_parameter_shift_tape method correctly and
         returns the correct tape for qubit devices."""
         dev = qml.device("default.qubit", wires=1)
         tape_class = QNode._get_parameter_shift_tape(dev)
         assert tape_class is QubitParamShiftTape
 
     def test_parameter_shift_tape_cv_device(self):
-        """Test that the get_parameter_shift_method method correctly and
+        """Test that the get_parameter_shift_tape method correctly and
         returns the correct tape for qubit devices."""
         dev = qml.device("default.gaussian", wires=1)
         tape_class = QNode._get_parameter_shift_tape(dev)
