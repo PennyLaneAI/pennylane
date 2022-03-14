@@ -807,8 +807,6 @@ class QubitDevice(Device):
                 raise qml.operation.EigvalsUndefinedError(
                     f"Cannot compute analytic variance of {observable.name}."
                 ) from e
-
-
             prob = self.probability(wires=observable.wires)
             return self._dot((eigvals**2), prob) - self._dot(eigvals, prob) ** 2
 

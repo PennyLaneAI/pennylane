@@ -333,42 +333,6 @@ class Device(abc.ABC):
         wire_map = zip(wires, consecutive_wires)
         return OrderedDict(wire_map)
 
-    def get_ordered_subset_wires(self, subset_wires):
-        """Takes a subset of the device wires (in any order) and returns the same subset,
-        re-ordered to match the device wire order.
-
-        Args:
-            subset_wires (Wires): a subset of the device wires
-
-        Raises:
-            ValueError: Could not find wire {label} in device wires {device_wires}
-
-        Returns:
-            ordered_subset (Wires): A new Wires object with the same subset of wires, re-ordered to match device order
-
-         """
-
-        if not isinstance(subset_wires, Wires):
-            subset_wires = Wires(subset_wires)
-
-        device_wire_lst, subset_wires_lst = self.wires.tolist(), subset_wires.tolist()
-        _order = dict()
-
-        for label in subset_wires_lst:
-            try:
-                indx = device_wire_lst.index(label)
-                _order[label] = indx
-            except ValueError:
-                raise ValueError(f"Could not find wire {label} in device wires {device_wire_lst}")
-
-        subset_wires_lst.sort(key=lambda x: _order[x])  # sort the list in ascending order using index in device wires
-
-        return Wires(subset_wires_lst)
-
-
-
-
-
     @lru_cache()
     def map_wires(self, wires):
         """Map the wire labels of wires using this device's wire map.
