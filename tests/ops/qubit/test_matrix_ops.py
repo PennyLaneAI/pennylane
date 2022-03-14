@@ -454,7 +454,7 @@ class TestControlledQubitUnitary:
         assert np.allclose(res_dynamic, expected, atol=tol)
 
     def test_no_decomp(self):
-        """Test ControlledQubitUnitary raises a decomposition undefined
+        """Test that ControlledQubitUnitary raises a decomposition undefined
         error."""
         mat = qml.PauliX(0).get_matrix()
         with pytest.raises(qml.operation.DecompositionUndefinedError):
