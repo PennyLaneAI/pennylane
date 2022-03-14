@@ -279,6 +279,5 @@ class TestSnapshot:
             "execution_results": np.array(0.36819668),
         }
 
-        print(result, expected)
         assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
         assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
