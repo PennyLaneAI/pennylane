@@ -137,7 +137,7 @@ def expand_matrix(base_matrix, wires, wire_order):
     ...                         [5, 6, 7, 8],
     ...                         [9, 10, 11, 12],
     ...                         [13, 14, 15, 16]])
-    >>> expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2])
+    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2]))
     [[ 1  2  3  4]
      [ 5  6  7  8]
      [ 9 10 11 12]
@@ -145,7 +145,7 @@ def expand_matrix(base_matrix, wires, wire_order):
 
     If the wire order is a permutation of ``wires``, the entries of the base matrix get permuted:
 
-    >>> expand_matrix(base_matrix, wires=[0, 2], wire_order=[2, 0])
+    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[2, 0]))
     [[ 1  3  2  4]
      [ 9 11 10 12]
      [ 5  7  6  8]
@@ -153,7 +153,7 @@ def expand_matrix(base_matrix, wires, wire_order):
 
     If the wire order contains wire labels not found in ``wires``, the matrix gets expanded:
 
-    >>> expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 1, 2])
+    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 1, 2]))
     [[ 1  2  0  0  3  4  0  0]
      [ 5  6  0  0  7  8  0  0]
      [ 0  0  1  2  0  0  3  4]
