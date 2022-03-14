@@ -731,7 +731,6 @@ class QubitDevice(Device):
             return prob
 
         wires = Wires(wires)
-        print(f"\nwires: {wires}\n")
         # determine which subsystems are to be summed over
         inactive_wires = Wires.unique_wires([self.wires, wires])
 
@@ -755,21 +754,13 @@ class QubitDevice(Device):
         # it corresponds to the orders of the wires passed.
         num_wires = len(device_wires)
         basis_states = self.generate_basis_states(num_wires)
-        print(f"\n ----- basis states: ----- \n{basis_states} ")
-        print(f"\ndevice wires: \n {device_wires}")
-        print(f"\ndevice wires sort: \n {np.argsort(device_wires)}")
-        print(f"\ndevice wires sort2: \n {np.argsort(np.argsort(device_wires))}")
         # basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
         basis_states = basis_states[:, np.argsort(device_wires)]
-        print(f"\nnew_basis states:\n {basis_states}")
 
 
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
-        print(f"powers of 2: \n {powers_of_two}")
         perm = basis_states @ powers_of_two
-        print(f"perm: \n{perm}")
-        print(f"prob: \n{prob}")
-        return self._gather(prob, perm), perm
+        return self._gather(prob, perm)
 
     def expval(self, observable, shot_range=None, bin_size=None):
 
@@ -808,23 +799,9 @@ class QubitDevice(Device):
             # )  # wires need to be sorted to match eigvals
             # prob = self.probability(wires=sorted_wires)
 
-            prob, perm = self.probability(wires=observable.wires)
+            prob = self.probability(wires=observable.wires)
 
             # prob, perm = self.probability(wires=ordered_wires)
-
-            y = lambda arr, ind: arr[ind]
-            print(f"\n prob vector: {prob}")
-            print(f"\n eigvals: \n{eigvals}\n")
-            print(f"\n perm eigvals: \n{y(eigvals, perm)}")
-
-            sum=0
-            for i, j in zip(prob, eigvals):
-                sum += i*j
-
-            print(sum)
-
-            print(f"wires: \n{self.wires}")
-            print(f"wire map: \n{self.wire_map}")
 
             return self._dot(eigvals, prob)
 
