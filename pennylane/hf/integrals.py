@@ -749,7 +749,7 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
         g_hc = _hermite_coulomb(t + r, u + s, v + w, 0, (p * q) / (p + q), p_ab - p_cd)
         g = g + g_exp * g_hc
         # g = g + g_exp
-    g = g * 2 * (anp.pi ** 2.5) / (p * q * anp.sqrt(p + q))
+    g = g * 2 * (anp.pi**2.5) / (p * q * anp.sqrt(p + q))
 
     return g
 
