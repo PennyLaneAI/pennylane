@@ -430,6 +430,39 @@ class TestTapeToGraph:
         with pytest.raises(ValueError, match="Sampling from tensor products of observables "):
             g = qcut.tape_to_graph(tape)
 
+    def test_multiple_obs_samples(self):
+        """
+        Test that a circuit with multiple sample measurements of observables
+        over individual wires is supported.
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.sample(qml.PauliZ(0))
+            qml.sample(qml.PauliZ(1))
+            qml.sample(qml.PauliZ(2))
+
+        g = qcut.tape_to_graph(tape)
+
+        expected_nodes = [
+            qml.Hadamard(wires=[0]),
+            qml.CNOT(wires=[0, 1]),
+            qml.PauliX(wires=[1]),
+            qml.WireCut(wires=[1]),
+            qml.CNOT(wires=[1, 2]),
+            qml.sample(qml.PauliZ(wires=[0])),
+            qml.sample(qml.PauliZ(wires=[1])),
+            qml.sample(qml.PauliZ(wires=[2])),
+        ]
+
+        for node, expected_node in zip(list(g.nodes), expected_nodes):
+            assert node.name == expected_node.name
+            assert node.wires == expected_node.wires
+
 
 class TestReplaceWireCut:
     """
