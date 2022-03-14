@@ -458,18 +458,24 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 wire_map[original_wire] = new_wire
                 reverse_wire_map[new_wire] = original_wire
 
-        for meas in copy_meas:
-            obs = meas.obs
-            obs._wires = Wires([wire_map[w] for w in obs.wires])
-            observables.append(obs)
+        if copy_meas:
+            for meas in copy_meas:
+                obs = meas.obs
+                obs._wires = Wires([wire_map[w] for w in obs.wires])
+                observables.append(obs)
+                meas_wires = meas.wires
 
-        # We assume that each MeasurementProcess node in the graph contributes to a single
-        # expectation value of an observable, given by the tensor product over the observables of
-        # each MeasurementProcess.
-        if len(observables) > 1:
-            qml.expval(Tensor(*observables))
-        elif len(observables) == 1:
-            qml.expval(obs)
+            # Assume that the circuit contains either expval or sample measurements
+            # only i.e all measurement types in the circuit are the same
+            meas_return_type = meas.return_type.name
+            meas_names = {"Expectation": "expval", "Sample": "sample"}
+
+            if len(observables) > 1:
+                getattr(qml, meas_names[meas_return_type])(Tensor(*observables))
+            elif len(observables) == 1:
+                getattr(qml, meas_names[meas_return_type])(obs)
+            elif len(observables) == 0:
+                getattr(qml, meas_names[meas_return_type])(wires=meas_wires)
 
     return tape
 

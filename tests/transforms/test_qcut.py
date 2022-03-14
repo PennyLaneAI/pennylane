@@ -1259,6 +1259,37 @@ class TestGraphToTape:
         assert m[0].wires == Wires([2])
         assert m[0].obs.name == "PauliZ"
 
+    def test_sample_meas_conversion(self):
+        """
+        Tests that subgraphs with sample nodes are correctly converted to
+        a fragment tapes
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.sample(wires=[0, 1, 2])
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+        frag0_expected_meas = [qml.sample(qml.Projector([1], wires=[0]))]
+        frag1_expected_meas = [
+            qml.sample(qml.Projector([1], wires=[1]) @ qml.Projector([1], wires=[2]))
+        ]
+
+        for meas, expected_meas in zip(tapes[0].measurements, frag0_expected_meas):
+            compare_measurements(meas, expected_meas)
+
+        for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
+            compare_measurements(meas, expected_meas)
+
 
 class TestGetMeasurements:
     """Tests for the _get_measurements function"""
