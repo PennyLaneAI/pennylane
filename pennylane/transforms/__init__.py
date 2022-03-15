@@ -182,6 +182,8 @@ from .optimization import (
     undo_swaps,
     pattern_matching,
     pattern_matching_optimization,
+    maximal_sequences,
+    sequences_optimization,
 )
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
