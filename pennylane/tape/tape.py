@@ -19,6 +19,7 @@ from collections import Counter, deque, defaultdict
 import contextlib
 import copy
 from threading import RLock
+import warnings
 
 import numpy as np
 
@@ -118,10 +119,10 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     .. code-block:: python
 
-        with JacobianTape() as tape:
+        with QuantumTape() as tape:
             qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
 
-            with JacobianTape() as tape2:
+            with QuantumTape() as tape2:
                 qml.Rot(0.543, 0.1, 0.4, wires=0)
 
             qml.CNOT(wires=[0, 'a'])
@@ -132,7 +133,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     >>> tape.operations
     [BasisState(array([1, 1]), wires=[0, 'a']),
-     <JacobianTape: wires=[0], params=3>,
+     <QuantumTape: wires=[0], params=3>,
      CNOT(wires=[0, 'a']),
      RY(0.2, wires=['a'])]
 
@@ -254,19 +255,11 @@ class QuantumTape(AnnotatedQueue):
     <pennylane.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
 
     Once constructed, the quantum tape can be executed directly on a supported
-    device:
+    device via the :func:`~.execute` function:
 
     >>> dev = qml.device("default.qubit", wires=[0, 'a'])
-
-    Execution can take place either using the in-place constructed parameters,
-
-    >>> tape.execute(dev)
-    [0.77750694]
-
-    or by providing parameters at run time:
-
-    >>> tape.execute(dev, params=[0.1, 0.1, 0.1])
-    [0.99003329]
+    >>> qml.execute([tape], dev, gradient_fn=None)
+    [array([0.77750694])]
 
     The trainable parameters of the tape can be explicitly set, and the values of
     the parameters modified in-place:
@@ -539,10 +532,10 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
 
-                with JacobianTape() as tape2:
+                with QuantumTape() as tape2:
                     qml.Rot(0.543, 0.1, 0.4, wires=0)
 
                 qml.CNOT(wires=[0, 'a'])
@@ -553,7 +546,7 @@ class QuantumTape(AnnotatedQueue):
 
         >>> tape.operations
         [BasisState(array([1, 1]), wires=[0, 'a']),
-         <JacobianTape: wires=[0], params=3>,
+         <QuantumTape: wires=[0], params=3>,
          CNOT(wires=[0, 'a']),
          RY(0.2, wires=['a'])]
 
@@ -590,7 +583,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
                 qml.RX(0.432, wires=0)
                 qml.Rot(0.543, 0.1, 0.4, wires=0).inv()
@@ -709,21 +702,20 @@ class QuantumTape(AnnotatedQueue):
         automatically excluded from the Jacobian computation.
 
         The number of trainable parameters determines the number of parameters passed to
-        :meth:`~.set_parameters`, :meth:`~.execute`, and :meth:`~.JacobianTape.jacobian`,
-        and changes the default output size of methods :meth:`~.JacobianTape.jacobian` and
-        :meth:`~.get_parameters()`.
+        :meth:`~.set_parameters`, and changes the default output size of method :meth:`~.get_parameters()`.
 
         .. note::
 
-            Since the :meth:`~.JacobianTape.jacobian` method is not called for devices that support
-            native backpropagation (such as ``default.qubit.tf`` and ``default.qubit.autograd``),
-            this property contains no relevant information when using backpropagation to compute gradients.
+            For devices that support native backpropagation (such as
+            ``default.qubit.tf`` and ``default.qubit.autograd``), this
+            property contains no relevant information when using
+            backpropagation to compute gradients.
 
         **Example**
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -792,7 +784,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -839,7 +831,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -926,7 +918,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -949,7 +941,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -984,7 +976,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -1305,6 +1297,11 @@ class QuantumTape(AnnotatedQueue):
     def execute(self, device, params=None):
         """Execute the tape on a quantum device.
 
+        .. warning::
+
+            Executing tapes using ``tape.execute(dev)`` is deprecated.
+            Please use the :func:`~.execute` function instead.
+
         Args:
             device (.Device): a PennyLane device
                 that can execute quantum operations and return measurement statistics
@@ -1315,7 +1312,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -1339,6 +1336,11 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.get_parameters()
         [0.432, 0.543, 0.133]
         """
+        warnings.warn(
+            "Executing tapes using tape.execute(dev) is deprecated. "
+            "Please use the qml.execute([tape], dev) function instead."
+        )
+
         if params is None:
             params = self.get_parameters()
 
@@ -1351,6 +1353,11 @@ class QuantumTape(AnnotatedQueue):
         and does not support autodifferentiation.
 
         For more details on differentiable tape execution, see :meth:`~.execute`.
+
+        .. warning::
+
+            Executing tapes using ``tape.execute(dev)`` is deprecated.
+            Please use the :func:`~.execute` function instead.
 
         Args:
             device (~.Device): a PennyLane device
