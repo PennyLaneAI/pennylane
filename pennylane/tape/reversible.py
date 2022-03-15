@@ -34,6 +34,12 @@ ABC_ARRAY = np.array(list(ABC))
 class ReversibleTape(JacobianTape):
     r"""Quantum tape for computing gradients via reversible analytic differentiation.
 
+    .. warning::
+
+        The ``ReversibleTape`` is deprecated.
+        Instead, create a standard ``QuantumTape``, and use devices that support
+        native adjoint differentiation methods, such as ``default.qubit`` and ``lightning.qubit``.
+
     .. note::
 
         The reversible analytic differentiation method has the following restrictions:

@@ -24,14 +24,13 @@ from pennylane.gradients.gradient_transform import (
 
 
 class TestGradMethodValidation:
-    """Test the helper function grad_method_validation, which is a
-    reduced copy of the eponymous method of ``JacobianTape``."""
+    """Test the helper function grad_method_validation."""
 
     @pytest.mark.parametrize("method", ["analytic", "best"])
     def test_with_nondiff_parameters(self, method):
         """Test that trainable parameters without grad_method
         are detected correctly, raising an exception."""
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.expval(qml.PauliZ(0))
@@ -43,7 +42,7 @@ class TestGradMethodValidation:
     def test_with_numdiff_parameters_and_analytic(self):
         """Test that trainable parameters with numerical grad_method ``"F"``
         together with ``method="analytic"`` raises an exception."""
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.expval(qml.PauliZ(0))
@@ -54,8 +53,7 @@ class TestGradMethodValidation:
 
 
 class TestChooseGradMethods:
-    """Test the helper function choose_grad_methods, which is a
-    reduced copy of the eponymous method of ``JacobianTape``."""
+    """Test the helper function choose_grad_methods"""
 
     all_diff_methods = [
         ["A"] * 2,

@@ -76,8 +76,8 @@ class batch_transform:
             '''Generates two tapes, one with all RX replaced with RY,
             and the other with all RX replaced with RZ.'''
 
-            tape1 = qml.tape.JacobianTape()
-            tape2 = qml.tape.JacobianTape()
+            tape1 = qml.tape.QuantumTape()
+            tape2 = qml.tape.QuantumTape()
 
             # loop through all operations on the input tape
             for op in tape.operations + tape.measurements:
@@ -102,7 +102,7 @@ class batch_transform:
 
     We can apply this transform to a quantum tape:
 
-    >>> with qml.tape.JacobianTape() as tape:
+    >>> with qml.tape.QuantumTape() as tape:
     ...     qml.Hadamard(wires=0)
     ...     qml.RX(-0.5, wires=0)
     ...     qml.expval(qml.PauliX(0))
