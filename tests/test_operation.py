@@ -1317,10 +1317,16 @@ class TestOperationDerivative:
 
     def test_no_generator_raise(self):
         """Tests if the function raises an exception if the input operation has no generator"""
-        op = qml.Rot(0.1, 0.2, 0.3, wires=0)
+
+        class CustomOp(qml.operation.Operation):
+            num_wires = 1
+            num_params = 1
+
+        op = CustomOp(0.5, wires=0)
 
         with pytest.raises(
-            qml.operation.GeneratorUndefinedError, match="Operation Rot does not have a generator"
+            qml.operation.GeneratorUndefinedError,
+            match="Operation CustomOp does not have a generator",
         ):
             operation_derivative(op)
 
@@ -1372,6 +1378,25 @@ class TestOperationDerivative:
         """Test if the function correctly returns the derivative of CRY"""
         p = 0.3
         op = qml.CRY(p, wires=[0, 1])
+
+        derivative = operation_derivative(op)
+        expected_derivative = 0.5 * np.array(
+            [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, -np.sin(p / 2), -np.cos(p / 2)],
+                [0, 0, np.cos(p / 2), -np.sin(p / 2)],
+            ]
+        )
+        assert np.allclose(derivative, expected_derivative)
+
+    def test_cry_non_consecutive(self):
+        """Test if the function correctly returns the derivative of CRY
+        if the wires are not consecutive. This is expected behaviour, since
+        without any other context, the operation derivative should make no
+        assumption about the wire ordering."""
+        p = 0.3
+        op = qml.CRY(p, wires=[1, 0])
 
         derivative = operation_derivative(op)
         expected_derivative = 0.5 * np.array(

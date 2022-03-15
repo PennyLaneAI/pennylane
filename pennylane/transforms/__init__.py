@@ -71,7 +71,7 @@ This set of transforms accept quantum functions, and perform basic circuit compi
     ~transforms.merge_amplitude_embedding
     ~transforms.remove_barrier
     ~transforms.undo_swaps
-    ~transforms.pattern_matching
+    ~transforms.pattern_matching_optimization
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -83,6 +83,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
     ~transforms.simplify
+    ~transforms.pattern_matching
 
 There are also utility functions that take a circuit and return a DAG.
 
@@ -95,6 +96,14 @@ There are also utility functions that take a circuit and return a DAG.
 
 Transforms for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This transform accepts QNodes, performs circuit cutting, and returns the result of the original
+uncut circuit.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.cut_circuit
 
 The following are utility functions that compose the circuit cutting transform.
 
@@ -109,6 +118,7 @@ The following are utility functions that compose the circuit cutting transform.
     ~transforms.expand_fragment_tapes
     ~transforms.contract_tensors
     ~transforms.qcut_processing_fn
+    ~transforms.remap_tape_wires
     ~transforms.CutStrategy
 
 Transforms that act on tapes
@@ -135,6 +145,7 @@ to help build custom QNode, quantum function, and tape transforms:
     ~single_tape_transform
     ~batch_transform
     ~qfunc_transform
+    ~op_transform
     ~transforms.make_tape
     ~transforms.map_batch_transform
     ~transforms.create_expand_fn
@@ -147,6 +158,7 @@ to help build custom QNode, quantum function, and tape transforms:
 # Import the decorators first to prevent circular imports when used in other transforms
 from .batch_transform import batch_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
+from .op_transforms import op_transform
 from .adjoint import adjoint
 from .batch_params import batch_params
 from .classical_jacobian import classical_jacobian
@@ -169,6 +181,7 @@ from .optimization import (
     remove_barrier,
     undo_swaps,
     pattern_matching,
+    pattern_matching_optimization,
 )
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
@@ -199,5 +212,7 @@ from .qcut import (
     expand_fragment_tapes,
     contract_tensors,
     qcut_processing_fn,
+    cut_circuit,
+    remap_tape_wires,
     CutStrategy,
 )

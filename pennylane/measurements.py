@@ -128,7 +128,7 @@ class MeasurementProcess:
 
         .. warning::
             The ``eigvals`` property is deprecated and will be removed in
-            an upcoming release.
+            an upcoming release. Please use :class:`qml.eigvals <.pennylane.eigvals>` instead.
 
         If the measurement process has an associated observable,
         the eigenvalues will correspond to this observable. Otherwise,
@@ -148,7 +148,8 @@ class MeasurementProcess:
             array: eigvals representation
         """
         warnings.warn(
-            "The 'eigvals' property is deprecated and will be removed in an upcoming release.",
+            "The 'eigvals' property is deprecated and will be removed in an upcoming release. "
+            "Please use 'qml.eigvals' instead.",
             UserWarning,
         )
         return self.get_eigvals()
