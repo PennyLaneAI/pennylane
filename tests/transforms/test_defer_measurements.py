@@ -29,13 +29,10 @@ class TestQNode:
         measurement yields the correct results and is transformed correctly."""
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
-        def qnode1():
+        with qml.tape.QuantumTape() as tape1:
             return qml.expval(qml.PauliZ(0))
 
-        @qml.qnode(dev)
-        @qml.defer_measurements
-        def qnode2():
+        with qml.tape.QuantumTape() as tape2:
             m = qml.measure(1)
             return qml.expval(qml.PauliZ(0))
 
@@ -100,20 +97,17 @@ class TestQNode:
         tensor observables in the tape."""
         dev = qml.device("default.qubit", wires=[mid_measure_wire] + tp_wires)
 
-        @qml.qnode(dev)
-        @qml.defer_measurements
-        def qnode():
+        with qml.tape.QuantumTape() as tape:
             qml.measure(mid_measure_wire)
             return qml.expval(qml.operation.Tensor(*[qml.PauliZ(w) for w in tp_wires]))
 
-        # Evaluate the QNode
-        qnode()
+        tape = qml.defer_measurements(tape)
 
         # Check the operations and measurements in the tape
-        assert qnode.qtape._ops == []
-        assert len(qnode.qtape.measurements) == 1
+        assert tape._ops == []
+        assert len(tape.measurements) == 1
 
-        measurement = qnode.qtape.measurements[0]
+        measurement = tape.measurements[0]
         assert isinstance(measurement, qml.measurements.MeasurementProcess)
 
         tensor = measurement.obs
@@ -188,9 +182,7 @@ class TestConditionalOperations:
         first_par = 0.1
         sec_par = 0.3
 
-        @qml.qnode(dev)
-        @qml.defer_measurements
-        def qnode():
+        with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(4)
             qml.cond(m_0, qml.RY)(first_par, wires=1)
 
@@ -198,25 +190,25 @@ class TestConditionalOperations:
             qml.cond(m_0, qml.RZ)(sec_par, wires=1)
             return qml.apply(terminal_measurement)
 
-        qnode()
+        tape = qml.defer_measurements(tape)
 
-        assert len(qnode.qtape.operations) == 2
-        assert len(qnode.qtape.measurements) == 1
+        assert len(tape.operations) == 2
+        assert len(tape.measurements) == 1
 
         # Check the two underlying ControlledOperation instance
-        first_ctrl_op = qnode.qtape.operations[0]
+        first_ctrl_op = tape.operations[0]
         assert isinstance(first_ctrl_op, qml.transforms.control.ControlledOperation)
         assert len(first_ctrl_op.subtape.operations) == 1
         assert isinstance(first_ctrl_op.subtape.operations[0], qml.RY)
         assert first_ctrl_op.data == [first_par]
 
-        sec_ctrl_op = qnode.qtape.operations[1]
+        sec_ctrl_op = tape.operations[1]
         assert isinstance(sec_ctrl_op, qml.transforms.control.ControlledOperation)
         assert len(sec_ctrl_op.subtape.operations) == 1
         assert isinstance(sec_ctrl_op.subtape.operations[0], qml.RZ)
         assert sec_ctrl_op.data == [sec_par]
 
-        assert qnode.qtape.measurements[0] is terminal_measurement
+        assert tape.measurements[0] is terminal_measurement
 
     def test_correct_ops_in_tape_inversion(self):
         """Test that the underlying tape contains the correct operations if a
@@ -228,26 +220,24 @@ class TestConditionalOperations:
 
         terminal_measurement = qml.expval(qml.PauliZ(1))
 
-        @qml.qnode(dev)
-        @qml.defer_measurements
-        def qnode():
+        with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(0)
             qml.cond(~m_0, qml.RY)(first_par, wires=1)
             return qml.apply(terminal_measurement)
 
-        qnode()
+        tape = qml.defer_measurements(tape)
 
         # Conditioned on 0 as the control value, PauliX is applied before and after
-        assert len(qnode.qtape.operations) == 3
-        assert len(qnode.qtape.measurements) == 1
+        assert len(tape.operations) == 3
+        assert len(tape.measurements) == 1
 
         # We flip the control qubit
-        first_x = qnode.qtape.operations[0]
+        first_x = tape.operations[0]
         assert isinstance(first_x, qml.PauliX)
         assert first_x.wires == qml.wires.Wires(0)
 
         # Check the two underlying ControlledOperation instance
-        ctrl_op = qnode.qtape.operations[1]
+        ctrl_op = tape.operations[1]
         assert isinstance(ctrl_op, qml.transforms.control.ControlledOperation)
         assert len(ctrl_op.subtape.operations) == 1
         assert isinstance(ctrl_op.subtape.operations[0], qml.RY)
@@ -256,7 +246,7 @@ class TestConditionalOperations:
         assert ctrl_op.wires == qml.wires.Wires([0, 1])
 
         # We flip the control qubit back
-        sec_x = qnode.qtape.operations[2]
+        sec_x = tape.operations[2]
         assert isinstance(sec_x, qml.PauliX)
         assert sec_x.wires == qml.wires.Wires(0)
 
@@ -271,26 +261,24 @@ class TestConditionalOperations:
         first_par = 0.1
         sec_par = 0.3
 
-        @qml.qnode(dev)
-        @qml.defer_measurements
-        def qnode():
+        with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(0)
             qml.cond(m_0 == 0, qml.RY)(first_par, wires=1)
             return qml.expval(qml.PauliZ(1))
 
-        qnode()
+        tape = qml.defer_measurements(tape)
 
         # Conditioned on 0 as the control value, PauliX is applied before and after
-        assert len(qnode.qtape.operations) == 3
-        assert len(qnode.qtape.measurements) == 1
+        assert len(tape.operations) == 3
+        assert len(tape.measurements) == 1
 
         # We flip the control qubit
-        first_x = qnode.qtape.operations[0]
+        first_x = tape.operations[0]
         assert isinstance(first_x, qml.PauliX)
         assert first_x.wires == qml.wires.Wires(0)
 
         # Check the underlying ControlledOperation instance
-        ctrl_op = qnode.qtape.operations[1]
+        ctrl_op = tape.operations[1]
         assert isinstance(ctrl_op, qml.transforms.control.ControlledOperation)
         assert len(ctrl_op.subtape.operations) == 1
         assert isinstance(ctrl_op.subtape.operations[0], qml.RY)
@@ -298,7 +286,7 @@ class TestConditionalOperations:
         assert ctrl_op.wires == qml.wires.Wires([0, 1])
 
         # We flip the control qubit back
-        sec_x = qnode.qtape.operations[2]
+        sec_x = tape.operations[2]
         assert isinstance(sec_x, qml.PauliX)
         assert sec_x.wires == qml.wires.Wires(0)
 
