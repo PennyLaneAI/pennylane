@@ -16,7 +16,7 @@ This module contains the CircuitGraph class which is used to generate a DAG (dir
 representation of a quantum circuit from an Operator queue.
 """
 # pylint: disable=too-many-branches,too-many-arguments,too-many-instance-attributes
-from collections import Counter, OrderedDict, namedtuple
+from collections import namedtuple
 
 import retworkx as rx
 import numpy as np
