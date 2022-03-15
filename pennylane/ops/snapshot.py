@@ -17,7 +17,7 @@ cv and qubit computing paradigms in PennyLane.
 """
 import numpy as np
 
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import AnyWires, Operation, classproperty
 
 
 # pylint: disable=unused-argument
@@ -55,3 +55,8 @@ class Snapshot(Operation):
     @staticmethod
     def compute_matrix(*params, **hyperparams):
         return np.eye(2)
+
+    # TODO: remove once compute_matrix no longer overridden
+    @classproperty
+    def has_matrix(cls):
+        return False

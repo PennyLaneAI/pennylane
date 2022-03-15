@@ -572,8 +572,12 @@ class Operator(abc.ABC):
         """
         raise MatrixUndefinedError
 
-    @classmethod
+    @classproperty
     def has_matrix(cls):
+        r"""Bool: Whether or not the Operator returns a defined matrix.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
         return cls.compute_matrix != Operator.compute_matrix
 
 
