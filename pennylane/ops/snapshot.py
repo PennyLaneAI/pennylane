@@ -57,6 +57,7 @@ class Snapshot(Operation):
         return np.eye(2)
 
     # TODO: remove once compute_matrix no longer overridden
+    # pylint: disable=no-self-argument
     @classproperty
     def has_matrix(cls):
         return False
