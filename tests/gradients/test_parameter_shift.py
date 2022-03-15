@@ -957,6 +957,46 @@ class TestParameterShiftRule:
         assert gradA == pytest.approx(expected, abs=tol)
         assert gradF == pytest.approx(expected, abs=tol)
 
+    def test_output_shape_matches_qnode(self):
+        """Test that the transform output shape matches that of the QNode."""
+        dev = qml.device("default.qubit", wires=4)
+
+        def cost1(x):
+            qml.Rot(*x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def cost2(x):
+            qml.Rot(*x, wires=0)
+            return [qml.expval(qml.PauliZ(0))]
+
+        def cost3(x):
+            qml.Rot(*x, wires=0)
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+
+        def cost4(x):
+            qml.Rot(*x, wires=0)
+            return qml.probs([0, 1])
+
+        def cost5(x):
+            qml.Rot(*x, wires=0)
+            return [qml.probs([0, 1])]
+
+        def cost6(x):
+            qml.Rot(*x, wires=0)
+            return [qml.probs([0, 1]), qml.probs([2, 3])]
+
+        x = np.random.rand(3)
+        circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
+
+        transform = [qml.math.shape(qml.gradients.param_shift(c)(x)) for c in circuits]
+        # The output shape of transforms for 2D qnode outputs (cost5 & cost6) is currently
+        # transposed, e.g. (4, 1, 3) instead of (1, 4, 3).
+        # TODO: fix qnode/expected once #2296 is resolved
+        qnode = [qml.math.shape(c(x)) + (3,) for c in circuits[:4]] + [(4, 1, 3), (4, 2, 3)]
+        expected = [(3,), (1, 3), (2, 3), (4, 3), (4, 1, 3), (4, 2, 3)]
+
+        assert all(t == q == e for t, q, e in zip(transform, qnode, expected))
+
 
 class TestParamShiftGradients:
     """Test that the transform is differentiable"""
