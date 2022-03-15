@@ -352,7 +352,7 @@ class Device(abc.ABC):
             ordered_subset_lst = sorted(subset_lst, key=lambda label: self.wire_map[label])
         except KeyError:
             raise ValueError(
-                f"Could not find some or all subset wires {subset_lst} in device wires {self.wires}"
+                f"Could not find some or all subset wires {subset_wires} in device wires {self.wires}"
             )
 
         return Wires(ordered_subset_lst)

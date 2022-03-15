@@ -219,7 +219,6 @@ class TestVar:
         dev = qml.device("default.qubit", wires=3)
         dev_custom_labels = qml.device("default.qubit", wires=[label_map[i] for i in range(3)])
 
-        @qml.qnode(dev)
         def circ(wire_labels):
             sub_routine(wire_labels)
             return qml.var(
