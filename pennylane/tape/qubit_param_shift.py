@@ -292,7 +292,9 @@ class QubitParamShiftTape(JacobianTape):
                 A = obs.get_matrix()
 
                 obs = qml.Hermitian(A @ A, wires=obs.wires, do_queue=False)
-                pdA2_tape._measurements[i] = MeasurementProcess(qml.measurements.Expectation, obs=obs)
+                pdA2_tape._measurements[i] = MeasurementProcess(
+                    qml.measurements.Expectation, obs=obs
+                )
 
             # Non-involutory observables are present; the partial derivative of <A^2>
             # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>

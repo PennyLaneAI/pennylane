@@ -23,6 +23,10 @@
   
 <h3>Breaking changes</h3>
 
+* The `ObservableReturnTypes` `Sample`, `Variance`, `Expectation`, `Probability`, `State`, and `MidMeasure`
+  have been moved to `measurements` from `operation`.
+  [(#2329)](https://github.com/PennyLaneAI/pennylane/pull/2329)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>

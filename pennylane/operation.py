@@ -98,7 +98,7 @@ import copy
 import itertools
 import functools
 import warnings
-from enum import Enum, IntEnum
+from enum import IntEnum
 from scipy.sparse import kron, eye, coo_matrix
 
 import numpy as np

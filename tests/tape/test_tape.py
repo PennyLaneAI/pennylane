@@ -862,7 +862,11 @@ class TestExpand:
 
         assert len(new_tape.operations) == 5
 
-        expected = [qml.measurements.Probability, qml.measurements.Expectation, qml.measurements.Variance]
+        expected = [
+            qml.measurements.Probability,
+            qml.measurements.Expectation,
+            qml.measurements.Variance,
+        ]
         assert [m.return_type is r for m, r in zip(new_tape.measurements, expected)]
 
         expected = [None, None, None]
