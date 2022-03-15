@@ -20,6 +20,7 @@ import copy
 import string
 import uuid
 import warnings
+import tempfile
 from dataclasses import InitVar, dataclass
 from functools import partial
 from itertools import product, compress
@@ -29,7 +30,6 @@ from typing import (
     ClassVar,
     Dict,
     List,
-    Set,
     Optional,
     Sequence,
     Tuple,
@@ -1769,7 +1769,7 @@ def kahypar_cut(
         context.loadINIconfiguration(config_path)
     else:
         config_path = str(Path(__file__).parent / "_cut_kKaHyPar_sea20.ini")
-        if block_weights is None:
+        if (not isinstance(block_weights, Sequence)) or (len(block_weights) != num_fragments):
             context.loadINIconfiguration(config_path)
         else:
             # Need to modify the config file and save it temporarily for kahypar to load.
@@ -1778,26 +1778,18 @@ def kahypar_cut(
             )
             context.loadINIconfiguration(temp_config.name)
             temp_config.close()
+            context.setCustomTargetBlockWeights(block_weights)
 
     context.setK(num_fragments)
 
     if isinstance(imbalance, float):
         context.setEpsilon(imbalance)
-    if isinstance(block_weights, list) and len(block_weights) == num_fragments:
-        context.setCustomTargetBlockWeights(block_weights)
     if isinstance(seed, int):
         context.setSeed(int(seed))
     if not verbose:
         context.suppressOutput(True)
 
     kahypar.partition(hypergraph, context)
-
-    # cut_cost = kahypar.cut(hypergraph)
-    partition_sizes = [hypergraph.blockSize(p) for p in range(num_fragments)]
-    if isinstance(block_weights, list) and len(block_weights) == num_fragments:
-        assert all(
-            [size_p <= capacity_p for size_p, capacity_p in zip(partition_sizes, block_weights)]
-        )
 
     cut_edge_mask = [hypergraph.connectivity(e) > 1 for e in hypergraph.edges()]
 
@@ -1807,7 +1799,7 @@ def kahypar_cut(
 
 
 def _temp_update_kahypar_ini(ini_path: Union[Path, str], updates: Dict[str, str]):
-    import tempfile
+    """Helper function for temporarily modify a KaHaPar config file."""
 
     with open(ini_path, "r") as f:
         lines = f.readlines()
