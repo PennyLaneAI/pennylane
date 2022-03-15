@@ -465,8 +465,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                     "Only a single return type can be used for measurement "
                     "nodes in graph_to_tape"
                 )
-            else:
-                return_type = return_types.pop()
+            return_type = return_types.pop()
 
             if return_type not in {Sample, Expectation}:
                 raise ValueError(
