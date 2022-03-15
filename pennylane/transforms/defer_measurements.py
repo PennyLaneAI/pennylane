@@ -44,6 +44,14 @@ def defer_measurements(tape):
         This transform does not change the list of terminal measurements returned by
         the quantum function.
 
+    .. note::
+
+        When applying the transform on a quantum function that returns
+        :func:`~measurements.state` as the terminal measurement or contains
+        :class:`~.Snapshot` instruction, state vector information the
+        transformed circuit will be obtained. No post-measurement states are
+        considered.
+
     Args:
         qfunc (function): a quantum function
 
@@ -75,13 +83,6 @@ def defer_measurements(tape):
 
     >>> qml.grad(qnode)(par)
     -0.9924450321351936
-
-    .. note::
-
-        When applying the transform on a quantum function that returns
-        :func:`~measurements.state` as the terminal measurement, the state vector corresponding
-        to the pre-measurement state of the transformed circuit will be
-        obtained. No post-measurement states are considered.
     """
     measured_wires = {}
 
