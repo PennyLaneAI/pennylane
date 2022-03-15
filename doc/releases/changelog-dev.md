@@ -23,6 +23,11 @@
   
 <h3>Breaking changes</h3>
 
+<h3>Bug fixed</h3>
+
+* The conditional measurement added gates that were not defined.
+  [(#2328)](https://github.com/PennyLaneAI/pennylane/pull/2328)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
@@ -31,4 +36,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Anthony Hayes
+Karim Alaa El-Din, Guillermo Alonso-Linaje, Anthony Hayes
