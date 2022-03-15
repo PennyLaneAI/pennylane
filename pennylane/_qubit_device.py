@@ -789,11 +789,7 @@ class QubitDevice(Device):
 
             permuted_wires = Wires([ordered_obs_wire_lst[index] for index in permutation])
 
-            print(f"------wires-----: \n{observable.wires}\n")
-            old_prob = self.probability(wires=observable.wires)
-            print(f"------permuted wires-----: \n{permuted_wires}\n ")
             prob = self.probability(wires=permuted_wires)
-            # prob = self.probability(wires=observable.wires)
             return self._dot(eigvals, prob)
 
         # estimate the ev
@@ -819,7 +815,17 @@ class QubitDevice(Device):
                 raise qml.operation.EigvalsUndefinedError(
                     f"Cannot compute analytic variance of {observable.name}."
                 ) from e
-            prob = self.probability(wires=observable.wires)
+
+            # the probability vector must be permuted to account for the permuted wire order of the observable
+            ordered_obs_wire_lst = self.get_ordered_subset(observable.wires).tolist()
+            obs_wire_lst = observable.wires.tolist()
+
+            mapped_wires = [self.wire_map[label] for label in obs_wire_lst]
+            permutation = np.argsort(mapped_wires)  # extract permutation via argsort
+
+            permuted_wires = Wires([ordered_obs_wire_lst[index] for index in permutation])
+
+            prob = self.probability(wires=permuted_wires)
             return self._dot((eigvals**2), prob) - self._dot(eigvals, prob) ** 2
 
         # estimate the variance
