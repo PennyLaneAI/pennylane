@@ -65,7 +65,8 @@ def commutation_dag(circuit):
     the  form ``(ID, CommutationDAGNode)``:
 
     >>> nodes = dag.get_nodes()
-    [(0, <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x132b03b20>), ...]
+    >>> nodes
+    NodeDataView({0: <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x7f461c4bb580>, ...}, data='node')
 
     You can also access specific nodes (of type :class:`~.CommutationDAGNode`) by using the :meth:`~.get_node`
     method. See :class:`~.CommutationDAGNode` for a list of available
@@ -205,7 +206,8 @@ def simplify_rotation(rot):
 
 
 def simplify_controlled_rotation(crot):
-    r"""Simplify a general one qubit controlled rotation into CRX, CRY, CRZ and CH.
+    r"""Simplify a general one qubit controlled rotation into CRX, CRY, CRZ and
+    controlled-Hadamard.
 
     Args:
         crot (pennylane.CRot): One qubit controlled rotation.
@@ -286,8 +288,8 @@ def simplify_u3(u3):
 def simplify(operation):
     r"""Simplify the (controlled) rotation operations :class:`~.Rot`,
     :class:`~.U2`, :class:`~.U3`, and :class:`~.CRot` into one of
-    :class:`~.RX`, :class:`~.CRX`, :class:`~.RY`, :class:`~.CRY`, :class:`~.`RZ`,
-    :class:`~.CZ`, :class:`~.H` and :class:`~.CH` where possible.
+    :class:`~.RX`, :class:`~.CRX`, :class:`~.RY`, :class:`~.CRY`, :class:`~.RZ`,
+    :class:`~.CZ`, :class:`~.Hadamard` and controlled-Hadamard where possible.
 
     Args:
         operation (.Operation): Rotation or controlled rotation.
@@ -755,10 +757,10 @@ def _merge_no_duplicates(*iterables):
     """Merge K list without duplicate using python heapq ordered merging.
 
     Args:
-        *iterables: A list of k sorted lists
+        *iterables: A list of k sorted lists.
 
     Yields:
-        Iterator: List from the merging of the k ones (without duplicates)
+        Iterator: List from the merging of the k ones (without duplicates).
     """
     last = object()
     for val in heapq.merge(*iterables):
@@ -897,7 +899,7 @@ class CommutationDAG:
         return self._multi_graph.nodes(data="node")[node_id]
 
     def get_nodes(self):
-        """Return iterable to loop through all the nodes in the DAG
+        """Return iterable to loop through all the nodes in the DAG.
 
         Returns:
             networkx.classes.reportviews.NodeDataView: Iterable nodes.

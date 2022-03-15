@@ -20,8 +20,7 @@ import numpy as np
 
 import pennylane as qml
 
-from .parameter_shift import _gradient_analysis
-from .gradient_transform import grad_method_validation
+from .gradient_transform import gradient_analysis, grad_method_validation
 from .hessian_transform import hessian_transform
 
 
@@ -265,13 +264,13 @@ def param_shift_hessian(tape, f0=None):
         >>> tape = circuit.qtape
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape)
         >>> hessian_tapes
-        [<JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>]
+        [<QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>]
         >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
         array([[-0.97517033,  0.01983384],
                 [ 0.01983384, -0.97517033]])
@@ -340,7 +339,7 @@ def param_shift_hessian(tape, f0=None):
                 f"Hessian. Only two-term parameter shift rules are currently supported."
             )
 
-    _gradient_analysis(tape)
+    gradient_analysis(tape, grad_fn=qml.gradients.param_shift)
     diff_methods = grad_method_validation("analytic", tape)
 
     if all(g == "0" for g in diff_methods):

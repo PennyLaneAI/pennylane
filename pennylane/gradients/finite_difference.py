@@ -28,6 +28,7 @@ from .gradient_transform import (
     gradient_transform,
     grad_method_validation,
     choose_grad_methods,
+    gradient_analysis,
 )
 
 
@@ -272,7 +273,7 @@ def finite_diff(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> with qml.tape.JacobianTape() as tape:
+        >>> with qml.tape.QuantumTape() as tape:
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
@@ -280,10 +281,10 @@ def finite_diff(
         ...     qml.var(qml.PauliZ(0))
         >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
         >>> gradient_tapes
-        [<JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>]
+        [<QuantumTape: wires=[0], params=3>,
+         <QuantumTape: wires=[0], params=3>,
+         <QuantumTape: wires=[0], params=3>,
+         <QuantumTape: wires=[0], params=3>]
 
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
@@ -306,7 +307,7 @@ def finite_diff(
 
     if validate_params:
         if "grad_method" not in tape._par_info[0]:
-            tape._update_gradient_info()
+            gradient_analysis(tape, grad_fn=finite_diff)
         diff_methods = grad_method_validation("numeric", tape)
     else:
         diff_methods = ["F" for i in tape.trainable_params]
