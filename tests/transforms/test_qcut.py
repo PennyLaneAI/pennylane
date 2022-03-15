@@ -160,7 +160,7 @@ def compare_measurements(meas1, meas2):
     obs1 = meas1.obs
     obs2 = meas2.obs
     assert np.array(obs1.name == obs2.name).all()
-    assert set(obs1.wires.tolist()) == set(obs2.wires.tolist())
+    assert obs1.wires.tolist() == obs2.wires.tolist()
 
 
 def test_node_ids(monkeypatch):
@@ -1281,14 +1281,19 @@ class TestGraphToTape:
 
         frag0_expected_meas = [qml.sample(qml.Projector([1], wires=[0]))]
         frag1_expected_meas = [
-            qml.sample(qml.Projector([1], wires=[1]) @ qml.Projector([1], wires=[2]))
+            qml.sample(qml.Projector([1], wires=[1])),
+            qml.sample(qml.Projector([1], wires=[2])),
         ]
 
         for meas, expected_meas in zip(tapes[0].measurements, frag0_expected_meas):
             compare_measurements(meas, expected_meas)
 
+        # For tapes with multiple measurements, the ordering vary
+        # so we check the set of wires rather that the order
         for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
-            compare_measurements(meas, expected_meas)
+            assert meas.return_type is qml.operation.Sample
+            assert isinstance(meas.obs, qml.Projector)
+            assert meas.obs.wires in {Wires(1), Wires(2)}
 
     def test_sample_mid_circuit_meas(self):
         """
@@ -1321,12 +1326,15 @@ class TestGraphToTape:
         tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
 
         frag0_expected_meas = [
-            qml.sample(qml.Projector([1], wires=[0]) @ qml.Projector([1], wires=[3]))
+            qml.sample(qml.Projector([1], wires=[0])),
+            qml.sample(qml.Projector([1], wires=[3])),
         ]
         frag1_expected_meas = [qml.sample(qml.Projector([1], wires=[2]))]
 
-        for meas, expected_meas in zip(tapes[0].measurements, frag0_expected_meas):
-            compare_measurements(meas, expected_meas)
+        for meas, expected_meas in zip(tapes[0].measurements, frag1_expected_meas):
+            assert meas.return_type is qml.operation.Sample
+            assert isinstance(meas.obs, qml.Projector)
+            assert meas.obs.wires in {Wires(0), Wires(3)}
 
         for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
             compare_measurements(meas, expected_meas)
@@ -1347,6 +1355,30 @@ class TestGraphToTape:
 
         for f1_mn_wire in set(f1_measurenode_wires):
             assert f1_mn_wire not in set(f1_sample_wires)
+
+    def test_mixed_measurements(self):
+        """
+        Tests thats a subgraph containing mixed measurements raises the correct
+        error message.
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.sample(wires=[0, 1])
+            qml.expval(qml.PauliZ(wires=2))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        with pytest.raises(
+            ValueError, match="Only a single return type can be used for measurement "
+        ):
+            [qcut.graph_to_tape(sg) for sg in subgraphs]
 
 
 class TestGetMeasurements:

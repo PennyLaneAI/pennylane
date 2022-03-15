@@ -459,20 +459,28 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 reverse_wire_map[new_wire] = original_wire
 
         if copy_meas:
+            return_types = set(meas.return_type for meas in copy_meas)
+            if len(return_types) > 1:
+                raise ValueError(
+                    "Only a single return type can be used for measurement "
+                    "nodes in graph_to_tape"
+                )
+            else:
+                return_type = return_types.pop()
+
             for meas in copy_meas:
-                meas_return_type = meas.return_type.name
                 obs = meas.obs
                 obs._wires = Wires([wire_map[w] for w in obs.wires])
                 observables.append(obs)
 
-            # Assume that the circuit contains either expval or sample measurements
-            # only i.e all measurement types in the circuit are the same
-            meas_names = {"Expectation": "expval", "Sample": "sample"}
+                if return_type is Sample:
+                    apply(meas)
 
-            if len(observables) > 1:
-                getattr(qml, meas_names[meas_return_type])(Tensor(*observables))
-            elif len(observables) == 1:
-                getattr(qml, meas_names[meas_return_type])(obs)
+            if return_type is Expectation:
+                if len(observables) > 1:
+                    qml.expval(Tensor(*observables))
+                elif len(observables) == 1:
+                    qml.expval(obs)
 
     return tape
 
