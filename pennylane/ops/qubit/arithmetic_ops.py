@@ -107,7 +107,7 @@ class QubitCarry(Operation):
 
         **Example**
 
-        >>> qml.QubitCarry.compute_matrix()
+        >>> print(qml.QubitCarry.compute_matrix())
         [[1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
          [0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
          [0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0]
@@ -254,7 +254,7 @@ class QubitSum(Operation):
 
         **Example**
 
-        >>> qml.QubitSum.compute_matrix()
+        >>> print(qml.QubitSum.compute_matrix())
         [[1 0 0 0 0 0 0 0]
          [0 1 0 0 0 0 0 0]
          [0 0 0 1 0 0 0 0]
