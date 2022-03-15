@@ -47,10 +47,10 @@ def defer_measurements(tape):
     .. note::
 
         When applying the transform on a quantum function that returns
-        :func:`~measurements.state` as the terminal measurement or contains
-        :class:`~.Snapshot` instruction, state vector information the
-        transformed circuit will be obtained. No post-measurement states are
-        considered.
+        :func:`~.state` as the terminal measurement or contains the
+        :class:`~.Snapshot` instruction, state information corresponding to
+        simulating the transformed circuit will be obtained. No
+        post-measurement states are considered.
 
     Args:
         qfunc (function): a quantum function
