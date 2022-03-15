@@ -165,6 +165,24 @@ def mock_device(monkeypatch):
 
         yield get_device
 
+@pytest.fixture(scope="function")
+def mock_device_arbitrary_wires(monkeypatch, wires):
+    with monkeypatch.context() as m:
+        m.setattr(Device, "__abstractmethods__", frozenset())
+        m.setattr(Device, "_capabilities", mock_device_capabilities)
+        m.setattr(Device, "operations", ["PauliY", "RX", "Rot"])
+        m.setattr(Device, "observables", ["PauliZ"])
+        m.setattr(Device, "short_name", "MockDevice")
+        m.setattr(Device, "expval", lambda self, x, y, z: 0)
+        m.setattr(Device, "var", lambda self, x, y, z: 0)
+        m.setattr(Device, "sample", lambda self, x, y, z: 0)
+        m.setattr(Device, "apply", lambda self, x, y, z: None)
+
+        def get_device(wires):
+            return Device(wires=wires)
+
+        yield get_device
+
 
 class TestShotVectors:
     """Tests passing shot vectors, their validation, and processing."""
@@ -563,10 +581,9 @@ class TestInternalFunctions:
                               (Wires([3, 'beta', 'a']), Wires(['a', 'beta', 3]), Wires([3, 'beta', 'a'])),
                               (Wires([0]), Wires([0]), Wires([0]))
                               ])
-    def test_get_ordered_subset(self, wires, subset, expected_subset):
-        dev = qml.Device(wires=wires)
+    def test_get_ordered_subset(self, wires, subset, expected_subset, mock_device):
+        dev = mock_device_arbitrary_wires(wires=wires)
         ordered_subset = dev.get_ordered_subset(subset_wires=subset)
-
         assert ordered_subset == expected_subset
 
     @pytest.mark.parametrize("wires, subset",
@@ -575,9 +592,8 @@ class TestInternalFunctions:
                               (Wires([3, 'beta', 'a']), Wires(['alpha', 'beta', 'gamma'])),
                               (Wires([0]), Wires([2]))
                               ])
-    def test_get_ordered_subset_raises_value_error(self, wires, subset):
-        dev = qml.Device(wires=wires)
-
+    def test_get_ordered_subset_raises_value_error(self, wires, subset, mock_device):
+        dev = mock_device_arbitrary_wires(wires=wires)
         with pytest.raises(
                 ValueError, match=f"Could not find some or all subset wires {subset} in device wires {wires}"
         ):
