@@ -24,13 +24,13 @@ from functools import partial
 from itertools import product
 from typing import Any, Callable, ClassVar, Dict, List, Optional, Sequence, Tuple, Union
 
-from networkx import MultiDiGraph, weakly_connected_components, has_path
+from networkx import MultiDiGraph, has_path, weakly_connected_components
 
 import pennylane as qml
 from pennylane import apply, expval
 from pennylane.grouping import string_to_pauli_word
 from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Expectation, Operation, Operator, Tensor
+from pennylane.operation import Expectation, Operation, Operator, Sample, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
@@ -235,11 +235,19 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     for m in tape.measurements:
         obs = getattr(m, "obs", None)
         if obs is not None and isinstance(obs, Tensor):
+            if m.return_type is Sample:
+                raise ValueError(
+                    "Sampling from tensor products of observables "
+                    "is not supported in circuit cutting"
+                )
             for o in obs.obs:
                 m_ = MeasurementProcess(m.return_type, obs=o)
 
                 _add_operator_node(graph, m_, order, wire_latest_node)
-
+        elif m.return_type is Sample and obs is None:
+            for w in m.wires:
+                s_ = qml.sample(qml.Projector([1], wires=w))
+                _add_operator_node(graph, s_, order, wire_latest_node)
         else:
             _add_operator_node(graph, m, order, wire_latest_node)
             order += 1
