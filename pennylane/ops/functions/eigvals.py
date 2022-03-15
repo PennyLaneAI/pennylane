@@ -14,10 +14,13 @@
 """
 This module contains the qml.eigvals function.
 """
+import warnings
+
 # pylint: disable=protected-access
 from functools import reduce
-import warnings
+
 import scipy
+
 import pennylane as qml
 
 
