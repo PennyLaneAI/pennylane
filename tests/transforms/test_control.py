@@ -403,3 +403,65 @@ class TestDifferentiation:
         expected = np.sin(b / 2) / 2
 
         assert np.allclose(res, expected)
+
+
+def test_control_values_sanity_check():
+    """Test that control works with control values on a very standard usecase."""
+
+    def make_ops():
+        qml.RX(0.123, wires=0)
+        qml.RY(0.456, wires=2)
+        qml.RX(0.789, wires=0)
+        qml.Rot(0.111, 0.222, 0.333, wires=2),
+        qml.PauliX(wires=2)
+        qml.PauliY(wires=4)
+        qml.PauliZ(wires=0)
+
+    with QuantumTape() as tape:
+        cmake_ops = ctrl(make_ops, control=1, control_values=0)
+        # Execute controlled version.
+        cmake_ops()
+
+    expected = [
+        qml.PauliX(wires=1),
+        qml.CRX(0.123, wires=[1, 0]),
+        qml.CRY(0.456, wires=[1, 2]),
+        qml.CRX(0.789, wires=[1, 0]),
+        qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]),
+        qml.CNOT(wires=[1, 2]),
+        qml.CY(wires=[1, 4]),
+        qml.CZ(wires=[1, 0]),
+        qml.PauliX(wires=1),
+    ]
+    assert len(tape.operations) == 1
+    ctrl_op = tape.operations[0]
+    assert isinstance(ctrl_op, ControlledOperation)
+    expanded = ctrl_op.expand()
+    assert_equal_operations(expanded.operations, expected)
+
+
+@pytest.mark.parametrize("ctrl_values", [[0, 0], [0, 1], [1, 0], [1, 1]])
+def test_multi_control_values(ctrl_values):
+    """Test control with a list of wires and control values."""
+
+    def expected_ops(ctrl_val):
+        exp_op = []
+        ctrl_wires = [3, 7]
+        for i, j in enumerate(ctrl_val):
+            if not bool(j):
+                exp_op.append(qml.PauliX(ctrl_wires[i]))
+        exp_op.append(qml.Toffoli(wires=[7, 3, 0]))
+        for i, j in enumerate(ctrl_val):
+            if not bool(j):
+                exp_op.append(qml.PauliX(ctrl_wires[i]))
+
+        return exp_op
+
+    with QuantumTape() as tape:
+        CCX = ctrl(qml.PauliX, control=[3, 7], control_values=ctrl_values)
+        CCX(wires=0)
+    assert len(tape.operations) == 1
+    op = tape.operations[0]
+    assert isinstance(op, ControlledOperation)
+    new_tape = expand_tape(tape, 1)
+    assert_equal_operations(new_tape.operations, expected_ops(ctrl_values))

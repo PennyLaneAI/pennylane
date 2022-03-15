@@ -86,6 +86,48 @@ class TestCoeffs:
         assert np.allclose(shifts, [0, -1, 1, -2, 2])
 
 
+class TestShiftedTapes:
+    """Tests for the generate_shifted_tapes function"""
+
+    def test_behaviour(self):
+        """Test that the function behaves as expected"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliZ(0)
+            qml.RX(1.0, wires=0)
+            qml.CNOT(wires=[0, 2])
+            qml.Rot(2.0, 3.0, 4.0, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 2}
+        shifts = [0.1, -0.2, 1.6]
+        res = generate_shifted_tapes(tape, 1, shifts=shifts)
+
+        assert len(res) == len(shifts)
+        assert res[0].get_parameters(trainable_only=False) == [1.0, 2.0, 3.1, 4.0]
+        assert res[1].get_parameters(trainable_only=False) == [1.0, 2.0, 2.8, 4.0]
+        assert res[2].get_parameters(trainable_only=False) == [1.0, 2.0, 4.6, 4.0]
+
+    def test_multipliers(self):
+        """Test that the function behaves as expected when multipliers are used"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliZ(0)
+            qml.RX(1.0, wires=0)
+            qml.CNOT(wires=[0, 2])
+            qml.Rot(2.0, 3.0, 4.0, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 2}
+        shifts = [0.3, 0.6]
+        multipliers = [0.2, 0.5]
+        res = generate_shifted_tapes(tape, 0, shifts=shifts, multipliers=multipliers)
+
+        assert len(res) == 2
+        assert res[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
+        assert res[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]
+
+
 class TestFiniteDiff:
     """Tests for the finite difference gradient transform"""
 
@@ -94,7 +136,7 @@ class TestFiniteDiff:
         respect to a non-differentiable argument"""
         psi = np.array([1, 0, 1, 0], requires_grad=False) / np.sqrt(2)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.QubitStateVector(psi, wires=[0, 1])
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
@@ -123,7 +165,7 @@ class TestFiniteDiff:
         during the Jacobian computation."""
         spy = mocker.spy(qml.gradients.finite_difference, "generate_shifted_tapes")
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[1])
             qml.expval(qml.PauliZ(0))
@@ -203,7 +245,7 @@ class TestFiniteDiff:
         values."""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
@@ -220,7 +262,7 @@ class TestFiniteDiff:
         values."""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
@@ -236,12 +278,12 @@ class TestFiniteDiff:
         parameters, the gradient should be evaluated to zero without executing the device."""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape1:
+        with qml.tape.QuantumTape() as tape1:
             qml.RX(1, wires=[0])
             qml.RX(1, wires=[1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.JacobianTape() as tape2:
+        with qml.tape.QuantumTape() as tape2:
             qml.RX(1, wires=[0])
             qml.RX(1, wires=[1])
             qml.expval(qml.PauliZ(1))
@@ -272,7 +314,7 @@ class TestFiniteDiffIntegration:
         dev = qml.device("default.qubit", wires=3)
         params = [1.0, 1.0, 1.0]
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(params[0], wires=[0])
             qml.RY(params[1], wires=[1])
             qml.RZ(params[2], wires=[2])
@@ -291,7 +333,7 @@ class TestFiniteDiffIntegration:
         x = 0.543
         y = -0.654
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -312,7 +354,7 @@ class TestFiniteDiffIntegration:
         x = 0.543
         y = -0.654
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -338,7 +380,7 @@ class TestFiniteDiffIntegration:
         x = 0.543
         y = -0.654
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -362,7 +404,7 @@ class TestFiniteDiffIntegration:
         x = 0.543
         y = -0.654
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -383,7 +425,7 @@ class TestFiniteDiffIntegration:
         x = 0.543
         y = -0.654
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -404,7 +446,7 @@ class TestFiniteDiffIntegration:
         x = 0.543
         y = -0.654
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -455,7 +497,7 @@ class TestFiniteDiffGradients:
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -483,7 +525,7 @@ class TestFiniteDiffGradients:
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -510,7 +552,7 @@ class TestFiniteDiffGradients:
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape() as t:
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(params[0], wires=[0])
                 qml.RY(params[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -542,7 +584,7 @@ class TestFiniteDiffGradients:
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 
         with tf.GradientTape() as t:
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(params[0], wires=[0])
                 qml.RY(params[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -566,7 +608,7 @@ class TestFiniteDiffGradients:
         dev = qml.device("default.qubit.torch", wires=2)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(params[0], wires=[0])
             qml.RY(params[1], wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -604,7 +646,7 @@ class TestFiniteDiffGradients:
         params = jnp.array([0.543, -0.654])
 
         def cost_fn(x):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])

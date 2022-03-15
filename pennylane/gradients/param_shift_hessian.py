@@ -21,6 +21,7 @@ import itertools as it
 import pennylane as qml
 
 from .gradient_transform import (
+    gradient_analysis,
     grad_method_validation,
     choose_grad_methods,
 )
@@ -281,13 +282,13 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         >>> tape = circuit.qtape
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape)
         >>> hessian_tapes
-        [<JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>]
+        [<QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>]
         >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
         array([[-0.97517033,  0.01983384],
                 [ 0.01983384, -0.97517033]])
@@ -346,7 +347,7 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
             f"({len(off_diagonal_shifts)}) does not match the number of {compare_to_str}."
         )
 
-    _gradient_analysis(tape)
+    gradient_analysis(tape, grad_fn=qml.gradients.param_shift)
     # If argnum is given, the grad_method_validation may allow parameters with
     # finite-difference as method. If they are among the requested argnum, we catch this
     # further below (as no fallback function analogue to `parameter_shift` is used currently).

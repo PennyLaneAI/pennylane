@@ -238,12 +238,12 @@ define the gradient:
 
 >>> gradient_tapes, fn = qml.gradients.param_shift(tape)
 >>> gradient_tapes
-[<JacobianTape: wires=[0, 1], params=3>,
- <JacobianTape: wires=[0, 1], params=3>,
- <JacobianTape: wires=[0, 1], params=3>,
- <JacobianTape: wires=[0, 1], params=3>,
- <JacobianTape: wires=[0, 1], params=3>,
- <JacobianTape: wires=[0, 1], params=3>]
+[<QuantumTape: wires=[0, 1], params=3>,
+ <QuantumTape: wires=[0, 1], params=3>,
+ <QuantumTape: wires=[0, 1], params=3>,
+ <QuantumTape: wires=[0, 1], params=3>,
+ <QuantumTape: wires=[0, 1], params=3>,
+ <QuantumTape: wires=[0, 1], params=3>]
 
 This can be useful if the underlying circuits representing the gradient
 computation need to be analyzed.

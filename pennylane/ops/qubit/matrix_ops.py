@@ -20,7 +20,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import AnyWires, Operation, DecompositionUndefinedError
 from pennylane.wires import Wires
 
 
@@ -240,6 +240,10 @@ class ControlledQubitUnitary(QubitUnitary):
 
         total_wires = control_wires + wires
         super().__init__(*params, wires=total_wires, do_queue=do_queue)
+
+    @staticmethod
+    def compute_decomposition(*params, wires=None, **hyperparameters):
+        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_matrix(
