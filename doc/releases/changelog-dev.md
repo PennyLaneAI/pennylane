@@ -23,7 +23,7 @@
   
 <h3>Breaking changes</h3>
 
-<h3>Bug fixed</h3>
+<h3>Bug fixes</h3>
 
 * The conditional measurement added gates that were not defined.
   [(#2328)](https://github.com/PennyLaneAI/pennylane/pull/2328)
