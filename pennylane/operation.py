@@ -1828,7 +1828,7 @@ class Tensor(Observable):
 
     __imatmul__ = __matmul__
 
-    def get_eigvals(self, wire_order=None):
+    def get_eigvals(self):
         """Return the eigenvalues of the specified tensor product observable.
 
         This method uses pre-stored eigenvalues for standard observables where
