@@ -123,7 +123,7 @@ class CVParamShiftTape(QubitParamShiftTape):
 
         for m in self.measurements:
 
-            if (m.return_type is qml.operation.Probability) or (m.obs.ev_order not in (1, 2)):
+            if (m.return_type is qml.measurements.Probability) or (m.obs.ev_order not in (1, 2)):
                 # Higher-order observables (including probability) only support finite differences.
                 best.append("F")
                 continue
@@ -148,12 +148,12 @@ class CVParamShiftTape(QubitParamShiftTape):
 
             elif m.obs.ev_order == 2:
 
-                if m.return_type is qml.operation.Expectation:
+                if m.return_type is qml.measurements.Expectation:
                     # If the observable is second order, we must use the second order
                     # CV parameter shift rule
                     best_method = "A2"
 
-                elif m.return_type is qml.operation.Variance:
+                elif m.return_type is qml.measurements.Variance:
                     # we only support analytic variance gradients for
                     # first order observables
                     best_method = "F"
@@ -348,7 +348,7 @@ class CVParamShiftTape(QubitParamShiftTape):
             idx = self.observables.index(obs)
             transformed_obs_idx.append(idx)
             tape._measurements[idx] = MeasurementProcess(
-                qml.operation.Expectation, self._transform_observable(obs, Z, dev_wires)
+                qml.measurements.Expectation, self._transform_observable(obs, Z, dev_wires)
             )
 
         tapes = [tape]
@@ -474,7 +474,7 @@ class CVParamShiftTape(QubitParamShiftTape):
         # Temporarily convert all variance measurements on the tape into expectation values
         for i in self.var_idx:
             obs = evA_tape._measurements[i].obs
-            evA_tape._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
+            evA_tape._measurements[i] = MeasurementProcess(qml.measurements.Expectation, obs=obs)
 
         # evaluate the analytic derivative of <A>
         pdA_tapes, pdA_fn = evA_tape.parameter_shift_first_order(idx, params, **options)
@@ -497,7 +497,7 @@ class CVParamShiftTape(QubitParamShiftTape):
             # with itself, to get a square symmetric matrix representing
             # the square of the observable
             obs = qml.PolyXP(np.outer(A, A), wires=obs.wires, do_queue=False)
-            pdA2_tape._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
+            pdA2_tape._measurements[i] = MeasurementProcess(qml.measurements.Expectation, obs=obs)
 
         # Here, we calculate the analytic derivatives of the <A^2> observables.
         pdA2_tapes, pdA2_fn = pdA2_tape.parameter_shift_second_order(idx, params, **options)

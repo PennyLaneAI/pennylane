@@ -141,8 +141,8 @@ class ReversibleTape(JacobianTape):
         # expectation values of observables for now.
         for m in self.measurements:
             if (
-                m.return_type is qml.operation.Variance
-                or m.return_type is qml.operation.Probability
+                m.return_type is qml.measurements.Variance
+                or m.return_type is qml.measurements.Probability
             ):
                 raise ValueError(
                     f"{m.return_type} is not supported with the reversible gradient method"

@@ -52,7 +52,7 @@ class TestCond:
         target_wire = qml.wires.Wires(1)
 
         assert len(ops) == 5
-        assert ops[0].return_type == qml.operation.MidMeasure
+        assert ops[0].return_type == qml.measurements.MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
         assert isinstance(ops[1].then_op, qml.PauliX)
@@ -67,7 +67,7 @@ class TestCond:
         assert isinstance(ops[3].then_op, qml.PauliZ)
         assert ops[3].then_op.wires == target_wire
 
-        assert ops[4].return_type == qml.operation.Probability
+        assert ops[4].return_type == qml.measurements.Probability
 
     def test_cond_queues_with_else(self):
         """Test that qml.cond queues Conditional operations as expected when an
@@ -92,7 +92,7 @@ class TestCond:
 
         assert len(ops) == 6
 
-        assert ops[0].return_type == qml.operation.MidMeasure
+        assert ops[0].return_type == qml.measurements.MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
         assert isinstance(ops[1].then_op, qml.PauliX)
@@ -111,7 +111,7 @@ class TestCond:
         assert isinstance(ops[4].then_op, qml.PauliY)
         assert ops[4].then_op.wires == target_wire
 
-        assert ops[5].return_type == qml.operation.Probability
+        assert ops[5].return_type == qml.measurements.Probability
 
     def test_cond_error(self):
         """Test that an error is raised when the qfunc has a measurement."""
@@ -179,7 +179,7 @@ class TestOtherTransforms:
         target_wire = qml.wires.Wires(1)
 
         assert len(ops) == 4
-        assert ops[0].return_type == qml.operation.MidMeasure
+        assert ops[0].return_type == qml.measurements.MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
         assert isinstance(ops[1].then_op, qml.RX)
@@ -191,7 +191,7 @@ class TestOtherTransforms:
         assert ops[2].then_op.data == [r]
         assert ops[2].then_op.wires == target_wire
 
-        assert ops[3].return_type == qml.operation.Probability
+        assert ops[3].return_type == qml.measurements.Probability
 
     def test_cond_queues_with_ctrl(self):
         """Test that qml.cond queues Conditional operations as expected with
@@ -207,7 +207,7 @@ class TestOtherTransforms:
         target_wire = qml.wires.Wires(2)
 
         assert len(ops) == 4
-        assert ops[0].return_type == qml.operation.MidMeasure
+        assert ops[0].return_type == qml.measurements.MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
         assert isinstance(ops[1].then_op, qml.transforms.control.ControlledOperation)
@@ -227,7 +227,7 @@ class TestOtherTransforms:
         assert controlled_op.data == [r]
         assert controlled_op.wires == target_wire
 
-        assert ops[3].return_type == qml.operation.Probability
+        assert ops[3].return_type == qml.measurements.Probability
 
     def test_ctrl_queues_with_cond(self):
         """Test that qml.cond queues Conditional operations as expected with
@@ -243,7 +243,7 @@ class TestOtherTransforms:
         target_wire = qml.wires.Wires(2)
 
         assert len(ops) == 3
-        assert ops[0].return_type == qml.operation.MidMeasure
+        assert ops[0].return_type == qml.measurements.MidMeasure
 
         assert isinstance(ops[1], qml.transforms.control.ControlledOperation)
         assert len(ops[1].subtape.queue) == 2
@@ -258,4 +258,4 @@ class TestOtherTransforms:
         assert isinstance(op2.then_op, qml.RY)
         assert op1.then_op.data == [r]
 
-        assert ops[2].return_type == qml.operation.Probability
+        assert ops[2].return_type == qml.measurements.Probability

@@ -145,7 +145,7 @@ class QubitParamShiftTape(JacobianTape):
         self.analytic_pd = self.parameter_shift
 
         # check if the quantum tape contains any variance measurements
-        self.var_mask = [m.return_type is qml.operation.Variance for m in self.measurements]
+        self.var_mask = [m.return_type is qml.measurements.Variance for m in self.measurements]
 
         # Make a copy of the original measurements; we will be mutating them
         # during the parameter shift method.
@@ -263,7 +263,7 @@ class QubitParamShiftTape(JacobianTape):
         # Convert all variance measurements on the tape into expectation values
         for i in self.var_idx:
             obs = evA_tape._measurements[i].obs
-            evA_tape._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
+            evA_tape._measurements[i] = MeasurementProcess(qml.measurements.Expectation, obs=obs)
 
         # evaluate the analytic derivative of <A>
         pdA_tapes, pdA_fn = evA_tape.parameter_shift(idx, params, **options)
@@ -286,7 +286,7 @@ class QubitParamShiftTape(JacobianTape):
                 A = obs.get_matrix()
 
                 obs = qml.Hermitian(A @ A, wires=obs.wires, do_queue=False)
-                pdA2_tape._measurements[i] = MeasurementProcess(qml.operation.Expectation, obs=obs)
+                pdA2_tape._measurements[i] = MeasurementProcess(qml.measurements.Expectation, obs=obs)
 
             # Non-involutory observables are present; the partial derivative of <A^2>
             # may be non-zero. Here, we calculate the analytic derivatives of the <A^2>
@@ -472,7 +472,7 @@ class QubitParamShiftTape(JacobianTape):
 
         info = super().specs
 
-        if any(m.return_type is qml.operation.State for m in self.measurements):
+        if any(m.return_type is qml.measurements.State for m in self.measurements):
             return info
 
         if len(self._par_info) > 0:

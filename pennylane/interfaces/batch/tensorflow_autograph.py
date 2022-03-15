@@ -72,7 +72,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
 
         if tape.all_sampled:
             output_types.append(tf.int64)
-        elif tape.measurements[0].return_type is qml.operation.State:
+        elif tape.measurements[0].return_type is qml.measurements.State:
             output_types.append(tf.complex128)
         else:
             output_types.append(tf.float64)
