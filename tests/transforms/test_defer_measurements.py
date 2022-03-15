@@ -397,6 +397,67 @@ class TestConditionalOperations:
 
         assert np.allclose(normal_probs, cond_probs)
 
+    def test_hermitian_queued(self):
+        """Test that the defer_measurements transform works with
+        qml.Hermitian."""
+        rads = 0.3
+
+        mat = np.eye(8)
+        measurement = qml.expval(qml.Hermitian(mat, wires=[3, 1, 2]))
+
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(0)
+            qml.cond(m_0, qml.RY)(rads, wires=4)
+            qml.apply(measurement)
+
+        tape = qml.defer_measurements(tape)
+
+        assert len(tape.operations) == 1
+        assert len(tape.measurements) == 1
+
+        # Check the underlying ControlledOperation instance
+        first_ctrl_op = tape.operations[0]
+        assert isinstance(first_ctrl_op, qml.transforms.control.ControlledOperation)
+        assert len(first_ctrl_op.subtape.operations) == 1
+        assert isinstance(first_ctrl_op.subtape.operations[0], qml.RY)
+        assert first_ctrl_op.data == [rads]
+
+        assert len(tape.measurements) == 1
+        assert tape.measurements[0] == measurement
+
+    def test_hamiltonian_queued(self):
+        """Test that the defer_measurements transform works with
+        qml.Hamiltonian."""
+        rads = 0.3
+        a = qml.PauliX(3)
+        b = qml.PauliX(1)
+        c = qml.PauliZ(2)
+        obs = [a, b, c]
+        coeffs = [1.0, 2.0, 3.0]
+
+        H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
+
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(0)
+            qml.cond(m_0, qml.RY)(rads, wires=4)
+            qml.expval(H)
+
+        tape = qml.defer_measurements(tape)
+
+        assert len(tape.operations) == 1
+        assert len(tape.measurements) == 1
+
+        # Check the underlying ControlledOperation instance
+        first_ctrl_op = tape.operations[0]
+        assert isinstance(first_ctrl_op, qml.transforms.control.ControlledOperation)
+        assert len(first_ctrl_op.subtape.operations) == 1
+        assert isinstance(first_ctrl_op.subtape.operations[0], qml.RY)
+        assert first_ctrl_op.data == [rads]
+
+        assert len(tape.measurements) == 1
+        assert isinstance(tape.measurements[0], qml.measurements.MeasurementProcess)
+        assert tape.measurements[0].obs == H
+
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("ops", [(qml.RX, qml.CRX), (qml.RY, qml.CRY), (qml.RZ, qml.CRZ)])
     def test_conditional_rotations_assert_zero_state(self, device, ops):
