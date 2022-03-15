@@ -17,12 +17,14 @@ Unit tests for the eigvals transform
 from functools import reduce
 
 import pytest
+import scipy
 
 import pennylane as qml
+from gate_data import CNOT, H, I
+from gate_data import Roty as RY
+from gate_data import S, X, Y, Z
 from pennylane import numpy as np
 from pennylane.transforms.op_transforms import OperationTransformError
-
-from gate_data import I, X, Y, Z, H, S, CNOT, Roty as RY
 
 one_qubit_no_parameter = [
     qml.PauliX,
@@ -137,6 +139,77 @@ class TestSingleOperation:
 
         expected = np.linalg.eigvalsh(reduce(np.kron, [Z, Y]) - 0.5 * reduce(np.kron, [I, X]))
         assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        ("row", "col", "dat", "val_ref", "vec_ref"),
+        [
+            (
+                # coordinates and values of a sparse Hamiltonian computed for H2
+                # at the geometry [[0.0, 0.0, 0.3674625962], [0.0, 0.0, -0.3674625962]]
+                np.array([0, 1, 2, 3, 3, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13, 14, 15]),
+                np.array([0, 1, 2, 3, 12, 4, 5, 6, 9, 7, 8, 6, 9, 10, 11, 3, 12, 13, 14, 15]),
+                np.array(
+                    [
+                        0.72004228 + 0.0j,
+                        0.2481941 + 0.0j,
+                        0.2481941 + 0.0j,
+                        0.47493346 + 0.0j,
+                        0.18092703 + 0.0j,
+                        -0.5363422 + 0.0j,
+                        -0.52452264 + 0.0j,
+                        -0.34359561 + 0.0j,
+                        -0.18092703 + 0.0j,
+                        0.36681148 + 0.0j,
+                        -0.5363422 + 0.0j,
+                        -0.18092703 + 0.0j,
+                        -0.34359561 + 0.0j,
+                        -0.52452264 + 0.0j,
+                        0.36681148 + 0.0j,
+                        0.18092703 + 0.0j,
+                        -1.11700225 + 0.0j,
+                        -0.44058792 + 0.0j,
+                        -0.44058792 + 0.0j,
+                        0.93441394 + 0.0j,
+                    ]
+                ),
+                # the first six lowest eigenvalues of the same matrix computed with np.linalg.eigh(H_dense)
+                # scipy.sparse.linalg.eigsh computes k ( = 6 by default) eigenvalues and eigenvectors
+                np.array(
+                    [-1.13730605, -0.5363422, -0.5363422, -0.52452264, -0.52452264, -0.52452264]
+                ),
+                # the ground-state computed with np.linalg.eigh(H_dense)
+                np.array(
+                    [
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        0.0 + 0.0j,
+                        1.0 + 0.0j,
+                        0.0 + 0.0j,
+                    ]
+                ),
+            ),
+        ],
+    )
+    def test_sparse_hamiltonian(self, row, col, dat, val_ref, vec_ref):
+        """Test that the eigenvalues and eigenvectors of a sparse Hamiltonian are correctly returned"""
+        h_sparse = scipy.sparse.coo_matrix((dat, (row, col)), shape=(len(row), len(col)))
+        val, vec = scipy.sparse.linalg.eigsh(h_sparse, which="SA")
+        assert np.allclose(np.sort(val), val_ref)
 
 
 class TestMultipleOperations:
