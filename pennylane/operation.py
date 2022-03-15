@@ -580,7 +580,6 @@ class Operator(abc.ABC):
         """
         return cls.compute_matrix != Operator.compute_matrix
 
-
     @property
     def matrix(self):
         r"""Matrix representation of an instantiated operator

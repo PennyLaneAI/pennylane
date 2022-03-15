@@ -20,11 +20,19 @@ import pennylane as qml
 
 from gate_data import I
 
+
 @pytest.mark.parametrize("op_str", qml.ops.qubit.ops)
 def test_has_matrix(op_str):
     """Test the has_matrix class property."""
     op = getattr(qml, op_str)
-    if op in {qml.WireCut, qml.Barrier, qml.Snapshot, qml.QubitDensityMatrix, qml.QubitStateVector, qml.BasisState}:
+    if op in {
+        qml.WireCut,
+        qml.Barrier,
+        qml.Snapshot,
+        qml.QubitDensityMatrix,
+        qml.QubitStateVector,
+        qml.BasisState,
+    }:
         assert not op.has_matrix
     else:
         assert op.has_matrix

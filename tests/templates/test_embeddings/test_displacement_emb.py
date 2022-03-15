@@ -24,6 +24,7 @@ def test_has_matrix():
     """Test has_matrix for DisplacementEmbedding is False."""
     assert not qml.DisplacementEmbedding.has_matrix
 
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

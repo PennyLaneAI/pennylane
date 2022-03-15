@@ -24,6 +24,7 @@ def test_has_matrix():
     """Test that BasicEntanglerLayers `has_matrix` property is False."""
     assert not qml.BasicEntanglerLayers.has_matrix
 
+
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

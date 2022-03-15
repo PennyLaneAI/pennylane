@@ -84,9 +84,11 @@ def decomposition_wires(wires):
     ]
     return wire_order
 
+
 def test_grover_has_matrix():
     """Test has_matrix True for Grover Operator."""
     assert qml.GroverOperator.has_matrix
+
 
 @pytest.mark.parametrize("n_wires", [2, 4, 7])
 def test_grover_diffusion_matrix(n_wires):
