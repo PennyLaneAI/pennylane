@@ -460,14 +460,13 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
         if copy_meas:
             for meas in copy_meas:
+                meas_return_type = meas.return_type.name
                 obs = meas.obs
                 obs._wires = Wires([wire_map[w] for w in obs.wires])
                 observables.append(obs)
-                meas_wires = meas.wires
 
             # Assume that the circuit contains either expval or sample measurements
             # only i.e all measurement types in the circuit are the same
-            meas_return_type = meas.return_type.name
             meas_names = {"Expectation": "expval", "Sample": "sample"}
 
             if len(observables) > 1:
