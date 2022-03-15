@@ -120,6 +120,8 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~transforms.qcut.expand_fragment_tape
     ~transforms.qcut.qcut_processing_fn
     ~transforms.qcut.CutStrategy
+    ~transforms.qcut.graph_to_hmetis
+    ~transforms.qcut.kahypar_cut
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

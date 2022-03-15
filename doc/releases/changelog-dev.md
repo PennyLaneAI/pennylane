@@ -11,6 +11,10 @@
     sample measurement without an observable specified to multiple single-qubit sample
     nodes.
     [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
+  - An automatic graph partitioning method `qcut.kahypar_cut()` has been implemented for cutting
+    arbitrary tape-converted graphs using the general purpose graph partitioner KaHyPar which needs
+    to be installed separately.
+    [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
 
 <h3>Improvements</h3>
 
@@ -31,4 +35,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Anthony Hayes
+Karim Alaa El-Din, Anthony Hayes, Zeyue Niu

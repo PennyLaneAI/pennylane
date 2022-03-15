@@ -1699,7 +1699,8 @@ def kahypar_cut(
     trial: int = None,
     verbose: bool = False,
 ) -> List[Union[int, Any]]:
-    """Calls KaHyPar to partition a graph.
+    """Calls KaHyPar to partition a graph. Requires KaHyPar to be installed separately with
+    ``pip install kahypar``.
 
     Args:
         num_fragments (int): Desired number of fragments.
@@ -1721,6 +1722,54 @@ def kahypar_cut(
 
     Returns:
         List[Union[int, Any]]: List of cut edges.
+
+    **Example**
+
+    Consider the following 2-wire circuit with one CNOT gate connecting the wires:
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.CNOT(wires=[0, "a"])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires="a")
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.expval(qml.PauliZ(wires=[0]))
+
+    We can let KaHyPar find the cut placement automatically. First convert it to the input format
+    for KaHyPar's hypergraph representation:
+
+    >>> graph = qcut.tape_to_graph(tape)
+    >>> adj_nodes, edge_splits, edge_weights = qcut.graph_to_hmetis(graph)
+
+    Then feed the output to `qcut.kahypar_cut()` to find the cut edges:
+
+    >>> cut_edges = qcut.kahypar_cut(
+            num_fragments=2,
+            adjacent_nodes=adj_nodes,
+            edge_splits=edge_splits,
+            edges=graph.edges,
+        )
+    >>> cut_edges
+    [(CNOT(wires=[0, 'a']), RZ(0.24, wires=[0]), 0)]
+
+    The above cut edge can be seen in the original circuit on wire 0 after the CNOT gate
+
+    >>> tape.draw()
+    0: ──RX(0.432)──╭C──RZ(0.24)───RX(0.432)──┤ ⟨Z⟩ 
+    a: ──RY(0.543)──╰X──RZ(0.133)──RY(0.543)──┤     
+
+    The output cut edges can be subsequently input into `fragment_graph()` to perform obtain the
+    fragment subcircuits and the communication graph:
+
+    >>> frags, comm_graph = qcut.fragment_graph(graph, cut_edges)
+    >>> frags
+    [<networkx.classes.multidigraph.MultiDiGraph at 0x7f3d2ed3b790>,
+    <networkx.classes.multidigraph.MultiDiGraph at 0x7f3d2ed3b8e0>]
+
     """
     # pylint: disable=too-many-arguments, import-outside-toplevel
     import kahypar
