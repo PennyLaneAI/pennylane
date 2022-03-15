@@ -28,6 +28,7 @@ from networkx import MultiDiGraph, has_path, weakly_connected_components
 
 import pennylane as qml
 from pennylane import apply, expval
+from pennylane import numpy as np
 from pennylane.grouping import string_to_pauli_word
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Expectation, Operation, Operator, Sample, Tensor
@@ -546,12 +547,64 @@ def _prep_plus_state(wire):
     qml.Hadamard(wire)
 
 
+def _prep_minus_state(wire):
+    qml.PauliX(wire)
+    qml.Hadamard(wire)
+
+
 def _prep_iplus_state(wire):
     qml.Hadamard(wire)
     qml.S(wires=wire)
 
 
+def _prep_iminus_state(wire):
+    qml.PauliX(wire)
+    qml.Hadamard(wire)
+    qml.S(wires=wire)
+
+
 PREPARE_SETTINGS = [_prep_zero_state, _prep_one_state, _prep_plus_state, _prep_iplus_state]
+
+MC_STATES = [
+    _prep_zero_state,
+    _prep_one_state,
+    _prep_plus_state,
+    _prep_minus_state,
+    _prep_iplus_state,
+    _prep_iminus_state,
+    _prep_zero_state,
+    _prep_one_state,
+]
+MC_PREP_MAP = dict(zip(range(8), MC_STATES))
+
+
+def _identity(wire):
+    qml.sample(qml.Identity(wires=wire))
+
+
+def _pauliX(wire):
+    qml.sample(qml.PauliX(wires=wire))
+
+
+def _pauliY(wire):
+    qml.sample(qml.PauliY(wires=wire))
+
+
+def _pauliZ(wire):
+    qml.sample(qml.PauliZ(wires=wire))
+
+
+MC_MEASUREMENTS = [
+    _identity,
+    _identity,
+    _pauliX,
+    _pauliX,
+    _pauliY,
+    _pauliY,
+    _pauliZ,
+    _pauliZ,
+]
+MC_MEAS_MAP = dict(zip(range(8), MC_MEASUREMENTS))
 
 
 def expand_fragment_tape(
@@ -647,6 +700,74 @@ def expand_fragment_tape(
                 tapes.append(tape_)
 
     return tapes, prepare_nodes, measure_nodes
+
+
+def expand_fragment_tapes_mc(
+    tapes: Sequence[QuantumTape], communication_graph: MultiDiGraph, shots: int
+) -> List[QuantumTape]:
+    pairs = [e[-1] for e in communication_graph.edges.data("pair")]
+
+    """
+    Expands a fragment tape into a sequence of tapes for random configurations of the contained
+    :class:`MeasureNode` and :class:`PrepareNode` operations. A measurement is sampled from 
+    the allowed basis and a state preparation is sampled from the correspoding pair of eigenstates.
+
+    .. note::
+
+        This function is designed for use as part of the circuit cutting workflow.
+        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+
+    Args:
+        tapes (Sequence[QuantumTape]): the fragment tapes containing :class:`MeasureNode` and
+            :class:`PrepareNode` operations to be expanded.
+        communication_graph (nx.MultiDiGraph): the communcation (quotient) graph of the fragmented 
+            full graph.
+        shots (int): number of shots
+
+    Returns:
+        List[QuantumTape]: the tapes corresponding to each configuration 
+
+    **Example**
+
+    Consider the following circuit that contains a sample measurment ...
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as tape:
+            some circuit
+
+    We can expand over the measurement and preparation nodes to generate random
+    configurations using:
+
+    >>> configs = qml.transforms.qcut.expand_fragment_tape_mc(tape)
+    >>>
+    """
+
+    settings = np.random.choice(range(8), size=(len(pairs), shots), replace=True)
+
+    meas_settings = {pair[0].id: setting for pair, setting in zip(pairs, settings)}
+    prep_settings = {pair[1].id: setting for pair, setting in zip(pairs, settings)}
+
+    all_configs = []
+    for tape in tapes:
+        frag_config = []
+        for shot in range(shots):
+            with qml.tape.QuantumTape() as new_tape:
+                for op in tape.operations:
+                    w = op.wires[0]
+                    if isinstance(op, MeasureNode):
+                        MC_MEASUREMENTS[meas_settings[op.id][shot]](w)
+                    elif isinstance(op, PrepareNode):
+                        MC_STATES[prep_settings[op.id][shot]](w)
+                    elif not isinstance(op, MeasureNode):
+                        qml.apply(op)
+
+                for meas in tape.measurements:
+                    qml.apply(meas)
+            frag_config.append(new_tape)
+
+        all_configs.append(frag_config)
+
+    return all_configs
 
 
 def _get_symbol(i):
