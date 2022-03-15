@@ -251,7 +251,7 @@ def execute(
             constituent terms if not supported on the device.
 
     Returns:
-        list[tensor_like[float]]: A list of tensor_like tape results. Each element in
+        list[tensor_like[float]]: A list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
 
     **Example**

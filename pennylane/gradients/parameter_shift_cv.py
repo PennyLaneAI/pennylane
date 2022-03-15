@@ -259,7 +259,7 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     gradient_tapes.extend(pdA2_tapes)
 
     def processing_fn(results):
-        # Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
             squeezed_results = []
@@ -430,7 +430,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         gradient_values.append(None)
 
     def processing_fn(results):
-        # Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
             squeezed_results = []
