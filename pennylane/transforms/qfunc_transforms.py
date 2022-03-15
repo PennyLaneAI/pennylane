@@ -16,6 +16,8 @@
 from copy import deepcopy
 import functools
 import inspect
+import os
+import warnings
 
 import pennylane as qml
 
@@ -374,6 +376,21 @@ def qfunc_transform(tape_transform):
         the queueing logic required under steps (1) and (3), so that it does not need to be
         repeated and tested for every new qfunc transform.
     """
+    if os.environ.get("SPHINX_BUILD") == "1":
+        # If called during a Sphinx documentation build,
+        # simply return the original function rather than
+        # instantiating the object. This allows the signature to
+        # be correctly displayed in the documentation.
+
+        warnings.warn(
+            "qfunc transformations have been disabled, as a Sphinx "
+            "build has been detected via SPHINX_BUILD='1'. If this is not the "
+            "case, please set the environment variable SPHINX_BUILD='0'.",
+            UserWarning,
+        )
+
+        return tape_transform
+
     if not callable(tape_transform):
         raise ValueError(
             "The qfunc_transform decorator can only be applied "

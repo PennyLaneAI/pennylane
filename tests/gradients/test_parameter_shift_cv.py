@@ -310,8 +310,25 @@ class TestParameterShiftLogic:
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
-        assert res.size == 0
-        assert np.all(res == np.array([[]]))
+        assert res == ()
+
+    def test_all_zero_diff_methods(self):
+        """Test that the transform works correctly when the diff method for every parameter is
+        identified to be 0, and that no tapes were generated."""
+        dev = qml.device("default.gaussian", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.Rotation(params[0], wires=0)
+            return qml.expval(qml.X(1))
+
+        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+
+        result = qml.gradients.param_shift_cv(circuit, dev)(params)
+        assert np.allclose(result, np.zeros((2, 3)), atol=0, rtol=0)
+
+        tapes, _ = qml.gradients.param_shift_cv(circuit.tape, dev)
+        assert tapes == []
 
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with
