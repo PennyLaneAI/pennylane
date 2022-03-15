@@ -39,9 +39,6 @@ class Pow(qml.operation.Operator):
     @staticmethod
     def compute_decomposition(*params, wires=None, exponent=None, base=None, **hyperparameters):
 
-        if hasattr(base, "__pow__"):
-            return [base.__pow__(exponent)]
-
         if exponent == 0:
             return []
         if isinstance(exponent, int):
@@ -63,4 +60,10 @@ def pow(
     op,
     exponent,
 ):
-    return Pow(op, exponent)
+    try:
+        # if custom method implemented, use it
+        res = op.pow(exponent)
+    except qml.operation.OperatorPropertyUndefined:
+        # if not, create an instance of the Pow class
+        return Pow(op, exponent)
+    return res

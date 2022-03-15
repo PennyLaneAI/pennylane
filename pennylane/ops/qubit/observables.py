@@ -441,3 +441,8 @@ class Projector(Observable):
         []
         """
         return []
+
+    # def pow(self, a):
+    #     p = qml.ops.math.Pow(self, a)
+    #     p.decomposition = lambda basis_state, wires: [Projector(basis_state, wires=wires)]
+    #     return p
