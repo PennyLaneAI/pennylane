@@ -26,6 +26,7 @@
 <h3>Deprecations</h3>
 
 <h3>Bug fixes</h3>
+
 * Fixes a bug in which the `expval`/`var` of a `Tensor(Observable)` would depend on the order 
   in which the observable is defined: 
   ```python
@@ -45,7 +46,7 @@
   >>> print(circ(op1), circ(op2))
   -0.8636111153905662 0.9928086358538663
   ```
-  
+  [(#2276)](https://github.com/PennyLaneAI/pennylane/pull/2276)
 
 <h3>Documentation</h3>
 
