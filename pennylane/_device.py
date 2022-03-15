@@ -25,6 +25,7 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
+from pennylane.measurements import MeasurementProcess
 from pennylane.operation import (
     Operation,
     Observable,
@@ -563,11 +564,16 @@ class Device(abc.ABC):
     @property
     def stopping_condition(self):
         """.BooleanFn: Returns the stopping condition for the device. The returned
-        function accepts a queuable object (including a PennyLane operation
-        and observable) and returns ``True`` if supported by the device."""
+        function accepts a queuable object (including a PennyLane Operator
+        and MeasurementProcess) and returns ``True`` if supported by the device."""
+        def supports(obj):
+            if isinstance(obj, Operation):
+                return self.supports_operation(obj)
+            if obj.obs is not None: # is a measurement process
+                return self.supports_observable(obj)
+            return True # obj.obs is none
         return qml.BooleanFn(
-            lambda obj: not isinstance(obj, qml.tape.QuantumTape)
-            and self.supports_operation(obj)
+            lambda obj: not isinstance(obj, qml.tape.QuantumTape) and supports(obj)
         )
 
     def custom_expand(self, fn):
@@ -806,7 +812,7 @@ class Device(abc.ABC):
         """Checks if an operation is supported by this device.
 
         Args:
-            operation (type or str): operation to be checked
+            operation (Operator or str): operation to be checked
 
         Raises:
             ValueError: if `operation` is not a :class:`~.Operation` class or string
@@ -814,8 +820,12 @@ class Device(abc.ABC):
         Returns:
             bool: ``True`` iff supplied operation is supported
         """
-        if isinstance(operation, type) and issubclass(operation, Operation):
-            return operation.__name__ in self.operations
+        if isinstance(operation, Operation):
+            if operation.inverse and not (
+                self.capabilities().get("supports_inverse_operations", False) or
+                self.capabilities().get("inverse_operations", False)):
+                return False
+            return operation.__class__.__name__ is self.operations
         if isinstance(operation, str):
 
             if operation.endswith(".inv"):
@@ -845,7 +855,7 @@ class Device(abc.ABC):
         Returns:
             bool: ``True`` iff supplied observable is supported
         """
-        if isinstance(observable, type) and issubclass(observable, Observable):
+        if isinstance(observable, Observable) or (isinstance(observable, type) and issubclass(observable, Observable)):
             return observable.__name__ in self.observables
         if isinstance(observable, str):
 
@@ -876,8 +886,6 @@ class Device(abc.ABC):
 
         for o in queue:
 
-            operation_name = o.name
-
             if getattr(
                 o, "return_type", None
             ) == qml.operation.MidMeasure and not self.capabilities().get(
@@ -889,20 +897,9 @@ class Device(abc.ABC):
                     "simulate the application of mid-circuit measurements on this device."
                 )
 
-            if o.inverse:
-                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                supports_inv = self.capabilities().get(
-                    "supports_inverse_operations", False
-                ) or self.capabilities().get("inverse_operations", False)
-                if not supports_inv:
-                    raise DeviceError(
-                        f"The inverse of gates are not supported on device {self.short_name}"
-                    )
-                operation_name = o.base_name
-
             if not self.supports_operation(o):
                 raise DeviceError(
-                    f"Gate {operation_name} not supported on device {self.short_name}"
+                    f"Gate {o.name} not supported on device {self.short_name}"
                 )
 
         for o in observables:
