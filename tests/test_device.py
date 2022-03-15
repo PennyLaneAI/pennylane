@@ -604,7 +604,7 @@ class TestInternalFunctions:
     ):
         dev = mock_device_arbitrary_wires(wires=wires)
         with pytest.raises(
-            KeyError,
+            ValueError,
             match=f"Could not find some or all subset wires {subset} in device wires {wires}",
         ):
             _ = dev.get_ordered_subset(subset_wires=subset)
