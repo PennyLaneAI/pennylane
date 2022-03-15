@@ -557,6 +557,33 @@ class TestInternalFunctions:
         with pytest.raises(DeviceError, match="Gate Conditional not supported on device"):
             dev.check_validity(tape.operations, tape.observables)
 
+    @pytest.mark.parametrize("wires, subset, expected_subset",
+                             [(Wires(['a', 'b', 'c']), Wires(['c', 'b']), Wires(['b', 'c'])),
+                              (Wires([0, 1, 2]), Wires([1, 0, 2]), Wires([0, 1, 2])),
+                              (Wires([3, 'beta', 'a']), Wires(['a', 'beta', 3]), Wires([3, 'beta', 'a'])),
+                              (Wires([0]), Wires([0]), Wires([0]))
+                              ])
+    def test_get_ordered_subset(self, wires, subset, expected_subset):
+        dev = qml.Device(wires=wires)
+        ordered_subset = dev.get_ordered_subset(subset_wires=subset)
+
+        assert ordered_subset == expected_subset
+
+    @pytest.mark.parametrize("wires, subset",
+                             [(Wires(['a', 'b', 'c']), Wires(['c', 'd'])),
+                              (Wires([0, 1, 2]), Wires([3, 4, 5])),
+                              (Wires([3, 'beta', 'a']), Wires(['alpha', 'beta', 'gamma'])),
+                              (Wires([0]), Wires([2]))
+                              ])
+    def test_get_ordered_subset_raises_value_error(self, wires, subset):
+        dev = qml.Device(wires=wires)
+
+        with pytest.raises(
+                ValueError, match=f"Could not find some or all subset wires {subset} in device wires {wires}"
+        ):
+            _ = dev.get_ordered_subset(subset_wires=subset)
+
+
 
 class TestClassmethods:
     """Test the classmethods of Device"""
