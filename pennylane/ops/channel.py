@@ -79,7 +79,7 @@ class AmplitudeDamping(Channel):
          array([[0., 0.70710678], [0., 0.]])]
         """
         if not 0.0 <= gamma <= 1.0:
-            raise ValueError("gamma must be between [0,1].")
+            raise ValueError("gamma must be in the interval [0,1].")
 
         K0 = np.diag([1, np.sqrt(1 - gamma)])
         K1 = np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
@@ -160,10 +160,10 @@ class GeneralizedAmplitudeDamping(Channel):
          array([[0.        , 0.        ], [0.34641016, 0.        ]])]
         """
         if not 0.0 <= gamma <= 1.0:
-            raise ValueError("gamma must be between [0,1].")
+            raise ValueError("gamma must be in the interval [0,1].")
 
         if not 0.0 <= p <= 1.0:
-            raise ValueError("p must be between [0,1].")
+            raise ValueError("p must be in the interval [0,1].")
 
         K0 = np.sqrt(p) * np.diag([1, np.sqrt(1 - gamma)])
         K1 = np.sqrt(p) * np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
@@ -227,7 +227,7 @@ class PhaseDamping(Channel):
          array([[0.        , 0.        ], [0.        , 0.70710678]])]
         """
         if not 0.0 <= gamma <= 1.0:
-            raise ValueError("gamma must be between [0,1].")
+            raise ValueError("gamma must be in the interval [0,1].")
 
         K0 = np.diag([1, np.sqrt(1 - gamma)])
         K1 = np.diag([0, np.sqrt(gamma)])
@@ -306,7 +306,7 @@ class DepolarizingChannel(Channel):
          array([[ 0.40824829,  0.        ], [ 0.        , -0.40824829]])]
         """
         if not 0.0 <= p <= 1.0:
-            raise ValueError("p must be between [0,1]")
+            raise ValueError("p must be in the interval [0,1]")
 
         K0 = np.sqrt(1 - p) * np.eye(2)
         K1 = np.sqrt(p / 3) * np.array([[0, 1], [1, 0]])
@@ -372,7 +372,7 @@ class BitFlip(Channel):
          array([[0.        , 0.70710678], [0.70710678, 0.        ]])]
         """
         if not 0.0 <= p <= 1.0:
-            raise ValueError("p must be between [0,1]")
+            raise ValueError("p must be in the interval [0,1]")
 
         K0 = np.sqrt(1 - p) * np.eye(2)
         K1 = np.sqrt(p) * np.array([[0, 1], [1, 0]])
@@ -459,13 +459,13 @@ class ResetError(Channel):
          array([[0.        , 0.        ], [0.        , 0.54772256]])]
         """
         if not 0.0 <= p_0 <= 1.0:
-            raise ValueError("p_0 must be between [0,1]")
+            raise ValueError("p_0 must be in the interval [0,1]")
 
         if not 0.0 <= p_1 <= 1.0:
-            raise ValueError("p_1 must be between [0,1]")
+            raise ValueError("p_1 must be in the interval [0,1]")
 
         if not 0.0 <= p_0 + p_1 <= 1.0:
-            raise ValueError("p_0 + p_1 must be between [0,1]")
+            raise ValueError("p_0 + p_1 must be in the interval [0,1]")
 
         K0 = np.sqrt(1 - p_0 - p_1) * np.eye(2)
         K1 = np.sqrt(p_0) * np.array([[1, 0], [0, 0]])
@@ -533,12 +533,12 @@ class PauliError(Channel):
         super().__init__(operators, p, wires=wires, do_queue=do_queue, id=id)
 
         # check if the specified operators are legal
-        if not all(c in "XYZ" for c in operators):
+        if not set(operators).issubset({"X", "Y", "Z"}):
             raise ValueError("The specified operators need to be either of 'X', 'Y' or 'Z'")
 
         # check if probabilities are legal
         if not 0.0 <= p <= 1.0:
-            raise ValueError("p must be between [0,1]")
+            raise ValueError("p must be in the interval [0,1]")
 
         # check if the number of operators matches the number of wires
         if len(self.wires) != len(operators):
@@ -644,7 +644,7 @@ class PhaseFlip(Channel):
          array([[ 0.70710678,  0.        ], [ 0.        , -0.70710678]])]
         """
         if not 0.0 <= p <= 1.0:
-            raise ValueError("p must be between [0,1]")
+            raise ValueError("p must be in the interval [0,1]")
 
         K0 = np.sqrt(1 - p) * np.eye(2)
         K1 = np.sqrt(p) * np.array([[1, 0], [0, -1]])

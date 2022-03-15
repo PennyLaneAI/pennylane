@@ -82,6 +82,12 @@ def _get_operation_recipe(op, p_idx, shifts):
 class QubitParamShiftTape(JacobianTape):
     r"""Quantum tape for qubit parameter-shift analytic differentiation method.
 
+    .. warning::
+
+        The ``QubitParamShiftTape`` is deprecated.
+        Please use a standard :class:`~.QuantumTape`, and apply gradient transforms using
+        the :mod:`.gradients` module to compute parameter-shift gradients.
+
     This class extends the :class:`~.jacobian` method of the quantum tape
     to support analytic gradients of qubit operations using the parameter-shift rule.
     This gradient method returns *exact* gradients, and can be computed directly

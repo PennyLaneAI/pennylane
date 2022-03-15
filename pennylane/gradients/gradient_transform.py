@@ -20,6 +20,60 @@ import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 
+def gradient_analysis(tape, use_graph=True, grad_fn=None):
+    """Update the parameter information dictionary of the tape with
+    gradient information of each parameter.
+
+    Parameter gradient methods include:
+
+    * ``None``: the parameter does not support differentiation.
+
+    * ``"0"``: the variational circuit output does not depend on this
+      parameter (the partial derivative is zero).
+
+    In addition, the operator might define its own grad method
+    via :attr:`.Operator.grad_method`.
+
+    Note that this function modifies the input tape in-place.
+
+    Args:
+        tape (.QuantumTape): the quantum tape to analyze
+        use_graph (bool): whether to use a directed-acyclic graph to determine
+            if the parameter has a gradient of 0
+        grad_fn (None or callable): The gradient transform performing the analysis.
+            This is an optional argument; if provided, and the tape has already
+            been analyzed for the gradient information by the same gradient transform,
+            the cached gradient analysis will be used.
+    """
+    # pylint:disable=protected-access
+    if grad_fn is not None and getattr(tape, "_gradient_fn", None) is grad_fn:
+        # gradient analysis has already been performed on this tape
+        return
+
+    if grad_fn is not None:
+        tape._gradient_fn = grad_fn
+
+    for idx, info in tape._par_info.items():
+
+        if idx not in tape.trainable_params:
+            # non-trainable parameters do not require a grad_method
+            info["grad_method"] = None
+        else:
+            op = tape._par_info[idx]["op"]
+
+            if not qml.operation.has_grad_method(op):
+                # no differentiation method is registered for this operation
+                info["grad_method"] = None
+
+            elif (tape._graph is not None) or use_graph:
+                if not any(tape.graph.has_path(op, ob) for ob in tape.observables):
+                    # there is no influence of this operation on any of the observables
+                    info["grad_method"] = "0"
+                    continue
+
+            info["grad_method"] = op.grad_method
+
+
 def grad_method_validation(method, tape):
     """Validates if the gradient method requested is supported by the trainable
     parameters of a tape, and returns the allowed parameter gradient methods.
@@ -39,7 +93,7 @@ def grad_method_validation(method, tape):
 
     Args:
         method (str): the overall Jacobian differentiation method
-        tape (.JacobianTape): the tape with associated parameter information
+        tape (.QuantumTape): the tape with associated parameter information
 
     Returns:
         tuple[str, None]: the allowed parameter gradient methods for each trainable parameter

@@ -832,7 +832,7 @@ class TestBatchExecution:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-    with qml.tape.JacobianTape() as tape2:
+    with qml.tape.QuantumTape() as tape2:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0))
 

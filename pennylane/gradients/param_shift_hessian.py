@@ -20,8 +20,7 @@ import numpy as np
 
 import pennylane as qml
 
-from .parameter_shift import _gradient_analysis
-from .gradient_transform import grad_method_validation
+from .gradient_transform import gradient_analysis, grad_method_validation
 from .hessian_transform import hessian_transform
 
 
@@ -170,21 +169,20 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
             # Compute the elements of the Hessian as the linear combination of
             # results and coefficients, barring optimization cases.
             if j < i:
-                g = hessian[j * h_dim + i]
+                hess = hessian[j * h_dim + i]
             elif s == 0:
-                g = qml.math.zeros(out_dim)
+                hess = qml.math.zeros(out_dim)
             else:
                 res = qml.math.stack(res)
-                hess = qml.math.convert_like(hessian_coeffs[k], res)
-                hess = qml.math.cast(hess, res.dtype)
-                g = qml.math.tensordot(res, hess, [[0], [0]])
+                coeffs = qml.math.cast(qml.math.convert_like(hessian_coeffs[k], res), res.dtype)
+                hess = qml.math.tensordot(res, coeffs, [[0], [0]])
                 if (i, j) in unshifted_coeffs:
-                    g += unshifted_coeffs[(i, j)] * r0
+                    hess = hess + unshifted_coeffs[(i, j)] * r0
 
-            hessian.append(g)
+            hessian.append(hess)
 
         # Reshape the Hessian to have the dimensions of the QNode output on the outside, that is:
-        #         (h_dim, h_dim, out_dim) -> (out_dim, h_dim, h_dim)
+        #     (h_dim*h_dim, out_dim) -> (h_dim, h_dim, out_dim) -> (out_dim, h_dim, h_dim)
         hessian = qml.math.reshape(qml.math.stack(hessian), (h_dim, h_dim) + out_dim)
         reordered_axes = list(range(2, len(out_dim) + 2)) + [0, 1]
         hessian = qml.math.transpose(hessian, axes=reordered_axes)
@@ -266,13 +264,13 @@ def param_shift_hessian(tape, f0=None):
         >>> tape = circuit.qtape
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape)
         >>> hessian_tapes
-        [<JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>]
+        [<QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>]
         >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
         array([[-0.97517033,  0.01983384],
                 [ 0.01983384, -0.97517033]])
@@ -341,7 +339,12 @@ def param_shift_hessian(tape, f0=None):
                 f"Hessian. Only two-term parameter shift rules are currently supported."
             )
 
-    _gradient_analysis(tape)
+    gradient_analysis(tape, grad_fn=qml.gradients.param_shift)
     diff_methods = grad_method_validation("analytic", tape)
+
+    if all(g == "0" for g in diff_methods):
+        return [], lambda _: np.zeros(
+            [tape.output_dim, len(tape.trainable_params), len(tape.trainable_params)]
+        )
 
     return compute_hessian_tapes(tape, diff_methods, f0)

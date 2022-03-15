@@ -35,7 +35,7 @@ class TestTorchExecuteUnitTests:
 
         dev = qml.device("default.qubit", wires=1)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             qml.expval(qml.PauliZ(0))
@@ -60,7 +60,7 @@ class TestTorchExecuteUnitTests:
 
         dev = qml.device("default.qubit", wires=1)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             qml.expval(qml.PauliZ(0))
@@ -78,7 +78,7 @@ class TestTorchExecuteUnitTests:
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             qml.expval(qml.PauliZ(0))
@@ -102,7 +102,7 @@ class TestTorchExecuteUnitTests:
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             qml.expval(qml.PauliZ(0))
@@ -127,7 +127,7 @@ class TestTorchExecuteUnitTests:
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             qml.expval(qml.PauliZ(0))
@@ -158,7 +158,7 @@ class TestCaching:
         spy = mocker.spy(qml.interfaces.batch, "cache_execute")
 
         def cost(a, cachesize):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
@@ -182,7 +182,7 @@ class TestCaching:
         spy = mocker.spy(qml.interfaces.batch, "cache_execute")
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
@@ -205,7 +205,7 @@ class TestCaching:
         dev = qml.device("default.qubit", wires=1)
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.probs(wires=0)
@@ -237,7 +237,7 @@ class TestCaching:
         N = len(params)
 
         def cost(x, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
 
@@ -290,7 +290,7 @@ class TestCaching:
         params = torch.tensor([0.1, 0.2, 0.3])
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
@@ -362,12 +362,12 @@ class TestTorchExecuteIntegration:
         a = torch.tensor(0.1, requires_grad=True, device=torch_device)
         b = torch.tensor(0.2, requires_grad=False, device=torch_device)
 
-        with qml.tape.JacobianTape() as tape1:
+        with qml.tape.QuantumTape() as tape1:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.JacobianTape() as tape2:
+        with qml.tape.QuantumTape() as tape2:
             qml.RY(a, wires=0)
             qml.RX(b, wires=0)
             qml.expval(qml.PauliZ(0))
@@ -383,7 +383,7 @@ class TestTorchExecuteIntegration:
         a = torch.tensor(0.1, requires_grad=True, dtype=torch.float64, device=torch_device)
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
 
@@ -412,7 +412,7 @@ class TestTorchExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RZ(torch.tensor(0.543, device=torch_device), wires=0)
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
@@ -449,15 +449,15 @@ class TestTorchExecuteIntegration:
         params = torch.tensor([0.1, 0.2], requires_grad=True, device=torch_device)
         x, y = params.detach()
 
-        with qml.tape.JacobianTape() as tape1:
+        with qml.tape.QuantumTape() as tape1:
             qml.Hadamard(0)
             qml.expval(qml.PauliX(0))
 
-        with qml.tape.JacobianTape() as tape2:
+        with qml.tape.QuantumTape() as tape2:
             qml.RY(0.5, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.JacobianTape() as tape3:
+        with qml.tape.QuantumTape() as tape3:
             qml.RY(params[0], wires=0)
             qml.RX(params[1], wires=0)
             qml.expval(qml.PauliZ(0))
@@ -484,7 +484,7 @@ class TestTorchExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(a, wires=0)
             qml.RX(b, wires=1)
             qml.CNOT(wires=[0, 1])
@@ -534,7 +534,7 @@ class TestTorchExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=1)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(params[0] * params[1], wires=0)
             qml.RZ(0.2, wires=0)
             qml.RX(params[1] + params[1] ** 2 + torch.sin(params[0]), wires=0)
@@ -567,7 +567,7 @@ class TestTorchExecuteIntegration:
         """Test evaluation and Jacobian if there are no trainable parameters"""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RY(0.2, wires=0)
             qml.RX(torch.tensor(0.1, device=torch_device), wires=0)
             qml.CNOT(wires=[0, 1])
@@ -600,7 +600,7 @@ class TestTorchExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.QubitUnitary(U, wires=0)
             qml.RY(a, wires=0)
             qml.expval(qml.PauliZ(0))
@@ -621,7 +621,7 @@ class TestTorchExecuteIntegration:
 
         class U3(qml.U3):
             def expand(self):
-                tape = qml.tape.JacobianTape()
+                tape = qml.tape.QuantumTape()
                 theta, phi, lam = self.data
                 wires = self.wires
                 tape._ops += [
@@ -630,7 +630,7 @@ class TestTorchExecuteIntegration:
                 ]
                 return tape
 
-        tape = qml.tape.JacobianTape()
+        tape = qml.tape.QuantumTape()
 
         dev = qml.device("default.qubit", wires=1)
         a = np.array(0.1)
@@ -698,7 +698,7 @@ class TestTorchExecuteIntegration:
         x = torch.tensor(x_val, requires_grad=True, device=torch_device)
         y = torch.tensor(y_val, requires_grad=True, device=torch_device)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -745,7 +745,7 @@ class TestTorchExecuteIntegration:
         x = torch.tensor(x_val, requires_grad=True, device=torch_device)
         y = torch.tensor(y_val, requires_grad=True, device=torch_device)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -787,7 +787,7 @@ class TestTorchExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2, shots=10)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             qml.sample(qml.PauliZ(0))
@@ -805,7 +805,7 @@ class TestTorchExecuteIntegration:
 
         dev = qml.device("default.qubit", wires=2, shots=10)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             qml.sample(qml.PauliZ(0))
@@ -828,7 +828,7 @@ class TestTorchExecuteIntegration:
 
         x = torch.tensor(0.65, requires_grad=True)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.sample(qml.PauliZ(0))
 
@@ -848,7 +848,7 @@ class TestTorchExecuteIntegration:
 
         weights = torch.ones((3,))
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.U3(*weights, wires=0)
             qml.expval(qml.PauliZ(wires=0))
 
@@ -875,13 +875,13 @@ class TestHigherOrderDerivatives:
         params = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
 
         def cost_fn(x):
-            with qml.tape.JacobianTape() as tape1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            with qml.tape.JacobianTape() as tape2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.RX(x[0], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
@@ -917,7 +917,7 @@ class TestHigherOrderDerivatives:
         dev = qml.device("default.qubit", wires=1)
 
         def circuit(x):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(x[0], wires=0)
                 qml.RX(x[1], wires=0)
                 qml.probs(wires=0)
@@ -985,7 +985,7 @@ class TestHigherOrderDerivatives:
         )
 
         def cost_fn(x):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
@@ -1010,13 +1010,13 @@ class TestHigherOrderDerivatives:
         params = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
 
         def cost_fn(x):
-            with qml.tape.JacobianTape() as tape1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.RX(x[0], wires=[0])
                 qml.RY(x[1], wires=[1])
                 qml.CNOT(wires=[0, 1])
                 qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-            with qml.tape.JacobianTape() as tape2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.RX(x[0], wires=0)
                 qml.RY(x[0], wires=1)
                 qml.CNOT(wires=[0, 1])
@@ -1067,7 +1067,7 @@ class TestHamiltonianWorkflows:
             obs2 = [qml.PauliZ(0)]
             H2 = qml.Hamiltonian(coeffs2, obs2)
 
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RX(weights[0], wires=0)
                 qml.RY(weights[1], wires=1)
                 qml.CNOT(wires=[0, 1])
