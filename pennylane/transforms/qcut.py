@@ -1785,7 +1785,7 @@ def kahypar_cut(
 def _temp_update_kahypar_ini(ini_path: Union[Path, str], updates: Dict[str, str]):
     """Helper function for temporarily modify a KaHaPar config file."""
 
-    with open(ini_path, "rt") as f:
+    with open(ini_path, "rt", encoding="UTF-8") as f:
         lines = f.readlines()
 
     for i, l in enumerate(lines):
