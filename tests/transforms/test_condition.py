@@ -69,9 +69,32 @@ class TestCond:
 
         assert ops[4].return_type == qml.operation.Probability
 
-    def test_cond_queues_with_else(self):
-        """Test that qml.cond queues Conditional operations as expected when an
-        else qfunc is also provided."""
+    def tape_with_else(f, g, r):
+        """Tape that uses cond by passing both a true and false func."""
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(0)
+            qml.cond(m_0, f, g)(r)
+            qml.probs(wires=1)
+
+        return tape
+
+    def tape_uses_cond_twice(f, g, r):
+        """Tape that uses cond twice such that it's equivalent to using cond
+        with two functions being passed (tape_with_else)."""
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(0)
+            qml.cond(m_0, f)(r)
+            qml.cond(~m_0, g)(r)
+            qml.probs(wires=1)
+
+        return tape
+
+    @pytest.mark.parametrize("tape", [tape_with_else, tape_uses_cond_twice])
+    def test_cond_queues_with_else(self, tape):
+        """Test that qml.cond queues Conditional operations as expected in two cases:
+        1. When an else qfunc is provided;
+        2. When qml.cond is used twice equivalent to using an else qfunc.
+        """
         r = 1.234
 
         def f(x):
@@ -82,11 +105,7 @@ class TestCond:
         def g(x):
             qml.PauliY(1)
 
-        with qml.tape.QuantumTape() as tape:
-            m_0 = qml.measure(0)
-            qml.cond(m_0, f, g)(r)
-            qml.probs(wires=1)
-
+        tape = tape(f, g, r)
         ops = tape.queue
         target_wire = qml.wires.Wires(1)
 
@@ -110,6 +129,13 @@ class TestCond:
         assert isinstance(ops[4], qml.transforms.condition.Conditional)
         assert isinstance(ops[4].then_op, qml.PauliY)
         assert ops[4].then_op.wires == target_wire
+
+        # Check that: the measurement value is the same for true_fn conditional
+        # ops
+        assert ops[1].meas_val is ops[2].meas_val is ops[3].meas_val
+
+        # However, it is not the same for the false_fn
+        assert ops[3].meas_val is not ops[4].meas_val
 
         assert ops[5].return_type == qml.operation.Probability
 

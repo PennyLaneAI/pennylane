@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import qnode, QNode
 from pennylane.transforms import draw
-from pennylane.tape import JacobianTape
+from pennylane.tape import QuantumTape
 
 
 def dummyfunc():
@@ -408,12 +408,12 @@ class TestTapeConstruction:
 
         res = qn(x, y)
 
-        assert isinstance(qn.qtape, JacobianTape)
+        assert isinstance(qn.qtape, QuantumTape)
         assert len(qn.qtape.operations) == 3
         assert len(qn.qtape.observables) == 1
         assert qn.qtape.num_params == 2
 
-        expected = qn.qtape.execute(dev)
+        expected = qml.execute([qn.tape], dev, None)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # when called, a new quantum tape is constructed
@@ -614,12 +614,12 @@ class TestDecorator:
 
         res = func(x, y)
 
-        assert isinstance(func.qtape, JacobianTape)
+        assert isinstance(func.qtape, QuantumTape)
         assert len(func.qtape.operations) == 3
         assert len(func.qtape.observables) == 1
         assert func.qtape.num_params == 2
 
-        expected = func.qtape.execute(dev)
+        expected = qml.execute([func.tape], dev, None)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # when called, a new quantum tape is constructed

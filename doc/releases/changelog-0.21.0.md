@@ -660,7 +660,7 @@
 This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Sam Banning, Thomas Bromley,
-Esther Cruz, Christian Gogolin, Nathan Killoran, Christina Lee, Olivia Di
-Matteo, Diego Guala, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri,
-Edward Jiang, Ankit Khandelwal, Korbinian Kottmann, Romain Moyard, Lee James
+Esther Cruz, Olivia Di Matteo, Christian Gogolin, Diego Guala, Anthony Hayes,
+David Ittah, Josh Izaac, Soran Jahangiri, Edward Jiang, Ankit Khandelwal,
+Nathan Killoran, Korbinian Kottmann, Christina Lee, Romain Moyard, Lee James
 O'Riordan, Maria Schuld, Jay Soni, Antal Száva, David Wierichs, Shaoming Zhang.
