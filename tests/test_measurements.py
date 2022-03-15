@@ -40,15 +40,25 @@ from pennylane.measurements import (
     MeasurementValueError,
 )
 
-@pytest.mark.parametrize("return_type, value", [(Expectation, "expval"), 
-    (Sample, "sample"), (Variance, "var"), (Probability, "probs"),
-    (State, "state"), (MidMeasure, "measure")])
+
+@pytest.mark.parametrize(
+    "return_type, value",
+    [
+        (Expectation, "expval"),
+        (Sample, "sample"),
+        (Variance, "var"),
+        (Probability, "probs"),
+        (State, "state"),
+        (MidMeasure, "measure"),
+    ],
+)
 def test_ObservableReturnTypes(return_type, value):
     """Test the ObservableReturnTypes enum value, repr, and enum membership."""
 
     assert return_type.value == value
     assert isinstance(return_type, qml.measurements.ObservableReturnTypes)
     assert repr(return_type) == value
+
 
 def test_no_measure(tol):
     """Test that failing to specify a measurement

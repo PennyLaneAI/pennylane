@@ -874,9 +874,7 @@ class Device(abc.ABC):
 
             operation_name = o.name
 
-            if getattr(
-                o, "return_type", None
-            ) == MidMeasure and not self.capabilities().get(
+            if getattr(o, "return_type", None) == MidMeasure and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
                 raise DeviceError(
