@@ -29,3 +29,8 @@ ignored-classes=numpy,scipy,autograd,toml,appdir,autograd,autograd.numpy,autogra
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once).
 disable=line-too-long,invalid-name,too-many-lines,redefined-builtin,too-many-locals,duplicate-code
+
+[MISCELLANEOUS]
+
+# List of note tags to take in consideration, separated by a comma.
+notes=

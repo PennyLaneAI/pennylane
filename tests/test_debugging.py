@@ -256,3 +256,28 @@ class TestSnapshot:
 
         if m == "state":
             assert np.allclose(result[2], result["execution_results"])
+
+    def test_controlled_circuit(self):
+        """Test that snapshots are returned correctly even with a controlled circuit."""
+        dev = qml.device("default.qubit", wires=2)
+
+        def circuit(params, wire):
+            qml.Hadamard(wire)
+            qml.Snapshot()
+            qml.Rot(*params, wire)
+
+        @qml.qnode(dev)
+        def qnode(params):
+            qml.Hadamard(0)
+            qml.ctrl(circuit, 0)(params, wire=1)
+            return qml.expval(qml.PauliZ(1))
+
+        params = np.array([1.3, 1.4, 0.2])
+        result = qml.snapshots(qnode)(params)
+        expected = {
+            0: np.array([1 / np.sqrt(2), 0, 0.5, 0.5]),
+            "execution_results": np.array(0.36819668),
+        }
+
+        assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
+        assert all(np.allclose(v1, v2) for v1, v2 in zip(result.values(), expected.values()))
