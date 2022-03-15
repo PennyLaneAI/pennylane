@@ -745,10 +745,10 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
     g = 0.0
     lengths = [l1 + l2 + 1, m1 + m2 + 1, n1 + n2 + 1, l3 + l4 + 1, m3 + m4 + 1, n3 + n4 + 1]
     for t, u, v, r, s, w in it.product(*[range(length) for length in lengths]):
-        g_exp = g_t[t] * g_u[u] * g_v[v] * g_r[r] * g_s[s] * g_w[w] * ((-1) ** (r + s + w))
-        g_hc = _hermite_coulomb(t + r, u + s, v + w, 0, (p * q) / (p + q), p_ab - p_cd)
-        g = g + g_exp * g_hc
-        # g = g + g_exp
+        g = g + g_t[t] * g_u[u] * g_v[v] * g_r[r] * g_s[s] * g_w[w] * (
+            (-1) ** (r + s + w)
+        ) * _hermite_coulomb(t + r, u + s, v + w, 0, (p * q) / (p + q), p_ab - p_cd)
+
     g = g * 2 * (anp.pi**2.5) / (p * q * anp.sqrt(p + q))
 
     return g
