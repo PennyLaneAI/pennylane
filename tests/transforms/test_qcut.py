@@ -20,7 +20,6 @@ import string
 import sys
 from itertools import product
 from pathlib import Path
-from jax import config
 
 import pytest
 from flaky import flaky
@@ -2998,6 +2997,7 @@ class TestKaHyPar:
     @pytest.mark.parametrize("hyperwire_weight", [0, 1])
     def test_kahypar_cut(self, tape, hyperwire_weight):
         """Test vanilla cutting with kahypar"""
+        pytest.importorskip("kahypar")
 
         num_frags, num_interfrag_gates, tape = tape
         graph = qcut.tape_to_graph(tape)
@@ -3026,6 +3026,7 @@ class TestKaHyPar:
     @pytest.mark.parametrize("imbalance", [None, 0.5])
     def test_kahypar_cut_options(self, imbalance, block_weights, config_path):
         """Test vanilla cutting with kahypar"""
+        pytest.importorskip("kahypar")
 
         num_frags, num_interfrag_gates, tape = self.disjoint_tapes[0]
         graph = qcut.tape_to_graph(tape)
