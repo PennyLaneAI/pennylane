@@ -1765,7 +1765,7 @@ def kahypar_cut(
     0: ──RX(0.432)──╭C──RZ(0.24)───RX(0.432)──┤ ⟨Z⟩
     a: ──RY(0.543)──╰X──RZ(0.133)──RY(0.543)──┤
 
-    The output cut edges can be subsequently input into `fragment_graph()` to perform obtain the
+    The output cut edges can be subsequently input into `fragment_graph()` to obtain the
     fragment subcircuits and the communication graph:
 
     >>> frags, comm_graph = qcut.fragment_graph(graph, cut_edges)
