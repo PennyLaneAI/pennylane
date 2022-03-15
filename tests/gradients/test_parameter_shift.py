@@ -22,13 +22,8 @@ from pennylane.gradients.parameter_shift import _get_operation_recipe
 
 
 class TestGetOperationRecipe:
-    @pytest.mark.parametrize("order", [0, 3])
-    def test_error_wrong_order(self, order):
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.2, wires=0)
-
-        with pytest.raises(NotImplementedError, match="is implemented for orders 1 and 2."):
-            _get_operation_recipe(tape, 0, [-np.pi / 2, np.pi / 2], order)
+    """Test the helper function `_get_operation_recipe` that obtains the
+    `grad_recipe` for a given operation in a tape."""
 
     @pytest.mark.parametrize(
         "orig_op, frequencies, shifts",
@@ -40,6 +35,7 @@ class TestGetOperationRecipe:
         ],
     )
     def test_custom_recipe_first_order(self, orig_op, frequencies, shifts):
+        """Test that a custom recipe is returned correctly for first-order derivatives."""
         c, s = qml.gradients.generate_shift_rule(frequencies, shifts=shifts)
         recipe = list(zip(c, np.ones_like(c), s))
 
@@ -70,6 +66,7 @@ class TestGetOperationRecipe:
         ],
     )
     def test_custom_recipe_second_order(self, orig_op, frequencies, shifts):
+        """Test that a custom recipe is returned correctly for second-order derivatives."""
         c, s = qml.gradients.generate_shift_rule(frequencies, shifts=shifts)
         recipe = list(zip(c, np.ones_like(c), s))
 
@@ -90,8 +87,7 @@ class TestGradAnalysis:
     """Tests for parameter gradient methods"""
 
     def test_non_differentiable(self):
-        """Test that a non-differentiable parameter is
-        correctly marked"""
+        """Test that a non-differentiable parameter is correctly marked"""
         psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
         with qml.tape.QuantumTape() as tape:

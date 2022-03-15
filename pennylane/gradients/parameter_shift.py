@@ -77,6 +77,13 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     of the operation corresponding to trainable parameter
     t_idx on tape.
 
+    Args:
+        tape (.tape.QuantumTape): Tape containing the operation to differentiate
+        t_idx (int): Parameter index of the operation to differentiate within the tape
+        shifts (Sequence[float]): Shift values to use if no static ``grad_recipe`` is
+            provided by the operation to differentiate
+        order (int): Order of the differentiation
+
     This function performs multiple attempts to obtain the recipe:
 
     - If the operation has a custom :attr:`~.grad_recipe` defined, it is used.
@@ -115,8 +122,13 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
             period = None
 
         # Iterate the custom recipe to obtain the second-order recipe
-        iter_c, iter_s = process_shifts(_iterate_shift_rule(recipe[:, ::2], order, period).T)
-        return qml.math.stack([iter_c, qml.math.ones_like(iter_c), iter_s])
+        if qml.math.allclose(recipe[:, 1], qml.math.ones_like(recipe[:, 1])):
+            # If the multipliers are ones, we do not include them in the iteration
+            # but keep track of them manually
+            iter_c, iter_s = process_shifts(_iterate_shift_rule(recipe[:, ::2], order, period).T)
+            return qml.math.stack([iter_c, qml.math.ones_like(iter_c), iter_s])
+
+        return process_shifts(_iterate_shift_rule(recipe, order, period).T)
 
     # Try to obtain frequencies, either via custom implementation or from generator eigvals
     try:

@@ -41,10 +41,7 @@ def _collect_recipes(tape, argnum, diff_methods, diagonal_shifts, off_diagonal_s
     diag_recipes = []
     partial_offdiag_recipes = []
     for i in range(tape.num_params):
-        if argnum is not None:
-            idx = argnum.index(i)
-        else:
-            idx = i
+        idx = argnum.index(i)
 
         if i not in argnum or diff_methods[i] == "0":
             # hessian will be set to 0 for this row/column

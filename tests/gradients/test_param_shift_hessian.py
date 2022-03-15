@@ -18,6 +18,32 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
+from pennylane.gradients.param_shift_hessian import _collect_recipes, _generate_off_diag_tapes
+
+
+class TestCollectRecipes:
+    """Test that gradient recipes are collected/generated correctly based
+    on probided shift values, hard-coded recipes of operations, and argnum."""
+
+    def test_with_custom_recipes(self):
+        dummy_recipe = [(-0.3, 1.0, 0.0), (0.3, 1.0, 0.4)]
+        dummy_recipe_2nd_order = [(0.09, 1.0, 0.0), (-0.18, 1.0, 0.4), (0.09, 1.0, 0.8)]
+        channel_recipe = [(-1, 0, 0), (1, 0, 1)]
+        channel_recipe_2nd_order = [(0, 0, 0), (0, 0, 1)]
+
+        class DummyOp(qml.RX):
+            grad_recipe = (dummy_recipe,)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.DepolarizingChannel(0.2, wires=0)
+            DummyOp(0.3, wires=0)
+
+        diag, offdiag = _collect_recipes(tape, tape.trainable_params, ("A", "A"), None, None)
+        assert qml.math.allclose(diag[0], qml.math.array(channel_recipe_2nd_order).T)
+        assert qml.math.allclose(diag[1], qml.math.array(dummy_recipe_2nd_order).T)
+        assert qml.math.allclose(offdiag[0], qml.math.array(channel_recipe).T)
+        assert qml.math.allclose(offdiag[1], qml.math.array(dummy_recipe).T)
+
 
 class TestParameterShiftHessian:
     """Test the general functionality of the param_shift_hessian method
@@ -256,14 +282,11 @@ class TestParameterShiftHessian:
 
         assert np.allclose(expected, hessian)
 
-    @pytest.mark.slow
     def test_multiple_qnode_arguments_scalar(self):
         """Test that the correct Hessian is calculated with multiple QNode arguments (0D->1D)"""
-        jax = pytest.importorskip("jax")
-
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        @qml.qnode(dev, diff_method="backprop")
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -279,21 +302,18 @@ class TestParameterShiftHessian:
         z = np.array(0.3, requires_grad=True)
         X = qml.math.stack([x, y, z])
 
-        expected = jax.jacobian(jax.jacobian(wrapper))(X)
+        expected = qml.jacobian(qml.jacobian(wrapper))(X)
         expected = tuple(expected[:, i, i] for i in range(3))
         circuit.interface = "autograd"
         hessian = qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
         assert np.allclose(expected, hessian)
 
-    @pytest.mark.slow
     def test_multiple_qnode_arguments_vector(self):
         """Test that the correct Hessian is calculated with multiple QNode arguments (1D->1D)"""
-        jax = pytest.importorskip("jax")
-
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        @qml.qnode(dev, diff_method="backprop")
         def circuit(x, y, z):
             qml.RX(x[0], wires=1)
             qml.RY(y[0], wires=0)
@@ -309,7 +329,7 @@ class TestParameterShiftHessian:
         z = np.array([0.3, 0.2], requires_grad=True)
         X = qml.math.stack([x, y, z])
 
-        expected = jax.jacobian(jax.jacobian(wrapper))(X)
+        expected = qml.jacobian(qml.jacobian(wrapper))(X)
         expected = tuple(expected[:, i, :, i] for i in range(3))
 
         circuit.interface = "autograd"
@@ -317,14 +337,11 @@ class TestParameterShiftHessian:
 
         assert np.allclose(expected, hessian)
 
-    @pytest.mark.slow
     def test_multiple_qnode_arguments_matrix(self):
         """Test that the correct Hessian is calculated with multiple QNode arguments (2D->1D)"""
-        jax = pytest.importorskip("jax")
-
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        @qml.qnode(dev, diff_method="backprop")
         def circuit(x, y, z):
             qml.RX(x[0, 0], wires=0)
             qml.RY(y[0, 0], wires=1)
@@ -340,7 +357,7 @@ class TestParameterShiftHessian:
         z = np.array([[0.3, 0.2], [0.2, 0.4]], requires_grad=True)
         X = qml.math.stack([x, y, z])
 
-        expected = jax.jacobian(jax.jacobian(wrapper))(X)
+        expected = qml.jacobian(qml.jacobian(wrapper))(X)
         expected = tuple(expected[:, i, :, :, i] for i in range(3))
 
         circuit.interface = "autograd"

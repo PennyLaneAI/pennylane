@@ -20,6 +20,47 @@ import numpy as np
 import pennylane as qml
 
 
+def _process_shifts_with_multipliers(rule, tol):
+    """Utility function to process gradient rules that contian multipliers.
+
+    Args:
+        rule (array): a ``(3, M)`` array corresponding to ``M`` terms
+            with function shifts. The first row of
+            the array corresponds to the linear combination coefficients;
+            the second and third row contain the multipliers and shift values, respectively
+        tol (float): floating point tolerance used when comparing shifts/coefficients
+            Terms with coefficients below ``tol`` will be removed.
+        check_duplicates (bool): whether to check the input ``rule`` for duplicate
+            shift values in its second row.
+
+    This utility function accepts coefficients and shift values, and performs the following
+    processing:
+
+    - Sets all small (within absolute tolerance ``tol``) coefficients and shifts to 0
+
+    - Removes terms with the coefficients are 0 (including the ones set to 0 in the previous step)
+
+    - Terms with the same multiplier and shift value are combined into a single term.
+
+    - Finally, the terms are sorted according to the absolute value of ``shift``,
+      ensuring that, if there is a zero-shift term, this is returned first.
+    """
+    round_decimals = int(-np.log10(tol))
+    rounded_rule = np.round(rule[1:], round_decimals)
+    unique_mods = np.unique(rounded_rule, axis=1)
+
+    if rule.shape[-1] != len(unique_mods):
+        # sum columns that have the same multiplier and shift value
+        coeffs = [
+            np.sum(rule[0, np.all(rounded_rule[1:] == mod.reshape((2, 1)), axis=0)])
+            for mod in unique_mods.T
+        ]
+        rule = np.vstack([np.stack(coeffs), unique_mods])
+
+    # sort columns according to abs(shift)
+    return rule[:, np.argsort(np.abs(rule)[-1])]
+
+
 def process_shifts(rule, tol=1e-10, check_duplicates=True):
     """Utility function to process gradient rules.
 
@@ -52,6 +93,8 @@ def process_shifts(rule, tol=1e-10, check_duplicates=True):
     rule = rule[:, ~(rule[0] == 0)]
 
     if check_duplicates:
+        if rule.shape[0] == 3:
+            return _process_shifts_with_multipliers(rule, tol)
         # determine unique shifts
         round_decimals = int(-np.log10(tol))
         rounded_rule = np.round(rule[-1], round_decimals)
@@ -59,9 +102,7 @@ def process_shifts(rule, tol=1e-10, check_duplicates=True):
 
         if rule.shape[-1] != len(unique_shifts):
             # sum columns that have the same shift value
-            coeffs = [
-                np.sum(rule[:, np.nonzero(rounded_rule == s)[0]], axis=1)[0] for s in unique_shifts
-            ]
+            coeffs = [np.sum(rule[0, rounded_rule == s]) for s in unique_shifts]
             rule = np.stack([np.stack(coeffs), unique_shifts])
 
     # sort columns according to abs(shift)
@@ -173,9 +214,33 @@ def _get_shift_rule(frequencies, shifts=None):
     return np.stack([coeffs, shifts])
 
 
+def _iterate_shift_rule_with_multipliers(rule, order, period):
+    r"""Helper method to repeat a shift rule that includes multipliers multiple
+    times along the same parameter axis for higher-order derivatives."""
+    combined_rules = []
+
+    for partial_rule in itertools.product(rule, repeat=order):
+        c, m, s = np.stack(partial_rule).T
+        cumul_coeff = np.prod(c)
+        cumul_shift = 0.0
+        cumul_mult = np.prod(m)
+        for _m, _s in zip(m, s):
+            cumul_shift *= _m
+            cumul_shift += _s
+        if period is not None:
+            cumul_shift = np.mod(cumul_shift + 0.5 * period, period) - 0.5 * period
+        combined_rules.append(np.stack([cumul_coeff, cumul_mult, cumul_shift]))
+
+    # combine all terms in the linear combination into a single
+    # array, with coefficients on the first column and shifts on the second column.
+    return qml.math.stack(combined_rules)
+
+
 def _iterate_shift_rule(rule, order, period=None):
     r"""Helper method to repeat a shift rule multiple times along the same
     parameter axis for higher-order derivatives."""
+    if len(rule[0]) == 3:
+        return _iterate_shift_rule_with_multipliers(rule, order, period)
 
     combined_rules = []
 
