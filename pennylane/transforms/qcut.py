@@ -293,6 +293,9 @@ def fragment_graph(
     Args:
         graph (nx.MultiDiGraph): directed multigraph containing measure and prepare
             nodes at cut locations
+        cut_edges: (List[Tuple[Any, Any, Any]]): List of MultiDiGraph edges to cut. Each 3-tuple
+            represents the source node, the target node, and the key of the (multi)edge. Defaults to
+            None which results in fragments by considering only existing cuts in the circuit.
 
     Returns:
         Tuple[Tuple[nx.MultiDiGraph], nx.MultiDiGraph]: the subgraphs of the cut graph
