@@ -230,14 +230,12 @@ def draw(
     When requested with ``show_matrices=True``, matrix valued parameters are printed below the
     circuit:
 
-    .. code-block:: python
-
     >>> @qml.qnode(qml.device('default.qubit', wires=2))
-    ... def circuit():
+    ... def circuit3():
     ...     qml.QubitUnitary(np.eye(2), wires=0)
     ...     qml.QubitUnitary(-np.eye(4), wires=(0,1))
     ...     return qml.expval(qml.Hermitian(np.eye(2), wires=1))
-    >>> print(qml.draw(circuit, show_matrices=True)())
+    >>> print(qml.draw(circuit3, show_matrices=True)())
     0: ──U(M0)─╭U(M1)─┤
     1: ────────╰U(M1)─┤  <𝓗(M0)>
     M0 =
@@ -295,13 +293,13 @@ def draw(
 
     .. code-block:: python
 
-        @qml.gradients.param_shift(shift=0.1)
+        @qml.gradients.param_shift(shifts=[(0.1,)])
         @qml.qnode(qml.device('lightning.qubit', wires=1))
         def transformed_circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        print(qml.draw(transformed_circuit)(np.array(1.0)))
+        print(qml.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
 
     .. code-block:: none
 

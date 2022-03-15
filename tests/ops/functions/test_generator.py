@@ -136,6 +136,47 @@ class TestValidation:
             qml.generator(qml.RX, format=None)(0.5, wires=0)
 
 
+class TestBackwardsCompatibility:
+    """Test that operators that provide the old style generator property
+    continue to work with a deprecation warning."""
+
+    def test_return_class(self):
+        """Test that an old-style Operator that has a generator property,
+        and that returns a list containing (a) operator class and (b) prefactor,
+        continues to work but also raises a deprecation warning."""
+
+        class DeprecatedClassOp(CustomOp):
+            generator = [qml.PauliX, -0.6]
+
+        op = DeprecatedClassOp(0.5, wires="a")
+
+        with pytest.warns(UserWarning, match=r"The Operator\.generator property is deprecated"):
+            gen, prefactor = qml.generator(op)
+
+        assert isinstance(gen, qml.operation.Operator)
+        assert prefactor == -0.6
+        assert gen.name == "PauliX"
+        assert gen.wires.tolist() == ["a"]
+
+    def test_return_array(self):
+        """Test that an old-style Operator that has a generator property,
+        and that returns a list containing (a) array and (b) prefactor,
+        continues to work but also raises a deprecation warning."""
+
+        class DeprecatedClassOp(CustomOp):
+            generator = [np.diag([0, 1]), -0.6]
+
+        op = DeprecatedClassOp(0.5, wires="a")
+
+        with pytest.warns(UserWarning, match=r"The Operator\.generator property is deprecated"):
+            gen, prefactor = qml.generator(op)
+
+        assert isinstance(gen, qml.operation.Operator)
+        assert prefactor == -0.6
+        assert gen.name == "Hermitian"
+        assert gen.wires.tolist() == ["a"]
+
+
 class TestPrefactorReturn:
     """Tests for format="prefactor". This format attempts to isolate a prefactor
     (if possible) from the generator, which is useful if the generator is a Pauli word."""
