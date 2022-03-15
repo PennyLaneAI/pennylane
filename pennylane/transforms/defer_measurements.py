@@ -85,9 +85,17 @@ def defer_measurements(tape):
     """
     measured_wires = {}
 
-    if any(
-        isinstance(op, (qml.operation.CVOperation, qml.operation.CVObservable)) for op in tape.queue
-    ):
+    cv_op = any(
+        isinstance(op, (qml.operation.CVOperation, qml.operation.CVObservable))
+        for op in tape.operations
+    )
+    cv_obs = any(
+        isinstance(
+            getattr(op, "obs", None), (qml.operation.CVOperation, qml.operation.CVObservable)
+        )
+        for op in tape.measurements
+    )
+    if cv_op or cv_obs:
         raise ValueError("Continuous variable operations and observables are not supported.")
 
     for op in tape.operations + tape.measurements:
