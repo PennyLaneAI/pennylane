@@ -31,13 +31,14 @@ import pennylane as qml
 from pennylane.transforms.condition import ConditionalTransformError
 
 terminal_meas = [
-qml.probs(wires=[1, 0]),
-qml.expval(qml.PauliZ(0)),
-qml.expval(qml.PauliZ('a') @ qml.PauliZ(3) @ qml.PauliZ(-1)),
-qml.var(qml.PauliX('b')),
-qml.state(),
-qml.density_matrix(wires=[2,3])
+    qml.probs(wires=[1, 0]),
+    qml.expval(qml.PauliZ(0)),
+    qml.expval(qml.PauliZ("a") @ qml.PauliZ(3) @ qml.PauliZ(-1)),
+    qml.var(qml.PauliX("b")),
+    qml.state(),
+    qml.density_matrix(wires=[2, 3]),
 ]
+
 
 @pytest.mark.parametrize("terminal_measurement", terminal_meas)
 class TestCond:
