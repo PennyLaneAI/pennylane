@@ -30,7 +30,7 @@ from pennylane.operation import (
     Observable,
     Tensor,
 )
-from pennylane.measurements import Sample, State, Variance, Expectation, Probability
+from pennylane.measurements import Sample, State, Variance, Expectation, Probability, MidMeasure
 from pennylane.wires import Wires, WireError
 
 
@@ -876,7 +876,7 @@ class Device(abc.ABC):
 
             if getattr(
                 o, "return_type", None
-            ) == qml.measurements.MidMeasure and not self.capabilities().get(
+            ) == MidMeasure and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
                 raise DeviceError(

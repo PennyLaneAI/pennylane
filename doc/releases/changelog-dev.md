@@ -35,4 +35,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Anthony Hayes
+Karim Alaa El-Din, Anthony Hayes, Christina Lee
