@@ -111,7 +111,7 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
         # Try to obtain the period of the operator frequencies for iteration of custom recipe
         try:
             period = frequencies_to_period(op.parameter_frequencies[p_idx])
-        except qml.operation.ParameterFrequenciesUndefinedError as e:
+        except qml.operation.ParameterFrequenciesUndefinedError:
             period = None
 
         # Iterate the custom recipe to obtain the second-order recipe
