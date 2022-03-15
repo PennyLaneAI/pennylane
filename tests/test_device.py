@@ -585,7 +585,7 @@ class TestInternalFunctions:
             (Wires([0]), Wires([0]), Wires([0])),
         ],
     )
-    def test_get_ordered_subset(self, wires, subset, expected_subset, mock_device):
+    def test_get_ordered_subset(self, wires, subset, expected_subset, mock_device_arbitrary_wires):
         dev = mock_device_arbitrary_wires(wires=wires)
         ordered_subset = dev.get_ordered_subset(subset_wires=subset)
         assert ordered_subset == expected_subset
@@ -599,7 +599,7 @@ class TestInternalFunctions:
             (Wires([0]), Wires([2])),
         ],
     )
-    def test_get_ordered_subset_raises_value_error(self, wires, subset, mock_device):
+    def test_get_ordered_subset_raises_value_error(self, wires, subset, mock_device_arbitrary_wires):
         dev = mock_device_arbitrary_wires(wires=wires)
         with pytest.raises(
             ValueError,

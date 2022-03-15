@@ -141,16 +141,19 @@ class TestExpval:
     @pytest.mark.parametrize("label_map", label_maps)
     def test_wire_label_in_tensor_prod_observables(self, label_map, tol):
         dev = qml.device("default.qubit", wires=3)
+        dev_custom_labels = qml.device("default.qubit", wires=[label_map[i] for i in range(3)])
 
-        @qml.qnode(dev)
         def circ(wire_labels):
             sub_routine(wire_labels)
             return qml.expval(
                 qml.PauliX(wire_labels[0]) @ qml.PauliY(wire_labels[1]) @ qml.PauliZ(wire_labels[2])
             )
 
+        circ_base_label = qml.QNode(circ, device=dev)
+        circ_custom_label = qml.QNode(circ, device=dev_custom_labels)
+
         assert np.allclose(
-            circ(wire_labels=range(3)), circ(wire_labels=label_map), atol=tol, rtol=0
+            circ_base_label(wire_labels=range(3)), circ_custom_label(wire_labels=label_map), atol=tol, rtol=0
         )
 
 
@@ -211,6 +214,7 @@ class TestVar:
     @pytest.mark.parametrize("label_map", label_maps)
     def test_wire_label_in_tensor_prod_observables(self, label_map, tol):
         dev = qml.device("default.qubit", wires=3)
+        dev_custom_labels = qml.device("default.qubit", wires=[label_map[i] for i in range(3)])
 
         @qml.qnode(dev)
         def circ(wire_labels):
@@ -219,8 +223,11 @@ class TestVar:
                 qml.PauliX(wire_labels[0]) @ qml.PauliY(wire_labels[1]) @ qml.PauliZ(wire_labels[2])
             )
 
+        circ_base_label = qml.QNode(circ, device=dev)
+        circ_custom_label = qml.QNode(circ, device=dev_custom_labels)
+
         assert np.allclose(
-            circ(wire_labels=range(3)), circ(wire_labels=label_map), atol=tol, rtol=0
+            circ_base_label(wire_labels=range(3)), circ_custom_label(wire_labels=label_map), atol=tol, rtol=0
         )
 
 
