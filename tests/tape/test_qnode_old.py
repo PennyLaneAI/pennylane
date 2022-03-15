@@ -606,6 +606,11 @@ class TestValidation:
         )
 
         expected_warnings = {
+            (
+                UserWarning,
+                f"qml.qnode_old.QNode is deprecated, and will be removed in an "
+                "upcoming release. Please use qml.QNode instead.",
+            ),
             (UserWarning, f"'{unrecognized_one}'{warning_text}"),
             (UserWarning, f"'{unrecognized_two}'{warning_text}"),
         }
@@ -632,6 +637,11 @@ class TestValidation:
         )
 
         expected_warnings = {
+            (
+                UserWarning,
+                f"qml.qnode_old.QNode is deprecated, and will be removed in an "
+                "upcoming release. Please use qml.QNode instead.",
+            ),
             (UserWarning, f"'{unrecognized_one}'{warning_text}"),
             (UserWarning, f"'{unrecognized_two}'{warning_text}"),
         }

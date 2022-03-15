@@ -40,6 +40,11 @@ from pennylane.tape import (
 class QNode:
     """Represents a quantum node in the hybrid computational graph.
 
+    .. warning::
+
+        This QNode is deprecated and due to be removed in an upcoming
+        release. Please use :class:`qml.QNode <.pennylane.QNode>` instead.
+
     A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>`
     (corresponding to a :ref:`variational circuit <glossary_variational_circuit>`)
     and the computational device it is executed on.
@@ -163,6 +168,11 @@ class QNode:
         argnum=None,
         **kwargs,
     ):
+        warnings.warn(
+            "qml.qnode_old.QNode is deprecated, and will be removed in an "
+            "upcoming release. Please use qml.QNode instead.",
+            UserWarning,
+        )
 
         if diff_method is None:
             # TODO: update this behaviour once the new differentiable pipeline is the default

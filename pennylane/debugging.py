@@ -28,7 +28,7 @@ class _Debugger:
     """
 
     def __init__(self, dev):
-        if dev.short_name == "lightning.qubit" or not hasattr(dev, "_debugger"):
+        if "Snapshot" not in dev.operations:
             raise DeviceError("Device does not support snapshots.")
 
         self.snapshots = {}

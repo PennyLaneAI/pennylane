@@ -66,13 +66,12 @@ def batch_input(
             qml.RY(weights[1], wires=1)
             return qml.expval(qml.PauliZ(1))
 
-    >>> x = np.random.uniform(0,1,(10,2))
-    >>> x.requires_grad = False
-    >>> w = np.random.uniform(0,1,2)
+    >>> x = tf.random.uniform((10, 2), 0, 1)
+    >>> w = tf.random.uniform((2,), 0, 1)
     >>> circuit(x, w)
     <tf.Tensor: shape=(10,), dtype=float64, numpy=
-    array([0.17926078, 0.7480163 , 0.47816999, 0.50381628, 0.349178  ,
-           0.17511444, 0.03769436, 0.19180259, 0.75867188, 0.55335748])>
+    array([0.46230079, 0.73971315, 0.95666004, 0.5355225 , 0.66180948,
+            0.44519553, 0.93874261, 0.9483197 , 0.78737918, 0.90866411])>
     """
     parameters = tape.get_parameters(trainable_only=False)
 

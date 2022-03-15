@@ -46,7 +46,7 @@ def matrix(op, *, wire_order=None):
 
     >>> x = torch.tensor(0.6, requires_grad=True)
     >>> matrix_fn = qml.matrix(qml.RX)
-    >>> matrix_fn(x)
+    >>> matrix_fn(x, wires=0)
     tensor([[0.9553+0.0000j, 0.0000-0.2955j],
             [0.0000-0.2955j, 0.9553+0.0000j]], grad_fn=<AddBackward0>)
 
