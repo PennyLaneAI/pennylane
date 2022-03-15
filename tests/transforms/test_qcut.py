@@ -1262,7 +1262,7 @@ class TestGraphToTape:
     def test_single_sample_meas_conversion(self):
         """
         Tests that subgraphs with sample nodes are correctly converted to
-        a fragment tapes
+        fragment tapes
         """
 
         with qml.tape.QuantumTape() as tape:
@@ -1292,8 +1292,9 @@ class TestGraphToTape:
 
     def test_sample_mid_circuit_meas(self):
         """
-        Test that a circuit with sample measurements, that also requires mid
-        circuit measurements, is coreectly converted to fragment tapes
+        Test that a circuit with sample measurements, that is partitioned into
+        fragments requiring mid-circuit measurements, has its fragment subgraphs
+        correctly converted into tapes
         """
 
         with qml.tape.QuantumTape() as tape:
@@ -1330,7 +1331,7 @@ class TestGraphToTape:
         for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
             compare_measurements(meas, expected_meas)
 
-        # sample measurements should not exsist on the same wire as MeasureNodes at this stage
+        # sample measurements should not exist on the same wire as MeasureNodes at this stage
         f0_sample_wires = [meas.wires for meas in tapes[0].measurements]
         f0_measurenode_wires = [
             op.wires for op in tapes[0].operations if isinstance(op, qcut.MeasureNode)
