@@ -26,7 +26,7 @@ from .gradient_transform import (
     choose_grad_methods,
 )
 from .hessian_transform import hessian_transform
-from .parameter_shift import _get_operation_recipe, _gradient_analysis
+from .parameter_shift import _get_operation_recipe
 from .general_shift_rules import (
     _combine_shift_rules,
     generate_shifted_tapes,
