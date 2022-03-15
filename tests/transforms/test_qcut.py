@@ -2917,3 +2917,60 @@ class TestCutStrategy:
                 max_wires_by_fragment=max_wires_by_fragment,
                 max_gates_by_fragment=max_gates_by_fragment,
             )
+
+
+def make_weakly_connected_tape(
+    fragment_wire_sizes=[3, 5],
+    single_gates_per_wire=1,
+    double_gates_multiplier=1.5,
+    inter_fragment_gate_wires={(0, 1): 1},
+    repeats=2,
+):
+    """Helper function for making random weakly connected tapes."""
+    inter_fragment_gate_wires = inter_fragment_gate_wires or {}
+    with qml.tape.QuantumTape() as tape:
+        for _ in range(repeats):
+            for i, wire_size in enumerate(fragment_wire_sizes):
+                double_gates_per_fragment = int(double_gates_multiplier * wire_size)
+                for _ in range(double_gates_per_fragment):
+                    j0, j1 = np.random.choice(wire_size, size=2, replace=False)
+                    qml.CNOT(wires=[f"{i}-{j0}", f"{i}-{j1}"])
+                for _ in range(single_gates_per_wire):
+                    for j in range(wire_size):
+                        qml.RZ(0.5, wires=f"{i}-{j}")
+            for frag_pair, num_gates in inter_fragment_gate_wires.items():
+                f0, f1 = sorted(frag_pair)
+                for _ in range(num_gates):
+                    w0 = np.random.choice(fragment_wire_sizes[f0])
+                    w1 = np.random.choice(fragment_wire_sizes[f1])
+                    qml.CNOT(wires=[f"{f0}-{w0}", f"{f1}-{w1}"])
+        for i, wire_size in enumerate(fragment_wire_sizes):
+            qml.expval(qml.PauliZ(wires=[f"{i}-0"]))
+    return tape
+
+
+class TestKaHyPar:
+    """Tests for the KaHyPar cutting function and utilities."""
+
+    # devs = [qml.device("default.qubit", wires=n) for n in [4, 6]]
+    disjoint_tapes = [
+        (2, make_weakly_connected_tape(inter_fragment_gate_wires=None)),
+        (5, make_weakly_connected_tape(fragment_wire_sizes=[2] * 5, inter_fragment_gate_wires=None)),
+    ]
+    fragment_tapes = [
+        (2, make_weakly_connected_tape(inter_fragment_gate_wires={(0, 1): 1})),
+        (3, make_weakly_connected_tape(
+            fragment_wire_sizes=[2, 3, 4], inter_fragment_gate_wires={(0, 1): 2, (1, 2): 1}
+        )),
+    ]
+
+    @pytest.mark.parametrize("tape", disjoint_tapes + fragment_tapes)
+    @pytest.mark.parametrize("hyperwire_weight", [0, 2])
+    def test_graph_to_hmetis(self, tape, hyperwire_weight):
+        """Test conversion to the hMETIS format."""
+
+        graph = qcut.tape_to_graph(tape)
+        adj_nodes, edge_splits, edge_weights = qcut.graph_to_hmetis(graph, hyperwire_weight=hyperwire_weight)
+        assert len(edge_splits) - 1 == len(graph.edges)
+        assert edge_weights == (hyperwire_weight > 0)
+        assert max(adj_nodes) + 1 == len(graph.nodes)

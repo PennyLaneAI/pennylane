@@ -271,7 +271,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
 # pylint: disable=too-many-branches
 def fragment_graph(
-    graph: MultiDiGraph, cut_edges: Sequence[Tuple[Any, Any]] = None
+    graph: MultiDiGraph, cut_edges: List[Tuple[Any, Any, Any]] = None
 ) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
     """
     Fragments a graph into a collection of subgraphs as well as returning
@@ -338,8 +338,10 @@ def fragment_graph(
     for node1, node2, wire_key in graph.edges:
         if isinstance(node1, MeasureNode):
             assert isinstance(node2, PrepareNode)
-            cut_edges.append((node1, node2))
-            graph_copy.remove_edge(node1, node2, key=wire_key)
+            cut_edges.append((node1, node2, wire_key))
+
+    for node1, node2, wire_key in cut_edges:
+        graph_copy.remove_edge(node1, node2, key=wire_key)
 
     subgraph_nodes = weakly_connected_components(graph_copy)
     subgraphs = tuple(MultiDiGraph(graph_copy.subgraph(n)) for n in subgraph_nodes)
@@ -347,7 +349,7 @@ def fragment_graph(
     communication_graph = MultiDiGraph()
     communication_graph.add_nodes_from(range(len(subgraphs)))
 
-    for node1, node2 in cut_edges:
+    for node1, node2, _ in cut_edges:
         for i, subgraph in enumerate(subgraphs):
             if subgraph.has_node(node1):
                 start_fragment = i
@@ -378,7 +380,7 @@ def fragment_graph(
             subgraphs_indices_to_remove.append(i)
             prepare_nodes_removed.extend([n for n in s.nodes if isinstance(n, PrepareNode)])
 
-    measure_nodes_to_remove = [m for p in prepare_nodes_removed for m, p_ in cut_edges if p is p_]
+    measure_nodes_to_remove = [m for p in prepare_nodes_removed for m, p_, _ in cut_edges if p is p_]
     communication_graph.remove_nodes_from(subgraphs_indices_to_remove)
 
     for m in measure_nodes_to_remove:
@@ -1652,30 +1654,29 @@ def graph_to_hmetis(
             is equal to 0.
     """
     nodes = {op: order for op, order in graph.nodes(data="order")}
-    edges = {(op0, op1): wire for op0, op1, wire in graph.edges(data="wire")}
-    wires = {w for w, _ in edges}
+    wires = {w for _, _, w in graph.edges(data="wire")}
 
-    adj_nodes = [nodes[v] for e in edges for v in e]
-    edge_splits = np.cumsum([0] + [len(e) for e in edges]).tolist()
+    adj_nodes = [nodes[v] for ops in graph.edges(keys=False) for v in ops]
+    edge_splits = np.cumsum([0] + [len(e) for e in graph.edges(keys=False)]).tolist()
     edge_weights = None
 
     if hyperwire_weight:
         hyperwires = {w: set() for w in wires}
         num_wires = len(hyperwires)
 
-        for (v0, v1), wire in edges.items():
+        for v0, v1, wire in graph.edges(data="wire"):
             hyperwires[wire].update([nodes[v0], nodes[v1]])
 
         for wire, nodes_on_wire in hyperwires.items():
             nwv = len(nodes_on_wire)
             edge_splits.append(nwv + edge_splits[-1])
             adj_nodes = adj_nodes + list(nodes_on_wire)
-        assert len(edge_splits) == len(edges) + num_wires + 1
+        assert len(edge_splits) == len(graph.edges) + num_wires + 1
 
         if isinstance(hyperwire_weight, (int, float)):
             # assumes original edges having weight 1.
             wire_weights = [hyperwire_weight] * num_wires
-            edge_weights = ([1] * len(edges)) + wire_weights
+            edge_weights = ([1] * len(graph.edges)) + wire_weights
 
     return adj_nodes, edge_splits, edge_weights
 
@@ -1771,6 +1772,7 @@ def kahypar_cut(
 
     edges = edges if isinstance(edges, Iterable) else hypergraph.edges()
     cut_edges = list(compress(edges, cut_edge_mask))
+
     return cut_edges
 
 
@@ -1785,6 +1787,7 @@ def _temp_update_kahypar_ini(ini_path: Union[Path, str], updates: Dict[str, str]
         if k in updates:
             lines[i] = f"{k}={updates[k]}\n"
 
+    # need to keep it open to avoid deletion.
     f = tempfile.NamedTemporaryFile(mode="wt", suffix=".ini")
     f.writelines(lines)
 
