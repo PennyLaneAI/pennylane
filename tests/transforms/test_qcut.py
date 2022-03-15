@@ -19,6 +19,8 @@ import itertools
 import string
 import sys
 from itertools import product
+from pathlib import Path
+from jax import config
 
 import pytest
 from flaky import flaky
@@ -2954,23 +2956,95 @@ class TestKaHyPar:
 
     # devs = [qml.device("default.qubit", wires=n) for n in [4, 6]]
     disjoint_tapes = [
-        (2, make_weakly_connected_tape(inter_fragment_gate_wires=None)),
-        (5, make_weakly_connected_tape(fragment_wire_sizes=[2] * 5, inter_fragment_gate_wires=None)),
+        (2, 0, make_weakly_connected_tape(single_gates_per_wire=2, inter_fragment_gate_wires=None)),
+        (
+            5,
+            0,
+            make_weakly_connected_tape(fragment_wire_sizes=[2] * 5, inter_fragment_gate_wires=None),
+        ),
     ]
     fragment_tapes = [
-        (2, make_weakly_connected_tape(inter_fragment_gate_wires={(0, 1): 1})),
-        (3, make_weakly_connected_tape(
-            fragment_wire_sizes=[2, 3, 4], inter_fragment_gate_wires={(0, 1): 2, (1, 2): 1}
-        )),
+        (2, 2, make_weakly_connected_tape(inter_fragment_gate_wires={(0, 1): 1})),
+        (
+            3,
+            6,
+            make_weakly_connected_tape(
+                fragment_wire_sizes=[4, 5, 6],
+                single_gates_per_wire=2,
+                double_gates_multiplier=2,
+                inter_fragment_gate_wires={(0, 1): 1, (1, 2): 1},
+            ),
+        ),
     ]
+    config_path = str(
+        Path(__file__).parent.parent.parent / "pennylane/transforms/_cut_kKaHyPar_sea20.ini"
+    )
 
     @pytest.mark.parametrize("tape", disjoint_tapes + fragment_tapes)
     @pytest.mark.parametrize("hyperwire_weight", [0, 2])
     def test_graph_to_hmetis(self, tape, hyperwire_weight):
         """Test conversion to the hMETIS format."""
 
+        num_frags, num_interfrag_gates, tape = tape
         graph = qcut.tape_to_graph(tape)
-        adj_nodes, edge_splits, edge_weights = qcut.graph_to_hmetis(graph, hyperwire_weight=hyperwire_weight)
-        assert len(edge_splits) - 1 == len(graph.edges)
-        assert edge_weights == (hyperwire_weight > 0)
+        adj_nodes, edge_splits, edge_weights = qcut.graph_to_hmetis(
+            graph, hyperwire_weight=hyperwire_weight
+        )
+        assert len(edge_splits) - 1 == len(graph.edges) + (hyperwire_weight > 0) * len(tape.wires)
+        assert (not edge_weights) == (not hyperwire_weight)
         assert max(adj_nodes) + 1 == len(graph.nodes)
+
+    @pytest.mark.parametrize("tape", disjoint_tapes + fragment_tapes)
+    @pytest.mark.parametrize("hyperwire_weight", [0, 1])
+    def test_kahypar_cut(self, tape, hyperwire_weight):
+        """Test vanilla cutting with kahypar"""
+
+        num_frags, num_interfrag_gates, tape = tape
+        graph = qcut.tape_to_graph(tape)
+        adj_nodes, edge_splits, edge_weights = qcut.graph_to_hmetis(
+            graph, hyperwire_weight=hyperwire_weight
+        )
+
+        cut_edges = qcut.kahypar_cut(
+            num_fragments=num_frags,
+            adjacent_nodes=adj_nodes,
+            edge_splits=edge_splits,
+            imbalance=0.5,
+            edge_weights=edge_weights,
+            edges=graph.edges,
+        )
+
+        assert len(cut_edges) <= num_interfrag_gates * 2
+
+        frags, comm_graph = qcut.fragment_graph(graph, cut_edges)
+
+        assert len(frags) == num_frags
+        assert len(comm_graph.edges) == len(cut_edges)
+
+    @pytest.mark.parametrize("config_path", [None, config_path])
+    @pytest.mark.parametrize("block_weights", [None, [100, 100]])
+    @pytest.mark.parametrize("imbalance", [None, 0.5])
+    def test_kahypar_cut_options(self, imbalance, block_weights, config_path):
+        """Test vanilla cutting with kahypar"""
+
+        num_frags, num_interfrag_gates, tape = self.disjoint_tapes[0]
+        graph = qcut.tape_to_graph(tape)
+        adj_nodes, edge_splits, _ = qcut.graph_to_hmetis(graph)
+
+        cut_edges = qcut.kahypar_cut(
+            num_fragments=num_frags,
+            adjacent_nodes=adj_nodes,
+            edge_splits=edge_splits,
+            imbalance=imbalance,
+            block_weights=block_weights,
+            config_path=config_path,
+            seed=42,
+            verbose=True,
+        )
+
+        assert len(cut_edges) <= num_interfrag_gates * 2
+
+        frags, comm_graph = qcut.fragment_graph(graph, cut_edges)
+
+        assert len(frags) == num_frags
+        assert len(comm_graph.edges) == len(cut_edges)

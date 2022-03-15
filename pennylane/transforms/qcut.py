@@ -36,6 +36,7 @@ from typing import (
     Iterable,
 )
 from pathlib import Path
+from os import unlink
 
 from networkx import MultiDiGraph, has_path, weakly_connected_components
 
@@ -380,7 +381,9 @@ def fragment_graph(
             subgraphs_indices_to_remove.append(i)
             prepare_nodes_removed.extend([n for n in s.nodes if isinstance(n, PrepareNode)])
 
-    measure_nodes_to_remove = [m for p in prepare_nodes_removed for m, p_, _ in cut_edges if p is p_]
+    measure_nodes_to_remove = [
+        m for p in prepare_nodes_removed for m, p_, _ in cut_edges if p is p_
+    ]
     communication_graph.remove_nodes_from(subgraphs_indices_to_remove)
 
     for m in measure_nodes_to_remove:
@@ -1653,8 +1656,9 @@ def graph_to_hmetis(
         - Optional list of numerical weights assigned to each edge. None if ``hyperwire_weight``
             is equal to 0.
     """
-    nodes = {op: order for op, order in graph.nodes(data="order")}
-    wires = {w for _, _, w in graph.edges(data="wire")}
+    nodes = dict(graph.nodes(data="order"))
+    edges = graph.edges(data="wire")
+    wires = {w for _, _, w in edges}
 
     adj_nodes = [nodes[v] for ops in graph.edges(keys=False) for v in ops]
     edge_splits = np.cumsum([0] + [len(e) for e in graph.edges(keys=False)]).tolist()
@@ -1664,19 +1668,19 @@ def graph_to_hmetis(
         hyperwires = {w: set() for w in wires}
         num_wires = len(hyperwires)
 
-        for v0, v1, wire in graph.edges(data="wire"):
+        for v0, v1, wire in edges:
             hyperwires[wire].update([nodes[v0], nodes[v1]])
 
         for wire, nodes_on_wire in hyperwires.items():
             nwv = len(nodes_on_wire)
             edge_splits.append(nwv + edge_splits[-1])
             adj_nodes = adj_nodes + list(nodes_on_wire)
-        assert len(edge_splits) == len(graph.edges) + num_wires + 1
+        assert len(edge_splits) == len(edges) + num_wires + 1
 
         if isinstance(hyperwire_weight, (int, float)):
             # assumes original edges having weight 1.
             wire_weights = [hyperwire_weight] * num_wires
-            edge_weights = ([1] * len(graph.edges)) + wire_weights
+            edge_weights = ([1] * len(edges)) + wire_weights
 
     return adj_nodes, edge_splits, edge_weights
 
@@ -1718,6 +1722,7 @@ def kahypar_cut(
     Returns:
         List[Union[int, Any]]: List of cut edges.
     """
+    # pylint: disable=too-many-arguments, import-outside-toplevel
     import kahypar
 
     trial = 0 if trial is None else trial
@@ -1751,10 +1756,10 @@ def kahypar_cut(
         else:
             # Need to modify the config file and save it temporarily for kahypar to load.
             temp_config = _temp_update_kahypar_ini(
-                config_path, updates={"use-individual-part-weights": "ture"}
+                config_path, updates={"use-individual-part-weights": "true"}
             )
             context.loadINIconfiguration(temp_config.name)
-            temp_config.close()
+            unlink(temp_config.name)
             context.setCustomTargetBlockWeights(block_weights)
 
     context.setK(num_fragments)
@@ -1771,6 +1776,7 @@ def kahypar_cut(
     cut_edge_mask = [hypergraph.connectivity(e) > 1 for e in hypergraph.edges()]
 
     edges = edges if isinstance(edges, Iterable) else hypergraph.edges()
+    # compress() ignores the extra hyperwires at the end if there is any.
     cut_edges = list(compress(edges, cut_edge_mask))
 
     return cut_edges
@@ -1779,7 +1785,7 @@ def kahypar_cut(
 def _temp_update_kahypar_ini(ini_path: Union[Path, str], updates: Dict[str, str]):
     """Helper function for temporarily modify a KaHaPar config file."""
 
-    with open(ini_path, "r") as f:
+    with open(ini_path, "rt") as f:
         lines = f.readlines()
 
     for i, l in enumerate(lines):
@@ -1787,8 +1793,8 @@ def _temp_update_kahypar_ini(ini_path: Union[Path, str], updates: Dict[str, str]
         if k in updates:
             lines[i] = f"{k}={updates[k]}\n"
 
-    # need to keep it open to avoid deletion.
-    f = tempfile.NamedTemporaryFile(mode="wt", suffix=".ini")
-    f.writelines(lines)
+    with tempfile.NamedTemporaryFile(mode="wt", suffix=".ini", delete=False) as f:
+        f.writelines(lines)
+        f.flush()
 
-    return f
+        return f
