@@ -239,10 +239,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
-            squeezed_results = []
-            for res in results:
-                squeezed_results.append(qml.math.squeeze(res))
-            results = squeezed_results
+            results = [qml.math.squeeze(res) for res in results]
 
         grads = []
         start = 1 if unshifted_coeffs and f0 is None else 0
@@ -381,10 +378,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
         # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
-            squeezed_results = []
-            for res in results:
-                squeezed_results.append(qml.math.squeeze(res))
-            results = squeezed_results
+            results = [qml.math.squeeze(res) for res in results]
 
         # We need to expand the dimensions of the variance mask,
         # and convert it to be the same type as the results.
