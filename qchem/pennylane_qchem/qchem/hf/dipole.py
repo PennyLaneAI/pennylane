@@ -207,9 +207,9 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
 
         nd = [anp.array([0]), anp.array([0]), anp.array([0])]
         for i, s in enumerate(mol.symbols):  # nuclear contributions
-            nd[0] = nd[0] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][0]
-            nd[1] = nd[1] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][1]
-            nd[2] = nd[2] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][2]
+            nd[0] = nd[0] + atomic_numbers[s] * mol.coordinates[i][0]
+            nd[1] = nd[1] + atomic_numbers[s] * mol.coordinates[i][1]
+            nd[2] = nd[2] + atomic_numbers[s] * mol.coordinates[i][2]
 
         f = []
         for i in range(3):
