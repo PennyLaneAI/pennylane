@@ -65,7 +65,6 @@ jobs:
           pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
-          pip install --upgrade --pre -i https://test.pypi.org/simple/ PennyLane-Lightning==0.22.0.dev16
 
       - name: Run tests
         run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS
