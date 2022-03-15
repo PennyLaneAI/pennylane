@@ -938,6 +938,7 @@ class Operator(abc.ABC):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
+        print(list(params))
         self.data = list(params)  #: list[Any]: parameters of the operator
 
         if do_queue:
