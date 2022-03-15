@@ -90,7 +90,7 @@ def defer_measurements(tape):
     ):
         raise ValueError("Continuous variable operations and observables are not supported.")
 
-    for op in tape.queue:
+    for op in tape.operations + tape.measurements:
         op_wires_measured = set(wire for wire in op.wires if wire in measured_wires.values())
         if len(op_wires_measured) > 0:
             raise ValueError(
