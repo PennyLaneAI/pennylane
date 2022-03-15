@@ -758,6 +758,7 @@ class QubitDevice(Device):
 
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
         perm = basis_states @ powers_of_two
+        print(f"perm: \n{perm}\n")
         return self._gather(prob, perm)
 
     def expval(self, observable, shot_range=None, bin_size=None):
@@ -780,9 +781,17 @@ class QubitDevice(Device):
                 ) from e
 
             # the probability vector must be permuted to account for the permuted wire order of the observable
+            ordered_obs_wire_lst = self.get_ordered_subset(observable.wires).tolist()
             obs_wire_lst = observable.wires.tolist()
-            permuted_wires = Wires(sorted(obs_wire_lst, key=lambda label:self.wire_map[label]))
 
+            mapped_wires = [self.wire_map[label] for label in obs_wire_lst]
+            permutation = np.argsort(mapped_wires)  # extract permutation via argsort
+
+            permuted_wires = Wires([ordered_obs_wire_lst[index] for index in permutation])
+
+            print(f"------wires-----: \n{observable.wires}\n")
+            old_prob = self.probability(wires=observable.wires)
+            print(f"------permuted wires-----: \n{permuted_wires}\n ")
             prob = self.probability(wires=permuted_wires)
             # prob = self.probability(wires=observable.wires)
             return self._dot(eigvals, prob)
