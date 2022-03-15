@@ -25,7 +25,8 @@
 
 <h3>Bug fixes</h3>
 
-* The conditional measurement added gates that were not defined.
+* Fixes cases with `qml.measure` where unexpected operations were added to the
+  circuit.
   [(#2328)](https://github.com/PennyLaneAI/pennylane/pull/2328)
 
 <h3>Deprecations</h3>
