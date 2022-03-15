@@ -14,8 +14,9 @@
 """
 Unit tests for functions needed for computing the Hamiltonian.
 """
-import pennylane as qml
 import pytest
+
+import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
 
@@ -246,6 +247,12 @@ def test_qubit_observable(f_observable, q_observable):
 @pytest.mark.parametrize(
     ("f_obs", "q_obs"),
     [
+        (
+            [0],
+            # trivial case of a creation operator, 0^ -> (X_0 - iY_0) / 2
+            # reformatted the original openfermion output: (0.5+0j) [] + (-0.5+0j) [Z0]
+            ([(0.5 + 0j), (0.0 - 0.5j)], [qml.PauliX(0), qml.PauliY(0)]),
+        ),
         (
             [0, 0],
             # obtained with openfermion using: jordan_wigner(FermionOperator('0^ 0', 1))

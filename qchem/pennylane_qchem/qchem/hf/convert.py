@@ -14,6 +14,7 @@
 """
 This module contains the functions needed for computing the molecular Hamiltonian.
 """
+# pylint: disable=import-outside-toplevel
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.wires import Wires
@@ -205,8 +206,8 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
     """
     try:
         import openfermion
-    except ImportError:
-        raise ImportError("The OpenFermion package is required.")
+    except ImportError as Error:
+        raise ImportError("The OpenFermion package is required.") from Error
 
     all_wires = Wires.all_wires([op.wires for op in ops], sort=True)
 

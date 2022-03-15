@@ -14,9 +14,11 @@
 """
 This module contains the functions needed for creating fermionic and qubit observables.
 """
+# pylint: disable= too-many-branches,
 from functools import reduce
 
 import autograd.numpy as anp
+
 import pennylane as qml
 from pennylane import numpy as np
 

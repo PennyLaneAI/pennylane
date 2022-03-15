@@ -15,8 +15,6 @@
 This module contains the functions needed for computing the dipole moment.
 """
 import autograd.numpy as anp
-import pennylane as qml
-from pennylane import numpy as np
 
 from .basis_data import atomic_numbers
 from .hartree_fock import scf
@@ -208,7 +206,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
         constants, integrals = dipole_integrals(mol, core, active)(*args)
 
         nd = [anp.array([0]), anp.array([0]), anp.array([0])]
-        for i in range(len(mol.symbols)):  # nuclear contributions
+        for i, s in enumerate(mol.symbols):  # nuclear contributions
             nd[0] = nd[0] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][0]
             nd[1] = nd[1] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][1]
             nd[2] = nd[2] + atomic_numbers[mol.symbols[i]] * mol.coordinates[i][2]

@@ -16,8 +16,6 @@ This module contains the functions needed for computing the molecular Hamiltonia
 """
 # pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
 import autograd.numpy as anp
-import pennylane as qml
-from pennylane import numpy as np
 
 from .hartree_fock import nuclear_energy, scf
 from .observable import fermionic_observable, qubit_observable
