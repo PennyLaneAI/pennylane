@@ -648,7 +648,6 @@ class TestConditionalOperations:
         assert np.allclose(qml.matrix(normal_circuit)(x, y), qml.matrix(cond_qnode)(x, y))
 
 
-
 class TestTemplates:
     """Tests templates being conditioned on mid-circuit measurement outcomes."""
 
