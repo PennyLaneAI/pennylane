@@ -677,6 +677,16 @@ class TestTemplates:
 
         assert np.allclose(qnode1(), qnode2())
 
+        # Check the operations
+        for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
+            assert type(op1) == type(op2)
+            assert np.allclose(op1.data, op2.data)
+
+        # Check the measurements
+        for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
+            assert type(op1) == type(op2)
+            assert np.allclose(op1.data, op2.data)
+
     def test_angle_embedding(self):
         """Test the angle embedding template conditioned on mid-circuit
         measurement outcomes."""
@@ -705,6 +715,16 @@ class TestTemplates:
 
         assert np.allclose(res1, res2)
 
+        # Check the operations
+        for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
+            assert type(op1) == type(op2)
+            assert np.allclose(op1.data, op2.data)
+
+        # Check the measurements
+        for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
+            assert type(op1) == type(op2)
+            assert np.allclose(op1.data, op2.data)
+
     @pytest.mark.parametrize("template", [qml.StronglyEntanglingLayers, qml.BasicEntanglerLayers])
     def test_layers(self, template):
         """Test layers conditioned on mid-circuit measurement outcomes."""
@@ -730,6 +750,16 @@ class TestTemplates:
         weights = np.random.random(size=shape)
 
         assert np.allclose(qnode1(weights), qnode2(weights))
+
+        # Check the operations
+        for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
+            assert type(op1) == type(op2)
+            assert np.allclose(op1.data, op2.data)
+
+        # Check the measurements
+        for op1, op2 in zip(qnode1.qtape.measurements, qnode2.qtape.measurements):
+            assert type(op1) == type(op2)
+            assert np.allclose(op1.data, op2.data)
 
 
 class TestDrawing:
