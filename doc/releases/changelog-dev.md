@@ -20,10 +20,18 @@
   `ControlledOperation`. Control values of `0` are implemented by `qml.PauliX` applied
   before and after the controlled operation
   [(#2288)](https://github.com/PennyLaneAI/pennylane/pull/2288)
-  
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
+
+<h3>Bug fixes</h3>
+
+* The output shape of gradient transforms (e.g. `qml.gradient.param_shift`) now respects the
+  dimensionality of the QNode return statement in the same manner as executing the QNode directly
+  does. That is, a QNode with `return qml.expval(qml.PauliZ(0))` will produce a shape of the form
+  `(*)` from a gradient transform, while `return [qml.expval(qml.PauliZ(0))]` produces `(1, *)`.
+  [(#2215)](https://github.com/PennyLaneAI/pennylane/pull/2215)
 
 <h3>Documentation</h3>
 
@@ -31,4 +39,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Anthony Hayes
+Karim Alaa El-Din, Anthony Hayes, David Ittah
