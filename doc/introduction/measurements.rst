@@ -158,8 +158,8 @@ Mid-circuit measurements and conditional operations
 ---------------------------------------------------
 
 PennyLane allows specifying measurements in the middle of the circuit.
-Operations can then be conditioned on the measurement outcome of such
-mid-circuit measurements:
+Quantum functions such as operations can then be conditioned on the measurement
+outcome of such mid-circuit measurements:
 
 .. code-block:: python
 
@@ -180,7 +180,7 @@ measurement on qubit 1 yielded ``1`` as an outcome, otherwise doing nothing
 for the ``0`` measurement outcome.
 
 PennyLane implements the deferred measurement principle to transform
-conditional operations with the :func:`defer_measurements` quantum
+conditional operations with the :func:`~.defer_measurements` quantum
 function transform.
 
 .. code-block:: python
@@ -225,6 +225,10 @@ application of mid-circuit measurements and conditional operations in a
 differentiable and device-independent way. Performing true mid-circuit
 measurements and conditional operations is dependent on the
 quantum hardware and PennyLane device capabilities.
+
+For more examples on applying quantum functions conditionally, refer to the
+:func:`~.pennylane.cond` transform.
+
 
 Changing the number of shots
 ----------------------------

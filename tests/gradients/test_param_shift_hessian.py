@@ -542,6 +542,24 @@ class TestParameterShiftHessian:
         assert h_tapes == []
         assert res == ()
 
+    def test_all_zero_diff_methods(self):
+        """Test that the transform works correctly when the diff method for every parameter is
+        identified to be 0, and that no tapes were generated."""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.Rot(*params, wires=0)
+            return qml.probs([2, 3])
+
+        params = np.array([0.5, 0.5, 0.5], requires_grad=True)
+
+        result = qml.gradients.param_shift_hessian(circuit)(params)
+        assert np.allclose(result, np.zeros((4, 3, 3)), atol=0, rtol=0)
+
+        tapes, _ = qml.gradients.param_shift_hessian(circuit.tape)
+        assert tapes == []
+
     def test_f0_argument(self):
         """Test that we can provide the results of a QNode to save on quantum invocations"""
 
