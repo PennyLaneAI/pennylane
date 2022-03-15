@@ -476,8 +476,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         for i, g in enumerate(grads):
             g = qml.math.convert_like(g, results[0])
             if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
-                if qml.math.ndim(g) > 0:
-                    grads[i] = qml.math.hstack(g)
+                grads[i] = qml.math.hstack(g)
 
         return qml.math.T(qml.math.stack(grads))
 
