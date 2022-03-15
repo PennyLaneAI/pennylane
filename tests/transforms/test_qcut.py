@@ -1380,6 +1380,25 @@ class TestGraphToTape:
         ):
             [qcut.graph_to_tape(sg) for sg in subgraphs]
 
+    def test_unsupported_meas(self):
+        """
+        Tests that a subgraph containing an unsupported measurement raises the
+        correct error message.
+        """
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.var(qml.PauliZ(wires=0))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        with pytest.raises(
+            ValueError,
+            match="Invalid return type. Only expecation value and sampling measurements ",
+        ):
+            [qcut.graph_to_tape(sg) for sg in subgraphs]
+
 
 class TestGetMeasurements:
     """Tests for the _get_measurements function"""

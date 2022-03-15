@@ -468,6 +468,12 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
             else:
                 return_type = return_types.pop()
 
+            if return_type not in {Sample, Expectation}:
+                raise ValueError(
+                    "Invalid return type. Only expecation value and sampling measurements "
+                    "are supported in graph_to_tape"
+                )
+
             for meas in copy_meas:
                 obs = meas.obs
                 obs._wires = Wires([wire_map[w] for w in obs.wires])
