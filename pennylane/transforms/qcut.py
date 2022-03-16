@@ -1232,15 +1232,15 @@ def _qcut_expand_fn(
     Expands operations until reaching a depth that includes :class:`~.WireCut` operations.
     """
     # pylint: disable=unused-argument
-
     for op in tape.operations:
         if isinstance(op, WireCut):
             return tape
 
     if max_depth > 0:
-        return _qcut_expand_fn(tape.expand(), max_depth=max_depth - 1)
+        return cut_circuit.expand_fn(tape.expand(), max_depth=max_depth - 1)
 
-    raise ValueError(f"Expanded tape {max_depth} times, no WireCut operations found")
+    raise ValueError("No WireCut operations found in the expanded tape. Consider increasing "
+                     "max_depth.")
 
 
 cut_circuit.expand_fn = _qcut_expand_fn
