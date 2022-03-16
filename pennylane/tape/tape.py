@@ -154,8 +154,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         # by default expand all objects
         stop_at = lambda obj: False
 
-    new_tape = tape.__class__()
-    new_tape.__bare__ = getattr(tape, "__bare__", tape.__class__)
+    new_tape = QuantumTape()
 
     # Check for observables acting on the same wire. If present, observables must be
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
@@ -1238,7 +1237,7 @@ class QuantumTape(AnnotatedQueue):
     def data(self, params):
         self.set_parameters(params, trainable_only=False)
 
-    def copy(self, copy_operations=False, tape_cls=None):
+    def copy(self, copy_operations=False):
         """Returns a shallow copy of the quantum tape.
 
         Args:
@@ -1246,16 +1245,11 @@ class QuantumTape(AnnotatedQueue):
                 Otherwise, if False, the copied tape operations will simply be references
                 to the original tape operations; changing the parameters of one tape will likewise
                 change the parameters of all copies.
-            tape_cls (.QuantumTape): Cast the copied tape to a specific quantum tape subclass.
-                If not provided, the same subclass is used as the original tape.
 
         Returns:
             .QuantumTape: a shallow copy of the tape
         """
-        if tape_cls is None:
-            tape = self.__class__()
-        else:
-            tape = tape_cls()
+        tape = QuantumTape()
 
         if copy_operations:
             # Perform a shallow copy of all operations in the state prep, operation, and measurement

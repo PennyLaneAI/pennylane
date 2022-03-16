@@ -1354,28 +1354,6 @@ class TestTapeCopying:
         # to support PyTorch, which does not support deep copying of tensors
         assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
 
-    def test_casting(self):
-        """Test that copying and casting works as expected"""
-        with QuantumTape() as tape:
-            qml.BasisState(np.array([1, 0]), wires=[0, 1])
-            qml.RY(0.5, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
-
-        # copy and cast to a JacobianTape
-        copied_tape = tape.copy(tape_cls=qml.tape.JacobianTape)
-
-        # check that the copying worked
-        assert copied_tape is not tape
-        assert copied_tape.operations == tape.operations
-        assert copied_tape.observables == tape.observables
-        assert copied_tape.measurements == tape.measurements
-        assert copied_tape.operations[0] is tape.operations[0]
-
-        # check that the casting worked
-        assert isinstance(copied_tape, qml.tape.JacobianTape)
-        assert not isinstance(tape, qml.tape.JacobianTape)
-
 
 class TestStopRecording:
     """Test that the stop_recording function works as expected"""
