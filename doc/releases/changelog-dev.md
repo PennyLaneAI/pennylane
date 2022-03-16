@@ -14,6 +14,13 @@
 
 <h3>Improvements</h3>
 
+* The function `qml.eigvals` is modified to use the efficient `scipy.sparse.linalg.eigsh`
+  method for obtaining the eigenvalues of a `SparseHamiltonian`. This new addition is used 
+  to compute :math:`k` eigenvalues of a sparse :math:`N \times N` matrix if `k` is smaller
+  than :math:`N-1`. If a larger :math:`k` is requested, the dense matrix representation of 
+  the Hamiltonian is constructed and the regular `qml.math.linalg.eigvalsh` is applied.
+  [(#2333)](https://github.com/PennyLaneAI/pennylane/pull/2333)
+
 * The function `qml.ctrl` was given the optional argument `control_values=None`.
   If overridden, `control_values` takes an integer or a list of integers corresponding to
   the binary value that each control value should take. The same change is reflected in
@@ -48,4 +55,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Anthony Hayes, Josh Izaac, Christina Lee.
+Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Anthony Hayes, Josh Izaac,
+Soran Jahangiri, Christina Lee, Jay Soni.
