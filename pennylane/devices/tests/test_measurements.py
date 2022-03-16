@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that the different measurement types work correctly on a device."""
-# pylint: disable=no-self-use
-# pylint: disable=pointless-statement
+# pylint: disable=no-self-use,pointless-statement, no-member
 import pytest
 from flaky import flaky
 from scipy.sparse import coo_matrix
