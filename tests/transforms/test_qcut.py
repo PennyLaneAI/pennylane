@@ -2792,8 +2792,8 @@ class TestCutCircuitExpansion:
         n_blocks = qml.TTN.get_n_blocks(range(n_wires), n_block_wires)
         template_weights = [[0.1, -0.3]] * n_blocks
 
-        dev_cut = qml.device('default.qubit', wires=2)
-        dev_big = qml.device('default.qubit', wires=4)
+        dev_cut = qml.device("default.qubit", wires=2)
+        dev_big = qml.device("default.qubit", wires=4)
 
         def circuit(template_weights):
             qml.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)

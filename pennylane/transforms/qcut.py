@@ -1239,8 +1239,9 @@ def _qcut_expand_fn(
     if max_depth > 0:
         return cut_circuit.expand_fn(tape.expand(), max_depth=max_depth - 1)
 
-    raise ValueError("No WireCut operations found in the expanded tape. Consider increasing "
-                     "max_depth.")
+    raise ValueError(
+        "No WireCut operations found in the expanded tape. Consider increasing " "max_depth."
+    )
 
 
 cut_circuit.expand_fn = _qcut_expand_fn
