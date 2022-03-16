@@ -943,7 +943,7 @@ def cut_circuit(
     tape: QuantumTape,
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
-    max_depth: int = 2,
+    max_depth: int = 1,
 ) -> Tuple[Tuple[QuantumTape], Callable]:
     """
     Cut up a quantum circuit into smaller circuit fragments.
