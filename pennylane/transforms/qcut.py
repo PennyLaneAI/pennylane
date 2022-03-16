@@ -258,7 +258,9 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
 
 # pylint: disable=too-many-branches
-def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
+def fragment_graph(
+    graph: MultiDiGraph, cut_edges: List[Tuple[Any, Any, Any]] = None
+) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
     """
     Fragments a graph into a collection of subgraphs as well as returning
     the communication (`quotient <https://en.wikipedia.org/wiki/Quotient_graph>`__)
@@ -278,6 +280,9 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     Args:
         graph (nx.MultiDiGraph): directed multigraph containing measure and prepare
             nodes at cut locations
+        cut_edges: (List[Tuple[Any, Any, Any]]): List of MultiDiGraph edges to cut. Each 3-tuple
+            represents the source node, the target node, and the key of the (multi)edge. Defaults to
+            None which results in fragments by considering only existing cuts in the circuit.
 
     Returns:
         Tuple[Tuple[nx.MultiDiGraph], nx.MultiDiGraph]: the subgraphs of the cut graph
@@ -318,14 +323,16 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
 
     graph_copy = graph.copy()
 
-    cut_edges = []
+    cut_edges = cut_edges or []
     measure_nodes = [n for n in graph.nodes if isinstance(n, MeasurementProcess)]
 
-    for node1, node2, wire in graph.edges:
+    for node1, node2, wire_key in graph.edges:
         if isinstance(node1, MeasureNode):
             assert isinstance(node2, PrepareNode)
-            cut_edges.append((node1, node2))
-            graph_copy.remove_edge(node1, node2, key=wire)
+            cut_edges.append((node1, node2, wire_key))
+
+    for node1, node2, wire_key in cut_edges:
+        graph_copy.remove_edge(node1, node2, key=wire_key)
 
     subgraph_nodes = weakly_connected_components(graph_copy)
     subgraphs = tuple(MultiDiGraph(graph_copy.subgraph(n)) for n in subgraph_nodes)
@@ -333,7 +340,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     communication_graph = MultiDiGraph()
     communication_graph.add_nodes_from(range(len(subgraphs)))
 
-    for node1, node2 in cut_edges:
+    for node1, node2, _ in cut_edges:
         for i, subgraph in enumerate(subgraphs):
             if subgraph.has_node(node1):
                 start_fragment = i
@@ -364,7 +371,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
             subgraphs_indices_to_remove.append(i)
             prepare_nodes_removed.extend([n for n in s.nodes if isinstance(n, PrepareNode)])
 
-    measure_nodes_to_remove = [m for p in prepare_nodes_removed for m, p_ in cut_edges if p is p_]
+    measure_nodes_to_remove = [m for p in prepare_nodes_removed for m, p_, _ in cut_edges if p is p_]
     communication_graph.remove_nodes_from(subgraphs_indices_to_remove)
 
     for m in measure_nodes_to_remove:
