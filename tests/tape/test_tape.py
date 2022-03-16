@@ -1711,11 +1711,11 @@ measures = [
 multi_measurements = [
     ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], (2,)),
     ([qml.probs(wires=[0]), qml.probs(wires=[1])], (2, 2)),
-    ([qml.probs(wires=[0]), qml.probs(wires=[1, 2])], (2 ** 1 + 2 ** 2,)),
-    ([qml.probs(wires=[0, 2]), qml.probs(wires=[1])], (2 ** 2 + 2 ** 1,)),
+    ([qml.probs(wires=[0]), qml.probs(wires=[1, 2])], (2**1 + 2**2,)),
+    ([qml.probs(wires=[0, 2]), qml.probs(wires=[1])], (2**2 + 2**1,)),
     (
         [qml.probs(wires=[0]), qml.probs(wires=[1, 2]), qml.probs(wires=[0, 1, 2])],
-        (2 ** 1 + 2 ** 2 + 2 ** 3,),
+        (2**1 + 2**2 + 2**3,),
     ),
 ]
 
@@ -1974,9 +1974,7 @@ class TestOutputShape:
             qml.probs(wires=[0])
             qml.probs(wires=[1, 2])
 
-        with pytest.raises(
-            TapeError, match="multiple probability measurements"
-        ):
+        with pytest.raises(TapeError, match="multiple probability measurements"):
             tape.get_output_shape(dev)
 
     def test_raises_multiple_different_measurements(self):
@@ -2007,9 +2005,7 @@ class TestOutputShape:
             qml.state()
             qml.density_matrix(wires=0)
 
-        with pytest.raises(
-            TapeError, match="multiple state measurements is not supported"
-        ):
+        with pytest.raises(TapeError, match="multiple state measurements is not supported"):
             tape.get_output_shape(dev)
 
     def test_raises_sample_shot_vector(self):

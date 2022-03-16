@@ -906,7 +906,7 @@ class QuantumTape(AnnotatedQueue):
         """
         cutoff = getattr(device, "cutoff", None)
         base = 2 if cutoff is None else cutoff
-        return base ** num_systems
+        return base**num_systems
 
     @staticmethod
     def _single_measurement_shape(measurement_process, device):
