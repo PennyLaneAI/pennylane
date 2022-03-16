@@ -34,6 +34,7 @@ from pennylane.measurements import (
     State,
     Variance,
     Probability,
+    MidMeasure,
     MeasurementProcess,
     MeasurementValue,
     MeasurementValueError,
@@ -68,6 +69,25 @@ def sub_routine(label_map):
     qml.RX(0.12, wires=label_map[1])
     qml.CNOT(wires=[label_map[1], label_map[2]])
     qml.RY(3.45, wires=label_map[2])
+
+
+@pytest.mark.parametrize(
+    "return_type, value",
+    [
+        (Expectation, "expval"),
+        (Sample, "sample"),
+        (Variance, "var"),
+        (Probability, "probs"),
+        (State, "state"),
+        (MidMeasure, "measure"),
+    ],
+)
+def test_ObservableReturnTypes(return_type, value):
+    """Test the ObservableReturnTypes enum value, repr, and enum membership."""
+
+    assert return_type.value == value
+    assert isinstance(return_type, qml.measurements.ObservableReturnTypes)
+    assert repr(return_type) == value
 
 
 def test_no_measure(tol):
