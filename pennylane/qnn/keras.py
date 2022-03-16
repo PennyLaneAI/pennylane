@@ -232,7 +232,6 @@ class KerasLayer(Layer):
         else:
             self.qnode = batch_input(qnode, argnum=batch_idx)
 
-        dtype = tf.float32 if tf.keras.backend.floatx() == tf.float32 else tf.float64
         self.qnode.interface = "tf"
 
         # Allows output_dim to be specified as an int or as a tuple, e.g, 5, (5,), (5, 2), [5, 2]
