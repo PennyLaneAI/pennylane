@@ -2953,7 +2953,6 @@ def make_weakly_connected_tape(
 class TestKaHyPar:
     """Tests for the KaHyPar cutting function and utilities."""
 
-    # devs = [qml.device("default.qubit", wires=n) for n in [4, 6]]
     disjoint_tapes = [
         (2, 0, make_weakly_connected_tape(single_gates_per_wire=2, inter_fragment_gate_wires=None)),
         (
