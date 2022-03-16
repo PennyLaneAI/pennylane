@@ -201,7 +201,7 @@ class TestSingleOperation:
         ],
     )
     def test_sparse_hamiltonian(self, row, col, dat, val_ref):
-        """Test that the eigenvalues and eigenvectors of a sparse Hamiltonian are correctly returned"""
+        """Test that the eigenvalues of a sparse Hamiltonian are correctly returned"""
         # N x N matrix with N = 20
         h_sparse = scipy.sparse.coo_matrix((dat, (row, col)), shape=(len(row), len(col)))
         h_sparse = qml.SparseHamiltonian(h_sparse, wires=all)
