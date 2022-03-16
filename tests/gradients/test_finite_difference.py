@@ -20,6 +20,8 @@ from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import finite_diff, finite_diff_coeffs, generate_shifted_tapes
+from pennylane.devices import DefaultQubit
+from pennylane.operation import Observable, AnyWires
 
 
 class TestCoeffs:
@@ -341,6 +343,65 @@ class TestFiniteDiff:
         expected = [(3,), (1, 3), (2, 3), (4, 3), (4, 1, 3), (4, 2, 3)]
 
         assert all(t == q == e for t, q, e in zip(transform, qnode, expected))
+
+    def test_special_observable_qnode_differentiation(self):
+        """Test differentiation of a QNode on a device supporting a
+        special observable that returns an object rather than a number."""
+
+        class SpecialObject:
+            """SpecialObject
+
+            A special object that conveniently encapsulates the return value of
+            a special observable supported by a special device and which supports
+            multiplication with scalars and addition.
+            """
+
+            def __init__(self, val):
+                self.val = val
+
+            def __mul__(self, other):
+                return SpecialObject(self.val * other)
+
+            def __add__(self, other):
+                new = self.val + other.val if isinstance(other, self.__class__) else other
+                return SpecialObject(new)
+
+        class SpecialObservable(Observable):
+            """SpecialObservable"""
+
+            num_wires = AnyWires
+
+            def diagonalizing_gates(self):
+                """Diagonalizing gates"""
+                return []
+
+        class DeviceSupporingSpecialObservable(DefaultQubit):
+            name = "Device supporting SpecialObservable"
+            short_name = "default.qubit.specialobservable"
+            observables = DefaultQubit.observables.union({"SpecialObservable"})
+
+            def expval(self, observable, **kwargs):
+                if self.analytic and isinstance(observable, SpecialObservable):
+                    val = super().expval(qml.PauliZ(wires=0), **kwargs)
+                    return SpecialObject(val)
+
+                return super().expval(observable, **kwargs)
+
+        dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(SpecialObservable(wires=0))
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def reference_qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        par = np.array(0.2, requires_grad=True)
+        assert np.isclose(qnode(par).item().val, reference_qnode(par))
+        assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
 
 
 @pytest.mark.parametrize("approx_order", [2, 4])

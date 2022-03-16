@@ -29,8 +29,8 @@ from networkx import MultiDiGraph, has_path, weakly_connected_components
 import pennylane as qml
 from pennylane import apply, expval
 from pennylane.grouping import string_to_pauli_word
-from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Expectation, Operation, Operator, Sample, Tensor
+from pennylane.measurements import MeasurementProcess, Expectation, Sample
+from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
 from pennylane.wires import Wires
