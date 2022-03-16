@@ -38,6 +38,10 @@
   - The deprecated tape subclasses `QubitParamShiftTape`, `JacobianTape`, `CVParamShiftTape`, and
     `ReversibleTape` have been removed.
 
+- The deprecated tape execution method `tape.execute(device)` has been removed. Please use
+  `qml.execute([tape], device)` instead.
+  [(#2339)](https://github.com/PennyLaneAI/pennylane/pull/2339)
+
 <h3>Bug fixes</h3>
 
 * Fixes cases with `qml.measure` where unexpected operations were added to the
