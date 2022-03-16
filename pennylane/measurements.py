@@ -21,21 +21,56 @@ and measurement samples using AnnotatedQueues.
 import copy
 import uuid
 import warnings
+from enum import Enum
 from typing import Generic, TypeVar
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Expectation,
-    MidMeasure,
-    Observable,
-    Probability,
-    Sample,
-    State,
-    Variance,
-)
+from pennylane.operation import Observable
 from pennylane.wires import Wires
+
+# =============================================================================
+# ObservableReturnTypes types
+# =============================================================================
+
+
+class ObservableReturnTypes(Enum):
+    """Enumeration class to represent the return types of an observable."""
+
+    Sample = "sample"
+    Variance = "var"
+    Expectation = "expval"
+    Probability = "probs"
+    State = "state"
+    MidMeasure = "measure"
+
+    def __repr__(self):
+        """String representation of the return types."""
+        return str(self.value)
+
+
+Sample = ObservableReturnTypes.Sample
+"""Enum: An enumeration which represents sampling an observable."""
+
+Variance = ObservableReturnTypes.Variance
+"""Enum: An enumeration which represents returning the variance of
+an observable on specified wires."""
+
+Expectation = ObservableReturnTypes.Expectation
+"""Enum: An enumeration which represents returning the expectation
+value of an observable on specified wires."""
+
+Probability = ObservableReturnTypes.Probability
+"""Enum: An enumeration which represents returning probabilities
+of all computational basis states."""
+
+State = ObservableReturnTypes.State
+"""Enum: An enumeration which represents returning the state in the computational basis."""
+
+MidMeasure = ObservableReturnTypes.MidMeasure
+"""Enum: An enumeration which represents returning sampling the computational
+basis in the middle of the circuit."""
 
 
 class MeasurementProcess:
