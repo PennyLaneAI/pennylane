@@ -25,6 +25,10 @@
 
 <h3>Breaking changes</h3>
 
+* The `ObservableReturnTypes` `Sample`, `Variance`, `Expectation`, `Probability`, `State`, and `MidMeasure`
+  have been moved to `measurements` from `operation`.
+  [(#2329)](https://github.com/PennyLaneAI/pennylane/pull/2329)
+
 * The deprecated QNode, available via `qml.qnode_old.QNode`, has been removed. Please
   transition to using the standard `qml.QNode`.
   [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
@@ -44,4 +48,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Anthony Hayes, Josh Izaac.
+Karim Alaa El-Din, Anthony Hayes, Josh Izaac, Christina Lee.
