@@ -22,18 +22,8 @@ import warnings
 from dataclasses import InitVar, dataclass
 from functools import partial
 from itertools import product, compress
-from typing import (
-    Any,
-    Callable,
-    ClassVar,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    Iterable,
-)
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Sequence, Tuple, Union, Iterable
+
 from pathlib import Path
 
 from networkx import MultiDiGraph, has_path, weakly_connected_components

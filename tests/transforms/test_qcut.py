@@ -20,6 +20,7 @@ import string
 import sys
 from itertools import product
 from pathlib import Path
+from os import environ
 
 import pytest
 from flaky import flaky
@@ -30,6 +31,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
+import numpy as np0
 
 I, X, Y, Z = (
     np.eye(2),
@@ -2926,15 +2928,17 @@ def make_weakly_connected_tape(
     double_gates_multiplier=1.5,
     inter_fragment_gate_wires={(0, 1): 1},
     repeats=2,
+    seed=None,
 ):
     """Helper function for making random weakly connected tapes."""
+    rs = np0.random.RandomState(seed=seed)
     inter_fragment_gate_wires = inter_fragment_gate_wires or {}
     with qml.tape.QuantumTape() as tape:
         for _ in range(repeats):
             for i, wire_size in enumerate(fragment_wire_sizes):
                 double_gates_per_fragment = int(double_gates_multiplier * wire_size)
                 for _ in range(double_gates_per_fragment):
-                    j0, j1 = np.random.choice(wire_size, size=2, replace=False)
+                    j0, j1 = rs.choice(wire_size, size=2, replace=False)
                     qml.CNOT(wires=[f"{i}-{j0}", f"{i}-{j1}"])
                 for _ in range(single_gates_per_wire):
                     for j in range(wire_size):
@@ -2942,8 +2946,8 @@ def make_weakly_connected_tape(
             for frag_pair, num_gates in inter_fragment_gate_wires.items():
                 f0, f1 = sorted(frag_pair)
                 for _ in range(num_gates):
-                    w0 = np.random.choice(fragment_wire_sizes[f0])
-                    w1 = np.random.choice(fragment_wire_sizes[f1])
+                    w0 = rs.choice(fragment_wire_sizes[f0])
+                    w1 = rs.choice(fragment_wire_sizes[f1])
                     qml.CNOT(wires=[f"{f0}-{w0}", f"{f1}-{w1}"])
         for i, wire_size in enumerate(fragment_wire_sizes):
             qml.expval(qml.PauliZ(wires=[f"{i}-0"]))
@@ -2953,16 +2957,27 @@ def make_weakly_connected_tape(
 class TestKaHyPar:
     """Tests for the KaHyPar cutting function and utilities."""
 
+    # Fixes seed for Github actions:
+    seed = 11 if environ.get("CI") == "true" else None
+
     disjoint_tapes = [
-        (2, 0, make_weakly_connected_tape(single_gates_per_wire=2, inter_fragment_gate_wires=None)),
+        (
+            2,
+            0,
+            make_weakly_connected_tape(
+                single_gates_per_wire=2, inter_fragment_gate_wires=None, seed=seed
+            ),
+        ),
         (
             5,
             0,
-            make_weakly_connected_tape(fragment_wire_sizes=[2] * 5, inter_fragment_gate_wires=None),
+            make_weakly_connected_tape(
+                fragment_wire_sizes=[2] * 5, inter_fragment_gate_wires=None, seed=seed
+            ),
         ),
     ]
     fragment_tapes = [
-        (2, 2, make_weakly_connected_tape(inter_fragment_gate_wires={(0, 1): 1})),
+        (2, 2, make_weakly_connected_tape(inter_fragment_gate_wires={(0, 1): 1}, seed=seed)),
         (
             3,
             6,
@@ -2971,12 +2986,18 @@ class TestKaHyPar:
                 single_gates_per_wire=2,
                 double_gates_multiplier=2,
                 inter_fragment_gate_wires={(0, 1): 1, (1, 2): 1},
+                seed=seed,
             ),
         ),
     ]
     config_path = str(
         Path(__file__).parent.parent.parent / "pennylane/transforms/_cut_kKaHyPar_sea20.ini"
     )
+
+    def test_seed_in_ci(self):
+        if environ.get("CI") == "true":
+            print(f"CI seed set to {self.seed}")
+            assert self.seed == 11
 
     @pytest.mark.parametrize("tape", disjoint_tapes + fragment_tapes)
     @pytest.mark.parametrize("hyperwire_weight", [0, 2])
