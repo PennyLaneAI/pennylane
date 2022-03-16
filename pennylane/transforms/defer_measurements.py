@@ -44,6 +44,14 @@ def defer_measurements(tape):
         This transform does not change the list of terminal measurements returned by
         the quantum function.
 
+    .. note::
+
+        When applying the transform on a quantum function that returns
+        :func:`~.state` as the terminal measurement or contains the
+        :class:`~.Snapshot` instruction, state information corresponding to
+        simulating the transformed circuit will be obtained. No
+        post-measurement states are considered.
+
     Args:
         qfunc (function): a quantum function
 
@@ -75,22 +83,16 @@ def defer_measurements(tape):
 
     >>> qml.grad(qnode)(par)
     -0.9924450321351936
-
-    .. note::
-
-        When applying the transform on a quantum function that returns
-        :func:`~measurements.state` as the terminal measurement, the state vector corresponding
-        to the pre-measurement state of the transformed circuit will be
-        obtained. No post-measurement states are considered.
     """
     measured_wires = {}
 
-    if any(
-        isinstance(op, (qml.operation.CVOperation, qml.operation.CVObservable)) for op in tape.queue
-    ):
+    cv_types = (qml.operation.CVOperation, qml.operation.CVObservable)
+    ops_cv = any(isinstance(op, cv_types) for op in tape.operations)
+    obs_cv = any(isinstance(getattr(op, "obs", None), cv_types) for op in tape.measurements)
+    if ops_cv or obs_cv:
         raise ValueError("Continuous variable operations and observables are not supported.")
 
-    for op in tape.queue:
+    for op in tape.operations + tape.measurements:
         op_wires_measured = set(wire for wire in op.wires if wire in measured_wires.values())
         if len(op_wires_measured) > 0:
             raise ValueError(
