@@ -16,15 +16,17 @@ Functions for performing quantum circuit cutting.
 """
 
 import copy
+from pathlib import Path
 import string
 import uuid
 import warnings
 from dataclasses import InitVar, dataclass
 from functools import partial
-from itertools import product
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Sequence, Tuple, Union
+from itertools import compress, product
+from typing import Any, Callable, ClassVar, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 from networkx import MultiDiGraph, has_path, weakly_connected_components
+import numpy as np
 
 import pennylane as qml
 from pennylane import apply, expval
@@ -1616,4 +1618,197 @@ class CutStrategy:
         return probed_cuts
 
 
-# dummy change
+def graph_to_hmetis(
+    graph, hyperwire_weight=0
+) -> Tuple[List[int], List[int], List[Union[int, float]]]:
+    """Converts a MultiDiGraph into the hMETIS hypergraph format, conforming to KaHyPar's signature.
+
+    Args:
+        graph (MultiDiGraph): The original (tape-converted) graph to be cut.
+        hyperwire_weight (int): Weight on the artificially appended hyperedges representing wires.
+            Defaults to 0 which leads to no such insersion. If greater than 0, hyperedges will be
+            appended with the provided weight, assuming all other edges having weights 1.
+
+    Returns:
+        (Tuple[List,List,List]): The 3 lists representing an (optionally weighted) hypergraph:
+
+            - Flattened list of adjacent node indices.
+            - List of starting indices for edges in the above adjacent-nodes-list.
+            - Optional list of edge weights. None if ``hyperwire_weight`` is equal to 0.
+    """
+    nodes = dict(graph.nodes(data="order"))
+    edges = graph.edges(data="wire")
+    wires = {w for _, _, w in edges}
+
+    adj_nodes = [nodes[v] for ops in graph.edges(keys=False) for v in ops]
+    edge_splits = np.cumsum([0] + [len(e) for e in graph.edges(keys=False)]).tolist()
+    edge_weights = None
+
+    if hyperwire_weight:
+        hyperwires = {w: set() for w in wires}
+        num_wires = len(hyperwires)
+
+        for v0, v1, wire in edges:
+            hyperwires[wire].update([nodes[v0], nodes[v1]])
+
+        for wire, nodes_on_wire in hyperwires.items():
+            nwv = len(nodes_on_wire)
+            edge_splits.append(nwv + edge_splits[-1])
+            adj_nodes = adj_nodes + list(nodes_on_wire)
+        assert len(edge_splits) == len(edges) + num_wires + 1
+
+        if isinstance(hyperwire_weight, (int, float)):
+            # assumes original edges having weight 1.
+            wire_weights = [hyperwire_weight] * num_wires
+            edge_weights = ([1] * len(edges)) + wire_weights
+
+    return adj_nodes, edge_splits, edge_weights
+
+
+def kahypar_cut(
+    num_fragments: int,
+    adjacent_nodes: List[int],
+    edge_splits: List[int],
+    imbalance: int = None,
+    edge_weights: List[Union[int, float]] = None,
+    node_weights: List[Union[int, float]] = None,
+    fragment_weights: List[Union[int, float]] = None,
+    edges: Iterable[Any] = None,
+    seed: int = None,
+    config_path: Union[str, Path] = None,
+    trial: int = None,
+    verbose: bool = False,
+) -> List[Union[int, Any]]:
+    """Calls KaHyPar to partition a graph. Requires KaHyPar to be installed separately with
+    ``pip install kahypar``.
+
+    Args:
+        num_fragments (int): Desired number of fragments.
+        adjacent_nodes (List[int]): Flattened list of adjacent node indicies per hMETIS format.
+        edge_splits (List[int]): List of starting indices for edges in the ``adjacent_nodes``.
+        imbalance (int): Imbalance factor of the partitioning. Defaults to KaHyPar's determination.
+        edge_weights (List[Union[int, float]]): Weights for edges. Defaults to unit-weighted edges.
+        node_weights (List[Union[int, float]]): Weights for nodes. Defaults to unit-weighted nodes.
+        fragment_weights (List[Union[int, float]]): Maximum size constraints by fragment. Defaults
+            to no such constraints, with ``imbalance`` the only parameter affecting fragment sizes.
+        edges (Iterable[Any]): Mapping for returning actual cut edge objects instead of cut edge
+            indices. Defaults to None which will return cut edge indices.
+        seed (int): KaHyPar's seed. Defaults to the seed in the config file which defaults to -1,
+            i.e. unfixed seed.
+        config_path (str): KaHyPar's .ini config file path. Defaults to its SEA20 paper config.
+        trial (int): trial id for summary label creation. Defaults to None.
+        verbose (bool): Flag for printing KaHyPar's output summary. Defaults to False.
+
+    Returns:
+        List[Union[int, Any]]: List of cut edges.
+
+    **Example**
+
+    Consider the following 2-wire circuit with one CNOT gate connecting the wires:
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.CNOT(wires=[0, "a"])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires="a")
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.expval(qml.PauliZ(wires=[0]))
+
+    We can let KaHyPar find the cut placement automatically. First convert it to the input format
+    for KaHyPar's hypergraph representation:
+
+    >>> graph = qcut.tape_to_graph(tape)
+    >>> adj_nodes, edge_splits, edge_weights = qcut.graph_to_hmetis(graph)
+
+    Then feed the output to `qcut.kahypar_cut()` to find the cut edges:
+
+    >>> cut_edges = qcut.kahypar_cut(
+            num_fragments=2,
+            adjacent_nodes=adj_nodes,
+            edge_splits=edge_splits,
+            edges=graph.edges,
+        )
+    >>> cut_edges
+    [(CNOT(wires=[0, 'a']), RZ(0.24, wires=[0]), 0)]
+
+    The above cut edge can be seen in the original circuit on wire 0 after the CNOT gate
+
+    >>> tape.draw()
+    0: ──RX(0.432)──╭C──RZ(0.24)───RX(0.432)──┤ ⟨Z⟩
+    a: ──RY(0.543)──╰X──RZ(0.133)──RY(0.543)──┤
+
+    The output cut edges can be subsequently input into `fragment_graph()` to obtain the
+    fragment subcircuits and the communication graph:
+
+    >>> frags, comm_graph = qcut.fragment_graph(graph, cut_edges)
+    >>> frags
+    [<networkx.classes.multidigraph.MultiDiGraph at 0x7f3d2ed3b790>,
+    <networkx.classes.multidigraph.MultiDiGraph at 0x7f3d2ed3b8e0>]
+
+    Each fragment subcircuits can then be converted back to tape for execution:
+
+    >>> for g in frags:
+    ...     print(qcut.graph_to_tape(g).draw())
+
+    .. code-block::
+
+         0: ──RX(0.432)──╭C────────────────────────┤
+         a: ──RY(0.543)──╰X──RZ(0.133)──RY(0.543)──┤
+
+         0: ──RZ(0.24)──RX(0.432)──┤ ⟨Z⟩
+
+    """
+    # pylint: disable=too-many-arguments, import-outside-toplevel
+    import kahypar
+
+    trial = 0 if trial is None else trial
+    ne = len(edge_splits) - 1
+    nv = max(adjacent_nodes) + 1
+
+    if edge_weights is not None or node_weights is not None:
+        edge_weights = edge_weights or [1] * ne
+        node_weights = node_weights or [1] * nv
+        hypergraph = kahypar.Hypergraph(
+            nv,
+            ne,
+            edge_splits,
+            adjacent_nodes,
+            num_fragments,
+            edge_weights,
+            node_weights,
+        )
+
+    else:
+        hypergraph = kahypar.Hypergraph(nv, ne, edge_splits, adjacent_nodes, num_fragments)
+
+    context = kahypar.Context()
+
+    config_path = config_path or str(Path(__file__).parent / "_cut_kKaHyPar_sea20.ini")
+    context.loadINIconfiguration(config_path)
+
+    context.setK(num_fragments)
+
+    if isinstance(imbalance, float):
+        context.setEpsilon(imbalance)
+    if isinstance(fragment_weights, Sequence) and (len(fragment_weights) == num_fragments):
+        context.setCustomTargetBlockWeights(fragment_weights)
+
+    if isinstance(seed, int):
+        context.setSeed(int(seed))
+    if not verbose:
+        context.suppressOutput(True)
+
+    kahypar.partition(hypergraph, context)
+
+    cut_edge_mask = [hypergraph.connectivity(e) > 1 for e in hypergraph.edges()]
+
+    edges = edges if isinstance(edges, Iterable) else hypergraph.edges()
+
+    # compress() ignores the extra hyperwires at the end if there is any.
+    cut_edges = list(compress(edges, cut_edge_mask))
+
+    return cut_edges
