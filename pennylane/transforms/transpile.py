@@ -85,8 +85,9 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
 
     # make sure every wire is present in coupling map
     if any(wire not in coupling_graph.nodes for wire in tape.wires):
+        wires = [w for w in tape.wires]
         raise ValueError(
-            f"Not all wires present in coupling map! wires: {tape.wires}, coupling map: {coupling_graph.nodes}"
+            f"Not all wires present in coupling map! wires: {wires}, coupling map: {coupling_graph.nodes}"
         )
 
     if any(isinstance(m.obs, (Hamiltonian, Tensor)) for m in tape.measurements):
@@ -181,3 +182,31 @@ def _adjust_mmt_indices(_m, _map_wires):
 
     _new_obs = type(_m.obs)(wires=_new_wires, id=_m.obs.id)
     return type(_m)(return_type=_m.return_type, obs=_new_obs)
+
+
+if __name__ == "__main__":
+    import pennylane as qml
+
+    def build_qfunc_pauli_z(wires):
+        def qfunc(x, y, z):
+            qml.Hadamard(wires=wires[0])
+            qml.RZ(z, wires=wires[2])
+            qml.CNOT(wires=[wires[2], wires[0]])
+            qml.CNOT(wires=[wires[1], wires[0]])
+            qml.RX(x, wires=wires[0])
+            qml.CNOT(wires=[wires[0], wires[2]])
+            qml.RZ(-z, wires=wires[2])
+            qml.RX(y, wires=wires[0])
+            qml.PauliY(wires=wires[2])
+            qml.CY(wires=[wires[1], wires[2]])
+            return qml.expval(qml.PauliZ(wires=wires[0]))
+
+        return qfunc
+
+    dev = qml.device("default.qubit", wires=[0, 1, 2])
+
+    # build circuit
+    original_qfunc = build_qfunc_pauli_z([0, 1, 2])
+    transpiled_qfunc = transpile(coupling_map=[(0, 1)])(original_qfunc)
+    transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
+    transpiled_qnode(0.1, 0.2, 0.3)

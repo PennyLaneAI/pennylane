@@ -3,7 +3,6 @@ Unit tests for transpiler function.
 """
 from math import isclose
 import pytest
-import regex as re
 
 from pennylane import numpy as np
 import pennylane as qml
@@ -55,8 +54,10 @@ class TestTranspile:
         original_qfunc = build_qfunc_pauli_z([0, 1, 2])
         transpiled_qfunc = transpile(coupling_map=[(0, 1)])(original_qfunc)
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-        err_msg = r"Not all wires present in coupling map! wires: <Wires = [0, 2, 1]>, coupling map: [0, 1]"
-        with pytest.raises(ValueError, match=re.escape(err_msg)):
+        err_msg = (
+            "Not all wires present in coupling map! wires: \[0, 2, 1\], coupling map: \[0, 1\]"
+        )
+        with pytest.raises(ValueError, match=err_msg):
             transpiled_qnode(0.1, 0.2, 0.3)
 
     def test_transpile_raise_not_implemented_hamiltonain_mmt(self):
@@ -75,9 +76,9 @@ class TestTranspile:
         transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2), (2, 3)])(circuit)
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         err_msg = (
-            r"Measuring expectation values of tensor products or Hamiltonians is not yet supported"
+            "Measuring expectation values of tensor products or Hamiltonians is not yet supported"
         )
-        with pytest.raises(NotImplementedError, match=re.escape(err_msg)):
+        with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
 
     def test_transpile_raise_not_implemented_tensorproduct_mmt(self):
@@ -95,7 +96,7 @@ class TestTranspile:
         err_msg = (
             r"Measuring expectation values of tensor products or Hamiltonians is not yet supported"
         )
-        with pytest.raises(NotImplementedError, match=re.escape(err_msg)):
+        with pytest.raises(NotImplementedError, match=err_msg):
             transpiled_qnode()
 
     def test_transpile_qfunc_transpiled_mmt_obs(self):
