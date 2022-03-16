@@ -30,12 +30,22 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane.transforms.condition import ConditionalTransformError
 
+terminal_meas = [
+    qml.probs(wires=[1, 0]),
+    qml.expval(qml.PauliZ(0)),
+    qml.expval(qml.PauliZ("a") @ qml.PauliZ(3) @ qml.PauliZ(-1)),
+    qml.var(qml.PauliX("b")),
+    qml.state(),
+    qml.density_matrix(wires=[2, 3]),
+]
 
+
+@pytest.mark.parametrize("terminal_measurement", terminal_meas)
 class TestCond:
     """Tests that verify that the cond transform works as expect."""
 
-    def test_cond_queues(self):
-        """Test that qml.cond queues Conditional operations as expected."""
+    def test_cond_ops(self, terminal_measurement):
+        """Test that qml.cond creates conditional operations as expected."""
         r = 1.234
 
         def f(x):
@@ -46,12 +56,12 @@ class TestCond:
         with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(0)
             qml.cond(m_0, f)(r)
-            qml.probs(wires=1)
+            qml.apply(terminal_measurement)
 
-        ops = tape.queue
+        ops = tape.operations
         target_wire = qml.wires.Wires(1)
 
-        assert len(ops) == 5
+        assert len(ops) == 4
         assert ops[0].return_type == qml.operation.MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
@@ -67,31 +77,32 @@ class TestCond:
         assert isinstance(ops[3].then_op, qml.PauliZ)
         assert ops[3].then_op.wires == target_wire
 
-        assert ops[4].return_type == qml.operation.Probability
+        assert len(tape.measurements) == 1
+        assert tape.measurements[0] is terminal_measurement
 
-    def tape_with_else(f, g, r):
+    def tape_with_else(f, g, r, meas):
         """Tape that uses cond by passing both a true and false func."""
         with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(0)
             qml.cond(m_0, f, g)(r)
-            qml.probs(wires=1)
+            qml.apply(meas)
 
         return tape
 
-    def tape_uses_cond_twice(f, g, r):
+    def tape_uses_cond_twice(f, g, r, meas):
         """Tape that uses cond twice such that it's equivalent to using cond
         with two functions being passed (tape_with_else)."""
         with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(0)
             qml.cond(m_0, f)(r)
             qml.cond(~m_0, g)(r)
-            qml.probs(wires=1)
+            qml.apply(meas)
 
         return tape
 
     @pytest.mark.parametrize("tape", [tape_with_else, tape_uses_cond_twice])
-    def test_cond_queues_with_else(self, tape):
-        """Test that qml.cond queues Conditional operations as expected in two cases:
+    def test_cond_operationss_with_else(self, tape, terminal_measurement):
+        """Test that qml.cond operationss Conditional operations as expected in two cases:
         1. When an else qfunc is provided;
         2. When qml.cond is used twice equivalent to using an else qfunc.
         """
@@ -105,11 +116,11 @@ class TestCond:
         def g(x):
             qml.PauliY(1)
 
-        tape = tape(f, g, r)
-        ops = tape.queue
+        tape = tape(f, g, r, terminal_measurement)
+        ops = tape.operations
         target_wire = qml.wires.Wires(1)
 
-        assert len(ops) == 6
+        assert len(ops) == 5
 
         assert ops[0].return_type == qml.operation.MidMeasure
 
@@ -137,14 +148,15 @@ class TestCond:
         # However, it is not the same for the false_fn
         assert ops[3].meas_val is not ops[4].meas_val
 
-        assert ops[5].return_type == qml.operation.Probability
+        assert len(tape.measurements) == 1
+        assert tape.measurements[0] is terminal_measurement
 
-    def test_cond_error(self):
+    def test_cond_error(self, terminal_measurement):
         """Test that an error is raised when the qfunc has a measurement."""
         dev = qml.device("default.qubit", wires=3)
 
         def f():
-            return qml.state()
+            return qml.apply(terminal_measurement)
 
         with pytest.raises(
             ConditionalTransformError, match="contain no measurements can be applied conditionally"
@@ -152,7 +164,7 @@ class TestCond:
             m_0 = qml.measure(1)
             qml.cond(m_0, f)()
 
-    def test_cond_error_else(self):
+    def test_cond_error_else(self, terminal_measurement):
         """Test that an error is raised when one of the qfuncs has a
         measurement."""
         dev = qml.device("default.qubit", wires=3)
@@ -161,7 +173,7 @@ class TestCond:
             qml.PauliX(0)
 
         def g():
-            return qml.state()
+            return qml.apply(terminal_measurement)
 
         with pytest.raises(
             ConditionalTransformError, match="contain no measurements can be applied conditionally"
@@ -176,7 +188,7 @@ class TestCond:
             qml.cond(m_0, g, f)()  # Check that the same error is raised when f and g are swapped
 
     @pytest.mark.parametrize("inp", [1, "string", qml.PauliZ(0)])
-    def test_cond_error_unrecognized_input(self, inp):
+    def test_cond_error_unrecognized_input(self, inp, terminal_measurement):
         """Test that an error is raised when the input is not recognized."""
         dev = qml.device("default.qubit", wires=3)
 
@@ -188,23 +200,24 @@ class TestCond:
             qml.cond(m_0, inp)()
 
 
+@pytest.mark.parametrize("terminal_measurement", terminal_meas)
 class TestOtherTransforms:
     """Tests that qml.cond works correctly with other transforms."""
 
-    def test_cond_queues_with_adjoint(self):
-        """Test that qml.cond queues Conditional operations as expected with
+    def test_cond_operationss_with_adjoint(self, terminal_measurement):
+        """Test that qml.cond operationss Conditional operations as expected with
         qml.adjoint."""
         r = 1.234
 
         with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.adjoint(qml.RX), qml.RX)(r, wires=1)
-            qml.probs(wires=1)
+            qml.apply(terminal_measurement)
 
-        ops = tape.queue
+        ops = tape.operations
         target_wire = qml.wires.Wires(1)
 
-        assert len(ops) == 4
+        assert len(ops) == 3
         assert ops[0].return_type == qml.operation.MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
@@ -217,29 +230,30 @@ class TestOtherTransforms:
         assert ops[2].then_op.data == [r]
         assert ops[2].then_op.wires == target_wire
 
-        assert ops[3].return_type == qml.operation.Probability
+        assert len(tape.measurements) == 1
+        assert tape.measurements[0] is terminal_measurement
 
-    def test_cond_queues_with_ctrl(self):
-        """Test that qml.cond queues Conditional operations as expected with
+    def test_cond_operationss_with_ctrl(self, terminal_measurement):
+        """Test that qml.cond operations Conditional operations as expected with
         qml.ctrl."""
         r = 1.234
 
         with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(0)
             qml.cond(m_0, qml.ctrl(qml.RX, 1), qml.ctrl(qml.RY, 1))(r, wires=2)
-            qml.probs(wires=[1, 2])
+            qml.apply(terminal_measurement)
 
-        ops = tape.queue
+        ops = tape.operations
         target_wire = qml.wires.Wires(2)
 
-        assert len(ops) == 4
+        assert len(ops) == 3
         assert ops[0].return_type == qml.operation.MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
         assert isinstance(ops[1].then_op, qml.transforms.control.ControlledOperation)
 
-        assert len(ops[1].then_op.subtape.queue) == 1
-        controlled_op = ops[1].then_op.subtape.queue[0]
+        assert len(ops[1].then_op.subtape.operations) == 1
+        controlled_op = ops[1].then_op.subtape.operations[0]
         assert isinstance(controlled_op, qml.RX)
         assert controlled_op.data == [r]
         assert controlled_op.wires == target_wire
@@ -247,41 +261,43 @@ class TestOtherTransforms:
         assert isinstance(ops[2], qml.transforms.condition.Conditional)
         assert isinstance(ops[2].then_op, qml.transforms.control.ControlledOperation)
 
-        assert len(ops[2].then_op.subtape.queue) == 1
-        controlled_op = ops[2].then_op.subtape.queue[0]
+        assert len(ops[2].then_op.subtape.operations) == 1
+        controlled_op = ops[2].then_op.subtape.operations[0]
         assert isinstance(controlled_op, qml.RY)
         assert controlled_op.data == [r]
         assert controlled_op.wires == target_wire
 
-        assert ops[3].return_type == qml.operation.Probability
+        assert len(tape.measurements) == 1
+        assert tape.measurements[0] is terminal_measurement
 
-    def test_ctrl_queues_with_cond(self):
-        """Test that qml.cond queues Conditional operations as expected with
+    def test_ctrl_operationss_with_cond(self, terminal_measurement):
+        """Test that qml.cond operationss Conditional operations as expected with
         qml.ctrl."""
         r = 1.234
 
         with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(0)
             qml.ctrl(qml.cond(m_0, qml.RX, qml.RY), 1)(r, wires=0)
-            qml.probs(wires=[1, 2])
+            qml.apply(terminal_measurement)
 
-        ops = tape.queue
+        ops = tape.operations
         target_wire = qml.wires.Wires(2)
 
-        assert len(ops) == 3
+        assert len(ops) == 2
         assert ops[0].return_type == qml.operation.MidMeasure
 
         assert isinstance(ops[1], qml.transforms.control.ControlledOperation)
-        assert len(ops[1].subtape.queue) == 2
+        assert len(ops[1].subtape.operations) == 2
 
-        op1 = ops[1].subtape.queue[0]
+        op1 = ops[1].subtape.operations[0]
         assert isinstance(op1, qml.transforms.condition.Conditional)
         assert isinstance(op1.then_op, qml.RX)
         assert op1.then_op.data == [r]
 
-        op2 = ops[1].subtape.queue[1]
+        op2 = ops[1].subtape.operations[1]
         assert isinstance(op2, qml.transforms.condition.Conditional)
         assert isinstance(op2.then_op, qml.RY)
         assert op1.then_op.data == [r]
 
-        assert ops[2].return_type == qml.operation.Probability
+        assert len(tape.measurements) == 1
+        assert tape.measurements[0] is terminal_measurement
