@@ -1652,12 +1652,11 @@ def graph_to_hmetis(
             appended with the provided weight, assuming all other edges having weights 1.
 
     Returns:
-        (Tuple[List,List,List]): The 3 lists representing an optionally weighted hypergraph:
-        - Flattened list of adjacent node indices.
-        - List of starting indices for edges in the above adjacent-nodes-list. For regular
-            non-hypergraphs, it's simply [0, 2, 4, 6, ... ].
-        - Optional list of numerical weights assigned to each edge. None if ``hyperwire_weight``
-            is equal to 0.
+        (Tuple[List,List,List]): The 3 lists representing an (optionally weighted) hypergraph:
+
+            - Flattened list of adjacent node indices.
+            - List of starting indices for edges in the above adjacent-nodes-list.
+            - Optional list of edge weights. None if ``hyperwire_weight`` is equal to 0.
     """
     nodes = dict(graph.nodes(data="order"))
     edges = graph.edges(data="wire")
@@ -1709,8 +1708,7 @@ def kahypar_cut(
         num_fragments (int): Desired number of fragments.
         adjacent_nodes (List[int]): Flattened list of adjacent node indicies per hMETIS format.
         edge_splits (List[int]): List of starting indices for edges in the ``adjacent_nodes``.
-        imbalance (int): Imbalance factor of the partitioning. Defaults to KaHyPar's default
-            selection.
+        imbalance (int): Imbalance factor of the partitioning. Defaults to KaHyPar's determination.
         edge_weights (List[Union[int, float]]): Weights for edges. Defaults to unit-weighted edges.
         node_weights (List[Union[int, float]]): Weights for nodes. Defaults to unit-weighted nodes.
         fragment_weights (List[Union[int, float]]): Maximum size constraints by fragment. Defaults
@@ -1718,7 +1716,7 @@ def kahypar_cut(
         edges (Iterable[Any]): Mapping for returning actual cut edge objects instead of cut edge
             indices. Defaults to None which will return cut edge indices.
         seed (int): KaHyPar's seed. Defaults to the seed in the config file which defaults to -1,
-            i.e. no seed.
+            i.e. unfixed seed.
         config_path (str): KaHyPar's .ini config file path. Defaults to its SEA20 paper config.
         trial (int): trial id for summary label creation. Defaults to None.
         verbose (bool): Flag for printing KaHyPar's output summary. Defaults to False.
