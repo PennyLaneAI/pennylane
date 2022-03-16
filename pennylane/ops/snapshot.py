@@ -18,7 +18,6 @@ cv and qubit computing paradigms in PennyLane.
 from pennylane.operation import AnyWires, Operation
 
 
-
 # pylint: disable=unused-argument
 class Snapshot(Operation):
     r"""
