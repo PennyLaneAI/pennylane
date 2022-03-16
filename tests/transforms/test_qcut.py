@@ -1291,7 +1291,7 @@ class TestGraphToTape:
         # For tapes with multiple measurements, the ordering varies
         # so we check the set of wires rather that the order
         for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
-            assert meas.return_type is qml.operation.Sample
+            assert meas.return_type is qml.measurements.Sample
             assert isinstance(meas.obs, qml.Projector)
             assert meas.obs.wires in {Wires(1), Wires(2)}
 
@@ -1332,7 +1332,7 @@ class TestGraphToTape:
         frag1_expected_meas = [qml.sample(qml.Projector([1], wires=[2]))]
 
         for meas, expected_meas in zip(tapes[0].measurements, frag1_expected_meas):
-            assert meas.return_type is qml.operation.Sample
+            assert meas.return_type is qml.measurements.Sample
             assert isinstance(meas.obs, qml.Projector)
             assert meas.obs.wires in {Wires(0), Wires(3)}
 
