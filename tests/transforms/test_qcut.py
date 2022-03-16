@@ -414,7 +414,7 @@ class TestTapeToGraph:
             assert node.wires == expected_node.wires
 
             if getattr(node, "obs", None) is not None:
-                assert node.return_type is qml.operation.Sample
+                assert node.return_type is qml.measurements.Sample
                 assert node.obs.name == expected_node.obs.name
 
     def test_sample_tensor_obs(self):
@@ -468,7 +468,7 @@ class TestTapeToGraph:
             assert node.wires == expected_node.wires
 
             if getattr(node, "obs", None) is not None:
-                assert node.return_type is qml.operation.Sample
+                assert node.return_type is qml.measurements.Sample
                 assert node.obs.name == expected_node.obs.name
 
 
