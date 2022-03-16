@@ -53,4 +53,3 @@
 This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Anthony Hayes, Josh Izaac
-
