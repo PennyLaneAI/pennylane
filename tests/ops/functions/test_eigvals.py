@@ -172,10 +172,30 @@ class TestSingleOperation:
                         0.93441394 + 0.0j,
                     ]
                 ),
-                # the first six lowest eigenvalues of the same matrix computed with np.linalg.eigh(H_dense)
-                # scipy.sparse.linalg.eigsh computes k ( = 6 by default) eigenvalues and eigenvectors
+                # eigenvalues of the same matrix computed with np.linalg.eigh(H_dense)
                 np.array(
-                    [-1.13730605, -0.5363422, -0.5363422, -0.52452264, -0.52452264, -0.52452264]
+                    [
+                        -1.13730605,
+                        -0.5363422,
+                        -0.5363422,
+                        -0.52452264,
+                        -0.52452264,
+                        -0.52452264,
+                        -0.44058792,
+                        -0.44058792,
+                        -0.16266858,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.0,
+                        0.2481941,
+                        0.2481941,
+                        0.36681148,
+                        0.36681148,
+                        0.49523726,
+                        0.72004228,
+                        0.93441394,
+                    ]
                 ),
             ),
         ],
@@ -184,8 +204,11 @@ class TestSingleOperation:
         """Test that the eigenvalues and eigenvectors of a sparse Hamiltonian are correctly returned"""
         h_sparse = scipy.sparse.coo_matrix((dat, (row, col)), shape=(len(row), len(col)))
         h_sparse = qml.SparseHamiltonian(h_sparse, wires=all)
-        val = qml.eigvals(h_sparse)
-        assert np.allclose(np.sort(val), val_ref)
+        val_groundstate = qml.eigvals(h_sparse, k=1)
+        val_all = qml.eigvals(h_sparse, k=len(val_ref))
+
+        assert np.allclose(val_groundstate, val_ref[0])
+        assert np.allclose(np.sort(val_all), val_ref)
 
 
 class TestMultipleOperations:

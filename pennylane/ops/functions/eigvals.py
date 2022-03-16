@@ -25,12 +25,14 @@ import pennylane as qml
 
 
 @qml.op_transform
-def eigvals(op):
+def eigvals(op, k=1, which="SA"):
     r"""The eigenvalues of one or more operations.
 
     Args:
         op (.Operator, pennylane.QNode, .QuantumTape, or Callable): An operator, quantum node, tape,
             or function that applies quantum operations.
+        k (integer): The number of eigenvalues and eigenvectors to be returned for a SparseHamiltonian.
+        which (str): Method for computing the eigenvalues of a SparseHamiltonian with Scipy.
 
     Returns:
         tensor_like or function: If an operator is provided as input, the eigenvalues are returned directly.
@@ -98,7 +100,11 @@ def eigvals(op):
         return qml.math.linalg.eigvalsh(qml.matrix(op))
 
     if isinstance(op, qml.SparseHamiltonian):
-        return scipy.sparse.linalg.eigsh(op.sparse_matrix(), k=6, which="SA")[0]
+        sparse_matrix = op.sparse_matrix()
+        if k < sparse_matrix.shape[0] - 1:
+            return scipy.sparse.linalg.eigsh(sparse_matrix, k=k, which=which)[0]
+        else:
+            return qml.math.linalg.eigvalsh(sparse_matrix.toarray())
 
     # TODO: make `get_eigvals` take a `wire_order` argument to mimic `get_matrix`
     return op.get_eigvals()
