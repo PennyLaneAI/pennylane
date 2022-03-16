@@ -20,7 +20,9 @@
   `ControlledOperation`. Control values of `0` are implemented by `qml.PauliX` applied
   before and after the controlled operation
   [(#2288)](https://github.com/PennyLaneAI/pennylane/pull/2288)
-  
+
+* Circuit cutting now performs expansion to search for wire cuts in contained operations or tapes.
+
 <h3>Deprecations</h3>
 
 <h3>Breaking changes</h3>
@@ -48,4 +50,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Guillermo Alonso-Linaje, Anthony Hayes, Josh Izaac
+Karim Alaa El-Din, Guillermo Alonso-Linaje, Tom Bromley, Anthony Hayes, Josh Izaac
