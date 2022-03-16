@@ -2079,7 +2079,7 @@ class WireCut(Operation):
     grad_method = None
 
     @staticmethod
-    def compute_decomposition(_):
+    def compute_decomposition(wires):  # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         Since this operator is a placeholder inside a circuit, it decomposes into an empty list.
