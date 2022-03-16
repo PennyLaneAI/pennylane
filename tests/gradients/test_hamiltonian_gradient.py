@@ -21,7 +21,7 @@ def test_behaviour():
 
     dev = qml.device("default.qubit", wires=2)
 
-    with qml.tape.JacobianTape() as tape:
+    with qml.tape.QuantumTape() as tape:
         qml.RY(0.3, wires=0)
         qml.RX(0.5, wires=1)
         qml.CNOT(wires=[0, 1])
@@ -34,13 +34,13 @@ def test_behaviour():
     tapes, processing_fn = hamiltonian_grad(tape, idx=1)
     res2 = processing_fn(dev.batch_execute(tapes))
 
-    with qml.tape.JacobianTape() as tape1:
+    with qml.tape.QuantumTape() as tape1:
         qml.RY(0.3, wires=0)
         qml.RX(0.5, wires=1)
         qml.CNOT(wires=[0, 1])
         qml.expval(qml.PauliZ(0))
 
-    with qml.tape.JacobianTape() as tape2:
+    with qml.tape.QuantumTape() as tape2:
         qml.RY(0.3, wires=0)
         qml.RX(0.5, wires=1)
         qml.CNOT(wires=[0, 1])

@@ -30,12 +30,57 @@ This quantum function uses the :class:`RZ <pennylane.RZ>`,
 :ref:`noisy channel <intro_ref_ops_channels>` as well as the
 :class:`PauliZ <pennylane.PauliZ>` :ref:`observable <intro_ref_ops_qobs>`.
 
-Note that PennyLane supports inverting quantum operations via the
-:meth:`Op(param, wires).inv() <.Operation.inv>` method. Additionally, PennyLane
-provides a function :func:`qml.inv <.pennylane.inv>` that can be used to invert sequences
-of operations and :doc:`templates`.
+Below is a list of all quantum operations and operation functions supported by PennyLane.
 
-Below is a list of all quantum operations supported by PennyLane.
+Operator functions
+------------------
+
+Various functions and transforms are available for manipulating operators,
+and extracting information.
+
+.. autosummary::
+
+    ~pennylane.adjoint
+    ~pennylane.ctrl
+    ~pennylane.cond
+    ~pennylane.matrix
+    ~pennylane.eigvals
+    ~pennylane.generator
+
+All operator functions can be used on instantiated operators,
+
+>>> op = qml.RX(0.54, wires=0)
+>>> qml.matrix(op)
+[[0.9637709+0.j         0.       -0.26673144j]
+[0.       -0.26673144j 0.9637709+0.j        ]]
+
+Operator functions can also be used in a functional form:
+
+>>> x = torch.tensor(0.6, requires_grad=True)
+>>> matrix_fn = qml.matrix(qml.RX)
+>>> matrix_fn(x)
+tensor([[0.9553+0.0000j, 0.0000-0.2955j],
+      [0.0000-0.2955j, 0.9553+0.0000j]], grad_fn=<AddBackward0>)
+
+In its functional form, most are fully differentiable with respect to gate arguments:
+
+>>> loss = torch.real(torch.trace(matrix_fn(x, wires=0)))
+>>> loss.backward()
+>>> x.grad
+tensor(-0.5910)
+
+Some operator transform can also act on multiple operations, by passing
+quantum functions, qnodes or tapes:
+
+>>> def circuit(theta):
+...     qml.RX(theta, wires=1)
+...     qml.PauliZ(wires=0)
+>>> qml.matrix(circuit)(np.pi / 4)
+array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
+[ 0.+0.j,  -0.92387953+0.j,  0.+0.j,  0. +0.38268343j],
+[ 0. -0.38268343j,  0.+0.j,  0.92387953+0.j,  0.+0.j],
+[ 0.+0.j,  0.+0.38268343j,  0.+0.j,  -0.92387953+0.j]])
+
 
 .. _intro_ref_ops_qubit:
 
@@ -249,8 +294,12 @@ solving the minimum clique cover problem, and auxiliary functions, refer to the
 
 .. _intro_ref_ops_cv:
 
-Continuous-variable (CV) operations
+Continuous-Variable (CV) operations
 -----------------------------------
+
+If you would like to learn more about the CV model of quantum computing, check out the
+`quantum photonics <https://strawberryfields.ai/photonics/concepts/photonics.html>`_
+page of the `Strawberry Fields <https://strawberryfields.ai/>`__ documentation.
 
 .. _intro_ref_ops_cvgates:
 

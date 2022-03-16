@@ -99,13 +99,13 @@ def test_mottonenstate_preparation(mocker):
     batch_size = 3
 
     # create a batched input statevector
-    data = np.random.random((batch_size, 2 ** 3))
+    data = np.random.random((batch_size, 2**3))
     data /= np.linalg.norm(data, axis=1).reshape(-1, 1)  # normalize
     weights = np.random.random((batch_size, 10, 3, 3))
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data, weights)
-    assert res.shape == (batch_size, 2 ** 3)
+    assert res.shape == (batch_size, 2**3)
     assert len(spy.call_args[0][0]) == batch_size
 
     # check the results against individually executed circuits (no batching)
@@ -140,7 +140,7 @@ def test_basis_state_preparation(mocker):
 
     spy = mocker.spy(circuit.device, "batch_execute")
     res = circuit(data, weights)
-    assert res.shape == (batch_size, 2 ** 4)
+    assert res.shape == (batch_size, 2**4)
     assert len(spy.call_args[0][0]) == batch_size
 
     # check the results against individually executed circuits (no batching)
@@ -378,3 +378,18 @@ def test_initial_unbatched_parameter():
 
     with pytest.raises(ValueError, match="Parameter 0.2 does not contain a batch"):
         circuit(x, y)
+
+
+def test_no_batch_param_error():
+    """Test that the right error is thrown when there is nothing to batch"""
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.batch_params
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RY(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    x = [0.2, 0.6, 3]
+    with pytest.raises(ValueError, match="There are no operations to transform"):
+        circuit(x)

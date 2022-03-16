@@ -16,8 +16,8 @@ This module contains the CircuitDrawer class which is used to draw CircuitGraph 
 """
 from collections import OrderedDict
 
-import pennylane as qml
 from pennylane.wires import Wires
+from pennylane.utils import _flatten
 from .charsets import CHARSETS, CharSet
 from .representation_resolver import RepresentationResolver
 from .grid import Grid
@@ -155,9 +155,7 @@ class CircuitDrawer:
             Wires: active wires on the device
         """
         # pylint: disable=protected-access
-        all_operators = list(qml.utils._flatten(raw_operation_grid)) + list(
-            qml.utils._flatten(raw_observable_grid)
-        )
+        all_operators = list(_flatten(raw_operation_grid)) + list(_flatten(raw_observable_grid))
         all_wires_with_duplicates = [op.wires for op in all_operators if op is not None]
         # make Wires object containing all used wires
         all_wires = Wires.all_wires(all_wires_with_duplicates)

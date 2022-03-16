@@ -23,10 +23,10 @@ from math import cos, sin, sqrt
 
 import pytest
 import numpy as np
-import pennylane as qml
-
 from scipy.linalg import block_diag
 from flaky import flaky
+
+import pennylane as qml
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -38,6 +38,7 @@ np.random.seed(42)
 # gates for which device support is tested
 ops = {
     "Identity": qml.Identity(wires=[0]),
+    "Snapshot": qml.Snapshot("label"),
     "BasisState": qml.BasisState(np.array([0]), wires=[0]),
     "CNOT": qml.CNOT(wires=[0, 1]),
     "CRX": qml.CRX(0, wires=[0, 1]),
@@ -331,7 +332,7 @@ class TestGatesQubit:
 
         res = circuit()
 
-        expected = np.zeros([2 ** n_wires])
+        expected = np.zeros([2**n_wires])
         expected[np.ravel_multi_index(basis_state, [2] * n_wires)] = 1
         assert np.allclose(res, expected, atol=tol(dev.shots))
 

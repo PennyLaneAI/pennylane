@@ -134,7 +134,7 @@ def test_nested_adjoint_on_function():
     )
 
 
-with qml.tape.JacobianTape() as tape:
+with qml.tape.QuantumTape() as tape:
     qml.PauliX(0)
     qml.Hadamard(1)
 
@@ -264,7 +264,7 @@ class TestTemplateIntegration:
 
         weights = np.array([1, 0, 1])
         res = circuit(weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
         assert np.allclose(res, expected)
 
@@ -313,7 +313,7 @@ class TestTemplateIntegration:
         weights = np.random.random(template.shape(2, 3))
 
         res = circuit(features, weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -331,7 +331,7 @@ class TestTemplateIntegration:
 
         features = np.array([1.0, 2.0, 3.0])
         res = circuit(features)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -356,7 +356,7 @@ class TestTemplateIntegration:
 
         weights = np.random.random(template.shape(2, 3))
         res = circuit(weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -381,7 +381,7 @@ class TestTemplateIntegration:
 
         weights = np.random.random(template.shape(2, 3))
         res = circuit(weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -399,7 +399,7 @@ class TestTemplateIntegration:
 
         weights = [np.random.random(s) for s in template.shape(2, 3)]
         res = circuit(weights[0], *weights[1:])
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -420,7 +420,7 @@ class TestTemplateIntegration:
             return qml.state()
 
         res = circuit(0.5)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
         assert np.allclose(res, expected)
 
@@ -437,7 +437,7 @@ class TestTemplateIntegration:
 
         weights = np.random.random(template.shape(3))
         res = circuit(weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -454,7 +454,7 @@ class TestTemplateIntegration:
             return qml.state()
 
         res = circuit(0.6)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -471,7 +471,7 @@ class TestTemplateIntegration:
             return qml.state()
 
         res = circuit(0.6)
-        expected = np.zeros([2 ** 4])
+        expected = np.zeros([2**4])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -511,7 +511,36 @@ class TestTemplateIntegration:
             return qml.state()
 
         res = circuit([[[0.6, 0.8]]])
-        expected = np.zeros([2 ** 4])
+        expected = np.zeros([2**4])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
+
+
+def test_op_that_overwrites_expand():
+    """Tests the adjoint method applied on an operation that overwrites the expand method.
+
+    .. note::
+        This is a discontinued practice, since all operators should define their decomposition
+        in decomposition() or compute_decomposition(). Once the new standard is established
+        everywhere, we can remove the "if isinstance(new_ops, QuantumTape)" check in
+        the adjoint method.
+    """
+    dev = qml.device("default.qubit", wires=3)
+
+    class MyOp(qml.operation.Operation):
+        num_wires = 1
+
+        def expand(self):
+            with qml.tape.QuantumTape() as tape:
+                qml.RX(0.1, wires=self.wires)
+            return tape
+
+    @qml.qnode(dev)
+    def circuit():
+        MyOp(wires=[0])
+        qml.adjoint(MyOp)(wires=[0])
+        return qml.state()
+
+    res = circuit()
+    assert len(np.nonzero(res)) == 1

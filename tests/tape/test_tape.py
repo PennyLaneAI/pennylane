@@ -21,8 +21,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import CircuitGraph
-from pennylane.tape import QuantumTape, UnsupportedTapeOperationError
-from pennylane.measure import MeasurementProcess, expval, sample, var
+from pennylane.tape import QuantumTape, TapeError
+from pennylane.measurements import MeasurementProcess, expval, sample, var
 
 
 def TestOperationMonkeypatching():
@@ -88,22 +88,22 @@ class TestConstruction:
 
         # test that the internal tape._measurements list is created properly
         assert isinstance(tape._measurements[0], MeasurementProcess)
-        assert tape._measurements[0].return_type == qml.operation.Expectation
+        assert tape._measurements[0].return_type == qml.measurements.Expectation
         assert tape._measurements[0].obs == obs[0]
 
         assert isinstance(tape._measurements[1], MeasurementProcess)
-        assert tape._measurements[1].return_type == qml.operation.Probability
+        assert tape._measurements[1].return_type == qml.measurements.Probability
 
         # test the public observables property
         assert len(tape.observables) == 2
         assert tape.observables[0].name == "PauliX"
-        assert tape.observables[1].return_type == qml.operation.Probability
+        assert tape.observables[1].return_type == qml.measurements.Probability
 
         # test the public measurements property
         assert len(tape.measurements) == 2
         assert all(isinstance(m, MeasurementProcess) for m in tape.measurements)
-        assert tape.observables[0].return_type == qml.operation.Expectation
-        assert tape.observables[1].return_type == qml.operation.Probability
+        assert tape.observables[0].return_type == qml.measurements.Expectation
+        assert tape.observables[1].return_type == qml.measurements.Probability
 
     def test_tensor_observables_matmul(self):
         """Test that tensor observables are correctly processed from the annotated
@@ -117,7 +117,7 @@ class TestConstruction:
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs2]
-        assert tape.measurements[0].return_type is qml.operation.Expectation
+        assert tape.measurements[0].return_type is qml.measurements.Expectation
         assert tape.measurements[0].obs is t_obs2
 
     def test_tensor_observables_rmatmul(self):
@@ -133,7 +133,7 @@ class TestConstruction:
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs2]
-        assert tape.measurements[0].return_type is qml.operation.Expectation
+        assert tape.measurements[0].return_type is qml.measurements.Expectation
         assert tape.measurements[0].obs is t_obs2
 
     def test_tensor_observables_tensor_init(self):
@@ -149,7 +149,7 @@ class TestConstruction:
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs2]
-        assert tape.measurements[0].return_type is qml.operation.Expectation
+        assert tape.measurements[0].return_type is qml.measurements.Expectation
         assert tape.measurements[0].obs is t_obs2
 
     def test_tensor_observables_tensor_matmul(self):
@@ -166,7 +166,7 @@ class TestConstruction:
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs]
-        assert tape.measurements[0].return_type is qml.operation.Variance
+        assert tape.measurements[0].return_type is qml.measurements.Variance
         assert tape.measurements[0].obs is t_obs
 
     def test_qubit_diagonalization(self, make_tape):
@@ -262,6 +262,16 @@ class TestConstruction:
             qml.sample(qml.PauliZ(wires=0))
 
         assert tape.is_sampled
+
+    def test_repr(self):
+        """Test the string representation"""
+
+        with QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+
+        s = tape.__repr__()
+        expected = "<QuantumTape: wires=[0], params=1>"
+        assert s == expected
 
 
 class TestGraph:
@@ -852,14 +862,18 @@ class TestExpand:
 
         assert len(new_tape.operations) == 5
 
-        expected = [qml.operation.Probability, qml.operation.Expectation, qml.operation.Variance]
+        expected = [
+            qml.measurements.Probability,
+            qml.measurements.Expectation,
+            qml.measurements.Variance,
+        ]
         assert [m.return_type is r for m, r in zip(new_tape.measurements, expected)]
 
         expected = [None, None, None]
         assert [m.obs is r for m, r in zip(new_tape.measurements, expected)]
 
         expected = [None, [1, -1, -1, 1], [0, 5]]
-        assert [m.eigvals is r for m, r in zip(new_tape.measurements, expected)]
+        assert [m.get_eigvals() is r for m, r in zip(new_tape.measurements, expected)]
 
     def test_expand_tape_multiple_wires(self):
         """Test the expand() method when measurements with more than one observable on the same
@@ -1343,28 +1357,6 @@ class TestTapeCopying:
         # however, the underlying operation *parameters* are still shared
         # to support PyTorch, which does not support deep copying of tensors
         assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
-
-    def test_casting(self):
-        """Test that copying and casting works as expected"""
-        with QuantumTape() as tape:
-            qml.BasisState(np.array([1, 0]), wires=[0, 1])
-            qml.RY(0.5, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
-
-        # copy and cast to a JacobianTape
-        copied_tape = tape.copy(tape_cls=qml.tape.JacobianTape)
-
-        # check that the copying worked
-        assert copied_tape is not tape
-        assert copied_tape.operations == tape.operations
-        assert copied_tape.observables == tape.observables
-        assert copied_tape.measurements == tape.measurements
-        assert copied_tape.operations[0] is tape.operations[0]
-
-        # check that the casting worked
-        assert isinstance(copied_tape, qml.tape.JacobianTape)
-        assert not isinstance(tape, qml.tape.JacobianTape)
 
 
 class TestStopRecording:
@@ -1983,7 +1975,7 @@ class TestOutputShape:
             qml.probs(wires=[1, 2])
 
         with pytest.raises(
-            UnsupportedTapeOperationError, match="multiple probability measurements"
+            TapeError, match="multiple probability measurements"
         ):
             tape.get_output_shape(dev)
 
@@ -1999,7 +1991,7 @@ class TestOutputShape:
             qml.sample(qml.PauliZ(0))
 
         with pytest.raises(
-            UnsupportedTapeOperationError,
+            TapeError,
             match="contains multiple types of measurements is unsupported",
         ):
             tape.get_output_shape(dev)
@@ -2016,7 +2008,7 @@ class TestOutputShape:
             qml.density_matrix(wires=0)
 
         with pytest.raises(
-            UnsupportedTapeOperationError, match="multiple state measurements is not supported"
+            TapeError, match="multiple state measurements is not supported"
         ):
             tape.get_output_shape(dev)
 
@@ -2031,7 +2023,7 @@ class TestOutputShape:
             qml.sample()
 
         with pytest.raises(
-            UnsupportedTapeOperationError,
+            TapeError,
             match="returning samples along with a device with a shot vector",
         ):
             tape.get_output_shape(dev)
@@ -2047,7 +2039,7 @@ class TestOutputShape:
             qml.sample()
 
         with pytest.raises(
-            UnsupportedTapeOperationError,
+            TapeError,
             match="returning samples along with a device with a shot vector",
         ):
             tape.get_output_shape(dev)
