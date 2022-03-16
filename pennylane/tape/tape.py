@@ -179,7 +179,6 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         for obj in getattr(tape, queue):
 
             stop = stop_at(obj)
-            print(obj, stop)
             if not expand_measurements:
                 # Measurements should not be expanded; treat measurements
                 # as a stopping condition

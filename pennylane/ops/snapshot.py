@@ -15,9 +15,7 @@
 This module contains the Snapshot (pseudo) operation that is common to both
 cv and qubit computing paradigms in PennyLane.
 """
-import numpy as np
-
-from pennylane.operation import AnyWires, Operation, classproperty
+from pennylane.operation import AnyWires, Operation
 
 
 
