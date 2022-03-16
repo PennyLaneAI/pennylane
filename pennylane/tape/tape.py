@@ -349,6 +349,18 @@ class QuantumTape(AnnotatedQueue):
         finally:
             QuantumTape._lock.release()
 
+    def __iter__(self):
+        self._iter_idx = 0
+        return self
+
+    def __next__(self):
+        if len(self._circuit) > self._iter_idx:
+            result = self._circuit[self._iter_idx]
+            self._iter_idx += 1
+            return result
+        else:
+                raise StopIteration
+
     @property
     def interface(self):
         """str, None: automatic differentiation interface used by the quantum tape (if any)"""
@@ -514,6 +526,8 @@ class QuantumTape(AnnotatedQueue):
         self._update_par_info()
         self._update_trainable_params()
         self._update_observables()
+
+        self._circuit = self.operations + self.measurements
 
     def expand(self, depth=1, stop_at=None, expand_measurements=False):
         """Expand all operations in the processed queue to a specific depth.

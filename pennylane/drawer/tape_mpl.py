@@ -258,7 +258,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     fontsize = kwargs.get("fontsize", None)
 
     wire_map = convert_wire_order(
-        tape.operations + tape.measurements, wire_order=wire_order, show_all_wires=show_all_wires
+        tape, wire_order=wire_order, show_all_wires=show_all_wires
     )
 
     layers = drawable_layers(tape.operations, wire_map=wire_map)

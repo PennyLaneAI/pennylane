@@ -80,7 +80,7 @@ class batch_transform:
             tape2 = qml.tape.QuantumTape()
 
             # loop through all operations on the input tape
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "RX":
                     wires = op.wires
                     param = op.parameters[0]
