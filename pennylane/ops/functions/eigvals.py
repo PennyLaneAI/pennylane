@@ -96,8 +96,8 @@ def eigvals(op):
         )
         return qml.math.linalg.eigvalsh(qml.matrix(op))
 
-    if isinstance(op, scipy.sparse.coo_matrix):
-        return scipy.sparse.linalg.eigsh(op)[0]
+    if isinstance(op, qml.SparseHamiltonian):
+        return scipy.sparse.linalg.eigsh(op.sparse_matrix(), k=6, which="SA")[0]
 
     # TODO: make `get_eigvals` take a `wire_order` argument to mimic `get_matrix`
     return op.get_eigvals()

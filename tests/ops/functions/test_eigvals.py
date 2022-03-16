@@ -141,7 +141,7 @@ class TestSingleOperation:
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize(
-        ("row", "col", "dat", "eigval_ref"),
+        ("row", "col", "dat", "val_ref"),
         [
             (
                 # coordinates and values of a sparse Hamiltonian computed for H2
@@ -180,11 +180,12 @@ class TestSingleOperation:
             ),
         ],
     )
-    def test_sparse_hamiltonian(self, row, col, dat, eigval_ref):
+    def test_sparse_hamiltonian(self, row, col, dat, val_ref):
         """Test that the eigenvalues and eigenvectors of a sparse Hamiltonian are correctly returned"""
         h_sparse = scipy.sparse.coo_matrix((dat, (row, col)), shape=(len(row), len(col)))
-        val, vec = scipy.sparse.linalg.eigsh(h_sparse, which="SA")
-        assert np.allclose(np.sort(val), eigval_ref)
+        h_sparse = qml.SparseHamiltonian(h_sparse, wires=all)
+        val = qml.eigvals(h_sparse)
+        assert np.allclose(np.sort(val), val_ref)
 
 
 class TestMultipleOperations:
