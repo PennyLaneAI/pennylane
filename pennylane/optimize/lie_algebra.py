@@ -166,7 +166,7 @@ class LieAlgebraOptimizer:
     For more information on Riemannian gradient flows on Lie groups see
     `T. Schulte-Herbrueggen et. al. (2008) <https://arxiv.org/abs/0802.4195>`_
     and the application to quantum circuits
-    `Wiersema and Killoran (2021) <https://arxiv.org/abs/>`_.
+    `Wiersema and Killoran (2022) <https://arxiv.org/abs/2202.06976>`_.
 
     Args:
         circuit (.QNode): a user defined circuit that does not take any arguments and returns
