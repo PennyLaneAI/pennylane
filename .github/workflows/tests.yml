@@ -61,7 +61,7 @@ jobs:
         run: pip3 install jax jaxlib
 
       - name: Install KaHyPar
-        run: pip3 install kahypar
+        run: pip3 install kahypar==1.1.6
 
       - name: Install PennyLane
         run: |

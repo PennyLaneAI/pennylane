@@ -36,7 +36,6 @@ from typing import (
     Iterable,
 )
 from pathlib import Path
-from os import unlink
 
 from networkx import MultiDiGraph, has_path, weakly_connected_components
 
@@ -1797,25 +1796,16 @@ def kahypar_cut(
 
     context = kahypar.Context()
 
-    if config_path is not None:
-        context.loadINIconfiguration(config_path)
-    else:
-        config_path = str(Path(__file__).parent / "_cut_kKaHyPar_sea20.ini")
-        if (not isinstance(block_weights, Sequence)) or (len(block_weights) != num_fragments):
-            context.loadINIconfiguration(config_path)
-        else:
-            # Need to modify the config file and save it temporarily for kahypar to load.
-            temp_config = _temp_update_kahypar_ini(
-                config_path, updates={"use-individual-part-weights": "true"}
-            )
-            context.loadINIconfiguration(temp_config.name)
-            unlink(temp_config.name)
-            context.setCustomTargetBlockWeights(block_weights)
+    config_path = config_path or str(Path(__file__).parent / "_cut_kKaHyPar_sea20.ini")
+    context.loadINIconfiguration(config_path)
 
     context.setK(num_fragments)
 
     if isinstance(imbalance, float):
         context.setEpsilon(imbalance)
+    if isinstance(block_weights, Sequence) and (len(block_weights) == num_fragments):
+        context.setCustomTargetBlockWeights(block_weights)
+
     if isinstance(seed, int):
         context.setSeed(int(seed))
     if not verbose:
@@ -1826,25 +1816,8 @@ def kahypar_cut(
     cut_edge_mask = [hypergraph.connectivity(e) > 1 for e in hypergraph.edges()]
 
     edges = edges if isinstance(edges, Iterable) else hypergraph.edges()
+
     # compress() ignores the extra hyperwires at the end if there is any.
     cut_edges = list(compress(edges, cut_edge_mask))
 
     return cut_edges
-
-
-def _temp_update_kahypar_ini(ini_path: Union[Path, str], updates: Dict[str, str]):
-    """Helper function for temporarily modify a KaHaPar config file."""
-
-    with open(ini_path, "rt", encoding="UTF-8") as f:
-        lines = f.readlines()
-
-    for i, l in enumerate(lines):
-        k, *_ = l.strip().split("=")
-        if k in updates:
-            lines[i] = f"{k}={updates[k]}\n"
-
-    with tempfile.NamedTemporaryFile(mode="wt", suffix=".ini", delete=False) as f:
-        f.writelines(lines)
-        f.flush()
-
-        return f
