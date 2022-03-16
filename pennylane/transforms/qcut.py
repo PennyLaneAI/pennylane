@@ -1182,10 +1182,6 @@ def cut_circuit(
                 "installed using:\npip install opt_einsum"
             ) from e
 
-    num_cut = len([op for op in tape.operations if isinstance(op, WireCut)])
-    if num_cut == 0:
-        raise ValueError("Cannot apply the circuit cutting workflow to a circuit without any cuts")
-
     g = tape_to_graph(tape)
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
@@ -1240,7 +1236,8 @@ def _qcut_expand_fn(
         return cut_circuit.expand_fn(tape.expand(), max_depth=max_depth - 1)
 
     raise ValueError(
-        "No WireCut operations found in the expanded tape. Consider increasing max_depth."
+        "No WireCut operations found in the circuit. Consider increasing the max_depth value if "
+        "operations or nested tapes contain WireCut operations."
     )
 
 

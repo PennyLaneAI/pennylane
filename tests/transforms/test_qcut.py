@@ -2691,6 +2691,7 @@ class TestCutCircuitTransformValidation:
         to be cut"""
 
         with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliZ(1))
 
@@ -2700,14 +2701,18 @@ class TestCutCircuitTransformValidation:
     def test_no_measurements_raises(self):
         """Tests if a ValueError is raised when a tape with no measurement is requested
         to be cut"""
+        with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
+
         with pytest.raises(ValueError, match="The circuit cutting workflow only supports circuits"):
-            qcut.cut_circuit(qml.tape.QuantumTape())
+            qcut.cut_circuit(tape)
 
     def test_non_expectation_raises(self):
         """Tests if a ValueError is raised when a tape with measurements that are not expectation
         values is requested to be cut"""
 
         with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
             qml.var(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="workflow only supports circuits with expectation"):
@@ -2716,6 +2721,7 @@ class TestCutCircuitTransformValidation:
     def test_fail_import(self, monkeypatch):
         """Test if an ImportError is raised when opt_einsum is requested but not installed"""
         with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
             qml.expval(qml.PauliZ(0))
 
         with monkeypatch.context() as m:
@@ -2730,7 +2736,7 @@ class TestCutCircuitTransformValidation:
         with qml.tape.QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="to a circuit without any cuts"):
+        with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
             qcut.cut_circuit(tape)
 
 
@@ -2774,7 +2780,7 @@ class TestCutCircuitExpansion:
             qml.RY(0.4, wires=0)
             qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="No WireCut operations found in the expanded tape."):
+        with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
             qcut.cut_circuit(tape, device_wires=[0], max_depth=1)
 
     def test_expansion_ttn(self, mocker):
