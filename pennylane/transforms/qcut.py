@@ -16,17 +16,15 @@ Functions for performing quantum circuit cutting.
 """
 
 import copy
-from pathlib import Path
 import string
 import uuid
 import warnings
 from dataclasses import InitVar, dataclass
 from functools import partial
-from itertools import compress, product
-from typing import Any, Callable, ClassVar, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from itertools import product
+from typing import Any, Callable, ClassVar, Dict, List, Optional, Sequence, Tuple, Union
 
 from networkx import MultiDiGraph, has_path, weakly_connected_components
-import numpy as np
 
 import pennylane as qml
 from pennylane import apply, expval
