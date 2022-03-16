@@ -359,7 +359,7 @@ class QuantumTape(AnnotatedQueue):
             self._iter_idx += 1
             return result
         else:
-                raise StopIteration
+            raise StopIteration
 
     @property
     def interface(self):
