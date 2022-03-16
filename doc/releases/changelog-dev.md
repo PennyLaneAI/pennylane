@@ -51,4 +51,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Guillermo Alonso-Linaje, Tom Bromley, Anthony Hayes, Josh Izaac
+Karim Alaa El-Din, Guillermo Alonso-Linaje, Thomas Bromley, Anthony Hayes, Josh Izaac
