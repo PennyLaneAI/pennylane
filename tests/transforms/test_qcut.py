@@ -1288,7 +1288,7 @@ class TestGraphToTape:
         for meas, expected_meas in zip(tapes[0].measurements, frag0_expected_meas):
             compare_measurements(meas, expected_meas)
 
-        # For tapes with multiple measurements, the ordering vary
+        # For tapes with multiple measurements, the ordering varies
         # so we check the set of wires rather that the order
         for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
             assert meas.return_type is qml.operation.Sample

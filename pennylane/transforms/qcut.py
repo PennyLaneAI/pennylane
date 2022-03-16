@@ -484,7 +484,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
             if return_type is Expectation:
                 if len(observables) > 1:
                     qml.expval(Tensor(*observables))
-                elif len(observables) == 1:
+                else:
                     qml.expval(obs)
 
     return tape
