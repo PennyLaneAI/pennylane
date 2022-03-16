@@ -22,6 +22,7 @@
   [(#2288)](https://github.com/PennyLaneAI/pennylane/pull/2288)
 
 * Circuit cutting now performs expansion to search for wire cuts in contained operations or tapes.
+  [(#2340)](https://github.com/PennyLaneAI/pennylane/pull/2340)
 
 <h3>Deprecations</h3>
 
