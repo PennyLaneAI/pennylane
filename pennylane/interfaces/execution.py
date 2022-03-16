@@ -290,22 +290,26 @@ def execute(
         # don't unwrap if it's an interface device
         if "passthru_interface" in device.capabilities():
             return batch_fn(
-                cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
+                qml.interfaces.cache_execute(
+                    batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+                )(tapes)
             )
         with qml.tape.Unwrap(*tapes):
-            res = cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(
-                tapes
-            )
+            res = qml.interfaces.cache_execute(
+                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+            )(tapes)
 
         return batch_fn(res)
 
     if gradient_fn == "backprop" or interface is None:
         return batch_fn(
-            cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
+            qml.interfaces.cache_execute(
+                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+            )(tapes)
         )
 
     # the default execution function is batch_execute
-    execute_fn = cache_execute(batch_execute, cache, expand_fn=expand_fn)
+    execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
     _mode = "backward"
 
     if gradient_fn == "device":
@@ -327,10 +331,10 @@ def execute(
 
         elif mode == "backward":
             # disable caching on the forward pass
-            execute_fn = cache_execute(batch_execute, cache=None)
+            execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
 
             # replace the backward gradient computation
-            gradient_fn = cache_execute(
+            gradient_fn = qml.interfaces.cache_execute(
                 set_shots(device, override_shots)(device.gradients),
                 cache,
                 pass_kwargs=True,
