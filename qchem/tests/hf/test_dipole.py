@@ -15,9 +15,10 @@
 Unit tests for functions needed for computing the dipole.
 """
 import autograd
-import pennylane as qml
 import pytest
-from pennylane import Identity, PauliX, PauliY, PauliZ
+
+import pennylane as qml
+from pennylane import PauliX, PauliY, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
 
