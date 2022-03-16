@@ -1730,7 +1730,8 @@ class TestExpandFragmentTapesMC:
 
     def test_expand_mc(self, monkeypatch):
         """
-        TODO: Docstring
+        Tests that fragment configurations are generated correctly using the
+        `expand_fragment_tapes_mc` method.
         """
         with qml.tape.QuantumTape() as tape:
             qml.Hadamard(wires=0)

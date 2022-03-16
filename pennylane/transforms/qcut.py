@@ -705,43 +705,94 @@ def expand_fragment_tape(
 def expand_fragment_tapes_mc(
     tapes: Sequence[QuantumTape], communication_graph: MultiDiGraph, shots: int
 ) -> List[QuantumTape]:
-    pairs = [e[-1] for e in communication_graph.edges.data("pair")]
-
     """
-    Expands a fragment tape into a sequence of tapes for random configurations of the contained
-    :class:`MeasureNode` and :class:`PrepareNode` operations. A measurement is sampled from 
-    the allowed basis and a state preparation is sampled from the correspoding pair of eigenstates.
+    Expands fragment tapes into a sequence of random configurations of the contained pairs of
+    :class:`MeasureNode` and :class:`PrepareNode` operations. For each pair a measurement is sampled from
+    the Pauli basis and a state preparation is sampled from the correspoding pair of eigenstates.
 
     .. note::
 
         This function is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qml.cut_circuit_mc() <TODO>` transform for more details.
 
     Args:
         tapes (Sequence[QuantumTape]): the fragment tapes containing :class:`MeasureNode` and
             :class:`PrepareNode` operations to be expanded.
-        communication_graph (nx.MultiDiGraph): the communcation (quotient) graph of the fragmented 
+        communication_graph (nx.MultiDiGraph): the communication (quotient) graph of the fragmented
             full graph.
         shots (int): number of shots
 
     Returns:
-        List[QuantumTape]: the tapes corresponding to each configuration 
+        List[QuantumTape]: the tapes corresponding to each configuration
 
     **Example**
 
-    Consider the following circuit that contains a sample measurment ...
+    Consider the following circuit that contains a sample measurment:
+
     .. code-block:: python
 
         with qml.tape.QuantumTape() as tape:
-            some circuit
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.sample(wires=[0, 1, 2])
 
-    We can expand over the measurement and preparation nodes to generate random
+    We can generate the fragment tapes using the following workflow:
+
+    >>> g = qcut.tape_to_graph(tape)
+    >>> qcut.replace_wire_cut_nodes(g)
+    >>> subgraphs, communication_graph = qcut.fragment_graph(g)
+    >>> tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+    We can then expand over the measurement and preparation nodes to generate random
     configurations using:
 
-    >>> configs = qml.transforms.qcut.expand_fragment_tape_mc(tape)
-    >>>
-    """
+    .. code-block:: python
 
+        >>> configs = qcut.expand_fragment_tapes_mc(tapes, communication_graph, 3)
+        >>> i = 0
+        >>> for c1, c2 in zip(configs[0], configs[1]):
+        ...    print(f"config {i}:")
+        ...    print(c1.draw())
+        ...    print(c2.draw())
+        ...    i += 1
+        ...
+
+        config 0:
+        0: ──H──╭C──┤ Sample[Projector(M0)]
+        1: ─────╰X──┤ Sample[X]
+        M0 =
+        [1]
+
+        1: ──H──╭C──┤ Sample[Projector(M0)]
+        2: ─────╰X──┤ Sample[Projector(M0)]
+        M0 =
+        [1]
+
+        config 1:
+        0: ──H──╭C──┤ Sample[Projector(M0)]
+        1: ─────╰X──┤ Sample[Z]
+        M0 =
+        [1]
+
+        1: ──I──╭C──┤ Sample[Projector(M0)]
+        2: ─────╰X──┤ Sample[Projector(M0)]
+        M0 =
+        [1]
+
+        config 2:
+        0: ──H──╭C──┤ Sample[Projector(M0)]
+        1: ─────╰X──┤ Sample[Y]
+        M0 =
+        [1]
+
+        1: ──X──H──S──╭C──┤ Sample[Projector(M0)]
+        2: ───────────╰X──┤ Sample[Projector(M0)]
+        M0 =
+        [1]
+    """
+    pairs = [e[-1] for e in communication_graph.edges.data("pair")]
     settings = np.random.choice(range(8), size=(len(pairs), shots), replace=True)
 
     meas_settings = {pair[0].id: setting for pair, setting in zip(pairs, settings)}
