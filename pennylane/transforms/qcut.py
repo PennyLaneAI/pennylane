@@ -1692,7 +1692,7 @@ def kahypar_cut(
     imbalance: int = None,
     edge_weights: List[Union[int, float]] = None,
     node_weights: List[Union[int, float]] = None,
-    block_weights: List[Union[int, float]] = None,
+    fragment_weights: List[Union[int, float]] = None,
     edges: Iterable[Any] = None,
     seed: int = None,
     config_path: Union[str, Path] = None,
@@ -1769,6 +1769,18 @@ def kahypar_cut(
     [<networkx.classes.multidigraph.MultiDiGraph at 0x7f3d2ed3b790>,
     <networkx.classes.multidigraph.MultiDiGraph at 0x7f3d2ed3b8e0>]
 
+    Each fragment subcircuits can then be converted back to tape for execution:
+
+    >>> for g in frags:
+    ...     print(qcut.graph_to_tape(g).draw())
+
+    .. code-block::
+
+         0: ──RX(0.432)──╭C────────────────────────┤
+         a: ──RY(0.543)──╰X──RZ(0.133)──RY(0.543)──┤
+
+         0: ──RZ(0.24)──RX(0.432)──┤ ⟨Z⟩
+
     """
     # pylint: disable=too-many-arguments, import-outside-toplevel
     import kahypar
@@ -1802,8 +1814,8 @@ def kahypar_cut(
 
     if isinstance(imbalance, float):
         context.setEpsilon(imbalance)
-    if isinstance(block_weights, Sequence) and (len(block_weights) == num_fragments):
-        context.setCustomTargetBlockWeights(block_weights)
+    if isinstance(fragment_weights, Sequence) and (len(fragment_weights) == num_fragments):
+        context.setCustomTargetBlockWeights(fragment_weights)
 
     if isinstance(seed, int):
         context.setSeed(int(seed))
