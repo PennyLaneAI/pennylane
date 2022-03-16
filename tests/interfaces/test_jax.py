@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the jax interface"""
 import functools
+import sys
 
 import pytest
 
@@ -24,6 +25,9 @@ import pennylane as qml
 from pennylane.gradients import param_shift
 from pennylane.interfaces import execute
 from pennylane.interfaces import InterfaceUnsupportedError
+
+
+execute_module = sys.modules["pennylane.interfaces.execute"]
 
 
 @pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
@@ -198,7 +202,7 @@ class TestCaching:
     def test_cache_maxsize(self, interface, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(execute_module, "cache_execute")
 
         def cost(a, cachesize):
             with qml.tape.QuantumTape() as tape:
@@ -225,7 +229,7 @@ class TestCaching:
     def test_custom_cache(self, interface, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(execute_module, "cache_execute")
 
         def cost(a, cache):
             with qml.tape.QuantumTape() as tape:
@@ -247,7 +251,7 @@ class TestCaching:
     def test_custom_cache_multiple(self, interface, mocker):
         """Test the use of a custom cache object with multiple tapes"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(execute_module, "cache_execute")
 
         a = jnp.array(0.1)
         b = jnp.array(0.2)

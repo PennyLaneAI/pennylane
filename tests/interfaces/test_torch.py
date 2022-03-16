@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the Torch interface"""
 import functools
+import sys
 
 import numpy as np
 import pytest
@@ -22,6 +23,9 @@ torch = pytest.importorskip("torch")
 import pennylane as qml
 from pennylane.gradients import finite_diff, param_shift
 from pennylane.interfaces import execute
+
+
+execute_module = sys.modules["pennylane.interfaces.execute"]
 
 
 class TestTorchExecuteUnitTests:
@@ -155,7 +159,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(execute_module, "cache_execute")
 
         def cost(a, cachesize):
             with qml.tape.QuantumTape() as tape:
@@ -179,7 +183,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces, "cache_execute")
+        spy = mocker.spy(execute_module, "cache_execute")
 
         def cost(a, cache):
             with qml.tape.QuantumTape() as tape:
