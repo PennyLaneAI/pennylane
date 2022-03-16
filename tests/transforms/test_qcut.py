@@ -1733,17 +1733,22 @@ class TestExpandFragmentTapesMC:
         Tests that fragment configurations are generated correctly using the
         `expand_fragment_tapes_mc` method.
         """
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
+        with qml.tape.QuantumTape() as tape0:
+            qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=[1, 2])
-            qml.sample(wires=[0, 1, 2])
+            qcut.MeasureNode(wires=[1])
+            qml.sample(qml.Projector([1], wires=[0]))
 
-        g = qcut.tape_to_graph(tape)
-        qcut.replace_wire_cut_nodes(g)
-        subgraphs, communication_graph = qcut.fragment_graph(g)
-        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+        with qml.tape.QuantumTape() as tape1:
+            qcut.PrepareNode(wires=[1])
+            qml.CNOT(wires=[1, 2])
+            qml.sample(qml.Projector([1], wires=[1]))
+            qml.sample(qml.Projector([1], wires=[2]))
+
+        tapes = [tape0, tape1]
+
+        edge_data = {"pair": (tape0.operations[2], tape1.operations[0])}
+        communication_graph = MultiDiGraph([(0, 1, edge_data)])
 
         with monkeypatch.context() as m:
             m.setattr(
