@@ -23,6 +23,7 @@ def build_qfunc_probs(wires):
         qml.PauliY(wires=wires[2])
         qml.CY(wires=[wires[1], wires[2]])
         return qml.probs(wires=[0, 1])
+
     return qfunc
 
 
@@ -44,7 +45,7 @@ def build_qfunc_pauli_z(wires):
 
 
 class TestTranspile:
-    """Unit tests for transpile function """
+    """Unit tests for transpile function"""
 
     def test_transpile_invalid_coupling(self):
         """test that error is raised when coupling_map is invalid"""
@@ -73,7 +74,9 @@ class TestTranspile:
         # build circuit
         transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2), (2, 3)])(circuit)
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-        err_msg = r"Measuring expectation values of tensor products or Hamiltonians is not yet supported"
+        err_msg = (
+            r"Measuring expectation values of tensor products or Hamiltonians is not yet supported"
+        )
         with pytest.raises(NotImplementedError, match=re.escape(err_msg)):
             transpiled_qnode()
 
@@ -89,7 +92,9 @@ class TestTranspile:
         # build circuit
         transpiled_qfunc = transpile(coupling_map=[(0, 1), (1, 2), (2, 3)])(circuit)
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-        err_msg = r"Measuring expectation values of tensor products or Hamiltonians is not yet supported"
+        err_msg = (
+            r"Measuring expectation values of tensor products or Hamiltonians is not yet supported"
+        )
         with pytest.raises(NotImplementedError, match=re.escape(err_msg)):
             transpiled_qnode()
 
@@ -123,11 +128,14 @@ class TestTranspile:
         transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
         transpiled_probs = transpiled_qnode(0.1, 0.2, 0.3)
 
-        assert all(isclose(po, pt, abs_tol=np.finfo(float).eps) for po, pt in zip(original_probs, transpiled_probs))
+        assert all(
+            isclose(po, pt, abs_tol=np.finfo(float).eps)
+            for po, pt in zip(original_probs, transpiled_probs)
+        )
 
     def test_transpile_differentiable(self):
         """test that circuit remains differentiable after transpilation"""
-        dev = qml.device('default.qubit', wires=3)
+        dev = qml.device("default.qubit", wires=3)
 
         def circuit(parameters):
             qml.RX(parameters[0], wires=0)
@@ -137,6 +145,6 @@ class TestTranspile:
             return qml.expval(qml.PauliZ(0))
 
         transpiled_circ = transpile(coupling_map=[(0, 1), (1, 2)])(circuit)
-        transpiled_qnode = qml.QNode(transpiled_circ, dev, interface='autograd')
+        transpiled_qnode = qml.QNode(transpiled_circ, dev, interface="autograd")
         params = np.array([0.5, 0.1, 0.2], requires_grad=True)
         qml.gradients.param_shift(transpiled_qnode)(params)

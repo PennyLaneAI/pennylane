@@ -79,16 +79,20 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
 
     """
     # init connectivity graph
-    coupling_graph = nx.Graph(coupling_map) if not isinstance(coupling_map, nx.Graph) else coupling_map
+    coupling_graph = (
+        nx.Graph(coupling_map) if not isinstance(coupling_map, nx.Graph) else coupling_map
+    )
 
     # make sure every wire is present in coupling map
     if any(wire not in coupling_graph.nodes for wire in tape.wires):
         raise ValueError(
-            f'Not all wires present in coupling map! wires: {tape.wires}, coupling map: {coupling_graph.nodes}')
+            f"Not all wires present in coupling map! wires: {tape.wires}, coupling map: {coupling_graph.nodes}"
+        )
 
     if any(isinstance(m.obs, (Hamiltonian, Tensor)) for m in tape.measurements):
         raise NotImplementedError(
-            "Measuring expectation values of tensor products or Hamiltonians is not yet supported")
+            "Measuring expectation values of tensor products or Hamiltonians is not yet supported"
+        )
 
     gates = []
 
@@ -113,7 +117,10 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
                 continue
 
             # two-qubit gates which can be handled by the coupling map
-            if op.wires in coupling_graph.edges or tuple(reversed(op.wires)) in coupling_graph.edges:
+            if (
+                op.wires in coupling_graph.edges
+                or tuple(reversed(op.wires)) in coupling_graph.edges
+            ):
                 gates.append(op)
                 list_op_copy.pop(0)
                 continue
@@ -127,13 +134,15 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
             source_wire, dest_wire = op.wires
             shortest_path = nx.algorithms.shortest_path(coupling_graph, source_wire, dest_wire)
             path_length = len(shortest_path) - 1
-            wires_to_swap = [shortest_path[(i - 1):(i + 1)] for i in range(path_length, 1, -1)]
+            wires_to_swap = [shortest_path[(i - 1) : (i + 1)] for i in range(path_length, 1, -1)]
 
             for w0, w1 in wires_to_swap:
                 # swap wires
                 gates.append(SWAP(wires=[w0, w1]))
                 # update logical -> phyiscal mapping
-                map_wires = {k: (w0 if v == w1 else (w1 if v == w0 else v)) for k, v in map_wires.items()}
+                map_wires = {
+                    k: (w0 if v == w1 else (w1 if v == w0 else v)) for k, v in map_wires.items()
+                }
 
             # append op to gates with adjusted indices and remove from list
             gates.append(_adjust_op_indices(op, map_wires))
@@ -148,7 +157,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
 
 
 def _adjust_op_indices(_op, _map_wires):
-    """ helper function which adjusts wires in Operation according to the map _map_wires"""
+    """helper function which adjusts wires in Operation according to the map _map_wires"""
     _new_wires = Wires([_map_wires[w] for w in _op.wires])
     _params = _op.parameters
     if len(_params) == 0:
@@ -157,14 +166,14 @@ def _adjust_op_indices(_op, _map_wires):
 
 
 def _adjust_mmt_indices(_m, _map_wires):
-    """ helper function which adjusts wires in MeasurementProcess according to the map _map_wires"""
+    """helper function which adjusts wires in MeasurementProcess according to the map _map_wires"""
     _new_wires = Wires([_map_wires[w] for w in _m.wires])
 
     if isinstance(_m.obs, (Hamiltonian, Tensor)):
-        # TODO: implement adjusting wires for measurement which involve the expectation value of Hamiltonians and/or
         # tensor products of observables
         raise NotImplementedError(
-            "Measuring expectation values of tensor products or Hamiltonians is not yet supported")
+            "Measuring expectation values of tensor products or Hamiltonians is not yet supported"
+        )
 
     # change wires of observable
     if _m.obs is None:

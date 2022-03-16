@@ -4,6 +4,23 @@
 
 <h3>New features since last release</h3>
 
+* Added a swap based transpiler transform. [(#2118)](https://github.com/PennyLaneAI/pennylane/pull/2118)
+  The transpile function takes a QuantumTape and a coupling map as inputs and compiles the tape to ensure that it can be 
+  executed on corresponding hardware. The transform can be used as a decorator in the following way:
+  ```python
+  dev = qml.device('default.qubit', wires=4)
+  
+  @qml.qnode(dev)
+  @qml.transforms.transpile(coupling_map=[(0, 1), (1, 2), (2, 3)])
+  def circuit(param):
+    qml.CNOT(wires=[0, 1])
+    qml.CNOT(wires=[0, 2])
+    qml.CNOT(wires=[0, 3])
+    qml.PhaseShift(param, wires=0)
+    return qml.probs(wires=[0, 1, 2, 3]) 
+  ```
+  
+
 * Added a modified version of the `simplify` function to the `hf` module.
   [(#2103)](https://github.com/PennyLaneAI/pennylane/pull/2103)
 
@@ -592,4 +609,4 @@ This release contains contributions from (in alphabetical order):
 
 Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Esther Cruz, Christian Gogolin Christina Lee, Olivia Di Matteo, Diego Guala,
 Anthony Hayes, Josh Izaac, Soran Jahangiri, Edward Jiang, Ankit Khandelwal, Korbinian Kottmann, Jay Soni, Antal Száva,
-David Wierichs, Shaoming Zhang
+Maurice Weber, David Wierichs, Shaoming Zhang
