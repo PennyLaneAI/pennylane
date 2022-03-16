@@ -22,31 +22,36 @@ class ScalarProd(qml.operation.Operator):
 
     def __init__(self, scalar, op, do_queue=True, id=None):
         self.hyperparameters["scalar"] = scalar
-        self.hyperparameters["op"] = op
+        self.hyperparameters["base_op"] = op
 
         super().__init__(*op.parameters, scalar, wires=op.wires, do_queue=do_queue, id=id)
         self._name = f"{scalar}  {op.name}"
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return f"{self.hyperparameters['scalar']} {self.hyperparameters['op']}"
+        return f"{self.hyperparameters['scalar']} {self.hyperparameters['base_op']}"
 
     @property
     def num_wires(self):
         return len(self.wires)
 
     @staticmethod
-    def compute_terms(*params, scalar=None, op=None, **hyperparams):
-        return [scalar], [op]
+    def compute_terms(*params, scalar=None, base_op=None):
+        return [scalar], [base_op]
 
     @staticmethod
-    def compute_matrix(*params, scalar=None, op=None, **hyperparams):
-        return scalar * op.get_matrix()
+    def compute_matrix(*params, scalar=None, base_op=None):
+        return scalar * base_op.get_matrix()
 
     @staticmethod
-    def compute_eigvals(*params, scalar=None, op=None, **hyperparams):
-        return scalar * op.get_eigvals()
+    def compute_eigvals(*params, scalar=None, base_op=None):
+        return scalar * base_op.get_eigvals()
 
 
 def scalar_prod(scalar, op):
-    return ScalarProd(scalar, op)
+    try:
+        # there is a custom version defined
+        return op.scalar_prod(scalar, op)
+    except AttributeError:
+        # default to an abstract arithmetic class
+        return ScalarProd(scalar, op)

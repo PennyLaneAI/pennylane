@@ -22,30 +22,35 @@ class Exp(qml.operation.Operator):
 
     def __init__(self, op, do_queue=True, id=None):
 
-        self.hyperparameters["base"] = op
+        self.hyperparameters["base_op"] = op
 
         super().__init__(*op.parameters, wires=op.wires, do_queue=do_queue, id=id)
         self._name = f"Exp({op})"
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return f"exp({self.hyperparameters['base']})"
+        return f"exp({self.hyperparameters['base_op']})"
 
     @property
     def num_wires(self):
         return len(self.wires)
 
     def generator(self):
-        return -1j * self.hyperparameters["base"]
+        return -1j * self.hyperparameters["base_op"]
 
     @staticmethod
-    def compute_matrix(*params, base=None, **hyperparams):
-        return qml.math.expm1(base.get_matrix())  # check if this gets dispatched correctly
+    def compute_matrix(*params, base_op=None):
+        return qml.math.expm1(base_op.get_matrix())  # check if this gets dispatched correctly
 
     @staticmethod
-    def compute_eigvals(*params, scalar=None, op=None, **hyperparams):
-        return qml.math.exp(op.get_eigvals()) # check if this gets dispatched correctly
+    def compute_eigvals(*params, base_op=None):
+        return qml.math.exp(base_op.get_eigvals()) # check if this gets dispatched correctly
 
 
 def exp(op):
-    return Exp(op)
+    try:
+        # there is a custom version defined
+        return op.exp()
+    except AttributeError:
+        # default to an abstract arithmetic class
+        return Exp(op)

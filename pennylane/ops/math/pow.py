@@ -20,9 +20,6 @@ import pennylane as qml
 class Pow(qml.operation.Operator):
     """Arithmetic operator subclass representing the power of an operator."""
 
-    def _simplify(self):
-        self.hyperparameters["base_op"].__pow__()
-
     def __init__(self, op, exponent, do_queue=True, id=None):
 
         self.hyperparameters["base_op"] = op
