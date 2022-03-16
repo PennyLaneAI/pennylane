@@ -42,14 +42,10 @@
 
 <h3>Bug fixes</h3>
 
-* Fixes cases with `qml.measure` where unexpected operations were added to the
-  circuit.
-  [(#2328)](https://github.com/PennyLaneAI/pennylane/pull/2328)
-
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Guillermo Alonso-Linaje, Anthony Hayes, Josh Izaac, Christina Lee
+Karim Alaa El-Din, Anthony Hayes, Josh Izaac, Christina Lee.
