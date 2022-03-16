@@ -468,7 +468,7 @@ class TestPassthruIntegration:
         """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
         gate is correct."""
         dev = qml.device("default.qubit.jax", wires=2)
-        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b, c):
@@ -557,7 +557,7 @@ class TestPassthruIntegration:
         assert qml.math.isclose(jax.jacobian(jax.jacobian(circuit))(x), -1.0)
         assert qml.math.isclose(jax.grad(jax.grad(circuit))(x), -1.0)
 
-    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
+    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.compute_decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop"])
     def test_jax_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
@@ -691,7 +691,7 @@ class TestOps:
 
         param = 0.3
         res = jacobian_transform(circuit)(param)
-        assert jnp.allclose(res, jnp.zeros(wires ** 2))
+        assert jnp.allclose(res, jnp.zeros(wires**2))
 
     def test_inverse_operation_jacobian_backprop(self, tol):
         """Test that inverse operations work in backprop

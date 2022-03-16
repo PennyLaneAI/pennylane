@@ -26,6 +26,7 @@ from string import ascii_letters as ABC
 import pennylane.numpy as np
 import pennylane.math as qnp
 from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, QubitDensityMatrix
+from pennylane import Snapshot
 from pennylane.operation import Channel
 from pennylane.wires import Wires
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
@@ -59,6 +60,7 @@ class DefaultMixed(QubitDevice):
 
     operations = {
         "Identity",
+        "Snapshot",
         "BasisState",
         "QubitStateVector",
         "QubitDensityMatrix",
@@ -119,6 +121,7 @@ class DefaultMixed(QubitDevice):
 
         # call QubitDevice init
         super().__init__(wires, shots, cache=cache, analytic=analytic)
+        self._debugger = None
 
         # Create the initial state.
         self._state = self._create_basis_state(0)
@@ -134,7 +137,7 @@ class DefaultMixed(QubitDevice):
             array[complex]: complex array of shape ``[2] * (2 * num_wires)``
             representing the density matrix of the basis state.
         """
-        rho = np.zeros((2 ** self.num_wires, 2 ** self.num_wires), dtype=np.complex128)
+        rho = np.zeros((2**self.num_wires, 2**self.num_wires), dtype=np.complex128)
         rho[index, index] = 1
         rho = self._asarray(rho, dtype=self.C_DTYPE)
         return self._reshape(rho, [2] * (2 * self.num_wires))
@@ -150,7 +153,7 @@ class DefaultMixed(QubitDevice):
     @property
     def state(self):
         """Returns the state density matrix of the circuit prior to measurement"""
-        dim = 2 ** self.num_wires
+        dim = 2**self.num_wires
         # User obtains state as a matrix
         return self._reshape(self._pre_rotated_state, (dim, dim))
 
@@ -195,7 +198,7 @@ class DefaultMixed(QubitDevice):
             return None
 
         # convert rho from tensor to matrix
-        rho = self._reshape(self._state, (2 ** self.num_wires, 2 ** self.num_wires))
+        rho = self._reshape(self._state, (2**self.num_wires, 2**self.num_wires))
         # probs are diagonal elements
         probs = self.marginal_prob(self._diag(rho), wires)
 
@@ -214,12 +217,12 @@ class DefaultMixed(QubitDevice):
             unitary, returns a 1D array representing the matrix diagonal.
         """
         if operation in diagonal_in_z_basis:
-            return operation.eigvals
+            return operation.get_eigvals()
 
         if isinstance(operation, Channel):
-            return operation.kraus_matrices
+            return operation.kraus_matrices()
 
-        return [operation.matrix]
+        return [operation.get_matrix()]
 
     def _apply_channel(self, kraus, wires):
         r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the
@@ -379,7 +382,7 @@ class DefaultMixed(QubitDevice):
             # get indices for which the state is changed to input state vector elements
             ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
-            state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
+            state = self._scatter(ravelled_indices, state, [2**self.num_wires])
             rho = self._outer(state, self._conj(state))
             rho = self._reshape(rho, [2] * 2 * self.num_wires)
             self._state = self._asarray(rho, dtype=self.C_DTYPE)
@@ -404,7 +407,7 @@ class DefaultMixed(QubitDevice):
         state = qnp.reshape(state, (-1,))
 
         state_dim = 2 ** len(device_wires)
-        dm_dim = state_dim ** 2
+        dm_dim = state_dim**2
         if dm_dim != state.shape[0]:
             raise ValueError("Density matrix must be of length (2**wires, 2**wires)")
 
@@ -443,7 +446,7 @@ class DefaultMixed(QubitDevice):
             transpose_axes = left_axes + right_axes
             rho = qnp.transpose(rho, axes=transpose_axes)
             assert qnp.allclose(
-                qnp.trace(qnp.reshape(rho, (2 ** self.num_wires, 2 ** self.num_wires))),
+                qnp.trace(qnp.reshape(rho, (2**self.num_wires, 2**self.num_wires))),
                 1.0,
                 atol=tolerance,
             )
@@ -467,6 +470,16 @@ class DefaultMixed(QubitDevice):
 
         if isinstance(operation, QubitDensityMatrix):
             self._apply_density_matrix(operation.parameters[0], wires)
+            return
+
+        if isinstance(operation, Snapshot):
+            if self._debugger and self._debugger.active:
+                dim = 2**self.num_wires
+                density_matrix = self._reshape(self._state, (dim, dim))
+                if operation.tag:
+                    self._debugger.snapshots[operation.tag] = density_matrix
+                else:
+                    self._debugger.snapshots[len(self._debugger.snapshots)] = density_matrix
             return
 
         matrices = self._get_kraus(operation)

@@ -16,7 +16,76 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.gradients.gradient_transform import gradient_transform
+from pennylane.gradients.gradient_transform import (
+    gradient_transform,
+    choose_grad_methods,
+    grad_method_validation,
+)
+
+
+class TestGradMethodValidation:
+    """Test the helper function grad_method_validation."""
+
+    @pytest.mark.parametrize("method", ["analytic", "best"])
+    def test_with_nondiff_parameters(self, method):
+        """Test that trainable parameters without grad_method
+        are detected correctly, raising an exception."""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(np.array(0.1, requires_grad=True), wires=0)
+            qml.RX(np.array(0.1, requires_grad=True), wires=0)
+            qml.expval(qml.PauliZ(0))
+        tape._par_info[0]["grad_method"] = "A"
+        tape._par_info[1]["grad_method"] = None
+        with pytest.raises(ValueError, match="Cannot differentiate with respect"):
+            grad_method_validation(method, tape)
+
+    def test_with_numdiff_parameters_and_analytic(self):
+        """Test that trainable parameters with numerical grad_method ``"F"``
+        together with ``method="analytic"`` raises an exception."""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(np.array(0.1, requires_grad=True), wires=0)
+            qml.RX(np.array(0.1, requires_grad=True), wires=0)
+            qml.expval(qml.PauliZ(0))
+        tape._par_info[0]["grad_method"] = "A"
+        tape._par_info[1]["grad_method"] = "F"
+        with pytest.raises(ValueError, match="The analytic gradient method cannot be used"):
+            grad_method_validation("analytic", tape)
+
+
+class TestChooseGradMethods:
+    """Test the helper function choose_grad_methods"""
+
+    all_diff_methods = [
+        ["A"] * 2,
+        [None, "A", "F", "A"],
+        ["F"],
+        ["0", "A"],
+    ]
+
+    @pytest.mark.parametrize("diff_methods", all_diff_methods)
+    def test_without_argnum(self, diff_methods):
+        """Test that the method returns all diff_methods when
+        used with ``argnum=None``."""
+        chosen = choose_grad_methods(diff_methods, None)
+        assert chosen == dict(enumerate(diff_methods))
+
+    @pytest.mark.parametrize(
+        "diff_methods, argnum, expected",
+        zip(all_diff_methods, [1, 2, 0, 0], [{1: "A"}, {2: "F"}, {0: "F"}, {0: "0"}]),
+    )
+    def test_with_integer_argnum(self, diff_methods, argnum, expected):
+        """Test that the method returns the correct single diff_method when
+        used with an integer ``argnum``."""
+        chosen = choose_grad_methods(diff_methods, argnum)
+        assert chosen == expected
+
+    @pytest.mark.parametrize("diff_methods", all_diff_methods[:2] + [[]])
+    def test_warning_with_empty_argnum(self, diff_methods):
+        """Test that the method raises a warning when an empty iterable
+        is passed as ``argnum``."""
+        with pytest.warns(UserWarning, match="No trainable parameters were specified"):
+            chosen = choose_grad_methods(diff_methods, [])
+        assert chosen == {}
 
 
 class TestGradientTransformIntegration:
@@ -76,7 +145,8 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliX(1))
 
-        grad_fn = qml.gradients.param_shift(circuit, shift=np.pi / 4)
+        shifts = [(np.pi / 4,), (np.pi / 3,)]
+        grad_fn = qml.gradients.param_shift(circuit, shifts=shifts)
 
         w = np.array([0.543, -0.654], requires_grad=True)
         res = grad_fn(w)
@@ -85,7 +155,7 @@ class TestGradientTransformIntegration:
         expected = np.array([[-np.sin(x), 0], [0, -2 * np.cos(y) * np.sin(y)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        assert spy.call_args[0][2] == np.pi / 4
+        assert spy.call_args[0][2] == shifts
 
     def test_expansion(self, mocker, tol):
         """Test that a gradient transform correctly
@@ -97,7 +167,7 @@ class TestGradientTransformIntegration:
             grad_method = None
 
             @staticmethod
-            def decomposition(x, wires):
+            def compute_decomposition(x, wires):
                 return [qml.RX(x, wires=wires)]
 
         @qml.qnode(dev)
@@ -272,7 +342,7 @@ class TestGradientTransformIntegration:
         assert np.allclose(classical_jac, np.array([[2 * w[0], 0], [0, 1]]))
 
         x, y = w
-        expected = [-2 * x * np.sin(x ** 2), 0]
+        expected = [-2 * x * np.sin(x**2), 0]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_classical_processing_multiple_arguments(self, mocker, tol):
@@ -298,7 +368,7 @@ class TestGradientTransformIntegration:
         classical_jac = spy.spy_return(d, w)
         assert np.allclose(classical_jac, np.array([[2 * w[0], 0], [0, 1]]).T)
 
-        expected = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x ** 2), 0])
+        expected = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x**2), 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # set d as differentiable
@@ -311,8 +381,8 @@ class TestGradientTransformIntegration:
         assert np.allclose(classical_jac[0], [-np.sin(d), 0, 0])
         assert np.allclose(classical_jac[1], np.array([[0, 2 * w[0], 0], [0, 0, 1]]).T)
 
-        expected_dd = np.cos(x ** 2) * np.sin(d) * np.sin(np.cos(d))
-        expected_dw = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x ** 2), 0])
+        expected_dd = np.cos(x**2) * np.sin(d) * np.sin(np.cos(d))
+        expected_dw = np.array([-2 * x * np.cos(np.cos(d)) * np.sin(x**2), 0])
         assert np.allclose(res[0], expected_dd, atol=tol, rtol=0)
         assert np.allclose(res[1], expected_dw, atol=tol, rtol=0)
 
@@ -347,7 +417,7 @@ class TestGradientTransformIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
-        w = np.array([0.543 ** 2, -0.654], requires_grad=True)
+        w = np.array([0.543**2, -0.654], requires_grad=True)
         expected = qml.jacobian(circuit)(w)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -395,15 +465,15 @@ class TestGradientTransformIntegration:
         """Raise an exception if shots is used within the QNode"""
         dev = qml.device("default.qubit", wires=1, shots=1000)
 
-        @qml.qnode(dev)
         def circuit(x, shots):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(
-            ValueError, match="'shots' argument name is reserved for overriding the number of shots"
-        ):
-            qml.gradients.param_shift(circuit)(0.2, shots=100)
+        with pytest.warns(UserWarning, match="Detected 'shots' as an argument to the given"):
+            qnode = qml.QNode(circuit, dev)
+
+        with pytest.raises(ValueError, match="Detected 'shots' as an argument of the quantum"):
+            qml.gradients.param_shift(qnode)(0.2, shots=100)
 
 
 class TestInterfaceIntegration:
@@ -418,18 +488,18 @@ class TestInterfaceIntegration:
         @qml.gradients.param_shift
         @qml.qnode(dev)
         def circuit(x):
-            qml.RY(x ** 2, wires=[1])
+            qml.RY(x**2, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliX(1))
 
         x = np.array(-0.654, requires_grad=True)
 
         res = circuit(x)
-        expected = -4 * x * np.cos(x ** 2) * np.sin(x ** 2)
+        expected = -4 * x * np.cos(x**2) * np.sin(x**2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = qml.grad(circuit)(x)
-        expected = -2 * (4 * x ** 2 * np.cos(2 * x ** 2) + np.sin(2 * x ** 2))
+        expected = -2 * (4 * x**2 * np.cos(2 * x**2) + np.sin(2 * x**2))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_tf(self, tol):
@@ -441,7 +511,7 @@ class TestInterfaceIntegration:
         @qml.gradients.param_shift
         @qml.qnode(dev, interface="tf", diff_method="parameter-shift")
         def circuit(x):
-            qml.RY(x ** 2, wires=[1])
+            qml.RY(x**2, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliX(1))
 
@@ -451,11 +521,11 @@ class TestInterfaceIntegration:
         with tf.GradientTape() as tape:
             res = circuit(x)
 
-        expected = -4 * x_ * np.cos(x_ ** 2) * np.sin(x_ ** 2)
+        expected = -4 * x_ * np.cos(x_**2) * np.sin(x_**2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = tape.gradient(res, x)
-        expected = -2 * (4 * x_ ** 2 * np.cos(2 * x_ ** 2) + np.sin(2 * x_ ** 2))
+        expected = -2 * (4 * x_**2 * np.cos(2 * x_**2) + np.sin(2 * x_**2))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_torch(self, tol):
@@ -492,16 +562,16 @@ class TestInterfaceIntegration:
         @qml.gradients.param_shift
         @qml.qnode(dev, interface="jax")
         def circuit(x):
-            qml.RY(x ** 2, wires=[1])
+            qml.RY(x**2, wires=[1])
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliX(1))
 
         x = jnp.array(-0.654)
 
         res = circuit(x)
-        expected = -4 * x * np.cos(x ** 2) * np.sin(x ** 2)
+        expected = -4 * x * np.cos(x**2) * np.sin(x**2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         res = jax.grad(circuit)(x)
-        expected = -2 * (4 * x ** 2 * np.cos(2 * x ** 2) + np.sin(2 * x ** 2))
+        expected = -2 * (4 * x**2 * np.cos(2 * x**2) + np.sin(2 * x**2))
         assert np.allclose(res, expected, atol=tol, rtol=0)

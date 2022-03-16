@@ -108,7 +108,7 @@ class TestAdjointOutsideQueuing:
         adjoint_of_controlled_op = qml.ctrl(op, control=control_wires)(par, wires=wires).adjoint()
 
         assert adjoint_of_controlled_op.control_wires == control_wires
-        res_ops = adjoint_of_controlled_op.subtape.operations[0].operations
+        res_ops = adjoint_of_controlled_op.subtape.operations
         expected = qml.adjoint(op)(par, wires=wires)
 
         for op1, op2 in zip(res_ops, expected):
@@ -309,3 +309,159 @@ def test_controlled_template_and_operations():
     tape = expand_tape(tape)
     assert len(tape.operations) == 10
     assert all(o.name in {"CNOT", "CRX", "Toffoli"} for o in tape.operations)
+
+
+@pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
+class TestDifferentiation:
+    """Tests for differentiation"""
+
+    def test_autograd(self, diff_method):
+        """Test differentiation using autograd"""
+        from pennylane import numpy as pnp
+
+        dev = qml.device("default.qubit", wires=2)
+        init_state = pnp.array([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def circuit(b):
+            qml.QubitStateVector(init_state, wires=0)
+            qml.ctrl(qml.RY, control=0)(b, wires=[1])
+            return qml.expval(qml.PauliX(0))
+
+        b = pnp.array(0.123, requires_grad=True)
+        res = qml.grad(circuit)(b)
+        expected = np.sin(b / 2) / 2
+
+        assert np.allclose(res, expected)
+
+    def test_torch(self, diff_method):
+        """Test differentiation using torch"""
+        torch = pytest.importorskip("torch")
+
+        dev = qml.device("default.qubit", wires=2)
+        init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
+
+        @qml.qnode(dev, diff_method=diff_method, interface="torch")
+        def circuit(b):
+            qml.QubitStateVector(init_state, wires=0)
+            qml.ctrl(qml.RY, control=0)(b, wires=[1])
+            return qml.expval(qml.PauliX(0))
+
+        b = torch.tensor(0.123, requires_grad=True)
+        loss = circuit(b)
+        loss.backward()
+
+        res = b.grad.detach()
+        expected = np.sin(b.detach() / 2) / 2
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize("jax_interface", ["jax", "jax-python", "jax-jit"])
+    def test_jax(self, diff_method, jax_interface):
+        """Test differentiation using JAX"""
+
+        if diff_method == "backprop" and jax_interface != "jax":
+            pytest.skip("The backprop case only accepts interface='jax'")
+
+        jax = pytest.importorskip("jax")
+        jnp = jax.numpy
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method=diff_method, interface=jax_interface)
+        def circuit(b):
+            init_state = np.array([1.0, -1.0]) / np.sqrt(2)
+            qml.QubitStateVector(init_state, wires=0)
+            qml.ctrl(qml.RY, control=0)(b, wires=[1])
+            return qml.expval(qml.PauliX(0))
+
+        b = jnp.array(0.123)
+        res = jax.grad(circuit)(b)
+        expected = np.sin(b / 2) / 2
+
+        assert np.allclose(res, expected)
+
+    def test_tf(self, diff_method):
+        """Test differentiation using TF"""
+        tf = pytest.importorskip("tensorflow")
+
+        dev = qml.device("default.qubit", wires=2)
+        init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / np.sqrt(2)
+
+        @qml.qnode(dev, diff_method=diff_method, interface="tf")
+        def circuit(b):
+            qml.QubitStateVector(init_state, wires=0)
+            qml.ctrl(qml.RY, control=0)(b, wires=[1])
+            return qml.expval(qml.PauliX(0))
+
+        b = tf.Variable(0.123, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            loss = circuit(b)
+
+        res = tape.gradient(loss, b)
+        expected = np.sin(b / 2) / 2
+
+        assert np.allclose(res, expected)
+
+
+def test_control_values_sanity_check():
+    """Test that control works with control values on a very standard usecase."""
+
+    def make_ops():
+        qml.RX(0.123, wires=0)
+        qml.RY(0.456, wires=2)
+        qml.RX(0.789, wires=0)
+        qml.Rot(0.111, 0.222, 0.333, wires=2),
+        qml.PauliX(wires=2)
+        qml.PauliY(wires=4)
+        qml.PauliZ(wires=0)
+
+    with QuantumTape() as tape:
+        cmake_ops = ctrl(make_ops, control=1, control_values=0)
+        # Execute controlled version.
+        cmake_ops()
+
+    expected = [
+        qml.PauliX(wires=1),
+        qml.CRX(0.123, wires=[1, 0]),
+        qml.CRY(0.456, wires=[1, 2]),
+        qml.CRX(0.789, wires=[1, 0]),
+        qml.CRot(0.111, 0.222, 0.333, wires=[1, 2]),
+        qml.CNOT(wires=[1, 2]),
+        qml.CY(wires=[1, 4]),
+        qml.CZ(wires=[1, 0]),
+        qml.PauliX(wires=1),
+    ]
+    assert len(tape.operations) == 1
+    ctrl_op = tape.operations[0]
+    assert isinstance(ctrl_op, ControlledOperation)
+    expanded = ctrl_op.expand()
+    assert_equal_operations(expanded.operations, expected)
+
+
+@pytest.mark.parametrize("ctrl_values", [[0, 0], [0, 1], [1, 0], [1, 1]])
+def test_multi_control_values(ctrl_values):
+    """Test control with a list of wires and control values."""
+
+    def expected_ops(ctrl_val):
+        exp_op = []
+        ctrl_wires = [3, 7]
+        for i, j in enumerate(ctrl_val):
+            if not bool(j):
+                exp_op.append(qml.PauliX(ctrl_wires[i]))
+        exp_op.append(qml.Toffoli(wires=[7, 3, 0]))
+        for i, j in enumerate(ctrl_val):
+            if not bool(j):
+                exp_op.append(qml.PauliX(ctrl_wires[i]))
+
+        return exp_op
+
+    with QuantumTape() as tape:
+        CCX = ctrl(qml.PauliX, control=[3, 7], control_values=ctrl_values)
+        CCX(wires=0)
+    assert len(tape.operations) == 1
+    op = tape.operations[0]
+    assert isinstance(op, ControlledOperation)
+    new_tape = expand_tape(tape, 1)
+    assert_equal_operations(new_tape.operations, expected_ops(ctrl_values))

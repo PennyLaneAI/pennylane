@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import CircuitGraph
 from pennylane.tape import QuantumTape
-from pennylane.measure import MeasurementProcess, expval, sample, var
+from pennylane.measurements import MeasurementProcess, expval, sample, var
 
 
 def TestOperationMonkeypatching():
@@ -262,6 +262,16 @@ class TestConstruction:
             qml.sample(qml.PauliZ(wires=0))
 
         assert tape.is_sampled
+
+    def test_repr(self):
+        """Test the string representation"""
+
+        with QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+
+        s = tape.__repr__()
+        expected = "<QuantumTape: wires=[0], params=1>"
+        assert s == expected
 
 
 class TestGraph:
@@ -859,7 +869,7 @@ class TestExpand:
         assert [m.obs is r for m, r in zip(new_tape.measurements, expected)]
 
         expected = [None, [1, -1, -1, 1], [0, 5]]
-        assert [m.eigvals is r for m, r in zip(new_tape.measurements, expected)]
+        assert [m.get_eigvals() is r for m, r in zip(new_tape.measurements, expected)]
 
     def test_expand_tape_multiple_wires(self):
         """Test the expand() method when measurements with more than one observable on the same
@@ -1343,28 +1353,6 @@ class TestTapeCopying:
         # however, the underlying operation *parameters* are still shared
         # to support PyTorch, which does not support deep copying of tensors
         assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
-
-    def test_casting(self):
-        """Test that copying and casting works as expected"""
-        with QuantumTape() as tape:
-            qml.BasisState(np.array([1, 0]), wires=[0, 1])
-            qml.RY(0.5, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
-
-        # copy and cast to a JacobianTape
-        copied_tape = tape.copy(tape_cls=qml.tape.JacobianTape)
-
-        # check that the copying worked
-        assert copied_tape is not tape
-        assert copied_tape.operations == tape.operations
-        assert copied_tape.observables == tape.observables
-        assert copied_tape.measurements == tape.measurements
-        assert copied_tape.operations[0] is tape.operations[0]
-
-        # check that the casting worked
-        assert isinstance(copied_tape, qml.tape.JacobianTape)
-        assert not isinstance(tape, qml.tape.JacobianTape)
 
 
 class TestStopRecording:

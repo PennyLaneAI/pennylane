@@ -38,4 +38,4 @@ from .utils import (
     observables_to_binary_matrix,
     qwc_complement_adj_matrix,
 )
-from .pauli import pauli_group, pauli_mult, pauli_mult_with_phase
+from .pauli import pauli_group, pauli_mult, pauli_mult_with_phase, partition_pauli_group

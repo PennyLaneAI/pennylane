@@ -14,57 +14,73 @@
 """
 Unit tests for the available qubit state preparation operations.
 """
-import itertools
-import re
 import pytest
-import functools
-import copy
-import numpy as np
-from numpy.linalg import multi_dot
-from scipy.stats import unitary_group
-from scipy.linalg import expm
-from pennylane import numpy as npp
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.wires import Wires
 
-from gate_data import (
-    I,
-    X,
-    Y,
-    Z,
-    H,
-    StateZeroProjector,
-    StateOneProjector,
-    CNOT,
-    SWAP,
-    ISWAP,
-    SISWAP,
-    CZ,
-    S,
-    T,
-    CSWAP,
-    Toffoli,
-    QFT,
-    ControlledPhaseShift,
-    SingleExcitation,
-    SingleExcitationPlus,
-    SingleExcitationMinus,
-    DoubleExcitation,
-    DoubleExcitationPlus,
-    DoubleExcitationMinus,
+
+densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
+
+
+@pytest.mark.parametrize(
+    "op",
+    [
+        qml.BasisState(np.array([0, 1]), wires=0),
+        qml.QubitStateVector(np.array([1.0, 0.0]), wires=0),
+        qml.QubitDensityMatrix(densitymat0, wires=0),
+    ],
 )
+def test_adjoint_error_exception(op):
+    with pytest.raises(qml.ops.AdjointError):
+        op.adjoint()
 
 
-class TestOperations:
-    @pytest.mark.parametrize(
-        "op",
-        [
-            qml.BasisState(np.array([0, 1]), wires=0),
-            qml.QubitStateVector(np.array([1.0, 0.0]), wires=0),
-            qml.QubitDensityMatrix(np.array([[1.0, 0.0], [0.0, 0.0]]), wires=0),
-        ],
-    )
-    def test_adjoint_error_exception(self, op, tol):
-        with pytest.raises(qml.ops.AdjointError):
-            op.adjoint()
+@pytest.mark.parametrize(
+    "op, mat, base",
+    [
+        (qml.BasisState(np.array([0, 1]), wires=0), [0, 1], "BasisState"),
+        (qml.QubitStateVector(np.array([1.0, 0.0]), wires=0), [1.0, 0.0], "QubitStateVector"),
+        (qml.QubitDensityMatrix(densitymat0, wires=0), densitymat0, "QubitDensityMatrix"),
+    ],
+)
+def test_labelling_matrix_cache(op, mat, base):
+    """Test state prep matrix parameters interact with labelling matrix cache"""
+
+    assert op.label() == base
+
+    cache = {"matrices": []}
+    assert op.label(cache=cache) == base + "(M0)"
+    assert qml.math.allclose(cache["matrices"][0], mat)
+
+    cache = {"matrices": [0, mat, 0]}
+    assert op.label(cache=cache) == base + "(M1)"
+    assert len(cache["matrices"]) == 3
+
+
+class TestDecomposition:
+    def test_BasisState_decomposition(self):
+        """Test the decomposition for BasisState"""
+
+        n = np.array([0, 1, 0])
+        wires = (0, 1, 2)
+        ops1 = qml.BasisState.compute_decomposition(n, wires)
+        ops2 = qml.BasisState(n, wires=wires).decomposition()
+
+        assert len(ops1) == len(ops2) == 1
+        assert isinstance(ops1[0], qml.BasisStatePreparation)
+        assert isinstance(ops2[0], qml.BasisStatePreparation)
+
+    def test_QubitStateVector_decomposition(self):
+        """Test the decomposition for QubitStateVector."""
+
+        U = np.array([1, 0, 0, 0])
+        wires = (0, 1)
+
+        ops1 = qml.QubitStateVector.compute_decomposition(U, wires)
+        ops2 = qml.QubitStateVector(U, wires=wires).decomposition()
+
+        assert len(ops1) == len(ops2) == 1
+        assert isinstance(ops1[0], qml.MottonenStatePreparation)
+        assert isinstance(ops2[0], qml.MottonenStatePreparation)
