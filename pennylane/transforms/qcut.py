@@ -19,7 +19,6 @@ import copy
 import string
 import uuid
 import warnings
-import tempfile
 from dataclasses import InitVar, dataclass
 from functools import partial
 from itertools import product, compress
