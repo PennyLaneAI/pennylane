@@ -71,4 +71,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Anthony Hayes, Josh Izaac, Christina Lee, Jay Soni
+Karim Alaa El-Din, Anthony Hayes, Josh Izaac, Christina Lee, Jay Soni.
