@@ -295,6 +295,29 @@ class PauliX(Observable, Operation):
         # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
         return [np.pi / 2, np.pi, -np.pi / 2]
 
+    def pow(self, exponent):
+        """Custom power method.
+
+        Args:
+            exponent (int, float): exponent
+        Returns:
+            .Operator
+        """
+        if isinstance(exponent, int):
+            if exponent % 2 == 0:
+                return qml.Identity(wires=self.wires)
+            return qml.PauliX(wires=self.wires)
+
+        # revert to default
+        return qml.ops.math.Pow(self, exponent)
+
+    def control(self, control_wires, control_values):
+        """Custom controlled version of this operator"""
+        if len(control_wires) == 1 and control_values[0] == 1:
+            combined_wires = qml.wires.Wires.all_wires([qml.wires.Wires(control_wires), self.wires])
+            return CNOT(wires=combined_wires)
+        return qml.ops.math.Control(self, control_wires, control_values)
+
 
 class PauliY(Observable, Operation):
     r"""PauliY(wires)

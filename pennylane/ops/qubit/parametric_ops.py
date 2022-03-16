@@ -302,6 +302,17 @@ class RZ(Operation):
         # RZ(\theta) = RZ(\theta) RY(0) RZ(0)
         return [self.data[0], 0.0, 0.0]
 
+    def control(self, control_wires, control_values):
+        phi = self.parameters[0]
+        if all(c == 1 for c in control_values):
+            # if all control values are 1, we know a decomposition
+            return qml.ops.math.Prod(qml.PhaseShift(phi / 2, wires=self.wires),
+                                     qml.CNOT(wires=control_wires+self.wires),
+                                     qml.PhaseShift(-phi / 2, wires=self.wires),
+                                     qml.CNOT(wires=control_wires+self.wires))
+        else:
+            qml.ops.math.Control(self, control_wires, control_values)
+
 
 class PhaseShift(Operation):
     r"""

@@ -18,7 +18,7 @@ import pennylane as qml
 
 
 class Exp(qml.operation.Operator):
-    """Arithmetic operator class representing the exponential of an operator."""
+    """Arithmetic operator subclass representing the exponential of an operator."""
 
     def __init__(self, op, do_queue=True, id=None):
 

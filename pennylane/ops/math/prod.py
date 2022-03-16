@@ -15,46 +15,42 @@
 # pylint: disable=too-few-public-methods,function-redefined
 
 import pennylane as qml
+from functools import reduce
 
 
 class Prod(qml.operation.Operator):
-    """Arithmetic operator class representing the product of two operators."""
+    """Arithmetic operator subclass representing the product of two operators."""
 
-    def __init__(self, left, right, do_queue=True, id=None):
+    def __init__(self, *factors, do_queue=True, id=None):
 
-        combined_wires = qml.wires.Wires.all_wires([left.wires, right.wires])
-
-        self.hyperparameters["left"] = left
-        self.hyperparameters["right"] = right
+        self.hyperparameters["factors"] = factors
+        combined_wires = qml.wires.Wires.all_wires([f.wires for f in factors])
         self.hyperparameters["combined_wires"] = combined_wires
 
         super().__init__(
-            *left.parameters, *right.parameters, wires=combined_wires, do_queue=do_queue, id=id
+            *[f.parameters for f in factors], wires=combined_wires, do_queue=do_queue, id=id
         )
-        self._name = f"MatMul({right.name}, {left.name})"
+        self._name = "Prod(" + ", ".join([f"{f}" for f in factors]) + ")"
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return f"{self.hyperparameters['left']} @ {self.hyperparameters['right']}"
+        return " @ ".join([f"{f}" for f in self.hyperparameters['factors']])
 
     @property
     def num_wires(self):
         return len(self.wires)
 
     @staticmethod
-    def compute_decomposition(*params, wires=None, left=None, right=None, **hyperparameters):
-        return [left, right]
+    def compute_decomposition(*params, wires=None, factors=None, **hyperparameters):
+        return [f for f in factors]
 
     @staticmethod
-    def get_generator(*params, wires=None, left=None, right=None, **hyperparameters):
-        return [left, right]
-
-    @staticmethod
-    def compute_matrix(*params, left=None, right=None, combined_wires=None, **hyperparams):
-        return left.get_matrix(wire_order=combined_wires) @ right.get_matrix(
-            wire_order=combined_wires
-        )
+    def compute_matrix(*params, factors=None, combined_wires=None, **hyperparams):
+        m = factors[0].get_matrix(wire_order=combined_wires)
+        for f in factors[1:]:
+            m @ f.get_matrix(wire_order=combined_wires)
+        return m
 
 
-def matmul(left, right):
-    return Prod(left, right)
+def prod(*factors):
+    return Prod(*factors)

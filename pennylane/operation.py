@@ -1094,9 +1094,6 @@ class Operator(abc.ABC):
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
-    def pow(self, a):
-        raise OperatorPropertyUndefined
-
     def __add__(self, other):
         r"""The addition operation between operators."""
         return qml.ops.math.sum(self, other)
@@ -1115,9 +1112,9 @@ class Operator(abc.ABC):
         r"""The multiplication between operators."""
         return qml.ops.math.prod(self, other)
 
-    def __pow__(self, a):
+    def __pow__(self, exponent):
         r"""The power of an operator."""
-        return qml.ops.math.pow(self, a)
+        return qml.ops.math.pow(self, exponent)
 
     def expand(self):
         """Returns a tape that has recorded the decomposition of the operator.
