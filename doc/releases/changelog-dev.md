@@ -46,16 +46,10 @@
   circuit.
   [(#2328)](https://github.com/PennyLaneAI/pennylane/pull/2328)
 
-* The output shape of gradient transforms (e.g. `qml.gradient.param_shift`) now respects the
-  dimensionality of the QNode return statement in the same manner as executing the QNode directly
-  does. That is, a QNode with `return qml.expval(qml.PauliZ(0))` will produce a shape of the form
-  `(*)` from a gradient transform, while `return [qml.expval(qml.PauliZ(0))]` produces `(1, *)`.
-  [(#2215)](https://github.com/PennyLaneAI/pennylane/pull/2215)
-
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Guillermo Alonso-Linaje, Anthony Hayes, David Ittah, Josh Izaac, Christina Lee
+Karim Alaa El-Din, Anthony Hayes, David Ittah, Josh Izaac, Christina Lee.
