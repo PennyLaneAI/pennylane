@@ -14,8 +14,149 @@
 """This module contains utilities for defining custom gradient transforms,
 including a decorator for specifying gradient expansions."""
 # pylint: disable=too-few-public-methods
+import warnings
+
 import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
+
+
+def gradient_analysis(tape, use_graph=True, grad_fn=None):
+    """Update the parameter information dictionary of the tape with
+    gradient information of each parameter.
+
+    Parameter gradient methods include:
+
+    * ``None``: the parameter does not support differentiation.
+
+    * ``"0"``: the variational circuit output does not depend on this
+      parameter (the partial derivative is zero).
+
+    In addition, the operator might define its own grad method
+    via :attr:`.Operator.grad_method`.
+
+    Note that this function modifies the input tape in-place.
+
+    Args:
+        tape (.QuantumTape): the quantum tape to analyze
+        use_graph (bool): whether to use a directed-acyclic graph to determine
+            if the parameter has a gradient of 0
+        grad_fn (None or callable): The gradient transform performing the analysis.
+            This is an optional argument; if provided, and the tape has already
+            been analyzed for the gradient information by the same gradient transform,
+            the cached gradient analysis will be used.
+    """
+    # pylint:disable=protected-access
+    if grad_fn is not None and getattr(tape, "_gradient_fn", None) is grad_fn:
+        # gradient analysis has already been performed on this tape
+        return
+
+    if grad_fn is not None:
+        tape._gradient_fn = grad_fn
+
+    for idx, info in tape._par_info.items():
+
+        if idx not in tape.trainable_params:
+            # non-trainable parameters do not require a grad_method
+            info["grad_method"] = None
+        else:
+            op = tape._par_info[idx]["op"]
+
+            if not qml.operation.has_grad_method(op):
+                # no differentiation method is registered for this operation
+                info["grad_method"] = None
+
+            elif (tape._graph is not None) or use_graph:
+                if not any(tape.graph.has_path(op, ob) for ob in tape.observables):
+                    # there is no influence of this operation on any of the observables
+                    info["grad_method"] = "0"
+                    continue
+
+            info["grad_method"] = op.grad_method
+
+
+def grad_method_validation(method, tape):
+    """Validates if the gradient method requested is supported by the trainable
+    parameters of a tape, and returns the allowed parameter gradient methods.
+
+    This method will generate parameter gradient information for the given tape if it
+    has not already been generated, and then proceed to validate the gradient method.
+    In particular:
+
+    * An exception will be raised if there exist non-differentiable trainable
+      parameters on the tape.
+
+    * An exception will be raised if the Jacobian method is ``"analytic"`` but there
+      exist some trainable parameters on the tape that only support numeric differentiation.
+
+    If all validations pass, this method will return a tuple containing the allowed parameter
+    gradient methods for each trainable parameter.
+
+    Args:
+        method (str): the overall Jacobian differentiation method
+        tape (.QuantumTape): the tape with associated parameter information
+
+    Returns:
+        tuple[str, None]: the allowed parameter gradient methods for each trainable parameter
+    """
+
+    diff_methods = {
+        idx: info["grad_method"]
+        for idx, info in tape._par_info.items()  # pylint: disable=protected-access
+        if idx in tape.trainable_params
+    }
+
+    # check and raise an error if any parameters are non-differentiable
+    nondiff_params = {idx for idx, g in diff_methods.items() if g is None}
+
+    if nondiff_params:
+        raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
+
+    numeric_params = {idx for idx, g in diff_methods.items() if g == "F"}
+
+    # If explicitly using analytic mode, ensure that all parameters
+    # support analytic differentiation.
+    if method == "analytic" and numeric_params:
+        raise ValueError(
+            f"The analytic gradient method cannot be used with the parameter(s) {numeric_params}."
+        )
+
+    return tuple(diff_methods.values())
+
+
+def choose_grad_methods(diff_methods, argnum):
+    """Chooses the trainable parameters to use for computing the Jacobian
+    by returning a map of their indices and differentiation methods.
+
+    When there are fewer parameters specified than the total number of
+    trainable parameters, the Jacobian is estimated by using the parameters
+    specified using the ``argnum`` keyword argument.
+
+    Args:
+        diff_methods (list): the ordered list of differentiation methods
+            for each parameter
+        argnum (int, list(int), None): Indices for argument(s) with respect
+            to which to compute the Jacobian.
+
+    Returns:
+        dict: map of the trainable parameter indices and
+        differentiation methods
+    """
+    if argnum is None:
+        return dict(enumerate(diff_methods))
+
+    if isinstance(argnum, int):
+        argnum = [argnum]
+
+    num_params = len(argnum)
+
+    if num_params == 0:
+        warnings.warn(
+            "No trainable parameters were specified for computing the Jacobian.",
+            UserWarning,
+        )
+        return {}
+
+    return {idx: diff_methods[idx] for idx in argnum}
 
 
 class gradient_transform(qml.batch_transform):
@@ -117,6 +258,14 @@ class gradient_transform(qml.batch_transform):
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
 
         def jacobian_wrapper(*args, **kwargs):
+            if not qml.math.get_trainable_indices(args):
+                warnings.warn(
+                    "Attempted to compute the gradient of a QNode with no trainable parameters. "
+                    "If this is unintended, please add trainable parameters in accordance with "
+                    "the chosen auto differentiation framework."
+                )
+                return ()
+
             qjac = _wrapper(*args, **kwargs)
 
             if any(m.return_type is qml.operation.Probability for m in qnode.qtape.measurements):

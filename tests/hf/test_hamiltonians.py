@@ -279,9 +279,9 @@ def test_generate_hamiltonian(symbols, geometry, h_ref_data):
     h = generate_hamiltonian(mol)(*args)
     h_ref = qml.Hamiltonian(h_ref_data[0], h_ref_data[1])
 
-    assert np.allclose(h.terms[0], h_ref.terms[0])
-    assert qml.Hamiltonian(np.ones(len(h.terms[0])), h.terms[1]).compare(
-        qml.Hamiltonian(np.ones(len(h_ref.terms[0])), h_ref.terms[1])
+    assert np.allclose(h.terms()[0], h_ref.terms()[0])
+    assert qml.Hamiltonian(np.ones(len(h.terms()[0])), h.terms()[1]).compare(
+        qml.Hamiltonian(np.ones(len(h_ref.terms()[0])), h_ref.terms()[1])
     )
 
 

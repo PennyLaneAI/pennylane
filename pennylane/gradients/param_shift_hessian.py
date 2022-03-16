@@ -15,11 +15,12 @@
 This module contains functions for computing the parameter-shift hessian
 of a qubit-based quantum tape.
 """
+import warnings
 import numpy as np
 
 import pennylane as qml
 
-from .parameter_shift import _gradient_analysis
+from .gradient_transform import gradient_analysis, grad_method_validation
 from .hessian_transform import hessian_transform
 
 
@@ -168,21 +169,20 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
             # Compute the elements of the Hessian as the linear combination of
             # results and coefficients, barring optimization cases.
             if j < i:
-                g = hessian[j * h_dim + i]
+                hess = hessian[j * h_dim + i]
             elif s == 0:
-                g = qml.math.zeros(out_dim)
+                hess = qml.math.zeros(out_dim)
             else:
                 res = qml.math.stack(res)
-                hess = qml.math.convert_like(hessian_coeffs[k], res)
-                hess = qml.math.cast(hess, res.dtype)
-                g = qml.math.tensordot(res, hess, [[0], [0]])
+                coeffs = qml.math.cast(qml.math.convert_like(hessian_coeffs[k], res), res.dtype)
+                hess = qml.math.tensordot(res, coeffs, [[0], [0]])
                 if (i, j) in unshifted_coeffs:
-                    g += unshifted_coeffs[(i, j)] * r0
+                    hess = hess + unshifted_coeffs[(i, j)] * r0
 
-            hessian.append(g)
+            hessian.append(hess)
 
         # Reshape the Hessian to have the dimensions of the QNode output on the outside, that is:
-        #         (h_dim, h_dim, out_dim) -> (out_dim, h_dim, h_dim)
+        #     (h_dim*h_dim, out_dim) -> (h_dim, h_dim, out_dim) -> (out_dim, h_dim, h_dim)
         hessian = qml.math.reshape(qml.math.stack(hessian), (h_dim, h_dim) + out_dim)
         reordered_axes = list(range(2, len(out_dim) + 2)) + [0, 1]
         hessian = qml.math.transpose(hessian, axes=reordered_axes)
@@ -264,13 +264,13 @@ def param_shift_hessian(tape, f0=None):
         >>> tape = circuit.qtape
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape)
         >>> hessian_tapes
-        [<JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>,
-            <JacobianTape: wires=[0], params=2>]
+        [<QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>,
+         <QuantumTape: wires=[0], params=2>]
         >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
         array([[-0.97517033,  0.01983384],
                 [ 0.01983384, -0.97517033]])
@@ -279,14 +279,15 @@ def param_shift_hessian(tape, f0=None):
         gate arguments generated from parameter-shift rules:
 
         >>> for h_tape in hessian_tapes:
-        ...     print(h_tape.draw())
-        0: ──RX(0.1)──RY(0.2)──┤ ⟨Z⟩
-        0: ──RX(3.24)──RY(0.2)──┤ ⟨Z⟩
-        0: ──RX(1.67)──RY(1.77)──┤ ⟨Z⟩
-        0: ──RX(-1.47)──RY(1.77)──┤ ⟨Z⟩
-        0: ──RX(1.67)──RY(-1.37)──┤ ⟨Z⟩
-        0: ──RX(-1.47)──RY(-1.37)──┤ ⟨Z⟩
-        0: ──RX(0.1)──RY(3.34)──┤ ⟨Z⟩
+        ...     print(qml.drawer.tape_text(h_tape, decimals=1))
+        0: ──RX(0.1)──RY(0.2)─┤  <Z>
+        0: ──RX(3.2)──RY(0.2)─┤  <Z>
+        0: ──RX(1.7)──RY(1.8)─┤  <Z>
+        0: ──RX(-1.5)──RY(1.8)─┤  <Z>
+        0: ──RX(1.7)──RY(-1.4)─┤  <Z>
+        0: ──RX(-1.5)──RY(-1.4)─┤  <Z>
+        0: ──RX(0.1)──RY(3.3)─┤  <Z>
+
     """
 
     # Perform input validation before generating tapes.
@@ -302,7 +303,12 @@ def param_shift_hessian(tape, f0=None):
         )
 
     if not tape.trainable_params:
-        return [], lambda _: []
+        warnings.warn(
+            "Attempted to compute the hessian of a tape with no trainable parameters. "
+            "If this is unintended, please mark trainable parameters in accordance with the "
+            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
+        )
+        return [], lambda _: ()
 
     # The parameter-shift Hessian implementation currently only supports
     # the two-term parameter-shift rule. Raise an error for unsupported operations.
@@ -333,7 +339,12 @@ def param_shift_hessian(tape, f0=None):
                 f"Hessian. Only two-term parameter shift rules are currently supported."
             )
 
-    _gradient_analysis(tape)
-    diff_methods = tape._grad_method_validation("analytic")  # pylint: disable=protected-access
+    gradient_analysis(tape, grad_fn=qml.gradients.param_shift)
+    diff_methods = grad_method_validation("analytic", tape)
+
+    if all(g == "0" for g in diff_methods):
+        return [], lambda _: np.zeros(
+            [tape.output_dim, len(tape.trainable_params), len(tape.trainable_params)]
+        )
 
     return compute_hessian_tapes(tape, diff_methods, f0)

@@ -17,7 +17,7 @@ from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane import qnode, QNode
-from pennylane.tape import JacobianTape
+from pennylane.tape import QuantumTape
 
 qubit_device_and_diff_method = [
     ["default.qubit", "finite-diff", "backward"],
@@ -300,7 +300,7 @@ class TestQNode:
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
             qml.RZ(b, wires=0)
-            qml.RX(c + c ** 2 + np.sin(a), wires=0)
+            qml.RX(c + c**2 + np.sin(a), wires=0)
             return qml.expval(qml.PauliZ(0))
 
         res = qml.jacobian(circuit)(a, b, c)
@@ -308,7 +308,7 @@ class TestQNode:
         if diff_method == "finite-diff":
             assert circuit.qtape.trainable_params == [0, 2]
             tape_params = np.array(circuit.qtape.get_parameters())
-            assert np.all(tape_params == [a * c, c + c ** 2 + np.sin(a)])
+            assert np.all(tape_params == [a * c, c + c**2 + np.sin(a)])
 
         assert isinstance(res, tuple) and len(res) == 2
         assert res[0].shape == ()
@@ -336,12 +336,13 @@ class TestQNode:
         assert res.shape == (2,)
         assert isinstance(res, np.ndarray)
 
-        assert not qml.jacobian(circuit)(a, b)
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
+            assert not qml.jacobian(circuit)(a, b)
 
         def cost(a, b):
             return np.sum(circuit(a, b))
 
-        with pytest.warns(UserWarning, match="Output seems independent of input"):
+        with pytest.warns(UserWarning, match="Attempted to differentiate a function with no"):
             grad = qml.grad(cost)(a, b)
 
         assert grad == tuple()
@@ -393,7 +394,7 @@ class TestQNode:
                 theta, phi, lam = self.data
                 wires = self.wires
 
-                with JacobianTape() as tape:
+                with QuantumTape() as tape:
                     qml.Rot(lam, theta, -lam, wires=wires)
                     qml.PhaseShift(phi + lam, wires=wires)
 
@@ -1210,12 +1211,12 @@ class TestCV:
             return qml.var(qml.NumberOperator(0))
 
         res = circuit(n, a)
-        expected = n ** 2 + n + np.abs(a) ** 2 * (1 + 2 * n)
+        expected = n**2 + n + np.abs(a) ** 2 * (1 + 2 * n)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # circuit jacobians
         res = qml.jacobian(circuit)(n, a)
-        expected = np.array([[2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
+        expected = np.array([[2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
@@ -1230,7 +1231,7 @@ def test_adjoint_reuse_device_state(mocker):
 
     spy = mocker.spy(dev, "adjoint_jacobian")
 
-    grad = qml.grad(circ)(1.0)
+    qml.grad(circ, argnum=0)(1.0)
     assert circ.device.num_executions == 1
 
     spy.assert_called_with(mocker.ANY, use_device_state=True)

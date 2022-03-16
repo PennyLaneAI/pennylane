@@ -12,14 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage contains various quantum tapes, which track, queue,
-validate, execute, and differentiate quantum circuits.
+This subpackage contains the quantum tape, which tracks, queues, and
+validates quantum operations and measurements.
 """
 from .tape import QuantumTape, get_active_tape
-from .jacobian_tape import JacobianTape
-from .cv_param_shift import CVParamShiftTape
-from .qubit_param_shift import QubitParamShiftTape
-from .reversible import ReversibleTape
 from .operation_recorder import OperationRecorder
 from .stop_recording import stop_recording
 from .unwrap import Unwrap, UnwrapTape

@@ -381,7 +381,7 @@ statement:
 
 As suggested by the camel-case naming, built-in templates in PennyLane are classes. Classes are more complex
 data structures than functions, since they can define properties and methods of templates (such as gradient
-recipes or matrix representations). Consult the :ref:`Contributing templates<contributing_templates>`
+recipes or matrix representations). Consult the :ref:`Contributing operators <contributing_operators>`
 page to learn how to code up your own template class, and how to add it to the PennyLane template library.
 
 Layering Function
