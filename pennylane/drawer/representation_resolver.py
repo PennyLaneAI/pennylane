@@ -474,23 +474,23 @@ class RepresentationResolver:
             str: String representation of the Observable
         """
         # pylint: disable=inconsistent-return-statements
-        if obs.return_type == qml.operation.Expectation:
+        if obs.return_type == qml.measurements.Expectation:
             return (
                 self.charset.LANGLE
                 + f"{self.operator_representation(obs, wire)}"
                 + self.charset.RANGLE
             )
 
-        if obs.return_type == qml.operation.Variance:
+        if obs.return_type == qml.measurements.Variance:
             return f"Var[{self.operator_representation(obs, wire)}]"
 
-        if obs.return_type == qml.operation.Sample:
+        if obs.return_type == qml.measurements.Sample:
             return f"Sample[{self.operator_representation(obs, wire)}]"
 
-        if obs.return_type == qml.operation.Probability:
+        if obs.return_type == qml.measurements.Probability:
             return "Probs"
 
-        if obs.return_type == qml.operation.State:
+        if obs.return_type == qml.measurements.State:
             return "State"
 
         # Unknown return_type

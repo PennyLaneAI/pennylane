@@ -16,7 +16,7 @@ This module contains logic for the text based circuit drawer through the ``tape_
 """
 
 import pennylane as qml
-from pennylane.operation import Expectation, Probability, Sample, Variance, State
+from pennylane.measurements import Expectation, Probability, Sample, Variance, State
 
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order
