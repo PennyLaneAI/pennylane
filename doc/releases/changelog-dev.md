@@ -12,6 +12,10 @@
     nodes.
     [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
 
+  - The existing `qcut.graph_to_tape()` method has been extended to convert
+    graphs containing sample measurement nodes to tapes.
+    [(#2321)](https://github.com/PennyLaneAI/pennylane/pull/2321)
+
 <h3>Improvements</h3>
 
 * The function `qml.ctrl` was given the optional argument `control_values=None`.
