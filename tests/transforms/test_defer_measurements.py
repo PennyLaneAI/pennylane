@@ -29,10 +29,14 @@ class TestQNode:
         measurement yields the correct results and is transformed correctly."""
         dev = qml.device("default.qubit", wires=3)
 
-        with qml.tape.QuantumTape() as tape1:
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode1():
             return qml.expval(qml.PauliZ(0))
 
-        with qml.tape.QuantumTape() as tape2:
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode2():
             m = qml.measure(1)
             return qml.expval(qml.PauliZ(0))
 
@@ -99,7 +103,7 @@ class TestQNode:
 
         with qml.tape.QuantumTape() as tape:
             qml.measure(mid_measure_wire)
-            return qml.expval(qml.operation.Tensor(*[qml.PauliZ(w) for w in tp_wires]))
+            qml.expval(qml.operation.Tensor(*[qml.PauliZ(w) for w in tp_wires]))
 
         tape = qml.defer_measurements(tape)
 
@@ -202,7 +206,7 @@ class TestConditionalOperations:
 
             m_1 = qml.measure(3)
             qml.cond(m_0, qml.RZ)(sec_par, wires=1)
-            return qml.apply(terminal_measurement)
+            qml.apply(terminal_measurement)
 
         tape = qml.defer_measurements(tape)
 
@@ -237,7 +241,7 @@ class TestConditionalOperations:
         with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(0)
             qml.cond(~m_0, qml.RY)(first_par, wires=1)
-            return qml.apply(terminal_measurement)
+            qml.apply(terminal_measurement)
 
         tape = qml.defer_measurements(tape)
 
@@ -278,7 +282,7 @@ class TestConditionalOperations:
         with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(0)
             qml.cond(m_0 == 0, qml.RY)(first_par, wires=1)
-            return qml.expval(qml.PauliZ(1))
+            qml.expval(qml.PauliZ(1))
 
         tape = qml.defer_measurements(tape)
 
