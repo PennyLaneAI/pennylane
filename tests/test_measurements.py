@@ -147,7 +147,11 @@ class TestExpval:
 
         circuit()
 
-    def test_wire_order_in_tensor_prod_observables(self, tol):
+    @pytest.mark.parametrize(
+        "obs, permuted_obs",
+        [(obs, permuted_obs) for obs, permuted_obs in zip(obs_lst, obs_permuted_lst)]
+    )
+    def test_wire_order_in_tensor_prod_observables(self, obs, permuted_obs, tol):
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
@@ -155,8 +159,7 @@ class TestExpval:
             sub_routine(label_map=range(3))
             return qml.expval(obs)
 
-        for obs, permuted_obs in zip(obs_lst, obs_permuted_lst):
-            assert np.allclose(circ(obs), circ(permuted_obs), atol=tol, rtol=0)
+        assert np.allclose(circ(obs), circ(permuted_obs), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("label_map", label_maps)
     def test_wire_label_in_tensor_prod_observables(self, label_map, tol):
@@ -223,7 +226,11 @@ class TestVar:
 
         circuit()
 
-    def test_wire_order_in_tensor_prod_observables(self, tol):
+    @pytest.mark.parametrize(
+        "obs, permuted_obs",
+        [(obs, permuted_obs) for obs, permuted_obs in zip(obs_lst, obs_permuted_lst)]
+    )
+    def test_wire_order_in_tensor_prod_observables(self, obs, permuted_obs, tol):
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)
@@ -231,8 +238,7 @@ class TestVar:
             sub_routine(label_map=range(3))
             return qml.var(obs)
 
-        for obs, permuted_obs in zip(obs_lst, obs_permuted_lst):
-            assert np.allclose(circ(obs), circ(permuted_obs), atol=tol, rtol=0)
+        assert np.allclose(circ(obs), circ(permuted_obs), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("label_map", label_maps)
     def test_wire_label_in_tensor_prod_observables(self, label_map, tol):
