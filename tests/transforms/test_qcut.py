@@ -1259,6 +1259,146 @@ class TestGraphToTape:
         assert m[0].wires == Wires([2])
         assert m[0].obs.name == "PauliZ"
 
+    def test_single_sample_meas_conversion(self):
+        """
+        Tests that subgraphs with sample nodes are correctly converted to
+        fragment tapes
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.sample(wires=[0, 1, 2])
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+        frag0_expected_meas = [qml.sample(qml.Projector([1], wires=[0]))]
+        frag1_expected_meas = [
+            qml.sample(qml.Projector([1], wires=[1])),
+            qml.sample(qml.Projector([1], wires=[2])),
+        ]
+
+        for meas, expected_meas in zip(tapes[0].measurements, frag0_expected_meas):
+            compare_measurements(meas, expected_meas)
+
+        # For tapes with multiple measurements, the ordering varies
+        # so we check the set of wires rather that the order
+        for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
+            assert meas.return_type is qml.measurements.Sample
+            assert isinstance(meas.obs, qml.Projector)
+            assert meas.obs.wires in {Wires(1), Wires(2)}
+
+    def test_sample_mid_circuit_meas(self):
+        """
+        Test that a circuit with sample measurements, that is partitioned into
+        fragments requiring mid-circuit measurements, has its fragment subgraphs
+        correctly converted into tapes
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.WireCut(wires=1)
+            qml.RZ(0.321, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.Hadamard(wires=2)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.sample(wires=[0, 1, 2])
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+        frag0_expected_meas = [
+            qml.sample(qml.Projector([1], wires=[0])),
+            qml.sample(qml.Projector([1], wires=[3])),
+        ]
+        frag1_expected_meas = [qml.sample(qml.Projector([1], wires=[2]))]
+
+        for meas, expected_meas in zip(tapes[0].measurements, frag1_expected_meas):
+            assert meas.return_type is qml.measurements.Sample
+            assert isinstance(meas.obs, qml.Projector)
+            assert meas.obs.wires in {Wires(0), Wires(3)}
+
+        for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
+            compare_measurements(meas, expected_meas)
+
+        # sample measurements should not exist on the same wire as MeasureNodes at this stage
+        f0_sample_wires = [meas.wires for meas in tapes[0].measurements]
+        f0_measurenode_wires = [
+            op.wires for op in tapes[0].operations if isinstance(op, qcut.MeasureNode)
+        ]
+
+        f1_sample_wires = [meas.wires for meas in tapes[1].measurements]
+        f1_measurenode_wires = [
+            op.wires for op in tapes[1].operations if isinstance(op, qcut.MeasureNode)
+        ]
+
+        for f0_mn_wire in set(f0_measurenode_wires):
+            assert f0_mn_wire not in set(f0_sample_wires)
+
+        for f1_mn_wire in set(f1_measurenode_wires):
+            assert f1_mn_wire not in set(f1_sample_wires)
+
+    def test_mixed_measurements(self):
+        """
+        Tests thats a subgraph containing mixed measurements raises the correct
+        error message.
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.sample(wires=[0, 1])
+            qml.expval(qml.PauliZ(wires=2))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        with pytest.raises(
+            ValueError, match="Only a single return type can be used for measurement "
+        ):
+            [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+    def test_unsupported_meas(self):
+        """
+        Tests that a subgraph containing an unsupported measurement raises the
+        correct error message.
+        """
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.var(qml.PauliZ(wires=0))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        with pytest.raises(
+            ValueError,
+            match="Invalid return type. Only expecation value and sampling measurements ",
+        ):
+            [qcut.graph_to_tape(sg) for sg in subgraphs]
+
 
 class TestGetMeasurements:
     """Tests for the _get_measurements function"""
