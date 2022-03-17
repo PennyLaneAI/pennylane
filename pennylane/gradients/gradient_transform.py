@@ -268,7 +268,7 @@ class gradient_transform(qml.batch_transform):
 
             qjac = _wrapper(*args, **kwargs)
 
-            if any(m.return_type is qml.operation.Probability for m in qnode.qtape.measurements):
+            if any(m.return_type is qml.measurements.Probability for m in qnode.qtape.measurements):
                 qjac = qml.math.safe_squeeze(qjac, exclude_axis=-1)
 
             if not hybrid:
