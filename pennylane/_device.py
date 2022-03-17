@@ -28,13 +28,9 @@ import pennylane as qml
 from pennylane.operation import (
     Operation,
     Observable,
-    Sample,
-    State,
-    Variance,
-    Expectation,
-    Probability,
     Tensor,
 )
+from pennylane.measurements import Sample, State, Variance, Expectation, Probability, MidMeasure
 from pennylane.wires import Wires, WireError
 
 
@@ -878,6 +874,15 @@ class Device(abc.ABC):
 
             operation_name = o.name
 
+            if getattr(o, "return_type", None) == MidMeasure and not self.capabilities().get(
+                "supports_mid_measure", False
+            ):
+                raise DeviceError(
+                    f"Mid-circuit measurements are not natively supported on device {self.short_name}. "
+                    "Apply the @qml.defer_measurements decorator to your quantum function to "
+                    "simulate the application of mid-circuit measurements on this device."
+                )
+
             if o.inverse:
                 # TODO: update when all capabilities keys changed to "supports_inverse_operations"
                 supports_inv = self.capabilities().get(
@@ -895,7 +900,7 @@ class Device(abc.ABC):
                 )
 
         for o in observables:
-            if isinstance(o, qml.measure.MeasurementProcess) and o.obs is not None:
+            if isinstance(o, qml.measurements.MeasurementProcess) and o.obs is not None:
                 o = o.obs
 
             if isinstance(o, Tensor):

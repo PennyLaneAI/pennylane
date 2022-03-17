@@ -28,9 +28,7 @@ requirements = [
     "semantic_version==2.6",
     "autoray",
     "cachetools",
-    "pennylane-lightning>=0.21",
-    "dask",
-    "distributed"
+    "pennylane-lightning>=0.22",
 ]
 
 info = {
@@ -51,8 +49,7 @@ info = {
             'default.qubit.torch = pennylane.devices.default_qubit_torch:DefaultQubitTorch',
             'default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd',
             'default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax',
-            'default.mixed = pennylane.devices.default_mixed:DefaultMixed',
-            'task.qubit = pennylane.devices.task_qubit:TaskQubit',
+            'default.mixed = pennylane.devices.default_mixed:DefaultMixed'
             ],
         'console_scripts': [
                 'pl-device-test=pennylane.devices.tests:cli'

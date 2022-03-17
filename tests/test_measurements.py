@@ -22,7 +22,7 @@ from pennylane.devices import DefaultQubit
 from pennylane.operation import DecompositionUndefinedError
 
 from pennylane.queuing import AnnotatedQueue
-from pennylane.measure import (
+from pennylane.measurements import (
     expval,
     var,
     sample,
@@ -34,8 +34,30 @@ from pennylane.measure import (
     State,
     Variance,
     Probability,
+    MidMeasure,
     MeasurementProcess,
+    MeasurementValue,
+    MeasurementValueError,
 )
+
+
+@pytest.mark.parametrize(
+    "return_type, value",
+    [
+        (Expectation, "expval"),
+        (Sample, "sample"),
+        (Variance, "var"),
+        (Probability, "probs"),
+        (State, "state"),
+        (MidMeasure, "measure"),
+    ],
+)
+def test_ObservableReturnTypes(return_type, value):
+    """Test the ObservableReturnTypes enum value, repr, and enum membership."""
+
+    assert return_type.value == value
+    assert isinstance(return_type, qml.measurements.ObservableReturnTypes)
+    assert repr(return_type) == value
 
 
 def test_no_measure(tol):
@@ -304,6 +326,75 @@ class TestSample:
             return res
 
         circuit()
+
+
+class TestMeasure:
+    """Tests for the measure function"""
+
+    def test_many_wires_error(self):
+        """Test that an error is raised if multiple wires are passed to
+        measure."""
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="Only a single qubit can be measured in the middle of the circuit",
+        ):
+            qml.measure(wires=[0, 1])
+
+
+class TestMeasurementValue:
+    """Tests for the MeasurementValue class"""
+
+    @pytest.mark.parametrize("val_pair", [(0, 1), (1, 0), (-1, 1)])
+    @pytest.mark.parametrize("control_val_idx", [0, 1])
+    def test_measurement_value_assertion(self, val_pair, control_val_idx):
+        """Test that asserting the value of a measurement works well."""
+        zero_case = val_pair[0]
+        one_case = val_pair[1]
+        mv = MeasurementValue(measurement_id="1234", zero_case=zero_case, one_case=one_case)
+        mv == val_pair[control_val_idx]
+        assert mv._control_value == val_pair[control_val_idx]
+
+    @pytest.mark.parametrize("val_pair", [(0, 1), (1, 0), (-1, 1)])
+    @pytest.mark.parametrize("num_inv, expected_idx", [(1, 0), (2, 1), (3, 0)])
+    def test_measurement_value_inversion(self, val_pair, num_inv, expected_idx):
+        """Test that inverting the value of a measurement works well even with
+        multiple inversions.
+
+        Double-inversion should leave the control value of the measurement
+        value in place.
+        """
+        zero_case = val_pair[0]
+        one_case = val_pair[1]
+        mv = MeasurementValue(measurement_id="1234", zero_case=zero_case, one_case=one_case)
+        for _ in range(num_inv):
+            mv_new = mv.__invert__()
+
+            # Check that inversion involves creating a copy
+            assert not mv_new is mv
+
+            mv = mv_new
+
+        assert mv._control_value == val_pair[expected_idx]
+
+    def test_measurement_value_assertion_error_wrong_type(self):
+        """Test that the return_type related info is updated for a
+        measurement."""
+        mv1 = MeasurementValue(measurement_id="1111")
+        mv2 = MeasurementValue(measurement_id="2222")
+
+        with pytest.raises(
+            MeasurementValueError,
+            match="The equality operator is used to assert measurement outcomes, but got a value with type",
+        ):
+            mv1 == mv2
+
+    def test_measurement_value_assertion_error(self):
+        """Test that the return_type related info is updated for a
+        measurement."""
+        mv = MeasurementValue(measurement_id="1234")
+
+        with pytest.raises(MeasurementValueError, match="Unknown measurement value asserted"):
+            mv == -1
 
 
 @pytest.mark.parametrize(

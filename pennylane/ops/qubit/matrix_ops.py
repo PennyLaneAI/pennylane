@@ -20,7 +20,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import AnyWires, Operation, DecompositionUndefinedError
 from pennylane.wires import Wires
 
 
@@ -75,7 +75,7 @@ class QubitUnitary(Operation):
 
             # Check for unitarity; due to variable precision across the different ML frameworks,
             # here we issue a warning to check the operation, instead of raising an error outright.
-            if not qml.math.allclose(
+            if not qml.math.is_abstract(U) and not qml.math.allclose(
                 qml.math.dot(U, qml.math.T(qml.math.conj(U))),
                 qml.math.eye(qml.math.shape(U)[0]),
                 atol=1e-6,
@@ -240,6 +240,10 @@ class ControlledQubitUnitary(QubitUnitary):
 
         total_wires = control_wires + wires
         super().__init__(*params, wires=total_wires, do_queue=do_queue)
+
+    @staticmethod
+    def compute_decomposition(*params, wires=None, **hyperparameters):
+        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_matrix(

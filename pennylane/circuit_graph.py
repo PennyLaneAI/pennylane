@@ -77,7 +77,7 @@ def _is_returned_observable(op):
         bool: whether or not the observable or measurement process is in the
         return statement
     """
-    is_obs = isinstance(op, (qml.operation.Observable, qml.measure.MeasurementProcess))
+    is_obs = isinstance(op, (qml.operation.Observable, qml.measurements.MeasurementProcess))
     return is_obs and op.return_type is not None
 
 
@@ -147,15 +147,15 @@ class CircuitGraph:
             op.queue_idx = k  # store the queue index in the Operator
 
             if hasattr(op, "return_type"):
-                if op.return_type is qml.operation.State:
+                if op.return_type is qml.measurements.State:
                     # State measurements contain no wires by default, but wires are
                     # required for the circuit drawer, so we recreate the state
                     # measurement with all wires
-                    op = qml.measure.MeasurementProcess(qml.operation.State, wires=wires)
+                    op = qml.measurements.MeasurementProcess(qml.measurements.State, wires=wires)
 
-                elif op.return_type is qml.operation.Sample and op.wires == Wires([]):
+                elif op.return_type is qml.measurements.Sample and op.wires == Wires([]):
                     # Sampling without specifying wires is treated as sampling all wires
-                    op = qml.measure.MeasurementProcess(qml.operation.Sample, wires=wires)
+                    op = qml.measurements.MeasurementProcess(qml.measurements.Sample, wires=wires)
 
                 op.queue_idx = k
 
@@ -506,7 +506,9 @@ class CircuitGraph:
             operations[wire] = list(
                 filter(
                     lambda op: not (
-                        isinstance(op, (qml.operation.Observable, qml.measure.MeasurementProcess))
+                        isinstance(
+                            op, (qml.operation.Observable, qml.measurements.MeasurementProcess)
+                        )
                         and op.return_type is not None
                     ),
                     operations[wire],
@@ -540,7 +542,7 @@ class CircuitGraph:
                 observables[wire] = list(
                     filter(
                         lambda op: isinstance(
-                            op, (qml.operation.Observable, qml.measure.MeasurementProcess)
+                            op, (qml.operation.Observable, qml.measurements.MeasurementProcess)
                         )
                         and op.return_type is not None,
                         self._grid[wire],

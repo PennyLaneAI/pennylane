@@ -18,7 +18,7 @@ from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane import qnode, QNode
-from pennylane.tape import JacobianTape
+from pennylane.tape import QuantumTape
 from pennylane.interfaces.batch import InterfaceUnsupportedError
 
 qubit_device_and_diff_method = [
@@ -176,7 +176,7 @@ class TestQNode:
                 theta, phi, lam = self.data
                 wires = self.wires
 
-                with JacobianTape() as tape:
+                with QuantumTape() as tape:
                     qml.Rot(lam, theta, -lam, wires=wires)
                     qml.PhaseShift(phi + lam, wires=wires)
 
@@ -409,11 +409,13 @@ class TestShotsIntegration:
         assert np.allclose(res, -np.cos(a) * np.sin(b), atol=tol, rtol=0)
         spy.assert_not_called()
 
-    def test_gradient_integration(self, interface, tol):
+    def test_gradient_integration(self, interface, tol, mocker):
         """Test that temporarily setting the shots works
         for gradient computations"""
         dev = qml.device("default.qubit", wires=2, shots=100)
         a, b = jnp.array([0.543, -0.654])
+
+        spy = mocker.spy(dev, "batch_execute")
 
         @qnode(dev, diff_method=qml.gradients.param_shift, interface=interface)
         def cost_fn(a, b):
@@ -427,6 +429,7 @@ class TestShotsIntegration:
 
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=0.1, rtol=0)
+        assert all(not isinstance(p, jnp.ndarray) for p in spy.call_args[0][0][0].get_parameters())
 
     def test_update_diff_method(self, mocker, interface, tol):
         """Test that temporarily setting the shots updates the diff method"""
@@ -552,12 +555,12 @@ class TestQubitIntegration:
         if diff_method == "backprop":
             pytest.skip("Backprop does not apply to this test")
 
-        if ret.return_type is qml.operation.Sample:
+        if ret.return_type is qml.measurements.Sample:
             dev = qml.device(dev_name, wires=3, shots=10)
             if diff_method == "adjoint":
                 pytest.skip("Adjoint does not support finite shots")
 
-        if ret.return_type is qml.operation.Probability:
+        if ret.return_type is qml.measurements.Probability:
             if diff_method == "adjoint":
                 pytest.skip("Adjoint does not support probs")
 

@@ -657,6 +657,7 @@ class DefaultGaussian(Device):
 
     _operation_map = {
         "Identity": Identity.identity_op,
+        "Snapshot": None,
         "Beamsplitter": beamsplitter,
         "ControlledAddition": controlled_addition,
         "ControlledPhase": controlled_phase,
@@ -689,6 +690,7 @@ class DefaultGaussian(Device):
         super().__init__(wires, shots, analytic=analytic)
         self.eng = None
         self.hbar = hbar
+        self._debugger = None
 
         self.reset()
 
@@ -726,6 +728,12 @@ class DefaultGaussian(Device):
                     "the incorrect size for the number of subsystems."
                 )
             self._state = self._operation_map[operation](*par, hbar=self.hbar)
+            return  # we are done here
+
+        if operation == "Snapshot":
+            if self._debugger and self._debugger.active:
+                gaussian = {"cov_matrix": self._state[0].copy(), "means": self._state[1].copy()}
+                self._debugger.snapshots[len(self._debugger.snapshots)] = gaussian
             return  # we are done here
 
         if "State" in operation:
