@@ -25,7 +25,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
-from pennylane.operation import DecompositionUndefinedError, Sample
+from pennylane.operation import DecompositionUndefinedError
+from pennylane.measurements import Sample
 
 from .unwrap import UnwrapTape
 
@@ -428,7 +429,7 @@ class QuantumTape(AnnotatedQueue):
 
             elif isinstance(obj, qml.measurements.MeasurementProcess):
 
-                if obj.return_type == qml.operation.MidMeasure:
+                if obj.return_type == qml.measurements.MidMeasure:
 
                     # TODO: for now, consider mid-circuit measurements as tape
                     # operations such that the order of the operators in the
@@ -441,15 +442,15 @@ class QuantumTape(AnnotatedQueue):
                     self._measurements.append(obj)
 
                     # attempt to infer the output dimension
-                    if obj.return_type is qml.operation.Probability:
+                    if obj.return_type is qml.measurements.Probability:
                         self._output_dim += 2 ** len(obj.wires)
-                    elif obj.return_type is qml.operation.State:
+                    elif obj.return_type is qml.measurements.State:
                         continue  # the output_dim is worked out automatically
                     else:
                         self._output_dim += 1
 
                     # check if any sampling is occuring
-                    if obj.return_type is qml.operation.Sample:
+                    if obj.return_type is qml.measurements.Sample:
                         self.is_sampled = True
 
         self._update()
