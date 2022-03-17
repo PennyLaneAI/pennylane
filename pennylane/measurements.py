@@ -87,6 +87,9 @@ class MeasurementProcess:
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
+        shape (tuple[int]): The output shape of the measurement proccess. For
+            some measurement processes a shape is not applicable or the shape may
+            depend on device options, in such cases ``shape=None``.
     """
 
     # pylint: disable=too-few-public-methods
