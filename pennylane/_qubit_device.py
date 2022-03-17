@@ -105,6 +105,24 @@ class QubitDevice(Device):
         new_array[indices] = array
         return new_array
 
+    def _permute_wires(self, observable):
+        """ Given an observable which acts on multiple wires, permute the wires to
+        be consistent with the device wire order.
+        """
+
+        # one must be careful to realize that the observable wire order DOES NOT contain the same permutation
+        # of wire labels and instead, one must compute the permutation which maps the observable wire order back
+        # to the device wire order. This permutation, when applied to the probability vector will match the eigvals
+        # and ultimately compute the correct exp_val or variance
+
+        ordered_obs_wire_lst = self.order_wires(observable.wires).tolist()
+
+        mapped_wires = self.map_wires(observable.wires).tolist()
+        permutation = np.argsort(mapped_wires)  # extract permutation via argsort
+
+        permuted_wires = Wires([ordered_obs_wire_lst[index] for index in permutation])
+        return permuted_wires
+
     observables = {
         "PauliX",
         "PauliY",
@@ -774,17 +792,7 @@ class QubitDevice(Device):
                 ) from e
 
             # the probability vector must be permuted to account for the permuted wire order of the observable
-            # one must be careful to realize that the observable wire order DOES NOT contain the same permutation
-            # of wire labels and instead, one must compute the permutation which maps the observable wire order back
-            # to the device wire order. This permutation, when applied to the probability vector will match the eigvals
-            # and ultimately compute the correct exp_val or variance
-            ordered_obs_wire_lst = self.order_wires(observable.wires).tolist()
-            obs_wire_lst = observable.wires.tolist()
-
-            mapped_wires = [self.wire_map[label] for label in obs_wire_lst]
-            permutation = np.argsort(mapped_wires)  # extract permutation via argsort
-
-            permuted_wires = Wires([ordered_obs_wire_lst[index] for index in permutation])
+            permuted_wires = self._permute_wires(observable)
 
             prob = self.probability(wires=permuted_wires)
             return self._dot(eigvals, prob)
@@ -814,13 +822,7 @@ class QubitDevice(Device):
                 ) from e
 
             # the probability vector must be permuted to account for the permuted wire order of the observable
-            ordered_obs_wire_lst = self.order_wires(observable.wires).tolist()
-            obs_wire_lst = observable.wires.tolist()
-
-            mapped_wires = [self.wire_map[label] for label in obs_wire_lst]
-            permutation = np.argsort(mapped_wires)  # extract permutation via argsort
-
-            permuted_wires = Wires([ordered_obs_wire_lst[index] for index in permutation])
+            permuted_wires = self._permute_wires(observable)
 
             prob = self.probability(wires=permuted_wires)
             return self._dot((eigvals**2), prob) - self._dot(eigvals, prob) ** 2
