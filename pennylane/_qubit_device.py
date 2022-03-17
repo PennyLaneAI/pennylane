@@ -778,7 +778,7 @@ class QubitDevice(Device):
             # of wire labels and instead, one must compute the permutation which maps the observable wire order back
             # to the device wire order. This permutation, when applied to the probability vector will match the eigvals
             # and ultimately compute the correct exp_val or variance
-            ordered_obs_wire_lst = self.get_ordered_subset(observable.wires).tolist()
+            ordered_obs_wire_lst = self.order_wires(observable.wires).tolist()
             obs_wire_lst = observable.wires.tolist()
 
             mapped_wires = [self.wire_map[label] for label in obs_wire_lst]
@@ -814,7 +814,7 @@ class QubitDevice(Device):
                 ) from e
 
             # the probability vector must be permuted to account for the permuted wire order of the observable
-            ordered_obs_wire_lst = self.get_ordered_subset(observable.wires).tolist()
+            ordered_obs_wire_lst = self.order_wires(observable.wires).tolist()
             obs_wire_lst = observable.wires.tolist()
 
             mapped_wires = [self.wire_map[label] for label in obs_wire_lst]
