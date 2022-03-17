@@ -273,6 +273,42 @@ class TestConstruction:
         expected = "<QuantumTape: wires=[0], params=1>"
         assert s == expected
 
+    def test_circuit(self):
+        """Test that the underlying circuit attribute contains the correct
+        operations."""
+        r = 1.234
+        terminal_measurement = qml.expval(qml.PauliZ(0))
+
+        def f(x):
+            qml.PauliX(1)
+            qml.RY(x, wires=1)
+            qml.PauliZ(1)
+
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(0)
+            qml.cond(m_0, f)(r)
+            qml.apply(terminal_measurement)
+
+        target_wire = qml.wires.Wires(1)
+
+        assert len(tape._circuit) == 5
+        assert tape._circuit[0].return_type == qml.measurements.MidMeasure
+
+        assert isinstance(tape._circuit[1], qml.transforms.condition.Conditional)
+        assert isinstance(tape._circuit[1].then_op, qml.PauliX)
+        assert tape._circuit[1].then_op.wires == target_wire
+
+        assert isinstance(tape._circuit[2], qml.transforms.condition.Conditional)
+        assert isinstance(tape._circuit[2].then_op, qml.RY)
+        assert tape._circuit[2].then_op.wires == target_wire
+        assert tape._circuit[2].then_op.data == [r]
+
+        assert isinstance(tape._circuit[3], qml.transforms.condition.Conditional)
+        assert isinstance(tape._circuit[3].then_op, qml.PauliZ)
+        assert tape._circuit[3].then_op.wires == target_wire
+
+        assert tape._circuit[4] is terminal_measurement
+
 
 class TestIteration:
     """Test the capabilities related to iterating over tapes."""
@@ -342,41 +378,6 @@ class TestIteration:
 
         assert len(tape) == len(expected)
 
-
-    def test_tape_with_mid_measure(self):
-        """Test that the underlying tape contains the correct operations."""
-        dev = qml.device("default.qubit", wires=5)
-
-        first_par = 0.1
-        sec_par = 0.3
-
-        with qml.tape.QuantumTape() as tape:
-            m_0 = qml.measure(4)
-            qml.cond(m_0, qml.RY)(first_par, wires=1)
-
-            m_1 = qml.measure(3)
-            qml.cond(m_0, qml.RZ)(sec_par, wires=1)
-            return qml.apply(terminal_measurement)
-
-        tape = qml.defer_measurements(tape)
-
-        assert len(tape.operations) == 2
-        assert len(tape.measurements) == 1
-
-        # Check the two underlying ControlledOperation instance
-        first_ctrl_op = tape.operations[0]
-        assert isinstance(first_ctrl_op, qml.transforms.control.ControlledOperation)
-        assert len(first_ctrl_op.subtape.operations) == 1
-        assert isinstance(first_ctrl_op.subtape.operations[0], qml.RY)
-        assert first_ctrl_op.data == [first_par]
-
-        sec_ctrl_op = tape.operations[1]
-        assert isinstance(sec_ctrl_op, qml.transforms.control.ControlledOperation)
-        assert len(sec_ctrl_op.subtape.operations) == 1
-        assert isinstance(sec_ctrl_op.subtape.operations[0], qml.RZ)
-        assert sec_ctrl_op.data == [sec_par]
-
-        assert tape.measurements[0] is terminal_measurement
 
 class TestGraph:
     """Tests involving graph creation"""
