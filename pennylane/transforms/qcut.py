@@ -23,8 +23,7 @@ from dataclasses import InitVar, dataclass
 from functools import partial
 from itertools import compress, product
 from pathlib import Path
-from typing import (Any, Callable, ClassVar, Dict, Iterable, List, Optional,
-                    Sequence, Tuple, Union)
+from typing import Any, Callable, ClassVar, Dict, Iterable, List, Optional, Sequence, Tuple, Union
 
 from networkx import MultiDiGraph, has_path, weakly_connected_components
 
