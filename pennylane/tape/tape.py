@@ -442,11 +442,11 @@ class QuantumTape(AnnotatedQueue):
                     self._ops.append(obj)
 
                 # attempt to infer the output dimension
-                if obj.return_type is qml.operation.Probability:
+                if obj.return_type is qml.measurements.Probability:
                     # TODO: what if we had a CV device here? Having the base as
                     # 2 would have to be swapped to the cutoff value
                     self._output_dim += 2 ** len(obj.wires)
-                elif obj.return_type is qml.operation.State:
+                elif obj.return_type is qml.measurements.State:
                     continue  # the output_dim is worked out automatically
                 else:
 
@@ -921,19 +921,19 @@ class QuantumTape(AnnotatedQueue):
 
                 shape = measurement_process.shape
 
-            elif ret_type == qml.operation.Probability:
+            elif ret_type == qml.measurements.Probability:
                 len_wires = len(measurement_process.wires)
                 dim = QuantumTape._get_num_basis_states(len_wires, device)
                 shape = (dim,)
 
-            elif ret_type == qml.operation.State:
+            elif ret_type == qml.measurements.State:
 
                 # Note: qml.density_matrix has its shape defined, so we're handling
                 # the qml.state case; acts on all device wires
                 dim = 2 ** len(device.wires)
                 shape = (dim,)
 
-            elif ret_type == qml.operation.Sample:
+            elif ret_type == qml.measurements.Sample:
 
                 if measurement_process.obs is not None:
                     # qml.sample(some_observable) case
@@ -954,13 +954,13 @@ class QuantumTape(AnnotatedQueue):
 
                 shape = (num_shot_elements,)
 
-            elif ret_type == qml.operation.Probability:
+            elif ret_type == qml.measurements.Probability:
 
                 len_wires = len(measurement_process.wires)
                 dim = QuantumTape._get_num_basis_states(len_wires, device)
                 shape = (num_shot_elements, dim)
 
-            elif ret_type == qml.operation.Sample:
+            elif ret_type == qml.measurements.Sample:
                 if measurement_process.obs is not None:
                     shape = tuple(
                         (shot_val,) if shot_val != 1 else tuple()
@@ -1003,7 +1003,7 @@ class QuantumTape(AnnotatedQueue):
         # We know that there's one type of return_type, gather it from the
         # first one
         ret_type = mps[0].return_type
-        if ret_type == qml.operation.State:
+        if ret_type == qml.measurements.State:
             raise TapeError(
                 "Getting the output shape of a tape with multiple state measurements is not supported."
             )
@@ -1014,7 +1014,7 @@ class QuantumTape(AnnotatedQueue):
 
                 shape = (len(mps),)
 
-            elif ret_type == qml.operation.Probability:
+            elif ret_type == qml.measurements.Probability:
 
                 wires_num_set = {len(meas.wires) for meas in mps}
                 same_num_wires = len(wires_num_set) == 1
@@ -1031,7 +1031,7 @@ class QuantumTape(AnnotatedQueue):
                     # measurement processes act on
                     shape = (sum(2 ** len(m.wires) for m in mps),)
 
-            elif ret_type == qml.operation.Sample:
+            elif ret_type == qml.measurements.Sample:
 
                 shape = (len(mps), device.shots)
 
@@ -1042,7 +1042,7 @@ class QuantumTape(AnnotatedQueue):
                 num = sum(shottup.copies for shottup in shot_vector)
                 shape = (num, len(mps))
 
-            elif ret_type == qml.operation.Probability:
+            elif ret_type == qml.measurements.Probability:
 
                 wires_num_set = {len(meas.wires) for meas in mps}
                 same_num_wires = len(wires_num_set) == 1
@@ -1064,7 +1064,7 @@ class QuantumTape(AnnotatedQueue):
                         "along with a device that defines a shot vector is not supported."
                     )
 
-            elif ret_type == qml.operation.Sample:
+            elif ret_type == qml.measurements.Sample:
                 shape = []
                 for shot_val in device.shot_vector:
                     for _ in range(shot_val.copies):
@@ -1127,10 +1127,10 @@ class QuantumTape(AnnotatedQueue):
 
         for observable in self._measurements:
             ret_type = observable.return_type
-            if ret_type == qml.operation.State:
+            if ret_type == qml.measurements.State:
                 return complex
 
-            if ret_type == qml.operation.Sample:
+            if ret_type == qml.measurements.Sample:
 
                 if observable.obs is None or all(
                     np.issubdtype(e.dtype, int) for e in observable.eigvals
