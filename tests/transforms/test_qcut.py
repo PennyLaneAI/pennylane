@@ -2995,9 +2995,18 @@ class TestKaHyPar:
     )
 
     def test_seed_in_ci(self):
+        """Test if seed is properly set in github action CI"""
         if environ.get("CI") == "true":
             print(f"CI seed set to {self.seed}")
             assert self.seed == 11
+
+    def test_import_raise(self, monkeypatch):
+        """Test if import exception is properly raised for missing kahypar."""
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "kahypar", None)
+
+            with pytest.raises(ImportError, match="KaHyPar must be installed"):
+                qcut.kahypar_cut(2, [], [])
 
     @pytest.mark.parametrize("tape", disjoint_tapes + fragment_tapes)
     @pytest.mark.parametrize("hyperwire_weight", [0, 2])
