@@ -442,6 +442,19 @@ class TestTensorExpval:
         [(obs, permuted_obs) for obs, permuted_obs in zip(obs_lst, obs_permuted_lst)]
     )
     def test_wire_order_in_tensor_prod_observables(self, device, obs, permuted_obs, tol, skip_if):
+        """Test that when given a tensor observable the expectation value is the same regardless of how the
+        observable is written, provided the wires it acts on are the same.
+
+        eg:
+        ob1 = qml.PauliZ(wires=0) @ qml.PauliY(wires=1)
+        ob2 = qml.PauliY(wires=0) @ qml.PauliZ(wires=1)
+
+        @qml.qnode(dev)
+        def circ(obs):
+            return qml.expval(obs)
+
+        circ(ob1) == circ(ob2)
+        """
         n_wires = 3
         dev = device(n_wires)
         skip_if(dev, {"supports_tensor_observables": False})
@@ -455,6 +468,19 @@ class TestTensorExpval:
 
     @pytest.mark.parametrize("label_map", label_maps)
     def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if):
+        """Test that when given a tensor observable the expectation value is the same regardless of how the
+        wires are labelled, as long as they match the device order.
+
+        eg:
+        dev1 = qml.device("default.qubit", wires=[0, 1, 2])
+        dev2 = qml.device("default.qubit", wires=['c', 'b', 'a']
+
+        def circ(wire_labels):
+            return qml.expval(qml.PauliZ(wires=wire_labels[0]) @ qml.PauliX(wires=wire_labels[2]))
+
+        c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
+        c1([0, 1, 2]) == c2(['c', 'b', 'a'])
+        """
         dev = qml.device("default.qubit", wires=3)
         dev_custom_labels = qml.device("default.qubit", wires=label_map)
 
@@ -1250,6 +1276,19 @@ class TestTensorVar:
         [(obs, permuted_obs) for obs, permuted_obs in zip(obs_lst, obs_permuted_lst)]
     )
     def test_wire_order_in_tensor_prod_observables(self, device, obs, permuted_obs, tol, skip_if):
+        """Test that when given a tensor observable the variance is the same regardless of how the
+        observable is written, provided the wires it acts on are the same.
+
+        eg:
+        ob1 = qml.PauliZ(wires=0) @ qml.PauliY(wires=1)
+        ob2 = qml.PauliY(wires=0) @ qml.PauliZ(wires=1)
+
+        @qml.qnode(dev)
+        def circ(obs):
+            return qml.var(obs)
+
+        circ(ob1) == circ(ob2)
+        """
         n_wires = 3
         dev = device(n_wires)
         skip_if(dev, {"supports_tensor_observables": False})
@@ -1263,6 +1302,19 @@ class TestTensorVar:
 
     @pytest.mark.parametrize("label_map", label_maps)
     def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if):
+        """Test that when given a tensor observable the variance is the same regardless of how the
+        wires are labelled, as long as they match the device order.
+
+        eg:
+        dev1 = qml.device("default.qubit", wires=[0, 1, 2])
+        dev2 = qml.device("default.qubit", wires=['c', 'b', 'a']
+
+        def circ(wire_labels):
+            return qml.var(qml.PauliZ(wires=wire_labels[0]) @ qml.PauliX(wires=wire_labels[2]))
+
+        c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
+        c1([0, 1, 2]) == c2(['c', 'b', 'a'])
+        """
         dev = qml.device("default.qubit", wires=3)
         dev_custom_labels = qml.device("default.qubit", wires=label_map)
 
