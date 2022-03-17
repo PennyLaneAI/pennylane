@@ -940,7 +940,10 @@ def qcut_processing_fn(
 
 @batch_transform
 def cut_circuit(
-    tape: QuantumTape, use_opt_einsum: bool = False, device_wires: Optional[Wires] = None
+    tape: QuantumTape,
+    use_opt_einsum: bool = False,
+    device_wires: Optional[Wires] = None,
+    max_depth: int = 1,
 ) -> Tuple[Tuple[QuantumTape], Callable]:
     """
     Cut up a quantum circuit into smaller circuit fragments.
@@ -965,6 +968,7 @@ def cut_circuit(
             e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
             differentiable contraction.
         device_wires (Wires): wires of the device that the cut circuits are to be run on
+        max_depth (int): the maximum depth used to expand the circuit while searching for wire cuts
 
     Returns:
         Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a
@@ -1155,6 +1159,7 @@ def cut_circuit(
         ... )
         0.47165198882111165
     """
+    # pylint: disable=unused-argument
     if len(tape.measurements) != 1:
         raise ValueError(
             "The circuit cutting workflow only supports circuits with a single output "
@@ -1176,10 +1181,6 @@ def cut_circuit(
                 "True in the cut_circuit function. This package can be "
                 "installed using:\npip install opt_einsum"
             ) from e
-
-    num_cut = len([op for op in tape.operations if isinstance(op, WireCut)])
-    if num_cut == 0:
-        raise ValueError("Cannot apply the circuit cutting workflow to a circuit without any cuts")
 
     g = tape_to_graph(tape)
     replace_wire_cut_nodes(g)
@@ -1214,6 +1215,33 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
     tkwargs.setdefault("device_wires", qnode.device.wires)
     return self.default_qnode_wrapper(qnode, targs, tkwargs)
+
+
+def _qcut_expand_fn(
+    tape: QuantumTape,
+    use_opt_einsum: bool = False,
+    device_wires: Optional[Wires] = None,
+    max_depth: int = 1,
+):
+    """Expansion function for circuit cutting.
+
+    Expands operations until reaching a depth that includes :class:`~.WireCut` operations.
+    """
+    # pylint: disable=unused-argument
+    for op in tape.operations:
+        if isinstance(op, WireCut):
+            return tape
+
+    if max_depth > 0:
+        return cut_circuit.expand_fn(tape.expand(), max_depth=max_depth - 1)
+
+    raise ValueError(
+        "No WireCut operations found in the circuit. Consider increasing the max_depth value if "
+        "operations or nested tapes contain WireCut operations."
+    )
+
+
+cut_circuit.expand_fn = _qcut_expand_fn
 
 
 def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
