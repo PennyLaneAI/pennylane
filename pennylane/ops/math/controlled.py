@@ -221,11 +221,13 @@ class Controlled(Operation):
         self.base = base
         self._control_wires = Wires(control_wires)
         self._work_wires = Wires([]) if work_wires is None else Wires(work_wires)
-        self._control_values = [1]*len(self._control_wires) if control_values is None else control_values
+        self._control_values = control_values
+
         self.hyperparameters['control_wires'] = self._control_wires
         self.hyperparameters['control_values'] = self._control_values
         self.hyperparameters['base']  = base
         self.hyperparameters['work_wires'] = self._work_wires
+
         super().__init__(*base.parameters, wires=(self._control_wires+base.wires+self._work_wires), do_queue=do_queue, id=id)
         self._name = f"C({self.base.name})"
 
@@ -268,8 +270,16 @@ class Controlled(Operation):
         return self.base.label(decimals=decimals, base_label=base_label)
     
     @staticmethod
-    def compute_matrix(*args, base=None, control_wires=None, control_values=None, work_wires=None, **kwargs):
-        base_matrix = base.compute_matrix(*args, **kwargs)
+    def compute_eigvals(*args, base=None, control_wires=None, control_values=None, **kwargs):
+        if control_values is not None:
+            base_eigvals = base.get_eigvals()
+            ones = qml.math.ones(2**len(control_wires))
+            return qml.math.concatenate([ones, base_eigvals])
+        raise qml.operation.EigvalsUndefinedError
+
+    @staticmethod
+    def compute_matrix(*args, base=None, control_wires=None, control_values=None, work_wires=None):
+        base_matrix = base.get_matrix()
         
         base_matrix_size = qml.math.shape(base_matrix)[0]
         num_control_states = 2**len(control_wires)

@@ -326,40 +326,6 @@ class ControlledPhaseShift(Controlled):
             id=id)
         self._name = self.__class__.__name__
 
-    @staticmethod
-    def compute_eigvals(phi):  # pylint: disable=arguments-differ
-        r"""Eigenvalues of the operator in the computational basis (static method).
-
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
-        the operator can be reconstructed as
-
-        .. math:: O = U \Sigma U^{\dagger},
-
-        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
-
-        Otherwise, no particular order for the eigenvalues is guaranteed.
-
-        .. seealso:: :meth:`~.ControlledPhaseShift.eigvals`
-
-
-        Args:
-            phi (tensor_like or float): phase shift
-
-        Returns:
-            tensor_like: eigenvalues
-
-        **Example**
-
-        >>> qml.ControlledPhaseShift.compute_eigvals(torch.tensor(0.5))
-        tensor([1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j])
-        """
-        if qml.math.get_interface(phi) == "tensorflow":
-            phi = qml.math.cast_like(phi, 1j)
-
-        exp_part = qml.math.exp(1j * phi)
-
-        return qml.math.stack([1, 1, 1, exp_part]) 
-
     
 CPhase = ControlledPhaseShift
 
@@ -510,42 +476,6 @@ class CRZ(Controlled):
         super().__init__(qml.RZ(phi, wires[-1]), wires[-1],
             do_queue=do_queue, id=id)
         self._name = self.__class__.__name__
-
-    @staticmethod
-    def compute_eigvals(theta):  # pylint: disable=arguments-differ
-        r"""Eigenvalues of the operator in the computational basis (static method).
-
-        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
-        the operator can be reconstructed as
-
-        .. math:: O = U \Sigma U^{\dagger},
-
-        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
-
-        Otherwise, no particular order for the eigenvalues is guaranteed.
-
-        .. seealso:: :meth:`~.CRZ.eigvals`
-
-
-        Args:
-            theta (tensor_like or float): rotation angle
-
-        Returns:
-            tensor_like: eigenvalues
-
-        **Example**
-
-        >>> qml.CRZ.compute_eigvals(torch.tensor(0.5))
-        tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.9689-0.2474j, 0.9689+0.2474j])
-        """
-        theta = qml.math.flatten(qml.math.stack([theta]))[0]
-
-        if qml.math.get_interface(theta) == "tensorflow":
-            theta = qml.math.cast_like(theta, 1j)
-
-        exp_part = qml.math.exp(-0.5j * theta)
-
-        return qml.math.stack([1, 1, exp_part, qml.math.conj(exp_part)])
 
 
 class CRot(Controlled):
