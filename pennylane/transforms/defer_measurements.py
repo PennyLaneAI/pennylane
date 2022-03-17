@@ -101,7 +101,7 @@ def defer_measurements(tape):
 
         if (
             isinstance(op, qml.measurements.MeasurementProcess)
-            and op.return_type == qml.operation.MidMeasure
+            and op.return_type == qml.measurements.MidMeasure
         ):
             measured_wires[op.id] = op.wires[0]
 
