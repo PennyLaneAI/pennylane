@@ -374,7 +374,7 @@ class QuantumTape(AnnotatedQueue):
         return self._circuit[idx]
 
     def __len__(self):
-       return len(self._circuit)
+        return len(self._circuit)
 
     @property
     def interface(self):

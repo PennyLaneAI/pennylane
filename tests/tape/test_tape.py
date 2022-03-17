@@ -273,6 +273,7 @@ class TestConstruction:
         expected = "<QuantumTape: wires=[0], params=1>"
         assert s == expected
 
+
 class TestIteration:
     """Test the capabilities related to iterating over tapes."""
 
