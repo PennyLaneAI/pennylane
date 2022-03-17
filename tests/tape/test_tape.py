@@ -378,6 +378,33 @@ class TestIteration:
 
         assert len(tape) == len(expected)
 
+    def test_iteration_preserves_circuit(self):
+        """Test that iterating through a tape doesn't change the underlying
+        list of operations and measurements in the circuit."""
+
+        circuit = [
+            qml.RX(0.432, wires=0),
+            qml.Rot(0.543, 0, 0.23, wires=0),
+            qml.CNOT(wires=[0, "a"]),
+            qml.RX(0.133, wires=4),
+            qml.expval(qml.PauliX(wires="a")),
+            qml.probs(wires=[0, "a"]),
+        ]
+
+        with QuantumTape() as tape:
+            for op in circuit:
+                qml.apply(op)
+
+        # Check that the underlying circuit is as expected
+        assert tape.circuit == circuit
+
+        # Iterate over the tape
+        for op in tape:
+            op
+
+        # Check that the underlying circuit is still as expected
+        assert tape.circuit == circuit
+
 
 class TestGraph:
     """Tests involving graph creation"""
