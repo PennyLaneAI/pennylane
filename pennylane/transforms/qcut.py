@@ -575,7 +575,6 @@ MC_STATES = [
     _prep_zero_state,
     _prep_one_state,
 ]
-MC_PREP_MAP = dict(zip(range(8), MC_STATES))
 
 
 def _identity(wire):
@@ -604,7 +603,6 @@ MC_MEASUREMENTS = [
     _pauliZ,
     _pauliZ,
 ]
-MC_MEAS_MAP = dict(zip(range(8), MC_MEASUREMENTS))
 
 
 def expand_fragment_tape(

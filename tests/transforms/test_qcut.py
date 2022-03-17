@@ -1800,6 +1800,67 @@ class TestExpandFragmentTapesMC:
         for tape, exp_tape in zip(fragment_configurations[1], expected_tapes_1):
             compare_tapes(tape, exp_tape)
 
+    def test_mc_measurements(self):
+        """
+        Tests that the measurements functions used in MC configutations are
+        correct
+        """
+        wire = "a"
+
+        tapes = []
+        for M in qcut.MC_MEASUREMENTS:
+            with qml.tape.QuantumTape() as tape:
+                M(wire)
+            tapes.append(tape)
+
+        expected_measurements = [
+            qml.sample(qml.Identity(wires=["a"])),
+            qml.sample(qml.Identity(wires=["a"])),
+            qml.sample(qml.PauliX(wires=["a"])),
+            qml.sample(qml.PauliX(wires=["a"])),
+            qml.sample(qml.PauliY(wires=["a"])),
+            qml.sample(qml.PauliY(wires=["a"])),
+            qml.sample(qml.PauliZ(wires=["a"])),
+            qml.sample(qml.PauliZ(wires=["a"])),
+        ]
+
+        measurements = [tape.measurements[0] for tape in tapes]
+
+        for meas, exp_meas in zip(measurements, expected_measurements):
+            compare_measurements(meas, exp_meas)
+
+    def test_mc_state_prep(self):
+        """
+        Tests that the state preparation functions used in MC configutations are
+        correct
+        """
+
+        wire = 3
+
+        tapes = []
+        for S in qcut.MC_STATES:
+            with qml.tape.QuantumTape() as tape:
+                S(wire)
+            tapes.append(tape)
+
+        expected_operations = [
+            [qml.Identity(wires=[3])],
+            [qml.PauliX(wires=[3])],
+            [qml.Hadamard(wires=[3])],
+            [qml.PauliX(wires=[3]), qml.Hadamard(wires=[3])],
+            [qml.Hadamard(wires=[3]), qml.S(wires=[3])],
+            [qml.PauliX(wires=[3]), qml.Hadamard(wires=[3]), qml.S(wires=[3])],
+            [qml.Identity(wires=[3])],
+            [qml.PauliX(wires=[3])],
+        ]
+
+        operations = [tape.operations for tape in tapes]
+
+        for ops, expected_ops in zip(operations, expected_operations):
+            for op, exp_op in zip(ops, expected_ops):
+                assert op.name == exp_op.name
+                assert op.wires == exp_op.wires
+
 
 class TestContractTensors:
     """Tests for the contract_tensors function"""
