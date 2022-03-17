@@ -51,6 +51,11 @@ jobs:
           git checkout -b "$BRANCH"
           git checkout master -- pennylane/_version.py
           git checkout master -- doc/releases/changelog-dev.md
+          if ! git diff-index --quiet HEAD; then
+            git config user.name "GitHub Actions Bot"
+            git config user.email "<>"
+            git commit -m "exclude files from pr"
+          fi
           git commit -m "exclude files from pr"
           git push --set-upstream origin "$BRANCH"
 
