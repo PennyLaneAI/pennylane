@@ -21,17 +21,17 @@ import uuid
 import warnings
 from dataclasses import InitVar, dataclass
 from functools import partial
-from itertools import product, compress
-from typing import Any, Callable, ClassVar, Dict, List, Optional, Sequence, Tuple, Union, Iterable
-
+from itertools import compress, product
 from pathlib import Path
+from typing import (Any, Callable, ClassVar, Dict, Iterable, List, Optional,
+                    Sequence, Tuple, Union)
 
 from networkx import MultiDiGraph, has_path, weakly_connected_components
 
 import pennylane as qml
 from pennylane import apply, expval
 from pennylane.grouping import string_to_pauli_word
-from pennylane.measurements import MeasurementProcess, Expectation, Sample
+from pennylane.measurements import Expectation, MeasurementProcess, Sample
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
@@ -1629,7 +1629,7 @@ class CutStrategy:
 
 
 def graph_to_hmetis(
-    graph: MultiDiGraph, hyperwire_weight: int=0
+    graph: MultiDiGraph, hyperwire_weight: int = 0
 ) -> Tuple[List[int], List[int], List[Union[int, float]]]:
     """Converts a ``MultiDiGraph`` into the hMETIS hypergraph format, conforming to KaHyPar's signature.
 
@@ -1690,7 +1690,7 @@ def kahypar_cut(
     verbose: bool = False,
 ) -> List[Union[int, Any]]:
     """Calls `KaHyPar <https://kahypar.org/>`__ to partition a graph.
-    
+
     Requires KaHyPar to be installed separately with ``pip install kahypar``.
 
     Args:
@@ -1777,9 +1777,11 @@ def kahypar_cut(
     try:
         import kahypar
     except ImportError as e:
-        raise ImportError("KaHyPar must be installed to use this method for automatic "
-                                    "cut placement. Try pip install kahypar or visit "
-                                    "https://kahypar.org/ for installation instructions.") from e
+        raise ImportError(
+            "KaHyPar must be installed to use this method for automatic "
+            "cut placement. Try pip install kahypar or visit "
+            "https://kahypar.org/ for installation instructions."
+        ) from e
 
     trial = 0 if trial is None else trial
     ne = len(edge_splits) - 1
