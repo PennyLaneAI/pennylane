@@ -50,7 +50,7 @@ def _is_observable(x):
         bool: True iff x is an observable
     """
     return getattr(x, "return_type", None) is not None
-    
+
 
 Layer = namedtuple("Layer", ["ops", "param_inds"])
 """Parametrized layer of the circuit.
