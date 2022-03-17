@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -368,12 +368,18 @@ class QuantumTape(AnnotatedQueue):
             QuantumTape._lock.release()
 
     def __iter__(self):
+        """list[.Operator, .MeasurementProcess]: Return an iterator to the
+        underlying quantum circuit object."""
         return iter(self._circuit)
 
     def __getitem__(self, idx):
+        """list[.Operator]: Return the indexed operator from underlying quantum
+        circuit object."""
         return self._circuit[idx]
 
     def __len__(self):
+        """int: Return the number of operators in the underlying quantum
+        circuit object."""
         return len(self._circuit)
 
     @property
