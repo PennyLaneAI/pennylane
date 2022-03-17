@@ -164,7 +164,7 @@ class TestExpval:
     @pytest.mark.parametrize("label_map", label_maps)
     def test_wire_label_in_tensor_prod_observables(self, label_map, tol):
         dev = qml.device("default.qubit", wires=3)
-        dev_custom_labels = qml.device("default.qubit", wires=[label_map[i] for i in range(3)])
+        dev_custom_labels = qml.device("default.qubit", wires=label_map)
 
         def circ(wire_labels):
             sub_routine(wire_labels)
@@ -243,7 +243,7 @@ class TestVar:
     @pytest.mark.parametrize("label_map", label_maps)
     def test_wire_label_in_tensor_prod_observables(self, label_map, tol):
         dev = qml.device("default.qubit", wires=3)
-        dev_custom_labels = qml.device("default.qubit", wires=[label_map[i] for i in range(3)])
+        dev_custom_labels = qml.device("default.qubit", wires=label_map)
 
         def circ(wire_labels):
             sub_routine(wire_labels)
