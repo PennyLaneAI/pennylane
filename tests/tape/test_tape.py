@@ -274,8 +274,8 @@ class TestConstruction:
         assert s == expected
 
     def test_circuit(self):
-        """Test that the underlying circuit attribute contains the correct
-        operations."""
+        """Test that the underlying circuit property returns the correct
+        operations and measurements making up the circuit."""
         r = 1.234
         terminal_measurement = qml.expval(qml.PauliZ(0))
 
