@@ -21,7 +21,7 @@ from random import random
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import QubitDevice, DeviceError, QuantumFunctionError
-from pennylane.operation import Sample, Variance, Expectation, Probability, State
+from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 from pennylane.tape import QuantumTape
