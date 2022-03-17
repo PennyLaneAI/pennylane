@@ -15,7 +15,7 @@
 <h3>Improvements</h3>
 
 * The function `qml.eigvals` is modified to use the efficient `scipy.sparse.linalg.eigsh`
-  method for obtaining the eigenvalues of a `SparseHamiltonian`. This new addition is used 
+  method for obtaining the eigenvalues of a `SparseHamiltonian`. This `scipy` method is called 
   to compute :math:`k` eigenvalues of a sparse :math:`N \times N` matrix if `k` is smaller
   than :math:`N-1`. If a larger :math:`k` is requested, the dense matrix representation of 
   the Hamiltonian is constructed and the regular `qml.math.linalg.eigvalsh` is applied.
