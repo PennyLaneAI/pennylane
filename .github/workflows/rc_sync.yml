@@ -1,9 +1,8 @@
-# This workflow will sync changes in the release candidate branch to master
-# during a feature freeze by creating a pull request. The action is run daily
-# and will only create a pull request when there exists a release candidate
-# branch corresponding to the current package version as declared in
-# pennylane/_version.py, that is if the branch "v0.23.0-rc0" exists while the
-# package version is "v0.24.0-dev".
+# This workflow will sync changes in the release candidate branch to master during a
+# feature freeze. The action is run daily and will only create a pull request when
+# there exists a release candidate branch corresponding to the current package version
+# as declared in pennylane/_version.py, that is if the branch "v0.23.0-rc0" exists while
+# the package version is "v0.24.0-dev".
 
 name: Sync release candidate with master
 
