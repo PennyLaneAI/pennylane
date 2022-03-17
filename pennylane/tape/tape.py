@@ -236,8 +236,11 @@ class QuantumTape(AnnotatedQueue):
             qml.RX(0.133, wires='a')
             qml.expval(qml.PauliZ(wires=[0]))
 
-    Once constructed, information about the quantum circuit can be queried:
+    Once constructed, the tape may act as a quantum circuit and information
+    about the quantum circuit can be queried:
 
+    >>> list(tape)
+    [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(PauliZ(wires=[0]))]
     >>> tape.operations
     [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
     >>> tape.observables
@@ -248,6 +251,17 @@ class QuantumTape(AnnotatedQueue):
     <Wires = [0, 'a']>
     >>> tape.num_params
     3
+
+    Iterating over the quantum circuit can be done by iterating over the tape
+    object:
+
+    >>> for op in tape:
+    ...     print(op)
+    RX(0.432, wires=[0])
+    RY(0.543, wires=[0])
+    CNOT(wires=[0, 'a'])
+    RX(0.133, wires=['a'])
+    expval(PauliZ(wires=[0]))
 
     The :class:`~.CircuitGraph` can also be accessed:
 
@@ -306,6 +320,10 @@ class QuantumTape(AnnotatedQueue):
         self._measurements = []
         """list[.MeasurementProcess]: measurement processes recorded by the tape."""
 
+        self._circuit = []
+        """list[.Operator, .MeasurementProcess]: the entire quantum circuit
+        recorded by the tape."""
+
         self._par_info = {}
         """dict[int, dict[str, Operation or int]]: Parameter information. Keys are
         parameter indices (in the order they appear on the tape), and values are a
@@ -350,16 +368,13 @@ class QuantumTape(AnnotatedQueue):
             QuantumTape._lock.release()
 
     def __iter__(self):
-        self._iter_idx = 0
-        return self
+        return iter(self._circuit)
 
-    def __next__(self):
-        if len(self._circuit) > self._iter_idx:
-            result = self._circuit[self._iter_idx]
-            self._iter_idx += 1
-            return result
-        else:
-            raise StopIteration
+    def __getitem__(self, idx):
+        return self._circuit[idx]
+
+    def __len__(self):
+       return len(self._circuit)
 
     @property
     def interface(self):
@@ -527,6 +542,9 @@ class QuantumTape(AnnotatedQueue):
         self._update_trainable_params()
         self._update_observables()
 
+        # Note: it is assumed here that all quantum operations precede
+        # measurements and mid-circuit measurements are contained in
+        # self.operations
         self._circuit = self.operations + self.measurements
 
     def expand(self, depth=1, stop_at=None, expand_measurements=False):

@@ -273,6 +273,74 @@ class TestConstruction:
         expected = "<QuantumTape: wires=[0], params=1>"
         assert s == expected
 
+class TestIteration:
+    """Test the capabilities related to iterating over tapes."""
+
+    @pytest.fixture
+    def make_tape(self):
+        ops = []
+        meas = []
+
+        with QuantumTape() as tape:
+            ops += [qml.RX(0.432, wires=0)]
+            ops += [qml.Rot(0.543, 0, 0.23, wires=0)]
+            ops += [qml.CNOT(wires=[0, "a"])]
+            ops += [qml.RX(0.133, wires=4)]
+            meas += [qml.expval(qml.PauliX(wires="a"))]
+            meas += [qml.probs(wires=[0, "a"])]
+
+        return tape, ops, meas
+
+    def test_tape_is_iterable(self, make_tape):
+        """Test the iterable protocol: that we can iterate over a tape because
+        an iterator object can be obtained using the iter function."""
+        tape, ops, meas = make_tape
+
+        expected = ops + meas
+
+        tape_iterator = iter(tape)
+
+        iterating = True
+
+        counter = 0
+
+        while iterating:
+            try:
+                next_tape_elem = next(tape_iterator)
+
+                assert next_tape_elem is expected[counter]
+                counter += 1
+
+            except StopIteration:
+
+                # StopIteration is raised by next when there are no more
+                # elements to iterate over
+                iterating = False
+
+        assert counter == len(expected)
+
+    def test_tape_is_sequence(self, make_tape):
+        """Test the sequence protocol: that a tape is a sequence because its
+        __len__ and __getitem__ methods work as expected."""
+        tape, ops, meas = make_tape
+
+        expected = ops + meas
+
+        for idx, exp_elem in enumerate(expected):
+            tape[idx] is exp_elem
+
+        assert len(tape) == len(expected)
+
+    def test_tape_as_list(self, make_tape):
+        """Test that a tape can be converted to a list."""
+        tape, ops, meas = make_tape
+
+        expected = ops + meas
+        for op, exp_op in zip(tape, expected):
+            assert op is exp_op
+
+        assert len(tape) == len(expected)
+
 
 class TestGraph:
     """Tests involving graph creation"""
