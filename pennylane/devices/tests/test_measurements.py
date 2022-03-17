@@ -78,6 +78,7 @@ label_maps = [[0, 1, 2], ["a", "b", "c"], ["beta", "alpha", "gamma"], [3, "beta"
 
 
 def sub_routine(label_map):
+    """Quantum function to initalize state in tests"""
     qml.Hadamard(wires=label_map[0])
     qml.RX(0.12, wires=label_map[1])
     qml.RY(3.45, wires=label_map[2])
@@ -439,7 +440,7 @@ class TestTensorExpval:
 
     @pytest.mark.parametrize(
         "obs, permuted_obs",
-        [(obs, permuted_obs) for obs, permuted_obs in zip(obs_lst, obs_permuted_lst)],
+        list(zip(obs_lst, obs_permuted_lst)),
     )
     def test_wire_order_in_tensor_prod_observables(self, device, obs, permuted_obs, tol, skip_if):
         """Test that when given a tensor observable the expectation value is the same regardless of how the
@@ -1274,7 +1275,7 @@ class TestTensorVar:
 
     @pytest.mark.parametrize(
         "obs, permuted_obs",
-        [(obs, permuted_obs) for obs, permuted_obs in zip(obs_lst, obs_permuted_lst)],
+        list(zip(obs_lst, obs_permuted_lst)),
     )
     def test_wire_order_in_tensor_prod_observables(self, device, obs, permuted_obs, tol, skip_if):
         """Test that when given a tensor observable the variance is the same regardless of how the

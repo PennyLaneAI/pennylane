@@ -106,7 +106,7 @@ class QubitDevice(Device):
         return new_array
 
     def _permute_wires(self, observable):
-        """Given an observable which acts on multiple wires, permute the wires to
+        r"""Given an observable which acts on multiple wires, permute the wires to
         be consistent with the device wire order.
 
         Suppose we are given an observable :math:`\hat{O} = \Identity \otimes \Identity \otimes \hat{Z}`.
