@@ -464,7 +464,7 @@ class TestTensorExpval:
             sub_routine(label_map=range(3))
             return qml.expval(obs)
 
-        assert np.allclose(circ(obs), circ(permuted_obs), atol=tol, rtol=0)
+        assert np.allclose(circ(obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
 
     @pytest.mark.parametrize("label_map", label_maps)
     def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if):
@@ -481,8 +481,9 @@ class TestTensorExpval:
         c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
         c1([0, 1, 2]) == c2(['c', 'b', 'a'])
         """
-        dev = qml.device("default.qubit", wires=3)
-        dev_custom_labels = qml.device("default.qubit", wires=label_map)
+        dev = device("default.qubit", wires=3)
+        dev_custom_labels = device("default.qubit", wires=label_map)
+        skip_if(dev, {"supports_tensor_observables": False})
 
         def circ(wire_labels):
             sub_routine(wire_labels)
@@ -496,7 +497,7 @@ class TestTensorExpval:
         assert np.allclose(
             circ_base_label(wire_labels=range(3)),
             circ_custom_label(wire_labels=label_map),
-            atol=tol,
+            atol=tol(dev.shots),
             rtol=0,
         )
 
@@ -1298,7 +1299,7 @@ class TestTensorVar:
             sub_routine(label_map=range(3))
             return qml.var(obs)
 
-        assert np.allclose(circ(obs), circ(permuted_obs), atol=tol, rtol=0)
+        assert np.allclose(circ(obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
 
     @pytest.mark.parametrize("label_map", label_maps)
     def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if):
@@ -1315,8 +1316,9 @@ class TestTensorVar:
         c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
         c1([0, 1, 2]) == c2(['c', 'b', 'a'])
         """
-        dev = qml.device("default.qubit", wires=3)
-        dev_custom_labels = qml.device("default.qubit", wires=label_map)
+        dev = device("default.qubit", wires=3)
+        dev_custom_labels = device("default.qubit", wires=label_map)
+        skip_if(dev, {"supports_tensor_observables": False})
 
         def circ(wire_labels):
             sub_routine(wire_labels)
@@ -1330,7 +1332,7 @@ class TestTensorVar:
         assert np.allclose(
             circ_base_label(wire_labels=range(3)),
             circ_custom_label(wire_labels=label_map),
-            atol=tol,
+            atol=tol(dev.shots),
             rtol=0,
         )
 
