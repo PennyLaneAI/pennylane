@@ -343,6 +343,41 @@ class TestIteration:
         assert len(tape) == len(expected)
 
 
+    def test_tape_with_mid_measure(self):
+        """Test that the underlying tape contains the correct operations."""
+        dev = qml.device("default.qubit", wires=5)
+
+        first_par = 0.1
+        sec_par = 0.3
+
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(4)
+            qml.cond(m_0, qml.RY)(first_par, wires=1)
+
+            m_1 = qml.measure(3)
+            qml.cond(m_0, qml.RZ)(sec_par, wires=1)
+            return qml.apply(terminal_measurement)
+
+        tape = qml.defer_measurements(tape)
+
+        assert len(tape.operations) == 2
+        assert len(tape.measurements) == 1
+
+        # Check the two underlying ControlledOperation instance
+        first_ctrl_op = tape.operations[0]
+        assert isinstance(first_ctrl_op, qml.transforms.control.ControlledOperation)
+        assert len(first_ctrl_op.subtape.operations) == 1
+        assert isinstance(first_ctrl_op.subtape.operations[0], qml.RY)
+        assert first_ctrl_op.data == [first_par]
+
+        sec_ctrl_op = tape.operations[1]
+        assert isinstance(sec_ctrl_op, qml.transforms.control.ControlledOperation)
+        assert len(sec_ctrl_op.subtape.operations) == 1
+        assert isinstance(sec_ctrl_op.subtape.operations[0], qml.RZ)
+        assert sec_ctrl_op.data == [sec_par]
+
+        assert tape.measurements[0] is terminal_measurement
+
 class TestGraph:
     """Tests involving graph creation"""
 
