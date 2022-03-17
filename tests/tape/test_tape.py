@@ -371,6 +371,7 @@ class TestIteration:
     def test_tape_as_list(self, make_tape):
         """Test that a tape can be converted to a list."""
         tape, ops, meas = make_tape
+        tape = list(tape)
 
         expected = ops + meas
         for op, exp_op in zip(tape, expected):
