@@ -46,6 +46,9 @@ class TestQNode:
         assert isinstance(res1, type(res2))
         assert res1.shape == res2.shape
 
+        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
+
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
             assert type(op1) == type(op2)
@@ -82,6 +85,9 @@ class TestQNode:
         assert res1 == res2
         assert isinstance(res1, type(res2))
         assert res1.shape == res2.shape
+
+        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
 
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
@@ -682,6 +688,9 @@ class TestTemplates:
 
         assert np.allclose(qnode1(), qnode2())
 
+        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
+
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
             assert type(op1) == type(op2)
@@ -720,6 +729,9 @@ class TestTemplates:
 
         assert np.allclose(res1, res2)
 
+        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
+
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
             assert type(op1) == type(op2)
@@ -755,6 +767,9 @@ class TestTemplates:
         weights = np.random.random(size=shape)
 
         assert np.allclose(qnode1(weights), qnode2(weights))
+
+        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
 
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
