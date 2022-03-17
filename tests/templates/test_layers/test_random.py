@@ -20,11 +20,6 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
-def test_RandomLayers_has_matrix():
-    """Test RandomLayers `has_matrix` property is False."""
-    assert not qml.RandomLayers.has_matrix
-
-
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 

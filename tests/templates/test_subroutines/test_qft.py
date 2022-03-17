@@ -25,10 +25,6 @@ import pennylane as qml
 class TestQFT:
     """Tests for the qft operations"""
 
-    def test_has_matrix(self):
-        """Test has_matrix True as QFT defines a matrix."""
-        assert qml.QFT.has_matrix
-
     @pytest.mark.parametrize("inverse", [True, False])
     def test_QFT(self, inverse):
         """Test if the QFT matrix is equal to a manually-calculated version for 3 qubits"""

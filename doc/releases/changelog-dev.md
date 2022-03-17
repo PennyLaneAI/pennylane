@@ -20,6 +20,9 @@
   `ControlledOperation`. Control values of `0` are implemented by `qml.PauliX` applied
   before and after the controlled operation
   [(#2288)](https://github.com/PennyLaneAI/pennylane/pull/2288)
+
+* Operators now have a `has_matrix` property denoting whether or not the operator defines a matrix.
+  [(#2331)](https://github.com/PennyLaneAI/pennylane/pull/2331)
   
 <h3>Deprecations</h3>
 
