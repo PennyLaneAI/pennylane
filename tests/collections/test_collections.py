@@ -151,13 +151,13 @@ class TestMap:
         assert len(queue) == 2
         assert queue[0].name == "RX"
         assert queue[1].name == "PauliX"
-        assert queue[1].return_type == qml.operation.Expectation
+        assert queue[1].return_type == qml.measurements.Expectation
 
         queue = qc[1].qtape.operations + qc[1].qtape.observables
         assert len(queue) == 2
         assert queue[0].name == "RX"
         assert queue[1].name == "PauliY"
-        assert queue[1].return_type == qml.operation.Variance
+        assert queue[1].return_type == qml.measurements.Variance
 
     def test_invalid_observable(self):
         """Test that an invalid observable raises an exception"""

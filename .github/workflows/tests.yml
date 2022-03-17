@@ -66,6 +66,9 @@ jobs:
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
 
+      - name: Install Lightning-master
+        run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
+
       - name: Run tests
         run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS
 
