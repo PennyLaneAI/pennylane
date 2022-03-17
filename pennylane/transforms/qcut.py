@@ -803,15 +803,16 @@ def expand_fragment_tapes_mc(
             with qml.tape.QuantumTape() as new_tape:
                 for op in tape.operations:
                     w = op.wires[0]
-                    if isinstance(op, MeasureNode):
-                        MC_MEASUREMENTS[meas_settings[op.id][shot]](w)
-                    elif isinstance(op, PrepareNode):
+                    if isinstance(op, PrepareNode):
                         MC_STATES[prep_settings[op.id][shot]](w)
                     elif not isinstance(op, MeasureNode):
                         qml.apply(op)
 
                 for meas in tape.measurements:
                     qml.apply(meas)
+                for op in tape.operations:
+                    if isinstance(op, MeasureNode):
+                        MC_MEASUREMENTS[meas_settings[op.id][shot]](w)
             frag_config.append(new_tape)
 
         all_configs.append(frag_config)
