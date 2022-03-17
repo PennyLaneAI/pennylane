@@ -40,7 +40,7 @@
 <p align="center">
   <strong>Train a quantum computer the same way as a neural network.</strong>
   <img src="./doc/_static/header.png#gh-light-mode-only" width="700px">
-  <img src="./pennylane/logo-dark-mode/doc/_static/header-dark-mode.png#gh-dark-mode-only" width="700px" onerror="this.style.display='none'" alt=""/>
+  <img src="./doc/_static/header-dark-mode.png#gh-dark-mode-only" width="700px" onerror="this.style.display='none'" alt=""/>
 </p>
 
 ## Key Features
