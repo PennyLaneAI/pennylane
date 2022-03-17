@@ -28,7 +28,6 @@ from pathlib import Path
 
 from networkx import MultiDiGraph, has_path, weakly_connected_components
 
-import numpy as np
 import pennylane as qml
 from pennylane import apply, expval
 from pennylane.grouping import string_to_pauli_word
@@ -260,7 +259,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
 
 # pylint: disable=too-many-branches
 def fragment_graph(
-    graph: MultiDiGraph, cut_edges: List[Tuple[Any, Any, Any]] = None
+    graph: MultiDiGraph, cut_edges: Sequence[Tuple[Operation, Operation, Any]] = None
 ) -> Tuple[Tuple[MultiDiGraph], MultiDiGraph]:
     """
     Fragments a graph into a collection of subgraphs as well as returning
@@ -281,9 +280,10 @@ def fragment_graph(
     Args:
         graph (nx.MultiDiGraph): directed multigraph containing measure and prepare
             nodes at cut locations
-        cut_edges: (List[Tuple[Any, Any, Any]]): List of MultiDiGraph edges to cut. Each 3-tuple
-            represents the source node, the target node, and the key of the (multi)edge. Defaults to
-            None which results in fragments by considering only existing cuts in the circuit.
+        cut_edges: (Sequence[Tuple[Operation, Operation, Any]]): List of additional MultiDiGraph
+            edges to cut. Each 3-tuple represents the source node, the target node, and the wire of
+            the (multi)edge. Defaults to ``None``, which results in fragments by considering only
+            existing manually-placed cuts in the circuit.
 
     Returns:
         Tuple[Tuple[nx.MultiDiGraph], nx.MultiDiGraph]: the subgraphs of the cut graph
@@ -1629,9 +1629,9 @@ class CutStrategy:
 
 
 def graph_to_hmetis(
-    graph, hyperwire_weight=0
+    graph: MultiDiGraph, hyperwire_weight: int=0
 ) -> Tuple[List[int], List[int], List[Union[int, float]]]:
-    """Converts a MultiDiGraph into the hMETIS hypergraph format, conforming to KaHyPar's signature.
+    """Converts a ``MultiDiGraph`` into the hMETIS hypergraph format, conforming to KaHyPar's signature.
 
     Args:
         graph (MultiDiGraph): The original (tape-converted) graph to be cut.
@@ -1642,16 +1642,16 @@ def graph_to_hmetis(
     Returns:
         (Tuple[List,List,List]): The 3 lists representing an (optionally weighted) hypergraph:
 
-            - Flattened list of adjacent node indices.
-            - List of starting indices for edges in the above adjacent-nodes-list.
-            - Optional list of edge weights. None if ``hyperwire_weight`` is equal to 0.
+        - Flattened list of adjacent node indices.
+        - List of starting indices for edges in the above adjacent-nodes-list.
+        - Optional list of edge weights. None if ``hyperwire_weight`` is equal to 0.
     """
     nodes = dict(graph.nodes(data="order"))
     edges = graph.edges(data="wire")
     wires = {w for _, _, w in edges}
 
     adj_nodes = [nodes[v] for ops in graph.edges(keys=False) for v in ops]
-    edge_splits = np.cumsum([0] + [len(e) for e in graph.edges(keys=False)]).tolist()
+    edge_splits = qml.math.cumsum([0] + [len(e) for e in graph.edges(keys=False)]).tolist()
     edge_weights = None
 
     if hyperwire_weight:
@@ -1689,8 +1689,9 @@ def kahypar_cut(
     trial: int = None,
     verbose: bool = False,
 ) -> List[Union[int, Any]]:
-    """Calls KaHyPar to partition a graph. Requires KaHyPar to be installed separately with
-    ``pip install kahypar``.
+    """Calls `KaHyPar <https://kahypar.org/>`__ to partition a graph.
+    
+    Requires KaHyPar to be installed separately with ``pip install kahypar``.
 
     Args:
         num_fragments (int): Desired number of fragments.
@@ -1702,12 +1703,12 @@ def kahypar_cut(
         fragment_weights (List[Union[int, float]]): Maximum size constraints by fragment. Defaults
             to no such constraints, with ``imbalance`` the only parameter affecting fragment sizes.
         edges (Iterable[Any]): Mapping for returning actual cut edge objects instead of cut edge
-            indices. Defaults to None which will return cut edge indices.
+            indices. Defaults to ``None`` which will return cut edge indices.
         seed (int): KaHyPar's seed. Defaults to the seed in the config file which defaults to -1,
             i.e. unfixed seed.
-        config_path (str): KaHyPar's .ini config file path. Defaults to its SEA20 paper config.
-        trial (int): trial id for summary label creation. Defaults to None.
-        verbose (bool): Flag for printing KaHyPar's output summary. Defaults to False.
+        config_path (str): KaHyPar's ``.ini`` config file path. Defaults to its SEA20 paper config.
+        trial (int): trial id for summary label creation. Defaults to ``None``.
+        verbose (bool): Flag for printing KaHyPar's output summary. Defaults to ``False``.
 
     Returns:
         List[Union[int, Any]]: List of cut edges.
@@ -1734,7 +1735,7 @@ def kahypar_cut(
     >>> graph = qcut.tape_to_graph(tape)
     >>> adj_nodes, edge_splits, edge_weights = qcut.graph_to_hmetis(graph)
 
-    Then feed the output to `qcut.kahypar_cut()` to find the cut edges:
+    Then feed the output to ``qcut.kahypar_cut()`` to find the cut edges:
 
     >>> cut_edges = qcut.kahypar_cut(
             num_fragments=2,
@@ -1751,7 +1752,7 @@ def kahypar_cut(
     0: ──RX(0.432)──╭C──RZ(0.24)───RX(0.432)──┤ ⟨Z⟩
     a: ──RY(0.543)──╰X──RZ(0.133)──RY(0.543)──┤
 
-    The output cut edges can be subsequently input into `fragment_graph()` to obtain the
+    The output cut edges can be subsequently input into :func:`fragment_graph` to obtain the
     fragment subcircuits and the communication graph:
 
     >>> frags, comm_graph = qcut.fragment_graph(graph, cut_edges)
@@ -1759,7 +1760,7 @@ def kahypar_cut(
     [<networkx.classes.multidigraph.MultiDiGraph at 0x7f3d2ed3b790>,
     <networkx.classes.multidigraph.MultiDiGraph at 0x7f3d2ed3b8e0>]
 
-    Each fragment subcircuits can then be converted back to tape for execution:
+    Each fragment subcircuit can then be converted back to a tape for execution:
 
     >>> for g in frags:
     ...     print(qcut.graph_to_tape(g).draw())
@@ -1773,7 +1774,12 @@ def kahypar_cut(
 
     """
     # pylint: disable=too-many-arguments, import-outside-toplevel
-    import kahypar
+    try:
+        import kahypar
+    except ImportError as e:
+        raise ImportError("KaHyPar must be installed to use this method for automatic "
+                                    "cut placement. Try pip install kahypar or visit "
+                                    "https://kahypar.org/ for installation instructions.") from e
 
     trial = 0 if trial is None else trial
     ne = len(edge_splits) - 1
