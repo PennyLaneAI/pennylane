@@ -481,8 +481,8 @@ class TestTensorExpval:
         c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
         c1([0, 1, 2]) == c2(['c', 'b', 'a'])
         """
-        dev = device("default.qubit", wires=3)
-        dev_custom_labels = device("default.qubit", wires=label_map)
+        dev = device(wires=3)
+        dev_custom_labels = device(wires=label_map)
         skip_if(dev, {"supports_tensor_observables": False})
 
         def circ(wire_labels):
@@ -1316,8 +1316,8 @@ class TestTensorVar:
         c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
         c1([0, 1, 2]) == c2(['c', 'b', 'a'])
         """
-        dev = device("default.qubit", wires=3)
-        dev_custom_labels = device("default.qubit", wires=label_map)
+        dev = device(wires=3)
+        dev_custom_labels = device(wires=label_map)
         skip_if(dev, {"supports_tensor_observables": False})
 
         def circ(wire_labels):
