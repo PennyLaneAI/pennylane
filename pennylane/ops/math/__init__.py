@@ -14,4 +14,4 @@
 
 # pylint: disable=too-few-public-methods,function-redefined
 
-from .control import Controlled
+from .controlled import Controlled

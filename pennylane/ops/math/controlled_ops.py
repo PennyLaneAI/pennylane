@@ -77,6 +77,7 @@ class ControlledQubitUnitary(Controlled):
     ):
         super().__init__(qml.QubitUnitary(*params, wires=wires), control_wires, control_values=control_values,
             do_queue=do_queue, id=id)
+        self._name = self.__class__.__name__
 
 
 class CNOT(Controlled):
@@ -103,6 +104,7 @@ class CNOT(Controlled):
     
     def __init__(self, wires=None, do_queue=True, id=None):
         super().__init__(qml.PauliX(wires[1]), wires[0], do_queue=do_queue, id=id)
+        self._name = self.__class__.__name__
 
 class CZ(Controlled):
     r"""CZ(wires)
@@ -127,6 +129,7 @@ class CZ(Controlled):
     """
     def __init__(self, wires=None, do_queue=True, id=None):
         super().__init__(qml.PauliZ(wires[1]), wires[0], do_queue=do_queue, id=id)
+        self._name = self.__class__.__name__
 
 class CY(Controlled):
     r"""CY(wires)
@@ -179,7 +182,8 @@ class CSWAP(Controlled):
         wires (Sequence[int]): the wires the operation acts on
     """
     def __init__(self, wires=None, do_queue=True, id=None):
-        super().__init__(qml.SWAP(wires[1:]), wires[0], do_queue=do_queue, id=id)
+        super().__init__(qml.SWAP(wires=wires[1:]), wires[0], do_queue=do_queue, id=id)
+        self._name = self.__class__.__name__
 
 
 class Toffoli(Controlled):
@@ -210,6 +214,7 @@ class Toffoli(Controlled):
     """
     def __init__(self, wires=None, do_queue=True, id=None):
         super().__init__(qml.PauliX(wires[-1]), wires[0:-1], do_queue=do_queue, id=id)
+        self._name = self.__class__.__name__
 
 
 class MultiControlledX(Controlled):
@@ -268,8 +273,19 @@ class MultiControlledX(Controlled):
         do_queue=True,
         id=None
     ):
-        super().__init__(qml.PauliX(wires[-1]), wires[0:-1], work_wires=work_wires,
-            control_values=control_values, do_queue=do_queue, id=id)
+        if control_wires is None:
+            super().__init__(qml.PauliX(wires[-1]), wires[0:-1], work_wires=work_wires,
+                control_values=control_values, do_queue=do_queue, id=id)
+        else:
+            warnings.warn(
+                "The control_wires keyword will be removed soon. "
+                "Use wires = (control_wires, target_wire) instead. "
+                "See the documentation for more information.",
+                category=UserWarning,
+            )
+            super().__init__(qml.PauliX(wires), control_wires, work_wires=work_wires,
+                control_values=control_values, do_queue=do_queue, id=id)
+        self._name = self.__class__.__name__
 
 
 ##### PARAMETRIC OPS #######################
@@ -306,8 +322,9 @@ class ControlledPhaseShift(Controlled):
     parameter_frequencies = [(1,)]
 
     def __init__(self, phi, wires, do_queue=True, id=None):
-        super().__init__(qml.PhaseShift(wires[-1]), wires[:-1], do_queue=do_queue,
+        super().__init__(qml.PhaseShift(phi, wires[-1]), wires[:-1], do_queue=do_queue,
             id=id)
+        self._name = self.__class__.__name__
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
@@ -393,6 +410,7 @@ class CRX(Controlled):
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(qml.RX(phi, wires[-1]), wires[:-1],
             do_queue=do_queue, id=id)
+        self._name = self.__class__.__name__
 
 
 class CRY(Controlled):
@@ -439,6 +457,7 @@ class CRY(Controlled):
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(qml.RY(phi, wires[-1]), wires[:-1], do_queue=do_queue, id=id)
+        self._name = self.__class__.__name__
 
 
 class CRZ(Controlled):
@@ -488,8 +507,9 @@ class CRZ(Controlled):
     parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, do_queue=True, id=None):
-         super().__init__(qml.RZ(phi, wires[-1]), wires[-1],
+        super().__init__(qml.RZ(phi, wires[-1]), wires[-1],
             do_queue=do_queue, id=id)
+        self._name = self.__class__.__name__
 
     @staticmethod
     def compute_eigvals(theta):  # pylint: disable=arguments-differ
@@ -575,4 +595,5 @@ class CRot(Controlled):
     def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
         super().__init__(qml.Rot(phi, theta, omega, wires[-1]), wires[:-1],
             do_queue=do_queue, id=id)
+        self._name = self.__class__.__name__
 

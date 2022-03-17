@@ -17,7 +17,7 @@ from multimethod import multimethod
 import warnings
 
 import pennylane as qml
-from pennylane.operation import Operator, AnyWires
+from pennylane.operation import Operation, AnyWires
 from pennylane.wires import Wires
 from pennylane import numpy as np
 from ..qubit import PauliX, PauliY, SWAP, PhaseShift, RX, RY, RZ, Rot
@@ -26,7 +26,7 @@ class NoDecompositionShortcut(Exception):
     """decomposition undefined."""
 
 @multimethod
-def c1_decomp(op: Operator):
+def c1_decomp(op: Operation, control):
     raise NoDecompositionShortcut
 
 
@@ -173,7 +173,7 @@ def multicx_decomposition(control_wires, target_wire, work_wires):
     
 
 
-class Controlled(Operator):
+class Controlled(Operation):
     r"""Wrapper denoting a controlled operation.
 
     Args:
@@ -226,7 +226,7 @@ class Controlled(Operator):
         self.hyperparameters['control_values'] = self._control_values
         self.hyperparameters['base']  = base
         self.hyperparameters['work_wires'] = self._work_wires
-        super().__init__(*base.parameters, wires=(base.wires+self._control_wires+self._work_wires), do_queue=do_queue, id=id)
+        super().__init__(*base.parameters, wires=(self._control_wires+base.wires+self._work_wires), do_queue=do_queue, id=id)
         self._name = f"C({self.base.name})"
 
     def queue(self, context=qml.QueuingContext):
@@ -259,11 +259,6 @@ class Controlled(Operator):
     def control_values(self):
         """The values to control on."""
         return self._control_values
-
-    @property
-    def data(self):
-        """Base gate data."""
-        return self.base.data
     
     @property
     def basis(self):
@@ -306,7 +301,7 @@ class Controlled(Operator):
                 pass
         if len(control_wires) > 2 and isinstance(base, PauliX):
             return flips + multicx_decomposition(control_wires, base.wires, work_wires) + flips
-        return qml.operation.DecompositionUndefinedError
+        raise qml.operation.DecompositionUndefinedError
 
     @staticmethod
     def compute_eigvals(*args, **kwargs):
