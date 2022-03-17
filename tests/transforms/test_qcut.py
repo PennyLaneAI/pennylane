@@ -1862,8 +1862,8 @@ class TestExpandFragmentTapesMC:
             qml.CNOT(wires=[0, 3])
             qml.sample(qml.Projector([1], wires=[0]))
             qml.sample(qml.Projector([1], wires=[3]))
-            qml.sample(qml.PauliY(wires=[0]))
-            qml.sample(qml.Identity(wires=[0]))
+            qml.sample(qml.PauliY(wires=[1]))
+            qml.sample(qml.Identity(wires=[2]))
 
         with qml.tape.QuantumTape() as config2:
             qml.Hadamard(wires=[0])
@@ -1878,8 +1878,8 @@ class TestExpandFragmentTapesMC:
             qml.CNOT(wires=[0, 3])
             qml.sample(qml.Projector([1], wires=[0]))
             qml.sample(qml.Projector([1], wires=[3]))
-            qml.sample(qml.PauliZ(wires=[0]))
-            qml.sample(qml.PauliX(wires=[0]))
+            qml.sample(qml.PauliZ(wires=[1]))
+            qml.sample(qml.PauliX(wires=[2]))
 
         expected_configs = [config1, config2]
 

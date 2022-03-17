@@ -811,8 +811,10 @@ def expand_fragment_tapes_mc(
                 for meas in tape.measurements:
                     qml.apply(meas)
                 for op in tape.operations:
+                    meas_w = op.wires[0]
                     if isinstance(op, MeasureNode):
-                        MC_MEASUREMENTS[meas_settings[op.id][shot]](w)
+                        MC_MEASUREMENTS[meas_settings[op.id][shot]](meas_w)
+
             frag_config.append(new_tape)
 
         all_configs.append(frag_config)
