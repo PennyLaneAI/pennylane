@@ -585,9 +585,9 @@ class TestInternalFunctions:
             (Wires([0]), Wires([0]), Wires([0])),
         ],
     )
-    def test_get_ordered_subset(self, wires, subset, expected_subset, mock_device_arbitrary_wires):
+    def test_order_wires(self, wires, subset, expected_subset, mock_device_arbitrary_wires):
         dev = mock_device_arbitrary_wires(wires=wires)
-        ordered_subset = dev.get_ordered_subset(subset_wires=subset)
+        ordered_subset = dev.order_wires(subset_wires=subset)
         assert ordered_subset == expected_subset
 
     @pytest.mark.parametrize(
@@ -599,12 +599,12 @@ class TestInternalFunctions:
             (Wires([0]), Wires([2])),
         ],
     )
-    def test_get_ordered_subset_raises_value_error(
+    def test_order_wires_raises_value_error(
         self, wires, subset, mock_device_arbitrary_wires
     ):
         dev = mock_device_arbitrary_wires(wires=wires)
         with pytest.raises(ValueError, match="Could not find some or all subset wires"):
-            _ = dev.get_ordered_subset(subset_wires=subset)
+            _ = dev.order_wires(subset_wires=subset)
 
 
 class TestClassmethods:

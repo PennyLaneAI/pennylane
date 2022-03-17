@@ -329,7 +329,7 @@ class Device(abc.ABC):
         wire_map = zip(wires, consecutive_wires)
         return OrderedDict(wire_map)
 
-    def get_ordered_subset(self, subset_wires):
+    def order_wires(self, subset_wires):
         """Given some subset of device wires return a Wires object with the same wires;
         sorted according to the device wire map.
 
