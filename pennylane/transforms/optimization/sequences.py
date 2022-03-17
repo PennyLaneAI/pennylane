@@ -27,7 +27,7 @@ from pennylane.transforms.decompositions import two_qubit_decomposition, zyz_dec
 
 
 @qfunc_transform
-def sequences_optimization(tape, n_qubits):
+def sequences_optimization(tape, size_qubits_subsets, custom_quantum_cost=None):
     r"""Quantum function transform to optimize a circuit given a list of qubits subset size (1, 2). First the
     algorithm finds all maximal sequences of gates acting on a all subset of qubits of a given size. Then all
     sequences are optimized by using 1 qubits and 2 qubits optimal decompositions.
@@ -36,6 +36,7 @@ def sequences_optimization(tape, n_qubits):
         qfunc (function): A quantum function to be optimized.
         n_qubits(list(int)): List of size of subset qubits [1], [2], [1, 2], [2, 1]. The order in the list matters as
                             it will be optimized sequentially.
+        custom_quantum_cost (dict): Optional, custom quantum cost dictionary.
 
     Returns:
         function: the transformed quantum function
@@ -91,8 +92,8 @@ def sequences_optimization(tape, n_qubits):
     1: ─│───RZ(1.57)─────────────╭C──SX─╭C──Rot(-1.57,1.57,1.57)─╰X─┤
     2: ─╰X──Rot(0.00,1.57,-1.57)─╰X──S──╰X──Rot(0.00,1.57,-1.57)────┤
 
-    The algortihm finds the sequences [0, 1, 2, 3, 4, 7, 8, 9, 10, 11] (acting on qubits 1 and 2) as we can push CNOT
-    5 to the right and CNOT 6 to the left. The long sequences contains 4 CNOT which is not optimal and can bbe
+    The algortihm finds the sequence [0, 1, 2, 3, 4, 7, 8, 9, 10, 11] (acting on qubits 1 and 2) as we can push CNOT
+    5 to the right and CNOT 6 to the left. The longest sequence contains 4 CNOT which is not optimal and can bbe
     reduced to two by optimal synthesis of 4x4 unitaries. Therefore the sequences of gates is replaced and therefore
     the whole circuit is optimized.
 
@@ -111,23 +112,24 @@ def sequences_optimization(tape, n_qubits):
     inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
 
     # Check the validity of the size of qubits subsets.
-    if n_qubits not in [[1], [2], [1, 2], [2, 1]]:
+    if size_qubits_subsets not in [[1], [2], [1, 2], [2, 1]]:
         raise qml.QuantumFunctionError(
-            "The list of number of qubits is not a valid. It should be [1] or [2] or ["
-            "1, 2] or [2, 1]"
+            "The list of number of qubits is not a valid. It should be a list containing 1 and or 2."
         )
 
-    for n_qubit in n_qubits:
+    for size_qubits_subset in size_qubits_subsets:
         # Construct Dag representation of the circuit and the pattern.
         circuit_dag = commutation_dag(tape)()
 
         # FInd all maximal seuqences for a circuit with a given qubity subset size.
-        max_sequences = maximal_sequences(circuit_dag, n_qubit)
+        max_sequences = maximal_sequences(circuit_dag, size_qubits_subset)
 
         # Optimizes the circuit for compatible maximal sequences
         if max_sequences:
             # Initialize the optimization by substitution of the different sequences
-            substitution = SequencesSubstitution(max_sequences, circuit_dag, n_qubit)
+            substitution = SequencesSubstitution(
+                max_sequences, circuit_dag, size_qubits_subset, custom_quantum_cost
+            )
             substitution.substitution()
             already_sub = []
 
@@ -1038,7 +1040,6 @@ class SequencesSubstitution:  # pylint: disable=too-few-public-methods
         cost_sequence_opt = 0
         for gate in sequence_opt:
             cost_sequence_opt += self.quantum_cost[gate.name]
-
         return cost_sequence > cost_sequence_opt
 
     def substitution(self):
@@ -1051,11 +1052,11 @@ class SequencesSubstitution:  # pylint: disable=too-few-public-methods
             # Get the first match scenario of the list
             current = self.sequence_stack.pop(0)
 
-            circuit_sublist = current.sequence
-            current_qubit = current.qubit
+            circuit_sequence = current.sequence
+            qubits_conf = current.qubit
 
             with qml.tape.QuantumTape(do_queue=False) as sequence:
-                for id in circuit_sublist:
+                for id in circuit_sequence:
                     apply(self.circuit_dag.get_node(id).op)
 
             sequence_matrix = qml.matrix(sequence)
@@ -1070,8 +1071,8 @@ class SequencesSubstitution:  # pylint: disable=too-few-public-methods
             # If the sequence is optimized
             if self._quantum_cost(sequence.operations, sequence_opt.operations):
                 config = SubstitutionConfig(
-                    circuit_sublist,
-                    current_qubit,
+                    circuit_sequence,
+                    qubits_conf,
                     sequence_opt,
                     [],
                 )

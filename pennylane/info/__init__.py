@@ -1,4 +1,4 @@
-# Copyright 2022 Xanadu Quantum Technologies Inc.
+# Copyright 2021-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,12 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import pytest
-import pennylane as qml
-import pennylane.numpy as np
-from pennylane.transforms.commutation_dag import commutation_dag
-from pennylane.transforms.optimization.sequences import (
-    maximal_sequences,
-    sequences_optimization
-)
+"""
+This folder contains every quantum information post processing functions.
+"""
+from .entropy import entropy
