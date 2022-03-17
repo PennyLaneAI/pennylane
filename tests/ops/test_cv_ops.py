@@ -239,6 +239,12 @@ label_data = [
     (cv.TensorN(wires=(0, 1, 2)), "n⊗n⊗n", "n⊗n⊗n", None),
     (cv.QuadOperator(1.234, wires=0), "cos(φ)x\n+sin(φ)p", "cos(1.23)x\n+sin(1.23)p", None),
     (cv.FockStateProjector([1, 2, 3], wires=(0, 1, 2)), "|123⟩⟨123|", "|123⟩⟨123|", None),
+    (
+        cv.CoherentState(1.0, 2.0, wires=0),
+        "CoherentState",
+        "CoherentState\n(1.00,\n2.00)",
+        "CoherentState⁻¹\n(1.00,\n2.00)",
+    ),
 ]
 
 
