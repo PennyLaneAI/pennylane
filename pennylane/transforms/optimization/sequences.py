@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Transform finding all maximal matches of a pattern in a quantum circuit and optimizing the circuit by
-substitution."""
+"""Function finding all maximal sequences of gates acting on a subset of qubits considering pairwise commutation of gates.
+"""
 
 import itertools
 import copy
@@ -28,18 +28,20 @@ from pennylane.transforms.decompositions import two_qubit_decomposition, zyz_dec
 
 @qfunc_transform
 def sequences_optimization(tape, n_qubits):
-    r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
+    r"""Quantum function transform to optimize a circuit given a list of qubits subset size (1, 2). First the
+    algorithm finds all maximal sequences of gates acting on a all subset of qubits of a given size. Then all
+    sequences are optimized by using 1 qubits and 2 qubits optimal decompositions.
 
     Args:
         qfunc (function): A quantum function to be optimized.
-        n_qubits(list(int)): List of number of qubits [1], [2], [1, 2], [2, 1]
+        n_qubits(list(int)): List of size of subset qubits [1], [2], [1, 2], [2, 1]. The order in the list matters as
+                            it will be optimized sequentially.
 
     Returns:
         function: the transformed quantum function
 
     Raises:
-        QuantumFunctionError: The pattern provided is not a valid QuantumTape or the pattern contains measurements or
-            the pattern does not implement identity or the circuit has less qubits than the pattern.
+        QuantumFunctionError: The subset size list is not of the right format or contains unsupported sizes.
 
     **Example**
 
@@ -74,10 +76,10 @@ def sequences_optimization(tape, n_qubits):
     optimizing the circuit. The number of CNOTs in the circuit is reduced by one.
 
     >>> qml.specs(qnode)()["gate_types"]["CNOT"]
-    4
+    6
 
     >>> qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
-    2
+    4
 
     >>> print(qml.draw(qnode)())
     0: ────────────────╭C─╭C────────────────┤  <X>
@@ -88,6 +90,11 @@ def sequences_optimization(tape, n_qubits):
     0: ─╭C───────────────────────────────────────────────────────╭C─┤  <X>
     1: ─│───RZ(1.57)─────────────╭C──SX─╭C──Rot(-1.57,1.57,1.57)─╰X─┤
     2: ─╰X──Rot(0.00,1.57,-1.57)─╰X──S──╰X──Rot(0.00,1.57,-1.57)────┤
+
+    The algortihm finds the sequences [0, 1, 2, 3, 4, 7, 8, 9, 10, 11] (acting on qubits 1 and 2) as we can push CNOT
+    5 to the right and CNOT 6 to the left. The long sequences contains 4 CNOT which is not optimal and can bbe
+    reduced to two by optimal synthesis of 4x4 unitaries. Therefore the sequences of gates is replaced and therefore
+    the whole circuit is optimized.
 
     **Reference:**
 
@@ -103,7 +110,7 @@ def sequences_optimization(tape, n_qubits):
     consecutive_wires = Wires(range(len(tape.wires)))
     inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
 
-    # Check the validity of number of qubits
+    # Check the validity of the size of qubits subsets.
     if n_qubits not in [[1], [2], [1, 2], [2, 1]]:
         raise qml.QuantumFunctionError(
             "The list of number of qubits is not a valid. It should be [1] or [2] or ["
@@ -114,11 +121,12 @@ def sequences_optimization(tape, n_qubits):
         # Construct Dag representation of the circuit and the pattern.
         circuit_dag = commutation_dag(tape)()
 
+        # FInd all maximal seuqences for a circuit with a given qubity subset size.
         max_sequences = maximal_sequences(circuit_dag, n_qubit)
 
-        # Optimizes the circuit for compatible maximal matches
+        # Optimizes the circuit for compatible maximal sequences
         if max_sequences:
-            # Initialize the optimization by substitution of the different matches
+            # Initialize the optimization by substitution of the different sequences
             substitution = SequencesSubstitution(max_sequences, circuit_dag, n_qubit)
             substitution.substitution()
             already_sub = []
@@ -127,16 +135,12 @@ def sequences_optimization(tape, n_qubits):
             if substitution.substitution_list:
                 # Create a tape that does not affect the outside context.
                 with qml.tape.QuantumTape(do_queue=False) as tape_inside:
-                    # Loop over all possible substitutions
+                    # Loop over all possible substitutions and create the optimized circuit.
                     for group in substitution.substitution_list:
 
-                        circuit_sub = group.circuit_config
-                        subtape_operations = group.subtape_opt.operations
-
+                        sequence = group.sequence
+                        sequence_opt_operations = group.sequence_opt.operations
                         pred = group.pred_block
-
-                        # Choose the first configuration
-                        qubit = group.qubit_config[0]
 
                         # First add all the predecessors of the given match.
                         for elem in pred:
@@ -145,13 +149,13 @@ def sequences_optimization(tape, n_qubits):
                             apply(inst)
                             already_sub.append(elem)
 
-                        already_sub = already_sub + circuit_sub
+                        already_sub = already_sub + sequence
 
-                        # Then add the inverse of the template.
-                        for op in subtape_operations:
+                        # Then replace the sequence by the optimized version.
+                        for op in sequence_opt_operations:
                             apply(op)
 
-                    # Add the unmatched gates.
+                    # Add the gates not found in sequences.
                     for node_id in substitution.unmatched_list:
                         node = circuit_dag.get_node(node_id)
                         inst = copy.deepcopy(node.op)
@@ -163,7 +167,7 @@ def sequences_optimization(tape, n_qubits):
         op._wires = Wires([inverse_wires_map[wire] for wire in op.wires.tolist()])
         apply(op)
 
-        # After optimization, simply apply the measurements
+    # After optimization, simply apply the measurements
     for obs in observables:
         obs._wires = Wires([inverse_wires_map[wire] for wire in obs.wires.tolist()])
 
@@ -171,67 +175,70 @@ def sequences_optimization(tape, n_qubits):
         apply(m)
 
 
-def maximal_sequences(circuit_dag, n_qubit_subset):
-    r"""Function that applies the pattern matching algorithm and returns the list of maximal matches.
+def maximal_sequences(circuit_dag, size_qubit_subset):
+    r"""Function that applies an algorithm to find all maximal sequences of gates acting on a given qubits subset size.
 
     Args:
         circuit_dag (.CommutationDAG): A commutation DAG representing the circuit to be optimized.
-        n_qubit_subset(int): Number of qubits that should be considered in the subset.
+        size_qubit_subset(int): Size of the qubits subset that are considered.
 
     Returns:
-        list(Match): the list of maximal sequences.
+        list(Sequence): the list of maximal sequences.
+
+    Raises:
+        QuantumFunctionError: The subset size is greater than the number of qubits in the circuit.
     """
-    # Check the validity of number of qubits
-    if n_qubit_subset >= circuit_dag.num_wires:
+    # Check the validity of the qubits subset size.
+    if size_qubit_subset > circuit_dag.num_wires:
         raise qml.QuantumFunctionError(
-            "The qubits subset considered must be smaller than the number of qubit in the "
+            "The qubits subset considered must be smaller or equal than the number of qubits in the "
             "circuit."
         )
 
-    # Match list
+    # Sequence list
     sequence_list = []
 
     # Loop through all possible initial matches
     for node_c in circuit_dag.get_nodes():
-        if _compare_operation_qubits_number(node_c[1], n_qubit_subset):
-            # Fix qubits from the first (target fixed and control restrained)
-            not_fixed_qubits_confs = _not_fixed_qubits(
-                circuit_dag.num_wires, node_c[1].wires, n_qubit_subset - len(node_c[1].wires)
+        # Check that the gate acts on less or equal number of qubits than the given size.
+        if _compare_operation_qubits_number(node_c[1], size_qubit_subset):
+            # List the not fixed qubits
+            not_fixed_qubits_conf = _not_fixed_qubits(circuit_dag.num_wires, node_c[1].wires)
+
+            # Fix the qubits from the first gate
+            first_match_qubits_conf = _first_gate_qubits(node_c[1])
+
+            # Qubit configuration given the first operation and number of qubits.
+            qubits_confs = _merge_first_match_and_not_fixed(
+                first_match_qubits_conf, not_fixed_qubits_conf, size_qubit_subset
             )
-            # Loop over all possible qubits configurations given the first match constrains
-            for not_fixed_qubits_conf in not_fixed_qubits_confs:
-                for not_fixed_qubits_conf_permuted in itertools.permutations(not_fixed_qubits_conf):
-                    first_match_qubits_conf = _first_match_qubits(node_c[1], n_qubit_subset)
-                    # Qubit configuration given the first operation and number of qubits.
-                    qubits_conf = _merge_first_match_and_permutation(
-                        first_match_qubits_conf, not_fixed_qubits_conf_permuted
-                    )
 
-                    qubits_conf = set(qubits_conf)
-                    # Forward match part of the algorithm
-                    forward = ForwardSequence(
-                        circuit_dag,
-                        node_c[0],
-                        qubits_conf,
-                    )
-                    forward.run_forward_match()
+            # Loops over the diffrent qubits configurations
+            for qubits_conf in qubits_confs:
+                # Forward match part of the algorithm
+                forward = ForwardSequence(
+                    circuit_dag,
+                    node_c[0],
+                    qubits_conf,
+                )
+                forward.run_forward_match()
 
-                    # Backward match part of the algorithm
-                    backward = BackwardSequence(
-                        circuit_dag,
-                        forward.sequence,
-                        forward.circuit_matched,
-                        forward.circuit_blocked,
-                        node_c[0],
-                        qubits_conf,
-                    )
-                    backward.run_backward_match()
+                # Backward match part of the algorithm
+                backward = BackwardSequence(
+                    circuit_dag,
+                    forward.sequence,
+                    forward.circuit_matched,
+                    forward.circuit_blocked,
+                    node_c[0],
+                    qubits_conf,
+                )
+                backward.run_backward_match()
 
-                    _add_sequence(sequence_list, backward.final_sequences)
+                _add_sequence(sequence_list, backward.final_sequences)
 
     sequence_list.sort(key=lambda x: len(x.sequence), reverse=True)
 
-    # Extract maximal matches and optimizes the circuit for compatible maximal matches
+    # Extract maximal sequences
     if sequence_list:
         maximal = MaximalSequences(sequence_list)
         maximal.run_maximal_sequences()
@@ -241,112 +248,107 @@ def maximal_sequences(circuit_dag, n_qubit_subset):
     return sequence_list
 
 
-def _compare_operation_qubits_number(node_1, n_qubit):
-    """Compare two operations without taking the qubits into account.
+def _compare_operation_qubits_number(node_1, qubits_subset_size):
+    """Compare the number of qubits in the operation with the qubits subset size.
 
     Args:
         node_1 (.CommutationDAGNode): First operation.
-        n_qubit (int): Number of qubits, one or two.
+        qubits_subset_size (int): Qubits subset size.
     Return:
-        Bool: True if the operation has as much or less qubits than the desired number.
+        Bool: True if the operation has as much or less qubits than the qubits subset size.
     """
-    return len(node_1.op.wires) <= n_qubit
+    return len(node_1.op.wires) <= qubits_subset_size
 
 
-def _not_fixed_qubits(n_qubits_circuit, exclude, length):
+def _not_fixed_qubits(n_qubits_circuit, exclude_qubits):
     """
     Function that returns all possible combinations of qubits given some restrictions and using itertools.
     Args:
         n_qubits_circuit (int): Number of qubit in the circuit.
-        exclude (list): list of qubits from the first matched circuit operation that needs to be excluded.
-        length (int): number of qubits.
-    Yield:
-        iterator: Iterator of the possible lists.
+        exclude_qubits (list): list of qubits from the first matched circuit operation that needs to be excluded.
+    Returns:
+        list: List of not fixed qubits.
     """
     circuit_range = range(0, n_qubits_circuit)
-    for sublist in itertools.combinations([e for e in circuit_range if e not in exclude], length):
-        yield list(sublist)
+    return [e for e in circuit_range if e not in exclude_qubits]
 
 
-def _first_match_qubits(node_c, n_qubit):
+def _first_gate_qubits(node_c):
     """
-    Returns the list of qubits for circuit given the first match, the unknown qubit are
-    replaced by -1.
+    Returns the list of qubits of the operation.
     Args:
         node_c (.CommutationDAGNode): First node in the circuit.
-        n_qubit (int):
 
     Returns:
-        list: list of qubits to consider in circuit (with specific order).
+        list: list of qubits to consider in circuit.
     """
-    wires = node_c.wires
-    list_first_node = [-1] * n_qubit
-    for q in range(0, len(wires)):
-        list_first_node[q] = wires[q]
-    return list_first_node
+    return node_c.wires
 
 
-def _merge_first_match_and_permutation(list_first_match, permutation):
+def _merge_first_match_and_not_fixed(list_first_match, list_not_fixed, size_qubits_subset):
     """
     Function that returns the final qubits configuration given the first match constraints and the permutation of
     qubits not in the first match.
 
     Args:
         list_first_match (list): list of qubits indices for the first match.
-        permutation (list): possible permutation for the circuit qubits not in the first match.
+        list_not_fixed (list): possible permutation for the circuit qubits not in the first match.
+        size_qubits_subset (int): Size of the qubits subset.
 
     Returns:
-        list: list of circuit qubits for the given permutation and constraints from the initial match.
+        list(set(int)): list of qubits configurations to consider.
     """
     list_circuit = []
 
-    counter = 0
+    combinations = itertools.combinations(
+        list_not_fixed, size_qubits_subset - len(list_first_match)
+    )
 
-    for elem in list_first_match:
-        if elem == -1:
-            list_circuit.append(permutation[counter])
-            counter = counter + 1
-        else:
-            list_circuit.append(elem)
+    for combination in combinations:
+        current_set = set(list_first_match)
+        combination = set(combination)
+        current_set = current_set.union(combination)
+        list_circuit.append(current_set)
 
     return list_circuit
 
 
-def _add_sequence(sequence_list, backward_sequence_list):
+def _add_sequence(sequences_list, backward_sequences):
     """
-    Add a match configuration found by pattern matching if it is not already in final list of matches.
-    If the match is already in the final list, the qubit configuration is added to the existing Match.
+    Add a sequence configuration found by the algorithm if it is not already in final list of matches.
+    If the match is already in the final sequences list, the qubit configuration is added to the existing Sequence.
     Args:
-        match_list (list): match from the backward part of the algorithm.
-        backward_match_list (list): List of matches found by the algorithm for a given configuration.
+        sequences_list (list(.Sequence)): Sequence from the backward part of the algorithm.
+        backward_sequences (list(.Sequence)): List of Sequences found by the algorithm for a given configuration.
     """
 
     already_in = False
 
-    for b_match in backward_sequence_list:
-        for l_match in sequence_list:
-            if b_match.sequence == l_match.sequence:
-                index = sequence_list.index(l_match)
-                sequence_list[index].qubit.append(b_match.qubit[0])
+    for backward_sequence in backward_sequences:
+        for sequence in sequences_list:
+            if backward_sequence.sequence == sequence.sequence:
+                index = sequences_list.index(sequence)
+                sequences_list[index].qubit.append(backward_sequence.qubit[0])
                 already_in = True
 
         if not already_in:
-            sequence_list.append(b_match)
+            sequences_list.append(backward_sequence)
 
 
-class ForwardSequence:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
+class ForwardSequence:
     """
-    Class to apply pattern matching in the forward direction.
+    Class to apply the forward part of the sequence finding algorithm.
     """
 
     def __init__(self, circuit_dag, node_id_c, qubits_conf):
         """
         Create the ForwardMatch class.
         Args:
-            circuit_dag (.CommutationDAG): circuit as commutation DAG.
+            circuit_dag (.CommutationDAG): Circuit as commutation DAG.
+            node_id_c (int): ID of the given node.
+            qubits_conf (set(int)): Qubits configuration.
 
         """
-        # pylint: disable=too-many-branches, too-many-arguments
 
         # Commutation DAG of the circuit
         self.circuit_dag = circuit_dag
@@ -366,7 +368,7 @@ class ForwardSequence:  # pylint: disable=too-many-instance-attributes,too-few-p
         # Matched nodes circuit
         self.circuit_matched = [None] * circuit_dag.size
 
-        # List of sequence
+        # Sequence
         self.sequence = []
 
         # List of nodes in circuit which are in the sequence
@@ -384,7 +386,7 @@ class ForwardSequence:  # pylint: disable=too-many-instance-attributes,too-few-p
 
     def _init_circuit_matched(self):
         """
-        Initialize the list of corresponding matches in the pattern for the circuit.
+        Initialize the nodes that are in the sequence.
         """
         for i in range(0, self.circuit_dag.size):
             if i == self.node_id_c:
@@ -401,13 +403,13 @@ class ForwardSequence:  # pylint: disable=too-many-instance-attributes,too-few-p
 
     def _init_list_sequence(self):
         """
-        Initialize the list of matched nodes between the circuit and the pattern with the first match found.
+        Initialize the list of nodes in the sequence (first matched gate).
         """
         self.sequence.append(self.node_id_c)
 
     def _init_sequence_nodes(self):
         """
-        Initialize the list of current matched nodes.
+        Initialize the list of current nodes to be considered for addition in the sequence.
         """
         self.sequence_nodes_list.append(
             [
@@ -419,11 +421,11 @@ class ForwardSequence:  # pylint: disable=too-many-instance-attributes,too-few-p
 
     def _get_node_forward(self, list_id):
         """
-        Return node and successors from the matched_nodes_list for a given ID.
+        Return node and successors from the sequence_nodes_list for a given ID.
         Args:
-            list_id (int): considered list id of the desired node.
+            list_id (int): list ID of the desired node.
         Returns:
-            CommutationDAGNode: Node from the matched_node_list.
+            CommutationDAGNode: Node from the sequence_nodes_list.
             list(int): List of successors.
         """
         node = self.sequence_nodes_list[list_id][1]
@@ -431,14 +433,14 @@ class ForwardSequence:  # pylint: disable=too-many-instance-attributes,too-few-p
         return node, succ
 
     def _remove_node_forward(self, list_id):
-        """Remove a node of the current matched_nodes_list for a given ID.
+        """Remove a node of the current sequence_nodes_list for a given ID.
         Args:
             list_id (int): considered list id of the desired node.
         """
         self.sequence_nodes_list.pop(list_id)
 
     def run_forward_match(self):
-        """Apply the forward match algorithm and returns the list of matches given an initial match
+        """Apply the forward match sequence finding algorithm and returns the list of matches given an initial sequence
         and a qubits configuration.
         """
         # Initialization
@@ -446,13 +448,13 @@ class ForwardSequence:  # pylint: disable=too-many-instance-attributes,too-few-p
         self._init_circuit_matched()
         self._init_circuit_blocked()
 
-        # Initialize the list of matches and the stack of matched nodes (circuit)
+        # Initialize the sequence of gates and the stack of nodes to consider.
         self._init_list_sequence()
         self._init_sequence_nodes()
 
-        # While the list of matched nodes is not empty
+        # While the list of nodes to be considered is not empty
         while self.sequence_nodes_list:
-            # Return first element of the matched_nodes_list and removes it from the list
+            # Return first element of the sequence_nodes_list and removes it from the list
             v_first, successors_to_visit = self._get_node_forward(0)
             self._remove_node_forward(0)
 
@@ -467,7 +469,7 @@ class ForwardSequence:  # pylint: disable=too-many-instance-attributes,too-few-p
             # Update of the successors to visit.
             successors_to_visit.pop(0)
 
-            # Update the matched_nodes_list with new attribute successor to visit and sort the list.
+            # Update the seequence_nodes_list with new attribute successor to visit and sort the list.
             self.sequence_nodes_list.append([v_first.node_id, v_first, successors_to_visit])
             self.sequence_nodes_list.sort(key=lambda x: x[2])
 
@@ -475,16 +477,17 @@ class ForwardSequence:  # pylint: disable=too-many-instance-attributes,too-few-p
             if self.circuit_blocked[label] or self.circuit_matched[v[0]]:
                 continue
 
+            # Match condition is the node acting on the subset.
             if set(v[1].wires).issubset(self.wires):
                 # A match happens
                 self.circuit_matched[label] = True
 
-                # Append the new match to the list of matches.
+                # Append the gate to the sequence.
                 self.sequence.append(label)
 
-                # Potential successors to visit (circuit) for a given match.
+                # Potential successors to visit for a given matched node.
                 potential = self.circuit_dag.direct_successors(label)
-                # If the potential successors to visit are blocked or match, it is removed.
+                # If the potential successors to visit are blocked or matched, it is removed.
                 for potential_id in potential:
                     if self.circuit_blocked[potential_id] or (self.circuit_matched[potential_id]):
                         potential.remove(potential_id)
@@ -498,22 +501,22 @@ class ForwardSequence:  # pylint: disable=too-many-instance-attributes,too-few-p
                 self.sequence_nodes_list.append([v[0], v[1], successorstovisit])
                 self.sequence_nodes_list.sort(key=lambda x: x[2])
 
-            # If no match is found, block the node and all the successors.
+            # If no match is found, block the node and all its successors.
             else:
                 self.circuit_blocked[label] = True
                 for succ in v[1].successors:
                     self.circuit_blocked[succ] = True
 
 
-class Sequence:  # pylint: disable=too-few-public-methods
+class Sequence:
     """
-    Object to represent a match and its qubits configurations.
+    Object to represent a sequence and its qubits configurations.
     """
 
     def __init__(self, sequence, qubit):
         """Create a Match class with necessary arguments.
         Args:
-            match (list): list of gates in the sequence.
+            sequence (list): list of gates in the sequence.
             qubit (list): list of qubits configuration.
         """
         # Match list
@@ -527,15 +530,15 @@ class Sequence:  # pylint: disable=too-few-public-methods
 
 class SequenceScenarios:
     """
-    Class to represent a matching scenario in the Backward part of the algorithm.
+    Class to represent a sequence scenario in the Backward part of the algorithm.
     """
 
     def __init__(self, circuit_matched, circuit_blocked, sequence, counter):
         """Create a SequenceScenarios class for the Backward match.
         Args:
-            circuit_matched (list): list representing the matched gates in the circuit.
-            circuit_blocked (list): list representing the blocked gates in the circuit.
-            sequence (list): list of matches.
+            circuit_matched (list): list representing the matched gates.
+            circuit_blocked (list): list representing the blocked gates.
+            sequence (list): list of nodes in the sequence.
             counter (int): counter of the number of circuit gates already considered.
         """
 
@@ -547,7 +550,7 @@ class SequenceScenarios:
 
 class SequenceScenariosList:
     """
-    Object to define a list of MatchingScenarios, with method to append
+    Object to define a list of SequenceScenarios, with method to append
     and pop elements.
     """
 
@@ -577,9 +580,9 @@ class SequenceScenariosList:
         return first
 
 
-class BackwardSequence:  # pylint: disable=too-many-instance-attributes, too-few-public-methods
+class BackwardSequence:
     """
-    Class BackwardMatch allows to run backward direction part of the pattern matching algorithm.
+    Class to apply the backward part of the sequence finding algorithm.
     """
 
     def __init__(
@@ -592,33 +595,35 @@ class BackwardSequence:  # pylint: disable=too-many-instance-attributes, too-few
         qubits_conf,
     ):
         """
-        Create a ForwardMatch class with necessary arguments.
+        Create a BackwardSequence class with necessary arguments.
         Args:
             circuit_dag (DAGDependency): circuit in the dag dependency form.
             forward_sequence (list): list of match obtained in the forward direction.
+            circuit_matched (list): List of node ID belonging to the sequence.
+            circuit_blocked (list): List of node ID blocked in the circuit.
             node_id_c (int): index of the first gate matched in the circuit.
+            qubits_conf (set(int)): Set of qubits.
         """
-        # pylint: disable=too-many-arguments
 
         self.circuit_dag = circuit_dag
+        self.forward_sequence = forward_sequence
         self.circuit_matched = circuit_matched
         self.circuit_blocked = circuit_blocked
-        self.wires = qubits_conf
         self.node_id_c = node_id_c
-        self.forward_sequence = forward_sequence
+        self.wires = qubits_conf
         self.final_sequences = []
         self.sequence_list = SequenceScenariosList()
 
     def run_backward_match(self):
-        """Run the backward match algorithm and returns the list of matches given an initial match, a forward
-        scenario and a circuit qubits configuration.
+        """Run the backward sequence algorithm and returns the sequence of gates given an initial gate, the forward
+        results and a circuit qubits configuration.
         """
-        # pylint: disable=too-many-branches, too-many-statements
+
         sequence_store_list = []
 
         counter = 1
 
-        # First Scenario is stored in the MatchingScenariosList().
+        # First Scenario is stored in the SequenceScenariosList().
         first_match = SequenceScenarios(
             self.circuit_matched,
             self.circuit_blocked,
@@ -626,10 +631,9 @@ class BackwardSequence:  # pylint: disable=too-many-instance-attributes, too-few
             counter,
         )
 
-        self.sequence_list = SequenceScenariosList()
         self.sequence_list.append_scenario(first_match)
 
-        # Set the circuit indices that can be matched.
+        # Set the circuit ID that can be potentially added to the sequence.
         gate_indices = _gate_indices(self.circuit_matched, self.circuit_blocked)
 
         # While the scenario stack is not empty.
@@ -641,7 +645,7 @@ class BackwardSequence:  # pylint: disable=too-many-instance-attributes, too-few
             sequence_scenario = scenario.sequence
             counter_scenario = scenario.counter
 
-            # Part of the match list coming from the backward match.
+            # Part of the sequence coming from the backward match.
             sequence_backward = [
                 match for match in sequence_scenario if match not in self.forward_sequence
             ]
@@ -671,17 +675,18 @@ class BackwardSequence:  # pylint: disable=too-many-instance-attributes, too-few
             if set(node_circuit.wires).issubset(self.wires):
                 # A match happens.
                 # If there is a match the attributes are copied.
-                circuit_matched_match = circuit_matched.copy()
-                circuit_blocked_match = circuit_blocked.copy()
+                circuit_matched_add = circuit_matched.copy()
+                circuit_blocked_add = circuit_blocked.copy()
 
                 sequence_scenario_add = sequence_scenario.copy()
 
-                circuit_matched_match[circuit_id] = True
+                circuit_matched_add[circuit_id] = True
                 sequence_scenario_add.append(circuit_id)
 
+                # First option: greedy matching
                 new_sequence_scenario = SequenceScenarios(
-                    circuit_matched_match,
-                    circuit_blocked_match,
+                    circuit_matched_add,
+                    circuit_blocked_add,
                     sequence_scenario_add,
                     counter_scenario + 1,
                 )
@@ -746,33 +751,33 @@ class BackwardSequence:  # pylint: disable=too-many-instance-attributes, too-few
                 predecessors = self.circuit_dag.get_node(circuit_id).predecessors
 
                 if not predecessors or not following_matches:
-                    sequence_scenarios = SequenceScenarios(
+                    new_sequence_scenario = SequenceScenarios(
                         circuit_matched,
                         circuit_blocked,
                         sequence_scenario,
                         counter_scenario + 1,
                     )
-                    self.sequence_list.append_scenario(sequence_scenarios)
+                    self.sequence_list.append_scenario(new_sequence_scenario)
 
                 else:
 
-                    circuit_matched_nomatch = circuit_matched.copy()
-                    circuit_blocked_nomatch = circuit_blocked.copy()
+                    circuit_matched_no_add = circuit_matched.copy()
+                    circuit_blocked_no_add = circuit_blocked.copy()
 
-                    sequence_scenario_nomatch = sequence_scenario.copy()
+                    sequence_scenario_no_add = sequence_scenario.copy()
 
                     # Second option, all predecessors are blocked (circuit gate is
                     # moved to the left).
                     for pred in predecessors:
                         circuit_blocked[pred] = True
 
-                    sequence_scenarios = SequenceScenarios(
+                    new_sequence_scenario = SequenceScenarios(
                         circuit_matched,
                         circuit_blocked,
                         sequence_scenario,
                         counter_scenario + 1,
                     )
-                    self.sequence_list.append_scenario(sequence_scenarios)
+                    self.sequence_list.append_scenario(new_sequence_scenario)
 
                     # Third option, all successors are blocked (circuit gate is
                     # moved to the right).
@@ -782,13 +787,13 @@ class BackwardSequence:  # pylint: disable=too-many-instance-attributes, too-few
                     successors = self.circuit_dag.get_node(circuit_id).successors
 
                     for succ in successors:
-                        circuit_blocked_nomatch[succ] = True
-                        if circuit_matched_nomatch[succ]:
+                        circuit_blocked_no_add[succ] = True
+                        if circuit_matched_no_add[succ]:
                             broken_matches.append(succ)
-                            circuit_matched_nomatch[succ] = False
+                            circuit_matched_no_add[succ] = False
 
                     new_sequence_scenario_no_add = [
-                        elem for elem in sequence_scenario_nomatch if elem not in broken_matches
+                        elem for elem in sequence_scenario_no_add if elem not in broken_matches
                     ]
 
                     condition_block = True
@@ -802,8 +807,8 @@ class BackwardSequence:  # pylint: disable=too-many-instance-attributes, too-few
                         condition_block or not sequence_backward
                     ):
                         new_sequence_scenario = SequenceScenarios(
-                            circuit_matched_nomatch,
-                            circuit_blocked_nomatch,
+                            circuit_matched_no_add,
+                            circuit_blocked_no_add,
                             new_sequence_scenario_no_add,
                             counter_scenario + 1,
                         )
@@ -811,7 +816,7 @@ class BackwardSequence:  # pylint: disable=too-many-instance-attributes, too-few
 
         length = max(len(m.sequence) for m in sequence_store_list)
 
-        # Store the matches with maximal length.
+        # Store the sequences with maximal length.
         for scenario in sequence_store_list:
             if (len(scenario.sequence) == length) and not any(
                 scenario.sequence == x.sequence for x in self.final_sequences
@@ -835,21 +840,21 @@ def _gate_indices(circuit_matched, circuit_blocked):
 
 class MaximalSequences:  # pylint: disable=too-few-public-methods
     """
-    Class MaximalMatches allows to sort and store the maximal matches from the list
-    of matches obtained with the pattern matching algorithm.
+    Class MaximalSequences allows to sort and store the maximal sequences from the list
+    of sequences obtained with the sequence finding algorithm.
     """
 
     def __init__(self, sequences):
-        """Initialize MaximalMatches with the necessary arguments.
+        """Initialize MaximalSequences with the necessary arguments.
         Args:
-            pattern_matches (list): list of matches obtained from running the algorithm.
+            sequences (list): list of sequences obtained from running the algorithm.
         """
         self.sequences = sequences
 
         self.max_sequences_list = []
 
     def run_maximal_sequences(self):
-        """Method that extracts and stores maximal matches in decreasing length order."""
+        """Method that extracts and stores maximal sequences in decreasing length order."""
 
         self.max_sequences_list = [
             Sequence(
@@ -871,40 +876,70 @@ class MaximalSequences:  # pylint: disable=too-few-public-methods
 
 
 class SubstitutionConfig:
-    """Class to store the configuration of a given match substitution, which circuit gates, template gates,
-    qubits and predecessors of the match in the circuit.
+    """Class to store the configuration of a given sequence, its qubits configurations and predecessors and the
+    optimized sequences.
     """
 
     def __init__(
         self,
-        circuit_config,
+        sequence,
+        qubits_conf,
+        sequence_opt,
         pred_block,
-        qubit_config,
-        subtape_opt,
     ):
-        self.circuit_config = circuit_config
-        self.qubit_config = qubit_config
+        """Initialize MaximalSequences with the necessary arguments.
+        Args:
+            sequence (list(int)): sequence of gates in the circuit.
+            qubits_conf (list(int)): Qubits configuration.
+            sequence_opt (.QuantumTape): Quantum tape of the optimized sequence.
+            pred_block (list(int)): List of predecessors.
+        """
+        self.sequence = sequence
+        self.qubits_conf = qubits_conf
+        self.sequence_opt = sequence_opt
         self.pred_block = pred_block
-        self.subtape_opt = subtape_opt
 
 
 class SequencesSubstitution:  # pylint: disable=too-few-public-methods
-    """Class to run the substitution algorithm from the list of maximal matches."""
+    """Class to run the substitution algorithm from the list of maximal sequences."""
 
-    def __init__(self, max_sequences, circuit_dag, n_qubits_subset):
+    def __init__(self, max_sequences, circuit_dag, size_qubits_subset, custom_quantum_cost=None):
         """
         Initialize TemplateSubstitution with necessary arguments.
         Args:
-            max_matches (list(int)): list of maximal matches obtained from the running the pattern matching algorithm.
+            max_sequences (list(int)): list of maximal matches obtained from the running the pattern matching algorithm.
             circuit_dag (.CommutationDAG): circuit in the dag dependency form.
+            size_qubits_subset (int): Size of the qubits subset.
+            custom_quantum_cost (dict): Optional, dictionary containing gate names and their respective costs.
         """
 
         self.sequence_stack = max_sequences
         self.circuit_dag = circuit_dag
-        self.n_qubits_subset = n_qubits_subset
+        self.size_qubits_subset = size_qubits_subset
 
         self.substitution_list = []
         self.unmatched_list = []
+
+        if custom_quantum_cost is not None:
+            self.quantum_cost = dict(custom_quantum_cost)
+        else:
+            self.quantum_cost = {
+                "Identity": 0,
+                "PauliX": 1,
+                "PauliY": 1,
+                "PauliZ": 1,
+                "RX": 1,
+                "RY": 1,
+                "RZ": 1,
+                "Rot": 1,
+                "Hadamard": 1,
+                "T": 1,
+                "S": 1,
+                "SX": 1,
+                "CNOT": 2,
+                "CZ": 4,
+                "SWAP": 6,
+            }
 
     def _pred_block(self, circuit_sublist, index):
         """It returns the predecessors of a given part of the circuit.
@@ -920,7 +955,7 @@ class SequencesSubstitution:  # pylint: disable=too-few-public-methods
 
         exclude = set()
         for elem in self.substitution_list[:index]:
-            exclude = exclude | set(elem.circuit_config) | set(elem.pred_block)
+            exclude = exclude | set(elem.sequence) | set(elem.pred_block)
 
         pred = list(predecessors - set(circuit_sublist) - exclude)
         pred.sort()
@@ -940,12 +975,12 @@ class SequencesSubstitution:  # pylint: disable=too-few-public-methods
         """
         for scenario in self.substitution_list:
             predecessors = set()
-            for match in scenario.circuit_config:
+            for match in scenario.sequence:
                 predecessors = predecessors | set(self.circuit_dag.get_node(match).predecessors)
-            predecessors = predecessors - set(scenario.circuit_config)
+            predecessors = predecessors - set(scenario.sequence)
             index = self.substitution_list.index(scenario)
             for scenario_b in self.substitution_list[index::]:
-                if set(scenario_b.circuit_config) & predecessors:
+                if set(scenario_b.sequence) & predecessors:
                     index1 = self.substitution_list.index(scenario)
                     index2 = self.substitution_list.index(scenario_b)
 
@@ -962,7 +997,7 @@ class SequencesSubstitution:  # pylint: disable=too-few-public-methods
         # Initialize predecessors for each group of matches.
         for scenario in self.substitution_list:
             predecessors = set()
-            for index in scenario.circuit_config:
+            for index in scenario.sequence:
                 predecessors = predecessors | set(self.circuit_dag.get_node(index).predecessors)
             list_predecessors.append(predecessors)
 
@@ -971,12 +1006,12 @@ class SequencesSubstitution:  # pylint: disable=too-few-public-methods
             if scenario_a in remove_list:
                 continue
             index_a = self.substitution_list.index(scenario_a)
-            circuit_a = scenario_a.circuit_config
+            circuit_a = scenario_a.sequence
             for scenario_b in self.substitution_list[index_a + 1 : :]:
                 if scenario_b in remove_list:
                     continue
                 index_b = self.substitution_list.index(scenario_b)
-                circuit_b = scenario_b.circuit_config
+                circuit_b = scenario_b.sequence
                 if (set(circuit_a) & list_predecessors[index_b]) and (
                     set(circuit_b) & list_predecessors[index_a]
                 ):
@@ -988,9 +1023,27 @@ class SequencesSubstitution:  # pylint: disable=too-few-public-methods
                 scenario for scenario in self.substitution_list if scenario not in remove_list
             ]
 
+    def _quantum_cost(self, sequence, sequence_opt):
+        """Compare the quantum cost between the original sequence and the optimized sequence.
+        Args:
+            sequence (.QuantumTape): tape of the sequence.
+            sequence_opt (.QuantumTape): tape of the optimized sequencee.
+        Returns:
+            bool: True if the quantum cost is reduced.
+        """
+        cost_sequence = 0
+        for gate in sequence:
+            cost_sequence += self.quantum_cost[gate.name]
+
+        cost_sequence_opt = 0
+        for gate in sequence_opt:
+            cost_sequence_opt += self.quantum_cost[gate.name]
+
+        return cost_sequence > cost_sequence_opt
+
     def substitution(self):
-        """From the list of maximal matches, it chooses which one will be used and gives the necessary details for
-        each substitution(template inverse, predecessors of the match).
+        """From the list of maximal sequences, it creates all subsitution configurations necessary to create the
+        optimized version of the circuit.
         """
 
         while self.sequence_stack:
@@ -1001,45 +1054,45 @@ class SequencesSubstitution:  # pylint: disable=too-few-public-methods
             circuit_sublist = current.sequence
             current_qubit = current.qubit
 
-            with qml.tape.QuantumTape(do_queue=False) as subtape:
+            with qml.tape.QuantumTape(do_queue=False) as sequence:
                 for id in circuit_sublist:
                     apply(self.circuit_dag.get_node(id).op)
 
-            subtape_matrix = qml.matrix(subtape)
+            sequence_matrix = qml.matrix(sequence)
 
-            if self.n_qubits_subset == 1:
-                subtape_opt = zyz_decomposition(subtape_matrix)
+            if self.size_qubits_subset == 1:
+                sequence_opt = zyz_decomposition(sequence_matrix)
 
-            if self.n_qubits_subset == 2:
-                with qml.tape.QuantumTape(do_queue=False) as subtape_opt:
-                    two_qubit_decomposition(subtape_matrix, subtape.wires)
+            if self.size_qubits_subset == 2:
+                with qml.tape.QuantumTape(do_queue=False) as sequence_opt:
+                    two_qubit_decomposition(sequence_matrix, sequence.wires)
 
-            # If the match obey the rule then it is added to the list.
-            if len(subtape_opt.operations) < len(subtape.operations):
+            # If the sequence is optimized
+            if self._quantum_cost(sequence.operations, sequence_opt.operations):
                 config = SubstitutionConfig(
                     circuit_sublist,
-                    [],
                     current_qubit,
-                    subtape_opt,
+                    sequence_opt,
+                    [],
                 )
                 self.substitution_list.append(config)
 
         # Remove incompatible matches.
         self._remove_impossible()
 
-        # First sort the matches according to the smallest index in the matches (circuit).
-        self.substitution_list.sort(key=lambda x: x.circuit_config[0])
+        # First sort the matches according to the smallest index in the sequences.
+        self.substitution_list.sort(key=lambda x: x.sequence[0])
 
         # Change position of the groups due to predecessors of other groups.
         self._substitution_sort()
 
         for scenario in self.substitution_list:
             index = self.substitution_list.index(scenario)
-            scenario.pred_block = self._pred_block(scenario.circuit_config, index)
+            scenario.pred_block = self._pred_block(scenario.sequence, index)
 
         circuit_list = []
         for elem in self.substitution_list:
-            circuit_list = circuit_list + elem.circuit_config + elem.pred_block
+            circuit_list = circuit_list + elem.sequence + elem.pred_block
 
-        # Unmatched gates that are not predecessors of any group of matches.
+        # Not listed gates that are not predecessors of any group of sequences.
         self.unmatched_list = sorted(list(set(range(0, self.circuit_dag.size)) - set(circuit_list)))
