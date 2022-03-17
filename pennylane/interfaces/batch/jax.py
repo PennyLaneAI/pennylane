@@ -20,7 +20,7 @@ import jax
 import jax.numpy as jnp
 
 import pennylane as qml
-from pennylane.operation import Sample, Probability
+from pennylane.measurements import Sample, Probability
 from pennylane.interfaces.batch import InterfaceUnsupportedError
 
 dtype = jnp.float64
@@ -193,15 +193,16 @@ def _execute(
                 new_tapes[-1].set_parameters(a)
                 new_tapes[-1].trainable_params = t.trainable_params
 
-            vjp_tapes, processing_fn = qml.gradients.batch_vjp(
-                new_tapes,
-                dy,
-                gradient_fn,
-                reduction="append",
-                gradient_kwargs=gradient_kwargs,
-            )
+            with qml.tape.Unwrap(*new_tapes):
+                vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                    new_tapes,
+                    dy,
+                    gradient_fn,
+                    reduction="append",
+                    gradient_kwargs=gradient_kwargs,
+                )
 
-            partial_res = execute_fn(vjp_tapes)[0]
+                partial_res = execute_fn(vjp_tapes)[0]
 
             for t in tapes:
                 multi_probs = (

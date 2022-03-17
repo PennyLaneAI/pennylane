@@ -19,7 +19,7 @@ tf = pytest.importorskip("tensorflow")
 
 import pennylane as qml
 from pennylane import qnode, QNode
-from pennylane.tape import JacobianTape
+from pennylane.tape import QuantumTape
 
 
 qubit_device_and_diff_method = [
@@ -124,10 +124,7 @@ class TestQNode:
             return qml.state()
 
         result = qml.draw(circuit)(p1=x, p3=z)
-        expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──╭┤ State 
- 1: ──RY(0.06)───────────╰X──╰┤ State 
-"""
+        expected = "0: ──RX(0.10)──RX(0.40)─╭C─┤  State\n" "1: ──RY(0.06)───────────╰X─┤  State"
         assert result == expected
 
     def test_jacobian(self, dev_name, diff_method, mode, mocker, tol):
@@ -299,7 +296,7 @@ class TestQNode:
         def circuit(x, y, z):
             qml.RY(x * z, wires=0)
             qml.RZ(y, wires=0)
-            qml.RX(z + z ** 2 + tf.sin(a), wires=0)
+            qml.RX(z + z**2 + tf.sin(a), wires=0)
             return qml.expval(qml.PauliZ(0))
 
         with tf.GradientTape() as tape:
@@ -307,7 +304,7 @@ class TestQNode:
 
         if diff_method == "finite-diff":
             assert circuit.qtape.trainable_params == [0, 2]
-            assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + tf.sin(a)]
+            assert circuit.qtape.get_parameters() == [a * c, c + c**2 + tf.sin(a)]
 
         res = tape.jacobian(res, [a, b, c])
 
@@ -372,7 +369,7 @@ class TestQNode:
                 theta, phi, lam = self.data
                 wires = self.wires
 
-                with JacobianTape() as tape:
+                with QuantumTape() as tape:
                     qml.Rot(lam, theta, -lam, wires=wires)
                     qml.PhaseShift(phi + lam, wires=wires)
 
@@ -1015,12 +1012,12 @@ class TestCV:
         with tf.GradientTape() as tape:
             res = circuit(n, a)
 
-        expected = n ** 2 + n + np.abs(a) ** 2 * (1 + 2 * n)
+        expected = n**2 + n + np.abs(a) ** 2 * (1 + 2 * n)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # circuit jacobians
         grad = tape.gradient(res, [n, a])
-        expected = [2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]
+        expected = [2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
 

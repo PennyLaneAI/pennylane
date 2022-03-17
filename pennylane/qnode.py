@@ -217,6 +217,7 @@ class QNode:
         self._original_device = device
         self.gradient_fn = None
         self.gradient_kwargs = None
+        self._tape_cached = False
 
         self._update_gradient_fn()
         functools.update_wrapper(self, func)
@@ -265,7 +266,9 @@ class QNode:
         # of the user's device before and after executing the tape.
 
         if self.device is not self._original_device:
-            self._original_device._num_executions += 1  # pylint: disable=protected-access
+
+            if not self._tape_cached:
+                self._original_device._num_executions += 1  # pylint: disable=protected-access
 
             # Update for state vector simulators that have the _pre_rotated_state attribute
             if hasattr(self._original_device, "_pre_rotated_state"):
@@ -479,7 +482,7 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        self._tape = qml.tape.JacobianTape()
+        self._tape = qml.tape.QuantumTape()
 
         with self.tape:
             self._qfunc_output = self.func(*args, **kwargs)
@@ -492,13 +495,18 @@ class QNode:
         else:
             measurement_processes = self._qfunc_output
 
-        if not all(isinstance(m, qml.measure.MeasurementProcess) for m in measurement_processes):
+        if not all(
+            isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
+        ):
             raise qml.QuantumFunctionError(
                 "A quantum function must return either a single measurement, "
                 "or a nonempty sequence of measurements."
             )
 
-        if not all(ret == m for ret, m in zip(measurement_processes, self.tape.measurements)):
+        terminal_measurements = [
+            m for m in self.tape.measurements if m.return_type != qml.measurements.MidMeasure
+        ]
+        if not all(ret == m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )
@@ -515,6 +523,19 @@ class QNode:
                     "SparseHamiltonian observable must be used with the parameter-shift"
                     " differentiation method"
                 )
+
+        # Apply the deferred measurement principle if the device doesn't
+        # support mid-circuit measurements natively
+        # TODO:
+        # 1. Change once mid-circuit measurements are not considered as tape
+        # operations
+        # 2. Move this expansion to Device (e.g., default_expand_fn or
+        # batch_transform method)
+        if any(
+            getattr(obs, "return_type", None) == qml.measurements.MidMeasure
+            for obs in self.tape.operations
+        ):
+            self._tape = qml.defer_measurements(self._tape)
 
         if self.expansion_strategy == "device":
             self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
@@ -545,6 +566,14 @@ class QNode:
 
         # construct the tape
         self.construct(args, kwargs)
+
+        cache = self.execute_kwargs.get("cache", False)
+        using_custom_cache = (
+            hasattr(cache, "__getitem__")
+            and hasattr(cache, "__setitem__")
+            and hasattr(cache, "__delitem__")
+        )
+        self._tape_cached = using_custom_cache and self.tape.hash in cache
 
         res = qml.execute(
             [self.tape],

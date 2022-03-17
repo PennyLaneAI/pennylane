@@ -30,7 +30,7 @@ class TestTensorFlow:
         tf = pytest.importorskip("tensorflow")
 
         def cost(x, w):
-            y = x ** 2
+            y = x**2
             z = tf.ones([2, 2])
 
             assert tf.executing_eagerly()
@@ -63,7 +63,7 @@ class TestTensorFlow:
 
         @tf.function(jit_compile=jit_compile)
         def cost(x, w):
-            y = x ** 2
+            y = x**2
             z = tf.ones([2, 2])
 
             assert not tf.executing_eagerly()
@@ -99,7 +99,7 @@ class TestJAX:
         jnp = jax.numpy
 
         def cost(x, w):
-            y = x ** 2
+            y = x**2
             z = jnp.ones([2, 2])
 
             assert not qml.math.is_abstract(w)
@@ -130,7 +130,7 @@ class TestJAX:
 
         @functools.partial(jax.jit, static_argnums=[2])
         def cost(x, w, w_is_abstract=True):
-            y = x ** 2
+            y = x**2
             z = jnp.ones([2, 2])
 
             assert qml.math.is_abstract(w) == w_is_abstract
@@ -150,9 +150,13 @@ class TestJAX:
         res = cost(x, w)
         assert res == 0.26
 
-        # since we only specify argnums=0, w will not be abstract
-        grad = jax.grad(cost, argnums=0)(x, w, w_is_abstract=False)
-        assert np.allclose(grad, 2 * x)
+        # NOTE: As of JAX 0.3.1, JAX will trace non-differentiated arguments.
+        # As a result, it is no longer possible to assume that non-differentiated
+        # arguments will not be abstract.
+
+        # # since we only specify argnums=0, w will not be abstract
+        # grad = jax.grad(cost, argnums=0)(x, w, w_is_abstract=False)
+        # assert np.allclose(grad, 2 * x)
 
         # Otherwise, w will be abstract
         grad = jax.grad(cost, argnums=[0, 1])(x, w, w_is_abstract=True)

@@ -26,7 +26,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 import pennylane as qml
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Snapshot
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
 from .._version import __version__
@@ -93,6 +93,7 @@ class DefaultQubit(QubitDevice):
 
     operations = {
         "Identity",
+        "Snapshot",
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
@@ -156,6 +157,7 @@ class DefaultQubit(QubitDevice):
 
     def __init__(self, wires, *, shots=None, cache=0, analytic=None):
         super().__init__(wires, shots, cache=cache, analytic=analytic)
+        self._debugger = None
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.
@@ -196,6 +198,7 @@ class DefaultQubit(QubitDevice):
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
 
+    # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 
@@ -212,6 +215,13 @@ class DefaultQubit(QubitDevice):
                 self._apply_state_vector(operation.parameters[0], operation.wires)
             elif isinstance(operation, BasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
+            elif isinstance(operation, Snapshot):
+                if self._debugger and self._debugger.active:
+                    state_vector = np.array(self._flatten(self._state))
+                    if operation.tag:
+                        self._debugger.snapshots[operation.tag] = state_vector
+                    else:
+                        self._debugger.snapshots[len(self._debugger.snapshots)] = state_vector
             else:
                 self._state = self._apply_operation(self._state, operation)
 
@@ -454,8 +464,8 @@ class DefaultQubit(QubitDevice):
 
     def expval(self, observable, shot_range=None, bin_size=None):
         """Returns the expectation value of a Hamiltonian observable. When the observable is a
-         ``SparseHamiltonian`` object, the expectation value is computed directly for the full
-         Hamiltonian, which leads to faster execution.
+        ``Hamiltonian`` or ``SparseHamiltonian`` object, the expectation value is computed directly
+        from the sparse matrix representation, which leads to faster execution.
 
         Args:
             observable (~.Observable): a PennyLane observable
@@ -516,7 +526,7 @@ class DefaultQubit(QubitDevice):
                 if observable.name == "Hamiltonian":
                     Hmat = qml.utils.sparse_hamiltonian(observable, wires=self.wires)
                 elif observable.name == "SparseHamiltonian":
-                    Hmat = observable.matrix
+                    Hmat = observable.sparse_matrix()
 
                 state = qml.math.toarray(self.state)
                 res = coo_matrix.dot(
@@ -543,9 +553,9 @@ class DefaultQubit(QubitDevice):
             a 1D array representing the matrix diagonal.
         """
         if unitary in diagonal_in_z_basis:
-            return unitary.eigvals
+            return unitary.get_eigvals()
 
-        return unitary.matrix
+        return unitary.get_matrix()
 
     @classmethod
     def capabilities(cls):
@@ -575,7 +585,7 @@ class DefaultQubit(QubitDevice):
             array[complex]: complex array of shape ``[2]*self.num_wires``
             representing the statevector of the basis state
         """
-        state = np.zeros(2 ** self.num_wires, dtype=np.complex128)
+        state = np.zeros(2**self.num_wires, dtype=np.complex128)
         state[index] = 1
         state = self._asarray(state, dtype=self.C_DTYPE)
         return self._reshape(state, [2] * self.num_wires)
@@ -652,7 +662,7 @@ class DefaultQubit(QubitDevice):
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
-        state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
+        state = self._scatter(ravelled_indices, state, [2**self.num_wires])
         state = self._reshape(state, [2] * self.num_wires)
         self._state = self._asarray(state, dtype=self.C_DTYPE)
 
@@ -792,5 +802,5 @@ class DefaultQubit(QubitDevice):
         flat_state = self._flatten(self._state)
         real_state = self._real(flat_state)
         imag_state = self._imag(flat_state)
-        prob = self.marginal_prob(real_state ** 2 + imag_state ** 2, wires)
+        prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
         return prob

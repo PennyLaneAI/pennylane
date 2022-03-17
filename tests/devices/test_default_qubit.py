@@ -1102,7 +1102,7 @@ class TestSample:
 
         # s1 should only contain 1 and -1, which is guaranteed if
         # they square to 1
-        assert np.allclose(s1 ** 2, 1, atol=tol, rtol=0)
+        assert np.allclose(s1**2, 1, atol=tol, rtol=0)
 
 
 class TestDefaultQubitIntegration:
@@ -1162,7 +1162,7 @@ class TestDefaultQubitIntegration:
     def test_nonzero_shots(self, tol):
         """Test that the default qubit plugin provides correct result for high shot number"""
 
-        shots = 10 ** 5
+        shots = 10**5
         dev = qml.device("default.qubit", wires=1, shots=shots)
 
         p = 0.543
@@ -1699,17 +1699,17 @@ class TestTensorSample:
         dev._samples = dev.generate_samples()
         dev.sample(obs)
 
-        s1 = obs.eigvals
+        s1 = obs.get_eigvals()
         p = dev.probability(wires=dev.map_wires(obs.wires))
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
+        assert np.allclose(s1**2, 1, atol=tol_stochastic, rtol=0)
 
         mean = s1 @ p
         expected = np.sin(theta) * np.sin(phi) * np.sin(varphi)
         assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
-        var = (s1 ** 2) @ p - (s1 @ p).real ** 2
+        var = (s1**2) @ p - (s1 @ p).real ** 2
         expected = (
             8 * np.sin(theta) ** 2 * np.cos(2 * varphi) * np.sin(phi) ** 2
             - np.cos(2 * (theta - phi))
@@ -1739,17 +1739,17 @@ class TestTensorSample:
         dev._samples = dev.generate_samples()
         dev.sample(obs)
 
-        s1 = obs.eigvals
+        s1 = obs.get_eigvals()
         p = dev.marginal_prob(dev.probability(), wires=obs.wires)
 
         # s1 should only contain 1 and -1
-        assert np.allclose(s1 ** 2, 1, atol=tol_stochastic, rtol=0)
+        assert np.allclose(s1**2, 1, atol=tol_stochastic, rtol=0)
 
         mean = s1 @ p
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
         assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
-        var = (s1 ** 2) @ p - (s1 @ p).real ** 2
+        var = (s1**2) @ p - (s1 @ p).real ** 2
         expected = (
             3
             + np.cos(2 * phi) * np.cos(varphi) ** 2
@@ -1787,7 +1787,7 @@ class TestTensorSample:
         dev._samples = dev.generate_samples()
         dev.sample(obs)
 
-        s1 = obs.eigvals
+        s1 = obs.get_eigvals()
         p = dev.marginal_prob(dev.probability(), wires=obs.wires)
 
         # s1 should only contain the eigenvalues of
@@ -1809,7 +1809,7 @@ class TestTensorSample:
         )
         assert np.allclose(mean, expected, atol=tol_stochastic, rtol=0)
 
-        var = (s1 ** 2) @ p - (s1 @ p).real ** 2
+        var = (s1**2) @ p - (s1 @ p).real ** 2
         expected = (
             0.01
             * (
@@ -2021,7 +2021,7 @@ class TestApplyOps:
     """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
     gates in DefaultQubit."""
 
-    state = np.arange(2 ** 4).reshape((2, 2, 2, 2))
+    state = np.arange(2**4).reshape((2, 2, 2, 2))
     dev = qml.device("default.qubit", wires=4)
     single_qubit_ops = [
         (qml.PauliX, dev._apply_x),
@@ -2046,7 +2046,7 @@ class TestApplyOps:
         """Test if the application of single qubit operations is correct."""
         state_out = method(self.state, axes=[1], inverse=inverse)
         op = op(wires=[1])
-        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = op.inv().get_matrix() if inverse else op.get_matrix()
         state_out_einsum = np.einsum("ab,ibjk->iajk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
@@ -2055,7 +2055,7 @@ class TestApplyOps:
         """Test if the application of two qubit operations is correct."""
         state_out = method(self.state, axes=[0, 1])
         op = op(wires=[0, 1])
-        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = op.inv().get_matrix() if inverse else op.get_matrix()
         matrix = matrix.reshape((2, 2, 2, 2))
         state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
@@ -2066,7 +2066,7 @@ class TestApplyOps:
         reversed."""
         state_out = method(self.state, axes=[2, 1])
         op = op(wires=[2, 1])
-        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = op.inv().get_matrix() if inverse else op.get_matrix()
         matrix = matrix.reshape((2, 2, 2, 2))
         state_out_einsum = np.einsum("abcd,idck->ibak", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
@@ -2077,7 +2077,7 @@ class TestApplyOps:
         smaller than the target wire."""
         state_out = method(self.state, axes=[0, 2, 3])
         op = op(wires=[0, 2, 3])
-        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = op.inv().get_matrix() if inverse else op.get_matrix()
         matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,dkef->akbc", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
@@ -2088,7 +2088,7 @@ class TestApplyOps:
         greater than the target wire."""
         state_out = method(self.state, axes=[2, 1, 0])
         op = op(wires=[2, 1, 0])
-        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = op.inv().get_matrix() if inverse else op.get_matrix()
         matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,fedk->cbak", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
@@ -2099,7 +2099,7 @@ class TestApplyOps:
         and one control wire is greater than the target wire."""
         state_out = method(self.state, axes=[3, 1, 2])
         op = op(wires=[3, 1, 2])
-        matrix = op.inv().matrix if inverse else op.matrix
+        matrix = op.inv().get_matrix() if inverse else op.get_matrix()
         matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,kdfe->kacb", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
@@ -2259,7 +2259,7 @@ class TestApplyOperationUnit:
             res_state, res_mat, res_wires = history[0]
 
             assert np.allclose(res_state, test_state)
-            assert np.allclose(res_mat, np.diag(op.matrix))
+            assert np.allclose(res_mat, np.diag(op.get_matrix()))
             assert np.allclose(res_wires, wires)
 
     def test_apply_einsum_case(self, mocker, monkeypatch):
@@ -2273,11 +2273,10 @@ class TestApplyOperationUnit:
         # Redefine the S gate so that it is an example for a one-qubit gate
         # that is not registered in the diagonal_in_z_basis attribute
         class TestSGate(qml.operation.Operation):
-            matrix = np.array([[0, 1], [1, 0]])
             num_wires = 1
 
-            @classmethod
-            def _matrix(cls, *params):
+            @staticmethod
+            def compute_matrix(*params, **hyperparams):
                 return np.array([[1, 0], [0, 1j]])
 
         dev.operations.add("TestSGate")
@@ -2297,7 +2296,7 @@ class TestApplyOperationUnit:
             res_state, res_mat, res_wires = history[0]
 
             assert np.allclose(res_state, test_state)
-            assert np.allclose(res_mat, op.matrix)
+            assert np.allclose(res_mat, op.get_matrix())
             assert np.allclose(res_wires, wires)
 
     @pytest.mark.parametrize("inverse", [True, False])
@@ -2313,11 +2312,10 @@ class TestApplyOperationUnit:
         # more than two wires
         class TestToffoli(qml.operation.Operation):
             num_wires = 3
-            matrix = U_toffoli
 
-            @classmethod
-            def _matrix(cls, *params):
-                return cls.matrix
+            @staticmethod
+            def compute_matrix(*params, **hyperparams):
+                return U_toffoli
 
         dev.operations.add("TestToffoli")
         op = TestToffoli(wires=wires)
@@ -2340,7 +2338,7 @@ class TestApplyOperationUnit:
             res_state, res_mat, res_wires = history[0]
 
             assert np.allclose(res_state, test_state)
-            assert np.allclose(res_mat, op.matrix)
+            assert np.allclose(res_mat, op.get_matrix())
             assert np.allclose(res_wires, wires)
 
 

@@ -19,12 +19,14 @@ from collections import Counter, deque, defaultdict
 import contextlib
 import copy
 from threading import RLock
+import warnings
 
 import numpy as np
 
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
-from pennylane.operation import Sample
+from pennylane.operation import DecompositionUndefinedError
+from pennylane.measurements import Sample
 
 from .unwrap import UnwrapTape
 
@@ -83,8 +85,8 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
 
 
-class UnsupportedTapeOperationError(ValueError):
-    """An error raised when an unsupported operation is attempted using a
+class TapeError(ValueError):
+    """An error raised when an unsupported operation is attempted with a
     quantum tape."""
 
 
@@ -123,10 +125,10 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     .. code-block:: python
 
-        with JacobianTape() as tape:
+        with QuantumTape() as tape:
             qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
 
-            with JacobianTape() as tape2:
+            with QuantumTape() as tape2:
                 qml.Rot(0.543, 0.1, 0.4, wires=0)
 
             qml.CNOT(wires=[0, 'a'])
@@ -137,7 +139,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     >>> tape.operations
     [BasisState(array([1, 1]), wires=[0, 'a']),
-     <JacobianTape: wires=[0], params=3>,
+     <QuantumTape: wires=[0], params=3>,
      CNOT(wires=[0, 'a']),
      RY(0.2, wires=['a'])]
 
@@ -158,8 +160,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         # by default expand all objects
         stop_at = lambda obj: False
 
-    new_tape = tape.__class__()
-    new_tape.__bare__ = getattr(tape, "__bare__", tape.__class__)
+    new_tape = QuantumTape()
 
     # Check for observables acting on the same wire. If present, observables must be
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
@@ -177,7 +178,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         tape._ops.extend(rotations)
 
         for o, i in zip(diag_obs, tape._obs_sharing_wires_id):
-            new_m = qml.measure.MeasurementProcess(tape.measurements[i].return_type, obs=o)
+            new_m = qml.measurements.MeasurementProcess(tape.measurements[i].return_type, obs=o)
             tape._measurements[i] = new_m
 
     for queue in ("_prep", "_ops", "_measurements"):
@@ -188,7 +189,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
             if not expand_measurements:
                 # Measurements should not be expanded; treat measurements
                 # as a stopping condition
-                stop = stop or isinstance(obj, qml.measure.MeasurementProcess)
+                stop = stop or isinstance(obj, qml.measurements.MeasurementProcess)
 
             if stop:
                 # do not expand out the object; append it to the
@@ -196,11 +197,11 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 getattr(new_tape, queue).append(obj)
                 continue
 
-            if isinstance(obj, (qml.operation.Operation, qml.measure.MeasurementProcess)):
+            if isinstance(obj, (qml.operation.Operation, qml.measurements.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
-                except NotImplementedError:
+                except DecompositionUndefinedError:
                     # Object does not define an expansion; treat this as
                     # a stopping condition.
                     getattr(new_tape, queue).append(obj)
@@ -259,19 +260,11 @@ class QuantumTape(AnnotatedQueue):
     <pennylane.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
 
     Once constructed, the quantum tape can be executed directly on a supported
-    device:
+    device via the :func:`~.execute` function:
 
     >>> dev = qml.device("default.qubit", wires=[0, 'a'])
-
-    Execution can take place either using the in-place constructed parameters,
-
-    >>> tape.execute(dev)
-    [0.77750694]
-
-    or by providing parameters at run time:
-
-    >>> tape.execute(dev, params=[0.1, 0.1, 0.1])
-    [0.99003329]
+    >>> qml.execute([tape], dev, gradient_fn=None)
+    [array([0.77750694])]
 
     The trainable parameters of the tape can be explicitly set, and the values of
     the parameters modified in-place:
@@ -439,9 +432,14 @@ class QuantumTape(AnnotatedQueue):
                 else:
                     self._ops.append(obj)
 
-            elif isinstance(obj, qml.measure.MeasurementProcess):
-                # measurement process
-                self._measurements.append(obj)
+            elif isinstance(obj, qml.measurements.MeasurementProcess):
+
+                if obj.return_type == qml.measurements.MidMeasure:
+
+                    # TODO: for now, consider mid-circuit measurements as tape
+                    # operations such that the order of the operators in the
+                    # tape is correct
+                    self._ops.append(obj)
 
                 # attempt to infer the output dimension
                 if obj.return_type is qml.operation.Probability:
@@ -451,11 +449,21 @@ class QuantumTape(AnnotatedQueue):
                 elif obj.return_type is qml.operation.State:
                     continue  # the output_dim is worked out automatically
                 else:
-                    self._output_dim += 1
 
-                # check if any sampling is occuring
-                if obj.return_type is qml.operation.Sample:
-                    self.is_sampled = True
+                    # measurement process
+                    self._measurements.append(obj)
+
+                    # attempt to infer the output dimension
+                    if obj.return_type is qml.measurements.Probability:
+                        self._output_dim += 2 ** len(obj.wires)
+                    elif obj.return_type is qml.measurements.State:
+                        continue  # the output_dim is worked out automatically
+                    else:
+                        self._output_dim += 1
+
+                    # check if any sampling is occuring
+                    if obj.return_type is qml.measurements.Sample:
+                        self.is_sampled = True
 
         self._update()
 
@@ -536,10 +544,10 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
 
-                with JacobianTape() as tape2:
+                with QuantumTape() as tape2:
                     qml.Rot(0.543, 0.1, 0.4, wires=0)
 
                 qml.CNOT(wires=[0, 'a'])
@@ -550,7 +558,7 @@ class QuantumTape(AnnotatedQueue):
 
         >>> tape.operations
         [BasisState(array([1, 1]), wires=[0, 'a']),
-         <JacobianTape: wires=[0], params=3>,
+         <QuantumTape: wires=[0], params=3>,
          CNOT(wires=[0, 'a']),
          RY(0.2, wires=['a'])]
 
@@ -587,7 +595,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
                 qml.RX(0.432, wires=0)
                 qml.Rot(0.543, 0.1, 0.4, wires=0).inv()
@@ -663,7 +671,7 @@ class QuantumTape(AnnotatedQueue):
         for idx, op in enumerate(self._ops):
             try:
                 self._ops[idx] = op.adjoint()
-            except NotImplementedError:
+            except qml.operation.AdjointUndefinedError:
                 op.inverse = not op.inverse
 
         self._ops = list(reversed(self._ops))
@@ -706,21 +714,20 @@ class QuantumTape(AnnotatedQueue):
         automatically excluded from the Jacobian computation.
 
         The number of trainable parameters determines the number of parameters passed to
-        :meth:`~.set_parameters`, :meth:`~.execute`, and :meth:`~.JacobianTape.jacobian`,
-        and changes the default output size of methods :meth:`~.JacobianTape.jacobian` and
-        :meth:`~.get_parameters()`.
+        :meth:`~.set_parameters`, and changes the default output size of method :meth:`~.get_parameters()`.
 
         .. note::
 
-            Since the :meth:`~.JacobianTape.jacobian` method is not called for devices that support
-            native backpropagation (such as ``default.qubit.tf`` and ``default.qubit.autograd``),
-            this property contains no relevant information when using backpropagation to compute gradients.
+            For devices that support native backpropagation (such as
+            ``default.qubit.tf`` and ``default.qubit.autograd``), this
+            property contains no relevant information when using
+            backpropagation to compute gradients.
 
         **Example**
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -789,7 +796,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -836,7 +843,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -886,7 +893,7 @@ class QuantumTape(AnnotatedQueue):
 
         This function is meant to be used with the Probability measurement to
         determine how many outcomes there will be. With qubit based devices
-        we'll have two outcomes for each subsystem, with continuous variable
+        we'll have two outcomes for each subsystem. With continuous variable
         devices that impose a Fock cutoff the number of basis states per
         subsystem equals the cutoff value.
 
@@ -899,13 +906,13 @@ class QuantumTape(AnnotatedQueue):
         """
         cutoff = getattr(device, "cutoff", None)
         base = 2 if cutoff is None else cutoff
-        return base ** num_systems
+        return base**num_systems
 
     @staticmethod
     def _single_measurement_shape(measurement_process, device):
-        """Auxiliary function that determines the output shape of a tape with
-        a single measurement.
-        """
+        """Auxiliary function of get_output_shape that determines the output
+        shape of a tape with a single measurement."""
+
         shape = tuple()
 
         ret_type = measurement_process.return_type
@@ -914,7 +921,6 @@ class QuantumTape(AnnotatedQueue):
 
                 shape = measurement_process.shape
 
-            # TODO: consider CV cutoff
             elif ret_type == qml.operation.Probability:
                 len_wires = len(measurement_process.wires)
                 dim = QuantumTape._get_num_basis_states(len_wires, device)
@@ -940,6 +946,8 @@ class QuantumTape(AnnotatedQueue):
                         shape = (device.shots, len(device.wires))
 
         else:
+            # Shot vector was defined
+
             shot_vector = device._shot_vector
             num_shot_elements = sum([s.copies for s in shot_vector])
             if measurement_process.shape is not None:
@@ -959,17 +967,19 @@ class QuantumTape(AnnotatedQueue):
                         for shot_val in device._raw_shot_sequence
                     )
                 else:
-                    # TODO: revisit when qml.sample without an observable fully supports shot vectors
-                    raise UnsupportedTapeOperationError(
-                        "Getting the output shape of a tape returning samples along with a device with a shot vector is not supported."
+                    # TODO: revisit when qml.sample without an observable fully
+                    # supports shot vectors
+                    raise TapeError(
+                        "Getting the output shape of a tape returning samples along with "
+                        "a device with a shot vector is not supported."
                     )
 
         return shape
 
     @staticmethod
     def _multi_homogenous_measurement_shape(mps, device):
-        """Auxiliary function that determines the output shape of a tape with
-        multiple homogenous measurements.
+        """Auxiliary function of get_output_shape that determines the output
+        shape of a tape with multiple homogenous measurements.
 
         .. note::
 
@@ -979,7 +989,8 @@ class QuantumTape(AnnotatedQueue):
             by each probability measurement.
 
             Consider the `qml.probs(wires=[0]), qml.probs(wires=[1,2])`
-            multiple probability measurement as an example.
+            multiple probability measurement with an analytic device as an
+            example.
 
             The output shape will be a one element tuple `(6,)`, where the
             element `6` is equal to `2 ** 1 + 2 ** 2 = 6`. The base of each
@@ -993,7 +1004,7 @@ class QuantumTape(AnnotatedQueue):
         # first one
         ret_type = mps[0].return_type
         if ret_type == qml.operation.State:
-            raise UnsupportedTapeOperationError(
+            raise TapeError(
                 "Getting the output shape of a tape with multiple state measurements is not supported."
             )
 
@@ -1025,6 +1036,8 @@ class QuantumTape(AnnotatedQueue):
                 shape = (len(mps), device.shots)
 
         else:
+            # Shot vector was defined
+
             if ret_type in (qml.operation.Expectation, qml.operation.Variance):
                 num = sum(shottup.copies for shottup in shot_vector)
                 shape = (num, len(mps))
@@ -1045,7 +1058,11 @@ class QuantumTape(AnnotatedQueue):
                 else:
                     # There are a varying number of wires that the probability
                     # measurement processes act on
-                    shape = (sum(2 ** len(m.wires) for m in mps),)
+                    # TODO: revisit when issues with this case are resolved
+                    raise TapeError(
+                        "Getting the output shape of a tape with multiple probability measurements "
+                        "along with a device that defines a shot vector is not supported."
+                    )
 
             elif ret_type == qml.operation.Sample:
                 shape = []
@@ -1070,16 +1087,13 @@ class QuantumTape(AnnotatedQueue):
             device (~.Device): the device that will be used for the tape execution
 
         Raises:
-            UnsupportedTapeOperationError: raised for unsupported cases for
+            TapeError: raised for unsupported cases for
                 example when the tape contains heterogeneous measurements
 
         Returns:
             Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
             tape result
         """
-        if not self._measurements:
-            self._process_queue()
-
         output_shape = tuple()
 
         if len(self._measurements) == 1:
@@ -1089,7 +1103,7 @@ class QuantumTape(AnnotatedQueue):
             if num_measurements == 1:
                 output_shape = self._multi_homogenous_measurement_shape(self._measurements, device)
             else:
-                raise UnsupportedTapeOperationError(
+                raise TapeError(
                     "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
                 )
         return output_shape
@@ -1102,7 +1116,7 @@ class QuantumTape(AnnotatedQueue):
         results before executing the tape.
 
         Raises:
-            UnsupportedTapeOperationError: raised for unsupported cases for
+            TapeError: raised for unsupported cases for
                 example when the tape contains heterogeneous measurements
 
         Returns:
@@ -1177,7 +1191,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -1200,7 +1214,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -1235,7 +1249,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -1268,11 +1282,11 @@ class QuantumTape(AnnotatedQueue):
         rotation_gates = []
 
         for observable in self.observables:
+            # some observables do not have diagonalizing gates,
+            # in which case we just don't append any
             try:
-                # some observables do not have diagonalizing gates,
-                # in which case we just don't append any
                 rotation_gates.extend(observable.diagonalizing_gates())
-            except NotImplementedError:
+            except qml.operation.DiagGatesUndefinedError:
                 pass
 
         return rotation_gates
@@ -1497,7 +1511,7 @@ class QuantumTape(AnnotatedQueue):
     def data(self, params):
         self.set_parameters(params, trainable_only=False)
 
-    def copy(self, copy_operations=False, tape_cls=None):
+    def copy(self, copy_operations=False):
         """Returns a shallow copy of the quantum tape.
 
         Args:
@@ -1505,16 +1519,11 @@ class QuantumTape(AnnotatedQueue):
                 Otherwise, if False, the copied tape operations will simply be references
                 to the original tape operations; changing the parameters of one tape will likewise
                 change the parameters of all copies.
-            tape_cls (.QuantumTape): Cast the copied tape to a specific quantum tape subclass.
-                If not provided, the same subclass is used as the original tape.
 
         Returns:
             .QuantumTape: a shallow copy of the tape
         """
-        if tape_cls is None:
-            tape = self.__class__()
-        else:
-            tape = tape_cls()
+        tape = QuantumTape()
 
         if copy_operations:
             # Perform a shallow copy of all operations in the state prep, operation, and measurement
@@ -1556,6 +1565,11 @@ class QuantumTape(AnnotatedQueue):
     def execute(self, device, params=None):
         """Execute the tape on a quantum device.
 
+        .. warning::
+
+            Executing tapes using ``tape.execute(dev)`` is deprecated.
+            Please use the :func:`~.execute` function instead.
+
         Args:
             device (.Device): a PennyLane device
                 that can execute quantum operations and return measurement statistics
@@ -1566,7 +1580,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -1590,6 +1604,11 @@ class QuantumTape(AnnotatedQueue):
         >>> tape.get_parameters()
         [0.432, 0.543, 0.133]
         """
+        warnings.warn(
+            "Executing tapes using tape.execute(dev) is deprecated. "
+            "Please use the qml.execute([tape], dev) function instead."
+        )
+
         if params is None:
             params = self.get_parameters()
 
@@ -1602,6 +1621,11 @@ class QuantumTape(AnnotatedQueue):
         and does not support autodifferentiation.
 
         For more details on differentiable tape execution, see :meth:`~.execute`.
+
+        .. warning::
+
+            Executing tapes using ``tape.execute(dev)`` is deprecated.
+            Please use the :func:`~.execute` function instead.
 
         Args:
             device (~.Device): a PennyLane device

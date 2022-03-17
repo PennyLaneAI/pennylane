@@ -22,11 +22,12 @@ representation of Pauli words and applications, see:
 """
 from functools import reduce
 
+import numpy as np
+
 import pennylane as qml
 from pennylane import PauliX, PauliY, PauliZ, Identity
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
-import numpy as np
 
 # To make this quicker later on
 ID_MAT = np.eye(2)
@@ -426,7 +427,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
         raise TypeError(f"Input to string_to_pauli_word must be string, obtained {pauli_string}")
 
     # String can only consist of I, X, Y, Z
-    if any(char not in character_map.keys() for char in pauli_string):
+    if any(char not in character_map for char in pauli_string):
         raise ValueError(
             "Invalid characters encountered in string_to_pauli_word "
             f"string {pauli_string}. Permitted characters are 'I', 'X', 'Y', and 'Z'"
@@ -444,7 +445,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
 
     # Special case: all-identity Pauli
     if pauli_string == "I" * len(wire_map):
-        first_wire = list(wire_map.keys())[0]
+        first_wire = list(wire_map)[0]
         return Identity(first_wire)
 
     pauli_word = None
@@ -506,7 +507,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
 
     # If there is only a single qubit, we can return the matrix directly
     if n_qubits == 1:
-        return pauli_word.matrix
+        return pauli_word.get_matrix()
 
     # There may be more than one qubit in the Pauli but still only
     # one of them with anything acting on it, so take that into account
@@ -514,7 +515,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
 
     # Special case: the identity Pauli
     if pauli_names == ["Identity"]:
-        return np.eye(2 ** n_qubits)
+        return np.eye(2**n_qubits)
 
     # If there is more than one qubit, we must go through the wire map wire
     # by wire and pick out the relevant matrices
@@ -523,7 +524,8 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     for wire_label, wire_idx in wire_map.items():
         if wire_label in pauli_word.wires.labels:
             op_idx = pauli_word.wires.labels.index(wire_label)
-            pauli_mats[wire_idx] = getattr(qml, pauli_names[op_idx]).matrix
+            # compute_matrix() only works because we work with Paulis here
+            pauli_mats[wire_idx] = getattr(qml, pauli_names[op_idx]).compute_matrix()
 
     return reduce(np.kron, pauli_mats)
 

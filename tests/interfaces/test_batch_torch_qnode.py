@@ -20,7 +20,7 @@ from torch.autograd.functional import hessian, jacobian
 
 import pennylane as qml
 from pennylane import qnode, QNode
-from pennylane.tape import JacobianTape
+from pennylane.tape import QuantumTape
 
 
 qubit_device_and_diff_method = [
@@ -105,23 +105,20 @@ class TestQNode:
         y = torch.tensor([0.2, 0.3], requires_grad=True)
         z = torch.tensor(0.4, requires_grad=True)
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device(dev_name, wires=2)
 
-        @qnode(dev, interface="torch")
+        @qnode(dev, interface="torch", diff_method=diff_method, mode=mode)
         def circuit(p1, p2=y, **kwargs):
             qml.RX(p1, wires=0)
             qml.RY(p2[0] * p2[1], wires=1)
             qml.RX(kwargs["p3"], wires=0)
             qml.CNOT(wires=[0, 1])
-            return qml.probs(wires=0), qml.var(qml.PauliZ(1))
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
 
         circuit(p1=x, p3=z)
 
         result = qml.draw(circuit)(p1=x, p3=z)
-        expected = """\
- 0: ──RX(0.1)───RX(0.4)──╭C──┤ Probs  
- 1: ──RY(0.06)───────────╰X──┤ Var[Z] 
-"""
+        expected = "0: ──RX(0.10)──RX(0.40)─╭C─┤  <Z>\n" "1: ──RY(0.06)───────────╰X─┤  <Z>"
 
         assert result == expected
 
@@ -305,14 +302,14 @@ class TestQNode:
         def circuit(a, b, c):
             qml.RY(a * c, wires=0)
             qml.RZ(b, wires=0)
-            qml.RX(c + c ** 2 + torch.sin(a), wires=0)
+            qml.RX(c + c**2 + torch.sin(a), wires=0)
             return qml.expval(qml.PauliZ(0))
 
         res = circuit(a, b, c)
 
         if diff_method == "finite-diff":
             assert circuit.qtape.trainable_params == [0, 2]
-            assert circuit.qtape.get_parameters() == [a * c, c + c ** 2 + torch.sin(a)]
+            assert circuit.qtape.get_parameters() == [a * c, c + c**2 + torch.sin(a)]
 
         res.backward()
 
@@ -388,7 +385,7 @@ class TestQNode:
                 theta, phi, lam = self.data
                 wires = self.wires
 
-                with JacobianTape() as tape:
+                with QuantumTape() as tape:
                     qml.Rot(lam, theta, -lam, wires=wires)
                     qml.PhaseShift(phi + lam, wires=wires)
 
@@ -1036,13 +1033,13 @@ class TestCV:
             return qml.var(qml.NumberOperator(0))
 
         res = circuit(n, a)
-        expected = n ** 2 + n + torch.abs(a) ** 2 * (1 + 2 * n)
+        expected = n**2 + n + torch.abs(a) ** 2 * (1 + 2 * n)
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
         # circuit jacobians
         res.backward()
         res = torch.tensor([n.grad, a.grad])
-        expected = torch.tensor([[2 * a ** 2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
+        expected = torch.tensor([[2 * a**2 + 2 * n + 1, 2 * a * (2 * n + 1)]])
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
 

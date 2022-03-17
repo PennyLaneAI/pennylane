@@ -39,11 +39,11 @@ def test_get_unitary_matrix_nonparam_1qubit_ops(op, wire):
     matrix = get_matrix(wire)
 
     if wire == 0:
-        expected_matrix = np.kron(op(wires=wire).matrix, np.eye(4))
+        expected_matrix = np.kron(op(wires=wire).get_matrix(), np.eye(4))
     if wire == 1:
-        expected_matrix = np.kron(np.eye(2), np.kron(op(wires=wire).matrix, np.eye(2)))
+        expected_matrix = np.kron(np.eye(2), np.kron(op(wires=wire).get_matrix(), np.eye(2)))
     if wire == 2:
-        expected_matrix = np.kron(np.eye(4), op(wires=wire).matrix)
+        expected_matrix = np.kron(np.eye(4), op(wires=wire).get_matrix())
 
     assert np.allclose(matrix, expected_matrix)
 
@@ -116,7 +116,9 @@ def test_get_unitary_matrix_CRX():
     # do not perform controlled rotation
     teststate0 = reduce(np.kron, [state1, state1, state0])
 
-    expected_state1 = reduce(np.kron, [qml.RX(testangle, wires=1).matrix @ state1, state1, state1])
+    expected_state1 = reduce(
+        np.kron, [qml.RX(testangle, wires=1).get_matrix() @ state1, state1, state1]
+    )
     expected_state0 = teststate0
 
     get_matrix = get_unitary_matrix(testcircuit, wires)
@@ -210,9 +212,11 @@ def test_get_unitary_matrix_input_tape():
 
     matrix = get_matrix()
 
-    part_expected_matrix = np.kron(qml.RY(0.543, wires=0).matrix @ qml.RX(0.432, wires=0).matrix, I)
+    part_expected_matrix = np.kron(
+        qml.RY(0.543, wires=0).get_matrix() @ qml.RX(0.432, wires=0).get_matrix(), I
+    )
 
-    expected_matrix = np.kron(I, qml.RX(0.133, wires=1).matrix) @ CNOT @ part_expected_matrix
+    expected_matrix = np.kron(I, qml.RX(0.133, wires=1).get_matrix()) @ CNOT @ part_expected_matrix
 
     assert np.allclose(matrix, expected_matrix)
 
@@ -228,12 +232,16 @@ def test_get_unitary_matrix_input_tape_wireorder():
     get_matrix = get_unitary_matrix(tape, wire_order=[1, 0])
     matrix = get_matrix()
 
-    # CNOT where the second wire is the control wire, as opposed to qml.CNOT.matrix
+    # CNOT where the second wire is the control wire, as opposed to qml.CNOT.get_matrix()
     CNOT10 = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
 
-    part_expected_matrix = np.kron(I, qml.RY(0.543, wires=0).matrix @ qml.RX(0.432, wires=0).matrix)
+    part_expected_matrix = np.kron(
+        I, qml.RY(0.543, wires=0).get_matrix() @ qml.RX(0.432, wires=0).get_matrix()
+    )
 
-    expected_matrix = np.kron(qml.RX(0.133, wires=1).matrix, I) @ CNOT10 @ part_expected_matrix
+    expected_matrix = (
+        np.kron(qml.RX(0.133, wires=1).get_matrix(), I) @ CNOT10 @ part_expected_matrix
+    )
 
     assert np.allclose(matrix, expected_matrix)
 
@@ -256,7 +264,7 @@ def test_get_unitary_matrix_input_QNode():
 
     expected_matrix = (
         reduce(np.kron, [I, I, I, I, X])
-        @ reduce(np.kron, [I, I, qml.CRZ(0.2, wires=[2, 3]).matrix, I])
+        @ reduce(np.kron, [I, I, qml.CRZ(0.2, wires=[2, 3]).get_matrix(), I])
         @ reduce(np.kron, [I, Y, I, I, I])
         @ reduce(np.kron, [CNOT, I, I, I])
         @ reduce(np.kron, [Z, I, I, I, I])
@@ -285,7 +293,7 @@ def test_get_unitary_matrix_input_QNode_wireorder():
 
     expected_matrix = (
         reduce(np.kron, [I, I, X, I, I])
-        @ reduce(np.kron, [I, I, I, qml.CRZ(0.2, wires=[2, 3]).matrix])
+        @ reduce(np.kron, [I, I, I, qml.CRZ(0.2, wires=[2, 3]).get_matrix()])
         @ reduce(np.kron, [Y, I, I, I, I])
         @ reduce(np.kron, [CNOT10, I, I, I])
         @ reduce(np.kron, [I, Z, I, I, I])
@@ -341,8 +349,10 @@ def test_get_unitary_matrix_interface_tf():
 
     # expected matrix
     theta_np = theta.numpy()
-    matrix1 = np.kron(qml.RZ(beta, wires=0).matrix, np.kron(qml.RZ(theta_np[0], wires=1).matrix, I))
-    matrix2 = np.kron(I, qml.CRY(theta_np[1], wires=[1, 2]).matrix)
+    matrix1 = np.kron(
+        qml.RZ(beta, wires=0).get_matrix(), np.kron(qml.RZ(theta_np[0], wires=1).get_matrix(), I)
+    )
+    matrix2 = np.kron(I, qml.CRY(theta_np[1], wires=[1, 2]).get_matrix())
     expected_matrix = matrix2 @ matrix1
 
     assert np.allclose(matrix, expected_matrix)
@@ -373,9 +383,9 @@ def test_get_unitary_matrix_interface_torch():
 
     # expected matrix
     matrix1 = np.kron(
-        qml.RZ(theta[0], wires=0).matrix, np.kron(qml.RZ(theta[1], wires=1).matrix, I)
+        qml.RZ(theta[0], wires=0).get_matrix(), np.kron(qml.RZ(theta[1], wires=1).get_matrix(), I)
     )
-    matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix)
+    matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).get_matrix())
     expected_matrix = matrix2 @ matrix1
 
     assert np.allclose(matrix, expected_matrix)
@@ -404,9 +414,9 @@ def test_get_unitary_matrix_interface_autograd():
 
     # expected matrix
     matrix1 = np.kron(
-        qml.RZ(theta[0], wires=0).matrix, np.kron(qml.RZ(theta[1], wires=1).matrix, I)
+        qml.RZ(theta[0], wires=0).get_matrix(), np.kron(qml.RZ(theta[1], wires=1).get_matrix(), I)
     )
-    matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix)
+    matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).get_matrix())
     expected_matrix = matrix2 @ matrix1
 
     assert np.allclose(matrix, expected_matrix)
@@ -442,9 +452,9 @@ def test_get_unitary_matrix_interface_jax():
 
     # expected matrix
     matrix1 = np.kron(
-        qml.RZ(theta[0], wires=0).matrix, np.kron(qml.RZ(theta[1], wires=1).matrix, I)
+        qml.RZ(theta[0], wires=0).get_matrix(), np.kron(qml.RZ(theta[1], wires=1).get_matrix(), I)
     )
-    matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix)
+    matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).get_matrix())
     expected_matrix = matrix2 @ matrix1
 
     assert np.allclose(matrix, expected_matrix)
