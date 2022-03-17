@@ -38,7 +38,6 @@ from .state_preparation import *
 from .hamiltonian import Hamiltonian
 from ..identity import Identity
 from ..snapshot import Snapshot
-from ..math.controlled_ops import *
 
 ops = {
     "Identity",
