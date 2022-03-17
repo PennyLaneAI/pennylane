@@ -3042,7 +3042,7 @@ class TestKaHyPar:
         assert len(comm_graph.edges) == len(cut_edges)
 
     @pytest.mark.parametrize("config_path", [None, config_path])
-    @pytest.mark.parametrize("fragment_weights", [None, [100, 100]])
+    @pytest.mark.parametrize("fragment_weights", [None, [350, 210]])
     @pytest.mark.parametrize("imbalance", [None, 0.5])
     def test_kahypar_cut_options(self, imbalance, fragment_weights, config_path):
         """Test vanilla cutting with kahypar"""

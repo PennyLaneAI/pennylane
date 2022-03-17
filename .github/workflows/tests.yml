@@ -61,8 +61,7 @@ jobs:
         run: pip3 install jax jaxlib
 
       - name: Install KaHyPar
-        if: matrix.config.python-version != '3.10'
-        run: pip3 install kahypar==1.1.6
+        run: pip3 install kahypar==1.1.7
 
       - name: Install PennyLane
         run: |
