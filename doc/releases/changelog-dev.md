@@ -24,6 +24,9 @@
 * Operators now have a `has_matrix` property denoting whether or not the operator defines a matrix.
   [(#2331)](https://github.com/PennyLaneAI/pennylane/pull/2331)
   
+* Circuit cutting now performs expansion to search for wire cuts in contained operations or tapes.
+  [(#2340)](https://github.com/PennyLaneAI/pennylane/pull/2340)
+
 <h3>Deprecations</h3>
 
 <h3>Breaking changes</h3>
@@ -51,4 +54,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Anthony Hayes, Josh Izaac, Christina Lee.
+Karim Alaa El-Din, Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee.
