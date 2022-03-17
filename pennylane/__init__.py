@@ -61,7 +61,6 @@ from pennylane.transforms import (
     cut_circuit,
     draw,
     draw_mpl,
-    ControlledOperation,
     compile,
     ctrl,
     cond,

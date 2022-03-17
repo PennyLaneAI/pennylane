@@ -165,7 +165,7 @@ from .batch_input import batch_input
 from .classical_jacobian import classical_jacobian
 from .condition import cond, Conditional
 from .compile import compile
-from .control import ControlledOperation, ctrl
+from .control import ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
 from .draw import draw, draw_mpl, draw_old

@@ -288,9 +288,6 @@ class PauliX(Observable, Operation):
     def adjoint(self):
         return PauliX(wires=self.wires)
 
-    def _controlled(self, wire):
-        CNOT(wires=Wires(wire) + self.wires)
-
     def single_qubit_rot_angles(self):
         # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
         return [np.pi / 2, np.pi, -np.pi / 2]
@@ -427,9 +424,6 @@ class PauliY(Observable, Operation):
     def adjoint(self):
         return PauliY(wires=self.wires)
 
-    def _controlled(self, wire):
-        CY(wires=Wires(wire) + self.wires)
-
     def single_qubit_rot_angles(self):
         # Y = RZ(0) RY(\pi) RZ(0)
         return [0.0, np.pi, 0.0]
@@ -553,9 +547,6 @@ class PauliZ(Observable, Operation):
 
     def adjoint(self):
         return PauliZ(wires=self.wires)
-
-    def _controlled(self, wire):
-        CZ(wires=Wires(wire) + self.wires)
 
     def single_qubit_rot_angles(self):
         # Z = RZ(\pi) RY(0) RZ(0)
@@ -951,9 +942,6 @@ class SWAP(Operation):
     def adjoint(self):
         return SWAP(wires=self.wires)
 
-    def _controlled(self, wire):
-        CSWAP(wires=wire + self.wires)
-
 
 class ISWAP(Operation):
     r"""ISWAP(wires)
@@ -1256,9 +1244,6 @@ class Barrier(Operation):
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "||"
-
-    def _controlled(self, _):
-        return Barrier(wires=self.wires)
 
     def adjoint(self, do_queue=False):
         return Barrier(wires=self.wires)
