@@ -17,7 +17,7 @@
     [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
   - New functions are added for building fermionic and qubit observables
     [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
-  - New module is created for hosting openfermion to pennylane observable conversion functions
+  - A new module is created for hosting openfermion to pennylane observable conversion functions
     [(#2199)](https://github.com/PennyLaneAI/pennylane/pull/2199)
   - Expressive names are used for the Hartree-Fock solver functions
     [(#2272)](https://github.com/PennyLaneAI/pennylane/pull/2272)
