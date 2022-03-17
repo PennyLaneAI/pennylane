@@ -31,9 +31,11 @@ jobs:
       - name: Check for rc branch
         run: |
           VERSION=$(python setup.py --version)
-          if git ls-remote --quiet --exit-code origin "refs/heads/v${VERSION%.dev0}-rc0"; then
+          IFS=. read MAJ MIN PAT <<< "${VERSION%.dev0}"
+          RC_BRANCH="v${MAJ}.$((MIN-1)).${PAT}-rc0"
+          if git ls-remote --exit-code origin "refs/heads/$RC_BRANCH"; then
             echo "branch_exists=true" >> $GITHUB_ENV
-            echo "rc_branch=v${VERSION%.dev0}-rc0" >> $GITHUB_ENV
+            echo "rc_branch=$RC_BRANCH" >> $GITHUB_ENV
           else
             echo "branch_exists=false" >> $GITHUB_ENV
           fi
@@ -47,6 +49,9 @@ jobs:
           BRANCH="rc_$(date +'%Y-%m-%d-%H-%M-%S')"
           echo "tmp_branch=$BRANCH" >> $GITHUB_ENV
           git checkout -b "$BRANCH"
+          git checkout master -- pennylane/_version.py
+          git checkout master -- doc/releases/changelog-dev.md
+          git commit -m "exclude files from pr"
           git push --set-upstream origin "$BRANCH"
 
       # Create PR to master
