@@ -439,10 +439,10 @@ class TestTensorExpval:
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize(
-        "obs, permuted_obs",
+        "base_obs, permuted_obs",
         list(zip(obs_lst, obs_permuted_lst)),
     )
-    def test_wire_order_in_tensor_prod_observables(self, device, obs, permuted_obs, tol, skip_if):
+    def test_wire_order_in_tensor_prod_observables(self, device, base_obs, permuted_obs, tol, skip_if):
         """Test that when given a tensor observable the expectation value is the same regardless of how the
         observable is written, provided the wires it acts on are the same.
 
@@ -1274,10 +1274,10 @@ class TestTensorVar:
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
     @pytest.mark.parametrize(
-        "obs, permuted_obs",
+        "base_obs, permuted_obs",
         list(zip(obs_lst, obs_permuted_lst)),
     )
-    def test_wire_order_in_tensor_prod_observables(self, device, obs, permuted_obs, tol, skip_if):
+    def test_wire_order_in_tensor_prod_observables(self, device, base_obs, permuted_obs, tol, skip_if):
         """Test that when given a tensor observable the variance is the same regardless of how the
         observable is written, provided the wires it acts on are the same.
 
