@@ -85,7 +85,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
 
     # make sure every wire is present in coupling map
     if any(wire not in coupling_graph.nodes for wire in tape.wires):
-        wires = [w for w in tape.wires]
+        wires = tape.wires.tolist()
         raise ValueError(
             f"Not all wires present in coupling map! wires: {wires}, coupling map: {coupling_graph.nodes}"
         )
