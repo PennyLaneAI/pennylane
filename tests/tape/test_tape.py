@@ -291,23 +291,23 @@ class TestConstruction:
 
         target_wire = qml.wires.Wires(1)
 
-        assert len(tape._circuit) == 5
-        assert tape._circuit[0].return_type == qml.measurements.MidMeasure
+        assert len(tape.circuit) == 5
+        assert tape.circuit[0].return_type == qml.measurements.MidMeasure
 
-        assert isinstance(tape._circuit[1], qml.transforms.condition.Conditional)
-        assert isinstance(tape._circuit[1].then_op, qml.PauliX)
-        assert tape._circuit[1].then_op.wires == target_wire
+        assert isinstance(tape.circuit[1], qml.transforms.condition.Conditional)
+        assert isinstance(tape.circuit[1].then_op, qml.PauliX)
+        assert tape.circuit[1].then_op.wires == target_wire
 
-        assert isinstance(tape._circuit[2], qml.transforms.condition.Conditional)
-        assert isinstance(tape._circuit[2].then_op, qml.RY)
-        assert tape._circuit[2].then_op.wires == target_wire
-        assert tape._circuit[2].then_op.data == [r]
+        assert isinstance(tape.circuit[2], qml.transforms.condition.Conditional)
+        assert isinstance(tape.circuit[2].then_op, qml.RY)
+        assert tape.circuit[2].then_op.wires == target_wire
+        assert tape.circuit[2].then_op.data == [r]
 
-        assert isinstance(tape._circuit[3], qml.transforms.condition.Conditional)
-        assert isinstance(tape._circuit[3].then_op, qml.PauliZ)
-        assert tape._circuit[3].then_op.wires == target_wire
+        assert isinstance(tape.circuit[3], qml.transforms.condition.Conditional)
+        assert isinstance(tape.circuit[3].then_op, qml.PauliZ)
+        assert tape.circuit[3].then_op.wires == target_wire
 
-        assert tape._circuit[4] is terminal_measurement
+        assert tape.circuit[4] is terminal_measurement
 
 
 class TestIteration:
