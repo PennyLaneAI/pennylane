@@ -41,36 +41,6 @@ from pennylane.measurements import (
 )
 
 
-obs_lst = [
-    qml.PauliX(wires=0) @ qml.PauliY(wires=1),
-    qml.PauliX(wires=1) @ qml.PauliY(wires=0),
-    qml.PauliX(wires=1) @ qml.PauliZ(wires=2),
-    qml.PauliX(wires=2) @ qml.PauliZ(wires=1),
-    qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2),
-    qml.PauliZ(wires=0) @ qml.PauliX(wires=1) @ qml.PauliY(wires=2),
-]
-
-obs_permuted_lst = [
-    qml.PauliY(wires=1) @ qml.PauliX(wires=0),
-    qml.PauliY(wires=0) @ qml.PauliX(wires=1),
-    qml.PauliZ(wires=2) @ qml.PauliX(wires=1),
-    qml.PauliZ(wires=1) @ qml.PauliX(wires=2),
-    qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1),
-    qml.PauliX(wires=1) @ qml.PauliY(wires=2) @ qml.PauliZ(wires=0),
-]
-
-
-label_maps = [[0, 1, 2], ["a", "b", "c"], ["beta", "alpha", "gamma"], [3, "beta", "a"]]
-
-
-def sub_routine(label_map):
-    qml.Hadamard(wires=label_map[0])
-    qml.CNOT(wires=[label_map[0], label_map[1]])
-    qml.RX(0.12, wires=label_map[1])
-    qml.CNOT(wires=[label_map[1], label_map[2]])
-    qml.RY(3.45, wires=label_map[2])
-
-
 @pytest.mark.parametrize(
     "return_type, value",
     [
@@ -147,41 +117,6 @@ class TestExpval:
 
         circuit()
 
-    @pytest.mark.parametrize(
-        "obs, permuted_obs",
-        [(obs, permuted_obs) for obs, permuted_obs in zip(obs_lst, obs_permuted_lst)]
-    )
-    def test_wire_order_in_tensor_prod_observables(self, obs, permuted_obs, tol):
-        dev = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev)
-        def circ(obs):
-            sub_routine(label_map=range(3))
-            return qml.expval(obs)
-
-        assert np.allclose(circ(obs), circ(permuted_obs), atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("label_map", label_maps)
-    def test_wire_label_in_tensor_prod_observables(self, label_map, tol):
-        dev = qml.device("default.qubit", wires=3)
-        dev_custom_labels = qml.device("default.qubit", wires=label_map)
-
-        def circ(wire_labels):
-            sub_routine(wire_labels)
-            return qml.expval(
-                qml.PauliX(wire_labels[0]) @ qml.PauliY(wire_labels[1]) @ qml.PauliZ(wire_labels[2])
-            )
-
-        circ_base_label = qml.QNode(circ, device=dev)
-        circ_custom_label = qml.QNode(circ, device=dev_custom_labels)
-
-        assert np.allclose(
-            circ_base_label(wire_labels=range(3)),
-            circ_custom_label(wire_labels=label_map),
-            atol=tol,
-            rtol=0,
-        )
-
 
 class TestVar:
     """Tests for the var function"""
@@ -225,41 +160,6 @@ class TestVar:
             return res
 
         circuit()
-
-    @pytest.mark.parametrize(
-        "obs, permuted_obs",
-        [(obs, permuted_obs) for obs, permuted_obs in zip(obs_lst, obs_permuted_lst)]
-    )
-    def test_wire_order_in_tensor_prod_observables(self, obs, permuted_obs, tol):
-        dev = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev)
-        def circ(obs):
-            sub_routine(label_map=range(3))
-            return qml.var(obs)
-
-        assert np.allclose(circ(obs), circ(permuted_obs), atol=tol, rtol=0)
-
-    @pytest.mark.parametrize("label_map", label_maps)
-    def test_wire_label_in_tensor_prod_observables(self, label_map, tol):
-        dev = qml.device("default.qubit", wires=3)
-        dev_custom_labels = qml.device("default.qubit", wires=label_map)
-
-        def circ(wire_labels):
-            sub_routine(wire_labels)
-            return qml.var(
-                qml.PauliX(wire_labels[0]) @ qml.PauliY(wire_labels[1]) @ qml.PauliZ(wire_labels[2])
-            )
-
-        circ_base_label = qml.QNode(circ, device=dev)
-        circ_custom_label = qml.QNode(circ, device=dev_custom_labels)
-
-        assert np.allclose(
-            circ_base_label(wire_labels=range(3)),
-            circ_custom_label(wire_labels=label_map),
-            atol=tol,
-            rtol=0,
-        )
 
 
 class TestSample:

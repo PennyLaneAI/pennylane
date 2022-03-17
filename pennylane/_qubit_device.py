@@ -108,14 +108,44 @@ class QubitDevice(Device):
     def _permute_wires(self, observable):
         """ Given an observable which acts on multiple wires, permute the wires to
         be consistent with the device wire order.
+
+        Suppose we are given an observable :math:`\hat{O} = \Identity \otimes \Identity \otimes \hat{Z}`.
+        This observable can be represented in many ways:
+
+        .. code::
+            O_1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
+            O_2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
+
+        Notice that while the explicit tensor product matrix representation of :code:`O_1` and :code:`O_2` is
+        different, the underlying operator is identical due to the wire labeling. If we wish to compute the
+        expectation value of such an observable, we must ensure it is identical in both cases. To facilitate this,
+        we permute the wires in our state vector such that they are consistent with this swapping of order in the
+        tensor observable.
+
+        .. code::
+            >>> print(0_1.wires)
+            <Wires = [0, 1, 2]>
+            >>> print(O_2.wires)
+            <Wires = [2, 0, 1]>
+
+        We might naively think that we must permute our state vector to match the wire order of our observable.
+        We must be careful and realize that the observable wire order DOES NOT contain the same permutation as the
+        observables themselves. If we directly compare :code:`O_1` and :code:`O_2`, we see that each sub-observable
+        was shifted one position forward (i.e 0 --> 1, 1 --> 2, 2 --> 0).
+
+        Thus, the correct wire ordering should be :code:`permuted_wires = <Wires = [1, 2, 0]>`.
+
+        This function uses the observable wires and the global device wire ordering in order to determine the
+        permutation of the wires in the observable required such that if our quantum state vector is
+        permuted accordingly then the amplitudes of the state will match the matrix representation of the observable.
+
+        Args:
+            observable (Observable): the observable whose wires are to be permuted.
+
+        Returns:
+            permuted_wires (Wires): permuted wires object.
         """
-
-        # one must be careful to realize that the observable wire order DOES NOT contain the same permutation
-        # of wire labels and instead, one must compute the permutation which maps the observable wire order back
-        # to the device wire order. This permutation, when applied to the probability vector will match the eigvals
-        # and ultimately compute the correct exp_val or variance
-
-        ordered_obs_wire_lst = self.order_wires(observable.wires).tolist()
+        ordered_obs_wire_lst = self.order_wires(observable.wires).tolist()  # order according to device wire order
 
         mapped_wires = self.map_wires(observable.wires).tolist()
         permutation = np.argsort(mapped_wires)  # extract permutation via argsort
