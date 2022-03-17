@@ -50,35 +50,7 @@ def _is_observable(x):
         bool: True iff x is an observable
     """
     return getattr(x, "return_type", None) is not None
-
-
-def _list_at_index_or_none(ls, idx):
-    """Return the element of a list at the given index if it exists, return None otherwise.
-
-    Args:
-        ls (list[object]): The target list
-        idx (int): The target index
-
-    Returns:
-        Union[object,NoneType]: The element at the target index or None
-    """
-    if len(ls) > idx:
-        return ls[idx]
-
-    return None
-
-
-def _is_returned_observable(op):
-    """Helper for the condition of having an observable or
-    measurement process in the return statement.
-
-    Returns:
-        bool: whether or not the observable or measurement process is in the
-        return statement
-    """
-    is_obs = isinstance(op, (qml.operation.Observable, qml.measurements.MeasurementProcess))
-    return is_obs and op.return_type is not None
-
+    
 
 Layer = namedtuple("Layer", ["ops", "param_inds"])
 """Parametrized layer of the circuit.
