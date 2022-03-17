@@ -2691,6 +2691,7 @@ class TestCutCircuitTransformValidation:
         to be cut"""
 
         with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliZ(1))
 
@@ -2700,14 +2701,18 @@ class TestCutCircuitTransformValidation:
     def test_no_measurements_raises(self):
         """Tests if a ValueError is raised when a tape with no measurement is requested
         to be cut"""
+        with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
+
         with pytest.raises(ValueError, match="The circuit cutting workflow only supports circuits"):
-            qcut.cut_circuit(qml.tape.QuantumTape())
+            qcut.cut_circuit(tape)
 
     def test_non_expectation_raises(self):
         """Tests if a ValueError is raised when a tape with measurements that are not expectation
         values is requested to be cut"""
 
         with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
             qml.var(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="workflow only supports circuits with expectation"):
@@ -2716,6 +2721,7 @@ class TestCutCircuitTransformValidation:
     def test_fail_import(self, monkeypatch):
         """Test if an ImportError is raised when opt_einsum is requested but not installed"""
         with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
             qml.expval(qml.PauliZ(0))
 
         with monkeypatch.context() as m:
@@ -2730,8 +2736,83 @@ class TestCutCircuitTransformValidation:
         with qml.tape.QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="to a circuit without any cuts"):
+        with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
             qcut.cut_circuit(tape)
+
+
+class TestCutCircuitExpansion:
+    """Test of expansion in the cut_circuit function"""
+
+    def test_no_expansion(self, mocker):
+        """Test if no/trivial expansion occurs if WireCut operations are already present in the
+        tape"""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            qml.WireCut(wires=0)
+            qml.RY(0.4, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        spy = mocker.spy(qcut.cut_circuit, "expand_fn")
+        qcut.cut_circuit(tape, device_wires=[0])
+        spy.assert_called_once()
+
+    def test_expansion(self, mocker):
+        """Test if expansion occurs if WireCut operations are present in a nested tape"""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            with qml.tape.QuantumTape() as _:
+                qml.WireCut(wires=0)
+            qml.RY(0.4, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        spy = mocker.spy(qcut.cut_circuit, "expand_fn")
+        qcut.cut_circuit(tape, device_wires=[0])
+
+        assert spy.call_count == 2
+
+    def test_expansion_error(self):
+        """Test if a ValueError is raised if expansion continues beyond the maximum depth"""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            with qml.tape.QuantumTape() as _:
+                with qml.tape.QuantumTape() as __:
+                    qml.WireCut(wires=0)
+            qml.RY(0.4, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
+            qcut.cut_circuit(tape, device_wires=[0], max_depth=1)
+
+    def test_expansion_ttn(self, mocker):
+        """Test if wire cutting is compatible with the tree tensor network operation"""
+
+        def block(weights, wires):
+            qml.CNOT(wires=[wires[0], wires[1]])
+            qml.RY(weights[0], wires=wires[0])
+            qml.RY(weights[1], wires=wires[1])
+            qml.WireCut(wires=wires[1])
+
+        n_wires = 4
+        n_block_wires = 2
+        n_params_block = 2
+        n_blocks = qml.TTN.get_n_blocks(range(n_wires), n_block_wires)
+        template_weights = [[0.1, -0.3]] * n_blocks
+
+        dev_cut = qml.device("default.qubit", wires=2)
+        dev_big = qml.device("default.qubit", wires=4)
+
+        def circuit(template_weights):
+            qml.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)
+            return qml.expval(qml.PauliZ(wires=n_wires - 1))
+
+        qnode = qml.QNode(circuit, dev_big)
+        qnode_cut = qcut.cut_circuit(qml.QNode(circuit, dev_cut))
+
+        spy = mocker.spy(qcut.cut_circuit, "expand_fn")
+        res = qnode_cut(template_weights)
+        assert spy.call_count == 2
+
+        assert np.isclose(res, qnode(template_weights))
 
 
 class TestCutStrategy:
