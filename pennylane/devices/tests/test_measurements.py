@@ -461,9 +461,9 @@ class TestTensorExpval:
         skip_if(dev, {"supports_tensor_observables": False})
 
         @qml.qnode(dev)
-        def circ(obs):
+        def circ(ob):
             sub_routine(label_map=range(3))
-            return qml.expval(obs)
+            return qml.expval(ob)
 
         assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
 
@@ -1296,9 +1296,9 @@ class TestTensorVar:
         skip_if(dev, {"supports_tensor_observables": False})
 
         @qml.qnode(dev)
-        def circ(obs):
+        def circ(ob):
             sub_routine(label_map=range(3))
-            return qml.var(obs)
+            return qml.var(ob)
 
         assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
 
