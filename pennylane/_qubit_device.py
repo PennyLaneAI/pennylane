@@ -106,7 +106,7 @@ class QubitDevice(Device):
         return new_array
 
     def _permute_wires(self, observable):
-        """ Given an observable which acts on multiple wires, permute the wires to
+        """Given an observable which acts on multiple wires, permute the wires to
         be consistent with the device wire order.
 
         Suppose we are given an observable :math:`\hat{O} = \Identity \otimes \Identity \otimes \hat{Z}`.
@@ -145,9 +145,15 @@ class QubitDevice(Device):
         Returns:
             permuted_wires (Wires): permuted wires object.
         """
-        ordered_obs_wire_lst = self.order_wires(observable.wires).tolist()  # order according to device wire order
+        ordered_obs_wire_lst = self.order_wires(
+            observable.wires
+        ).tolist()  # order according to device wire order
 
-        mapped_wires = self.map_wires(observable.wires).tolist()
+        mapped_wires = self.map_wires(observable.wires)
+        if isinstance(mapped_wires, Wires):
+            # by default this should be a Wires obj, but it is overwritten to list object in default.qubit
+            mapped_wires = mapped_wires.tolist()
+
         permutation = np.argsort(mapped_wires)  # extract permutation via argsort
 
         permuted_wires = Wires([ordered_obs_wire_lst[index] for index in permutation])

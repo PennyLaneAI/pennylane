@@ -599,9 +599,7 @@ class TestInternalFunctions:
             (Wires([0]), Wires([2])),
         ],
     )
-    def test_order_wires_raises_value_error(
-        self, wires, subset, mock_device_arbitrary_wires
-    ):
+    def test_order_wires_raises_value_error(self, wires, subset, mock_device_arbitrary_wires):
         dev = mock_device_arbitrary_wires(wires=wires)
         with pytest.raises(ValueError, match="Could not find some or all subset wires"):
             _ = dev.order_wires(subset_wires=subset)
