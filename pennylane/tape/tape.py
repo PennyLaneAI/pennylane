@@ -1100,7 +1100,7 @@ class QuantumTape(AnnotatedQueue):
     ):
         """Draw the quantum tape as a circuit diagram. See :func:`~.drawer.tape_text` for more information.
 
-        Keyword Args:
+        Args:
             wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
             show_all_wires (bool): If True, all wires, including empty wires, are printed.
             decimals (int): How many decimal points to include when formatting operation parameters.
