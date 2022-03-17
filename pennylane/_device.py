@@ -331,7 +331,7 @@ class Device(abc.ABC):
 
     def get_ordered_subset(self, subset_wires):
         """Given some subset of device wires return a Wires object with the same wires;
-        re-ordered according to the device wires
+        sorted according to the device wire map.
 
         Args:
             subset_wires (Wires): The subset of device wires (in any order)
