@@ -16,6 +16,11 @@
     graphs containing sample measurement nodes to tapes.
     [(#2321)](https://github.com/PennyLaneAI/pennylane/pull/2321)
 
+  - A `qcut.expand_fragment_tapes_mc()` method has been added to expand fragment
+    tapes to random configurations by replacing measure and prepare nodes with
+    sampled Pauli measurements and state preparations.
+    [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
+
 <h3>Improvements</h3>
 
 * The function `qml.ctrl` was given the optional argument `control_values=None`.
