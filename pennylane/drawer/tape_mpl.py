@@ -31,7 +31,7 @@ from .utils import convert_wire_order
 # create a private method here and add it to the ``special_cases`` dictionary
 # These methods should accept arguments in the order of ``drawer, layer, mapped_wires, op``
 
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,no-member
 def _add_swap(drawer, layer, mapped_wires, op):
     drawer.SWAP(layer, mapped_wires)
 
