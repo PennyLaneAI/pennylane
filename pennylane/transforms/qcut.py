@@ -1679,12 +1679,11 @@ def _graph_to_hmetis(
             Defaults to 0 which leads to no such insersion. If greater than 0, hyperedges will be
             appended with the provided weight, to encourage the resulting fragments to cluster gates
             on the same wire together.
-        edge_weights (Sequence[int]): Weights for regular edges in the graph. Defaults to None,
+        edge_weights (Sequence[int]): Weights for regular edges in the graph. Defaults to ``None``,
             which leads to unit-weighted edges.
 
     Returns:
         (Tuple[List,List,List]): The 3 lists representing an (optionally weighted) hypergraph:
-
         - Flattened list of adjacent node indices.
         - List of starting indices for edges in the above adjacent-nodes-list.
         - Optional list of edge weights. None if ``hyperwire_weight`` is equal to 0.
@@ -1740,6 +1739,7 @@ def kahypar_cut(
     Requires KaHyPar to be installed separately with ``pip install kahypar``.
 
     Args:
+        graph (nx.MultiDiGraph): The graph to be partitioned.
         num_fragments (int): Desired number of fragments.
         imbalance (int): Imbalance factor of the partitioning. Defaults to KaHyPar's determination.
         edge_weights (List[Union[int, float]]): Weights for edges. Defaults to unit-weighted edges.
@@ -1747,7 +1747,7 @@ def kahypar_cut(
         fragment_weights (List[Union[int, float]]): Maximum size constraints by fragment. Defaults
             to no such constraints, with ``imbalance`` the only parameter affecting fragment sizes.
         hyperwire_weight (int): Weight on the artificially appended hyperedges representing wires.
-            Defaults to 0 which leads to no such insersion. If greater than 0, hyperedges will be
+            Defaults to 0 which leads to no such insertion. If greater than 0, hyperedges will be
             appended with the provided weight, to encourage the resulting fragments to cluster gates
             on the same wire together.
         seed (int): KaHyPar's seed. Defaults to the seed in the config file which defaults to -1,
@@ -1777,8 +1777,8 @@ def kahypar_cut(
 
     We can let KaHyPar automatically find the optimal edges to place cuts:
 
-    >>> graph = qcut.tape_to_graph(tape)
-    >>> cut_edges = qcut.kahypar_cut(
+    >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+    >>> cut_edges = qml.transforms.qcut.kahypar_cut(
             graph=graph,
             num_fragments=2,
         )
@@ -1849,16 +1849,16 @@ def kahypar_cut(
 def place_wire_cuts(
     graph: MultiDiGraph, cut_edges: Sequence[Tuple[Operation, Operation, Any]]
 ) -> MultiDiGraph:
-    """Inserts a ``WireCut`` node for each provided cut edge into a circuit graph.
+    """Inserts a :class:`~.WireCut` node for each provided cut edge into a circuit graph.
 
     Args:
-        graph (MultiDiGraph): The original (tape-converted) graph to be cut.
-        cut_edges: (Sequence[Tuple[Operation, Operation, Any]]): List of ``MultiDiGraph`` edges
-            to be replaced with a ``WireCut`` node. Each 3-tuple represents the source node, the
+        graph (nx.MultiDiGraph): The original (tape-converted) graph to be cut.
+        cut_edges (Sequence[Tuple[Operation, Operation, Any]]): List of ``MultiDiGraph`` edges
+            to be replaced with a :class:`~.WireCut` node. Each 3-tuple represents the source node, the
             target node, and the wire key of the (multi)edge.
 
     Returns:
-        (MultiDiGraph): Copy of the input graph with ``WireCut`` nodes inserted.
+        MultiDiGraph: Copy of the input graph with :class:`~.WireCut` nodes inserted.
 
     **Example**
 
@@ -1876,10 +1876,10 @@ def place_wire_cuts(
      0: ──RX(0.432)──╭C──┤ ⟨Z⟩
      a: ──RY(0.543)──╰X──┤
 
-    If we know we want to place a ``WireCut`` node between nodes ``RY(0.543, wires=["a"])`` and
+    If we know we want to place a :class:`~.WireCut` node between nodes ``RY(0.543, wires=["a"])`` and
     ``CNOT(wires=[0, 'a'])`` after the tape is constructed, we can first find the edge in the graph:
 
-    >>> graph = qcut.tape_to_graph(tape)
+    >>> graph = qml.transforms.qcut.tape_to_graph(tape)
     >>> op0, op1 = tape.operations[1], tape.operations[2]
     >>> cut_edges = [e for e in graph.edges if e[0] is op0 and e[1] is op1]
     >>> cut_edges
@@ -1887,13 +1887,13 @@ def place_wire_cuts(
 
     Then feed it to this function for placement:
 
-    >>> cut_graph = qcut.place_wire_cuts(graph=graph, cut_edges=cut_edges)
+    >>> cut_graph = qml.transforms.qcut.place_wire_cuts(graph=graph, cut_edges=cut_edges)
     >>> cut_graph
     <networkx.classes.multidigraph.MultiDiGraph at 0x7f7251ac1220>
 
     And visualize the cut by converting back to a tape:
 
-    >>> print(qcut.graph_to_tape(cut_graph).draw())
+    >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
      0: ──RX(0.432)──────╭C──┤ ⟨Z⟩
      a: ──RY(0.543)──//──╰X──┤
     """
@@ -1950,26 +1950,29 @@ def _remove_existing_cuts(graph: MultiDiGraph) -> MultiDiGraph:
 def find_and_place_cuts(
     graph: MultiDiGraph, cut_method: Callable = kahypar_cut, replace_wire_cuts=False, **kwargs
 ) -> MultiDiGraph:
-    """Automatically finds and places optimal ``WireCut`` nodes into a given tape-converted graph
+    """Automatically finds and places optimal :class:`~.WireCut` nodes into a given tape-converted graph
     using a customizable graph partitioning function. Preserves existing placed cuts.
 
     Args:
         graph (MultiDiGraph): The original (tape-converted) graph to be cut.
         cut_method (Callable): A graph partitioning function that takes an input graph and returns
             a list of edges to be cut based on a given set of constraints and objective. Defaults
-            to :func:`kahypar_cut` which requires KaHyPar to be installed: ``pip install kahypar``.
-        replace_wire_cuts (bool): Whether to replace ``WireCut`` nodes with ``MeasureNode`` and
-            ``PrepareNode`` pairs. Defaults to False.
+            to :func:`kahypar_cut` which requires KaHyPar to be installed using
+            ``pip install kahypar`` for Linux and Mac users or visiting the
+            instructions `here <https://kahypar.org/#the-python-interface>`__ to compile from
+            source for Windows users.
+        replace_wire_cuts (bool): Whether to replace :class:`~.WireCut` nodes with
+        :class:`MeasureNode` and :class:`PrepareNode` pairs. Defaults to ``False``.
         kwargs: Additional keyword arguments to be passed to the callable ``cut_method``.
 
     Returns:
-        (MultiDiGraph): Copy of the input graph with ``WireCut`` nodes inserted.
+        nx.MultiDiGraph: Copy of the input graph with :class:`~.WireCut` nodes inserted.
 
     **Example**
 
     Consider the following 4-wire circuit with a single CNOT gate connecting the top (wires
-    ``[1, 2]``) and bottom (wires ``["a", "b"]``) halves of the circuit. Note there's a ``WireCut``
-    manually placed into the circuit already.
+    ``[1, 2]``) and bottom (wires ``["a", "b"]``) halves of the circuit. Note there's a
+    :class:`~.WireCut` manually placed into the circuit already.
 
     .. code-block:: python
 
@@ -1986,26 +1989,25 @@ def find_and_place_cuts(
             qml.CNOT(wires=["a", "b"])
             qml.RX(0.5, wires="a")
             qml.RY(0.6, wires="b")
-            qml.expval(qml.PauliX(wires=[0]))
-            qml.expval(qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
+            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
 
     >>> print(tape.draw())
-     0: ──RX(0.1)──╭C──────────╭C────────────┤ ⟨X⟩
-     1: ──RY(0.2)──╰X──//──╭C──╰X────────────┤
-     a: ──RX(0.3)──╭C──────╰X──╭C──RX(0.5)──╭┤ ⟨Y ⊗ Z⟩
-     b: ──RY(0.4)──╰X──────────╰X──RY(0.6)──╰┤ ⟨Y ⊗ Z⟩
+     0: ──RX(0.1)──╭C──────────╭C───────────╭┤ ⟨X ⊗ Y ⊗ Z⟩ 
+     1: ──RY(0.2)──╰X──//──╭C──╰X───────────│┤             
+     a: ──RX(0.3)──╭C──────╰X──╭C──RX(0.5)──├┤ ⟨X ⊗ Y ⊗ Z⟩ 
+     b: ──RY(0.4)──╰X──────────╰X──RY(0.6)──╰┤ ⟨X ⊗ Y ⊗ Z⟩ 
 
-    Since the existing ``WireCut`` doesn't sufficiently fragment the circuit, we can find the
+    Since the existing :class:`~.WireCut` doesn't sufficiently fragment the circuit, we can find the
     remaining cuts using the default KaHyPar partitioner:
 
-    >>> graph = qcut.tape_to_graph(tape)
-    >>> cut_graph = qcut.find_and_place_cuts(
+    >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+    >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
     ...     graph=graph,
     ...     num_fragments=2,
     ...     imbalance=0.5,
     ... )
 
-    Visualizing the newly placed cut:
+    Visualizing the newly-placed cut:
 
     >>> print(qcut.graph_to_tape(cut_graph).draw())
      0: ──RX(0.1)──╭C───────────────╭C────────╭┤ ⟨X ⊗ Y ⊗ Z⟩
@@ -2013,19 +2015,20 @@ def find_and_place_cuts(
      a: ──RX(0.3)──╭C──────╰X──╭C────RX(0.5)──├┤ ⟨X ⊗ Y ⊗ Z⟩
      b: ──RY(0.4)──╰X──────────╰X────RY(0.6)──╰┤ ⟨X ⊗ Y ⊗ Z⟩
 
-    We can then proceed with the usual process of replacing ``WireCut`` nodes with pairs of
-    ``MeasureNode`` and ``PrepareNode``, and then break it into fragments. Or, alternatively,
-    we can directly get such processed graph by passing ``replace_wire_cuts=True``:
+    We can then proceed with the usual process of replacing :class:`~.WireCut` nodes with
+    pairs of :class:`~.MeasureNode` and :class:`~.PrepareNode`, and then break the graph
+    into fragments. Or, alternatively, we can directly get such processed graph by passing
+    ``replace_wire_cuts=True``:
 
-    >>> cut_graph = qcut.find_and_place_cuts(
+    >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
             graph=graph,
             num_fragments=2,
             imbalance=0.5,
             replace_wire_cuts=True,
         )
-    >>> frags, comm_graph = qcut.fragment_graph(cut_graph)
+    >>> frags, comm_graph = qml.transforms.qcut.fragment_graph(cut_graph)
     >>> for t in frags:
-    ...     print(qcut.graph_to_tape(t).draw())
+    ...     print(qml.transforms.qcut.graph_to_tape(t).draw())
 
     .. code-block::
 
