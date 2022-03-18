@@ -104,17 +104,18 @@ class MeasurementProcess:
             raise ValueError("Cannot set the wires if an observable is provided.")
 
         self._wires = wires or Wires([])
-        self._eigvals = eigvals
-        self.shape = shape
-        """tuple[int]: The output shape of the measurement proccess. For some a
-        shape is not applicable or the shape may depend on device options, in
-        such cases ``shape=None``."""
+        self._eigvals = None
 
         if eigvals is not None:
             if obs is not None:
                 raise ValueError("Cannot set the eigenvalues if an observable is provided.")
 
             self._eigvals = np.array(eigvals)
+
+        self.shape = shape
+        """tuple[int]: The output shape of the measurement proccess. For some a
+        shape is not applicable or the shape may depend on device options, in
+        such cases ``shape=None``."""
 
         # TODO: remove the following lines once devices
         # have been refactored to accept and understand recieving
