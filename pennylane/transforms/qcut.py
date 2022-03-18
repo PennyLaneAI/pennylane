@@ -1962,7 +1962,7 @@ def find_and_place_cuts(
             instructions `here <https://kahypar.org/#the-python-interface>`__ to compile from
             source for Windows users.
         replace_wire_cuts (bool): Whether to replace :class:`~.WireCut` nodes with
-        :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs. Defaults to ``False``.
+            :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs. Defaults to ``False``.
         kwargs: Additional keyword arguments to be passed to the callable ``cut_method``.
 
     Returns:
