@@ -28,7 +28,8 @@
   seamless.
   [(#2342)](https://github.com/PennyLaneAI/pennylane/pull/2342)
 
-  Given a `QuantumTape`,
+  Given a `QuantumTape` object, the underlying quantum circuit with its
+  operations and measurements can now be accessed in multiple ways.
   ```python
   with qml.tape.QuantumTape() as tape:
       qml.RX(0.432, wires=0)
@@ -37,8 +38,10 @@
       qml.RX(0.133, wires='a')
       qml.expval(qml.PauliZ(wires=[0]))
   ```
-  the underlying quantum circuit or operations/measurements are accessible by:
-  - Iteration using a `for` loop:
+
+  The underlying quantum circuit of the tape can be iterated over using a `for`
+  loop:
+
   ```pycon
   >>> for op in tape:
   ...     print(op)
@@ -48,7 +51,17 @@
   RX(0.133, wires=['a'])
   expval(PauliZ(wires=[0]))
   ```
-  - Converting to a sequence such as a `list`:
+
+  Indexing into the circuit is also allowed via `tape[i]`:
+
+  ```pycon
+  >>> tape[0]
+  RX(0.432, wires=[0])
+  ```
+
+  A tape object can also be converted to a sequence (e.g., to a `list`) of
+  operations and measurements:
+
   ```pycon
   >>> list(tape)
   [RX(0.432, wires=[0]),
@@ -57,10 +70,6 @@
    RX(0.133, wires=['a']),
    expval(PauliZ(wires=[0]))]
   ```
-  - Indexing via `tape[i]`:
-  ```pycon
-  >>> tape[0]
-  RX(0.432, wires=[0])
 
 * The function `qml.ctrl` was given the optional argument `control_values=None`.
   If overridden, `control_values` takes an integer or a list of integers corresponding to
