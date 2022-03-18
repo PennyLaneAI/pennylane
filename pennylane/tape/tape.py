@@ -1005,7 +1005,7 @@ class QuantumTape(AnnotatedQueue):
 
         shot_vector = device._shot_vector
         if shot_vector is None:
-            if ret_type in (qml.operation.Expectation, qml.operation.Variance):
+            if ret_type in (qml.measurements.Expectation, qml.measurements.Variance):
 
                 shape = (len(mps),)
 
@@ -1033,7 +1033,7 @@ class QuantumTape(AnnotatedQueue):
         else:
             # Shot vector was defined
 
-            if ret_type in (qml.operation.Expectation, qml.operation.Variance):
+            if ret_type in (qml.measurements.Expectation, qml.measurements.Variance):
                 num = sum(shottup.copies for shottup in shot_vector)
                 shape = (num, len(mps))
 
@@ -1128,7 +1128,7 @@ class QuantumTape(AnnotatedQueue):
             if ret_type == qml.measurements.Sample:
 
                 if observable.obs is None or all(
-                    np.issubdtype(e.dtype, int) for e in observable.eigvals
+                    np.issubdtype(e.dtype, int) for e in observable.get_eigvals()
                 ):
                     # qml.sample() or integer eigvals
                     output_domain = int

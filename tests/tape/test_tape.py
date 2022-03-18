@@ -1743,7 +1743,7 @@ class TestOutputShape:
         if expected_shape is None:
             expected_shape = shot_dim if shot_dim == 1 else (shot_dim,)
 
-        if measurement.return_type is qml.operation.Sample and measurement.obs is None:
+        if measurement.return_type is qml.measurements.Sample and measurement.obs is None:
             expected_shape = (num_wires,) if shots is None or dev.shots == 1 else (shots, num_wires)
         assert tape.get_output_shape(dev) == expected_shape
 
@@ -1752,17 +1752,17 @@ class TestOutputShape:
     def test_output_shapes_single_qnode_check(self, measurement, expected_shape, shots):
         """Test that the output shape produced by the tape matches the output
         shape of a QNode for a single measurement."""
-        if shots is None and measurement.return_type is qml.operation.Sample:
+        if shots is None and measurement.return_type is qml.measurements.Sample:
             pytest.skip("Sample doesn't support analytic computations.")
 
-        if shots is not None and measurement.return_type is qml.operation.State:
+        if shots is not None and measurement.return_type is qml.measurements.State:
             pytest.skip("State only supports analytic computations.")
 
         # TODO: revisit when qml.sample without an observable has been updated
         # with shot vectors
         if (
             isinstance(shots, tuple)
-            and measurement.return_type is qml.operation.Sample
+            and measurement.return_type is qml.measurements.Sample
             and not measurement.obs
         ):
             pytest.skip("qml.sample with no observable is to be updated for shot vectors.")
@@ -1862,7 +1862,7 @@ class TestOutputShape:
             for m in measurements:
                 qml.apply(m)
 
-        if measurements[0].return_type is qml.operation.Sample:
+        if measurements[0].return_type is qml.measurements.Sample:
             expected[1] = shots
             expected = tuple(expected)
 
@@ -1878,7 +1878,7 @@ class TestOutputShape:
         """Test that the expected output shape is obtained when using multiple
         expectation value, variance and probability measurements with a shot
         vector."""
-        if measurements[0].return_type is qml.operation.Probability:
+        if measurements[0].return_type is qml.measurements.Probability:
             num_wires = set(len(m.wires) for m in measurements)
             if len(num_wires) > 1:
                 pytest.skip(
@@ -1897,7 +1897,7 @@ class TestOutputShape:
             for m in measurements:
                 qml.apply(m)
 
-        if measurements[0].return_type is qml.operation.Sample:
+        if measurements[0].return_type is qml.measurements.Sample:
             expected[1] = shots
             expected = tuple(expected)
 
