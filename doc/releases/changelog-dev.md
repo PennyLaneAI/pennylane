@@ -1,24 +1,6 @@
 :orphan:
 
-# Release 0.23.0-dev (development release)
 
-<h3>New features since last release</h3>
-
-* Development of a circuit-cutting compiler extension to circuits with sampling
-  measurements has begun:
-
-  - The existing `qcut.tape_to_graph()` method has been extended to convert a
-    sample measurement without an observable specified to multiple single-qubit sample
-    nodes.
-    [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
-
-  - The existing `qcut.graph_to_tape()` method has been extended to convert
-    graphs containing sample measurement nodes to tapes.
-    [(#2321)](https://github.com/PennyLaneAI/pennylane/pull/2321)
-
-<h3>Improvements</h3>
-
-* The function `qml.ctrl` was given the optional argument `control_values=None`.
   If overridden, `control_values` takes an integer or a list of integers corresponding to
   the binary value that each control value should take. The same change is reflected in
   `ControlledOperation`. Control values of `0` are implemented by `qml.PauliX` applied
@@ -39,6 +21,12 @@
 * The deprecated QNode, available via `qml.qnode_old.QNode`, has been removed. Please
   transition to using the standard `qml.QNode`.
   [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
+
+
+
+
+awsdfghloyltrrsezsdxfcvbpoiyuftf
+
 
 * The deprecated, non-batch compatible interfaces, have been removed.
   [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
