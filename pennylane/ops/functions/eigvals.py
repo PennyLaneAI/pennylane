@@ -28,24 +28,26 @@ import pennylane as qml
 def eigvals(op, k=1, which="SA"):
     r"""The eigenvalues of one or more operations.
 
-    For a SparseHamiltonian object, the eigenvalues are computed with the efficient ``scipy.sparse.linalg.eigsh``
-    method which returns `k` eigenvalues. For an :math:`N \times N` sparse matrix, `k` must be smaller than `N - 1`,
-    otherwise ``scipy.sparse.linalg.eigsh`` fails. If the requested `k` is equal or larger than `N - 1`,
-    the regular ``qml.math.linalg.eigvalsh`` is applied on the dense matrix.
+    For a SparseHamiltonian object, the eigenvalues are computed with the efficient
+    ``scipy.sparse.linalg.eigsh`` method which returns `k` eigenvalues. The default value of `k` is
+    `1`. For an :math:`N \times N` sparse matrix, `k` must be smaller than `N - 1`, otherwise
+    ``scipy.sparse.linalg.eigsh`` fails. If the requested `k` is equal or larger than `N - 1`, the
+    regular ``qml.math.linalg.eigvalsh`` is applied on the dense matrix. The possible methods for
+    computing the `k` eigenvalues are `LM` (largest in magnitude), `SM` (smallest in magnitude) `LA`
+    (largest algebraic), `SA` (smallest algebraic) and `BE` (k/2 from each end of the spectrum).
 
     Args:
         op (.Operator, pennylane.QNode, .QuantumTape, or Callable): An operator, quantum node, tape,
             or function that applies quantum operations.
-        k (int): The number of eigenvalues and eigenvectors to be returned for a SparseHamiltonian.
-        which (str): Method for computing the eigenvalues of a SparseHamiltonian with Scipy, possible values are
-            ["LM" | "SM" | "LA" | "SA" | "BE"]
+        k (int): The number of eigenvalues to be returned for a SparseHamiltonian using Scipy.
+        which (str): Method for computing the eigenvalues of a SparseHamiltonian using Scipy.
 
     Returns:
-        tensor_like or function: If an operator is provided as input, the eigenvalues are returned directly.
-        If a QNode or quantum function is provided as input, a function which accepts the
+        tensor_like or function: If an operator is provided as input, the eigenvalues are returned
+        directly. If a QNode or quantum function is provided as input, a function which accepts the
         same arguments as the QNode or quantum function is returned. When called, this function will
-        return the unitary matrix in the appropriate autodiff framework (Autograd, TensorFlow, PyTorch, JAX)
-        given its parameters.
+        return the unitary matrix in the appropriate autodiff framework (Autograd, TensorFlow,
+        PyTorch, JAX) given its parameters.
 
     **Example**
 
