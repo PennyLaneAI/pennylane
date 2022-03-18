@@ -18,6 +18,37 @@
 
 <h3>Improvements</h3>
 
+* `QuantumTape` objects are now iterable and can be used in `for` loops or
+  converted to sequences such as a `list` to get the operations and
+  measurements of the underlying quantum circuit.
+  [(#2342)](https://github.com/PennyLaneAI/pennylane/pull/2342)
+
+  ```python
+  with qml.tape.QuantumTape() as tape:
+      qml.RX(0.432, wires=0)
+      qml.RY(0.543, wires=0)
+      qml.CNOT(wires=[0, 'a'])
+      qml.RX(0.133, wires='a')
+      qml.expval(qml.PauliZ(wires=[0]))
+  ```
+  ```pycon
+  >>> for op in tape:
+  ...     print(op)
+  ```
+  RX(0.432, wires=[0])
+  RY(0.543, wires=[0])
+  CNOT(wires=[0, 'a'])
+  RX(0.133, wires=['a'])
+  expval(PauliZ(wires=[0]))
+  ```pycon
+  >>> list(tape)
+  ```
+  [RX(0.432, wires=[0]),
+   RY(0.543, wires=[0]),
+   CNOT(wires=[0, 'a']),
+   RX(0.133, wires=['a']),
+   expval(PauliZ(wires=[0]))]
+
 * The function `qml.ctrl` was given the optional argument `control_values=None`.
   If overridden, `control_values` takes an integer or a list of integers corresponding to
   the binary value that each control value should take. The same change is reflected in
@@ -55,4 +86,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee.
+Karim Alaa El-Din, Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee,
+Romain Moyard, Antal Száva.
