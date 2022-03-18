@@ -12,9 +12,10 @@
     nodes.
     [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
   - An automatic graph partitioning method `qcut.kahypar_cut()` has been implemented for cutting
-    arbitrary tape-converted graphs using the general purpose graph partitioning framework [KaHyPar](https://pypi.org/project/kahypar/) which needs
-    to be installed separately. Method `fragment_graph()` is also slightly modified to enable the
-    ability to accept user-supplied argument `cut_edges`.
+    arbitrary tape-converted graphs using the general purpose graph partitioning framework
+    [KaHyPar](https://pypi.org/project/kahypar/) which needs to be installed separately.
+    To integrate with existing manual cut pipeline, method `qcut.find_and_place_cuts()` and related
+    utilities are implemented which uses `qcut.kahypar_cut()` as the default auto cutter.
     [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
 
 <h3>Improvements</h3>
