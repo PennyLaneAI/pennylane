@@ -160,7 +160,6 @@ def _execute(
         # shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
         # shapes, _ = get_shapes_and_dtype(tapes, device)
         shapes = [t.get_output_shape(device) for t in tapes]
-        print(shapes)
         dtypes = [_domain_to_dtype(t.get_output_domain()) for t in tapes]
 
         # Note: for qml.probs we'll first have a [1,dim] shape for the tape
