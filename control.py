@@ -3,6 +3,8 @@ import ast
 
 import astunparse
 
+import torch
+
 import pennylane as qml
 from pennylane.tape import QuantumTape
 
@@ -15,12 +17,10 @@ class ControlFlowTransformer(ast.NodeTransformer):
         if_tape_name = ast.Name()
         if_tape_name.id = "IfTape"
 
-
         if_tape = ast.Call()
         if_tape.func = if_tape_name
         if_tape.args = [node.test]
         if_tape.keywords = {}
-
 
         with_block = ast.With()
         with_block.body = node.body
@@ -33,12 +33,10 @@ class ControlFlowTransformer(ast.NodeTransformer):
         tape_name = ast.Name()
         tape_name.id = "WhileTape"
 
-
         tape = ast.Call()
         tape.func = tape_name
         tape.args = [node.test]
         tape.keywords = {}
-
 
         with_block = ast.With()
         with_block.body = node.body
@@ -51,17 +49,42 @@ class ControlFlowTransformer(ast.NodeTransformer):
         tape_name = ast.Name()
         tape_name.id = "ForTape"
 
-
         tape = ast.Call()
         tape.func = tape_name
         tape.args = [node.test]
         tape.keywords = {}
 
+        with_block = ast.With()
+        with_block.body = node.body
+        with_block.items = [tape]
+        return with_block
+
+    def visit_FunctionDef(self, node):
+        self.generic_visit(node)
+
+        tape_name = ast.Name()
+        tape_name.id = "FunctionTape"
+
+        tape = ast.Call()
+        tape.func = tape_name
+        arguments = list((map(lambda arg: ast.Expr(arg.arg), node.args.args)))
+        tape.args = []
+        tape.keywords = {}
 
         with_block = ast.With()
         with_block.body = node.body
         with_block.items = [tape]
         return with_block
+
+    def visit_Name(self, node):
+
+        if node.id == "x":
+            attr = ast.Attribute()
+            attr.attr = "x"
+            attr.value = ast.Name("circuit")
+            return attr
+        return node
+
 
 cft = ControlFlowTransformer()
 
@@ -76,8 +99,7 @@ def script(fn):
 @script
 def circuit(x, y):
     while y > 0 and x == 0:
-        with QuantumTape():
-            print("hi")
         if x > 3:
-            qml.RX(x, wires=0)
+            if y < 10:
+                qml.RX(x + 10, wires=0)
     return qml.expval(qml.PauliX(wires=0))
