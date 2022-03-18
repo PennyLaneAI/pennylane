@@ -724,6 +724,8 @@ def molecular_hamiltonian(
     mapping="jordan_wigner",
     outpath=".",
     wires=None,
+    method=None,
+    args=None,
 ):  # pylint:disable=too-many-arguments
     r"""Generates the qubit Hamiltonian of a molecule.
 
@@ -815,6 +817,16 @@ def molecular_hamiltonian(
     + (0.12293305056183801) [Z1 Z3]
     + (0.176276408043196) [Z2 Z3]
     """
+
+    if method == 'differentiable':
+        geometry = coordinates.reshape(len(symbols), 3)
+        mol = qml.hf.Molecule(symbols, geometry)
+        return qml.hf.generate_hamiltonian(mol)(*args), mol.n_orbitals * 2
+
+    try:
+        import openfermion
+    except ImportError as Error:
+        raise ImportError("The OpenFermion package is required.") from Error
 
     hf_file = meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
 
