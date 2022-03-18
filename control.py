@@ -45,6 +45,24 @@ class ControlFlowTransformer(ast.NodeTransformer):
         with_block.items = [tape]
         return with_block
 
+    def visit_For(self, node):
+        self.generic_visit(node)
+
+        tape_name = ast.Name()
+        tape_name.id = "ForTape"
+
+
+        tape = ast.Call()
+        tape.func = tape_name
+        tape.args = [node.test]
+        tape.keywords = {}
+
+
+        with_block = ast.With()
+        with_block.body = node.body
+        with_block.items = [tape]
+        return with_block
+
 cft = ControlFlowTransformer()
 
 def script(fn):
