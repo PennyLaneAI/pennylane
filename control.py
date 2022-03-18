@@ -8,8 +8,6 @@ import torch
 import pennylane as qml
 from pennylane.tape import QuantumTape
 
-# class FunctionTransformer(ast.NodeTransformer):
-
 def transform_top_level_function(node: ast.FunctionDef):
 
     tape_name = ast.Name()
@@ -35,7 +33,7 @@ class ControlFlowTransformer(ast.NodeTransformer):
 
     def __init__(self, arg_names, *args, **kwargs):
         self.arg_names = arg_names
-        super().__init__()
+        super().__init__(*args, **kwargs)
 
     def visit_If(self, node):
         self.generic_visit(node)
@@ -85,9 +83,6 @@ class ControlFlowTransformer(ast.NodeTransformer):
         with_block.items = [tape]
         return with_block
 
-    def visit_With(self, node):
-        return node
-
     def visit_Name(self, node):
 
         if node.id in self.arg_names:
@@ -100,12 +95,12 @@ class ControlFlowTransformer(ast.NodeTransformer):
 
 def script(fn):
     fn_source = inspect.getsource(fn)
+    print(fn_source)
     fn_ast = ast.parse(fn_source)
     trimmed_ast = fn_ast.body[0]
     tape_ast, arg_names = transform_top_level_function(trimmed_ast)
     cft = ControlFlowTransformer(arg_names)
     transformed_ast = cft.visit(tape_ast)
-    print(transformed_ast)
     print(astunparse.unparse(transformed_ast))
 
 
