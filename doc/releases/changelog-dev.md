@@ -32,6 +32,23 @@
 
 <h3>Breaking changes</h3>
 
+* The old circuit text drawing infrastructure is being deleted.
+  [(#2310)](https://github.com/PennyLaneAI/pennylane/pull/2310)
+
+  - `qml.drawer.CircuitDrawer` is replaced by `qml.drawer.tape_text`.
+  - `qml.drawer.CHARSETS` is deleted because we now assume everyone has access to unicode.
+  - `Grid` and `qml.drawer.drawable_grid` are removed because the custom data class is replaced
+      by list of sets of operators or measurements.
+  - `RepresentationResolver` is replaced by the `Operator.label` method.
+  - `qml.transforms.draw_old` is replaced by `qml.draw`.
+  - `qml.CircuitGraph.greedy_layers` is deleted, as it is no longer needed by the circuit drawer and
+      does not seem to have uses outside of that situation.
+  - `qml.CircuitGraph.draw` has been deleted, as we draw tapes instead.
+
+The tape method `qml.tape.QuantumTape.draw` now simply calls `qml.drawer.tape_text`. 
+In the new pathway, the `charset` keyword is deleted, the `max_length` keyword defaults to `100`, and
+the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tape)`
+
 * The `ObservableReturnTypes` `Sample`, `Variance`, `Expectation`, `Probability`, `State`, and `MidMeasure`
   have been moved to `measurements` from `operation`.
   [(#2329)](https://github.com/PennyLaneAI/pennylane/pull/2329)

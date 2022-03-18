@@ -1691,3 +1691,37 @@ class TestHashing:
             qml.expval(H)
 
         assert tape1.hash == tape2.hash
+
+
+class TestTapeDraw:
+    """Test the tape draw method."""
+
+    def test_default_kwargs(self):
+        """Test tape draw with default keyword arguments."""
+
+        with QuantumTape() as tape:
+            qml.RX(1.23456, wires=0)
+            qml.RY(2.3456, wires="a")
+            qml.RZ(3.4567, wires=1.234)
+
+        assert tape.draw() == qml.drawer.tape_text(tape)
+        assert tape.draw(decimals=2) == qml.drawer.tape_text(tape, decimals=2)
+
+    def test_show_matrices(self):
+        """Test show_matrices keyword argument."""
+
+        with QuantumTape() as tape:
+            qml.QubitUnitary(qml.numpy.eye(2), wires=0)
+
+        assert tape.draw() == qml.drawer.tape_text(tape)
+        assert tape.draw(show_matrices=True) == qml.drawer.tape_text(tape, show_matrices=True)
+
+    def test_max_length_keyword(self):
+        """Test the max_length keyword argument."""
+
+        with QuantumTape() as tape:
+            for _ in range(50):
+                qml.PauliX(0)
+
+        assert tape.draw() == qml.drawer.tape_text(tape)
+        assert tape.draw(max_length=20) == qml.drawer.tape_text(tape, max_length=20)
