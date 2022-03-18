@@ -18,9 +18,11 @@
 
 <h3>Improvements</h3>
 
-* `QuantumTape` objects are now iterable and can be used in `for` loops or
-  converted to sequences such as a `list` to get the operations and
-  measurements of the underlying quantum circuit.
+* `QuantumTape` objects are now iterable and can be used to access the
+  operations and measurements of the underlying quantum circuit by:
+  - iteration using `for` loops;
+  - converting to a sequence such as a `list(tape)` or
+  - indexing via `tape[i]`.
   [(#2342)](https://github.com/PennyLaneAI/pennylane/pull/2342)
 
   ```python
