@@ -120,6 +120,7 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~transforms.qcut.expand_fragment_tape
     ~transforms.qcut.qcut_processing_fn
     ~transforms.qcut.CutStrategy
+    ~transforms.qcut.expand_fragment_tapes_mc
     ~transforms.qcut.kahypar_cut
     ~transforms.qcut.place_wire_cuts
     ~transforms.qcut.find_and_place_cuts
