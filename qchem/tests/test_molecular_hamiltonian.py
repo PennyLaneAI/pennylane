@@ -2,12 +2,11 @@ import os
 
 import pytest
 
+import pennylane as qml
+from pennylane import Identity, PauliX, PauliY, PauliZ
+from pennylane import numpy as np
 from pennylane import qchem
-
 from pennylane.ops import Hamiltonian
-
-import numpy as np
-
 
 symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
 coordinates = np.array(
@@ -89,3 +88,67 @@ def test_building_hamiltonian(
 
     assert isinstance(built_hamiltonian, Hamiltonian)
     assert qubits == 2 * nact_orbs
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "h_ref_data"),
+    [
+        (
+            ["H", "H"],
+            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0], requires_grad=True),
+            # computed with OpenFermion; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # h_q = openfermion.transforms.jordan_wigner(h_f)
+            # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
+            (
+                np.array(
+                    [
+                        0.2981788017,
+                        0.2081336485,
+                        0.2081336485,
+                        0.1786097698,
+                        0.042560361,
+                        -0.042560361,
+                        -0.042560361,
+                        0.042560361,
+                        -0.3472487379,
+                        0.1329029281,
+                        -0.3472487379,
+                        0.175463289,
+                        0.175463289,
+                        0.1329029281,
+                        0.1847091733,
+                    ]
+                ),
+                [
+                    Identity(wires=[0]),
+                    PauliZ(wires=[0]),
+                    PauliZ(wires=[1]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[1]),
+                    PauliY(wires=[0]) @ PauliX(wires=[1]) @ PauliX(wires=[2]) @ PauliY(wires=[3]),
+                    PauliY(wires=[0]) @ PauliY(wires=[1]) @ PauliX(wires=[2]) @ PauliX(wires=[3]),
+                    PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]),
+                    PauliX(wires=[0]) @ PauliY(wires=[1]) @ PauliY(wires=[2]) @ PauliX(wires=[3]),
+                    PauliZ(wires=[2]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[2]),
+                    PauliZ(wires=[3]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[3]),
+                    PauliZ(wires=[1]) @ PauliZ(wires=[2]),
+                    PauliZ(wires=[1]) @ PauliZ(wires=[3]),
+                    PauliZ(wires=[2]) @ PauliZ(wires=[3]),
+                ],
+            ),
+        )
+    ],
+)
+def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
+    r"""Test that molecular_hamiltonian returns the correct Hamiltonian with the differentiable
+    backend."""
+    args = [geometry]
+    h = qchem.molecular_hamiltonian(symbols, geometry, method="differentiable", args=args)[0]
+    h_ref = qml.Hamiltonian(h_ref_data[0], h_ref_data[1])
+    assert np.allclose(np.sort(h.coeffs), np.sort(h_ref.coeffs))
+    assert qml.Hamiltonian(np.ones(len(h.coeffs)), h.ops).compare(
+        qml.Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
+    )
