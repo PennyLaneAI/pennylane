@@ -364,12 +364,11 @@ def custom_rot(phi, theta, omega, wires):
 
 # Decompose a template into another template
 def custom_basic_entangler_layers(weights, wires, **kwargs):
-    with qml.tape.QuantumTape(do_queue = False) as tape:
+    with qml.tape.QuantumTape(do_queue=False) as tape:
         qml.AngleEmbedding(weights[0], wires=wires),
         qml.broadcast(qml.CNOT, pattern="ring", wires=wires),
-    
+
     return tape.operations
-    
 
 
 class TestCreateCustomDecompExpandFn:

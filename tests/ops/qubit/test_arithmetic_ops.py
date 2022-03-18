@@ -210,7 +210,7 @@ class TestQubitSum:
             qml.state()
 
         if expand:
-            result = dev.execute(tape.expand(depth = 100))
+            result = dev.execute(tape.expand(depth=100))
         else:
             result = dev.execute(tape)
         assert np.allclose(result, output_state)
