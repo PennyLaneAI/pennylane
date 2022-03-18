@@ -273,7 +273,7 @@ class TestConstruction:
         expected = "<QuantumTape: wires=[0], params=1>"
         assert s == expected
 
-    def test_circuit(self):
+    def test_circuit_property(self):
         """Test that the underlying circuit property returns the correct
         operations and measurements making up the circuit."""
         r = 1.234
