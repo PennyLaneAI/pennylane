@@ -32,6 +32,7 @@
   [(#2340)](https://github.com/PennyLaneAI/pennylane/pull/2340)
 
 * The `QuantumTape` now processes all `Operator` objects into `_ops` list, instead of just `Operation` objects.
+  [(#2353)](https://github.com/PennyLaneAI/pennylane/pull/2353)
 
 <h3>Deprecations</h3>
 
