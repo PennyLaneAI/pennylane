@@ -530,7 +530,7 @@ class Operator(abc.ABC):
         """
         raise MatrixUndefinedError
 
-    # pylint: disable=no-self-argument
+    # pylint: disable=no-self-argument, comparison-with-callable
     @classproperty
     def has_matrix(cls):
         r"""Bool: Whether or not the Operator returns a defined matrix.
