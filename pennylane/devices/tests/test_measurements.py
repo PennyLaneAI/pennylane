@@ -56,6 +56,33 @@ if not set(all_obs) == all_available_obs:
 # single qubit Hermitian observable
 A = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
+obs_lst = [
+    qml.PauliX(wires=0) @ qml.PauliY(wires=1),
+    qml.PauliX(wires=1) @ qml.PauliY(wires=0),
+    qml.PauliX(wires=1) @ qml.PauliZ(wires=2),
+    qml.PauliX(wires=2) @ qml.PauliZ(wires=1),
+    qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2),
+    qml.PauliZ(wires=0) @ qml.PauliX(wires=1) @ qml.PauliY(wires=2),
+]
+
+obs_permuted_lst = [
+    qml.PauliY(wires=1) @ qml.PauliX(wires=0),
+    qml.PauliY(wires=0) @ qml.PauliX(wires=1),
+    qml.PauliZ(wires=2) @ qml.PauliX(wires=1),
+    qml.PauliZ(wires=1) @ qml.PauliX(wires=2),
+    qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1),
+    qml.PauliX(wires=1) @ qml.PauliY(wires=2) @ qml.PauliZ(wires=0),
+]
+
+label_maps = [[0, 1, 2], ["a", "b", "c"], ["beta", "alpha", "gamma"], [3, "beta", "a"]]
+
+
+def sub_routine(label_map):
+    """Quantum function to initalize state in tests"""
+    qml.Hadamard(wires=label_map[0])
+    qml.RX(0.12, wires=label_map[1])
+    qml.RY(3.45, wires=label_map[2])
+
 
 class TestSupportedObservables:
     """Test that the device can implement all observables that it supports."""
@@ -410,6 +437,73 @@ class TestTensorExpval:
 
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
         assert np.allclose(res, expected, atol=tol(dev.shots))
+
+    @pytest.mark.parametrize(
+        "base_obs, permuted_obs",
+        list(zip(obs_lst, obs_permuted_lst)),
+    )
+    def test_wire_order_in_tensor_prod_observables(
+        self, device, base_obs, permuted_obs, tol, skip_if
+    ):
+        """Test that when given a tensor observable the expectation value is the same regardless of the order of terms
+        in the tensor observable, provided the wires each term acts on remain constant.
+
+        eg:
+        ob1 = qml.PauliZ(wires=0) @ qml.PauliY(wires=1)
+        ob2 = qml.PauliY(wires=1) @ qml.PauliZ(wires=0)
+
+        @qml.qnode(dev)
+        def circ(obs):
+            return qml.expval(obs)
+
+        circ(ob1) == circ(ob2)
+        """
+        n_wires = 3
+        dev = device(n_wires)
+        skip_if(dev, {"supports_tensor_observables": False})
+
+        @qml.qnode(dev)
+        def circ(ob):
+            sub_routine(label_map=range(3))
+            return qml.expval(ob)
+
+        assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
+
+    @pytest.mark.parametrize("label_map", label_maps)
+    def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if):
+        """Test that when given a tensor observable the expectation value is the same regardless of how the
+        wires are labelled, as long as they match the device order.
+
+        For example:
+
+        dev1 = qml.device("default.qubit", wires=[0, 1, 2])
+        dev2 = qml.device("default.qubit", wires=['c', 'b', 'a']
+
+        def circ(wire_labels):
+            return qml.expval(qml.PauliZ(wires=wire_labels[0]) @ qml.PauliX(wires=wire_labels[2]))
+
+        c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
+        c1([0, 1, 2]) == c2(['c', 'b', 'a'])
+        """
+        dev = device(wires=3)
+        dev_custom_labels = device(wires=label_map)
+        skip_if(dev, {"supports_tensor_observables": False})
+
+        def circ(wire_labels):
+            sub_routine(wire_labels)
+            return qml.expval(
+                qml.PauliX(wire_labels[0]) @ qml.PauliY(wire_labels[1]) @ qml.PauliZ(wire_labels[2])
+            )
+
+        circ_base_label = qml.QNode(circ, device=dev)
+        circ_custom_label = qml.QNode(circ, device=dev_custom_labels)
+
+        assert np.allclose(
+            circ_base_label(wire_labels=range(3)),
+            circ_custom_label(wire_labels=label_map),
+            atol=tol(dev.shots),
+            rtol=0,
+        )
 
     def test_hermitian(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
@@ -1181,6 +1275,72 @@ class TestTensorVar:
             - 2 * np.cos(theta) * np.sin(phi) * np.sin(2 * varphi)
         ) / 4
         assert np.allclose(res, expected, atol=tol(dev.shots))
+
+    @pytest.mark.parametrize(
+        "base_obs, permuted_obs",
+        list(zip(obs_lst, obs_permuted_lst)),
+    )
+    def test_wire_order_in_tensor_prod_observables(
+        self, device, base_obs, permuted_obs, tol, skip_if
+    ):
+        """Test that when given a tensor observable the variance is the same regardless of the order of terms
+        in the tensor observable, provided the wires each term acts on remain constant.
+
+        eg:
+        ob1 = qml.PauliZ(wires=0) @ qml.PauliY(wires=1)
+        ob2 = qml.PauliY(wires=1) @ qml.PauliZ(wires=0)
+
+        @qml.qnode(dev)
+        def circ(obs):
+            return qml.var(obs)
+
+        circ(ob1) == circ(ob2)
+        """
+        n_wires = 3
+        dev = device(n_wires)
+        skip_if(dev, {"supports_tensor_observables": False})
+
+        @qml.qnode(dev)
+        def circ(ob):
+            sub_routine(label_map=range(3))
+            return qml.var(ob)
+
+        assert np.allclose(circ(base_obs), circ(permuted_obs), atol=tol(dev.shots), rtol=0)
+
+    @pytest.mark.parametrize("label_map", label_maps)
+    def test_wire_label_in_tensor_prod_observables(self, device, label_map, tol, skip_if):
+        """Test that when given a tensor observable the variance is the same regardless of how the
+        wires are labelled, as long as they match the device order.
+
+        eg:
+        dev1 = qml.device("default.qubit", wires=[0, 1, 2])
+        dev2 = qml.device("default.qubit", wires=['c', 'b', 'a']
+
+        def circ(wire_labels):
+            return qml.var(qml.PauliZ(wires=wire_labels[0]) @ qml.PauliX(wires=wire_labels[2]))
+
+        c1, c2 = qml.QNode(circ, dev1), qml.QNode(circ, dev2)
+        c1([0, 1, 2]) == c2(['c', 'b', 'a'])
+        """
+        dev = device(wires=3)
+        dev_custom_labels = device(wires=label_map)
+        skip_if(dev, {"supports_tensor_observables": False})
+
+        def circ(wire_labels):
+            sub_routine(wire_labels)
+            return qml.var(
+                qml.PauliX(wire_labels[0]) @ qml.PauliY(wire_labels[1]) @ qml.PauliZ(wire_labels[2])
+            )
+
+        circ_base_label = qml.QNode(circ, device=dev)
+        circ_custom_label = qml.QNode(circ, device=dev_custom_labels)
+
+        assert np.allclose(
+            circ_base_label(wire_labels=range(3)),
+            circ_custom_label(wire_labels=label_map),
+            atol=tol(dev.shots),
+            rtol=0,
+        )
 
     def test_hermitian(self, device, tol, skip_if):
         """Test that a tensor product involving qml.Hermitian works correctly"""
