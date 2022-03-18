@@ -1075,8 +1075,8 @@ class Operator(abc.ABC):
             )
 
         with qml.tape.QuantumTape(do_queue=False) as tape:
-            for op in ops:
-                if op:
+            if ops:
+                for op in ops:
                     op.queue()
 
         if not self.data:
