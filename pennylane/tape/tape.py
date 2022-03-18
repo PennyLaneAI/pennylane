@@ -263,7 +263,12 @@ class QuantumTape(AnnotatedQueue):
     RX(0.133, wires=['a'])
     expval(PauliZ(wires=[0]))
 
-    Tapes also support indexing.
+    Tapes can also as sequences and support indexing and the ``len`` function:
+
+    >>> tape[0]
+    RX(0.432, wires=[0])
+    >>> len(tape)
+    5
 
     The :class:`~.CircuitGraph` can also be accessed:
 
