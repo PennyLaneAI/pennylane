@@ -437,6 +437,7 @@ class TestTensorExpval:
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "base_obs, permuted_obs",
         list(zip(obs_lst, obs_permuted_lst)),
@@ -1275,6 +1276,7 @@ class TestTensorVar:
         ) / 4
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "base_obs, permuted_obs",
         list(zip(obs_lst, obs_permuted_lst)),
