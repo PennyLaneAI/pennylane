@@ -1757,7 +1757,7 @@ class TestExpandFragmentTapesMC:
                 tapes, communication_graph, 3
             )
 
-        assert np.isclose(settings, fixed_choice).all()
+        assert np.allclose(settings, fixed_choice)
 
         frag_0_ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
         frag_0_expected_meas = [
@@ -1855,7 +1855,7 @@ class TestExpandFragmentTapesMC:
                 tapes, communication_graph, 2
             )
 
-        assert np.isclose(settings, fixed_choice).all()
+        assert np.allclose(settings, fixed_choice)
 
         with qml.tape.QuantumTape() as config1:
             qml.Hadamard(wires=[0])
