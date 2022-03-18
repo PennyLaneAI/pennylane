@@ -705,19 +705,21 @@ def expand_fragment_tapes_mc(
 ) -> List[QuantumTape]:
     """
     Expands fragment tapes into a sequence of random configurations of the contained pairs of
-    :class:`MeasureNode` and :class:`PrepareNode` operations. For each pair a measurement is sampled from
-    the Pauli basis and a state preparation is sampled from the correspoding pair of eigenstates.
+    :class:`MeasureNode` and :class:`PrepareNode` operations.
+    
+    For each pair, a measurement is sampled from
+    the Pauli basis and a state preparation is sampled from the corresponding pair of eigenstates.
 
     .. note::
 
         This function is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit_mc() <TODO>` transform for more details.
+        Check out the :func:`~.cut_circuit_mc` transform for more details.
 
     Args:
         tapes (Sequence[QuantumTape]): the fragment tapes containing :class:`MeasureNode` and
-            :class:`PrepareNode` operations to be expanded.
+            :class:`PrepareNode` operations to be expanded
         communication_graph (nx.MultiDiGraph): the communication (quotient) graph of the fragmented
-            full graph.
+            full graph
         shots (int): number of shots
 
     Returns:
@@ -725,7 +727,7 @@ def expand_fragment_tapes_mc(
 
     **Example**
 
-    Consider the following circuit that contains a sample measurment:
+    Consider the following circuit that contains a sample measurement:
 
     .. code-block:: python
 
@@ -749,12 +751,10 @@ def expand_fragment_tapes_mc(
     .. code-block:: python
 
         >>> configs = qcut.expand_fragment_tapes_mc(tapes, communication_graph, 3)
-        >>> i = 0
-        >>> for c1, c2 in zip(configs[0], configs[1]):
+        >>> for i, (c1, c2) in enumerate(zip(configs[0], configs[1])):
         ...    print(f"config {i}:")
         ...    print(c1.draw())
         ...    print(c2.draw())
-        ...    i += 1
         ...
 
         config 0:

@@ -1724,14 +1724,14 @@ class TestExpandFragmentTapes:
 
 class TestExpandFragmentTapesMC:
     """
-    Tests fragment tapes are correctly expanded to all random configurations
+    Tests that fragment tapes are correctly expanded to all random configurations
     for the Monte Carlo sampling technique.
     """
 
     def test_expand_mc(self, monkeypatch):
         """
         Tests that fragment configurations are generated correctly using the
-        `expand_fragment_tapes_mc` method.
+        `expand_fragment_tapes_mc` function.
         """
         with qml.tape.QuantumTape() as tape0:
             qml.Hadamard(wires=[0])
@@ -1802,7 +1802,7 @@ class TestExpandFragmentTapesMC:
 
     def test_expand_multinode_frag(self, monkeypatch):
         """
-        Tests that a fragments with multiple measure and prepare nodes are
+        Tests that fragments with multiple measure and prepare nodes are
         expanded correctly.
         """
 
