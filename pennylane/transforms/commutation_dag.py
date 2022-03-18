@@ -145,7 +145,7 @@ def _create_commutation_map():
 
     commutation_map['Identity'] = {"Hadamard", "PauliX", "PauliY", "PauliZ", "SWAP", "ctrl", "S", "T", "SX", "ISWAP", "SISWAP", "RX",
                 "RY", "RZ", "PhaseShift", "Rot", "MultiRZ", "Identity", "U1", "U2", "U3", "IsingXX", "IsingYY", "IsingZZ"}
-    return _commutation_map
+    return commutation_map
 
 _commutation_map = _create_commutation_map()
 
