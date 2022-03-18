@@ -1059,7 +1059,7 @@ class Operator(abc.ABC):
             .QuantumTape: quantum tape
         """
         try:
-            ops =  self.decomposition()
+            ops = self.decomposition()
 
         except TypeError:
             if self.num_params == 0:
