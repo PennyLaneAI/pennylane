@@ -8,6 +8,24 @@ import torch
 import pennylane as qml
 from pennylane.tape import QuantumTape
 
+# class FunctionTransformer(ast.NodeTransformer):
+
+def transform_top_level_function(node: ast.FunctionDef):
+
+    tape_name = ast.Name()
+    tape_name.id = "FunctionTape"
+
+    tape = ast.Call()
+    tape.func = tape_name
+    arguments = list((map(lambda arg: ast.Str(arg.arg), node.args.args)))
+    tape.args = arguments
+    tape.keywords = {}
+
+    with_block = ast.With()
+    with_block.body = node.body
+    with_block.items = [tape]
+    return with_block, arguments
+
 
 class ControlFlowTransformer(ast.NodeTransformer):
 
@@ -59,22 +77,6 @@ class ControlFlowTransformer(ast.NodeTransformer):
         with_block.items = [tape]
         return with_block
 
-    def visit_FunctionDef(self, node):
-        self.generic_visit(node)
-
-        tape_name = ast.Name()
-        tape_name.id = "FunctionTape"
-
-        tape = ast.Call()
-        tape.func = tape_name
-        arguments = list((map(lambda arg: ast.Str(arg.arg), node.args.args)))
-        tape.args = arguments
-        tape.keywords = {}
-
-        with_block = ast.With()
-        with_block.body = node.body
-        with_block.items = [tape]
-        return with_block
 
     # def visit_Call(self, node):
     #     return node
