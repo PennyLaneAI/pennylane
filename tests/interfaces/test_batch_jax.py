@@ -835,6 +835,7 @@ class TestVectorValued:
         with pytest.raises(InterfaceUnsupportedError):
             jax.jacobian(cost)(params, cache=None)
 
+
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
 class TestVectorValuedJIT:
     """Test vector-valued returns for the JAX jit Python interface."""
@@ -851,7 +852,7 @@ class TestVectorValuedJIT:
             pytest.xfail("Getting a TypeError due to an incorrectly shaped array.")
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
@@ -885,16 +886,15 @@ class TestVectorValuedJIT:
             if "gradient_kwargs" in execute_kwargs
             else ""
         )
-        if "adjoint" in grad_meth and any(r.return_type in (
-            qml.operation.Probability,
-            qml.operation.State,
-            qml.operation.Variance)
+        if "adjoint" in grad_meth and any(
+            r.return_type
+            in (qml.operation.Probability, qml.operation.State, qml.operation.Variance)
             for r in ret
         ):
             pytest.skip("Adjoint does not support probs")
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
@@ -924,7 +924,7 @@ class TestVectorValuedJIT:
             pytest.skip("Adjoint does not support probs")
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
@@ -945,7 +945,7 @@ class TestVectorValuedJIT:
         params = jnp.array([0.1, 0.2, 0.3])
 
         def cost(a, cache):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
                 qml.RX(a[1], wires=0)
                 qml.RY(a[2], wires=0)
@@ -959,6 +959,7 @@ class TestVectorValuedJIT:
 
         res = jax.grad(cost)(params, cache=None)
         assert res.shape == (3,)
+
 
 def test_diff_method_None_jit():
     """Test that jitted execution works when `gradient_fn=None`."""
