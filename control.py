@@ -24,7 +24,7 @@ def transform_top_level_function(node: ast.FunctionDef):
     with_block = ast.With()
     with_block.body = node.body
     with_block.items = [tape]
-    return with_block, arguments
+    return with_block
 
 
 class ControlFlowTransformer(ast.NodeTransformer):
@@ -96,7 +96,9 @@ cft = ControlFlowTransformer()
 def script(fn):
     fn_source = inspect.getsource(fn)
     fn_ast = ast.parse(fn_source)
-    transformed_ast = cft.visit(fn_ast)
+    trimmed_ast = fn_ast.body[0]
+    tape_ast = transform_top_level_function(trimmed_ast)
+    transformed_ast = cft.visit(tape_ast)
     print(transformed_ast)
     print(astunparse.unparse(transformed_ast))
 
