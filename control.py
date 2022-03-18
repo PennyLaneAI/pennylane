@@ -21,9 +21,13 @@ def transform_top_level_function(node: ast.FunctionDef):
     tape.args = list((map(lambda arg: ast.Str(arg), arg_names)))
     tape.keywords = {}
 
+    v = ast.withitem()
+    v.context_expr = tape
+    v.optional_vars = ast.Name(node.name)
+
     with_block = ast.With()
     with_block.body = node.body
-    with_block.items = [tape]
+    with_block.items = [v]
     return with_block, arg_names
 
 
@@ -81,9 +85,8 @@ class ControlFlowTransformer(ast.NodeTransformer):
         with_block.items = [tape]
         return with_block
 
-
-    # def visit_Call(self, node):
-    #     return node
+    def visit_With(self, node):
+        return node
 
     def visit_Name(self, node):
 
@@ -108,6 +111,8 @@ def script(fn):
 
 @script
 def circuit(x, y):
+    # with QuantumTape() as tape:
+    #     pass
     while y > 0 and x == 0:
         if x > 3:
             if y < 10:
