@@ -906,7 +906,16 @@ class QuantumTape(AnnotatedQueue):
     @staticmethod
     def _single_measurement_shape(measurement_process, device):
         """Auxiliary function of get_output_shape that determines the output
-        shape of a tape with a single measurement."""
+        shape of a tape with a single measurement.
+
+        Args:
+            measurement_process (MeasurementProcess): the measurement process
+                to check
+            device (~.Device): a PennyLane device
+
+        Returns:
+            tuple: output shape
+        """
 
         shape = tuple()
 
