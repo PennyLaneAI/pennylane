@@ -821,7 +821,10 @@ def molecular_hamiltonian(
     if method == 'differentiable':
         geometry = coordinates.reshape(len(symbols), 3)
         mol = qml.hf.Molecule(symbols, geometry)
-        return qml.hf.generate_hamiltonian(mol)(*args), mol.n_orbitals * 2
+        core, active = active_space(
+            mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
+        )
+        return qml.hf.generate_hamiltonian(mol, core, active)(*args), mol.n_orbitals * 2
 
     try:
         import openfermion
