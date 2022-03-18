@@ -18,6 +18,10 @@
     utilities are implemented which uses `qcut.kahypar_cut()` as the default auto cutter.
     [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
 
+  - The existing `qcut.graph_to_tape()` method has been extended to convert
+    graphs containing sample measurement nodes to tapes.
+    [(#2321)](https://github.com/PennyLaneAI/pennylane/pull/2321)
+
 <h3>Improvements</h3>
 
 * The function `qml.ctrl` was given the optional argument `control_values=None`.
@@ -26,7 +30,10 @@
   `ControlledOperation`. Control values of `0` are implemented by `qml.PauliX` applied
   before and after the controlled operation
   [(#2288)](https://github.com/PennyLaneAI/pennylane/pull/2288)
-  
+
+* Circuit cutting now performs expansion to search for wire cuts in contained operations or tapes.
+  [(#2340)](https://github.com/PennyLaneAI/pennylane/pull/2340)
+
 <h3>Deprecations</h3>
 
 <h3>Breaking changes</h3>
@@ -54,4 +61,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Anthony Hayes, Josh Izaac, Christina Lee, Zeyue Niu.
+Karim Alaa El-Din, Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee, Zeyue Niu.
