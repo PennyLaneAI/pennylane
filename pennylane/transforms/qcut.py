@@ -30,7 +30,7 @@ import pennylane as qml
 from pennylane import apply, expval
 from pennylane import numpy as np
 from pennylane.grouping import string_to_pauli_word
-from pennylane.measurements import MeasurementProcess, Expectation, Sample
+from pennylane.measurements import Expectation, MeasurementProcess, Sample
 from pennylane.operation import Operation, Operator, Tensor
 from pennylane.ops.qubit.non_parametric_ops import WireCut
 from pennylane.tape import QuantumTape
@@ -565,45 +565,6 @@ def _prep_iminus_state(wire):
 
 PREPARE_SETTINGS = [_prep_zero_state, _prep_one_state, _prep_plus_state, _prep_iplus_state]
 
-MC_STATES = [
-    _prep_zero_state,
-    _prep_one_state,
-    _prep_plus_state,
-    _prep_minus_state,
-    _prep_iplus_state,
-    _prep_iminus_state,
-    _prep_zero_state,
-    _prep_one_state,
-]
-
-
-def _identity(wire):
-    qml.sample(qml.Identity(wires=wire))
-
-
-def _pauliX(wire):
-    qml.sample(qml.PauliX(wires=wire))
-
-
-def _pauliY(wire):
-    qml.sample(qml.PauliY(wires=wire))
-
-
-def _pauliZ(wire):
-    qml.sample(qml.PauliZ(wires=wire))
-
-
-MC_MEASUREMENTS = [
-    _identity,
-    _identity,
-    _pauliX,
-    _pauliX,
-    _pauliY,
-    _pauliY,
-    _pauliZ,
-    _pauliZ,
-]
-
 
 def expand_fragment_tape(
     tape: QuantumTape,
@@ -700,19 +661,59 @@ def expand_fragment_tape(
     return tapes, prepare_nodes, measure_nodes
 
 
+MC_STATES = [
+    _prep_zero_state,
+    _prep_one_state,
+    _prep_plus_state,
+    _prep_minus_state,
+    _prep_iplus_state,
+    _prep_iminus_state,
+    _prep_zero_state,
+    _prep_one_state,
+]
+
+
+def _identity(wire):
+    qml.sample(qml.Identity(wires=wire))
+
+
+def _pauliX(wire):
+    qml.sample(qml.PauliX(wires=wire))
+
+
+def _pauliY(wire):
+    qml.sample(qml.PauliY(wires=wire))
+
+
+def _pauliZ(wire):
+    qml.sample(qml.PauliZ(wires=wire))
+
+
+MC_MEASUREMENTS = [
+    _identity,
+    _identity,
+    _pauliX,
+    _pauliX,
+    _pauliY,
+    _pauliY,
+    _pauliZ,
+    _pauliZ,
+]
+
+
 def expand_fragment_tapes_mc(
     tapes: Sequence[QuantumTape], communication_graph: MultiDiGraph, shots: int
 ) -> List[QuantumTape]:
     """
     Expands fragment tapes into a sequence of random configurations of the contained pairs of
     :class:`MeasureNode` and :class:`PrepareNode` operations.
-    
+
     For each pair, a measurement is sampled from
     the Pauli basis and a state preparation is sampled from the corresponding pair of eigenstates.
 
     .. note::
 
-        This function is designed for use as part of the circuit cutting workflow.
+        This function is designed for use as part of the sampling-based circuit cutting workflow.
         Check out the :func:`~.cut_circuit_mc` transform for more details.
 
     Args:
@@ -740,17 +741,17 @@ def expand_fragment_tapes_mc(
 
     We can generate the fragment tapes using the following workflow:
 
-    >>> g = qcut.tape_to_graph(tape)
-    >>> qcut.replace_wire_cut_nodes(g)
-    >>> subgraphs, communication_graph = qcut.fragment_graph(g)
-    >>> tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+    >>> g = qml.transforms.qcut.tape_to_graph(tape)
+    >>> qml.transforms.qcut.replace_wire_cut_nodes(g)
+    >>> subgraphs, communication_graph = qml.transforms.qcut.fragment_graph(g)
+    >>> tapes = [qml.transforms.qcut.graph_to_tape(sg) for sg in subgraphs]
 
     We can then expand over the measurement and preparation nodes to generate random
     configurations using:
 
     .. code-block:: python
 
-        >>> configs = qcut.expand_fragment_tapes_mc(tapes, communication_graph, 3)
+        >>> configs = qml.transforms.qcut.expand_fragment_tapes_mc(tapes, communication_graph, 3)
         >>> for i, (c1, c2) in enumerate(zip(configs[0], configs[1])):
         ...    print(f"config {i}:")
         ...    print(c1.draw())
@@ -819,7 +820,7 @@ def expand_fragment_tapes_mc(
 
         all_configs.append(frag_config)
 
-    return all_configs
+    return all_configs, settings
 
 
 def _get_symbol(i):

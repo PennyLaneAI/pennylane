@@ -1750,11 +1750,14 @@ class TestExpandFragmentTapesMC:
         edge_data = {"pair": (tape0.operations[2], tape1.operations[0])}
         communication_graph = MultiDiGraph([(0, 1, edge_data)])
 
+        fixed_choice = np.array([[4, 0, 1]])
         with monkeypatch.context() as m:
-            m.setattr(
-                np.random, "choice", lambda a, size=(1, 3), replace=True: np.array([[4, 0, 1]])
+            m.setattr(np.random, "choice", lambda a, size, replace: fixed_choice)
+            fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
+                tapes, communication_graph, 3
             )
-            fragment_configurations = qcut.expand_fragment_tapes_mc(tapes, communication_graph, 3)
+
+        assert np.isclose(settings, fixed_choice).all()
 
         frag_0_ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
         frag_0_expected_meas = [
@@ -1841,13 +1844,18 @@ class TestExpandFragmentTapesMC:
         ]
         communication_graph = MultiDiGraph(edge_data)
 
+        fixed_choice = np.array([[4, 6], [1, 2], [2, 3], [3, 0]])
         with monkeypatch.context() as m:
             m.setattr(
                 np.random,
                 "choice",
-                lambda a, size=(4, 2), replace=True: np.array([[4, 6], [1, 2], [2, 3], [3, 0]]),
+                lambda a, size, replace: fixed_choice,
             )
-            fragment_configurations = qcut.expand_fragment_tapes_mc(tapes, communication_graph, 2)
+            fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
+                tapes, communication_graph, 2
+            )
+
+        assert np.isclose(settings, fixed_choice).all()
 
         with qml.tape.QuantumTape() as config1:
             qml.Hadamard(wires=[0])
