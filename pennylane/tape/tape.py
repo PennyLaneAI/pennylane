@@ -434,7 +434,6 @@ class QuantumTape(AnnotatedQueue):
 
             elif isinstance(obj, qml.measurements.MeasurementProcess):
 
-
                 if obj.return_type == qml.measurements.MidMeasure:
 
                     # TODO: for now, consider mid-circuit measurements as tape
@@ -910,7 +909,7 @@ class QuantumTape(AnnotatedQueue):
 
         Args:
             measurement_process (MeasurementProcess): the measurement process
-                to check
+                associated with the single measurement
             device (~.Device): a PennyLane device
 
         Returns:
@@ -1465,6 +1464,7 @@ class QuantumTape(AnnotatedQueue):
                     op.inv()
 
         # decompose the queue
+        # pylint: disable=no-member
         operations = tape.expand(depth=2, stop_at=lambda obj: obj.name in OPENQASM_GATES).operations
 
         # create the QASM code representing the operations
