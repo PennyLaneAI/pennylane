@@ -24,10 +24,14 @@ def transform_top_level_function(node: ast.FunctionDef):
     with_block = ast.With()
     with_block.body = node.body
     with_block.items = [tape]
-    return with_block
+    return with_block, arg_names
 
 
 class ControlFlowTransformer(ast.NodeTransformer):
+
+    def __init__(self, arg_names, *args, **kwargs):
+        self.arg_names = arg_names
+        super().__init__()
 
     def visit_If(self, node):
         self.generic_visit(node)
@@ -83,21 +87,20 @@ class ControlFlowTransformer(ast.NodeTransformer):
 
     def visit_Name(self, node):
 
-        if node.id == "x":
+        if node.id in self.arg_names:
             attr = ast.Attribute()
-            attr.attr = "x"
+            attr.attr = node.id
             attr.value = ast.Name("circuit")
             return attr
         return node
 
 
-cft = ControlFlowTransformer()
-
 def script(fn):
     fn_source = inspect.getsource(fn)
     fn_ast = ast.parse(fn_source)
     trimmed_ast = fn_ast.body[0]
-    tape_ast = transform_top_level_function(trimmed_ast)
+    tape_ast, arg_names = transform_top_level_function(trimmed_ast)
+    cft = ControlFlowTransformer(arg_names)
     transformed_ast = cft.visit(tape_ast)
     print(transformed_ast)
     print(astunparse.unparse(transformed_ast))
