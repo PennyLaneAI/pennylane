@@ -122,11 +122,30 @@ def commutation_dag(circuit):
     return wrapper
 
 
-# fmt: off
+def _create_commute_function():
+    """This function constructs the ``_commutes`` helper utility function while using closure
+    to hide the ``commutation_map`` data away from the global scope of the file.
 
-def _create_commutation_map():
+    This function only needs to be called a single time.
 
-    pauliz_group = {"PauliZ", "ctrl", "S", "T", "RZ", "PhaseShift", "MultiRZ", "Identity", "U1", "IsingZZ", "S.inv", "T.inv"}
+    Returns:
+        function
+    """
+
+    pauliz_group = {
+        "PauliZ",
+        "ctrl",
+        "S",
+        "T",
+        "RZ",
+        "PhaseShift",
+        "MultiRZ",
+        "Identity",
+        "U1",
+        "IsingZZ",
+        "S.inv",
+        "T.inv",
+    }
     swap_group = {"SWAP", "ISWAP", "SISWAP", "Identity"}
     paulix_group = {"PauliX", "SX", "RX", "Identity", "IsingXX", "SX.inv"}
     pauliy_group = {"PauliY", "RY", "Identity", "IsingYY"}
@@ -135,33 +154,59 @@ def _create_commutation_map():
     for group in [paulix_group, pauliy_group, pauliz_group, swap_group]:
         for op in group:
             commutation_map[op] = group
-            
-    for op in ("Hadamard", "U2", "U3", "Rot"):
-        commutation_map[op] = {'Identity', op}
 
-    for op in ('Barrier', 'WireCut', 'QubitStateVector', 'BasisState'):
+    for op in ("Hadamard", "U2", "U3", "Rot"):
+        commutation_map[op] = {"Identity", op}
+
+    for op in ("Barrier", "WireCut", "QubitStateVector", "BasisState"):
         commutation_map[op] = {}
 
+    commutation_map["Identity"] = {
+        "Hadamard",
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "SWAP",
+        "ctrl",
+        "S",
+        "T",
+        "SX",
+        "ISWAP",
+        "SISWAP",
+        "RX",
+        "RY",
+        "RZ",
+        "PhaseShift",
+        "Rot",
+        "MultiRZ",
+        "Identity",
+        "U1",
+        "U2",
+        "U3",
+        "IsingXX",
+        "IsingYY",
+        "IsingZZ",
+    }
 
-    commutation_map['Identity'] = {"Hadamard", "PauliX", "PauliY", "PauliZ", "SWAP", "ctrl", "S", "T", "SX", "ISWAP", "SISWAP", "RX",
-                "RY", "RZ", "PhaseShift", "Rot", "MultiRZ", "Identity", "U1", "U2", "U3", "IsingXX", "IsingYY", "IsingZZ"}
-    return commutation_map
+    def commutes_inner(op_name1, op_name2):
+        """Determine whether or not two operations commute.
 
-_commutation_map = _create_commutation_map()
+        Relies on ``commutation_map`` from the enclosing namespace of ``_create_commute_function``.
 
-def _commutes(op_name1, op_name2):
-    """Determines whether or not two operations commute.
-    
-    Args:
-        op_name1 (str): name of one operation
-        op_name2 (str): name of the second operation
+        Args:
+            op_name1 (str): name of one operation
+            op_name2 (str): name of the second operation
 
-    Returns:
-        Bool
+        Returns:
+            Bool
 
-    """
-    return op_name1 in _commutation_map[op_name2]
-# fmt: on
+        """
+        return op_name1 in commutation_map[op_name2]
+
+    return commutes_inner
+
+
+_commutes = _create_commute_function()
 
 
 def intersection(wires1, wires2):
