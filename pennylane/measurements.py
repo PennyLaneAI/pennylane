@@ -104,7 +104,7 @@ class MeasurementProcess:
             raise ValueError("Cannot set the wires if an observable is provided.")
 
         self._wires = wires or Wires([])
-        self._eigvals = eigvals
+        self._eigvals = None
 
         if eigvals is not None:
             if obs is not None:

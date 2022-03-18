@@ -434,20 +434,13 @@ class QuantumTape(AnnotatedQueue):
 
             elif isinstance(obj, qml.measurements.MeasurementProcess):
 
+
                 if obj.return_type == qml.measurements.MidMeasure:
 
                     # TODO: for now, consider mid-circuit measurements as tape
                     # operations such that the order of the operators in the
                     # tape is correct
                     self._ops.append(obj)
-
-                # attempt to infer the output dimension
-                if obj.return_type is qml.measurements.Probability:
-                    # TODO: what if we had a CV device here? Having the base as
-                    # 2 would have to be swapped to the cutoff value
-                    self._output_dim += 2 ** len(obj.wires)
-                elif obj.return_type is qml.measurements.State:
-                    continue  # the output_dim is worked out automatically
                 else:
 
                     # measurement process
@@ -455,6 +448,8 @@ class QuantumTape(AnnotatedQueue):
 
                     # attempt to infer the output dimension
                     if obj.return_type is qml.measurements.Probability:
+                        # TODO: what if we had a CV device here? Having the base as
+                        # 2 would have to be swapped to the cutoff value
                         self._output_dim += 2 ** len(obj.wires)
                     elif obj.return_type is qml.measurements.State:
                         continue  # the output_dim is worked out automatically
