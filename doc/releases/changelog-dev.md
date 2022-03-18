@@ -49,10 +49,33 @@
 
 <h3>Bug fixes</h3>
 
+<h3>Bug fixes</h3>
+
+* Fixes a bug in which the `expval`/`var` of a `Tensor(Observable)` would depend on the order 
+  in which the observable is defined: 
+  ```python
+  @qml.qnode(dev)
+  def circ(op):
+    qml.RX(0.12, wires=0)
+    qml.RX(1.34, wires=1)
+    qml.RX(3.67, wires=2)
+    
+    return qml.expval(op)
+  
+  op1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
+  op2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
+  ```
+
+  ```
+  >>> print(circ(op1), circ(op2))
+  -0.8636111153905662 -0.8636111153905662
+  ```
+  [(#2276)](https://github.com/PennyLaneAI/pennylane/pull/2276)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee.
+Karim Alaa El-Din, Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee, Jay Soni.
