@@ -1689,11 +1689,11 @@ def _graph_to_hmetis(
         - Optional list of edge weights. None if ``hyperwire_weight`` is equal to 0.
     """
 
-    nodes = dict(graph.nodes(data="order"))
+    nodes = list(graph.nodes)
     edges = graph.edges(data="wire")
     wires = {w for _, _, w in edges}
 
-    adj_nodes = [nodes[v] for ops in graph.edges(keys=False) for v in ops]
+    adj_nodes = [nodes.index(v) for ops in graph.edges(keys=False) for v in ops]
     edge_splits = qml.math.cumsum([0] + [len(e) for e in graph.edges(keys=False)]).tolist()
     edge_weights = (
         edge_weights if edge_weights is not None and len(edges) == len(edge_weights) else None
@@ -1704,7 +1704,7 @@ def _graph_to_hmetis(
         num_wires = len(hyperwires)
 
         for v0, v1, wire in edges:
-            hyperwires[wire].update([nodes[v0], nodes[v1]])
+            hyperwires[wire].update([nodes.index(v0), nodes.index(v1)])
 
         for wire, nodes_on_wire in hyperwires.items():
             nwv = len(nodes_on_wire)
@@ -1938,7 +1938,7 @@ def _remove_existing_cuts(graph: MultiDiGraph) -> MultiDiGraph:
                     uncut_graph.remove_node(op)
                     uncut_graph.remove_node(op1)
 
-    if len([n for n in graph.nodes if isinstance(n, (MeasureNode, PrepareNode))]) > 0:
+    if len([n for n in uncut_graph.nodes if isinstance(n, (MeasureNode, PrepareNode))]) > 0:
         warnings.warn(
             "The circuit contains `MeasureNode`/`PrepareNode` that is not paired up correctly. "
             "Please check.",
@@ -1992,10 +1992,10 @@ def find_and_place_cuts(
             qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
 
     >>> print(tape.draw())
-     0: ──RX(0.1)──╭C──────────╭C───────────╭┤ ⟨X ⊗ Y ⊗ Z⟩ 
-     1: ──RY(0.2)──╰X──//──╭C──╰X───────────│┤             
-     a: ──RX(0.3)──╭C──────╰X──╭C──RX(0.5)──├┤ ⟨X ⊗ Y ⊗ Z⟩ 
-     b: ──RY(0.4)──╰X──────────╰X──RY(0.6)──╰┤ ⟨X ⊗ Y ⊗ Z⟩ 
+     0: ──RX(0.1)──╭C──────────╭C───────────╭┤ ⟨X ⊗ Y ⊗ Z⟩
+     1: ──RY(0.2)──╰X──//──╭C──╰X───────────│┤
+     a: ──RX(0.3)──╭C──────╰X──╭C──RX(0.5)──├┤ ⟨X ⊗ Y ⊗ Z⟩
+     b: ──RY(0.4)──╰X──────────╰X──RY(0.6)──╰┤ ⟨X ⊗ Y ⊗ Z⟩
 
     Since the existing :class:`~.WireCut` doesn't sufficiently fragment the circuit, we can find the
     remaining cuts using the default KaHyPar partitioner:

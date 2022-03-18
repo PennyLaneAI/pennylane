@@ -31,7 +31,6 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms import qcut
 from pennylane.wires import Wires
-import numpy as np0
 
 I, X, Y, Z = (
     np.eye(2),
@@ -3171,7 +3170,10 @@ def make_weakly_connected_tape(
                     w1 = rng.choice(fragment_wire_sizes[f1])
                     qml.CNOT(wires=[f"{f0}-{w0}", f"{f1}-{w1}"])
         for i, wire_size in enumerate(fragment_wire_sizes):
-            qml.expval(qml.PauliZ(wires=[f"{i}-0"]))
+            if wire_size == 1:
+                qml.expval(qml.PauliZ(wires=[f"{i}-0"]))
+            else:
+                qml.expval(qml.PauliZ(wires=[f"{i}-0"]) @ qml.PauliZ(wires=[f"{i}-{wire_size-1}"]))
     return tape
 
 
@@ -3180,16 +3182,6 @@ class TestKaHyPar:
 
     # Fixes seed for Github actions:
     seed = 11 if environ.get("CI") == "true" else None
-
-    with qml.tape.QuantumTape() as kahypar_cut_doc_tape:
-        qml.RX(0.432, wires=0)
-        qml.RY(0.543, wires="a")
-        qml.CNOT(wires=[0, "a"])
-        qml.RZ(0.240, wires=0)
-        qml.RZ(0.133, wires="a")
-        qml.RX(0.432, wires=0)
-        qml.RY(0.543, wires="a")
-        qml.expval(qml.PauliZ(wires=[0]))
 
     disjoint_tapes = [
         (
@@ -3395,8 +3387,7 @@ class TestKaHyPar:
             qml.CNOT(wires=["a", "b"])
             qml.RX(0.5, wires="a")
             qml.RY(0.6, wires="b")
-            qml.expval(qml.PauliX(wires=[0]))
-            qml.expval(qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
+            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
 
         expected_num_cut_edges = 2
         num_frags = 2
