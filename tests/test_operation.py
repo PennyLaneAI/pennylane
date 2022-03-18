@@ -148,6 +148,40 @@ class TestOperatorConstruction:
         state = [0, 1, 0]
         assert MyOp(wires=1, basis_state=state).hyperparameters["basis_state"] == state
 
+    def test_has_matrix_true(self):
+        """Test has_matrix property detects overriding of `compute_matrix` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+            @staticmethod
+            def compute_matrix():
+                return np.eye(2)
+
+        assert MyOp.has_matrix
+        assert MyOp(wires=0).has_matrix
+
+    def test_has_matrix_true_get_matrix(self):
+        """Test has_matrix property also detects overriding of `get_matrix` method."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+            def get_matrix(self):
+                return np.eye(2)
+
+        assert MyOp.has_matrix
+        assert MyOp(wires=0).has_matrix
+
+    def test_has_matrix_false(self):
+        """Test has_matrix property defaults to false if `compute_matrix` not overwritten."""
+
+        class MyOp(qml.operation.Operator):
+            num_wires = 1
+
+        assert not MyOp.has_matrix
+        assert not MyOp(wires=0).has_matrix
+
 
 class TestOperationConstruction:
     """Test custom operations construction."""
