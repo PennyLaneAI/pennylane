@@ -402,8 +402,8 @@ class QuantumTape(AnnotatedQueue):
         return self.circuit[idx]
 
     def __len__(self):
-        """int: Return the number of operators in the underlying quantum
-        circuit object."""
+        """int: Return the number of operations and measurements in the
+        underlying quantum circuit object."""
         return len(self.circuit)
 
     @property
