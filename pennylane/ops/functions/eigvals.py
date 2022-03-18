@@ -36,7 +36,7 @@ def eigvals(op, k=1, which="SA"):
     Args:
         op (.Operator, pennylane.QNode, .QuantumTape, or Callable): An operator, quantum node, tape,
             or function that applies quantum operations.
-        k (integer): The number of eigenvalues and eigenvectors to be returned for a SparseHamiltonian.
+        k (int): The number of eigenvalues and eigenvectors to be returned for a SparseHamiltonian.
         which (str): Method for computing the eigenvalues of a SparseHamiltonian with Scipy, possible values are
             ["LM" | "SM" | "LA" | "SA" | "BE"]
 
