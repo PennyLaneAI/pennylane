@@ -18,13 +18,12 @@
 
 <h3>Improvements</h3>
 
-* `QuantumTape` objects are now iterable and can be used to access the
-  operations and measurements of the underlying quantum circuit by:
-  - iteration using `for` loops;
-  - converting to a sequence such as a `list(tape)` or
-  - indexing via `tape[i]`.
+* `QuantumTape` objects are now iterable and accessing the
+  operations and measurements of the underlying quantum circuit are more
+  seamless.
   [(#2342)](https://github.com/PennyLaneAI/pennylane/pull/2342)
 
+  Given a `QuantumTape`,
   ```python
   with qml.tape.QuantumTape() as tape:
       qml.RX(0.432, wires=0)
@@ -33,23 +32,30 @@
       qml.RX(0.133, wires='a')
       qml.expval(qml.PauliZ(wires=[0]))
   ```
+  the underlying quantum circuit or operations/measurements are accessible by:
+  - Iteration using a `for` loop:
   ```pycon
   >>> for op in tape:
   ...     print(op)
-  ```
   RX(0.432, wires=[0])
   RY(0.543, wires=[0])
   CNOT(wires=[0, 'a'])
   RX(0.133, wires=['a'])
   expval(PauliZ(wires=[0]))
+  ```
+  - Converting to a sequence such as a `list`:
   ```pycon
   >>> list(tape)
-  ```
   [RX(0.432, wires=[0]),
    RY(0.543, wires=[0]),
    CNOT(wires=[0, 'a']),
    RX(0.133, wires=['a']),
    expval(PauliZ(wires=[0]))]
+  ```
+  - Indexing via `tape[i]`:
+  ```pycon
+  >>> tape[0]
+  RX(0.432, wires=[0])
 
 * The function `qml.ctrl` was given the optional argument `control_values=None`.
   If overridden, `control_values` takes an integer or a list of integers corresponding to
