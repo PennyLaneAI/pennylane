@@ -67,14 +67,17 @@ class ControlFlowTransformer(ast.NodeTransformer):
 
         tape = ast.Call()
         tape.func = tape_name
-        arguments = list((map(lambda arg: ast.Expr(arg.arg), node.args.args)))
-        tape.args = []
+        arguments = list((map(lambda arg: ast.Str(arg.arg), node.args.args)))
+        tape.args = arguments
         tape.keywords = {}
 
         with_block = ast.With()
         with_block.body = node.body
         with_block.items = [tape]
         return with_block
+
+    # def visit_Call(self, node):
+    #     return node
 
     def visit_Name(self, node):
 
