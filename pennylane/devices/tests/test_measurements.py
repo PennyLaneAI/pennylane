@@ -445,13 +445,12 @@ class TestTensorExpval:
     def test_wire_order_in_tensor_prod_observables(
         self, device, base_obs, permuted_obs, tol, skip_if
     ):
-        """Test that when given a tensor observable the expectation value is the same regardless of how the
-        observable is written, provided the wires it acts on are the same.
+        """Test that when given a tensor observable the expectation value is the same regardless of the order of terms
+        in the tensor observable, provided the wires each term acts on remain constant.
 
-        For example:
-
+        eg:
         ob1 = qml.PauliZ(wires=0) @ qml.PauliY(wires=1)
-        ob2 = qml.PauliY(wires=0) @ qml.PauliZ(wires=1)
+        ob2 = qml.PauliY(wires=1) @ qml.PauliZ(wires=0)
 
         @qml.qnode(dev)
         def circ(obs):
@@ -1284,12 +1283,12 @@ class TestTensorVar:
     def test_wire_order_in_tensor_prod_observables(
         self, device, base_obs, permuted_obs, tol, skip_if
     ):
-        """Test that when given a tensor observable the variance is the same regardless of how the
-        observable is written, provided the wires it acts on are the same.
+        """Test that when given a tensor observable the variance is the same regardless of the order of terms
+        in the tensor observable, provided the wires each term acts on remain constant.
 
         eg:
         ob1 = qml.PauliZ(wires=0) @ qml.PauliY(wires=1)
-        ob2 = qml.PauliY(wires=0) @ qml.PauliZ(wires=1)
+        ob2 = qml.PauliY(wires=1) @ qml.PauliZ(wires=0)
 
         @qml.qnode(dev)
         def circ(obs):
