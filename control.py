@@ -17,8 +17,8 @@ def transform_top_level_function(node: ast.FunctionDef):
 
     tape = ast.Call()
     tape.func = tape_name
-    arguments = list((map(lambda arg: ast.Str(arg.arg), node.args.args)))
-    tape.args = arguments
+    arg_names = list((map(lambda arg: arg.arg, node.args.args)))
+    tape.args = list((map(lambda arg: ast.Str(arg), arg_names)))
     tape.keywords = {}
 
     with_block = ast.With()
