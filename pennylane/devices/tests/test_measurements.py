@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that the different measurement types work correctly on a device."""
-# pylint: disable=no-self-use
-# pylint: disable=pointless-statement
+# pylint: disable=no-self-use,pointless-statement, no-member
 import pytest
 from flaky import flaky
 from scipy.sparse import coo_matrix
@@ -438,6 +437,7 @@ class TestTensorExpval:
         expected = -(np.cos(varphi) * np.sin(phi) + np.sin(varphi) * np.cos(theta)) / np.sqrt(2)
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "base_obs, permuted_obs",
         list(zip(obs_lst, obs_permuted_lst)),
@@ -1276,6 +1276,7 @@ class TestTensorVar:
         ) / 4
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
+    # pylint: disable=too-many-arguments
     @pytest.mark.parametrize(
         "base_obs, permuted_obs",
         list(zip(obs_lst, obs_permuted_lst)),
