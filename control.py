@@ -106,8 +106,6 @@ def script(fn):
 
 @script
 def circuit(x, y):
-    # with QuantumTape() as tape:
-    #     pass
     while y > 0 and x == 0:
         if x > 3:
             if y < 10:
