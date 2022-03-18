@@ -118,10 +118,10 @@ class QubitDevice(Device):
               O_2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
 
           Notice that while the explicit tensor product matrix representation of :code:`O_1` and :code:`O_2` is
-          different, the underlying operator is identical due to the wire labeling. If we wish to compute the
-          expectation value of such an observable, we must ensure it is identical in both cases. To facilitate this,
-          we permute the wires in our state vector such that they are consistent with this swapping of order in the
-          tensor observable.
+          different, the underlying operator is identical due to the wire labelling (assuming the labels in
+          ascending order are {0,1,2}). If we wish to compute the expectation value of such an observable, we must
+          ensure it is identical in both cases. To facilitate this, we permute the wires in our state vector such
+          that they are consistent with this swapping of order in the tensor observable.
 
         .. code-block:: python
 
@@ -130,12 +130,18 @@ class QubitDevice(Device):
               >>> print(O_2.wires)
               <Wires = [2, 0, 1]>
 
-          We might naively think that we must permute our state vector to match the wire order of our observable.
-          We must be careful and realize that the observable wire order DOES NOT contain the same permutation as the
-          observables themselves. If we directly compare :code:`O_1` and :code:`O_2`, we see that each term in the tensor product
-          was shifted one position forward (i.e 0 --> 1, 1 --> 2, 2 --> 0).
+          We might naively think that we must permute our state vector to match the wire order of our tensor observable.
+          We must be careful and realize that the wire order of the terms in the tensor observable DOES NOT match the
+          permutation of the terms themselves. As an example we directly compare :code:`O_1` and :code:`O_2`:
 
-          Thus, the correct wire ordering should be :code:`permuted_wires = <Wires = [1, 2, 0]>`.
+          The first term in :code:`O_1` (:code:`qml.Identity(wires=0)`) became the second term in :code:`O_2`.
+          By similar comparison we see that each term in the tensor product was shifted one position forward
+          (i.e 0 --> 1, 1 --> 2, 2 --> 0). The wires in our permuted quantum state should follow their respective
+          terms in the tensor product observable.
+
+          Thus, the correct wire ordering should be :code:`permuted_wires = <Wires = [1, 2, 0]>`. But if we had
+          taken the naive approach we would have permuted our state according to
+          :code:`permuted_wires = <Wires = [2, 0, 1]>` which is NOT correct.
 
           This function uses the observable wires and the global device wire ordering in order to determine the
           permutation of the wires in the observable required such that if our quantum state vector is
