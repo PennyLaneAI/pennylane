@@ -530,6 +530,17 @@ class Operator(abc.ABC):
         """
         raise MatrixUndefinedError
 
+    # pylint: disable=no-self-argument
+    @classproperty
+    def has_matrix(cls):
+        r"""Bool: Whether or not the Operator returns a defined matrix.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return (cls.compute_matrix != Operator.compute_matrix) or (
+            cls.get_matrix != Operator.get_matrix
+        )
+
     @property
     def matrix(self):
         r"""Matrix representation of an instantiated operator
