@@ -112,7 +112,8 @@ class QubitDevice(Device):
         Suppose we are given an observable :math:`\hat{O} = \Identity \otimes \Identity \otimes \hat{Z}`.
         This observable can be represented in many ways:
 
-        .. code::
+      .. code-block:: python
+
             O_1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
             O_2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
 
@@ -122,7 +123,8 @@ class QubitDevice(Device):
         we permute the wires in our state vector such that they are consistent with this swapping of order in the
         tensor observable.
 
-        .. code::
+      .. code-block:: python
+
             >>> print(0_1.wires)
             <Wires = [0, 1, 2]>
             >>> print(O_2.wires)
@@ -130,7 +132,7 @@ class QubitDevice(Device):
 
         We might naively think that we must permute our state vector to match the wire order of our observable.
         We must be careful and realize that the observable wire order DOES NOT contain the same permutation as the
-        observables themselves. If we directly compare :code:`O_1` and :code:`O_2`, we see that each sub-observable
+        observables themselves. If we directly compare :code:`O_1` and :code:`O_2`, we see that each term in the tensor product
         was shifted one position forward (i.e 0 --> 1, 1 --> 2, 2 --> 0).
 
         Thus, the correct wire ordering should be :code:`permuted_wires = <Wires = [1, 2, 0]>`.
@@ -143,7 +145,7 @@ class QubitDevice(Device):
             observable (Observable): the observable whose wires are to be permuted.
 
         Returns:
-            permuted_wires (Wires): permuted wires object.
+            permuted_wires (Wires): permuted wires object
         """
         ordered_obs_wire_lst = self.order_wires(
             observable.wires

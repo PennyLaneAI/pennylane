@@ -337,7 +337,7 @@ class Device(abc.ABC):
             subset_wires (Wires): The subset of device wires (in any order).
 
         Raise:
-            ValueError: Could not find some or all subset wires {subset_wires} in device wires {device_wires}.
+            ValueError: Could not find some or all subset wires subset_wires in device wires device_wires.
 
         Return:
             ordered_wires (Wires): a new Wires object containing the re-ordered wires set

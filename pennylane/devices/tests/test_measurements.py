@@ -448,7 +448,8 @@ class TestTensorExpval:
         """Test that when given a tensor observable the expectation value is the same regardless of how the
         observable is written, provided the wires it acts on are the same.
 
-        eg:
+        For example:
+
         ob1 = qml.PauliZ(wires=0) @ qml.PauliY(wires=1)
         ob2 = qml.PauliY(wires=0) @ qml.PauliZ(wires=1)
 
@@ -474,7 +475,8 @@ class TestTensorExpval:
         """Test that when given a tensor observable the expectation value is the same regardless of how the
         wires are labelled, as long as they match the device order.
 
-        eg:
+        For example:
+
         dev1 = qml.device("default.qubit", wires=[0, 1, 2])
         dev2 = qml.device("default.qubit", wires=['c', 'b', 'a']
 
