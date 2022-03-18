@@ -145,7 +145,7 @@ class TestSingleOperation:
         [
             (
                 # coordinates and values of a sparse Hamiltonian computed for H2
-                # at the geometry [[0.0, 0.0, 0.3674625962], [0.0, 0.0, -0.3674625962]]
+                # with geometry = np.array([[0.0, 0.0, 0.3674625962], [0.0, 0.0, -0.3674625962]])
                 np.array([0, 1, 2, 3, 3, 4, 5, 6, 6, 7, 8, 9, 9, 10, 11, 12, 12, 13, 14, 15]),
                 np.array([0, 1, 2, 3, 12, 4, 5, 6, 9, 7, 8, 6, 9, 10, 11, 3, 12, 13, 14, 15]),
                 np.array(
