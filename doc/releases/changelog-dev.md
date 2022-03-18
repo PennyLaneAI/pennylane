@@ -28,6 +28,8 @@
 * Circuit cutting now performs expansion to search for wire cuts in contained operations or tapes.
   [(#2340)](https://github.com/PennyLaneAI/pennylane/pull/2340)
 
+* The `QuantumTape` now processes all `Operator` objects into `_ops` list, instead of just `Operation` objects.
+
 <h3>Deprecations</h3>
 
 <h3>Breaking changes</h3>
@@ -63,8 +65,6 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 * The deprecated tape subclasses `QubitParamShiftTape`, `JacobianTape`, `CVParamShiftTape`, and
   `ReversibleTape` have been removed.
   [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
-
-<h3>Bug fixes</h3>
 
 <h3>Bug fixes</h3>
 
