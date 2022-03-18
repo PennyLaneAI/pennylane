@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
+# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 import cmath
 import warnings
 import numpy as np
@@ -2079,7 +2079,7 @@ class WireCut(Operation):
     grad_method = None
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires):  # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         Since this operator is a placeholder inside a circuit, it decomposes into an empty list.
