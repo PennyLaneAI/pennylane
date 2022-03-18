@@ -36,7 +36,7 @@ def eigvals(op, k=1, which="SA"):
     computing the `k` eigenvalues are `"LM"` (largest in magnitude), `"SM"` (smallest in magnitude),
     `"LA"` (largest algebraic), `"SA"` (smallest algebraic) and `"BE"` (k/2 from each end of the
     spectrum). For more details see
-    `here <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh>`_
+    `here <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh>`_.
 
     Args:
         op (.Operator, pennylane.QNode, .QuantumTape, or Callable): An operator, quantum node, tape,
