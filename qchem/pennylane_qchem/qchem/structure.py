@@ -818,7 +818,7 @@ def molecular_hamiltonian(
     + (0.176276408043196) [Z2 Z3]
     """
 
-    if method == 'differentiable':
+    if method == "differentiable":
         geometry = coordinates.reshape(len(symbols), 3)
         mol = qml.hf.Molecule(symbols, geometry)
         core, active = active_space(
