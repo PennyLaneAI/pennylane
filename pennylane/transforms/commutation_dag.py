@@ -124,25 +124,30 @@ def commutation_dag(circuit):
 
 # fmt: off
 
-_pauliz_group = {"PauliZ", "ctrl", "S", "T", "RZ", "PhaseShift", "MultiRZ", "Identity", "U1", "IsingZZ", "S.inv", "T.inv"}
-_swap_group = {"SWAP", "ISWAP", "SISWAP", "Identity"}
-_paulix_group = {"PauliX", "SX", "RX", "Identity", "IsingXX", "SX.inv"}
-_pauliy_group = {"PauliY", "RY", "Identity", "IsingYY"}
+def _create_commutation_map():
 
-_commutation_map = {}
-for group in [_paulix_group, _pauliy_group, _pauliz_group, _swap_group]:
-    for op in group:
-        _commutation_map[op] = group
-        
-for op in ("Hadamard", "U2", "U3", "Rot"):
-    _commutation_map[op] = {'Identity', op}
+    pauliz_group = {"PauliZ", "ctrl", "S", "T", "RZ", "PhaseShift", "MultiRZ", "Identity", "U1", "IsingZZ", "S.inv", "T.inv"}
+    swap_group = {"SWAP", "ISWAP", "SISWAP", "Identity"}
+    paulix_group = {"PauliX", "SX", "RX", "Identity", "IsingXX", "SX.inv"}
+    pauliy_group = {"PauliY", "RY", "Identity", "IsingYY"}
 
-for op in ('Barrier', 'WireCut', 'QubitStateVector', 'BasisState'):
-    _commutation_map[op] = {}
+    commutation_map = {}
+    for group in [paulix_group, pauliy_group, pauliz_group, swap_group]:
+        for op in group:
+            commutation_map[op] = group
+            
+    for op in ("Hadamard", "U2", "U3", "Rot"):
+        commutation_map[op] = {'Identity', op}
+
+    for op in ('Barrier', 'WireCut', 'QubitStateVector', 'BasisState'):
+        commutation_map[op] = {}
 
 
-_commutation_map['Identity'] = {"Hadamard", "PauliX", "PauliY", "PauliZ", "SWAP", "ctrl", "S", "T", "SX", "ISWAP", "SISWAP", "RX",
-            "RY", "RZ", "PhaseShift", "Rot", "MultiRZ", "Identity", "U1", "U2", "U3", "IsingXX", "IsingYY", "IsingZZ"}
+    commutation_map['Identity'] = {"Hadamard", "PauliX", "PauliY", "PauliZ", "SWAP", "ctrl", "S", "T", "SX", "ISWAP", "SISWAP", "RX",
+                "RY", "RZ", "PhaseShift", "Rot", "MultiRZ", "Identity", "U1", "U2", "U3", "IsingXX", "IsingYY", "IsingZZ"}
+    return _commutation_map
+
+_commutation_map = _create_commutation_map()
 
 def _commutes(op_name1, op_name2):
     """Determines whether or not two operations commute.
@@ -730,7 +735,6 @@ def _both_controlled(control_base, operation1, operation2):
     # Case 2.9: targets and controls overlap with targets and controls
     # equivalent to target_control and control_target and target_target:
     return _commutes("ctrl", control_base_1) and _commutes("ctrl", control_base_2)
-
 
 
 def _merge_no_duplicates(*iterables):
