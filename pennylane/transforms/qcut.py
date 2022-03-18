@@ -1962,7 +1962,7 @@ def find_and_place_cuts(
             instructions `here <https://kahypar.org/#the-python-interface>`__ to compile from
             source for Windows users.
         replace_wire_cuts (bool): Whether to replace :class:`~.WireCut` nodes with
-        :class:`MeasureNode` and :class:`PrepareNode` pairs. Defaults to ``False``.
+        :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs. Defaults to ``False``.
         kwargs: Additional keyword arguments to be passed to the callable ``cut_method``.
 
     Returns:
@@ -2002,10 +2002,10 @@ def find_and_place_cuts(
 
     >>> graph = qml.transforms.qcut.tape_to_graph(tape)
     >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
-    ...     graph=graph,
-    ...     num_fragments=2,
-    ...     imbalance=0.5,
-    ... )
+            graph=graph,
+            num_fragments=2,
+            imbalance=0.5,
+        )
 
     Visualizing the newly-placed cut:
 
