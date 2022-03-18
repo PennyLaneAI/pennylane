@@ -70,24 +70,34 @@ The basic components of operators are the following:
      >>> op.terms()
      ((1.0, 2.0), [PauliX(wires=[0]), PauliZ(wires=[0])])
 
-   * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix, :meth:`.Operator.eigvals`)
+   * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix, :meth:`.Operator.get_eigvals`)
      and diagonalizing gates (for the unitaries :meth:`.Operator.diagonalizing_gates`):
 
      >>> op = qml.PauliX(0)
      >>> op.diagonalizing_gates()
      [Hadamard(wires=[0])]
-     >>> op.eigvals()
+     >>> op.get_eigvals()
      [ 1 -1]
 
-   * Representation as a **matrix** (:meth:`.Operator.matrix`), as specified by a global wire order that tells us where the
+    .. note::
+
+        The :meth:`.Operator.get_eigvals` method is temporary and will be renamed to :meth:`.Operator.eigvals` in an
+        upcoming release. It is recommended to use the higher-level :func:`~.eigvals` function where possible.
+
+   * Representation as a **matrix** (:meth:`.Operator.get_matrix`), as specified by a global wire order that tells us where the
      wires are found on a register:
 
      >>> op = qml.PauliRot(0.2, "X", wires=["b"])
-     >>> op.matrix(wire_order=["a", "b"])
+     >>> op.get_matrix(wire_order=["a", "b"])
      [[9.95e-01-2.26e-18j 2.72e-17-9.98e-02j, 0+0j, 0+0j]
       [2.72e-17-9.98e-02j 9.95e-01-2.26e-18j, 0+0j, 0+0j]
       [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
       [0+0j, 0+0j, 2.72e-17-9.98e-02j 9.95e-01-2.26e-18j]]
+
+    .. note::
+
+        The :meth:`.Operator.get_matrix` method is temporary and will be renamed to :meth:`.Operator.matrix` in an
+        upcoming release. It is recommended to use the higher-level :func:`~.matrix` function where possible.
 
    * Representation as a **sparse matrix** (:meth:`.Operator.sparse_matrix`):
 
@@ -214,7 +224,7 @@ whether it supports operations using the operation name.
 - If the device registers support for an operation with the same name,
   PennyLane leaves the gate implementation up to the device. The device
   might have a hardcoded implementation, *or* it may refer to one of the
-  numerical representations of the operator (such as :meth:`.Operator.matrix`).
+  numerical representations of the operator (such as :meth:`.Operator.get_matrix`).
   
 - If the device does not register support for an operation with the same
   name, PennyLane will automatically decompose the gate using :meth:`.Operator.decomposition`.

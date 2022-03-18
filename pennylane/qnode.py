@@ -482,7 +482,7 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        self._tape = qml.tape.JacobianTape()
+        self._tape = qml.tape.QuantumTape()
 
         with self.tape:
             self._qfunc_output = self.func(*args, **kwargs)
@@ -504,7 +504,7 @@ class QNode:
             )
 
         terminal_measurements = [
-            m for m in self.tape.measurements if m.return_type != qml.operation.MidMeasure
+            m for m in self.tape.measurements if m.return_type != qml.measurements.MidMeasure
         ]
         if not all(ret == m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
@@ -532,7 +532,7 @@ class QNode:
         # 2. Move this expansion to Device (e.g., default_expand_fn or
         # batch_transform method)
         if any(
-            getattr(obs, "return_type", None) == qml.operation.MidMeasure
+            getattr(obs, "return_type", None) == qml.measurements.MidMeasure
             for obs in self.tape.operations
         ):
             self._tape = qml.defer_measurements(self._tape)

@@ -25,6 +25,7 @@ from .gradient_transform import (
     gradient_transform,
     grad_method_validation,
     choose_grad_methods,
+    gradient_analysis,
 )
 from .finite_difference import finite_diff, generate_shifted_tapes
 from .general_shift_rules import process_shifts
@@ -109,37 +110,6 @@ def _get_operation_recipe(tape, t_idx, shifts):
     return coeffs, mults, shifts
 
 
-def _gradient_analysis(tape, use_graph=True):
-    """Update the parameter information dictionary of the tape with
-    gradient information of each parameter."""
-
-    if getattr(tape, "_gradient_fn", None) is param_shift:
-        # gradient analysis has already been performed on this tape
-        return
-
-    tape._gradient_fn = param_shift
-
-    for idx, info in tape._par_info.items():
-
-        if idx not in tape.trainable_params:
-            # non-trainable parameters do not require a grad_method
-            info["grad_method"] = None
-        else:
-            op = tape._par_info[idx]["op"]
-
-            if not qml.operation.has_grad_method(op):
-                # no differentiation method is registered for this operation
-                info["grad_method"] = None
-
-            elif (tape._graph is not None) or use_graph:
-                if not any(tape.graph.has_path(op, ob) for ob in tape.observables):
-                    # there is no influence of this operation on any of the observables
-                    info["grad_method"] = "0"
-                    continue
-
-            info["grad_method"] = op.grad_method
-
-
 def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0=None):
     r"""Generate the parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
@@ -188,7 +158,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
 
         if op.name == "Hamiltonian":
             # operation is a Hamiltonian
-            if op.return_type is not qml.operation.Expectation:
+            if op.return_type is not qml.measurements.Expectation:
                 raise ValueError(
                     "Can only differentiate Hamiltonian "
                     f"coefficients for expectations, not {op.return_type.value}"
@@ -306,7 +276,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
     argnum = argnum or tape.trainable_params
 
     # Determine the locations of any variance measurements in the measurement queue.
-    var_mask = [m.return_type is qml.operation.Variance for m in tape.measurements]
+    var_mask = [m.return_type is qml.measurements.Variance for m in tape.measurements]
     var_idx = np.where(var_mask)[0]
 
     # Get <A>, the expectation value of the tape with unshifted parameters.
@@ -316,7 +286,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
     for i in var_idx:
         obs = expval_tape._measurements[i].obs
         expval_tape._measurements[i] = qml.measurements.MeasurementProcess(
-            qml.operation.Expectation, obs=obs
+            qml.measurements.Expectation, obs=obs
         )
 
     gradient_tapes = [expval_tape]
@@ -356,7 +326,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
             # involutory observables A in the queue with A^2.
             obs = _square_observable(expval_sq_tape._measurements[i].obs)
             expval_sq_tape._measurements[i] = qml.measurements.MeasurementProcess(
-                qml.operation.Expectation, obs=obs
+                qml.measurements.Expectation, obs=obs
             )
 
         # Non-involutory observables are present; the partial derivative of <A^2>
@@ -573,7 +543,7 @@ def param_shift(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> with qml.tape.JacobianTape() as tape:
+        >>> with qml.tape.QuantumTape() as tape:
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
@@ -581,12 +551,12 @@ def param_shift(
         ...     qml.var(qml.PauliZ(0))
         >>> gradient_tapes, fn = qml.gradients.param_shift(tape)
         >>> gradient_tapes
-        [<JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>]
+        [<QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>]
 
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
@@ -600,7 +570,7 @@ def param_shift(
          [ 0.69916862  0.34072424  0.69202359]]
     """
 
-    if any(m.return_type is qml.operation.State for m in tape.measurements):
+    if any(m.return_type is qml.measurements.State for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of circuits that return the state is not supported."
         )
@@ -613,7 +583,7 @@ def param_shift(
         )
         return [], lambda _: ()
 
-    _gradient_analysis(tape)
+    gradient_analysis(tape, grad_fn=param_shift)
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = grad_method_validation(method, tape)
 
@@ -643,7 +613,7 @@ def param_shift(
     if gradient_recipes is None:
         gradient_recipes = [None] * len(argnum)
 
-    if any(m.return_type is qml.operation.Variance for m in tape.measurements):
+    if any(m.return_type is qml.measurements.Variance for m in tape.measurements):
         g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0)
     else:
         g_tapes, fn = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0)

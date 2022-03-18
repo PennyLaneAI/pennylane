@@ -140,7 +140,7 @@ class TestVJP:
         x = 0.543
         y = -0.654
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -165,7 +165,7 @@ class TestVJP:
         x = 0.543
         y = -0.654
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -191,7 +191,7 @@ class TestVJP:
         x = 0.543
         y = -0.654
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -240,7 +240,7 @@ class TestVJP:
         zero-like."""
         x = np.array([0.1], dtype=np.float64)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x[0], wires=0)
             qml.expval(qml.PauliZ(0))
 
@@ -280,7 +280,7 @@ class TestVJPGradients:
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x, dy):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 ansatz(x[0], x[1])
 
             tape.trainable_params = {0, 1}
@@ -306,7 +306,7 @@ class TestVJPGradients:
         params = torch.tensor(params_np, requires_grad=True, dtype=torch.float64)
         dy = torch.tensor([-1.0, 0.0, 0.0, 1.0], dtype=torch.float64)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             ansatz(params[0], params[1])
 
         tape.trainable_params = {0, 1}
@@ -334,7 +334,7 @@ class TestVJPGradients:
         dy = tf.constant([-1.0, 0.0, 0.0, 1.0], dtype=tf.float64)
 
         with tf.GradientTape() as t:
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 ansatz(params[0], params[1])
 
             tape.trainable_params = {0, 1}
@@ -393,7 +393,7 @@ class TestVJPGradients:
 
         @partial(jax.jit, static_argnums=1)
         def cost_fn(x, dy):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 ansatz(x[0], x[1])
 
             tape.trainable_params = {0, 1}
@@ -422,7 +422,7 @@ class TestBatchVJP:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.JacobianTape() as tape2:
+        with qml.tape.QuantumTape() as tape2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -478,7 +478,7 @@ class TestBatchVJP:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.JacobianTape() as tape2:
+        with qml.tape.QuantumTape() as tape2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -502,12 +502,12 @@ class TestBatchVJP:
         """Test the 'append' reduction strategy"""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape1:
+        with qml.tape.QuantumTape() as tape1:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.JacobianTape() as tape2:
+        with qml.tape.QuantumTape() as tape2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -531,12 +531,12 @@ class TestBatchVJP:
         """Test the 'extend' reduction strategy"""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape1:
+        with qml.tape.QuantumTape() as tape1:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.JacobianTape() as tape2:
+        with qml.tape.QuantumTape() as tape2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
