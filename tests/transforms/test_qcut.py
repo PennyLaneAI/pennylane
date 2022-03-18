@@ -3557,7 +3557,7 @@ class TestKaHyPar:
         if dangling_measure:
             with pytest.warns(
                 UserWarning,
-                match="The circuit contains `MeasureNode`/`PrepareNode` that is not paired up",
+                match="The circuit contains `MeasureNode` or `PrepareNode` operations",
             ):
                 graph = qcut._remove_existing_cuts(graph)
         else:
