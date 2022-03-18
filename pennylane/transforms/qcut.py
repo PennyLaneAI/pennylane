@@ -1676,17 +1676,17 @@ def _graph_to_hmetis(
     Args:
         graph (MultiDiGraph): The original (tape-converted) graph to be cut.
         hyperwire_weight (int): Weight on the artificially appended hyperedges representing wires.
-            Defaults to 0 which leads to no such insersion. If greater than 0, hyperedges will be
+            Defaults to 0 which leads to no such insertion. If greater than 0, hyperedges will be
             appended with the provided weight, to encourage the resulting fragments to cluster gates
             on the same wire together.
         edge_weights (Sequence[int]): Weights for regular edges in the graph. Defaults to ``None``,
             which leads to unit-weighted edges.
 
     Returns:
-        (Tuple[List,List,List]): The 3 lists representing an (optionally weighted) hypergraph:
+        Tuple[List,List,List]: The 3 lists representing an (optionally weighted) hypergraph:
         - Flattened list of adjacent node indices.
         - List of starting indices for edges in the above adjacent-nodes-list.
-        - Optional list of edge weights. None if ``hyperwire_weight`` is equal to 0.
+        - Optional list of edge weights. ``None`` if ``hyperwire_weight`` is equal to 0.
     """
 
     nodes = list(graph.nodes)
@@ -1736,7 +1736,11 @@ def kahypar_cut(
 ) -> List[Tuple[Operation, Operation, Any]]:
     """Calls `KaHyPar <https://kahypar.org/>`__ to partition a graph.
 
-    Requires KaHyPar to be installed separately with ``pip install kahypar``.
+    .. warning::
+        Requires KaHyPar to be installed separately. For Linux and Mac users,
+        KaHyPar can be installed using ``pip install kahypar``. Windows users
+        can follow the instructions
+        `here <https://kahypar.org>`__ to compile from source.
 
     Args:
         graph (nx.MultiDiGraph): The graph to be partitioned.
@@ -1940,8 +1944,8 @@ def _remove_existing_cuts(graph: MultiDiGraph) -> MultiDiGraph:
 
     if len([n for n in uncut_graph.nodes if isinstance(n, (MeasureNode, PrepareNode))]) > 0:
         warnings.warn(
-            "The circuit contains `MeasureNode`/`PrepareNode` that is not paired up correctly. "
-            "Please check.",
+            "The circuit contains `MeasureNode` or `PrepareNode` operations that are "
+            "not paired up correctly. Please check.",
             UserWarning,
         )
     return uncut_graph
@@ -1959,7 +1963,7 @@ def find_and_place_cuts(
             a list of edges to be cut based on a given set of constraints and objective. Defaults
             to :func:`kahypar_cut` which requires KaHyPar to be installed using
             ``pip install kahypar`` for Linux and Mac users or visiting the
-            instructions `here <https://kahypar.org/#the-python-interface>`__ to compile from
+            instructions `here <https://kahypar.org>`__ to compile from
             source for Windows users.
         replace_wire_cuts (bool): Whether to replace :class:`~.WireCut` nodes with
             :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs. Defaults to ``False``.
@@ -2009,7 +2013,7 @@ def find_and_place_cuts(
 
     Visualizing the newly-placed cut:
 
-    >>> print(qcut.graph_to_tape(cut_graph).draw())
+    >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
      0: ──RX(0.1)──╭C───────────────╭C────────╭┤ ⟨X ⊗ Y ⊗ Z⟩
      1: ──RY(0.2)──╰X──//──╭C───//──╰X────────│┤
      a: ──RX(0.3)──╭C──────╰X──╭C────RX(0.5)──├┤ ⟨X ⊗ Y ⊗ Z⟩
