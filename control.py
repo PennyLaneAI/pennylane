@@ -1,5 +1,6 @@
 import inspect
 import ast
+import asttokens
 
 import astunparse
 
@@ -31,7 +32,8 @@ def transform_top_level_function(node: ast.FunctionDef):
 
 class ControlFlowTransformer(ast.NodeTransformer):
 
-    def __init__(self, arg_names, *args, **kwargs):
+    def __init__(self, arg_names, tokens, *args, **kwargs):
+        self.tokens = tokens
         self.arg_names = arg_names
         super().__init__(*args, **kwargs)
 
@@ -83,6 +85,13 @@ class ControlFlowTransformer(ast.NodeTransformer):
         with_block.items = [tape]
         return with_block
 
+    def visit_Assign(self, node):
+        code = self.tokens.get_text(node)
+        code.split("\n")
+        print(code)
+        # self.generic_visit(node)
+        return node
+
     def visit_Name(self, node):
 
         if node.id in self.arg_names:
@@ -95,11 +104,14 @@ class ControlFlowTransformer(ast.NodeTransformer):
 
 def script(fn):
     fn_source = inspect.getsource(fn)
+
     print(fn_source)
     fn_ast = ast.parse(fn_source)
+    tokens = asttokens.ASTTokens(fn_source)
+    tokens.mark_tokens(fn_ast)
     trimmed_ast = fn_ast.body[0]
     tape_ast, arg_names = transform_top_level_function(trimmed_ast)
-    cft = ControlFlowTransformer(arg_names)
+    cft = ControlFlowTransformer(arg_names, tokens)
     transformed_ast = cft.visit(tape_ast)
     print(astunparse.unparse(transformed_ast))
 
@@ -110,4 +122,5 @@ def circuit(x, y):
         if x > 3:
             if y < 10:
                 qml.RX(x + 10, wires=0)
+        x = 1 + x
     return qml.expval(qml.PauliX(wires=0))
