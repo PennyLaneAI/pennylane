@@ -86,14 +86,16 @@ class ControlFlowTransformer(ast.NodeTransformer):
         return with_block
 
     def visit_Assign(self, node):
+        self.dont_allow(node)
+
+    def dont_allow(self, node):
         code = self.tokens.get_text(node)
         code_lines = code.split("\n")
         code_lines.insert(1, f"<<< {type(node).__name__} is not allowed in pennylane-script")
         code_lines_snippet = code_lines[:min(3, len(code_lines))]
         raise ValueError("\n" + "\n".join(code_lines_snippet))
 
-        # self.generic_visit(node)
-        # return node
+
 
     def visit_Name(self, node):
 
