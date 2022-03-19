@@ -85,6 +85,9 @@ class ControlFlowTransformer(ast.NodeTransformer):
         with_block.items = [tape]
         return with_block
 
+    def visit_FunctionDef(self, node):
+        self.dont_allow(node)
+
     def visit_Assign(self, node):
         self.dont_allow(node)
 
