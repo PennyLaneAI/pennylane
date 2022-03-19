@@ -28,8 +28,6 @@
   seamless.
   [(#2342)](https://github.com/PennyLaneAI/pennylane/pull/2342)
 
-  Given a `QuantumTape` object, the underlying quantum circuit with its
-  operations and measurements can now be accessed in multiple ways.
   ```python
   with qml.tape.QuantumTape() as tape:
       qml.RX(0.432, wires=0)
@@ -39,8 +37,8 @@
       qml.expval(qml.PauliZ(wires=[0]))
   ```
 
-  The underlying quantum circuit of the tape can be iterated over using a `for`
-  loop:
+  Given a `QuantumTape` object, the underlying quantum circuit can be iterated
+  over using a `for` loop:
 
   ```pycon
   >>> for op in tape:
