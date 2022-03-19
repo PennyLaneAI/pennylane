@@ -1410,3 +1410,21 @@ class QuantumTape(AnnotatedQueue):
     # if they need to perform any logic in between the user's
     # call to tape.execute and the internal call to tape.execute_device.
     _execute = execute_device
+
+
+class FunctionTape(QuantumTape):
+
+    def __init__(self, param_names, *args, **kwargs):
+        self.param_names = param_names
+        super().__init__(*args, **kwargs)
+
+class IfTape(QuantumTape):
+
+    def __init__(self, expr, *args, **kwargs):
+        self.expr = expr
+        super().__init__(*args, **kwargs)
+
+class WhileTape(QuantumTape):
+    def __init__(self, expr, *args, **kwargs):
+        self.expr = expr
+        super().__init__(*args, **kwargs)
