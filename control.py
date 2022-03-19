@@ -32,9 +32,11 @@ def transform_top_level_function(node: ast.FunctionDef):
 
 class ControlFlowTransformer(ast.NodeTransformer):
 
-    def __init__(self, arg_names, tokens, *args, **kwargs):
+    def __init__(self, arg_names, tokens, globals, line_num, *args, **kwargs):
         self.tokens = tokens
         self.arg_names = arg_names
+        self.globals = globals
+        self.lin_num = line_num
         super().__init__(*args, **kwargs)
 
     def visit_If(self, node):
@@ -91,6 +93,16 @@ class ControlFlowTransformer(ast.NodeTransformer):
     def visit_Assign(self, node):
         self.dont_allow(node)
 
+    def visit_Attribute(self, node):
+        if isinstance(node.value, ast.Name):
+            # root node
+            if self.globals[node.value.id].__name__ == "pennylane":
+                return node
+            else:
+                raise ValueError("bad import")
+
+        return node
+
     def dont_allow(self, node):
         code = self.tokens.get_text(node)
         code_lines = code.split("\n")
@@ -119,7 +131,9 @@ def script(fn):
     tokens.mark_tokens(fn_ast)
     trimmed_ast = fn_ast.body[0]
     tape_ast, arg_names = transform_top_level_function(trimmed_ast)
-    cft = ControlFlowTransformer(arg_names, tokens)
+    parent_frame = inspect.currentframe().f_back
+    fun_lin_num = parent_frame.f_lineno + 1
+    cft = ControlFlowTransformer(arg_names, tokens, parent_frame.f_globals, fun_lin_num)
     transformed_ast = cft.visit(tape_ast)
     print(astunparse.unparse(transformed_ast))
 
@@ -130,5 +144,4 @@ def circuit(x, y):
         if x > 3:
             if y < 10:
                 qml.RX(x + 10, wires=0)
-        x = 1 + x
     return qml.expval(qml.PauliX(wires=0))
