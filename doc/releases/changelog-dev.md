@@ -24,7 +24,7 @@
 <h3>Improvements</h3>
 
 * `QuantumTape` objects are now iterable and accessing the
-  operations and measurements of the underlying quantum circuit are more
+  operations and measurements of the underlying quantum circuit is more
   seamless.
   [(#2342)](https://github.com/PennyLaneAI/pennylane/pull/2342)
 
@@ -37,7 +37,7 @@
       qml.expval(qml.PauliZ(wires=[0]))
   ```
 
-  Given a `QuantumTape` object, the underlying quantum circuit can be iterated
+  Given a `QuantumTape` object the underlying quantum circuit can be iterated
   over using a `for` loop:
 
   ```pycon
