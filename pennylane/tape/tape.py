@@ -1416,15 +1416,35 @@ class FunctionTape(QuantumTape):
 
     def __init__(self, param_names, *args, **kwargs):
         self.param_names = param_names
+        self.values = None
+        self.vars = {param_names[i]:(lambda: self.values[i]) for i in range(len(param_names))}
         super().__init__(*args, **kwargs)
+
+    def __call__(self, *args):
+        self.values = args
+        with QuantumTape() as tape:
+            for op in self.queue:
+                if isinstance(op, IfTape):
+                    if op.expr():
+                        for if_op in op.queue:
+                            qml.apply(if_op)
+                if isinstance(op, WhileTape):
+                    while(op.expr()):
+                        for while_op in op.queue:
+                            qml.apply(while_op)
+                qml.apply(op)
+        return tape
+
+
+
 
 class IfTape(QuantumTape):
 
     def __init__(self, expr, *args, **kwargs):
-        self.expr = expr
         super().__init__(*args, **kwargs)
+        self.expr = expr
 
 class WhileTape(QuantumTape):
     def __init__(self, expr, *args, **kwargs):
-        self.expr = expr
         super().__init__(*args, **kwargs)
+        self.expr = expr
