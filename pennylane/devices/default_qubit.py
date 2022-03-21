@@ -242,6 +242,8 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
+        if operation.base_name == "Identity":
+            return state
         wires = operation.wires
 
         if operation.base_name in self._apply_ops:
