@@ -493,8 +493,7 @@ def _boys(n, t):
     Returns:
         float: value of the Boys function
     """
-    eps = 1e-30
-    tf = t.flatten() + eps
+    tf = t.flatten() + anp.finfo(anp.float64).eps ** 2
 
     f = asp.special.gammainc(n + 0.5, tf) * asp.special.gamma(n + 0.5) / (2 * tf ** (n + 0.5))
     o_z = anp.ones(len(tf))

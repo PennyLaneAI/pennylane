@@ -692,15 +692,19 @@ def _boys(n, t):
 
     Args:
         n (float): order of the Boys function
-        t (float): exponent of the Boys function
+        t (array[float]): exponent of the Boys function
 
     Returns:
         float: value of the Boys function
     """
-    if t == 0.0:
-        return 1 / (2 * n + 1)
+    tf = t.flatten() + anp.finfo(anp.float64).eps ** 2
 
-    return asp.special.gammainc(n + 0.5, t) * asp.special.gamma(n + 0.5) / (2 * t ** (n + 0.5))
+    f = asp.special.gammainc(n + 0.5, tf) * asp.special.gamma(n + 0.5) / (2 * tf ** (n + 0.5))
+    o_z = anp.ones(len(tf))
+    o_z[tf == 0] = 0.0
+    o_v = anp.zeros(len(tf))
+    o_v[tf == 0] = 1 / (2 * n + 1)
+    return (f * o_z + o_v).reshape(t.shape)
 
 
 def _hermite_coulomb(t, u, v, n, p, dr):
@@ -747,10 +751,7 @@ def _hermite_coulomb(t, u, v, n, p, dr):
     r = 0
 
     if t == u == v == 0:
-        f = []
-        for term in T.flatten():
-            f.append(_boys(n, term))
-        return ((-2 * p) ** n) * anp.array(f).reshape(T.shape)
+        return ((-2 * p) ** n) * _boys(n, T)
 
     if t == u == 0:
         if v > 1:
