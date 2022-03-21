@@ -4,6 +4,26 @@
 
 <h3>New features since last release</h3>
 
+* A differentiable quantum chemistry module is added to `qml.qchem`. The new module inherits a 
+  modified version of the differentiable Hartree-Fock solver from `qml.hf`, contains new functions
+  for building a differentiable dipole moment observable and also contains modified functions for 
+  building spin and particle number observables independent of external libraries.
+
+  - New functions are added for computing multipole moment molecular integrals
+    [(#2166)](https://github.com/PennyLaneAI/pennylane/pull/2166)
+  - New functions are added for building a differentiable dipole moment observable
+    [(#2173)](https://github.com/PennyLaneAI/pennylane/pull/2173)
+  - External dependencies are replaced with local functions for spin and particle number observables
+    [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
+  - New functions are added for building fermionic and qubit observables
+    [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
+  - A new module is created for hosting openfermion to pennylane observable conversion functions
+    [(#2199)](https://github.com/PennyLaneAI/pennylane/pull/2199)
+  - Expressive names are used for the Hartree-Fock solver functions
+    [(#2272)](https://github.com/PennyLaneAI/pennylane/pull/2272)
+  - These new additions are added to a feature branch
+    [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
+
 * Development of a circuit-cutting compiler extension to circuits with sampling
   measurements has begun:
 
@@ -11,12 +31,76 @@
     sample measurement without an observable specified to multiple single-qubit sample
     nodes.
     [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
+  - An automatic graph partitioning method `qcut.kahypar_cut()` has been implemented for cutting
+    arbitrary tape-converted graphs using the general purpose graph partitioning framework
+    [KaHyPar](https://pypi.org/project/kahypar/) which needs to be installed separately.
+    To integrate with the existing manual cut pipeline, method `qcut.find_and_place_cuts()` and related
+    utilities are implemented which uses `qcut.kahypar_cut()` as the default auto cutter.
+    [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
 
   - The existing `qcut.graph_to_tape()` method has been extended to convert
     graphs containing sample measurement nodes to tapes.
     [(#2321)](https://github.com/PennyLaneAI/pennylane/pull/2321)
 
+  - A `qcut.expand_fragment_tapes_mc()` method has been added to expand fragment
+    tapes to random configurations by replacing measure and prepare nodes with
+    sampled Pauli measurements and state preparations.
+    [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
+
 <h3>Improvements</h3>
+
+* `QuantumTape` objects are now iterable and accessing the
+  operations and measurements of the underlying quantum circuit is more
+  seamless.
+  [(#2342)](https://github.com/PennyLaneAI/pennylane/pull/2342)
+
+  ```python
+  with qml.tape.QuantumTape() as tape:
+      qml.RX(0.432, wires=0)
+      qml.RY(0.543, wires=0)
+      qml.CNOT(wires=[0, 'a'])
+      qml.RX(0.133, wires='a')
+      qml.expval(qml.PauliZ(wires=[0]))
+  ```
+
+  Given a `QuantumTape` object the underlying quantum circuit can be iterated
+  over using a `for` loop:
+
+  ```pycon
+  >>> for op in tape:
+  ...     print(op)
+  RX(0.432, wires=[0])
+  RY(0.543, wires=[0])
+  CNOT(wires=[0, 'a'])
+  RX(0.133, wires=['a'])
+  expval(PauliZ(wires=[0]))
+  ```
+
+  Indexing into the circuit is also allowed via `tape[i]`:
+
+  ```pycon
+  >>> tape[0]
+  RX(0.432, wires=[0])
+  ```
+
+  A tape object can also be converted to a sequence (e.g., to a `list`) of
+  operations and measurements:
+
+  ```pycon
+  >>> list(tape)
+  [RX(0.432, wires=[0]),
+   RY(0.543, wires=[0]),
+   CNOT(wires=[0, 'a']),
+   RX(0.133, wires=['a']),
+   expval(PauliZ(wires=[0]))]
+  ```
+
+* The function `qml.eigvals` is modified to use the efficient `scipy.sparse.linalg.eigsh`
+  method for obtaining the eigenvalues of a `SparseHamiltonian`. This `scipy` method is called 
+  to compute :math:`k` eigenvalues of a sparse :math:`N \times N` matrix if `k` is smaller
+  than :math:`N-1`. If a larger :math:`k` is requested, the dense matrix representation of 
+  the Hamiltonian is constructed and the regular `qml.math.linalg.eigvalsh` is applied.
+  [(#2333)](https://github.com/PennyLaneAI/pennylane/pull/2333)
 
 * The function `qml.ctrl` was given the optional argument `control_values=None`.
   If overridden, `control_values` takes an integer or a list of integers corresponding to
@@ -98,4 +182,6 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee, Jay Soni.
+Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
+Anthony Hayes, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu, Jay Soni,
+Antal Száva.
