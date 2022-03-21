@@ -883,6 +883,7 @@ def attraction_integral(r, basis_a, basis_b):
 
     return _attraction_integral
 
+
 def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta):
     r"""Compute the electron-electron repulsion integral between four primitive Gaussian functions.
 
