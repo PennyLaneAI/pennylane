@@ -12,6 +12,7 @@ class FunctionTape(QuantumTape):
     def __call__(self, *args):
         self.values = args
 
+
 class Expr:
 
     def __init__(self, lambda_expr):
