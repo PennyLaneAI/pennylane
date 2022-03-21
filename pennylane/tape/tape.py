@@ -212,6 +212,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # Update circuit info
     new_tape._update_circuit_info()
     new_tape._output_dim = tape.output_dim
+    new_tape._qfunc_output = tape._qfunc_output
     return new_tape
 
 
@@ -337,6 +338,7 @@ class QuantumTape(AnnotatedQueue):
         self._specs = None
         self._depth = None
         self._output_dim = 0
+        self._qfunc_output = None
 
         self.wires = qml.wires.Wires([])
         self.num_wires = 0
