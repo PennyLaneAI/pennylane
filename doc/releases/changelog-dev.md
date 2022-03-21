@@ -23,6 +23,52 @@
 
 <h3>Improvements</h3>
 
+* `QuantumTape` objects are now iterable and accessing the
+  operations and measurements of the underlying quantum circuit is more
+  seamless.
+  [(#2342)](https://github.com/PennyLaneAI/pennylane/pull/2342)
+
+  ```python
+  with qml.tape.QuantumTape() as tape:
+      qml.RX(0.432, wires=0)
+      qml.RY(0.543, wires=0)
+      qml.CNOT(wires=[0, 'a'])
+      qml.RX(0.133, wires='a')
+      qml.expval(qml.PauliZ(wires=[0]))
+  ```
+
+  Given a `QuantumTape` object the underlying quantum circuit can be iterated
+  over using a `for` loop:
+
+  ```pycon
+  >>> for op in tape:
+  ...     print(op)
+  RX(0.432, wires=[0])
+  RY(0.543, wires=[0])
+  CNOT(wires=[0, 'a'])
+  RX(0.133, wires=['a'])
+  expval(PauliZ(wires=[0]))
+  ```
+
+  Indexing into the circuit is also allowed via `tape[i]`:
+
+  ```pycon
+  >>> tape[0]
+  RX(0.432, wires=[0])
+  ```
+
+  A tape object can also be converted to a sequence (e.g., to a `list`) of
+  operations and measurements:
+
+  ```pycon
+  >>> list(tape)
+  [RX(0.432, wires=[0]),
+   RY(0.543, wires=[0]),
+   CNOT(wires=[0, 'a']),
+   RX(0.133, wires=['a']),
+   expval(PauliZ(wires=[0]))]
+  ```
+
 * The function `qml.eigvals` is modified to use the efficient `scipy.sparse.linalg.eigsh`
   method for obtaining the eigenvalues of a `SparseHamiltonian`. This `scipy` method is called 
   to compute :math:`k` eigenvalues of a sparse :math:`N \times N` matrix if `k` is smaller
@@ -111,4 +157,4 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Anthony Hayes,
-Josh Izaac, Soran Jahangiri, Christina Lee, Jay Soni.
+Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Jay Soni, Antal Száva.

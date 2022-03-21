@@ -273,6 +273,139 @@ class TestConstruction:
         expected = "<QuantumTape: wires=[0], params=1>"
         assert s == expected
 
+    def test_circuit_property(self):
+        """Test that the underlying circuit property returns the correct
+        operations and measurements making up the circuit."""
+        r = 1.234
+        terminal_measurement = qml.expval(qml.PauliZ(0))
+
+        def f(x):
+            qml.PauliX(1)
+            qml.RY(x, wires=1)
+            qml.PauliZ(1)
+
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(0)
+            qml.cond(m_0, f)(r)
+            qml.apply(terminal_measurement)
+
+        target_wire = qml.wires.Wires(1)
+
+        assert len(tape.circuit) == 5
+        assert tape.circuit[0].return_type == qml.measurements.MidMeasure
+
+        assert isinstance(tape.circuit[1], qml.transforms.condition.Conditional)
+        assert isinstance(tape.circuit[1].then_op, qml.PauliX)
+        assert tape.circuit[1].then_op.wires == target_wire
+
+        assert isinstance(tape.circuit[2], qml.transforms.condition.Conditional)
+        assert isinstance(tape.circuit[2].then_op, qml.RY)
+        assert tape.circuit[2].then_op.wires == target_wire
+        assert tape.circuit[2].then_op.data == [r]
+
+        assert isinstance(tape.circuit[3], qml.transforms.condition.Conditional)
+        assert isinstance(tape.circuit[3].then_op, qml.PauliZ)
+        assert tape.circuit[3].then_op.wires == target_wire
+
+        assert tape.circuit[4] is terminal_measurement
+
+
+class TestIteration:
+    """Test the capabilities related to iterating over tapes."""
+
+    @pytest.fixture
+    def make_tape(self):
+        ops = []
+        meas = []
+
+        with QuantumTape() as tape:
+            ops += [qml.RX(0.432, wires=0)]
+            ops += [qml.Rot(0.543, 0, 0.23, wires=0)]
+            ops += [qml.CNOT(wires=[0, "a"])]
+            ops += [qml.RX(0.133, wires=4)]
+            meas += [qml.expval(qml.PauliX(wires="a"))]
+            meas += [qml.probs(wires=[0, "a"])]
+
+        return tape, ops, meas
+
+    def test_tape_is_iterable(self, make_tape):
+        """Test the iterable protocol: that we can iterate over a tape because
+        an iterator object can be obtained using the iter function."""
+        tape, ops, meas = make_tape
+
+        expected = ops + meas
+
+        tape_iterator = iter(tape)
+
+        iterating = True
+
+        counter = 0
+
+        while iterating:
+            try:
+                next_tape_elem = next(tape_iterator)
+
+                assert next_tape_elem is expected[counter]
+                counter += 1
+
+            except StopIteration:
+
+                # StopIteration is raised by next when there are no more
+                # elements to iterate over
+                iterating = False
+
+        assert counter == len(expected)
+
+    def test_tape_is_sequence(self, make_tape):
+        """Test the sequence protocol: that a tape is a sequence because its
+        __len__ and __getitem__ methods work as expected."""
+        tape, ops, meas = make_tape
+
+        expected = ops + meas
+
+        for idx, exp_elem in enumerate(expected):
+            tape[idx] is exp_elem
+
+        assert len(tape) == len(expected)
+
+    def test_tape_as_list(self, make_tape):
+        """Test that a tape can be converted to a list."""
+        tape, ops, meas = make_tape
+        tape = list(tape)
+
+        expected = ops + meas
+        for op, exp_op in zip(tape, expected):
+            assert op is exp_op
+
+        assert len(tape) == len(expected)
+
+    def test_iteration_preserves_circuit(self):
+        """Test that iterating through a tape doesn't change the underlying
+        list of operations and measurements in the circuit."""
+
+        circuit = [
+            qml.RX(0.432, wires=0),
+            qml.Rot(0.543, 0, 0.23, wires=0),
+            qml.CNOT(wires=[0, "a"]),
+            qml.RX(0.133, wires=4),
+            qml.expval(qml.PauliX(wires="a")),
+            qml.probs(wires=[0, "a"]),
+        ]
+
+        with QuantumTape() as tape:
+            for op in circuit:
+                qml.apply(op)
+
+        # Check that the underlying circuit is as expected
+        assert tape.circuit == circuit
+
+        # Iterate over the tape
+        for op in tape:
+            op
+
+        # Check that the underlying circuit is still as expected
+        assert tape.circuit == circuit
+
 
 class TestGraph:
     """Tests involving graph creation"""
