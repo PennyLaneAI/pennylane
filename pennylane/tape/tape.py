@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,7 +25,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
-from pennylane.operation import DecompositionUndefinedError, Sample
+from pennylane.operation import DecompositionUndefinedError
+from pennylane.measurements import Sample
 
 from .unwrap import UnwrapTape
 
@@ -154,8 +155,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         # by default expand all objects
         stop_at = lambda obj: False
 
-    new_tape = tape.__class__()
-    new_tape.__bare__ = getattr(tape, "__bare__", tape.__class__)
+    new_tape = QuantumTape()
 
     # Check for observables acting on the same wire. If present, observables must be
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
@@ -236,8 +236,11 @@ class QuantumTape(AnnotatedQueue):
             qml.RX(0.133, wires='a')
             qml.expval(qml.PauliZ(wires=[0]))
 
-    Once constructed, information about the quantum circuit can be queried:
+    Once constructed, the tape may act as a quantum circuit and information
+    about the quantum circuit can be queried:
 
+    >>> list(tape)
+    [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(PauliZ(wires=[0]))]
     >>> tape.operations
     [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
     >>> tape.observables
@@ -248,6 +251,24 @@ class QuantumTape(AnnotatedQueue):
     <Wires = [0, 'a']>
     >>> tape.num_params
     3
+
+    Iterating over the quantum circuit can be done by iterating over the tape
+    object:
+
+    >>> for op in tape:
+    ...     print(op)
+    RX(0.432, wires=[0])
+    RY(0.543, wires=[0])
+    CNOT(wires=[0, 'a'])
+    RX(0.133, wires=['a'])
+    expval(PauliZ(wires=[0]))
+
+    Tapes can also as sequences and support indexing and the ``len`` function:
+
+    >>> tape[0]
+    RX(0.432, wires=[0])
+    >>> len(tape)
+    5
 
     The :class:`~.CircuitGraph` can also be accessed:
 
@@ -350,6 +371,42 @@ class QuantumTape(AnnotatedQueue):
             QuantumTape._lock.release()
 
     @property
+    def circuit(self):
+        """Returns the quantum circuit recorded by the tape.
+
+        The circuit is created with the assumptions that:
+
+        * The ``operations`` attribute contains quantum operations and
+          mid-circuit measurements and
+        * The ``measurements`` attribute contains terminal measurements.
+
+        Note that the resulting list could contain MeasurementProcess objects
+        that some devices may not support.
+
+        Returns:
+
+            list[.Operator, .MeasurementProcess]: the quantum circuit
+            containing quantum operations and measurements as recorded by the
+            tape.
+        """
+        return self.operations + self.measurements
+
+    def __iter__(self):
+        """list[.Operator, .MeasurementProcess]: Return an iterator to the
+        underlying quantum circuit object."""
+        return iter(self.circuit)
+
+    def __getitem__(self, idx):
+        """list[.Operator]: Return the indexed operator from underlying quantum
+        circuit object."""
+        return self.circuit[idx]
+
+    def __len__(self):
+        """int: Return the number of operations and measurements in the
+        underlying quantum circuit object."""
+        return len(self.circuit)
+
+    @property
     def interface(self):
         """str, None: automatic differentiation interface used by the quantum tape (if any)"""
         return None
@@ -429,7 +486,7 @@ class QuantumTape(AnnotatedQueue):
 
             elif isinstance(obj, qml.measurements.MeasurementProcess):
 
-                if obj.return_type == qml.operation.MidMeasure:
+                if obj.return_type == qml.measurements.MidMeasure:
 
                     # TODO: for now, consider mid-circuit measurements as tape
                     # operations such that the order of the operators in the
@@ -442,15 +499,15 @@ class QuantumTape(AnnotatedQueue):
                     self._measurements.append(obj)
 
                     # attempt to infer the output dimension
-                    if obj.return_type is qml.operation.Probability:
+                    if obj.return_type is qml.measurements.Probability:
                         self._output_dim += 2 ** len(obj.wires)
-                    elif obj.return_type is qml.operation.State:
+                    elif obj.return_type is qml.measurements.State:
                         continue  # the output_dim is worked out automatically
                     else:
                         self._output_dim += 1
 
                     # check if any sampling is occuring
-                    if obj.return_type is qml.operation.Sample:
+                    if obj.return_type is qml.measurements.Sample:
                         self.is_sampled = True
 
         self._update()
@@ -1089,47 +1146,36 @@ class QuantumTape(AnnotatedQueue):
 
         return self._specs
 
-    def draw(self, charset="unicode", wire_order=None, show_all_wires=False, max_length=None):
-        """Draw the quantum tape as a circuit diagram.
-
-        Consider the following circuit as an example:
-
-        .. code-block:: python3
-
-            with QuantumTape() as tape:
-                qml.Hadamard(0)
-                qml.CRX(2.3, wires=[0, 1])
-                qml.Rot(1.2, 3.2, 0.7, wires=[1])
-                qml.CRX(-2.3, wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        We can draw the tape after construction:
-
-        >>> print(tape.draw())
-        0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
-        1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
-        >>> print(tape.draw(charset="ascii"))
-        0: --H--+C----------------------------+C---------+| <Z @ Z>
-        1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z>
+    # pylint: disable=too-many-arguments
+    def draw(
+        self,
+        wire_order=None,
+        show_all_wires=False,
+        decimals=None,
+        max_length=100,
+        show_matrices=False,
+    ):
+        """Draw the quantum tape as a circuit diagram. See :func:`~.drawer.tape_text` for more information.
 
         Args:
-            charset (str, optional): The charset that should be used. Currently, "unicode" and
-                "ascii" are supported.
             wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
             show_all_wires (bool): If True, all wires, including empty wires, are printed.
-            max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
-
-        Raises:
-            ValueError: if the given charset is not supported
+            decimals (int): How many decimal points to include when formatting operation parameters.
+                Default ``None`` will omit parameters from operation labels.
+            max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
+                begin anew beneath the previous lines.
+            show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
 
         Returns:
             str: the circuit representation of the tape
         """
-        return self.graph.draw(
-            charset=charset,
+        return qml.drawer.tape_text(
+            self,
             wire_order=wire_order,
             show_all_wires=show_all_wires,
+            decimals=decimals,
             max_length=max_length,
+            show_matrices=show_matrices,
         )
 
     def to_openqasm(self, wires=None, rotations=True, measure_all=True, precision=None):
@@ -1238,7 +1284,7 @@ class QuantumTape(AnnotatedQueue):
     def data(self, params):
         self.set_parameters(params, trainable_only=False)
 
-    def copy(self, copy_operations=False, tape_cls=None):
+    def copy(self, copy_operations=False):
         """Returns a shallow copy of the quantum tape.
 
         Args:
@@ -1246,16 +1292,11 @@ class QuantumTape(AnnotatedQueue):
                 Otherwise, if False, the copied tape operations will simply be references
                 to the original tape operations; changing the parameters of one tape will likewise
                 change the parameters of all copies.
-            tape_cls (.QuantumTape): Cast the copied tape to a specific quantum tape subclass.
-                If not provided, the same subclass is used as the original tape.
 
         Returns:
             .QuantumTape: a shallow copy of the tape
         """
-        if tape_cls is None:
-            tape = self.__class__()
-        else:
-            tape = tape_cls()
+        tape = QuantumTape()
 
         if copy_operations:
             # Perform a shallow copy of all operations in the state prep, operation, and measurement

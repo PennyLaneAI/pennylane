@@ -16,7 +16,7 @@ This module contains logic for the text based circuit drawer through the ``tape_
 """
 
 import pennylane as qml
-from pennylane.operation import Expectation, Probability, Sample, Variance, State
+from pennylane.measurements import Expectation, Probability, Sample, Variance, State
 
 from .drawable_layers import drawable_layers
 from .utils import convert_wire_order
@@ -273,9 +273,7 @@ def tape_text(
     cache.setdefault("matrices", [])
     tape_cache = []
 
-    wire_map = convert_wire_order(
-        tape.operations + tape.measurements, wire_order=wire_order, show_all_wires=show_all_wires
-    )
+    wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
     n_wires = len(wire_map)
     if n_wires == 0:
         return ""

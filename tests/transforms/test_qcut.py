@@ -414,7 +414,7 @@ class TestTapeToGraph:
             assert node.wires == expected_node.wires
 
             if getattr(node, "obs", None) is not None:
-                assert node.return_type is qml.operation.Sample
+                assert node.return_type is qml.measurements.Sample
                 assert node.obs.name == expected_node.obs.name
 
     def test_sample_tensor_obs(self):
@@ -468,7 +468,7 @@ class TestTapeToGraph:
             assert node.wires == expected_node.wires
 
             if getattr(node, "obs", None) is not None:
-                assert node.return_type is qml.operation.Sample
+                assert node.return_type is qml.measurements.Sample
                 assert node.obs.name == expected_node.obs.name
 
 
@@ -1259,6 +1259,146 @@ class TestGraphToTape:
         assert m[0].wires == Wires([2])
         assert m[0].obs.name == "PauliZ"
 
+    def test_single_sample_meas_conversion(self):
+        """
+        Tests that subgraphs with sample nodes are correctly converted to
+        fragment tapes
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.sample(wires=[0, 1, 2])
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+        frag0_expected_meas = [qml.sample(qml.Projector([1], wires=[0]))]
+        frag1_expected_meas = [
+            qml.sample(qml.Projector([1], wires=[1])),
+            qml.sample(qml.Projector([1], wires=[2])),
+        ]
+
+        for meas, expected_meas in zip(tapes[0].measurements, frag0_expected_meas):
+            compare_measurements(meas, expected_meas)
+
+        # For tapes with multiple measurements, the ordering varies
+        # so we check the set of wires rather that the order
+        for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
+            assert meas.return_type is qml.measurements.Sample
+            assert isinstance(meas.obs, qml.Projector)
+            assert meas.obs.wires in {Wires(1), Wires(2)}
+
+    def test_sample_mid_circuit_meas(self):
+        """
+        Test that a circuit with sample measurements, that is partitioned into
+        fragments requiring mid-circuit measurements, has its fragment subgraphs
+        correctly converted into tapes
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.WireCut(wires=1)
+            qml.RZ(0.321, wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.Hadamard(wires=2)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.sample(wires=[0, 1, 2])
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        tapes = [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+        frag0_expected_meas = [
+            qml.sample(qml.Projector([1], wires=[0])),
+            qml.sample(qml.Projector([1], wires=[3])),
+        ]
+        frag1_expected_meas = [qml.sample(qml.Projector([1], wires=[2]))]
+
+        for meas, expected_meas in zip(tapes[0].measurements, frag1_expected_meas):
+            assert meas.return_type is qml.measurements.Sample
+            assert isinstance(meas.obs, qml.Projector)
+            assert meas.obs.wires in {Wires(0), Wires(3)}
+
+        for meas, expected_meas in zip(tapes[1].measurements, frag1_expected_meas):
+            compare_measurements(meas, expected_meas)
+
+        # sample measurements should not exist on the same wire as MeasureNodes at this stage
+        f0_sample_wires = [meas.wires for meas in tapes[0].measurements]
+        f0_measurenode_wires = [
+            op.wires for op in tapes[0].operations if isinstance(op, qcut.MeasureNode)
+        ]
+
+        f1_sample_wires = [meas.wires for meas in tapes[1].measurements]
+        f1_measurenode_wires = [
+            op.wires for op in tapes[1].operations if isinstance(op, qcut.MeasureNode)
+        ]
+
+        for f0_mn_wire in set(f0_measurenode_wires):
+            assert f0_mn_wire not in set(f0_sample_wires)
+
+        for f1_mn_wire in set(f1_measurenode_wires):
+            assert f1_mn_wire not in set(f1_sample_wires)
+
+    def test_mixed_measurements(self):
+        """
+        Tests thats a subgraph containing mixed measurements raises the correct
+        error message.
+        """
+
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=1)
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.sample(wires=[0, 1])
+            qml.expval(qml.PauliZ(wires=2))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        with pytest.raises(
+            ValueError, match="Only a single return type can be used for measurement "
+        ):
+            [qcut.graph_to_tape(sg) for sg in subgraphs]
+
+    def test_unsupported_meas(self):
+        """
+        Tests that a subgraph containing an unsupported measurement raises the
+        correct error message.
+        """
+        with qml.tape.QuantumTape() as tape:
+            qml.Hadamard(wires=0)
+            qml.var(qml.PauliZ(wires=0))
+
+        g = qcut.tape_to_graph(tape)
+        qcut.replace_wire_cut_nodes(g)
+        subgraphs, communication_graph = qcut.fragment_graph(g)
+
+        with pytest.raises(
+            ValueError,
+            match="Invalid return type. Only expecation value and sampling measurements ",
+        ):
+            [qcut.graph_to_tape(sg) for sg in subgraphs]
+
 
 class TestGetMeasurements:
     """Tests for the _get_measurements function"""
@@ -1580,6 +1720,241 @@ class TestExpandFragmentTapes:
 
         for tape, config in zip(expanded_tapes, expected_configs):
             compare_tapes(tape, config)
+
+
+class TestExpandFragmentTapesMC:
+    """
+    Tests that fragment tapes are correctly expanded to all random configurations
+    for the Monte Carlo sampling technique.
+    """
+
+    def test_expand_mc(self, monkeypatch):
+        """
+        Tests that fragment configurations are generated correctly using the
+        `expand_fragment_tapes_mc` function.
+        """
+        with qml.tape.QuantumTape() as tape0:
+            qml.Hadamard(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qcut.MeasureNode(wires=[1])
+            qml.sample(qml.Projector([1], wires=[0]))
+
+        with qml.tape.QuantumTape() as tape1:
+            qcut.PrepareNode(wires=[1])
+            qml.CNOT(wires=[1, 2])
+            qml.sample(qml.Projector([1], wires=[1]))
+            qml.sample(qml.Projector([1], wires=[2]))
+
+        tapes = [tape0, tape1]
+
+        edge_data = {"pair": (tape0.operations[2], tape1.operations[0])}
+        communication_graph = MultiDiGraph([(0, 1, edge_data)])
+
+        fixed_choice = np.array([[4, 0, 1]])
+        with monkeypatch.context() as m:
+            m.setattr(np.random, "choice", lambda a, size, replace: fixed_choice)
+            fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
+                tapes, communication_graph, 3
+            )
+
+        assert np.allclose(settings, fixed_choice)
+
+        frag_0_ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
+        frag_0_expected_meas = [
+            [qml.sample(qml.Projector([1], wires=[0])), qml.sample(qml.PauliY(wires=[1]))],
+            [qml.sample(qml.Projector([1], wires=[0])), qml.sample(qml.Identity(wires=[1]))],
+            [qml.sample(qml.Projector([1], wires=[0])), qml.sample(qml.Identity(wires=[1]))],
+        ]
+
+        expected_tapes_0 = []
+        for meas in frag_0_expected_meas:
+            with qml.tape.QuantumTape() as expected_tape:
+                for op in frag_0_ops:
+                    qml.apply(op)
+                for m in meas:
+                    qml.apply(m)
+
+            expected_tapes_0.append(expected_tape)
+
+        for tape, exp_tape in zip(fragment_configurations[0], expected_tapes_0):
+            compare_tapes(tape, exp_tape)
+
+        frag_1_expected_preps = [
+            [qml.Hadamard(wires=[1]), qml.S(wires=[1])],
+            [qml.Identity(wires=[1])],
+            [qml.PauliX(wires=[1])],
+        ]
+
+        frag_1_ops_and_meas = [
+            qml.CNOT(wires=[1, 2]),
+            qml.sample(qml.Projector([1], wires=[1])),
+            qml.sample(qml.Projector([1], wires=[2])),
+        ]
+
+        expected_tapes_1 = []
+        for preps in frag_1_expected_preps:
+            with qml.tape.QuantumTape() as expected_tape:
+                for prep in preps:
+                    qml.apply(prep)
+                for op in frag_1_ops_and_meas:
+                    qml.apply(op)
+            expected_tapes_1.append(expected_tape)
+
+        for tape, exp_tape in zip(fragment_configurations[1], expected_tapes_1):
+            compare_tapes(tape, exp_tape)
+
+    def test_expand_multinode_frag(self, monkeypatch):
+        """
+        Tests that fragments with multiple measure and prepare nodes are
+        expanded correctly.
+        """
+
+        with qml.tape.QuantumTape() as tape0:
+            qml.Hadamard(wires=[0])
+            qml.RX(0.432, wires=[0])
+            qml.RY(0.543, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qcut.MeasureNode(wires=[1])
+            qcut.PrepareNode(wires=[2])
+            qml.RZ(0.321, wires=[2])
+            qml.CNOT(wires=[0, 2])
+            qcut.MeasureNode(wires=[2])
+            qcut.PrepareNode(wires=[3])
+            qml.CNOT(wires=[0, 3])
+            qml.sample(qml.Projector([1], wires=[0]))
+            qml.sample(qml.Projector([1], wires=[3]))
+
+        with qml.tape.QuantumTape() as tape1:
+            qcut.PrepareNode(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qcut.MeasureNode(wires=[0])
+            qml.Hadamard(wires=[1])
+            qcut.PrepareNode(wires=[2])
+            qml.CNOT(wires=[2, 1])
+            qcut.MeasureNode(wires=[2])
+            qml.sample(qml.Projector([1], wires=[1]))
+
+        tapes = [tape0, tape1]
+
+        edge_data = [
+            (0, 1, {"pair": (tape0.operations[4], tape1.operations[0])}),
+            (1, 0, {"pair": (tape1.operations[2], tape0.operations[5])}),
+            (0, 1, {"pair": (tape0.operations[8], tape1.operations[4])}),
+            (1, 0, {"pair": (tape1.operations[6], tape0.operations[9])}),
+        ]
+        communication_graph = MultiDiGraph(edge_data)
+
+        fixed_choice = np.array([[4, 6], [1, 2], [2, 3], [3, 0]])
+        with monkeypatch.context() as m:
+            m.setattr(
+                np.random,
+                "choice",
+                lambda a, size, replace: fixed_choice,
+            )
+            fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
+                tapes, communication_graph, 2
+            )
+
+        assert np.allclose(settings, fixed_choice)
+
+        with qml.tape.QuantumTape() as config1:
+            qml.Hadamard(wires=[0])
+            qml.RX(0.432, wires=[0])
+            qml.RY(0.543, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.Hadamard(wires=[2])
+            qml.RZ(0.321, wires=[2])
+            qml.CNOT(wires=[0, 2])
+            qml.PauliX(wires=[3])
+            qml.Hadamard(wires=[3])
+            qml.CNOT(wires=[0, 3])
+            qml.sample(qml.Projector([1], wires=[0]))
+            qml.sample(qml.Projector([1], wires=[3]))
+            qml.sample(qml.PauliY(wires=[1]))
+            qml.sample(qml.Identity(wires=[2]))
+
+        with qml.tape.QuantumTape() as config2:
+            qml.Hadamard(wires=[0])
+            qml.RX(0.432, wires=[0])
+            qml.RY(0.543, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.PauliX(wires=[2])
+            qml.Hadamard(wires=[2])
+            qml.RZ(0.321, wires=[2])
+            qml.CNOT(wires=[0, 2])
+            qml.Identity(wires=[3])
+            qml.CNOT(wires=[0, 3])
+            qml.sample(qml.Projector([1], wires=[0]))
+            qml.sample(qml.Projector([1], wires=[3]))
+            qml.sample(qml.PauliZ(wires=[1]))
+            qml.sample(qml.PauliX(wires=[2]))
+
+        expected_configs = [config1, config2]
+
+        # check first fragment configs only for brevity
+        for config, exp_config in zip(fragment_configurations[0], expected_configs):
+            compare_tapes(config, exp_config)
+
+    def test_mc_measurements(self):
+        """
+        Tests that the measurements functions used in MC configutations are
+        correct
+        """
+        wire = "a"
+
+        tapes = []
+        for M in qcut.MC_MEASUREMENTS:
+            with qml.tape.QuantumTape() as tape:
+                M(wire)
+            tapes.append(tape)
+
+        expected_measurements = [
+            qml.sample(qml.Identity(wires=["a"])),
+            qml.sample(qml.Identity(wires=["a"])),
+            qml.sample(qml.PauliX(wires=["a"])),
+            qml.sample(qml.PauliX(wires=["a"])),
+            qml.sample(qml.PauliY(wires=["a"])),
+            qml.sample(qml.PauliY(wires=["a"])),
+            qml.sample(qml.PauliZ(wires=["a"])),
+            qml.sample(qml.PauliZ(wires=["a"])),
+        ]
+
+        measurements = [tape.measurements[0] for tape in tapes]
+
+        for meas, exp_meas in zip(measurements, expected_measurements):
+            compare_measurements(meas, exp_meas)
+
+    def test_mc_state_prep(self):
+        """
+        Tests that the state preparation functions used in MC configutations are
+        correct
+        """
+
+        wire = 3
+
+        tapes = []
+        for S in qcut.MC_STATES:
+            with qml.tape.QuantumTape() as tape:
+                S(wire)
+            tapes.append(tape)
+
+        expected_operations = [
+            [qml.Identity(wires=[3])],
+            [qml.PauliX(wires=[3])],
+            [qml.Hadamard(wires=[3])],
+            [qml.PauliX(wires=[3]), qml.Hadamard(wires=[3])],
+            [qml.Hadamard(wires=[3]), qml.S(wires=[3])],
+            [qml.PauliX(wires=[3]), qml.Hadamard(wires=[3]), qml.S(wires=[3])],
+            [qml.Identity(wires=[3])],
+            [qml.PauliX(wires=[3])],
+        ]
+
+        operations = [tape.operations for tape in tapes]
+
+        for ops, expected_ops in zip(operations, expected_operations):
+            for op, exp_op in zip(ops, expected_ops):
+                assert op.name == exp_op.name
+                assert op.wires == exp_op.wires
 
 
 class TestContractTensors:
@@ -2691,6 +3066,7 @@ class TestCutCircuitTransformValidation:
         to be cut"""
 
         with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliZ(1))
 
@@ -2700,14 +3076,18 @@ class TestCutCircuitTransformValidation:
     def test_no_measurements_raises(self):
         """Tests if a ValueError is raised when a tape with no measurement is requested
         to be cut"""
+        with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
+
         with pytest.raises(ValueError, match="The circuit cutting workflow only supports circuits"):
-            qcut.cut_circuit(qml.tape.QuantumTape())
+            qcut.cut_circuit(tape)
 
     def test_non_expectation_raises(self):
         """Tests if a ValueError is raised when a tape with measurements that are not expectation
         values is requested to be cut"""
 
         with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
             qml.var(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="workflow only supports circuits with expectation"):
@@ -2716,6 +3096,7 @@ class TestCutCircuitTransformValidation:
     def test_fail_import(self, monkeypatch):
         """Test if an ImportError is raised when opt_einsum is requested but not installed"""
         with qml.tape.QuantumTape() as tape:
+            qml.WireCut(wires=0)
             qml.expval(qml.PauliZ(0))
 
         with monkeypatch.context() as m:
@@ -2730,8 +3111,83 @@ class TestCutCircuitTransformValidation:
         with qml.tape.QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="to a circuit without any cuts"):
+        with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
             qcut.cut_circuit(tape)
+
+
+class TestCutCircuitExpansion:
+    """Test of expansion in the cut_circuit function"""
+
+    def test_no_expansion(self, mocker):
+        """Test if no/trivial expansion occurs if WireCut operations are already present in the
+        tape"""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            qml.WireCut(wires=0)
+            qml.RY(0.4, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        spy = mocker.spy(qcut.cut_circuit, "expand_fn")
+        qcut.cut_circuit(tape, device_wires=[0])
+        spy.assert_called_once()
+
+    def test_expansion(self, mocker):
+        """Test if expansion occurs if WireCut operations are present in a nested tape"""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            with qml.tape.QuantumTape() as _:
+                qml.WireCut(wires=0)
+            qml.RY(0.4, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        spy = mocker.spy(qcut.cut_circuit, "expand_fn")
+        qcut.cut_circuit(tape, device_wires=[0])
+
+        assert spy.call_count == 2
+
+    def test_expansion_error(self):
+        """Test if a ValueError is raised if expansion continues beyond the maximum depth"""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.3, wires=0)
+            with qml.tape.QuantumTape() as _:
+                with qml.tape.QuantumTape() as __:
+                    qml.WireCut(wires=0)
+            qml.RY(0.4, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
+            qcut.cut_circuit(tape, device_wires=[0], max_depth=1)
+
+    def test_expansion_ttn(self, mocker):
+        """Test if wire cutting is compatible with the tree tensor network operation"""
+
+        def block(weights, wires):
+            qml.CNOT(wires=[wires[0], wires[1]])
+            qml.RY(weights[0], wires=wires[0])
+            qml.RY(weights[1], wires=wires[1])
+            qml.WireCut(wires=wires[1])
+
+        n_wires = 4
+        n_block_wires = 2
+        n_params_block = 2
+        n_blocks = qml.TTN.get_n_blocks(range(n_wires), n_block_wires)
+        template_weights = [[0.1, -0.3]] * n_blocks
+
+        dev_cut = qml.device("default.qubit", wires=2)
+        dev_big = qml.device("default.qubit", wires=4)
+
+        def circuit(template_weights):
+            qml.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)
+            return qml.expval(qml.PauliZ(wires=n_wires - 1))
+
+        qnode = qml.QNode(circuit, dev_big)
+        qnode_cut = qcut.cut_circuit(qml.QNode(circuit, dev_cut))
+
+        spy = mocker.spy(qcut.cut_circuit, "expand_fn")
+        res = qnode_cut(template_weights)
+        assert spy.call_count == 2
+
+        assert np.isclose(res, qnode(template_weights))
 
 
 class TestCutStrategy:

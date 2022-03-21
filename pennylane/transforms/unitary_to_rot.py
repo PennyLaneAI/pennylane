@@ -129,7 +129,7 @@ def unitary_to_rot(tape):
                 return qml.expval(qml.PauliX(wires="a"))
     """
 
-    for op in tape.operations + tape.measurements:
+    for op in tape:
         if isinstance(op, qml.QubitUnitary):
             # Single-qubit unitary operations
             if qml.math.shape(op.parameters[0]) == (2, 2):
