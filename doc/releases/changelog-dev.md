@@ -1,508 +1,187 @@
 :orphan:
 
-# Release 0.22.0-dev (development release)
+# Release 0.23.0-dev (development release)
 
 <h3>New features since last release</h3>
 
-* A new transform for circuit optimization has been added. The pattern matching
-  transform takes a pattern as argument and look for all possibles matches in the
-  quantum circuit. It optimizes the circuit by gate replacement where it is possible.
-  [(#2032)](https://github.com/PennyLaneAI/pennylane/pull/2032)
-  
-  First we create a quantum circuit to be optimized.
-  ```pycon
-  def circuit():
-      qml.Toffoli(wires=[3, 4, 0])
-      qml.CNOT(wires=[1, 4])
-      qml.CNOT(wires=[2, 1])
-      qml.Hadamard(wires=3)
-      qml.PauliZ(wires=1)
-      qml.CNOT(wires=[2, 3])
-      qml.Toffoli(wires=[2, 3, 0])
-      qml.CNOT(wires=[1, 4])
-      return qml.expval(qml.PauliX(wires=0))
-  ```
+* A differentiable quantum chemistry module is added to `qml.qchem`. The new module inherits a 
+  modified version of the differentiable Hartree-Fock solver from `qml.hf`, contains new functions
+  for building a differentiable dipole moment observable and also contains modified functions for 
+  building spin and particle number observables independent of external libraries.
 
-  Then we define a pattern that implement the identity:
-  ```pycon
-  with qml.tape.QuantumTape() as pattern:
-      qml.CNOT(wires=[1, 2])
-      qml.CNOT(wires=[0, 1])
-      qml.CNOT(wires=[1, 2])
-      qml.CNOT(wires=[0, 1])
-      qml.CNOT(wires=[0, 2])
-  ```
+  - New functions are added for computing multipole moment molecular integrals
+    [(#2166)](https://github.com/PennyLaneAI/pennylane/pull/2166)
+  - New functions are added for building a differentiable dipole moment observable
+    [(#2173)](https://github.com/PennyLaneAI/pennylane/pull/2173)
+  - External dependencies are replaced with local functions for spin and particle number observables
+    [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
+  - New functions are added for building fermionic and qubit observables
+    [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
+  - A new module is created for hosting openfermion to pennylane observable conversion functions
+    [(#2199)](https://github.com/PennyLaneAI/pennylane/pull/2199)
+  - Expressive names are used for the Hartree-Fock solver functions
+    [(#2272)](https://github.com/PennyLaneAI/pennylane/pull/2272)
+  - These new additions are added to a feature branch
+    [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
 
-  For optimizing the circuit given the given following pattern of CNOTs we apply the `pattern_matching_optimization`
-  transform.
-  ```pycon
-  >>> dev = qml.device('default.qubit', wires=5)
-  >>> qnode = qml.QNode(circuit, dev)
-  >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
-  >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-  ```
+* Development of a circuit-cutting compiler extension to circuits with sampling
+  measurements has begun:
 
-  In our case, it is possible to find three CNOTs and replace this pattern with only two CNOTs and therefore
-  optimizing the circuit. The number of CNOTs in the circuit is reduced by one.
-  ```pycon
-  >>> qml.specs(qnode)()["gate_types"]["CNOT"]
-  3
+  - The existing `qcut.tape_to_graph()` method has been extended to convert a
+    sample measurement without an observable specified to multiple single-qubit sample
+    nodes.
+    [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
+  - An automatic graph partitioning method `qcut.kahypar_cut()` has been implemented for cutting
+    arbitrary tape-converted graphs using the general purpose graph partitioning framework
+    [KaHyPar](https://pypi.org/project/kahypar/) which needs to be installed separately.
+    To integrate with the existing manual cut pipeline, method `qcut.find_and_place_cuts()` and related
+    utilities are implemented which uses `qcut.kahypar_cut()` as the default auto cutter.
+    [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
 
-  >>> qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
-  2
-  
-  >>> print(qml.draw(qnode)())
-  0: ─╭X──────────╭X────┤  <X>
-  1: ─│──╭C─╭X──Z─│──╭C─┤
-  2: ─│──│──╰C─╭C─├C─│──┤
-  3: ─├C─│───H─╰X─╰C─│──┤
-  4: ─╰C─╰X──────────╰X─┤
+  - The existing `qcut.graph_to_tape()` method has been extended to convert
+    graphs containing sample measurement nodes to tapes.
+    [(#2321)](https://github.com/PennyLaneAI/pennylane/pull/2321)
 
-  >>> print(qml.draw(optimized_qnode)())
-  0: ─╭X──────────╭X─┤  <X>
-  1: ─│─────╭X──Z─│──┤
-  2: ─│──╭C─╰C─╭C─├C─┤
-  3: ─├C─│───H─╰X─╰C─┤
-  4: ─╰C─╰X──────────┤
-  ```
-
-* New functions and transforms of operators have been added. These include:
-
-  - `qml.matrix()` for computing the matrix representation of one or more unitary operators.
-    [(#2241)](https://github.com/PennyLaneAI/pennylane/pull/2241)
-    
-  - `qml.eigvals()` for computing the eigenvalues of one or more operators.
-    [(#2248)](https://github.com/PennyLaneAI/pennylane/pull/2248)
-
-  - `qml.generator()` for computing the generator of a single-parameter unitary operation.
-    [(#2256)](https://github.com/PennyLaneAI/pennylane/pull/2256)
-
-  All operator transforms can be used on instantiated operators,
-
-  ```pycon
-  >>> op = qml.RX(0.54, wires=0)
-  >>> qml.matrix(op)
-  [[0.9637709+0.j         0.       -0.26673144j]
-  [0.       -0.26673144j 0.9637709+0.j        ]]
-  ```
-
-  Operator transforms can also be used in a functional form:
-
-  ```pycon
-  >>> x = torch.tensor(0.6, requires_grad=True)
-  >>> matrix_fn = qml.matrix(qml.RX)
-  >>> matrix_fn(x)
-  tensor([[0.9553+0.0000j, 0.0000-0.2955j],
-          [0.0000-0.2955j, 0.9553+0.0000j]], grad_fn=<AddBackward0>)
-  ```
-
-  In its functional form, it is fully differentiable with respect to gate arguments:
-
-  ```pycon
-  >>> loss = torch.real(torch.trace(matrix_fn(x, wires=0)))
-  >>> loss.backward()
-  >>> x.grad
-  tensor(-0.5910)
-  ```
-
-  Some operator transform can also act on multiple operations, by passing
-  quantum functions or tapes:
-
-  ```pycon
-  >>> def circuit(theta):
-  ...     qml.RX(theta, wires=1)
-  ...     qml.PauliZ(wires=0)
-  >>> qml.matrix(circuit)(np.pi / 4)
-  array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
-  [ 0.+0.j,  -0.92387953+0.j,  0.+0.j,  0. +0.38268343j],
-  [ 0. -0.38268343j,  0.+0.j,  0.92387953+0.j,  0.+0.j],
-  [ 0.+0.j,  0.+0.38268343j,  0.+0.j,  -0.92387953+0.j]])
-  ```
-
-* Added the user-interface for mid-circuit measurements.
-  [(#2236)](https://github.com/PennyLaneAI/pennylane/pull/2236)
-
-* A new transform has been added to construct the pairwise-commutation directed acyclic graph (DAG)
-  representation of a quantum circuit.
-  [(#1712)](https://github.com/PennyLaneAI/pennylane/pull/1712)
-
-  In the DAG, each node represents a quantum operation, and edges represent non-commutation
-  between two operations.
-
-  This transform takes into account that not all operations can be moved next to each other by
-  pairwise commutation:
-  
-  ```pycon
-  >>> def circuit(x, y, z):
-  ...     qml.RX(x, wires=0)
-  ...     qml.RX(y, wires=0)
-  ...     qml.CNOT(wires=[1, 2])
-  ...     qml.RY(y, wires=1)
-  ...     qml.Hadamard(wires=2)
-  ...     qml.CRZ(z, wires=[2, 0])
-  ...     qml.RY(-y, wires=1)
-  ...     return qml.expval(qml.PauliZ(0))
-  >>> dag_fn = commutation_dag(circuit)
-  >>> dag = dag_fn(np.pi / 4, np.pi / 3, np.pi / 2)
-  ```
-
-  Nodes in the commutation DAG can be accessed via the `get_nodes()` method, returning a list of 
-  the  form `(ID, CommutationDAGNode)`:
-
-  ```pycon
-  nodes = dag.get_nodes()
-  [(0, <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x132b03b20>), ...]
-  ```
-
-  Specific nodes in the commutation DAG can be accessed via the `get_node()` method:
-  
-  ```
-  >>> second_node = dag.get_node(2)
-  >>> second_node
-  <pennylane.transforms.commutation_dag.CommutationDAGNode object at 0x136f8c4c0>
-  >>> second_node.op
-  CNOT(wires=[1, 2])
-  >>> second_node.successors
-  [3, 4, 5, 6]
-  >>> second_node.predecessors
-  []
-  ```
-
-* The text based drawer accessed via `qml.draw` has been overhauled.
-
-  [(#2128)](https://github.com/PennyLaneAI/pennylane/pull/2128)
-  [(#2198)](https://github.com/PennyLaneAI/pennylane/pull/2198)
-
-  The new drawer has:
-
-  * a `decimals` keyword for controlling parameter rounding
-  * a `show_matrices` keyword for controlling display of matrices
-  * a different algorithm for determining positions
-  * deprecation of the `charset` keyword
-  * additional minor cosmetic changes
-
-  ```python
-  @qml.qnode(qml.device('lightning.qubit', wires=2))
-  def circuit(a, w):
-      qml.Hadamard(0)
-      qml.CRX(a, wires=[0, 1])
-      qml.Rot(*w, wires=[1])
-      qml.CRX(-a, wires=[0, 1])
-      return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-  ```
-
-  ```pycon
-  >>> print(qml.draw(circuit, decimals=2)(a=2.3, w=[1.2, 3.2, 0.7]))
-  0: ──H─╭C─────────────────────────────╭C─────────┤ ╭<Z@Z>
-  1: ────╰RX(2.30)──Rot(1.20,3.20,0.70)─╰RX(-2.30)─┤ ╰<Z@Z>
-  ```
-
-* Parametric operations now have the `parameter_frequencies`
-  method that returns the frequencies with which a parameter
-  enters a circuit. In addition, the general parameter-shift
-  rule is now automatically used by `qml.gradients.param_shift`.
-  [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
-  [(#2182)](https://github.com/PennyLaneAI/pennylane/pull/2182)
-
-  The frequencies can be used for circuit analysis, optimization
-  via the `RotosolveOptimizer` and differentiation with the
-  parameter-shift rule. They assume that the circuit returns
-  expectation values or probabilities, for a variance
-  measurement the frequencies will differ.
-
-  By default, the frequencies will be obtained from the
-  `generator` property (if it is defined).
-
-  When using `qml.gradients.param_shift`, the parameter frequencies
-  are used to obtain the shift rule for the operation.
-
-  For operations that are registered to have an analytic gradient
-  method but that do not provide parameter frequencies, the
-  `grad_recipe` of the operation will be used for differentiation
-  instead. If there is no `grad_recipe`, the standard two-term shift
-  rule will be used.
-
-  See [Vidal and Theis (2018)](https://arxiv.org/abs/1812.06323)
-  and [Wierichs et al. (2021)](https://arxiv.org/abs/2107.12390)
-  for theoretical background information on the general
-  parameter-shift rule.
-
-* Continued development of the circuit-cutting compiler:
-
-  - A method for converting a quantum tape to a directed multigraph that is amenable
-    to graph partitioning algorithms for circuit cutting has been added.
-    [(#2107)](https://github.com/PennyLaneAI/pennylane/pull/2107)
-
-  - A method to replace `WireCut` nodes in a directed multigraph with `MeasureNode`
-    and `PrepareNode` placeholders has been added.
-    [(#2124)](https://github.com/PennyLaneAI/pennylane/pull/2124)
-
-  - A method has been added that takes a directed multigraph with `MeasureNode` and
-    `PrepareNode` placeholders and fragments into subgraphs and a communication graph.
-    [(#2153)](https://github.com/PennyLaneAI/pennylane/pull/2153)
-
-  - A method has been added that takes a directed multigraph with `MeasureNode`
-    and `PrepareNode` placeholder nodes and converts it into a tape.
-    [(#2165)](https://github.com/PennyLaneAI/pennylane/pull/2165)
-
-  - A differentiable tensor contraction function `contract_tensors` has been
-    added.
-    [(#2158)](https://github.com/PennyLaneAI/pennylane/pull/2158)
-  
-  - A method has been added that expands a quantum tape over `MeasureNode` and `PrepareNode`
-    configurations.
-    [(#2169)](https://github.com/PennyLaneAI/pennylane/pull/2169)
-
-  - The postprocessing function for the `cut_circuit` transform has been added.
-    [(#2192)](https://github.com/PennyLaneAI/pennylane/pull/2192)
-
-  - The `cut_circuit` transform has been added.
-    [(#2216)](https://github.com/PennyLaneAI/pennylane/pull/2216)
-
-  - A class `CutStrategy` which acts as an interface and coordinates device/user
-    constraints with circuit execution requirements to come up with the best sets
-    of graph partitioning parameters.
-    [(#2168)](https://github.com/PennyLaneAI/pennylane/pull/2168)
-
-  - A suite of integration tests has been added.
-    [(#2231)](https://github.com/PennyLaneAI/pennylane/pull/2231)
-    [(#2234)](https://github.com/PennyLaneAI/pennylane/pull/2234)
-    [(#2244)](https://github.com/PennyLaneAI/pennylane/pull/2244)
-    [(#2251)](https://github.com/PennyLaneAI/pennylane/pull/2251)
-    [(#2265)](https://github.com/PennyLaneAI/pennylane/pull/2265)
-
-  - Circuit fragments that are disconnected from the terminal measurements are now removed.
-    [(#2254)](https://github.com/PennyLaneAI/pennylane/pull/2254)
-  
-  - `WireCut` operations that do not lead to a disconnection are now being removed.
-    [(#2260)](https://github.com/PennyLaneAI/pennylane/pull/2260)
-  
-  - Circuit cutting now remaps the wires of fragment circuits to match the available wires on the
-    device.
-    [(#2257)](https://github.com/PennyLaneAI/pennylane/pull/2257)
+  - A `qcut.expand_fragment_tapes_mc()` method has been added to expand fragment
+    tapes to random configurations by replacing measure and prepare nodes with
+    sampled Pauli measurements and state preparations.
+    [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
 
 <h3>Improvements</h3>
 
-* The `qml.draw_mpl` transform supports a `expansion_strategy` keyword argument.
-  [(#2271)](https://github.com/PennyLaneAI/pennylane/pull/2271/)
+* `QuantumTape` objects are now iterable and accessing the
+  operations and measurements of the underlying quantum circuit is more
+  seamless.
+  [(#2342)](https://github.com/PennyLaneAI/pennylane/pull/2342)
 
-* The `qml.gradients` module has been streamlined and special-purpose functions
-  moved closer to their use cases, while preserving existing behaviour.
-  [(#2200)](https://github.com/PennyLaneAI/pennylane/pull/2200)
-
-* Added a new `partition_pauli_group` function to the `grouping` module for
-  efficiently measuring the `N`-qubit Pauli group with `3 ** N`
-  qubit-wise commuting terms.
-  [(#2185)](https://github.com/PennyLaneAI/pennylane/pull/2185)
-  
-  ```pycon
-  >>> qml.grouping.partition_pauli_group(2)
-  [['II', 'IZ', 'ZI', 'ZZ'],
-   ['IX', 'ZX'],
-   ['IY', 'ZY'],
-   ['XI', 'XZ'],
-   ['XX'],
-   ['XY'],
-   ['YI', 'YZ'],
-   ['YX'],
-   ['YY']]
+  ```python
+  with qml.tape.QuantumTape() as tape:
+      qml.RX(0.432, wires=0)
+      qml.RY(0.543, wires=0)
+      qml.CNOT(wires=[0, 'a'])
+      qml.RX(0.133, wires='a')
+      qml.expval(qml.PauliZ(wires=[0]))
   ```
 
-<h3>Breaking changes</h3>
+  Given a `QuantumTape` object the underlying quantum circuit can be iterated
+  over using a `for` loop:
 
-* The `MultiControlledX` operation now accepts a single `wires` keyword argument for both `control_wires` and `wires`.
-  The single `wires` keyword should be all the control wires followed by a single target wire. 
-  [(#2121)](https://github.com/PennyLaneAI/pennylane/pull/2121)
+  ```pycon
+  >>> for op in tape:
+  ...     print(op)
+  RX(0.432, wires=[0])
+  RY(0.543, wires=[0])
+  CNOT(wires=[0, 'a'])
+  RX(0.133, wires=['a'])
+  expval(PauliZ(wires=[0]))
+  ```
+
+  Indexing into the circuit is also allowed via `tape[i]`:
+
+  ```pycon
+  >>> tape[0]
+  RX(0.432, wires=[0])
+  ```
+
+  A tape object can also be converted to a sequence (e.g., to a `list`) of
+  operations and measurements:
+
+  ```pycon
+  >>> list(tape)
+  [RX(0.432, wires=[0]),
+   RY(0.543, wires=[0]),
+   CNOT(wires=[0, 'a']),
+   RX(0.133, wires=['a']),
+   expval(PauliZ(wires=[0]))]
+  ```
+
+* The function `qml.eigvals` is modified to use the efficient `scipy.sparse.linalg.eigsh`
+  method for obtaining the eigenvalues of a `SparseHamiltonian`. This `scipy` method is called 
+  to compute :math:`k` eigenvalues of a sparse :math:`N \times N` matrix if `k` is smaller
+  than :math:`N-1`. If a larger :math:`k` is requested, the dense matrix representation of 
+  the Hamiltonian is constructed and the regular `qml.math.linalg.eigvalsh` is applied.
+  [(#2333)](https://github.com/PennyLaneAI/pennylane/pull/2333)
+
+* The function `qml.ctrl` was given the optional argument `control_values=None`.
+  If overridden, `control_values` takes an integer or a list of integers corresponding to
+  the binary value that each control value should take. The same change is reflected in
+  `ControlledOperation`. Control values of `0` are implemented by `qml.PauliX` applied
+  before and after the controlled operation
+  [(#2288)](https://github.com/PennyLaneAI/pennylane/pull/2288)
+
+* Operators now have a `has_matrix` property denoting whether or not the operator defines a matrix.
+  [(#2331)](https://github.com/PennyLaneAI/pennylane/pull/2331)
+  
+* Circuit cutting now performs expansion to search for wire cuts in contained operations or tapes.
+  [(#2340)](https://github.com/PennyLaneAI/pennylane/pull/2340)
 
 <h3>Deprecations</h3>
 
-* The `qml.finite_diff()` function has been deprecated and will be removed
-  in an upcoming release. Instead,
-  `qml.gradients.finite_diff()` can be used to compute purely quantum gradients
-  (that is, gradients of tapes or QNode).
-  [#2212](https://github.com/PennyLaneAI/pennylane/pull/2212)
+<h3>Breaking changes</h3>
 
-* `qml.transforms.get_unitary_matrix()` has been deprecated and will be removed
-  in a future release. For extracting matrices of operations and quantum functions,
-  please use `qml.matrix()`.
-  [(#2248)](https://github.com/PennyLaneAI/pennylane/pull/2248)
+* The old circuit text drawing infrastructure is being deleted.
+  [(#2310)](https://github.com/PennyLaneAI/pennylane/pull/2310)
+
+  - `qml.drawer.CircuitDrawer` is replaced by `qml.drawer.tape_text`.
+  - `qml.drawer.CHARSETS` is deleted because we now assume everyone has access to unicode.
+  - `Grid` and `qml.drawer.drawable_grid` are removed because the custom data class is replaced
+      by list of sets of operators or measurements.
+  - `RepresentationResolver` is replaced by the `Operator.label` method.
+  - `qml.transforms.draw_old` is replaced by `qml.draw`.
+  - `qml.CircuitGraph.greedy_layers` is deleted, as it is no longer needed by the circuit drawer and
+      does not seem to have uses outside of that situation.
+  - `qml.CircuitGraph.draw` has been deleted, as we draw tapes instead.
+
+The tape method `qml.tape.QuantumTape.draw` now simply calls `qml.drawer.tape_text`. 
+In the new pathway, the `charset` keyword is deleted, the `max_length` keyword defaults to `100`, and
+the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tape)`
+
+* The `ObservableReturnTypes` `Sample`, `Variance`, `Expectation`, `Probability`, `State`, and `MidMeasure`
+  have been moved to `measurements` from `operation`.
+  [(#2329)](https://github.com/PennyLaneAI/pennylane/pull/2329)
+
+* The deprecated QNode, available via `qml.qnode_old.QNode`, has been removed. Please
+  transition to using the standard `qml.QNode`.
+  [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
+
+* The deprecated, non-batch compatible interfaces, have been removed.
+  [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
+
+* The deprecated tape subclasses `QubitParamShiftTape`, `JacobianTape`, `CVParamShiftTape`, and
+  `ReversibleTape` have been removed.
+  [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
 
 <h3>Bug fixes</h3>
 
-* The `qml.RandomLayers` template now decomposes when the weights are a list of lists.
-  [(#2266)](https://github.com/PennyLaneAI/pennylane/pull/2266/)
+<h3>Bug fixes</h3>
 
-* The `qml.QubitUnitary` operation now supports jitting. 
-  [(#2249)](https://github.com/PennyLaneAI/pennylane/pull/2249)
+* Fixes a bug in which the `expval`/`var` of a `Tensor(Observable)` would depend on the order 
+  in which the observable is defined: 
+  ```python
+  @qml.qnode(dev)
+  def circ(op):
+    qml.RX(0.12, wires=0)
+    qml.RX(1.34, wires=1)
+    qml.RX(3.67, wires=2)
+    
+    return qml.expval(op)
   
-* Fixes a bug in the JAX interface where ``DeviceArray`` objects
-  were not being converted to NumPy arrays before executing an
-  external device.
-  [(#2255)](https://github.com/PennyLaneAI/pennylane/pull/2255)
+  op1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
+  op2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
+  ```
 
-* The ``qml.ctrl`` transform now works correctly with gradient transforms
-  such as the parameter-shift rule.
-  [(#2238)](https://github.com/PennyLaneAI/pennylane/pull/2238)
-
-* Fixes a bug in which passing required arguments into operations as
-  keyword arguments would throw an error because the documented call
-  signature didn't match the function definition.
-  [(#1976)](https://github.com/PennyLaneAI/pennylane/pull/1976)
-
-* The operation `OrbitalRotation` previously was wrongfully registered to satisfy
-  the four-term parameter shift rule. The correct eight-term rule will now be used when
-  using the parameter-shift rule.
-  [(#2180)](https://github.com/PennyLaneAI/pennylane/pull/2180)
+  ```
+  >>> print(circ(op1), circ(op2))
+  -0.8636111153905662 -0.8636111153905662
+  ```
+  [(#2276)](https://github.com/PennyLaneAI/pennylane/pull/2276)
 
 <h3>Documentation</h3>
-
-* Link to the strawberry fields docs for information on the CV model.
-  [(#2259)](https://github.com/PennyLaneAI/pennylane/pull/2259)
-
-* Fixes the documentation example for `qml.QFT`.
-  [(#2232)](https://github.com/PennyLaneAI/pennylane/pull/2232)
-
-* Fixes the documentation example for using `qml.sample` with `jax.jit`.
-  [(#2196)](https://github.com/PennyLaneAI/pennylane/pull/2196)
-
-* The `qml.numpy` subpackage is now included in the PennyLane
-  API documentation.
-  [(#2179)](https://github.com/PennyLaneAI/pennylane/pull/2179)
-
-* Improves the documentation of `RotosolveOptimizer` regarding the
-  usage of the passed `substep_optimizer` and its keyword arguments.
-  [(#2160)](https://github.com/PennyLaneAI/pennylane/pull/2160)
-
-<h3>Operator class refactor</h3>
-
-The Operator class has undergone a major refactor with the following changes:
-
-* The static `compute_decomposition` method defines the decomposition
-  of an operator into a product of simpler operators, and the instance method
-  `decomposition()` computes this for a given instance. When a custom
-  decomposition does not exist, the code now raises a custom `NoDecompositionError`
-  instead of `NotImplementedError`.
-  [(#2024)](https://github.com/PennyLaneAI/pennylane/pull/2024)
-
-* The `diagonalizing_gates()` representation has been moved to the highest-level
-  `Operator` class and is therefore available to all subclasses. A condition
-  `qml.operation.defines_diagonalizing_gates` has been added, which can be used
-  in tape contexts without queueing.
-  [(#1985)](https://github.com/PennyLaneAI/pennylane/pull/1985)
-
-* A static `compute_diagonalizing_gates` method has been added, which is called
-  by default in `diagonalizing_gates()`.
-  [(#1993)](https://github.com/PennyLaneAI/pennylane/pull/1993)
-
-* A `hyperparameters` attribute was added to the operator class.
-  [(#2017)](https://github.com/PennyLaneAI/pennylane/pull/2017)
-
-* The representation of an operator as a matrix has been overhauled.
-
-  The `matrix()` method now accepts a
-  `wire_order` argument and calculates the correct numerical representation
-  with respect to that ordering.
-
-  ```pycon
-  >>> op = qml.RX(0.5, wires="b")
-  >>> op.matrix()
-  [[0.96891242+0.j         0.        -0.24740396j]
-   [0.        -0.24740396j 0.96891242+0.j        ]]
-  >>> op.matrix(wire_order=["a", "b"])
-  [[0.9689+0.j  0.-0.2474j 0.+0.j         0.+0.j]
-   [0.-0.2474j  0.9689+0.j 0.+0.j         0.+0.j]
-   [0.+0.j          0.+0.j 0.9689+0.j 0.-0.2474j]
-   [0.+0.j          0.+0.j 0.-0.2474j 0.9689+0.j]]
-  ```
-
-  The "canonical matrix", which is independent of wires,
-  is now defined in the static method `compute_matrix()` instead of `_matrix`.
-  By default, this method is assumed to take all parameters and non-trainable
-  hyperparameters that define the operation.
-
-  ```pycon
-  >>> qml.RX.compute_matrix(0.5)
-  [[0.96891242+0.j         0.        -0.24740396j]
-   [0.        -0.24740396j 0.96891242+0.j        ]]
-  ```
-
-  If no canonical matrix is specified for a gate, `compute_matrix()`
-  raises a `NotImplementedError`.
-
-  The new `matrix()` method is now used in the
-  `pennylane.transforms.get_qubit_unitary()` transform.
-  [(#1996)](https://github.com/PennyLaneAI/pennylane/pull/1996)
-
-* The `string_for_inverse` attribute is removed.
-  [(#2021)](https://github.com/PennyLaneAI/pennylane/pull/2021)
-
-* A `terms()` method and a `compute_terms()` static method were added to `Operator`.
-  Currently, only the `Hamiltonian` class overwrites `compute_terms` to store
-  coefficients and operators. The `Hamiltonian.terms` property hence becomes
-  a proper method called by `Hamiltonian.terms()`.
-
-* The generator property has been updated to an instance method,
-  `Operator.generator()`. It now returns an instantiated operation,
-  representing the generator of the instantiated operator.
-  [(#2030)](https://github.com/PennyLaneAI/pennylane/pull/2030)
-  [(#2061)](https://github.com/PennyLaneAI/pennylane/pull/2061)
-
-  Various operators have been updated to specify the generator as either
-  an `Observable`, `Tensor`, `Hamiltonian`, `SparseHamiltonian`, or `Hermitian`
-  operator.
-
-  In addition, a temporary utility function get_generator has been added
-  to the utils module, to automate:
-
-  - Extracting the matrix representation
-  - Extracting the 'coefficient' if possible (only occurs if the generator is a single Pauli word)
-  - Converting a Hamiltonian to a sparse matrix if there are more than 1 Pauli word present.
-  - Negating the coefficient/taking the adjoint of the matrix if the operation was inverted
-
-  This utility logic is currently needed because:
-
-  - Extracting the matrix representation is not supported natively on
-    Hamiltonians and SparseHamiltonians.
-  - By default, calling `op.generator()` does not take into account `op.inverse()`.
-  - If the generator is a single Pauli word, it is convenient to have access to
-    both the coefficient and the observable separately.
-
-* Decompositions are now defined in `compute_decomposition`, instead of `expand`.
-  [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
-
-* The `expand` method was moved to the main `Operator` class.
-  [(#2053)](https://github.com/PennyLaneAI/pennylane/pull/2053)
-
-* A `sparse_matrix` method and a `compute_sparse_matrix` static method were added
-  to the `Operator` class. The sparse representation of `SparseHamiltonian`
-  is moved to this method, so that its `matrix` method now returns a dense matrix.
-  [(#2050)](https://github.com/PennyLaneAI/pennylane/pull/2050)
-
-* The argument `wires` in `heisenberg_obs`, `heisenberg_expand` and `heisenberg_tr`
-  was renamed to `wire_order` to be consistent with other matrix representations.
-  [(#2051)](https://github.com/PennyLaneAI/pennylane/pull/2051)
-
-* The property `kraus_matrices` has been changed to a method, and `_kraus_matrices` renamed to
-  `compute_kraus_matrices`, which is now a static method.
-  [(#2055)](https://github.com/PennyLaneAI/pennylane/pull/2055)
-
-* The developer guide on adding templates and the architecture overview were rewritten
-  to reflect the past and planned changes of the operator refactor.
-  [(#2066)](https://github.com/PennyLaneAI/pennylane/pull/2066)
-
-* Custom errors subclassing ``OperatorPropertyUndefined`` are raised if a representation
-  has not been defined. This replaces the ``NotImplementedError`` and allows finer control
-  for developers.
-  [(#2064)](https://github.com/PennyLaneAI/pennylane/pull/2064)
-
-* Moved ``expand()`` from ``Operation`` to ``Operator``.
-  [(#2239)](https://github.com/PennyLaneAI/pennylane/pull/2239)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Thomas Bromley, Anthony Hayes, Josh Izaac, Christina Lee, Angus Lowe,
-Maria Fernanda Morris, Romain Moyard, Zeyue Niu, Maria Schuld, Jay Soni,
-Antal Száva, David Wierichs
-
+Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
+Anthony Hayes, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu, Jay Soni,
+Antal Száva.

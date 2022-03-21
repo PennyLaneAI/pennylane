@@ -19,8 +19,8 @@ Unit tests for the :mod:`pennylane.plugin.DefaultGaussian` device.
 from scipy.linalg import block_diag
 import pytest
 
-import pennylane
 from pennylane import numpy as np
+from pennylane.operation import AnyWires
 import numpy.testing as np_testing
 from pennylane.ops import cv
 from pennylane.wires import Wires
@@ -211,6 +211,28 @@ class TestNonGaussian:
         cv.CubicPhase(0.1, wires=0)
         with pytest.raises(RuntimeError):
             op.heisenberg_tr(Wires(range(op.num_wires)))
+
+
+state_prep_data = [
+    (cv.CoherentState(0.1, 0.2, wires=0), 2, 1, "F"),
+    (cv.SqueezedState(0.1, 0.2, wires=0), 2, 1, "F"),
+    (cv.DisplacedSqueezedState(0.1, 0.2, 0.3, 0.4, wires=0), 4, 1, "F"),
+    (cv.ThermalState(0.1, wires=0), 1, 1, "F"),
+    (cv.GaussianState(0.1, 0.2, wires=(0, 1, 2, 3, 4)), 2, AnyWires, "F"),
+    (cv.FockState(1, wires=0), 1, 1, None),
+    (cv.FockStateVector([0, 0, 1, 0], wires=0), 1, AnyWires, "F"),
+    (cv.FockDensityMatrix(np.eye(2), wires=0), 1, AnyWires, "F"),
+    (cv.CatState(0.1, 0.2, 0.3, wires=0), 3, 1, "F"),
+]
+
+
+@pytest.mark.parametrize("op, num_params, num_wires, grad_method", state_prep_data)
+def test_state_prep_operations(op, num_params, num_wires, grad_method):
+    """Test initialization of state preperation operations."""
+
+    assert op.num_params == num_params
+    assert op.num_wires == num_wires
+    assert op.grad_method == grad_method
 
 
 label_data = [

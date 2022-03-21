@@ -42,6 +42,7 @@ and extracting information.
 
     ~pennylane.adjoint
     ~pennylane.ctrl
+    ~pennylane.cond
     ~pennylane.matrix
     ~pennylane.eigvals
     ~pennylane.generator

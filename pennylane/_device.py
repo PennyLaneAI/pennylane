@@ -28,13 +28,9 @@ import pennylane as qml
 from pennylane.operation import (
     Operation,
     Observable,
-    Sample,
-    State,
-    Variance,
-    Expectation,
-    Probability,
     Tensor,
 )
+from pennylane.measurements import Sample, State, Variance, Expectation, Probability, MidMeasure
 from pennylane.wires import Wires, WireError
 
 
@@ -332,6 +328,30 @@ class Device(abc.ABC):
 
         wire_map = zip(wires, consecutive_wires)
         return OrderedDict(wire_map)
+
+    def order_wires(self, subset_wires):
+        """Given some subset of device wires return a Wires object with the same wires;
+        sorted according to the device wire map.
+
+        Args:
+            subset_wires (Wires): The subset of device wires (in any order).
+
+        Raise:
+            ValueError: Could not find some or all subset wires subset_wires in device wires device_wires.
+
+        Return:
+            ordered_wires (Wires): a new Wires object containing the re-ordered wires set
+        """
+        subset_lst = subset_wires.tolist()
+
+        try:
+            ordered_subset_lst = sorted(subset_lst, key=lambda label: self.wire_map[label])
+        except KeyError as e:
+            raise ValueError(
+                f"Could not find some or all subset wires {subset_wires} in device wires {self.wires}"
+            ) from e
+
+        return Wires(ordered_subset_lst)
 
     @lru_cache()
     def map_wires(self, wires):
@@ -877,6 +897,15 @@ class Device(abc.ABC):
         for o in queue:
 
             operation_name = o.name
+
+            if getattr(o, "return_type", None) == MidMeasure and not self.capabilities().get(
+                "supports_mid_measure", False
+            ):
+                raise DeviceError(
+                    f"Mid-circuit measurements are not natively supported on device {self.short_name}. "
+                    "Apply the @qml.defer_measurements decorator to your quantum function to "
+                    "simulate the application of mid-circuit measurements on this device."
+                )
 
             if o.inverse:
                 # TODO: update when all capabilities keys changed to "supports_inverse_operations"

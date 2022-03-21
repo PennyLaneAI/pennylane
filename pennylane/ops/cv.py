@@ -44,6 +44,10 @@ from pennylane.operation import AnyWires, CVOperation, CVObservable
 from pennylane import math as qml_math
 
 from .identity import Identity  #  pylint: disable=unused-import
+from .snapshot import Snapshot  #  pylint: disable=unused-import
+
+
+_two_term_shift_rule = [[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]]
 
 
 def _rotation(phi, bare=False):
@@ -96,7 +100,7 @@ class Rotation(CVOperation):
 
     Args:
         phi (float): the rotation angle
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -104,6 +108,7 @@ class Rotation(CVOperation):
     num_params = 1
     num_wires = 1
     grad_method = "A"
+    grad_recipe = (_two_term_shift_rule,)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -146,7 +151,7 @@ class Squeezing(CVOperation):
     Args:
         r (float): squeezing amount
         phi (float): squeezing phase angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -158,7 +163,7 @@ class Squeezing(CVOperation):
     shift = 0.1
     multiplier = 0.5 / math.sinh(shift)
     a = 1
-    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
     def __init__(self, r, phi, wires, do_queue=True, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
@@ -203,7 +208,7 @@ class Displacement(CVOperation):
     Args:
         a (float): displacement magnitude :math:`a=|\alpha|`
         phi (float): phase angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -215,7 +220,7 @@ class Displacement(CVOperation):
     shift = 0.1
     multiplier = 0.5 / shift
     a = 1
-    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
     def __init__(self, a, phi, wires, do_queue=True, id=None):
         super().__init__(a, phi, wires=wires, do_queue=do_queue, id=id)
@@ -266,7 +271,7 @@ class Beamsplitter(CVOperation):
         phi (float): Phase angle :math:`\phi`. The reflection amplitude of the
             beamsplitter is :math:`r = e^{i\phi}\sin(\theta)`.
             The value :math:`\phi = \pi/2` gives the symmetric beamsplitter.
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -274,6 +279,7 @@ class Beamsplitter(CVOperation):
     num_params = 2
     num_wires = 2
     grad_method = "A"
+    grad_recipe = (_two_term_shift_rule, _two_term_shift_rule)
 
     def __init__(self, theta, phi, wires, do_queue=True, id=None):
         super().__init__(theta, phi, wires=wires, do_queue=do_queue, id=id)
@@ -329,7 +335,7 @@ class TwoModeSqueezing(CVOperation):
     Args:
         r (float): squeezing amount
         phi (float): squeezing phase angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -342,7 +348,7 @@ class TwoModeSqueezing(CVOperation):
     shift = 0.1
     multiplier = 0.5 / math.sinh(shift)
     a = 1
-    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], None)
+    grad_recipe = ([[multiplier, a, shift], [-multiplier, a, -shift]], _two_term_shift_rule)
 
     def __init__(self, r, phi, wires, do_queue=True, id=None):
         super().__init__(r, phi, wires=wires, do_queue=do_queue, id=id)
@@ -393,7 +399,7 @@ class QuadraticPhase(CVOperation):
 
     Args:
         s (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -449,7 +455,7 @@ class ControlledAddition(CVOperation):
 
     Args:
         s (float): addition multiplier
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -508,7 +514,7 @@ class ControlledPhase(CVOperation):
 
     Args:
         s (float):  phase shift multiplier
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -554,7 +560,7 @@ class Kerr(CVOperation):
 
     Args:
         kappa (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -585,7 +591,7 @@ class CrossKerr(CVOperation):
 
     Args:
         kappa (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -616,7 +622,7 @@ class CubicPhase(CVOperation):
 
     Args:
         gamma (float): parameter
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -667,7 +673,7 @@ class InterferometerUnitary(CVOperation):
 
     Args:
         U (array): A shape ``(len(wires), len(wires))`` complex unitary matrix
-        wires (Sequence[int] or int): the wires the operation acts on
+        wires (Sequence[Any] or Any): the wires the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -723,7 +729,7 @@ class CoherentState(CVOperation):
     Args:
         a (float): displacement magnitude :math:`r=|\alpha|`
         phi (float): phase angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -749,7 +755,7 @@ class SqueezedState(CVOperation):
     Args:
         r (float): squeezing magnitude
         phi (float): squeezing angle :math:`\phi`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -785,7 +791,7 @@ class DisplacedSqueezedState(CVOperation):
         phi_a (float): displacement angle :math:`\phi_a`
         r (float): squeezing magnitude :math:`r=|z|`
         phi_r (float): squeezing angle :math:`\phi_r`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -810,7 +816,7 @@ class ThermalState(CVOperation):
 
     Args:
         nbar (float): mean thermal population of the mode
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -840,7 +846,7 @@ class GaussianState(CVOperation):
         V (array): the :math:`2N\times 2N` (real and positive definite) covariance matrix
         r (array): a length :math:`2N` vector of means, of the
             form :math:`(\x_0,\dots,\x_{N-1},\p_0,\dots,\p_{N-1})`
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -868,7 +874,7 @@ class FockState(CVOperation):
 
     Args:
         n (int): Fock state to prepare
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -920,7 +926,7 @@ class FockStateVector(CVOperation):
     Args:
         state (array): a single ket vector, for single mode state preparation,
             or a multimode ket, with one array dimension per mode
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -1010,7 +1016,7 @@ class FockDensityMatrix(CVOperation):
     Args:
         state (array): a single mode matrix :math:`\rho_{ij}`, or
             a multimode tensor :math:`\rho_{ij,kl,\dots,mn}`, with two indices per mode
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -1047,7 +1053,7 @@ class CatState(CVOperation):
         phi (float): displacement angle :math:`\phi`
         p (float): parity, where :math:`p=0` corresponds to an even
             cat state, and :math:`p=1` an odd cat state.
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -1089,7 +1095,7 @@ class NumberOperator(CVObservable):
         \end{bmatrix}
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
     """
     num_params = 0
     num_wires = 1
@@ -1125,7 +1131,7 @@ class TensorN(CVObservable):
     * Number of parameters: 0
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
 
     .. UsageDetails::
 
@@ -1185,7 +1191,7 @@ class X(CVObservable):
       .. math:: d = [0, 1, 0]
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
     """
     num_params = 0
     num_wires = 1
@@ -1218,7 +1224,7 @@ class P(CVObservable):
       .. math:: d = [0, 0, 1]
 
     Args:
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
     """
     num_params = 0
     num_wires = 1
@@ -1253,7 +1259,7 @@ class QuadOperator(CVObservable):
     Args:
         phi (float): axis in the phase space at which to calculate
             the generalized quadrature observable
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -1332,7 +1338,7 @@ class PolyXP(CVObservable):
 
     Args:
         q (array[float]): expansion coefficients
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -1393,7 +1399,7 @@ class FockStateProjector(CVObservable):
 
             Note that ``len(n)==len(wires)``, and that ``len(n)`` cannot exceed the
             total number of wires in the QNode.
-        wires (Sequence[int] or int): the wire the operation acts on
+        wires (Sequence[Any] or Any): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
@@ -1436,6 +1442,7 @@ class FockStateProjector(CVObservable):
 
 ops = {
     "Identity",
+    "Snapshot",
     "Beamsplitter",
     "ControlledAddition",
     "ControlledPhase",

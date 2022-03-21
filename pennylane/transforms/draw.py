@@ -19,137 +19,6 @@ Contains the drawing function.
 from functools import wraps
 
 from pennylane.drawer import tape_mpl, tape_text
-from pennylane.wires import Wires
-
-
-def draw_old(
-    qnode,
-    charset="unicode",
-    wire_order=None,
-    show_all_wires=False,
-    max_length=None,
-    expansion_strategy=None,
-):
-    """Create a function that draws the given qnode.
-
-    Args:
-        qnode (.QNode): the input QNode that is to be drawn.
-        charset (str, optional): The charset that should be used. Currently, "unicode" and
-            "ascii" are supported.
-        wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
-        show_all_wires (bool): If True, all wires, including empty wires, are printed.
-        max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
-        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
-            are required.
-
-            - ``gradient``: The QNode will attempt to decompose
-              the internal circuit such that all circuit operations are supported by the gradient
-              method.
-
-            - ``device``: The QNode will attempt to decompose the internal circuit
-              such that all circuit operations are natively supported by the device.
-
-
-    Returns:
-        A function that has the same argument signature as ``qnode``. When called,
-        the function will draw the QNode.
-
-    **Example**
-
-    Given the following definition of a QNode,
-
-    .. code-block:: python3
-
-        dev = qml.device('default.qubit', wires=2)
-
-        @qml.qnode(dev)
-        def circuit(a, w):
-            qml.Hadamard(0)
-            qml.CRX(a, wires=[0, 1])
-            qml.Rot(*w, wires=[1])
-            qml.CRX(-a, wires=[0, 1])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-    We can draw the it like such:
-
-    >>> drawer = qml.draw(circuit)
-    >>> print(drawer(a=2.3, w=[1.2, 3.2, 0.7]))
-    0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
-    1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
-
-    Circuit drawing works with devices with custom wire labels:
-
-    .. code-block:: python3
-
-        dev = qml.device('default.qubit', wires=["a", -1, "q2"])
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.Hadamard(wires=-1)
-            qml.CNOT(wires=["a", "q2"])
-            qml.RX(0.2, wires="a")
-            return qml.expval(qml.PauliX(wires="q2"))
-
-    When printed, the wire order matches the order defined on the device:
-
-    >>> drawer = qml.draw(circuit)
-    >>> print(drawer())
-      a: ─────╭C──RX(0.2)──┤
-     -1: ──H──│────────────┤
-     q2: ─────╰X───────────┤ ⟨X⟩
-
-    We can use the ``wire_order`` argument to change the wire order:
-
-    >>> drawer = qml.draw(circuit, wire_order=["q2", "a", -1])
-    >>> print(drawer())
-     q2: ──╭X───────────┤ ⟨X⟩
-      a: ──╰C──RX(0.2)──┤
-     -1: ───H───────────┤
-    """
-
-    @wraps(qnode)
-    def wrapper(*args, **kwargs):
-        original_expansion_strategy = getattr(qnode, "expansion_strategy", None)
-
-        try:
-            qnode.expansion_strategy = expansion_strategy or original_expansion_strategy
-            tapes = qnode.construct(args, kwargs)
-        finally:
-            qnode.expansion_strategy = original_expansion_strategy
-
-        _wire_order = wire_order or qnode.device.wires
-        _wire_order = Wires(_wire_order)
-
-        if show_all_wires and len(_wire_order) < qnode.device.num_wires:
-            raise ValueError(
-                "When show_all_wires is enabled, the provided wire order must contain all wires on the device."
-            )
-
-        if not qnode.device.wires.contains_wires(_wire_order):
-            raise ValueError(
-                f"Provided wire order {_wire_order.labels} contains wires not contained on the device: {qnode.device.wires}."
-            )
-
-        if tapes is not None:
-            res = [
-                t.draw(
-                    charset=charset,
-                    wire_order=_wire_order,
-                    show_all_wires=show_all_wires,
-                    max_length=max_length,
-                )
-                for t in tapes[0]
-            ]
-            return "\n".join(res)
-
-        return qnode.qtape.draw(
-            charset=charset,
-            wire_order=_wire_order,
-            show_all_wires=show_all_wires,
-            max_length=max_length,
-        )
-
-    return wrapper
 
 
 def draw(
@@ -230,14 +99,12 @@ def draw(
     When requested with ``show_matrices=True``, matrix valued parameters are printed below the
     circuit:
 
-    .. code-block:: python
-
     >>> @qml.qnode(qml.device('default.qubit', wires=2))
-    ... def circuit():
+    ... def circuit3():
     ...     qml.QubitUnitary(np.eye(2), wires=0)
     ...     qml.QubitUnitary(-np.eye(4), wires=(0,1))
     ...     return qml.expval(qml.Hermitian(np.eye(2), wires=1))
-    >>> print(qml.draw(circuit, show_matrices=True)())
+    >>> print(qml.draw(circuit3, show_matrices=True)())
     0: ──U(M0)─╭U(M1)─┤
     1: ────────╰U(M1)─┤  <𝓗(M0)>
     M0 =
@@ -295,13 +162,13 @@ def draw(
 
     .. code-block:: python
 
-        @qml.gradients.param_shift(shift=0.1)
+        @qml.gradients.param_shift(shifts=[(0.1,)])
         @qml.qnode(qml.device('lightning.qubit', wires=1))
         def transformed_circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        print(qml.draw(transformed_circuit)(np.array(1.0)))
+        print(qml.draw(transformed_circuit)(np.array(1.0, requires_grad=True)))
 
     .. code-block:: none
 

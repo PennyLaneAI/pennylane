@@ -74,7 +74,7 @@ def create_expand_fn(depth, stop_at=None, device=None, docstring=None):
 
     .. code-block:: python
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.2, wires=0)
             qml.RX(qml.numpy.array(-2.4, requires_grad=True), wires=1)
             qml.Rot(1.7, 0.92, -1.1, wires=0)
@@ -223,7 +223,7 @@ def _custom_decomp_context(custom_decomps):
         if isinstance(obj, str):
             obj = getattr(qml, obj)
 
-        original_decomp_method = obj.decomposition
+        original_decomp_method = obj.compute_decomposition
 
         try:
             # Explicitly set the new compute_decomposition method

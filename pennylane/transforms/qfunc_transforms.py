@@ -16,6 +16,8 @@
 from copy import deepcopy
 import functools
 import inspect
+import os
+import warnings
 
 import pennylane as qml
 
@@ -120,7 +122,7 @@ class single_tape_transform:
         @qml.single_tape_transform
         def my_transform(tape, x, y):
             # loop through all operations on the input tape
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "CRX":
                     wires = op.wires
                     param = op.parameters[0]
@@ -137,7 +139,7 @@ class single_tape_transform:
 
     We can apply this transform to a quantum tape:
 
-    >>> with qml.tape.JacobianTape() as tape:
+    >>> with qml.tape.QuantumTape() as tape:
     ...     qml.Hadamard(wires=0)
     ...     qml.CRX(-0.5, wires=[0, 1])
     >>> new_tape = my_transform(tape, 1., 2.)
@@ -238,7 +240,7 @@ def qfunc_transform(tape_transform):
 
         @qml.qfunc_transform
         def my_transform(tape, x, y):
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "CRX":
                     wires = op.wires
                     param = op.parameters[0]
@@ -374,6 +376,21 @@ def qfunc_transform(tape_transform):
         the queueing logic required under steps (1) and (3), so that it does not need to be
         repeated and tested for every new qfunc transform.
     """
+    if os.environ.get("SPHINX_BUILD") == "1":
+        # If called during a Sphinx documentation build,
+        # simply return the original function rather than
+        # instantiating the object. This allows the signature to
+        # be correctly displayed in the documentation.
+
+        warnings.warn(
+            "qfunc transformations have been disabled, as a Sphinx "
+            "build has been detected via SPHINX_BUILD='1'. If this is not the "
+            "case, please set the environment variable SPHINX_BUILD='0'.",
+            UserWarning,
+        )
+
+        return tape_transform
+
     if not callable(tape_transform):
         raise ValueError(
             "The qfunc_transform decorator can only be applied "
