@@ -164,13 +164,18 @@ def expval_hessian_param_shift(
             off_diag_data = _generate_off_diag_tapes(tape, (i, j), recipe_i, recipe_j)
             hessian_tapes.extend(off_diag_data[0])
             hessian_coeffs.append(off_diag_data[1])
+            # It should not be possible to obtain an unshifted tape for the off-diagonal
+            # terms if there hasn't already been one for the diagonal terms.
+            # TODO: This will depend on the decision on how diagonal_shifts are formatted.
+            # TODO: If this is confirmed, remove the following safety check
             # If there is a coefficient for the unshifted tape, memorize it and add the unshifted
             # tape; Again the latter only happens if f0 was not provided and we did not add it yet.
             if off_diag_data[2] is not None:
-                if add_unshifted:
-                    hessian_tapes.insert(0, tape)
-                    add_unshifted = False
-                unshifted_coeffs[(i, i)] = off_diag_data[2]
+                raise ValueError(
+                    "A tape without parameter shifts was created unexpectedly during "
+                    "the computation of the Hessian. Please submit a bug report "
+                    "at https://github.com/PennyLaneAI/pennylane/issues"
+                )
 
     def processing_fn(results):
         # The first results dimension is the number of terms/tapes in the parameter-shift

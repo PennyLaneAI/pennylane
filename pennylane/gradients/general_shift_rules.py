@@ -276,6 +276,7 @@ def _combine_shift_rules_with_multipliers(rules):
 def _combine_shift_rules(rules):
     r"""Helper method to combine shift rules for multiple parameters into
     simultaneous multivariate shift rules."""
+    combined_rules = []
 
     for partial_rules in itertools.product(*rules):
         c, s = np.stack(partial_rules).T
