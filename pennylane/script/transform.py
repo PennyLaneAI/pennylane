@@ -11,6 +11,7 @@ def remove_control_flow_transform(tape: QuantumTape):
     return new_tape
 
 def _remove_control_flow(tape: QuantumTape):
+
         if isinstance(tape, IfTape):
             if tape.expr():
                 for if_op in tape.queue:
