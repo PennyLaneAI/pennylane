@@ -486,6 +486,7 @@ class QNode:
 
         with self.tape:
             self._qfunc_output = self.func(*args, **kwargs)
+        self._tape._qfunc_output = self._qfunc_output
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)

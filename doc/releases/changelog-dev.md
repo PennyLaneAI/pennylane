@@ -27,7 +27,7 @@
 * Development of a circuit-cutting compiler extension to circuits with sampling
   measurements has begun:
 
-  - The existing `qcut.tape_to_graph()` method has been extended to convert a
+    - The existing `qcut.tape_to_graph()` method has been extended to convert a
     sample measurement without an observable specified to multiple single-qubit sample
     nodes.
     [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
@@ -153,7 +153,9 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
-<h3>Bug fixes</h3>
+* Fixes cases with `qml.measure` where unexpected operations were added to the
+  circuit.
+  [(#2328)](https://github.com/PennyLaneAI/pennylane/pull/2328)
 
 * Fixes a bug in which the `expval`/`var` of a `Tensor(Observable)` would depend on the order 
   in which the observable is defined: 
@@ -183,5 +185,5 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
-Anthony Hayes, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu, Jay Soni,
-Antal Száva.
+Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
+Jay Soni, Antal Száva.

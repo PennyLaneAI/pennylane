@@ -20,6 +20,8 @@ from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import finite_diff, finite_diff_coeffs, generate_shifted_tapes
+from pennylane.devices import DefaultQubit
+from pennylane.operation import Observable, AnyWires
 
 
 class TestCoeffs:
@@ -301,6 +303,105 @@ class TestFiniteDiff:
 
         assert np.allclose(j1, [exp, 0])
         assert np.allclose(j2, [0, exp])
+
+    def test_output_shape_matches_qnode(self):
+        """Test that the transform output shape matches that of the QNode."""
+        dev = qml.device("default.qubit", wires=4)
+
+        def cost1(x):
+            qml.Rot(*x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def cost2(x):
+            qml.Rot(*x, wires=0)
+            return [qml.expval(qml.PauliZ(0))]
+
+        def cost3(x):
+            qml.Rot(*x, wires=0)
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+
+        def cost4(x):
+            qml.Rot(*x, wires=0)
+            return qml.probs([0, 1])
+
+        def cost5(x):
+            qml.Rot(*x, wires=0)
+            return [qml.probs([0, 1])]
+
+        def cost6(x):
+            qml.Rot(*x, wires=0)
+            return [qml.probs([0, 1]), qml.probs([2, 3])]
+
+        x = np.random.rand(3)
+        circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
+
+        transform = [qml.math.shape(qml.gradients.finite_diff(c)(x)) for c in circuits]
+        # The output shape of transforms for 2D qnode outputs (cost5 & cost6) is currently
+        # transposed, e.g. (4, 1, 3) instead of (1, 4, 3).
+        # TODO: fix qnode/expected once #2296 is resolved
+        qnode = [qml.math.shape(c(x)) + (3,) for c in circuits[:4]] + [(4, 1, 3), (4, 2, 3)]
+        expected = [(3,), (1, 3), (2, 3), (4, 3), (4, 1, 3), (4, 2, 3)]
+
+        assert all(t == q == e for t, q, e in zip(transform, qnode, expected))
+
+    def test_special_observable_qnode_differentiation(self):
+        """Test differentiation of a QNode on a device supporting a
+        special observable that returns an object rather than a number."""
+
+        class SpecialObject:
+            """SpecialObject
+
+            A special object that conveniently encapsulates the return value of
+            a special observable supported by a special device and which supports
+            multiplication with scalars and addition.
+            """
+
+            def __init__(self, val):
+                self.val = val
+
+            def __mul__(self, other):
+                return SpecialObject(self.val * other)
+
+            def __add__(self, other):
+                new = self.val + other.val if isinstance(other, self.__class__) else other
+                return SpecialObject(new)
+
+        class SpecialObservable(Observable):
+            """SpecialObservable"""
+
+            num_wires = AnyWires
+
+            def diagonalizing_gates(self):
+                """Diagonalizing gates"""
+                return []
+
+        class DeviceSupporingSpecialObservable(DefaultQubit):
+            name = "Device supporting SpecialObservable"
+            short_name = "default.qubit.specialobservable"
+            observables = DefaultQubit.observables.union({"SpecialObservable"})
+
+            def expval(self, observable, **kwargs):
+                if self.analytic and isinstance(observable, SpecialObservable):
+                    val = super().expval(qml.PauliZ(wires=0), **kwargs)
+                    return SpecialObject(val)
+
+                return super().expval(observable, **kwargs)
+
+        dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(SpecialObservable(wires=0))
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def reference_qnode(x):
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(wires=0))
+
+        par = np.array(0.2, requires_grad=True)
+        assert np.isclose(qnode(par).item().val, reference_qnode(par))
+        assert np.isclose(qml.jacobian(qnode)(par).item().val, qml.jacobian(reference_qnode)(par))
 
 
 @pytest.mark.parametrize("approx_order", [2, 4])
