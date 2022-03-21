@@ -185,7 +185,13 @@ jobs:
 
       - name: Run tests
         run: |
+          python -m pytest tests/hf --cov=pennylane $COVERAGE_FLAGS
           cd qchem && python -m pytest tests --cov=pennylane_qchem $COVERAGE_FLAGS
+
+      - name: Upload HF coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
