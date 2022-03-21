@@ -301,7 +301,7 @@ def simplify_rotation(op):
 @qml.qfunc_transform
 def simplify_rotation(tape):
     """Define how simplify rotation works on a tape"""
-    for op in tape.operations + tape.measurements:
+    for op in tape:
         if op.name == "Rot":
             simplify_rotation(op)
         else:

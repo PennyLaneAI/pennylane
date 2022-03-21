@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -236,8 +236,11 @@ class QuantumTape(AnnotatedQueue):
             qml.RX(0.133, wires='a')
             qml.expval(qml.PauliZ(wires=[0]))
 
-    Once constructed, information about the quantum circuit can be queried:
+    Once constructed, the tape may act as a quantum circuit and information
+    about the quantum circuit can be queried:
 
+    >>> list(tape)
+    [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(PauliZ(wires=[0]))]
     >>> tape.operations
     [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
     >>> tape.observables
@@ -248,6 +251,24 @@ class QuantumTape(AnnotatedQueue):
     <Wires = [0, 'a']>
     >>> tape.num_params
     3
+
+    Iterating over the quantum circuit can be done by iterating over the tape
+    object:
+
+    >>> for op in tape:
+    ...     print(op)
+    RX(0.432, wires=[0])
+    RY(0.543, wires=[0])
+    CNOT(wires=[0, 'a'])
+    RX(0.133, wires=['a'])
+    expval(PauliZ(wires=[0]))
+
+    Tapes can also as sequences and support indexing and the ``len`` function:
+
+    >>> tape[0]
+    RX(0.432, wires=[0])
+    >>> len(tape)
+    5
 
     The :class:`~.CircuitGraph` can also be accessed:
 
@@ -348,6 +369,42 @@ class QuantumTape(AnnotatedQueue):
             self._process_queue()
         finally:
             QuantumTape._lock.release()
+
+    @property
+    def circuit(self):
+        """Returns the quantum circuit recorded by the tape.
+
+        The circuit is created with the assumptions that:
+
+        * The ``operations`` attribute contains quantum operations and
+          mid-circuit measurements and
+        * The ``measurements`` attribute contains terminal measurements.
+
+        Note that the resulting list could contain MeasurementProcess objects
+        that some devices may not support.
+
+        Returns:
+
+            list[.Operator, .MeasurementProcess]: the quantum circuit
+            containing quantum operations and measurements as recorded by the
+            tape.
+        """
+        return self.operations + self.measurements
+
+    def __iter__(self):
+        """list[.Operator, .MeasurementProcess]: Return an iterator to the
+        underlying quantum circuit object."""
+        return iter(self.circuit)
+
+    def __getitem__(self, idx):
+        """list[.Operator]: Return the indexed operator from underlying quantum
+        circuit object."""
+        return self.circuit[idx]
+
+    def __len__(self):
+        """int: Return the number of operations and measurements in the
+        underlying quantum circuit object."""
+        return len(self.circuit)
 
     @property
     def interface(self):
