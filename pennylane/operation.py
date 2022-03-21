@@ -98,7 +98,7 @@ import copy
 import itertools
 import functools
 import warnings
-from enum import Enum, IntEnum
+from enum import IntEnum
 from scipy.sparse import kron, eye, coo_matrix
 
 import numpy as np
@@ -273,48 +273,6 @@ AnyWires = WiresEnum.AnyWires
 """IntEnum: An enumeration which represents any wires in the
 subsystem. It is equivalent to an integer with value -1."""
 
-
-# =============================================================================
-# ObservableReturnTypes types
-# =============================================================================
-
-
-class ObservableReturnTypes(Enum):
-    """Enumeration class to represent the return types of an observable."""
-
-    Sample = "sample"
-    Variance = "var"
-    Expectation = "expval"
-    Probability = "probs"
-    State = "state"
-    MidMeasure = "measure"
-
-    def __repr__(self):
-        """String representation of the return types."""
-        return str(self.value)
-
-
-Sample = ObservableReturnTypes.Sample
-"""Enum: An enumeration which represents sampling an observable."""
-
-Variance = ObservableReturnTypes.Variance
-"""Enum: An enumeration which represents returning the variance of
-an observable on specified wires."""
-
-Expectation = ObservableReturnTypes.Expectation
-"""Enum: An enumeration which represents returning the expectation
-value of an observable on specified wires."""
-
-Probability = ObservableReturnTypes.Probability
-"""Enum: An enumeration which represents returning probabilities
-of all computational basis states."""
-
-State = ObservableReturnTypes.State
-"""Enum: An enumeration which represents returning the state in the computational basis."""
-
-MidMeasure = ObservableReturnTypes.MidMeasure
-"""Enum: An enumeration which represents returning sampling the computational
-basis in the middle of the circuit."""
 
 # =============================================================================
 # Class property
@@ -571,6 +529,17 @@ class Operator(abc.ABC):
             tensor_like: matrix representation
         """
         raise MatrixUndefinedError
+
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_matrix(cls):
+        r"""Bool: Whether or not the Operator returns a defined matrix.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return (cls.compute_matrix != Operator.compute_matrix) or (
+            cls.get_matrix != Operator.get_matrix
+        )
 
     @property
     def matrix(self):
@@ -1524,7 +1493,7 @@ class Observable(Operator):
         if self.return_type is None:
             return temp
 
-        if self.return_type is Probability:
+        if self.return_type is qml.measurements.Probability:
             return repr(self.return_type) + f"(wires={self.wires.tolist()})"
 
         return repr(self.return_type) + "(" + temp + ")"
@@ -1728,7 +1697,7 @@ class Tensor(Observable):
         if self.return_type is None:
             return s
 
-        if self.return_type is Probability:
+        if self.return_type is qml.measurements.Probability:
             return repr(self.return_type) + f"(wires={self.wires.tolist()})"
 
         return repr(self.return_type) + "(" + s + ")"
@@ -1846,19 +1815,12 @@ class Tensor(Observable):
         # observable should be Z^{\otimes n}
         self._eigvals_cache = pauli_eigs(len(self.wires))
 
-        # Sort observables lexicographically by the strings of the wire labels
-        # TODO: check for edge cases of the sorting, e.g. Tensor(Hermitian(obs, wires=[0, 2]),
-        # Hermitian(obs, wires=[1, 3, 4])
-        # Sorting the observables based on wires, so that the order of
-        # the eigenvalues is correct
-        obs_sorted = sorted(self.obs, key=lambda x: [str(l) for l in x.wires.labels])
-
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:
             # Tensor product of observables contains a mixture
             # of standard and non-standard observables
             self._eigvals_cache = np.array([1])
-            for k, g in itertools.groupby(obs_sorted, lambda x: x.name in standard_observables):
+            for k, g in itertools.groupby(self.obs, lambda x: x.name in standard_observables):
                 if k:
                     # Subgroup g contains only standard observables.
                     self._eigvals_cache = np.kron(self._eigvals_cache, pauli_eigs(len(list(g))))

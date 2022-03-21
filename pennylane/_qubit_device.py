@@ -17,7 +17,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, arguments-renamed
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
 import abc
 from collections import OrderedDict
 import itertools
@@ -26,14 +26,8 @@ import warnings
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Sample,
-    Variance,
-    Expectation,
-    Probability,
-    State,
-    operation_derivative,
-)
+from pennylane.operation import operation_derivative
+from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.wires import Wires
@@ -110,6 +104,68 @@ class QubitDevice(Device):
         new_array = np.zeros(new_dimensions, dtype=array.dtype.type)
         new_array[indices] = array
         return new_array
+
+    def _permute_wires(self, observable):
+        r"""Given an observable which acts on multiple wires, permute the wires to
+          be consistent with the device wire order.
+
+          Suppose we are given an observable :math:`\hat{O} = \Identity \otimes \Identity \otimes \hat{Z}`.
+          This observable can be represented in many ways:
+
+        .. code-block:: python
+
+              O_1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
+              O_2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
+
+          Notice that while the explicit tensor product matrix representation of :code:`O_1` and :code:`O_2` is
+          different, the underlying operator is identical due to the wire labelling (assuming the labels in
+          ascending order are {0,1,2}). If we wish to compute the expectation value of such an observable, we must
+          ensure it is identical in both cases. To facilitate this, we permute the wires in our state vector such
+          that they are consistent with this swapping of order in the tensor observable.
+
+        .. code-block:: python
+
+              >>> print(0_1.wires)
+              <Wires = [0, 1, 2]>
+              >>> print(O_2.wires)
+              <Wires = [2, 0, 1]>
+
+          We might naively think that we must permute our state vector to match the wire order of our tensor observable.
+          We must be careful and realize that the wire order of the terms in the tensor observable DOES NOT match the
+          permutation of the terms themselves. As an example we directly compare :code:`O_1` and :code:`O_2`:
+
+          The first term in :code:`O_1` (:code:`qml.Identity(wires=0)`) became the second term in :code:`O_2`.
+          By similar comparison we see that each term in the tensor product was shifted one position forward
+          (i.e 0 --> 1, 1 --> 2, 2 --> 0). The wires in our permuted quantum state should follow their respective
+          terms in the tensor product observable.
+
+          Thus, the correct wire ordering should be :code:`permuted_wires = <Wires = [1, 2, 0]>`. But if we had
+          taken the naive approach we would have permuted our state according to
+          :code:`permuted_wires = <Wires = [2, 0, 1]>` which is NOT correct.
+
+          This function uses the observable wires and the global device wire ordering in order to determine the
+          permutation of the wires in the observable required such that if our quantum state vector is
+          permuted accordingly then the amplitudes of the state will match the matrix representation of the observable.
+
+          Args:
+              observable (Observable): the observable whose wires are to be permuted.
+
+          Returns:
+              permuted_wires (Wires): permuted wires object
+        """
+        ordered_obs_wire_lst = self.order_wires(
+            observable.wires
+        ).tolist()  # order according to device wire order
+
+        mapped_wires = self.map_wires(observable.wires)
+        if isinstance(mapped_wires, Wires):
+            # by default this should be a Wires obj, but it is overwritten to list object in default.qubit
+            mapped_wires = mapped_wires.tolist()
+
+        permutation = np.argsort(mapped_wires)  # extract permutation via argsort
+
+        permuted_wires = Wires([ordered_obs_wire_lst[index] for index in permutation])
+        return permuted_wires
 
     observables = {
         "PauliX",
@@ -779,7 +835,10 @@ class QubitDevice(Device):
                     f"Cannot compute analytic expectations of {observable.name}."
                 ) from e
 
-            prob = self.probability(wires=observable.wires)
+            # the probability vector must be permuted to account for the permuted wire order of the observable
+            permuted_wires = self._permute_wires(observable)
+
+            prob = self.probability(wires=permuted_wires)
             return self._dot(eigvals, prob)
 
         # estimate the ev
@@ -805,7 +864,11 @@ class QubitDevice(Device):
                 raise qml.operation.EigvalsUndefinedError(
                     f"Cannot compute analytic variance of {observable.name}."
                 ) from e
-            prob = self.probability(wires=observable.wires)
+
+            # the probability vector must be permuted to account for the permuted wire order of the observable
+            permuted_wires = self._permute_wires(observable)
+
+            prob = self.probability(wires=permuted_wires)
             return self._dot((eigvals**2), prob) - self._dot(eigvals, prob) ** 2
 
         # estimate the variance
@@ -895,7 +958,7 @@ class QubitDevice(Device):
         dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:
-            if m.return_type is not qml.operation.Expectation:
+            if m.return_type is not Expectation:
                 raise qml.QuantumFunctionError(
                     "Adjoint differentiation method does not support"
                     f" measurement {m.return_type.value}"

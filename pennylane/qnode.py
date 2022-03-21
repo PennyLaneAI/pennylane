@@ -504,7 +504,7 @@ class QNode:
             )
 
         terminal_measurements = [
-            m for m in self.tape.measurements if m.return_type != qml.operation.MidMeasure
+            m for m in self.tape.measurements if m.return_type != qml.measurements.MidMeasure
         ]
         if not all(ret == m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
@@ -518,6 +518,7 @@ class QNode:
                 if len(obj.wires) != self.device.num_wires:
                     raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
+            # pylint: disable=no-member
             if isinstance(obj, qml.ops.qubit.SparseHamiltonian) and self.gradient_fn == "backprop":
                 raise qml.QuantumFunctionError(
                     "SparseHamiltonian observable must be used with the parameter-shift"
@@ -532,7 +533,7 @@ class QNode:
         # 2. Move this expansion to Device (e.g., default_expand_fn or
         # batch_transform method)
         if any(
-            getattr(obs, "return_type", None) == qml.operation.MidMeasure
+            getattr(obs, "return_type", None) == qml.measurements.MidMeasure
             for obs in self.tape.operations
         ):
             self._tape = qml.defer_measurements(self._tape)
@@ -561,6 +562,7 @@ class QNode:
                 # store the initialization gradient function
                 original_grad_fn = [self.gradient_fn, self.gradient_kwargs, self.device]
 
+                # pylint: disable=not-callable
                 # update the gradient function
                 set_shots(self._original_device, override_shots)(self._update_gradient_fn)()
 
