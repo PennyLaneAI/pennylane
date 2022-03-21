@@ -16,26 +16,26 @@ This module contains some useful utility functions for circuit drawing.
 """
 
 
-def default_wire_map(ops):
+def default_wire_map(tape):
     """Create a dictionary mapping used wire labels to non-negative integers
 
     Args:
-        ops Iterable[Operation]
+        tape [~.tape.QuantumTape): the QuantumTape containing operations and measurements
 
     Returns:
         dict: map from wires to sequential positive integers
     """
 
     # Use dictionary to preserve ordering, sets break order
-    used_wires = {wire: None for op in ops for wire in op.wires}
+    used_wires = {wire: None for op in tape for wire in op.wires}
     return {wire: ind for ind, wire in enumerate(used_wires)}
 
 
-def convert_wire_order(ops, wire_order=None, show_all_wires=False):
+def convert_wire_order(tape, wire_order=None, show_all_wires=False):
     """Creates the mapping between wire labels and place in order.
 
     Args:
-        ops Iterable[.Operator]: a list of operations
+        tape (~.tape.QuantumTape): the Quantum Tape containing operations and measurements
         wire_order Sequence[Any]: the order (from top to bottom) to print the wires
 
     Keyword Args:
@@ -45,7 +45,7 @@ def convert_wire_order(ops, wire_order=None, show_all_wires=False):
     Returns:
         dict: map from wire labels to sequential positive integers
     """
-    default = default_wire_map(ops)
+    default = default_wire_map(tape)
 
     if wire_order is None:
         return default
@@ -53,7 +53,7 @@ def convert_wire_order(ops, wire_order=None, show_all_wires=False):
     wire_order = list(wire_order) + [wire for wire in default if wire not in wire_order]
 
     if not show_all_wires:
-        used_wires = {wire for op in ops for wire in op.wires}
+        used_wires = {wire for op in tape for wire in op.wires}
         wire_order = [wire for wire in wire_order if wire in used_wires]
 
     return {wire: ind for ind, wire in enumerate(wire_order)}
