@@ -49,6 +49,9 @@
 
 <h3>Improvements</h3>
 
+* `"default.qubit"` now skips over identity operators instead performing matrix multiplication
+  with the identity.
+
 * `QuantumTape` objects are now iterable and accessing the
   operations and measurements of the underlying quantum circuit is more
   seamless.
