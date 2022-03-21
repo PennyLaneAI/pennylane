@@ -415,6 +415,27 @@ class TestParameterShiftHessian:
 
         assert all(np.allclose(expected[i], hessian[i]) for i in range(3))
 
+    def test_with_channel(self):
+        """Test that the Hessian is correctly computed for circuits
+        that contain quantum channels."""
+
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev, max_diff=2)
+        def circuit(x):
+            qml.RX(x[1], wires=0)
+            qml.RY(x[0], wires=0)
+            qml.DepolarizingChannel(x[2], wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        x = np.array([-0.4, 0.9, 0.1], requires_grad=True)
+
+        expected = qml.jacobian(qml.jacobian(circuit))(x)
+        hessian = qml.gradients.param_shift_hessian(circuit)(x)
+
+        assert np.allclose(expected, hessian)
+
     def test_hessian_transform_is_differentiable(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation (1d -> 1d)"""
 

@@ -19,6 +19,7 @@ import warnings
 import itertools as it
 
 import pennylane as qml
+from pennylane import numpy as np
 
 from .gradient_transform import (
     gradient_analysis,
@@ -28,7 +29,7 @@ from .gradient_transform import (
 from .hessian_transform import hessian_transform
 from .parameter_shift import _get_operation_recipe
 from .general_shift_rules import (
-    _combine_shift_rules,
+    _combine_shift_rules_with_multipliers,
     generate_shifted_tapes,
     generate_multishifted_tapes,
 )
@@ -62,22 +63,22 @@ def _collect_recipes(tape, argnum, diff_methods, diagonal_shifts, off_diagonal_s
 def _generate_off_diag_tapes(tape, idx, recipe_i, recipe_j):
     r"""Combine two univariate first order recipes and create
     multi-shifted tapes to compute the off-diagonal entry of the Hessian."""
-    c_i, _, s_i = recipe_i
-    c_j, _, s_j = recipe_j
 
-    if c_j is None:
+    if recipe_j[0] is None:
         return [], None, None
 
-    c_ij, *s_ij = _combine_shift_rules([qml.math.stack([c_i, s_i]).T, qml.math.stack([c_j, s_j]).T])
-    if s_ij[0][0] == s_ij[1][0] == 0:
-        unshifted_coeff = c_ij[0]
-        c_ij, s_ij[0], s_ij[1] = c_ij[1:], s_ij[0][1:], s_ij[1][1:]
+    combined_rulesT = _combine_shift_rules_with_multipliers(
+        [qml.math.stack(recipe_i).T, qml.math.stack(recipe_j).T]
+    )
+    if np.allclose(combined_rulesT[3:5, 0], 0.0):
+        unshifted_coeff = combined_rulesT[0, 0]
+        combined_rulesT = combined_rulesT[:, 1:]
     else:
         unshifted_coeff = None
 
-    h_tapes = generate_multishifted_tapes(tape, idx, zip(*s_ij))
+    h_tapes = generate_multishifted_tapes(tape, idx, combined_rulesT[3:5].T, combined_rulesT[1:3].T)
 
-    return h_tapes, c_ij, unshifted_coeff
+    return h_tapes, combined_rulesT[0], unshifted_coeff
 
 
 def expval_hessian_param_shift(
@@ -164,7 +165,7 @@ def expval_hessian_param_shift(
             hessian_tapes.extend(off_diag_data[0])
             hessian_coeffs.append(off_diag_data[1])
             # If there is a coefficient for the unshifted tape, memorize it and add the unshifted
-            # tape; Again this only happens if f0 was not provided and we did not add it yet.
+            # tape; Again the latter only happens if f0 was not provided and we did not add it yet.
             if off_diag_data[2] is not None:
                 if add_unshifted:
                     hessian_tapes.insert(0, tape)

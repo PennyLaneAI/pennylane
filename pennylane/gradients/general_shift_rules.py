@@ -260,11 +260,22 @@ def _iterate_shift_rule(rule, order, period=None):
     return qml.math.stack(combined_rules)
 
 
+def _combine_shift_rules_with_multipliers(rules):
+    r"""Helper method to combine shift rules for multiple parameters that
+    contain multipliers into simultaneous multivariate shift rules."""
+    combined_rules = []
+
+    for partial_rules in itertools.product(*rules):
+        c, m, s = np.stack(partial_rules).T
+        combined = np.concatenate([[np.prod(c)], m, s])
+        combined_rules.append(np.stack(combined))
+
+    return np.stack(combined_rules).T
+
+
 def _combine_shift_rules(rules):
     r"""Helper method to combine shift rules for multiple parameters into
     simultaneous multivariate shift rules."""
-
-    combined_rules = []
 
     for partial_rules in itertools.product(*rules):
         c, s = np.stack(partial_rules).T
@@ -444,7 +455,7 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
     return tapes
 
 
-def generate_multishifted_tapes(tape, idx, shifts):
+def generate_multishifted_tapes(tape, idx, shifts, mults):
     r"""Generate a list of tapes where the corresponding trainable parameter
     indices have been shifted by the values given.
 
@@ -453,6 +464,7 @@ def generate_multishifted_tapes(tape, idx, shifts):
         idx (list[int]): trainable parameter indices to shift the parameters of
         shifts (list[list[float or int]]): nested list of shift values, each
             list containing a value for each index
+        mults: TODO
 
     Returns:
         list[QuantumTape]: List of quantum tapes. Each tape has multiple parameters
@@ -460,14 +472,16 @@ def generate_multishifted_tapes(tape, idx, shifts):
             of the returned list of tapes will match the length of ``shifts``.
     """
     params = list(tape.get_parameters())
+    mults = [None] * len(shifts) if mults is None else mults
     tapes = []
 
-    for shift in shifts:
+    for shift, mult in zip(shifts, mults):
         new_params = params.copy()
         shifted_tape = tape.copy(copy_operations=True)
-
-        for id_, s in zip(idx, shift):
+        mult = np.ones_like(shift) if mult is None else mult
+        for id_, s, m in zip(idx, shift, mult):
             dtype = new_params[id_].dtype
+            new_params[id_] = new_params[id_] * qml.math.convert_like(m, new_params[id_])
             new_params[id_] = new_params[id_] + qml.math.convert_like(s, new_params[id_])
             new_params[id_] = qml.math.cast(new_params[id_], dtype)
 
