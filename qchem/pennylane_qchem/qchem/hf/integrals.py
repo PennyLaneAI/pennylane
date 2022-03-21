@@ -883,7 +883,6 @@ def attraction_integral(r, basis_a, basis_b):
 
     return _attraction_integral
 
-
 def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta):
     r"""Compute the electron-electron repulsion integral between four primitive Gaussian functions.
 
@@ -938,22 +937,19 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
         + delta * rd[:, anp.newaxis, anp.newaxis, anp.newaxis, anp.newaxis]
     ) / (gamma + delta)
 
+    g_t = [expansion(l1, l2, ra[0], rb[0], alpha, beta, t) for t in range(l1 + l2 + 1)]
+    g_u = [expansion(m1, m2, ra[1], rb[1], alpha, beta, u) for u in range(m1 + m2 + 1)]
+    g_v = [expansion(n1, n2, ra[2], rb[2], alpha, beta, v) for v in range(n1 + n2 + 1)]
+    g_r = [expansion(l3, l4, rc[0], rd[0], gamma, delta, r) for r in range(l3 + l4 + 1)]
+    g_s = [expansion(m3, m4, rc[1], rd[1], gamma, delta, s) for s in range(m3 + m4 + 1)]
+    g_w = [expansion(n3, n4, rc[2], rd[2], gamma, delta, w) for w in range(n3 + n4 + 1)]
+
     g = 0.0
     lengths = [l1 + l2 + 1, m1 + m2 + 1, n1 + n2 + 1, l3 + l4 + 1, m3 + m4 + 1, n3 + n4 + 1]
     for t, u, v, r, s, w in it.product(*[range(length) for length in lengths]):
-        g = g + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * expansion(
-            m1, m2, ra[1], rb[1], alpha, beta, u
-        ) * expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * expansion(
-            l3, l4, rc[0], rd[0], gamma, delta, r
-        ) * expansion(
-            m3, m4, rc[1], rd[1], gamma, delta, s
-        ) * expansion(
-            n3, n4, rc[2], rd[2], gamma, delta, w
-        ) * (
+        g = g + g_t[t] * g_u[u] * g_v[v] * g_r[r] * g_s[s] * g_w[w] * (
             (-1) ** (r + s + w)
-        ) * _hermite_coulomb(
-            t + r, u + s, v + w, 0, (p * q) / (p + q), p_ab - p_cd
-        )
+        ) * _hermite_coulomb(t + r, u + s, v + w, 0, (p * q) / (p + q), p_ab - p_cd)
 
     g = g * 2 * (anp.pi**2.5) / (p * q * anp.sqrt(p + q))
 
