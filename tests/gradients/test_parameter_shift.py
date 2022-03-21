@@ -82,6 +82,16 @@ class TestGetOperationRecipe:
         assert qml.math.allclose(out_recipe[1], np.ones_like(c2))
         assert qml.math.allclose(out_recipe[2], s2)
 
+    @pytest.mark.parametrize("order", [0, 3])
+    def test_error_wrong_order(self, order):
+        """Test that get_operation_recipe raises an error for orders other than 1 and 2"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.2, wires=0)
+
+        with pytest.raises(NotImplementedError, match="only is implemented for orders 1 and 2."):
+            _get_operation_recipe(tape, 0, shifts=None, order=order)
+
 
 class TestGradAnalysis:
     """Tests for parameter gradient methods"""

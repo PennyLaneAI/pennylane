@@ -219,6 +219,8 @@ def _iterate_shift_rule_with_multipliers(rule, order, period):
     times along the same parameter axis for higher-order derivatives."""
     combined_rules = []
 
+    # TODO: Optimization: Only iterate over half of the combinations and
+    # double their coefficients (does this work with multipliers?)
     for partial_rule in itertools.product(rule, repeat=order):
         c, m, s = np.stack(partial_rule).T
         cumul_coeff = np.prod(c)
@@ -244,6 +246,8 @@ def _iterate_shift_rule(rule, order, period=None):
 
     combined_rules = []
 
+    # TODO: Optimization: Only iterate over half of the combinations and
+    # double their coefficients
     for partial_rule in itertools.product(rule, repeat=order):
         c, s = np.stack(partial_rule).T
         cumul_shift = sum(s)

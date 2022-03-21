@@ -41,8 +41,6 @@ def _collect_recipes(tape, argnum, diff_methods, diagonal_shifts, off_diagonal_s
     diag_recipes = []
     partial_offdiag_recipes = []
     for i in range(tape.num_params):
-        idx = argnum.index(i)
-
         if i not in argnum or diff_methods[i] == "0":
             # hessian will be set to 0 for this row/column
             diag_recipes.append(None)
@@ -50,6 +48,7 @@ def _collect_recipes(tape, argnum, diff_methods, diagonal_shifts, off_diagonal_s
             continue
 
         # Get the diagonal second-order derivative recipe
+        idx = argnum.index(i)
         diag_shifts = None if diagonal_shifts is None else diagonal_shifts[idx]
         diag_recipes.append(_get_operation_recipe(tape, i, diag_shifts, order=2))
 
@@ -71,8 +70,8 @@ def _generate_off_diag_tapes(tape, idx, recipe_i, recipe_j):
 
     c_ij, *s_ij = _combine_shift_rules([qml.math.stack([c_i, s_i]).T, qml.math.stack([c_j, s_j]).T])
     if s_ij[0][0] == s_ij[1][0] == 0:
-        unshifted_coeff = c_ij
-        c_ij, s_ij = c_ij[1:], s_ij[1:]
+        unshifted_coeff = c_ij[0]
+        c_ij, s_ij[0], s_ij[1] = c_ij[1:], s_ij[0][1:], s_ij[1][1:]
     else:
         unshifted_coeff = None
 
@@ -90,6 +89,10 @@ def expval_hessian_param_shift(
 
     Args:
         tape (.QuantumTape): input quantum tape
+        argnum TODO
+        diff_methods TODO
+        diagonal_shifts TODO
+        off_diagonal_shifts TODO
         diff_methods (list[string]): The differentiation method to use for each trainable parameter.
             Can be "A" or "0", where "A" is the analytical parameter shift rule and "0" indicates
             a 0 derivative (that is the parameter does not affect the tape's output).

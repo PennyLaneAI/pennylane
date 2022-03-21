@@ -16,13 +16,64 @@ import pytest
 
 import numpy as np
 import pennylane as qml
-from pennylane import numpy as np
+
+# from pennylane import numpy as np
 from pennylane.gradients.general_shift_rules import (
     generate_shift_rule,
     _get_shift_rule,
     generate_multi_shift_rule,
     generate_shifted_tapes,
+    _iterate_shift_rule_with_multipliers,
 )
+
+
+class TestIterateShiftRuleWithMultipliers:
+    """Tests `_iterate_shift_rule_with_multipliers` to produce the correct rules."""
+
+    @pytest.mark.parametrize("period", [None, np.pi / 3, 2 * np.pi])
+    def test_first_order(self, period):
+        rule = [(-0.9, 0.7, -0.2), (0.2, 1.2, 0.4)]
+        iterated_rule = _iterate_shift_rule_with_multipliers(rule, 1, period)
+        assert np.allclose(iterated_rule, rule)
+
+    @pytest.mark.parametrize("period", [None, np.pi / 3, 2 * np.pi])
+    def test_second_order(self, period):
+        rule = [(0.2, 1.2, 0.4), (-0.9, 0.7, -0.2)]
+        iterated_rule = _iterate_shift_rule_with_multipliers(rule, 2, period)
+        expected = np.array(
+            [
+                [0.2**2, 1.2**2, 0.4 * 1.2 + 0.4],
+                [0.2 * -0.9, 1.2 * 0.7, 0.4 * 0.7 - 0.2],
+                [-0.9 * 0.2, 0.7 * 1.2, -0.2 * 1.2 + 0.4],
+                [(-0.9) ** 2, 0.7**2, -0.2 * 0.7 - 0.2],
+            ]
+        )
+        if period == np.pi / 3:
+            expected[0, -1] -= period
+
+        assert np.allclose(iterated_rule, expected)
+
+    @pytest.mark.parametrize("period", [None, np.pi / 3, 2 * np.pi])
+    def test_third_order(self, period):
+        rule = [(0.2, 1.2, 0.4), (-0.9, 0.7, -0.2)]
+        iterated_rule = _iterate_shift_rule_with_multipliers(rule, 3, period)
+        expected = np.array(
+            [
+                [0.2**3, 1.2**3, (0.4 * 1.2 + 0.4) * 1.2 + 0.4],
+                [0.2**2 * -0.9, 1.2**2 * 0.7, (0.4 * 1.2 + 0.4) * 0.7 - 0.2],
+                [0.2 * -0.9 * 0.2, 1.2 * 0.7 * 1.2, (0.4 * 0.7 - 0.2) * 1.2 + 0.4],
+                [0.2 * (-0.9) ** 2, 1.2 * 0.7**2, (0.4 * 0.7 - 0.2) * 0.7 - 0.2],
+                [-0.9 * 0.2**2, 0.7 * 1.2**2, (-0.2 * 1.2 + 0.4) * 1.2 + 0.4],
+                [-0.9 * 0.2 * -0.9, 0.7 * 1.2 * 0.7, (-0.2 * 1.2 + 0.4) * 0.7 - 0.2],
+                [(-0.9) ** 2 * 0.2, 0.7**2 * 1.2, (-0.2 * 0.7 - 0.2) * 1.2 + 0.4],
+                [(-0.9) ** 3, 0.7**3, (-0.2 * 0.7 - 0.2) * 0.7 - 0.2],
+            ]
+        )
+        if period == np.pi / 3:
+            expected[0, -1] -= period
+            expected[4, -1] -= period
+
+        assert np.allclose(iterated_rule, expected)
 
 
 class TestGenerateShiftRule:
@@ -334,7 +385,7 @@ class TestShiftedTapes:
     def test_multipliers(self):
         """Test that the function behaves as expected when multipliers are used"""
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.PauliZ(0)
             qml.RX(1.0, wires=0)
             qml.CNOT(wires=[0, 2])
