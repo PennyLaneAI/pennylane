@@ -3,10 +3,10 @@ from pennylane.tape.tape import QuantumTape
 
 class FunctionTape(QuantumTape):
 
-    def __init__(self, param_names, *args, **kwargs):
-        self.param_names = param_names
+    def __init__(self, names, *args, **kwargs):
+        self.names = names
         self.values = None
-        self.vars = {param_names[i]:(lambda: self.values[i]()) for i in range(len(param_names))}
+        self.vars = {names[i]: (lambda: self.values[i]()) for i in range(len(names))}
         super().__init__(*args, **kwargs)
 
     def __call__(self, *args):
