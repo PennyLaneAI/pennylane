@@ -19,6 +19,8 @@ import itertools
 import string
 import sys
 from itertools import product
+from pathlib import Path
+from os import environ
 
 import pytest
 from flaky import flaky
@@ -3373,3 +3375,289 @@ class TestCutStrategy:
                 max_wires_by_fragment=max_wires_by_fragment,
                 max_gates_by_fragment=max_gates_by_fragment,
             )
+
+
+def make_weakly_connected_tape(
+    fragment_wire_sizes=[3, 5],
+    single_gates_per_wire=1,
+    double_gates_multiplier=1.5,
+    inter_fragment_gate_wires={(0, 1): 1},
+    repeats=2,
+    seed=None,
+):
+    """Helper function for making random weakly connected tapes."""
+    rng = np.random.default_rng(seed)
+    inter_fragment_gate_wires = inter_fragment_gate_wires or {}
+    with qml.tape.QuantumTape() as tape:
+        for _ in range(repeats):
+            for i, wire_size in enumerate(fragment_wire_sizes):
+                double_gates_per_fragment = int(double_gates_multiplier * wire_size)
+                for _ in range(double_gates_per_fragment):
+                    j0, j1 = rng.choice(wire_size, size=2, replace=False)
+                    qml.CNOT(wires=[f"{i}-{j0}", f"{i}-{j1}"])
+                for _ in range(single_gates_per_wire):
+                    for j in range(wire_size):
+                        qml.RZ(0.5, wires=f"{i}-{j}")
+            for frag_pair, num_gates in inter_fragment_gate_wires.items():
+                f0, f1 = sorted(frag_pair)
+                for _ in range(num_gates):
+                    w0 = rng.choice(fragment_wire_sizes[f0])
+                    w1 = rng.choice(fragment_wire_sizes[f1])
+                    qml.CNOT(wires=[f"{f0}-{w0}", f"{f1}-{w1}"])
+        for i, wire_size in enumerate(fragment_wire_sizes):
+            if wire_size == 1:
+                qml.expval(qml.PauliZ(wires=[f"{i}-0"]))
+            else:
+                qml.expval(qml.PauliZ(wires=[f"{i}-0"]) @ qml.PauliZ(wires=[f"{i}-{wire_size-1}"]))
+    return tape
+
+
+class TestKaHyPar:
+    """Tests for the KaHyPar cutting function and utilities."""
+
+    # Fixes seed for Github actions:
+    seed = 11 if environ.get("CI") == "true" else None
+
+    disjoint_tapes = [
+        (
+            2,
+            0,
+            make_weakly_connected_tape(
+                single_gates_per_wire=2, inter_fragment_gate_wires=None, seed=seed
+            ),
+        ),
+        (
+            5,
+            0,
+            make_weakly_connected_tape(
+                fragment_wire_sizes=[2] * 5, inter_fragment_gate_wires=None, seed=seed
+            ),
+        ),
+    ]
+    fragment_tapes = [
+        (2, 2, make_weakly_connected_tape(inter_fragment_gate_wires={(0, 1): 1}, seed=seed)),
+        (
+            3,
+            6,
+            make_weakly_connected_tape(
+                fragment_wire_sizes=[4, 5, 6],
+                single_gates_per_wire=2,
+                double_gates_multiplier=2,
+                inter_fragment_gate_wires={(0, 1): 1, (1, 2): 1},
+                seed=seed,
+            ),
+        ),
+    ]
+    config_path = str(
+        Path(__file__).parent.parent.parent / "pennylane/transforms/_cut_kKaHyPar_sea20.ini"
+    )
+
+    def test_seed_in_ci(self):
+        """Test if seed is properly set in github action CI"""
+        if environ.get("CI") == "true":
+            print(f"CI seed set to {self.seed}")
+            assert self.seed == 11
+
+    def test_import_raise(self, monkeypatch):
+        """Test if import exception is properly raised for missing kahypar."""
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "kahypar", None)
+
+            with pytest.raises(ImportError, match="KaHyPar must be installed"):
+                qcut.kahypar_cut(None, 2)
+
+    @pytest.mark.parametrize("tape", disjoint_tapes + fragment_tapes)
+    @pytest.mark.parametrize("hyperwire_weight", [0, 2])
+    @pytest.mark.parametrize("edge_weights", [None, 3])
+    def test_graph_to_hmetis(self, tape, hyperwire_weight, edge_weights):
+        """Test conversion to the hMETIS format."""
+
+        num_frags, num_interfrag_gates, tape = tape
+        graph = qcut.tape_to_graph(tape)
+        edge_weights = [edge_weights] * len(graph.edges) if edge_weights is not None else None
+        adj_nodes, edge_splits, all_edge_weights = qcut._graph_to_hmetis(
+            graph, hyperwire_weight=hyperwire_weight, edge_weights=edge_weights
+        )
+        assert len(edge_splits) - 1 == len(graph.edges) + (hyperwire_weight > 0) * len(tape.wires)
+        assert (all_edge_weights is not None) == (hyperwire_weight > 0) or (
+            edge_weights is not None
+        )
+        assert max(adj_nodes) + 1 == len(graph.nodes)
+
+    @pytest.mark.parametrize("tape", disjoint_tapes + fragment_tapes)
+    @pytest.mark.parametrize("hyperwire_weight", [0, 1])
+    def test_kahypar_cut(self, tape, hyperwire_weight):
+        """Test vanilla cutting with kahypar"""
+        pytest.importorskip("kahypar")
+
+        num_frags, num_interfrag_gates, tape = tape
+        graph = qcut.tape_to_graph(tape)
+
+        cut_edges = qcut.kahypar_cut(
+            graph=graph,
+            num_fragments=num_frags,
+            imbalance=0.5,
+            hyperwire_weight=hyperwire_weight,
+            seed=self.seed,
+        )
+
+        assert len(cut_edges) <= num_interfrag_gates * 2
+
+        cut_graph = qcut.place_wire_cuts(graph=graph, cut_edges=cut_edges)
+        qcut.replace_wire_cut_nodes(cut_graph)
+        frags, comm_graph = qcut.fragment_graph(cut_graph)
+
+        assert len(frags) == num_frags
+        assert len(comm_graph.edges) == len(cut_edges)
+
+    @pytest.mark.parametrize("config_path", [None, config_path])
+    @pytest.mark.parametrize("fragment_weights", [None, [350, 210]])
+    @pytest.mark.parametrize("imbalance", [None, 0.5])
+    def test_kahypar_cut_options(self, imbalance, fragment_weights, config_path):
+        """Test vanilla cutting with kahypar"""
+        pytest.importorskip("kahypar")
+
+        num_frags, num_interfrag_gates, tape = self.disjoint_tapes[0]
+        graph = qcut.tape_to_graph(tape)
+
+        cut_edges = qcut.kahypar_cut(
+            graph=graph,
+            num_fragments=num_frags,
+            imbalance=imbalance,
+            fragment_weights=fragment_weights,
+            config_path=config_path,
+            verbose=True,
+            seed=self.seed,
+        )
+
+        assert len(cut_edges) <= num_interfrag_gates * 2
+
+        cut_graph = qcut.place_wire_cuts(graph=graph, cut_edges=cut_edges)
+        qcut.replace_wire_cut_nodes(cut_graph)
+        frags, comm_graph = qcut.fragment_graph(cut_graph)
+
+        assert len(frags) == num_frags
+        assert len(comm_graph.edges) == len(cut_edges)
+
+    @pytest.mark.parametrize("dangling_measure", [False, True])
+    def test_remove_existing_cuts(self, dangling_measure):
+        """Test if ``WireCut`` and ``MeasureNode``/``PrepareNode`` are correctly removed."""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires="a")
+            qml.WireCut(wires="a")
+            qml.RY(0.543, wires="a")
+            qcut.MeasureNode(wires="a")
+            qcut.PrepareNode(wires="a")
+            if dangling_measure:
+                qcut.MeasureNode(wires="a")
+            qml.RX(0.678, wires=0)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        graph = qcut.tape_to_graph(tape)
+        if dangling_measure:
+            with pytest.warns(
+                UserWarning,
+                match="The circuit contains `MeasureNode` or `PrepareNode` operations",
+            ):
+                graph = qcut._remove_existing_cuts(graph)
+        else:
+            graph = qcut._remove_existing_cuts(graph)
+
+        # Only dangling `MeasureNode` should be left:
+        assert (
+            len(
+                [
+                    n
+                    for n in graph.nodes
+                    if isinstance(n, (qml.WireCut, qcut.MeasureNode, qcut.PrepareNode))
+                ]
+            )
+            == dangling_measure
+        )
+
+    def test_place_wire_cuts(self):
+        """Test if ``WireCut`` are correctly placed with the correct order."""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires="a")
+            qml.RY(0.543, wires="a")
+            qml.CNOT(wires=[0, "a"])
+            qml.RX(0.678, wires=0)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        graph = qcut.tape_to_graph(tape)
+        op0, op1, op2 = tape.operations[0], tape.operations[1], tape.operations[2]
+        cut_edges = [e for e in graph.edges if e[0] is op0 and e[1] is op1]
+        cut_edges += [e for e in graph.edges if e[0] is op1 and e[1] is op2]
+
+        cut_graph = qcut.place_wire_cuts(graph=graph, cut_edges=cut_edges)
+        wire_cuts = [n for n in cut_graph.nodes if isinstance(n, qml.WireCut)]
+
+        assert len(wire_cuts) == len(cut_edges)
+        assert list(cut_graph.pred[wire_cuts[0]]) == [op0]
+        assert list(cut_graph.succ[wire_cuts[0]]) == [op1]
+        assert list(cut_graph.pred[wire_cuts[1]]) == [op1]
+        assert list(cut_graph.succ[wire_cuts[1]]) == [op2]
+
+        # check if order is unique and also if there's enough nodes.
+        assert list({i for _, i in cut_graph.nodes.data("order")}) == list(
+            range(len(graph.nodes) + len(cut_edges))
+        )
+
+    @pytest.mark.parametrize("with_manual_cut", [False, True])
+    def test_find_and_place_cuts(self, with_manual_cut):
+        """Integration tests for auto cutting pipeline."""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.1, wires=0)
+            qml.RY(0.2, wires=1)
+            qml.RX(0.3, wires="a")
+            qml.RY(0.4, wires="b")
+            qml.CNOT(wires=[0, 1])
+            if with_manual_cut:
+                qml.WireCut(wires=1)
+            qml.CNOT(wires=["a", "b"])
+            qml.CNOT(wires=[1, "a"])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=["a", "b"])
+            qml.RX(0.5, wires="a")
+            qml.RY(0.6, wires="b")
+            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
+
+        expected_num_cut_edges = 2
+        num_frags = 2
+
+        graph = qcut.tape_to_graph(tape)
+        cut_graph = qcut.find_and_place_cuts(
+            graph=graph,
+            num_fragments=num_frags,
+            imbalance=0.5,
+            replace_wire_cuts=True,
+            seed=self.seed,
+        )
+
+        assert (
+            len([n for n in cut_graph.nodes if isinstance(n, qcut.MeasureNode)])
+            == expected_num_cut_edges
+        )
+        assert (
+            len([n for n in cut_graph.nodes if isinstance(n, qcut.PrepareNode)])
+            == expected_num_cut_edges
+        )
+
+        # Cutting wire "a" is more balanced, thus will be cut if there's no manually placed cut on
+        # wire 1:
+        expected_cut_wire = 1 if with_manual_cut else "a"
+        assert all(
+            list(n.wires) == [expected_cut_wire]
+            for n in cut_graph.nodes
+            if isinstance(n, (qcut.MeasureNode, qcut.PrepareNode))
+        )
+
+        frags, comm_graph = qcut.fragment_graph(cut_graph)
+
+        assert len(frags) == num_frags
+        assert len(comm_graph.edges) == expected_num_cut_edges
+
+        expected_fragment_sizes = [7, 11] if with_manual_cut else [8, 10]
+        assert expected_fragment_sizes == [f.number_of_nodes() for f in frags]

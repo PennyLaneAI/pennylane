@@ -60,6 +60,9 @@ jobs:
         if: contains(matrix.config.interfaces, 'jax')
         run: pip3 install jax jaxlib
 
+      - name: Install KaHyPar
+        run: pip3 install kahypar==1.1.7
+
       - name: Install PennyLane
         run: |
           pip install -r requirements-ci.txt

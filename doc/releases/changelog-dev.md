@@ -31,6 +31,12 @@
     sample measurement without an observable specified to multiple single-qubit sample
     nodes.
     [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
+  - An automatic graph partitioning method `qcut.kahypar_cut()` has been implemented for cutting
+    arbitrary tape-converted graphs using the general purpose graph partitioning framework
+    [KaHyPar](https://pypi.org/project/kahypar/) which needs to be installed separately.
+    To integrate with the existing manual cut pipeline, method `qcut.find_and_place_cuts()` and related
+    utilities are implemented which uses `qcut.kahypar_cut()` as the default auto cutter.
+    [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
 
   - The existing `qcut.graph_to_tape()` method has been extended to convert
     graphs containing sample measurement nodes to tapes.
@@ -177,4 +183,5 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
-Anthony Hayes, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Jay Soni, Antal Száva.
+Anthony Hayes, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu, Jay Soni,
+Antal Száva.
