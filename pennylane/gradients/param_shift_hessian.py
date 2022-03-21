@@ -88,14 +88,25 @@ def expval_hessian_param_shift(
     post-processing function to combine the results of evaluating the Hessian tapes.
 
     Args:
-        tape (.QuantumTape): input quantum tape
-        argnum TODO
-        diff_methods TODO
-        diagonal_shifts TODO
-        off_diagonal_shifts TODO
+        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        argnum (int or list[int] or None): Parameter indices to differentiate
+            with respect to. If not provided, the Hessian with respect to all
+            trainable indices is returned. Note that the indices refer to tape
+            parameters if ``tape`` is a tape, and to QNode arguments if it is a QNode.
         diff_methods (list[string]): The differentiation method to use for each trainable parameter.
             Can be "A" or "0", where "A" is the analytical parameter shift rule and "0" indicates
             a 0 derivative (that is the parameter does not affect the tape's output).
+        diagonal_shifts (list[tuple[int or float]]): List containing tuples of shift values
+            for the Hessian diagonal.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple length should match the number of frequencies for that parameter.
+            If unspecified, equidistant shifts are used.
+        off_diagonal_shifts (list[tuple[int or float]]): List containing tuples of shift
+            values for the off-diagonal entries of the Hessian.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple should match the number of frequencies for that parameter.
+            The combination of shifts into bivariate shifts is performed automatically.
+            If unspecified, equidistant shifts are used.
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the Hessian tapes include the original input tape, the 'f0' value is used
             instead of evaluating the input tape, reducing the number of device invocations.
@@ -220,20 +231,21 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
-        argnum (int or list[int] or None): Trainable parameter indices to differentiate
-            with respect to. If not provided, the derivative with respect to all
-            trainable indices are returned.
+        argnum (int or list[int] or None): Parameter indices to differentiate
+            with respect to. If not provided, the Hessian with respect to all
+            trainable indices is returned. Note that the indices refer to tape
+            parameters if ``tape`` is a tape, and to QNode arguments if it is a QNode.
         diagonal_shifts (list[tuple[int or float]]): List containing tuples of shift values
             for the Hessian diagonal.
             If provided, one tuple of shifts should be given per trainable parameter
-            and the tuple should match the number of frequencies for that parameter.
-            If unspecified, equidistant shifts are assumed.
+            and the tuple length should match the number of frequencies for that parameter.
+            If unspecified, equidistant shifts are used.
         off_diagonal_shifts (list[tuple[int or float]]): List containing tuples of shift
             values for the off-diagonal entries of the Hessian.
             If provided, one tuple of shifts should be given per trainable parameter
             and the tuple should match the number of frequencies for that parameter.
             The combination of shifts into bivariate shifts is performed automatically.
-            If unspecified, equidistant shifts are assumed.
+            If unspecified, equidistant shifts are used.
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the Hessian tapes include the original input tape, the 'f0' value is used
             instead of evaluating the input tape, reducing the number of device invocations.
@@ -265,46 +277,45 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
     >>> @qml.qnode(dev)
     ... def circuit(x):
     ...     qml.RX(x[0], wires=0)
-    ...     qml.RY(x[1], wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
-    >>> x = np.array([0.1, 0.2], requires_grad=True)
+    ...     qml.CRY(x[1], wires=[0, 1])
+    ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+
+    >>> x = np.array([0.5, 0.2], requires_grad=True)
     >>> qml.gradients.param_shift_hessian(circuit)(x)
-    tensor([[-0.97517033,  0.01983384],
-            [ 0.01983384, -0.97517033]], requires_grad=True)
+    tensor([[-0.86883595,  0.04762358],
+            [ 0.04762358,  0.05998862]], requires_grad=True)
 
     .. UsageDetails::
 
-        The Hessian transform can also be applied to a quantum tape, instead producing the
-        parameter-shifted Hessian tapes and a post-processing function to combine execution
-        results:
+        The Hessian transform can also be applied to a quantum tape instead of a QNode, producing
+        the parameter-shifted tapes and a post-processing function to combine the execution
+        results of these tapes into the Hessian:
 
         >>> circuit(x)  # generate the QuantumTape inside the QNode
         >>> tape = circuit.qtape
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape)
-        >>> hessian_tapes
-        [<QuantumTape: wires=[0], params=2>,
-         <QuantumTape: wires=[0], params=2>,
-         <QuantumTape: wires=[0], params=2>,
-         <QuantumTape: wires=[0], params=2>,
-         <QuantumTape: wires=[0], params=2>,
-         <QuantumTape: wires=[0], params=2>,
-         <QuantumTape: wires=[0], params=2>]
+        >>> len(hessian_tapes)
+        13
+        >>> all(isinstance(tape, qml.tape.QuantumTape) for tape in hessian_tapes)
+        True
         >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
-        array([[-0.97517033,  0.01983384],
-                [ 0.01983384, -0.97517033]])
+        array([[-0.86883595,  0.04762358],
+               [ 0.04762358,  0.05998862]])
 
         The Hessian tapes can be inspected via their draw function, which reveals the different
-        gate arguments generated from parameter-shift rules:
+        gate arguments generated from parameter-shift rules (we only draw the first four out of
+        all 13 tapes here):
 
         >>> for h_tape in hessian_tapes:
         ...     print(qml.drawer.tape_text(h_tape, decimals=1))
-        0: ──RX(0.1)──RY(0.2)─┤  <Z>
-        0: ──RX(3.2)──RY(0.2)─┤  <Z>
-        0: ──RX(1.7)──RY(1.8)─┤  <Z>
-        0: ──RX(-1.5)──RY(1.8)─┤  <Z>
-        0: ──RX(1.7)──RY(-1.4)─┤  <Z>
-        0: ──RX(-1.5)──RY(-1.4)─┤  <Z>
-        0: ──RX(0.1)──RY(3.3)─┤  <Z>
+        0: ──RX(0.5)─╭C───────┤ ╭<Z@Z>
+        1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
+        0: ──RX(-2.6)─╭C───────┤ ╭<Z@Z>
+        1: ───────────╰RY(0.2)─┤ ╰<Z@Z>
+        0: ──RX(2.1)─╭C───────┤ ╭<Z@Z>
+        1: ──────────╰RY(1.8)─┤ ╰<Z@Z>
+        0: ──RX(2.1)─╭C────────┤ ╭<Z@Z>
+        1: ──────────╰RY(-1.4)─┤ ╰<Z@Z>
 
     """
 

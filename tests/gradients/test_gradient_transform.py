@@ -225,8 +225,6 @@ class TestGradientTransformIntegration:
         assert isinstance(res, tuple) and len(res) == 2
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
-    # TODO: Include the following test once the gradient_transform is fixed regarding the
-    # usage of qml.math.squeeze.
     def test_multiple_tensor_arguments_old_version(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when multiple tensor QNode arguments are present"""
@@ -264,8 +262,6 @@ class TestGradientTransformIntegration:
         res = qml.gradients.param_shift(circuit)(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # TODO: Include the following test once the gradient_transform is fixed regarding the
-    # usage of qml.math.squeeze.
     def test_high_dimensional_single_parameter_arg_and_single_gate(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single high-dimensional tensor QNode arguments is used"""
@@ -282,8 +278,6 @@ class TestGradientTransformIntegration:
         res = qml.gradients.param_shift(circuit)(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # TODO: Include the following test once the gradient_transform is fixed regarding the
-    # usage of qml.math.squeeze.
     def test_single_gate_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single QNode argument and gate are present"""
