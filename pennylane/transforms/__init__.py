@@ -192,7 +192,7 @@ from .optimization import (
     pattern_matching,
     pattern_matching_optimization,
     maximal_sequences,
-    sequences_optimization,
+    peephole_optimization,
 )
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo

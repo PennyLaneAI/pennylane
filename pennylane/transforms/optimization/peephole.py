@@ -27,8 +27,8 @@ from pennylane.transforms.decompositions import two_qubit_decomposition, zyz_dec
 
 
 @qfunc_transform
-def sequences_optimization(tape, size_qubits_subsets, custom_quantum_cost=None):
-    r"""Quantum function transform to optimize a circuit given a list of qubits subset size (1, 2). First the
+def peephole_optimization(tape, size_qubits_subsets, custom_quantum_cost=None):
+    r"""Quantum function transform to optimize a circuit given a list of qubits subset (peephole) size (1, 2). First the
     algorithm finds all maximal sequences of gates acting on a all subset of qubits of a given size. Then all
     sequences are optimized by using 1 qubits and 2 qubits optimal decompositions.
 
@@ -70,7 +70,7 @@ def sequences_optimization(tape, size_qubits_subsets, custom_quantum_cost=None):
 
     >>> dev = qml.device('default.qubit', wires=3)
     >>> qnode = qml.QNode(circuit, dev)
-    >>> optimized_qfunc = sequences_optimization(n_qubit=[2])(circuit)
+    >>> optimized_qfunc = peephole_optimization(n_qubit=[2])(circuit)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
     In our case, it is possible to reduce 4 CNOTs to only two CNOTs and therefore
@@ -325,12 +325,12 @@ def _add_sequence(sequences_list, backward_sequences):
     """
 
     already_in = False
-
     for backward_sequence in backward_sequences:
         for sequence in sequences_list:
             if backward_sequence.sequence == sequence.sequence:
                 index = sequences_list.index(sequence)
-                sequences_list[index].qubit.append(backward_sequence.qubit[0])
+                if backward_sequence.qubit[0] not in sequences_list[index].qubit:
+                    sequences_list[index].qubit.append(backward_sequence.qubit[0])
                 already_in = True
 
         if not already_in:
@@ -524,7 +524,7 @@ class Sequence:
         # Match list
         self.sequence = sequence
         # Qubits list for circuit
-        if any(isinstance(el, list) for el in qubit):
+        if isinstance(qubit, list):
             self.qubit = qubit
         else:
             self.qubit = [qubit]

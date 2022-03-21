@@ -77,6 +77,8 @@ from pennylane.transforms import (
     is_commuting,
     pattern_matching,
     pattern_matching_optimization,
+    maximal_sequences,
+    peephole_optimization,
     simplify,
 )
 from pennylane.ops.functions import *

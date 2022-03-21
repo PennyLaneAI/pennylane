@@ -23,4 +23,4 @@ from .merge_amplitude_embedding import merge_amplitude_embedding
 from .single_qubit_fusion import single_qubit_fusion
 from .undo_swaps import undo_swaps
 from .pattern_matching import pattern_matching, pattern_matching_optimization
-from .sequences import sequences_optimization, maximal_sequences
+from .peephole import peephole_optimization, maximal_sequences
