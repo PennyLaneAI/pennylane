@@ -1,4 +1,8 @@
 import ast
+import inspect
+
+import asttokens
+import astunparse
 
 
 def transform_top_level_function(node: ast.FunctionDef):
@@ -116,3 +120,19 @@ class ControlFlowTransformer(ast.NodeTransformer):
             attr.value = ast.Name("circuit")
             return attr
         return node
+
+
+def script(fn):
+    fn_source = inspect.getsource(fn)
+
+    print(fn_source)
+    fn_ast = ast.parse(fn_source)
+    tokens = asttokens.ASTTokens(fn_source)
+    tokens.mark_tokens(fn_ast)
+    trimmed_ast = fn_ast.body[0]
+    tape_ast, arg_names = transform_top_level_function(trimmed_ast)
+    parent_frame = inspect.currentframe().f_back
+    fun_lin_num = parent_frame.f_lineno + 1
+    cft = ControlFlowTransformer(arg_names, tokens, parent_frame.f_globals, fun_lin_num)
+    transformed_ast = cft.visit(tape_ast)
+    print(astunparse.unparse(transformed_ast))
