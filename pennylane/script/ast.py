@@ -107,8 +107,12 @@ class ControlFlowTransformer(ast.NodeTransformer):
     def dont_allow(self, node):
         code = self.tokens.get_text(node)
         code_lines = code.split("\n")
-        code_lines.insert(1, f"<<< {type(node).__name__} is not allowed in pennylane-script")
-        code_lines_snippet = code_lines[:min(3, len(code_lines))]
+        code_lines_snippet = code_lines[:min(2, len(code_lines))]
+        leading_spaces = len(code_lines_snippet[0]) - len(code_lines_snippet[0].lstrip())
+        line_num = self.lin_num + node.lineno
+        code_lines_snippet[0] = f"{line_num} {code_lines_snippet[0]}"
+        code_lines_snippet[1] = f"{line_num + 1} {code_lines_snippet[1]}"
+        code_lines_snippet.insert(1, f"{' ' * (leading_spaces * len(str(line_num)))}<<< {type(node).__name__} is not allowed in pennylane-script")
         raise ValueError("\n" + "\n".join(code_lines_snippet))
 
 
