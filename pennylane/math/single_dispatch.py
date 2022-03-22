@@ -166,6 +166,8 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "kron"] = "tensorflow.experimental.n
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "sinc"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "ndim"] = "tensorflow.experimental.numpy"
 
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
@@ -469,6 +471,13 @@ def _tensordot_torch(tensor1, tensor2, axes):
 
 
 ar.register_function("torch", "tensordot", _tensordot_torch)
+
+
+def _ndim_torch(tensor):
+    return tensor.dim()
+
+
+ar.register_function("torch", "ndim", _ndim_torch)
 
 
 # -------------------------------- JAX --------------------------------- #

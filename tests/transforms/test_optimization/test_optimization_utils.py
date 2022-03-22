@@ -22,7 +22,6 @@ from pennylane.transforms.optimization.optimization_utils import (
 )
 
 from utils import check_matrix_equivalence
-from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 
 
 sample_op_list = [
@@ -66,8 +65,7 @@ class TestRotGateFusion:
             qml.RZ(angles[1], wires=0),
             qml.RY(angles[2], wires=0),
 
-        compute_matrix = get_unitary_matrix(original_ops, [0])
-        product_yzy = compute_matrix()
+        product_yzy = qml.matrix(original_ops, [0])()
 
         z1, y, z2 = _yzy_to_zyz(angles)
 
@@ -76,8 +74,7 @@ class TestRotGateFusion:
             qml.RY(y, wires=0)
             qml.RZ(z2, wires=0)
 
-        compute_transformed_matrix = get_unitary_matrix(transformed_ops, [0])
-        product_zyz = compute_transformed_matrix()
+        product_zyz = qml.matrix(transformed_ops, [0])()
 
         assert check_matrix_equivalence(product_yzy, product_zyz)
 
@@ -107,8 +104,7 @@ class TestRotGateFusion:
             qml.Rot(*angles_1, wires=0)
             qml.Rot(*angles_2, wires=0)
 
-        compute_matrix = get_unitary_matrix(original_ops, [0])
-        matrix_expected = compute_matrix()
+        matrix_expected = qml.matrix(original_ops, [0])()
 
         fused_angles = fuse_rot_angles(angles_1, angles_2)
         matrix_obtained = qml.Rot(*fused_angles, wires=0).get_matrix()
