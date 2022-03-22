@@ -348,7 +348,7 @@ def test_generate_hamiltonian_queueing():
     )
     mol = Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
-    
+
     with qml.tape.QuantumTape() as tape:
         h_qubit = generate_hamiltonian(mol)(*args)
         qml.expval(h_qubit)

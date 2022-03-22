@@ -240,7 +240,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         Returns:
             Hamiltonian: the qubit Hamiltonian
         """
-        with qml.tape.stop_recording(): # prevent unowned identities from being queued
+        with qml.tape.stop_recording():  # prevent unowned identities from being queued
             h_ferm = generate_fermionic_hamiltonian(mol, cutoff, core, active)(*args)
 
             ops = []

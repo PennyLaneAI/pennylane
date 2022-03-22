@@ -163,6 +163,8 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
+* Stops recording during `qml.hf.generate_hamiltonian` to avoid queuing unowned identity operations.
+
 * Fixes cases with `qml.measure` where unexpected operations were added to the
   circuit.
   [(#2328)](https://github.com/PennyLaneAI/pennylane/pull/2328)
