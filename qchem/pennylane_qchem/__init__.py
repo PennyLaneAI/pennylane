@@ -15,4 +15,6 @@
 and Psi4 for quantum chemistry calculations using PennyLane.
 """
 from .qchem import hf
+from .qchem import spin
+from .qchem import particle_number
 from ._version import __version__

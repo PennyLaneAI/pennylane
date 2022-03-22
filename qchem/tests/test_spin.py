@@ -109,7 +109,7 @@ def test_spin2_matrix_elements(n_spin_orbs, matrix_ref):
 
     sz = np.where(np.arange(n_spin_orbs) % 2 == 0, 0.5, -0.5)
 
-    s2_me_result = qchem.hf._spin2_matrix_elements(sz)
+    s2_me_result = qchem.spin._spin2_matrix_elements(sz)
 
     assert np.allclose(s2_me_result, matrix_ref)
 
@@ -171,7 +171,7 @@ def test_spin2(electrons, orbitals, coeffs_ref, ops_ref):
     r"""Tests the correctness of the total spin observable :math:`\hat{S}^2`
     built by the function `'spin2'`.
     """
-    s2 = qchem.hf.spin2(electrons, orbitals)
+    s2 = qchem.spin.spin2(electrons, orbitals)
     s2_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
 
     assert s2.compare(s2_ref)
@@ -191,7 +191,7 @@ def test_exception_spin2(electrons, orbitals, msg_match):
     number of electrons or the number of orbitals is less than zero."""
 
     with pytest.raises(ValueError, match=msg_match):
-        qchem.hf.spin2(electrons, orbitals)
+        qchem.spin.spin2(electrons, orbitals)
 
 
 @pytest.mark.parametrize(
@@ -220,7 +220,7 @@ def test_spinz(orbitals, coeffs_ref, ops_ref):
     r"""Tests the correctness of the :math:`\hat{S}_z` observable built by the
     function `'spin_z'`.
     """
-    sz = qchem.hf.spinz(orbitals)
+    sz = qchem.spin.spinz(orbitals)
     sz_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
 
     assert sz.compare(sz_ref)
@@ -238,4 +238,4 @@ def test_exception_spinz(orbitals, msg_match):
     number of orbitals is less than zero."""
 
     with pytest.raises(ValueError, match=msg_match):
-        qchem.hf.spinz(orbitals)
+        qchem.spin.spinz(orbitals)
