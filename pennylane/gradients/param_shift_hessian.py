@@ -251,7 +251,8 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
             trainable indices is returned. Note that the indices refer to tape
             parameters if ``tape`` is a tape, and to QNode arguments if it is a QNode.
         diagonal_shifts (list[tuple[int or float]]): List containing tuples of shift values
-            for the Hessian diagonal.
+            for the Hessian diagonal. The shifts are understood as first-order derivative
+            shifts and are iterated to obtain the second-order derivative.
             If provided, one tuple of shifts should be given per trainable parameter
             and the tuple length should match the number of frequencies for that parameter.
             If unspecified, equidistant shifts are used.
@@ -331,6 +332,44 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         1: ──────────╰RY(1.8)─┤ ╰<Z@Z>
         0: ──RX(2.1)─╭C────────┤ ╭<Z@Z>
         1: ──────────╰RY(-1.4)─┤ ╰<Z@Z>
+
+        To enable more detailed control over the parameter shifts, shift values can be provided
+        per parameter, and separately for the diagonal and the off-diagonal terms.
+        Here we choose them based on the parameters ``x`` themselves, mostly yielding multiples of
+        the original parameters in the shifted tapes.
+
+        >>> diag_shifts = [(x[0] / 2,), (x[1] / 2, x[1])]
+        >>> offdiag_shifts = [(x[0],), (x[1], 2 * x[1])]
+        >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(
+        ...     tape, diagonal_shifts=diag_shifts, off_diagonal_shifts=offdiag_shifts
+        ... )
+        >>> for h_tape in hessian_tapes:
+        ...     print(qml.drawer.tape_text(h_tape, decimals=1))
+        0: ──RX(0.5)─╭C───────┤ ╭<Z@Z>
+        1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
+        0: ──RX(0.0)─╭C───────┤ ╭<Z@Z>
+        1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
+        0: ──RX(1.0)─╭C───────┤ ╭<Z@Z>
+        1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
+        0: ──RX(1.0)─╭C───────┤ ╭<Z@Z>
+        1: ──────────╰RY(0.4)─┤ ╰<Z@Z>
+
+        .. note::
+
+            Note that the ``diagonal_shifts`` are interpreted as *first-order* derivative
+            shift values. That means they are used to generate a first-order derivative
+            recipe, which then is iterated in order to obtain the second-order derivative
+            for the diagonal Hessian entry. Explicit control over the used second-order
+            shifts is not implemented.
+
+        Finally, the `argnum` argument can be used to compute the Hessian only for some of the
+        variational parameters. This refers to QNode input arguments if ``tape`` is a QNode
+        and to trainable tape parameters if ``tape`` is a tape.
+
+        >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape, argnum=(1,))
+        >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
+        array([[0.        , 0.        ],
+               [0.        , 0.05998862]])
 
     """
 
