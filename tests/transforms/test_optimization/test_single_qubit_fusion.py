@@ -18,7 +18,6 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.transforms.optimization import single_qubit_fusion
-from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 
 from utils import *
 
@@ -41,11 +40,9 @@ class TestSingleQubitFusion:
         transformed_qfunc = single_qubit_fusion()(qfunc)
 
         # Compare matrices
-        compute_matrix = get_unitary_matrix(qfunc, [0])
-        matrix_expected = compute_matrix()
+        matrix_expected = qml.matrix(qfunc, [0])()
 
-        compute_transformed_matrix = get_unitary_matrix(transformed_qfunc, [0])
-        matrix_obtained = compute_transformed_matrix()
+        matrix_obtained = qml.matrix(transformed_qfunc, [0])()
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)
 
     def test_single_qubit_fusion_no_gates_after(self):
@@ -126,11 +123,9 @@ class TestSingleQubitFusion:
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
         # Compare matrices
-        compute_matrix = get_unitary_matrix(qfunc, [0, 1])
-        matrix_expected = compute_matrix()
+        matrix_expected = qml.matrix(qfunc, [0, 1])()
 
-        compute_transformed_matrix = get_unitary_matrix(transformed_qfunc, [0, 1])
-        matrix_obtained = compute_transformed_matrix()
+        matrix_obtained = qml.matrix(transformed_qfunc, [0, 1])()
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)
 
     def test_single_qubit_fusion_multiple_qubits(self):
@@ -156,11 +151,9 @@ class TestSingleQubitFusion:
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
         # Check matrix representation
-        compute_matrix = get_unitary_matrix(qfunc, ["a", "b"])
-        matrix_expected = compute_matrix()
+        matrix_expected = qml.matrix(qfunc, ["a", "b"])()
 
-        compute_transformed_matrix = get_unitary_matrix(transformed_qfunc, ["a", "b"])
-        matrix_obtained = compute_transformed_matrix()
+        matrix_obtained = qml.matrix(transformed_qfunc, ["a", "b"])()
 
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)
 
