@@ -23,16 +23,17 @@ def transform_top_level_function(node: ast.FunctionDef):
     with_block = ast.With()
     with_block.body = node.body
     with_block.items = [v]
-    return with_block, arg_names
+    return with_block, node.name, arg_names
 
 
 class ControlFlowTransformer(ast.NodeTransformer):
 
-    def __init__(self, arg_names, tokens, globals, line_num, functions_to_compile, *args, **kwargs):
+    def __init__(self, function_name, arg_names, tokens, globals, line_num, functions_to_compile, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # constants
         self.tokens = tokens
+        self.function_name = function_name
         self.arg_names = arg_names
         self.globals = globals
         self.lin_num = line_num
@@ -142,7 +143,7 @@ class ControlFlowTransformer(ast.NodeTransformer):
         if node.id in self.arg_names:
             attr = ast.Attribute()
             attr.attr = node.id
-            attr.value = ast.Name("circuit")
+            attr.value = ast.Name(self.function_name)
             return attr
         return node
 
@@ -156,9 +157,9 @@ def script(fn):
     tokens.mark_tokens(fn_ast)
     trimmed_ast = fn_ast.body[0]
     functions_to_compile = []
-    tape_ast, arg_names = transform_top_level_function(trimmed_ast)
+    tape_ast, function_name, arg_names = transform_top_level_function(trimmed_ast)
     parent_frame = inspect.currentframe().f_back
     fun_lin_num = parent_frame.f_lineno + 1
-    cft = ControlFlowTransformer(arg_names, tokens, parent_frame.f_globals, fun_lin_num, functions_to_compile)
+    cft = ControlFlowTransformer(function_name, arg_names, tokens, parent_frame.f_globals, fun_lin_num, functions_to_compile)
     transformed_ast = cft.visit(tape_ast)
     print(astunparse.unparse(transformed_ast))
