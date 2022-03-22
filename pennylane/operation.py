@@ -977,6 +977,11 @@ class Operator(abc.ABC):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
+        .. note::
+
+            Operations making up the decomposition should be queued within the
+            ``compute_decomposition`` method.
+
         .. seealso:: :meth:`~.Operator.decomposition`.
 
         Args:
