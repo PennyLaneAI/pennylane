@@ -29,10 +29,14 @@ class TestQNode:
         measurement yields the correct results and is transformed correctly."""
         dev = qml.device("default.qubit", wires=3)
 
-        with qml.tape.QuantumTape() as tape1:
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode1():
             return qml.expval(qml.PauliZ(0))
 
-        with qml.tape.QuantumTape() as tape2:
+        @qml.qnode(dev)
+        @qml.defer_measurements
+        def qnode2():
             m = qml.measure(1)
             return qml.expval(qml.PauliZ(0))
 
@@ -41,6 +45,9 @@ class TestQNode:
         assert res1 == res2
         assert isinstance(res1, type(res2))
         assert res1.shape == res2.shape
+
+        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
 
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
@@ -79,6 +86,9 @@ class TestQNode:
         assert isinstance(res1, type(res2))
         assert res1.shape == res2.shape
 
+        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
+
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
             assert type(op1) == type(op2)
@@ -99,7 +109,7 @@ class TestQNode:
 
         with qml.tape.QuantumTape() as tape:
             qml.measure(mid_measure_wire)
-            return qml.expval(qml.operation.Tensor(*[qml.PauliZ(w) for w in tp_wires]))
+            qml.expval(qml.operation.Tensor(*[qml.PauliZ(w) for w in tp_wires]))
 
         tape = qml.defer_measurements(tape)
 
@@ -202,7 +212,7 @@ class TestConditionalOperations:
 
             m_1 = qml.measure(3)
             qml.cond(m_0, qml.RZ)(sec_par, wires=1)
-            return qml.apply(terminal_measurement)
+            qml.apply(terminal_measurement)
 
         tape = qml.defer_measurements(tape)
 
@@ -237,7 +247,7 @@ class TestConditionalOperations:
         with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(0)
             qml.cond(~m_0, qml.RY)(first_par, wires=1)
-            return qml.apply(terminal_measurement)
+            qml.apply(terminal_measurement)
 
         tape = qml.defer_measurements(tape)
 
@@ -278,7 +288,7 @@ class TestConditionalOperations:
         with qml.tape.QuantumTape() as tape:
             m_0 = qml.measure(0)
             qml.cond(m_0 == 0, qml.RY)(first_par, wires=1)
-            return qml.expval(qml.PauliZ(1))
+            qml.expval(qml.PauliZ(1))
 
         tape = qml.defer_measurements(tape)
 
@@ -678,6 +688,9 @@ class TestTemplates:
 
         assert np.allclose(qnode1(), qnode2())
 
+        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
+
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
             assert type(op1) == type(op2)
@@ -716,6 +729,9 @@ class TestTemplates:
 
         assert np.allclose(res1, res2)
 
+        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
+
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):
             assert type(op1) == type(op2)
@@ -751,6 +767,9 @@ class TestTemplates:
         weights = np.random.random(size=shape)
 
         assert np.allclose(qnode1(weights), qnode2(weights))
+
+        assert len(qnode1.qtape.operations) == len(qnode2.qtape.operations)
+        assert len(qnode1.qtape.measurements) == len(qnode2.qtape.measurements)
 
         # Check the operations
         for op1, op2 in zip(qnode1.qtape.operations, qnode2.qtape.operations):

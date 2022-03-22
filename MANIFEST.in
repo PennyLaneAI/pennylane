@@ -4,3 +4,4 @@ include LICENSE
 include examples/*
 include tests/*
 include example_config.toml
+include pennylane/transforms/_cut_kKaHyPar_sea20.ini
