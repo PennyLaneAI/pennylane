@@ -91,18 +91,16 @@ class ControlFlowTransformer(ast.NodeTransformer):
     def visit_While(self, node):
         self.generic_visit(node)
 
-        tape_name = ast.Name()
-        tape_name.id = "WhileTape"
-
-        tape = ast.Call()
-        tape.func = tape_name
-        tape.args = [node.test]
-        tape.keywords = {}
-
-        with_block = ast.With()
-        with_block.body = node.body
-        with_block.items = [tape]
-        return with_block
+        return ast.With(
+            body=node.body,
+            items=[
+                ast.Call(
+                    func=ast.Name(id="WhileTape"),
+                    args=[node.test],
+                    keywords={}
+                )
+            ]
+        )
 
     def visit_For(self, node):
         self.generic_visit(node)
