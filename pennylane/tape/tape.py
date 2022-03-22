@@ -212,6 +212,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # Update circuit info
     new_tape._update_circuit_info()
     new_tape._output_dim = tape.output_dim
+    new_tape._qfunc_output = tape._qfunc_output
     return new_tape
 
 
@@ -276,7 +277,7 @@ class QuantumTape(AnnotatedQueue):
     <pennylane.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
 
     Once constructed, the quantum tape can be executed directly on a supported
-    device via the :func:`~.execute` function:
+    device via the :func:`~.pennylane.execute` function:
 
     >>> dev = qml.device("default.qubit", wires=[0, 'a'])
     >>> qml.execute([tape], dev, gradient_fn=None)
@@ -337,6 +338,7 @@ class QuantumTape(AnnotatedQueue):
         self._specs = None
         self._depth = None
         self._output_dim = 0
+        self._qfunc_output = None
 
         self.wires = qml.wires.Wires([])
         self.num_wires = 0
@@ -1341,7 +1343,7 @@ class QuantumTape(AnnotatedQueue):
         .. warning::
 
             Executing tapes using ``tape.execute(dev)`` is deprecated.
-            Please use the :func:`~.execute` function instead.
+            Please use the :func:`~.pennylane.execute` function instead.
 
         Args:
             device (.Device): a PennyLane device
@@ -1393,12 +1395,12 @@ class QuantumTape(AnnotatedQueue):
         This is a low-level method, intended to be called by an interface,
         and does not support autodifferentiation.
 
-        For more details on differentiable tape execution, see :meth:`~.execute`.
+        For more details on differentiable tape execution, see :func:`~.pennylane.execute`.
 
         .. warning::
 
             Executing tapes using ``tape.execute(dev)`` is deprecated.
-            Please use the :func:`~.execute` function instead.
+            Please use the :func:`~.pennylane.execute` function instead.
 
         Args:
             device (~.Device): a PennyLane device

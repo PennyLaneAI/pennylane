@@ -21,12 +21,14 @@ import uuid
 import warnings
 from dataclasses import InitVar, dataclass
 from functools import partial
-from itertools import product
+from itertools import compress, product
+from pathlib import Path
 from typing import Any, Callable, ClassVar, Dict, List, Optional, Sequence, Tuple, Union
 
 from networkx import MultiDiGraph, has_path, weakly_connected_components
 
 import pennylane as qml
+import pennylane.numpy as np
 from pennylane import apply, expval
 from pennylane import numpy as np
 from pennylane.grouping import string_to_pauli_word
@@ -320,11 +322,11 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     cut_edges = []
     measure_nodes = [n for n in graph.nodes if isinstance(n, MeasurementProcess)]
 
-    for node1, node2, wire in graph.edges:
+    for node1, node2, wire_key in graph.edges:
         if isinstance(node1, MeasureNode):
             assert isinstance(node2, PrepareNode)
-            cut_edges.append((node1, node2))
-            graph_copy.remove_edge(node1, node2, key=wire)
+            cut_edges.append((node1, node2, wire_key))
+            graph_copy.remove_edge(node1, node2, key=wire_key)
 
     subgraph_nodes = weakly_connected_components(graph_copy)
     subgraphs = tuple(MultiDiGraph(graph_copy.subgraph(n)) for n in subgraph_nodes)
@@ -332,7 +334,7 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
     communication_graph = MultiDiGraph()
     communication_graph.add_nodes_from(range(len(subgraphs)))
 
-    for node1, node2 in cut_edges:
+    for node1, node2, _ in cut_edges:
         for i, subgraph in enumerate(subgraphs):
             if subgraph.has_node(node1):
                 start_fragment = i
@@ -363,7 +365,9 @@ def fragment_graph(graph: MultiDiGraph) -> Tuple[Tuple[MultiDiGraph], MultiDiGra
             subgraphs_indices_to_remove.append(i)
             prepare_nodes_removed.extend([n for n in s.nodes if isinstance(n, PrepareNode)])
 
-    measure_nodes_to_remove = [m for p in prepare_nodes_removed for m, p_ in cut_edges if p is p_]
+    measure_nodes_to_remove = [
+        m for p in prepare_nodes_removed for m, p_, _ in cut_edges if p is p_
+    ]
     communication_graph.remove_nodes_from(subgraphs_indices_to_remove)
 
     for m in measure_nodes_to_remove:
@@ -1832,3 +1836,396 @@ class CutStrategy:
             probed_cuts.append(cut_kwargs)
 
         return probed_cuts
+
+
+def _graph_to_hmetis(
+    graph: MultiDiGraph,
+    hyperwire_weight: int = 0,
+    edge_weights: Sequence[int] = None,
+) -> Tuple[List[int], List[int], List[Union[int, float]]]:
+    """Converts a ``MultiDiGraph`` into the
+    `hMETIS hypergraph input format <http://glaros.dtc.umn.edu/gkhome/fetch/sw/hmetis/manual.pdf>`__
+    conforming to KaHyPar's calling signature.
+
+    Args:
+        graph (MultiDiGraph): The original (tape-converted) graph to be cut.
+        hyperwire_weight (int): Weight on the artificially appended hyperedges representing wires.
+            Defaults to 0 which leads to no such insertion. If greater than 0, hyperedges will be
+            appended with the provided weight, to encourage the resulting fragments to cluster gates
+            on the same wire together.
+        edge_weights (Sequence[int]): Weights for regular edges in the graph. Defaults to ``None``,
+            which leads to unit-weighted edges.
+
+    Returns:
+        Tuple[List,List,List]: The 3 lists representing an (optionally weighted) hypergraph:
+        - Flattened list of adjacent node indices.
+        - List of starting indices for edges in the above adjacent-nodes-list.
+        - Optional list of edge weights. ``None`` if ``hyperwire_weight`` is equal to 0.
+    """
+
+    nodes = list(graph.nodes)
+    edges = graph.edges(data="wire")
+    wires = {w for _, _, w in edges}
+
+    adj_nodes = [nodes.index(v) for ops in graph.edges(keys=False) for v in ops]
+    edge_splits = qml.math.cumsum([0] + [len(e) for e in graph.edges(keys=False)]).tolist()
+    edge_weights = (
+        edge_weights if edge_weights is not None and len(edges) == len(edge_weights) else None
+    )
+
+    if hyperwire_weight:
+        hyperwires = {w: set() for w in wires}
+        num_wires = len(hyperwires)
+
+        for v0, v1, wire in edges:
+            hyperwires[wire].update([nodes.index(v0), nodes.index(v1)])
+
+        for wire, nodes_on_wire in hyperwires.items():
+            nwv = len(nodes_on_wire)
+            edge_splits.append(nwv + edge_splits[-1])
+            adj_nodes = adj_nodes + list(nodes_on_wire)
+        assert len(edge_splits) == len(edges) + num_wires + 1
+
+        if isinstance(hyperwire_weight, (int, float)):
+            # assumes original edges having unit weights by default:
+            edge_weights = edge_weights or ([1] * len(edges))
+            wire_weights = [hyperwire_weight] * num_wires
+            edge_weights = edge_weights + wire_weights
+
+    return adj_nodes, edge_splits, edge_weights
+
+
+def kahypar_cut(
+    graph: MultiDiGraph,
+    num_fragments: int,
+    imbalance: int = None,
+    edge_weights: List[Union[int, float]] = None,
+    node_weights: List[Union[int, float]] = None,
+    fragment_weights: List[Union[int, float]] = None,
+    hyperwire_weight: int = None,
+    seed: int = None,
+    config_path: Union[str, Path] = None,
+    trial: int = None,
+    verbose: bool = False,
+) -> List[Tuple[Operation, Operation, Any]]:
+    """Calls `KaHyPar <https://kahypar.org/>`__ to partition a graph.
+
+    .. warning::
+        Requires KaHyPar to be installed separately. For Linux and Mac users,
+        KaHyPar can be installed using ``pip install kahypar``. Windows users
+        can follow the instructions
+        `here <https://kahypar.org>`__ to compile from source.
+
+    Args:
+        graph (nx.MultiDiGraph): The graph to be partitioned.
+        num_fragments (int): Desired number of fragments.
+        imbalance (int): Imbalance factor of the partitioning. Defaults to KaHyPar's determination.
+        edge_weights (List[Union[int, float]]): Weights for edges. Defaults to unit-weighted edges.
+        node_weights (List[Union[int, float]]): Weights for nodes. Defaults to unit-weighted nodes.
+        fragment_weights (List[Union[int, float]]): Maximum size constraints by fragment. Defaults
+            to no such constraints, with ``imbalance`` the only parameter affecting fragment sizes.
+        hyperwire_weight (int): Weight on the artificially appended hyperedges representing wires.
+            Defaults to 0 which leads to no such insertion. If greater than 0, hyperedges will be
+            appended with the provided weight, to encourage the resulting fragments to cluster gates
+            on the same wire together.
+        seed (int): KaHyPar's seed. Defaults to the seed in the config file which defaults to -1,
+            i.e. unfixed seed.
+        config_path (str): KaHyPar's ``.ini`` config file path. Defaults to its SEA20 paper config.
+        trial (int): trial id for summary label creation. Defaults to ``None``.
+        verbose (bool): Flag for printing KaHyPar's output summary. Defaults to ``False``.
+
+    Returns:
+        List[Union[int, Any]]: List of cut edges.
+
+    **Example**
+
+    Consider the following 2-wire circuit with one CNOT gate connecting the wires:
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.CNOT(wires=[0, "a"])
+            qml.RZ(0.240, wires=0)
+            qml.RZ(0.133, wires="a")
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.expval(qml.PauliZ(wires=[0]))
+
+    We can let KaHyPar automatically find the optimal edges to place cuts:
+
+    >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+    >>> cut_edges = qml.transforms.qcut.kahypar_cut(
+            graph=graph,
+            num_fragments=2,
+        )
+    >>> cut_edges
+    [(CNOT(wires=[0, 'a']), RZ(0.24, wires=[0]), 0)]
+    """
+    # pylint: disable=too-many-arguments, import-outside-toplevel
+    try:
+        import kahypar
+    except ImportError as e:
+        raise ImportError(
+            "KaHyPar must be installed to use this method for automatic "
+            "cut placement. Try pip install kahypar or visit "
+            "https://kahypar.org/ for installation instructions."
+        ) from e
+
+    adjacent_nodes, edge_splits, edge_weights = _graph_to_hmetis(
+        graph=graph, hyperwire_weight=hyperwire_weight, edge_weights=edge_weights
+    )
+
+    trial = 0 if trial is None else trial
+    ne = len(edge_splits) - 1
+    nv = max(adjacent_nodes) + 1
+
+    if edge_weights is not None or node_weights is not None:
+        edge_weights = edge_weights or [1] * ne
+        node_weights = node_weights or [1] * nv
+        hypergraph = kahypar.Hypergraph(
+            nv,
+            ne,
+            edge_splits,
+            adjacent_nodes,
+            num_fragments,
+            edge_weights,
+            node_weights,
+        )
+
+    else:
+        hypergraph = kahypar.Hypergraph(nv, ne, edge_splits, adjacent_nodes, num_fragments)
+
+    context = kahypar.Context()
+
+    config_path = config_path or str(Path(__file__).parent / "_cut_kKaHyPar_sea20.ini")
+    context.loadINIconfiguration(config_path)
+
+    context.setK(num_fragments)
+
+    if isinstance(imbalance, float):
+        context.setEpsilon(imbalance)
+    if isinstance(fragment_weights, Sequence) and (len(fragment_weights) == num_fragments):
+        context.setCustomTargetBlockWeights(fragment_weights)
+    if not verbose:
+        context.suppressOutput(True)
+
+    # KaHyPar fixes seed to 42 by default, need to manually sample seed to randomize:
+    context.setSeed(np.random.default_rng(seed).choice(2**15))
+
+    kahypar.partition(hypergraph, context)
+
+    cut_edge_mask = [hypergraph.connectivity(e) > 1 for e in hypergraph.edges()]
+
+    # compress() ignores the extra hyperwires at the end if there is any.
+    cut_edges = list(compress(graph.edges, cut_edge_mask))
+
+    return cut_edges
+
+
+def place_wire_cuts(
+    graph: MultiDiGraph, cut_edges: Sequence[Tuple[Operation, Operation, Any]]
+) -> MultiDiGraph:
+    """Inserts a :class:`~.WireCut` node for each provided cut edge into a circuit graph.
+
+    Args:
+        graph (nx.MultiDiGraph): The original (tape-converted) graph to be cut.
+        cut_edges (Sequence[Tuple[Operation, Operation, Any]]): List of ``MultiDiGraph`` edges
+            to be replaced with a :class:`~.WireCut` node. Each 3-tuple represents the source node, the
+            target node, and the wire key of the (multi)edge.
+
+    Returns:
+        MultiDiGraph: Copy of the input graph with :class:`~.WireCut` nodes inserted.
+
+    **Example**
+
+    Consider the following 2-wire circuit with one CNOT gate connecting the wires:
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires=0)
+            qml.RY(0.543, wires="a")
+            qml.CNOT(wires=[0, "a"])
+            qml.expval(qml.PauliZ(wires=[0]))
+
+    >>> print(tape.draw())
+     0: ──RX(0.432)──╭C──┤ ⟨Z⟩
+     a: ──RY(0.543)──╰X──┤
+
+    If we know we want to place a :class:`~.WireCut` node between nodes ``RY(0.543, wires=["a"])`` and
+    ``CNOT(wires=[0, 'a'])`` after the tape is constructed, we can first find the edge in the graph:
+
+    >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+    >>> op0, op1 = tape.operations[1], tape.operations[2]
+    >>> cut_edges = [e for e in graph.edges if e[0] is op0 and e[1] is op1]
+    >>> cut_edges
+    [(RY(0.543, wires=['a']), CNOT(wires=[0, 'a']), 0)]
+
+    Then feed it to this function for placement:
+
+    >>> cut_graph = qml.transforms.qcut.place_wire_cuts(graph=graph, cut_edges=cut_edges)
+    >>> cut_graph
+    <networkx.classes.multidigraph.MultiDiGraph at 0x7f7251ac1220>
+
+    And visualize the cut by converting back to a tape:
+
+    >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
+     0: ──RX(0.432)──────╭C──┤ ⟨Z⟩
+     a: ──RY(0.543)──//──╰X──┤
+    """
+    cut_graph = graph.copy()
+
+    for op0, op1, wire_key in cut_edges:
+        # Get info:
+        order = cut_graph.nodes[op0]["order"] + 1
+        wire = cut_graph.edges[(op0, op1, wire_key)]["wire"]
+        # Apply cut:
+        cut_graph.remove_edge(op0, op1, wire_key)
+        # Increment order for all subsequent gates:
+        for op, o in cut_graph.nodes(data="order"):
+            if o >= order:
+                cut_graph.nodes[op]["order"] += 1
+        # Add WireCut
+        wire_cut = WireCut(wires=wire)
+        cut_graph.add_node(wire_cut, order=order)
+        cut_graph.add_edge(op0, wire_cut, wire=wire)
+        cut_graph.add_edge(wire_cut, op1, wire=wire)
+
+    return cut_graph
+
+
+def _remove_existing_cuts(graph: MultiDiGraph) -> MultiDiGraph:
+    """Removes all existing, manually or automatically placed, cuts from a circuit graph, be it
+    ``WireCut``s or ``MeasureNode``-``PrepareNode`` pairs.
+
+    Args:
+        graph (MultiDiGraph): The original (tape-converted) graph to be cut.
+
+    Returns:
+        (MultiDiGraph): Copy of the input graph with all its existing cuts removed.
+    """
+    uncut_graph = graph.copy()
+    for op in list(graph.nodes):
+        if isinstance(op, WireCut):
+            uncut_graph.remove_node(op)
+        elif isinstance(op, MeasureNode):
+            for op1 in graph.neighbors(op):
+                if isinstance(op1, PrepareNode):
+                    uncut_graph.remove_node(op)
+                    uncut_graph.remove_node(op1)
+
+    if len([n for n in uncut_graph.nodes if isinstance(n, (MeasureNode, PrepareNode))]) > 0:
+        warnings.warn(
+            "The circuit contains `MeasureNode` or `PrepareNode` operations that are "
+            "not paired up correctly. Please check.",
+            UserWarning,
+        )
+    return uncut_graph
+
+
+def find_and_place_cuts(
+    graph: MultiDiGraph, cut_method: Callable = kahypar_cut, replace_wire_cuts=False, **kwargs
+) -> MultiDiGraph:
+    """Automatically finds and places optimal :class:`~.WireCut` nodes into a given tape-converted graph
+    using a customizable graph partitioning function. Preserves existing placed cuts.
+
+    Args:
+        graph (MultiDiGraph): The original (tape-converted) graph to be cut.
+        cut_method (Callable): A graph partitioning function that takes an input graph and returns
+            a list of edges to be cut based on a given set of constraints and objective. Defaults
+            to :func:`kahypar_cut` which requires KaHyPar to be installed using
+            ``pip install kahypar`` for Linux and Mac users or visiting the
+            instructions `here <https://kahypar.org>`__ to compile from
+            source for Windows users.
+        replace_wire_cuts (bool): Whether to replace :class:`~.WireCut` nodes with
+            :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs. Defaults to ``False``.
+        kwargs: Additional keyword arguments to be passed to the callable ``cut_method``.
+
+    Returns:
+        nx.MultiDiGraph: Copy of the input graph with :class:`~.WireCut` nodes inserted.
+
+    **Example**
+
+    Consider the following 4-wire circuit with a single CNOT gate connecting the top (wires
+    ``[1, 2]``) and bottom (wires ``["a", "b"]``) halves of the circuit. Note there's a
+    :class:`~.WireCut` manually placed into the circuit already.
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.1, wires=0)
+            qml.RY(0.2, wires=1)
+            qml.RX(0.3, wires="a")
+            qml.RY(0.4, wires="b")
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=["a", "b"])
+            qml.CNOT(wires=[1, "a"])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=["a", "b"])
+            qml.RX(0.5, wires="a")
+            qml.RY(0.6, wires="b")
+            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
+
+    >>> print(tape.draw())
+     0: ──RX(0.1)──╭C──────────╭C───────────╭┤ ⟨X ⊗ Y ⊗ Z⟩
+     1: ──RY(0.2)──╰X──//──╭C──╰X───────────│┤
+     a: ──RX(0.3)──╭C──────╰X──╭C──RX(0.5)──├┤ ⟨X ⊗ Y ⊗ Z⟩
+     b: ──RY(0.4)──╰X──────────╰X──RY(0.6)──╰┤ ⟨X ⊗ Y ⊗ Z⟩
+
+    Since the existing :class:`~.WireCut` doesn't sufficiently fragment the circuit, we can find the
+    remaining cuts using the default KaHyPar partitioner:
+
+    >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+    >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
+            graph=graph,
+            num_fragments=2,
+            imbalance=0.5,
+        )
+
+    Visualizing the newly-placed cut:
+
+    >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
+     0: ──RX(0.1)──╭C───────────────╭C────────╭┤ ⟨X ⊗ Y ⊗ Z⟩
+     1: ──RY(0.2)──╰X──//──╭C───//──╰X────────│┤
+     a: ──RX(0.3)──╭C──────╰X──╭C────RX(0.5)──├┤ ⟨X ⊗ Y ⊗ Z⟩
+     b: ──RY(0.4)──╰X──────────╰X────RY(0.6)──╰┤ ⟨X ⊗ Y ⊗ Z⟩
+
+    We can then proceed with the usual process of replacing :class:`~.WireCut` nodes with
+    pairs of :class:`~.MeasureNode` and :class:`~.PrepareNode`, and then break the graph
+    into fragments. Or, alternatively, we can directly get such processed graph by passing
+    ``replace_wire_cuts=True``:
+
+    >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
+            graph=graph,
+            num_fragments=2,
+            imbalance=0.5,
+            replace_wire_cuts=True,
+        )
+    >>> frags, comm_graph = qml.transforms.qcut.fragment_graph(cut_graph)
+    >>> for t in frags:
+    ...     print(qml.transforms.qcut.graph_to_tape(t).draw())
+
+    .. code-block::
+
+         0: ──RX(0.1)──────╭C───────────────╭C──┤ ⟨X⟩
+         1: ──RY(0.2)──────╰X──MeasureNode──│───┤
+         2: ──PrepareNode───────────────────╰X──┤
+
+         a: ──RX(0.3)──────╭C──╭X──╭C────────────RX(0.5)──╭┤ ⟨Y ⊗ Z⟩
+         b: ──RY(0.4)──────╰X──│───╰X────────────RY(0.6)──╰┤ ⟨Y ⊗ Z⟩
+         1: ──PrepareNode──────╰C───MeasureNode────────────┤
+
+    """
+
+    cut_graph = _remove_existing_cuts(graph)
+
+    cut_edges = cut_method(cut_graph, **kwargs)
+    cut_graph = place_wire_cuts(graph=graph, cut_edges=cut_edges)
+
+    if replace_wire_cuts:
+        replace_wire_cut_nodes(cut_graph)
+
+    return cut_graph

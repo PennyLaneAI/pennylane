@@ -12,18 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage defines functions for interfacing devices' batch execution
-capabilities with different machine learning libraries.
+Contains the cache_execute decoratator, for adding caching to a function
+that executes multiple tapes on a device.
+
+Also contains the general execute function, for exectuting tapes on
+devices with autodifferentiation support.
 """
-# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,protected-access,not-callable
-import contextlib
+# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
 from functools import wraps
 import itertools
-
 from cachetools import LRUCache
-import numpy as np
 
 import pennylane as qml
+
+from .set_shots import set_shots
 
 
 INTERFACE_NAMES = {
@@ -33,51 +35,11 @@ INTERFACE_NAMES = {
     "PyTorch": ("torch", "pytorch"),
     "TensorFlow": ("tf", "tensorflow", "tensorflow-autograph", "tf-autograph"),
 }
-"""dict[str, str]: maps allowed interface strings to the name of the interface"""
+"""dict[str, str]: maps the name of the interface to allowed interface strings"""
 
+#: list[str]: allowed interface strings
 SUPPORTED_INTERFACES = list(itertools.chain(*INTERFACE_NAMES.values()))
-
-
-class InterfaceUnsupportedError(NotImplementedError):
-    """Exception raised when features not supported by an interface are
-    attempted to be used."""
-
-
-@contextlib.contextmanager
-def set_shots(device, shots):
-    """Context manager to temporarily change the shots
-    of a device.
-
-    This context manager can be used in two ways.
-
-    As a standard context manager:
-
-    >>> dev = qml.device("default.qubit", wires=2, shots=None)
-    >>> with set_shots(dev, shots=100):
-    ...     print(dev.shots)
-    100
-    >>> print(dev.shots)
-    None
-
-    Or as a decorator that acts on a function that uses the device:
-
-    >>> set_shots(dev, shots=100)(lambda: dev.shots)()
-    100
-    """
-    if shots == device.shots:
-        yield
-        return
-
-    original_shots = device.shots
-    original_shot_vector = device._shot_vector
-
-    try:
-        if shots is not False and device.shots != shots:
-            device.shots = shots
-        yield
-    finally:
-        device.shots = original_shots
-        device._shot_vector = original_shot_vector
+"""list[str]: allowed interface strings"""
 
 
 def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
@@ -251,7 +213,7 @@ def execute(
             constituent terms if not supported on the device.
 
     Returns:
-        list[list[float]]: A nested list of tape results. Each element in
+        list[tensor_like[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
 
     **Example**
@@ -328,22 +290,26 @@ def execute(
         # don't unwrap if it's an interface device
         if "passthru_interface" in device.capabilities():
             return batch_fn(
-                cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
+                qml.interfaces.cache_execute(
+                    batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+                )(tapes)
             )
         with qml.tape.Unwrap(*tapes):
-            res = cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(
-                tapes
-            )
+            res = qml.interfaces.cache_execute(
+                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+            )(tapes)
 
         return batch_fn(res)
 
     if gradient_fn == "backprop" or interface is None:
         return batch_fn(
-            cache_execute(batch_execute, cache, return_tuple=False, expand_fn=expand_fn)(tapes)
+            qml.interfaces.cache_execute(
+                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+            )(tapes)
         )
 
     # the default execution function is batch_execute
-    execute_fn = cache_execute(batch_execute, cache, expand_fn=expand_fn)
+    execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
     _mode = "backward"
 
     if gradient_fn == "device":
@@ -365,10 +331,10 @@ def execute(
 
         elif mode == "backward":
             # disable caching on the forward pass
-            execute_fn = cache_execute(batch_execute, cache=None)
+            execute_fn = qml.interfaces.cache_execute(batch_execute, cache=None)
 
             # replace the backward gradient computation
-            gradient_fn = cache_execute(
+            gradient_fn = qml.interfaces.cache_execute(
                 set_shots(device, override_shots)(device.gradients),
                 cache,
                 pass_kwargs=True,
