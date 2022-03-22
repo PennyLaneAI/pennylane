@@ -21,7 +21,6 @@ import pennylane as qml
 from pennylane import numpy as np
 
 from pennylane.wires import Wires
-from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 
 from pennylane.transforms.decompositions import zyz_decomposition
 from pennylane.transforms.decompositions import two_qubit_decomposition
@@ -677,7 +676,7 @@ class TestTwoQubitUnitaryDecomposition:
             for op in obtained_decomposition:
                 qml.apply(op)
 
-        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
+        obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         # We check with a slightly great tolerance threshold here simply because the
         # test matrices were copied in here with reduced precision.
@@ -698,7 +697,7 @@ class TestTwoQubitUnitaryDecomposition:
             for op in obtained_decomposition:
                 qml.apply(op)
 
-        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
+        obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
@@ -717,7 +716,7 @@ class TestTwoQubitUnitaryDecomposition:
             for op in obtained_decomposition:
                 qml.apply(op)
 
-        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
+        obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
@@ -736,7 +735,7 @@ class TestTwoQubitUnitaryDecomposition:
             for op in obtained_decomposition:
                 qml.apply(op)
 
-        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
+        obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
@@ -758,7 +757,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
             for op in obtained_decomposition:
                 qml.apply(op)
 
-        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
+        obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
@@ -778,7 +777,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
             for op in obtained_decomposition:
                 qml.apply(op)
 
-        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
+        obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
@@ -796,7 +795,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
             for op in obtained_decomposition:
                 qml.apply(op)
 
-        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
+        obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
@@ -816,7 +815,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
             for op in obtained_decomposition:
                 qml.apply(op)
 
-        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
+        obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
@@ -839,7 +838,7 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
             for op in obtained_decomposition:
                 qml.apply(op)
 
-        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
+        obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
@@ -864,6 +863,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
             for op in obtained_decomposition:
                 qml.apply(op)
 
-        obtained_matrix = get_unitary_matrix(tape, wire_order=wires)()
+        obtained_matrix = qml.matrix(tape, wire_order=wires)
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
