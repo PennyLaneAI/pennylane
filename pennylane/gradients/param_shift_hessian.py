@@ -70,10 +70,14 @@ def _generate_off_diag_tapes(tape, idx, recipe_i, recipe_j):
     if recipe_j[0] is None:
         return [], None, None
 
+    # The rows of combined_rulesT contain the coefficients (1), the multipliers (2) and the
+    # shifts (2) in that order, with the number in brackets indicating the number of columns
     combined_rulesT = _combine_shift_rules_with_multipliers(
         [qml.math.stack(recipe_i).T, qml.math.stack(recipe_j).T]
     )
-    if np.allclose(combined_rulesT[3:5, 0], 0.0):
+    # If there are unmultiplied, unshifted tapes, the coefficient is memorized and the term
+    # removed from the list of tapes to create
+    if np.allclose(combined_rulesT[1:3, 0], 1.0) and np.allclose(combined_rulesT[3:5, 0], 0.0):
         unshifted_coeff = combined_rulesT[0, 0]
         combined_rulesT = combined_rulesT[:, 1:]
     else:
@@ -171,14 +175,12 @@ def expval_hessian_param_shift(
             # terms if there hasn't already been one for the diagonal terms.
             # TODO: This will depend on the decision on how diagonal_shifts are formatted.
             # TODO: If this is confirmed, remove the following safety check
-            # If there is a coefficient for the unshifted tape, memorize it and add the unshifted
-            # tape; Again the latter only happens if f0 was not provided and we did not add it yet.
             if off_diag_data[2] is not None:
                 raise ValueError(
                     "A tape without parameter shifts was created unexpectedly during "
                     "the computation of the Hessian. Please submit a bug report "
                     "at https://github.com/PennyLaneAI/pennylane/issues"
-                )
+                ) # pragma: no cover
 
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
