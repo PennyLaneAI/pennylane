@@ -81,7 +81,7 @@ class ControlFlowTransformer(ast.NodeTransformer):
             body=node.body,
             items=[
                 ast.Call(
-                    func=ast.Name("IfTape"),
+                    func=ast.Name(id="IfTape", ctx=ast.Load()),
                     args=[node.test],
                     keywords={}
                 )
@@ -95,7 +95,7 @@ class ControlFlowTransformer(ast.NodeTransformer):
             body=node.body,
             items=[
                 ast.Call(
-                    func=ast.Name(id="WhileTape"),
+                    func=ast.Name(id="WhileTape", ctx=ast.Load()),
                     args=[node.test],
                     keywords={}
                 )
@@ -109,7 +109,7 @@ class ControlFlowTransformer(ast.NodeTransformer):
             body=node.body,
             items=[
                 ast.Call(
-                    func=ast.Name(id="ForTape"),
+                    func=ast.Name(id="ForTape", ctx=ast.Load()),
                     args=[node.test],
                     keywords={}
                 )
