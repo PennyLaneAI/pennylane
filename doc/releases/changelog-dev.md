@@ -27,7 +27,7 @@
 * Development of a circuit-cutting compiler extension to circuits with sampling
   measurements has begun:
 
-  - The existing `qcut.tape_to_graph()` method has been extended to convert a
+    - The existing `qcut.tape_to_graph()` method has been extended to convert a
     sample measurement without an observable specified to multiple single-qubit sample
     nodes.
     [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
@@ -48,6 +48,10 @@
     [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
 
 <h3>Improvements</h3>
+
+* `"default.qubit"` now skips over identity operators instead performing matrix multiplication
+  with the identity.
+  [(#2356)](https://github.com/PennyLaneAI/pennylane/pull/2356)
 
 * `QuantumTape` objects are now iterable and accessing the
   operations and measurements of the underlying quantum circuit is more
@@ -143,17 +147,25 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 * The deprecated QNode, available via `qml.qnode_old.QNode`, has been removed. Please
   transition to using the standard `qml.QNode`.
   [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
+  [(#2337)](https://github.com/PennyLaneAI/pennylane/pull/2337)
+  [(#2338)](https://github.com/PennyLaneAI/pennylane/pull/2338)
 
-* The deprecated, non-batch compatible interfaces, have been removed.
-  [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
+  In addition, several other components which powered the deprecated QNode have been removed:
 
-* The deprecated tape subclasses `QubitParamShiftTape`, `JacobianTape`, `CVParamShiftTape`, and
-  `ReversibleTape` have been removed.
-  [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
+  - The deprecated, non-batch compatible interfaces, have been removed.
+  
+  - The deprecated tape subclasses `QubitParamShiftTape`, `JacobianTape`, `CVParamShiftTape`, and
+    `ReversibleTape` have been removed.
+
+* The deprecated tape execution method `tape.execute(device)` has been removed. Please use
+  `qml.execute([tape], device)` instead.
+  [(#2339)](https://github.com/PennyLaneAI/pennylane/pull/2339)
 
 <h3>Bug fixes</h3>
 
-<h3>Bug fixes</h3>
+* Fixes cases with `qml.measure` where unexpected operations were added to the
+  circuit.
+  [(#2328)](https://github.com/PennyLaneAI/pennylane/pull/2328)
 
 * Fixes a bug in which the `expval`/`var` of a `Tensor(Observable)` would depend on the order 
   in which the observable is defined: 
@@ -183,5 +195,5 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
-Anthony Hayes, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu, Jay Soni,
-Antal Száva.
+Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
+Jay Soni, Antal Száva.

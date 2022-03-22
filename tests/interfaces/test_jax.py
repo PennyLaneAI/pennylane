@@ -22,8 +22,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.gradients import param_shift
-from pennylane.interfaces.batch import execute
-from pennylane.interfaces.batch import InterfaceUnsupportedError
+from pennylane.interfaces import execute
+from pennylane.interfaces import InterfaceUnsupportedError
 
 
 @pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
@@ -198,7 +198,7 @@ class TestCaching:
     def test_cache_maxsize(self, interface, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces.batch, "cache_execute")
+        spy = mocker.spy(qml.interfaces, "cache_execute")
 
         def cost(a, cachesize):
             with qml.tape.QuantumTape() as tape:
@@ -225,7 +225,7 @@ class TestCaching:
     def test_custom_cache(self, interface, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces.batch, "cache_execute")
+        spy = mocker.spy(qml.interfaces, "cache_execute")
 
         def cost(a, cache):
             with qml.tape.QuantumTape() as tape:
@@ -247,7 +247,7 @@ class TestCaching:
     def test_custom_cache_multiple(self, interface, mocker):
         """Test the use of a custom cache object with multiple tapes"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces.batch, "cache_execute")
+        spy = mocker.spy(qml.interfaces, "cache_execute")
 
         a = jnp.array(0.1)
         b = jnp.array(0.2)
@@ -630,7 +630,7 @@ class TestJaxExecuteIntegration:
                 qml.RY(a[2], wires=0)
                 qml.expval(qml.PauliZ(1))
 
-            res = qml.interfaces.batch.execute(
+            res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface=interface, **execute_kwargs
             )
             return res[0][0]
@@ -658,7 +658,7 @@ class TestJaxExecuteIntegration:
                 qml.RY(a[2], wires=0)
                 [qml.apply(r) for r in ret]
 
-            res = qml.interfaces.batch.execute(
+            res = qml.interfaces.execute(
                 # Test only applicable for the jax jit interface
                 [tape],
                 dev,
@@ -693,7 +693,7 @@ class TestVectorValued:
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
-            res = qml.interfaces.batch.execute(
+            res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface="jax-python", **execute_kwargs
             )
             return res[0]
@@ -717,7 +717,7 @@ class TestVectorValued:
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
-            res = qml.interfaces.batch.execute(
+            res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface="jax-python", **execute_kwargs
             )
             return res[0]
@@ -827,7 +827,7 @@ class TestVectorValued:
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
-            res = qml.interfaces.batch.execute(
+            res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface="jax-python", **execute_kwargs
             )
             return res[0]

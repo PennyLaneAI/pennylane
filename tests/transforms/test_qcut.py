@@ -3607,6 +3607,7 @@ class TestKaHyPar:
     @pytest.mark.parametrize("with_manual_cut", [False, True])
     def test_find_and_place_cuts(self, with_manual_cut):
         """Integration tests for auto cutting pipeline."""
+        pytest.importorskip("kahypar")
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.1, wires=0)

@@ -177,7 +177,7 @@ def test_prob_generalize_param_one_qubit(hermitian, init_state, tol):
         qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
     state = np.array([1, 0])
-    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)(0.56)
+    matrix = qml.matrix(circuit_rotated)(0.56)
     state = np.dot(matrix, state)
     expected = np.reshape(np.abs(state) ** 2, [2] * 1)
     expected = expected.flatten()
@@ -208,7 +208,7 @@ def test_prob_generalize_param(hermitian, init_state, tol):
         qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
     state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
-    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)(0.56, 0.1)
+    matrix = qml.matrix(circuit_rotated)(0.56, 0.1)
     state = np.dot(matrix, state)
     expected = np.reshape(np.abs(state) ** 2, [2] * 3)
     expected = np.einsum("ijk->i", expected).flatten()
@@ -243,7 +243,7 @@ def test_prob_generalize_param_multiple(hermitian, init_state, tol):
         qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
     state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
-    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)(0.56, 0.1)
+    matrix = qml.matrix(circuit_rotated)(0.56, 0.1)
     state = np.dot(matrix, state)
 
     expected = np.reshape(np.abs(state) ** 2, [2] * 3)
@@ -281,7 +281,7 @@ def test_prob_generalize_initial_state(hermitian, wire, init_state, tol):
         qml.PauliX(wires=3)
         qml.Hermitian(hermitian, wires=wire).diagonalizing_gates()
 
-    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)()
+    matrix = qml.matrix(circuit_rotated)()
     state = np.dot(matrix, state)
     expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
@@ -322,7 +322,7 @@ def test_operation_prob(operation, wire, init_state, tol):
         qml.PauliZ(wires=3)
         operation(wires=wire).diagonalizing_gates()
 
-    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)()
+    matrix = qml.matrix(circuit_rotated)()
     state = np.dot(matrix, state)
     expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
@@ -363,7 +363,7 @@ def test_operation_prob(operation, wire, init_state, tol):
         qml.PauliZ(wires=3)
         operation(wires=wire).diagonalizing_gates()
 
-    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)()
+    matrix = qml.matrix(circuit_rotated)()
     state = np.dot(matrix, state)
     expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
@@ -404,7 +404,7 @@ def test_observable_tensor_prob(observable, init_state, tol):
         observable[0](wires=0).diagonalizing_gates()
         observable[1](wires=1).diagonalizing_gates()
 
-    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)()
+    matrix = qml.matrix(circuit_rotated)()
     state = np.dot(matrix, state)
     expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
