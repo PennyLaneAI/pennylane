@@ -28,9 +28,13 @@ def transform_top_level_function(node: ast.FunctionDef):
 
 class ExpressionTransformer(ast.NodeTransformer):
 
-    def __init__(self, function_name, vars):
+    def __init__(self, function_name, function_vars):
+
+        # constants
         self.function_name = function_name
-        self.vars = vars
+        self.vars = function_vars
+
+        # state
         self.expr_does_contain_vars = False
 
     def transform(self, node):
