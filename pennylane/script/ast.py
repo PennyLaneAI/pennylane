@@ -77,16 +77,23 @@ class ControlFlowTransformer(ast.NodeTransformer):
     def visit_If(self, node):
         self.generic_visit(node)
 
-        return ast.With(
-            body=node.body,
-            items=[
-                ast.Call(
-                    func=ast.Name(id="IfTape", ctx=ast.Load()),
-                    args=[node.test],
-                    keywords={}
-                )
-            ]
-        )
+        et = ExpressionTransformer(self.function_name, self.arg_names)
+        new_node_test = et.transform(node.test)
+
+        if et.expr_does_contain_vars:
+
+            return ast.With(
+                body=node.body,
+                items=[
+                    ast.Call(
+                        func=ast.Name(id="IfTape", ctx=ast.Load()),
+                        args=[new_node_test],
+                        keywords={}
+                    )
+                ]
+            )
+
+        return node
 
     def visit_While(self, node):
         self.generic_visit(node)
