@@ -31,17 +31,24 @@ class ExpressionTransformer(ast.NodeTransformer):
     def __init__(self, function_name, vars):
         self.function_name = function_name
         self.vars = vars
+        self.expr_does_contain_vars = False
 
     def transform(self, node):
         if isinstance(node, ast.Name):
             if node.id in self.vars:
+                self.expr_does_contain_vars = True
                 return ast.Subscript(ast.Name(self.function_name), ast.Str(node.id))
             return node
         else:
-            return ast.Lambda([], self.visit(node))
+            out = self.visit(node)
+            if self.expr_does_contain_vars:
+                return ast.Lambda([], out)
+            else:
+                return node
 
     def visit_Name(self, node):
         if node.id in self.vars:
+            self.expr_does_contain_vars = True
             return ast.Call(ast.Subscript(ast.Name(self.function_name), ast.Str(node.id)), [], {})
         return node
 
