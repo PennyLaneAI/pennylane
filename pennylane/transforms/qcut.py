@@ -823,7 +823,7 @@ def expand_fragment_tapes_mc(
     return all_configs, settings
 
 
-def qcut_processing_fn_mc(results, fragment_configurations, mc=False):
+def qcut_processing_fn_mc(results, fragment_configurations, settings, mc=False, function=None):
     """
     TODO: Docstring
     """
@@ -843,20 +843,54 @@ def qcut_processing_fn_mc(results, fragment_configurations, mc=False):
     results = np.array(results, dtype=object)
     reshaped_results = results.reshape(config_dims)
 
-    if not mc:
-        processed_results = []
-        for i, frag_res in enumerate(reshaped_results):
-            new_frag_res = []
-            for conf_res in frag_res:
-                n = mid_counts[i]  # number of results to be removed from array
-                new_conf_res = conf_res[:-n]
-                new_frag_res.append(new_conf_res)
-            processed_results.append(new_frag_res)
-    else:
-        # do Monte Carlo postprocessing
+    evals = (0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
 
-        # TODO add MC logic
-        processed_results = reshaped_results
+    # find mid circuit samples
+    processed_terminal_samples = []
+    all_mid_circuit_samples = []
+    for i, frag_res in enumerate(reshaped_results):
+        terminal_samples = []
+        mid_circuit_samples = []
+        for conf_res in frag_res:
+            n = mid_counts[i]  # number of results to be removed from array
+            new_conf_res = conf_res[:-n]
+            mid_circuit_samples = conf_res[-n:]
+            terminal_samples.append(new_conf_res)
+        processed_terminal_samples.append(terminal_samples)
+        all_mid_circuit_samples.append(mid_circuit_samples)
+
+    if not mc:
+        processed_results = processed_terminal_samples
+    else:
+        if function is None:
+            raise ValueError(
+                "A function must be passed to act on the resulting " "bistring when using mc=True"
+            )
+
+        # Build eigenvalue products
+        cs_list = []
+        for setting in settings:
+            cs = [evals[s] for s in setting]
+            cs_list.append(cs)
+        cs_list = np.array(cs_list, dtype=object)
+        cs_list = np.prod(cs_list, axis=1, dtype=object)
+
+        full_bitstrings = []
+        shots = len(processed_terminal_samples[0])
+        for i in range(shots):
+            bs = np.concatenate([conf[i] for conf in processed_terminal_samples], axis=0)
+            full_bitstrings.append(bs)
+
+        ts_list = []
+        for bitstring in full_bitstrings:
+            ts_list.append(function(bitstring) * np.prod(np.concatenate(all_mid_circuit_samples)))
+
+        K = len(settings)
+        # processed_results = 1/len(ts_list) * 8**K *
+
+        import pdb
+
+        pdb.set_trace()
 
     return processed_results
 

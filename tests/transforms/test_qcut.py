@@ -2019,7 +2019,9 @@ class TestMCPostprocessing:
             np.array([[1.0], [1.0], [1.0]]),
         ]
 
-        postprocessed = qcut.qcut_processing_fn_mc(fixed_samples, fragment_configurations, mc=False)
+        postprocessed = qcut.qcut_processing_fn_mc(
+            fixed_samples, fragment_configurations, settings, mc=False
+        )
 
         expected_postprocessed = [
             [np.array([[1.0], [0.0]]), np.array([[0.0], [0.0]]), np.array([[0.0], [1.0]])],
@@ -2028,6 +2030,66 @@ class TestMCPostprocessing:
 
         for pp, exp_pp in zip(postprocessed, expected_postprocessed):
             assert np.allclose(pp, exp_pp)
+
+    def test_mc_sample_postprocess(self):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        with qml.tape.QuantumTape() as frag0:
+            qml.Hadamard(wires=[0])
+            qml.RX(0.432, wires=[0])
+            qml.RY(0.543, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qcut.MeasureNode(wires=[1])
+            qcut.PrepareNode(wires=[2])
+            qml.RZ(0.321, wires=[2])
+            qml.CNOT(wires=[0, 2])
+            qcut.MeasureNode(wires=[2])
+            qcut.PrepareNode(wires=[3])
+            qml.CNOT(wires=[0, 3])
+            qml.sample(qml.Projector([1], wires=[0]))
+            qml.sample(qml.Projector([1], wires=[3]))
+
+        with qml.tape.QuantumTape() as frag1:
+            qcut.PrepareNode(wires=[0])
+            qml.CNOT(wires=[0, 1])
+            qcut.MeasureNode(wires=[0])
+            qml.Hadamard(wires=[1])
+            qcut.PrepareNode(wires=[2])
+            qml.CNOT(wires=[2, 1])
+            qcut.MeasureNode(wires=[2])
+            qml.sample(qml.Projector([1], wires=[1]))
+
+        fragment_tapes = [frag0, frag1]
+
+        edge_data = [
+            (0, 1, {"pair": (frag0.operations[4], frag1.operations[0])}),
+            (1, 0, {"pair": (frag1.operations[2], frag0.operations[5])}),
+            (0, 1, {"pair": (frag0.operations[8], frag1.operations[4])}),
+            (1, 0, {"pair": (frag1.operations[6], frag0.operations[9])}),
+        ]
+        communication_graph = MultiDiGraph(edge_data)
+        shots = 3
+        fragment_configurations, settings = qml.transforms.qcut.expand_fragment_tapes_mc(
+            fragment_tapes, communication_graph, shots
+        )
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+
+        def func(bitstring):
+            return np.sum(bitstring)
+
+        postprocessed = qcut.qcut_processing_fn_mc(
+            fixed_samples, fragment_configurations, settings, mc=True, function=func
+        )
 
 
 class TestContractTensors:
