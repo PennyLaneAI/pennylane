@@ -180,7 +180,7 @@ def expval_hessian_param_shift(
                     "A tape without parameter shifts was created unexpectedly during "
                     "the computation of the Hessian. Please submit a bug report "
                     "at https://github.com/PennyLaneAI/pennylane/issues"
-                ) # pragma: no cover
+                )  # pragma: no cover
 
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
