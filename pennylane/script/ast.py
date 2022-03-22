@@ -73,18 +73,16 @@ class ControlFlowTransformer(ast.NodeTransformer):
     def visit_If(self, node):
         self.generic_visit(node)
 
-        if_tape_name = ast.Name()
-        if_tape_name.id = "IfTape"
-
-        if_tape = ast.Call()
-        if_tape.func = if_tape_name
-        if_tape.args = [node.test]
-        if_tape.keywords = {}
-
-        with_block = ast.With()
-        with_block.body = node.body
-        with_block.items = [if_tape]
-        return with_block
+        return ast.With(
+            body=node.body,
+            items=[
+                ast.Call(
+                    func=ast.Name("IfTape"),
+                    args=[node.test],
+                    keywords={}
+                )
+            ]
+        )
 
     def visit_While(self, node):
         self.generic_visit(node)
