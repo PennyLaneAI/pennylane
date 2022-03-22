@@ -2006,9 +2006,6 @@ class TestMCPostprocessing:
         fragment_configurations, settings = qml.transforms.qcut.expand_fragment_tapes_mc(
             fragment_tapes, communication_graph, shots
         )
-        #
-        # flat = tuple(tape for c in fragment_configurations for tape in c)
-        # dev = qml.device("default.qubit", wires=range(4), shots=1)
 
         fixed_samples = [
             np.array([[1.0], [0.0], [1.0], [1.0]]),
@@ -2019,14 +2016,9 @@ class TestMCPostprocessing:
             np.array([[1.0], [1.0], [1.0]]),
         ]
 
-        postprocessed = qcut.qcut_processing_fn_mc(
-            fixed_samples, fragment_configurations, settings, mc=False
-        )
+        postprocessed = qcut.qcut_processing_fn_sample(fixed_samples, communication_graph, shots)
 
-        expected_postprocessed = [
-            [np.array([[1.0], [0.0]]), np.array([[0.0], [0.0]]), np.array([[0.0], [1.0]])],
-            [np.array([[0.0]]), np.array([[0.0]]), np.array([[1.0]])],
-        ]
+        expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
 
         for pp, exp_pp in zip(postprocessed, expected_postprocessed):
             assert np.allclose(pp, exp_pp)
@@ -2087,9 +2079,15 @@ class TestMCPostprocessing:
         def func(bitstring):
             return np.sum(bitstring)
 
+        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+
         postprocessed = qcut.qcut_processing_fn_mc(
-            fixed_samples, fragment_configurations, settings, mc=True, function=func
+            fixed_samples, communication_graph, fixed_settings, shots, func
         )
+
+        expected = 85.33333333333333
+
+        assert np.isclose(postprocessed, expected)
 
 
 class TestContractTensors:

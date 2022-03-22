@@ -823,76 +823,64 @@ def expand_fragment_tapes_mc(
     return all_configs, settings
 
 
-def qcut_processing_fn_mc(results, fragment_configurations, settings, mc=False, function=None):
+def reshape_and_find_degrees(results, communication_graph, shots):
+    """
+    Helper function to reshape results and find out degrees of communication
+    graph
+    """
+    results = [r.flatten() for r in results]
+    results = np.array(results, dtype=object)
+    results = results.reshape((len(communication_graph), shots)).T
+    out_degrees = [d for _, d in communication_graph.out_degree]
+
+    return results, out_degrees
+
+
+def qcut_processing_fn_sample(results, communication_graph, shots):
     """
     TODO: Docstring
     """
+    results, out_degrees = reshape_and_find_degrees(results, communication_graph, shots)
 
-    # Find number of mid circuit measurements in each fragment:
-    mid_counts = []
-    for config in fragment_configurations:
-        counter = 0
-        for meas in config[0].measurements:
-            if not isinstance(meas.obs, qml.ops.qubit.observables.Projector):
-                counter += 1
-        mid_counts.append(counter)
+    samples = []
+    for result in results:
+        sample = []
+        for fragment_result, out_degree in zip(result, out_degrees):
+            sample.append(fragment_result[: -out_degree or None])
+        samples.append(np.hstack(sample))
+    return [np.array(samples)]
 
-    # Assume the results are received as a flat numpy array
-    # corresponding to a single shot of each configuration:
-    config_dims = np.array(fragment_configurations, dtype=object).shape
-    results = np.array(results, dtype=object)
-    reshaped_results = results.reshape(config_dims)
+
+def qcut_processing_fn_mc(
+    results, communication_graph, settings, shots, classical_processing_fn: callable
+):
+    """
+    TODO: Docstring
+    """
+    results, out_degrees = reshape_and_find_degrees(results, communication_graph, shots)
 
     evals = (0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
+    expvals = []
+    for result, setting in zip(results, settings.T):
+        sample_terminal = []
+        sample_mid = []
 
-    # find mid circuit samples
-    processed_terminal_samples = []
-    all_mid_circuit_samples = []
-    for i, frag_res in enumerate(reshaped_results):
-        terminal_samples = []
-        mid_circuit_samples = []
-        for conf_res in frag_res:
-            n = mid_counts[i]  # number of results to be removed from array
-            new_conf_res = conf_res[:-n]
-            mid_circuit_samples = conf_res[-n:]
-            terminal_samples.append(new_conf_res)
-        processed_terminal_samples.append(terminal_samples)
-        all_mid_circuit_samples.append(mid_circuit_samples)
+        for fragment_result, out_degree in zip(result, out_degrees):
+            sample_terminal.append(fragment_result[: -out_degree or None])
+            sample_mid.append(fragment_result[-out_degree or len(fragment_result) :])
 
-    if not mc:
-        processed_results = processed_terminal_samples
-    else:
-        if function is None:
-            raise ValueError(
-                "A function must be passed to act on the resulting " "bistring when using mc=True"
-            )
+        sample_terminal = np.hstack(sample_terminal)
+        sample_mid = np.hstack(sample_mid)
 
-        # Build eigenvalue products
-        cs_list = []
-        for setting in settings:
-            cs = [evals[s] for s in setting]
-            cs_list.append(cs)
-        cs_list = np.array(cs_list, dtype=object)
-        cs_list = np.prod(cs_list, axis=1, dtype=object)
+        # following Eq.(35) of Peng et.al: https://arxiv.org/abs/1904.00102
+        f = classical_processing_fn(sample_terminal)
+        sigma_s = np.prod(sample_mid)
+        t_s = f * sigma_s
+        c_s = np.prod([evals[s] for s in setting])
+        K = len(sample_mid)
+        expvals.append(8**K * c_s * t_s)
 
-        full_bitstrings = []
-        shots = len(processed_terminal_samples[0])
-        for i in range(shots):
-            bs = np.concatenate([conf[i] for conf in processed_terminal_samples], axis=0)
-            full_bitstrings.append(bs)
-
-        ts_list = []
-        for bitstring in full_bitstrings:
-            ts_list.append(function(bitstring) * np.prod(np.concatenate(all_mid_circuit_samples)))
-
-        K = len(settings)
-        # processed_results = 1/len(ts_list) * 8**K *
-
-        import pdb
-
-        pdb.set_trace()
-
-    return processed_results
+    return np.mean(expvals)
 
 
 def _get_symbol(i):
