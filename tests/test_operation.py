@@ -161,18 +161,6 @@ class TestOperatorConstruction:
         assert MyOp.has_matrix
         assert MyOp(wires=0).has_matrix
 
-    def test_has_matrix_true_get_matrix(self):
-        """Test has_matrix property also detects overriding of `get_matrix` method."""
-
-        class MyOp(qml.operation.Operator):
-            num_wires = 1
-
-            def get_matrix(self):
-                return np.eye(2)
-
-        assert MyOp.has_matrix
-        assert MyOp(wires=0).has_matrix
-
     def test_has_matrix_false(self):
         """Test has_matrix property defaults to false if `compute_matrix` not overwritten."""
 

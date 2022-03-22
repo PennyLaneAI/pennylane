@@ -537,9 +537,7 @@ class Operator(abc.ABC):
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        return (cls.compute_matrix != Operator.compute_matrix) or (
-            cls.get_matrix != Operator.get_matrix
-        )
+        return (cls.compute_matrix != Operator.compute_matrix)
 
     @property
     def matrix(self):
@@ -1847,6 +1845,10 @@ class Tensor(Observable):
             diag_gates.extend(o.diagonalizing_gates())
 
         return diag_gates
+
+    @property
+    def has_matrix(self):
+        return all(ob.has_matrix for ob in self.obs)
 
     def get_matrix(self, wire_order=None):
         r"""Matrix representation of the Tensor operator

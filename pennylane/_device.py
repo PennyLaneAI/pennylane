@@ -587,7 +587,7 @@ class Device(abc.ABC):
         and observable) and returns ``True`` if supported by the device."""
         return qml.BooleanFn(
             lambda obj: not isinstance(obj, qml.tape.QuantumTape)
-            and self.supports_operation(obj.name)
+            and self.supports_operation(obj)
         )
 
     def custom_expand(self, fn):
@@ -826,14 +826,16 @@ class Device(abc.ABC):
         """Checks if an operation is supported by this device.
 
         Args:
-            operation (type or str): operation to be checked
+            operation (Union[.Operation, type, str]): operation to be checked
 
         Raises:
-            ValueError: if `operation` is not a :class:`~.Operation` class or string
+            ValueError: if `operation` is not a :class:`~.Operation` instance, class, or string
 
         Returns:
             bool: ``True`` iff supplied operation is supported
         """
+        if isinstance(operation, Operation):
+            return operation.__class__.__name__ in self.operations
         if isinstance(operation, type) and issubclass(operation, Operation):
             return operation.__name__ in self.operations
         if isinstance(operation, str):
@@ -857,14 +859,16 @@ class Device(abc.ABC):
          if not a subclass or string of an Observable was passed.
 
         Args:
-            observable (type or str): observable to be checked
+            observable (Union[.Observable, type, str]): observable to be checked
 
         Raises:
-            ValueError: if `observable` is not a :class:`~.Observable` class or string
+            ValueError: if `observable` is not a :class:`~.Observable` instance, class, or string
 
         Returns:
             bool: ``True`` iff supplied observable is supported
         """
+        if isinstance(observable, Observable):
+            return observable.__class__.__name__ in self.observables
         if isinstance(observable, type) and issubclass(observable, Observable):
             return observable.__name__ in self.observables
         if isinstance(observable, str):
@@ -896,8 +900,6 @@ class Device(abc.ABC):
 
         for o in queue:
 
-            operation_name = o.name
-
             if getattr(o, "return_type", None) == MidMeasure and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
@@ -916,11 +918,10 @@ class Device(abc.ABC):
                     raise DeviceError(
                         f"The inverse of gates are not supported on device {self.short_name}"
                     )
-                operation_name = o.base_name
 
-            if not self.supports_operation(operation_name):
+            if not self.supports_operation(o):
                 raise DeviceError(
-                    f"Gate {operation_name} not supported on device {self.short_name}"
+                    f"Gate {o.name} not supported on device {self.short_name}"
                 )
 
         for o in observables:
@@ -938,7 +939,7 @@ class Device(abc.ABC):
                     )
 
                 for i in o.obs:
-                    if not self.supports_observable(i.name):
+                    if not self.supports_observable(i):
                         raise DeviceError(
                             f"Observable {i.name} not supported on device {self.short_name}"
                         )
