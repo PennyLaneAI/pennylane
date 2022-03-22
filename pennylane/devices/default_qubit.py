@@ -198,19 +198,13 @@ class DefaultQubit(QubitDevice):
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
 
-    @property
-    def stopping_condition(self):
-        def f(obj):
-            if isinstance(obj, qml.tape.QuantumTape):
-                return False
-            if isinstance(obj, qml.operation.Operation):
-                return obj.has_matrix
-            if isinstance(obj, qml.measurements.MeasurementProcess):
-                if obj.obs is not None:
-                    return self.supports_observable(obj.obs)
-                return True
-            return False
-        return qml.BooleanFn(f)
+    def supports_operation(self, operation):
+        if operation.__class__.__name__ in {"Snapshot",
+        "BasisState",
+        "QubitStateVector",
+        "QubitUnitary"}:
+            return True
+        return operation.has_matrix
 
     # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):

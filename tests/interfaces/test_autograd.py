@@ -643,7 +643,7 @@ class TestAutogradExecuteIntegration:
                 U3(*p, wires=0)
                 qml.expval(qml.PauliX(0))
 
-            tape = tape.expand(stop_at=lambda obj: device.supports_operation(obj.name))
+            tape = tape.expand(stop_at=lambda obj: device.supports_operation(obj))
             return execute([tape], device, **execute_kwargs)[0]
 
         a = np.array(0.1, requires_grad=False)

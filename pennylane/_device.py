@@ -585,10 +585,17 @@ class Device(abc.ABC):
         """.BooleanFn: Returns the stopping condition for the device. The returned
         function accepts a queuable object (including a PennyLane operation
         and observable) and returns ``True`` if supported by the device."""
-        return qml.BooleanFn(
-            lambda obj: not isinstance(obj, qml.tape.QuantumTape)
-            and self.supports_operation(obj)
-        )
+        def f(obj):
+            if isinstance(obj, qml.tape.QuantumTape):
+                return False
+            if isinstance(obj, qml.operation.Operation):
+                return self.supports_operation(obj)
+            if isinstance(obj, qml.measurements.MeasurementProcess):
+                if obj.obs is not None:
+                    return self.supports_observable(obj.obs)
+                return True
+            return False
+        return qml.BooleanFn(f)
 
     def custom_expand(self, fn):
         """Register a custom expansion function for the device.
