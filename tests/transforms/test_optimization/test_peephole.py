@@ -79,10 +79,11 @@ class TestPeepholeOptimization:
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
-        assert len(qnode.qtape.operations) == 12
-        assert len(optimized_qnode.qtape.operations) == 10
-
-        assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
+        assert len(qnode.qtape.operations) == 5
+        assert len(optimized_qnode.qtape.operations) == 1
+        # GLobal phase
+        opt_matrix = 1.0j * qml.matrix(optimized_qnode)()
+        assert np.allclose(opt_matrix, qml.matrix(qnode)())
 
     def test_simple_circuit_custom_dict(self):
         """Test peephole optimization (2 qubits) for a simple circuit with custom dictionary."""

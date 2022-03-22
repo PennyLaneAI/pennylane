@@ -1062,7 +1062,8 @@ class SequencesSubstitution:  # pylint: disable=too-few-public-methods
             sequence_matrix = qml.matrix(sequence)
 
             if self.size_qubits_subset == 1:
-                sequence_opt = zyz_decomposition(sequence_matrix)
+                with qml.tape.QuantumTape(do_queue=False) as sequence_opt:
+                    zyz_decomposition(sequence_matrix, sequence.wires)
 
             if self.size_qubits_subset == 2:
                 with qml.tape.QuantumTape(do_queue=False) as sequence_opt:
