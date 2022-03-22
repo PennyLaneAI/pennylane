@@ -334,6 +334,29 @@ def test_return_pauli(symbol, operator):
     assert p is operator
 
 
+def test_generate_hamiltonian_queueing():
+    """Tests that when performing `generate_hamiltonian` is a queuing contexts, unowned identity operations are not
+    queued."""
+    symbols = ["H", "H"]
+    geometry = (
+        np.array([[0.0, 0.0, -0.3674625962], [0.0, 0.0, 0.3674625962]], requires_grad=False)
+        / 0.529177210903
+    )
+    alpha = np.array(
+        [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+        requires_grad=True,
+    )
+    mol = Molecule(symbols, geometry, alpha=alpha)
+    args = [alpha]
+    
+    with qml.tape.QuantumTape() as tape:
+        h_qubit = generate_hamiltonian(mol)(*args)
+        qml.expval(h_qubit)
+
+    assert len(tape.operations) == 0
+    assert len(tape.measurements) == 1
+
+
 def test_gradient_expvalH():
     r"""Test that the gradient of expval(H) computed with ``autograd.grad`` is equal to the value
     obtained with the finite difference method."""
