@@ -24,7 +24,7 @@ from jax.experimental import host_callback
 import numpy as np
 import pennylane as qml
 from pennylane.measurements import Variance, Expectation
-from pennylane.interfaces.batch import InterfaceUnsupportedError
+from pennylane.interfaces import InterfaceUnsupportedError
 
 dtype = jnp.float64
 

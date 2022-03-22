@@ -268,34 +268,26 @@ class gradient_transform(qml.batch_transform):
 
             qjac = _wrapper(*args, **kwargs)
 
-            if any(m.return_type is qml.measurements.Probability for m in qnode.qtape.measurements):
-                qjac = qml.math.safe_squeeze(qjac, exclude_axis=-1)
-
             if not hybrid:
                 return qjac
 
-            qjac_axes = list(range(len(qml.math.shape(qjac)) - 1))
             kwargs.pop("shots", False)
             cjac = cjac_fn(*args, **kwargs)
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
                 jacs = tuple(
-                    qml.math.safe_squeeze(qml.math.tensordot(qjac, c, [[-1], [0]]), axis=qjac_axes)
-                    for c in cjac
-                    if c is not None
+                    qml.math.tensordot(qjac, c, [[-1], [0]]) for c in cjac if c is not None
                 )
                 return jacs
 
-            is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
+            is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
 
             if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
                 # Classical Jacobian is the identity. No classical processing
                 # is present inside the QNode.
                 return qjac
 
-            return qml.math.safe_squeeze(
-                qml.math.tensordot(qjac, cjac, [[-1], [0]]), axis=qjac_axes
-            )
+            return qml.math.tensordot(qjac, cjac, [[-1], [0]])
 
         return jacobian_wrapper

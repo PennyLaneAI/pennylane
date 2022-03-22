@@ -2341,6 +2341,24 @@ class TestApplyOperationUnit:
             assert np.allclose(res_mat, op.get_matrix())
             assert np.allclose(res_wires, wires)
 
+    def test_identity_skipped(self, mocker):
+        """Test identity operation does not perform additional computations."""
+        dev = qml.device("default.qubit", wires=1)
+
+        starting_state = np.array([1, 0])
+        op = qml.Identity(0)
+
+        spy_diagonal = mocker.spy(dev, "_apply_diagonal_unitary")
+        spy_einsum = mocker.spy(dev, "_apply_unitary_einsum")
+        spy_unitary = mocker.spy(dev, "_apply_unitary")
+
+        res = dev._apply_operation(starting_state, op)
+        assert res is starting_state
+
+        spy_diagonal.assert_not_called()
+        spy_einsum.assert_not_called()
+        spy_unitary.assert_not_called()
+
 
 class TestHamiltonianSupport:
     """Tests the devices' native support for Hamiltonian observables."""
