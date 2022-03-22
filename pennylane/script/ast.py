@@ -25,12 +25,12 @@ def transform_top_level_function(node: ast.FunctionDef):
     with_block.items = [v]
     return with_block, node.name, arg_names
 
+
 class ExpressionTransformer(ast.NodeTransformer):
 
     def __init__(self, function_name, vars):
         self.function_name = function_name
         self.vars = vars
-
 
     def transform(self, node):
         if isinstance(node, ast.Name):
@@ -40,7 +40,6 @@ class ExpressionTransformer(ast.NodeTransformer):
         else:
             return ast.Lambda([], self.visit(node))
 
-
     def visit_Name(self, node):
         if node.id in self.vars:
             return ast.Call(ast.Subscript(ast.Name(self.function_name), ast.Str(node.id)), [], {})
@@ -48,11 +47,9 @@ class ExpressionTransformer(ast.NodeTransformer):
 
 
 
-
 class ControlFlowTransformer(ast.NodeTransformer):
 
-    def __init__(self, function_name, arg_names, tokens, globals, line_num, functions_to_compile, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, function_name, arg_names, tokens, globals, line_num, functions_to_compile):
 
         # constants
         self.tokens = tokens
@@ -159,15 +156,6 @@ class ControlFlowTransformer(ast.NodeTransformer):
         code_lines_snippet.insert(1, f"{' ' * (leading_spaces * len(str(line_num)))}<<< {type(node).__name__} is not allowed in pennylane scripting")
         raise ValueError("\n" + "\n".join(code_lines_snippet))
 
-
-    def visit_Name(self, node):
-
-        if node.id in self.arg_names:
-            attr = ast.Attribute()
-            attr.attr = node.id
-            attr.value = ast.Name(self.function_name)
-            return attr
-        return node
 
 
 def script(fn):
