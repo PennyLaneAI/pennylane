@@ -823,6 +823,44 @@ def expand_fragment_tapes_mc(
     return all_configs, settings
 
 
+def qcut_processing_fn_mc(results, fragment_configurations, mc=False):
+    """
+    TODO: Docstring
+    """
+
+    # Find number of mid circuit measurements in each fragment:
+    mid_counts = []
+    for config in fragment_configurations:
+        counter = 0
+        for meas in config[0].measurements:
+            if not isinstance(meas.obs, qml.ops.qubit.observables.Projector):
+                counter += 1
+        mid_counts.append(counter)
+
+    # Assume the results are received as a flat numpy array
+    # corresponding to a single shot of each configuration:
+    config_dims = np.array(fragment_configurations, dtype=object).shape
+    results = np.array(results, dtype=object)
+    reshaped_results = results.reshape(config_dims)
+
+    if not mc:
+        processed_results = []
+        for i, frag_res in enumerate(reshaped_results):
+            new_frag_res = []
+            for conf_res in frag_res:
+                n = mid_counts[i]  # number of results to be removed from array
+                new_conf_res = conf_res[:-n]
+                new_frag_res.append(new_conf_res)
+            processed_results.append(new_frag_res)
+    else:
+        # do Monte Carlo postprocessing
+
+        # TODO add MC logic
+        processed_results = reshaped_results
+
+    return processed_results
+
+
 def _get_symbol(i):
     """Finds the i-th ASCII symbol. Works for lowercase and uppercase letters, allowing i up to
     51."""
