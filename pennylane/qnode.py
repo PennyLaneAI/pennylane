@@ -486,6 +486,7 @@ class QNode:
 
         with self.tape:
             self._qfunc_output = self.func(*args, **kwargs)
+        self._tape._qfunc_output = self._qfunc_output
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
@@ -518,6 +519,7 @@ class QNode:
                 if len(obj.wires) != self.device.num_wires:
                     raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
+            # pylint: disable=no-member
             if isinstance(obj, qml.ops.qubit.SparseHamiltonian) and self.gradient_fn == "backprop":
                 raise qml.QuantumFunctionError(
                     "SparseHamiltonian observable must be used with the parameter-shift"
@@ -561,6 +563,7 @@ class QNode:
                 # store the initialization gradient function
                 original_grad_fn = [self.gradient_fn, self.gradient_kwargs, self.device]
 
+                # pylint: disable=not-callable
                 # update the gradient function
                 set_shots(self._original_device, override_shots)(self._update_gradient_fn)()
 

@@ -562,7 +562,6 @@ class TestParameterShiftHessian:
 
     def test_f0_argument(self):
         """Test that we can provide the results of a QNode to save on quantum invocations"""
-
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
@@ -584,6 +583,43 @@ class TestParameterShiftHessian:
 
         assert np.allclose(hessian1, hessian2)
         assert qruns1 < qruns2
+
+    def test_output_shape_matches_qnode(self):
+        """Test that the transform output shape matches that of the QNode."""
+        dev = qml.device("default.qubit", wires=4)
+
+        def cost1(x):
+            qml.Rot(*x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def cost2(x):
+            qml.Rot(*x, wires=0)
+            return [qml.expval(qml.PauliZ(0))]
+
+        def cost3(x):
+            qml.Rot(*x, wires=0)
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+
+        def cost4(x):
+            qml.Rot(*x, wires=0)
+            return qml.probs([0, 1])
+
+        def cost5(x):
+            qml.Rot(*x, wires=0)
+            return [qml.probs([0, 1])]
+
+        def cost6(x):
+            qml.Rot(*x, wires=0)
+            return [qml.probs([0, 1]), qml.probs([2, 3])]
+
+        x = np.random.rand(3)
+        circuits = [qml.QNode(cost, dev) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
+
+        transform = [qml.math.shape(qml.gradients.param_shift_hessian(c)(x)) for c in circuits]
+        qnode = [qml.math.shape(c(x)) + (3, 3) for c in circuits]
+        expected = [(3, 3), (1, 3, 3), (2, 3, 3), (4, 3, 3), (1, 4, 3, 3), (2, 4, 3, 3)]
+
+        assert all(t == q == e for t, q, e in zip(transform, qnode, expected))
 
 
 class TestInterfaces:

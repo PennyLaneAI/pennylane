@@ -15,7 +15,7 @@
 This subpackage defines functions for interfacing devices' batch execution
 capabilities with different machine learning libraries.
 """
-# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,protected-access
+# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,protected-access,not-callable
 import contextlib
 from functools import wraps
 import itertools
@@ -251,7 +251,7 @@ def execute(
             constituent terms if not supported on the device.
 
     Returns:
-        list[list[float]]: A nested list of tape results. Each element in
+        list[tensor_like[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
 
     **Example**
