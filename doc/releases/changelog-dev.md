@@ -147,13 +147,15 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 * The deprecated QNode, available via `qml.qnode_old.QNode`, has been removed. Please
   transition to using the standard `qml.QNode`.
   [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
+  [(#2337)](https://github.com/PennyLaneAI/pennylane/pull/2337)
+  [(#2338)](https://github.com/PennyLaneAI/pennylane/pull/2338)
 
-* The deprecated, non-batch compatible interfaces, have been removed.
-  [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
+  In addition, several other components which powered the deprecated QNode have been removed:
 
-* The deprecated tape subclasses `QubitParamShiftTape`, `JacobianTape`, `CVParamShiftTape`, and
-  `ReversibleTape` have been removed.
-  [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
+  - The deprecated, non-batch compatible interfaces, have been removed.
+  
+  - The deprecated tape subclasses `QubitParamShiftTape`, `JacobianTape`, `CVParamShiftTape`, and
+    `ReversibleTape` have been removed.
 
 <h3>Bug fixes</h3>
 
