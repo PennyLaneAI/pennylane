@@ -18,7 +18,7 @@ that executes multiple tapes on a device.
 Also contains the general execute function, for exectuting tapes on
 devices with autodifferentiation support.
 """
-# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches
+# pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
 from functools import wraps
 import itertools
 from cachetools import LRUCache
@@ -213,7 +213,7 @@ def execute(
             constituent terms if not supported on the device.
 
     Returns:
-        list[list[float]]: A nested list of tape results. Each element in
+        list[tensor_like[float]]: A nested list of tape results. Each element in
         the returned list corresponds in order to the provided tapes.
 
     **Example**

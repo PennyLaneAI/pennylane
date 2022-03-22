@@ -530,6 +530,17 @@ class Operator(abc.ABC):
         """
         raise MatrixUndefinedError
 
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_matrix(cls):
+        r"""Bool: Whether or not the Operator returns a defined matrix.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return (cls.compute_matrix != Operator.compute_matrix) or (
+            cls.get_matrix != Operator.get_matrix
+        )
+
     @property
     def matrix(self):
         r"""Matrix representation of an instantiated operator
@@ -1804,19 +1815,12 @@ class Tensor(Observable):
         # observable should be Z^{\otimes n}
         self._eigvals_cache = pauli_eigs(len(self.wires))
 
-        # Sort observables lexicographically by the strings of the wire labels
-        # TODO: check for edge cases of the sorting, e.g. Tensor(Hermitian(obs, wires=[0, 2]),
-        # Hermitian(obs, wires=[1, 3, 4])
-        # Sorting the observables based on wires, so that the order of
-        # the eigenvalues is correct
-        obs_sorted = sorted(self.obs, key=lambda x: [str(l) for l in x.wires.labels])
-
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:
             # Tensor product of observables contains a mixture
             # of standard and non-standard observables
             self._eigvals_cache = np.array([1])
-            for k, g in itertools.groupby(obs_sorted, lambda x: x.name in standard_observables):
+            for k, g in itertools.groupby(self.obs, lambda x: x.name in standard_observables):
                 if k:
                     # Subgroup g contains only standard observables.
                     self._eigvals_cache = np.kron(self._eigvals_cache, pauli_eigs(len(list(g))))

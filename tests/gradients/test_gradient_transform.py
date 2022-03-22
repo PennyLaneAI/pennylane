@@ -454,8 +454,8 @@ class TestGradientTransformIntegration:
 
         # the gradient function can be called with different shot values
         grad_fn = qml.gradients.param_shift(circuit)
-        assert grad_fn(x).shape == (1, 1)
-        assert grad_fn(x, shots=[(1, 1000)]).shape == (1000, 1)
+        assert grad_fn(x).shape == ()
+        assert grad_fn(x, shots=[(1, 1000)]).shape == (1000,)
 
         # the original QNode is unaffected
         assert circuit(x).shape == tuple()
