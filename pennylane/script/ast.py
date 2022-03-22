@@ -109,7 +109,7 @@ class ControlFlowTransformer(ast.NodeTransformer):
         code_lines = code.split("\n")
         code_lines_snippet = code_lines[:min(2, len(code_lines))]
         leading_spaces = len(code_lines_snippet[0]) - len(code_lines_snippet[0].lstrip())
-        line_num = self.lin_num + node.lineno
+        line_num = self.lin_num + node.lineno  # off by 2 for now
         code_lines_snippet[0] = f"{line_num} {code_lines_snippet[0]}"
         code_lines_snippet[1] = f"{line_num + 1} {code_lines_snippet[1]}"
         code_lines_snippet.insert(1, f"{' ' * (leading_spaces * len(str(line_num)))}<<< {type(node).__name__} is not allowed in pennylane-script")
