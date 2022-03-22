@@ -493,14 +493,13 @@ def _boys(n, t):
     Returns:
         float: value of the Boys function
     """
-    tf = t.flatten() + anp.finfo(anp.float64).eps ** 2
-
-    f = asp.special.gammainc(n + 0.5, tf) * asp.special.gamma(n + 0.5) / (2 * tf ** (n + 0.5))
-    o_z = anp.ones(len(tf))
-    o_z[tf == 0] = 0.0
-    o_v = anp.zeros(len(tf))
-    o_v[tf == 0] = 1 / (2 * n + 1)
-    return (f * o_z + o_v).reshape(t.shape)
+    return anp.where(
+        t == 0,
+        1 / (2 * n + 1),
+        asp.special.gammainc(n + 0.5, t + (t == 0))
+        * asp.special.gamma(n + 0.5)
+        / (2 * (t + (t == 0)) ** (n + 0.5)),
+    )  # (t == 0) is added to avoid divide by zero
 
 
 def _hermite_coulomb(t, u, v, n, p, dr):
