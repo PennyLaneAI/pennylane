@@ -44,9 +44,9 @@ class ExpressionTransformer(ast.NodeTransformer):
                 return ast.Subscript(ast.Name(self.function_name), ast.Str(node.id))
             return node
         else:
-            out = self.visit(node)
+            self.visit(node)
             if self.expr_does_contain_vars:
-                return ast.Lambda([], out)
+                return ast.Lambda([], node)
             else:
                 return node
 
