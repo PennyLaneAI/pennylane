@@ -25,6 +25,29 @@ def transform_top_level_function(node: ast.FunctionDef):
     with_block.items = [v]
     return with_block, node.name, arg_names
 
+class ExpressionTransformer(ast.NodeTransformer):
+
+    def __init__(self, function_name, vars):
+        self.function_name = function_name
+        self.vars = vars
+
+
+    def transform(self, node):
+        if isinstance(node, ast.Name):
+            if node.id in self.vars:
+                return ast.Subscript(ast.Name(self.function_name), ast.Str(node.id))
+            return node
+        else:
+            return ast.Lambda([], self.visit(node))
+
+
+    def visit_Name(self, node):
+        if node.id in self.vars:
+            return ast.Call(ast.Subscript(ast.Name(self.function_name), ast.Str(node.id)), [], {})
+        return node
+
+
+
 
 class ControlFlowTransformer(ast.NodeTransformer):
 
@@ -118,10 +141,9 @@ class ControlFlowTransformer(ast.NodeTransformer):
             # this is a local function
             self.called_functions.add(self.globals[astunparse.unparse(node.func).strip()])
             for i, arg in enumerate(node.args):
-                l = ast.Lambda()
-                l.args = []
-                l.body = arg
-                node.args[i] = l
+                et = ExpressionTransformer(self.function_name, self.arg_names)
+                new = et.transform(arg)
+                node.args[i] = new
 
         return node
 
@@ -134,7 +156,7 @@ class ControlFlowTransformer(ast.NodeTransformer):
         code_lines_snippet[0] = f"{line_num} {code_lines_snippet[0]}"
         if len(code_lines_snippet) == 2:
             code_lines_snippet[1] = f"{line_num + 1} {code_lines_snippet[1]}"
-        code_lines_snippet.insert(1, f"{' ' * (leading_spaces * len(str(line_num)))}<<< {type(node).__name__} is not allowed in pennylane-script")
+        code_lines_snippet.insert(1, f"{' ' * (leading_spaces * len(str(line_num)))}<<< {type(node).__name__} is not allowed in pennylane scripting")
         raise ValueError("\n" + "\n".join(code_lines_snippet))
 
 
