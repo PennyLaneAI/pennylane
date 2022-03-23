@@ -18,13 +18,13 @@ PennyLane observable.
 import sys
 
 import pytest
-
-pytest.importorskip("openfermion")
+from openfermion import QubitOperator
 
 import pennylane as qml
-from openfermion import QubitOperator
 from pennylane import numpy as np
 from pennylane import qchem
+
+pytest.importorskip("openfermion")
 
 
 @pytest.mark.parametrize(
