@@ -19,8 +19,8 @@ import itertools
 import string
 import sys
 from itertools import product
-from pathlib import Path
 from os import environ
+from pathlib import Path
 
 import pytest
 from flaky import flaky
@@ -1968,12 +1968,13 @@ class TestMCPostprocessing:
     gives the correct results.
     """
 
-    def test_sample_postprocess(self):
+    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
+    def test_sample_postprocess(self, interface):
         """
         Tests that the postprocessing for the generic sampling case gives the
         correct result
         """
-
+        lib = pytest.importorskip(interface)
         fragment_tapes = [frag0, frag1]
 
         communication_graph = MultiDiGraph(frag_edge_data)
@@ -1992,18 +1993,19 @@ class TestMCPostprocessing:
         ]
 
         postprocessed = qcut.qcut_processing_fn_sample(fixed_samples, communication_graph, shots)
+        postprocessed = qml.math.cast_like(postprocessed, lib.ones(1))
 
         expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
 
-        for pp, exp_pp in zip(postprocessed, expected_postprocessed):
-            assert np.allclose(pp, exp_pp)
+        assert np.allclose(postprocessed[0], expected_postprocessed[0])
 
-    def test_mc_sample_postprocess(self):
+    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
+    def test_mc_sample_postprocess(self, interface, mocker):
         """
         Tests that the postprocessing for the generic sampling case gives the
         correct result
         """
-
+        lib = pytest.importorskip(interface)
         fragment_tapes = [frag0, frag1]
 
         communication_graph = MultiDiGraph(frag_edge_data)
@@ -2026,11 +2028,41 @@ class TestMCPostprocessing:
 
         fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
 
+        # spy_func = mocker.spy(func)
+        spy_prod = mocker.spy(np, "prod")
+        spy_hstack = mocker.spy(np, "hstack")
+
         postprocessed = qcut.qcut_processing_fn_mc(
             fixed_samples, communication_graph, fixed_settings, shots, func
         )
+        postprocessed = qml.math.cast_like(postprocessed, lib.ones(1))
 
         expected = 85.33333333333333
+
+        prod_args = [
+            np.array([1.0, 1.0, -1.0, 1.0]),
+            [0.5, -0.5, 0.5, -0.5],
+            np.array([1.0, -1.0, -1.0, -1.0]),
+            [-0.5, -0.5, 0.5, 0.5],
+            np.array([1.0, -1.0, 1.0, 1.0]),
+            [0.5, 0.5, -0.5, 0.5],
+        ]
+
+        hstack_args = [
+            [np.array([1.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, 1.0]), np.array([-1.0, 1.0])],
+            [np.array([0.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, -1.0]), np.array([-1.0, -1.0])],
+            [np.array([0.0, 1.0]), np.array([1.0])],
+            [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
+        ]
+
+        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
+            assert np.allclose(arg[0][0], expected_arg)
+
+        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
+            for arg, expected_arg in zip(args[0][0], expected_args):
+                assert np.allclose(arg, expected_arg)
 
         assert np.isclose(postprocessed, expected)
 

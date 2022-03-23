@@ -827,7 +827,7 @@ def expand_fragment_tapes_mc(
     return all_configs, settings
 
 
-def _reshape_and_find_degrees(results, communication_graph, shots):
+def _reshape_results(results: Sequence, communication_graph: MultiDiGraph, shots: int):
     """
     Helper function to reshape results and find out degrees of communication
     graph
@@ -835,13 +835,12 @@ def _reshape_and_find_degrees(results, communication_graph, shots):
     results = [qml.math.flatten(r) for r in results]
     results = np.array(results, dtype=object)
     results = results.reshape((len(communication_graph), shots)).T
-    out_degrees = [d for _, d in communication_graph.out_degree]
 
-    return results, out_degrees
+    return results
 
 
 def qcut_processing_fn_sample(
-    results: Sequence[Sequence], communication_graph: MultiDiGraph, shots: int
+    results: Sequence, communication_graph: MultiDiGraph, shots: int
 ) -> List[np.array]:
     """
     Function to postprocess samples for the :func:`cut_circuit_mc() <pennylane.cut_circuit_mc>`
@@ -864,7 +863,8 @@ def qcut_processing_fn_sample(
         List[tensor_like]: the sampled output for all terminal measurements over the number of shots given
     """
     res0 = results[0]
-    results, out_degrees = _reshape_and_find_degrees(results, communication_graph, shots)
+    results = _reshape_results(results, communication_graph, shots)
+    out_degrees = [d for _, d in communication_graph.out_degree]
 
     samples = []
     for result in results:
@@ -908,7 +908,8 @@ def qcut_processing_fn_mc(
         `Peng et.al <https://arxiv.org/abs/1904.00102>`__.
     """
     res0 = results[0]
-    results, out_degrees = _reshape_and_find_degrees(results, communication_graph, shots)
+    results = _reshape_results(results, communication_graph, shots)
+    out_degrees = [d for _, d in communication_graph.out_degree]
 
     evals = (0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
     expvals = []
@@ -922,9 +923,9 @@ def qcut_processing_fn_mc(
 
         sample_terminal = np.hstack(sample_terminal)
         sample_mid = np.hstack(sample_mid)
-        assert set(sample_terminal).issubset({0, 1})
-        assert set(sample_mid).issubset({1, -1})
 
+        assert set(sample_terminal).issubset({np.array(0), np.array(1)})
+        assert set(sample_mid).issubset({np.array(-1), np.array(1)})
         # following Eq.(35) of Peng et.al: https://arxiv.org/abs/1904.00102
         f = classical_processing_fn(sample_terminal)
         sigma_s = np.prod(sample_mid)
