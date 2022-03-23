@@ -461,8 +461,8 @@ def test_unitary_to_rot_multiple_two_qubit(num_reps):
     original_qnode = qml.QNode(my_circuit, dev)
     transformed_qnode = qml.QNode(unitary_to_rot(my_circuit), dev)
 
-    original_matrix = qml.transforms.get_unitary_matrix(original_qnode)()
-    transformed_matrix = qml.transforms.get_unitary_matrix(transformed_qnode)()
+    original_matrix = qml.matrix(original_qnode)()
+    transformed_matrix = qml.matrix(transformed_qnode)()
 
     assert check_matrix_equivalence(original_matrix, transformed_matrix, atol=1e-7)
 
