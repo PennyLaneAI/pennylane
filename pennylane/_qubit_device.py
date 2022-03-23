@@ -80,7 +80,6 @@ class QubitDevice(Device):
     # pylint: disable=too-many-public-methods
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
-    I_DTYPE = np.int64
 
     _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)
@@ -295,10 +294,20 @@ class QubitDevice(Device):
         else:
             results = self.statistics(circuit.observables)
 
-        measurement_types = [ob.return_type for ob in circuit.measurements]
+        if not circuit.is_sampled:
 
-        if (circuit.all_sampled or not circuit.is_sampled) and not multiple_sampled_jobs:
-            results = self._convert_results_to_array(results, measurement_types)
+            if len(circuit.measurements) == 1 and circuit.measurements[0] is qml.measurements.State:
+                # State is assumed to be the only measurement
+                results = self._asarray(results, dtype=self.C_DTYPE)
+            else:
+                # Expval, var or probs
+                results = self._asarray(results, dtype=self.R_DTYPE)
+
+        elif circuit.all_sampled and not self._has_partitioned_shots():
+
+            # TODO: update the dtype for Sample such that it depends on the
+            # eigenvalues of the observable
+            results = self._asarray(results)
         else:
             results = tuple(self._asarray(r) for r in results)
 
@@ -314,28 +323,6 @@ class QubitDevice(Device):
             self.tracker.update(executions=1, shots=self._shots)
             self.tracker.record()
 
-        return results
-
-    def _convert_results_to_array(self, results, measurement_types):
-        """Converts the results to array while preserving the internal dtype
-        based on the type of statistics obtaines."""
-
-        dtype_measurement_map = {
-            qml.measurements.Sample: self.I_DTYPE,
-            qml.measurements.Expectation: self.R_DTYPE,
-            qml.measurements.Variance: self.R_DTYPE,
-            qml.measurements.Probability: self.R_DTYPE,
-            qml.measurements.State: self.C_DTYPE
-            # Note: as of now, MidMeasure does not occur as a terminal measurement
-        }
-
-        # First convert each results separately with the intended dtype
-        for idx in range(len(results)):  # pylint: disable=consider-using-enumerate
-            ret_type = measurement_types[idx]
-            results[idx] = self._asarray(results[idx], dtype=dtype_measurement_map[ret_type])
-
-        # Let the eventual dtype be resolved automatically
-        results = self._asarray(results)
         return results
 
     @property
