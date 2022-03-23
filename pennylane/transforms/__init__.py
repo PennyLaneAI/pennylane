@@ -121,6 +121,8 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~transforms.qcut.qcut_processing_fn
     ~transforms.qcut.CutStrategy
     ~transforms.qcut.expand_fragment_tapes_mc
+    ~transforms.qcut.qcut_processing_fn_sample
+    ~transforms.qcut.qcut_processing_fn_mc
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -21,6 +21,11 @@
     sampled Pauli measurements and state preparations.
     [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
 
+  - Postprocessing functions `qcut_processing_fn_sample()` and
+    `qcut_processing_fn_mc()` have been added to return recombined fragments
+    samples and expectation values respectively.
+    [(#2358)](https://github.com/PennyLaneAI/pennylane/pull/2358)
+
 <h3>Improvements</h3>
 
 * The function `qml.ctrl` was given the optional argument `control_values=None`.

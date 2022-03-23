@@ -470,7 +470,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
             if return_type not in {Sample, Expectation}:
                 raise ValueError(
-                    "Invalid return type. Only expecation value and sampling measurements "
+                    "Invalid return type. Only expectation value and sampling measurements "
                     "are supported in graph_to_tape"
                 )
 
@@ -823,7 +823,7 @@ def expand_fragment_tapes_mc(
     return all_configs, settings
 
 
-def reshape_and_find_degrees(results, communication_graph, shots):
+def _reshape_and_find_degrees(results, communication_graph, shots):
     """
     Helper function to reshape results and find out degrees of communication
     graph
@@ -836,11 +836,30 @@ def reshape_and_find_degrees(results, communication_graph, shots):
     return results, out_degrees
 
 
-def qcut_processing_fn_sample(results, communication_graph, shots):
+def qcut_processing_fn_sample(
+    results: Sequence[Sequence], communication_graph: MultiDiGraph, shots: int
+) -> List[np.array]:
     """
-    TODO: Docstring
+    Function to postprocess samples for the :func:`cut_circuit_mc() <pennylane.cut_circuit>`
+    transform. This removes superfluous mid-circuit measurement samples from fragment
+    circuit outputs.
+
+    .. note::
+
+        This function is designed for use as part of the sampling-based circuit cutting workflow.
+        Check out the :func:`~.cut_circuit_mc` transform for more details.
+
+    Args:
+        results (Sequence[Sequence]): a collection of execution results generated from the
+            expansion of circuit fragments over measurement and preparation node configurations
+        communication_graph (nx.MultiDiGraph): the communication graph determining connectivity
+            between circuit fragments
+        shots (int): the number of shots
+
+    Returns:
+        List[np.array]: the sampled output for all terminal measurements over the number of shots given
     """
-    results, out_degrees = reshape_and_find_degrees(results, communication_graph, shots)
+    results, out_degrees = _reshape_and_find_degrees(results, communication_graph, shots)
 
     samples = []
     for result in results:
@@ -852,12 +871,37 @@ def qcut_processing_fn_sample(results, communication_graph, shots):
 
 
 def qcut_processing_fn_mc(
-    results, communication_graph, settings, shots, classical_processing_fn: callable
-):
+    results: Sequence[Sequence],
+    communication_graph: MultiDiGraph,
+    settings: Tensor,
+    shots: int,
+    classical_processing_fn: callable,
+) -> float:
     """
-    TODO: Docstring
+    Function to postprocess samples for the :func:`cut_circuit_mc() <pennylane.cut_circuit>`
+    transform. This takes a user-specified classical function to act on bitstrings and
+    generates an expectation value.
+
+    .. note::
+
+        This function is designed for use as part of the sampling-based circuit cutting workflow.
+        Check out the :func:`~.cut_circuit_mc` transform for more details.
+
+    Args:
+        results (Sequence[Sequence]): a collection of execution results generated from the
+            expansion of circuit fragments over measurement and preparation node configurations
+        communication_graph (nx.MultiDiGraph): the communication graph determining connectivity
+            between circuit fragments
+        settings (Tensor): each element is one of 8 unique values that determines and tracks the specific
+            measurement and preparation operations over all configurations
+        shots (int): the number of shots
+        classical_processing_fn (callable): a classical postprocessing function to be applied to
+            the reconstructed bitstrings
+
+    Returns:
+        float: the expectation value calculated in accordance to Eq.(35) of `Peng et.al <https://arxiv.org/abs/1904.00102>`__.
     """
-    results, out_degrees = reshape_and_find_degrees(results, communication_graph, shots)
+    results, out_degrees = _reshape_and_find_degrees(results, communication_graph, shots)
 
     evals = (0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
     expvals = []
