@@ -49,9 +49,10 @@
 
 <h3>Improvements</h3>
 
-* `"default.qubit"` now skips over identity operators instead performing matrix multiplication
+* `default.qubit` and `default.mixed` now skip over identity operators instead of performing matrix multiplication
   with the identity.
   [(#2356)](https://github.com/PennyLaneAI/pennylane/pull/2356)
+  [(#2365)](https://github.com/PennyLaneAI/pennylane/pull/2365)
 
 * `QuantumTape` objects are now iterable and accessing the
   operations and measurements of the underlying quantum circuit is more
