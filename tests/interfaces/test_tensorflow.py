@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.gradients import finite_diff, param_shift
-from pennylane.interfaces.batch import execute
+from pennylane.interfaces import execute
 
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
@@ -133,7 +133,7 @@ class TestCaching:
     def test_cache_maxsize(self, mocker):
         """Test the cachesize property of the cache"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces.batch, "cache_execute")
+        spy = mocker.spy(qml.interfaces, "cache_execute")
         a = tf.Variable([0.1, 0.2])
 
         with tf.GradientTape() as t:
@@ -154,7 +154,7 @@ class TestCaching:
     def test_custom_cache(self, mocker):
         """Test the use of a custom cache object"""
         dev = qml.device("default.qubit", wires=1)
-        spy = mocker.spy(qml.interfaces.batch, "cache_execute")
+        spy = mocker.spy(qml.interfaces, "cache_execute")
         a = tf.Variable([0.1, 0.2])
         custom_cache = {}
 

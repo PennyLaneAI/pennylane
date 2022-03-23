@@ -443,9 +443,7 @@ class TestCommutingFunction:
         """Commutation between CNOT and MultiControlledX."""
         commutation = qml.is_commuting(
             qml.CNOT(wires=wires[0]),
-            qml.MultiControlledX(
-                control_wires=wires[1][0:3], wires=wires[1][-1], control_values="111"
-            ),
+            qml.MultiControlledX(wires=wires[1], control_values="111"),
         )
         assert commutation == res
 

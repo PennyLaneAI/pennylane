@@ -17,6 +17,8 @@ of a qubit-based quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-statements
 import warnings
+from collections.abc import Sequence
+
 import numpy as np
 
 import pennylane as qml
@@ -204,6 +206,11 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         shapes.append(len(g_tapes))
 
     def processing_fn(results):
+        # Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        # pylint: disable=protected-access
+        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+            results = [qml.math.squeeze(res) for res in results]
+
         grads = []
         start = 1 if unshifted_coeffs and f0 is None else 0
         r0 = f0 or results[0]
@@ -238,9 +245,9 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         # In the future, we might want to change this so that only tuples
         # of arrays are returned.
         for i, g in enumerate(grads):
-            g = qml.math.convert_like(g, res[0])
             if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
-                grads[i] = qml.math.hstack(g)
+                if qml.math.ndim(g) > 0:
+                    grads[i] = qml.math.hstack(g)
 
         return qml.math.T(qml.math.stack(grads))
 
@@ -338,24 +345,28 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
         gradient_tapes.extend(pdA2_tapes)
 
     def processing_fn(results):
+        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        # pylint: disable=protected-access
+        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+            results = [qml.math.squeeze(res) for res in results]
+
         # We need to expand the dimensions of the variance mask,
         # and convert it to be the same type as the results.
         res = results[0]
         ragged = getattr(results[0], "dtype", None) is np.dtype("object")
 
         mask = []
-        for m, r in zip(var_mask, results[0]):
+        for m, r in zip(var_mask, qml.math.atleast_1d(results[0])):
             array_func = np.ones if m else np.zeros
             shape = qml.math.shape(r)
-            shape = (1,) if shape == tuple() else shape
             mask.append(array_func(shape, dtype=bool))
 
-        if ragged:
+        if ragged and qml.math.ndim(res) > 0:
             res = qml.math.hstack(res)
             mask = qml.math.hstack(mask)
 
-        mask = qml.math.convert_like(qml.math.reshape(mask, [-1, 1]), res)
         f0 = qml.math.expand_dims(res, -1)
+        mask = qml.math.convert_like(qml.math.reshape(mask, qml.math.shape(f0)), res)
 
         pdA = pdA_fn(results[1:tape_boundary])
         pdA2 = 0
