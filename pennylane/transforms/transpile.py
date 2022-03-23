@@ -119,8 +119,8 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
 
             # two-qubit gates which can be handled by the coupling map
             if (
-                op.wires in coupling_graph.edges
-                or tuple(reversed(op.wires)) in coupling_graph.edges
+                    op.wires in coupling_graph.edges
+                    or tuple(reversed(op.wires)) in coupling_graph.edges
             ):
                 gates.append(op)
                 list_op_copy.pop(0)
@@ -135,7 +135,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
             source_wire, dest_wire = op.wires
             shortest_path = nx.algorithms.shortest_path(coupling_graph, source_wire, dest_wire)
             path_length = len(shortest_path) - 1
-            wires_to_swap = [shortest_path[(i - 1) : (i + 1)] for i in range(path_length, 1, -1)]
+            wires_to_swap = [shortest_path[(i - 1): (i + 1)] for i in range(path_length, 1, -1)]
 
             for w0, w1 in wires_to_swap:
                 # swap wires
@@ -170,43 +170,9 @@ def _adjust_mmt_indices(_m, _map_wires):
     """helper function which adjusts wires in MeasurementProcess according to the map _map_wires"""
     _new_wires = Wires([_map_wires[w] for w in _m.wires])
 
-    if isinstance(_m.obs, (Hamiltonian, Tensor)):
-        # tensor products of observables
-        raise NotImplementedError(
-            "Measuring expectation values of tensor products or Hamiltonians is not yet supported"
-        )
-
     # change wires of observable
     if _m.obs is None:
         return type(_m)(return_type=_m.return_type, eigvals=_m.eigvals, wires=_new_wires)
 
     _new_obs = type(_m.obs)(wires=_new_wires, id=_m.obs.id)
     return type(_m)(return_type=_m.return_type, obs=_new_obs)
-
-
-if __name__ == "__main__":
-    import pennylane as qml
-
-    def build_qfunc_pauli_z(wires):
-        def qfunc(x, y, z):
-            qml.Hadamard(wires=wires[0])
-            qml.RZ(z, wires=wires[2])
-            qml.CNOT(wires=[wires[2], wires[0]])
-            qml.CNOT(wires=[wires[1], wires[0]])
-            qml.RX(x, wires=wires[0])
-            qml.CNOT(wires=[wires[0], wires[2]])
-            qml.RZ(-z, wires=wires[2])
-            qml.RX(y, wires=wires[0])
-            qml.PauliY(wires=wires[2])
-            qml.CY(wires=[wires[1], wires[2]])
-            return qml.expval(qml.PauliZ(wires=wires[0]))
-
-        return qfunc
-
-    dev = qml.device("default.qubit", wires=[0, 1, 2])
-
-    # build circuit
-    original_qfunc = build_qfunc_pauli_z([0, 1, 2])
-    transpiled_qfunc = transpile(coupling_map=[(0, 1)])(original_qfunc)
-    transpiled_qnode = qml.QNode(transpiled_qfunc, dev)
-    transpiled_qnode(0.1, 0.2, 0.3)
