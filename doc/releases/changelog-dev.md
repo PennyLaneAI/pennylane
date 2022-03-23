@@ -23,6 +23,8 @@
     [(#2272)](https://github.com/PennyLaneAI/pennylane/pull/2272)
   - These new additions are added to a feature branch
     [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
+  - The efficiency of computing molecular integrals and Hamiltonian is improved
+    [(#2316)](https://github.com/PennyLaneAI/pennylane/pull/2316)
 
 * Development of a circuit-cutting compiler extension to circuits with sampling
   measurements has begun:
