@@ -198,7 +198,7 @@ def test_spin2(electrons, orbitals, mapping, terms_exp, monkeypatch):
     S2_qubit_op = QubitOperator()
     monkeypatch.setattr(S2_qubit_op, "terms", terms_exp)
 
-    assert qchem._qubit_operators_equivalent(S2_qubit_op, S2)
+    assert qchem.convert._openfermion_pennylane_equivalent(S2_qubit_op, S2)
 
 
 @pytest.mark.parametrize(

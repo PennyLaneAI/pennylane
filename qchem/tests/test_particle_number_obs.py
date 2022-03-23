@@ -85,7 +85,9 @@ def test_particle_number_observable(orbitals, mapping, terms_exp, custom_wires, 
     particle_number_qubit_op = QubitOperator()
     monkeypatch.setattr(particle_number_qubit_op, "terms", terms_exp)
 
-    assert qchem._qubit_operators_equivalent(particle_number_qubit_op, N, wires=custom_wires)
+    assert qchem.convert._openfermion_pennylane_equivalent(
+        particle_number_qubit_op, N, wires=custom_wires
+    )
 
 
 @pytest.mark.parametrize(

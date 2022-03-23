@@ -46,7 +46,7 @@ def test_spin_z(orbitals, mapping, terms_exp, monkeypatch):
     Sz_qubit_op = QubitOperator()
     monkeypatch.setattr(Sz_qubit_op, "terms", terms_exp)
 
-    assert qchem._qubit_operators_equivalent(Sz_qubit_op, Sz)
+    assert qchem.convert._openfermion_pennylane_equivalent(Sz_qubit_op, Sz)
 
 
 @pytest.mark.parametrize(
