@@ -26,7 +26,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
     Args:
         tape (function): A quantum function.
         coupling_map (list[tuple(int, int)] or nx.Graph): Either a list of tuples(int, int) or an instance of
-            networkx.Graph specifying the couplings between different qubits.
+            `networkx.Graph` specifying the couplings between different qubits.
 
     Returns:
         function: the transformed quantum function
