@@ -126,6 +126,7 @@
 
 * The `update_stepsize` method is being deleted from `GradientDescentOptimizer` and its child
   optimizers.  The `stepsize` property can be interacted with directly instead.
+  [(#2370)](https://github.com/PennyLaneAI/pennylane/pull/2370)
 
 * The old circuit text drawing infrastructure is being deleted.
   [(#2310)](https://github.com/PennyLaneAI/pennylane/pull/2310)
