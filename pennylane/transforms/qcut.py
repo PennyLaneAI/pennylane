@@ -832,7 +832,7 @@ def _reshape_and_find_degrees(results, communication_graph, shots):
     Helper function to reshape results and find out degrees of communication
     graph
     """
-    results = [r.flatten() for r in results]
+    results = [qml.math.flatten(r) for r in results]
     results = np.array(results, dtype=object)
     results = results.reshape((len(communication_graph), shots)).T
     out_degrees = [d for _, d in communication_graph.out_degree]
@@ -844,25 +844,26 @@ def qcut_processing_fn_sample(
     results: Sequence[Sequence], communication_graph: MultiDiGraph, shots: int
 ) -> List[np.array]:
     """
-    Function to postprocess samples for the :func:`cut_circuit_mc() <pennylane.cut_circuit>`
+    Function to postprocess samples for the :func:`cut_circuit_mc() <pennylane.cut_circuit_mc>`
     transform. This removes superfluous mid-circuit measurement samples from fragment
     circuit outputs.
 
     .. note::
 
         This function is designed for use as part of the sampling-based circuit cutting workflow.
-        Check out the :func:`~.cut_circuit_mc` transform for more details.
+        Check out the :func:`qml.cut_circuit_mc() <pennylane.cut_circuit_mc>` transform for more details.
 
     Args:
-        results (Sequence[Sequence]): a collection of execution results generated from the
-            expansion of circuit fragments over measurement and preparation node configurations
+        results (Sequence): a collection of execution results generated from the
+            random expansion of circuit fragments over measurement and preparation node configurations
         communication_graph (nx.MultiDiGraph): the communication graph determining connectivity
             between circuit fragments
         shots (int): the number of shots
 
     Returns:
-        List[np.array]: the sampled output for all terminal measurements over the number of shots given
+        List[tensor_like]: the sampled output for all terminal measurements over the number of shots given
     """
+    res0 = results[0]
     results, out_degrees = _reshape_and_find_degrees(results, communication_graph, shots)
 
     samples = []
@@ -871,40 +872,42 @@ def qcut_processing_fn_sample(
         for fragment_result, out_degree in zip(result, out_degrees):
             sample.append(fragment_result[: -out_degree or None])
         samples.append(np.hstack(sample))
-    return [np.array(samples)]
+    return [qml.math.convert_like(np.array(samples), res0)]
 
 
 def qcut_processing_fn_mc(
-    results: Sequence[Sequence],
+    results: Sequence,
     communication_graph: MultiDiGraph,
-    settings: Tensor,
+    settings: np.ndarray,
     shots: int,
     classical_processing_fn: callable,
-) -> float:
+):
     """
-    Function to postprocess samples for the :func:`cut_circuit_mc() <pennylane.cut_circuit>`
+    Function to postprocess samples for the :func:`cut_circuit_mc() <pennylane.cut_circuit_mc>`
     transform. This takes a user-specified classical function to act on bitstrings and
     generates an expectation value.
 
     .. note::
 
         This function is designed for use as part of the sampling-based circuit cutting workflow.
-        Check out the :func:`~.cut_circuit_mc` transform for more details.
+        Check out the :func:`qml.cut_circuit_mc() <pennylane.cut_circuit_mc>` transform for more details.
 
     Args:
-        results (Sequence[Sequence]): a collection of execution results generated from the
-            expansion of circuit fragments over measurement and preparation node configurations
+        results (Sequence): a collection of execution results generated from the
+            random expansion of circuit fragments over measurement and preparation node configurations
         communication_graph (nx.MultiDiGraph): the communication graph determining connectivity
             between circuit fragments
-        settings (Tensor): each element is one of 8 unique values that determines and tracks the specific
+        settings (array): each element is one of 8 unique values that determines and tracks the specific
             measurement and preparation operations over all configurations
         shots (int): the number of shots
         classical_processing_fn (callable): a classical postprocessing function to be applied to
             the reconstructed bitstrings
 
     Returns:
-        float: the expectation value calculated in accordance to Eq.(35) of `Peng et.al <https://arxiv.org/abs/1904.00102>`__.
+        float or tensor_like: the expectation value calculated in accordance to Eq. (35) of
+        `Peng et.al <https://arxiv.org/abs/1904.00102>`__.
     """
+    res0 = results[0]
     results, out_degrees = _reshape_and_find_degrees(results, communication_graph, shots)
 
     evals = (0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
@@ -919,6 +922,8 @@ def qcut_processing_fn_mc(
 
         sample_terminal = np.hstack(sample_terminal)
         sample_mid = np.hstack(sample_mid)
+        assert set(sample_terminal).issubset({0, 1})
+        assert set(sample_mid).issubset({1, -1})
 
         # following Eq.(35) of Peng et.al: https://arxiv.org/abs/1904.00102
         f = classical_processing_fn(sample_terminal)
@@ -928,7 +933,7 @@ def qcut_processing_fn_mc(
         K = len(sample_mid)
         expvals.append(8**K * c_s * t_s)
 
-    return np.mean(expvals)
+    return qml.math.convert_like(np.mean(expvals), res0)
 
 
 def _get_symbol(i):
