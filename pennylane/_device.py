@@ -30,7 +30,7 @@ from pennylane.operation import (
     Observable,
     Tensor,
 )
-from pennylane.measurements import Sample, State, Variance, Expectation, Probability, MidMeasure
+from pennylane.measurements import MeasurementProcess, Sample, State, Variance, Expectation, Probability, MidMeasure
 from pennylane.wires import Wires, WireError
 
 
@@ -586,8 +586,6 @@ class Device(abc.ABC):
         function accepts a queuable object (including a PennyLane operation
         and observable) and returns ``True`` if supported by the device."""
         def f(obj):
-            if isinstance(obj, qml.tape.QuantumTape):
-                return False
             if isinstance(obj, qml.operation.Operation):
                 return self.supports_operation(obj)
             if isinstance(obj, qml.measurements.MeasurementProcess):
@@ -833,7 +831,7 @@ class Device(abc.ABC):
         """Checks if an operation is supported by this device.
 
         Args:
-            operation (Union[.Operation, type, str]): operation to be checked
+            operation ().Operation) operation to be checked
 
         Raises:
             ValueError: if `operation` is not a :class:`~.Operation` instance, class, or string
@@ -841,32 +839,14 @@ class Device(abc.ABC):
         Returns:
             bool: ``True`` iff supplied operation is supported
         """
-        if isinstance(operation, Operation):
-            return operation.__class__.__name__ in self.operations
-        if isinstance(operation, type) and issubclass(operation, Operation):
-            return operation.__name__ in self.operations
-        if isinstance(operation, str):
-
-            if operation.endswith(".inv"):
-                in_ops = operation[:-4] in self.operations
-                # TODO: update when all capabilities keys changed to "supports_inverse_operations"
-                supports_inv = self.capabilities().get(
-                    "supports_inverse_operations", False
-                ) or self.capabilities().get("inverse_operations", False)
-                return in_ops and supports_inv
-
-            return operation in self.operations
-
-        raise ValueError(
-            "The given operation must either be a pennylane.Operation class or a string."
-        )
+        return operation.__class__.__name__ in self.operations
 
     def supports_observable(self, observable):
         """Checks if an observable is supported by this device. Raises a ValueError,
          if not a subclass or string of an Observable was passed.
 
         Args:
-            observable (Union[.Observable, type, str]): observable to be checked
+            observable (Union[.Observable, .MeasurementProcess]): observable to be checked
 
         Raises:
             ValueError: if `observable` is not a :class:`~.Observable` instance, class, or string
@@ -874,21 +854,12 @@ class Device(abc.ABC):
         Returns:
             bool: ``True`` iff supplied observable is supported
         """
-        if isinstance(observable, Observable):
-            return observable.__class__.__name__ in self.observables
-        if isinstance(observable, type) and issubclass(observable, Observable):
-            return observable.__name__ in self.observables
-        if isinstance(observable, str):
-
-            # This check regards observables that are also operations
-            if observable.endswith(".inv"):
-                return self.supports_operation(observable[:-4])
-
-            return observable in self.observables
-
-        raise ValueError(
-            "The given observable must either be a pennylane.Observable class or a string."
-        )
+        if isinstance(observable, MeasurementProcess):
+            if observable.obs is None:
+                return True
+            observable = observable.obs
+        return observable.__class__.__name__ in self.observables
+        
 
     def check_validity(self, queue, observables):
         """Checks whether the operations and observables in queue are all supported by the device.
@@ -951,7 +922,6 @@ class Device(abc.ABC):
                             f"Observable {i.name} not supported on device {self.short_name}"
                         )
             else:
-                observable_name = o.name
 
                 if issubclass(o.__class__, Operation) and o.inverse:
                     # TODO: update when all capabilities keys changed to "supports_inverse_operations"
@@ -962,11 +932,10 @@ class Device(abc.ABC):
                         raise DeviceError(
                             f"The inverse of gates are not supported on device {self.short_name}"
                         )
-                    observable_name = o.base_name
 
-                if not self.supports_observable(observable_name):
+                if not self.supports_observable(o):
                     raise DeviceError(
-                        f"Observable {observable_name} not supported on device {self.short_name}"
+                        f"Observable {o.name} not supported on device {self.short_name}"
                     )
 
     @abc.abstractmethod
