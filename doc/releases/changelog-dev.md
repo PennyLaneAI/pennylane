@@ -7,7 +7,7 @@
 * Added a swap based transpiler transform.
   [(#2118)](https://github.com/PennyLaneAI/pennylane/pull/2118)
 
-  The transpile function takes a quantum function and a coupling map as inputs and compiles the tape to ensure that it can be 
+  The transpile function takes a quantum function and a coupling map as inputs and compiles the circuit to ensure that it can be 
   executed on corresponding hardware. The transform can be used as a decorator in the following way:
 
   ```python
