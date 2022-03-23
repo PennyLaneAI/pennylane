@@ -698,12 +698,12 @@ def _boys(n, t):
         (array[float]): value of the Boys function
     """
     return anp.where(
-        t == 0,
+        t == 0.0,
         1 / (2 * n + 1),
-        asp.special.gammainc(n + 0.5, t + (t == 0))
+        asp.special.gammainc(n + 0.5, t + (t == 0.0))
         * asp.special.gamma(n + 0.5)
-        / (2 * (t + (t == 0)) ** (n + 0.5)),
-    )  # (t == 0) is added to avoid divide by zero
+        / (2 * (t + (t == 0.0)) ** (n + 0.5)),
+    )  # (t == 0.0) is added to avoid divide by zero
 
 
 def _hermite_coulomb(t, u, v, n, p, dr):
