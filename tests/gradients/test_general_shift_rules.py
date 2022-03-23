@@ -17,7 +17,6 @@ import pytest
 import numpy as np
 import pennylane as qml
 
-# from pennylane import numpy as np
 from pennylane.gradients.general_shift_rules import (
     generate_shift_rule,
     _get_shift_rule,

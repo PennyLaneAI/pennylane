@@ -96,7 +96,7 @@ def expval_hessian_param_shift(
     post-processing function to combine the results of evaluating the Hessian tapes.
 
     Args:
-        tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        tape (.QuantumTape): quantum tape to differentiate
         argnum (int or list[int] or None): Parameter indices to differentiate
             with respect to. If not provided, the Hessian with respect to all
             trainable indices is returned. Note that the indices refer to tape

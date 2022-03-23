@@ -54,7 +54,7 @@
   gradients, using `qml.gradients.param_shift_hessian`
   [(#2319)](https://github.com/XanaduAI/pennylane/pull/2319)
 
-  As for `qml.gradients.param_shift`, multiple ways to obtain the
+  Multiple ways to obtain the
   gradient recipe are supported, in the following order of preference:
 
   - A custom `grad_recipe`. It is iterated to obtain the shift rule for
