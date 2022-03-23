@@ -18,7 +18,7 @@ values can be used to simulate molecular properties.
 import pennylane as qml
 import numpy as np
 
-from . import openfermion, structure
+from . import openfermion
 
 
 def _spin2_matrix_elements(sz):
