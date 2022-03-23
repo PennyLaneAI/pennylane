@@ -296,20 +296,27 @@ class QubitDevice(Device):
 
         if not circuit.is_sampled:
 
-            if (
-                len(circuit.measurements) == 1
-                and circuit.measurements[0].return_type is qml.measurements.State
+            ret_types = [m.return_type for m in circuit.measurements]
+
+            if len(circuit.measurements) == 1:
+                if circuit.measurements[0].return_type is qml.measurements.State:
+                    # State: assumed to only be allowed if it's the only measurement
+                    results = self._asarray(results, dtype=self.C_DTYPE)
+                else:
+                    # Measurements with expval, var or probs
+                    results = self._asarray(results, dtype=self.R_DTYPE)
+
+            elif all(
+                ret in (qml.measurements.Expectation, qml.measurements.Variance)
+                for ret in ret_types
             ):
-                # State is assumed to be the only measurement
-                results = self._asarray(results, dtype=self.C_DTYPE)
-            else:
-                # Expval, var or probs
+                # Measurements with expval, var or only one probs
                 results = self._asarray(results, dtype=self.R_DTYPE)
+            else:
+                results = self._asarray(results)
 
         elif circuit.all_sampled and not self._has_partitioned_shots():
 
-            # TODO: update the dtype for Sample such that it depends on the
-            # eigenvalues of the observable
             results = self._asarray(results)
         else:
             results = tuple(self._asarray(r) for r in results)
