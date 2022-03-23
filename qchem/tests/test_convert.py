@@ -463,7 +463,9 @@ def test_pennylane_to_openfermion_no_decomp():
         qml.operation.Tensor(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w2"])),
     ]
     op_str = str(
-        qchem.convert._pennylane_to_openfermion(coeffs, ops, wires=qml.wires.Wires(["w0", "w1", "w2"]))
+        qchem.convert._pennylane_to_openfermion(
+            coeffs, ops, wires=qml.wires.Wires(["w0", "w1", "w2"])
+        )
     )
 
     # Remove new line characters
