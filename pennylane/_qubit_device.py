@@ -296,7 +296,10 @@ class QubitDevice(Device):
 
         if not circuit.is_sampled:
 
-            if len(circuit.measurements) == 1 and circuit.measurements[0] is qml.measurements.State:
+            if (
+                len(circuit.measurements) == 1
+                and circuit.measurements[0].return_type is qml.measurements.State
+            ):
                 # State is assumed to be the only measurement
                 results = self._asarray(results, dtype=self.C_DTYPE)
             else:
