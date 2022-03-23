@@ -270,7 +270,7 @@ class batch_transform:
         and returns a function that 'wraps' the QNode execution.
 
         The returned function should accept the same keyword arguments as
-        the QNode, and return the output of the applying the tape transform
+        the QNode, and return the output of applying the tape transform
         to the QNode's constructed tape.
         """
         transform_max_diff = tkwargs.pop("max_diff", None)

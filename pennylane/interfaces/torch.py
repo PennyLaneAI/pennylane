@@ -52,7 +52,7 @@ class ExecuteTapes(torch.autograd.Function):
         for backward passes
       * ``"gradient_kwargs"``: gradient keyword arguments to pass to the
         gradient function
-      * ``"max_diff`"`: the maximum order of derivatives to support
+      * ``"max_diff``: the maximum order of derivatives to support
 
     Further, note that the ``parameters`` argument is dependent on the
     ``tapes``; this function should always be called

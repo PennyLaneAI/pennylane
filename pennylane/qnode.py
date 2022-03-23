@@ -24,7 +24,7 @@ import autograd
 
 import pennylane as qml
 from pennylane import Device
-from pennylane.interfaces.batch import set_shots, SUPPORTED_INTERFACES
+from pennylane.interfaces import set_shots, SUPPORTED_INTERFACES
 
 
 class QNode:
@@ -486,6 +486,7 @@ class QNode:
 
         with self.tape:
             self._qfunc_output = self.func(*args, **kwargs)
+        self._tape._qfunc_output = self._qfunc_output
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)

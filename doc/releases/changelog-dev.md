@@ -4,13 +4,39 @@
 
 <h3>New features since last release</h3>
 
+* A differentiable quantum chemistry module is added to `qml.qchem`. The new module inherits a 
+  modified version of the differentiable Hartree-Fock solver from `qml.hf`, contains new functions
+  for building a differentiable dipole moment observable and also contains modified functions for 
+  building spin and particle number observables independent of external libraries.
+
+  - New functions are added for computing multipole moment molecular integrals
+    [(#2166)](https://github.com/PennyLaneAI/pennylane/pull/2166)
+  - New functions are added for building a differentiable dipole moment observable
+    [(#2173)](https://github.com/PennyLaneAI/pennylane/pull/2173)
+  - External dependencies are replaced with local functions for spin and particle number observables
+    [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
+  - New functions are added for building fermionic and qubit observables
+    [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
+  - A new module is created for hosting openfermion to pennylane observable conversion functions
+    [(#2199)](https://github.com/PennyLaneAI/pennylane/pull/2199)
+  - Expressive names are used for the Hartree-Fock solver functions
+    [(#2272)](https://github.com/PennyLaneAI/pennylane/pull/2272)
+  - These new additions are added to a feature branch
+    [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
+
 * Development of a circuit-cutting compiler extension to circuits with sampling
   measurements has begun:
 
-  - The existing `qcut.tape_to_graph()` method has been extended to convert a
+    - The existing `qcut.tape_to_graph()` method has been extended to convert a
     sample measurement without an observable specified to multiple single-qubit sample
     nodes.
     [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
+  - An automatic graph partitioning method `qcut.kahypar_cut()` has been implemented for cutting
+    arbitrary tape-converted graphs using the general purpose graph partitioning framework
+    [KaHyPar](https://pypi.org/project/kahypar/) which needs to be installed separately.
+    To integrate with the existing manual cut pipeline, method `qcut.find_and_place_cuts()` and related
+    utilities are implemented which uses `qcut.kahypar_cut()` as the default auto cutter.
+    [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
 
   - The existing `qcut.graph_to_tape()` method has been extended to convert
     graphs containing sample measurement nodes to tapes.
@@ -22,6 +48,11 @@
     [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
 
 <h3>Improvements</h3>
+
+* `default.qubit` and `default.mixed` now skip over identity operators instead of performing matrix multiplication
+  with the identity.
+  [(#2356)](https://github.com/PennyLaneAI/pennylane/pull/2356)
+  [(#2365)](https://github.com/PennyLaneAI/pennylane/pull/2365)
 
 * `QuantumTape` objects are now iterable and accessing the
   operations and measurements of the underlying quantum circuit is more
@@ -117,17 +148,25 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 * The deprecated QNode, available via `qml.qnode_old.QNode`, has been removed. Please
   transition to using the standard `qml.QNode`.
   [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
+  [(#2337)](https://github.com/PennyLaneAI/pennylane/pull/2337)
+  [(#2338)](https://github.com/PennyLaneAI/pennylane/pull/2338)
 
-* The deprecated, non-batch compatible interfaces, have been removed.
-  [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
+  In addition, several other components which powered the deprecated QNode have been removed:
 
-* The deprecated tape subclasses `QubitParamShiftTape`, `JacobianTape`, `CVParamShiftTape`, and
-  `ReversibleTape` have been removed.
-  [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
+  - The deprecated, non-batch compatible interfaces, have been removed.
+  
+  - The deprecated tape subclasses `QubitParamShiftTape`, `JacobianTape`, `CVParamShiftTape`, and
+    `ReversibleTape` have been removed.
+
+* The deprecated tape execution method `tape.execute(device)` has been removed. Please use
+  `qml.execute([tape], device)` instead.
+  [(#2339)](https://github.com/PennyLaneAI/pennylane/pull/2339)
 
 <h3>Bug fixes</h3>
 
-<h3>Bug fixes</h3>
+* Fixes cases with `qml.measure` where unexpected operations were added to the
+  circuit.
+  [(#2328)](https://github.com/PennyLaneAI/pennylane/pull/2328)
 
 * Fixes a bug in which the `expval`/`var` of a `Tensor(Observable)` would depend on the order 
   in which the observable is defined: 
@@ -156,5 +195,6 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Anthony Hayes,
-Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Jay Soni, Antal Száva.
+Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
+Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
+Jay Soni, Antal Száva.
