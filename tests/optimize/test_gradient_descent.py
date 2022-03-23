@@ -226,15 +226,9 @@ class TestGradientDescentOptimizer:
         assert opt.stepsize == eta
 
         eta2 = 0.1
-        opt.update_stepsize(eta2)
+        with pytest.warns(UserWarning, match="'update_stepsize' is deprecated. Stepsize value can"):
+            opt.update_stepsize(eta2)
         assert opt.stepsize == eta2
-
-        with pytest.warns(
-            UserWarning,
-            match="'update_stepsize' is deprecated. Stepsize value can be updated using "
-            "the 'stepsize' attribute.",
-        ):
-            opt.update_stepsize(eta)
 
     def test_private_stepsize(self):
         """
@@ -243,18 +237,10 @@ class TestGradientDescentOptimizer:
         """
         eta = 0.5
         opt = GradientDescentOptimizer(eta)
-        assert opt._stepsize == eta
-
-        with pytest.warns(
-            UserWarning, match="'_stepsize' is deprecated. Please use 'stepsize' instead."
-        ):
-            opt._stepsize
+        with pytest.warns(UserWarning, match="'_stepsize' is deprecated. Please use 'stepsize'"):
+            assert opt._stepsize == eta
 
         eta2 = 0.1
-        opt._stepsize = eta2
-        assert opt.stepsize == eta2
-
-        with pytest.warns(
-            UserWarning, match="'_stepsize' is deprecated. Please use 'stepsize' instead."
-        ):
+        with pytest.warns(UserWarning, match="'_stepsize' is deprecated. Please use 'stepsize'"):
             opt._stepsize = eta2
+        assert opt.stepsize == eta2
