@@ -21,7 +21,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
     .. warning::
 
         This transform does not yet support measurements of Hamiltonians or tensor products of observables. If a circuit
-        is passed which contains these types of measurements, a NotImplementedError will be raised.
+        is passed which contains these types of measurements, a ``NotImplementedError`` will be raised.
 
     Args:
         tape (function): A quantum function.
