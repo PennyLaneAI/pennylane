@@ -776,7 +776,7 @@ class MeasurementValue(Generic[T]):
                     self.zero_case.merge(other.zero_case),
                     self.one_case.merge(other.one_case),
                 )
-            if self.depends_on < other.depends_on:
+            if self.depends_on < other.depends_on:  # organize tree structure based on lexicographical order of uuids
                 return MeasurementValue(
                     self.depends_on,
                     self.zero_case.merge(other),
