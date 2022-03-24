@@ -664,7 +664,7 @@ def test_gradient_repulsion(symbols, geometry, alpha, coeff):
 
 @pytest.mark.parametrize(
     ("n", "t", "f_ref"),
-    [(1.25, 0.00, 0.2857142857142857), (2.75, 1.23, 0.061750771828252976)],
+    [(2.75, np.array([0.0, 1.23]), np.array([0.15384615384615385, 0.061750771828252976]))],
 )
 def test_boys(n, t, f_ref):
     r"""Test that the Boys function is evaluated correctly."""
