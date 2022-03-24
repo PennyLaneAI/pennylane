@@ -53,16 +53,16 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
 
     .. code-block:: python
 
-    def circuit():
-        qml.S(wires=0)
-        qml.PauliZ(wires=0)
-        qml.S(wires=1)
-        qml.CZ(wires=[0, 1])
-        qml.S(wires=1)
-        qml.S(wires=2)
-        qml.CZ(wires=[1, 2])
-        qml.S(wires=2)
-        return qml.expval(qml.PauliX(wires=0))
+        def circuit():
+            qml.S(wires=0)
+            qml.PauliZ(wires=0)
+            qml.S(wires=1)
+            qml.CZ(wires=[0, 1])
+            qml.S(wires=1)
+            qml.S(wires=2)
+            qml.CZ(wires=[1, 2])
+            qml.S(wires=2)
+            return qml.expval(qml.PauliX(wires=0))
 
     Therefore we use the following pattern that implements the identity:
 
