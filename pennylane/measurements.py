@@ -828,7 +828,11 @@ class MeasurementValue(Generic[T]):
         return apply_to_measurement(lambda x, y: x == y)(self, other)
 
     def __str__(self):
-        return f"{type(self).__name__}({repr(self.depends_on)}, {repr(self.zero_case)}, {repr(self.one_case)}"
+        measurements = self.measurements
+        lines = []
+        for k, v in self.branches.items():
+            lines.append("if " + ",".join([f"wire_{measurements[i]}={k[i]}" for i in range(len(measurements))]) + " => " + str(v))
+        return "\n".join(lines)
 
     def __repr__(self):
         return f"{type(self).__name__}({repr(self.depends_on)}, {repr(self.zero_case)}, {repr(self.one_case)}"
