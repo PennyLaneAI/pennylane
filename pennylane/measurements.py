@@ -754,17 +754,17 @@ class MeasurementValue(Generic[T]):
 
         .. code-block:: python
 
-            if wire_1=0 => 100
-            if wire_1=1 => 67
+            if fdjaibjs=0 => 100
+            if fdjaibjs=1 => 67
 
         will result in:
 
         .. code-block:: python
 
-            dfajif=0,wire_1=0 => 3.4,100
-            wire_0=0,wire_1=1 => 3.4,67
-            wire_0=1,wire_1=0 => 1,100
-            wire_0=1,wire_1=1 => 1,67
+            if fdjaibjs=0,sfdfajif=0 => 3.4,100
+            if fdjaibjs=0,sfdfajif=1 => 3.4,67
+            if fdjaibjs=1,sfdfajif=0 => 1,100
+            if fdjaibjs=0,sfdfajif=1 => 1,67
 
         (note the uuids in the example represent distinct measurements of different qubit.)
 
