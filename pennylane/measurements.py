@@ -831,7 +831,7 @@ class MeasurementValue(Generic[T]):
         m = self.measurements
         lines = []
         for k, v in self.branches.items():
-            lines.append("if " + ",".join([f"wire_{m[i]}={k[i]}" for i in range(len(m))]) + " => " + str(v))
+            lines.append("if " + ",".join([f"{m[i].depends_on}={k[i]}" for i in range(len(m))]) + " => " + str(v))
         return "\n".join(lines)
 
     def __repr__(self):
