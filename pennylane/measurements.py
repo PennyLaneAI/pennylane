@@ -828,10 +828,10 @@ class MeasurementValue(Generic[T]):
         return apply_to_measurement(lambda x, y: x == y)(self, other)
 
     def __str__(self):
-        measurements = self.measurements
+        m = self.measurements
         lines = []
         for k, v in self.branches.items():
-            lines.append("if " + ",".join([f"wire_{measurements[i]}={k[i]}" for i in range(len(measurements))]) + " => " + str(v))
+            lines.append("if " + ",".join([f"wire_{m[i]}={k[i]}" for i in range(len(m))]) + " => " + str(v))
         return "\n".join(lines)
 
     def __repr__(self):
