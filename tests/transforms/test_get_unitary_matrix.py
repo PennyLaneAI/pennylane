@@ -163,7 +163,7 @@ def test_get_unitary_matrix_MultiControlledX():
     wires = [0, 1, 2, 3, 4, 5]
 
     def testcircuit():
-        qml.MultiControlledX(control_wires=[0, 2, 4, 5], wires=3)
+        qml.MultiControlledX(wires=[0, 2, 4, 5, 3])
 
     state0 = [1, 0]
     state1 = [0, 1]
