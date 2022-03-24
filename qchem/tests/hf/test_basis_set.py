@@ -24,22 +24,21 @@ from pennylane import qchem
 class TestBasis:
     """Tests for generating basis set default parameters"""
 
-    basis_data_H = [
-        (
-            "sto-3g",
-            "H",
-            1,
-            [(0, 0, 0)],
-            [0.3425250914e01, 0.6239137298e00, 0.1688554040e00],
-            [0.1543289673e00, 0.5353281423e00, 0.4446345422e00],
-            [0.0000000000e00, 0.0000000000e00, -0.694349000e00],
-        )
-    ]
-
-    @pytest.mark.parametrize("basis_data", basis_data_H)
-    def test_basisfunction(self, basis_data):
+    @pytest.mark.parametrize(
+        ("basis_name", "atom_name", "l", "alpha", "coeff", "r"),
+        [
+            (
+                "sto-3g",
+                "H",
+                (0, 0, 0),
+                [0.3425250914e01, 0.6239137298e00, 0.1688554040e00],
+                [0.1543289673e00, 0.5353281423e00, 0.4446345422e00],
+                [0.0000000000e00, 0.0000000000e00, -0.694349000e00],
+            ),
+        ],
+    )
+    def test_basisfunction(self, basis_name, atom_name, l, alpha, coeff, r):
         """Test that BasisFunction class creates basis function objects correctly."""
-        _, _, _, l, alpha, coeff, r = basis_data
 
         basis_function = qchem.hf.BasisFunction(l, alpha, coeff, r)
 
