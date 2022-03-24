@@ -1205,7 +1205,6 @@ class TestGrouping:
 
 
 class TestHamiltonianCoefficientCasting:
-
     def test_int_to_float_casting(self):
         h = 0.5 * (qml.PauliX(0) @ qml.PauliX(0) + qml.PauliY(0) @ qml.PauliY(1))
         assert np.all(h.coeffs == np.array([0.5, 0.5]))
