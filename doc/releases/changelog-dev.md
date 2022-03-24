@@ -124,6 +124,9 @@
 
 <h3>Breaking changes</h3>
 
+* Most optimizers no longer flatten and unflatten arguments during computation. Due to this change, user
+  provided gradient functions *must* return the same shape as `qml.grad`.
+
 * The old circuit text drawing infrastructure is being deleted.
   [(#2310)](https://github.com/PennyLaneAI/pennylane/pull/2310)
 
