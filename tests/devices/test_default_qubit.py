@@ -2342,7 +2342,7 @@ class TestApplyOperationUnit:
             assert np.allclose(res_wires, wires)
 
     def test_identity_skipped(self, mocker):
-        """Test identity operation does not perform additional computations."""
+        """Test that applying the identity operation does not perform any additional computations."""
         dev = qml.device("default.qubit", wires=1)
 
         starting_state = np.array([1, 0])

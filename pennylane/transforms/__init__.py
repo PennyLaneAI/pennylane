@@ -75,6 +75,7 @@ This set of transforms accept quantum functions, and perform basic circuit compi
     ~transforms.remove_barrier
     ~transforms.undo_swaps
     ~transforms.pattern_matching_optimization
+    ~transforms.transpile
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -212,5 +213,6 @@ from .tape_expand import (
     create_decomp_expand_fn,
     set_decomposition,
 )
+from .transpile import transpile
 from . import qcut
 from .qcut import cut_circuit
