@@ -380,14 +380,14 @@ def simplify(h, cutoff=1.0e-12):
 
     c = []
     o = []
-    for i, op in enumerate(h.terms()[1]):
+    for i, op in enumerate(h.ops):
         op = qml.operation.Tensor(op).prune()
         op = qml.grouping.pauli_word_to_string(op, wire_map=wiremap)
         if op not in o:
-            c.append(h.terms()[0][i])
+            c.append(h.coeffs[i])
             o.append(op)
         else:
-            c[o.index(op)] += h.terms()[0][i]
+            c[o.index(op)] += h.coeffs[i]
 
     coeffs = []
     ops = []
