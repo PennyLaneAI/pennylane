@@ -681,7 +681,7 @@ class MeasurementLeaf(Generic[T]):
 
     def merge(self, other: Union["MeasurementValue", "MeasurementLeaf"]):
         """
-        Works with MeasurementDependantValue._merge
+        Works with MeasurementDependantValue.merge
         """
         if isinstance(other, MeasurementValue):
             return MeasurementValue(
@@ -691,7 +691,7 @@ class MeasurementLeaf(Generic[T]):
 
     def transform_leaves_inplace(self, func):
         """
-        Works with MeasurementDependantValue._transform_leaves
+        Works with MeasurementDependantValue.transform_leaves
         """
         self._values = (func(*self._values),)
 
@@ -713,6 +713,9 @@ class MeasurementValue(Generic[T]):
     """A class representing unknown measurement outcomes in the qubit model.
 
     Measurements on a single qubit in the computational basis are assumed.
+
+    This type should not be instantiated directly by the user. It is intended to be created by the `qml.measure`
+    function.
 
     Args:
         measurement_id (str): The id of the measurement that this object depends on.
