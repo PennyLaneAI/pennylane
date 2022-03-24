@@ -1203,11 +1203,13 @@ class TestGrouping:
         H3.compute_grouping(method="lf")
         assert H3.grouping_indices == [[2, 1], [0]]
 
+
 class TestHamiltonianCoefficientCasting:
 
     def test_int_to_float_casting(self):
         h = 0.5 * (qml.PauliX(0) @ qml.PauliX(0) + qml.PauliY(0) @ qml.PauliY(1))
         assert np.all(h.coeffs == np.array([0.5, 0.5]))
+
 
 class TestHamiltonianEvaluation:
     """Test the usage of a Hamiltonian as an observable"""
