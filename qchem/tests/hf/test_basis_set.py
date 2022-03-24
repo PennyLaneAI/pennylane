@@ -31,6 +31,7 @@ class TestBasis:
                 "sto-3g",
                 "H",
                 (0, 0, 0),
+                # data manually copied from https://www.basissetexchange.org/
                 [0.3425250914e01, 0.6239137298e00, 0.1688554040e00],
                 [0.1543289673e00, 0.5353281423e00, 0.4446345422e00],
                 [0.0000000000e00, 0.0000000000e00, -0.694349000e00],
@@ -52,14 +53,34 @@ class TestBasis:
 
     @pytest.mark.parametrize(
         ("basis_name", "atom_name", "params_ref"),
-        [
+        [  # data manually copied from https://www.basissetexchange.org/
             (
                 "sto-3g",
                 "H",
                 (
-                    (0, 0, 0),
-                    [0.3425250914e01, 0.6239137298e00, 0.1688554040e00],
-                    [0.1543289673e00, 0.5353281423e00, 0.4446345422e00],
+                    [
+                        (
+                            (0, 0, 0),  # l
+                            [0.3425250914e01, 0.6239137298e00, 0.1688554040e00],  # alpha
+                            [0.1543289673e00, 0.5353281423e00, 0.4446345422e00],  # coeff
+                        )
+                    ]
+                ),
+            ),
+            (
+                "6-31g",
+                "H",
+                (
+                    (
+                        (0, 0, 0),  # l
+                        [0.1873113696e02, 0.2825394365e01, 0.6401216923e00],  # alpha
+                        [0.3349460434e-01, 0.2347269535e00, 0.8137573261e00],  # coeff
+                    ),
+                    (
+                        (0, 0, 0),  # l
+                        [0.1612777588e00],  # alpha
+                        [1.0000000],  # coeff
+                    ),
                 ),
             ),
         ],
@@ -68,36 +89,18 @@ class TestBasis:
         """Test that correct basis set parameters are generated for a given atom."""
         params = qchem.hf.atom_basis_data(basis_name, atom_name)
 
-        assert np.allclose(params, params_ref)
+        l = [p[0] for p in params]
+        l_ref = [p[0] for p in params_ref]
 
-    @pytest.mark.parametrize(
-        ("basis_name", "atom_name", "params_ref"),
-        [
-            (
-                "6-31g",
-                "H",
-                (
-                    (
-                        (0, 0, 0),
-                        [0.1873113696e02, 0.2825394365e01, 0.6401216923e00],
-                        [0.3349460434e-01, 0.2347269535e00, 0.8137573261e00],
-                    ),
-                    (
-                        (0, 0, 0),
-                        [0.1612777588e00],
-                        [1.0000000],
-                    ),
-                ),
-            ),
-        ],
-    )
-    def test_atom_basis_data_631g(self, basis_name, atom_name, params_ref):
-        """Test that correct basis set parameters are generated for a given atom."""
-        params = qchem.hf.atom_basis_data(basis_name, atom_name)
+        alpha = [p[1] for p in params]
+        alpha_ref = [p[1] for p in params_ref]
 
-        assert np.allclose(params[0], params_ref[0])
-        assert np.allclose(params[1][0], params_ref[1][0])
-        assert np.allclose(params[1][1:], params_ref[1][1:])
+        coeff = [p[2] for p in params]
+        coeff_ref = [p[2] for p in params_ref]
+
+        assert l == l_ref
+        assert alpha == alpha_ref
+        assert coeff == coeff_ref
 
     basis_data_HF = [
         (
