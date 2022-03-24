@@ -638,10 +638,10 @@ class MeasurementValueError(ValueError):
 
 
 # pylint: disable=protected-access
-def apply_to_measurement(fun: Callable):
+def apply_to_measurement(func: Callable):
     """
     Apply an arbitrary function to a `MeasurementValue` or set of `MeasurementValue`s.
-    (fun should be a "pure" function)
+    (func should be a "pure" function)
 
     Ex:
 
@@ -651,7 +651,7 @@ def apply_to_measurement(fun: Callable):
         m0_sin = qml.apply_to_measurement(np.sin)(m0)
     """
 
-    @functools.wraps(fun)
+    @functools.wraps(func)
     def wrapper(*args, **kwargs):
         partial = _Value()
         for arg in args:
@@ -659,7 +659,7 @@ def apply_to_measurement(fun: Callable):
                 arg = _Value(arg)
             partial = partial._merge(arg)
         partial._transform_leaves_inplace(
-            lambda *unwrapped: fun(*unwrapped, **kwargs)  # pylint: disable=unnecessary-lambda
+            lambda *unwrapped: func(*unwrapped, **kwargs)  # pylint: disable=unnecessary-lambda
         )
         return partial
     return wrapper
@@ -686,11 +686,11 @@ class _Value(Generic[T]):
             )
         return _Value(*self._values, *other._values)
 
-    def _transform_leaves_inplace(self, fun):
+    def _transform_leaves_inplace(self, func):
         """
         Works with MeasurementDependantValue._transform_leaves
         """
-        self._values = (fun(*self._values),)
+        self._values = (func(*self._values),)
 
     @property
     def values(self):
@@ -782,12 +782,12 @@ class MeasurementValue(Generic[T]):
             self._one_case._merge(other),
         )
 
-    def _transform_leaves_inplace(self, fun: Callable):
+    def _transform_leaves_inplace(self, func: Callable):
         """
-        Transform the leaves of a MeasurementDependantValue with `fun`.
+        Transform the leaves of a MeasurementDependantValue with `func`.
         """
-        self._zero_case._transform_leaves_inplace(fun)
-        self._one_case._transform_leaves_inplace(fun)
+        self._zero_case._transform_leaves_inplace(func)
+        self._one_case._transform_leaves_inplace(func)
 
     @property
     def branches(self):
