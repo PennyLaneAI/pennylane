@@ -2,11 +2,10 @@ import os
 
 import numpy as np
 import pytest
-
-from pennylane import qchem
-
 from openfermion import QubitOperator
 
+import pennylane as qml
+from pennylane import qchem
 
 me_1 = np.array(
     [
@@ -198,7 +197,7 @@ def test_spin2(electrons, orbitals, mapping, terms_exp, monkeypatch):
     S2_qubit_op = QubitOperator()
     monkeypatch.setattr(S2_qubit_op, "terms", terms_exp)
 
-    assert qchem.convert._openfermion_pennylane_equivalent(S2_qubit_op, S2)
+    assert qml.convert._openfermion_pennylane_equivalent(S2_qubit_op, S2)
 
 
 @pytest.mark.parametrize(

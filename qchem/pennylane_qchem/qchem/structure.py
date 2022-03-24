@@ -624,7 +624,7 @@ def molecular_hamiltonian(
 
     h_of, qubits = (decompose(hf_file, mapping, core, active), 2 * len(active))
 
-    return qml.qchem.convert.import_operator(h_of, wires=wires), qubits
+    return qml.convert.import_operator(h_of, wires=wires), qubits
 
 
 def excitations(electrons, orbitals, delta_sz=0):

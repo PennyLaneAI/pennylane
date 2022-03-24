@@ -2,11 +2,10 @@ import os
 
 import numpy as np
 import pytest
-
-from pennylane import qchem
-
 from openfermion import QubitOperator
 
+import pennylane as qml
+from pennylane import qchem
 
 terms_1_jw = {
     ((0, "Z"),): (-0.25 + 0j),
@@ -46,7 +45,7 @@ def test_spin_z(orbitals, mapping, terms_exp, monkeypatch):
     Sz_qubit_op = QubitOperator()
     monkeypatch.setattr(Sz_qubit_op, "terms", terms_exp)
 
-    assert qchem.convert._openfermion_pennylane_equivalent(Sz_qubit_op, Sz)
+    assert qml.convert._openfermion_pennylane_equivalent(Sz_qubit_op, Sz)
 
 
 @pytest.mark.parametrize(

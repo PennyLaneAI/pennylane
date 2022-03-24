@@ -14,9 +14,10 @@
 """This module contains functions to construct many-body observables whose expectation
 values can be used to simulate molecular properties.
 """
+import numpy as np
+
 # pylint: disable=too-many-arguments, too-few-public-methods
 import pennylane as qml
-import numpy as np
 
 from . import openfermion
 
@@ -307,13 +308,11 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
     # Map the fermionic operator to a qubit operator
     if mapping.strip().lower() == "bravyi_kitaev":
-        return qml.qchem.convert.import_operator(
+        return qml.convert.import_operator(
             openfermion.transforms.bravyi_kitaev(mb_obs), wires=wires
         )
 
-    return qml.qchem.convert.import_operator(
-        openfermion.transforms.jordan_wigner(mb_obs), wires=wires
-    )
+    return qml.convert.import_operator(openfermion.transforms.jordan_wigner(mb_obs), wires=wires)
 
 
 def spin_z(orbitals, mapping="jordan_wigner", wires=None):

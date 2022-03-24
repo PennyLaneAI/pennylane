@@ -2,10 +2,10 @@ import os
 
 import numpy as np
 import pytest
-
-from pennylane import qchem
-
 from openfermion import QubitOperator
+
+import pennylane as qml
+from pennylane import qchem
 
 terms_h20_jw_full = {
     (): (7 + 0j),
@@ -85,7 +85,7 @@ def test_particle_number_observable(orbitals, mapping, terms_exp, custom_wires, 
     particle_number_qubit_op = QubitOperator()
     monkeypatch.setattr(particle_number_qubit_op, "terms", terms_exp)
 
-    assert qchem.convert._openfermion_pennylane_equivalent(
+    assert qml.convert._openfermion_pennylane_equivalent(
         particle_number_qubit_op, N, wires=custom_wires
     )
 
