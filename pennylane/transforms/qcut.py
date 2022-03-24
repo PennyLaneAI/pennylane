@@ -16,6 +16,7 @@ Functions for performing quantum circuit cutting.
 """
 
 import copy
+import inspect
 import string
 import uuid
 import warnings
@@ -937,6 +938,91 @@ def qcut_processing_fn_mc(
         expvals.append(8**K * c_s * t_s)
 
     return qml.math.convert_like(np.mean(expvals), res0)
+
+
+@batch_transform
+def cut_circuit_mc(
+    tape: QuantumTape,
+    shots: int,
+    device_wires: Optional[Wires] = None,
+    max_depth: int = 1,
+    classical_processing_fn: callable = None,
+) -> Tuple[Tuple[QuantumTape], Callable]:
+    """
+    TODO: Docstring
+    """
+
+    g = tape_to_graph(tape)
+    replace_wire_cut_nodes(g)
+    fragments, communication_graph = fragment_graph(g)
+    fragment_tapes = [graph_to_tape(f) for f in fragments]
+    fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
+
+    configurations, settings = expand_fragment_tapes_mc(
+        fragment_tapes, communication_graph, shots=shots
+    )
+
+    tapes = tuple(tape for c in configurations for tape in c)
+
+    if classical_processing_fn:
+        return tapes, partial(
+            qcut_processing_fn_mc,
+            communication_graph=communication_graph,
+            settings=settings,
+            shots=shots,
+            classical_processing_fn=classical_processing_fn,
+        )
+    else:
+        return tapes, partial(
+            qcut_processing_fn_sample, communication_graph=communication_graph, shots=shots
+        )
+
+
+@cut_circuit_mc.custom_qnode_wrapper
+def qnode_execution_wrapper(self, qnode, targs, tkwargs):
+    """Here, we overwrite the QNode execution wrapper in order
+    to replace execution variables"""
+
+    transform_max_diff = tkwargs.pop("max_diff", None)
+
+    if "shots" in inspect.signature(qnode.func).parameters:
+        raise ValueError(
+            "Detected 'shots' as an argument of the quantum function to transform. "
+            "The 'shots' argument name is reserved for overriding the number of shots "
+            "taken by the device."
+        )
+
+    def _wrapper(*args, **kwargs):
+        qnode.construct(args, kwargs)
+        tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
+
+        interface = qnode.interface
+        execute_kwargs = getattr(qnode, "execute_kwargs", {}).copy()
+        max_diff = execute_kwargs.pop("max_diff", 2)
+        max_diff = transform_max_diff or max_diff
+
+        gradient_fn = getattr(qnode, "gradient_fn", qnode.diff_method)
+        gradient_kwargs = getattr(qnode, "gradient_kwargs", {})
+
+        if interface is None or not self.differentiable:
+            gradient_fn = None
+
+        execute_kwargs["cache"] = False
+
+        res = qml.execute(
+            tapes,
+            device=qnode.device,
+            gradient_fn=gradient_fn,
+            interface=interface,
+            max_diff=max_diff,
+            override_shots=1,
+            gradient_kwargs=gradient_kwargs,
+            **execute_kwargs,
+        )
+
+        return processing_fn(res)
+
+    return _wrapper
 
 
 def _get_symbol(i):

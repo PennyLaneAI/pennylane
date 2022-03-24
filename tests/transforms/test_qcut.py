@@ -2113,6 +2113,107 @@ class TestMCPostprocessing:
                 assert np.allclose(arr, exp_arr)
 
 
+class TestCutCircuitMCTransform:
+    """
+    TODO: Docstring
+    """
+
+    def test_cut_circuit_mc_expval(self):
+        """
+        TODO: Docstring
+        """
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def target_circuit(v):
+            qml.RX(v, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(v, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=2))
+
+        @qml.qnode(dev)
+        def circuit(v):
+            qml.RX(v, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(v, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        edge_data = [(0, 1, {"pair": (qcut.MeasureNode(wires=[1]), qcut.PrepareNode(wires=[1]))})]
+        communication_graph = MultiDiGraph(edge_data)
+        shots = 10000
+
+        def fn(x):
+            if x[0] == 0 and x[1] == 0:
+                return 1
+            if x[0] == 0 and x[1] == 1:
+                return -1
+            if x[0] == 1 and x[1] == 0:
+                return -1
+            if x[0] == 1 and x[1] == 1:
+                return 1
+
+        v = 0.319
+        cut_circuit_mc = qcut.cut_circuit_mc(
+            circuit, shots=shots, device_wires=[0, 1], classical_processing_fn=fn
+        )
+        cut_res_mc = cut_circuit_mc(v)
+
+        target = target_circuit(v)
+
+        assert np.isclose(cut_res_mc, target, atol=0.01)  # not guaranteed to pass
+
+    def test_cut_circuit_mc_sample(self):
+        """
+        TODO: Docstring
+        """
+
+        dev = qml.device("default.qubit", wires=3, shots=1000)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        edge_data = [(0, 1, {"pair": (qcut.MeasureNode(wires=[1]), qcut.PrepareNode(wires=[1]))})]
+        communication_graph = MultiDiGraph(edge_data)
+        shots = 1000
+
+        v = 0.319
+        cut_circuit_bs = qcut.cut_circuit_mc(circuit, shots=shots, device_wires=[0, 1])
+        cut_res_bs = cut_circuit_bs(v)
+
+        target = circuit(v)
+
+        # what to assert?
+
+
 class TestContractTensors:
     """Tests for the contract_tensors function"""
 
