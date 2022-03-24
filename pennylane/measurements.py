@@ -656,7 +656,7 @@ def apply_to_measurement(func: Callable):
             if not isinstance(arg, MeasurementValue):
                 arg = MeasurementLeaf(arg)
             partial = partial.merge(arg)
-        partial._transform_leaves_inplace(
+        partial.transform_leaves_inplace(
             lambda *unwrapped: func(*unwrapped, **kwargs)  # pylint: disable=unnecessary-lambda
         )
         return partial
