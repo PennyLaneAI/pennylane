@@ -703,7 +703,12 @@ class MeasurementLeaf(Generic[T]):
         return self._values
 
     def __str__(self):
-        return f"{type(self).__name__}({', '.join(str(v) for v in self._values)})"
+        measurements = self.measurements
+        lines = []
+        for k, v in self.branches.items():
+            lines.append(
+                "if " + ",".join([f"{measurements[i]}={k[i]}" for i in range(len(measurements))]) + " => " + str(v))
+        return "\n".join(lines)
 
     def __repr__(self):
         return f"{type(self).__name__}({', '.join(str(v) for v in self._values)})"
