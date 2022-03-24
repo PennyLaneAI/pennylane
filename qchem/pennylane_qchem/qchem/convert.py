@@ -284,6 +284,8 @@ def _openfermion_pennylane_equivalent(
 def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e08):
     r"""Converts an external operator to a Pennylane operator.
 
+    The currently supported external format is openfermion.
+
     Args:
         qubit_observable: External qubit operator that will be converted
         format (str): the format of the operator object to convert from
