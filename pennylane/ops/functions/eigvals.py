@@ -14,27 +14,42 @@
 """
 This module contains the qml.eigvals function.
 """
+import warnings
+
 # pylint: disable=protected-access
 from functools import reduce
-import warnings
+
+import scipy
 
 import pennylane as qml
 
 
 @qml.op_transform
-def eigvals(op):
+def eigvals(op, k=1, which="SA"):
     r"""The eigenvalues of one or more operations.
+
+    For a SparseHamiltonian object, the eigenvalues are computed with the efficient
+    ``scipy.sparse.linalg.eigsh`` method which returns `k` eigenvalues. The default value of `k` is
+    `1`. For an :math:`N \times N` sparse matrix, `k` must be smaller than `N - 1`, otherwise
+    ``scipy.sparse.linalg.eigsh`` fails. If the requested `k` is equal or larger than `N - 1`, the
+    regular ``qml.math.linalg.eigvalsh`` is applied on the dense matrix. The possible methods for
+    computing the `k` eigenvalues are `"LM"` (largest in magnitude), `"SM"` (smallest in magnitude),
+    `"LA"` (largest algebraic), `"SA"` (smallest algebraic) and `"BE"` (k/2 from each end of the
+    spectrum). For more details see
+    `here <https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.linalg.eigsh.html#scipy.sparse.linalg.eigsh>`_.
 
     Args:
         op (.Operator, pennylane.QNode, .QuantumTape, or Callable): An operator, quantum node, tape,
             or function that applies quantum operations.
+        k (int): The number of eigenvalues to be returned for a :class:`~.SparseHamiltonian`.
+        which (str): Method for computing the eigenvalues of a :class:`~.SparseHamiltonian`.
 
     Returns:
-        tensor_like or function: If an operator is provided as input, the eigenvalues are returned directly.
-        If a QNode or quantum function is provided as input, a function which accepts the
+        tensor_like or function: If an operator is provided as input, the eigenvalues are returned
+        directly. If a QNode or quantum function is provided as input, a function which accepts the
         same arguments as the QNode or quantum function is returned. When called, this function will
-        return the unitary matrix in the appropriate autodiff framework (Autograd, TensorFlow, PyTorch, JAX)
-        given its parameters.
+        return the unitary matrix in the appropriate autodiff framework (Autograd, TensorFlow,
+        PyTorch, JAX) given its parameters.
 
     **Example**
 
@@ -88,10 +103,17 @@ def eigvals(op):
     if isinstance(op, qml.Hamiltonian):
         warnings.warn(
             "For Hamiltonians, the eigenvalues will be computed numerically. "
-            "This may be computationally intensive for a large number of wires.",
+            "This may be computationally intensive for a large number of wires."
+            "Consider using a sparse representation of the Hamiltonian with qml.SparseHamiltonian.",
             UserWarning,
         )
         return qml.math.linalg.eigvalsh(qml.matrix(op))
+
+    if isinstance(op, qml.SparseHamiltonian):
+        sparse_matrix = op.sparse_matrix()
+        if k < sparse_matrix.shape[0] - 1:
+            return scipy.sparse.linalg.eigsh(sparse_matrix, k=k, which=which)[0]
+        return qml.math.linalg.eigvalsh(sparse_matrix.toarray())
 
     # TODO: make `get_eigvals` take a `wire_order` argument to mimic `get_matrix`
     return op.get_eigvals()

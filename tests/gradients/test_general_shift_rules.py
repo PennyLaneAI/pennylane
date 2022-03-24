@@ -170,15 +170,8 @@ class TestGenerateShiftRule:
 
         frequencies = (1, 2, 3, 4, 5, 67)
 
-        with pytest.warns(None) as warnings:
+        with pytest.warns(UserWarning, match="Solving linear problem with near zero determinant"):
             generate_shift_rule(frequencies)
-
-        raised_warning = False
-        for warning in warnings:
-            if "Solving linear problem with near zero determinant" in str(warning):
-                raised_warning = True
-
-        assert raised_warning
 
     def test_second_order_two_term_shift_rule(self):
         """Test that the second order shift rule is correct and

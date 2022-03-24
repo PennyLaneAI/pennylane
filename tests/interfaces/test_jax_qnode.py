@@ -19,7 +19,7 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane import qnode, QNode
 from pennylane.tape import QuantumTape
-from pennylane.interfaces.batch import InterfaceUnsupportedError
+from pennylane.interfaces import InterfaceUnsupportedError
 
 qubit_device_and_diff_method = [
     ["default.qubit", "backprop", "forward", "jax"],

@@ -74,6 +74,7 @@ This set of transforms accept quantum functions, and perform basic circuit compi
     ~transforms.merge_amplitude_embedding
     ~transforms.remove_barrier
     ~transforms.undo_swaps
+    ~transforms.transpile
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -120,6 +121,10 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~transforms.qcut.expand_fragment_tape
     ~transforms.qcut.qcut_processing_fn
     ~transforms.qcut.CutStrategy
+    ~transforms.qcut.expand_fragment_tapes_mc
+    ~transforms.qcut.kahypar_cut
+    ~transforms.qcut.place_wire_cuts
+    ~transforms.qcut.find_and_place_cuts
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -168,7 +173,7 @@ from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
-from .draw import draw, draw_mpl, draw_old
+from .draw import draw, draw_mpl
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
@@ -204,5 +209,6 @@ from .tape_expand import (
     create_decomp_expand_fn,
     set_decomposition,
 )
+from .transpile import transpile
 from . import qcut
 from .qcut import cut_circuit
