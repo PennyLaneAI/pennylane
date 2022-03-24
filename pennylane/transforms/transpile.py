@@ -119,8 +119,8 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
 
             # two-qubit gates which can be handled by the coupling map
             if (
-                    op.wires in coupling_graph.edges
-                    or tuple(reversed(op.wires)) in coupling_graph.edges
+                op.wires in coupling_graph.edges
+                or tuple(reversed(op.wires)) in coupling_graph.edges
             ):
                 gates.append(op)
                 list_op_copy.pop(0)
@@ -135,7 +135,7 @@ def transpile(tape: QuantumTape, coupling_map: Union[List, nx.Graph]):
             source_wire, dest_wire = op.wires
             shortest_path = nx.algorithms.shortest_path(coupling_graph, source_wire, dest_wire)
             path_length = len(shortest_path) - 1
-            wires_to_swap = [shortest_path[(i - 1): (i + 1)] for i in range(path_length, 1, -1)]
+            wires_to_swap = [shortest_path[(i - 1) : (i + 1)] for i in range(path_length, 1, -1)]
 
             for w0, w1 in wires_to_swap:
                 # swap wires
