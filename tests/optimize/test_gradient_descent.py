@@ -52,9 +52,9 @@ class TestGradientDescentOptimizer:
 
         univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
         grad_uni_fns = [
-            lambda x: (np.cos(x),),
-            lambda x: (np.exp(x / 10.0) / 10.0,),
-            lambda x: (2 * x,),
+            lambda x: np.cos(x),
+            lambda x: np.exp(x / 10.0) / 10.0,
+            lambda x: 2 * x,
         ]
 
         for gradf, f in zip(grad_uni_fns, univariate_funcs):
@@ -205,14 +205,14 @@ class TestGradientDescentOptimizer:
 
         univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
         grad_uni_fns = [
-            lambda x: (np.cos(x),),
-            lambda x: (np.exp(x / 10.0) / 10.0,),
-            lambda x: (2 * x,),
+            lambda x: np.cos(x),
+            lambda x: np.exp(x / 10.0) / 10.0,
+            lambda x: 2 * x,
         ]
 
         for gradf, f in zip(grad_uni_fns[::-1], univariate_funcs):
             x_new = sgd_opt.step(f, x_start, grad_fn=gradf)
-            x_correct = x_start - gradf(x_start)[0] * stepsize
+            x_correct = x_start - gradf(x_start) * stepsize
             assert np.allclose(x_new, x_correct, atol=tol)
 
     def test_update_stepsize(self):

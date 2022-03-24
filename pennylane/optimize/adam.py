@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Adam optimizer"""
-import math
-
-from pennylane.utils import _flatten, unflatten
-from pennylane.numpy import ndarray, tensor
+from pennylane.numpy import sqrt
 from .gradient_descent import GradientDescentOptimizer
 
 
@@ -75,7 +72,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         args_new = list(args)
 
         if self.accumulation is None:
-            self.accumulation = {"fm": [None] * len(args), "sm": [None] * len(args), "t": 0}
+            self.accumulation = {"fm": [0] * len(args), "sm": [0] * len(args), "t": 0}
 
         self.accumulation["t"] += 1
 
@@ -89,55 +86,27 @@ class AdamOptimizer(GradientDescentOptimizer):
         trained_index = 0
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", True):
-                x_flat = _flatten(arg)
-                grad_flat = list(_flatten(grad[trained_index]))
+            
+                self._update_moments(index, grad[trained_index])
+                args_new[index] = arg - new_stepsize * self.accumulation["fm"][index] / (
+                    sqrt(self.accumulation["sm"][index]) + self.eps)
+
                 trained_index += 1
-
-                self._update_moments(index, grad_flat)
-
-                x_new_flat = [
-                    e - new_stepsize * f / (math.sqrt(s) + self.eps)
-                    for f, s, e in zip(
-                        self.accumulation["fm"][index], self.accumulation["sm"][index], x_flat
-                    )
-                ]
-                args_new[index] = unflatten(x_new_flat, arg)
-
-                if isinstance(arg, ndarray):
-                    # Due to a bug in unflatten, input PennyLane tensors
-                    # are being unwrapped. Here, we cast them back to PennyLane
-                    # tensors.
-                    # TODO: remove when the following is fixed:
-                    # https://github.com/PennyLaneAI/pennylane/issues/966
-                    args_new[index] = args_new[index].view(tensor)
-                    args_new[index].requires_grad = True
 
         return args_new
 
-    def _update_moments(self, index, grad_flat):
+    def _update_moments(self, index, grad):
         r"""Update the moments.
 
         Args:
             index (int): the index of the argument to update
-            grad_flat (list): the flattened gradient for that trainable param
+            grad (tuple): the flattened gradient for that trainable param
         """
         # update first moment
-        if self.accumulation["fm"][index] is None:
-            self.accumulation["fm"][index] = [(1 - self.beta1) * g for g in grad_flat]
-        else:
-            self.accumulation["fm"][index] = [
-                self.beta1 * f + (1 - self.beta1) * g
-                for f, g in zip(self.accumulation["fm"][index], grad_flat)
-            ]
+        self.accumulation["fm"][index] = self.beta1 * self.accumulation["fm"][index] + (1-self.beta1) * grad
 
         # update second moment
-        if self.accumulation["sm"][index] is None:
-            self.accumulation["sm"][index] = [(1 - self.beta2) * g * g for g in grad_flat]
-        else:
-            self.accumulation["sm"][index] = [
-                self.beta2 * s + (1 - self.beta2) * g * g
-                for s, g in zip(self.accumulation["sm"][index], grad_flat)
-            ]
+        self.accumulation["sm"][index] = self.beta2 * self.accumulation["sm"][index] + (1 - self.beta2) * grad **2
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""
