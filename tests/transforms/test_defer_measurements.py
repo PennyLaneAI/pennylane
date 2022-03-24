@@ -865,5 +865,35 @@ class TestMeasurementValueManipulation:
         assert out.branches[(1, 1, 0)] == np.sin(6)
         assert out.branches[(1, 1, 1)] == np.sin(7)
 
+    def test_str(self):
+        m = MeasurementValue("m")
+        assert str(m) == "if m=0 => 0\nif m=1 => 1"
+
+    def test_complex_str(self):
+        a = MeasurementValue("a")
+        b = MeasurementValue("b")
+        assert str(a + b) == "if a=0,b=0 => 0\nif a=0,b=1 => 1\nif a=1,b=0 => 1\nif a=1,b=1 => 2"
+
+    def test_repr(self):
+        m = MeasurementValue("m")
+        assert repr(m) == "MeasurementValue('m', MeasurementLeaf(0), MeasurementLeaf(1))"
+
+    def test_complex_cond(self):
+
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def cond_qnode(x, y):
+            qml.Hadamard(0)
+            qml.Hadamard(1)
+            qml.Hadamard(2)
+            m0 = qml.measure(0)
+            m1 = qml.measure(1)
+            m2 = qml.measure(2)
+            out = qml.apply_to_measurement(lambda x, y, z: np.exp(4 * x + 2 * y + z))(m0, m1, m2)
+
+            qml.cond(out < 20, qml.RY, None)(5.4, wires=4)
+            return qml.probs(wires=[4])
+
 
 

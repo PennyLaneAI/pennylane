@@ -823,19 +823,26 @@ class MeasurementValue(Generic[T]):
         value."""
         return apply_to_measurement(lambda x: not x)(self)
 
+
     def __eq__(self, other: Union[T, 'MeasurementValue[T]', MeasurementLeaf[T]]):
         """Allow asserting measurement values."""
         return apply_to_measurement(lambda x, y: x == y)(self, other)
+
+    def __le__(self, other: Union[T, 'MeasurementValue[T]', MeasurementLeaf[T]]):
+        return apply_to_measurement(lambda x, y: x < y)(self, other)
+
+    def __gt__(self, other: Union[T, 'MeasurementValue[T]', MeasurementLeaf[T]]):
+        return apply_to_measurement(lambda x, y: x > y)(self, other)
 
     def __str__(self):
         m = self.measurements
         lines = []
         for k, v in self.branches.items():
-            lines.append("if " + ",".join([f"{m[i].depends_on}={k[i]}" for i in range(len(m))]) + " => " + str(v))
+            lines.append("if " + ",".join([f"{m[i]}={k[i]}" for i in range(len(m))]) + " => " + str(v))
         return "\n".join(lines)
 
     def __repr__(self):
-        return f"{type(self).__name__}({repr(self.depends_on)}, {repr(self.zero_case)}, {repr(self.one_case)}"
+        return f"{type(self).__name__}({repr(self.depends_on)}, {repr(self.zero_case)}, {repr(self.one_case)})"
 
     @property
     def measurements(self):
