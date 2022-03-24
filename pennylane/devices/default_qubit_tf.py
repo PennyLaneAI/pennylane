@@ -14,8 +14,12 @@
 """This module contains a TensorFlow implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
+
 import numpy as np
 import semantic_version
+
+
+a = 3
 
 try:
     import tensorflow as tf
