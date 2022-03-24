@@ -14,9 +14,9 @@
 """This module contains functions to construct many-body observables whose expectation
 values can be used to simulate molecular properties.
 """
+# pylint: disable=too-many-arguments, too-few-public-methods
 import numpy as np
 
-# pylint: disable=too-many-arguments, too-few-public-methods
 import pennylane as qml
 
 from . import openfermion
