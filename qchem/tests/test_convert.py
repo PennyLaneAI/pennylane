@@ -18,13 +18,12 @@ PennyLane observable.
 import sys
 
 import pytest
-from openfermion import QubitOperator
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
 
-pytest.importorskip("openfermion")
+openfermion = pytest.importorskip("openfermion")
 
 
 @pytest.mark.parametrize(
@@ -314,7 +313,7 @@ def test_observable_conversion(mol_name, terms_ref, custom_wires, monkeypatch):
     The equality checking is implemented in the `convert` module itself as it could be
     something useful to the users as well.
     """
-    qOp = QubitOperator()
+    qOp = openfermion.QubitOperator()
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
 
@@ -335,7 +334,7 @@ def test_observable_conversion(mol_name, terms_ref, custom_wires, monkeypatch):
 def test_convert_format_not_supported(terms_ref, format, monkeypatch):
     """Test if an ImportError is raised when openfermion is requested but not installed"""
 
-    qOp = QubitOperator()
+    qOp = openfermion.QubitOperator()
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
 
@@ -384,7 +383,7 @@ def test_types_consistency():
     pl_ref = 1 * qml.Identity(0) + 2 * qml.PauliZ(0) @ qml.PauliX(1)
 
     # Corresponding OpenFermion QubitOperator
-    of = QubitOperator("", 1) + QubitOperator("Z0 X1", 2)
+    of = openfermion.QubitOperator("", 1) + openfermion.QubitOperator("Z0 X1", 2)
 
     # Build PL operator using 'import_operator'
     pl = qchem.convert.import_operator(of, "openfermion")
@@ -397,8 +396,12 @@ def test_types_consistency():
         assert type(op) == type(ops_ref[i])
 
 
-op_1 = QubitOperator("Y0 Y1", 1 + 0j) + QubitOperator("Y0 X1", 2) + QubitOperator("Z0 Y1", 2.3e-08j)
-op_2 = QubitOperator("Z0 Y1", 2.23e-10j)
+op_1 = (
+    openfermion.QubitOperator("Y0 Y1", 1 + 0j)
+    + openfermion.QubitOperator("Y0 X1", 2)
+    + openfermion.QubitOperator("Z0 Y1", 2.3e-08j)
+)
+op_2 = openfermion.QubitOperator("Z0 Y1", 2.23e-10j)
 
 
 @pytest.mark.parametrize(
@@ -506,7 +509,7 @@ def test_integration_observable_to_vqe_cost(
 ):
     r"""Test if `import_operator()` integrates with `ExpvalCost()` in pennylane"""
 
-    qOp = QubitOperator()
+    qOp = openfermion.QubitOperator()
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
     vqe_observable = qchem.convert.import_operator(qOp, "openfermion", custom_wires)
