@@ -4,6 +4,25 @@
 
 <h3>New features since last release</h3>
 
+* Added a swap based transpiler transform.
+  [(#2118)](https://github.com/PennyLaneAI/pennylane/pull/2118)
+
+  The transpile function takes a quantum function and a coupling map as inputs and compiles the circuit to ensure that it can be 
+  executed on corresponding hardware. The transform can be used as a decorator in the following way:
+
+  ```python
+  dev = qml.device('default.qubit', wires=4)
+  
+  @qml.qnode(dev)
+  @qml.transforms.transpile(coupling_map=[(0, 1), (1, 2), (2, 3)])
+  def circuit(param):
+      qml.CNOT(wires=[0, 1])
+      qml.CNOT(wires=[0, 2])
+      qml.CNOT(wires=[0, 3])
+      qml.PhaseShift(param, wires=0)
+      return qml.probs(wires=[0, 1, 2, 3]) 
+  ```
+
 * A differentiable quantum chemistry module is added to `qml.qchem`. The new module inherits a 
   modified version of the differentiable Hartree-Fock solver from `qml.hf`, contains new functions
   for building a differentiable dipole moment observable and also contains modified functions for 
@@ -199,4 +218,4 @@ This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
 Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
-Jay Soni, Antal Száva.
+Jay Soni, Antal Száva, Maurice Weber.
