@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the functions needed for computing the molecular Hamiltonian.
+This module contains the functions for converting an external operator to a Pennylane operator.
 """
 # pylint: disable=import-outside-toplevel
 import pennylane as qml
