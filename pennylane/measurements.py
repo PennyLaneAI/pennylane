@@ -645,7 +645,7 @@ def apply_to_measurement(func: Callable):
 
     .. code-block:: python
 
-        m0 = qml.mid_measure(0)
+        m0 = qml.measure(0)
         m0_sin = qml.apply_to_measurement(np.sin)(m0)
     """
 
