@@ -19,6 +19,7 @@ import math
 
 import pennylane as qml
 import pennylane.numpy as np
+from pennylane.measurements import MeasurementValue
 
 
 class TestQNode:
@@ -809,3 +810,60 @@ class TestDrawing:
             "2: ────────────────────────────╰C─────────────────────────┤     "
         )
         assert qml.draw(transformed_qnode)() == expected
+
+
+class TestMeasurementValueManipulation:
+
+    def test_apply_function_to_measurement(self):
+
+        m = MeasurementValue("m")
+
+        sin_of_m = qml.apply_to_measurement(np.sin)(m)
+        assert sin_of_m.branches[(0,)] == 0.0
+        assert sin_of_m.branches[(1,)] == np.sin(1)
+
+    def test_add_to_measurements(self):
+        m0 = MeasurementValue("m0")
+        m1 = MeasurementValue("m1")
+        sum_of_measurements = m0 + m1
+        assert sum_of_measurements.branches[(0, 0)] == 0
+        assert sum_of_measurements.branches[(0, 1)] == 1
+        assert sum_of_measurements.branches[(1, 0)] == 1
+        assert sum_of_measurements.branches[(1, 1)] == 2
+
+    def test_equality_with_scalar(self):
+        m = MeasurementValue("m")
+        m_eq = (m == 0)
+        assert m_eq.branches[(0,)] == True  # confirming value is actually eq to True, not just truthy
+        assert m_eq.branches[(1,)] == False
+
+    def test_inversion(self):
+        m = MeasurementValue("m")
+        m_inversion = ~m
+        assert m_inversion.branches[(0,)] == True
+        assert m_inversion.branches[(1,)] == False
+
+    def test_op_with_non_measurement_value(self):
+        m = MeasurementValue("m")
+        m_add = m + 10
+        assert m_add.branches[(0,)] == 10
+        assert m_add.branches[(1,)] == 11
+
+    def test_complex_function(self):
+        m0 = MeasurementValue("m0")
+        m1 = MeasurementValue("m1")
+        m2 = MeasurementValue("m3")
+
+        out = qml.apply_to_measurement(lambda x, y, z: np.sin(4*x + 2*y + z))(m0, m1, m2)
+
+        assert out.branches[(0, 0, 0)] == np.sin(0)
+        assert out.branches[(0, 0, 1)] == np.sin(1)
+        assert out.branches[(0, 1, 0)] == np.sin(2)
+        assert out.branches[(0, 1, 1)] == np.sin(3)
+        assert out.branches[(1, 0, 0)] == np.sin(4)
+        assert out.branches[(1, 0, 1)] == np.sin(5)
+        assert out.branches[(1, 1, 0)] == np.sin(6)
+        assert out.branches[(1, 1, 1)] == np.sin(7)
+
+
+
