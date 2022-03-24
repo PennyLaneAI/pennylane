@@ -23,21 +23,21 @@ class TestAdagradOptimizer:
         stepsize, eps = 0.1, 1e-8
         sgd_opt = AdagradOptimizer(stepsize, eps=eps)
 
-        grad = (np.array(grad), )
-        args = (np.array(args, requires_grad=True), )
+        grad = (np.array(grad),)
+        args = (np.array(args, requires_grad=True),)
 
-        a1 = grad[0]**2
+        a1 = grad[0] ** 2
         expected = args[0] - stepsize / np.sqrt(a1 + eps) * grad[0]
         res = sgd_opt.apply_grad(grad, args)
         assert np.allclose(res, expected, atol=tol)
 
         # Simulate a new step
-        grad = (grad[0] + args[0], )
-        args = (expected, )
+        grad = (grad[0] + args[0],)
+        args = (expected,)
 
         res = sgd_opt.apply_grad(grad, args)
 
-        a2 = a1 + grad[0]**2
+        a2 = a1 + grad[0] ** 2
         expected = args - stepsize / np.sqrt(a2 + eps) * grad[0]
 
         assert np.allclose(res, expected, atol=tol)
@@ -66,9 +66,7 @@ class TestAdagradOptimizer:
             assert np.allclose(x_onestep, x_onestep_target, atol=tol)
 
             x_twosteps = adag_opt.step(f, x_onestep)
-            past_grads = (
-                gradf(x_start) * gradf(x_start) + gradf(x_onestep) * gradf(x_onestep)
-            )
+            past_grads = gradf(x_start) * gradf(x_start) + gradf(x_onestep) * gradf(x_onestep)
             adapt_stepsize = stepsize / np.sqrt(past_grads + 1e-8)
             x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
             assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)

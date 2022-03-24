@@ -72,7 +72,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
 
                 self._update_accumulation(index, grad[trained_index])
 
-                coeff = self.stepsize / sqrt(self.accumulation[index]+self.eps)
+                coeff = self.stepsize / sqrt(self.accumulation[index] + self.eps)
                 args_new[index] = arg - coeff * grad[trained_index]
 
                 trained_index += 1

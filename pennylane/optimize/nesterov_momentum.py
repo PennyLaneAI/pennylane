@@ -70,5 +70,5 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         grad = g(*shifted_args, **kwargs)
         forward = getattr(g, "forward", None)
 
-        grad = (grad, ) if len(trainable_args) == 1 else grad
+        grad = (grad,) if len(trainable_args) == 1 else grad
         return grad, forward

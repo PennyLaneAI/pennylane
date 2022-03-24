@@ -68,9 +68,12 @@ class RMSPropOptimizer(AdagradOptimizer):
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", True):
                 self._update_accumulation(index, grad[trained_index])
-                args_new[index] = arg - (self.stepsize / sqrt(self.accumulation[index] + self.eps)) * grad[trained_index]
+                args_new[index] = (
+                    arg
+                    - (self.stepsize / sqrt(self.accumulation[index] + self.eps))
+                    * grad[trained_index]
+                )
                 trained_index += 1
-
 
         return args_new
 
@@ -81,4 +84,6 @@ class RMSPropOptimizer(AdagradOptimizer):
             index (int): index of argument to update.
             grad (ndarray): form of the gradient.
         """
-        self.accumulation[index] = self.decay * self.accumulation[index] + (1-self.decay) * grad**2
+        self.accumulation[index] = (
+            self.decay * self.accumulation[index] + (1 - self.decay) * grad**2
+        )

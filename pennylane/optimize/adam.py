@@ -86,10 +86,11 @@ class AdamOptimizer(GradientDescentOptimizer):
         trained_index = 0
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", True):
-            
+
                 self._update_moments(index, grad[trained_index])
                 args_new[index] = arg - new_stepsize * self.accumulation["fm"][index] / (
-                    sqrt(self.accumulation["sm"][index]) + self.eps)
+                    sqrt(self.accumulation["sm"][index]) + self.eps
+                )
 
                 trained_index += 1
 
@@ -103,10 +104,14 @@ class AdamOptimizer(GradientDescentOptimizer):
             grad (tuple): the flattened gradient for that trainable param
         """
         # update first moment
-        self.accumulation["fm"][index] = self.beta1 * self.accumulation["fm"][index] + (1-self.beta1) * grad
+        self.accumulation["fm"][index] = (
+            self.beta1 * self.accumulation["fm"][index] + (1 - self.beta1) * grad
+        )
 
         # update second moment
-        self.accumulation["sm"][index] = self.beta2 * self.accumulation["sm"][index] + (1 - self.beta2) * grad **2
+        self.accumulation["sm"][index] = (
+            self.beta2 * self.accumulation["sm"][index] + (1 - self.beta2) * grad**2
+        )
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""
