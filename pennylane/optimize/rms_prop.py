@@ -66,7 +66,7 @@ class RMSPropOptimizer(AdagradOptimizer):
 
         trained_index = 0
         for index, arg in enumerate(args):
-            if getattr(arg, "requires_grad", True):
+            if getattr(arg, "requires_grad", False):
                 self._update_accumulation(index, grad[trained_index])
                 args_new[index] = (
                     arg

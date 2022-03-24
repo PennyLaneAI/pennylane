@@ -61,7 +61,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
 
         trained_index = 0
         for index, arg in enumerate(args):
-            if getattr(arg, "requires_grad", True):
+            if getattr(arg, "requires_grad", False):
 
                 self._update_accumulation(index, grad[trained_index])
                 args_new[index] = arg - self.accumulation[index]
@@ -75,7 +75,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
 
         Args:
             index (int): index of argument to update.
-            grad (tuple): flattened list form of gradient.
+            grad (ndarray): list form of gradient.
         """
         self.accumulation[index] = self.momentum * self.accumulation[index] + self.stepsize * grad
 

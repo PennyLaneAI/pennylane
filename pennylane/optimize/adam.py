@@ -62,7 +62,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         the inputs to maintain nested iterables as the parameters of the optimization.
 
         Args:
-            grad (tuple[array]): the gradient of the objective
+            grad (tuple[ndarray]): the gradient of the objective
                 function at point :math:`x^{(t)}`: :math:`\nabla f(x^{(t)})`
             args (tuple): the current value of the variables :math:`x^{(t)}`
 
@@ -79,13 +79,13 @@ class AdamOptimizer(GradientDescentOptimizer):
         # Update step size (instead of correcting for bias)
         new_stepsize = (
             self.stepsize
-            * math.sqrt(1 - self.beta2 ** self.accumulation["t"])
+            * sqrt(1 - self.beta2 ** self.accumulation["t"])
             / (1 - self.beta1 ** self.accumulation["t"])
         )
 
         trained_index = 0
         for index, arg in enumerate(args):
-            if getattr(arg, "requires_grad", True):
+            if getattr(arg, "requires_grad", False):
 
                 self._update_moments(index, grad[trained_index])
                 args_new[index] = arg - new_stepsize * self.accumulation["fm"][index] / (
@@ -101,7 +101,7 @@ class AdamOptimizer(GradientDescentOptimizer):
 
         Args:
             index (int): the index of the argument to update
-            grad (tuple): the flattened gradient for that trainable param
+            grad (ndarray): the flattened gradient for that trainable param
         """
         # update first moment
         self.accumulation["fm"][index] = (
@@ -120,23 +120,14 @@ class AdamOptimizer(GradientDescentOptimizer):
     @property
     def fm(self):
         """Returns estimated first moments of gradient"""
-        if self.accumulation is None:
-            return None
-
-        return self.accumulation["fm"]
+        return None if self.accumulation is None else self.accumulation["fm"]
 
     @property
     def sm(self):
         """Returns estimated second moments of gradient"""
-        if self.accumulation is None:
-            return None
-
-        return self.accumulation["sm"]
+        return None if self.accumulation is None else self.accumulation["sm"]
 
     @property
     def t(self):
         """Returns accumulated timesteps"""
-        if self.accumulation is None:
-            return None
-
-        return self.accumulation["t"]
+        return None if self.accumulation is None else self.accumulation["t"]

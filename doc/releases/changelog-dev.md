@@ -189,6 +189,9 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
+* Optimizers only consider a variable trainable if they have `requires_grad = True`.
+  [(#2381)](https://github.com/PennyLaneAI/pennylane/pull/2381)
+
 * Fixes cases with `qml.measure` where unexpected operations were added to the
   circuit.
   [(#2328)](https://github.com/PennyLaneAI/pennylane/pull/2328)

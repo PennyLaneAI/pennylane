@@ -156,7 +156,7 @@ class GradientDescentOptimizer:
         grad = g(*args, **kwargs)
         forward = getattr(g, "forward", None)
 
-        num_trainable_args = sum(getattr(arg, "requires_grad", True) for arg in args)
+        num_trainable_args = sum(getattr(arg, "requires_grad", False) for arg in args)
         grad = (grad,) if num_trainable_args == 1 else grad
 
         return grad, forward
@@ -177,7 +177,7 @@ class GradientDescentOptimizer:
 
         trained_index = 0
         for index, arg in enumerate(args):
-            if getattr(arg, "requires_grad", True):
+            if getattr(arg, "requires_grad", False):
                 args_new[index] = arg - self.stepsize * grad[trained_index]
 
                 trained_index += 1

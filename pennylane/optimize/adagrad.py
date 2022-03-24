@@ -68,7 +68,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
 
         trained_index = 0
         for index, arg in enumerate(args):
-            if getattr(arg, "requires_grad", True):
+            if getattr(arg, "requires_grad", False):
 
                 self._update_accumulation(index, grad[trained_index])
 
@@ -84,7 +84,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
 
         Args:
             index (int): index of parameter to update.
-            grad_flat (list): flattened list form of gradient
+            grad_flat (ndarray): flattened list form of gradient
         """
         self.accumulation[index] = self.accumulation[index] + grad * grad
 

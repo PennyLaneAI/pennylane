@@ -59,7 +59,7 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
 
         trainable_args = []
         for arg in args:
-            if getattr(arg, "requires_grad", True):
+            if getattr(arg, "requires_grad", False):
                 trainable_args.append(arg)
 
         if self.accumulation:
