@@ -122,48 +122,91 @@ def commutation_dag(circuit):
     return wrapper
 
 
-# fmt: off
+def _create_commute_function():
+    """This function constructs the ``_commutes`` helper utility function while using closure
+    to hide the ``commutation_map`` data away from the global scope of the file.
 
-commutation_map = OrderedDict(
-    {
-        "Hadamard": [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        "PauliX": [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-        "PauliY": [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-        "PauliZ": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
-        "SWAP": [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        "ctrl": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
-        "S": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
-        "T": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
-        "SX": [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
-        "ISWAP": [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        "SISWAP": [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        "Barrier": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        "WireCut": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        "RX": [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-        "RY": [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-        "RZ": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
-        "PhaseShift": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
-        "Rot": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        "MultiRZ": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
-        "Identity": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
-        "U1": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
-        "U2": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        "U3": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-        "IsingXX": [0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0],
-        "IsingYY": [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-        "IsingZZ": [0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0],
-        "QubitStateVector": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        "BasisState": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    This function only needs to be called a single time.
+
+    Returns:
+        function
+    """
+
+    pauliz_group = {
+        "PauliZ",
+        "ctrl",
+        "S",
+        "T",
+        "RZ",
+        "PhaseShift",
+        "MultiRZ",
+        "Identity",
+        "U1",
+        "IsingZZ",
+        "S.inv",
+        "T.inv",
     }
-)
-"""OrderedDict[str, list[int]]: Represents the commutation relations between each gate. Positions in the array are
-the one defined by the position dictionary. 1 represents commutation and 0 non-commutation."""
+    swap_group = {"SWAP", "ISWAP", "SISWAP", "Identity"}
+    paulix_group = {"PauliX", "SX", "RX", "Identity", "IsingXX", "SX.inv"}
+    pauliy_group = {"PauliY", "RY", "Identity", "IsingYY"}
 
-# fmt: on
+    commutation_map = {}
+    for group in [paulix_group, pauliy_group, pauliz_group, swap_group]:
+        for op in group:
+            commutation_map[op] = group
+
+    for op in ("Hadamard", "U2", "U3", "Rot"):
+        commutation_map[op] = {"Identity", op}
+
+    for op in ("Barrier", "WireCut", "QubitStateVector", "BasisState"):
+        commutation_map[op] = {}
+
+    commutation_map["Identity"] = {
+        "Hadamard",
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "SWAP",
+        "ctrl",
+        "S",
+        "T",
+        "SX",
+        "ISWAP",
+        "SISWAP",
+        "RX",
+        "RY",
+        "RZ",
+        "PhaseShift",
+        "Rot",
+        "MultiRZ",
+        "Identity",
+        "U1",
+        "U2",
+        "U3",
+        "IsingXX",
+        "IsingYY",
+        "IsingZZ",
+    }
+
+    def commutes_inner(op_name1, op_name2):
+        """Determine whether or not two operations commute.
+
+        Relies on ``commutation_map`` from the enclosing namespace of ``_create_commute_function``.
+
+        Args:
+            op_name1 (str): name of one operation
+            op_name2 (str): name of the second operation
+
+        Returns:
+            Bool
+
+        """
+        return op_name1 in commutation_map[op_name2]
+
+    return commutes_inner
 
 
-position = dict(zip(commutation_map, range(len(commutation_map))))
-"""OrderedDict[str, int]: represents the index of each gates in the list of the commutation_map dictionary."""
+_commutes = _create_commute_function()
 
 
 def intersection(wires1, wires2):
@@ -418,7 +461,7 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
 
         if operation1.name == "CRot":
             if not intersection(target_wires_1, operation2.wires):
-                return bool(commutation_map["ctrl"][position[operation2.name]])
+                return _commutes(operation2.name, "ctrl")
             return np.all(
                 np.allclose(
                     np.matmul(
@@ -434,7 +477,7 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
 
         if operation2.name == "CRot":
             if not intersection(target_wires_2, operation1.wires):
-                return bool(commutation_map[operation1.name][position["ctrl"]])
+                return _commutes(operation1.name, "ctrl")
             return np.all(
                 np.allclose(
                     np.matmul(
@@ -633,17 +676,15 @@ def is_commuting(operation1, operation2):
 
         # Case 3.1: control and target 1 overlap with target 2
         if control_target and target_target:
-            return bool(commutation_map[control_base_1][position[operation2.name]]) and bool(
-                commutation_map["ctrl"][position[operation2.name]]
-            )
+            return _commutes(operation2.name, control_base_1) and _commutes(operation2.name, "ctrl")
 
         # Case 3.2: control operation 1 overlap with target 2
         if control_target and not target_target:
-            return bool(commutation_map["ctrl"][position[operation2.name]])
+            return _commutes(operation2.name, "ctrl")
 
         # Case 3.3: target 1 overlaps with target 2
         if not control_target and target_target:
-            return bool(commutation_map[control_base_1][position[operation2.name]])
+            return _commutes(operation2.name, control_base_1)
 
     # Case 4: only operation 2 is controlled
     if control_base.get(operation2.name):
@@ -661,21 +702,19 @@ def is_commuting(operation1, operation2):
 
         # Case 4.1: control and target 2 overlap with target 1
         if target_control and target_target:
-            return bool(commutation_map[operation1.name][position[control_base_2]]) and bool(
-                commutation_map[operation1.name][position[control_base_2]]
-            )
+            return _commutes(control_base_2, operation1.name)
 
         # Case 4.2: control operation 2 overlap with target 1
         if target_control and not target_target:
-            return bool(commutation_map[operation1.name][position["ctrl"]])
+            return _commutes("ctrl", operation1.name)
 
         # Case 4.3: target 1 overlaps with target 2
         if not target_control and target_target:
-            return bool(commutation_map[operation1.name][position[control_base_2]])
+            return _commutes(control_base_2, operation1.name)
 
     # Case 5: no controlled operations
     # Case 5.1: no controlled operations we simply check the commutation table
-    return bool(commutation_map[operation1.name][position[operation2.name]])
+    return _commutes(operation1.name, operation2.name)
 
 
 def _both_controlled(control_base, operation1, operation2):
@@ -712,45 +751,35 @@ def _both_controlled(control_base, operation1, operation2):
 
     # Case 2.2: disjoint controls
     if not control_control and target_target and not control_target and not target_control:
-        return bool(commutation_map[control_base_1][position[control_base_2]])
+        return _commutes(control_base_2, control_base_1)
 
     # Case 2.3: targets overlap and controls overlap
     if target_target and control_control and not control_target and not target_control:
-        return bool(commutation_map[control_base_1][position[control_base_2]])
+        return _commutes(control_base_1, control_base_2)
 
     # Case 2.4: targets and controls overlap
     if control_target and target_control and not target_target:
-        return bool(commutation_map["ctrl"][position[control_base_2]]) and bool(
-            commutation_map[control_base_1][position["ctrl"]]
-        )
+        return _commutes("ctrl", control_base_2) and _commutes("ctrl", control_base_1)
 
     # Case 2.5: targets overlap with and controls and targets
     if control_target and not target_control and target_target:
-        return bool(commutation_map["ctrl"][position[control_base_2]]) and bool(
-            commutation_map[control_base_1][position[control_base_2]]
-        )
+        return _commutes("ctrl", control_base_2) and _commutes(control_base_1, control_base_2)
 
     # Case 2.6: targets overlap with and controls and targets
     if target_control and not control_target and target_target:
-        return bool(commutation_map[control_base_1][position["ctrl"]]) and bool(
-            commutation_map[control_base_1][position[control_base_2]]
-        )
+        return _commutes(control_base_1, "ctrl") and _commutes(control_base_1, control_base_2)
 
     # Case 2.7: targets overlap with control
     if target_control and not control_target and not target_target:
-        return bool(commutation_map[control_base_1][position["ctrl"]])
+        return _commutes(control_base_1, "ctrl")
 
     # Case 2.8: targets overlap with control
     if not target_control and control_target and not target_target:
-        return bool(commutation_map["ctrl"][position[control_base_2]])
+        return _commutes("ctrl", control_base_2)
 
     # Case 2.9: targets and controls overlap with targets and controls
     # equivalent to target_control and control_target and target_target:
-    return (
-        bool(commutation_map[control_base_1][position["ctrl"]])
-        and bool(commutation_map["ctrl"][position[control_base_2]])
-        and bool(commutation_map[control_base_1][position[control_base_2]])
-    )
+    return _commutes("ctrl", control_base_1) and _commutes("ctrl", control_base_2)
 
 
 def _merge_no_duplicates(*iterables):
