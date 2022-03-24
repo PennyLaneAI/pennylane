@@ -400,9 +400,6 @@ class QNode:
                 expand_fn = device.expand_fn
                 batch_transform = device.batch_transform
 
-                # r_dtype = device.R_DTYPE
-                # c_dtype = device.C_DTYPE
-
                 device = qml.device(
                     backprop_devices[interface],
                     wires=device.wires,
@@ -411,8 +408,6 @@ class QNode:
                 device.expand_fn = expand_fn
                 device.batch_transform = batch_transform
 
-                # device.R_DTYPE = r_dtype
-                # device.C_DTYPE = c_dtype
                 return "backprop", {}, device
 
             raise qml.QuantumFunctionError(
