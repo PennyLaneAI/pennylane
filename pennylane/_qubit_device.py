@@ -310,7 +310,7 @@ class QubitDevice(Device):
                 ret in (qml.measurements.Expectation, qml.measurements.Variance)
                 for ret in ret_types
             ):
-                # Measurements with expval, var or only one probs
+                # Measurements with expval or var
                 results = self._asarray(results, dtype=self.R_DTYPE)
             else:
                 results = self._asarray(results)
