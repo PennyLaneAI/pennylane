@@ -897,11 +897,13 @@ def qcut_processing_fn_mc(
             random expansion of circuit fragments over measurement and preparation node configurations
         communication_graph (nx.MultiDiGraph): the communication graph determining connectivity
             between circuit fragments
-        settings (array): each element is one of 8 unique values that determines and tracks the specific
-            measurement and preparation operations over all configurations
+        settings (tensor_like): each element is one of 8 unique values that determines and tracks the specific
+            measurement and preparation operations over all configurations. The number of rows is determined
+            by the number of cuts and the number of columns is determined by the number of shots.
         shots (int): the number of shots
         classical_processing_fn (callable): a classical postprocessing function to be applied to
-            the reconstructed bitstrings
+            the reconstructed bitstrings. The expected input is a bitstring; a flat array of length `wires`
+            and the output should be a single number within the interval [-1, 1]
 
     Returns:
         float or tensor_like: the expectation value calculated in accordance to Eq. (35) of

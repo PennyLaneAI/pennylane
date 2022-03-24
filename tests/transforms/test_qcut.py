@@ -2023,21 +2023,28 @@ class TestMCPostprocessing:
             np.array([[1.0], [1.0], [1.0]]),
         ]
 
-        def func(bitstring):
-            return np.sum(bitstring)
+        def fn(x):
+            if x[0] == 0 and x[1] == 0:
+                return 1
+            if x[0] == 0 and x[1] == 1:
+                return -1
+            if x[0] == 1 and x[1] == 0:
+                return -1
+            if x[0] == 1 and x[1] == 1:
+                return 1
 
         fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
 
-        # spy_func = mocker.spy(func)
+        # spy_func = mocker.spy(fn)
         spy_prod = mocker.spy(np, "prod")
         spy_hstack = mocker.spy(np, "hstack")
 
         postprocessed = qcut.qcut_processing_fn_mc(
-            fixed_samples, communication_graph, fixed_settings, shots, func
+            fixed_samples, communication_graph, fixed_settings, shots, fn
         )
         postprocessed = qml.math.cast_like(postprocessed, lib.ones(1))
 
-        expected = 85.33333333333333
+        expected = -85.33333333333333
 
         prod_args = [
             np.array([1.0, 1.0, -1.0, 1.0]),
@@ -2065,6 +2072,45 @@ class TestMCPostprocessing:
                 assert np.allclose(arg, expected_arg)
 
         assert np.isclose(postprocessed, expected)
+
+    def test_reshape_results(self):
+        """
+        Tests that results are reshaped correctly using the `_reshape_results`
+        helper function
+        """
+
+        results = [
+            np.array([[0.0], [1.0]]),
+            np.array([[0.0], [1.0]]),
+            np.array([[0.0], [1.0]]),
+            np.array([[0.0], [1.0]]),
+            np.array([[1.0], [1.0]]),
+            np.array([[1.0]]),
+            np.array([[0.0]]),
+            np.array([[1.0]]),
+            np.array([[1.0]]),
+            np.array([[0.0]]),
+        ]
+
+        expected_reshaped = np.array(
+            [
+                [np.array([0.0, 1.0]), np.array([1.0])],
+                [np.array([0.0, 1.0]), np.array([0.0])],
+                [np.array([0.0, 1.0]), np.array([1.0])],
+                [np.array([0.0, 1.0]), np.array([1.0])],
+                [np.array([1.0, 1.0]), np.array([0.0])],
+            ]
+        )
+
+        edge_data = [(0, 1, {"pair": (qcut.MeasureNode(wires=[1]), qcut.PrepareNode(wires=[1]))})]
+        communication_graph = MultiDiGraph(edge_data)
+        shots = 5
+
+        reshaped = qcut._reshape_results(results, communication_graph, shots)
+
+        for resh, exp_resh in zip(reshaped, expected_reshaped):
+            for arr, exp_arr in zip(resh, exp_resh):
+                assert np.allclose(arr, exp_arr)
 
 
 class TestContractTensors:
