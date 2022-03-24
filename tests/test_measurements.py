@@ -37,7 +37,7 @@ from pennylane.measurements import (
     MidMeasure,
     MeasurementProcess,
     MeasurementValue,
-    MeasurementValueError, _Value,
+    MeasurementValueError, MeasurementLeaf,
 )
 
 
