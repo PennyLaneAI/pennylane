@@ -81,12 +81,28 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
     >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
-    Note that with this pattern we also replace a ``pennylane.S``, ``pennylane.PauliZ`` sequence by ``pennylane.S``.
-    If one would like avoiding this, it possible to give a custom quantum cost dictionary.
+    >>> print(qml.draw(qnode)())
+    0: ──S──Z─╭C──────────┤  <X>
+    1: ──S────╰Z──S─╭C────┤
+    2: ──S──────────╰Z──S─┤
 
-    >>> my_cost = {"PauliZ": , "S"}
-    >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern], )(circuit)
+    >>> print(qml.draw(optimized_qnode)())
+    0: ──S⁻¹─╭C────┤  <X>
+    1: ──Z───╰Z─╭C─┤
+    2: ──Z──────╰Z─┤
+
+    Note that with this pattern we also replace a ``pennylane.S``, ``pennylane.PauliZ`` sequence by ``pennylane.S``.
+    If one would like avoiding this, it possible to give a custom quantum cost dictionary with a negative cost for
+    ``pennylane.PauliZ``.
+
+    >>> my_cost = {"PauliZ": -1 , "S": 1, "S.inv": 1}
+    >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern], custom_quantum_cost=my_cost)(circuit)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+
+    >>> print(qml.draw(optimized_qnode)())
+    0: ──S──Z─╭C────┤  <X>
+    1: ──Z────╰Z─╭C─┤
+    2: ──Z───────╰Z─┤
 
     Now we can consider a more complicated example with the following quantum circuit to be optimized
 

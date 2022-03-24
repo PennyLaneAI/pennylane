@@ -120,7 +120,7 @@ def commutation_dag(circuit):
         return dag
 
     return wrapper
-  
+
 
 def _create_commute_function():
     """This function constructs the ``_commutes`` helper utility function while using closure
