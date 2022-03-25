@@ -332,7 +332,7 @@ def test_jordan_wigner_zero_output(f_obs, q_obs):
 )
 def test_pauli_mult(p1, p2, p_ref):
     r"""Test that _pauli_mult returns the correct operator."""
-    result = qchem.observable._pauli_mult(p1, p2)
+    result = qchem.observable_hf._pauli_mult(p1, p2)
 
     assert result == p_ref
 

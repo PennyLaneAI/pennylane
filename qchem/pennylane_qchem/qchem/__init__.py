@@ -23,6 +23,6 @@ from .hartree_fock import *
 from .integrals import *
 from .matrices import *
 from .molecule import *
-from .observable import *
+from .observable_hf import *
 from .particle_number import *
 from .spin import *

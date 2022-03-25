@@ -449,7 +449,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     return v_op
 
 
-def dipole(
+def dipole_of(
     symbols,
     coordinates,
     name="molecule",
@@ -633,7 +633,7 @@ def dipole(
 
 __all__ = [
     "observable",
-    "dipole",
+    "dipole_of",
     "one_particle",
     "two_particle",
 ]
