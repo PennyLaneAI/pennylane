@@ -23,7 +23,6 @@ def test_integration_mol_file_to_vqe_cost(
 ):
     r"""Test if the output of `decompose()` works with `import_operator()`
     to generate `ExpvalCost()`"""
-
     ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
     hf_file = os.path.join(ref_dir, name)
     qubit_hamiltonian = qchem.decompose(
