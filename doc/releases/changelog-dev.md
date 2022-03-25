@@ -38,7 +38,7 @@
   ```pycon
   >>> dev = qml.device('default.qubit', wires=5)
   >>> qnode = qml.QNode(circuit, dev)
-  >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
+  >>> optimized_qfunc = qml.transforms.pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
   >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
   >>> print(qml.draw(qnode)())
