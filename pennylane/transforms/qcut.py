@@ -714,6 +714,10 @@ def expand_fragment_tapes_mc(
 
     For each pair, a measurement is sampled from
     the Pauli basis and a state preparation is sampled from the corresponding pair of eigenstates.
+    A settings array is also given which tracks the configuration pairs. Since each of the 4
+    measurements has 2 possible eigenvectors, all configurations can be uniquely identified by
+    8 values. The number of rows is determined by the number of cuts and the number of columns
+    is determined by the number of shots.
 
     .. note::
 
@@ -728,7 +732,8 @@ def expand_fragment_tapes_mc(
         shots (int): number of shots
 
     Returns:
-        List[QuantumTape]: the tapes corresponding to each configuration
+        Tuple[List[QuantumTape], np.ndarray]: the tapes corresponding to each configuration and the
+            settings that track and determine each configuration pair
 
     **Example**
 
@@ -755,45 +760,37 @@ def expand_fragment_tapes_mc(
 
     .. code-block:: python
 
-        >>> configs = qml.transforms.qcut.expand_fragment_tapes_mc(tapes, communication_graph, 3)
+        >>> configs, settings = qml.transforms.qcut.expand_fragment_tapes_mc(tapes, communication_graph, 3)
+        >>> print(settings)
+        [[1 6 2]]
         >>> for i, (c1, c2) in enumerate(zip(configs[0], configs[1])):
-        ...    print(f"config {i}:")
-        ...    print(c1.draw())
-        ...    print(c2.draw())
+        ...     print(f"config {i}:")
+        ...     print(c1.draw())
+        ...     print("")
+        ...     print(c2.draw())
+        ...     print("")
         ...
 
         config 0:
-        0: ──H──╭C──┤ Sample[Projector(M0)]
-        1: ─────╰X──┤ Sample[X]
-        M0 =
-        [1]
+        0: ──H─╭C─┤  Sample[|1⟩⟨1|]
+        1: ────╰X─┤  Sample[I]
 
-        1: ──H──╭C──┤ Sample[Projector(M0)]
-        2: ─────╰X──┤ Sample[Projector(M0)]
-        M0 =
-        [1]
+        1: ──X─╭C─┤  Sample[|1⟩⟨1|]
+        2: ────╰X─┤  Sample[|1⟩⟨1|]
 
         config 1:
-        0: ──H──╭C──┤ Sample[Projector(M0)]
-        1: ─────╰X──┤ Sample[Z]
-        M0 =
-        [1]
+        0: ──H─╭C─┤  Sample[|1⟩⟨1|]
+        1: ────╰X─┤  Sample[Z]
 
-        1: ──I──╭C──┤ Sample[Projector(M0)]
-        2: ─────╰X──┤ Sample[Projector(M0)]
-        M0 =
-        [1]
+        1: ──I─╭C─┤  Sample[|1⟩⟨1|]
+        2: ────╰X─┤  Sample[|1⟩⟨1|]
 
         config 2:
-        0: ──H──╭C──┤ Sample[Projector(M0)]
-        1: ─────╰X──┤ Sample[Y]
-        M0 =
-        [1]
+        0: ──H─╭C─┤  Sample[|1⟩⟨1|]
+        1: ────╰X─┤  Sample[X]
 
-        1: ──X──H──S──╭C──┤ Sample[Projector(M0)]
-        2: ───────────╰X──┤ Sample[Projector(M0)]
-        M0 =
-        [1]
+        1: ──H─╭C─┤  Sample[|1⟩⟨1|]
+        2: ────╰X─┤  Sample[|1⟩⟨1|]
     """
     pairs = [e[-1] for e in communication_graph.edges.data("pair")]
     settings = np.random.choice(range(8), size=(len(pairs), shots), replace=True)
