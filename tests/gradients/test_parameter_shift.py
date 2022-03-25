@@ -1034,6 +1034,7 @@ class TestParameterShiftRule:
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
+            R_DTYPE = SpecialObservable
 
             def expval(self, observable, **kwargs):
                 if self.analytic and isinstance(observable, SpecialObservable):
