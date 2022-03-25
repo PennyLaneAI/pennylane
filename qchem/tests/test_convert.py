@@ -26,6 +26,7 @@ from pennylane import qchem
 
 openfermion = pytest.importorskip("openfermion")
 
+
 @pytest.fixture(
     scope="module",
     params=[
