@@ -34,6 +34,7 @@
     [(#2173)](https://github.com/PennyLaneAI/pennylane/pull/2173)
   - External dependencies are replaced with local functions for spin and particle number observables
     [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
+    [(#2362)](https://github.com/PennyLaneAI/pennylane/pull/2362)
   - New functions are added for building fermionic and qubit observables
     [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
   - A new module is created for hosting openfermion to pennylane observable conversion functions
