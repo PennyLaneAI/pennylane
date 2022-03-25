@@ -84,9 +84,9 @@ class AdagradOptimizer(GradientDescentOptimizer):
 
         Args:
             index (int): index of parameter to update.
-            grad_flat (ndarray): flattened list form of gradient
+            grad_flat (ndarray): gradient at index
         """
-        self.accumulation[index] = self.accumulation[index] + grad * grad
+        self.accumulation[index] = self.accumulation[index] + grad**2
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""

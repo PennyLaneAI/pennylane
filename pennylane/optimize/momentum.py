@@ -75,7 +75,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
 
         Args:
             index (int): index of argument to update.
-            grad (ndarray): list form of gradient.
+            grad (ndarray): gradient at index
         """
         self.accumulation[index] = self.momentum * self.accumulation[index] + self.stepsize * grad
 

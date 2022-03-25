@@ -87,7 +87,7 @@ class AdamOptimizer(GradientDescentOptimizer):
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
 
-                self._update_moments(index, grad[trained_index])
+                self._update_accumulation(index, grad[trained_index])
                 args_new[index] = arg - new_stepsize * self.accumulation["fm"][index] / (
                     sqrt(self.accumulation["sm"][index]) + self.eps
                 )
@@ -96,12 +96,12 @@ class AdamOptimizer(GradientDescentOptimizer):
 
         return args_new
 
-    def _update_moments(self, index, grad):
+    def _update_accumulation(self, index, grad):
         r"""Update the moments.
 
         Args:
             index (int): the index of the argument to update
-            grad (ndarray): the flattened gradient for that trainable param
+            grad (ndarray): the gradient for that trainable param
         """
         # update first moment
         self.accumulation["fm"][index] = (
