@@ -15,6 +15,7 @@
 and Psi4 for quantum chemistry calculations using PennyLane."""
 from .structure import *
 from .obs import *
+from .basis_set import *
 
 __all__ = [
     "read_structure",
