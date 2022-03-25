@@ -375,10 +375,11 @@ class TestFiniteDiff:
                 """Diagonalizing gates"""
                 return []
 
-        class DeviceSupporingSpecialObservable(DefaultQubit):
+        class DeviceSupportingSpecialObservable(DefaultQubit):
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
+            R_DTYPE = SpecialObservable
 
             def expval(self, observable, **kwargs):
                 if self.analytic and isinstance(observable, SpecialObservable):
@@ -387,7 +388,7 @@ class TestFiniteDiff:
 
                 return super().expval(observable, **kwargs)
 
-        dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
+        dev = DeviceSupportingSpecialObservable(wires=1, shots=None)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def qnode(x):
