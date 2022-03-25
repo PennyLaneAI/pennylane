@@ -21,7 +21,7 @@ from pennylane import qchem
 def test_integration_mol_file_to_vqe_cost(
     name, core, active, mapping, expected_cost, custom_wires, tol
 ):
-    r"""Test if the output of `decompose()` works with `convert_observable()`
+    r"""Test if the output of `decompose()` works with `import_operator()`
     to generate `ExpvalCost()`"""
 
     ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
