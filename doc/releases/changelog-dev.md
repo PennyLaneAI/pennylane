@@ -186,6 +186,11 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug with `qml.expval`, `qml.var`, `qml.state` and
+  `qml.probs` (when `qml.probs` is the only measurement) where the `dtype`
+  specified on the device did not match the `dtype` of the QNode output.
+  [(#2367)](https://github.com/PennyLaneAI/pennylane/pull/2367)
+
 * Fixes cases with `qml.measure` where unexpected operations were added to the
   circuit.
   [(#2328)](https://github.com/PennyLaneAI/pennylane/pull/2328)
