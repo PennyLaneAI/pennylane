@@ -39,6 +39,7 @@
     [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
   - A new module is created for hosting openfermion to pennylane observable conversion functions
     [(#2199)](https://github.com/PennyLaneAI/pennylane/pull/2199)
+    [(#2371)](https://github.com/PennyLaneAI/pennylane/pull/2371)
   - Expressive names are used for the Hartree-Fock solver functions
     [(#2272)](https://github.com/PennyLaneAI/pennylane/pull/2272)
   - These new additions are added to a feature branch
