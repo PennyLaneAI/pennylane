@@ -118,11 +118,9 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
     # Map the fermionic operator to a qubit operator
     if mapping.strip().lower() == "bravyi_kitaev":
-        return qml.convert.import_operator(
-            openfermion.transforms.bravyi_kitaev(mb_obs), wires=wires
-        )
+        return qml.import_operator(openfermion.transforms.bravyi_kitaev(mb_obs), wires=wires)
 
-    return qml.convert.import_operator(openfermion.transforms.jordan_wigner(mb_obs), wires=wires)
+    return qml.import_operator(openfermion.transforms.jordan_wigner(mb_obs), wires=wires)
 
 
 def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
