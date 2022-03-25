@@ -841,7 +841,7 @@ def _reshape_results(results: Sequence, communication_graph: MultiDiGraph, shots
 
 def qcut_processing_fn_sample(
     results: Sequence, communication_graph: MultiDiGraph, shots: int
-) -> List[np.array]:
+) -> List:
     """
     Function to postprocess samples for the :func:`cut_circuit_mc() <pennylane.cut_circuit_mc>`
     transform. This removes superfluous mid-circuit measurement samples from fragment
@@ -902,12 +902,12 @@ def qcut_processing_fn_mc(
             by the number of cuts and the number of columns is determined by the number of shots.
         shots (int): the number of shots
         classical_processing_fn (callable): a classical postprocessing function to be applied to
-            the reconstructed bitstrings. The expected input is a bitstring; a flat array of length `wires`
+            the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``
             and the output should be a single number within the interval [-1, 1]
 
     Returns:
         float or tensor_like: the expectation value calculated in accordance to Eq. (35) of
-        `Peng et.al <https://arxiv.org/abs/1904.00102>`__.
+        `Peng et al. <https://arxiv.org/abs/1904.00102>`__
     """
     res0 = results[0]
     results = _reshape_results(results, communication_graph, shots)
