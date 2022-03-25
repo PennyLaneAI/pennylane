@@ -34,7 +34,6 @@ from pennylane.operation import (
 _colors = {
     "error": "91",  # red
     "hint": "93",  # yellow
-    # "comment": None, # white
     "comment": 94,  # blue
     "pass": "92",  # green
 }
@@ -88,8 +87,7 @@ def is_diagonal(matrix):
         bool: Whether the input matrix is a diagonal matrix
     """
     # Extract the diagonal, subtract it from the input, and check whether the result is 0.
-    diagonal = np.diag(matrix)
-    off_diagonal = matrix - np.diag(diagonal)
+    off_diagonal = matrix - np.diag(np.diag(matrix))
     return np.allclose(off_diagonal, np.zeros_like(matrix))
 
 
@@ -491,6 +489,10 @@ class OperationChecker:
         return parameters
 
     def _check_instantiation(self, op, parameters, wires):
+        """Check whether instantiation of an operation works, either
+        with provided parameters and wires, or with a series of numbers
+        of parameters. The number(s) of parameters with which instantiation
+        works is stored in ``self.tmp["possible_num_params"]``."""
         if self.tmp["num_params_known"]:
             op(*parameters, wires=wires)
             return [op.num_params]
@@ -523,6 +525,10 @@ class OperationChecker:
         self.tmp["possible_num_params"] = possible_num_params
 
     def _check_single_method(self, op, method_tuple, parameters, wires):
+        """Check whether a specific method of an operation works with
+        provided parameters and wires, or with the same number of
+        parameters as the instantiation allowed."""
+
         method, expected_exc, use_wires = method_tuple
         wrapped_method = wrap_op_method(op, method, expected_exc)
         kwargs = {"wires": wires} if use_wires else {}
