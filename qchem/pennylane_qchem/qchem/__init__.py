@@ -16,15 +16,12 @@ and Psi4 for quantum chemistry calculations using PennyLane."""
 from .structure import *
 from .obs import *
 from .basis_set import *
-
-__all__ = [
-    "read_structure",
-    "meanfield",
-    "active_space",
-    "decompose",
-    "molecular_hamiltonian",
-    "hf_state",
-    "excitations",
-    "excitations_to_wires",
-    "obs",
-]
+from .convert import *
+from .dipole import *
+from .hamiltonian import *
+from .hartree_fock import *
+from .integrals import *
+from .matrices import *
+from .molecule import *
+from .particle_number import *
+from .spin import *
