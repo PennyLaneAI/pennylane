@@ -126,6 +126,7 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~transforms.qcut.kahypar_cut
     ~transforms.qcut.place_wire_cuts
     ~transforms.qcut.find_and_place_cuts
+    ~transforms.qcut.cut_circuit_mc
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

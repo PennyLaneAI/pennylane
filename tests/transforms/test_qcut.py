@@ -2115,12 +2115,14 @@ class TestMCPostprocessing:
 
 class TestCutCircuitMCTransform:
     """
-    TODO: Docstring
+    Tests that the  `cut_circuit_mc` transform gives the correct results.
     """
 
+    @flaky(max_runs=3)
     def test_cut_circuit_mc_expval(self):
         """
-        TODO: Docstring
+        Tests that a circuit containing sampling measurements can be cut and
+        recombined to give the correct expectation value
         """
 
         dev = qml.device("default.qubit", wires=3)
@@ -2176,8 +2178,7 @@ class TestCutCircuitMCTransform:
         cut_res_mc = cut_circuit_mc(v)
 
         target = target_circuit(v)
-
-        assert np.isclose(cut_res_mc, target, atol=0.01)  # not guaranteed to pass
+        assert np.isclose(cut_res_mc, target, atol=0.05)  # not guaranteed to pass
 
     def test_cut_circuit_mc_sample(self):
         """

@@ -944,12 +944,62 @@ def qcut_processing_fn_mc(
 def cut_circuit_mc(
     tape: QuantumTape,
     shots: int,
-    device_wires: Optional[Wires] = None,
+    device_wires: Wires,
     max_depth: int = 1,
     classical_processing_fn: callable = None,
 ) -> Tuple[Tuple[QuantumTape], Callable]:
     """
-    TODO: Docstring
+    Cut up a circuit containing sample measurements into smaller fragments.
+
+    Following the approach of `Peng et al. <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.125.150504>`__,
+    strategic placement of :class:`~.WireCut` operations can allow a quantum circuit to be split
+    into disconnected circuit fragments. This transform allows for sampled measurement outcomes
+    to be recombined to full bitstrings and if a classical processing function is supplied,
+    an expectation value will be evaluated.
+
+    Args:
+        tape (QuantumTape): the tape of the full circuit to be cut
+        shots (int): number of shots
+        device_wires (Wires):  wires of the device that the cut circuits are to be run on
+        max_depth (int): the maximum depth used to expand the circuit while searching for wire cuts
+        classical_processing_fn (callable): a classical postprocessing function to be applied to
+            the reconstructed bitstrings. The expected input is a bitstring; a flat array of length `wires`
+            and the output should be a single number within the interval [-1, 1]
+
+    Returns:
+        Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a
+        result of cutting and a post-processing function which either recombines samples to a full
+        circuit bitstring or further calculates an expectation value if a classical processing function
+        is supplied
+
+    **Example**
+
+    The following :math:`3`-qubit circuit containins a :class:`~.WireCut` operation and a :func:`~sample`
+    measurement. When decorated with ``@qml.cut_circuit_mc``, we can cut the circuit into two
+    :math:`2`-qubit fragments:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.cut_circuit_mc(shots=shots, device_wires=[0, 1])
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(0.89, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(0.3, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 1, 2])
+
+    TODO: finish example with working code, add usage details
+
     """
 
     g = tape_to_graph(tape)
@@ -984,6 +1034,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     to replace execution variables"""
 
     transform_max_diff = tkwargs.pop("max_diff", None)
+    tkwargs.setdefault("device_wires", qnode.device.wires)
 
     if "shots" in inspect.signature(qnode.func).parameters:
         raise ValueError(
