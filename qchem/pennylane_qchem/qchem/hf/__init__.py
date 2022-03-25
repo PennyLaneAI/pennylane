@@ -58,5 +58,3 @@ from .matrices import (
 )
 from .molecule import Molecule
 from .observable import _pauli_mult, fermionic_observable, jordan_wigner, qubit_observable, simplify
-from .particle_number import particle_number
-from .spin import _spin2_matrix_elements, spin2, spinz
