@@ -843,6 +843,26 @@ class TestMeasurementValueManipulation:
         assert m_inversion.branches[(0,)] == True
         assert m_inversion.branches[(1,)] == False
 
+    def test_lt(self):
+        m = MeasurementValue("m")
+        m_inversion = m < 0.5
+        assert m_inversion.branches[(0,)] == True
+        assert m_inversion.branches[(1,)] == False
+
+    def test_lt(self):
+        m = MeasurementValue("m")
+        m_inversion = m > 0.5
+        assert m_inversion.branches[(0,)] == False
+        assert m_inversion.branches[(1,)] == True
+
+    def merge_measurements_values_dependant_on_same_measurement(self):
+        m0 = MeasurementValue("m")
+        m1 = MeasurementValue("m")
+        combined = m0 + m1
+        assert combined.branches[(0,)] == 0
+        assert combined.branches[(1,)] == 2
+
+
     def test_op_with_non_measurement_value(self):
         m = MeasurementValue("m")
         m_add = m + 10
