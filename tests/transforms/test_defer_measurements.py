@@ -865,7 +865,14 @@ class TestMeasurementValueManipulation:
     def combine_measurement_value_with_measurement_leaf(self):
         m0 = MeasurementValue("m")
         l0 = MeasurementLeaf(10)
-        out = m0 + l0
+        out = qml.apply_to_measurement(lambda x, y: x + y)(m0, l0)
+        assert out.branches[(0,)] == 10
+        assert out.branches[(1,)] == 11
+
+    def combine_measurement_value_with_measurement_leaf_reverse(self):
+        m0 = MeasurementValue("m")
+        l0 = MeasurementLeaf(10)
+        out = qml.apply_to_measurement(lambda x, y: x + y)(l0, m0)
         assert out.branches[(0,)] == 10
         assert out.branches[(1,)] == 11
 
