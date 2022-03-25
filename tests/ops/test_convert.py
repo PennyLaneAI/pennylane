@@ -348,12 +348,12 @@ def test_observable_conversion(mol_name, terms_ref, custom_wires, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("terms_ref", "format"),
+    ("terms_ref", "lib_name"),
     [
         ({((0, "Z"),): (0.155924093421341 + 0j)}, "qiskit"),
     ],
 )
-def test_convert_format_not_supported(terms_ref, format, monkeypatch):
+def test_convert_format_not_supported(terms_ref, lib_name, monkeypatch):
     """Test if an ImportError is raised when openfermion is requested but not installed"""
 
     qOp = openfermion.QubitOperator()
@@ -361,7 +361,7 @@ def test_convert_format_not_supported(terms_ref, format, monkeypatch):
         monkeypatch.setattr(qOp, "terms", terms_ref)
 
     with pytest.raises(TypeError, match="Converter does not exist for"):
-        qml.import_operator(qOp, format)
+        qml.import_operator(qOp, format=lib_name)
 
 
 def test_not_xyz_pennylane_to_openfermion():
