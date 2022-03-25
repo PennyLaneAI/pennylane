@@ -4,8 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Add a function to apply pattern matching algorithm and return the list of maximal matches and also a transform that 
-  uses those results for circuit optimization.
+* Adds an optimization transform that matches pieces of user-provided identity templates in a circuit and replaces them with an equivalent component.
   [(#2032)](https://github.com/PennyLaneAI/pennylane/pull/2032)
   
   First let's consider the following circuit where we want to replace sequence of two ``pennylane.S`` gates with a
