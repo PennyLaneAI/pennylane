@@ -114,7 +114,10 @@ def defer_measurements(tape):
                         if wire_val and flipped[i] or not wire_val and not flipped[i]:
                             qml.PauliX(control[i])
                             flipped[i] = not flipped[i]
-                    ctrl(lambda: apply(op.then_op), control=Wires(control))()
+                    ctrl(
+                        lambda: apply(op.then_op),  # pylint: disable=cell-var-from-loop
+                        control=Wires(control)
+                    )()
             for i, flip in enumerate(flipped):
                 if flip:
                     qml.PauliX(control[i])
