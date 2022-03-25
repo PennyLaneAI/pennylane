@@ -110,9 +110,6 @@ def atom_basis_data(name, atom):
                             (l, basis["exponents"][i], basis["coefficients"][i + sp_count + 1])
                         )
             sp_count += 1
-        if j == "P":
-            for l in p:
-                params.append((l, basis["exponents"][i], basis["coefficients"][i + sp_count]))
     return params
 
 
