@@ -116,7 +116,7 @@ def defer_measurements(tape):
                             flipped[i] = not flipped[i]
                     ctrl(
                         lambda: apply(op.then_op),  # pylint: disable=cell-var-from-loop
-                        control=Wires(control)
+                        control=Wires(control),
                     )()
             for i, flip in enumerate(flipped):
                 if flip:

@@ -630,7 +630,6 @@ def density_matrix(wires):
     return MeasurementProcess(State, wires=qml.wires.Wires(wires))
 
 
-
 class MeasurementValueError(ValueError):
     """Error raised when an unknown measurement value is being used."""
 
@@ -660,6 +659,7 @@ def apply_to_measurement(func: Callable):
             lambda *unwrapped: func(*unwrapped, **kwargs)  # pylint: disable=unnecessary-lambda
         )
         return partial
+
     return wrapper
 
 
@@ -707,7 +707,11 @@ class MeasurementLeaf(Generic[T]):
         lines = []
         for k, v in self.branches.items():
             lines.append(
-                "if " + ",".join([f"{measurements[i]}={k[i]}" for i in range(len(measurements))]) + " => " + str(v))
+                "if "
+                + ",".join([f"{measurements[i]}={k[i]}" for i in range(len(measurements))])
+                + " => "
+                + str(v)
+            )
         return "\n".join(lines)
 
     def __repr__(self):
@@ -776,7 +780,9 @@ class MeasurementValue(Generic[T]):
                     self.zero_case.merge(other.zero_case),
                     self.one_case.merge(other.one_case),
                 )
-            if self.depends_on < other.depends_on:  # organize tree structure based on lexicographical order of uuids
+            if (
+                self.depends_on < other.depends_on
+            ):  # organize tree structure based on lexicographical order of uuids
                 return MeasurementValue(
                     self.depends_on,
                     self.zero_case.merge(other),
@@ -815,7 +821,7 @@ class MeasurementValue(Generic[T]):
             branch_dict[(1,)] = self.one_case.values
         return branch_dict
 
-    def __add__(self, other: Union[T, 'MeasurementValue[T]', MeasurementLeaf[T]]):
+    def __add__(self, other: Union[T, "MeasurementValue[T]", MeasurementLeaf[T]]):
         return apply_to_measurement(lambda x, y: x + y)(self, other)
 
     def __invert__(self):
@@ -823,22 +829,23 @@ class MeasurementValue(Generic[T]):
         value."""
         return apply_to_measurement(lambda x: not x)(self)
 
-
-    def __eq__(self, other: Union[T, 'MeasurementValue[T]', MeasurementLeaf[T]]):
+    def __eq__(self, other: Union[T, "MeasurementValue[T]", MeasurementLeaf[T]]):
         """Allow asserting measurement values."""
         return apply_to_measurement(lambda x, y: x == y)(self, other)
 
-    def __le__(self, other: Union[T, 'MeasurementValue[T]', MeasurementLeaf[T]]):
+    def __le__(self, other: Union[T, "MeasurementValue[T]", MeasurementLeaf[T]]):
         return apply_to_measurement(lambda x, y: x < y)(self, other)
 
-    def __gt__(self, other: Union[T, 'MeasurementValue[T]', MeasurementLeaf[T]]):
+    def __gt__(self, other: Union[T, "MeasurementValue[T]", MeasurementLeaf[T]]):
         return apply_to_measurement(lambda x, y: x > y)(self, other)
 
     def __str__(self):
         m = self.measurements
         lines = []
         for k, v in self.branches.items():
-            lines.append("if " + ",".join([f"{m[i]}={k[i]}" for i in range(len(m))]) + " => " + str(v))
+            lines.append(
+                "if " + ",".join([f"{m[i]}={k[i]}" for i in range(len(m))]) + " => " + str(v)
+            )
         return "\n".join(lines)
 
     def __repr__(self):

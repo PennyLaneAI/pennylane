@@ -813,7 +813,6 @@ class TestDrawing:
 
 
 class TestMeasurementValueManipulation:
-
     def test_apply_function_to_measurement(self):
 
         m = MeasurementValue("m")
@@ -833,8 +832,10 @@ class TestMeasurementValueManipulation:
 
     def test_equality_with_scalar(self):
         m = MeasurementValue("m")
-        m_eq = (m == 0)
-        assert m_eq.branches[(0,)] == True  # confirming value is actually eq to True, not just truthy
+        m_eq = m == 0
+        assert (
+            m_eq.branches[(0,)] == True
+        )  # confirming value is actually eq to True, not just truthy
         assert m_eq.branches[(1,)] == False
 
     def test_inversion(self):
@@ -876,7 +877,6 @@ class TestMeasurementValueManipulation:
         assert out.branches[(0,)] == 10
         assert out.branches[(1,)] == 11
 
-
     def test_op_with_non_measurement_value(self):
         m = MeasurementValue("m")
         m_add = m + 10
@@ -888,7 +888,7 @@ class TestMeasurementValueManipulation:
         m1 = MeasurementValue("m1")
         m2 = MeasurementValue("m3")
 
-        out = qml.apply_to_measurement(lambda x, y, z: np.sin(4*x + 2*y + z))(m0, m1, m2)
+        out = qml.apply_to_measurement(lambda x, y, z: np.sin(4 * x + 2 * y + z))(m0, m1, m2)
 
         assert out.branches[(0, 0, 0)] == np.sin(0)
         assert out.branches[(0, 0, 1)] == np.sin(1)
@@ -928,6 +928,3 @@ class TestMeasurementValueManipulation:
 
             qml.cond(out < 20, qml.RY, None)(5.4, wires=4)
             return qml.probs(wires=[4])
-
-
-
