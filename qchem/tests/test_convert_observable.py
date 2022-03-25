@@ -43,7 +43,7 @@ def test_integration_mol_file_to_vqe_cost(
     if custom_wires is None:
         wires = num_qubits
     elif isinstance(custom_wires, dict):
-        wires = qchem.structure._process_wires(custom_wires)
+        wires = qml.convert._process_wires(custom_wires)
     else:
         wires = custom_wires[:num_qubits]
     dev = qml.device("default.qubit", wires=wires)
