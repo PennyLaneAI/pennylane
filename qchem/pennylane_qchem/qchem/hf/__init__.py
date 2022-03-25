@@ -17,13 +17,6 @@ Hartree-Fock calculations.
 """
 from .basis_data import STO3G, atomic_numbers
 from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
-from .convert import (
-    _openfermion_pennylane_equivalent,
-    _openfermion_to_pennylane,
-    _pennylane_to_openfermion,
-    _process_wires,
-    import_operator,
-)
 from .dipole import dipole_integrals, dipole_moment, fermionic_dipole
 from .hamiltonian import electron_integrals, fermionic_hamiltonian, mol_hamiltonian
 from .hartree_fock import hf_energy, nuclear_energy, scf
