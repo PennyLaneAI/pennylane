@@ -78,7 +78,6 @@ from pennylane.transforms import (
     simplify,
 )
 from pennylane.ops.functions import *
-
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
 from pennylane.debugging import snapshots
