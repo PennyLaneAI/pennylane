@@ -52,81 +52,8 @@
   2: ──Z──────╰Z─┤
   ```
 
-  Note that with this pattern we also replace a ``pennylane.S``, ``pennylane.PauliZ`` sequence by ``pennylane.S``.
-  If one would like avoiding this, it possible to give a custom quantum cost dictionary with a negative cost for
-  ``pennylane.PauliZ``.
-  
-  ```pycon
-  >>> my_cost = {"PauliZ": -1 , "S": 1, "S.inv": 1}
-  >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern], custom_quantum_cost=my_cost)(circuit)
-  >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-
-  >>> print(qml.draw(optimized_qnode)())
-  0: ──S──Z─╭C────┤  <X>
-  1: ──Z────╰Z─╭C─┤
-  2: ──Z───────╰Z─┤
-  ```
-
-  Now we can consider a more complicated example with the following quantum circuit to be optimized
-
-  ```python
-  def circuit():
-      qml.Toffoli(wires=[3, 4, 0])
-      qml.CNOT(wires=[1, 4])
-      qml.CNOT(wires=[2, 1])
-      qml.Hadamard(wires=3)
-      qml.PauliZ(wires=1)
-      qml.CNOT(wires=[2, 3])
-      qml.Toffoli(wires=[2, 3, 0])
-      qml.CNOT(wires=[1, 4])
-      return qml.expval(qml.PauliX(wires=0))
-  ```
-
-  We define a pattern that implement the identity:
-
-  ```python
-  with qml.tape.QuantumTape() as pattern:
-      qml.CNOT(wires=[1, 2])
-      qml.CNOT(wires=[0, 1])
-      qml.CNOT(wires=[1, 2])
-      qml.CNOT(wires=[0, 1])
-      qml.CNOT(wires=[0, 2])
-  ```
-
-  For optimizing the circuit given the given following pattern of CNOTs we apply the `pattern_matching`
-  transform.
-  
-  ```pycon
-  >>> dev = qml.device('default.qubit', wires=5)
-  >>> qnode = qml.QNode(circuit, dev)
-  >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
-  >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-  ```
-
-  In our case, it is possible to find three CNOTs and replace this pattern with only two CNOTs and therefore
-  optimizing the circuit. The number of CNOTs in the circuit is reduced by one.
-  
-  ```pycon
-  >>> qml.specs(qnode)()["gate_types"]["CNOT"]
-  3
-
-  >>> qml.specs(optimized_qnode)()["gate_types"]["CNOT"]
-  2
-
-  >>> print(qml.draw(qnode)())
-  0: ─╭X──────────╭X────┤  <X>
-  1: ─│──╭C─╭X──Z─│──╭C─┤
-  2: ─│──│──╰C─╭C─├C─│──┤
-  3: ─├C─│───H─╰X─╰C─│──┤
-  4: ─╰C─╰X──────────╰X─┤
-
-  >>> print(qml.draw(optimized_qnode)())
-  0: ─╭X──────────╭X─┤  <X>
-  1: ─│─────╭X──Z─│──┤
-  2: ─│──╭C─╰C─╭C─├C─┤
-  3: ─├C─│───H─╰X─╰C─┤
-  4: ─╰C─╰X──────────┤
-  ```
+  For more details on using pattern matching optimization you can check the corresponding documentation and also the
+  following [paper](https://dl.acm.org/doi/full/10.1145/3498325).
 
 * Added a swap based transpiler transform.
   [(#2118)](https://github.com/PennyLaneAI/pennylane/pull/2118)
