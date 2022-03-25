@@ -19,7 +19,7 @@ import math
 
 import pennylane as qml
 import pennylane.numpy as np
-from pennylane.measurements import MeasurementValue
+from pennylane.measurements import MeasurementValue, MeasurementLeaf
 
 
 class TestQNode:
@@ -861,6 +861,13 @@ class TestMeasurementValueManipulation:
         combined = m0 + m1
         assert combined.branches[(0,)] == 0
         assert combined.branches[(1,)] == 2
+
+    def combine_measurement_value_with_measurement_leaf(self):
+        m0 = MeasurementValue("m")
+        l0 = MeasurementLeaf(10)
+        out = m0 + l0
+        assert out.branches[(0,)] == 10
+        assert out.branches[(1,)] == 11
 
 
     def test_op_with_non_measurement_value(self):
