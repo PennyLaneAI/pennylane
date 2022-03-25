@@ -567,7 +567,7 @@ class Hamiltonian(Observable):
         r"""The scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
             self_coeffs = copy(self.coeffs)
-            coeffs = a * self_coeffs
+            coeffs = qml.math.multiply(a, self_coeffs)
             return qml.Hamiltonian(coeffs, self.ops.copy())
 
         raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
