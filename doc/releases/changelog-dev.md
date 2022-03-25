@@ -4,6 +4,57 @@
 
 <h3>New features since last release</h3>
 
+* Adds an optimization transform that matches pieces of user-provided identity templates in a circuit and replaces them with an equivalent component.
+  [(#2032)](https://github.com/PennyLaneAI/pennylane/pull/2032)
+  
+  First let's consider the following circuit where we want to replace sequence of two ``pennylane.S`` gates with a
+  ``pennylane.PauliZ`` gate.
+  
+  ```python
+  def circuit():
+      qml.S(wires=0)
+      qml.PauliZ(wires=0)
+      qml.S(wires=1)
+      qml.CZ(wires=[0, 1])
+      qml.S(wires=1)
+      qml.S(wires=2)
+      qml.CZ(wires=[1, 2])
+      qml.S(wires=2)
+      return qml.expval(qml.PauliX(wires=0))
+  ```
+
+  Therefore we use the following pattern that implements the identity:
+
+  ```python
+  with qml.tape.QuantumTape() as pattern:
+      qml.S(wires=0)
+      qml.S(wires=0)
+      qml.PauliZ(wires=0)
+  ```
+
+  For optimizing the circuit given the given following template of CNOTs we apply the `pattern_matching`
+  transform.
+  
+  ```pycon
+  >>> dev = qml.device('default.qubit', wires=5)
+  >>> qnode = qml.QNode(circuit, dev)
+  >>> optimized_qfunc = qml.transforms.pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
+  >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+
+  >>> print(qml.draw(qnode)())
+  0: ──S──Z─╭C──────────┤  <X>
+  1: ──S────╰Z──S─╭C────┤
+  2: ──S──────────╰Z──S─┤
+
+  >>> print(qml.draw(optimized_qnode)())
+  0: ──S⁻¹─╭C────┤  <X>
+  1: ──Z───╰Z─╭C─┤
+  2: ──Z──────╰Z─┤
+  ```
+
+  For more details on using pattern matching optimization you can check the corresponding documentation and also the
+  following [paper](https://dl.acm.org/doi/full/10.1145/3498325).
+
 * Added a swap based transpiler transform.
   [(#2118)](https://github.com/PennyLaneAI/pennylane/pull/2118)
 
