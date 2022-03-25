@@ -634,7 +634,6 @@ class MeasurementValueError(ValueError):
     """Error raised when an unknown measurement value is being used."""
 
 
-# pylint: disable=protected-access
 def apply_to_measurement(func: Callable):
     """
     Apply an arbitrary function to a `MeasurementValue` or set of `MeasurementValue`s.
