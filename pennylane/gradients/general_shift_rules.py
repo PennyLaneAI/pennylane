@@ -414,8 +414,8 @@ def generate_shifted_tapes(tape, indices, shifts, multipliers=None):
     """
     multipliers = np.ones_like(shifts) if multipliers is None else multipliers
     if isinstance(indices, int):
-        shifts = qml.math.array(shifts).reshape((1, len(shifts)))
-        multipliers = qml.math.array(multipliers).reshape((1, len(multipliers)))
+        shifts = qml.math.array(shifts).reshape((len(shifts), 1))
+        multipliers = qml.math.array(multipliers).reshape((len(multipliers), 1))
         indices = [indices]
 
     params = list(tape.get_parameters())
