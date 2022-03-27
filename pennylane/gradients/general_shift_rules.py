@@ -20,71 +20,31 @@ import numpy as np
 import pennylane as qml
 
 
-def _process_shifts_with_multipliers(rule, tol):
-    """Utility function to process gradient rules that contian multipliers.
-
-    Args:
-        rule (array): a ``(3, M)`` array corresponding to ``M`` terms
-            with function shifts. The first row of
-            the array corresponds to the linear combination coefficients;
-            the second and third row contain the multipliers and shift values, respectively
-        tol (float): floating point tolerance used when comparing shifts/coefficients
-            Terms with coefficients below ``tol`` will be removed.
-        check_duplicates (bool): whether to check the input ``rule`` for duplicate
-            shift values in its second row.
-
-    This utility function accepts coefficients and shift values, and performs the following
-    processing:
-
-    - Sets all small (within absolute tolerance ``tol``) coefficients and shifts to 0
-
-    - Removes terms with the coefficients are 0 (including the ones set to 0 in the previous step)
-
-    - Terms with the same multiplier and shift value are combined into a single term.
-
-    - Finally, the terms are sorted according to the absolute value of ``shift``,
-      ensuring that, if there is a zero-shift term, this is returned first.
-    """
-    round_decimals = int(-np.log10(tol))
-    rounded_rule = np.round(rule[1:], round_decimals)
-    unique_mods = np.unique(rounded_rule, axis=1)
-
-    if rule.shape[-1] != len(unique_mods):
-        # sum columns that have the same multiplier and shift value
-        coeffs = [
-            np.sum(rule[0, np.all(rounded_rule[1:] == mod.reshape((2, 1)), axis=0)])
-            for mod in unique_mods.T
-        ]
-        rule = np.vstack([np.stack(coeffs), unique_mods])
-
-    # sort columns according to abs(shift)
-    return rule[:, np.argsort(np.abs(rule)[-1])]
-
-
 def process_shifts(rule, tol=1e-10, check_duplicates=True):
     """Utility function to process gradient rules.
 
     Args:
-        rule (array): a ``(2, M)`` array corresponding to ``M`` terms
-            with function shifts. The first row of
-            the array corresponds to the linear combination coefficients;
-            the second row contains the shift values.
+        rule (array): a ``(N, M)`` array corresponding to ``M`` terms
+            with parameter shifts. ``N`` has to be either ``2`` or ``3``.
+            The first row corresponds to the linear combination coefficients;
+            the last row contains the shift values.
+            If ``N=3``, the middle row contains the multipliers.
         tol (float): floating point tolerance used when comparing shifts/coefficients
             Terms with coefficients below ``tol`` will be removed.
         check_duplicates (bool): whether to check the input ``rule`` for duplicate
             shift values in its second row.
 
-    This utility function accepts coefficients and shift values, and performs the following
-    processing:
+    This utility function accepts coefficients and shift values as well as optionally
+    multipliers, and performs the following processing:
 
-    - Sets all small (within absolute tolerance ``tol``) coefficients and shifts to 0
+    - Set all small (within absolute tolerance ``tol``) coefficients and shifts to 0
 
-    - Removes terms with the coefficients are 0 (including the ones set to 0 in the previous step)
+    - Remove terms where the coefficients are 0 (including the ones set to 0 in the previous step)
 
-    - Terms with the same shift value are combined into a single term.
+    - Terms with the same shift value (and multiplier) are combined into a single term.
 
     - Finally, the terms are sorted according to the absolute value of ``shift``,
-      ensuring that, if there is a zero-shift term, this is returned first.
+      This ensures that a zero-shift term, if it exists, is returned first.
     """
     # remove all small coefficients and shifts
     rule[np.abs(rule) < tol] = 0
@@ -93,17 +53,28 @@ def process_shifts(rule, tol=1e-10, check_duplicates=True):
     rule = rule[:, ~(rule[0] == 0)]
 
     if check_duplicates:
-        if rule.shape[0] == 3:
-            return _process_shifts_with_multipliers(rule, tol)
-        # determine unique shifts
         round_decimals = int(-np.log10(tol))
-        rounded_rule = np.round(rule[-1], round_decimals)
-        unique_shifts = np.unique(rounded_rule)
+        rounded_rule = np.round(rule[1:], round_decimals)
+        # determine unique shifts or (multiplier, shift) combinations
+        unique_mods = np.unique(rounded_rule, axis=1)
 
-        if rule.shape[-1] != len(unique_shifts):
-            # sum columns that have the same shift value
-            coeffs = [np.sum(rule[0, rounded_rule == s]) for s in unique_shifts]
-            rule = np.stack([np.stack(coeffs), unique_shifts])
+        if rule.shape[-1] != unique_mods.shape[-1]:
+            if rule.shape[0] == 3:
+                # sum columns that have the same multiplier and shift value
+                # TODO: Check whether the list comprehension can be absorbed into a smart
+                # single NumPy call
+                coeffs = [
+                    np.sum(rule[0, np.all(rounded_rule[1:] == mod.reshape((2, 1)), axis=0)])
+                    for mod in unique_mods.T
+                ]
+            else:
+                # sum columns that have the same shift value
+                rounded_rule = rounded_rule[0]
+                # TODO: Check whether the list comprehension can be absorbed into a smart
+                # single NumPy call
+                coeffs = [np.sum(rule[0, rounded_rule == s]) for s in unique_mods[0]]
+
+            rule = np.vstack([np.stack(coeffs), unique_mods])
 
     # sort columns according to abs(shift)
     return rule[:, np.argsort(np.abs(rule)[-1])]
@@ -421,66 +392,36 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
     return _combine_shift_rules(rules)
 
 
-def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
-    r"""Generate a list of tapes where the corresponding trainable parameter
-    index has been shifted by the values given.
-
-    Args:
-        tape (.QuantumTape): input quantum tape
-        idx (int): trainable parameter index to shift the parameter of
-        shifts (Sequence[float or int]): sequence of shift values
-        multipliers (Sequence[float or int]): Sequence of multiplier values to
-            scale the parameter by. If not provided, the parameter will
-            not be scaled.
-
-    Returns:
-        list[QuantumTape]: List of quantum tapes. Each tape has parameter
-        ``idx`` shifted by consecutive values of ``shift``. The length
-        of the returned list of tapes will match the length of ``shifts``.
-    """
-    params = list(tape.get_parameters())
-    tapes = []
-
-    for i, s in enumerate(shifts):
-        new_params = params.copy()
-        shifted_tape = tape.copy(copy_operations=True)
-
-        if multipliers is not None:
-            m = multipliers[i]
-            new_params[idx] = new_params[idx] * qml.math.convert_like(m, new_params[idx])
-
-        new_params[idx] = new_params[idx] + qml.math.convert_like(s, new_params[idx])
-        shifted_tape.set_parameters(new_params)
-        tapes.append(shifted_tape)
-
-    return tapes
-
-
-def generate_multishifted_tapes(tape, indices, shifts, multipliers=None):
-
+def generate_shifted_tapes(tape, indices, shifts, multipliers=None):
     r"""Generate a list of tapes where the corresponding trainable parameter
     indices have been shifted by the values given.
 
     Args:
         tape (.QuantumTape): input quantum tape
-        indices (Sequence[int]): trainable gate parameter indices to shift
-        shifts (Sequence[Sequence[float or int]]): Nested sequence of shift values
-            with the same length as ``indices``. The length of the inner sequence
-            determines how many shifts are applied separately to the same gate parameter.
-        multipliers (Sequence[Sequence[float or int]]): Nested sequence of multiplier values
-            matching the shape of ``shifts``. Each multiplier scales the corresponding gate
-            parameter before the shift is applied.
+        indices (int or Sequence[int]): trainable gate parameter indices to shift
+        shifts (Sequence[float or int] or Sequence[Sequence[float or int]]): Nested sequence
+            of shift values with the same length as ``indices`` or single sequence if ``indices``
+            is an integer. The length of the inner sequence determines how many shifts are
+            applied separately to the same gate parameter.
+        multipliers (Sequence[float or int] or Sequence[Sequence[float or int]]): Nested sequence
+            of multiplier values matching the format of ``shifts``. Each multiplier scales
+            the corresponding gate parameter before the shift is applied.
 
     Returns:
         list[QuantumTape]: List of quantum tapes. Each tape has multiple parameters
             (indicated by ``indices``) shifted by the values of ``shifts``. The length
             of the returned list of tapes will match the length of ``shifts``.
     """
-    params = list(tape.get_parameters())
     multipliers = np.ones_like(shifts) if multipliers is None else multipliers
+    if isinstance(indices, int):
+        shifts = qml.math.array(shifts).reshape((1, len(shifts)))
+        multipliers = qml.math.array(multipliers).reshape((1, len(multipliers)))
+        indices = [indices]
+
+    params = list(tape.get_parameters())
     tapes = []
 
-    for shift, mult in zip(shifts, mults):
+    for shift, mult in zip(shifts, multipliers):
         new_params = params.copy()
         shifted_tape = tape.copy(copy_operations=True)
         for idx, s, m in zip(indices, shift, mult):
