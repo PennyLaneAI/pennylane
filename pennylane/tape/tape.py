@@ -1232,6 +1232,7 @@ class QuantumTape(AnnotatedQueue):
                 if op.inverse:
                     op.inv()
 
+        # pylint: disable=no-member
         # decompose the queue
         operations = tape.expand(depth=2, stop_at=lambda obj: obj.name in OPENQASM_GATES).operations
 

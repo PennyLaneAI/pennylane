@@ -4,6 +4,76 @@
 
 <h3>New features since last release</h3>
 
+* Adds an optimization transform that matches pieces of user-provided identity templates in a circuit and replaces them with an equivalent component.
+  [(#2032)](https://github.com/PennyLaneAI/pennylane/pull/2032)
+  
+  First let's consider the following circuit where we want to replace sequence of two ``pennylane.S`` gates with a
+  ``pennylane.PauliZ`` gate.
+  
+  ```python
+  def circuit():
+      qml.S(wires=0)
+      qml.PauliZ(wires=0)
+      qml.S(wires=1)
+      qml.CZ(wires=[0, 1])
+      qml.S(wires=1)
+      qml.S(wires=2)
+      qml.CZ(wires=[1, 2])
+      qml.S(wires=2)
+      return qml.expval(qml.PauliX(wires=0))
+  ```
+
+  Therefore we use the following pattern that implements the identity:
+
+  ```python
+  with qml.tape.QuantumTape() as pattern:
+      qml.S(wires=0)
+      qml.S(wires=0)
+      qml.PauliZ(wires=0)
+  ```
+
+  For optimizing the circuit given the given following template of CNOTs we apply the `pattern_matching`
+  transform.
+  
+  ```pycon
+  >>> dev = qml.device('default.qubit', wires=5)
+  >>> qnode = qml.QNode(circuit, dev)
+  >>> optimized_qfunc = qml.transforms.pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
+  >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+
+  >>> print(qml.draw(qnode)())
+  0: ──S──Z─╭C──────────┤  <X>
+  1: ──S────╰Z──S─╭C────┤
+  2: ──S──────────╰Z──S─┤
+
+  >>> print(qml.draw(optimized_qnode)())
+  0: ──S⁻¹─╭C────┤  <X>
+  1: ──Z───╰Z─╭C─┤
+  2: ──Z──────╰Z─┤
+  ```
+
+  For more details on using pattern matching optimization you can check the corresponding documentation and also the
+  following [paper](https://dl.acm.org/doi/full/10.1145/3498325).
+
+* Added a swap based transpiler transform.
+  [(#2118)](https://github.com/PennyLaneAI/pennylane/pull/2118)
+
+  The transpile function takes a quantum function and a coupling map as inputs and compiles the circuit to ensure that it can be 
+  executed on corresponding hardware. The transform can be used as a decorator in the following way:
+
+  ```python
+  dev = qml.device('default.qubit', wires=4)
+  
+  @qml.qnode(dev)
+  @qml.transforms.transpile(coupling_map=[(0, 1), (1, 2), (2, 3)])
+  def circuit(param):
+      qml.CNOT(wires=[0, 1])
+      qml.CNOT(wires=[0, 2])
+      qml.CNOT(wires=[0, 3])
+      qml.PhaseShift(param, wires=0)
+      return qml.probs(wires=[0, 1, 2, 3]) 
+  ```
+
 * A differentiable quantum chemistry module is added to `qml.qchem`. The new module inherits a 
   modified version of the differentiable Hartree-Fock solver from `qml.hf`, contains new functions
   for building a differentiable dipole moment observable and also contains modified functions for 
@@ -15,14 +85,18 @@
     [(#2173)](https://github.com/PennyLaneAI/pennylane/pull/2173)
   - External dependencies are replaced with local functions for spin and particle number observables
     [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
+    [(#2362)](https://github.com/PennyLaneAI/pennylane/pull/2362)
   - New functions are added for building fermionic and qubit observables
     [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
   - A new module is created for hosting openfermion to pennylane observable conversion functions
     [(#2199)](https://github.com/PennyLaneAI/pennylane/pull/2199)
+    [(#2371)](https://github.com/PennyLaneAI/pennylane/pull/2371)
   - Expressive names are used for the Hartree-Fock solver functions
     [(#2272)](https://github.com/PennyLaneAI/pennylane/pull/2272)
   - These new additions are added to a feature branch
     [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
+  - The efficiency of computing molecular integrals and Hamiltonian is improved
+    [(#2316)](https://github.com/PennyLaneAI/pennylane/pull/2316)
 
 * Development of a circuit-cutting compiler extension to circuits with sampling
   measurements has begun:
@@ -66,9 +140,10 @@
   - An operation's `generator`. Its eigenvalues will be used to obtain
     `parameter_frequencies`, if they are not given explicitly for an operation.
 
-* `"default.qubit"` now skips over identity operators instead performing matrix multiplication
+* `default.qubit` and `default.mixed` now skip over identity operators instead of performing matrix multiplication
   with the identity.
   [(#2356)](https://github.com/PennyLaneAI/pennylane/pull/2356)
+  [(#2365)](https://github.com/PennyLaneAI/pennylane/pull/2365)
 
 * `QuantumTape` objects are now iterable and accessing the
   operations and measurements of the underlying quantum circuit is more
@@ -180,6 +255,11 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug with `qml.expval`, `qml.var`, `qml.state` and
+  `qml.probs` (when `qml.probs` is the only measurement) where the `dtype`
+  specified on the device did not match the `dtype` of the QNode output.
+  [(#2367)](https://github.com/PennyLaneAI/pennylane/pull/2367)
+
 * Fixes cases with `qml.measure` where unexpected operations were added to the
   circuit.
   [(#2328)](https://github.com/PennyLaneAI/pennylane/pull/2328)
@@ -213,4 +293,4 @@ This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
 Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
-Jay Soni, Antal Száva, David Wierichs
+Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
