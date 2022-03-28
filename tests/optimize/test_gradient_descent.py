@@ -20,6 +20,28 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.optimize import GradientDescentOptimizer
 
+univariate = [
+    (np.sin, lambda x: np.cos(x)),
+    (lambda x: np.exp(x / 10.0), lambda x: np.exp(x / 10.0) / 10.0),
+    (lambda x: x**2, lambda x: 2 * x),
+]
+
+multivariate = [
+    (lambda x: np.sin(x[0]) + np.cos(x[1]), lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),)),
+    (
+        lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
+        lambda x: (
+            np.array(
+                [
+                    np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
+                    np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),
+                ]
+            ),
+        ),
+    ),
+    (lambda x: np.sum([x_**2 for x_ in x]), lambda x: (np.array([2 * x_ for x_ in x]),)),
+]
+
 
 class TestGradientDescentOptimizer:
     """Test the Gradient Descent optimizer"""
@@ -45,22 +67,15 @@ class TestGradientDescentOptimizer:
         assert np.allclose(res, expected, atol=tol)
 
     @pytest.mark.parametrize("args", [0, -3, 42])
-    def test_step_and_cost_supplied_grad(self, args):
+    @pytest.mark.parametrize("f, df", univariate)
+    def test_step_and_cost_supplied_grad(self, args, f, df):
         """Test that returned cost is correct if gradient function is supplied"""
         stepsize = 0.1
         sgd_opt = GradientDescentOptimizer(stepsize)
 
-        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
-        grad_uni_fns = [
-            lambda x: (np.cos(x),),
-            lambda x: (np.exp(x / 10.0) / 10.0,),
-            lambda x: (2 * x,),
-        ]
-
-        for gradf, f in zip(grad_uni_fns, univariate_funcs):
-            _, res = sgd_opt.step_and_cost(f, args, grad_fn=gradf)
-            expected = f(args)
-            assert np.all(res == expected)
+        _, res = sgd_opt.step_and_cost(f, args, grad_fn=df)
+        expected = f(args)
+        assert np.all(res == expected)
 
     def test_step_and_cost_autograd_sgd_multiple_inputs(self):
         """Test that the correct cost is returned via the step_and_cost method for the
@@ -77,7 +92,7 @@ class TestGradientDescentOptimizer:
 
         inputs = [
             np.array((0.2, 0.3), requires_grad=True),
-            np.array([0.4, 0.2, 0.4], requires_grad=True),
+            np.array([0.4, 0.2, 0.4], requires_grad=False),
             np.array(0.1, requires_grad=True),
         ]
 
@@ -106,56 +121,31 @@ class TestGradientDescentOptimizer:
         assert np.all(res == expected)
 
     @pytest.mark.parametrize("x_start", np.linspace(-10, 10, 16, endpoint=False))
-    def test_gradient_descent_optimizer_univar(self, x_start, tol):
+    @pytest.mark.parametrize("f, df", univariate)
+    def test_gradient_descent_optimizer_univar(self, x_start, f, df, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         for univariate functions."""
         stepsize = 0.1
         sgd_opt = GradientDescentOptimizer(stepsize)
 
-        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
-        grad_uni_fns = [
-            lambda x: (np.cos(x),),
-            lambda x: (np.exp(x / 10.0) / 10.0,),
-            lambda x: (2 * x,),
-        ]
+        x_new = sgd_opt.step(f, x_start)
+        x_correct = x_start - df(x_start) * stepsize
+        assert np.allclose(x_new, x_correct, atol=tol)
 
-        for gradf, f in zip(grad_uni_fns, univariate_funcs):
-            x_new = sgd_opt.step(f, x_start)
-            x_correct = x_start - gradf(x_start)[0] * stepsize
-            assert np.allclose(x_new, x_correct, atol=tol)
-
-    def test_gradient_descent_optimizer_multivar(self, tol):
+    @pytest.mark.parametrize("f, df", multivariate)
+    def test_gradient_descent_optimizer_multivar(self, f, df, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         for multivariate functions."""
         stepsize = 0.1
         sgd_opt = GradientDescentOptimizer(stepsize)
 
-        multivariate_funcs = [
-            lambda x: np.sin(x[0]) + np.cos(x[1]),
-            lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-            lambda x: np.sum([x_**2 for x_ in x]),
-        ]
-        grad_multi_funcs = [
-            lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),),
-            lambda x: (
-                np.array(
-                    [
-                        np.exp(x[0] / 3) / 3 * np.tanh(x[1]),
-                        np.exp(x[0] / 3) * (1 - np.tanh(x[1]) ** 2),
-                    ]
-                ),
-            ),
-            lambda x: (np.array([2 * x_ for x_ in x]),),
-        ]
-
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
 
-        for gradf, f in zip(grad_multi_funcs, multivariate_funcs):
-            for jdx in range(len(x_vals[:-1])):
-                x_vec = x_vals[jdx : jdx + 2]
-                x_new = sgd_opt.step(f, x_vec)
-                x_correct = x_vec - gradf(x_vec)[0] * stepsize
-                assert np.allclose(x_new, x_correct, atol=tol)
+        for jdx in range(len(x_vals[:-1])):
+            x_vec = x_vals[jdx : jdx + 2]
+            x_new = sgd_opt.step(f, x_vec)
+            x_correct = x_vec - df(x_vec)[0] * stepsize
+            assert np.allclose(x_new, x_correct, atol=tol)
 
     def test_gradient_descent_optimizer_multivar_multidim(self, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
@@ -197,23 +187,16 @@ class TestGradientDescentOptimizer:
                 assert np.allclose(x_new_flat, x_correct_flat, atol=tol)
 
     @pytest.mark.parametrize("x_start", np.linspace(-10, 10, 16, endpoint=False))
-    def test_gradient_descent_optimizer_usergrad(self, x_start, tol):
+    @pytest.mark.parametrize("f, df", univariate)
+    def test_gradient_descent_optimizer_usergrad(self, x_start, f, df, tol):
         """Tests that basic stochastic gradient descent takes gradient-descent steps correctly
         using user-provided gradients."""
         stepsize = 0.1
         sgd_opt = GradientDescentOptimizer(stepsize)
 
-        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
-        grad_uni_fns = [
-            lambda x: (np.cos(x),),
-            lambda x: (np.exp(x / 10.0) / 10.0,),
-            lambda x: (2 * x,),
-        ]
-
-        for gradf, f in zip(grad_uni_fns[::-1], univariate_funcs):
-            x_new = sgd_opt.step(f, x_start, grad_fn=gradf)
-            x_correct = x_start - gradf(x_start)[0] * stepsize
-            assert np.allclose(x_new, x_correct, atol=tol)
+        x_new = sgd_opt.step(f, x_start, grad_fn=df)
+        x_correct = x_start - df(x_start) * stepsize
+        assert np.allclose(x_new, x_correct, atol=tol)
 
     def test_update_stepsize(self):
         """
