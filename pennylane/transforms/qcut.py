@@ -1046,6 +1046,18 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         )
 
     def _wrapper(*args, **kwargs):
+
+        shots = kwargs.pop("shots", False)
+        shots = shots or qnode.device.shots
+
+        if shots is None:
+            raise ValueError(
+                "A shots value must be provided in the device "
+                "or when calling the QNode to be cut"
+            )
+
+        tkwargs["shots"] = shots
+
         qnode.construct(args, kwargs)
         tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
 

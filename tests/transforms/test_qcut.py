@@ -2125,9 +2125,9 @@ class TestCutCircuitMCTransform:
         recombined to give the correct expectation value
         """
 
-        dev = qml.device("default.qubit", wires=3)
+        dev_sim = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev_sim)
         def target_circuit(v):
             qml.RX(v, wires=0)
             qml.RY(0.5, wires=1)
@@ -2142,6 +2142,19 @@ class TestCutCircuitMCTransform:
             qml.RX(2.3, wires=2)
             return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=2))
 
+        def fn(x):
+            if x[0] == 0 and x[1] == 0:
+                return 1
+            if x[0] == 0 and x[1] == 1:
+                return -1
+            if x[0] == 1 and x[1] == 0:
+                return -1
+            if x[0] == 1 and x[1] == 1:
+                return 1
+
+        dev = qml.device("default.qubit", wires=3, shots=10000)
+
+        @qml.cut_circuit_mc(classical_processing_fn=fn)
         @qml.qnode(dev)
         def circuit(v):
             qml.RX(v, wires=0)
@@ -2157,25 +2170,8 @@ class TestCutCircuitMCTransform:
             qml.RX(2.3, wires=2)
             return qml.sample(wires=[0, 2])
 
-        edge_data = [(0, 1, {"pair": (qcut.MeasureNode(wires=[1]), qcut.PrepareNode(wires=[1]))})]
-        communication_graph = MultiDiGraph(edge_data)
-        shots = 10000
-
-        def fn(x):
-            if x[0] == 0 and x[1] == 0:
-                return 1
-            if x[0] == 0 and x[1] == 1:
-                return -1
-            if x[0] == 1 and x[1] == 0:
-                return -1
-            if x[0] == 1 and x[1] == 1:
-                return 1
-
         v = 0.319
-        cut_circuit_mc = qcut.cut_circuit_mc(
-            circuit, shots=shots, device_wires=[0, 1], classical_processing_fn=fn
-        )
-        cut_res_mc = cut_circuit_mc(v)
+        cut_res_mc = circuit(v)
 
         target = target_circuit(v)
         assert np.isclose(cut_res_mc, target, atol=0.05)  # not guaranteed to pass each time
@@ -2203,18 +2199,77 @@ class TestCutCircuitMCTransform:
             qml.RX(2.3, wires=2)
             return qml.sample(wires=[0, 2])
 
-        edge_data = [(0, 1, {"pair": (qcut.MeasureNode(wires=[1]), qcut.PrepareNode(wires=[1]))})]
-        communication_graph = MultiDiGraph(edge_data)
-        shots = 1000
-
         v = 0.319
-        cut_circuit_bs = qcut.cut_circuit_mc(circuit, shots=shots, device_wires=[0, 1])
-        cut_res_bs = cut_circuit_bs(v)
-
         target = circuit(v)
+
+        cut_circuit_bs = qcut.cut_circuit_mc(circuit)
+        cut_res_bs = cut_circuit_bs(v)
 
         assert cut_res_bs[0].shape == target.shape
         assert type(cut_res_bs[0]) == type(target)
+
+    def test_override_samples(self):
+        """
+        Tests that the number of shots used on a device can be temporarily
+        altered when executing the QNode
+        """
+        shots = 1000
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+
+        temp_shots = 333
+        cut_res = cut_circuit(v, shots=temp_shots)
+
+        assert cut_res[0].shape == (temp_shots, 2)
+
+        cut_res_original = cut_circuit(v)
+
+        assert cut_res_original[0].shape == (shots, 2)
+
+    def test_no_shots(self):
+        """
+        Tests that the correct error message is given if a device is provided
+        without shots
+        """
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        with pytest.raises(ValueError, match="A shots value must be provided in the device "):
+            cut_circuit(v)
 
 
 class TestContractTensors:
