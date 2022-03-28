@@ -17,7 +17,7 @@ Unit tests for functions needed for computing the particle number observable.
 import pytest
 
 import pennylane as qml
-from pennylane import Identity, PauliX, PauliY, PauliZ
+from pennylane import Identity, PauliZ
 from pennylane import numpy as np
 from pennylane import qchem
 
@@ -55,7 +55,7 @@ def test_particle_number(orbitals, coeffs_ref, ops_ref):
     r"""Tests the correctness of the :math:`\hat{S}_z` observable built by the
     function `'spin_z'`.
     """
-    n = qchem.hf.particle_number(orbitals)
+    n = qchem.particle_number.particle_number(orbitals)
     n_ref = qml.Hamiltonian(coeffs_ref, ops_ref)
 
     assert n.compare(n_ref)
@@ -73,4 +73,4 @@ def test_exception_particle_number(orbitals, msg_match):
     number of orbitals is less than zero."""
 
     with pytest.raises(ValueError, match=msg_match):
-        qchem.hf.particle_number(orbitals)
+        qchem.particle_number.particle_number(orbitals)
