@@ -19,8 +19,6 @@ import warnings
 import itertools as it
 from collections.abc import Sequence
 
-import numpy as np
-
 import pennylane as qml
 from pennylane import numpy as np
 
@@ -34,6 +32,7 @@ from .parameter_shift import _get_operation_recipe
 from .general_shift_rules import (
     _combine_shift_rules_with_multipliers,
     generate_shifted_tapes,
+    generate_multishifted_tapes,
 )
 
 
@@ -82,7 +81,7 @@ def _generate_off_diag_tapes(tape, idx, recipe_i, recipe_j):
     else:
         unshifted_coeff = None
 
-    h_tapes = generate_shifted_tapes(tape, idx, combined_rulesT[3:5].T, combined_rulesT[1:3].T)
+    h_tapes = generate_multishifted_tapes(tape, idx, combined_rulesT[3:5].T, combined_rulesT[1:3].T)
 
     return h_tapes, combined_rulesT[0], unshifted_coeff
 
@@ -92,14 +91,13 @@ def expval_hessian_param_shift(
 ):
     r"""Generate the Hessian tapes that are used in the computation of the second derivative of a
     quantum tape, using analytical parameter-shift rules to do so exactly. Also define a
-    post-processing function to combine the results of evaluating the Hessian tapes.
+    post-processing function to combine the results of evaluating the tapes into the Hessian.
 
     Args:
         tape (.QuantumTape): quantum tape to differentiate
         argnum (int or list[int] or None): Parameter indices to differentiate
             with respect to. If not provided, the Hessian with respect to all
-            trainable indices is returned. Note that the indices refer to tape
-            parameters if ``tape`` is a tape, and to QNode arguments if it is a QNode.
+            trainable indices is returned.
         diff_methods (list[string]): The differentiation method to use for each trainable parameter.
             Can be "A" or "0", where "A" is the analytical parameter shift rule and "0" indicates
             a 0 derivative (that is the parameter does not affect the tape's output).
@@ -195,7 +193,7 @@ def expval_hessian_param_shift(
         # but first we accumulate all elements into a list, since no array assignment is possible.
         hessian = []
         # Keep track of tape results already consumed.
-        start = int(bool(unshifted_coeffs) and f0 is None)
+        start = 1 if unshifted_coeffs and f0 is None else 0
         # Results of the unshifted tape.
         r0 = results[0] if start == 1 else f0
 

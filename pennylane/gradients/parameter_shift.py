@@ -80,7 +80,7 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     t_idx on tape.
 
     Args:
-        tape (.tape.QuantumTape): Tape containing the operation to differentiate
+        tape (.QuantumTape): Tape containing the operation to differentiate
         t_idx (int): Parameter index of the operation to differentiate within the tape
         shifts (Sequence[float or int]): Shift values to use if no static ``grad_recipe`` is
             provided by the operation to differentiate
