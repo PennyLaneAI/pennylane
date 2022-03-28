@@ -33,23 +33,16 @@ from pennylane.optimize import (
 def opt(opt_name):
     stepsize, gamma, delta = 0.1, 0.5, 0.8
 
-    if opt_name == "gd":
-        return GradientDescentOptimizer(stepsize)
+    map = {
+        "gd": GradientDescentOptimizer(stepsize),
+        "nest": NesterovMomentumOptimizer(stepsize, momentum=gamma),
+        "moment": MomentumOptimizer(stepsize, momentum=gamma),
+        "ada": AdagradOptimizer(stepsize),
+        "rms": RMSPropOptimizer(stepsize, decay=gamma),
+        "adam": AdamOptimizer(stepsize, beta1=gamma, beta2=delta),
+    }
 
-    if opt_name == "nest":
-        return NesterovMomentumOptimizer(stepsize, momentum=gamma)
-
-    if opt_name == "moment":
-        return MomentumOptimizer(stepsize, momentum=gamma)
-
-    if opt_name == "ada":
-        return AdagradOptimizer(stepsize)
-
-    if opt_name == "rms":
-        return RMSPropOptimizer(stepsize, decay=gamma)
-
-    if opt_name == "adam":
-        return AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
+    return map[opt_name]
 
 
 @pytest.mark.parametrize("opt_name", ["gd", "moment", "nest", "ada", "rms", "adam"])
@@ -118,25 +111,21 @@ class TestOverOpts:
 
         assert np.allclose(cost, wrapper.func(x, y, z), atol=tol)
 
-    def test_nontrainable_data(self, opt, tol):
+    def test_nontrainable_data(self, opt):
         """Check non-trainable argument does not get updated"""
 
-        def func(x, data):
-            return x[0] * data[0]
+        def func(a, b, c, d):
+            return a * b * c * d
 
-        x = np.array([1.0])
-        data = np.array([1.0], requires_grad=False)
+        a = np.array(1.0, requires_grad=True)
+        b = np.array(1.0, requires_grad=False)
+        c = 1.0
+        d = np.array(1.0, requires_grad=True)
 
-        args_new = opt.step(func, x, data)
-        self.reset(opt)
-        args_new_wc, cost = opt.step_and_cost(func, *args_new)
-        self.reset(opt)
+        args_new = opt.step(func, a, b, c, d)
 
-        assert np.allclose(len(args_new), 2, atol=tol)
-        assert not np.allclose(args_new[0], x, atol=tol)
-        assert np.allclose(args_new[1], data, atol=tol)
-
-        assert np.allclose(cost, func(*args_new), atol=tol)
+        assert args_new[1] is b
+        assert args_new[2] == 1.0
 
     def test_steps_the_same(self, opt, tol):
         """Tests whether separating the args into different inputs affects their
