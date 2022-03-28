@@ -601,7 +601,7 @@ class Hamiltonian(Observable):
     def __imul__(self, a):
         r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
-            self._coeffs = qml.math.multiply(qml.math.cast_like([a], self._coeffs), self._coeffs)
+            self._coeffs = qml.math.multiply(a, self._coeffs)
             return self
 
         raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
