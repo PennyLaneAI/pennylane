@@ -107,6 +107,16 @@ have a restricted number of qubits.
 
     ~cut_circuit
 
+This transform is designed to be used for cutting circuits which contain :func:`~.sample`
+measurements. Similarly to the :func:`~.cut_circuit` transform, this transform accepts a
+QNode and returns a new function that cuts the original circuit. However, this transform
+can also accept an optional classical processing function to calculate an expectation value.
+
+.. autosummary::
+    :toctree: api
+
+    ~cut_circuit_mc
+
 There are also low-level functions that can be used to build up the circuit cutting functionalities:
 
 .. autosummary::
@@ -126,7 +136,6 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~transforms.qcut.kahypar_cut
     ~transforms.qcut.place_wire_cuts
     ~transforms.qcut.find_and_place_cuts
-    ~transforms.qcut.cut_circuit_mc
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -212,4 +221,4 @@ from .tape_expand import (
     set_decomposition,
 )
 from . import qcut
-from .qcut import cut_circuit
+from .qcut import cut_circuit, cut_circuit_mc

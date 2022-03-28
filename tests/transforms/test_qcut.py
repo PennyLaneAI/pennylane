@@ -2178,11 +2178,12 @@ class TestCutCircuitMCTransform:
         cut_res_mc = cut_circuit_mc(v)
 
         target = target_circuit(v)
-        assert np.isclose(cut_res_mc, target, atol=0.05)  # not guaranteed to pass
+        assert np.isclose(cut_res_mc, target, atol=0.05)  # not guaranteed to pass each time
 
     def test_cut_circuit_mc_sample(self):
         """
-        TODO: Docstring
+        Tests that a circuit containing sampling measurements can be cut and
+        postprocessed to return bitstrings of the original circuit size.
         """
 
         dev = qml.device("default.qubit", wires=3, shots=1000)
@@ -2212,7 +2213,8 @@ class TestCutCircuitMCTransform:
 
         target = circuit(v)
 
-        # what to assert?
+        assert cut_res_bs[0].shape == target.shape
+        assert type(cut_res_bs[0]) == type(target)
 
 
 class TestContractTensors:

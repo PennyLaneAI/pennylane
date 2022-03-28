@@ -58,6 +58,7 @@ from pennylane.transforms import (
     batch_input,
     batch_transform,
     cut_circuit,
+    cut_circuit_mc,
     draw,
     draw_mpl,
     ControlledOperation,

@@ -944,9 +944,9 @@ def qcut_processing_fn_mc(
 def cut_circuit_mc(
     tape: QuantumTape,
     shots: int,
-    device_wires: Wires,
-    max_depth: int = 1,
+    device_wires: Optional[Wires] = None,
     classical_processing_fn: callable = None,
+    max_depth: int = 1,
 ) -> Tuple[Tuple[QuantumTape], Callable]:
     """
     Cut up a circuit containing sample measurements into smaller fragments.
@@ -960,11 +960,12 @@ def cut_circuit_mc(
     Args:
         tape (QuantumTape): the tape of the full circuit to be cut
         shots (int): number of shots
-        device_wires (Wires):  wires of the device that the cut circuits are to be run on
-        max_depth (int): the maximum depth used to expand the circuit while searching for wire cuts
+        device_wires (Optional[Wires]): optional when applied to a QNode, rquired when applied to tape.
+            Wires of the device that the cut circuits are to be run on
         classical_processing_fn (callable): a classical postprocessing function to be applied to
             the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``
             and the output should be a single number within the interval :math:`[-1, 1]`
+        max_depth (int): the maximum depth used to expand the circuit while searching for wire cuts
 
     Returns:
         Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a
@@ -1023,10 +1024,10 @@ def cut_circuit_mc(
             shots=shots,
             classical_processing_fn=classical_processing_fn,
         )
-    else:
-        return tapes, partial(
-            qcut_processing_fn_sample, communication_graph=communication_graph, shots=shots
-        )
+
+    return tapes, partial(
+        qcut_processing_fn_sample, communication_graph=communication_graph, shots=shots
+    )
 
 
 @cut_circuit_mc.custom_qnode_wrapper
