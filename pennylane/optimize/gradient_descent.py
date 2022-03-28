@@ -16,8 +16,6 @@
 import warnings
 
 from pennylane._grad import grad as get_gradient
-from pennylane.utils import _flatten, unflatten
-from pennylane.numpy import ndarray, tensor
 
 
 class GradientDescentOptimizer:
@@ -158,13 +156,8 @@ class GradientDescentOptimizer:
         grad = g(*args, **kwargs)
         forward = getattr(g, "forward", None)
 
-        num_trainable_args = 0
-        for arg in args:
-            if getattr(arg, "requires_grad", True):
-                num_trainable_args += 1
-
-        if num_trainable_args == 1:
-            grad = (grad,)
+        num_trainable_args = sum(getattr(arg, "requires_grad", False) for arg in args)
+        grad = (grad,) if num_trainable_args == 1 else grad
 
         return grad, forward
 
@@ -184,22 +177,9 @@ class GradientDescentOptimizer:
 
         trained_index = 0
         for index, arg in enumerate(args):
-            if getattr(arg, "requires_grad", True):
-                x_flat = _flatten(arg)
-                grad_flat = _flatten(grad[trained_index])
+            if getattr(arg, "requires_grad", False):
+                args_new[index] = arg - self.stepsize * grad[trained_index]
+
                 trained_index += 1
-
-                x_new_flat = [e - self.stepsize * g for g, e in zip(grad_flat, x_flat)]
-
-                args_new[index] = unflatten(x_new_flat, args[index])
-
-                if isinstance(arg, ndarray):
-                    # Due to a bug in unflatten, input PennyLane tensors
-                    # are being unwrapped. Here, we cast them back to PennyLane
-                    # tensors.
-                    # TODO: remove when the following is fixed:
-                    # https://github.com/PennyLaneAI/pennylane/issues/966
-                    args_new[index] = args_new[index].view(tensor)
-                    args_new[index].requires_grad = True
 
         return args_new
