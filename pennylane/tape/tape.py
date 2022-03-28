@@ -19,9 +19,6 @@ from collections import Counter, deque, defaultdict
 import contextlib
 import copy
 from threading import RLock
-import warnings
-
-import numpy as np
 
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
@@ -1235,6 +1232,7 @@ class QuantumTape(AnnotatedQueue):
                 if op.inverse:
                     op.inv()
 
+        # pylint: disable=no-member
         # decompose the queue
         operations = tape.expand(depth=2, stop_at=lambda obj: obj.name in OPENQASM_GATES).operations
 
