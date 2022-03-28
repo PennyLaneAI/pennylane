@@ -824,7 +824,7 @@ def expand_fragment_tapes_mc(
     return all_configs, settings
 
 
-def _reshape_results(results: Sequence, communication_graph: MultiDiGraph, shots: int):
+def _reshape_results(results: Sequence, communication_graph: MultiDiGraph, shots: int) -> np.ndarray:
     """
     Helper function to reshape ``results`` into a two-dimensional array whose number of rows is
     determined by the number of shots and whose number of columns is determined by the number of
