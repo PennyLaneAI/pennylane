@@ -51,12 +51,13 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
-import pennylane.qnode_old
 from pennylane.transforms import (
     adjoint,
     adjoint_metric_tensor,
     batch_params,
+    batch_input,
     batch_transform,
+    cut_circuit,
     draw,
     draw_mpl,
     ControlledOperation,
@@ -74,6 +75,8 @@ from pennylane.transforms import (
     apply_controlled_Q,
     commutation_dag,
     is_commuting,
+    pattern_matching,
+    pattern_matching_optimization,
     simplify,
 )
 from pennylane.ops.functions import *
@@ -85,7 +88,7 @@ from pennylane.debugging import snapshots
 from .collections import QNodeCollection, dot, map, sum
 import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
-from pennylane.interfaces.batch import execute  # pylint:disable=wrong-import-order
+from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")

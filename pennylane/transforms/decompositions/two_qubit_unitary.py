@@ -85,7 +85,7 @@ q_one_cnot = (1 / np.sqrt(2)) * np.array(
 
 
 def _convert_to_su4(U):
-    r"""Convert a 4x4 matrix to :math:`SU(4)`.
+    r"""Check unitarity of a 4x4 matrix and convert it to :math:`SU(4)` if the determinant is not 1.
 
     Args:
         U (array[complex]): A matrix, presumed to be :math:`4 \times 4` and unitary.
@@ -94,11 +94,19 @@ def _convert_to_su4(U):
         array[complex]: A :math:`4 \times 4` matrix in :math:`SU(4)` that is
         equivalent to U up to a global phase.
     """
+    # Check unitarity
+    if not math.allclose(math.dot(U, math.T(math.conj(U))), math.eye(4), atol=1e-7):
+        raise ValueError("Operator must be unitary.")
+
     # Compute the determinant
     det = math.linalg.det(U)
 
-    exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 4
-    return math.cast_like(U, det) * math.exp(exp_angle)
+    # Convert to SU(4) if it's not close to 1
+    if not math.allclose(det, 1.0):
+        exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 4
+        U = math.cast_like(U, det) * math.exp(exp_angle)
+
+    return U
 
 
 def _compute_num_cnots(U):

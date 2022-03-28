@@ -98,7 +98,7 @@ import copy
 import itertools
 import functools
 import warnings
-from enum import Enum, IntEnum
+from enum import IntEnum
 from scipy.sparse import kron, eye, coo_matrix
 
 import numpy as np
@@ -137,7 +137,7 @@ def expand_matrix(base_matrix, wires, wire_order):
     ...                         [5, 6, 7, 8],
     ...                         [9, 10, 11, 12],
     ...                         [13, 14, 15, 16]])
-    >>> expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2])
+    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 2]))
     [[ 1  2  3  4]
      [ 5  6  7  8]
      [ 9 10 11 12]
@@ -145,7 +145,7 @@ def expand_matrix(base_matrix, wires, wire_order):
 
     If the wire order is a permutation of ``wires``, the entries of the base matrix get permuted:
 
-    >>> expand_matrix(base_matrix, wires=[0, 2], wire_order=[2, 0])
+    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[2, 0]))
     [[ 1  3  2  4]
      [ 9 11 10 12]
      [ 5  7  6  8]
@@ -153,7 +153,7 @@ def expand_matrix(base_matrix, wires, wire_order):
 
     If the wire order contains wire labels not found in ``wires``, the matrix gets expanded:
 
-    >>> expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 1, 2])
+    >>> print(expand_matrix(base_matrix, wires=[0, 2], wire_order=[0, 1, 2]))
     [[ 1  2  0  0  3  4  0  0]
      [ 5  6  0  0  7  8  0  0]
      [ 0  0  1  2  0  0  3  4]
@@ -169,7 +169,7 @@ def expand_matrix(base_matrix, wires, wire_order):
     ...                                   [3., 4.]], requires_grad=True)
     >>> res = expand_matrix(base_matrix_torch, wires=["b"], wire_order=["a", "b"])
     >>> type(res)
-    <class 'torch.Tensor'>
+    torch.Tensor
     >>> res.requires_grad
     True
     """
@@ -273,48 +273,6 @@ AnyWires = WiresEnum.AnyWires
 """IntEnum: An enumeration which represents any wires in the
 subsystem. It is equivalent to an integer with value -1."""
 
-
-# =============================================================================
-# ObservableReturnTypes types
-# =============================================================================
-
-
-class ObservableReturnTypes(Enum):
-    """Enumeration class to represent the return types of an observable."""
-
-    Sample = "sample"
-    Variance = "var"
-    Expectation = "expval"
-    Probability = "probs"
-    State = "state"
-    MidMeasure = "measure"
-
-    def __repr__(self):
-        """String representation of the return types."""
-        return str(self.value)
-
-
-Sample = ObservableReturnTypes.Sample
-"""Enum: An enumeration which represents sampling an observable."""
-
-Variance = ObservableReturnTypes.Variance
-"""Enum: An enumeration which represents returning the variance of
-an observable on specified wires."""
-
-Expectation = ObservableReturnTypes.Expectation
-"""Enum: An enumeration which represents returning the expectation
-value of an observable on specified wires."""
-
-Probability = ObservableReturnTypes.Probability
-"""Enum: An enumeration which represents returning probabilities
-of all computational basis states."""
-
-State = ObservableReturnTypes.State
-"""Enum: An enumeration which represents returning the state in the computational basis."""
-
-MidMeasure = ObservableReturnTypes.MidMeasure
-"""Enum: An enumeration which represents returning sampling the computational
-basis in the middle of the circuit."""
 
 # =============================================================================
 # Class property
@@ -561,7 +519,7 @@ class Operator(abc.ABC):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.CNOT.matrix`
+        .. seealso:: :meth:`~.Operator.get_matrix` and :func:`~.matrix`
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -571,6 +529,17 @@ class Operator(abc.ABC):
             tensor_like: matrix representation
         """
         raise MatrixUndefinedError
+
+    # pylint: disable=no-self-argument, comparison-with-callable
+    @classproperty
+    def has_matrix(cls):
+        r"""Bool: Whether or not the Operator returns a defined matrix.
+
+        Note: Child classes may have this as an instance property instead of as a class property.
+        """
+        return (cls.compute_matrix != Operator.compute_matrix) or (
+            cls.get_matrix != Operator.get_matrix
+        )
 
     @property
     def matrix(self):
@@ -633,7 +602,7 @@ class Operator(abc.ABC):
         The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-        .. seealso:: :meth:`~.SparseHamiltonian.sparse_matrix`
+        .. seealso:: :meth:`~.Operator.sparse_matrix`
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -657,7 +626,7 @@ class Operator(abc.ABC):
 
         A ``SparseMatrixUndefinedError`` is raised if the sparse matrix representation has not been defined.
 
-        .. seealso:: :meth:`~.SparseHamiltonian.compute_sparse_matrix`
+        .. seealso:: :meth:`~.Operator.compute_sparse_matrix`
 
         Args:
             wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
@@ -686,7 +655,7 @@ class Operator(abc.ABC):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.RZ.eigvals`
+        .. seealso:: :meth:`~.Operator.get_eigvals` and :func:`~.eigvals`
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -765,7 +734,7 @@ class Operator(abc.ABC):
 
         .. math:: O = \sum_i c_i O_i
 
-        .. seealso:: :meth:`~.Hamiltonian.terms`
+        .. seealso:: :meth:`~.Operator.terms`
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -784,11 +753,11 @@ class Operator(abc.ABC):
 
         A ``TermsUndefinedError`` is raised if no representation by terms is defined.
 
-        .. seealso:: :meth:`~.Hamiltonian.compute_terms`
+        .. seealso:: :meth:`~.Operator.compute_terms`
 
         Returns:
             tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
-                and list of operations :math:`O_i`
+            and list of operations :math:`O_i`
         """
         return self.compute_terms(*self.parameters, **self.hyperparameters)
 
@@ -993,7 +962,7 @@ class Operator(abc.ABC):
 
         A ``DecompositionUndefinedError`` is raised if no representation by decomposition is defined.
 
-        .. seealso:: :meth:`~.operation.Operator.compute_decomposition`.
+        .. seealso:: :meth:`~.Operator.compute_decomposition`.
 
         Returns:
             list[Operator]: decomposition of the operator
@@ -1008,7 +977,7 @@ class Operator(abc.ABC):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        .. seealso:: :meth:`~.operation.Operator.decomposition`.
+        .. seealso:: :meth:`~.Operator.decomposition`.
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -1033,7 +1002,7 @@ class Operator(abc.ABC):
         The diagonalizing gates rotate the state into the eigenbasis
         of the operator.
 
-        .. seealso:: :meth:`~.PauliX.diagonalizing_gates`.
+        .. seealso:: :meth:`~.Operator.diagonalizing_gates`.
 
         Args:
             params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -1098,7 +1067,7 @@ class Operator(abc.ABC):
         """Returns a tape that has recorded the decomposition of the operator.
 
         Returns:
-            .JacobianTape: quantum tape
+            .QuantumTape: quantum tape
         """
         tape = qml.tape.QuantumTape(do_queue=False)
 
@@ -1291,9 +1260,10 @@ class Operation(Operator):
         >>> op = qml.ControlledPhaseShift(0.1, wires=[0, 1])
         >>> op.parameter_frequencies
         [(1,)]
-        >>> gen_eigvals = tuple(np.linalg.eigvals(op.generator[0] * op.generator[1]))
-        >>> qml.gradients.eigvals_to_frequencies(gen_eigvals)
-        (tensor(1., requires_grad=True),)
+        >>> gen = qml.generator(op, format="observable")
+        >>> gen_eigvals = qml.eigvals(gen)
+        >>> qml.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
+        (1.0,)
 
         For more details on this relationship, see :func:`.eigvals_to_frequencies`.
         """
@@ -1523,7 +1493,7 @@ class Observable(Operator):
         if self.return_type is None:
             return temp
 
-        if self.return_type is Probability:
+        if self.return_type is qml.measurements.Probability:
             return repr(self.return_type) + f"(wires={self.wires.tolist()})"
 
         return repr(self.return_type) + "(" + temp + ")"
@@ -1727,7 +1697,7 @@ class Tensor(Observable):
         if self.return_type is None:
             return s
 
-        if self.return_type is Probability:
+        if self.return_type is qml.measurements.Probability:
             return repr(self.return_type) + f"(wires={self.wires.tolist()})"
 
         return repr(self.return_type) + "(" + s + ")"
@@ -1845,19 +1815,12 @@ class Tensor(Observable):
         # observable should be Z^{\otimes n}
         self._eigvals_cache = pauli_eigs(len(self.wires))
 
-        # Sort observables lexicographically by the strings of the wire labels
-        # TODO: check for edge cases of the sorting, e.g. Tensor(Hermitian(obs, wires=[0, 2]),
-        # Hermitian(obs, wires=[1, 3, 4])
-        # Sorting the observables based on wires, so that the order of
-        # the eigenvalues is correct
-        obs_sorted = sorted(self.obs, key=lambda x: [str(l) for l in x.wires.labels])
-
         # check if there are any non-standard observables (such as Identity)
         if set(self.name) - standard_observables:
             # Tensor product of observables contains a mixture
             # of standard and non-standard observables
             self._eigvals_cache = np.array([1])
-            for k, g in itertools.groupby(obs_sorted, lambda x: x.name in standard_observables):
+            for k, g in itertools.groupby(self.obs, lambda x: x.name in standard_observables):
                 if k:
                     # Subgroup g contains only standard observables.
                     self._eigvals_cache = np.kron(self._eigvals_cache, pauli_eigs(len(list(g))))

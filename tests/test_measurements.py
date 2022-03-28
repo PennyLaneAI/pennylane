@@ -34,10 +34,30 @@ from pennylane.measurements import (
     State,
     Variance,
     Probability,
+    MidMeasure,
     MeasurementProcess,
     MeasurementValue,
     MeasurementValueError,
 )
+
+
+@pytest.mark.parametrize(
+    "return_type, value",
+    [
+        (Expectation, "expval"),
+        (Sample, "sample"),
+        (Variance, "var"),
+        (Probability, "probs"),
+        (State, "state"),
+        (MidMeasure, "measure"),
+    ],
+)
+def test_ObservableReturnTypes(return_type, value):
+    """Test the ObservableReturnTypes enum value, repr, and enum membership."""
+
+    assert return_type.value == value
+    assert isinstance(return_type, qml.measurements.ObservableReturnTypes)
+    assert repr(return_type) == value
 
 
 def test_no_measure(tol):
@@ -57,11 +77,13 @@ def test_no_measure(tol):
 class TestExpval:
     """Tests for the expval function"""
 
-    def test_value(self, tol):
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_value(self, tol, r_dtype):
         """Test that the expval interface works"""
         dev = qml.device("default.qubit", wires=2)
+        dev.R_DTYPE = r_dtype
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -71,6 +93,7 @@ class TestExpval:
         expected = -np.sin(x)
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert res.dtype == r_dtype
 
     def test_not_an_observable(self):
         """Test that a qml.QuantumFunctionError is raised if the provided
@@ -101,11 +124,13 @@ class TestExpval:
 class TestVar:
     """Tests for the var function"""
 
-    def test_value(self, tol):
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_value(self, tol, r_dtype):
         """Test that the var function works"""
         dev = qml.device("default.qubit", wires=2)
+        dev.R_DTYPE = r_dtype
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.var(qml.PauliZ(0))
@@ -115,6 +140,7 @@ class TestVar:
         expected = np.sin(x) ** 2
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert res.dtype == r_dtype
 
     def test_not_an_observable(self):
         """Test that a qml.QuantumFunctionError is raised if the provided
@@ -347,9 +373,26 @@ class TestMeasurementValue:
         one_case = val_pair[1]
         mv = MeasurementValue(measurement_id="1234", zero_case=zero_case, one_case=one_case)
         for _ in range(num_inv):
-            mv = mv.__invert__()
+            mv_new = mv.__invert__()
+
+            # Check that inversion involves creating a copy
+            assert not mv_new is mv
+
+            mv = mv_new
 
         assert mv._control_value == val_pair[expected_idx]
+
+    def test_measurement_value_assertion_error_wrong_type(self):
+        """Test that the return_type related info is updated for a
+        measurement."""
+        mv1 = MeasurementValue(measurement_id="1111")
+        mv2 = MeasurementValue(measurement_id="2222")
+
+        with pytest.raises(
+            MeasurementValueError,
+            match="The equality operator is used to assert measurement outcomes, but got a value with type",
+        ):
+            mv1 == mv2
 
     def test_measurement_value_assertion_error(self):
         """Test that the return_type related info is updated for a

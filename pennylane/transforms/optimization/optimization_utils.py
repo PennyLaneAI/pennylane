@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility functions for circuit optimization."""
-# pylint: disable=too-many-return-statements,import-outside-toplevel
-from pennylane.math import allclose, sin, cos, arccos, arctan2, stack, _multi_dispatch, is_abstract
+# pylint: disable=too-many-return-statements
+from pennylane.math import allclose, sin, cos, arccos, arctan2, zeros, cast_like, stack
 from pennylane.wires import Wires
 
 
@@ -40,32 +40,51 @@ def find_next_gate(wires, op_list):
     return next_gate_idx
 
 
-def _zyz_to_quat(angles):
-    """Converts a set of Euler angles in ZYZ format to a quaternion."""
-    qw = cos(angles[1] / 2) * cos(0.5 * (angles[0] + angles[2]))
-    qx = -sin(angles[1] / 2) * sin(0.5 * (angles[0] - angles[2]))
-    qy = sin(angles[1] / 2) * cos(0.5 * (angles[0] - angles[2]))
-    qz = cos(angles[1] / 2) * sin(0.5 * (angles[0] + angles[2]))
+def _yzy_to_zyz(middle_yzy):
+    r"""Converts a set of angles representing a sequence of rotations RY, RZ, RY into
+    an equivalent sequence of the form RZ, RY, RZ.
 
-    return stack([qw, qx, qy, qz])
+    Any rotation in 3-dimensional space (or, equivalently, any single-qubit unitary)
+    can be expressed as a sequence of rotations about 3 axes in 12 different ways.
+    Typically, the arbitrary single-qubit rotation is expressed as RZ(a) RY(b) RZ(c),
+    but there are some situations, e.g., composing two such rotations, where we need
+    to convert between representations. This function converts the angles of a sequence
 
+    .. math::
 
-def _quaternion_product(q1, q2):
-    """Compute the product of two quaternions, q = q1 * q2."""
-    qw = q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3]
-    qx = q1[0] * q2[1] + q1[1] * q2[0] + q1[2] * q2[3] - q1[3] * q2[2]
-    qy = q1[0] * q2[2] - q1[1] * q2[3] + q1[2] * q2[0] + q1[3] * q2[1]
-    qz = q1[0] * q2[3] + q1[1] * q2[2] - q1[2] * q2[1] + q1[3] * q2[0]
+       RY(y_1) RZ(z) RY(y_2)
 
-    return stack([qw, qx, qy, qz])
+    into the form
 
+    .. math::
 
-def _fuse(angles_1, angles_2):
-    """Perform fusion of two angle sets. Separated out so we can do JIT with conditionals."""
-    # Compute the product of the quaternions
-    qw, qx, qy, qz = _quaternion_product(_zyz_to_quat(angles_1), _zyz_to_quat(angles_2))
+       RZ(z_1) RY(y) RZ(z_2)
 
-    # Convert the product back into the angles fed to Rot
+    This is accomplished by first converting the rotation to quaternion form, and then
+    extracting the desired set of angles.
+
+    Args:
+        y1 (float): The angle of the first ``RY`` rotation.
+        z (float): The angle of the inner ``RZ`` rotation.
+        y2 (float): The angle of the second ``RY`` rotation.
+
+    Returns:
+        tuple[float, float, float]: A list of rotation angles in the ZYZ representation.
+    """
+    if allclose(stack(middle_yzy), cast_like(zeros(3), stack(middle_yzy))):
+        return stack([0.0, 0.0, 0.0])
+
+    y1, z, y2 = middle_yzy[0], middle_yzy[1], middle_yzy[2]
+
+    # First, compute the quaternion representation
+    # https://ntrs.nasa.gov/api/citations/19770024290/downloads/19770024290.pdf
+    qw = cos(z / 2) * cos(0.5 * (y1 + y2))
+    qx = sin(z / 2) * sin(0.5 * (y1 - y2))
+    qy = cos(z / 2) * sin(0.5 * (y1 + y2))
+    qz = sin(z / 2) * cos(0.5 * (y1 - y2))
+
+    # Now convert from YZY Euler angles to ZYZ angles
+    # Source: http://bediyap.com/programming/convert-quaternion-to-euler-rotations/
     z1_arg1 = 2 * (qy * qz - qw * qx)
     z1_arg2 = 2 * (qx * qz + qw * qy)
     z1 = arctan2(z1_arg1, z1_arg2)
@@ -73,18 +92,10 @@ def _fuse(angles_1, angles_2):
     y = arccos(qw**2 - qx**2 - qy**2 + qz**2)
 
     z2_arg1 = 2 * (qy * qz + qw * qx)
-    z2_arg2 = 2 * (qw * qy - qx * qz)
+    z2_arg2 = -2 * (qx * qz - qw * qy)
     z2 = arctan2(z2_arg1, z2_arg2)
 
     return stack([z1, y, z2])
-
-
-def _no_fuse(angles_1, angles_2):
-    """Special case: do not perform fusion when both Y angles are zero:
-        Rot(a, 0, b) Rot(c, 0, d) = Rot(a + b + c + d, 0, 0)
-    The quaternion math itself will fail in this case without a conditional.
-    """
-    return stack([angles_1[0] + angles_1[2] + angles_2[0] + angles_2[2], 0.0, 0.0])
 
 
 def fuse_rot_angles(angles_1, angles_2):
@@ -100,30 +111,48 @@ def fuse_rot_angles(angles_1, angles_2):
         angles_2 (float): A set of three angles for the second ``qml.Rot`` operation.
 
     Returns:
-        array[float]: Rotation angles for a single ``qml.Rot`` operation that
-        implements the same operation as the two sets of input angles.
+        array[float]: A tuple of rotation angles for a single ``qml.Rot`` operation
+        that implements the same operation as the two sets of input angles.
     """
+    # Check for all-zero instances; if there are some, we can just return the sum.
+    are_angles_1_zero = allclose(angles_1, zeros(3))
+    are_angles_2_zero = allclose(angles_2, zeros(3))
 
-    # Check if we are tracing; if so, use the special conditionals
-    if is_abstract(angles_1) or is_abstract(angles_2):
-        interface = _multi_dispatch([angles_1, angles_2])
+    if are_angles_1_zero or are_angles_2_zero:
+        return stack([angles_1[i] + angles_2[i] for i in range(3)])
 
-        # TODO: implement something similar for torch and tensorflow interfaces
-        # If the interface is JAX, use jax.lax.cond so that we can jit even with conditionals
-        if interface == "jax":
-            from jax.lax import cond
+    # RZ(a) RY(b) RZ(c) fused with RZ(d) RY(e) RZ(f)
+    # first produces RZ(a) RY(b) RZ(c+d) RY(e) RZ(f)
+    left_z = angles_1[0]
+    middle_yzy = angles_1[1], angles_1[2] + angles_2[0], angles_2[1]
+    right_z = angles_2[2]
 
-            return cond(
-                allclose(angles_1[1], 0.0) * allclose(angles_2[1], 0.0),
-                _no_fuse,
-                _fuse,
-                angles_1,
-                angles_2,
-            )
+    # There are a few other cases to consider where things can be 0 and
+    # avoid having to use the quaternion conversion routine
+    # If b = 0, then we have RZ(a + c + d) RY(e) RZ(f)
+    if allclose(middle_yzy[0], 0.0):
+        # Then if e is close to zero, return a single rotation RZ(a + c + d + f)
+        if allclose(middle_yzy[2], 0.0):
+            return [left_z + middle_yzy[1] + right_z, 0.0, 0.0]
+        return stack([left_z + middle_yzy[1], middle_yzy[2], right_z])
 
-    # For other interfaces where we would not be jitting or tracing, we can simply check
-    # if we are dealing with the special case of Rot(a, 0, b) Rot(c, 0, d).
-    if allclose(angles_1[1], 0.0) and allclose(angles_2[1], 0.0):
-        return _no_fuse(angles_1, angles_2)
+    # If c + d is close to 0, then we have the case RZ(a) RY(b + e) RZ(f)
+    if allclose(middle_yzy[1], 0.0):
+        # If b + e is 0, we have RZ(a + f)
+        if allclose(middle_yzy[0] + middle_yzy[2], 0.0):
+            return [left_z + right_z, 0.0, 0.0]
+        return stack([left_z, middle_yzy[0] + middle_yzy[2], right_z])
 
-    return _fuse(angles_1, angles_2)
+    # If e is close to 0, then we have the case RZ(a) RY(b) RZ(c + d + f)
+    # The case where b is 0 actually already covered in the first loop,
+    # so only one case here.
+    if allclose(middle_yzy[2], 0.0):
+        return stack([left_z, middle_yzy[0], middle_yzy[1] + right_z])
+
+    # Otherwise, we need to turn the RY(b) RZ(c+d) RY(e) into something
+    # of the form RZ(u) RY(v) RZ(w)
+    u, v, w = _yzy_to_zyz(middle_yzy)
+
+    # Then we can combine to create
+    # RZ(a + u) RY(v) RZ(w + f)
+    return stack([left_z + u, v, w + right_z])

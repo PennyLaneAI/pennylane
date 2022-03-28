@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
+# pylint:disable=abstract-method,arguments-differ,protected-access,invalid-overridden-method, no-member
 import cmath
 import warnings
 import numpy as np
@@ -66,7 +66,7 @@ class Hadamard(Observable, Operation):
 
         **Example**
 
-        >>> qml.Hadamard.compute_matrix()
+        >>> print(qml.Hadamard.compute_matrix())
         [[ 0.70710678  0.70710678]
          [ 0.70710678 -0.70710678]]
         """
@@ -92,7 +92,7 @@ class Hadamard(Observable, Operation):
 
         **Example**
 
-        >>> qml.Hadamard.compute_eigvals()
+        >>> print(qml.Hadamard.compute_eigvals())
         [ 1 -1]
         """
         return pauli_eigs(1)
@@ -117,7 +117,7 @@ class Hadamard(Observable, Operation):
 
         **Example**
 
-        >>> qml.Hadamard.compute_diagonalizing_gates(wires=[0])
+        >>> print(qml.Hadamard.compute_diagonalizing_gates(wires=[0]))
         [RY(-0.7853981633974483, wires=[0])]
         """
         return [qml.RY(-np.pi / 4, wires=wires)]
@@ -138,7 +138,7 @@ class Hadamard(Observable, Operation):
 
         **Example:**
 
-        >>> qml.Hadamard.compute_decomposition(0)
+        >>> print(qml.Hadamard.compute_decomposition(0))
         [PhaseShift(1.5707963267948966, wires=[0]),
         RX(1.5707963267948966, wires=[0]),
         PhaseShift(1.5707963267948966, wires=[0])]
@@ -199,7 +199,7 @@ class PauliX(Observable, Operation):
 
         **Example**
 
-        >>> qml.PauliX.compute_matrix()
+        >>> print(qml.PauliX.compute_matrix())
         [[0 1]
          [1 0]]
         """
@@ -225,7 +225,7 @@ class PauliX(Observable, Operation):
 
         **Example**
 
-        >>> qml.PauliX.compute_eigvals()
+        >>> print(qml.PauliX.compute_eigvals())
         [ 1 -1]
         """
         return pauli_eigs(1)
@@ -250,7 +250,7 @@ class PauliX(Observable, Operation):
 
         **Example**
 
-        >>> qml.PauliX.compute_diagonalizing_gates(wires=[0])
+        >>> print(qml.PauliX.compute_diagonalizing_gates(wires=[0]))
         [Hadamard(wires=[0])]
         """
         return [Hadamard(wires=wires)]
@@ -272,7 +272,7 @@ class PauliX(Observable, Operation):
 
         **Example:**
 
-        >>> qml.PauliX.compute_decomposition(0)
+        >>> print(qml.PauliX.compute_decomposition(0))
         [PhaseShift(1.5707963267948966, wires=[0]),
         RX(3.141592653589793, wires=[0]),
         PhaseShift(1.5707963267948966, wires=[0])]
@@ -335,7 +335,7 @@ class PauliY(Observable, Operation):
 
         **Example**
 
-        >>> qml.PauliY.compute_matrix()
+        >>> print(qml.PauliY.compute_matrix())
         [[ 0.+0.j -0.-1.j]
          [ 0.+1.j  0.+0.j]]
         """
@@ -361,7 +361,7 @@ class PauliY(Observable, Operation):
 
         **Example**
 
-        >>> qml.PauliY.compute_eigvals()
+        >>> print(qml.PauliY.compute_eigvals())
         [ 1 -1]
         """
         return pauli_eigs(1)
@@ -386,7 +386,7 @@ class PauliY(Observable, Operation):
 
         **Example**
 
-        >>> qml.PauliY.compute_diagonalizing_gates(wires=[0])
+        >>> print(qml.PauliY.compute_diagonalizing_gates(wires=[0]))
         [PauliZ(wires=[0]), S(wires=[0]), Hadamard(wires=[0])]
         """
         return [
@@ -411,7 +411,7 @@ class PauliY(Observable, Operation):
 
         **Example:**
 
-        >>> qml.PauliY.compute_decomposition(0)
+        >>> print(qml.PauliY.compute_decomposition(0))
         [PhaseShift(1.5707963267948966, wires=[0]),
         RY(3.141592653589793, wires=[0]),
         PhaseShift(1.5707963267948966, wires=[0])]
@@ -472,7 +472,7 @@ class PauliZ(Observable, Operation):
 
         **Example**
 
-        >>> qml.PauliZ.compute_matrix()
+        >>> print(qml.PauliZ.compute_matrix())
         [[ 1  0]
          [ 0 -1]]
         """
@@ -498,7 +498,7 @@ class PauliZ(Observable, Operation):
 
         **Example**
 
-        >>> qml.PauliZ.compute_eigvals()
+        >>> print(qml.PauliZ.compute_eigvals())
         [ 1 -1]
         """
         return pauli_eigs(1)
@@ -524,7 +524,7 @@ class PauliZ(Observable, Operation):
 
         **Example**
 
-        >>> qml.PauliZ.compute_diagonalizing_gates(wires=[0])
+        >>> print(qml.PauliZ.compute_diagonalizing_gates(wires=[0]))
         []
         """
         return []
@@ -545,7 +545,7 @@ class PauliZ(Observable, Operation):
 
         **Example:**
 
-        >>> qml.PauliZ.compute_decomposition(0)
+        >>> print(qml.PauliZ.compute_decomposition(0))
         [PhaseShift(3.141592653589793, wires=[0])]
 
         """
@@ -599,7 +599,7 @@ class S(Operation):
 
         **Example**
 
-        >>> qml.S.compute_matrix()
+        >>> print(qml.S.compute_matrix())
         [[1.+0.j 0.+0.j]
          [0.+0.j 0.+1.j]]
         """
@@ -625,7 +625,7 @@ class S(Operation):
 
         **Example**
 
-        >>> qml.S.compute_eigvals()
+        >>> print(qml.S.compute_eigvals())
         [1.+0.j 0.+1.j]
         """
         return np.array([1, 1j])
@@ -647,7 +647,7 @@ class S(Operation):
 
         **Example:**
 
-        >>> qml.S.compute_decomposition(0)
+        >>> print(qml.S.compute_decomposition(0))
         [PhaseShift(1.5707963267948966, wires=[0])]
 
         """
@@ -700,7 +700,7 @@ class T(Operation):
 
         **Example**
 
-        >>> qml.T.compute_matrix()
+        >>> print(qml.T.compute_matrix())
         [[1.+0.j         0.        +0.j        ]
          [0.+0.j         0.70710678+0.70710678j]]
         """
@@ -726,7 +726,7 @@ class T(Operation):
 
         **Example**
 
-        >>> qml.T.compute_eigvals()
+        >>> print(qml.T.compute_eigvals())
         [1.+0.j 0.70710678+0.70710678j]
         """
         return np.array([1, cmath.exp(1j * np.pi / 4)])
@@ -748,7 +748,7 @@ class T(Operation):
 
         **Example:**
 
-        >>> qml.T.compute_decomposition(0)
+        >>> print(qml.T.compute_decomposition(0))
         [PhaseShift(0.7853981633974483, wires=[0])]
 
         """
@@ -801,7 +801,7 @@ class SX(Operation):
 
         **Example**
 
-        >>> qml.SX.compute_matrix()
+        >>> print(qml.SX.compute_matrix())
         [[0.5+0.5j 0.5-0.5j]
          [0.5-0.5j 0.5+0.5j]]
         """
@@ -828,7 +828,7 @@ class SX(Operation):
 
         **Example**
 
-        >>> qml.SX.compute_eigvals()
+        >>> print(qml.SX.compute_eigvals())
         [1.+0.j 0.+1.j]
         """
         return np.array([1, 1j])
@@ -850,7 +850,7 @@ class SX(Operation):
 
         **Example:**
 
-        >>> qml.SX.compute_decomposition(0)
+        >>> print(qml.SX.compute_decomposition(0))
         [RZ(1.5707963267948966, wires=[0]),
         RY(1.5707963267948966, wires=[0]),
         RZ(-3.141592653589793, wires=[0]),
@@ -920,7 +920,7 @@ class CNOT(Operation):
 
         **Example**
 
-        >>> qml.CNOT.compute_matrix()
+        >>> print(qml.CNOT.compute_matrix())
         [[1 0 0 0]
          [0 1 0 0]
          [0 0 0 1]
@@ -983,7 +983,7 @@ class CZ(Operation):
 
         **Example**
 
-        >>> qml.CZ.compute_matrix()
+        >>> print(qml.CZ.compute_matrix())
         [[ 1  0  0  0]
          [ 0  1  0  0]
          [ 0  0  1  0]
@@ -1012,7 +1012,7 @@ class CZ(Operation):
 
         **Example**
 
-        >>> qml.CZ.compute_eigvals()
+        >>> print(qml.CZ.compute_eigvals())
         [1, 1, 1, -1]
         """
         return np.array([1, 1, 1, -1])
@@ -1070,7 +1070,7 @@ class CY(Operation):
 
         **Example**
 
-        >>> qml.CY.compute_matrix()
+        >>> print(qml.CY.compute_matrix())
         [[ 1.+0.j  0.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j  1.+0.j  0.+0.j  0.+0.j]
          [ 0.+0.j  0.+0.j  0.+0.j -0.-1.j]
@@ -1103,7 +1103,7 @@ class CY(Operation):
 
         **Example:**
 
-        >>> qml.CY.compute_decomposition(0)
+        >>> print(qml.CY.compute_decomposition(0))
         [CRY(3.141592653589793, wires=[0, 1]), S(wires=[0])]
 
         """
@@ -1140,8 +1140,6 @@ class SWAP(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    basis = "X"
-
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
@@ -1156,7 +1154,7 @@ class SWAP(Operation):
 
         **Example**
 
-        >>> qml.SWAP.compute_matrix()
+        >>> print(qml.SWAP.compute_matrix())
         [[1 0 0 0]
          [0 0 1 0]
          [0 1 0 0]
@@ -1181,7 +1179,7 @@ class SWAP(Operation):
 
         **Example:**
 
-        >>> qml.SWAP.compute_decomposition((0,1))
+        >>> print(qml.SWAP.compute_decomposition((0,1)))
         [CNOT(wires=[0, 1]), CNOT(wires=[1, 0]), CNOT(wires=[0, 1])]
 
         """
@@ -1236,7 +1234,7 @@ class ISWAP(Operation):
 
         **Example**
 
-        >>> qml.ISWAP.compute_matrix()
+        >>> print(qml.ISWAP.compute_matrix())
         [[1.+0.j 0.+0.j 0.+0.j 0.+0.j]
          [0.+0.j 0.+0.j 0.+1.j 0.+0.j]
          [0.+0.j 0.+1.j 0.+0.j 0.+0.j]
@@ -1265,7 +1263,7 @@ class ISWAP(Operation):
 
         **Example**
 
-        >>> qml.ISWAP.compute_eigvals()
+        >>> print(qml.ISWAP.compute_eigvals())
         [1j, -1j, 1, 1]
         """
         return np.array([1j, -1j, 1, 1])
@@ -1287,7 +1285,7 @@ class ISWAP(Operation):
 
         **Example:**
 
-        >>> qml.ISWAP.compute_decomposition((0,1))
+        >>> print(qml.ISWAP.compute_decomposition((0,1)))
         [S(wires=[0]),
         S(wires=[1]),
         Hadamard(wires=[0]),
@@ -1350,7 +1348,7 @@ class SISWAP(Operation):
 
         **Example**
 
-        >>> qml.SISWAP.compute_matrix()
+        >>> print(qml.SISWAP.compute_matrix())
         [[1.+0.j          0.+0.j          0.+0.j  0.+0.j]
          [0.+0.j  0.70710678+0.j  0.+0.70710678j  0.+0.j]
          [0.+0.j  0.+0.70710678j  0.70710678+0.j  0.+0.j]
@@ -1386,7 +1384,7 @@ class SISWAP(Operation):
 
         **Example**
 
-        >>> qml.SISWAP.compute_eigvals()
+        >>> print(qml.SISWAP.compute_eigvals())
         [0.70710678+0.70710678j 0.70710678-0.70710678j 1.+0.j 1.+0.j]
         """
         return np.array([INV_SQRT2 * (1 + 1j), INV_SQRT2 * (1 - 1j), 1, 1])
@@ -1408,7 +1406,7 @@ class SISWAP(Operation):
 
         **Example:**
 
-        >>> qml.SISWAP.compute_decomposition((0,1))
+        >>> print(qml.SISWAP.compute_decomposition((0,1)))
         [SX(wires=[0]),
         RZ(1.5707963267948966, wires=[0]),
         CNOT(wires=[0, 1]),
@@ -1495,7 +1493,7 @@ class CSWAP(Operation):
 
         **Example**
 
-        >>> qml.CSWAP.compute_matrix()
+        >>> print(qml.CSWAP.compute_matrix())
         [[1 0 0 0 0 0 0 0]
          [0 1 0 0 0 0 0 0]
          [0 0 1 0 0 0 0 0]
@@ -1535,7 +1533,7 @@ class CSWAP(Operation):
 
         **Example:**
 
-        >>> qml.CSWAP.compute_decomposition((0,1,2))
+        >>> print(qml.CSWAP.compute_decomposition((0,1,2)))
         [Toffoli(wires=[0, 2, 1]), Toffoli(wires=[0, 1, 2]), Toffoli(wires=[0, 2, 1])]
 
         """
@@ -1604,7 +1602,7 @@ class Toffoli(Operation):
 
         **Example**
 
-        >>> qml.Toffoli.compute_matrix()
+        >>> print(qml.Toffoli.compute_matrix())
         [[1 0 0 0 0 0 0 0]
          [0 1 0 0 0 0 0 0]
          [0 0 1 0 0 0 0 0]
@@ -1644,7 +1642,7 @@ class Toffoli(Operation):
 
         **Example:**
 
-        >>> qml.Toffoli.compute_decomposition((0,1,2))
+        >>> print(qml.Toffoli.compute_decomposition((0,1,2)))
         [Hadamard(wires=[2]),
         CNOT(wires=[1, 2]),
         T.inv(wires=[2]),
@@ -1758,14 +1756,17 @@ class MultiControlledX(Operation):
                 wires = Wires(wires[-1])
             else:
                 raise ValueError(
-                    "MultiControlledX: wrong number of wires. 1 wire given. Need at least 2."
+                    "MultiControlledX: wrong number of wires. "
+                    f"{len(wires)} wire(s) given. Need at least 2."
                 )
         else:
             wires = Wires(wires)
             control_wires = Wires(control_wires)
 
             warnings.warn(
-                "The control_wires keyword will be removed soon. Use wires = (control_wires,target_wire). See the documentation for more information.",
+                "The control_wires keyword will be removed soon. "
+                "Use wires = (control_wires, target_wire) instead. "
+                "See the documentation for more information.",
                 category=UserWarning,
             )
 
@@ -1773,10 +1774,9 @@ class MultiControlledX(Operation):
                 raise ValueError("MultiControlledX accepts a single target wire.")
 
         work_wires = Wires([]) if work_wires is None else Wires(work_wires)
+        total_wires = control_wires + wires
 
-        if Wires.shared_wires([wires, work_wires]) or Wires.shared_wires(
-            [control_wires, work_wires]
-        ):
+        if Wires.shared_wires([total_wires, work_wires]):
             raise ValueError("The work wires must be different from the control and target wires")
 
         if not control_values:
@@ -1785,8 +1785,6 @@ class MultiControlledX(Operation):
         self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["work_wires"] = work_wires
         self.hyperparameters["control_values"] = control_values
-
-        total_wires = control_wires + wires
 
         super().__init__(wires=total_wires, do_queue=do_queue)
 
@@ -1814,12 +1812,12 @@ class MultiControlledX(Operation):
 
         **Example**
 
-        >>> qml.MultiControlledX.compute_matrix([0], '1')
+        >>> print(qml.MultiControlledX.compute_matrix([0], '1'))
         [[1. 0. 0. 0.]
          [0. 1. 0. 0.]
          [0. 0. 0. 1.]
          [0. 0. 1. 0.]]
-        >>> qml.MultiControlledX.compute_matrix([1], '0')
+        >>> print(qml.MultiControlledX.compute_matrix([1], '0'))
         [[0. 1. 0. 0.]
          [1. 0. 0. 0.]
          [0. 0. 1. 0.]
@@ -1834,12 +1832,12 @@ class MultiControlledX(Operation):
                 raise ValueError("Length of control bit string must equal number of control wires.")
 
             # Make sure all values are either 0 or 1
-            if any(x not in ["0", "1"] for x in control_values):
+            if not set(control_values).issubset({"1", "0"}):
                 raise ValueError("String of control values can contain only '0' or '1'.")
 
             control_int = int(control_values, 2)
         else:
-            raise ValueError("Alternative control values must be passed as a binary string.")
+            raise ValueError("Control values must be passed as a string.")
 
         padding_left = control_int * 2
         padding_right = 2 ** (len(control_wires) + 1) - 2 - padding_left
@@ -1852,8 +1850,7 @@ class MultiControlledX(Operation):
 
     def adjoint(self):
         return MultiControlledX(
-            control_wires=self.wires[:-1],
-            wires=self.wires[-1],
+            wires=self.wires,
             control_values=self.hyperparameters["control_values"],
         )
 
@@ -1878,7 +1875,7 @@ class MultiControlledX(Operation):
 
         **Example:**
 
-        >>> qml.MultiControlledX.compute_decomposition(wires=[0,1,2,3],control_values="111", work_wires=qml.wires.Wires("aux"))
+        >>> print(qml.MultiControlledX.compute_decomposition(wires=[0,1,2,3],control_values="111", work_wires=qml.wires.Wires("aux")))
         [Toffoli(wires=[2, 'aux', 3]),
         Toffoli(wires=[0, 1, 'aux']),
         Toffoli(wires=[2, 'aux', 3]),
@@ -2044,7 +2041,7 @@ class Barrier(Operation):
 
         **Example:**
 
-        >>> qml.Barrier.compute_decomposition(0)
+        >>> print(qml.Barrier.compute_decomposition(0))
         []
 
         """
@@ -2053,13 +2050,21 @@ class Barrier(Operation):
     def label(self, decimals=None, base_label=None, cache=None):
         return "||"
 
-    def adjoint(self):
+    def _controlled(self, _):
+        return Barrier(wires=self.wires)
+
+    def adjoint(self, do_queue=False):
         return Barrier(wires=self.wires)
 
 
 class WireCut(Operation):
     r"""WireCut(wires)
-    The wire cut operator, used to manually mark locations for wire cuts.
+    The wire cut operation, used to manually mark locations for wire cuts.
+
+    .. note::
+
+        This operation is designed for use as part of the circuit cutting workflow.
+        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     **Details:**
 
@@ -2069,11 +2074,12 @@ class WireCut(Operation):
     Args:
         wires (Sequence[int] or int): the wires the operation acts on
     """
+    num_params = 0
     num_wires = AnyWires
     grad_method = None
 
     @staticmethod
-    def compute_decomposition(wires):
+    def compute_decomposition(wires):  # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         Since this operator is a placeholder inside a circuit, it decomposes into an empty list.
@@ -2086,7 +2092,7 @@ class WireCut(Operation):
 
         **Example:**
 
-        >>> qml.WireCut.compute_decomposition(0)
+        >>> print(qml.WireCut.compute_decomposition(0))
         []
 
         """
