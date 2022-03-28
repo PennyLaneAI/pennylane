@@ -198,6 +198,10 @@
 
 <h3>Breaking changes</h3>
 
+* Most optimizers no longer flatten and unflatten arguments during computation. Due to this change, user
+  provided gradient functions *must* return the same shape as `qml.grad`.
+  [(#2381)](https://github.com/PennyLaneAI/pennylane/pull/2381)
+
 * The old circuit text drawing infrastructure is being deleted.
   [(#2310)](https://github.com/PennyLaneAI/pennylane/pull/2310)
 
@@ -237,6 +241,9 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   [(#2339)](https://github.com/PennyLaneAI/pennylane/pull/2339)
 
 <h3>Bug fixes</h3>
+
+* Optimizers only consider a variable trainable if they have `requires_grad = True`.
+  [(#2381)](https://github.com/PennyLaneAI/pennylane/pull/2381)
 
 * Fixes a bug with `qml.expval`, `qml.var`, `qml.state` and
   `qml.probs` (when `qml.probs` is the only measurement) where the `dtype`
