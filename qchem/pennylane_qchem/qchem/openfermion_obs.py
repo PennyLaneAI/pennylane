@@ -26,6 +26,7 @@ from shutil import copyfile
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
 
+
 def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
     r"""Builds the Fermion many-body observable whose expectation value can be
