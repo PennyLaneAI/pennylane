@@ -153,7 +153,7 @@ class OpWithoutNumParams(qml.operation.Operation):
 
 
 ops_with_hints = [OpWithoutNumParams]
-hints = ["Instantiating OpWithNumParams only succeeded when using 1 parameter(s)."]
+hints = ["Instantiating OpWithoutNumParams only succeeded when using 1 parameter(s)."]
 
 
 class OpWithoutNumWires(qml.operation.Operation):

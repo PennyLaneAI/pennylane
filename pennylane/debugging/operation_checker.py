@@ -486,6 +486,7 @@ class OperationChecker:
         # Check methods to work with the same number of parameters as instantiation
         for method_tuple in _default_methods_to_check:
             self._check_single_method(op, method_tuple, parameters, wires)
+        parameters = [par for par in parameters if len(par) in self.tmp["possible_num_params"]]
 
         self._check_decompositions(op, parameters, wires)
         self._check_properties(op, parameters, wires)
@@ -532,7 +533,7 @@ class OperationChecker:
         self.tmp["num_params_known"] = num_params_known
         if parameters is None:
             if num_params_known:
-                parameters = np.random.random(op.num_params)
+                parameters = [np.random.random(op.num_params)]
             else:
                 parameters = [np.random.random(num) for num in range(self.max_num_params)]
         elif num_params_known and len(parameters) != op.num_params:
@@ -542,6 +543,8 @@ class OperationChecker:
                 "fatal_error",
             )
             raise CheckerError("Fatal error: Subsequent checks will not be possible.")
+        else:
+            parameters = [parameters]
 
         return parameters
 
@@ -551,15 +554,16 @@ class OperationChecker:
         of parameters. The number(s) of parameters with which instantiation
         works is stored in ``self.tmp["possible_num_params"]``."""
         if self.tmp["num_params_known"]:
-            op(*parameters, wires=wires)
-            return [op.num_params]
+            op(*parameters[0], wires=wires)
+            self.tmp["possible_num_params"] = [op.num_params]
+            return
 
         possible_num_params = []
         for par in parameters:
             try:
                 op(*par, wires=wires)
                 possible_num_params.append(len(par))
-            except:
+            except TypeError:
                 pass
 
         if len(possible_num_params) == 1:
@@ -593,7 +597,8 @@ class OperationChecker:
         wrapped_method = wrap_op_method(op, method, expected_exc)
         kwargs = {"wires": wires} if use_wires else {}
         if self.tmp["num_params_known"]:
-            exc = wrapped_method(*parameters, **kwargs)
+            par = parameters[0]
+            exc = wrapped_method(*par, **kwargs)
             if not isinstance(exc, Exception):
                 # If no or the expected exception occured, return
                 return
@@ -602,7 +607,7 @@ class OperationChecker:
             # different args than __init__ but that this is accomodated
             # for in the hyperparameters of the operation.
             try:
-                instance = op(*parameters, wires=wires)
+                instance = op(*par, wires=wires)
                 getattr(instance, method.replace("compute", "get"))()
                 self.print_(exc, "comment")
                 self.print_(
@@ -652,9 +657,6 @@ class OperationChecker:
 
     def _check_decompositions(self, op, parameters, wires):
         """Check that all defined decompositions work and yield the same matrix."""
-        if self.tmp["num_params_known"]:
-            parameters = [parameters]
-
         for par in parameters:
             matrices = [meth(op, par, wires) for meth in decomposition_methods]
             matrices = [mat for mat in matrices if mat is not None]
@@ -669,9 +671,6 @@ class OperationChecker:
     def _check_properties(self, op, parameters, wires):
         """Check basic properties that need to be satisfied as well as the correctness
         of additional properties that are given by attributes of the operation."""
-        if self.tmp["num_params_known"]:
-            parameters = [parameters]
-
         for par in parameters:
             instance = op(*par, wires=wires)
             # Check that the matrix is square and has the correct size for op.num_wires
@@ -780,11 +779,9 @@ class OperationChecker:
             self.print_("Channels can not be checked for the correct derivative yet.", "hint")
             return
 
-        if self.tmp["num_params_known"]:
-            if op.num_params != 1:
-                # Operation has more than one parameter. Skip it
-                return
-            parameters = [parameters]
+        if self.tmp["num_params_known"] and op.num_params != 1:
+            # Operation has more than one parameter. Skip it
+            return
 
         grad_method = getattr(op, "grad_method", None)
         if grad_method is None:
