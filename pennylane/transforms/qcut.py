@@ -733,7 +733,7 @@ def expand_fragment_tapes_mc(
 
     Returns:
         Tuple[List[QuantumTape], np.ndarray]: the tapes corresponding to each configuration and the
-            settings that track and determine each configuration pair
+            settings that track each configuration pair
 
     **Example**
 
@@ -826,8 +826,9 @@ def expand_fragment_tapes_mc(
 
 def _reshape_results(results: Sequence, communication_graph: MultiDiGraph, shots: int):
     """
-    Helper function to reshape results and find out degrees of communication
-    graph
+    Helper function to reshape ``results`` into a two-dimensional array whose number of rows is
+    determined by the number of shots and whose number of columns is determined by the number of
+    cuts.
     """
     results = [qml.math.flatten(r) for r in results]
     results = np.array(results, dtype=object)
@@ -850,7 +851,7 @@ def qcut_processing_fn_sample(
         Check out the :func:`qml.cut_circuit_mc() <pennylane.cut_circuit_mc>` transform for more details.
 
     Args:
-        results (Sequence): a collection of execution results generated from the
+        results (Sequence): a collection of sample-based execution results generated from the
             random expansion of circuit fragments over measurement and preparation node configurations
         communication_graph (nx.MultiDiGraph): the communication graph determining connectivity
             between circuit fragments
@@ -890,17 +891,17 @@ def qcut_processing_fn_mc(
         Check out the :func:`qml.cut_circuit_mc() <pennylane.cut_circuit_mc>` transform for more details.
 
     Args:
-        results (Sequence): a collection of execution results generated from the
+        results (Sequence): a collection of sample-based execution results generated from the
             random expansion of circuit fragments over measurement and preparation node configurations
         communication_graph (nx.MultiDiGraph): the communication graph determining connectivity
             between circuit fragments
-        settings (tensor_like): each element is one of 8 unique values that determines and tracks the specific
+        settings (np.ndarray): Each element is one of 8 unique values that tracks the specific
             measurement and preparation operations over all configurations. The number of rows is determined
             by the number of cuts and the number of columns is determined by the number of shots.
         shots (int): the number of shots
-        classical_processing_fn (callable): a classical postprocessing function to be applied to
+        classical_processing_fn (callable): A classical postprocessing function to be applied to
             the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``
-            and the output should be a single number within the interval [-1, 1]
+            and the output should be a single number within the interval :math:`[-1, 1]`.
 
     Returns:
         float or tensor_like: the expectation value calculated in accordance to Eq. (35) of
