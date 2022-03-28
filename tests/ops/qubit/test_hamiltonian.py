@@ -658,8 +658,8 @@ class TestHamiltonian:
         assert res.compare(H * coeff)
 
     def test_hamiltonian_mul_coeff_cast(self):
-        """Test that the coefficients are as expected when the type of the
-        existing and the new coeffients differ."""
+        """Test that the coefficients are correct when the type of the existing
+        and the new coefficients differ."""
         h = 0.5 * (qml.PauliX(0) @ qml.PauliX(0) + qml.PauliY(0) @ qml.PauliY(1))
         assert np.all(h.coeffs == np.array([0.5, 0.5]))
 
