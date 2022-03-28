@@ -13,6 +13,7 @@
 r"""
 This file contains the OperationChecker debugging and developing tool.
 """
+import abc
 from collections.abc import Sequence
 import inspect
 
@@ -33,12 +34,13 @@ from pennylane.operation import (
 
 _colors = {
     "error": "91",  # red
+    "fatal_error": "91",  # red
     "hint": "93",  # yellow
     "comment": 94,  # blue
     "pass": "92",  # green
 }
 
-verbosity_levels = {"error": 0, "hint": 1, "comment": 2, "pass": 3}
+verbosity_levels = {"fatal_error": 0, "error": 1, "hint": 2, "comment": 3, "pass": 4}
 levels_verbosity = {val: key for key, val in verbosity_levels.items()}
 
 _default_methods_to_check = [
@@ -74,10 +76,12 @@ def equal_up_to_phase(mat1, mat2, atol=1e-10):
     phase = mat1[idx] / mat2[idx]
 
     # Return whether the matrices are equal, accounting for the potential scalar prefactor
-    return np.allclose(mat1, mat2 * phase, atol=atol, rtol=0.0)
+    return np.isclose(np.abs(phase), 1.0, atol=atol) and np.allclose(
+        mat1, mat2 * phase, atol=atol, rtol=0.0
+    )
 
 
-def is_diagonal(matrix):
+def is_diagonal(matrix, atol=1e-10):
     r"""Check whether a matrix is a diagonal matrix
 
     Args:
@@ -88,7 +92,45 @@ def is_diagonal(matrix):
     """
     # Extract the diagonal, subtract it from the input, and check whether the result is 0.
     off_diagonal = matrix - np.diag(np.diag(matrix))
-    return np.allclose(off_diagonal, np.zeros_like(matrix))
+    return np.allclose(off_diagonal, np.zeros_like(matrix), atol=atol, rtol=0.0)
+
+
+def complex_jacobian(fn):
+    r_jac = qml.jacobian(lambda *args, **kwargs: qml.math.real(fn(*args, **kwargs)))
+    i_jac = qml.jacobian(lambda *args, **kwargs: qml.math.imag(fn(*args, **kwargs)))
+    return lambda *args, **kwargs: r_jac(*args, **kwargs) + 1j * i_jac(*args, **kwargs)
+
+
+def recipe_yields_commutator(recipe, op, par, wires):
+    """For now only implemented for single-parameter gates."""
+    coeffs, multipliers, shifts = recipe
+    shifted_parameters = [m * par[0] + s for m, s in zip(multipliers, shifts)]
+    shifted_matrices = [qml.matrix(op(p, wires=wires)) for p in shifted_parameters]
+
+    def apply_recipe(H):
+        out = qml.math.zeros_like(H)
+        for c, mat in zip(coeffs, shifted_matrices):
+            out = out + c * mat.T.conj() @ H @ mat
+        return out
+
+    d_apply_recipe = complex_jacobian(apply_recipe)
+
+    mat_fn = lambda p: qml.matrix(op(p, wires=wires))
+    d_mat_fn = complex_jacobian(mat_fn)
+    orig_mat = mat_fn(par[0])
+    d_orig_mat = d_mat_fn(par[0])
+    commutator_fn = (
+        lambda H: d_orig_mat.conj().T @ H @ orig_mat + orig_mat.conj().T @ H @ d_orig_mat
+    )
+    d_commutator_fn = complex_jacobian(commutator_fn)
+
+    dim = 2 ** len(wires)
+    H = (
+        np.random.random((dim, dim), requires_grad=True) * 2
+        + np.random.random((dim, dim), requires_grad=True) * 2j
+    )
+    H += H.T.conj()
+    return np.allclose(d_apply_recipe(H), d_commutator_fn(H))
 
 
 def wrap_op_method(op, method, expected_exc):
@@ -242,6 +284,11 @@ def matrix_from_generator(op, par, wires):
     gen = wrap_op_method(instance, "generator", GeneratorUndefinedError)()
     if gen is None or isinstance(gen, Exception):
         return None
+    if np.isclose(par[0], 0.0):
+        self.print_(
+            "Checking the matrix from generator at a parameter close to 0 is inconclusive.",
+            "hint",
+        )
     mat = qml.matrix(gen)
     return la.expm(1j * par[0] * mat)
 
@@ -311,16 +358,19 @@ class OperationChecker:
         r"""Call the OperationChecker on one or multiple operations.
 
         Args:
-            op (type or .operation.Operation): Operation(s) to check. Allowed to be a ``Sequence``
-                of types or instances instead, in which case the function iterates over all objects.
+            op (type or .operation.Operation): Operation(s) to check, either provided as class
+                or as instance. Allowed to be a ``Sequence`` of classes or instances instead,
+                in which case the function iterates over all objects.
             parameters (Sequence[int or float]): Parameters with which the operation(s) is/are expected
                 to work. If ``op`` contains multiple types and ``parameters`` only contains one
                 set of parameters, they are broadcast to all operations.
                 Ignored for those objects in ``op`` that are not types but a class instance.
+                If not provided, random parameters are used.
             wires (.wires.Wires): Wires with which the operation(s) is/are expected to work.
                 If ``op`` contains multiple types and ``wires`` only contains one wires object,
                 it is broadcast to all operations.
                 Ignored for those objects in ``op`` that are not types but a class instance.
+                If not provided, consecutive integer-named wires are used.
             seed (int): Seed for random generation of parameters.
 
         Returns:
@@ -363,12 +413,17 @@ class OperationChecker:
             }
             self.output[op_] = ""
 
-            self.check_single_operation(op_, parameters_, wires_)
+            try:
+                self.check_single_operation(op_, parameters_, wires_)
+            except CheckerError as e:
+                pass
 
             # Store the result for this operation outside of tmp and print summary per op
             self.results[op_] = levels_verbosity[self.tmp["res"]]
             if self.results[op_] == "pass":
-                self.print_(f"No problems have been found with the operation {op_}.\n", "pass")
+                self.print_(
+                    f"No problems have been found with the operation {self.tmp['name']}.\n", "pass"
+                )
 
         return self.results, self.output
 
@@ -397,7 +452,7 @@ class OperationChecker:
         # Errors are always printed
         if level == "error" or level in self._verbosity:
             if not self.tmp["printed_header"]:
-                header = f"Checking operation {self.tmp['op']} for consistency.\n" + "= " * 40
+                header = f"Checking operation {self.tmp['name']} for consistency.\n" + "= " * 40
                 print(header)
                 self.output[self.tmp["op"]] += header
                 self.tmp["printed_header"] = True
@@ -409,7 +464,7 @@ class OperationChecker:
         be well-defined, and have consistent properties.
 
         Args:
-            op (type): Operation to check.
+            op (type): Operation to check, may be a class or and instance.
             parameters (Sequence[int or float]): Parameters with which the operation(s)
                 is/are expected to work.
             wires (.wires.Wires): Wires with which the operation(s) is/are expected to work.
@@ -434,10 +489,11 @@ class OperationChecker:
 
         self._check_decompositions(op, parameters, wires)
         self._check_properties(op, parameters, wires)
-        # self._check_differentiability(op, parameters, wires)
+        if issubclass(op, qml.operation.Operation):
+            self._check_differentiability(op, parameters, wires)
 
     def _check_wires(self, op, wires):
-        """Check that ``num_wires`` is defined, that provided wires match that number
+        """Check that ``num_wires`` is defined, that provided wires match the given number
         and otherwise create correct number of wires.
         TODO: Check whether the following is reasonable:
         If ``num_wires`` is ``AnyWires``, its size is undetermined and we default to 2
@@ -445,7 +501,8 @@ class OperationChecker:
         """
         if type(op.num_wires) == property:
             self.print_(
-                f"The operation {op} does not define the number of wires it acts on.", "error"
+                f"The operation {self.tmp['name']} does not define the number of wires it acts on.",
+                "fatal_error",
             )
             raise CheckerError("Fatal error: Subsequent checks will not be possible.")
 
@@ -456,11 +513,11 @@ class OperationChecker:
                 # Use a dummy case of 2 wires for operations with flexible number of wires
                 wires = qml.wires.Wires([0, 1])
         else:
-            if op.num_wires != AnyWires and len(wires) == op.num_wires:
+            if op.num_wires != AnyWires and len(wires) != op.num_wires:
                 self.print_(
                     f"The number of provided wires ({len(wires)}) does not match the expected "
-                    f"number ({op.num_wires}) for operation {op}",
-                    "error",
+                    f"number ({op.num_wires}) for operation {self.tmp['name']}",
+                    "fatal_error",
                 )
                 raise CheckerError("Fatal error: Subsequent checks will not be possible.")
 
@@ -481,8 +538,8 @@ class OperationChecker:
         elif num_params_known and len(parameters) != op.num_params:
             self.print_(
                 f"The number of provided parameters ({len(parameters)}) does not match "
-                f"the expected number ({op.num_params}) for operation {op}",
-                "error",
+                f"the expected number ({op.num_params}) for operation {self.tmp['name']}",
+                "fatal_error",
             )
             raise CheckerError("Fatal error: Subsequent checks will not be possible.")
 
@@ -507,14 +564,17 @@ class OperationChecker:
 
         if len(possible_num_params) == 1:
             self.print_(
-                f"Instantiating {op} only succeeded when using {possible_num_params[0]} "
+                f"Instantiating {self.tmp['name']} only succeeded when using {possible_num_params[0]} "
                 "parameter(s).\n"
                 "Consider specifying the number of parameters by setting op.num_params.",
                 "hint",
             )
         elif not possible_num_params:
             par_lens = [len(par) for par in parameters]
-            err_str = f"Instantiating {op} did not succeed with any of\n" f"{par_lens} parameters."
+            err_str = (
+                f"Instantiating {self.tmp['name']} did not succeed with any of\n"
+                f"{par_lens} parameters."
+            )
             if len(parameters) == 1:
                 err_str += (
                     "\nIt seems that you provided parameters of the wrong length "
@@ -546,7 +606,7 @@ class OperationChecker:
                 getattr(instance, method.replace("compute", "get"))()
                 self.print_(exc, "comment")
                 self.print_(
-                    f"Operation method {op}.{method} does not work\n"
+                    f"Operation method {self.tmp['name']}.{method} does not work\n"
                     f"with num_params ({op.num_params}) parameters (see above) but is "
                     "using additional (hyper)parameters.",
                     "comment",
@@ -558,7 +618,7 @@ class OperationChecker:
                 self.print_(f, "error")
 
             self.print_(
-                f"Operation method {op}.{method} does not work\n"
+                f"Operation method {self.tmp['name']}.{method} does not work\n"
                 f"with num_params ({op.num_params}) parameters.",
                 "error",
             )
@@ -576,7 +636,7 @@ class OperationChecker:
 
         if failing_methods:
             self.print_(
-                f"Operation method {op}.{method} does not work\n"
+                f"Operation method {self.tmp['name']}.{method} does not work\n"
                 f"with number(s) of parameters {failing_methods}\n"
                 "but instantiation works with this/these number(s) of parameters.",
                 "error",
@@ -584,7 +644,7 @@ class OperationChecker:
 
         if succeeding_methods:
             self.print_(
-                f"Operation method {op}.{method} works\n"
+                f"Operation method {self.tmp['name']}.{method} works\n"
                 f"with number(s) of parameters {succeeding_methods}\n"
                 "but instantiation does not work with this/these number(s) of parameters.",
                 "comment",
@@ -601,7 +661,7 @@ class OperationChecker:
             for mat in matrices[1:]:
                 if not equal_up_to_phase(matrices[0], mat, atol=self.tol):
                     self.print_(
-                        f"Matrices do not coincide for {op}."
+                        f"Matrices do not coincide for {self.tmp['name']}."
                         # f"\n{np.round(matrices[0], 5)}\n{np.round(mat, 5)}",
                         "error",
                     )
@@ -631,11 +691,11 @@ class OperationChecker:
         if matrix is None:
             return
         if not matrix.shape[0] == matrix.shape[1]:
-            self.print_(f"The operation {op} defines a non-square matrix.", "error")
+            self.print_(f"The operation {self.tmp['name']} defines a non-square matrix.", "error")
         mat_num_wires = int(np.log2(matrix.shape[0]))
         if not mat_num_wires == op.num_wires and op.num_wires != AnyWires:
             self.print_(
-                f"The operation {op} defines a matrix for {mat_num_wires} wires but "
+                f"The operation {self.tmp['name']} defines a matrix for {mat_num_wires} wires but "
                 f"is defined to have {op.num_wires} wires.",
                 "error",
             )
@@ -649,7 +709,7 @@ class OperationChecker:
         mat_eigvals = np.linalg.eigvals(matrix)
         if not np.allclose(mat_eigvals, eigvals):
             self.print_(
-                f"The eigenvalues of the matrix and the stored eigvals for {op} do not match.",
+                f"The eigenvalues of the matrix and the stored eigvals for {self.tmp['name']} do not match.",
                 "error",
             )
         return
@@ -667,9 +727,9 @@ class OperationChecker:
             diag_mat = qml.matrix(tape)
 
         diagonalized = diag_mat @ matrix @ diag_mat.conj().T
-        if not is_diagonal(diagonalized):
+        if not is_diagonal(diagonalized, atol=self.tol):
             self.print_(
-                f"The diagonalizing gates do not diagonalize the matrix for {op}.",
+                f"The diagonalizing gates do not diagonalize the matrix for {self.tmp['name']}.",
                 "error",
             )
             return
@@ -678,7 +738,7 @@ class OperationChecker:
         ):
             self.print_(
                 "The diagonalizing gates diagonalize the matrix but produce wrong "
-                f"eigenvalues for {op}.",
+                f"eigenvalues for {self.tmp['name']}.",
                 "error",
             )
         return
@@ -707,8 +767,70 @@ class OperationChecker:
                 [diag_gate(wires=w) for diag_gate in diag_gates]
 
         diag_mat = qml.operation.expand_matrix(qml.matrix(tape), target_wires, instance.wires)
-        if not is_diagonal(diag_mat @ matrix @ diag_mat.conj().T):
+        if not is_diagonal(diag_mat @ matrix @ diag_mat.conj().T, atol=self.tol):
             self.print_(
-                f"The operation {instance.__class__} is not diagonal in the provided basis",
+                f"The operation {self.tmp['name']} is not diagonal in the provided basis",
                 "error",
             )
+
+    def _check_differentiability(self, op, parameters, wires):
+        """Check that an operation is differentiable if it is marked to be, and that
+        the correct derivative is produced. Note that this can be computationally expensive."""
+        if issubclass(op, qml.operation.Channel):
+            self.print_("Channels can not be checked for the correct derivative yet.", "hint")
+            return
+
+        if self.tmp["num_params_known"]:
+            if op.num_params != 1:
+                # Operation has more than one parameter. Skip it
+                return
+            parameters = [parameters]
+
+        grad_method = getattr(op, "grad_method", None)
+        if grad_method is None:
+            return
+        grad_method_is_hardcoded = isinstance(grad_method, str)
+        # TODO: the following line would fail _in general_ because of num_params
+        has_grad_recipe = (
+            getattr(op, "grad_recipe", None) is not None
+            and op.grad_recipe != [None] * op.num_params
+        )
+        if grad_method_is_hardcoded and op.grad_method != "A" and has_grad_recipe:
+            self.print_(
+                f"A grad_recipe is provided for {self.tmp['name']} but grad_method is "
+                f"{op.grad_method}. Consider changing it to 'A'.",
+                "hint",
+            )
+        elif op.grad_method == "F":
+            return
+
+        for par in parameters:
+            instance = op(*par, wires=wires)
+            try:
+                freq = instance.parameter_frequencies[0]
+                coeffs, shifts = qml.gradients.generate_shift_rule(freq)
+                std_recipe = np.array([coeffs, np.ones_like(coeffs), shifts])
+            except qml.operation.ParameterFrequenciesUndefinedError:
+                std_recipe = None
+            recipe = np.array(op.grad_recipe[0]).T if has_grad_recipe else std_recipe
+
+            if recipe is None:
+                continue
+            try:
+                correct_recipe = recipe_yields_commutator(recipe, op, par, wires)
+            except qml.operation.MatrixUndefinedError:
+                continue
+
+            if not correct_recipe:
+                self.print_(
+                    f"The grad_recipe of {self.tmp['name']} does not yield the correct "
+                    "derivative.",
+                    "error",
+                )
+            if has_grad_recipe and np.allclose(recipe, std_recipe):
+                self.print_(
+                    f"The grad_recipe of {self.tmp['name']} is a standard parameter-"
+                    "shift rule. Consider removing it and adding parameter_frequencies "
+                    f"to the operation instead in order to allow for flexible shift values.",
+                    "hint",
+                )
