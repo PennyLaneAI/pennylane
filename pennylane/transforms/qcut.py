@@ -954,7 +954,7 @@ def cut_circuit_mc(
     Following the approach of `Peng et al. <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.125.150504>`__,
     strategic placement of :class:`~.WireCut` operations can allow a quantum circuit to be split
     into disconnected circuit fragments. This transform allows for sampled measurement outcomes
-    to be recombined to full bitstrings and if a classical processing function is supplied,
+    to be recombined to full bitstrings and, if a classical processing function is supplied,
     an expectation value will be evaluated.
 
     Args:
@@ -963,18 +963,19 @@ def cut_circuit_mc(
         device_wires (Wires):  wires of the device that the cut circuits are to be run on
         max_depth (int): the maximum depth used to expand the circuit while searching for wire cuts
         classical_processing_fn (callable): a classical postprocessing function to be applied to
-            the reconstructed bitstrings. The expected input is a bitstring; a flat array of length `wires`
-            and the output should be a single number within the interval [-1, 1]
+            the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``
+            and the output should be a single number within the interval :math:`[-1, 1]`
 
     Returns:
         Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a
-        result of cutting and a post-processing function which either recombines samples to a full
+        result of cutting and then random expansion at :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs,
+        and a post-processing function which either recombines samples to a full
         circuit bitstring or further calculates an expectation value if a classical processing function
         is supplied
 
     **Example**
 
-    The following :math:`3`-qubit circuit containins a :class:`~.WireCut` operation and a :func:`~sample`
+    The following :math:`3`-qubit circuit containins a :class:`~.WireCut` operation and a :func:`~.sample`
     measurement. When decorated with ``@qml.cut_circuit_mc``, we can cut the circuit into two
     :math:`2`-qubit fragments:
 
