@@ -74,6 +74,7 @@ This set of transforms accept quantum functions, and perform basic circuit compi
     ~transforms.merge_amplitude_embedding
     ~transforms.remove_barrier
     ~transforms.undo_swaps
+    ~transforms.pattern_matching_optimization
     ~transforms.transpile
 
 There are also utility functions and decompositions available that assist with
@@ -86,6 +87,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
     ~transforms.simplify
+    ~transforms.pattern_matching
 
 There are also utility functions that take a circuit and return a DAG.
 
@@ -188,6 +190,8 @@ from .optimization import (
     merge_amplitude_embedding,
     remove_barrier,
     undo_swaps,
+    pattern_matching,
+    pattern_matching_optimization,
 )
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo

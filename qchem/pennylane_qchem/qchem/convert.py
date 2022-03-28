@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the functions needed for computing the molecular Hamiltonian.
+This module contains the functions for converting an external operator to a Pennylane operator.
 """
 # pylint: disable=import-outside-toplevel
 import pennylane as qml
@@ -281,8 +281,10 @@ def _openfermion_pennylane_equivalent(
     return openfermion_qubit_operator == _pennylane_to_openfermion(coeffs, ops, wires=wires)
 
 
-def import_operator(qubit_observable, format, wires=None, tol=1e08):
+def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e08):
     r"""Converts an external operator to a Pennylane operator.
+
+    The external format currently supported is openfermion.
 
     Args:
         qubit_observable: External qubit operator that will be converted
