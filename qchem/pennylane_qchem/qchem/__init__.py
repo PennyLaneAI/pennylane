@@ -13,8 +13,7 @@
 # limitations under the License.
 """The PennyLane quantum chemistry package. Supports OpenFermion, PySCF,
 and Psi4 for quantum chemistry calculations using PennyLane."""
-from .structure import *
-from .obs import *
+from .openfermion_obs import *
 from .basis_set import *
 from .convert import *
 from .dipole import *
