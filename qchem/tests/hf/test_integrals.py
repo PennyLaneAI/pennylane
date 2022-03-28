@@ -773,12 +773,12 @@ def test_gradient_repulsion(symbols, geometry, alpha, coeff):
     basis_b = mol.basis_set[1]
     args = [mol.alpha, mol.coeff]
 
-    g_alpha = autograd.grad(
-        qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=0
-    )(*args)
-    g_coeff = autograd.grad(
-        qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=1
-    )(*args)
+    g_alpha = autograd.grad(qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=0)(
+        *args
+    )
+    g_coeff = autograd.grad(qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=1)(
+        *args
+    )
 
     # compute repulsion gradients with respect to alpha and coeff using finite diff
     delta = 0.0001
