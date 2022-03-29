@@ -825,7 +825,6 @@ def expand_fragment_tapes_mc(
     return all_configs, settings
 
 
-
 def _reshape_results(
     results: Sequence, communication_graph: MultiDiGraph, shots: int
 ) -> np.ndarray:
@@ -932,6 +931,11 @@ def qcut_processing_fn_mc(
         assert set(sample_mid).issubset({np.array(-1), np.array(1)})
         # following Eq.(35) of Peng et.al: https://arxiv.org/abs/1904.00102
         f = classical_processing_fn(sample_terminal)
+        if not -1 <= f <= 1:
+            raise ValueError(
+                "The classical processing function supplied must "
+                "give output in the interval [-1, 1]"
+            )
         sigma_s = np.prod(sample_mid)
         t_s = f * sigma_s
         c_s = np.prod([evals[s] for s in setting])
@@ -1155,6 +1159,14 @@ def cut_circuit_mc(
                 [0., 0., 0., 1., 1., 0., 0., 0.]])]
     """
 
+    for meas in tape.measurements:
+        if meas.obs is not None:
+            raise ValueError(
+                "The sample-based circuit cutting workflow only "
+                "supports measurements in the computational basis. Please only specify "
+                "wires to be sampled within qml.sample(), do not pass observables."
+            )
+
     g = tape_to_graph(tape)
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
@@ -1197,6 +1209,12 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         )
 
     def _wrapper(*args, **kwargs):
+        if tkwargs.get("shots", False):
+            raise ValueError(
+                "Cannot provide a shots directly to the `cut_circuit_mc` "
+                "decorator when transforming a QNode. Please provide the number of shots in "
+                "the device or when calling the QNode."
+            )
 
         shots = kwargs.pop("shots", False)
         shots = shots or qnode.device.shots
@@ -1207,10 +1225,8 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
                 "or when calling the QNode to be cut"
             )
 
-        tkwargs["shots"] = shots
-
         qnode.construct(args, kwargs)
-        tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs)
+        tapes, processing_fn = self.construct(qnode.qtape, *targs, **tkwargs, shots=shots)
 
         interface = qnode.interface
         execute_kwargs = getattr(qnode, "execute_kwargs", {}).copy()
@@ -1240,7 +1256,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
     return _wrapper
 
-  
+
 def _get_symbol(i):
     """Finds the i-th ASCII symbol. Works for lowercase and uppercase letters, allowing i up to
     51."""

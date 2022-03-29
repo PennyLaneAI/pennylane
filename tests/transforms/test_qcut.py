@@ -2110,6 +2110,43 @@ class TestMCPostprocessing:
             for arr, exp_arr in zip(resh, exp_resh):
                 assert np.allclose(arr, exp_arr)
 
+    def test_classical_processing_error(self):
+        """
+        Tests that the correct error is given if the classical processing
+        function give output outside of the interval [-1, 1]
+        """
+
+        fragment_tapes = [frag0, frag1]
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+
+        def fn(x):
+            if x[0] == 0 and x[1] == 0:
+                return 2
+            if x[0] == 0 and x[1] == 1:
+                return -2
+            if x[0] == 1 and x[1] == 0:
+                return -2
+            if x[0] == 1 and x[1] == 1:
+                return 2
+
+        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+
+        with pytest.raises(ValueError, match="The classical processing function supplied must "):
+            qcut.qcut_processing_fn_mc(
+                fixed_samples, communication_graph, fixed_settings, shots, fn
+            )
+
 
 class TestCutCircuitMCTransform:
     """
@@ -2172,7 +2209,7 @@ class TestCutCircuitMCTransform:
         cut_res_mc = circuit(v)
 
         target = target_circuit(v)
-        assert np.isclose(cut_res_mc, target, atol=0.05)  # not guaranteed to pass each time
+        assert np.isclose(cut_res_mc, target, atol=0.1)  # not guaranteed to pass each time
 
     def test_cut_circuit_mc_sample(self):
         """
@@ -2269,7 +2306,65 @@ class TestCutCircuitMCTransform:
         with pytest.raises(ValueError, match="A shots value must be provided in the device "):
             cut_circuit(v)
 
-            
+    def test_sample_obs_error(self):
+        """
+        Tests that a circuit with sample measurements containing observables
+        gives the correct error
+        """
+        shots = 1000
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(qml.PauliZ(0))
+
+        v = 0.319
+        with pytest.raises(ValueError, match="The sample-based circuit cutting workflow only "):
+            cut_circuit(v)
+
+    def test_transform_shots_error(self):
+        """
+        Tests that the correct error is given when a `shots` argument is passed
+        when transforming a qnode
+        """
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.cut_circuit_mc(shots=456)
+        @qml.qnode(dev)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        with pytest.raises(
+            ValueError, match="Cannot provide a shots directly to the `cut_circuit_mc` "
+        ):
+            cut_circuit(v)
+
+
 class TestContractTensors:
     """Tests for the contract_tensors function"""
 
