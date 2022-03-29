@@ -1119,7 +1119,7 @@ class Operator(abc.ABC):
             # original operation has no trainable parameters
             tape.trainable_params = {}
 
-        if self.inverse:
+        if hasattr(self, "inverse") and self.inverse:
             tape.inv()
 
         return tape

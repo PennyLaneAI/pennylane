@@ -189,7 +189,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 getattr(new_tape, queue).append(obj)
                 continue
 
-            if isinstance(obj, (qml.operation.Operation, qml.measurements.MeasurementProcess)):
+            if isinstance(obj, (qml.operation.Operator, qml.measurements.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
@@ -462,28 +462,9 @@ class QuantumTape(AnnotatedQueue):
             if isinstance(obj, QuantumTape):
                 self._ops.append(obj)
 
-            elif isinstance(obj, qml.operation.Operation) and not info.get("owner", False):
-                # operation objects with no owners
-
-                if self._measurements:
-                    raise ValueError(
-                        f"Quantum operation {obj} must occur prior to any measurements."
-                    )
-
-                # invert the operation if required
-                obj.inverse = info.get("inverse", obj.inverse)
-
-                if isinstance(obj, STATE_PREP_OPS):
-                    if self._ops:
-                        raise ValueError(
-                            f"State preparation operation {obj} must occur prior to any quantum operations."
-                        )
-
-                    self._prep.append(obj)
-                else:
-                    self._ops.append(obj)
-
             elif isinstance(obj, qml.measurements.MeasurementProcess):
+                # measurements: put mid-circuits measurements into operation queue and
+                # others into measurement queue
 
                 if obj.return_type == qml.measurements.MidMeasure:
 
@@ -508,6 +489,29 @@ class QuantumTape(AnnotatedQueue):
                     # check if any sampling is occuring
                     if obj.return_type is qml.measurements.Sample:
                         self.is_sampled = True
+
+            elif not info.get("owner", False):
+                # all other operators with no owners go into operation queue
+
+                if self._measurements:
+                    raise ValueError(
+                        f"Quantum operation {obj} must occur prior to any measurements."
+                    )
+
+                # invert the operation if required
+                inv =  info.get("inverse", None)
+                if inv is not None:
+                    obj.inverse = inv
+
+                if isinstance(obj, STATE_PREP_OPS):
+                    if self._ops:
+                        raise ValueError(
+                            f"State preparation operation {obj} must occur prior to any quantum operations."
+                        )
+
+                    self._prep.append(obj)
+                else:
+                    self._ops.append(obj)
 
         self._update()
 
