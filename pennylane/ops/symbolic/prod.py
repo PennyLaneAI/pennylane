@@ -11,46 +11,43 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# pylint: disable=too-few-public-methods,function-redefined
-
 import pennylane as qml
-from functools import reduce
 
 
 class Prod(qml.operation.Operator):
-    """Arithmetic operator subclass representing the product of two operators."""
+    """Arithmetic operator subclass representing the product of operators."""
 
     def __init__(self, *factors, do_queue=True, id=None):
 
-        self.hyperparameters["factors"] = factors
+        self.factors = factors
         combined_wires = qml.wires.Wires.all_wires([f.wires for f in factors])
-        self.hyperparameters["combined_wires"] = combined_wires
-
+        combined_params = [f.parameters for f in factors]
         super().__init__(
-            *[f.parameters for f in factors], wires=combined_wires, do_queue=do_queue, id=id
+            *combined_params, wires=combined_wires, do_queue=do_queue, id=id
         )
-        self._name = "Prod(" + ", ".join([f"{f}" for f in factors]) + ")"
+        self._name = "Prod[" + ", ".join([f"{f}" for f in factors]) + "]"
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return " @ ".join([f"{f}" for f in self.hyperparameters['factors']])
+        return " @ ".join([f"{f}" for f in self.factors])
 
     @property
     def num_wires(self):
         return len(self.wires)
 
-    @staticmethod
-    def compute_decomposition(*params, wires=None, factors=None, **hyperparameters):
-        return [f for f in factors]
+    @property
+    def base_ops(self):
+        """List: constituent operations of this arithmetic operation"""
+        return self.factors
 
-    @staticmethod
-    def compute_matrix(*params, factors=None, combined_wires=None, **hyperparams):
-        m = factors[0].get_matrix(wire_order=combined_wires)
-        for f in factors[1:]:
-            m @ f.get_matrix(wire_order=combined_wires)
+    def decomposition(self):
+        return [f for f in self.factors]
+
+    def get_matrix(self, wire_order=None):
+        if wire_order is None:
+            wire_order = self.wires
+        m = self.factors[0].get_matrix(wire_order=wire_order)
+        for f in self.factors[1:]:
+            m @ f.get_matrix(wire_order=wire_order)
         return m
 
-
-def prod(*factors):
-    return Prod(*factors)

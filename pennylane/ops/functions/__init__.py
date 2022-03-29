@@ -17,3 +17,9 @@ This module contains functions that act on operators and tapes.
 from .eigvals import eigvals
 from .generator import generator
 from .matrix import matrix
+from .adjoint import adjoint
+from .exp import exp
+from .pow import pow
+from .prod import prod
+from .scalar_prod import scalar_prod
+from .sum import sum

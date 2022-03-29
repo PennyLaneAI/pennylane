@@ -442,13 +442,13 @@ class Projector(Observable):
         """
         return []
 
-    def pow(self, exponent):  # pylint: disable=unused-argument
-        """Custom power method.
-
-        Args:
-            exponent (int, float): exponent
-        Returns:
-            .Operator
-        """
-        # a projector's power is the projector itself
-        return self
+    # def pow(self, exponent):  # pylint: disable=unused-argument
+    #     """Custom power method.
+    #
+    #     Args:
+    #         exponent (int, float): exponent
+    #     Returns:
+    #         .Operator
+    #     """
+    #     # a projector's power is the projector itself
+    #     return self

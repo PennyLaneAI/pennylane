@@ -1096,7 +1096,7 @@ class Operator(abc.ABC):
 
     def __add__(self, other):
         r"""The addition operation between operators."""
-        return qml.ops.math.sum(self, other)
+        return qml.ops.functions.sum(self, other)
 
     def __sub__(self, other):
         r"""The subtraction operation between operators."""
@@ -1104,17 +1104,21 @@ class Operator(abc.ABC):
 
     def __mul__(self, a):
         r"""The scalar multiplication for operators."""
-        return qml.ops.math.scalar_prod(a, self)
+        return qml.ops.functions.scalar_prod(a, self)
 
     __rmul__ = __mul__
 
     def __matmul__(self, other):
         r"""The multiplication between operators."""
-        return qml.ops.math.prod(self, other)
+        return qml.ops.functions.prod(self, other)
 
     def __pow__(self, exponent):
         r"""The power of an operator."""
-        return qml.ops.math.pow(self, exponent)
+        return qml.ops.functions.pow(self, exponent)
+
+    def __invert__(self):
+        r"""The inverse of an operator."""
+        return qml.ops.functions.pow(self, -1)
 
     def expand(self):
         """Returns a tape that has recorded the decomposition of the operator.
@@ -1151,6 +1155,42 @@ class Operator(abc.ABC):
 
         return tape
 
+    def adjoint(self, do_queue=False):  # pylint:disable=no-self-use
+        """Operator that is the adjoint of this one.
+
+        Adjointed operations are the conjugated and transposed version of the
+        original operation. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        Args:
+            do_queue: Whether to add the adjointed gate to the context queue.
+
+        Returns:
+            The adjointed operation.
+        """
+        raise AdjointUndefinedError
+
+    def exp(self, do_queue=False):  # pylint:disable=no-self-use
+        """Operator that represents qml.ops.symbolic.Exp(self).
+
+        Args:
+            do_queue: Whether to add the adjointed gate to the context queue.
+
+        Returns:
+            The exponentiated operation.
+        """
+        raise OperatorPropertyUndefined
+
+    def pow(self, exponent, do_queue=False):  # pylint:disable=no-self-use
+        """Operator that is a power of this one.
+
+        Args:
+            do_queue: Whether to add the adjointed gate to the context queue.
+
+        Returns:
+            The power of this operation.
+        """
+        raise OperatorPropertyUndefined
 
 # =============================================================================
 # Base Operation class
@@ -1348,21 +1388,6 @@ class Operation(Operator):
     def inverse(self):
         """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
-
-    def adjoint(self, do_queue=False):  # pylint:disable=no-self-use
-        """Create an operation that is the adjoint of this one.
-
-        Adjointed operations are the conjugated and transposed version of the
-        original operation. Adjointed ops are equivalent to the inverted operation for unitary
-        gates.
-
-        Args:
-            do_queue: Whether to add the adjointed gate to the context queue.
-
-        Returns:
-            The adjointed operation.
-        """
-        raise AdjointUndefinedError
 
     @inverse.setter
     def inverse(self, boolean):

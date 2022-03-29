@@ -11,16 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from pennylane.ops.symbolic import Prod
 
-# pylint: disable=too-few-public-methods,function-redefined
 
-"""
-This module contains functionality for arithmetic operations
-applied to operators, such as addition and inversion.
-"""
-from .sum import Sum, sum
-from .scalar_prod import ScalarProd, scalar_prod
-from .prod import Prod, prod
-from .exp import Exp, exp
-from .pow import Pow, pow
-from .control import Control, control
+def prod(*factors):
+    return Prod(*factors)

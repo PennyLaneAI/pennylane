@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the operator math utils.
+Unit tests for the flatten operator functions.
 """
 import pennylane as qml
-from pennylane.ops.math.utils import flatten_decomposition, flatten_terms
+from pennylane.ops.functions.utils import flatten_decomposition, flatten_terms
 from numpy import np
 
 

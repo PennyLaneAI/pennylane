@@ -11,47 +11,37 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-# pylint: disable=too-few-public-methods,function-redefined
-
 import pennylane as qml
 
 
 class ScalarProd(qml.operation.Operator):
-    """Arithmetic operator subclass representing the scalar product of an operator."""
+    """Arithmetic operator subclass representing the product of an operator with a scalar."""
 
     def __init__(self, scalar, op, do_queue=True, id=None):
-        self.hyperparameters["scalar"] = scalar
-        self.hyperparameters["base_op"] = op
 
+        self.scalar = scalar
+        self.base_op = op
         super().__init__(*op.parameters, scalar, wires=op.wires, do_queue=do_queue, id=id)
         self._name = f"{scalar}  {op.name}"
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return f"{self.hyperparameters['scalar']} {self.hyperparameters['base_op']}"
+        return f"{self.scalar} {self.base_op}"
 
     @property
     def num_wires(self):
         return len(self.wires)
 
-    @staticmethod
-    def compute_terms(*params, scalar=None, base_op=None):
-        return [scalar], [base_op]
+    @property
+    def base_ops(self):
+        """List: constituent operations of this arithmetic operation"""
+        return [self.base_op]
 
-    @staticmethod
-    def compute_matrix(*params, scalar=None, base_op=None):
-        return scalar * base_op.get_matrix()
+    def terms(self):
+        return [self.scalar], [self.base_op]
 
-    @staticmethod
-    def compute_eigvals(*params, scalar=None, base_op=None):
-        return scalar * base_op.get_eigvals()
+    def get_matrix(self, wire_order=None):
+        return self.scalar * self.base_op.get_matrix(wire_order)
 
-
-def scalar_prod(scalar, op):
-    try:
-        # there is a custom version defined
-        return op.scalar_prod(scalar, op)
-    except AttributeError:
-        # default to an abstract arithmetic class
-        return ScalarProd(scalar, op)
+    def get_eigvals(self):
+        return self.scalar * self.base_op.get_eigvals()

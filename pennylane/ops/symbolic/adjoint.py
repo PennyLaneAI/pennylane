@@ -22,34 +22,34 @@ class Adjoint(qml.operation.Operator):
 
     def __init__(self, op, do_queue=True, id=None):
 
-        self.hyperparameters["base_op"] = op
-
+        self.base_op = op
         super().__init__(*op.parameters, wires=op.wires, do_queue=do_queue, id=id)
-        self._name = f"Adjoint({op})"
+        self._name = f"Adjoint[{op}]"
 
     def __repr__(self):
         """Constructor-call-like representation."""
-        return f"{self.hyperparameters['base_op']}†"
+        return f"{self.base_op}†"
 
     @property
     def num_wires(self):
         return len(self.wires)
 
-    @staticmethod
-    def compute_decomposition(*params, wires=None, base_op=None, **hyperparameters):
-        return [qml.adjoint(o) for o in base_op.decomposition()].reverse()
+    @property
+    def base_ops(self):
+        """List: constituent operations of this arithmetic operation"""
+        return [self.base_op]
 
-    @staticmethod
-    def compute_matrix(*params, exponent=None, base_op=None, **hyperparams):
-        return base_op.get_matrix() ** exponent  # check if this works for non-integer exponents
+    def decomposition(self):
+        try:
+            # extract custom decomposition
+            # for now, we wrap this in a list to resemble the output of other decomposition methods
+            # in future, decomposition should return an Operation everywhere, and PennyLane should know
+            # how to "unpack" a Prod operator
+            return [self.base_op.adjoint()]
+        except qml.operation.AdjointUndefinedError:
+            # default: adjoin and reverse the standard decomposition
+            return [qml.adjoint(o) for o in self.base_op.decomposition()].reverse()
 
-
-def adjoint(
-    op,
-):
-    try:
-        # there is a custom version defined
-        return op.adjoint()
-    except AttributeError:
-        # default to an abstract arithmetic class
-        return Adjoint(op)
+    def get_matrix(self, wire_order=None):
+        # TODO: this will not work in torch (no 'conjugate') and tensorflow (no complex number support?)
+        return qml.math.conjugate(qml.math.transpose(self.base_op.get_matrix(wire_order)))
