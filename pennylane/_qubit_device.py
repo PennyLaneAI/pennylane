@@ -80,6 +80,7 @@ class QubitDevice(Device):
     # pylint: disable=too-many-public-methods
     C_DTYPE = np.complex128
     R_DTYPE = np.float64
+
     _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)
     _abs = staticmethod(np.abs)
@@ -293,7 +294,29 @@ class QubitDevice(Device):
         else:
             results = self.statistics(circuit.observables)
 
-        if (circuit.all_sampled or not circuit.is_sampled) and not multiple_sampled_jobs:
+        if not circuit.is_sampled:
+
+            ret_types = [m.return_type for m in circuit.measurements]
+
+            if len(circuit.measurements) == 1:
+                if circuit.measurements[0].return_type is qml.measurements.State:
+                    # State: assumed to only be allowed if it's the only measurement
+                    results = self._asarray(results, dtype=self.C_DTYPE)
+                else:
+                    # Measurements with expval, var or probs
+                    results = self._asarray(results, dtype=self.R_DTYPE)
+
+            elif all(
+                ret in (qml.measurements.Expectation, qml.measurements.Variance)
+                for ret in ret_types
+            ):
+                # Measurements with expval or var
+                results = self._asarray(results, dtype=self.R_DTYPE)
+            else:
+                results = self._asarray(results)
+
+        elif circuit.all_sampled and not self._has_partitioned_shots():
+
             results = self._asarray(results)
         else:
             results = tuple(self._asarray(r) for r in results)
