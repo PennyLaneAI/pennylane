@@ -20,7 +20,6 @@ from shutil import copyfile
 import numpy as np
 
 import pennylane as qml
-from pennylane.wires import Wires
 
 from . import openfermion
 
