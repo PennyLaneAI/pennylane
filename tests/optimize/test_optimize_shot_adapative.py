@@ -34,13 +34,15 @@ class TestExceptions:
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
+        x = np.array(0.5, requires_grad=True)
+
         # test expval cost
         with pytest.raises(ValueError, match="can only be used with devices that"):
-            opt.step(expval_cost, 0.5)
+            opt.step(expval_cost, x)
 
         # test qnode cost
         with pytest.raises(ValueError, match="can only be used with devices that"):
-            opt.step(expval_cost.qnodes[0], 0.5)
+            opt.step(expval_cost.qnodes[0], x)
 
     def test_learning_error(self):
         """Test that an exception is raised if the learning rate is beyond the
@@ -64,12 +66,12 @@ class TestExceptions:
         with pytest.raises(
             ValueError, match=f"The learning rate must be less than {2 / lipschitz}"
         ):
-            opt.step(expval_cost, 0.5)
+            opt.step(expval_cost, np.array(0.5, requires_grad=True))
 
         # for a single QNode, the lipschitz constant is simply 1
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, stepsize=100.0)
         with pytest.raises(ValueError, match=f"The learning rate must be less than {2 / 1}"):
-            opt.step(expval_cost.qnodes[0], 0.5)
+            opt.step(expval_cost.qnodes[0], np.array(0.5, requires_grad=True))
 
     def test_unknown_objective_function(self):
         """Test that an exception is raised if an unknown objective function is passed"""
@@ -89,13 +91,13 @@ class TestExceptions:
         with pytest.raises(
             ValueError, match="The objective function must either be encoded as a single QNode"
         ):
-            opt.step(cost, 0.5)
+            opt.step(cost, np.array(0.5, requires_grad=True))
 
         # defining the device attribute allows it to proceed
         cost.device = circuit.device
-        new_x = opt.step(cost, 0.5)
+        new_x = opt.step(cost, np.array(0.5, requires_grad=True))
 
-        assert isinstance(new_x, float)
+        assert isinstance(new_x, np.tensor)
 
 
 class TestSingleShotGradientIntegration:
@@ -125,10 +127,10 @@ class TestSingleShotGradientIntegration:
         spy_single_shot_qnodes = mocker.spy(opt, "_single_shot_qnode_gradients")
         spy_grad = mocker.spy(opt, "compute_grad")
 
-        x_init = 0.5
+        x_init = np.array(0.5, requires_grad=True)
         new_x = opt.step(cost_fn, x_init)
 
-        assert isinstance(new_x, float)
+        assert isinstance(new_x, np.tensor)
         assert new_x != x_init
 
         spy_grad.assert_called_once()
@@ -265,7 +267,7 @@ class TestSingleShotGradientIntegration:
         spy_single_shot = mocker.spy(opt, "_single_shot_qnode_gradients")
         spy_grad = mocker.spy(opt, "compute_grad")
 
-        args = [0.1, 0.2]
+        args = [np.array(0.1, requires_grad=True), np.array(0.2, requires_grad=True)]
         new_x = opt.step(circuit, *args)
 
         assert isinstance(new_x, list)

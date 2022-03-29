@@ -708,13 +708,17 @@ MC_MEASUREMENTS = [
 
 def expand_fragment_tapes_mc(
     tapes: Sequence[QuantumTape], communication_graph: MultiDiGraph, shots: int
-) -> Tuple[List[QuantumTape], np.array]:
+) -> Tuple[List[QuantumTape], np.ndarray]:
     """
     Expands fragment tapes into a sequence of random configurations of the contained pairs of
     :class:`MeasureNode` and :class:`PrepareNode` operations.
 
     For each pair, a measurement is sampled from
     the Pauli basis and a state preparation is sampled from the corresponding pair of eigenstates.
+    A settings array is also given which tracks the configuration pairs. Since each of the 4
+    measurements has 2 possible eigenvectors, all configurations can be uniquely identified by
+    8 values. The number of rows is determined by the number of cuts and the number of columns
+    is determined by the number of shots.
 
     .. note::
 
@@ -729,7 +733,8 @@ def expand_fragment_tapes_mc(
         shots (int): number of shots
 
     Returns:
-        List[QuantumTape]: the tapes corresponding to each configuration
+        Tuple[List[QuantumTape], np.ndarray]: the tapes corresponding to each configuration and the
+            settings that track each configuration pair
 
     **Example**
 
@@ -756,45 +761,37 @@ def expand_fragment_tapes_mc(
 
     .. code-block:: python
 
-        >>> configs = qml.transforms.qcut.expand_fragment_tapes_mc(tapes, communication_graph, 3)
+        >>> configs, settings = qml.transforms.qcut.expand_fragment_tapes_mc(tapes, communication_graph, 3)
+        >>> print(settings)
+        [[1 6 2]]
         >>> for i, (c1, c2) in enumerate(zip(configs[0], configs[1])):
-        ...    print(f"config {i}:")
-        ...    print(c1.draw())
-        ...    print(c2.draw())
+        ...     print(f"config {i}:")
+        ...     print(c1.draw())
+        ...     print("")
+        ...     print(c2.draw())
+        ...     print("")
         ...
 
         config 0:
-        0: ──H──╭C──┤ Sample[Projector(M0)]
-        1: ─────╰X──┤ Sample[X]
-        M0 =
-        [1]
+        0: ──H─╭C─┤  Sample[|1⟩⟨1|]
+        1: ────╰X─┤  Sample[I]
 
-        1: ──H──╭C──┤ Sample[Projector(M0)]
-        2: ─────╰X──┤ Sample[Projector(M0)]
-        M0 =
-        [1]
+        1: ──X─╭C─┤  Sample[|1⟩⟨1|]
+        2: ────╰X─┤  Sample[|1⟩⟨1|]
 
         config 1:
-        0: ──H──╭C──┤ Sample[Projector(M0)]
-        1: ─────╰X──┤ Sample[Z]
-        M0 =
-        [1]
+        0: ──H─╭C─┤  Sample[|1⟩⟨1|]
+        1: ────╰X─┤  Sample[Z]
 
-        1: ──I──╭C──┤ Sample[Projector(M0)]
-        2: ─────╰X──┤ Sample[Projector(M0)]
-        M0 =
-        [1]
+        1: ──I─╭C─┤  Sample[|1⟩⟨1|]
+        2: ────╰X─┤  Sample[|1⟩⟨1|]
 
         config 2:
-        0: ──H──╭C──┤ Sample[Projector(M0)]
-        1: ─────╰X──┤ Sample[Y]
-        M0 =
-        [1]
+        0: ──H─╭C─┤  Sample[|1⟩⟨1|]
+        1: ────╰X─┤  Sample[X]
 
-        1: ──X──H──S──╭C──┤ Sample[Projector(M0)]
-        2: ───────────╰X──┤ Sample[Projector(M0)]
-        M0 =
-        [1]
+        1: ──H─╭C─┤  Sample[|1⟩⟨1|]
+        2: ────╰X─┤  Sample[|1⟩⟨1|]
     """
     pairs = [e[-1] for e in communication_graph.edges.data("pair")]
     settings = np.random.choice(range(8), size=(len(pairs), shots), replace=True)
@@ -828,10 +825,14 @@ def expand_fragment_tapes_mc(
     return all_configs, settings
 
 
-def _reshape_results(results: Sequence, communication_graph: MultiDiGraph, shots: int):
+
+def _reshape_results(
+    results: Sequence, communication_graph: MultiDiGraph, shots: int
+) -> np.ndarray:
     """
-    Helper function to reshape results and find out degrees of communication
-    graph
+    Helper function to reshape ``results`` into a two-dimensional array whose number of rows is
+    determined by the number of shots and whose number of columns is determined by the number of
+    cuts.
     """
     results = [qml.math.flatten(r) for r in results]
     results = np.array(results, dtype=object)
@@ -842,7 +843,7 @@ def _reshape_results(results: Sequence, communication_graph: MultiDiGraph, shots
 
 def qcut_processing_fn_sample(
     results: Sequence, communication_graph: MultiDiGraph, shots: int
-) -> List[np.array]:
+) -> List:
     """
     Function to postprocess samples for the :func:`cut_circuit_mc() <pennylane.cut_circuit_mc>`
     transform. This removes superfluous mid-circuit measurement samples from fragment
@@ -854,7 +855,7 @@ def qcut_processing_fn_sample(
         Check out the :func:`qml.cut_circuit_mc() <pennylane.cut_circuit_mc>` transform for more details.
 
     Args:
-        results (Sequence): a collection of execution results generated from the
+        results (Sequence): a collection of sample-based execution results generated from the
             random expansion of circuit fragments over measurement and preparation node configurations
         communication_graph (nx.MultiDiGraph): the communication graph determining connectivity
             between circuit fragments
@@ -894,21 +895,21 @@ def qcut_processing_fn_mc(
         Check out the :func:`qml.cut_circuit_mc() <pennylane.cut_circuit_mc>` transform for more details.
 
     Args:
-        results (Sequence): a collection of execution results generated from the
+        results (Sequence): a collection of sample-based execution results generated from the
             random expansion of circuit fragments over measurement and preparation node configurations
         communication_graph (nx.MultiDiGraph): the communication graph determining connectivity
             between circuit fragments
-        settings (tensor_like): each element is one of 8 unique values that determines and tracks the specific
+        settings (np.ndarray): Each element is one of 8 unique values that tracks the specific
             measurement and preparation operations over all configurations. The number of rows is determined
             by the number of cuts and the number of columns is determined by the number of shots.
         shots (int): the number of shots
-        classical_processing_fn (callable): a classical postprocessing function to be applied to
-            the reconstructed bitstrings. The expected input is a bitstring; a flat array of length `wires`
-            and the output should be a single number within the interval [-1, 1]
+        classical_processing_fn (callable): A classical postprocessing function to be applied to
+            the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``
+            and the output should be a single number within the interval :math:`[-1, 1]`.
 
     Returns:
         float or tensor_like: the expectation value calculated in accordance to Eq. (35) of
-        `Peng et.al <https://arxiv.org/abs/1904.00102>`__.
+        `Peng et al. <https://arxiv.org/abs/1904.00102>`__
     """
     res0 = results[0]
     results = _reshape_results(results, communication_graph, shots)
@@ -1239,7 +1240,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
     return _wrapper
 
-
+  
 def _get_symbol(i):
     """Finds the i-th ASCII symbol. Works for lowercase and uppercase letters, allowing i up to
     51."""

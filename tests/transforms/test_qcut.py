@@ -1979,9 +1979,6 @@ class TestMCPostprocessing:
 
         communication_graph = MultiDiGraph(frag_edge_data)
         shots = 3
-        fragment_configurations, settings = qml.transforms.qcut.expand_fragment_tapes_mc(
-            fragment_tapes, communication_graph, shots
-        )
 
         fixed_samples = [
             np.array([[1.0], [0.0], [1.0], [1.0]]),
@@ -1992,12 +1989,15 @@ class TestMCPostprocessing:
             np.array([[1.0], [1.0], [1.0]]),
         ]
 
-        postprocessed = qcut.qcut_processing_fn_sample(fixed_samples, communication_graph, shots)
-        postprocessed = qml.math.cast_like(postprocessed, lib.ones(1))
+        convert_fixed_samples = [qml.math.convert_like(fs, lib.ones(1)) for fs in fixed_samples]
 
+        postprocessed = qcut.qcut_processing_fn_sample(
+            convert_fixed_samples, communication_graph, shots
+        )
         expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
 
         assert np.allclose(postprocessed[0], expected_postprocessed[0])
+        assert type(convert_fixed_samples[0]) == type(postprocessed[0])
 
     @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
     def test_mc_sample_postprocess(self, interface, mocker):
@@ -2010,9 +2010,6 @@ class TestMCPostprocessing:
 
         communication_graph = MultiDiGraph(frag_edge_data)
         shots = 3
-        fragment_configurations, settings = qml.transforms.qcut.expand_fragment_tapes_mc(
-            fragment_tapes, communication_graph, shots
-        )
 
         fixed_samples = [
             np.array([[1.0], [0.0], [1.0], [1.0]]),
@@ -2022,6 +2019,8 @@ class TestMCPostprocessing:
             np.array([[0.0], [-1.0], [-1.0]]),
             np.array([[1.0], [1.0], [1.0]]),
         ]
+
+        convert_fixed_samples = [qml.math.convert_like(fs, lib.ones(1)) for fs in fixed_samples]
 
         def fn(x):
             if x[0] == 0 and x[1] == 0:
@@ -2035,14 +2034,12 @@ class TestMCPostprocessing:
 
         fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
 
-        # spy_func = mocker.spy(fn)
         spy_prod = mocker.spy(np, "prod")
         spy_hstack = mocker.spy(np, "hstack")
 
         postprocessed = qcut.qcut_processing_fn_mc(
-            fixed_samples, communication_graph, fixed_settings, shots, fn
+            convert_fixed_samples, communication_graph, fixed_settings, shots, fn
         )
-        postprocessed = qml.math.cast_like(postprocessed, lib.ones(1))
 
         expected = -85.33333333333333
 
@@ -2072,6 +2069,7 @@ class TestMCPostprocessing:
                 assert np.allclose(arg, expected_arg)
 
         assert np.isclose(postprocessed, expected)
+        assert type(convert_fixed_samples[0]) == type(postprocessed)
 
     def test_reshape_results(self):
         """
@@ -2271,7 +2269,7 @@ class TestCutCircuitMCTransform:
         with pytest.raises(ValueError, match="A shots value must be provided in the device "):
             cut_circuit(v)
 
-
+            
 class TestContractTensors:
     """Tests for the contract_tensors function"""
 
