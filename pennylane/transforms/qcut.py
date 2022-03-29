@@ -960,7 +960,7 @@ def cut_circuit_mc(
     Args:
         tape (QuantumTape): the tape of the full circuit to be cut
         shots (int): number of shots
-        device_wires (Optional[Wires]): optional when applied to a QNode, rquired when applied to tape.
+        device_wires (Optional[Wires]): optional when applied to a QNode, required when applied to tape.
             Wires of the device that the cut circuits are to be run on
         classical_processing_fn (callable): a classical postprocessing function to be applied to
             the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``
@@ -976,15 +976,15 @@ def cut_circuit_mc(
 
     **Example**
 
-    The following :math:`3`-qubit circuit containins a :class:`~.WireCut` operation and a :func:`~.sample`
+    The following :math:`3`-qubit circuit contains a :class:`~.WireCut` operation and a :func:`~.sample`
     measurement. When decorated with ``@qml.cut_circuit_mc``, we can cut the circuit into two
     :math:`2`-qubit fragments:
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2, shots=1000)
 
-        @qml.cut_circuit_mc(shots=shots, device_wires=[0, 1])
+        @qml.cut_circuit_mc
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(0.89, wires=0)
@@ -998,10 +998,160 @@ def cut_circuit_mc(
             qml.RX(0.3, wires=0)
             qml.RY(0.7, wires=1)
             qml.RX(2.3, wires=2)
-            return qml.sample(wires=[0, 1, 2])
+            return qml.sample(wires=[0, 2])
 
-    TODO: finish example with working code, add usage details
+    we can then execute the circuit as usual by calling the qnode:
 
+    >>> x = 0.3
+    >>> circuit(x)
+    [tensor([[1., 1.],
+         [0., 1.],
+         [0., 1.],
+         ...,
+         [0., 1.],
+         [0., 1.],
+         [0., 1.]], requires_grad=True)]
+
+    Furthermore, the number of shots can be temporarily altered when calling
+    the qnode:
+
+    >>> results = circuit(x, shots=123)
+    >>> results[0].shape
+    (123, 2)
+
+    .. UsageDetails::
+
+        Manually placing :class:`~.WireCut` operations and decorating the QNode with the
+        ``cut_circuit()`` batch transform is the suggested entrypoint into circuit cutting. However,
+        advanced users also have the option to work directly with a :class:`~.QuantumTape` and
+        manipulate the tape to perform circuit cutting using the below functionality:
+
+        .. autosummary::
+            :toctree:
+
+            ~transforms.qcut.tape_to_graph
+            ~transforms.qcut.replace_wire_cut_nodes
+            ~transforms.qcut.fragment_graph
+            ~transforms.qcut.graph_to_tape
+            ~transforms.qcut.remap_tape_wires
+            ~transforms.qcut.expand_fragment_tapes_mc
+            ~transforms.qcut.qcut_processing_fn_mc
+
+        The following shows how these elementary steps are combined as part of the
+        ``cut_circuit_mc()`` transform.
+
+        Consider the circuit below:
+
+        .. code-block:: python
+
+            with qml.tape.QuantumTape() as tape:
+                qml.RX(0.531, wires=0)
+                qml.RY(0.9, wires=1)
+                qml.RX(0.3, wires=2)
+
+                qml.CZ(wires=[0, 1])
+                qml.RY(-0.4, wires=0)
+
+                qml.WireCut(wires=1)
+
+                qml.CZ(wires=[1, 2])
+
+                qml.sample(wires=[0, 2])
+
+        >>> print(tape.draw())
+            0: ──RX─╭C──RY────┤ ╭Sample
+            1: ──RY─╰Z──//─╭C─┤ │
+            2: ──RX────────╰Z─┤ ╰Sample
+
+        To cut the circuit, we first convert it to its graph representation:
+
+        >>> graph = qml.transforms.qcut.tape_to_graph(tape)
+
+        Our next step is to remove the :class:`~.WireCut` nodes in the graph and replace with
+        :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs.
+
+        >>> qml.transforms.qcut.replace_wire_cut_nodes(graph)
+
+        The :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs are placeholder operations that
+        allow us to cut the circuit graph and then iterate over measurement and preparation
+        configurations at cut locations. First, the :func:`~.fragment_graph` function pulls apart
+        the graph into disconnected components as well as returning the
+        `communication_graph <https://en.wikipedia.org/wiki/Quotient_graph>`__
+        detailing the connectivity between the components.
+
+        >>> fragments, communication_graph = qml.transforms.qcut.fragment_graph(graph)
+
+        We now convert the ``fragments`` back to :class:`~.QuantumTape` objects
+
+        >>> fragment_tapes = [qml.transforms.qcut.graph_to_tape(f) for f in fragments]
+
+        The circuit fragments can now be visualized:
+
+        >>> print(fragment_tapes[0].draw())
+        0: ──RX─╭C──RY──────────┤  Sample[|1⟩⟨1|]
+        1: ──RY─╰Z──MeasureNode─┤
+
+        >>> print(fragment_tapes[1].draw())
+        2: ──RX──────────╭Z─┤  Sample[|1⟩⟨1|]
+        1: ──PrepareNode─╰C─┤
+
+        Additionally, we must remap the tape wires to match those available on our device.
+
+        >>> dev = qml.device("default.qubit", wires=2, shots=3)
+        >>> fragment_tapes = [
+        ...     qml.transforms.qcut.remap_tape_wires(t, dev.wires) for t in fragment_tapes
+        ... ]
+
+        Next, each circuit fragment is expanded over :class:`~.MeasureNode` and
+        :class:`~.PrepareNode` configurations and a flat list of tapes is created:
+
+        .. code-block::
+
+            configurations, settings = qml.transforms.qcut.expand_fragment_tapes_mc(
+                    fragment_tapes, communication_graph, shots=dev.shots
+                )
+
+            tapes = tuple(tape for c in configurations for tape in c)
+
+        Each configuration is drawn below:
+
+        >>> for t in tapes:
+        ...     print(t.draw())
+        ...     print("")
+
+        .. code-block::
+
+            0: ──RX─╭C──RY─┤  Sample[|1⟩⟨1|]
+            1: ──RY─╰Z─────┤  Sample[I]
+
+            0: ──RX─╭C──RY─┤  Sample[|1⟩⟨1|]
+            1: ──RY─╰Z─────┤  Sample[I]
+
+            0: ──RX─╭C──RY─┤  Sample[|1⟩⟨1|]
+            1: ──RY─╰Z─────┤  Sample[I]
+
+            0: ──RX─╭Z─┤  Sample[|1⟩⟨1|]
+            1: ──I──╰C─┤
+
+            0: ──RX─╭Z─┤  Sample[|1⟩⟨1|]
+            1: ──I──╰C─┤
+
+            0: ──RX─╭Z─┤  Sample[|1⟩⟨1|]
+            1: ──I──╰C─┤
+
+        The last step is to execute the tapes and postprocess the results using
+        :func:`~.qcut_processing_fn_sample` which processes the results to the original full circuit
+        output bitstrings
+
+        >>> results = qml.execute(tapes, dev, gradient_fn=None)
+        >>> qml.transforms.qcut.qcut_processing_fn_sample(
+        ...     results,
+        ...     communication_graph,
+        ...     shots=dev.shots,
+        ... )
+        [array([[0., 0., 0., 1., 1., 0., 0., 0.],
+                [0., 0., 0., 1., 1., 0., 0., 0.],
+                [0., 0., 0., 1., 1., 0., 0., 0.]])]
     """
 
     g = tape_to_graph(tape)
@@ -1434,7 +1584,7 @@ def cut_circuit(
 
     **Example**
 
-    The following :math:`3`-qubit circuit containins a :class:`~.WireCut` operation. When decorated
+    The following :math:`3`-qubit circuit contains a :class:`~.WireCut` operation. When decorated
     with ``@qml.cut_circuit``, we can cut the circuit into two :math:`2`-qubit fragments:
 
     .. code-block:: python
