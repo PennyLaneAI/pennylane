@@ -121,7 +121,6 @@
     sampled Pauli measurements and state preparations.
     [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
 
-
   - Postprocessing functions `qcut.qcut_processing_fn_sample()` and
     `qcut.qcut_processing_fn_mc()` have been added to return samples and expectation
     values, respectively, of recombined fragments using the Monte Carlo sampling

@@ -1988,7 +1988,6 @@ class TestMCPostprocessing:
             np.array([[0.0], [-1.0], [-1.0]]),
             np.array([[1.0], [1.0], [1.0]]),
         ]
-
         convert_fixed_samples = [qml.math.convert_like(fs, lib.ones(1)) for fs in fixed_samples]
 
         postprocessed = qcut.qcut_processing_fn_sample(
@@ -2019,7 +2018,6 @@ class TestMCPostprocessing:
             np.array([[0.0], [-1.0], [-1.0]]),
             np.array([[1.0], [1.0], [1.0]]),
         ]
-
         convert_fixed_samples = [qml.math.convert_like(fs, lib.ones(1)) for fs in fixed_samples]
 
         def fn(x):
@@ -2103,7 +2101,7 @@ class TestMCPostprocessing:
     def test_classical_processing_error(self):
         """
         Tests that the correct error is given if the classical processing
-        function give output outside of the interval [-1, 1]
+        function gives output outside of the interval [-1, 1]
         """
 
         fragment_tapes = [frag0, frag1]
@@ -2140,7 +2138,7 @@ class TestMCPostprocessing:
 
 class TestCutCircuitMCTransform:
     """
-    Tests that the  `cut_circuit_mc` transform gives the correct results.
+    Tests that the `cut_circuit_mc` transform gives the correct results.
     """
 
     @flaky(max_runs=3)
@@ -2177,7 +2175,7 @@ class TestCutCircuitMCTransform:
             if x[0] == 1 and x[1] == 1:
                 return 1
 
-        dev = qml.device("default.qubit", wires=3, shots=10000)
+        dev = qml.device("default.qubit", wires=2, shots=10000)
 
         @qml.cut_circuit_mc(classical_processing_fn=fn)
         @qml.qnode(dev)
@@ -2207,7 +2205,7 @@ class TestCutCircuitMCTransform:
         postprocessed to return bitstrings of the original circuit size.
         """
 
-        dev = qml.device("default.qubit", wires=3, shots=1000)
+        dev = qml.device("default.qubit", wires=2, shots=1000)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -2239,7 +2237,7 @@ class TestCutCircuitMCTransform:
         altered when executing the QNode
         """
         shots = 1000
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
         @qml.qnode(dev)

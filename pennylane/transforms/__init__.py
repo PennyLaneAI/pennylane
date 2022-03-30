@@ -111,9 +111,10 @@ have a restricted number of qubits.
     ~cut_circuit
 
 This transform is designed to be used for cutting circuits which contain :func:`~.sample`
-measurements. Similarly to the :func:`~.cut_circuit` transform, this transform accepts a
-QNode and returns a new function that cuts the original circuit. However, this transform
-can also accept an optional classical processing function to calculate an expectation value.
+measurements and is implemented using a Monte Carlo method. Similarly to the :func:`~.cut_circuit`
+transform, this transform accepts a QNode and returns a new function that cuts the original circuit.
+This transform can also accept an optional classical processing function to calculate an
+expectation value.
 
 .. autosummary::
     :toctree: api

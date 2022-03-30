@@ -945,13 +945,14 @@ def qcut_processing_fn_mc(
 @batch_transform
 def cut_circuit_mc(
     tape: QuantumTape,
-    shots: int,
+    shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
-    classical_processing_fn: callable = None,
+    classical_processing_fn: Optional[callable] = None,
     max_depth: int = 1,
 ) -> Tuple[Tuple[QuantumTape], Callable]:
     """
-    Cut up a circuit containing sample measurements into smaller fragments.
+    Cut up a circuit containing sample measurements into smaller fragments using a
+    Monte Carlo method.
 
     Following the approach of `Peng et al. <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.125.150504>`__,
     strategic placement of :class:`~.WireCut` operations can allow a quantum circuit to be split
@@ -962,11 +963,14 @@ def cut_circuit_mc(
 
     Args:
         tape (QuantumTape): the tape of the full circuit to be cut
-        shots (int): number of shots
+        shots (int): Number of shots. When transforming a QNode, this argument is
+        set by the device's ``shots`` value or at QNode call time (if provided).
+        Required when transforming a tape.
         device_wires (Optional[Wires]): optional when applied to a QNode, required when applied to tape.
             Wires of the device that the cut circuits are to be run on
-        classical_processing_fn (callable): a classical postprocessing function to be applied to
-            the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``
+        classical_processing_fn (callable): A classical postprocessing function to be applied to
+            the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``.
+            If not supplied, the transform will output samples.
             and the output should be a single number within the interval :math:`[-1, 1]`
         max_depth (int): the maximum depth used to expand the circuit while searching for wire cuts
 
@@ -998,7 +1002,7 @@ def cut_circuit_mc(
             qml.WireCut(wires=1)
             qml.CNOT(wires=[1, 2])
 
-            qml.RX(0.3, wires=0)
+            qml.RX(x, wires=0)
             qml.RY(0.7, wires=1)
             qml.RX(2.3, wires=2)
             return qml.sample(wires=[0, 2])
@@ -1025,7 +1029,8 @@ def cut_circuit_mc(
     .. UsageDetails::
 
         Manually placing :class:`~.WireCut` operations and decorating the QNode with the
-        ``cut_circuit_mc()`` batch transform is the suggested entrypoint into circuit cutting. However,
+        ``cut_circuit_mc()`` batch transform is the suggested entrypoint into sampling-based
+        circuit cutting using the Monte Carlo method. However,
         advanced users also have the option to work directly with a :class:`~.QuantumTape` and
         manipulate the tape to perform circuit cutting using the below functionality:
 
@@ -1039,6 +1044,7 @@ def cut_circuit_mc(
             ~transforms.qcut.remap_tape_wires
             ~transforms.qcut.expand_fragment_tapes_mc
             ~transforms.qcut.qcut_processing_fn_mc
+            ~transforms.qcut.qcut_processing_fn_sample
 
         The following shows how these elementary steps are combined as part of the
         ``cut_circuit_mc()`` transform.
@@ -1070,7 +1076,7 @@ def cut_circuit_mc(
         >>> qml.transforms.qcut.replace_wire_cut_nodes(graph)
 
         The :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs are placeholder operations that
-        allow us to cut the circuit graph and then iterate over measurement and preparation
+        allow us to cut the circuit graph and then randomly select measurement and preparation
         configurations at cut locations. First, the :func:`~.fragment_graph` function pulls apart
         the graph into disconnected components as well as returning the
         `communication_graph <https://en.wikipedia.org/wiki/Quotient_graph>`__
@@ -1106,7 +1112,7 @@ def cut_circuit_mc(
         with a qnode, this shots value is automatically inferred from the provided
         device.
 
-        Next, each circuit fragment is expanded over :class:`~.MeasureNode` and
+        Next, each circuit fragment is randomly expanded over :class:`~.MeasureNode` and
         :class:`~.PrepareNode` configurations. For each pair, a measurement is sampled from
         the Pauli basis and a state preparation is sampled from the corresponding pair of eigenstates.
 
@@ -1150,8 +1156,8 @@ def cut_circuit_mc(
             1: ────╰X─┤  Sample[|1⟩⟨1|]
 
         The last step is to execute the tapes and postprocess the results using
-        :func:`~.qcut_processing_fn_sample` which processes the results to the original full circuit
-        output bitstrings
+        :func:`~.qcut_processing_fn_sample`, which processes the results to approximate the original full circuit
+        output bitstrings.
 
         >>> results = qml.execute(tapes, dev, gradient_fn=None)
         >>> qml.transforms.qcut.qcut_processing_fn_sample(
@@ -1179,10 +1185,22 @@ def cut_circuit_mc(
         array(4.)
     """
 
+    if len(tape.measurements) != 1:
+        raise ValueError(
+            "The Monte Carlo circuit cutting workflow only supports circuits "
+            "with a single output measurement"
+        )
+
+    if not all(m.return_type is Sample for m in tape.measurements):
+        raise ValueError(
+            "The Monte Carlo circuit cutting workflow only supports circuits "
+            "with sampling-based measurements"
+        )
+
     for meas in tape.measurements:
         if meas.obs is not None:
             raise ValueError(
-                "The sample-based circuit cutting workflow only "
+                "The Monte Carlo circuit cutting workflow only "
                 "supports measurements in the computational basis. Please only specify "
                 "wires to be sampled within qml.sample(), do not pass observables."
             )
@@ -1231,7 +1249,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     def _wrapper(*args, **kwargs):
         if tkwargs.get("shots", False):
             raise ValueError(
-                "Cannot provide a shots directly to the `cut_circuit_mc` "
+                "Cannot provide a 'shots' value directly to the cut_circuit_mc "
                 "decorator when transforming a QNode. Please provide the number of shots in "
                 "the device or when calling the QNode."
             )
