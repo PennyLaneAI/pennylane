@@ -15,13 +15,15 @@
 values can be used to simulate molecular properties.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
-import numpy as np
-import pennylane as qml
-from . import openfermion
-
 import os
 import subprocess
 from shutil import copyfile
+
+import numpy as np
+
+import pennylane as qml
+
+from . import openfermion
 
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
