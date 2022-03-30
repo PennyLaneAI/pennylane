@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function for generating generalized parameter shift rules."""
+"""Contains a function for generating generalized parameter shift rules and
+helper methods for processing shift rules as well as for creating tapes with
+shifted parameters."""
 import functools
 import itertools
 import warnings
@@ -20,7 +22,7 @@ import numpy as np
 import pennylane as qml
 
 
-def process_shifts(rule, tol=1e-10, check_duplicates=True):
+def process_shifts(rule, tol=1e-10, batch_duplicates=True):
     """Utility function to process gradient rules.
 
     Args:
@@ -31,8 +33,14 @@ def process_shifts(rule, tol=1e-10, check_duplicates=True):
             If ``N=3``, the middle row contains the multipliers.
         tol (float): floating point tolerance used when comparing shifts/coefficients
             Terms with coefficients below ``tol`` will be removed.
-        check_duplicates (bool): whether to check the input ``rule`` for duplicate
+        batch_duplicates (bool): whether to check the input ``rule`` for duplicate
             shift values in its second row.
+
+    Returns:
+        array: The processed shift rule with small entries rounded to 0, sorted
+        with respect to the absolute value of the shifts, and groups of shift
+        terms with identical (multiplier and) shift fused into one term each,
+        if ``batch_duplicates=True``.
 
     This utility function accepts coefficients and shift values as well as optionally
     multipliers, and performs the following processing:
@@ -46,38 +54,28 @@ def process_shifts(rule, tol=1e-10, check_duplicates=True):
     - Finally, the terms are sorted according to the absolute value of ``shift``,
       This ensures that a zero-shift term, if it exists, is returned first.
     """
-    # remove all small coefficients and shifts
+    # set all small coefficients, multipliers if present, and shifts to zero.
     rule[np.abs(rule) < tol] = 0
 
     # remove columns where the coefficients are 0
     rule = rule[:, ~(rule[0] == 0)]
 
-    if check_duplicates:
+    if batch_duplicates:
         round_decimals = int(-np.log10(tol))
         rounded_rule = np.round(rule[1:], round_decimals)
         # determine unique shifts or (multiplier, shift) combinations
         unique_mods = np.unique(rounded_rule, axis=1)
 
         if rule.shape[-1] != unique_mods.shape[-1]:
-            if rule.shape[0] == 3:
-                # sum columns that have the same multiplier and shift value
-                # TODO: Check whether the list comprehension can be absorbed into a smart
-                # single NumPy call
-                coeffs = [
-                    np.sum(rule[0, np.all(rounded_rule[1:] == mod.reshape((2, 1)), axis=0)])
-                    for mod in unique_mods.T
-                ]
-            else:
-                # sum columns that have the same shift value
-                rounded_rule = rounded_rule[0]
-                # TODO: Check whether the list comprehension can be absorbed into a smart
-                # single NumPy call
-                coeffs = [np.sum(rule[0, rounded_rule == s]) for s in unique_mods[0]]
-
+            matches = np.all(
+                rounded_rule[:, :, np.newaxis] == unique_mods[:, np.newaxis, :], axis=0
+            )
+            # TODO: The following line probably can be done in numpy
+            coeffs = [np.sum(rule[0, slc]) for slc in matches.T]
             rule = np.vstack([np.stack(coeffs), unique_mods])
 
     # sort columns according to abs(shift)
-    return rule[:, np.argsort(np.abs(rule)[-1])]
+    return rule[:, np.argsort(np.abs(rule[-1]))]
 
 
 @functools.lru_cache(maxsize=None)
@@ -160,7 +158,7 @@ def _get_shift_rule(frequencies, shifts=None):
         if len(set(shifts)) != n_freqs:
             raise ValueError(f"Shift values must be unique, instead got {shifts}")
 
-        equ_shifts = all(np.isclose(shifts, (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min)))
+        equ_shifts = np.allclose(shifts, (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min))
 
     if len(set(np.round(np.diff(frequencies), 10))) <= 1 and equ_shifts:  # equidistant case
         coeffs = (
@@ -170,15 +168,15 @@ def _get_shift_rule(frequencies, shifts=None):
         )
 
     else:  # non-equidistant case
-        sin_matr = -4 * np.sin(np.outer(shifts, frequencies))
-        det_sin_matr = np.linalg.det(sin_matr)
-        if abs(det_sin_matr) < 1e-6:
+        sin_matrix = -4 * np.sin(np.outer(shifts, frequencies))
+        det_sin_matrix = np.linalg.det(sin_matrix)
+        if abs(det_sin_matrix) < 1e-6:
             warnings.warn(
-                f"Solving linear problem with near zero determinant ({det_sin_matr}) "
+                f"Solving linear problem with near zero determinant ({det_sin_matrix}) "
                 "may give unstable results for the parameter shift rules."
             )
 
-        coeffs = -2 * np.linalg.solve(sin_matr.T, frequencies)
+        coeffs = -2 * np.linalg.solve(sin_matrix.T, frequencies)
 
     coeffs = np.concatenate((coeffs, -coeffs))
     shifts = np.concatenate((shifts, -shifts))  # pylint: disable=invalid-unary-operand-type
@@ -190,22 +188,18 @@ def _iterate_shift_rule_with_multipliers(rule, order, period):
     times along the same parameter axis for higher-order derivatives."""
     combined_rules = []
 
-    # TODO: Optimization: Only iterate over half of the combinations and
-    # double their coefficients (does this work with multipliers?)
     for partial_rule in itertools.product(rule, repeat=order):
         c, m, s = np.stack(partial_rule).T
-        cumul_coeff = np.prod(c)
         cumul_shift = 0.0
-        cumul_mult = np.prod(m)
         for _m, _s in zip(m, s):
             cumul_shift *= _m
             cumul_shift += _s
         if period is not None:
             cumul_shift = np.mod(cumul_shift + 0.5 * period, period) - 0.5 * period
-        combined_rules.append(np.stack([cumul_coeff, cumul_mult, cumul_shift]))
+        combined_rules.append(np.stack([np.prod(c), np.prod(m), cumul_shift]))
 
     # combine all terms in the linear combination into a single
-    # array, with coefficients on the first column and shifts on the second column.
+    # array, with column order (coefficients, multipliers, shifts)
     return qml.math.stack(combined_rules)
 
 
@@ -215,33 +209,20 @@ def _iterate_shift_rule(rule, order, period=None):
     if len(rule[0]) == 3:
         return _iterate_shift_rule_with_multipliers(rule, order, period)
 
-    combined_rules = []
+    # TODO: optimization: Without multipliers, the order of shifts does not matter,
+    # so that we can only iterate over the symmetric part of the combined_rules tensor.
+    # This requires the corresponding multinomial prefactors to be factored into the coeffs.
 
-    # TODO: Optimization: Only iterate over half of the combinations and
-    # double their coefficients
-    for partial_rule in itertools.product(rule, repeat=order):
-        c, s = np.stack(partial_rule).T
-        cumul_shift = sum(s)
-        if period is not None:
-            cumul_shift = np.mod(cumul_shift + 0.5 * period, period) - 0.5 * period
-        combined_rules.append(np.stack([np.prod(c), cumul_shift]))
-
-    # combine all terms in the linear combination into a single
-    # array, with coefficients on the first column and shifts on the second column.
-    return qml.math.stack(combined_rules)
-
-
-def _combine_shift_rules_with_multipliers(rules):
-    r"""Helper method to combine shift rules for multiple parameters that
-    contain multipliers into simultaneous multivariate shift rules."""
-    combined_rules = []
-
-    for partial_rules in itertools.product(*rules):
-        c, m, s = np.stack(partial_rules).T
-        combined = np.concatenate([[np.prod(c)], m, s])
-        combined_rules.append(np.stack(combined))
-
-    return np.stack(combined_rules).T
+    # the following might become slow if high-order derivatives or very large rules are used
+    combined_rules = np.array(list(itertools.product(rule, repeat=order)))
+    # multiply the coefficients of each rule
+    coeffs = np.prod(combined_rules[..., 0], axis=1)
+    # sum the shifts of each rule
+    shifts = np.sum(combined_rules[..., 1], axis=1)
+    if period is not None:
+        # if a period is provided, make sure the shift value is within [-period/2, period/2)
+        shifts = np.mod(shifts + 0.5 * period, period) - 0.5 * period
+    return qml.math.stack([coeffs, shifts]).T
 
 
 def _combine_shift_rules(rules):
@@ -250,8 +231,8 @@ def _combine_shift_rules(rules):
     combined_rules = []
 
     for partial_rules in itertools.product(*rules):
-        c, s = np.stack(partial_rules).T
-        combined = np.concatenate([[np.prod(c)], s])
+        c, *m, s = np.stack(partial_rules).T
+        combined = np.concatenate([[np.prod(c)], *m, s])
         combined_rules.append(np.stack(combined))
 
     return np.stack(combined_rules).T

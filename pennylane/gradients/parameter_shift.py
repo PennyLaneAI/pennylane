@@ -112,10 +112,7 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     if recipe is not None:
         recipe = qml.math.array(recipe)
         if order == 1:
-            # TODO: The following only works because `process_shifts` does not notice that
-            # recipe.T has 3 instead of 2 rows, because we don't use the check for duplicates
-            # This should be improved.
-            return process_shifts(recipe.T, check_duplicates=False)
+            return process_shifts(recipe.T, batch_duplicates=False)
 
         # Try to obtain the period of the operator frequencies for iteration of custom recipe
         try:

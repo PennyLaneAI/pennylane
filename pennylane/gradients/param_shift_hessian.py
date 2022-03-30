@@ -30,7 +30,7 @@ from .gradient_transform import (
 from .hessian_transform import hessian_transform
 from .parameter_shift import _get_operation_recipe
 from .general_shift_rules import (
-    _combine_shift_rules_with_multipliers,
+    _combine_shift_rules,
     generate_shifted_tapes,
     generate_multishifted_tapes,
 )
@@ -70,9 +70,7 @@ def _generate_off_diag_tapes(tape, idx, recipe_i, recipe_j):
 
     # The rows of combined_rulesT contain the coefficients (1), the multipliers (2) and the
     # shifts (2) in that order, with the number in brackets indicating the number of columns
-    combined_rulesT = _combine_shift_rules_with_multipliers(
-        [qml.math.stack(recipe_i).T, qml.math.stack(recipe_j).T]
-    )
+    combined_rulesT = _combine_shift_rules([qml.math.stack(recipe_i).T, qml.math.stack(recipe_j).T])
     # If there are unmultiplied, unshifted tapes, the coefficient is memorized and the term
     # removed from the list of tapes to create
     if np.allclose(combined_rulesT[1:3, 0], 1.0) and np.allclose(combined_rulesT[3:5, 0], 0.0):
