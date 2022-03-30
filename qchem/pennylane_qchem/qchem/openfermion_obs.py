@@ -29,10 +29,10 @@ bohr_angs = 0.529177210903
 
 def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
-    r"""Builds the Fermion many-body observable whose expectation value can be
+    r"""Builds the fermionic many-body observable whose expectation value can be
     measured in PennyLane.
 
-    The second-quantized operator of the Fermion many-body system can combine one-particle
+    The second-quantized operator of the fermionic many-body system can combine one-particle
     and two-particle operators as in the case of electronic Hamiltonians :math:`\hat{H}`:
 
     .. math::
@@ -49,7 +49,7 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     are the particle creation and annihilation operators, respectively.
     :math:`\langle \alpha \vert \hat{t} \vert \beta \rangle` denotes the matrix element of
     the single-particle operator :math:`\hat{t}` entering the observable. For example,
-    in electronic structure calculations, this is the case for: the kinetic energy operator,
+    in electronic structure calculations, this is the case for the kinetic energy operator,
     the nuclei Coulomb potential, or any other external fields included in the Hamiltonian.
     On the other hand, :math:`\langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle`
     denotes the matrix element of the two-particle operator :math:`\hat{v}`, for example, the
