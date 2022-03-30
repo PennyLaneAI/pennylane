@@ -29,7 +29,6 @@ from typing import Any, Callable, ClassVar, Dict, List, Optional, Sequence, Tupl
 from networkx import MultiDiGraph, has_path, weakly_connected_components
 
 import pennylane as qml
-import pennylane.numpy as np
 from pennylane import apply, expval
 from pennylane import numpy as np
 from pennylane.grouping import string_to_pauli_word
@@ -958,8 +957,9 @@ def cut_circuit_mc(
 
     Following the approach of `Peng et al. <https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.125.150504>`__,
     strategic placement of :class:`~.WireCut` operations can allow a quantum circuit to be split
-    into disconnected circuit fragments. This transform allows for sampled measurement outcomes
-    to be recombined to full bitstrings and, if a classical processing function is supplied,
+    into disconnected circuit fragments. A circuit containing sample measurements can be cut and
+    processed using Monte Carlo (MC) methods. This transform employs MC methods to allow for sampled measurement
+    outcomes to be recombined to full bitstrings and, if a classical processing function is supplied,
     an expectation value will be evaluated.
 
     Args:
@@ -1027,7 +1027,7 @@ def cut_circuit_mc(
     .. UsageDetails::
 
         Manually placing :class:`~.WireCut` operations and decorating the QNode with the
-        ``cut_circuit()`` batch transform is the suggested entrypoint into circuit cutting. However,
+        ``cut_circuit_mc()`` batch transform is the suggested entrypoint into circuit cutting. However,
         advanced users also have the option to work directly with a :class:`~.QuantumTape` and
         manipulate the tape to perform circuit cutting using the below functionality:
 
@@ -1108,15 +1108,21 @@ def cut_circuit_mc(
         ... ]
 
         Next, each circuit fragment is expanded over :class:`~.MeasureNode` and
-        :class:`~.PrepareNode` configurations and a flat list of tapes is created:
+        :class:`~.PrepareNode` configurations. For each pair, a measurement is sampled from
+        the Pauli basis and a state preparation is sampled from the corresponding pair of eigenstates.
 
-        .. code-block::
+        A settings array is also given which tracks the configuration pairs. Since each of the 4
+        measurements has 2 possible eigenvectors, all configurations can be uniquely identified by
+        8 values. The number of rows is determined by the number of cuts and the number of columns
+        is determined by the number of shots.
 
-            configurations, settings = qml.transforms.qcut.expand_fragment_tapes_mc(
-                    fragment_tapes, communication_graph, shots=dev.shots
-                )
 
-            tapes = tuple(tape for c in configurations for tape in c)
+        >>> configurations, settings = qml.transforms.qcut.expand_fragment_tapes_mc(
+        ...        fragment_tapes, communication_graph, shots=dev.shots
+        ...    )
+        >>> tapes = tuple(tape for c in configurations for tape in c)
+        >>> settings
+        tensor([[7, 2, 5]], requires_grad=True)
 
         Each configuration is drawn below:
 
@@ -1127,22 +1133,22 @@ def cut_circuit_mc(
         .. code-block::
 
             0: ──RX─╭C──RY─┤  Sample[|1⟩⟨1|]
-            1: ──RY─╰Z─────┤  Sample[I]
+            1: ──RY─╰Z─────┤  Sample[Z]
 
             0: ──RX─╭C──RY─┤  Sample[|1⟩⟨1|]
-            1: ──RY─╰Z─────┤  Sample[I]
+            1: ──RY─╰Z─────┤  Sample[X]
 
             0: ──RX─╭C──RY─┤  Sample[|1⟩⟨1|]
-            1: ──RY─╰Z─────┤  Sample[I]
+            1: ──RY─╰Z─────┤  Sample[Y]
 
             0: ──RX─╭Z─┤  Sample[|1⟩⟨1|]
-            1: ──I──╰C─┤
+            1: ──X──╰C─┤
 
             0: ──RX─╭Z─┤  Sample[|1⟩⟨1|]
-            1: ──I──╰C─┤
+            1: ──H──╰C─┤
 
-            0: ──RX─╭Z─┤  Sample[|1⟩⟨1|]
-            1: ──I──╰C─┤
+            0: ──RX───────╭Z─┤  Sample[|1⟩⟨1|]
+            1: ──X───H──S─╰C─┤
 
         The last step is to execute the tapes and postprocess the results using
         :func:`~.qcut_processing_fn_sample` which processes the results to the original full circuit
@@ -1154,9 +1160,15 @@ def cut_circuit_mc(
         ...     communication_graph,
         ...     shots=dev.shots,
         ... )
-        [array([[0., 0., 0., 1., 1., 0., 0., 0.],
-                [0., 0., 0., 1., 1., 0., 0., 0.],
-                [0., 0., 0., 1., 1., 0., 0., 0.]])]
+        [array([[ 0.,  0.,  0.,  1., -1.,  0.,  0.,  0.],
+                [ 0.,  0.,  0.,  1.,  1.,  0.,  0.,  0.],
+                [ 0.,  0.,  1., -1., -1.,  0.,  0.,  0.]])]
+
+        Alternatively, it is possible to calculate an expectation value if a classical
+        processing function is provided that will accept the reconstructed circuit bitstrings
+        and return a value in the interval :math:`[-1, 1]`:
+
+
     """
 
     for meas in tape.measurements:
