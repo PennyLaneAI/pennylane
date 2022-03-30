@@ -824,17 +824,15 @@ def expand_fragment_tapes_mc(
     return all_configs, settings
 
 
-def _reshape_results(
-    results: Sequence, communication_graph: MultiDiGraph, shots: int
-) -> np.ndarray:
+def _reshape_results(results: Sequence, shots: int) -> List[List]:
     """
-    Helper function to reshape ``results`` into a two-dimensional array whose number of rows is
-    determined by the number of shots and whose number of columns is determined by the number of
+    Helper function to reshape ``results`` into a two-dimensional nested list whose number of rows
+    is determined by the number of shots and whose number of columns is determined by the number of
     cuts.
     """
     results = [qml.math.flatten(r) for r in results]
-    results = np.array(results, dtype=object)
-    results = results.reshape((len(communication_graph), shots)).T
+    results = [results[i : i + shots] for i in range(0, len(results), shots)]
+    results = list(map(list, zip(*results)))  # calculate list-based transpose
 
     return results
 
@@ -863,7 +861,7 @@ def qcut_processing_fn_sample(
         List[tensor_like]: the sampled output for all terminal measurements over the number of shots given
     """
     res0 = results[0]
-    results = _reshape_results(results, communication_graph, shots)
+    results = _reshape_results(results, shots)
     out_degrees = [d for _, d in communication_graph.out_degree]
 
     samples = []
@@ -910,7 +908,7 @@ def qcut_processing_fn_mc(
         `Peng et al. <https://arxiv.org/abs/1904.00102>`__
     """
     res0 = results[0]
-    results = _reshape_results(results, communication_graph, shots)
+    results = _reshape_results(results, shots)
     out_degrees = [d for _, d in communication_graph.out_degree]
 
     evals = (0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5)

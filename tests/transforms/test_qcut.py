@@ -2078,33 +2078,23 @@ class TestMCPostprocessing:
         """
 
         results = [
-            np.array([[0.0], [1.0]]),
-            np.array([[0.0], [1.0]]),
-            np.array([[0.0], [1.0]]),
-            np.array([[0.0], [1.0]]),
+            np.array([[0.0], [-1.0]]),
             np.array([[1.0], [1.0]]),
-            np.array([[1.0]]),
-            np.array([[0.0]]),
-            np.array([[1.0]]),
-            np.array([[1.0]]),
-            np.array([[0.0]]),
+            np.array([[1.0], [1.0]]),
+            np.array([[1.0], [1.0]]),
+            np.array([[1.0], [1.0]]),
+            np.array([[0.0], [0.0]]),
         ]
 
-        expected_reshaped = np.array(
-            [
-                [np.array([0.0, 1.0]), np.array([1.0])],
-                [np.array([0.0, 1.0]), np.array([0.0])],
-                [np.array([0.0, 1.0]), np.array([1.0])],
-                [np.array([0.0, 1.0]), np.array([1.0])],
-                [np.array([1.0, 1.0]), np.array([0.0])],
-            ]
-        )
+        expected_reshaped = [
+            [np.array([0.0, -1.0]), np.array([1.0, 1.0])],
+            [np.array([1.0, 1.0]), np.array([1.0, 1.0])],
+            [np.array([1.0, 1.0]), np.array([0.0, 0.0])],
+        ]
 
-        edge_data = [(0, 1, {"pair": (qcut.MeasureNode(wires=[1]), qcut.PrepareNode(wires=[1]))})]
-        communication_graph = MultiDiGraph(edge_data)
-        shots = 5
+        shots = 3
 
-        reshaped = qcut._reshape_results(results, communication_graph, shots)
+        reshaped = qcut._reshape_results(results, shots)
 
         for resh, exp_resh in zip(reshaped, expected_reshaped):
             for arr, exp_arr in zip(resh, exp_resh):
