@@ -15,12 +15,14 @@
 This module contains utilities and auxiliary functions which are shared
 across the PennyLane submodules.
 """
-# pylint: disable=protected-access,too-many-branches
-from collections.abc import Iterable
+from copy import copy
 import functools
 import inspect
 import itertools
 import numbers
+
+# pylint: disable=protected-access,too-many-branches
+from collections.abc import Iterable
 from operator import matmul
 
 import numpy as np
@@ -428,24 +430,29 @@ def expand_vector(vector, original_wires, expanded_wires):
     return qml.math.reshape(expanded_tensor, 2**M)
 
 
-def create_S(x, y, k):
+def _create_S(x, y, k):
+    """Auxiliary function to the get_unitary_preparing_superposition
+    function to create set S."""
     S = []
     for idx, (i, j) in enumerate(zip(x, y)):
         if idx == k:
-            break
+            pass
         else:
             if i != j:
                 S.append(idx)
     return S
 
 
-def create_T(y):
+def _create_T(y):
+    """Auxiliary function to the get_unitary_preparing_superposition
+    function to create set T."""
     indices = np.where(np.array(y) == 1)
     return set(indices[0].flatten())
 
 
 def apply_gate_G(p, qubit):
-
+    """Auxiliary quantum function to the get_unitary_preparing_superposition
+    function for applying the G gate."""
     if p not in {0, 1, 2, 3}:
         raise ValueError("Incorrect p specified.")
 
@@ -462,7 +469,30 @@ def apply_gate_G(p, qubit):
         qml.S(wires=[qubit])
 
 
-from copy import copy
+def _get_k(x, y):
+    """Auxiliary function to get the first index where two lists of equal size differ."""
+    k = 0
+    while not (k > len(x) or x[k] != y[k]):
+        k += 1
+
+    return k
+
+
+def state_vector_from_bitstring(bitstring):
+    """
+
+    Args:
+        bitstring (list): a list of binary integers corresponding to the
+            bitstring representing the basis state
+
+    Returns:
+        list: the state vector
+    """
+    zero = [1, 0]
+    one = [0, 1]
+    x_state = [zero if a == 0 else one for a in bitstring]
+    x_state = np.array(x_state)
+    return functools.reduce(np.kron, x_state)
 
 
 def get_unitary_preparing_superposition(x_bitstring, y_bitstring, p):
@@ -474,18 +504,15 @@ def get_unitary_preparing_superposition(x_bitstring, y_bitstring, p):
     x = copy(x_bitstring)
     y = copy(y_bitstring)
 
-    for k in range(len(x)):
-
-        if x[k] != y[k]:
-            continue
+    k = _get_k(x, y)
 
     if x[k] == 1:
         # Swap x and y
         x, y = y, x
         p = -p % 4
 
-    S = create_S(x, y, 2)
-    T = create_T(x)
+    S = _create_S(x, y, k)
+    T = _create_T(x)
 
     with qml.tape.QuantumTape() as tape:
 

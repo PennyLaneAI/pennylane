@@ -625,11 +625,28 @@ class TestExpand:
         with pytest.raises(ValueError, match="Vector parameter must be of length"):
             pu.expand_vector(TestExpand.VECTOR1, [0, 1], 4)
 
-    @pytest.mark.parametrize("x", [[0, 0, 0], [0, 1, 0], [1, 0, 0]])
-    @pytest.mark.parametrize("y", [[0, 0, 1], [0, 1, 1], [1, 1, 1]])
+    # Note: x is always chosen such that x[k]==0 is True
+    # There are two separate test cases:
+    # 1. Use the bitstrings as they are
+    # 2. Use the bitstrings swapped (such that x[k]==1 is True)
+    x_y_bitstrings = [
+        ([0], [1]),
+        ([0, 0], [1, 0]),
+        ([0, 0], [0, 1]),
+        ([0, 1], [1, 1]),
+        ([1, 0], [1, 1]),
+        ([0, 0], [1, 1]),
+        ([0, 0, 0], [0, 0, 1]),
+        ([0, 0, 0], [0, 1, 1]),
+        ([0, 0, 0], [1, 1, 1]),
+        ([0, 1, 0], [0, 1, 1]),
+        ([0, 1, 1], [1, 1, 1]),
+    ]
+
+    @pytest.mark.parametrize("x,y", x_y_bitstrings)
     @pytest.mark.parametrize("p", [0, 1, 2, 3])
     def test_get_unitary_preparing_superposition(self, x, y, p):
-        """Test"""
+        """Test x and y stay the same"""
         dev = qml.device("default.qubit", wires=len(x))
         tape = pu.get_unitary_preparing_superposition(x, y, p)
 
@@ -639,19 +656,95 @@ class TestExpand:
                 qml.apply(op)
             return qml.state()
 
-        from functools import reduce
-
-        def get_state_vector_from_bitstring(bitstring):
-            zero = [1, 0]
-            one = [0, 1]
-            x_state = [zero if a == 0 else one for a in bitstring]
-            return reduce(np.kron, x_state)
-
         def state_to_create(x, y, p):
-            x_state = get_state_vector_from_bitstring(x)
-            y_state = get_state_vector_from_bitstring(y)
+            """Computes the vector corresponding to the superposition state."""
+            x_state = pu.state_vector_from_bitstring(x)
+            y_state = pu.state_vector_from_bitstring(y)
             return (np.array(x_state) + 1j**p * np.array(y_state)) / np.sqrt(2)
 
         res = circuit()
         state = state_to_create(x, y, p)
         assert np.allclose(res, state)
+
+    x_y_bitstrings_swapped = [(y, x) for x, y in x_y_bitstrings]
+
+    @pytest.mark.parametrize("x,y", x_y_bitstrings_swapped)
+    @pytest.mark.parametrize("p", [0, 1, 2, 3])
+    def test_get_unitary_preparing_superposition_swapping(self, x, y, p):
+        """Test x and y are swapped, p = -p mod 4"""
+
+        dev = qml.device("default.qubit", wires=len(x))
+        tape = pu.get_unitary_preparing_superposition(x, y, p)
+
+        @qml.qnode(dev)
+        def circuit():
+            for op in tape._ops:
+                qml.apply(op)
+            return qml.state()
+
+        def state_to_create(x, y, p):
+            """Computes the vector corresponding to the superposition state.
+
+            Note: as per the algorithm, x and y are swapped and we substitute p = -p mod 4.
+            Although the resulting vector will differ to the vector yielded with computing
+            with the original values of x, y and p, we're preparing an equivalent state up
+            to a global phase.
+            """
+            x_state = pu.state_vector_from_bitstring(x)
+            y_state = pu.state_vector_from_bitstring(y)
+
+            # x and y states are swapped, get p = -p mod 4
+            return (np.array(y_state) + 1j ** (-p % 4) * np.array(x_state)) / np.sqrt(2)
+
+        res = circuit()
+        state = state_to_create(x, y, p)
+        assert np.allclose(res, state)
+
+    @pytest.mark.parametrize(
+        "bitstring, exp",
+        [
+            ([0], [1, 0]),
+            ([1], [0, 1]),
+            ([0, 0], [1, 0, 0, 0]),
+            ([0, 1], [0, 1, 0, 0]),
+            ([1, 0], [0, 0, 1, 0]),
+            ([1, 1], [0, 0, 0, 1]),
+        ],
+    )
+    def test_state_vector_from_bitstring(self, bitstring, exp):
+        assert np.allclose(pu.state_vector_from_bitstring(bitstring), np.array(exp))
+
+    @pytest.mark.parametrize(
+        "x,y,k,exp",
+        [
+            ([0, 0, 0], [0, 0, 1], 0, [2]),
+            ([0, 0, 0], [1, 0, 1], 0, [2]),
+            ([0, 0, 0], [1, 0, 1], 1, [0, 2]),
+            ([0, 0, 0], [1, 0, 1], 2, [0]),
+        ],
+    )
+    def test_s_creation(self, x, y, k, exp):
+
+        res = pu.create_S(x, y, k)
+        assert res == exp
+
+    @pytest.mark.parametrize(
+        "x,exp",
+        [
+            ([0, 0, 0], []),
+            ([0, 0, 1], [2]),
+            ([1, 0, 1], [0, 2]),
+        ],
+    )
+    def test_t_creation(self, x, exp):
+
+        res = pu.create_T(x)
+        assert res == set(exp)
+
+    @pytest.mark.parametrize(
+        "x,y,exp", [([0, 0, 0], [0, 0, 1], 2), ([0, 0, 0], [1, 0, 1], 0), ([1, 1, 0], [1, 0, 1], 1)]
+    )
+    def test_get_k(self, x, y, exp):
+
+        res = pu.get_k(x, y)
+        assert res == exp
