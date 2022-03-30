@@ -2418,28 +2418,26 @@ class TestCutCircuitMCTransform:
         shots = 1000
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.cut_circuit_mc
-        @qml.qnode(dev)
-        def cut_circuit(x, shots=shots):
-            qml.RX(x, wires=0)
-            qml.RY(0.5, wires=1)
-            qml.RX(1.3, wires=2)
-
-            qml.CNOT(wires=[0, 1])
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=[1, 2])
-
-            qml.RX(x, wires=0)
-            qml.RY(0.7, wires=1)
-            qml.RX(2.3, wires=2)
-            return qml.sample(wires=[0, 2])
-
-        v = 0.319
         with pytest.raises(
             ValueError,
             match="Detected 'shots' as an argument of the quantum function to transform. ",
         ):
-            cut_circuit(v)
+
+            @qml.cut_circuit_mc
+            @qml.qnode(dev)
+            def cut_circuit(x, shots=shots):
+                qml.RX(x, wires=0)
+                qml.RY(0.5, wires=1)
+                qml.RX(1.3, wires=2)
+
+                qml.CNOT(wires=[0, 1])
+                qml.WireCut(wires=1)
+                qml.CNOT(wires=[1, 2])
+
+                qml.RX(x, wires=0)
+                qml.RY(0.7, wires=1)
+                qml.RX(2.3, wires=2)
+                return qml.sample(wires=[0, 2])
 
     def test_no_interface(self):
         """
