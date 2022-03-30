@@ -1048,23 +1048,17 @@ def cut_circuit_mc(
         .. code-block:: python
 
             with qml.tape.QuantumTape() as tape:
-                qml.RX(0.531, wires=0)
-                qml.RY(0.9, wires=1)
-                qml.RX(0.3, wires=2)
-
-                qml.CZ(wires=[0, 1])
-                qml.RY(-0.4, wires=0)
-
+                qml.Hadamard(wires=0)
+                qml.CNOT(wires=[0, 1])
+                qml.PauliX(wires=1)
                 qml.WireCut(wires=1)
-
-                qml.CZ(wires=[1, 2])
-
-                qml.sample(wires=[0, 2])
+                qml.CNOT(wires=[1, 2])
+                qml.sample(wires=[0, 1, 2])
 
         >>> print(tape.draw())
-            0: ──RX─╭C──RY────┤ ╭Sample
-            1: ──RY─╰Z──//─╭C─┤ │
-            2: ──RX────────╰Z─┤ ╰Sample
+            0: ──H─╭C───────────┤ ╭Sample
+            1: ────╰X──X──//─╭C─┤ ├Sample
+            2: ──────────────╰X─┤ ╰Sample
 
         To cut the circuit, we first convert it to its graph representation:
 
@@ -1091,19 +1085,26 @@ def cut_circuit_mc(
         The circuit fragments can now be visualized:
 
         >>> print(fragment_tapes[0].draw())
-        0: ──RX─╭C──RY──────────┤  Sample[|1⟩⟨1|]
-        1: ──RY─╰Z──MeasureNode─┤
+        0: ──H─╭C─────────────────┤  Sample[|1⟩⟨1|]
+        1: ────╰X──X──MeasureNode─┤
 
         >>> print(fragment_tapes[1].draw())
-        2: ──RX──────────╭Z─┤  Sample[|1⟩⟨1|]
-        1: ──PrepareNode─╰C─┤
+        1: ──PrepareNode─╭C─┤  Sample[|1⟩⟨1|]
+        2: ──────────────╰X─┤  Sample[|1⟩⟨1|]
 
         Additionally, we must remap the tape wires to match those available on our device.
 
-        >>> dev = qml.device("default.qubit", wires=2, shots=3)
+        >>> dev = qml.device("default.qubit", wires=2, shots=1)
         >>> fragment_tapes = [
         ...     qml.transforms.qcut.remap_tape_wires(t, dev.wires) for t in fragment_tapes
         ... ]
+
+        Note that the number of shots on the device is set to :math:`1` here since we
+        will only require one execution per fragment configurations. In the
+        following steps we introduce a shots value that will determine the number
+        of fragment configurations. When using the ``cut_circuit_mc()`` decorator
+        with a qnode, this shots value is automatically inferred from the provided
+        device.
 
         Next, each circuit fragment is expanded over :class:`~.MeasureNode` and
         :class:`~.PrepareNode` configurations. For each pair, a measurement is sampled from
@@ -1114,13 +1115,13 @@ def cut_circuit_mc(
         8 values. The number of rows is determined by the number of cuts and the number of columns
         is determined by the number of shots.
 
-
+        >>> shots = 3
         >>> configurations, settings = qml.transforms.qcut.expand_fragment_tapes_mc(
-        ...        fragment_tapes, communication_graph, shots=dev.shots
+        ...        fragment_tapes, communication_graph, shots=shots
         ...    )
         >>> tapes = tuple(tape for c in configurations for tape in c)
         >>> settings
-        tensor([[7, 2, 5]], requires_grad=True)
+        tensor([[0, 4, 7]], requires_grad=True)
 
         Each configuration is drawn below:
 
@@ -1130,23 +1131,23 @@ def cut_circuit_mc(
 
         .. code-block::
 
-            0: ──RX─╭C──RY─┤  Sample[|1⟩⟨1|]
-            1: ──RY─╰Z─────┤  Sample[Z]
+            0: ──H─╭C────┤  Sample[|1⟩⟨1|]
+            1: ────╰X──X─┤  Sample[I]
 
-            0: ──RX─╭C──RY─┤  Sample[|1⟩⟨1|]
-            1: ──RY─╰Z─────┤  Sample[X]
+            0: ──H─╭C────┤  Sample[|1⟩⟨1|]
+            1: ────╰X──X─┤  Sample[Y]
 
-            0: ──RX─╭C──RY─┤  Sample[|1⟩⟨1|]
-            1: ──RY─╰Z─────┤  Sample[Y]
+            0: ──H─╭C────┤  Sample[|1⟩⟨1|]
+            1: ────╰X──X─┤  Sample[Z]
 
-            0: ──RX─╭Z─┤  Sample[|1⟩⟨1|]
-            1: ──X──╰C─┤
+            0: ──I─╭C─┤  Sample[|1⟩⟨1|]
+            1: ────╰X─┤  Sample[|1⟩⟨1|]
 
-            0: ──RX─╭Z─┤  Sample[|1⟩⟨1|]
-            1: ──H──╰C─┤
+            0: ──H──S─╭C─┤  Sample[|1⟩⟨1|]
+            1: ───────╰X─┤  Sample[|1⟩⟨1|]
 
-            0: ──RX───────╭Z─┤  Sample[|1⟩⟨1|]
-            1: ──X───H──S─╰C─┤
+            0: ──X─╭C─┤  Sample[|1⟩⟨1|]
+            1: ────╰X─┤  Sample[|1⟩⟨1|]
 
         The last step is to execute the tapes and postprocess the results using
         :func:`~.qcut_processing_fn_sample` which processes the results to the original full circuit
@@ -1156,17 +1157,26 @@ def cut_circuit_mc(
         >>> qml.transforms.qcut.qcut_processing_fn_sample(
         ...     results,
         ...     communication_graph,
-        ...     shots=dev.shots,
+        ...     shots=shots,
         ... )
-        [array([[ 0.,  0.,  0.,  1., -1.,  0.,  0.,  0.],
-                [ 0.,  0.,  0.,  1.,  1.,  0.,  0.,  0.],
-                [ 0.,  0.,  1., -1., -1.,  0.,  0.,  0.]])]
+        [array([[1., 0., 0.],
+                [0., 0., 0.],
+                [1., 1., 1.]])]
 
         Alternatively, it is possible to calculate an expectation value if a classical
         processing function is provided that will accept the reconstructed circuit bitstrings
         and return a value in the interval :math:`[-1, 1]`:
 
+        .. code-block::
 
+            def fn(x):
+                if x[0] == 0:
+                    return 1
+                if x[0] == 1:
+                    return -1
+
+        >>> qml.transforms.qcut.qcut_processing_fn_mc(results, communication_graph, settings, dev.shots, fn)
+        array(4.)
     """
 
     for meas in tape.measurements:
