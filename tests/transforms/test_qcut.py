@@ -2205,7 +2205,7 @@ class TestCutCircuitMCTransform:
         postprocessed to return bitstrings of the original circuit size.
         """
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit", wires=3, shots=1000)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -2228,8 +2228,8 @@ class TestCutCircuitMCTransform:
         cut_circuit_bs = qcut.cut_circuit_mc(circuit)
         cut_res_bs = cut_circuit_bs(v)
 
-        assert cut_res_bs[0].shape == target.shape
-        assert type(cut_res_bs[0]) == type(target)
+        assert cut_res_bs.shape == target.shape
+        assert type(cut_res_bs) == type(target)
 
     def test_override_samples(self):
         """
@@ -2260,11 +2260,11 @@ class TestCutCircuitMCTransform:
         temp_shots = 333
         cut_res = cut_circuit(v, shots=temp_shots)
 
-        assert cut_res[0].shape == (temp_shots, 2)
+        assert cut_res.shape == (temp_shots, 2)
 
         cut_res_original = cut_circuit(v)
 
-        assert cut_res_original[0].shape == (shots, 2)
+        assert cut_res_original.shape == (shots, 2)
 
     def test_no_shots(self):
         """
@@ -2319,7 +2319,7 @@ class TestCutCircuitMCTransform:
             return qml.sample(qml.PauliZ(0))
 
         v = 0.319
-        with pytest.raises(ValueError, match="The sample-based circuit cutting workflow only "):
+        with pytest.raises(ValueError, match="The Monte Carlo circuit cutting workflow only "):
             cut_circuit(v)
 
     def test_transform_shots_error(self):
@@ -2348,7 +2348,7 @@ class TestCutCircuitMCTransform:
 
         v = 0.319
         with pytest.raises(
-            ValueError, match="Cannot provide a shots directly to the `cut_circuit_mc` "
+            ValueError, match="Cannot provide a 'shots' value directly to the cut_circuit_mc "
         ):
             cut_circuit(v)
 

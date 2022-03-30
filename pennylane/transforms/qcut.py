@@ -966,20 +966,19 @@ def cut_circuit_mc(
         shots (int): Number of shots. When transforming a QNode, this argument is
         set by the device's ``shots`` value or at QNode call time (if provided).
         Required when transforming a tape.
-        device_wires (Optional[Wires]): optional when applied to a QNode, required when applied to tape.
-            Wires of the device that the cut circuits are to be run on
+        device_wires (Wires): Wires of the device that the cut circuits are to be run on.
+                    When transforming a QNode, this argument is optional and will be set to the
+                    QNode's device wires. Required when transforming a tape.
         classical_processing_fn (callable): A classical postprocessing function to be applied to
             the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``.
             If not supplied, the transform will output samples.
             and the output should be a single number within the interval :math:`[-1, 1]`
-        max_depth (int): the maximum depth used to expand the circuit while searching for wire cuts
+        max_depth (int): The maximum depth used to expand the circuit while searching for wire cuts.
 
     Returns:
-        Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a
-        result of cutting and then random expansion at :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs,
-        and a post-processing function which either recombines samples to a full
-        circuit bitstring or further calculates an expectation value if a classical processing function
-        is supplied
+        Callable: Function which accepts the same arguments as the QNode.
+        When called, this function will sample from the partitioned circuit fragments
+        and combine the results using a Monte Carlo method.
 
     **Example**
 
@@ -1011,19 +1010,19 @@ def cut_circuit_mc(
 
     >>> x = 0.3
     >>> circuit(x)
-    [tensor([[1., 1.],
-         [0., 1.],
-         [0., 1.],
-         ...,
-         [0., 1.],
-         [0., 1.],
-         [0., 1.]], requires_grad=True)]
+    tensor([[1, 1],
+            [0, 1],
+            [0, 1],
+            ...,
+            [0, 1],
+            [0, 1],
+            [0, 1]], requires_grad=True)
 
     Furthermore, the number of shots can be temporarily altered when calling
     the qnode:
 
     >>> results = circuit(x, shots=123)
-    >>> results[0].shape
+    >>> results.shape
     (123, 2)
 
     .. UsageDetails::
@@ -1043,8 +1042,8 @@ def cut_circuit_mc(
             ~transforms.qcut.graph_to_tape
             ~transforms.qcut.remap_tape_wires
             ~transforms.qcut.expand_fragment_tapes_mc
-            ~transforms.qcut.qcut_processing_fn_mc
             ~transforms.qcut.qcut_processing_fn_sample
+            ~transforms.qcut.qcut_processing_fn_mc
 
         The following shows how these elementary steps are combined as part of the
         ``cut_circuit_mc()`` transform.
@@ -1181,7 +1180,13 @@ def cut_circuit_mc(
                 if x[0] == 1:
                     return -1
 
-        >>> qml.transforms.qcut.qcut_processing_fn_mc(results, communication_graph, settings, dev.shots, fn)
+        >>> qml.transforms.qcut.qcut_processing_fn_mc(
+        ...     results,
+        ...     communication_graph,
+        ...     settings,
+        ...     shots,
+        ...     fn
+        ... )
         array(4.)
     """
 
@@ -1290,7 +1295,10 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
             **execute_kwargs,
         )
 
-        return processing_fn(res)
+        out = processing_fn(res)
+        if isinstance(out, list) and len(out) == 1:
+            return out[0]
+        return out
 
     return _wrapper
 
@@ -1629,12 +1637,15 @@ def cut_circuit(
             for faster tensor contractions of large networks but must be installed separately using,
             e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
             differentiable contraction.
-        device_wires (Wires): wires of the device that the cut circuits are to be run on
-        max_depth (int): the maximum depth used to expand the circuit while searching for wire cuts
+        device_wires (Wires): Wires of the device that the cut circuits are to be run on.
+                    When transforming a QNode, this argument is optional and will be set to the
+                    QNode's device wires. Required when transforming a tape.
+        max_depth (int): The maximum depth used to expand the circuit while searching for wire cuts.
 
     Returns:
-        Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a
-        result of cutting and a post-processing function which combines the results via tensor
+        Callable: Function which accepts the same arguments as the QNode.
+        When called, this function will perform a process tomography of the
+        partitioned circuit fragments and combine the results via tensor
         contractions.
 
     **Example**
