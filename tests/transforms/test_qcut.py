@@ -2272,7 +2272,7 @@ class TestCutCircuitMCTransform:
         without shots
         """
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.cut_circuit_mc
         @qml.qnode(dev)
@@ -2300,7 +2300,7 @@ class TestCutCircuitMCTransform:
         gives the correct error
         """
         shots = 1000
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
         @qml.qnode(dev)
@@ -2328,7 +2328,7 @@ class TestCutCircuitMCTransform:
         when transforming a qnode
         """
 
-        dev = qml.device("default.qubit", wires=3)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.cut_circuit_mc(shots=456)
         @qml.qnode(dev)
@@ -2351,6 +2351,124 @@ class TestCutCircuitMCTransform:
             ValueError, match="Cannot provide a 'shots' value directly to the cut_circuit_mc "
         ):
             cut_circuit(v)
+
+    def test_multiple_meas_error(self):
+        """
+        Tests that attempting to cut a circuit with multiple sample measurements
+        using `cut_circuit_mc` gives the correct error
+        """
+        dev = qml.device("default.qubit", wires=3, shots=100)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0]), qml.sample(wires=[1]), qml.sample(wires=[2])
+
+        v = 0.319
+        with pytest.raises(
+            ValueError, match="The Monte Carlo circuit cutting workflow only supports circuits "
+        ):
+            cut_circuit(v)
+
+    def test_non_sample_meas_error(self):
+        """
+        Tests that attempting to cut a circuit with non-sample measurements
+        using `cut_circuit_mc` gives the correct error
+        """
+        dev = qml.device("default.qubit", wires=2, shots=100)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.expval(qml.PauliX(1))
+
+        v = 0.319
+        with pytest.raises(
+            ValueError, match="The Monte Carlo circuit cutting workflow only supports circuits "
+        ):
+            cut_circuit(v)
+
+    def test_qnode_shots_arg_error(self):
+        """
+        Tests that if a shots argument is passed directly to the qnode when using
+        `cut_circuit_mc` the correct error is given
+        """
+        shots = 1000
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def cut_circuit(x, shots=shots):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        with pytest.raises(
+            ValueError,
+            match="Detected 'shots' as an argument of the quantum function to transform. ",
+        ):
+            cut_circuit(v)
+
+    def test_no_interface(self):
+        """
+        Tests that if no interface is provided when using `cut_circuit_mc` the
+        correct output is given
+        """
+        shots = 1000
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev, interface=None)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        res = cut_circuit(v)
+        assert res.shape == (shots, 2)
+        assert type(res) == np.ndarray
 
 
 class TestContractTensors:
