@@ -24,6 +24,7 @@ pennylane_qchem/.pytest_cache/*
 qchem/tmp/*
 qchem/timer.dat
 qchem/tests/tmp/*
+qchem/tests/qchem_tests/tmp/*
 qchem/tests/tmp/timer.dat
 timer.dat
 tmp/*
