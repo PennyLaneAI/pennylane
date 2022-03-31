@@ -13,7 +13,7 @@
 
 * The documentation run has been updated to require `jinja2==3.0.3` due to an
   issue that arises with `jinja2` `v3.1.0` and `sphinx` `v3.5.3`.
-  [(#2066)](https://github.com/PennyLaneAI/pennylane/pull/2066)
+  [(#2378)](https://github.com/PennyLaneAI/pennylane/pull/2378)
 
 <h3>Contributors</h3>
 
