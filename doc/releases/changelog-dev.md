@@ -202,6 +202,7 @@
 
 * The `qml.draw` and `qml.draw_mpl` transforms are now located in the `drawer` module. They can still be
   accessed via top-level `qml` namespace.
+  [(#2396)](https://github.com/PennyLaneAI/pennylane/pull/2396)
 
 <h3>Deprecations</h3>
 
