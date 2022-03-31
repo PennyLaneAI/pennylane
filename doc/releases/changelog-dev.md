@@ -207,6 +207,10 @@
 * Circuit cutting now performs expansion to search for wire cuts in contained operations or tapes.
   [(#2340)](https://github.com/PennyLaneAI/pennylane/pull/2340)
 
+* The `qml.draw` and `qml.draw_mpl` transforms are now located in the `drawer` module. They can still be
+  accessed via the top-level `qml` namespace.
+  [(#2396)](https://github.com/PennyLaneAI/pennylane/pull/2396)
+
 <h3>Deprecations</h3>
 
 <h3>Breaking changes</h3>
