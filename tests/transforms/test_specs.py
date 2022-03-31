@@ -180,7 +180,7 @@ class TestSpecsTransform:
 
         assert len(info) == 15
 
-        assert info["gate_sizes"] == defaultdict(int, {1:10, 2: 10})
+        assert info["gate_sizes"] == defaultdict(int, {1: 10, 2: 10})
         assert info["gate_types"] == defaultdict(int, {"RX": 10, "CNOT": 10})
         assert info["num_operations"] == 20
 
