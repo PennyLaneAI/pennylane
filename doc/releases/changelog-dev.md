@@ -97,6 +97,10 @@
     [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
   - The efficiency of computing molecular integrals and Hamiltonian is improved
     [(#2316)](https://github.com/PennyLaneAI/pennylane/pull/2316)
+  - The qchem and new hf modules are merged
+    [(#2385)](https://github.com/PennyLaneAI/pennylane/pull/2385)
+  - The 6-31G basis set is added to the qchem basis set repo
+    [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
 
 * Development of a circuit-cutting compiler extension to circuits with sampling
   measurements has begun:
