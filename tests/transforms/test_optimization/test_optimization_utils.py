@@ -22,6 +22,8 @@ from pennylane.transforms.optimization.optimization_utils import (
     fuse_rot_angles,
 )
 
+from pennylane import numpy as np
+
 from utils import check_matrix_equivalence
 
 
