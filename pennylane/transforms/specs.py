@@ -107,7 +107,6 @@ def specs(qnode, max_expansion=None, expansion_strategy=None):
         """
         initial_max_expansion = qnode.max_expansion
         initial_expansion_strategy = getattr(qnode, "expansion_strategy", None)
-        
 
         try:
             qnode.max_expansion = initial_max_expansion if max_expansion is None else max_expansion
