@@ -43,7 +43,7 @@ class TestMolecule:
     )
     def test_basis_error(self, symbols, geometry):
         r"""Test that an error is raised if a wrong basis set name is entered."""
-        with pytest.raises(ValueError, match="Currently, the only supported basis set is"):
+        with pytest.raises(ValueError, match="Currently, the only supported basis sets"):
             qchem.hf.Molecule(symbols, geometry, basis_name="6-311g")
 
     @pytest.mark.parametrize(
