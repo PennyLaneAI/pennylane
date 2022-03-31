@@ -87,7 +87,7 @@ def atom_basis_data(name, atom):
     >>> print(params)
     [((0, 0, 0), [3.425250914, 0.6239137298, 0.168855404], [0.1543289673, 0.5353281423, 0.4446345422])]
     """
-    basis_sets = {"sto-3g": STO3G, "6-31g": POPLE631G}
+    basis_sets = {"sto-3g": STO3G, "6-31g": POPLE631G, "STO-3G": STO3G, "6-31G": POPLE631G}
 
     s = [(0, 0, 0)]
     p = [(1, 0, 0), (0, 1, 0), (0, 0, 1)]  # for px, py, pz, respectively
