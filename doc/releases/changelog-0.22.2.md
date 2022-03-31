@@ -9,8 +9,14 @@
   shipped with `v0.22.0`.
   [(#2397)](https://github.com/PennyLaneAI/pennylane/pull/2397)
 
+<h3>Documentation</h3>
+
+* The documentation run has been updated to require `jinja2==3.0.3` due to an
+  issue that arises with `jinja2` `v3.1.0` and `sphinx` `v3.5.3`.
+  [(#2066)](https://github.com/PennyLaneAI/pennylane/pull/2066)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Olivia Di Matteo, Christina Lee, Antal Száva.
+Olivia Di Matteo, Christina Lee, Romain Moyard, Antal Száva.
