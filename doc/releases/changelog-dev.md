@@ -129,6 +129,9 @@
 
 <h3>Improvements</h3>
 
+* The `qml.specs` transform now accepts an `expansion_strategy` keyword argument.
+  [(#2395)](https://github.com/PennyLaneAI/pennylane/pull/2395)
+
 * `default.qubit` and `default.mixed` now skip over identity operators instead of performing matrix multiplication
   with the identity.
   [(#2356)](https://github.com/PennyLaneAI/pennylane/pull/2356)
