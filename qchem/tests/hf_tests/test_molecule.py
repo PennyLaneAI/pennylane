@@ -32,8 +32,8 @@ class TestMolecule:
     )
     def test_build_molecule(self, symbols, geometry):
         r"""Test that the generated molecule object has the correct type."""
-        mol = qchem.hf.Molecule(symbols, geometry)
-        assert isinstance(mol, qchem.hf.Molecule)
+        mol = qchem.Molecule(symbols, geometry)
+        assert isinstance(mol, qchem.Molecule)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry"),
@@ -44,7 +44,7 @@ class TestMolecule:
     def test_basis_error(self, symbols, geometry):
         r"""Test that an error is raised if a wrong basis set name is entered."""
         with pytest.raises(ValueError, match="Currently, the only supported basis sets"):
-            qchem.hf.Molecule(symbols, geometry, basis_name="6-311g")
+            qchem.Molecule(symbols, geometry, basis_name="6-311g")
 
     @pytest.mark.parametrize(
         ("symbols", "geometry"),
@@ -55,7 +55,7 @@ class TestMolecule:
     def test_symbol_error(self, symbols, geometry):
         r"""Test that an error is raised if a wrong/not-supported atomic symbol is entered."""
         with pytest.raises(ValueError, match="are not supported"):
-            qchem.hf.Molecule(symbols, geometry)
+            qchem.Molecule(symbols, geometry)
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "charge", "mult", "basis_name"),
@@ -65,7 +65,7 @@ class TestMolecule:
     )
     def test_default_inputs(self, symbols, geometry, charge, mult, basis_name):
         r"""Test that the molecule object contains correct default molecular input data."""
-        mol = qchem.hf.Molecule(symbols, geometry)
+        mol = qchem.Molecule(symbols, geometry)
 
         assert mol.symbols == symbols
         assert np.allclose(mol.coordinates, geometry)
@@ -87,7 +87,7 @@ class TestMolecule:
     )
     def test_molecule_data(self, symbols, geometry, n_electrons, n_orbitals, nuclear_charges):
         r"""Test that the molecule object contains correct molecular data."""
-        mol = qchem.hf.Molecule(symbols, geometry)
+        mol = qchem.Molecule(symbols, geometry)
 
         assert mol.n_electrons == n_electrons
         assert mol.n_orbitals == n_orbitals
@@ -117,7 +117,7 @@ class TestMolecule:
     )
     def test_default_basisdata(self, symbols, geometry, n_basis, basis_data):
         r"""Test that the molecule object contains correct default basis data for a given molecule."""
-        mol = qchem.hf.Molecule(symbols, geometry)
+        mol = qchem.Molecule(symbols, geometry)
 
         assert mol.n_basis == n_basis
         assert np.allclose(mol.basis_data, basis_data)
@@ -170,9 +170,9 @@ class TestMolecule:
         r"""Test that the molecule object contains the correct basis set and non-default basis data
         for a given molecule.
         """
-        mol = qchem.hf.Molecule(symbols, geometry)
+        mol = qchem.Molecule(symbols, geometry)
 
-        assert set(map(type, mol.basis_set)) == {qchem.hf.BasisFunction}
+        assert set(map(type, mol.basis_set)) == {qchem.BasisFunction}
         assert mol.l == l
         assert np.allclose(mol.alpha, alpha)
         assert np.allclose(mol.coeff, coeff)
@@ -223,7 +223,7 @@ class TestMolecule:
     )
     def test_atomic_orbital(self, symbols, geometry, alpha, coeff, index, position, ref_value):
         r"""Test that the computed atomic orbital value is correct."""
-        mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
 
         x, y, z = position
         ao = mol.atomic_orbital(index)
@@ -245,10 +245,10 @@ class TestMolecule:
     )
     def test_molecular_orbital(self, symbols, geometry, index, position, ref_value):
         r"""Test that the computed atomic orbital value is correct."""
-        mol = qchem.hf.Molecule(symbols, geometry)
+        mol = qchem.Molecule(symbols, geometry)
 
         x, y, z = position
-        _ = qchem.hf.scf(mol)()
+        _ = qchem.scf(mol)()
         mo = mol.molecular_orbital(index)
         mo_value = mo(x, y, z)
 

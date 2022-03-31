@@ -41,7 +41,7 @@ class TestBasis:
     def test_basisfunction(self, basis_name, atom_name, l, alpha, coeff, r):
         """Test that BasisFunction class creates basis function objects correctly."""
 
-        basis_function = qchem.hf.BasisFunction(l, alpha, coeff, r)
+        basis_function = qchem.BasisFunction(l, alpha, coeff, r)
 
         assert np.allclose(np.array(basis_function.alpha), np.array(alpha))
         assert np.allclose(np.array(basis_function.coeff), np.array(coeff))
@@ -153,7 +153,7 @@ class TestBasis:
     )
     def test_atom_basis_data(self, basis_name, atom_name, params_ref):
         """Test that correct basis set parameters are generated for a given atom."""
-        params = qchem.hf.atom_basis_data(basis_name, atom_name)
+        params = qchem.atom_basis_data(basis_name, atom_name)
 
         l = [p[0] for p in params]
         l_ref = [p[0] for p in params_ref]
@@ -213,7 +213,7 @@ class TestBasis:
         """Test that correct basis set parameters are generated for a given molecule represented as
         a list of atoms."""
         basis, symbols, n_ref, params_ref = basis_data
-        n_basis, params = qchem.hf.mol_basis_data(basis, symbols)
+        n_basis, params = qchem.mol_basis_data(basis, symbols)
 
         assert n_basis == n_ref
 
