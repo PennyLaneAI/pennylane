@@ -55,6 +55,20 @@ class TestFindNextGate:
 class TestRotGateFusion:
     """Test that utility functions for fusing two qml.Rot gates function as expected."""
 
+    @pytest.mark.parametrize(
+        ("angles", "expected_quat"),
+        # Examples generated at https://www.mathworks.com/help/robotics/ref/eul2quat.html
+        [
+            (
+                [0.15, 0.25, -0.90],
+                [0.923247491800509, -0.062488597726915, 0.107884031713695, -0.363414748929363],
+            ),
+            ([np.pi / 2, 0.0, 0.0], [1 / np.sqrt(2), 0.0, 0.0, 1 / np.sqrt(2)]),
+            ([0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0]),
+            ([0.15, 0, -0.90], [0.930507621912314, 0.0, 0.0, -0.366272529086048]),
+            ([0.0, 0.2, 0.0], [0.995004165278026, 0.0, 0.099833416646828, 0.0]),
+        ],
+    )
     def test_zyz_to_quat(self, angles, expected_quat):
         """Test that ZYZ Euler angles are correctly converted to quaternions."""
         obtained_quat = _zyz_to_quat(angles)
