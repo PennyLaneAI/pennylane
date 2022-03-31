@@ -47,8 +47,8 @@ from pennylane import qchem
 )
 def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_tensor):
     r"""Test that scf returns the correct values."""
-    mol = qchem.hf.Molecule(symbols, geometry)
-    v, c, f, h, e = qchem.hf.scf(mol)()
+    mol = qchem.Molecule(symbols, geometry)
+    v, c, f, h, e = qchem.scf(mol)()
 
     assert np.allclose(v, v_fock)
     assert np.allclose(c, coeffs)
@@ -64,29 +64,29 @@ def test_scf(symbols, geometry, v_fock, coeffs, fock_matrix, h_core, repulsion_t
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             0,
-            # HF energy computed with pyscf using scf.hf.SCF(mol).kernel(numpy.eye(mol.nao_nr()))
+            # HF energy computed with pyscf using scf.SCF(mol).kernel(numpy.eye(mol.nao_nr()))
             np.array([-1.06599931664376]),
         ),
         (
             ["H", "H", "H"],
             np.array([[0.0, 1.0, 0.0], [0.0, 0.0, 0.0], [1.0, 0.0, 0.0]], requires_grad=False),
             1,
-            # HF energy computed with pyscf using scf.hf.SCF(mol).kernel(numpy.eye(mol.nao_nr()))
+            # HF energy computed with pyscf using scf.SCF(mol).kernel(numpy.eye(mol.nao_nr()))
             np.array([-0.948179228995941]),
         ),
         (
             ["H", "F"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
             0,
-            # HF energy computed with pyscf using scf.hf.SCF(mol).kernel(numpy.eye(mol.nao_nr()))
+            # HF energy computed with pyscf using scf.SCF(mol).kernel(numpy.eye(mol.nao_nr()))
             np.array([-97.8884541671664]),
         ),
     ],
 )
 def test_hf_energy(symbols, geometry, charge, e_ref):
     r"""Test that hf_energy returns the correct energy."""
-    mol = qchem.hf.Molecule(symbols, geometry, charge=charge)
-    e = qchem.hf.hf_energy(mol)()
+    mol = qchem.Molecule(symbols, geometry, charge=charge)
+    e = qchem.hf_energy(mol)()
     assert np.allclose(e, e_ref)
 
 
@@ -96,13 +96,13 @@ def test_hf_energy(symbols, geometry, charge, e_ref):
         (
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
-            # HF gradient computed with pyscf using rhf.nuc_grad_method().kernel()
+            # HF gradient computed with pyscf using rnuc_grad_method().kernel()
             np.array([[0.0, 0.0, 0.3650435], [0.0, 0.0, -0.3650435]]),
         ),
         (
             ["H", "Li"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True),
-            # HF gradient computed with pyscf using rhf.nuc_grad_method().kernel()
+            # HF gradient computed with pyscf using rnuc_grad_method().kernel()
             np.array([[0.0, 0.0, 0.21034957], [0.0, 0.0, -0.21034957]]),
         ),
     ],
@@ -110,9 +110,9 @@ def test_hf_energy(symbols, geometry, charge, e_ref):
 def test_hf_energy_gradient(symbols, geometry, g_ref):
     r"""Test that the gradient of the Hartree-Fock energy wrt differentiable parameters is
     correct."""
-    mol = qchem.hf.Molecule(symbols, geometry)
+    mol = qchem.Molecule(symbols, geometry)
     args = [mol.coordinates]
-    g = autograd.grad(qchem.hf.hf_energy(mol))(*args)
+    g = autograd.grad(qchem.hf_energy(mol))(*args)
 
     assert np.allclose(g, g_ref)
 
@@ -140,9 +140,9 @@ def test_hf_energy_gradient(symbols, geometry, g_ref):
 )
 def test_nuclear_energy(symbols, geometry, e_ref):
     r"""Test that nuclear_energy returns the correct energy."""
-    mol = qchem.hf.Molecule(symbols, geometry)
+    mol = qchem.Molecule(symbols, geometry)
     args = [mol.coordinates]
-    e = qchem.hf.nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
+    e = qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(e, e_ref)
 
 
@@ -164,7 +164,7 @@ def test_nuclear_energy(symbols, geometry, e_ref):
 )
 def test_nuclear_energy_gradient(symbols, geometry, g_ref):
     r"""Test that nuclear energy gradients are correct."""
-    mol = qchem.hf.Molecule(symbols, geometry)
+    mol = qchem.Molecule(symbols, geometry)
     args = [mol.coordinates]
-    g = autograd.grad(qchem.hf.nuclear_energy(mol.nuclear_charges, mol.coordinates))(*args)
+    g = autograd.grad(qchem.nuclear_energy(mol.nuclear_charges, mol.coordinates))(*args)
     assert np.allclose(g, g_ref)

@@ -16,7 +16,7 @@ This module contains the functions needed for computing the spin observables.
 """
 from pennylane import numpy as np
 
-from .hf.observable import qubit_observable
+from .observable_hf import qubit_observable
 
 
 def _spin2_matrix_elements(sz):

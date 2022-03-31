@@ -129,23 +129,29 @@ class TestSpecsTransform:
         assert info["num_observables"] == 1
         assert info["num_diagonalizing_gates"] == 0
 
-    def test_max_expansion(self):
-        """Test that a user can calculation specifications for a different max
-        expansion parameter."""
-
+    def make_qnode_and_params(self, initial_expansion_strategy):
+        """Generates a qnode and params for use in other tests"""
         n_layers = 2
         n_wires = 5
 
         dev = qml.device("default.qubit", wires=n_wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, expansion_strategy=initial_expansion_strategy)
         def circuit(params):
-            qml.templates.BasicEntanglerLayers(params, wires=range(n_wires))
+            qml.BasicEntanglerLayers(params, wires=range(n_wires))
             return qml.expval(qml.PauliZ(0))
 
-        params_shape = qml.templates.BasicEntanglerLayers.shape(n_layers=n_layers, n_wires=n_wires)
+        params_shape = qml.BasicEntanglerLayers.shape(n_layers=n_layers, n_wires=n_wires)
         rng = np.random.default_rng(seed=10)
         params = rng.standard_normal(params_shape)
+
+        return circuit, params
+
+    def test_max_expansion(self):
+        """Test that a user can calculation specifications for a different max
+        expansion parameter."""
+
+        circuit, params = self.make_qnode_and_params("device")
 
         assert circuit.max_expansion == 10
         info = qml.specs(circuit, max_expansion=0)(params)
@@ -163,6 +169,20 @@ class TestSpecsTransform:
         assert info["device_name"] == "default.qubit.autograd"
         assert info["diff_method"] == "best"
         assert info["gradient_fn"] == "backprop"
+
+    def test_expansion_strategy(self):
+        """Test that a user can calculate specs for different expansion strategies."""
+        circuit, params = self.make_qnode_and_params("gradient")
+
+        assert circuit.expansion_strategy == "gradient"
+        info = qml.specs(circuit, expansion_strategy="device")(params)
+        assert circuit.expansion_strategy == "gradient"
+
+        assert len(info) == 15
+
+        assert info["gate_sizes"] == defaultdict(int, {1: 10, 2: 10})
+        assert info["gate_types"] == defaultdict(int, {"RX": 10, "CNOT": 10})
+        assert info["num_operations"] == 20
 
     def test_gradient_transform(self):
         """Test that a gradient transform is properly labelled"""
