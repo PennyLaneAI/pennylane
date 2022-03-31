@@ -1303,6 +1303,34 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     return _wrapper
 
 
+def _qcut_expand_fn_mc(
+    tape: QuantumTape,
+    shots: Optional[int] = None,
+    device_wires: Optional[Wires] = None,
+    classical_processing_fn: Optional[callable] = None,
+    max_depth: int = 1,
+):
+    """Expansion function for sample-based circuit cutting.
+
+    Expands operations until reaching a depth that includes :class:`~.WireCut` operations.
+    """
+    # pylint: disable=unused-argument
+    for op in tape.operations:
+        if isinstance(op, WireCut):
+            return tape
+
+    if max_depth > 0:
+        return cut_circuit_mc.expand_fn(tape.expand(), max_depth=max_depth - 1)
+
+    raise ValueError(
+        "No WireCut operations found in the circuit. Consider increasing the max_depth value if "
+        "operations or nested tapes contain WireCut operations."
+    )
+
+
+cut_circuit_mc.expand_fn = _qcut_expand_fn_mc
+
+
 def _get_symbol(i):
     """Finds the i-th ASCII symbol. Works for lowercase and uppercase letters, allowing i up to
     51."""
