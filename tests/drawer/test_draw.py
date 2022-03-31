@@ -20,7 +20,7 @@ from functools import partial
 import pennylane as qml
 from pennylane import numpy as np
 
-from pennylane.transforms import draw
+from pennylane.drawer import draw
 
 
 @qml.qnode(qml.device("default.qubit", wires=(0, "a", 1.234)))
