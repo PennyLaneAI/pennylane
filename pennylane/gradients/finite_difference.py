@@ -270,7 +270,7 @@ def finite_diff(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return [], lambda _: ()
+        return [], lambda _: qml.math.zeros([tape.output_dim, 0])
 
     if validate_params:
         if "grad_method" not in tape._par_info[0]:
