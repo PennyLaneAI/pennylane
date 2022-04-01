@@ -16,7 +16,7 @@ This module contains the functions needed for computing the particle number obse
 """
 from pennylane import numpy as np
 
-from .hf.observable import qubit_observable
+from .observable_hf import qubit_observable
 
 
 def particle_number(orbitals):
