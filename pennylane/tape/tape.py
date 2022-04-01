@@ -27,21 +27,6 @@ from pennylane.measurements import Sample
 
 from .unwrap import UnwrapTape
 
-# CV ops still need to support state preparation operations prior to any
-# other operation for PennyLane-SF tests to pass.
-STATE_PREP_OPS = (
-    qml.BasisState,
-    qml.QubitStateVector,
-    # qml.CatState,
-    # qml.CoherentState,
-    # qml.FockDensityMatrix,
-    # qml.DisplacedSqueezedState,
-    # qml.FockState,
-    # qml.FockStateVector,
-    # qml.ThermalState,
-    # qml.GaussianState,
-)
-
 
 OPENQASM_GATES = {
     "CNOT": "cx",
@@ -439,6 +424,8 @@ class QuantumTape(AnnotatedQueue):
     # construction methods
     # ========================================================
 
+    _queue_category = "_ops"
+
     def _process_queue(self):
         """Process the annotated queue, creating a list of quantum
         operations and measurement processes.
@@ -459,43 +446,12 @@ class QuantumTape(AnnotatedQueue):
 
         for obj, info in self._queue.items():
 
-            if isinstance(obj, QuantumTape):
-                self._ops.append(obj)
+            if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
+                getattr(self, obj._queue_category).append(obj)
 
-            elif isinstance(obj, qml.operation.Operation) and not info.get("owner", False):
-                # operation objects with no owners
+                obj.inverse = info.get("inverse", getattr(obj, "inverse", False))
 
-                if self._measurements:
-                    raise ValueError(
-                        f"Quantum operation {obj} must occur prior to any measurements."
-                    )
-
-                # invert the operation if required
-                obj.inverse = info.get("inverse", obj.inverse)
-
-                if isinstance(obj, STATE_PREP_OPS):
-                    if self._ops:
-                        raise ValueError(
-                            f"State preparation operation {obj} must occur prior to any quantum operations."
-                        )
-
-                    self._prep.append(obj)
-                else:
-                    self._ops.append(obj)
-
-            elif isinstance(obj, qml.measurements.MeasurementProcess):
-
-                if obj.return_type == qml.measurements.MidMeasure:
-
-                    # TODO: for now, consider mid-circuit measurements as tape
-                    # operations such that the order of the operators in the
-                    # tape is correct
-                    self._ops.append(obj)
-
-                else:
-
-                    # measurement process
-                    self._measurements.append(obj)
+            if isinstance(obj, qml.measurements.MeasurementProcess):
 
                     # attempt to infer the output dimension
                     if obj.return_type is qml.measurements.Probability:

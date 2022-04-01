@@ -49,6 +49,8 @@ class Hadamard(Observable, Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
+    _queue_category = "_ops"
+
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "H"
 
@@ -180,6 +182,8 @@ class PauliX(Observable, Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "X"
+
+    _queue_category = "_ops"
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "X"
@@ -318,6 +322,8 @@ class PauliY(Observable, Operation):
 
     basis = "Y"
 
+    _queue_category = "_ops"
+
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Y"
 
@@ -454,6 +460,8 @@ class PauliZ(Observable, Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     basis = "Z"
+
+    _queue_category = "_ops"
 
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "Z"

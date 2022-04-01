@@ -215,9 +215,14 @@
   accessed via the top-level `qml` namespace.
   [(#2396)](https://github.com/PennyLaneAI/pennylane/pull/2396)
 
+* Instead of checking types, objects are processed in `QuantumTape`'s based on a new `_queue_category` property.
+
 <h3>Deprecations</h3>
 
 <h3>Breaking changes</h3>
+
+* Errors will no longer be raised if an generic `Operation`'s occur before state prep ops or
+  anything comes after a `MeasurementProcess` in construction of a `QuantumTape`.
 
 * The `update_stepsize` method is being deleted from `GradientDescentOptimizer` and its child
   optimizers.  The `stepsize` property can be interacted with directly instead.

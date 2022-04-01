@@ -1063,6 +1063,18 @@ class Operator(abc.ABC):
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
+    @property
+    def _queue_category(self):
+        """Used for sorting objects into their respective lists in `QuantumTape` objects.
+        
+        Options are:
+            * `"_prep"`
+            * `"_ops"`
+            * `"_measurements"`
+            * `None`
+        """
+        return "_ops"
+
     def expand(self):
         """Returns a tape that has recorded the decomposition of the operator.
 
@@ -1467,6 +1479,8 @@ class Observable(Operator):
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
+
+    _queue_category = None
 
     # pylint: disable=abstract-method
     return_type = None
