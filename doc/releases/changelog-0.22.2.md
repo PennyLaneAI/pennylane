@@ -4,9 +4,9 @@
 
 <h3>Bug fixes</h3>
 
-* Readded the changes of
-  [(#1894)](https://github.com/PennyLaneAI/pennylane/pull/1894/) that have not
-  shipped with `v0.22.0`.
+* Most compilation transforms, and relevant subroutines, have been updated to
+  support just-in-time compilation with jax.jit. This fix was intended to be
+  included in `v0.22.0`, but due to a bug was incomplete.
   [(#2397)](https://github.com/PennyLaneAI/pennylane/pull/2397)
 
 <h3>Documentation</h3>
