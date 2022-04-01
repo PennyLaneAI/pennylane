@@ -974,6 +974,7 @@ def cut_circuit_mc(
             and the output should be a single number within the interval :math:`[-1, 1]`.
             If not supplied, the transform will output samples.
         max_depth (int): The maximum depth used to expand the circuit while searching for wire cuts.
+            Only applicable when transforming a QNode.
 
     Returns:
         Callable: Function which accepts the same arguments as the QNode.
