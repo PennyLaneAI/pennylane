@@ -43,7 +43,7 @@ class GateFabric(Operation):
         :width: 100%
         :target: javascript:void(0);
 
-    The gate element :math:`\hat{Q}(\theta, \phi)` (`Anselmetti et al. (2021) <https://doi.org/10.1088/1367-2630/ac2cb3>`_) 
+    The gate element :math:`\hat{Q}(\theta, \phi)` (`Anselmetti et al. (2021) <https://doi.org/10.1088/1367-2630/ac2cb3>`_)
     is composed of a four-qubit spin-adapted spatial orbital rotation gate, which is implemented by the :class:`~.OrbitalRotation()`
     operation and a four-qubit diagonal pair-exchange gate, which is equivalent to the :class:`~.DoubleExcitation()`
     operation. In addition to these two gates, the gate element :math:`\hat{Q}(\theta, \phi)` can also include an optional
