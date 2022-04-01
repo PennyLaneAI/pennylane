@@ -177,7 +177,7 @@ class RotosolveOptimizer:
     and
     `Ostaszewski et al. (2019) <https://quantum-journal.org/papers/q-2021-01-28-391/>`_,
     and the reconstruction method used for more general operations is described in
-    `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
+    `Wierichs et al. (2022) <https://doi.org/10.22331/q-2022-03-30-677>`_.
 
     .. warning::
 
@@ -633,7 +633,7 @@ class RotosolveOptimizer:
         The closed form expression used here was derived in
         `Vidal & Theis (2018) <https://arxiv.org/abs/1812.06323>`__ ,
         `Parrish et al (2019) <https://arxiv.org/abs/1904.03206>`__ and
-        `Ostaszewski et al (2019) <https://arxiv.org/abs/1905.09692>`__.
+        `Ostaszewski et al (2021) <https://doi.org/10.22331/q-2021-01-28-391>`__.
         We use the notation of Appendix A of the last of these references,
         although we allow for an arbitrary frequency instead of restricting
         to :math:`f=1`.
