@@ -95,10 +95,10 @@ from pennylane import qchem
 )
 def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, two_ref):
     r"""Test that electron_integrals returns the correct values."""
-    mol = qchem.hf.Molecule(symbols, geometry)
+    mol = qchem.Molecule(symbols, geometry)
     args = []
 
-    e, one, two = qchem.hf.electron_integrals(mol, core=core, active=active)(*args)
+    e, one, two = qchem.electron_integrals(mol, core=core, active=active)(*args)
 
     assert np.allclose(e, e_core)
     assert np.allclose(one, one_ref)
@@ -203,9 +203,9 @@ def test_electron_integrals(symbols, geometry, core, active, e_core, one_ref, tw
 )
 def test_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref):
     r"""Test that fermionic_hamiltonian returns the correct Hamiltonian."""
-    mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
-    h = qchem.hf.fermionic_hamiltonian(mol)(*args)
+    h = qchem.fermionic_hamiltonian(mol)(*args)
 
     assert np.allclose(h[0], coeffs_h_ref)
     assert h[1] == ops_h_ref
@@ -266,9 +266,9 @@ def test_fermionic_hamiltonian(symbols, geometry, alpha, coeffs_h_ref, ops_h_ref
 def test_mol_hamiltonian(symbols, geometry, h_ref_data):
     r"""Test that mol_hamiltonian returns the correct Hamiltonian."""
 
-    mol = qchem.hf.Molecule(symbols, geometry)
+    mol = qchem.Molecule(symbols, geometry)
     args = []
-    h = qchem.hf.mol_hamiltonian(mol)(*args)
+    h = qchem.mol_hamiltonian(mol)(*args)
     h_ref = qml.Hamiltonian(h_ref_data[0], h_ref_data[1])
 
     assert np.allclose(h.terms()[0], h_ref.terms()[0])
@@ -290,7 +290,7 @@ def test_gradient_expvalH():
         requires_grad=True,
     )
 
-    mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
     dev = qml.device("default.qubit", wires=4)
 
@@ -300,7 +300,7 @@ def test_gradient_expvalH():
             qml.PauliX(0)
             qml.PauliX(1)
             qml.DoubleExcitation(0.22350048111151138, wires=[0, 1, 2, 3])
-            h_qubit = qchem.hf.mol_hamiltonian(mol)(*args)
+            h_qubit = qchem.mol_hamiltonian(mol)(*args)
             return qml.expval(h_qubit)
 
         return circuit
