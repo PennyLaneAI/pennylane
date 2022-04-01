@@ -1700,7 +1700,7 @@ class CutStrategy:
     ):
         """Deriving cutting constraints from given devices and parameters."""
 
-        self.max_free_wires = self.max_free_wires or self.min_free_wires
+        self.max_free_wires = self.max_free_wires
         if isinstance(self.num_fragments_probed, int):
             self.num_fragments_probed = [self.num_fragments_probed]
         if isinstance(self.num_fragments_probed, (list, tuple)):
@@ -1739,6 +1739,8 @@ class CutStrategy:
                 "The overall `imbalance_tolerance` is expected to be a non-negative number, "
                 f"got {type(self.imbalance_tolerance)} with value {self.imbalance_tolerance}."
             )
+
+        self.max_free_wires = self.max_free_wires or self.min_free_wires
 
     def get_cut_kwargs(
         self,
@@ -2133,6 +2135,8 @@ def kahypar_cut(
     # compress() ignores the extra hyperwires at the end if there is any.
     cut_edges = list(compress(graph.edges, cut_edge_mask))
 
+    # fragment_sizes = [hypergraph.blockSize(p) for p in range(num_fragments)]
+    # return cut_edges, fragment_sizes
     return cut_edges
 
 
@@ -2241,6 +2245,7 @@ def find_and_place_cuts(
     graph: MultiDiGraph,
     cut_method: Callable = kahypar_cut,
     cut_strategy: CutStrategy = None,
+    deferred_measurement: bool = False,
     replace_wire_cuts=False,
     **kwargs,
 ) -> MultiDiGraph:
@@ -2349,12 +2354,29 @@ def find_and_place_cuts(
             for cut_kwargs in cut_kwargs_probed
             # kwargs has higher precedence in case of key collisions.
         }
+        print({k: len(v) for k, v in cut_edges_probed.items()})
+
+        valid_cut_edges = {}
+        for k, cut_edges in cut_edges_probed.items():
+            cut_graph = place_wire_cuts(graph=graph, cut_edges=cut_edges)
+            replace_wire_cut_nodes(cut_graph)
+            frags, comm_graph = fragment_graph(cut_graph)
+            if all(
+                len({w for _, _, w in f.edges(data="wire")})
+                + comm_graph.degree()[i] * deferred_measurement
+                <= cut_strategy.max_free_wires
+                for i, f in enumerate(frags)
+            ):
+                valid_cut_edges[k] = cut_edges
 
         # Filtering to get the optimal cuts by looking at the number of cuts and num_fragments.
         # Can have fancier ways of evaluating cuts other than counting cut edges.
-        min_cuts = min(len(cut_edges) for cut_edges in cut_edges_probed)
-        optim_cuts = {k: v for k, v in cut_edges_probed if v == min_cuts}
+        min_cuts = min(len(cut_edges) for cut_edges in valid_cut_edges.values())
+        optim_cuts = {
+            k: cut_edges for k, cut_edges in valid_cut_edges.items() if len(cut_edges) == min_cuts
+        }
         cut_edges = optim_cuts[min(optim_cuts)]  # choose the lowest num_fragments among best ones.
+        print(optim_cuts)
 
     else:
         cut_edges = cut_method(cut_graph, **kwargs)
