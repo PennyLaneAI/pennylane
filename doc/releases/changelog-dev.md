@@ -211,9 +211,17 @@
 * Circuit cutting now performs expansion to search for wire cuts in contained operations or tapes.
   [(#2340)](https://github.com/PennyLaneAI/pennylane/pull/2340)
 
+* The `qml.draw` and `qml.draw_mpl` transforms are now located in the `drawer` module. They can still be
+  accessed via the top-level `qml` namespace.
+  [(#2396)](https://github.com/PennyLaneAI/pennylane/pull/2396)
+
 <h3>Deprecations</h3>
 
 <h3>Breaking changes</h3>
+
+* The `update_stepsize` method is being deleted from `GradientDescentOptimizer` and its child
+  optimizers.  The `stepsize` property can be interacted with directly instead.
+  [(#2370)](https://github.com/PennyLaneAI/pennylane/pull/2370)
 
 * Most optimizers no longer flatten and unflatten arguments during computation. Due to this change, user
   provided gradient functions *must* return the same shape as `qml.grad`.
