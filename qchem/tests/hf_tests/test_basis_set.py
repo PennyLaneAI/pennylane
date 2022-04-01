@@ -16,29 +16,30 @@ Unit tests for generating basis set default parameters.
 """
 # pylint: disable=no-self-use
 import pytest
+
 from pennylane import numpy as np
 from pennylane import qchem
-
-basis_data_H = [
-    (
-        "sto-3g",
-        "H",
-        1,
-        [(0, 0, 0)],
-        [0.3425250914e01, 0.6239137298e00, 0.1688554040e00],
-        [0.1543289673e00, 0.5353281423e00, 0.4446345422e00],
-        [0.0000000000e00, 0.0000000000e00, -0.694349000e00],
-    )
-]
 
 
 class TestBasis:
     """Tests for generating basis set default parameters"""
 
-    @pytest.mark.parametrize("basis_data", basis_data_H)
-    def test_basisfunction(self, basis_data):
+    @pytest.mark.parametrize(
+        ("basis_name", "atom_name", "l", "alpha", "coeff", "r"),
+        [
+            (
+                "sto-3g",
+                "H",
+                (0, 0, 0),
+                # data manually copied from https://www.basissetexchange.org/
+                [0.3425250914e01, 0.6239137298e00, 0.1688554040e00],
+                [0.1543289673e00, 0.5353281423e00, 0.4446345422e00],
+                [0.0000000000e00, 0.0000000000e00, -0.694349000e00],
+            ),
+        ],
+    )
+    def test_basisfunction(self, basis_name, atom_name, l, alpha, coeff, r):
         """Test that BasisFunction class creates basis function objects correctly."""
-        _, _, _, l, alpha, coeff, r = basis_data
 
         basis_function = qchem.BasisFunction(l, alpha, coeff, r)
 
@@ -50,15 +51,122 @@ class TestBasis:
         assert np.allclose(basis_function.params[1], coeff)
         assert np.allclose(basis_function.params[2], r)
 
-    @pytest.mark.parametrize("basis_data", basis_data_H)
-    def test_atom_basis_data(self, basis_data):
+    @pytest.mark.parametrize(
+        ("basis_name", "atom_name", "params_ref"),
+        [  # data manually copied from https://www.basissetexchange.org/
+            (
+                "sto-3g",
+                "H",
+                (
+                    [
+                        (
+                            (0, 0, 0),  # l
+                            [0.3425250914e01, 0.6239137298e00, 0.1688554040e00],  # alpha
+                            [0.1543289673e00, 0.5353281423e00, 0.4446345422e00],  # coeff
+                        )
+                    ]
+                ),
+            ),
+            (
+                "6-31g",
+                "H",
+                (
+                    (
+                        (0, 0, 0),  # l
+                        [0.1873113696e02, 0.2825394365e01, 0.6401216923e00],  # alpha
+                        [0.3349460434e-01, 0.2347269535e00, 0.8137573261e00],  # coeff
+                    ),
+                    (
+                        (0, 0, 0),  # l
+                        [0.1612777588e00],  # alpha
+                        [1.0000000],  # coeff
+                    ),
+                ),
+            ),
+            (
+                "6-31g",
+                "O",
+                (
+                    (
+                        (0, 0, 0),  # l
+                        [
+                            0.5484671660e04,
+                            0.8252349460e03,
+                            0.1880469580e03,
+                            0.5296450000e02,
+                            0.1689757040e02,
+                            0.5799635340e01,
+                        ],  # alpha
+                        [
+                            0.1831074430e-02,
+                            0.1395017220e-01,
+                            0.6844507810e-01,
+                            0.2327143360e00,
+                            0.4701928980e00,
+                            0.3585208530e00,
+                        ],  # coeff
+                    ),
+                    (
+                        (0, 0, 0),  # l
+                        [0.1553961625e02, 0.3599933586e01, 0.1013761750e01],  # alpha
+                        [-0.1107775495e00, -0.1480262627e00, 0.1130767015e01],
+                        # coeff
+                    ),
+                    (
+                        (1, 0, 0),  # l
+                        [0.1553961625e02, 0.3599933586e01, 0.1013761750e01],  # alpha
+                        [0.7087426823e-01, 0.3397528391e00, 0.7271585773e00],  # coeff
+                    ),
+                    (
+                        (0, 1, 0),  # l
+                        [0.1553961625e02, 0.3599933586e01, 0.1013761750e01],  # alpha
+                        [0.7087426823e-01, 0.3397528391e00, 0.7271585773e00],  # coeff
+                    ),
+                    (
+                        (0, 0, 1),  # l
+                        [0.1553961625e02, 0.3599933586e01, 0.1013761750e01],  # alpha
+                        [0.7087426823e-01, 0.3397528391e00, 0.7271585773e00],  # coeff
+                    ),
+                    (
+                        (0, 0, 0),  # l
+                        [0.2700058226e00],  # alpha
+                        [0.1000000000e01],  # coeff
+                    ),
+                    (
+                        (1, 0, 0),  # l
+                        [0.2700058226e00],  # alpha
+                        [0.1000000000e01],  # coeff
+                    ),
+                    (
+                        (0, 1, 0),  # l
+                        [0.2700058226e00],  # alpha
+                        [0.1000000000e01],  # coeff
+                    ),
+                    (
+                        (0, 0, 1),  # l
+                        [0.2700058226e00],  # alpha
+                        [0.1000000000e01],  # coeff
+                    ),
+                ),
+            ),
+        ],
+    )
+    def test_atom_basis_data(self, basis_name, atom_name, params_ref):
         """Test that correct basis set parameters are generated for a given atom."""
-        basis, symbol, _, l, alpha, coeff, _ = basis_data
-        params = qchem.atom_basis_data(basis, symbol)[0]
+        params = qchem.atom_basis_data(basis_name, atom_name)
 
-        assert np.allclose(params[0], l)
-        assert np.allclose(params[1], alpha)
-        assert np.allclose(params[2], coeff)
+        l = [p[0] for p in params]
+        l_ref = [p[0] for p in params_ref]
+
+        alpha = [p[1] for p in params]
+        alpha_ref = [p[1] for p in params_ref]
+
+        coeff = [p[2] for p in params]
+        coeff_ref = [p[2] for p in params_ref]
+
+        assert l == l_ref
+        assert alpha == alpha_ref
+        assert coeff == coeff_ref
 
     basis_data_HF = [
         (
