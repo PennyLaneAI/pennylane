@@ -138,10 +138,6 @@
 
 <h3>Improvements</h3>
 
-* Most compilation transforms, and relevant subroutines, have been updated to
-  support just-in-time compilation with `jax.jit`.
-  [(#1894)](https://github.com/PennyLaneAI/pennylane/pull/1894/)
-
 * The `qml.specs` transform now accepts an `expansion_strategy` keyword argument.
   [(#2395)](https://github.com/PennyLaneAI/pennylane/pull/2395)
 
