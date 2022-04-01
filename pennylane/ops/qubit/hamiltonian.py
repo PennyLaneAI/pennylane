@@ -567,7 +567,7 @@ class Hamiltonian(Observable):
         r"""The scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
             self_coeffs = copy(self.coeffs)
-            coeffs = qml.math.multiply(a, self_coeffs)
+            coeffs = qml.math.multiply(qml.math.cast_like([a], self_coeffs), self_coeffs)
             return qml.Hamiltonian(coeffs, self.ops.copy())
 
         raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
@@ -582,26 +582,31 @@ class Hamiltonian(Observable):
 
     def __iadd__(self, H):
         r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        if not isinstance(H, Observable):
+            raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+
         if isinstance(H, Hamiltonian):
             self._coeffs = qml.math.concatenate([self._coeffs, H.coeffs], axis=0)
             self._ops.extend(H.ops.copy())
-            self.simplify()
-            return self
 
         if isinstance(H, (Tensor, Observable)):
             self._coeffs = qml.math.concatenate(
                 [self._coeffs, qml.math.cast_like([1.0], self._coeffs)], axis=0
             )
             self._ops.append(H)
-            self.simplify()
-            return self
 
-        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+        # HOTFIX: repeat some of the __init__ logic
+        self._hyperparameters = {"ops": self._ops}
+        self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
+        self._grouping_indices = None
+        self.data = [self._coeffs[i] for i in range(qml.math.shape(self._coeffs)[0])]
+        self.simplify()
+        return self
 
     def __imul__(self, a):
         r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
         if isinstance(a, (int, float)):
-            self._coeffs = qml.math.multiply(a, self._coeffs)
+            self._coeffs = qml.math.multiply(qml.math.cast_like([a], self._coeffs), self._coeffs)
             return self
 
         raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")

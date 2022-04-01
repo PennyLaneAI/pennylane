@@ -687,6 +687,15 @@ class TestHamiltonian:
         H1 += H2
         assert H.compare(H1)
 
+    def test_hamiltonian_iadd_more_wires(self):
+        """Tests that Hamiltonians are added inline correctly
+        when they result in addition of new wires"""
+        H = qml.PauliX(0)
+        H += qml.PauliZ(2)
+        H_expected = qml.PauliX(0) + qml.PauliZ(2)
+        assert H.wires.tolist() == [0, 2]
+        assert H.compare(H_expected)
+
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
     def test_hamiltonian_imul(self, coeff, H, res):
         """Tests that scalars and Hamiltonians are multiplied inline correctly"""
