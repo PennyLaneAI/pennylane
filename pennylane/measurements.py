@@ -286,7 +286,7 @@ class MeasurementProcess:
     def _queue_category(self):
         """Denotes that `MeasurementProcess` objects should be processed into the `_measurements` list
         in `QuantumTape` objects."""
-        return "_ops" if self.return_type is MidMeasure else"_measurements"
+        return "_ops" if self.return_type is MidMeasure else "_measurements"
 
     @property
     def hash(self):

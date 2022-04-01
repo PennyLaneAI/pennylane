@@ -22,6 +22,7 @@ from pennylane.templates.state_preparations import BasisStatePreparation, Motton
 
 state_prep_ops = {"BasisState", "QubitStateVector", "QubitDensityMatrix"}
 
+
 class BasisState(Operation):
     r"""BasisState(n, wires)
     Prepares a single computational basis state.

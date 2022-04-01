@@ -1066,7 +1066,7 @@ class Operator(abc.ABC):
     @property
     def _queue_category(self):
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
-        
+
         Options are:
             * `"_prep"`
             * `"_ops"`

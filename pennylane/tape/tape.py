@@ -453,17 +453,17 @@ class QuantumTape(AnnotatedQueue):
 
             if isinstance(obj, qml.measurements.MeasurementProcess):
 
-                    # attempt to infer the output dimension
-                    if obj.return_type is qml.measurements.Probability:
-                        self._output_dim += 2 ** len(obj.wires)
-                    elif obj.return_type is qml.measurements.State:
-                        continue  # the output_dim is worked out automatically
-                    else:
-                        self._output_dim += 1
+                # attempt to infer the output dimension
+                if obj.return_type is qml.measurements.Probability:
+                    self._output_dim += 2 ** len(obj.wires)
+                elif obj.return_type is qml.measurements.State:
+                    continue  # the output_dim is worked out automatically
+                else:
+                    self._output_dim += 1
 
-                    # check if any sampling is occuring
-                    if obj.return_type is qml.measurements.Sample:
-                        self.is_sampled = True
+                # check if any sampling is occuring
+                if obj.return_type is qml.measurements.Sample:
+                    self.is_sampled = True
 
         self._update()
 
