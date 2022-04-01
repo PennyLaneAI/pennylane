@@ -19,8 +19,8 @@ import itertools
 import string
 import sys
 from itertools import product
-from pathlib import Path
 from os import environ
+from pathlib import Path
 
 import pytest
 from flaky import flaky
@@ -99,6 +99,40 @@ with qml.tape.QuantumTape() as mcm_tape:
     qml.WireCut(wires=1)
     qml.CNOT(wires=[0, 1])
     qml.expval(qml.PauliZ(wires=[0]))
+
+
+with qml.tape.QuantumTape() as frag0:
+    qml.Hadamard(wires=[0])
+    qml.RX(0.432, wires=[0])
+    qml.RY(0.543, wires=[1])
+    qml.CNOT(wires=[0, 1])
+    qcut.MeasureNode(wires=[1])
+    qcut.PrepareNode(wires=[2])
+    qml.RZ(0.321, wires=[2])
+    qml.CNOT(wires=[0, 2])
+    qcut.MeasureNode(wires=[2])
+    qcut.PrepareNode(wires=[3])
+    qml.CNOT(wires=[0, 3])
+    qml.sample(qml.Projector([1], wires=[0]))
+    qml.sample(qml.Projector([1], wires=[3]))
+
+with qml.tape.QuantumTape() as frag1:
+    qcut.PrepareNode(wires=[0])
+    qml.CNOT(wires=[0, 1])
+    qcut.MeasureNode(wires=[0])
+    qml.Hadamard(wires=[1])
+    qcut.PrepareNode(wires=[2])
+    qml.CNOT(wires=[2, 1])
+    qcut.MeasureNode(wires=[2])
+    qml.sample(qml.Projector([1], wires=[1]))
+
+
+frag_edge_data = [
+    (0, 1, {"pair": (frag0.operations[4], frag1.operations[0])}),
+    (1, 0, {"pair": (frag1.operations[2], frag0.operations[5])}),
+    (0, 1, {"pair": (frag0.operations[8], frag1.operations[4])}),
+    (1, 0, {"pair": (frag1.operations[6], frag0.operations[9])}),
+]
 
 
 def compare_nodes(nodes, expected_wires, expected_names):
@@ -1397,7 +1431,7 @@ class TestGraphToTape:
 
         with pytest.raises(
             ValueError,
-            match="Invalid return type. Only expecation value and sampling measurements ",
+            match="Invalid return type. Only expectation value and sampling measurements ",
         ):
             [qcut.graph_to_tape(sg) for sg in subgraphs]
 
@@ -1811,40 +1845,9 @@ class TestExpandFragmentTapesMC:
         expanded correctly.
         """
 
-        with qml.tape.QuantumTape() as tape0:
-            qml.Hadamard(wires=[0])
-            qml.RX(0.432, wires=[0])
-            qml.RY(0.543, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qcut.MeasureNode(wires=[1])
-            qcut.PrepareNode(wires=[2])
-            qml.RZ(0.321, wires=[2])
-            qml.CNOT(wires=[0, 2])
-            qcut.MeasureNode(wires=[2])
-            qcut.PrepareNode(wires=[3])
-            qml.CNOT(wires=[0, 3])
-            qml.sample(qml.Projector([1], wires=[0]))
-            qml.sample(qml.Projector([1], wires=[3]))
+        frags = [frag0, frag1]
 
-        with qml.tape.QuantumTape() as tape1:
-            qcut.PrepareNode(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            qcut.MeasureNode(wires=[0])
-            qml.Hadamard(wires=[1])
-            qcut.PrepareNode(wires=[2])
-            qml.CNOT(wires=[2, 1])
-            qcut.MeasureNode(wires=[2])
-            qml.sample(qml.Projector([1], wires=[1]))
-
-        tapes = [tape0, tape1]
-
-        edge_data = [
-            (0, 1, {"pair": (tape0.operations[4], tape1.operations[0])}),
-            (1, 0, {"pair": (tape1.operations[2], tape0.operations[5])}),
-            (0, 1, {"pair": (tape0.operations[8], tape1.operations[4])}),
-            (1, 0, {"pair": (tape1.operations[6], tape0.operations[9])}),
-        ]
-        communication_graph = MultiDiGraph(edge_data)
+        communication_graph = MultiDiGraph(frag_edge_data)
 
         fixed_choice = np.array([[4, 6], [1, 2], [2, 3], [3, 0]])
         with monkeypatch.context() as m:
@@ -1854,7 +1857,7 @@ class TestExpandFragmentTapesMC:
                 lambda a, size, replace: fixed_choice,
             )
             fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
-                tapes, communication_graph, 2
+                frags, communication_graph, 2
             )
 
         assert np.allclose(settings, fixed_choice)
@@ -1957,6 +1960,153 @@ class TestExpandFragmentTapesMC:
             for op, exp_op in zip(ops, expected_ops):
                 assert op.name == exp_op.name
                 assert op.wires == exp_op.wires
+
+
+class TestMCPostprocessing:
+    """
+    Tests that the postprocessing for circuits containing sample measurements
+    gives the correct results.
+    """
+
+    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
+    def test_sample_postprocess(self, interface):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        lib = pytest.importorskip(interface)
+        fragment_tapes = [frag0, frag1]
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [qml.math.convert_like(fs, lib.ones(1)) for fs in fixed_samples]
+
+        postprocessed = qcut.qcut_processing_fn_sample(
+            convert_fixed_samples, communication_graph, shots
+        )
+        expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
+
+        assert np.allclose(postprocessed[0], expected_postprocessed[0])
+        assert type(convert_fixed_samples[0]) == type(postprocessed[0])
+
+    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
+    def test_mc_sample_postprocess(self, interface, mocker):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        lib = pytest.importorskip(interface)
+        fragment_tapes = [frag0, frag1]
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [qml.math.convert_like(fs, lib.ones(1)) for fs in fixed_samples]
+
+        def fn(x):
+            if x[0] == 0 and x[1] == 0:
+                return 1
+            if x[0] == 0 and x[1] == 1:
+                return -1
+            if x[0] == 1 and x[1] == 0:
+                return -1
+            if x[0] == 1 and x[1] == 1:
+                return 1
+
+        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+
+        spy_prod = mocker.spy(np, "prod")
+        spy_hstack = mocker.spy(np, "hstack")
+
+        postprocessed = qcut.qcut_processing_fn_mc(
+            convert_fixed_samples, communication_graph, fixed_settings, shots, fn
+        )
+
+        expected = -85.33333333333333
+
+        prod_args = [
+            np.array([1.0, 1.0, -1.0, 1.0]),
+            [0.5, -0.5, 0.5, -0.5],
+            np.array([1.0, -1.0, -1.0, -1.0]),
+            [-0.5, -0.5, 0.5, 0.5],
+            np.array([1.0, -1.0, 1.0, 1.0]),
+            [0.5, 0.5, -0.5, 0.5],
+        ]
+
+        hstack_args = [
+            [np.array([1.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, 1.0]), np.array([-1.0, 1.0])],
+            [np.array([0.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, -1.0]), np.array([-1.0, -1.0])],
+            [np.array([0.0, 1.0]), np.array([1.0])],
+            [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
+        ]
+
+        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
+            assert np.allclose(arg[0][0], expected_arg)
+
+        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
+            for arg, expected_arg in zip(args[0][0], expected_args):
+                assert np.allclose(arg, expected_arg)
+
+        assert np.isclose(postprocessed, expected)
+        assert type(convert_fixed_samples[0]) == type(postprocessed)
+
+    def test_reshape_results(self):
+        """
+        Tests that results are reshaped correctly using the `_reshape_results`
+        helper function
+        """
+
+        results = [
+            np.array([[0.0], [1.0]]),
+            np.array([[0.0], [1.0]]),
+            np.array([[0.0], [1.0]]),
+            np.array([[0.0], [1.0]]),
+            np.array([[1.0], [1.0]]),
+            np.array([[1.0]]),
+            np.array([[0.0]]),
+            np.array([[1.0]]),
+            np.array([[1.0]]),
+            np.array([[0.0]]),
+        ]
+
+        expected_reshaped = np.array(
+            [
+                [np.array([0.0, 1.0]), np.array([1.0])],
+                [np.array([0.0, 1.0]), np.array([0.0])],
+                [np.array([0.0, 1.0]), np.array([1.0])],
+                [np.array([0.0, 1.0]), np.array([1.0])],
+                [np.array([1.0, 1.0]), np.array([0.0])],
+            ]
+        )
+
+        edge_data = [(0, 1, {"pair": (qcut.MeasureNode(wires=[1]), qcut.PrepareNode(wires=[1]))})]
+        communication_graph = MultiDiGraph(edge_data)
+        shots = 5
+
+        reshaped = qcut._reshape_results(results, communication_graph, shots)
+
+        for resh, exp_resh in zip(reshaped, expected_reshaped):
+            for arr, exp_arr in zip(resh, exp_resh):
+                assert np.allclose(arr, exp_arr)
 
 
 class TestContractTensors:

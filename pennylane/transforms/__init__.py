@@ -32,8 +32,6 @@ that compute the desired quantity.
     ~transforms.classical_jacobian
     ~batch_params
     ~batch_input
-    ~draw
-    ~draw_mpl
     ~transforms.get_unitary_matrix
     ~metric_tensor
     ~adjoint_metric_tensor
@@ -124,6 +122,8 @@ There are also low-level functions that can be used to build up the circuit cutt
     ~transforms.qcut.qcut_processing_fn
     ~transforms.qcut.CutStrategy
     ~transforms.qcut.expand_fragment_tapes_mc
+    ~transforms.qcut.qcut_processing_fn_sample
+    ~transforms.qcut.qcut_processing_fn_mc
     ~transforms.qcut.kahypar_cut
     ~transforms.qcut.place_wire_cuts
     ~transforms.qcut.find_and_place_cuts
@@ -175,7 +175,6 @@ from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
-from .draw import draw, draw_mpl
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
