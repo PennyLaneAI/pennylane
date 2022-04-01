@@ -2238,7 +2238,11 @@ def _remove_existing_cuts(graph: MultiDiGraph) -> MultiDiGraph:
 
 
 def find_and_place_cuts(
-    graph: MultiDiGraph, cut_method: Callable = kahypar_cut, replace_wire_cuts=False, **kwargs
+    graph: MultiDiGraph,
+    cut_method: Callable = kahypar_cut,
+    cut_strategy: CutStrategy = None,
+    replace_wire_cuts=False,
+    **kwargs,
 ) -> MultiDiGraph:
     """Automatically finds and places optimal :class:`~.WireCut` nodes into a given tape-converted graph
     using a customizable graph partitioning function. Preserves existing placed cuts.
@@ -2251,6 +2255,9 @@ def find_and_place_cuts(
             ``pip install kahypar`` for Linux and Mac users or visiting the
             instructions `here <https://kahypar.org>`__ to compile from
             source for Windows users.
+        cut_strategy (CutStrategy): Strategy for optimizing cutting parameters based on device
+            constraints. Defaults to ``None`` in which case ``kwargs`` must be fully specified
+            for passing to the ``cut_method``.
         replace_wire_cuts (bool): Whether to replace :class:`~.WireCut` nodes with
             :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs. Defaults to ``False``.
         kwargs: Additional keyword arguments to be passed to the callable ``cut_method``.
@@ -2261,7 +2268,7 @@ def find_and_place_cuts(
     **Example**
 
     Consider the following 4-wire circuit with a single CNOT gate connecting the top (wires
-    ``[1, 2]``) and bottom (wires ``["a", "b"]``) halves of the circuit. Note there's a
+    ``[0, 1]``) and bottom (wires ``["a", "b"]``) halves of the circuit. Note there's a
     :class:`~.WireCut` manually placed into the circuit already.
 
     .. code-block:: python
@@ -2334,7 +2341,24 @@ def find_and_place_cuts(
 
     cut_graph = _remove_existing_cuts(graph)
 
-    cut_edges = cut_method(cut_graph, **kwargs)
+    if isinstance(cut_strategy, CutStrategy):
+        cut_kwargs_probed = cut_strategy.get_cut_kwargs(cut_graph)
+        # kwargs has higher precedence for colliding keys
+        cut_edges_probed = {
+            cut_kwargs["num_fragments"]: cut_method(cut_graph, **{**cut_kwargs, **kwargs})
+            for cut_kwargs in cut_kwargs_probed
+            # kwargs has higher precedence in case of key collisions.
+        }
+
+        # Filtering to get the optimal cuts by looking at the number of cuts and num_fragments.
+        # Can have fancier ways of evaluating cuts other than counting cut edges.
+        min_cuts = min(len(cut_edges) for cut_edges in cut_edges_probed)
+        optim_cuts = {k: v for k, v in cut_edges_probed if v == min_cuts}
+        cut_edges = optim_cuts[min(optim_cuts)]  # choose the lowest num_fragments among best ones.
+
+    else:
+        cut_edges = cut_method(cut_graph, **kwargs)
+
     cut_graph = place_wire_cuts(graph=graph, cut_edges=cut_edges)
 
     if replace_wire_cuts:
