@@ -2468,6 +2468,48 @@ class TestCutCircuitMCTransform:
         assert res.shape == (shots, 2)
         assert type(res) == np.ndarray
 
+    @pytest.mark.parametrize(
+        "interface_import,interface",
+        [
+            ("autograd.numpy", "autograd"),
+            ("tensorflow", "tensorflow"),
+            ("torch", "torch"),
+            ("jax.numpy", "jax"),
+        ],
+    )
+    def test_all_interfaces(self, interface_import, interface):
+        """
+        Tests that the `cut_circuit_mc` works in all interfaces
+        """
+        lib = pytest.importorskip(interface_import)
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev, interface=interface)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, lib.ones(1))
+
+        res = cut_circuit(convert_input)
+
+        assert res.shape == (shots, 2)
+        assert type(res) == type(convert_input)
+
 
 class TestContractTensors:
     """Tests for the contract_tensors function"""
