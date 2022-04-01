@@ -564,4 +564,4 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
             unitary(wires=wire_sequence[i], **kwargs)
     else:
         for i in range(len(wire_sequence)):
-            unitary(*parameters[i], wires=wire_sequence[i], **kwargs)
+            unitary(parameters[i], wires=wire_sequence[i], **kwargs)
