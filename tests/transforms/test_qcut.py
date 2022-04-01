@@ -2510,6 +2510,76 @@ class TestCutCircuitMCTransform:
         assert res.shape == (shots, 2)
         assert type(res) == type(convert_input)
 
+    def test_mc_with_mid_circuit_measurement(self, mocker):
+        """Tests the full sample-based circuit cutting pipeline returns the
+        correct value and gradient for a circuit that contains mid-circuit
+        measurements and terminal sample measurements using the `cut_circuit_mc`
+        transform."""
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.RX(np.sin(x) ** 2, wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(wires=[0, 1])
+
+        spy = mocker.spy(qcut, "qcut_processing_fn_sample")
+        x = np.array(0.531, requires_grad=True)
+        res = circuit(x)
+
+        assert res.shape == (shots, 2)
+        spy.assert_called_once()
+
+    def test_mc_circuit_with_disconnected_components(self, mocker):
+        """Tests if a sample-based circuit that is fragmented into subcircuits such
+        that some of the subcircuits are disconnected from the final terminal sample
+        measurements are executed correctly"""
+        shots = 10
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RY(x**2, wires=2)
+            return qml.sample(wires=0)
+
+        x = 0.4
+        res = circuit(x)
+        assert res.shape == (shots, 1)
+
+    def test_mc_circuit_with_trivial_wire_cut(self, mocker):
+        """Tests that a sample-based circuit with a trivial wire cut (not
+        separating the circuit into fragments) is executed correctly"""
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(wires=0)
+
+        # spy = mocker.spy(qcut, "something??")
+
+        x = 0.4
+        res = circuit(x)
+        assert res.shape == (shots, 1)
+
 
 class TestContractTensors:
     """Tests for the contract_tensors function"""
