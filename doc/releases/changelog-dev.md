@@ -292,12 +292,15 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   ```
   [(#2276)](https://github.com/PennyLaneAI/pennylane/pull/2276)
 
+* Fixes a bug in `broadcast` described in issue [#2402](https://github.com/PennyLaneAI/pennylane/issues/2402)
+  [(#2403)](https://github.com/PennyLaneAI/pennylane/pull/2403)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
+Jack Y. Araz, Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
 Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
 Jay Soni, Antal Száva, Maurice Weber.
