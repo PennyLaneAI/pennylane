@@ -16,6 +16,7 @@ Unit tests for the molecule object.
 """
 # pylint: disable=no-self-use
 import pytest
+
 from pennylane import numpy as np
 from pennylane import qchem
 
@@ -42,8 +43,8 @@ class TestMolecule:
     )
     def test_basis_error(self, symbols, geometry):
         r"""Test that an error is raised if a wrong basis set name is entered."""
-        with pytest.raises(ValueError, match="Currently, the only supported basis set is"):
-            qchem.Molecule(symbols, geometry, basis_name="6-31g")
+        with pytest.raises(ValueError, match="Currently, the only supported basis sets"):
+            qchem.Molecule(symbols, geometry, basis_name="6-311g")
 
     @pytest.mark.parametrize(
         ("symbols", "geometry"),
