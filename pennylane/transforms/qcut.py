@@ -964,15 +964,15 @@ def cut_circuit_mc(
     Args:
         tape (QuantumTape): the tape of the full circuit to be cut
         shots (int): Number of shots. When transforming a QNode, this argument is
-        set by the device's ``shots`` value or at QNode call time (if provided).
-        Required when transforming a tape.
+            set by the device's ``shots`` value or at QNode call time (if provided).
+            Required when transforming a tape.
         device_wires (Wires): Wires of the device that the cut circuits are to be run on.
                     When transforming a QNode, this argument is optional and will be set to the
                     QNode's device wires. Required when transforming a tape.
         classical_processing_fn (callable): A classical postprocessing function to be applied to
             the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``.
+            and the output should be a single number within the interval :math:`[-1, 1]`.
             If not supplied, the transform will output samples.
-            and the output should be a single number within the interval :math:`[-1, 1]`
         max_depth (int): The maximum depth used to expand the circuit while searching for wire cuts.
 
     Returns:
@@ -1006,7 +1006,7 @@ def cut_circuit_mc(
             qml.RX(2.3, wires=2)
             return qml.sample(wires=[0, 2])
 
-    we can then execute the circuit as usual by calling the qnode:
+    we can then execute the circuit as usual by calling the QNode:
 
     >>> x = 0.3
     >>> circuit(x)
@@ -1105,10 +1105,10 @@ def cut_circuit_mc(
         ... ]
 
         Note that the number of shots on the device is set to :math:`1` here since we
-        will only require one execution per fragment configurations. In the
+        will only require one execution per fragment configuration. In the
         following steps we introduce a shots value that will determine the number
         of fragment configurations. When using the ``cut_circuit_mc()`` decorator
-        with a qnode, this shots value is automatically inferred from the provided
+        with a QNode, this shots value is automatically inferred from the provided
         device.
 
         Next, each circuit fragment is randomly expanded over :class:`~.MeasureNode` and
@@ -1641,6 +1641,7 @@ def cut_circuit(
                     When transforming a QNode, this argument is optional and will be set to the
                     QNode's device wires. Required when transforming a tape.
         max_depth (int): The maximum depth used to expand the circuit while searching for wire cuts.
+            Only applicable when transforming a QNode.
 
     Returns:
         Callable: Function which accepts the same arguments as the QNode.
