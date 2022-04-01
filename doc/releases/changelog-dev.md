@@ -215,6 +215,10 @@
 
 <h3>Breaking changes</h3>
 
+* The `update_stepsize` method is being deleted from `GradientDescentOptimizer` and its child
+  optimizers.  The `stepsize` property can be interacted with directly instead.
+  [(#2370)](https://github.com/PennyLaneAI/pennylane/pull/2370)
+
 * Most optimizers no longer flatten and unflatten arguments during computation. Due to this change, user
   provided gradient functions *must* return the same shape as `qml.grad`.
   [(#2381)](https://github.com/PennyLaneAI/pennylane/pull/2381)
