@@ -1250,6 +1250,8 @@ def cut_circuit(
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
+    auto_cutter: Union[bool, Callable] = False,
+    **kwargs,
 ) -> Tuple[Tuple[QuantumTape], Callable]:
     """
     Cut up a quantum circuit into smaller circuit fragments.
@@ -1489,6 +1491,16 @@ def cut_circuit(
             ) from e
 
     g = tape_to_graph(tape)
+
+    if auto_cutter is True or callable(auto_cutter):
+        cut_strategy = CutStrategy(max_free_wires=len(device_wires), min_free_wires=2)
+        g = find_and_place_cuts(
+            graph=g,
+            cut_method=auto_cutter if callable(auto_cutter) else kahypar_cut,
+            cut_strategy=cut_strategy,
+            **kwargs,
+        )
+
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]
@@ -1528,12 +1540,16 @@ def _qcut_expand_fn(
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
+    auto_cutter: Union[bool, Callable] = False,
 ):
     """Expansion function for circuit cutting.
 
     Expands operations until reaching a depth that includes :class:`~.WireCut` operations.
     """
     # pylint: disable=unused-argument
+    if auto_cutter is True or callable(auto_cutter):
+        return tape
+
     for op in tape.operations:
         if isinstance(op, WireCut):
             return tape
@@ -1688,6 +1704,8 @@ class CutStrategy:
     min_free_gates: int = None
     #: The global maximum allowed imbalance for all partition trials.
     imbalance_tolerance: float = None
+    #: Number of trials to repeat for per set of partition parameters probed.
+    trials_per_probe: int = 10
 
     #: Class attribute, threshold for warning about too many fragments.
     HIGH_NUM_FRAGMENTS: ClassVar[int] = 20
@@ -2348,35 +2366,40 @@ def find_and_place_cuts(
 
     if isinstance(cut_strategy, CutStrategy):
         cut_kwargs_probed = cut_strategy.get_cut_kwargs(cut_graph)
-        # kwargs has higher precedence for colliding keys
+
         cut_edges_probed = {
-            cut_kwargs["num_fragments"]: cut_method(cut_graph, **{**cut_kwargs, **kwargs})
+            (cut_kwargs["num_fragments"], trial_id): cut_method(
+                cut_graph,
+                **{**cut_kwargs, **kwargs},  # kwargs has higher precedence for colliding keys
+            )
             for cut_kwargs in cut_kwargs_probed
-            # kwargs has higher precedence in case of key collisions.
+            for trial_id in range(cut_strategy.trials_per_probe)
         }
-        print({k: len(v) for k, v in cut_edges_probed.items()})
 
         valid_cut_edges = {}
-        for k, cut_edges in cut_edges_probed.items():
+        for (k, _), cut_edges in cut_edges_probed.items():
             cut_graph = place_wire_cuts(graph=graph, cut_edges=cut_edges)
             replace_wire_cut_nodes(cut_graph)
             frags, comm_graph = fragment_graph(cut_graph)
-            if all(
-                len({w for _, _, w in f.edges(data="wire")})
-                + comm_graph.degree()[i] * deferred_measurement
-                <= cut_strategy.max_free_wires
-                for i, f in enumerate(frags)
+
+            if (
+                (len(frags) == k)
+                and ((k not in valid_cut_edges) or (len(valid_cut_edges[k]) > len(cut_edges)))
+                and all(
+                    len({w for _, _, w in f.edges(data="wire")})
+                    + comm_graph.degree()[j] * deferred_measurement
+                    <= cut_strategy.max_free_wires
+                    for j, f in enumerate(frags)
+                )
             ):
                 valid_cut_edges[k] = cut_edges
 
         # Filtering to get the optimal cuts by looking at the number of cuts and num_fragments.
-        # Can have fancier ways of evaluating cuts other than counting cut edges.
         min_cuts = min(len(cut_edges) for cut_edges in valid_cut_edges.values())
         optim_cuts = {
             k: cut_edges for k, cut_edges in valid_cut_edges.items() if len(cut_edges) == min_cuts
         }
         cut_edges = optim_cuts[min(optim_cuts)]  # choose the lowest num_fragments among best ones.
-        print(optim_cuts)
 
     else:
         cut_edges = cut_method(cut_graph, **kwargs)
