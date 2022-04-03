@@ -29,8 +29,13 @@ from .gradient_transform import (
     choose_grad_methods,
     gradient_analysis,
 )
-from .finite_difference import finite_diff, generate_shifted_tapes
-from .general_shift_rules import process_shifts
+from .finite_difference import finite_diff
+from .general_shift_rules import (
+    process_shifts,
+    _iterate_shift_rule,
+    frequencies_to_period,
+    generate_shifted_tapes,
+)
 
 
 NONINVOLUTORY_OBS = {
@@ -69,10 +74,17 @@ def _square_observable(obs):
     return NONINVOLUTORY_OBS[obs.name](obs)
 
 
-def _get_operation_recipe(tape, t_idx, shifts):
+def _get_operation_recipe(tape, t_idx, shifts, order=1):
     """Utility function to return the parameter-shift rule
     of the operation corresponding to trainable parameter
     t_idx on tape.
+
+    Args:
+        tape (.QuantumTape): Tape containing the operation to differentiate
+        t_idx (int): Parameter index of the operation to differentiate within the tape
+        shifts (Sequence[float or int]): Shift values to use if no static ``grad_recipe`` is
+            provided by the operation to differentiate
+        order (int): Order of the differentiation
 
     This function performs multiple attempts to obtain the recipe:
 
@@ -87,13 +99,38 @@ def _get_operation_recipe(tape, t_idx, shifts):
     That is, the order of precedence is :meth:`~.grad_recipe`, custom
     :attr:`~.parameter_frequencies`, and finally :meth:`.generator` via the default
     implementation of the frequencies.
+
+    If order is set to 2, the rule for the second-order derivative is obtained instead.
     """
+    if order not in {1, 2}:
+        raise NotImplementedError("_get_operation_recipe only is implemented for orders 1 and 2.")
+
     op, p_idx = tape.get_operation(t_idx)
 
     # Try to use the stored grad_recipe of the operation
     recipe = op.grad_recipe[p_idx]
     if recipe is not None:
-        return process_shifts(np.array(recipe).T, check_duplicates=False)
+        recipe = qml.math.array(recipe)
+        if order == 1:
+            # TODO: The following only works because `process_shifts` does not notice that
+            # recipe.T has 3 instead of 2 rows, because we don't use the check for duplicates
+            # This should be improved.
+            return process_shifts(recipe.T, check_duplicates=False)
+
+        # Try to obtain the period of the operator frequencies for iteration of custom recipe
+        try:
+            period = frequencies_to_period(op.parameter_frequencies[p_idx])
+        except qml.operation.ParameterFrequenciesUndefinedError:
+            period = None
+
+        # Iterate the custom recipe to obtain the second-order recipe
+        if qml.math.allclose(recipe[:, 1], qml.math.ones_like(recipe[:, 1])):
+            # If the multipliers are ones, we do not include them in the iteration
+            # but keep track of them manually
+            iter_c, iter_s = process_shifts(_iterate_shift_rule(recipe[:, ::2], order, period).T)
+            return qml.math.stack([iter_c, qml.math.ones_like(iter_c), iter_s])
+
+        return process_shifts(_iterate_shift_rule(recipe, order, period).T)
 
     # Try to obtain frequencies, either via custom implementation or from generator eigvals
     try:
@@ -105,7 +142,7 @@ def _get_operation_recipe(tape, t_idx, shifts):
         ) from e
 
     # Create shift rule from frequencies with given shifts
-    coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=1)
+    coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=order)
     # The generated shift rules do not include a rescaling of the parameter, only shifts.
     mults = np.ones_like(coeffs)
 
@@ -592,7 +629,7 @@ def param_shift(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return [], lambda _: ()
+        return [], lambda _: np.zeros((tape.output_dim, 0))
 
     gradient_analysis(tape, grad_fn=param_shift)
     method = "analytic" if fallback_fn is None else "best"

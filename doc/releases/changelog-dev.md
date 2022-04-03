@@ -138,6 +138,23 @@
 
 <h3>Improvements</h3>
 
+* The parameter-shift Hessian can now be computed for arbitrary
+  operations that support the general parameter-shift rule for
+  gradients, using `qml.gradients.param_shift_hessian`
+  [(#2319)](https://github.com/XanaduAI/pennylane/pull/2319)
+
+  Multiple ways to obtain the
+  gradient recipe are supported, in the following order of preference:
+
+  - A custom `grad_recipe`. It is iterated to obtain the shift rule for
+    the second-order derivatives in the diagonal entries of the Hessian.
+
+  - Custom `parameter_frequencies`. The second-order shift rule can
+    directly be computed using them.
+
+  - An operation's `generator`. Its eigenvalues will be used to obtain
+    `parameter_frequencies`, if they are not given explicitly for an operation.
+
 * Most compilation transforms, and relevant subroutines, have been updated to
   support just-in-time compilation with `jax.jit`.
   [(#1894)](https://github.com/PennyLaneAI/pennylane/pull/1894/)
@@ -202,7 +219,7 @@
   than :math:`N-1`. If a larger :math:`k` is requested, the dense matrix representation of 
   the Hamiltonian is constructed and the regular `qml.math.linalg.eigvalsh` is applied.
   [(#2333)](https://github.com/PennyLaneAI/pennylane/pull/2333)
-
+  
 * The function `qml.ctrl` was given the optional argument `control_values=None`.
   If overridden, `control_values` takes an integer or a list of integers corresponding to
   the binary value that each control value should take. The same change is reflected in
@@ -312,5 +329,6 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
+
 Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
-Jay Soni, Antal Száva, Maurice Weber.
+Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
