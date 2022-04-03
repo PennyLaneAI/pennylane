@@ -266,7 +266,8 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
     cost function first derivatives with respect to the variational parameters can be cast into
     linear combinations of expectation values at shifted parameter values. The coefficients and
     shifts defining the linear combination can be obtained from the unitary generator's eigenvalue
-    frequency spectrum. Details can be found in https://arxiv.org/abs/2107.12390.
+    frequency spectrum. Details can be found in
+    `Wierichs et al. (2022) <https://doi.org/10.22331/q-2022-03-30-677>`__.
 
     Args:
         frequencies (tuple[int or float]): The tuple of eigenvalue frequencies. Eigenvalue

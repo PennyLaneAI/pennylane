@@ -2735,7 +2735,7 @@ class TestQCutProcessingFn:
         results = []
 
         # Calculates U_{ijkl} = Tr((b[k] x b[l]) U (b[i] x b[j]) U*)
-        # See Sec. II. A. of https://arxiv.org/abs/1909.07534, below Eq. (2).
+        # See Sec. II. A. of https://doi.org/10.1088/1367-2630/abd7bc, below Eq. (2).
         for inp, out in itertools.product(prod_inp, prod_out):
             input = kron(*[basis[i] for i in inp])
             output = kron(*[basis[i] for i in out])

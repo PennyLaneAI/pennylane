@@ -505,7 +505,7 @@ def param_shift(
     For more general shift rules, both regarding the shifts and the frequencies, and
     for more technical details, see
     `Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_ and
-    `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
+    `Wierichs et al. (2022) <https://doi.org/10.22331/q-2022-03-30-677>`_.
 
     **Gradients of variances**
 
