@@ -276,6 +276,12 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         - If the input is a tape, a tuple containing the list of parameter-shifted tapes, and a
           post-processing function to be applied to the evaluated tapes, is returned.
 
+        Note: By default a QNode with the keyword ``hybrid=True`` computes derivates with respect to
+        QNode arguments, which can include classical computations on those arguments before they are
+        passed to quantum operations. The "purely quantum" Hessian can instead be obtained with
+        ``hybrid=False``, which is then computed with respect to the gate arguments and produces a
+        result of shape ``(*QNode output dimensions, # gate arguments, # gate arguments)``.
+
     **Example**
 
     Applying the Hessian transform to a QNode computes its Hessian tensor:
