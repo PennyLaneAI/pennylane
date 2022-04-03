@@ -15,6 +15,7 @@
 Functions for performing quantum circuit cutting.
 """
 
+from collections.abc import Sequence as SequenceType
 import copy
 import inspect
 import string
@@ -1239,7 +1240,7 @@ def cut_circuit_mc(
 
 
 @cut_circuit_mc.custom_qnode_wrapper
-def qnode_execution_wrapper(self, qnode, targs, tkwargs):
+def qnode_execution_wrapper_mc(self, qnode, targs, tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
     to replace execution variables"""
 
@@ -2090,8 +2091,7 @@ class CutStrategy:
             devices = (devices,)
 
         if devices is not None:
-            if not isinstance(devices, Sequence) or any(
-                # pylint: disable=isinstance-second-argument-not-valid-type
+            if not isinstance(devices, SequenceType) or any(
                 (not isinstance(d, qml.Device) for d in devices)
             ):
                 raise ValueError(
@@ -2490,8 +2490,7 @@ def kahypar_cut(
 
     if isinstance(imbalance, float):
         context.setEpsilon(imbalance)
-    if isinstance(fragment_weights, Sequence) and (len(fragment_weights) == num_fragments):
-        # pylint: disable=isinstance-second-argument-not-valid-type
+    if isinstance(fragment_weights, SequenceType) and (len(fragment_weights) == num_fragments):
         context.setCustomTargetBlockWeights(fragment_weights)
     if not verbose:
         context.suppressOutput(True)
