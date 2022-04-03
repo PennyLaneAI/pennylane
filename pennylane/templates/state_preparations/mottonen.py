@@ -49,7 +49,7 @@ def gray_code(rank):
 def _matrix_M_entry(row, col):
     """Returns one entry for the matrix that maps alpha to theta.
 
-    See Eq. (3) in `Möttönen et al. (2004) <https://arxiv.org/pdf/quant-ph/0407010.pdf>`_.
+    See Eq. (3) in `Möttönen et al. (2004) <https://arxiv.org/abs/quant-ph/0407010>`_.
 
     Args:
         row (int): one-based row number
@@ -106,7 +106,7 @@ def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     a decomposition based on Gray codes is used. For this purpose, the multi-controlled rotation
     angles alpha have to be converted into a set of non-controlled rotation angles theta.
 
-    For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/pdf/quant-ph/0504100.pdf>`_.
+    For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/abs/quant-ph/0504100>`_.
 
     Args:
         gate (.Operation): gate to be applied, needs to have exactly one parameter
@@ -219,7 +219,7 @@ def _get_alpha_y(a, n, k):
 class MottonenStatePreparation(Operation):
     r"""
     Prepares an arbitrary state on the given wires using a decomposition into gates developed
-    by `Möttönen et al. (2004) <https://arxiv.org/pdf/quant-ph/0407010.pdf>`_.
+    by `Möttönen et al. (2004) <https://arxiv.org/abs/quant-ph/0407010>`_.
 
     The state is prepared via a sequence
     of uniformly controlled rotations. A uniformly controlled rotation on a target qubit is

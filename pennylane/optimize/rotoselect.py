@@ -45,7 +45,7 @@ class RotoselectOptimizer:
     number of generators should match the number of parameters.
 
     The algorithm is described in further detail in
-    `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_.
+    `Ostaszewski et al. (2021) <https://doi.org/10.22331/q-2021-01-28-391>`_.
 
     Args:
         possible_generators (list[~.Operation]): List containing the possible
@@ -192,7 +192,7 @@ class RotoselectOptimizer:
         r"""The rotosolve step for one parameter and one set of generators.
 
         Updates the parameter :math:`\theta_d` based on Equation 1 in
-        `Ostaszewski et al. (2019) <https://arxiv.org/abs/1905.09692>`_.
+        `Ostaszewski et al. (2021) <https://doi.org/10.22331/q-2021-01-28-391>`_.
 
         Args:
             objective_fn (function): The objective function for optimization. It must have the

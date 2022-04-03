@@ -275,7 +275,7 @@ def _decomposition_1_cnot(U, wires):
         G (Edag V E) H = (Edag U E)
 
     where V depends on the central CNOT gate, and both U, V are in SU(4). This
-    is done following the methods in https://arxiv.org/pdf/quant-ph/0308045.pdf.
+    is done following the methods in https://arxiv.org/abs/quant-ph/0308045.
 
     Once we find G and H, we can use the fact that E SO(4) Edag gives us
     something in SU(2) x SU(2) to give A, B, C, D.
