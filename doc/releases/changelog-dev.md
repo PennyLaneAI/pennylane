@@ -131,6 +131,11 @@
     approach.
     [(#2358)](https://github.com/PennyLaneAI/pennylane/pull/2358)
 
+  - A user-facing transform for circuit cutting with sample measurements has
+    been added. A `qnode` containing `WireCut` operations and `sample` measurements
+    can be decorated with `@qml.cut_circuit_mc()` to perform this type of cutting.
+    [(#2382)](https://github.com/PennyLaneAI/pennylane/pull/2382)
+
 <h3>Improvements</h3>
 
 * The parameter-shift Hessian can now be computed for arbitrary
