@@ -1190,6 +1190,7 @@ def cut_circuit_mc(
         ... )
         array(4.)
     """
+    # pylint: disable=unused-argument
 
     if len(tape.measurements) != 1:
         raise ValueError(
@@ -1887,6 +1888,7 @@ def cut_circuit(
 def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
     to access the device wires."""
+    # pylint: disable=function-redefined
 
     tkwargs.setdefault("device_wires", qnode.device.wires)
     return self.default_qnode_wrapper(qnode, targs, tkwargs)
@@ -2089,6 +2091,7 @@ class CutStrategy:
 
         if devices is not None:
             if not isinstance(devices, Sequence) or any(
+                # pylint: disable=isinstance-second-argument-not-valid-type
                 (not isinstance(d, qml.Device) for d in devices)
             ):
                 raise ValueError(
@@ -2488,6 +2491,7 @@ def kahypar_cut(
     if isinstance(imbalance, float):
         context.setEpsilon(imbalance)
     if isinstance(fragment_weights, Sequence) and (len(fragment_weights) == num_fragments):
+        # pylint: disable=isinstance-second-argument-not-valid-type
         context.setCustomTargetBlockWeights(fragment_weights)
     if not verbose:
         context.suppressOutput(True)
