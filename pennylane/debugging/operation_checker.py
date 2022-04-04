@@ -13,7 +13,6 @@
 r"""
 This file contains the OperationChecker debugging and developing tool.
 """
-from collections.abc import Sequence
 import inspect
 
 import scipy.linalg as la
@@ -224,7 +223,7 @@ def wrap_op_method(op, method, expected_exc):
             return _method(*args, **kwargs)
         except expected_exc:
             return None
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             return e
 
     return wrapped_method
@@ -390,8 +389,10 @@ class OperationChecker:
 
         max_num_params (int): Largest number of parameters to check for operations
             that do not provide a fixed number of parameters via ``num_params`` themselves.
+        print_fn (callable): Function used to store or print output. Must take a single string
+            as input.
         print_color (bool): Whether or not to use colors in the terminal and returned outputs.
-        tol (float): Numeric (absolute) tolerance for comparing matrices.
+        tol (float): Numeric (absolute) tolerance when comparing matrices.
 
     The categorization of test results and of the associated messages is as follows:
 
@@ -429,6 +430,7 @@ class OperationChecker:
         integer-labelled wires are used.
 
       - seed (int): Seed for random generation of parameters.
+
 
     Returns:
 
@@ -522,11 +524,12 @@ class OperationChecker:
         = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
         No problems have been found with the operation RX.
     """
+    # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self, verbosity="pass", max_num_params=10, print_fn=print, print_color=True, tol=1e-5
     ):
-        # pylint: disable=too-many-instance-attributes
+        # pylint: disable=too-many-arguments
         self._verbosity = {
             key for key, val in verbosity_levels.items() if val <= verbosity_levels[verbosity]
         }
@@ -638,7 +641,7 @@ class OperationChecker:
         If ``num_wires`` is ``AnyWires``, its size is undetermined and we default to 2
         wires.
         """
-        if type(op.num_wires) == property:
+        if isinstance(op.num_wires, property):
             self.print_(
                 f"The operation {self.tmp['name']} does not define the number of wires it acts on.",
                 "fatal_error",
@@ -756,7 +759,7 @@ class OperationChecker:
                 )
                 # If the above indeed is the case, return
                 return
-            except Exception as f:
+            except Exception as f:  # pylint: disable=broad-except
                 self.print_(exc, "error")
                 self.print_(f, "error")
 
