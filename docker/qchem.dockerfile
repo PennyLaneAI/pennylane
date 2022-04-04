@@ -26,7 +26,7 @@ RUN git submodule update --init --recursive
 RUN pip install wheel && pip install openfermionpyscf && pip install -r requirements.txt \
     && python3 setup.py install \
     && pip install -i https://test.pypi.org/simple/ pennylane-lightning --pre --upgrade \
-    && make test
+    && make test && make coverage
 
 # Image build completed.
 CMD echo "Successfully built Docker image"
