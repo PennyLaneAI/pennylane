@@ -56,4 +56,4 @@ from .molecule import Molecule
 from .observable_hf import fermionic_observable, qubit_observable, jordan_wigner, simplify
 from .particle_number import particle_number
 from .spin import spin2, spinz
-from .utils import read_structure, active_space, excitations, hf_state, excitations_to_wires
+from .structure import read_structure, active_space, excitations, hf_state, excitations_to_wires

@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains functions to construct many-body observables whose expectation
-values can be used to simulate molecular properties.
+"""This module contains functions to read the structure of molecules, build a Hartree-Fock state,
+build an active space and generates single and double excitations.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
 import os
