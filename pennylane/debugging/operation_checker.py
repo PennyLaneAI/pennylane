@@ -13,7 +13,6 @@
 r"""
 This file contains the OperationChecker debugging and developing tool.
 """
-import abc
 from collections.abc import Sequence
 import inspect
 
@@ -96,13 +95,78 @@ def is_diagonal(matrix, atol=1e-10):
 
 
 def complex_jacobian(fn):
+    r"""Compute the Jacobian of a complex-valued function with real-valued inputs.
+
+    Args:
+        fn (callable): Function to differentiate
+
+    Returns:
+        callable: Jacobian function with the same input signature as the input function.
+        It returns the linear combination of the real and imaginary part of the function
+        output, with coefficient :math:`1` and :math:`i`.
+
+    .. warning::
+
+        The derivative of a complex-valued function can be defined in multiple
+        ways, so that the returned function may differ from other implementations
+        of functions :math:`f:\mathbb{R}\mapsto\mathbb{C}^k`.
+
+    """
     r_jac = qml.jacobian(lambda *args, **kwargs: qml.math.real(fn(*args, **kwargs)))
     i_jac = qml.jacobian(lambda *args, **kwargs: qml.math.imag(fn(*args, **kwargs)))
     return lambda *args, **kwargs: r_jac(*args, **kwargs) + 1j * i_jac(*args, **kwargs)
 
 
 def recipe_yields_commutator(recipe, op, par, wires):
-    """For now only implemented for single-parameter gates."""
+    r"""Check whether a gradient recipe produces the commutator as required to
+    produce the correct derivative.
+
+    .. warning::
+
+        This test only is implemented for single-parameter gates.
+
+    Args:
+        recipe (array_like): Gradient recipe with shape ``(3, M)``, where the rows
+            correspond to the coefficient, multipliers and shifts, respectively.
+        op (type): Operation subclass to be checked.
+        par (array_like): Parameter position at which to check the operation.
+            As the test is only implemented for single-parameter operations,
+            the shape of ``par`` is expected to be ``(1,)``.
+        wires (.Wires): Wires with which to instantiate the checked operation.
+
+    Returns:
+        bool: Whether the provided ``recipe`` produces the commutator belonging
+        to the checked ``op`` at the given parameter position, and thus will produce
+        the correct derivative.
+
+    For any single-parameter gate of the form :math:`U(x)=\exp(ixG)` with some Hermitian
+    generator :math:`G`, we can consider a cost function arising from measuring a
+    Hamiltonian :math:`H` after applying the gate:
+
+    .. math::
+
+        E(x) = \langle \psi | U(x)^\dagger H U(x) | \psi \rangle
+
+    The derivative of :math:`E` then is given by:
+
+    .. math::
+
+        \partial_x E(x) = i \langle \psi | U(x)^\dagger [H, G] U(x) | \psi \rangle
+
+    This means: if a gradient recipe applied to the operator-valued function
+
+    .. math::
+
+        O(x) = U(x)^\dagger H U(x)
+
+    produces the commutator :math:`i[H, G]`, it will produce the correct derivative when
+    applied to the function :math:`E(x)`.
+
+    In this function, we check that both :math:`i[H, G]` and :math:`\partial_H i[H, G]`
+    (in the sense of a component-wise derivative) are correct for some random :math:`H`,
+    which is very likely to be a sufficient test.
+    """
+
     coeffs, multipliers, shifts = recipe
     shifted_parameters = [m * par[0] + s for m, s in zip(multipliers, shifts)]
     shifted_matrices = [qml.matrix(op(p, wires=wires)) for p in shifted_parameters]
@@ -166,7 +230,7 @@ def wrap_op_method(op, method, expected_exc):
     return wrapped_method
 
 
-def matrix_from_matrix(op, par, wires):
+def matrix_from_hardcoded_matrix(op, par, wires):
     r"""Get the matrix of an operation, using ``get_matrix``.
 
     Args:
@@ -270,6 +334,10 @@ def matrix_from_single_qubit_rot_angles(op, par, wires):
 def matrix_from_generator(op, par, wires):
     r"""Get the matrix of an operation, using its ``generator``.
 
+    .. warning::
+
+        Only carries out the test for single-parameter gates.
+
     Args:
         op (type): Operation type to obtain the matrix for
         par (array_like): Parameters of the operation
@@ -280,22 +348,20 @@ def matrix_from_generator(op, par, wires):
         with ``generator``. ``None`` if no generator is defined via ``generator``
         or ``Exception`` if an error occured.
     """
-    instance = op(*par, wires=wires)
-    gen = wrap_op_method(instance, "generator", GeneratorUndefinedError)()
-    if gen is None or isinstance(gen, Exception):
+    if len(par) != 1:
         return None
-    if np.isclose(par[0], 0.0):
-        self.print_(
-            "Checking the matrix from generator at a parameter close to 0 is inconclusive.",
-            "hint",
-        )
+    instance = op(*par, wires=wires)
+    try:
+        gen = qml.generator(instance, "observable")
+    except GeneratorUndefinedError:
+        return None
     mat = qml.matrix(gen)
     return la.expm(1j * par[0] * mat)
 
 
 decomposition_methods = [
     matrix_from_single_qubit_rot_angles,
-    matrix_from_matrix,
+    matrix_from_hardcoded_matrix,
     matrix_from_sparse_matrix,
     matrix_from_terms,
     matrix_from_decomposition,
@@ -342,90 +408,161 @@ class OperationChecker:
     - ``"error"``: Problems with the checked operation(s) that require changes. These problems
       might be in the core of the ``Operation``, preventing instantiation, or in a specific
       method or property that is rendered unusable or inconsistent by the problem.
+
+
+    **Example**
+
+    Once instantiated, the ``OperationChecker`` can be called on an operation instance or class
+    with the following signature:
+
+    Args:
+
+      - op (type or .operation.Operation): Operation(s) to check, either provided as class
+        or as instance.
+
+      - parameters (Sequence[int or float]): Parameters with which the operation(s) is/are
+        expected to work. Ignored if ``op`` is not a type but a class instance. If not
+        provided, random parameters are used.
+
+      - wires (.wires.Wires): Wires with which the operation(s) is/are expected to work.
+        Ignored if ``op`` is not a type but a class instance. If not provided, consecutive
+        integer-labelled wires are used.
+
+      - seed (int): Seed for random generation of parameters.
+
+    Returns:
+
+      - str: The result status of the operation check, one of ``"error"``, ``"hint"``,
+        ``"comment"``, and ``"pass"``.
+      - str: A copy of the text printed via the ``print_fn`` during the check.
+
+    Let's consider a custom operation, which is a copy of ``qml.RX`` but with its
+    argument rounded to 2 decimal places:
+
+    .. code-block ::
+
+        class MyRX(qml.operation.Operation):
+
+            num_wires = 1
+
+            def __init__(self, theta, wires, do_queue=True, id=None):
+                theta = qml.math.round(theta, 2)
+                super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
+
+            @staticmethod
+            def compute_matrix(theta):
+                theta = qml.math.round(theta, 2)
+                return qml.math.array([
+                    [qml.math.cos(theta / 2), -1j * qml.math.sin(theta / 2)],
+                    [-1j * qml.math.sin(theta / 2), qml.math.cos(theta / 2)],
+                ])
+
+    Now we can run the OperationChecker on this operation class:
+
+    >>> checker = qml.debugging.OperationChecker()
+    >>> result, output = checker(MyRX)
+    Checking operation MyRX for consistency.
+    = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+    \x1b[93mInstantiating MyRX only succeeded when using 1 parameter(s).
+    Consider specifying the number of parameters by setting op.num_params.\x1b[0m
+
+    As we can see, an improvement to ``MyRX`` is easily possible by providing it with
+    the property ``num_params``. The return values ``result`` and ``output`` contain
+    the status of the check and the printed output, respectively:
+
+    >>> print(result)
+    hint
+
+    .. UsageDetails::
+
+        **Filtering messages**
+
+        By specifying a ``verbosity`` level, less important messages may be suppressed.
+        For example, if only errors and hints should be displayed, but commentary that
+        does not require any action should be suppressed, set ``verbosity="hint"``.
+
+        **Retrieving previous check results**
+
+        An instance of ``OperationChecker`` is stateful, allowing us to retrieve the results
+        of checks that were performed earlier:
+
+        >>> checker = qml.debugging.OperationChecker(verbosity="error")
+        >>> for op in [qml.RX, qml.RY, qml.IsingZZ]:
+        >>>     checker(op)
+        >>> print(checker.results[qml.RX])
+        pass
+
+        >>> checker.outputs[qml.RY]
+        ''
+
+        **Using a custom print function**
+
+        By providing a custom function via ``print_fn``, we e.g. can store
+        the output to a file:
+
+        .. code-block::
+
+            import sys
+
+            def print_to_file(string):
+                '''Print string to fixed file'''
+                original_stdout = sys.stdout
+
+                with open('check_output.txt', 'a') as f:
+                    sys.stdout = f
+                    print(string)
+                    sys.stdout = original_stdout
+
+        >>> checker = qml.debugging.OperationChecker(print_fn=print_to_file)
+        >>> checker(qml.RX)
+        >>> with open("check_output.txt", "r") as f:
+        ...     for line in f.readlines():
+        ...         print(line)
+        Checking operation RX for consistency.
+        = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
+        No problems have been found with the operation RX.
     """
 
-    def __init__(self, verbosity="pass", max_num_params=10, print_color=True, tol=1e-5):
+    def __init__(self, verbosity="pass", max_num_params=10, print_fn=print, print_color=True, tol=1e-5):
         # pylint: disable=too-many-instance-attributes
         self._verbosity = {
             key for key, val in verbosity_levels.items() if val <= verbosity_levels[verbosity]
         }
         self.max_num_params = max_num_params
+        self.print_fn = print_fn
         self.print_color = print_color
         self.tol = tol
-        self.results = self.output = self.tmp = self.seed = None
+        self.results = {}
+        self.outputs = {}
+        self.tmp = self.seed = None
 
     def __call__(self, op, parameters=None, wires=None, seed=None):
         r"""Call the OperationChecker on one or multiple operations.
-
-        Args:
-            op (type or .operation.Operation): Operation(s) to check, either provided as class
-                or as instance. Allowed to be a ``Sequence`` of classes or instances instead,
-                in which case the function iterates over all objects.
-            parameters (Sequence[int or float]): Parameters with which the operation(s) is/are expected
-                to work. If ``op`` contains multiple types and ``parameters`` only contains one
-                set of parameters, they are broadcast to all operations.
-                Ignored for those objects in ``op`` that are not types but a class instance.
-                If not provided, random parameters are used.
-            wires (.wires.Wires): Wires with which the operation(s) is/are expected to work.
-                If ``op`` contains multiple types and ``wires`` only contains one wires object,
-                it is broadcast to all operations.
-                Ignored for those objects in ``op`` that are not types but a class instance.
-                If not provided, consecutive integer-named wires are used.
-            seed (int): Seed for random generation of parameters.
-
-        Returns:
-            dict: The result status for each checked operation, corresponding to the four levels
-            ``"error"``, ``"hint"``, ``"comment"`` and ``"pass"``.
-            dict: The text printed to the terminal for each checked operation.
         """
-        if isinstance(op, Sequence):
-            # A Sequence of operations was passed, make sure the parameters
-            # and wires are also a Sequence of the same length
-            if parameters is None or not isinstance(parameters[0], Sequence):
-                # Broadcast the parameters
-                parameters = [parameters] * len(op)
-            else:
-                # Check number of sets of parameters to match the number of operations
-                assert len(parameters) == len(op)
-            if wires is None or isinstance(wires, qml.wires.Wires):
-                # Broadcast the wires
-                wires = [wires] * len(op)
-            else:
-                # Check number of sets of wires to match the number of operations
-                assert len(wires) == len(op)
-
-        else:
-            op = [op]
-            parameters = [parameters]
-            wires = [wires]
-
         self.seed = seed
-        # Initialize result status for all operations
-        self.results = {op_: "pass" for op_ in op}
-        self.output = {}
-        for op_, parameters_, wires_ in zip(op, parameters, wires):
-            # Temporary storage per operation
-            self.tmp = {
-                "printed_header": False,  # Header for this op has not been printed yet
-                "op": op_,  # Currently investigated operation
-                "res": max(verbosity_levels.values()),  # Current result status
-                "name": op_.name if isinstance(op_, qml.operation.Operation) else op_.__name__,
-            }
-            self.output[op_] = ""
+        # Initialize result status and output for this operation
+        self.results[op] = "pass"
+        self.outputs[op] = ""
+        # Temporary storage
+        self.tmp = {
+            "printed_header": False,  # Header for this op has not been printed yet
+            "op": op,  # Currently investigated operation
+            "res": verbosity_levels["pass"],  # Current result status
+            "name": op.name if isinstance(op, qml.operation.Operation) else op.__name__,
+        }
+        try:
+            self.check_single_operation(op, parameters, wires)
+        except CheckerError:
+            pass
 
-            try:
-                self.check_single_operation(op_, parameters_, wires_)
-            except CheckerError as e:
-                pass
+        # Store the result for this operation outside of tmp and print summary
+        self.results[op] = levels_verbosity[self.tmp["res"]]
+        if self.results[op] == "pass":
+            self.print_(
+                f"No problems have been found with the operation {self.tmp['name']}.\n", "pass"
+            )
 
-            # Store the result for this operation outside of tmp and print summary per op
-            self.results[op_] = levels_verbosity[self.tmp["res"]]
-            if self.results[op_] == "pass":
-                self.print_(
-                    f"No problems have been found with the operation {self.tmp['name']}.\n", "pass"
-                )
-
-        return self.results, self.output
+        return self.results[op], self.outputs[op]
 
     def print_(self, string, level=None):
         """Print a string if the verbosity level allows it, color it if applicable,
@@ -435,7 +572,7 @@ class OperationChecker:
             string (str): String to be printed
             level (str): One of the verbosity levels (see class documentation)
                 If the level is in the levels that are printed, print the string to console
-                and store it in ``self.output``.
+                and store it in ``self.outputs``.
 
         Returns:
 
@@ -453,11 +590,11 @@ class OperationChecker:
         if level == "error" or level in self._verbosity:
             if not self.tmp["printed_header"]:
                 header = f"Checking operation {self.tmp['name']} for consistency.\n" + "= " * 40
-                print(header)
-                self.output[self.tmp["op"]] += header
+                self.print_fn(header)
+                self.outputs[self.tmp["op"]] += header
                 self.tmp["printed_header"] = True
-            print(string)
-            self.output[self.tmp["op"]] += "\n" + string
+            self.print_fn(string)
+            self.outputs[self.tmp["op"]] += "\n" + string
 
     def check_single_operation(self, op, parameters, wires):
         """Check one operation subclass to define all required properties,
@@ -634,7 +771,7 @@ class OperationChecker:
         for par in parameters:
             exc = wrapped_method(*par, **kwargs)
             num = len(par)
-            if exc is None and num not in self.tmp["possible_num_params"]:
+            if not (exc is None or isinstance(exc, Exception)) and num not in self.tmp["possible_num_params"]:
                 succeeding_methods.append(num)
             elif isinstance(exc, Exception) and num in self.tmp["possible_num_params"]:
                 failing_methods.append(num)
@@ -678,10 +815,10 @@ class OperationChecker:
             self._check_matrix_shape(mat, op)
             # Check that the eigenvalues are produced correctly
             eigvals = wrap_op_method(instance, "get_eigvals", EigvalsUndefinedError)()
-            self._check_eigvals(eigvals, mat, op)
+            self._check_eigvals(eigvals, mat)
             # Check that the diagonalizing gates diagonalize the operation matrix
             diag_gates = wrap_op_method(instance, "diagonalizing_gates", DiagGatesUndefinedError)()
-            self._check_diag_gates(diag_gates, mat, eigvals, op)
+            self._check_diag_gates(diag_gates, mat, eigvals)
             # Check that the basis is given correctly
             self._check_basis(mat, instance)
 
@@ -700,7 +837,7 @@ class OperationChecker:
             )
         return
 
-    def _check_eigvals(self, eigvals, matrix, op):
+    def _check_eigvals(self, eigvals, matrix):
         """Check that produced eigvals for an operation coincide with the
         eigvals of a matrix representation of the same operation."""
         if matrix is None or eigvals is None:
@@ -708,12 +845,13 @@ class OperationChecker:
         mat_eigvals = np.linalg.eigvals(matrix)
         if not np.allclose(mat_eigvals, eigvals):
             self.print_(
-                f"The eigenvalues of the matrix and the stored eigvals for {self.tmp['name']} do not match.",
+                f"The eigenvalues of the matrix and the stored eigvals for {self.tmp['name']} "
+                "do not match.",
                 "error",
             )
         return
 
-    def _check_diag_gates(self, diag_gates, matrix, eigvals, op):
+    def _check_diag_gates(self, diag_gates, matrix, eigvals):
         """Check that the diagonalizing gates attributed to an operation
         produce a diagonal matrix, and that it has the correct eigenvalues."""
         if diag_gates is None or matrix is None:
@@ -722,7 +860,7 @@ class OperationChecker:
             diag_mat = np.eye(matrix.shape[0])
         else:
             with qml.tape.QuantumTape() as tape:
-                [op.queue() for op in diag_gates]
+                [op.queue() for op in diag_gates] # pylint: disable=expression-not-assigned
             diag_mat = qml.matrix(tape)
 
         diagonalized = diag_mat @ matrix @ diag_mat.conj().T
@@ -763,6 +901,7 @@ class OperationChecker:
         target_wires = qml.wires.Wires.unique_wires([instance.wires, instance.control_wires])
         with qml.tape.QuantumTape() as tape:
             for w in target_wires:
+                # pylint: disable=expression-not-assigned
                 [diag_gate(wires=w) for diag_gate in diag_gates]
 
         diag_mat = qml.operation.expand_matrix(qml.matrix(tape), target_wires, instance.wires)

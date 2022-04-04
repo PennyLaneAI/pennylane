@@ -113,22 +113,22 @@ class TestQMLOperations:
         else:
             expected_res = "pass"
 
-        self.Checker(op, seed=42)
-        assert self.Checker.output[op] == "" or expected_res == "hint"
-        assert self.Checker.results[op] == expected_res
+        result, output = self.Checker(op, seed=42)
+        assert output == "" or expected_res == "hint"
+        assert result == expected_res
 
     @pytest.mark.parametrize("op", qmlops_special_input)
     def test_special_input_qml_ops(self, op):
         all_parameters, all_wires = qmlops_special_input[op]
         for parameters, wires in zip(all_parameters, all_wires):
-            self.Checker(op, parameters=parameters, wires=wires, seed=42)
+            result, output = self.Checker(op, parameters=parameters, wires=wires, seed=42)
             if issubclass(op, qml.operation.Channel):
                 # Hint for differentiation of channels
-                assert "Channels can not be checked for the correct" in self.Checker.output[op]
-                assert self.Checker.results[op] == "hint"
+                assert "Channels can not be checked for the correct" in output
+                assert result == "hint"
             else:
-                assert self.Checker.output[op] == ""
-                assert self.Checker.results[op] == "pass"
+                assert output == ""
+                assert result == "pass"
 
 
 class OpWithNumWires(qml.operation.Operation):
@@ -172,52 +172,36 @@ class TestPassingCustomOperations:
 
     Checker = OperationChecker(verbosity="comment")
 
-    def test_passing(self):
-        self.Checker(passing_ops)
-        for op in passing_ops:
-            assert self.Checker.output[op] == ""
-            assert self.Checker.results[op] == "pass"
-
     @pytest.mark.parametrize("op", passing_ops)
-    def test_passing_serial(self, op):
-        self.Checker(op)
-        assert self.Checker.output[op] == ""
-        assert self.Checker.results[op] == "pass"
+    def test_passing(self, op):
+        result, output = self.Checker(op)
+        assert output == ""
+        assert result == "pass"
 
 
 class TestCustomOperationsWithHints:
 
     Checker = OperationChecker(verbosity="comment")
 
-    def test_hints(self):
-        self.Checker(ops_with_hints)
-        for op in ops_with_hints:
-            assert self.Checker.results[op] == "hint"
-
     @pytest.mark.parametrize("op, hint", zip(ops_with_hints, hints))
-    def test_hints_serial(self, op, hint):
-        self.Checker(op)
-        assert hint in self.Checker.output[op]
-        assert self.Checker.results[op] == "hint"
+    def test_hints(self, op, hint):
+        result, output = self.Checker(op)
+        assert hint in output
+        assert result == "hint"
 
 
 class TestFatalErrorCustomOperations:
 
     Checker = OperationChecker(verbosity="comment")
 
-    def test_fatal_errors(self):
-        self.Checker(fatal_error_ops)
-        for op in fatal_error_ops:
-            assert self.Checker.results[op] == "fatal_error"
-
     @pytest.mark.parametrize(
         "op, err_str",
         zip(fatal_error_ops, fatal_error_messages),
     )
-    def test_fatal_errors_serial(self, op, err_str):
-        self.Checker(op)
-        assert err_str in self.Checker.output[op]
-        assert self.Checker.results[op] == "fatal_error"
+    def test_fatal_errors(self, op, err_str):
+        result, output = self.Checker(op)
+        assert err_str in output
+        assert result == "fatal_error"
 
 
 """
