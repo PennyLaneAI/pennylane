@@ -1616,11 +1616,21 @@ class Tensor(Observable):
     return_type = None
     tensor = True
 
-    def __init__(self, *args):  # pylint: disable=super-init-not-called
+    def __init__(self, *args, do_queue=True):  # pylint: disable=super-init-not-called
         self._eigvals_cache = None
         self.obs = []
         self._args = args
-        self.queue(init=True)
+
+        for o in args:
+            if isinstance(o, Tensor):
+                self.obs.extend(o.obs)
+            elif isinstance(o, Observable):
+                self.obs.append(o)
+            else:
+                raise ValueError("Can only perform tensor products between observables.")
+
+        if do_queue:
+            self.queue()
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the operator is represented in diagrams and drawings.
@@ -1655,22 +1665,9 @@ class Tensor(Observable):
 
         return "@".join(ob.label(decimals=decimals) for ob in self.obs)
 
-    def queue(self, context=qml.QueuingContext, init=False):  # pylint: disable=arguments-differ
-        constituents = self.obs
+    def queue(self, context=qml.QueuingContext):  # pylint: disable=arguments-differ
 
-        if init:
-            constituents = self._args
-
-        for o in constituents:
-
-            if init:
-                if isinstance(o, Tensor):
-                    self.obs.extend(o.obs)
-                elif isinstance(o, Observable):
-                    self.obs.append(o)
-                else:
-                    raise ValueError("Can only perform tensor products between observables.")
-
+        for o in self.obs:
             try:
                 context.update_info(o, owner=self)
             except qml.queuing.QueuingError:
@@ -1679,7 +1676,7 @@ class Tensor(Observable):
             except NotImplementedError:
                 pass
 
-        context.append(self, owns=tuple(constituents))
+        context.append(self, owns=tuple(self.obs))
         return self
 
     def __copy__(self):
@@ -2047,7 +2044,13 @@ class Tensor(Observable):
         else:
             obs = Tensor(*self.non_identity_obs)
 
+        try:
+            qml.QueuingContext.update_info(self, owner=obs)
+        except qml.queuing.QueuingError:
+            pass
+
         obs.return_type = self.return_type
+
         return obs
 
 

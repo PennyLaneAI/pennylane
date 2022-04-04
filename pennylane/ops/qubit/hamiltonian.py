@@ -363,7 +363,6 @@ class Hamiltonian(Observable):
 
         # Todo: make simplify return a new operation, so
         # it does not mutate this one
-
         new_coeffs = []
         new_ops = []
 
@@ -517,6 +516,7 @@ class Hamiltonian(Observable):
 
     def __matmul__(self, H):
         r"""The tensor product operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        print("In Hamiltonians matmul", self, H)
         coeffs1 = copy(self.coeffs)
         ops1 = self.ops.copy()
 
@@ -535,14 +535,25 @@ class Hamiltonian(Observable):
             ops_list = itertools.product(ops1, ops2)
             terms = [qml.operation.Tensor(t[0], t[1]) for t in ops_list]
 
-            return qml.Hamiltonian(coeffs, terms, simplify=True)
+            new_hamiltonian = Hamiltonian(coeffs, terms, simplify=True)
 
-        if isinstance(H, (Tensor, Observable)):
+        elif isinstance(H, (Tensor, Observable)):
             terms = [op @ H for op in ops1]
+            print("id of terms")
+            for t in terms:
+                print(id(t))
 
-            return qml.Hamiltonian(coeffs1, terms, simplify=True)
+            new_hamiltonian = Hamiltonian(coeffs1, terms, simplify=True)
 
-        raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+        else:
+            raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+
+        try:
+            qml.QueuingContext.update_info(self, owner=new_hamiltonian)
+        except (QueuingError, NotImplementedError):
+            pass
+
+        return new_hamiltonian
 
     def __add__(self, H):
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
