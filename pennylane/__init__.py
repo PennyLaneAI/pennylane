@@ -82,7 +82,7 @@ from pennylane.transforms import (
 from pennylane.ops.functions import *
 from pennylane.optimize import *
 from pennylane.vqe import ExpvalCost, VQECost
-from pennylane.debugging.snapshots import snapshots
+from pennylane.debugging import snapshots
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum

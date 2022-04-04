@@ -329,7 +329,7 @@ class OperationChecker:
 
     The categorization of test results and of the associated messages is as follows:
 
-    - ``"pass"``: Status reports e.g. after a successfully completed run.
+    - ``"pass"``: Status reports e.g., after a successfully completed run.
 
     - ``"comment"``: Comments regarding certain properties of the tested operation(s).
       These does not require any action to change the operation but is used to raise awareness
