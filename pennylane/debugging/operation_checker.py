@@ -284,8 +284,7 @@ def matrix_from_terms(op, par, wires):
     if terms is None or isinstance(terms, Exception):
         return terms
 
-    return np.sum([c * qml.matrix(op) for c, op in zip(*terms)], axis=0)
-
+    return qml.matrix(qml.Hamiltonian(*terms))
 
 def matrix_from_decomposition(op, par, wires):
     r"""Get the matrix of an operation, using its ``decomposition``.
