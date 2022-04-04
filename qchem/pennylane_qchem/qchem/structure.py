@@ -14,9 +14,8 @@
 """This module contains functions to read the structure of molecules, build a Hartree-Fock state,
 build an active space and generates single and double excitations.
 """
-# pylint: disable=too-many-arguments, too-few-public-methods
+# pylint: disable=too-many-locals
 import os
-import subprocess
 from shutil import copyfile
 
 import numpy as np
@@ -175,8 +174,8 @@ def active_space(electrons, orbitals, mult=1, active_electrons=None, active_orbi
 
         if ncore_orbs + active_orbitals > orbitals:
             raise ValueError(
-                f"The number of core ({ncore_orbs}) + active orbitals ({active_orbitals}) can not be "
-                f"greater than the total number of orbitals ({orbitals})"
+                f"The number of core ({ncore_orbs}) + active orbitals ({active_orbitals}) cannot "
+                f"be greater than the total number of orbitals ({orbitals})"
             )
 
         homo = (electrons + mult - 1) / 2
@@ -314,7 +313,8 @@ def hf_state(electrons, orbitals):
 
     if electrons <= 0:
         raise ValueError(
-            f"The number of active electrons has to be larger than zero; got 'electrons' = {electrons}"
+            f"The number of active electrons has to be larger than zero; "
+            f"got 'electrons' = {electrons}"
         )
 
     if electrons > orbitals:
