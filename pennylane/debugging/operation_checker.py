@@ -286,6 +286,7 @@ def matrix_from_terms(op, par, wires):
 
     return qml.matrix(qml.Hamiltonian(*terms))
 
+
 def matrix_from_decomposition(op, par, wires):
     r"""Get the matrix of an operation, using its ``decomposition``.
 
