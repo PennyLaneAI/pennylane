@@ -1192,6 +1192,7 @@ def cut_circuit_mc(
         array(4.)
     """
     # pylint: disable=unused-argument
+
     if len(tape.measurements) != 1:
         raise ValueError(
             "The Monte Carlo circuit cutting workflow only supports circuits "
@@ -1888,6 +1889,7 @@ def cut_circuit(
 def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
     to access the device wires."""
+    # pylint: disable=function-redefined
 
     tkwargs.setdefault("device_wires", qnode.device.wires)
     return self.default_qnode_wrapper(qnode, targs, tkwargs)

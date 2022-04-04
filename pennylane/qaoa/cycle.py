@@ -143,7 +143,7 @@ def wires_to_edges(graph: Union[nx.Graph, rx.PyGraph, rx.PyDiGraph]) -> Dict[int
 def cycle_mixer(graph: Union[nx.DiGraph, rx.PyDiGraph]) -> Hamiltonian:
     r"""Calculates the cycle-mixer Hamiltonian.
 
-    Following methods outlined `here <https://arxiv.org/pdf/1709.03489.pdf>`__, the
+    Following methods outlined `here <https://arxiv.org/abs/1709.03489>`__, the
     cycle-mixer Hamiltonian preserves the set of valid cycles:
 
     .. math::
