@@ -53,25 +53,7 @@ def read_structure(filepath, outpath="."):
     atomic units (Bohr radius = 1).
 
     The atomic coordinates in the file must be in Angstroms.
-    The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported out of the box.
-    If `Open Babel <https://openbabel.org/>`_ is installed,
-    `any format recognized by Open Babel <https://openbabel.org/wiki/Category:Formats>`_
-    is also supported. Additionally, the new file ``structure.xyz``,
-    containing the input geometry, is created in a directory with path given by ``outpath``.
-
-    Open Babel can be installed using ``apt`` if on Ubuntu:
-
-    .. code-block:: bash
-
-        sudo apt install openbabel
-
-    or using Anaconda:
-
-    .. code-block:: bash
-
-        conda install -c conda-forge openbabel
-
-    See the Open Babel documentation for more details on installation.
+    The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported.
 
     Args:
         filepath (str): name of the molecular structure file in the working directory
@@ -88,36 +70,10 @@ def read_structure(filepath, outpath="."):
     >>> print(symbols, coordinates)
     ['H', 'H'] [0.    0.   -0.66140414    0.    0.    0.66140414]
     """
-
-    obabel_error_message = (
-        "Open Babel converter not found:\n"
-        "If using Ubuntu or Debian, try: 'sudo apt install openbabel' \n"
-        "If using openSUSE, try: 'sudo zypper install openbabel' \n"
-        "If using CentOS or Fedora, try: 'sudo snap install openbabel' "
-        "Open Babel can also be downloaded from http://openbabel.org/wiki/Main_Page, \n"
-        "make sure you add it to the PATH environment variable. \n"
-        "If Anaconda is installed, try: 'conda install -c conda-forge openbabel'"
-    )
-
-    extension = filepath.split(".")[-1].strip().lower()
-
     file_in = filepath.strip()
     file_out = os.path.join(outpath, "structure.xyz")
 
-    if extension != "xyz":
-        if not _exec_exists("obabel"):
-            raise TypeError(obabel_error_message)
-        try:
-            subprocess.run(
-                ["obabel", "-i" + extension, file_in, "-oxyz", "-O", file_out], check=True
-            )
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(
-                f"Open Babel error. See the following Open Babel "
-                f"output for details:\n\n {e.stdout}\n{e.stderr}"
-            ) from e
-    else:
-        copyfile(file_in, file_out)
+    copyfile(file_in, file_out)
 
     symbols = []
     coordinates = []
