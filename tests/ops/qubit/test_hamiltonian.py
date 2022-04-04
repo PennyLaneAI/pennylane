@@ -335,6 +335,13 @@ sub_hamiltonians = [
 
 mul_hamiltonians = [
     (
+        0.5,
+        qml.Hamiltonian(
+            [1, 2], [qml.PauliX(0), qml.PauliZ(1)]
+        ),  # Case where the types of the coefficient and the scalar differ
+        qml.Hamiltonian([0.5, 1.0], [qml.PauliX(0), qml.PauliZ(1)]),
+    ),
+    (
         3,
         qml.Hamiltonian([1.5, 0.5], [qml.PauliX(0), qml.PauliZ(1)]),
         qml.Hamiltonian([4.5, 1.5], [qml.PauliX(0), qml.PauliZ(1)]),
@@ -649,6 +656,12 @@ class TestHamiltonian:
         """Tests that scalars and Hamiltonians are multiplied correctly"""
         assert res.compare(coeff * H)
         assert res.compare(H * coeff)
+
+    def test_hamiltonian_mul_coeff_cast(self):
+        """Test that the coefficients are correct when the type of the existing
+        and the new coefficients differ."""
+        h = 0.5 * (qml.PauliX(0) @ qml.PauliX(0) + qml.PauliY(0) @ qml.PauliY(1))
+        assert np.all(h.coeffs == np.array([0.5, 0.5]))
 
     @pytest.mark.parametrize(("H1", "H2", "H"), sub_hamiltonians)
     def test_hamiltonian_sub(self, H1, H2, H):

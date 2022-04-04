@@ -29,9 +29,9 @@ from .gradient_transform import (
     grad_method_validation,
     choose_grad_methods,
 )
-from .finite_difference import finite_diff, generate_shifted_tapes
+from .finite_difference import finite_diff
 from .parameter_shift import expval_param_shift, _get_operation_recipe
-from .general_shift_rules import process_shifts
+from .general_shift_rules import process_shifts, generate_shifted_tapes
 
 
 def _grad_method(tape, idx):
@@ -119,7 +119,7 @@ def _grad_method(tape, idx):
     return "A"
 
 
-def _gradient_analysis(tape):
+def _gradient_analysis_cv(tape):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter."""
 
@@ -662,10 +662,7 @@ def param_shift_cv(
             "Computing the gradient of circuits that return the state is not supported."
         )
 
-    _gradient_analysis(tape)
-    gradient_tapes = []
-    shapes = []
-    fns = []
+    _gradient_analysis_cv(tape)
 
     if argnum is None and not tape.trainable_params:
         warnings.warn(
@@ -673,7 +670,11 @@ def param_shift_cv(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return gradient_tapes, lambda _: ()
+        return [], lambda _: qml.math.zeros((tape.output_dim, 0))
+
+    gradient_tapes = []
+    shapes = []
+    fns = []
 
     def _update(data):
         """Utility function to update the list of gradient tapes,
@@ -684,9 +685,8 @@ def param_shift_cv(
 
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = grad_method_validation(method, tape)
-    all_params_grad_method_zero = all(g == "0" for g in diff_methods)
-    if all_params_grad_method_zero:
-        return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+    if all(g == "0" for g in diff_methods):
+        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     method_map = choose_grad_methods(diff_methods, argnum)
     var_present = any(m.return_type is qml.measurements.Variance for m in tape.measurements)

@@ -97,6 +97,10 @@
     [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
   - The efficiency of computing molecular integrals and Hamiltonian is improved
     [(#2316)](https://github.com/PennyLaneAI/pennylane/pull/2316)
+  - The qchem and new hf modules are merged
+    [(#2385)](https://github.com/PennyLaneAI/pennylane/pull/2385)
+  - The 6-31G basis set is added to the qchem basis set repo
+    [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
 
 * Development of a circuit-cutting compiler extension to circuits with sampling
   measurements has begun:
@@ -121,7 +125,42 @@
     sampled Pauli measurements and state preparations.
     [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
 
+  - Postprocessing functions `qcut.qcut_processing_fn_sample()` and
+    `qcut.qcut_processing_fn_mc()` have been added to return samples and expectation
+    values, respectively, of recombined fragments using the Monte Carlo sampling
+    approach.
+    [(#2358)](https://github.com/PennyLaneAI/pennylane/pull/2358)
+
+  - A user-facing transform for circuit cutting with sample measurements has
+    been added. A `qnode` containing `WireCut` operations and `sample` measurements
+    can be decorated with `@qml.cut_circuit_mc()` to perform this type of cutting.
+    [(#2382)](https://github.com/PennyLaneAI/pennylane/pull/2382)
+
 <h3>Improvements</h3>
+
+* The parameter-shift Hessian can now be computed for arbitrary
+  operations that support the general parameter-shift rule for
+  gradients, using `qml.gradients.param_shift_hessian`
+  [(#2319)](https://github.com/XanaduAI/pennylane/pull/2319)
+
+  Multiple ways to obtain the
+  gradient recipe are supported, in the following order of preference:
+
+  - A custom `grad_recipe`. It is iterated to obtain the shift rule for
+    the second-order derivatives in the diagonal entries of the Hessian.
+
+  - Custom `parameter_frequencies`. The second-order shift rule can
+    directly be computed using them.
+
+  - An operation's `generator`. Its eigenvalues will be used to obtain
+    `parameter_frequencies`, if they are not given explicitly for an operation.
+
+* Most compilation transforms, and relevant subroutines, have been updated to
+  support just-in-time compilation with `jax.jit`.
+  [(#1894)](https://github.com/PennyLaneAI/pennylane/pull/1894/)
+
+* The `qml.specs` transform now accepts an `expansion_strategy` keyword argument.
+  [(#2395)](https://github.com/PennyLaneAI/pennylane/pull/2395)
 
 * `default.qubit` and `default.mixed` now skip over identity operators instead of performing matrix multiplication
   with the identity.
@@ -180,7 +219,7 @@
   than :math:`N-1`. If a larger :math:`k` is requested, the dense matrix representation of 
   the Hamiltonian is constructed and the regular `qml.math.linalg.eigvalsh` is applied.
   [(#2333)](https://github.com/PennyLaneAI/pennylane/pull/2333)
-
+  
 * The function `qml.ctrl` was given the optional argument `control_values=None`.
   If overridden, `control_values` takes an integer or a list of integers corresponding to
   the binary value that each control value should take. The same change is reflected in
@@ -194,9 +233,17 @@
 * Circuit cutting now performs expansion to search for wire cuts in contained operations or tapes.
   [(#2340)](https://github.com/PennyLaneAI/pennylane/pull/2340)
 
+* The `qml.draw` and `qml.draw_mpl` transforms are now located in the `drawer` module. They can still be
+  accessed via the top-level `qml` namespace.
+  [(#2396)](https://github.com/PennyLaneAI/pennylane/pull/2396)
+
 <h3>Deprecations</h3>
 
 <h3>Breaking changes</h3>
+
+* The `update_stepsize` method is being deleted from `GradientDescentOptimizer` and its child
+  optimizers.  The `stepsize` property can be interacted with directly instead.
+  [(#2370)](https://github.com/PennyLaneAI/pennylane/pull/2370)
 
 * Most optimizers no longer flatten and unflatten arguments during computation. Due to this change, user
   provided gradient functions *must* return the same shape as `qml.grad`.
@@ -282,5 +329,6 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
-Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
-Jay Soni, Antal Száva, Maurice Weber.
+
+Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
+Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
