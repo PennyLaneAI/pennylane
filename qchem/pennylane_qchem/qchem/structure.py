@@ -25,27 +25,6 @@ import numpy as np
 bohr_angs = 0.529177210903
 
 
-def _exec_exists(prog):
-    r"""Checks whether the executable program ``prog`` exists in any of the directories
-    set in the ``PATH`` environment variable.
-
-    Args:
-        prog (str): name of the executable program
-
-    Returns:
-        boolean: ``True`` if the executable ``prog`` is found; ``False`` otherwise
-    """
-    for dir_in_path in os.environ["PATH"].split(os.pathsep):
-        path_to_prog = os.path.join(dir_in_path, prog)
-        if os.path.exists(path_to_prog):
-            try:
-                subprocess.call([path_to_prog], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-            except OSError:
-                return False
-            return True
-    return False
-
-
 def read_structure(filepath, outpath="."):
     r"""Reads the structure of the polyatomic system from a file and returns
     a list with the symbols of the atoms in the molecule and a 1D array
