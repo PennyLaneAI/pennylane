@@ -523,7 +523,9 @@ class OperationChecker:
         No problems have been found with the operation RX.
     """
 
-    def __init__(self, verbosity="pass", max_num_params=10, print_fn=print, print_color=True, tol=1e-5):
+    def __init__(
+        self, verbosity="pass", max_num_params=10, print_fn=print, print_color=True, tol=1e-5
+    ):
         # pylint: disable=too-many-instance-attributes
         self._verbosity = {
             key for key, val in verbosity_levels.items() if val <= verbosity_levels[verbosity]
@@ -537,8 +539,7 @@ class OperationChecker:
         self.tmp = self.seed = None
 
     def __call__(self, op, parameters=None, wires=None, seed=None):
-        r"""Call the OperationChecker on one or multiple operations.
-        """
+        r"""Call the OperationChecker on one or multiple operations."""
         self.seed = seed
         # Initialize result status and output for this operation
         self.results[op] = "pass"
@@ -771,7 +772,10 @@ class OperationChecker:
         for par in parameters:
             exc = wrapped_method(*par, **kwargs)
             num = len(par)
-            if not (exc is None or isinstance(exc, Exception)) and num not in self.tmp["possible_num_params"]:
+            if (
+                not (exc is None or isinstance(exc, Exception))
+                and num not in self.tmp["possible_num_params"]
+            ):
                 succeeding_methods.append(num)
             elif isinstance(exc, Exception) and num in self.tmp["possible_num_params"]:
                 failing_methods.append(num)
@@ -860,7 +864,7 @@ class OperationChecker:
             diag_mat = np.eye(matrix.shape[0])
         else:
             with qml.tape.QuantumTape() as tape:
-                [op.queue() for op in diag_gates] # pylint: disable=expression-not-assigned
+                [op.queue() for op in diag_gates]  # pylint: disable=expression-not-assigned
             diag_mat = qml.matrix(tape)
 
         diagonalized = diag_mat @ matrix @ diag_mat.conj().T
