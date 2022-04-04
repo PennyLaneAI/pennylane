@@ -1,17 +1,59 @@
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Unit tests for functions needed for converting observables obtained from external libraries to a
+PennyLane observable.
+"""
 import os
+import sys
 
-import numpy as np
-import pennylane as qml
 import pytest
-from openfermion import QubitOperator
 
+import pennylane as qml
+from pennylane import numpy as np
 from pennylane import qchem
+
+openfermion = pytest.importorskip("openfermion")
+
+
+@pytest.fixture(
+    scope="module",
+    params=[
+        None,
+        qml.wires.Wires(
+            list("ab") + [-3, 42] + ["xyz", "23", "wireX"] + [f"w{i}" for i in range(20)]
+        ),
+        list(range(100, 120)),
+        {13 - i: "abcdefghijklmn"[i] for i in range(14)},
+    ],
+)
+def custom_wires(request):
+    """Custom wire mapping for Pennylane<->OpenFermion conversion"""
+    return request.param
+
+
+@pytest.fixture(scope="session")
+def tol():
+    """Numerical tolerance for equality tests."""
+    return {"rtol": 0, "atol": 1e-8}
 
 
 @pytest.mark.parametrize(
     ("mol_name", "terms_ref"),
     [
         ("empty", None),
+        ("singlewire", {((0, "Z"),): (0.155924093421341 + 0j)}),
         (
             "lih [jordan_WIGNER]",
             {
@@ -291,29 +333,47 @@ def test_observable_conversion(mol_name, terms_ref, custom_wires, monkeypatch):
     The parametrized inputs are `.terms` attribute of the output `QubitOperator`s based on
     the same set of test molecules as `test_gen_hamiltonian_pauli_basis`.
 
-    The equality checking is implemented in the `qchem` module itself as it could be
+    The equality checking is implemented in the `convert` module itself as it could be
     something useful to the users as well.
     """
-    qOp = QubitOperator()
+    qOp = openfermion.QubitOperator()
+
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
 
-    vqe_observable = qchem.convert_observable(qOp, custom_wires)
+    vqe_observable = qml.qchem.convert.import_operator(qOp, "openfermion", custom_wires)
 
     if isinstance(custom_wires, dict):
         custom_wires = {v: k for k, v in custom_wires.items()}
 
-    assert qchem._qubit_operators_equivalent(qOp, vqe_observable, custom_wires)
+    assert qml.qchem.convert._openfermion_pennylane_equivalent(qOp, vqe_observable, custom_wires)
 
 
-def test_not_xyz_terms_to_qubit_operator():
+@pytest.mark.parametrize(
+    ("terms_ref", "lib_name"),
+    [
+        ({((0, "Z"),): (0.155924093421341 + 0j)}, "qiskit"),
+    ],
+)
+def test_convert_format_not_supported(terms_ref, lib_name, monkeypatch):
+    """Test if an ImportError is raised when openfermion is requested but not installed"""
+
+    qOp = openfermion.QubitOperator()
+    if terms_ref is not None:
+        monkeypatch.setattr(qOp, "terms", terms_ref)
+
+    with pytest.raises(TypeError, match="Converter does not exist for"):
+        qml.qchem.convert.import_operator(qOp, format=lib_name)
+
+
+def test_not_xyz_pennylane_to_openfermion():
     r"""Test if the conversion complains about non Pauli matrix observables"""
     with pytest.raises(
         ValueError,
         match="Expected only PennyLane observables PauliX/Y/Z or Identity, but also got {"
         "'QuadOperator'}.",
     ):
-        qchem._terms_to_qubit_operator(
+        qml.qchem.convert._pennylane_to_openfermion(
             np.array([0.1 + 0.0j, 0.0]),
             [
                 qml.operation.Tensor(qml.PauliX(0)),
@@ -322,8 +382,24 @@ def test_not_xyz_terms_to_qubit_operator():
         )
 
 
+def test_wires_not_covered_pennylane_to_openfermion():
+    r"""Test if the conversion complains about Supplied wires not covering ops wires"""
+    with pytest.raises(
+        ValueError,
+        match="Supplied `wires` does not cover all wires defined in `ops`.",
+    ):
+        qml.qchem.convert._pennylane_to_openfermion(
+            np.array([0.1, 0.2]),
+            [
+                qml.operation.Tensor(qml.PauliX(wires=["w0"])),
+                qml.operation.Tensor(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w2"])),
+            ],
+            wires=qml.wires.Wires(["w0", "w1"]),
+        )
+
+
 def test_types_consistency():
-    r"""Test the type consistency of the qubit Hamiltonian constructed by 'convert_observable' from
+    r"""Test the type consistency of the qubit Hamiltonian constructed by 'import_operator' from
     an OpenFermion QubitOperator with respect to the same observable built directly using PennyLane
     operations"""
 
@@ -331,21 +407,25 @@ def test_types_consistency():
     pl_ref = 1 * qml.Identity(0) + 2 * qml.PauliZ(0) @ qml.PauliX(1)
 
     # Corresponding OpenFermion QubitOperator
-    of = QubitOperator("", 1) + QubitOperator("Z0 X1", 2)
+    of = openfermion.QubitOperator("", 1) + openfermion.QubitOperator("Z0 X1", 2)
 
-    # Build PL operator using 'convert_observable'
-    pl = qchem.convert_observable(of)
+    # Build PL operator using 'import_operator'
+    pl = qml.qchem.convert.import_operator(of, "openfermion")
 
-    ops = pl.terms()[1]
-    ops_ref = pl_ref.terms()[1]
+    ops = pl.ops
+    ops_ref = pl_ref.ops
 
     for i, op in enumerate(ops):
         assert op.name == ops_ref[i].name
         assert type(op) == type(ops_ref[i])
 
 
-op_1 = QubitOperator("Y0 Y1", 1 + 0j) + QubitOperator("Y0 X1", 2) + QubitOperator("Z0 Y1", 2.3e-08j)
-op_2 = QubitOperator("Z0 Y1", 2.23e-10j)
+op_1 = (
+    openfermion.QubitOperator("Y0 Y1", 1 + 0j)
+    + openfermion.QubitOperator("Y0 X1", 2)
+    + openfermion.QubitOperator("Z0 Y1", 2.3e-08j)
+)
+op_2 = openfermion.QubitOperator("Z0 Y1", 2.23e-10j)
 
 
 @pytest.mark.parametrize(
@@ -355,17 +435,17 @@ op_2 = QubitOperator("Z0 Y1", 2.23e-10j)
         (op_2, 1e06),
     ],
 )
-def test_exception_convert_observable(qubit_op, tol):
+def test_exception_import_operator(qubit_op, tol):
     r"""Test that an error is raised if the QubitOperator contains complex coefficients.
     Currently the Hamiltonian class does not support complex coefficients.
     """
     with pytest.raises(TypeError, match="The coefficients entering the QubitOperator must be real"):
-        qchem.convert_observable(qubit_op, tol=tol)
+        qml.qchem.convert.import_operator(qubit_op, "openfermion", tol=tol)
 
 
-def test_identities_terms_to_qubit_operator():
+def test_identities_pennylane_to_openfermion():
     """Test that tensor products that contain Identity instances are handled
-    correctly by the _terms_to_qubit_operator function.
+    correctly by the _pennylane_to_openfermion function.
 
     A decomposition of the following observable was used:
     [[1 0 0 0]
@@ -380,27 +460,44 @@ def test_identities_terms_to_qubit_operator():
         qml.PauliZ(wires=[0]) @ qml.Identity(wires=[1]),
     ]
 
-    op_str = str(qchem._terms_to_qubit_operator(coeffs, obs_list))
+    op_str = str(qml.qchem.convert._pennylane_to_openfermion(coeffs, obs_list))
 
     # Remove new line characters
     op_str = op_str.replace("\n", "")
-    assert op_str == "2.5 [] +-1.0 [Z0] +-0.5 [Z1]"
+
+    assert op_str == "(2.5+0j) [] +(-1+0j) [Z0] +(-0.5+0j) [Z1]"
 
 
-def test_terms_to_qubit_operator_no_decomp():
-    """Test the _terms_to_qubit_operator function with custom wires."""
+def test_singlewire_pennylane_to_openfermion():
+    """Test that _pennylane_to_openfermion function returns the correct Hamiltonian for a
+    single-wire case.
+    """
+    coeffs = np.array([0.5])
+    obs_list = [qml.PauliZ(wires=[0])]
+
+    op_str = str(qml.qchem.convert._pennylane_to_openfermion(coeffs, obs_list))
+
+    # Remove new line characters
+    op_str = op_str.replace("\n", "")
+    assert op_str == "(0.5+0j) [Z0]"
+
+
+def test_pennylane_to_openfermion_no_decomp():
+    """Test the _pennylane_to_openfermion function with custom wires."""
     coeffs = np.array([0.1, 0.2])
     ops = [
         qml.operation.Tensor(qml.PauliX(wires=["w0"])),
         qml.operation.Tensor(qml.PauliY(wires=["w0"]), qml.PauliZ(wires=["w2"])),
     ]
     op_str = str(
-        qchem._terms_to_qubit_operator(coeffs, ops, wires=qml.wires.Wires(["w0", "w1", "w2"]))
+        qml.qchem.convert._pennylane_to_openfermion(
+            coeffs, ops, wires=qml.wires.Wires(["w0", "w1", "w2"])
+        )
     )
 
     # Remove new line characters
     op_str = op_str.replace("\n", "")
-    expected = "0.1 [X0] +0.2 [Y0 Z2]"
+    expected = "(0.1+0j) [X0] +(0.2+0j) [Y0 Z2]"
     assert op_str == expected
 
 
@@ -434,20 +531,20 @@ def test_terms_to_qubit_operator_no_decomp():
 def test_integration_observable_to_vqe_cost(
     monkeypatch, mol_name, terms_ref, expected_cost, custom_wires, tol
 ):
-    r"""Test if `convert_observable()` in qchem integrates with `ExpvalCost()` in pennylane"""
+    r"""Test if `import_operator()` integrates with `ExpvalCost()` in pennylane"""
 
-    qOp = QubitOperator()
+    qOp = openfermion.QubitOperator()
     if terms_ref is not None:
         monkeypatch.setattr(qOp, "terms", terms_ref)
-    vqe_observable = qchem.convert_observable(qOp, custom_wires)
+    vqe_observable = qml.qchem.convert.import_operator(qOp, "openfermion", custom_wires)
 
     num_qubits = len(vqe_observable.wires)
-    assert vqe_observable.terms().__repr__()  # just to satisfy codecov
+    assert vqe_observable.terms.__repr__()  # just to satisfy codecov
 
     if custom_wires is None:
         wires = num_qubits
     elif isinstance(custom_wires, dict):
-        wires = qchem.structure._process_wires(custom_wires)
+        wires = qml.qchem.convert._process_wires(custom_wires)
     else:
         wires = custom_wires[:num_qubits]
     dev = qml.device("default.qubit", wires=wires)
@@ -464,6 +561,61 @@ def test_integration_observable_to_vqe_cost(
     assert np.allclose(res, expected_cost, **tol)
 
 
+@pytest.mark.parametrize("n_wires", [None, 6])
+def test_process_wires(custom_wires, n_wires):
+    r"""Test if _process_wires handels different combinations of input types correctly."""
+
+    wires = qml.qchem.convert._process_wires(custom_wires, n_wires)
+
+    assert isinstance(wires, qml.wires.Wires)
+
+    expected_length = (
+        n_wires if n_wires is not None else len(custom_wires) if custom_wires is not None else 1
+    )
+    if len(wires) > expected_length:
+        assert isinstance(custom_wires, dict)
+        assert len(wires) == max(custom_wires) + 1
+    else:
+        assert len(wires) == expected_length
+
+    if custom_wires is not None and n_wires is not None:
+        if not isinstance(custom_wires, dict):
+            assert wires == qml.qchem.convert._process_wires(custom_wires[:n_wires], n_wires)
+        else:
+            assert wires == qml.qchem.convert._process_wires(
+                {k: v for k, v in custom_wires.items()}, n_wires
+            )
+
+
+def test_process_wires_raises():
+    """Test if exceptions are raised for _wire_proc()"""
+
+    with pytest.raises(ValueError, match="Expected only int-keyed or consecutive int-valued dict"):
+        qml.qchem.convert._process_wires({"a": "b"})
+
+    with pytest.raises(ValueError, match="Expected type Wires, list, tuple, or dict"):
+        qml.qchem.convert._process_wires(1.2)
+
+    with pytest.raises(ValueError, match="Length of `wires`"):
+        qml.qchem.convert._process_wires([3, 4], 3)
+
+
+def test_fail_import_openfermion(monkeypatch):
+    """Test if an ImportError is raised when openfermion is requested but not installed"""
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "openfermion", None)
+
+        with pytest.raises(ImportError, match="The OpenFermion package is required"):
+            qml.qchem.convert._pennylane_to_openfermion(
+                np.array([0.1 + 0.0j, 0.0]),
+                [
+                    qml.operation.Tensor(qml.PauliX(0)),
+                    qml.operation.Tensor(qml.PauliZ(0), qml.QuadOperator(0.1, wires=1)),
+                ],
+            )
+
+
 @pytest.mark.parametrize(
     ("name", "core", "active", "mapping", "expected_cost"),
     [
@@ -478,9 +630,8 @@ def test_integration_observable_to_vqe_cost(
 def test_integration_mol_file_to_vqe_cost(
     name, core, active, mapping, expected_cost, custom_wires, tol
 ):
-    r"""Test if the output of `decompose()` works with `convert_observable()`
+    r"""Test if the output of `decompose()` works with `import_operator()`
     to generate `ExpvalCost()`"""
-
     ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
     hf_file = os.path.join(ref_dir, name)
     qubit_hamiltonian = qchem.decompose(
@@ -490,7 +641,9 @@ def test_integration_mol_file_to_vqe_cost(
         active=active,
     )
 
-    vqe_hamiltonian = qchem.convert_observable(qubit_hamiltonian, custom_wires)
+    vqe_hamiltonian = qml.qchem.convert.import_operator(
+        qubit_hamiltonian, wires=custom_wires, format="openfermion"
+    )
     assert len(vqe_hamiltonian.ops) > 1  # just to check if this runs
 
     num_qubits = len(vqe_hamiltonian.wires)
@@ -499,7 +652,7 @@ def test_integration_mol_file_to_vqe_cost(
     if custom_wires is None:
         wires = num_qubits
     elif isinstance(custom_wires, dict):
-        wires = qchem.structure._process_wires(custom_wires)
+        wires = qml.qchem.convert._process_wires(custom_wires)
     else:
         wires = custom_wires[:num_qubits]
     dev = qml.device("default.qubit", wires=wires)
@@ -515,42 +668,3 @@ def test_integration_mol_file_to_vqe_cost(
     res = dummy_cost(phis)
 
     assert np.abs(res - expected_cost) < tol["atol"]
-
-
-@pytest.mark.parametrize("n_wires", [None, 6])
-def test_process_wires(custom_wires, n_wires):
-    r"""Test if _process_wires handels different combinations of input types correctly."""
-
-    wires = qchem.structure._process_wires(custom_wires, n_wires)
-
-    assert isinstance(wires, qml.wires.Wires)
-
-    expected_length = (
-        n_wires if n_wires is not None else len(custom_wires) if custom_wires is not None else 1
-    )
-    if len(wires) > expected_length:
-        assert isinstance(custom_wires, dict)
-        assert len(wires) == max(custom_wires) + 1
-    else:
-        assert len(wires) == expected_length
-
-    if custom_wires is not None and n_wires is not None:
-        if not isinstance(custom_wires, dict):
-            assert wires == qchem.structure._process_wires(custom_wires[:n_wires], n_wires)
-        else:
-            assert wires == qchem.structure._process_wires(
-                {k: v for k, v in custom_wires.items()}, n_wires
-            )
-
-
-def test_process_wires_raises():
-    """Test if exceptions are raised for _wire_proc()"""
-
-    with pytest.raises(ValueError, match="Expected only int-keyed or consecutive int-valued dict"):
-        qchem.structure._process_wires({"a": "b"})
-
-    with pytest.raises(ValueError, match="Expected type Wires, list, tuple, or dict"):
-        qchem.structure._process_wires(1.2)
-
-    with pytest.raises(ValueError, match="Length of `wires`"):
-        qchem.structure._process_wires([3, 4], 3)

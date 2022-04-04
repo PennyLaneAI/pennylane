@@ -19,6 +19,8 @@ import itertools
 import string
 import sys
 from itertools import product
+from os import environ
+from pathlib import Path
 
 import pytest
 from flaky import flaky
@@ -97,6 +99,40 @@ with qml.tape.QuantumTape() as mcm_tape:
     qml.WireCut(wires=1)
     qml.CNOT(wires=[0, 1])
     qml.expval(qml.PauliZ(wires=[0]))
+
+
+with qml.tape.QuantumTape() as frag0:
+    qml.Hadamard(wires=[0])
+    qml.RX(0.432, wires=[0])
+    qml.RY(0.543, wires=[1])
+    qml.CNOT(wires=[0, 1])
+    qcut.MeasureNode(wires=[1])
+    qcut.PrepareNode(wires=[2])
+    qml.RZ(0.321, wires=[2])
+    qml.CNOT(wires=[0, 2])
+    qcut.MeasureNode(wires=[2])
+    qcut.PrepareNode(wires=[3])
+    qml.CNOT(wires=[0, 3])
+    qml.sample(qml.Projector([1], wires=[0]))
+    qml.sample(qml.Projector([1], wires=[3]))
+
+with qml.tape.QuantumTape() as frag1:
+    qcut.PrepareNode(wires=[0])
+    qml.CNOT(wires=[0, 1])
+    qcut.MeasureNode(wires=[0])
+    qml.Hadamard(wires=[1])
+    qcut.PrepareNode(wires=[2])
+    qml.CNOT(wires=[2, 1])
+    qcut.MeasureNode(wires=[2])
+    qml.sample(qml.Projector([1], wires=[1]))
+
+
+frag_edge_data = [
+    (0, 1, {"pair": (frag0.operations[4], frag1.operations[0])}),
+    (1, 0, {"pair": (frag1.operations[2], frag0.operations[5])}),
+    (0, 1, {"pair": (frag0.operations[8], frag1.operations[4])}),
+    (1, 0, {"pair": (frag1.operations[6], frag0.operations[9])}),
+]
 
 
 def compare_nodes(nodes, expected_wires, expected_names):
@@ -1395,7 +1431,7 @@ class TestGraphToTape:
 
         with pytest.raises(
             ValueError,
-            match="Invalid return type. Only expecation value and sampling measurements ",
+            match="Invalid return type. Only expectation value and sampling measurements ",
         ):
             [qcut.graph_to_tape(sg) for sg in subgraphs]
 
@@ -1809,40 +1845,9 @@ class TestExpandFragmentTapesMC:
         expanded correctly.
         """
 
-        with qml.tape.QuantumTape() as tape0:
-            qml.Hadamard(wires=[0])
-            qml.RX(0.432, wires=[0])
-            qml.RY(0.543, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qcut.MeasureNode(wires=[1])
-            qcut.PrepareNode(wires=[2])
-            qml.RZ(0.321, wires=[2])
-            qml.CNOT(wires=[0, 2])
-            qcut.MeasureNode(wires=[2])
-            qcut.PrepareNode(wires=[3])
-            qml.CNOT(wires=[0, 3])
-            qml.sample(qml.Projector([1], wires=[0]))
-            qml.sample(qml.Projector([1], wires=[3]))
+        frags = [frag0, frag1]
 
-        with qml.tape.QuantumTape() as tape1:
-            qcut.PrepareNode(wires=[0])
-            qml.CNOT(wires=[0, 1])
-            qcut.MeasureNode(wires=[0])
-            qml.Hadamard(wires=[1])
-            qcut.PrepareNode(wires=[2])
-            qml.CNOT(wires=[2, 1])
-            qcut.MeasureNode(wires=[2])
-            qml.sample(qml.Projector([1], wires=[1]))
-
-        tapes = [tape0, tape1]
-
-        edge_data = [
-            (0, 1, {"pair": (tape0.operations[4], tape1.operations[0])}),
-            (1, 0, {"pair": (tape1.operations[2], tape0.operations[5])}),
-            (0, 1, {"pair": (tape0.operations[8], tape1.operations[4])}),
-            (1, 0, {"pair": (tape1.operations[6], tape0.operations[9])}),
-        ]
-        communication_graph = MultiDiGraph(edge_data)
+        communication_graph = MultiDiGraph(frag_edge_data)
 
         fixed_choice = np.array([[4, 6], [1, 2], [2, 3], [3, 0]])
         with monkeypatch.context() as m:
@@ -1852,7 +1857,7 @@ class TestExpandFragmentTapesMC:
                 lambda a, size, replace: fixed_choice,
             )
             fragment_configurations, settings = qcut.expand_fragment_tapes_mc(
-                tapes, communication_graph, 2
+                frags, communication_graph, 2
             )
 
         assert np.allclose(settings, fixed_choice)
@@ -1955,6 +1960,513 @@ class TestExpandFragmentTapesMC:
             for op, exp_op in zip(ops, expected_ops):
                 assert op.name == exp_op.name
                 assert op.wires == exp_op.wires
+
+
+class TestMCPostprocessing:
+    """
+    Tests that the postprocessing for circuits containing sample measurements
+    gives the correct results.
+    """
+
+    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
+    def test_sample_postprocess(self, interface):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        lib = pytest.importorskip(interface)
+        fragment_tapes = [frag0, frag1]
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [qml.math.convert_like(fs, lib.ones(1)) for fs in fixed_samples]
+
+        postprocessed = qcut.qcut_processing_fn_sample(
+            convert_fixed_samples, communication_graph, shots
+        )
+        expected_postprocessed = [np.array([[1.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 1.0, 1.0]])]
+
+        assert np.allclose(postprocessed[0], expected_postprocessed[0])
+        assert type(convert_fixed_samples[0]) == type(postprocessed[0])
+
+    @pytest.mark.parametrize("interface", ["autograd.numpy", "tensorflow", "torch", "jax.numpy"])
+    def test_mc_sample_postprocess(self, interface, mocker):
+        """
+        Tests that the postprocessing for the generic sampling case gives the
+        correct result
+        """
+        lib = pytest.importorskip(interface)
+        fragment_tapes = [frag0, frag1]
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+        convert_fixed_samples = [qml.math.convert_like(fs, lib.ones(1)) for fs in fixed_samples]
+
+        def fn(x):
+            if x[0] == 0 and x[1] == 0:
+                return 1
+            if x[0] == 0 and x[1] == 1:
+                return -1
+            if x[0] == 1 and x[1] == 0:
+                return -1
+            if x[0] == 1 and x[1] == 1:
+                return 1
+
+        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+
+        spy_prod = mocker.spy(np, "prod")
+        spy_hstack = mocker.spy(np, "hstack")
+
+        postprocessed = qcut.qcut_processing_fn_mc(
+            convert_fixed_samples, communication_graph, fixed_settings, shots, fn
+        )
+
+        expected = -85.33333333333333
+
+        prod_args = [
+            np.array([1.0, 1.0, -1.0, 1.0]),
+            [0.5, -0.5, 0.5, -0.5],
+            np.array([1.0, -1.0, -1.0, -1.0]),
+            [-0.5, -0.5, 0.5, 0.5],
+            np.array([1.0, -1.0, 1.0, 1.0]),
+            [0.5, 0.5, -0.5, 0.5],
+        ]
+
+        hstack_args = [
+            [np.array([1.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, 1.0]), np.array([-1.0, 1.0])],
+            [np.array([0.0, 0.0]), np.array([0.0])],
+            [np.array([1.0, -1.0]), np.array([-1.0, -1.0])],
+            [np.array([0.0, 1.0]), np.array([1.0])],
+            [np.array([1.0, -1.0]), np.array([1.0, 1.0])],
+        ]
+
+        for arg, expected_arg in zip(spy_prod.call_args_list, prod_args):
+            assert np.allclose(arg[0][0], expected_arg)
+
+        for args, expected_args in zip(spy_hstack.call_args_list, hstack_args):
+            for arg, expected_arg in zip(args[0][0], expected_args):
+                assert np.allclose(arg, expected_arg)
+
+        assert np.isclose(postprocessed, expected)
+        assert type(convert_fixed_samples[0]) == type(postprocessed)
+
+    def test_reshape_results(self):
+        """
+        Tests that results are reshaped correctly using the `_reshape_results`
+        helper function
+        """
+
+        results = [
+            np.array([[0.0], [-1.0]]),
+            np.array([[1.0], [1.0]]),
+            np.array([[1.0], [1.0]]),
+            np.array([[1.0], [1.0]]),
+            np.array([[1.0], [1.0]]),
+            np.array([[0.0], [0.0]]),
+        ]
+
+        expected_reshaped = [
+            [np.array([0.0, -1.0]), np.array([1.0, 1.0])],
+            [np.array([1.0, 1.0]), np.array([1.0, 1.0])],
+            [np.array([1.0, 1.0]), np.array([0.0, 0.0])],
+        ]
+
+        shots = 3
+
+        reshaped = qcut._reshape_results(results, shots)
+
+        for resh, exp_resh in zip(reshaped, expected_reshaped):
+            for arr, exp_arr in zip(resh, exp_resh):
+                assert np.allclose(arr, exp_arr)
+
+    def test_classical_processing_error(self):
+        """
+        Tests that the correct error is given if the classical processing
+        function gives output outside of the interval [-1, 1]
+        """
+
+        fragment_tapes = [frag0, frag1]
+
+        communication_graph = MultiDiGraph(frag_edge_data)
+        shots = 3
+
+        fixed_samples = [
+            np.array([[1.0], [0.0], [1.0], [1.0]]),
+            np.array([[0.0], [0.0], [1.0], [-1.0]]),
+            np.array([[0.0], [1.0], [1.0], [-1.0]]),
+            np.array([[0.0], [-1.0], [1.0]]),
+            np.array([[0.0], [-1.0], [-1.0]]),
+            np.array([[1.0], [1.0], [1.0]]),
+        ]
+
+        def fn(x):
+            if x[0] == 0 and x[1] == 0:
+                return 2
+            if x[0] == 0 and x[1] == 1:
+                return -2
+            if x[0] == 1 and x[1] == 0:
+                return -2
+            if x[0] == 1 and x[1] == 1:
+                return 2
+
+        fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
+
+        with pytest.raises(ValueError, match="The classical processing function supplied must "):
+            qcut.qcut_processing_fn_mc(
+                fixed_samples, communication_graph, fixed_settings, shots, fn
+            )
+
+
+class TestCutCircuitMCTransform:
+    """
+    Tests that the `cut_circuit_mc` transform gives the correct results.
+    """
+
+    @flaky(max_runs=3)
+    def test_cut_circuit_mc_expval(self):
+        """
+        Tests that a circuit containing sampling measurements can be cut and
+        recombined to give the correct expectation value
+        """
+
+        dev_sim = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev_sim)
+        def target_circuit(v):
+            qml.RX(v, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(v, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=2))
+
+        def fn(x):
+            if x[0] == 0 and x[1] == 0:
+                return 1
+            if x[0] == 0 and x[1] == 1:
+                return -1
+            if x[0] == 1 and x[1] == 0:
+                return -1
+            if x[0] == 1 and x[1] == 1:
+                return 1
+
+        dev = qml.device("default.qubit", wires=2, shots=10000)
+
+        @qml.cut_circuit_mc(classical_processing_fn=fn)
+        @qml.qnode(dev)
+        def circuit(v):
+            qml.RX(v, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(v, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        cut_res_mc = circuit(v)
+
+        target = target_circuit(v)
+        assert np.isclose(cut_res_mc, target, atol=0.1)  # not guaranteed to pass each time
+
+    def test_cut_circuit_mc_sample(self):
+        """
+        Tests that a circuit containing sampling measurements can be cut and
+        postprocessed to return bitstrings of the original circuit size.
+        """
+
+        dev = qml.device("default.qubit", wires=3, shots=100)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        target = circuit(v)
+
+        cut_circuit_bs = qcut.cut_circuit_mc(circuit)
+        cut_res_bs = cut_circuit_bs(v)
+
+        assert cut_res_bs.shape == target.shape
+        assert type(cut_res_bs) == type(target)
+
+    def test_override_samples(self):
+        """
+        Tests that the number of shots used on a device can be temporarily
+        altered when executing the QNode
+        """
+        shots = 100
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+
+        temp_shots = 333
+        cut_res = cut_circuit(v, shots=temp_shots)
+
+        assert cut_res.shape == (temp_shots, 2)
+
+        cut_res_original = cut_circuit(v)
+
+        assert cut_res_original.shape == (shots, 2)
+
+    def test_no_shots(self):
+        """
+        Tests that the correct error message is given if a device is provided
+        without shots
+        """
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        with pytest.raises(ValueError, match="A shots value must be provided in the device "):
+            cut_circuit(v)
+
+    def test_sample_obs_error(self):
+        """
+        Tests that a circuit with sample measurements containing observables
+        gives the correct error
+        """
+        shots = 100
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(qml.PauliZ(0))
+
+        v = 0.319
+        with pytest.raises(ValueError, match="The Monte Carlo circuit cutting workflow only "):
+            cut_circuit(v)
+
+    def test_transform_shots_error(self):
+        """
+        Tests that the correct error is given when a `shots` argument is passed
+        when transforming a qnode
+        """
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.cut_circuit_mc(shots=456)
+        @qml.qnode(dev)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        with pytest.raises(
+            ValueError, match="Cannot provide a 'shots' value directly to the cut_circuit_mc "
+        ):
+            cut_circuit(v)
+
+    def test_multiple_meas_error(self):
+        """
+        Tests that attempting to cut a circuit with multiple sample measurements
+        using `cut_circuit_mc` gives the correct error
+        """
+        dev = qml.device("default.qubit", wires=3, shots=100)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0]), qml.sample(wires=[1]), qml.sample(wires=[2])
+
+        v = 0.319
+        with pytest.raises(
+            ValueError, match="The Monte Carlo circuit cutting workflow only supports circuits "
+        ):
+            cut_circuit(v)
+
+    def test_non_sample_meas_error(self):
+        """
+        Tests that attempting to cut a circuit with non-sample measurements
+        using `cut_circuit_mc` gives the correct error
+        """
+        dev = qml.device("default.qubit", wires=2, shots=100)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.expval(qml.PauliX(1))
+
+        v = 0.319
+        with pytest.raises(
+            ValueError, match="The Monte Carlo circuit cutting workflow only supports circuits "
+        ):
+            cut_circuit(v)
+
+    def test_qnode_shots_arg_error(self):
+        """
+        Tests that if a shots argument is passed directly to the qnode when using
+        `cut_circuit_mc` the correct error is given
+        """
+        shots = 100
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        with pytest.raises(
+            ValueError,
+            match="Detected 'shots' as an argument of the quantum function to transform. ",
+        ):
+
+            @qml.cut_circuit_mc
+            @qml.qnode(dev)
+            def cut_circuit(x, shots=shots):
+                qml.RX(x, wires=0)
+                qml.RY(0.5, wires=1)
+                qml.RX(1.3, wires=2)
+
+                qml.CNOT(wires=[0, 1])
+                qml.WireCut(wires=1)
+                qml.CNOT(wires=[1, 2])
+
+                qml.RX(x, wires=0)
+                qml.RY(0.7, wires=1)
+                qml.RX(2.3, wires=2)
+                return qml.sample(wires=[0, 2])
+
+    def test_no_interface(self):
+        """
+        Tests that if no interface is provided when using `cut_circuit_mc` the
+        correct output is given
+        """
+        shots = 100
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev, interface=None)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        res = cut_circuit(v)
+        assert res.shape == (shots, 2)
+        assert type(res) == np.ndarray
 
 
 class TestContractTensors:
@@ -2223,7 +2735,7 @@ class TestQCutProcessingFn:
         results = []
 
         # Calculates U_{ijkl} = Tr((b[k] x b[l]) U (b[i] x b[j]) U*)
-        # See Sec. II. A. of https://arxiv.org/abs/1909.07534, below Eq. (2).
+        # See Sec. II. A. of https://doi.org/10.1088/1367-2630/abd7bc, below Eq. (2).
         for inp, out in itertools.product(prod_inp, prod_out):
             input = kron(*[basis[i] for i in inp])
             output = kron(*[basis[i] for i in out])
@@ -3373,3 +3885,290 @@ class TestCutStrategy:
                 max_wires_by_fragment=max_wires_by_fragment,
                 max_gates_by_fragment=max_gates_by_fragment,
             )
+
+
+def make_weakly_connected_tape(
+    fragment_wire_sizes=[3, 5],
+    single_gates_per_wire=1,
+    double_gates_multiplier=1.5,
+    inter_fragment_gate_wires={(0, 1): 1},
+    repeats=2,
+    seed=None,
+):
+    """Helper function for making random weakly connected tapes."""
+    rng = np.random.default_rng(seed)
+    inter_fragment_gate_wires = inter_fragment_gate_wires or {}
+    with qml.tape.QuantumTape() as tape:
+        for _ in range(repeats):
+            for i, wire_size in enumerate(fragment_wire_sizes):
+                double_gates_per_fragment = int(double_gates_multiplier * wire_size)
+                for _ in range(double_gates_per_fragment):
+                    j0, j1 = rng.choice(wire_size, size=2, replace=False)
+                    qml.CNOT(wires=[f"{i}-{j0}", f"{i}-{j1}"])
+                for _ in range(single_gates_per_wire):
+                    for j in range(wire_size):
+                        qml.RZ(0.5, wires=f"{i}-{j}")
+            for frag_pair, num_gates in inter_fragment_gate_wires.items():
+                f0, f1 = sorted(frag_pair)
+                for _ in range(num_gates):
+                    w0 = rng.choice(fragment_wire_sizes[f0])
+                    w1 = rng.choice(fragment_wire_sizes[f1])
+                    qml.CNOT(wires=[f"{f0}-{w0}", f"{f1}-{w1}"])
+        for i, wire_size in enumerate(fragment_wire_sizes):
+            if wire_size == 1:
+                qml.expval(qml.PauliZ(wires=[f"{i}-0"]))
+            else:
+                qml.expval(qml.PauliZ(wires=[f"{i}-0"]) @ qml.PauliZ(wires=[f"{i}-{wire_size-1}"]))
+    return tape
+
+
+class TestKaHyPar:
+    """Tests for the KaHyPar cutting function and utilities."""
+
+    # Fixes seed for Github actions:
+    seed = 11 if environ.get("CI") == "true" else None
+
+    disjoint_tapes = [
+        (
+            2,
+            0,
+            make_weakly_connected_tape(
+                single_gates_per_wire=2, inter_fragment_gate_wires=None, seed=seed
+            ),
+        ),
+        (
+            5,
+            0,
+            make_weakly_connected_tape(
+                fragment_wire_sizes=[2] * 5, inter_fragment_gate_wires=None, seed=seed
+            ),
+        ),
+    ]
+    fragment_tapes = [
+        (2, 2, make_weakly_connected_tape(inter_fragment_gate_wires={(0, 1): 1}, seed=seed)),
+        (
+            3,
+            6,
+            make_weakly_connected_tape(
+                fragment_wire_sizes=[4, 5, 6],
+                single_gates_per_wire=2,
+                double_gates_multiplier=2,
+                inter_fragment_gate_wires={(0, 1): 1, (1, 2): 1},
+                seed=seed,
+            ),
+        ),
+    ]
+    config_path = str(
+        Path(__file__).parent.parent.parent / "pennylane/transforms/_cut_kKaHyPar_sea20.ini"
+    )
+
+    def test_seed_in_ci(self):
+        """Test if seed is properly set in github action CI"""
+        if environ.get("CI") == "true":
+            print(f"CI seed set to {self.seed}")
+            assert self.seed == 11
+
+    def test_import_raise(self, monkeypatch):
+        """Test if import exception is properly raised for missing kahypar."""
+        with monkeypatch.context() as m:
+            m.setitem(sys.modules, "kahypar", None)
+
+            with pytest.raises(ImportError, match="KaHyPar must be installed"):
+                qcut.kahypar_cut(None, 2)
+
+    @pytest.mark.parametrize("tape", disjoint_tapes + fragment_tapes)
+    @pytest.mark.parametrize("hyperwire_weight", [0, 2])
+    @pytest.mark.parametrize("edge_weights", [None, 3])
+    def test_graph_to_hmetis(self, tape, hyperwire_weight, edge_weights):
+        """Test conversion to the hMETIS format."""
+
+        num_frags, num_interfrag_gates, tape = tape
+        graph = qcut.tape_to_graph(tape)
+        edge_weights = [edge_weights] * len(graph.edges) if edge_weights is not None else None
+        adj_nodes, edge_splits, all_edge_weights = qcut._graph_to_hmetis(
+            graph, hyperwire_weight=hyperwire_weight, edge_weights=edge_weights
+        )
+        assert len(edge_splits) - 1 == len(graph.edges) + (hyperwire_weight > 0) * len(tape.wires)
+        assert (all_edge_weights is not None) == (hyperwire_weight > 0) or (
+            edge_weights is not None
+        )
+        assert max(adj_nodes) + 1 == len(graph.nodes)
+
+    @pytest.mark.parametrize("tape", disjoint_tapes + fragment_tapes)
+    @pytest.mark.parametrize("hyperwire_weight", [0, 1])
+    def test_kahypar_cut(self, tape, hyperwire_weight):
+        """Test vanilla cutting with kahypar"""
+        pytest.importorskip("kahypar")
+
+        num_frags, num_interfrag_gates, tape = tape
+        graph = qcut.tape_to_graph(tape)
+
+        cut_edges = qcut.kahypar_cut(
+            graph=graph,
+            num_fragments=num_frags,
+            imbalance=0.5,
+            hyperwire_weight=hyperwire_weight,
+            seed=self.seed,
+        )
+
+        assert len(cut_edges) <= num_interfrag_gates * 2
+
+        cut_graph = qcut.place_wire_cuts(graph=graph, cut_edges=cut_edges)
+        qcut.replace_wire_cut_nodes(cut_graph)
+        frags, comm_graph = qcut.fragment_graph(cut_graph)
+
+        assert len(frags) == num_frags
+        assert len(comm_graph.edges) == len(cut_edges)
+
+    @pytest.mark.parametrize("config_path", [None, config_path])
+    @pytest.mark.parametrize("fragment_weights", [None, [350, 210]])
+    @pytest.mark.parametrize("imbalance", [None, 0.5])
+    def test_kahypar_cut_options(self, imbalance, fragment_weights, config_path):
+        """Test vanilla cutting with kahypar"""
+        pytest.importorskip("kahypar")
+
+        num_frags, num_interfrag_gates, tape = self.disjoint_tapes[0]
+        graph = qcut.tape_to_graph(tape)
+
+        cut_edges = qcut.kahypar_cut(
+            graph=graph,
+            num_fragments=num_frags,
+            imbalance=imbalance,
+            fragment_weights=fragment_weights,
+            config_path=config_path,
+            verbose=True,
+            seed=self.seed,
+        )
+
+        assert len(cut_edges) <= num_interfrag_gates * 2
+
+        cut_graph = qcut.place_wire_cuts(graph=graph, cut_edges=cut_edges)
+        qcut.replace_wire_cut_nodes(cut_graph)
+        frags, comm_graph = qcut.fragment_graph(cut_graph)
+
+        assert len(frags) == num_frags
+        assert len(comm_graph.edges) == len(cut_edges)
+
+    @pytest.mark.parametrize("dangling_measure", [False, True])
+    def test_remove_existing_cuts(self, dangling_measure):
+        """Test if ``WireCut`` and ``MeasureNode``/``PrepareNode`` are correctly removed."""
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires="a")
+            qml.WireCut(wires="a")
+            qml.RY(0.543, wires="a")
+            qcut.MeasureNode(wires="a")
+            qcut.PrepareNode(wires="a")
+            if dangling_measure:
+                qcut.MeasureNode(wires="a")
+            qml.RX(0.678, wires=0)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        graph = qcut.tape_to_graph(tape)
+        if dangling_measure:
+            with pytest.warns(
+                UserWarning,
+                match="The circuit contains `MeasureNode` or `PrepareNode` operations",
+            ):
+                graph = qcut._remove_existing_cuts(graph)
+        else:
+            graph = qcut._remove_existing_cuts(graph)
+
+        # Only dangling `MeasureNode` should be left:
+        assert (
+            len(
+                [
+                    n
+                    for n in graph.nodes
+                    if isinstance(n, (qml.WireCut, qcut.MeasureNode, qcut.PrepareNode))
+                ]
+            )
+            == dangling_measure
+        )
+
+    def test_place_wire_cuts(self):
+        """Test if ``WireCut`` are correctly placed with the correct order."""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.432, wires="a")
+            qml.RY(0.543, wires="a")
+            qml.CNOT(wires=[0, "a"])
+            qml.RX(0.678, wires=0)
+            qml.expval(qml.PauliZ(wires=[0]))
+
+        graph = qcut.tape_to_graph(tape)
+        op0, op1, op2 = tape.operations[0], tape.operations[1], tape.operations[2]
+        cut_edges = [e for e in graph.edges if e[0] is op0 and e[1] is op1]
+        cut_edges += [e for e in graph.edges if e[0] is op1 and e[1] is op2]
+
+        cut_graph = qcut.place_wire_cuts(graph=graph, cut_edges=cut_edges)
+        wire_cuts = [n for n in cut_graph.nodes if isinstance(n, qml.WireCut)]
+
+        assert len(wire_cuts) == len(cut_edges)
+        assert list(cut_graph.pred[wire_cuts[0]]) == [op0]
+        assert list(cut_graph.succ[wire_cuts[0]]) == [op1]
+        assert list(cut_graph.pred[wire_cuts[1]]) == [op1]
+        assert list(cut_graph.succ[wire_cuts[1]]) == [op2]
+
+        # check if order is unique and also if there's enough nodes.
+        assert list({i for _, i in cut_graph.nodes.data("order")}) == list(
+            range(len(graph.nodes) + len(cut_edges))
+        )
+
+    @pytest.mark.parametrize("with_manual_cut", [False, True])
+    def test_find_and_place_cuts(self, with_manual_cut):
+        """Integration tests for auto cutting pipeline."""
+        pytest.importorskip("kahypar")
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.1, wires=0)
+            qml.RY(0.2, wires=1)
+            qml.RX(0.3, wires="a")
+            qml.RY(0.4, wires="b")
+            qml.CNOT(wires=[0, 1])
+            if with_manual_cut:
+                qml.WireCut(wires=1)
+            qml.CNOT(wires=["a", "b"])
+            qml.CNOT(wires=[1, "a"])
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=["a", "b"])
+            qml.RX(0.5, wires="a")
+            qml.RY(0.6, wires="b")
+            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
+
+        expected_num_cut_edges = 2
+        num_frags = 2
+
+        graph = qcut.tape_to_graph(tape)
+        cut_graph = qcut.find_and_place_cuts(
+            graph=graph,
+            num_fragments=num_frags,
+            imbalance=0.5,
+            replace_wire_cuts=True,
+            seed=self.seed,
+        )
+
+        assert (
+            len([n for n in cut_graph.nodes if isinstance(n, qcut.MeasureNode)])
+            == expected_num_cut_edges
+        )
+        assert (
+            len([n for n in cut_graph.nodes if isinstance(n, qcut.PrepareNode)])
+            == expected_num_cut_edges
+        )
+
+        # Cutting wire "a" is more balanced, thus will be cut if there's no manually placed cut on
+        # wire 1:
+        expected_cut_wire = 1 if with_manual_cut else "a"
+        assert all(
+            list(n.wires) == [expected_cut_wire]
+            for n in cut_graph.nodes
+            if isinstance(n, (qcut.MeasureNode, qcut.PrepareNode))
+        )
+
+        frags, comm_graph = qcut.fragment_graph(cut_graph)
+
+        assert len(frags) == num_frags
+        assert len(comm_graph.edges) == expected_num_cut_edges
+
+        expected_fragment_sizes = [7, 11] if with_manual_cut else [8, 10]
+        assert expected_fragment_sizes == [f.number_of_nodes() for f in frags]

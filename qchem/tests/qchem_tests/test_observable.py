@@ -2,10 +2,10 @@ import os
 
 import numpy as np
 import pytest
-
-from pennylane import qchem
-
 from openfermion import FermionOperator, QubitOperator
+
+import pennylane as qml
+from pennylane import qchem
 
 t = FermionOperator("0^ 0", 0.5) + FermionOperator("1^ 1", -0.5)
 
@@ -118,7 +118,9 @@ def test_observable(fermion_ops, init_term, mapping, terms_exp, custom_wires, mo
     qubit_op = QubitOperator()
     monkeypatch.setattr(qubit_op, "terms", terms_exp)
 
-    assert qchem._qubit_operators_equivalent(qubit_op, res_obs, wires=custom_wires)
+    assert qml.qchem.convert._openfermion_pennylane_equivalent(
+        qubit_op, res_obs, wires=custom_wires
+    )
 
 
 msg1 = "Elements in the lists are expected to be of type 'FermionOperator'"

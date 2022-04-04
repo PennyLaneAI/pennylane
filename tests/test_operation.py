@@ -218,6 +218,7 @@ class TestOperationConstruction:
         with pytest.warns(UserWarning, match="get_parameter_shift is deprecated"):
             assert op.get_parameter_shift(0) == "Dummy recipe"
 
+    @pytest.mark.filterwarnings("ignore:The method get_parameter_shift is deprecated")
     def test_error_get_parameter_shift_no_recipe(self):
         """Test that ``get_parameter_shift`` raises an Error if no grad_recipe
         is available, as we no longer assume the two-term rule by default."""
