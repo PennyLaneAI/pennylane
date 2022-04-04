@@ -53,7 +53,9 @@ def read_structure(filepath, outpath="."):
     atomic units (Bohr radius = 1).
 
     The atomic coordinates in the file must be in Angstroms.
-    The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported.
+    The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported. Additionally,
+    the new file ``structure.xyz``, containing the input geometry, is created in a directory with
+    path given by ``outpath``.
 
     Args:
         filepath (str): name of the molecular structure file in the working directory
