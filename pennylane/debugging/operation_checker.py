@@ -263,7 +263,7 @@ def matrix_from_sparse_matrix(op, par, wires):
     smat = wrap_op_method(instance, "sparse_matrix", SparseMatrixUndefinedError)()
     if smat is None or isinstance(smat, Exception):
         return smat
-    return qml.matrix(smat)
+    return smat.toarray()
 
 
 def matrix_from_terms(op, par, wires):
@@ -355,6 +355,7 @@ def matrix_from_generator(op, par, wires):
     except GeneratorUndefinedError:
         return None
     mat = qml.matrix(gen)
+
     return la.expm(1j * par[0] * mat)
 
 
@@ -629,8 +630,8 @@ class OperationChecker:
             self._check_single_method(op, method_tuple, parameters, wires)
         parameters = [par for par in parameters if len(par) in self.tmp["possible_num_params"]]
 
-        self._check_decompositions(op, parameters, wires)
         self._check_properties(op, parameters, wires)
+        self._check_decompositions(op, parameters, wires)
         if issubclass(op, qml.operation.Operation):
             self._check_differentiability(op, parameters, wires)
 
@@ -709,8 +710,8 @@ class OperationChecker:
 
         if len(possible_num_params) == 1:
             self.print_(
-                f"Instantiating {self.tmp['name']} only succeeded when using {possible_num_params[0]} "
-                "parameter(s).\n"
+                f"Instantiating {self.tmp['name']} only succeeded when using "
+                f"{possible_num_params[0]} parameter(s).\n"
                 "Consider specifying the number of parameters by setting op.num_params.",
                 "hint",
             )
@@ -805,9 +806,10 @@ class OperationChecker:
             matrices = [meth(op, par, wires) for meth in decomposition_methods]
             matrices = [mat for mat in matrices if mat is not None]
             for mat in matrices[1:]:
+                # TODO: improvement: Take a guess at _which_ of the matrices is/ are wrong
                 if not equal_up_to_phase(matrices[0], mat, atol=self.tol):
                     self.print_(
-                        f"Matrices do not coincide for {self.tmp['name']}."
+                        f"Matrices do not coincide for {self.tmp['name']}.",
                         # f"\n{np.round(matrices[0], 5)}\n{np.round(mat, 5)}",
                         "error",
                     )
@@ -825,6 +827,7 @@ class OperationChecker:
             self._check_eigvals(eigvals, mat)
             # Check that the diagonalizing gates diagonalize the operation matrix
             diag_gates = wrap_op_method(instance, "diagonalizing_gates", DiagGatesUndefinedError)()
+            print(diag_gates)
             self._check_diag_gates(diag_gates, mat, eigvals)
             # Check that the basis is given correctly
             self._check_basis(mat, instance)
@@ -834,7 +837,10 @@ class OperationChecker:
         if matrix is None:
             return
         if not matrix.shape[0] == matrix.shape[1]:
-            self.print_(f"The operation {self.tmp['name']} defines a non-square matrix.", "error")
+            self.print_(
+                f"The operation {self.tmp['name']} defines a non-square matrix.", "fatal_error"
+            )
+            raise CheckerError("Fatal error: Subsequent checks will not be possible.")
         mat_num_wires = int(np.log2(matrix.shape[0]))
         if not mat_num_wires == op.num_wires and op.num_wires != AnyWires:
             self.print_(
@@ -869,6 +875,7 @@ class OperationChecker:
             with qml.tape.QuantumTape() as tape:
                 [op.queue() for op in diag_gates]  # pylint: disable=expression-not-assigned
             diag_mat = qml.matrix(tape)
+        print(diag_mat)
 
         diagonalized = diag_mat @ matrix @ diag_mat.conj().T
         if not is_diagonal(diagonalized, atol=self.tol):
@@ -877,6 +884,8 @@ class OperationChecker:
                 "error",
             )
             return
+        print(eigvals)
+        print(np.sort(np.diag(diagonalized)))
         if eigvals is not None and not np.allclose(
             np.sort(eigvals), np.sort(np.diag(diagonalized))
         ):

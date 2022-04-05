@@ -722,7 +722,7 @@ class Operator(abc.ABC):
             return self.compute_eigvals(*self.parameters, **self.hyperparameters)
         except EigvalsUndefinedError:
             # By default, compute the eigenvalues from the matrix representation.
-            # This will raise a NotImplementedError if the matrix is undefined.
+            # This will raise a MatrixUndefinedError if the matrix is undefined.
             try:
                 return qml.math.linalg.eigvals(self.get_matrix())
             except MatrixUndefinedError as e:
@@ -1284,7 +1284,7 @@ class Operation(Operator):
                 eigvals = qml.eigvals(gen)
 
             eigvals = tuple(np.round(eigvals, 8))
-            return qml.gradients.eigvals_to_frequencies(eigvals)
+            return [qml.gradients.eigvals_to_frequencies(eigvals)]
 
         raise ParameterFrequenciesUndefinedError(
             f"Operation {self.name} does not have parameter frequencies defined, "

@@ -1,6 +1,7 @@
 import pytest
 from scipy.stats import unitary_group
 import scipy.linalg as la
+import scipy as sp
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -140,7 +141,40 @@ class OpWithNumParams(qml.operation.Operation):
     num_params = 2
 
 
-passing_ops = [OpWithNumWires, OpWithNumParams]
+class OpWithAllReps(qml.operation.Operation):
+    num_wires = 2
+    num_params = 1
+    grad_method = None
+
+    @staticmethod
+    def compute_eigvals(theta):
+        return qml.math.ones(4)
+
+    @staticmethod
+    def compute_matrix(theta):
+        return qml.math.eye(4)
+
+    @staticmethod
+    def compute_sparse_matrix(theta):
+        return sp.sparse.coo_array(qml.math.eye(4))
+
+    @staticmethod
+    def compute_terms(theta):
+        return [1.0], [qml.Identity(0) @ qml.Identity(1)]
+
+    @staticmethod
+    def compute_decomposition(theta, wires):
+        return [qml.Identity(wires[0]), qml.Identity(wires[1])]
+
+    @staticmethod
+    def compute_diagonalizing_gates(theta, wires):
+        return []
+
+    def generator(self):
+        return qml.Hermitian(qml.math.zeros((4, 4)), wires=[0, 1])
+
+
+passing_ops = [OpWithNumWires, OpWithNumParams, OpWithAllReps]
 
 
 class OpWithoutNumParams(qml.operation.Operation):
@@ -152,8 +186,99 @@ class OpWithoutNumParams(qml.operation.Operation):
         super().__init__(x, wires=wires)
 
 
-ops_with_hints = [OpWithoutNumParams]
-hints = ["Instantiating OpWithoutNumParams only succeeded when using 1 parameter(s)."]
+ops_with_hints = [
+    (
+        OpWithoutNumParams,
+        "Instantiating OpWithoutNumParams only succeeded when using 1 parameter(s).",
+    ),
+]
+
+
+class OpWrongMatrixShape(OpWithAllReps):
+    @staticmethod
+    def compute_matrix(theta):
+        return qml.math.ones((2, 4))
+
+
+class OpWrongMatrix(OpWithAllReps):
+    @staticmethod
+    def compute_matrix(theta):
+        return qml.math.ones((4, 4))
+
+
+class OpWrongSparseMatrix(OpWithAllReps):
+    @staticmethod
+    def compute_sparse_matrix(theta):
+        return sp.sparse.coo_array(qml.math.ones((4, 4)))
+
+
+class OpWrongGenerator(OpWithAllReps):
+    def generator(self):
+        return qml.Hermitian(qml.math.ones((4, 4)), wires=[0, 1])
+
+
+class OpWrongTerms(OpWithAllReps):
+    @staticmethod
+    def compute_terms(theta):
+        return [
+            1.0,
+        ], [qml.PauliZ(0) @ qml.PauliX(1)]
+
+
+class OpWrongDecomposition(OpWithAllReps):
+    @staticmethod
+    def compute_decomposition(theta, wires):
+        return [qml.PauliX(wires[0]), qml.Identity(wires[1])]
+
+
+class OpWrongEigvals(OpWithAllReps):
+    @staticmethod
+    def compute_eigvals(theta):
+        return -1 * qml.math.ones(4)
+
+
+class OpWrongRotAngles(qml.operation.Operation):
+    num_wires = 1
+    num_params = 0
+
+    @staticmethod
+    def compute_matrix():
+        return qml.math.eye(2)
+
+    def single_qubit_rot_angles(self):
+        return [0.1, 0.4, -0.3]
+
+
+class OpWrongDiagGates(qml.operation.Operation):
+    num_wires = 2
+    num_params = 1
+
+    @staticmethod
+    def compute_matrix(theta):
+        return qml.math.ones((4, 4))
+
+    @staticmethod
+    def compute_diagonalizing_gates(theta, wires):
+        return [qml.PauliX(0), qml.PauliZ(1)]
+
+
+error_ops = [
+    (OpWrongMatrix, "Matrices do not coincide for OpWrongMatrix"),
+    (OpWrongSparseMatrix, "Matrices do not coincide for OpWrongSparseMatrix"),
+    (OpWrongGenerator, "Matrices do not coincide for OpWrongGenerator"),
+    (OpWrongTerms, "Matrices do not coincide for OpWrongTerms"),
+    (OpWrongDecomposition, "Matrices do not coincide for OpWrongDecomposition"),
+    (OpWrongRotAngles, "Matrices do not coincide for OpWrongRotAngles"),
+    (
+        OpWrongEigvals,
+        "The eigenvalues of the matrix and the stored eigvals for OpWrongEigvals",
+        "The diagonalizing gates diagonalize the matrix but produce wrong eigenvalues",
+    ),
+    (
+        OpWrongDiagGates,
+        "The diagonalizing gates do not diagonalize the matrix for OpWrongDiagGates",
+    ),
+]
 
 
 class OpWithoutNumWires(qml.operation.Operation):
@@ -161,14 +286,12 @@ class OpWithoutNumWires(qml.operation.Operation):
 
 
 fatal_error_ops = [
-    OpWithoutNumWires,
-]
-fatal_error_messages = [
-    "OpWithoutNumWires does not define the number of wires",
+    (OpWithoutNumWires, "OpWithoutNumWires does not define the number of wires"),
+    (OpWrongMatrixShape, "The operation OpWrongMatrixShape defines a non-square matrix"),
 ]
 
 
-class TestPassingCustomOperations:
+class TestCustomOperations:
 
     Checker = OperationChecker(verbosity="comment")
 
@@ -178,27 +301,24 @@ class TestPassingCustomOperations:
         assert output == ""
         assert result == "pass"
 
-
-class TestCustomOperationsWithHints:
-
-    Checker = OperationChecker(verbosity="comment")
-
-    @pytest.mark.parametrize("op, hint", zip(ops_with_hints, hints))
-    def test_hints(self, op, hint):
+    @pytest.mark.parametrize("op_with_hint", ops_with_hints)
+    def test_hints(self, op_with_hint):
+        op, hint = op_with_hint
         result, output = self.Checker(op)
         assert hint in output
         assert result == "hint"
 
+    @pytest.mark.parametrize("error_op", error_ops)
+    def test_errors(self, error_op):
+        op, *err_strs = error_op
+        result, output = self.Checker(op)
+        print(result, output)
+        assert all(err_str in output for err_str in err_strs)
+        assert result == "error"
 
-class TestFatalErrorCustomOperations:
-
-    Checker = OperationChecker(verbosity="comment")
-
-    @pytest.mark.parametrize(
-        "op, err_str",
-        zip(fatal_error_ops, fatal_error_messages),
-    )
-    def test_fatal_errors(self, op, err_str):
+    @pytest.mark.parametrize("fatal_error_op", fatal_error_ops)
+    def test_fatal_errors(self, fatal_error_op):
+        op, err_str = fatal_error_op
         result, output = self.Checker(op)
         assert err_str in output
         assert result == "fatal_error"
