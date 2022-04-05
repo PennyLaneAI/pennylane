@@ -26,12 +26,12 @@ class HilbertSchmidt(Operation):
     Therefore we can define a cost by:
 
     .. math::
-        C_{HST} = 1 - \frac{1}{d^2} \left|Tr(V^{\dagger}U)\right|^2
+        C_{HST} = 1 - \frac{1}{d^2} \left|Tr(V^{\dagger}U)\right|^2,
 
-    where the quantity :math:`\frac{1}{d^2} \left|Tr(V^{\dagger}U)\right|^2` is the Hilbert Schmidt Test. This is
-    equivalent to take the probability of having the state :math:`|m\rangle`for the following circuit:
+    where the quantity :math:`\frac{1}{d^2} \left|Tr(V^{\dagger}U)\right|^2` is the Hilbert Schmidt Test. It is
+    equivalent to taking the outcome probability of the state :math:`|0 ... 0\rangle` for the following circuit:
 
-    .. figure:: ../../_static/templates/subroutines/hst.pdf
+    .. figure:: ../../_static/templates/subroutines/hst.png
         :align: center
         :width: 60%
         :target: javascript:void(0);
@@ -45,11 +45,14 @@ class HilbertSchmidt(Operation):
         u_tape (.QuantumTape): U, the unitary to be compiled as a ``qml.tape.QuantumTape``.
 
     Raises:
-        QuantumFunctionError:
+        QuantumFunctionError: ``v_function`` is not a valid Quantum function.
+        QuantumFunctionError: `U` and `V` do not have the same number of wires.
+        QuantumFunctionError: The wires ``v_wires`` are a subset of `V` wires.
 
     .. UsageDetails::
 
-        Consider the matrix corresponding to a rotation from an :class:`~.RX` gate:
+        Consider that we want to evaluate the Hilbert Schmidt Test cost between the unitary U and its approximate
+        unitary V.
 
         .. code-block:: python
 
@@ -71,6 +74,11 @@ class HilbertSchmidt(Operation):
 
             def cost_hst(parameters, v_function, v_wires, u_tape):
                 return (1 - hilbert_test(v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape)[0])
+
+        Now that you have defined your cost function you can call it for specific parameters.
+
+        >>> cost_hst([0], v_function = v_circuit, v_wires = [1], u_tape = U)
+        1
 
 
     **Reference**
