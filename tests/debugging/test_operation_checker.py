@@ -312,6 +312,12 @@ class OpWrongDiagGates(qml.operation.Operation):
         return [qml.PauliX(0), qml.PauliZ(1)]
 
 
+class OpWrongNumParamsComputeEigvals(OpWithAllReps):
+    @staticmethod
+    def compute_eigvals(theta, phi):
+        return qml.math.ones(4)
+
+
 error_ops = [
     (OpWrongMatrix, "Matrices do not coincide for OpWrongMatrix"),
     (OpWrongSparseMatrix, "Matrices do not coincide for OpWrongSparseMatrix"),
@@ -327,6 +333,11 @@ error_ops = [
     (
         OpWrongDiagGates,
         "The diagonalizing gates do not diagonalize the matrix for OpWrongDiagGates",
+    ),
+    (
+        OpWrongNumParamsComputeEigvals,
+        "compute_eigvals() missing 1 required positional",
+        "Operation method OpWrongNumParamsComputeEigvals.compute_eigvals does not work",
     ),
 ]
 
@@ -345,9 +356,16 @@ class OpWrongMatrixShape(OpWithAllReps):
         return qml.math.ones((2, 4))
 
 
+class OpWrongNumParamsComputeMatrix(OpWithAllReps):
+    @staticmethod
+    def compute_matrix(theta, phi):
+        return qml.math.ones((4, 4))
+
+
 fatal_error_ops = [
     (OpWithoutNumWires, "OpWithoutNumWires does not define the number of wires"),
     (OpWrongMatrixShape, "The operation OpWrongMatrixShape defines a non-square matrix"),
+    (OpWrongNumParamsComputeMatrix, "compute_matrix() missing 1 required positional"),
 ]
 
 
@@ -364,6 +382,16 @@ class TestCustomOperations:
         assert output == ""
         assert result == "pass"
 
+    @pytest.mark.parametrize(
+        "op, par, wires",
+        zip(passing_ops, [(0.4,), (0.9, -1.2), (-0.7,)], [[3], 0, [2, 0]]),
+    )
+    def test_passing_with_instances(self, op, par, wires):
+        instance = op(*par, wires=wires)
+        result, output = self.Checker(instance)
+        assert output == ""
+        assert result == "pass"
+
     @pytest.mark.parametrize("op_with_hint", ops_with_hints)
     def test_hints(self, op_with_hint):
         """Test that custom operations correctly receive a hint if necessary."""
@@ -377,7 +405,6 @@ class TestCustomOperations:
         """Test that custom operations correctly are reported with an error."""
         op, *err_strs = error_op
         result, output = self.Checker(op)
-        print(result, output)
         assert all(err_str in output for err_str in err_strs)
         assert result == "error"
 
@@ -388,3 +415,51 @@ class TestCustomOperations:
         result, output = self.Checker(op)
         assert err_str in output
         assert result == "fatal_error"
+
+
+class TestFlawedArgs:
+    """Test that the operation checker exits properly when provided with
+    flawed arguments."""
+
+    Checker = OperationChecker(verbosity="comment")
+
+    def test_wrong_number_wires(self):
+        """Test that the operation checker reports a fatal error
+        when passing the wrong number of wires."""
+        result, output = self.Checker(qml.RX, parameters=[0.5], wires=[0, 1])
+        assert result == "fatal_error"
+        assert "The number of provided wires (2) does not match the expected number (1)" in output
+
+    def test_wrong_number_params(self):
+        """Test that the operation checker reports a fatal error
+        when passing the wrong number of parameters, as found via instantiation attempts."""
+        result, output = self.Checker(OpWithoutNumParams, parameters=[0.5, 0.6], wires=[0, 1])
+        assert result == "fatal_error"
+        assert (
+            "Instantiating OpWithoutNumParams did not succeed with any of\n[2] parameters."
+            in output
+        )
+        assert "It seems that you provided parameters of the wrong length" in output
+
+    def test_wrong_number_params_with_num_params(self):
+        """Test that the operation checker reports a fatal error
+        when passing the wrong number of parameters, as found via op.num_params."""
+        result, output = self.Checker(qml.RX, parameters=[0.5, 0.6], wires=[0])
+        assert result == "fatal_error"
+        assert (
+            "The number of provided parameters (2) does not match the expected number (1)" in output
+        )
+
+    def test_no_suitable_number_params(self):
+        """Test that a fatal error is raised if no parameter set of the
+        correct length was included in the randomly created parameters."""
+
+        class MyRot(qml.Rot):
+            @property
+            def num_params(self):
+                return None
+
+        Checker = OperationChecker(verbosity="comment", max_num_params=2)
+        result, output = Checker(MyRot)
+        assert result == "fatal_error"
+        assert "Instantiating MyRot did not succeed with any of\n[0, 1, 2] parameters." in output

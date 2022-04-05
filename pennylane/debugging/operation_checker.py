@@ -677,7 +677,7 @@ class OperationChecker:
             if num_params_known:
                 parameters = [np.random.random(op.num_params)]
             else:
-                parameters = [np.random.random(num) for num in range(self.max_num_params)]
+                parameters = [np.random.random(num) for num in range(self.max_num_params + 1)]
         elif num_params_known and len(parameters) != op.num_params:
             self.print_(
                 f"The number of provided parameters ({len(parameters)}) does not match "
@@ -708,7 +708,7 @@ class OperationChecker:
             except TypeError:
                 pass
 
-        if len(possible_num_params) == 1:
+        if len(possible_num_params) == 1 and len(parameters) > 1:
             self.print_(
                 f"Instantiating {self.tmp['name']} only succeeded when using "
                 f"{possible_num_params[0]} parameter(s).\n"
@@ -726,7 +726,7 @@ class OperationChecker:
                     "\nIt seems that you provided parameters of the wrong length "
                     "for this operation,\ncheck the input to check_operation."
                 )
-            self.print_(err_str, "error")
+            self.print_(err_str, "fatal_error")
 
         self.tmp["possible_num_params"] = possible_num_params
 
@@ -767,8 +767,10 @@ class OperationChecker:
             self.print_(
                 f"Operation method {self.tmp['name']}.{method} does not work\n"
                 f"with num_params ({op.num_params}) parameters.",
-                "error",
+                "fatal_error" if method == "compute_matrix" else "error",
             )
+            if method == "compute_matrix":
+                raise CheckerError("Fatal error: Subsequent checks will not be possible.")
             return
 
         failing_methods = []
@@ -823,11 +825,12 @@ class OperationChecker:
             mat = wrap_op_method(instance, "get_matrix", MatrixUndefinedError)()
             self._check_matrix_shape(mat, op)
             # Check that the eigenvalues are produced correctly
-            eigvals = wrap_op_method(instance, "get_eigvals", EigvalsUndefinedError)()
+            eigvals = wrap_op_method(instance, "get_eigvals", (EigvalsUndefinedError, TypeError))()
             self._check_eigvals(eigvals, mat)
             # Check that the diagonalizing gates diagonalize the operation matrix
-            diag_gates = wrap_op_method(instance, "diagonalizing_gates", DiagGatesUndefinedError)()
-            print(diag_gates)
+            diag_gates = wrap_op_method(
+                instance, "diagonalizing_gates", (DiagGatesUndefinedError, TypeError)
+            )()
             self._check_diag_gates(diag_gates, mat, eigvals)
             # Check that the basis is given correctly
             self._check_basis(mat, instance)
@@ -875,7 +878,6 @@ class OperationChecker:
             with qml.tape.QuantumTape() as tape:
                 [op.queue() for op in diag_gates]  # pylint: disable=expression-not-assigned
             diag_mat = qml.matrix(tape)
-        print(diag_mat)
 
         diagonalized = diag_mat @ matrix @ diag_mat.conj().T
         if not is_diagonal(diagonalized, atol=self.tol):
@@ -884,8 +886,6 @@ class OperationChecker:
                 "error",
             )
             return
-        print(eigvals)
-        print(np.sort(np.diag(diagonalized)))
         if eigvals is not None and not np.allclose(
             np.sort(eigvals), np.sort(np.diag(diagonalized))
         ):
