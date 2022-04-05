@@ -2574,11 +2574,71 @@ class TestCutCircuitMCTransform:
             qml.CNOT(wires=[0, 1])
             return qml.sample(wires=0)
 
-        # spy = mocker.spy(qcut, "something??")
+        spy = mocker.spy(qcut, "qcut_processing_fn_mc")
 
         x = 0.4
         res = circuit(x)
         assert res.shape == (shots, 1)
+        spy.assert_not_called()
+
+    def test_mc_complicated_circuit(self, mocker):
+        """
+        Tests that the full sample-based circuit cutting pipeline returns the correct value and
+        gradient for a complex circuit with multiple wire cut scenarios. The circuit is cut into
+        fragments of at most 2 qubits and is drawn below:
+
+        0: ──X──//─╭C───//──RX─╭C───//─╭C──╭//────────────────────┤
+        1: ────────╰X──────────╰X───//─╰Z──╰//────────────────╭RX─┤ ╭Sample
+        2: ──H─╭C──────────────────────╭RY────────────────╭RY─│───┤ ├Sample
+        3: ────╰RY──//──H──╭C───//──H──╰C───//─╭RY──//──H─╰C──│───┤ ╰Sample
+        4: ────────────────╰RY──H──────────────╰C─────────────╰C──┤
+        """
+
+        # We need a 4-qubit device to account for mid-circuit measurements
+        shots = 10
+        dev = qml.device("default.qubit", wires=4, shots=shots)
+
+        def two_qubit_unitary(param, wires):
+            qml.Hadamard(wires=[wires[0]])
+            qml.CRY(param, wires=[wires[0], wires[1]])
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.BasisState(np.array([1]), wires=[0])
+            qml.WireCut(wires=0)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=0)
+            qml.RX(params[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+
+            qml.WireCut(wires=0)
+            qml.WireCut(wires=1)
+
+            qml.CZ(wires=[0, 1])
+            qml.WireCut(wires=[0, 1])
+
+            two_qubit_unitary(params[1], wires=[2, 3])
+            qml.WireCut(wires=3)
+            two_qubit_unitary(params[2] ** 2, wires=[3, 4])
+            qml.WireCut(wires=3)
+            two_qubit_unitary(np.sin(params[3]), wires=[3, 2])
+            qml.WireCut(wires=3)
+            two_qubit_unitary(np.sqrt(params[4]), wires=[4, 3])
+            qml.WireCut(wires=3)
+            two_qubit_unitary(np.cos(params[1]), wires=[3, 2])
+            qml.CRX(params[2], wires=[4, 1])
+
+            return qml.sample(wires=[1, 2, 3])
+
+        spy = mocker.spy(qcut, "qcut_processing_fn_sample")
+
+        params = np.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
+        res = circuit(params)
+
+        spy.assert_called_once()
+        assert res.shape == (shots, 3)
 
 
 class TestContractTensors:
