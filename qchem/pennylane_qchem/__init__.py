@@ -14,5 +14,4 @@
 """The PennyLane quantum chemistry package. Supports OpenFermion, PySCF,
 and Psi4 for quantum chemistry calculations using PennyLane.
 """
-from .qchem import hf
 from ._version import __version__
