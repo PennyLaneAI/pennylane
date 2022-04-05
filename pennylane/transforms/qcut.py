@@ -15,12 +15,12 @@
 Functions for performing quantum circuit cutting.
 """
 
-from collections.abc import Sequence as SequenceType
 import copy
 import inspect
 import string
 import uuid
 import warnings
+from collections.abc import Sequence as SequenceType
 from dataclasses import InitVar, dataclass
 from functools import partial
 from itertools import compress, product
@@ -1921,6 +1921,8 @@ def cut_circuit_expand(
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
 ):
+    """Main entry point for expanding operations until reaching a depth that
+    includes :class:`~.WireCut` operations."""
     # pylint: disable=unused-argument
     return _qcut_expand_fn(tape, max_depth)
 
@@ -1932,6 +1934,8 @@ def cut_circuit_mc_expand(
     classical_processing_fn: Optional[callable] = None,
     max_depth: int = 1,
 ):
+    """Main entry point for expanding operations in sample-based tapes until
+    reaching a depth that includes :class:`~.WireCut` operations."""
     # pylint: disable=unused-argument
     return _qcut_expand_fn(tape, max_depth)
 
