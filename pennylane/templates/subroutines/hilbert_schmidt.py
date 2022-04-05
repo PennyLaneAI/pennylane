@@ -32,9 +32,9 @@ class HilbertSchmidt(Operation):
     equivalent to take the probability of having the state :math:`|m\rangle`for the following circuit:
 
     .. figure:: ../../_static/templates/subroutines/hst.pdf
-    :align: center
-    :width: 60%
-    :target: javascript:void(0);
+        :align: center
+        :width: 60%
+        :target: javascript:void(0);
 
     It defines our decomposition for the Hilbert Schmidt Test template.
 
