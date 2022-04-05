@@ -931,7 +931,7 @@ class OperationChecker:
         """Check that an operation is differentiable if it is marked to be, and that
         the correct derivative is produced. Note that this can be computationally expensive."""
         if issubclass(op, qml.operation.Channel):
-            self.print_("Channels can not be checked for the correct derivative yet.", "hint")
+            self.print_("Channels cannot be checked for the correct derivative yet.", "hint")
             return
 
         if self.tmp["num_params_known"] and op.num_params != 1:

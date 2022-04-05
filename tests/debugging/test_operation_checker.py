@@ -25,40 +25,53 @@ scalar_phases = [-1.0, np.exp(1j * 0.3), 1j, -1j]
 
 
 class TestEqualUpToPhase:
+    """Test that matrices are correctly identified as equal up to a global phase
+    or not equal up to a global phase."""
+
     @pytest.mark.parametrize("mat", matrices)
     def test_same_matrix(self, mat):
+        """Test that two copies of the same matrix are reported as equal up to a phase."""
         assert equal_up_to_phase(mat, mat, atol=1e-14)
 
     @pytest.mark.parametrize("mat, phase", zip(matrices, scalar_phases))
     def test_global_phase(self, mat, phase):
+        """Test that a matrix with and without a global phase
+        are reported as equal up to a phase."""
         assert equal_up_to_phase(mat, phase * mat, atol=1e-14)
 
     @pytest.mark.parametrize("mat, phase", zip(matrices, matrix_phases))
     def test_matrix_phase(self, mat, phase):
+        """Test that a matrix-valued 'phase' is not reported as a global phase."""
         assert not equal_up_to_phase(mat, phase * mat, atol=1e-5)
         assert not equal_up_to_phase(mat, phase @ mat, atol=1e-5)
         assert not equal_up_to_phase(mat, mat @ phase, atol=1e-5)
 
     @pytest.mark.parametrize("mat, factor", zip(matrices, matrices))
     def test_matrix_prefactor(self, mat, factor):
+        """Test that a matrix-valued prefactor is not reported as a global phase."""
         assert not equal_up_to_phase(mat, factor * mat, atol=1e-5)
         assert not equal_up_to_phase(mat, factor @ mat, atol=1e-5)
         assert not equal_up_to_phase(mat, mat @ factor, atol=1e-5)
 
     @pytest.mark.parametrize("mat, factor", zip(matrices, [0.3, 2, -0.9j]))
     def test_scalar_prefactor(self, mat, factor):
+        """Test that a scalar prefactor is not reported as a global phase."""
         assert not equal_up_to_phase(mat, factor * mat, atol=1e-5)
 
 
 class TestIsDiagonal:
+    """Test whether diagonal and non-diagonal matrices are correctly detected."""
+
     @pytest.mark.parametrize(
         "mat", [np.diag(np.arange(9)), np.eye(6), np.zeros((5, 5), dtype=complex)]
     )
     def test_diagonal(self, mat):
+        """Test that diagonal matrices are reported to be diagonal."""
         assert is_diagonal(mat, atol=1e-14)
 
     @pytest.mark.parametrize("mat", [np.arange(9).reshape((3, 3)), np.ones((6, 6))])
     def test_not_diagonal(self, mat):
+        """Test that non-diagonal matrices are reported to be non-diagonal."""
         assert not is_diagonal(mat, 1e-5)
 
 
@@ -102,30 +115,48 @@ qmlops = qmlops.difference(qmlops_skip)
 
 
 class TestQMLOperations:
+    """Test the operation checker on native PennyLane operations."""
 
-    Checker = OperationChecker(verbosity="hint")
+    Checker = OperationChecker(verbosity="comment")
 
     @pytest.mark.parametrize("op", qmlops)
     def test_standard_qml_ops(self, op):
+        """Test that the operation checker reports "pass" on all PennyLane operations
+        that have standard input format. Exceptions are
+        - qml.MultiRZ, which makes use of hyperparameters (This is something the
+          OperationChecker comments on, setting the result status to "comment")
+        - all channels, for which differentiability can not be checked yet.
+        """
+
         if op == qml.MultiRZ:
             expected_res = "comment"
+            expected_str = "but is using additional (hyper)parameters"
         elif issubclass(op, qml.operation.Channel):
             expected_res = "hint"
+            expected_str = "Channels cannot be checked for the correct derivative yet"
         else:
             expected_res = "pass"
+            expected_str = ""
 
         result, output = self.Checker(op, seed=42)
-        assert output == "" or expected_res == "hint"
         assert result == expected_res
+        if expected_res=="pass":
+            assert output == ""
+        else:
+            assert expected_str in output
 
     @pytest.mark.parametrize("op", qmlops_special_input)
     def test_special_input_qml_ops(self, op):
+        """Test that the operation checker reports "pass" on all PennyLane operations
+        that have special input formats. Exceptions are
+        - all channels, for which differentiability can not be checked yet.
+        """
         all_parameters, all_wires = qmlops_special_input[op]
         for parameters, wires in zip(all_parameters, all_wires):
             result, output = self.Checker(op, parameters=parameters, wires=wires, seed=42)
             if issubclass(op, qml.operation.Channel):
                 # Hint for differentiation of channels
-                assert "Channels can not be checked for the correct" in output
+                assert "Channels cannot be checked for the correct" in output
                 assert result == "hint"
             else:
                 assert output == ""
@@ -133,15 +164,18 @@ class TestQMLOperations:
 
 
 class OpWithNumWires(qml.operation.Operation):
+    """Operation that only defines num_wires, should pass."""
     num_wires = 1
 
 
 class OpWithNumParams(qml.operation.Operation):
+    """Operation that only defines num_wires and num_params, should pass."""
     num_wires = 1
     num_params = 2
 
 
 class OpWithAllReps(qml.operation.Operation):
+    """Operation that defines all applicable representations, should pass."""
     num_wires = 2
     num_params = 1
     grad_method = None
@@ -178,7 +212,8 @@ passing_ops = [OpWithNumWires, OpWithNumParams, OpWithAllReps]
 
 
 class OpWithoutNumParams(qml.operation.Operation):
-    """This operation does not fix ``num_params`` although it should."""
+    """This operation does not fix ``num_params`` although it should.
+    It should receive a "hint" as result."""
 
     num_wires = 2
 
@@ -194,30 +229,28 @@ ops_with_hints = [
 ]
 
 
-class OpWrongMatrixShape(OpWithAllReps):
-    @staticmethod
-    def compute_matrix(theta):
-        return qml.math.ones((2, 4))
-
-
 class OpWrongMatrix(OpWithAllReps):
+    """Modified OpWithAllReps with wrong hardcoded matrix."""
     @staticmethod
     def compute_matrix(theta):
         return qml.math.ones((4, 4))
 
 
 class OpWrongSparseMatrix(OpWithAllReps):
+    """Modified OpWithAllReps with wrong sparse matrix."""
     @staticmethod
     def compute_sparse_matrix(theta):
         return sp.sparse.coo_array(qml.math.ones((4, 4)))
 
 
 class OpWrongGenerator(OpWithAllReps):
+    """Modified OpWithAllReps with wrong generator."""
     def generator(self):
         return qml.Hermitian(qml.math.ones((4, 4)), wires=[0, 1])
 
 
 class OpWrongTerms(OpWithAllReps):
+    """Modified OpWithAllReps with wrong terms decomposition."""
     @staticmethod
     def compute_terms(theta):
         return [
@@ -226,18 +259,22 @@ class OpWrongTerms(OpWithAllReps):
 
 
 class OpWrongDecomposition(OpWithAllReps):
+    """Modified OpWithAllReps with wrong gate decomposition."""
     @staticmethod
     def compute_decomposition(theta, wires):
         return [qml.PauliX(wires[0]), qml.Identity(wires[1])]
 
 
 class OpWrongEigvals(OpWithAllReps):
+    """Modified OpWithAllReps with wrong hardcoded eigenvalues."""
     @staticmethod
     def compute_eigvals(theta):
         return -1 * qml.math.ones(4)
 
 
 class OpWrongRotAngles(qml.operation.Operation):
+    """Operation that only defines a hardcoded matrix and mismatching
+    single-qubit rotation angles."""
     num_wires = 1
     num_params = 0
 
@@ -250,6 +287,8 @@ class OpWrongRotAngles(qml.operation.Operation):
 
 
 class OpWrongDiagGates(qml.operation.Operation):
+    """Operation that only defines a hardcoded matrix and mismatching
+    diagonalizing gates."""
     num_wires = 2
     num_params = 1
 
@@ -282,7 +321,16 @@ error_ops = [
 
 
 class OpWithoutNumWires(qml.operation.Operation):
-    """Failing dummy operation."""
+    """Failing dummy operation that does not define any properties.
+    This will produce a fatal error because no num_wires are defined."""
+
+
+class OpWrongMatrixShape(OpWithAllReps):
+    """Modified OpWithAllReps with wrongly shaped hardcoded matrix. This will produce
+    a fatal error because many parts of the check rely on the matrix being well-defined."""
+    @staticmethod
+    def compute_matrix(theta):
+        return qml.math.ones((2, 4))
 
 
 fatal_error_ops = [
@@ -292,17 +340,21 @@ fatal_error_ops = [
 
 
 class TestCustomOperations:
+    """Test that all the custom operations defined above are reported with
+    the correct result status and output."""
 
     Checker = OperationChecker(verbosity="comment")
 
     @pytest.mark.parametrize("op", passing_ops)
     def test_passing(self, op):
+        """Test that custom operations that are well-defined are passing."""
         result, output = self.Checker(op)
         assert output == ""
         assert result == "pass"
 
     @pytest.mark.parametrize("op_with_hint", ops_with_hints)
     def test_hints(self, op_with_hint):
+        """Test that custom operations correctly receive a hint if necessary."""
         op, hint = op_with_hint
         result, output = self.Checker(op)
         assert hint in output
@@ -310,6 +362,7 @@ class TestCustomOperations:
 
     @pytest.mark.parametrize("error_op", error_ops)
     def test_errors(self, error_op):
+        """Test that custom operations correctly are reported with an error."""
         op, *err_strs = error_op
         result, output = self.Checker(op)
         print(result, output)
@@ -318,26 +371,9 @@ class TestCustomOperations:
 
     @pytest.mark.parametrize("fatal_error_op", fatal_error_ops)
     def test_fatal_errors(self, fatal_error_op):
+        """Test that custom operations correctly are reported with a fatal error."""
         op, err_str = fatal_error_op
         result, output = self.Checker(op)
         assert err_str in output
         assert result == "fatal_error"
 
-
-"""
-
-class D(qml.operation.Operation):
-    num_wires = 2
-
-    def __init__(self, *params, wires):
-        super().__init__(*params, wires=wires)
-
-
-class E(qml.operation.Operation):
-    num_wires = 1
-
-    @staticmethod
-    def compute_matrix(self, x):
-        return None
-
-"""
