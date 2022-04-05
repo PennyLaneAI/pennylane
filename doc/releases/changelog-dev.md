@@ -289,6 +289,10 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where the default `parameter_frequencies` of single-parameter gates
+  were formatted wrongly.
+  [(#2383)](https://github.com/PennyLaneAI/pennylane/pull/2383)
+
 * Optimizers only consider a variable trainable if they have `requires_grad = True`.
   [(#2381)](https://github.com/PennyLaneAI/pennylane/pull/2381)
 
