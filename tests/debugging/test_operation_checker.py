@@ -140,7 +140,7 @@ class TestQMLOperations:
 
         result, output = self.Checker(op, seed=42)
         assert result == expected_res
-        if expected_res=="pass":
+        if expected_res == "pass":
             assert output == ""
         else:
             assert expected_str in output
@@ -165,17 +165,20 @@ class TestQMLOperations:
 
 class OpWithNumWires(qml.operation.Operation):
     """Operation that only defines num_wires, should pass."""
+
     num_wires = 1
 
 
 class OpWithNumParams(qml.operation.Operation):
     """Operation that only defines num_wires and num_params, should pass."""
+
     num_wires = 1
     num_params = 2
 
 
 class OpWithAllReps(qml.operation.Operation):
     """Operation that defines all applicable representations, should pass."""
+
     num_wires = 2
     num_params = 1
     grad_method = None
@@ -231,6 +234,7 @@ ops_with_hints = [
 
 class OpWrongMatrix(OpWithAllReps):
     """Modified OpWithAllReps with wrong hardcoded matrix."""
+
     @staticmethod
     def compute_matrix(theta):
         return qml.math.ones((4, 4))
@@ -238,6 +242,7 @@ class OpWrongMatrix(OpWithAllReps):
 
 class OpWrongSparseMatrix(OpWithAllReps):
     """Modified OpWithAllReps with wrong sparse matrix."""
+
     @staticmethod
     def compute_sparse_matrix(theta):
         return sp.sparse.coo_array(qml.math.ones((4, 4)))
@@ -245,12 +250,14 @@ class OpWrongSparseMatrix(OpWithAllReps):
 
 class OpWrongGenerator(OpWithAllReps):
     """Modified OpWithAllReps with wrong generator."""
+
     def generator(self):
         return qml.Hermitian(qml.math.ones((4, 4)), wires=[0, 1])
 
 
 class OpWrongTerms(OpWithAllReps):
     """Modified OpWithAllReps with wrong terms decomposition."""
+
     @staticmethod
     def compute_terms(theta):
         return [
@@ -260,6 +267,7 @@ class OpWrongTerms(OpWithAllReps):
 
 class OpWrongDecomposition(OpWithAllReps):
     """Modified OpWithAllReps with wrong gate decomposition."""
+
     @staticmethod
     def compute_decomposition(theta, wires):
         return [qml.PauliX(wires[0]), qml.Identity(wires[1])]
@@ -267,6 +275,7 @@ class OpWrongDecomposition(OpWithAllReps):
 
 class OpWrongEigvals(OpWithAllReps):
     """Modified OpWithAllReps with wrong hardcoded eigenvalues."""
+
     @staticmethod
     def compute_eigvals(theta):
         return -1 * qml.math.ones(4)
@@ -275,6 +284,7 @@ class OpWrongEigvals(OpWithAllReps):
 class OpWrongRotAngles(qml.operation.Operation):
     """Operation that only defines a hardcoded matrix and mismatching
     single-qubit rotation angles."""
+
     num_wires = 1
     num_params = 0
 
@@ -289,6 +299,7 @@ class OpWrongRotAngles(qml.operation.Operation):
 class OpWrongDiagGates(qml.operation.Operation):
     """Operation that only defines a hardcoded matrix and mismatching
     diagonalizing gates."""
+
     num_wires = 2
     num_params = 1
 
@@ -328,6 +339,7 @@ class OpWithoutNumWires(qml.operation.Operation):
 class OpWrongMatrixShape(OpWithAllReps):
     """Modified OpWithAllReps with wrongly shaped hardcoded matrix. This will produce
     a fatal error because many parts of the check rely on the matrix being well-defined."""
+
     @staticmethod
     def compute_matrix(theta):
         return qml.math.ones((2, 4))
@@ -376,4 +388,3 @@ class TestCustomOperations:
         result, output = self.Checker(op)
         assert err_str in output
         assert result == "fatal_error"
-
