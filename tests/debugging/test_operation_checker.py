@@ -214,6 +214,30 @@ class OpWithAllReps(qml.operation.Operation):
 passing_ops = [OpWithNumWires, OpWithNumParams, OpWithAllReps]
 
 
+class OpFlexibleNumParamsComputeMatrix(qml.operation.Operation):
+    """Operation whose compute_matrix method takes a flexible
+    number of parameters. This will result in a comment."""
+
+    num_wires = 1
+
+    def __init__(self, first_angle, *other_angles, wires):
+        """This is required to avoid triggering the hint to fix
+        the num_params property."""
+        super().__init__(first_angle, *other_angles, wires=wires)
+
+    @staticmethod
+    def compute_matrix(*angles):
+        return qml.math.eye(2)
+
+
+ops_with_comment = [
+    (
+        OpFlexibleNumParamsComputeMatrix,
+        f"with number(s) of parameters [0]\nbut instantiation",
+    )
+]
+
+
 class OpWithoutNumParams(qml.operation.Operation):
     """This operation does not fix ``num_params`` although it should.
     It should receive a "hint" as result."""
@@ -354,6 +378,20 @@ class OpWrongGradRecipe(qml.RX):
     grad_recipe = ([[0.5, 1.0, np.pi / 2], [-0.5, 1.0, -np.pi / 4]],)
 
 
+class OpRestrictiveNumParamsComputeEigvals(qml.operation.Operation):
+    """Operation whose compute_eigvals method takes a less flexible number
+    of parameters than its instantiation. This will result in an error."""
+
+    num_wires = 1
+
+    def __init__(self, *other_angles, wires):
+        super().__init__(*other_angles, wires=wires)
+
+    @staticmethod
+    def compute_eigvals(first_angle, *angles):
+        return qml.math.eye(2)
+
+
 error_ops = [
     (OpWrongMatrix, "Matrices do not coincide for OpWrongMatrix"),
     (OpWrongSparseMatrix, "Matrices do not coincide for OpWrongSparseMatrix"),
@@ -377,6 +415,10 @@ error_ops = [
         "Operation method OpWrongNumParamsComputeEigvals.compute_eigvals does not work",
     ),
     (OpWrongGradRecipe, "The grad_recipe of OpWrongGradRecipe does not yield the correct"),
+    (
+        OpRestrictiveNumParamsComputeEigvals,
+        "eigvals does not work\nwith number(s) of parameters [0]",
+    ),
 ]
 
 
@@ -394,6 +436,14 @@ class OpWrongMatrixShape(OpWithAllReps):
         return qml.math.ones((2, 4))
 
 
+class OpWrongMatrixSize(OpWithAllReps):
+    """Modified OpWithAllReps with wrongly-sized hardcoded matrix."""
+
+    @staticmethod
+    def compute_matrix(theta):
+        return qml.math.ones((2, 2))
+
+
 class OpWrongNumParamsComputeMatrix(OpWithAllReps):
     """Operation whose compute_matrix method takes the wrong
     number of parameters. This will yield a fatal error."""
@@ -403,10 +453,29 @@ class OpWrongNumParamsComputeMatrix(OpWithAllReps):
         return qml.math.ones((4, 4))
 
 
+class OpRestrictiveNumParamsComputeMatrix(qml.operation.Operation):
+    """Operation whose compute_matrix method takes a less flexible number
+    of parameters than its instantiation. This will result in a fatal error."""
+
+    num_wires = 1
+
+    def __init__(self, *other_angles, wires):
+        super().__init__(*other_angles, wires=wires)
+
+    @staticmethod
+    def compute_matrix(first_angle, *angles):
+        return qml.math.eye(2)
+
+
 fatal_error_ops = [
     (OpWithoutNumWires, "OpWithoutNumWires does not define the number of wires"),
     (OpWrongMatrixShape, "The operation OpWrongMatrixShape defines a non-square matrix"),
+    (OpWrongMatrixSize, "defines a matrix for 1 wires but is defined to have 2 wires"),
     (OpWrongNumParamsComputeMatrix, "compute_matrix() missing 1 required positional"),
+    (
+        OpRestrictiveNumParamsComputeMatrix,
+        "matrix does not work\nwith number(s) of parameters [0]",
+    ),
 ]
 
 
@@ -432,6 +501,14 @@ class TestCustomOperations:
         result, output = self.Checker(instance)
         assert output == ""
         assert result == "pass"
+
+    @pytest.mark.parametrize("op_with_comment", ops_with_comment)
+    def test_comments(self, op_with_comment):
+        """Test that custom operations correctly receive a hint if necessary."""
+        op, comment = op_with_comment
+        result, output = self.Checker(op)
+        assert comment in output
+        assert result == "comment"
 
     @pytest.mark.parametrize("op_with_hint", ops_with_hints)
     def test_hints(self, op_with_hint):

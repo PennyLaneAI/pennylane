@@ -773,8 +773,8 @@ class OperationChecker:
                 raise CheckerError("Fatal error: Subsequent checks will not be possible.")
             return
 
-        failing_methods = []
-        succeeding_methods = []
+        failing_nums = []
+        succeeding_nums = []
         for par in parameters:
             exc = wrapped_method(*par, **kwargs)
             num = len(par)
@@ -782,22 +782,24 @@ class OperationChecker:
                 not (exc is None or isinstance(exc, Exception))
                 and num not in self.tmp["possible_num_params"]
             ):
-                succeeding_methods.append(num)
+                succeeding_nums.append(num)
             elif isinstance(exc, Exception) and num in self.tmp["possible_num_params"]:
-                failing_methods.append(num)
+                failing_nums.append(num)
 
-        if failing_methods:
+        if failing_nums:
             self.print_(
                 f"Operation method {self.tmp['name']}.{method} does not work\n"
-                f"with number(s) of parameters {failing_methods}\n"
+                f"with number(s) of parameters {failing_nums}\n"
                 "but instantiation works with this/these number(s) of parameters.",
-                "error",
+                "fatal_error" if method == "compute_matrix" else "error",
             )
+            if method == "compute_matrix":
+                raise CheckerError("Fatal error: Subsequent checks will not be possible.")
 
-        if succeeding_methods:
+        if succeeding_nums:
             self.print_(
                 f"Operation method {self.tmp['name']}.{method} works\n"
-                f"with number(s) of parameters {succeeding_methods}\n"
+                f"with number(s) of parameters {succeeding_nums}\n"
                 "but instantiation does not work with this/these number(s) of parameters.",
                 "comment",
             )
@@ -849,8 +851,9 @@ class OperationChecker:
             self.print_(
                 f"The operation {self.tmp['name']} defines a matrix for {mat_num_wires} wires but "
                 f"is defined to have {op.num_wires} wires.",
-                "error",
+                "fatal_error",
             )
+            raise CheckerError("Fatal error: Subsequent checks will not be possible.")
         return
 
     def _check_eigvals(self, eigvals, matrix):
