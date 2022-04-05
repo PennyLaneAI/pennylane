@@ -1303,34 +1303,6 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     return _wrapper
 
 
-def _qcut_expand_fn_mc(
-    tape: QuantumTape,
-    shots: Optional[int] = None,
-    device_wires: Optional[Wires] = None,
-    classical_processing_fn: Optional[callable] = None,
-    max_depth: int = 1,
-):
-    """Expansion function for sample-based circuit cutting.
-
-    Expands operations until reaching a depth that includes :class:`~.WireCut` operations.
-    """
-    # pylint: disable=unused-argument
-    for op in tape.operations:
-        if isinstance(op, WireCut):
-            return tape
-
-    if max_depth > 0:
-        return cut_circuit_mc.expand_fn(tape.expand(), max_depth=max_depth - 1)
-
-    raise ValueError(
-        "No WireCut operations found in the circuit. Consider increasing the max_depth value if "
-        "operations or nested tapes contain WireCut operations."
-    )
-
-
-cut_circuit_mc.expand_fn = _qcut_expand_fn_mc
-
-
 def _get_symbol(i):
     """Finds the i-th ASCII symbol. Works for lowercase and uppercase letters, allowing i up to
     51."""
@@ -1920,21 +1892,17 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
 
 def _qcut_expand_fn(
     tape: QuantumTape,
-    use_opt_einsum: bool = False,
-    device_wires: Optional[Wires] = None,
     max_depth: int = 1,
 ):
-    """Expansion function for circuit cutting.
-
+    """Expansion function for sample-based circuit cutting.
     Expands operations until reaching a depth that includes :class:`~.WireCut` operations.
     """
-    # pylint: disable=unused-argument
     for op in tape.operations:
         if isinstance(op, WireCut):
             return tape
 
     if max_depth > 0:
-        return cut_circuit.expand_fn(tape.expand(), max_depth=max_depth - 1)
+        return _qcut_expand_fn(tape.expand(), max_depth=max_depth - 1)
 
     raise ValueError(
         "No WireCut operations found in the circuit. Consider increasing the max_depth value if "
@@ -1942,7 +1910,29 @@ def _qcut_expand_fn(
     )
 
 
-cut_circuit.expand_fn = _qcut_expand_fn
+def cut_circuit_expand(
+    tape: QuantumTape,
+    use_opt_einsum: bool = False,
+    device_wires: Optional[Wires] = None,
+    max_depth: int = 1,
+):
+    # pylint: disable=unused-argument
+    return _qcut_expand_fn(tape, max_depth)
+
+
+def cut_circuit_mc_expand(
+    tape: QuantumTape,
+    shots: Optional[int] = None,
+    device_wires: Optional[Wires] = None,
+    classical_processing_fn: Optional[callable] = None,
+    max_depth: int = 1,
+):
+    # pylint: disable=unused-argument
+    return _qcut_expand_fn(tape, max_depth)
+
+
+cut_circuit.expand_fn = cut_circuit_expand
+cut_circuit_mc.expand_fn = cut_circuit_mc_expand
 
 
 def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:

@@ -3678,7 +3678,7 @@ class TestCutCircuitExpansion:
         else:
             cut_transform(tape, device_wires=[0])
 
-        assert spy.call_count == 2
+        assert spy.call_count == 1
 
     @pytest.mark.parametrize(
         "cut_transform, measurement",
@@ -3731,7 +3731,7 @@ class TestCutCircuitExpansion:
 
         spy = mocker.spy(qcut.cut_circuit, "expand_fn")
         res = qnode_cut(template_weights)
-        assert spy.call_count == 2
+        assert spy.call_count == 1
 
         assert np.isclose(res, qnode(template_weights))
 
@@ -3760,7 +3760,7 @@ class TestCutCircuitExpansion:
 
         spy = mocker.spy(qcut.cut_circuit_mc, "expand_fn")
         qnode_cut(template_weights)
-        assert spy.call_count == 2
+        assert spy.call_count == 1
 
 
 class TestCutStrategy:
