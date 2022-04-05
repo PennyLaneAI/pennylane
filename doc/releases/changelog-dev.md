@@ -101,7 +101,7 @@
     [(#2385)](https://github.com/PennyLaneAI/pennylane/pull/2385)
   - The 6-31G basis set is added to the qchem basis set repo
     [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
-  - The dependency to openbabel is removed
+  - The dependency on openbabel is removed
     [(#2415)](https://github.com/PennyLaneAI/pennylane/pull/2415)
 
 * Development of a circuit-cutting compiler extension to circuits with sampling
