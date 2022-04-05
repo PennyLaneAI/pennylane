@@ -381,6 +381,7 @@ class Hamiltonian(Observable):
 
             if ind is not None:
                 new_coeffs[ind] += c
+                qml.QueuingContext.safe_update_info(op, owner=self)
                 if np.isclose(qml.math.toarray(new_coeffs[ind]), np.array(0.0)):
                     del new_coeffs[ind]
                     del new_ops[ind]

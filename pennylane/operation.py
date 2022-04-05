@@ -1520,7 +1520,7 @@ class Observable(Operator):
         >>> print(tensor._obs_data())
         {("PauliZ", <Wires = [1]>, ()), ("PauliX", <Wires = [0]>, ())}
         """
-        obs = Tensor(self).non_identity_obs
+        obs = Tensor(self, do_queue=False).non_identity_obs
         tensor = set()
 
         for ob in obs:
@@ -1624,6 +1624,7 @@ class Tensor(Observable):
         for o in args:
             if isinstance(o, Tensor):
                 self.obs.extend(o.obs)
+                qml.QueuingContext.safe_update_info(o, owner=self)
             elif isinstance(o, Observable):
                 self.obs.append(o)
             else:
@@ -2045,7 +2046,6 @@ class Tensor(Observable):
             obs = Tensor(*self.non_identity_obs)
 
         qml.QueuingContext.safe_update_info(self, owner=obs, prune=True)
-        print("id of prune result: ", id(obs))
         obs.return_type = self.return_type
         return obs
 

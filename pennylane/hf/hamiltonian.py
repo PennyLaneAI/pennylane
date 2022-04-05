@@ -240,52 +240,53 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         Returns:
             Hamiltonian: the qubit Hamiltonian
         """
-        h_ferm = generate_fermionic_hamiltonian(mol, cutoff, core, active)(*args)
+        with qml.tape.stop_recording():
+            h_ferm = generate_fermionic_hamiltonian(mol, cutoff, core, active)(*args)
 
-        ops = []
+            ops = []
 
-        for n, t in enumerate(h_ferm[1]):
+            for n, t in enumerate(h_ferm[1]):
 
-            if len(t) == 0:
-                coeffs = anp.array([0.0])
-                coeffs = coeffs + np.array([h_ferm[0][n]])
-                ops = ops + [qml.Identity(0)]
+                if len(t) == 0:
+                    coeffs = anp.array([0.0])
+                    coeffs = coeffs + np.array([h_ferm[0][n]])
+                    ops = ops + [qml.Identity(0)]
 
-            elif len(t) == 2:
-                op = _generate_qubit_operator(t)
-                if op != 0:
-                    for i, o in enumerate(op[1]):
-                        if len(o) == 0:
-                            op[1][i] = qml.Identity(0)
-                        if len(o) == 1:
-                            op[1][i] = _return_pauli(o[0][1])(o[0][0])
-                        if len(o) > 1:
-                            k = qml.Identity(0)
-                            for o_ in o:
-                                k = k @ _return_pauli(o_[1])(o_[0])
-                            op[1][i] = k
-                    coeffs = np.concatenate([coeffs, np.array(op[0]) * h_ferm[0][n]])
-                    ops = ops + op[1]
+                elif len(t) == 2:
+                    op = _generate_qubit_operator(t)
+                    if op != 0:
+                        for i, o in enumerate(op[1]):
+                            if len(o) == 0:
+                                op[1][i] = qml.Identity(0)
+                            if len(o) == 1:
+                                op[1][i] = _return_pauli(o[0][1])(o[0][0])
+                            if len(o) > 1:
+                                k = qml.Identity(0)
+                                for o_ in o:
+                                    k = k @ _return_pauli(o_[1])(o_[0])
+                                op[1][i] = k
+                        coeffs = np.concatenate([coeffs, np.array(op[0]) * h_ferm[0][n]])
+                        ops = ops + op[1]
 
-            elif len(t) == 4:
-                op = _generate_qubit_operator(t)
-                if op != 0:
-                    for i, o in enumerate(op[1]):
-                        if len(o) == 0:
-                            op[1][i] = qml.Identity(0)
-                        if len(o) == 1:
-                            op[1][i] = _return_pauli(o[0][1])(o[0][0])
-                        if len(o) > 1:
-                            k = qml.Identity(0)
-                            for o_ in o:
-                                k = k @ _return_pauli(o_[1])(o_[0])
-                            op[1][i] = k
-                    coeffs = np.concatenate([coeffs, np.array(op[0]) * h_ferm[0][n]])
-                    ops = ops + op[1]
+                elif len(t) == 4:
+                    op = _generate_qubit_operator(t)
+                    if op != 0:
+                        for i, o in enumerate(op[1]):
+                            if len(o) == 0:
+                                op[1][i] = qml.Identity(0)
+                            if len(o) == 1:
+                                op[1][i] = _return_pauli(o[0][1])(o[0][0])
+                            if len(o) > 1:
+                                k = qml.Identity(0)
+                                for o_ in o:
+                                    k = k @ _return_pauli(o_[1])(o_[0])
+                                op[1][i] = k
+                        coeffs = np.concatenate([coeffs, np.array(op[0]) * h_ferm[0][n]])
+                        ops = ops + op[1]
 
-        h = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
+            h = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 
-        return h
+            return h
 
     return hamiltonian
 

@@ -132,6 +132,10 @@ class CommutingEvolution(Operation):
             time, *hamiltonian.parameters, wires=hamiltonian.wires, do_queue=do_queue, id=id
         )
 
+    def queue(self, context=qml.QueuingContext):
+        context.safe_update_info(self.hyperparameters["hamiltonian"], owner=self)
+        super().queue(context)
+
     @staticmethod
     def compute_decomposition(
         *time_and_coeffs, wires, hamiltonian, **kwargs
@@ -156,12 +160,12 @@ class CommutingEvolution(Operation):
             list[.Operator]: decomposition of the operator
         """
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
-        hamiltonian = qml.Hamiltonian(time_and_coeffs[1:], hamiltonian.ops)
+        hamiltonian = qml.Hamiltonian(time_and_coeffs[1:], hamiltonian.ops, do_queue=False)
         return qml.templates.ApproxTimeEvolution(hamiltonian, time_and_coeffs[1], 1).decomposition()
 
     def adjoint(self):  # pylint: disable=arguments-differ
 
-        hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hyperparameters["hamiltonian"].ops)
+        hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hyperparameters["hamiltonian"].ops, do_queue=False)
         time = self.parameters[0]
         frequencies = self.hyperparameters["frequencies"]
         shifts = self.hyperparameters["shifts"]
