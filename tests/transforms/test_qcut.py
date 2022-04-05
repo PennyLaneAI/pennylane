@@ -2205,7 +2205,7 @@ class TestCutCircuitMCTransform:
         postprocessed to return bitstrings of the original circuit size.
         """
 
-        dev = qml.device("default.qubit", wires=3, shots=1000)
+        dev = qml.device("default.qubit", wires=3, shots=100)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -2236,7 +2236,7 @@ class TestCutCircuitMCTransform:
         Tests that the number of shots used on a device can be temporarily
         altered when executing the QNode
         """
-        shots = 1000
+        shots = 100
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
@@ -2299,7 +2299,7 @@ class TestCutCircuitMCTransform:
         Tests that a circuit with sample measurements containing observables
         gives the correct error
         """
-        shots = 1000
+        shots = 100
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
@@ -2415,7 +2415,7 @@ class TestCutCircuitMCTransform:
         Tests that if a shots argument is passed directly to the qnode when using
         `cut_circuit_mc` the correct error is given
         """
-        shots = 1000
+        shots = 100
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         with pytest.raises(
@@ -2444,7 +2444,7 @@ class TestCutCircuitMCTransform:
         Tests that if no interface is provided when using `cut_circuit_mc` the
         correct output is given
         """
-        shots = 1000
+        shots = 100
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
@@ -2735,7 +2735,7 @@ class TestQCutProcessingFn:
         results = []
 
         # Calculates U_{ijkl} = Tr((b[k] x b[l]) U (b[i] x b[j]) U*)
-        # See Sec. II. A. of https://arxiv.org/abs/1909.07534, below Eq. (2).
+        # See Sec. II. A. of https://doi.org/10.1088/1367-2630/abd7bc, below Eq. (2).
         for inp, out in itertools.product(prod_inp, prod_out):
             input = kron(*[basis[i] for i in inp])
             output = kron(*[basis[i] for i in out])

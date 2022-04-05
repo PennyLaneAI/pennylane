@@ -18,11 +18,3 @@ The PennyLane quantum chemistry library.
     :no-heading:
     :include-all-objects:
     :no-inheritance-diagram:
-
-qml.qchem.obs
-^^^^^^^^^^^^^
-
-.. automodule:: pennylane_qchem.qchem.obs
-
-.. automodsumm:: pennylane_qchem.qchem.obs
-    :toctree: api

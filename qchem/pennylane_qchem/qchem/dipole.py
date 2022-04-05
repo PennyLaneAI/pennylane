@@ -19,7 +19,7 @@ import autograd.numpy as anp
 from .basis_data import atomic_numbers
 from .hartree_fock import scf
 from .matrices import moment_matrix
-from .observable import fermionic_observable, qubit_observable
+from .observable_hf import fermionic_observable, qubit_observable
 
 
 def dipole_integrals(mol, core=None, active=None):
