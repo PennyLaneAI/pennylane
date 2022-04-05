@@ -2044,13 +2044,9 @@ class Tensor(Observable):
         else:
             obs = Tensor(*self.non_identity_obs)
 
-        try:
-            qml.QueuingContext.update_info(self, owner=obs)
-        except qml.queuing.QueuingError:
-            pass
+        qml.QueuingContext.safe_update_info(self, owner=obs)
 
         obs.return_type = self.return_type
-
         return obs
 
 

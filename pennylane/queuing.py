@@ -185,6 +185,20 @@ class QueuingContext(abc.ABC):
         if cls.recording():
             cls.active_context()._update_info(obj, **kwargs)  # pylint: disable=protected-access
 
+    @classmethod
+    def safe_update_info(cls, obj, **kwargs):
+        """Updates information of an object in the active queue queue safe from queuing errors.
+        
+        If the object isn't currently in the queue, no errors are raised.
+
+        Args:
+            obj: the object with metadata to be updated
+        """
+        try:
+            cls.update_info(obj, **kwargs)
+        except QueuingError:
+            pass
+
     def _update_info(self, obj, **kwargs):
         """Updates information of an object in the queue instance."""
         raise NotImplementedError
