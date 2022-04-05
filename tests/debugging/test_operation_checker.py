@@ -224,10 +224,30 @@ class OpWithoutNumParams(qml.operation.Operation):
         super().__init__(x, wires=wires)
 
 
+class OpWithVanillaGradRecipe(qml.RX):
+    """This operation provides a custom grad_recipe which is just
+    the standard grad_recipe. This should result in a "hint" result."""
+
+    grad_recipe = ([[0.5, 1.0, np.pi / 2], [-0.5, 1.0, -np.pi / 2]],)
+
+
+class OpWithGradRecipeWrongGradMethod(qml.RX):
+    """This operation provides a custom grad_recipe but claims to
+    only be differentiable numerically via grad_method="F"."""
+
+    grad_method = "F"
+    grad_recipe = ([[0.5, 1.0, np.pi / 2], [-0.5, 1.0, -np.pi / 2]],)
+
+
 ops_with_hints = [
     (
         OpWithoutNumParams,
         "Instantiating OpWithoutNumParams only succeeded when using 1 parameter(s).",
+    ),
+    (OpWithVanillaGradRecipe, "The grad_recipe of OpWithVanillaGradRecipe is a standard"),
+    (
+        OpWithGradRecipeWrongGradMethod,
+        "A grad_recipe is provided for OpWithGradRecipeWrongGradMethod but grad_method is F.",
     ),
 ]
 
@@ -312,10 +332,26 @@ class OpWrongDiagGates(qml.operation.Operation):
         return [qml.PauliX(0), qml.PauliZ(1)]
 
 
+class OpWrongBasis(qml.RX):
+    """This operation claims to be diagonal in the wrong basis."""
+
+    basis = "Z"
+
+
 class OpWrongNumParamsComputeEigvals(OpWithAllReps):
+    """Operation whose compute_eigvals method takes the wrong
+    number of parameters. This will yield an error."""
+
     @staticmethod
     def compute_eigvals(theta, phi):
         return qml.math.ones(4)
+
+
+class OpWrongGradRecipe(qml.RX):
+    """This operation provides a custom grad_recipe which does not produce
+    the correct derivative. This should result in an "error" result."""
+
+    grad_recipe = ([[0.5, 1.0, np.pi / 2], [-0.5, 1.0, -np.pi / 4]],)
 
 
 error_ops = [
@@ -334,11 +370,13 @@ error_ops = [
         OpWrongDiagGates,
         "The diagonalizing gates do not diagonalize the matrix for OpWrongDiagGates",
     ),
+    (OpWrongBasis, "The operation OpWrongBasis is not diagonal in the provided basis"),
     (
         OpWrongNumParamsComputeEigvals,
         "compute_eigvals() missing 1 required positional",
         "Operation method OpWrongNumParamsComputeEigvals.compute_eigvals does not work",
     ),
+    (OpWrongGradRecipe, "The grad_recipe of OpWrongGradRecipe does not yield the correct"),
 ]
 
 
@@ -357,6 +395,9 @@ class OpWrongMatrixShape(OpWithAllReps):
 
 
 class OpWrongNumParamsComputeMatrix(OpWithAllReps):
+    """Operation whose compute_matrix method takes the wrong
+    number of parameters. This will yield a fatal error."""
+
     @staticmethod
     def compute_matrix(theta, phi):
         return qml.math.ones((4, 4))
