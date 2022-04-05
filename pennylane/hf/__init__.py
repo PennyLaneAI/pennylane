@@ -48,10 +48,10 @@ from .matrices import (
 from .molecule import Molecule
 from .tapering import (
     clifford,
-    generate_paulis,
+    paulix_ops,
     generate_symmetries,
-    get_generators,
+    symmetry_generators,
     optimal_sector,
-    transform_hamiltonian,
-    transform_hf,
+    taper,
+    taper_hf,
 )
