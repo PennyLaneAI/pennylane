@@ -16,7 +16,6 @@ This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
 # pylint: disable=too-many-arguments
-from hashlib import new
 import itertools
 from copy import copy
 from collections.abc import Iterable
