@@ -20,7 +20,6 @@ from scipy.sparse import coo_matrix
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import qnode, QNode
-from pennylane.transforms import draw
 from pennylane.tape import QuantumTape
 
 
@@ -657,7 +656,7 @@ class TestIntegration:
 
     def test_correct_number_of_executions_tf(self):
         """Test that number of executions are tracked in the tf interface."""
-        tf = pytest.importorskip("tf")
+        tf = pytest.importorskip("tensorflow")
 
         def func():
             qml.Hadamard(wires=0)

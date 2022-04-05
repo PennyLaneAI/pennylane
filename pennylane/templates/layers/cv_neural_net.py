@@ -21,7 +21,7 @@ from pennylane.operation import Operation, AnyWires
 
 class CVNeuralNetLayers(Operation):
     r"""A sequence of layers of a continuous-variable quantum neural network,
-    as specified in `arXiv:1806.06871 <https://arxiv.org/abs/1806.06871>`_.
+    as specified in `Killoran et al. (2019) <https://doi.org/10.1103/PhysRevResearch.1.033063>`_.
 
     The layer consists
     of interferometers, displacement and squeezing gates mimicking the linear transformation of
