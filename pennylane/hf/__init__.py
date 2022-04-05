@@ -49,7 +49,7 @@ from .molecule import Molecule
 from .tapering import (
     clifford,
     paulix_ops,
-    generate_symmetries,
+    # generate_symmetries,
     symmetry_generators,
     optimal_sector,
     taper,
