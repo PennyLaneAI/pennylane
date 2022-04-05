@@ -16,6 +16,7 @@ This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
 # pylint: disable=too-many-arguments
+from hashlib import new
 import itertools
 from copy import copy
 from collections.abc import Iterable
@@ -557,14 +558,18 @@ class Hamiltonian(Observable):
         if isinstance(H, Hamiltonian):
             coeffs = qml.math.concatenate([self_coeffs, copy(H.coeffs)], axis=0)
             ops.extend(H.ops.copy())
-            return qml.Hamiltonian(coeffs, ops, simplify=True)
+            new_hamiltonian = qml.Hamiltonian(coeffs, ops, simplify=True)
+            qml.QueuingContext.safe_update_info(self, owner=new_hamiltonian)
+            return new_hamiltonian
 
         if isinstance(H, (Tensor, Observable)):
             coeffs = qml.math.concatenate(
                 [self_coeffs, qml.math.cast_like([1.0], self_coeffs)], axis=0
             )
             ops.append(H)
-            return qml.Hamiltonian(coeffs, ops, simplify=True)
+            new_hamiltonian = qml.Hamiltonian(coeffs, ops, simplify=True)
+            qml.QueuingContext.safe_update_info(self, owner=new_hamiltonian)
+            return new_hamiltonian
 
         raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
 
@@ -573,7 +578,9 @@ class Hamiltonian(Observable):
         if isinstance(a, (int, float)):
             self_coeffs = copy(self.coeffs)
             coeffs = qml.math.multiply(a, self_coeffs)
-            return qml.Hamiltonian(coeffs, self.ops.copy())
+            new_hamiltonian = qml.Hamiltonian(coeffs, self.ops.copy())
+            qml.QueuingContext.safe_update_info(self, owner=new_hamiltonian)
+            return new_hamiltonian
 
         raise ValueError(f"Cannot multiply Hamiltonian by {type(a)}")
 
