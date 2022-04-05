@@ -2045,7 +2045,7 @@ class Tensor(Observable):
         else:
             obs = Tensor(*self.non_identity_obs)
 
-        qml.QueuingContext.safe_update_info(self, owner=obs, prune=True)
+        qml.QueuingContext.safe_update_info(self, owner=obs)
         obs.return_type = self.return_type
         return obs
 
