@@ -1277,6 +1277,13 @@ def cut_circuit(
             differentiable contraction.
         device_wires (Wires): wires of the device that the cut circuits are to be run on
         max_depth (int): the maximum depth used to expand the circuit while searching for wire cuts
+        auto_cutter (Union[bool, Callable]): toggle for enabling automatic cutting with the default
+            :func:`kahypar_cut` partition method. Can also pass a graph partitioning function that
+            takes an input graph and returns a list of edges to be cut based on a given set of
+            constraints and objective. The default :func:`kahypar_cut` function requires KaHyPar to
+            be installed using ``pip install kahypar`` for Linux and Mac users or visiting the
+            instructions `here <https://kahypar.org>`__ to compile from source for Windows users.
+        kwargs: Additional keyword arguments to be passed to a callable ``auto_cutter`` argument.
 
     Returns:
         Tuple[Tuple[QuantumTape], Callable]: the tapes corresponding to the circuit fragments as a
@@ -1493,7 +1500,9 @@ def cut_circuit(
     g = tape_to_graph(tape)
 
     if auto_cutter is True or callable(auto_cutter):
-        cut_strategy = CutStrategy(max_free_wires=len(device_wires), min_free_wires=2)
+
+        cut_strategy = CutStrategy(max_free_wires=len(device_wires))
+
         g = find_and_place_cuts(
             graph=g,
             cut_method=auto_cutter if callable(auto_cutter) else kahypar_cut,
@@ -1547,20 +1556,21 @@ def _qcut_expand_fn(
     Expands operations until reaching a depth that includes :class:`~.WireCut` operations.
     """
     # pylint: disable=unused-argument
-    if auto_cutter is True or callable(auto_cutter):
-        return tape
 
     for op in tape.operations:
         if isinstance(op, WireCut):
             return tape
 
     if max_depth > 0:
-        return cut_circuit.expand_fn(tape.expand(), max_depth=max_depth - 1)
+        return cut_circuit.expand_fn(tape.expand(), max_depth=max_depth - 1, auto_cutter=auto_cutter)
 
-    raise ValueError(
-        "No WireCut operations found in the circuit. Consider increasing the max_depth value if "
-        "operations or nested tapes contain WireCut operations."
-    )
+    if not (auto_cutter is True or callable(auto_cutter)):
+        raise ValueError(
+            "No WireCut operations found in the circuit. Consider increasing the max_depth value if"
+            " operations or nested tapes contain WireCut operations."
+        )
+
+    return tape
 
 
 cut_circuit.expand_fn = _qcut_expand_fn
@@ -1660,7 +1670,8 @@ class CutStrategy:
         min_free_wires (int): Number of wires for the smallest available device, or, equivalently,
             the smallest max fragment-wire-size that the partitioning is allowed to explore.
             When provided, this parameter will be used to derive an upper-bound to the range of
-            explored number of fragments.  Optional, defaults to ``max_free_wires``.
+            explored number of fragments.  Optional, defaults to 2 which corresponds to attempting
+            the most granular partitioning of max 2-wire fragments.
         num_fragments_probed (Union[int, Sequence[int]]): Single, or 2-Sequence of, number(s)
             specifying the potential (range of) number of fragments for the partitioner to attempt.
             Optional, defaults to probing all valid strategies derivable from the circuit and
@@ -1672,6 +1683,9 @@ class CutStrategy:
         imbalance_tolerance (float): The global maximum allowed imbalance for all partition trials.
             Optional, defaults to unlimited imbalance. Used only if there's a known hard balancing
             constraint on the partitioning problem.
+        trials_per_probe (int): Number of repeated partitioning trials for a random automatic
+            cutting method to attempt per set of partitioning parameters. For a deterministic
+            cutting method, this can be set to 1. Defaults to 10.
 
     **Example**
 
@@ -1758,7 +1772,7 @@ class CutStrategy:
                 f"got {type(self.imbalance_tolerance)} with value {self.imbalance_tolerance}."
             )
 
-        self.max_free_wires = self.max_free_wires or self.min_free_wires
+        self.min_free_wires = self.min_free_wires or 2
 
     def get_cut_kwargs(
         self,
@@ -1829,7 +1843,8 @@ class CutStrategy:
 
         wire_imbalance = free_wires / avg_fragment_wires - 1
         gate_imbalance = free_gates / avg_fragment_gates - 1
-        imbalance = min(gate_imbalance, wire_imbalance)
+        # imbalance = min(gate_imbalance, wire_imbalance)
+        imbalance = gate_imbalance
         if imbalance_tolerance is not None:
             imbalance = min(imbalance, imbalance_tolerance)
 
@@ -2263,7 +2278,7 @@ def find_and_place_cuts(
     graph: MultiDiGraph,
     cut_method: Callable = kahypar_cut,
     cut_strategy: CutStrategy = None,
-    deferred_measurement: bool = False,
+    deferred_measurement: bool = True,
     replace_wire_cuts=False,
     **kwargs,
 ) -> MultiDiGraph:
@@ -2281,6 +2296,9 @@ def find_and_place_cuts(
         cut_strategy (CutStrategy): Strategy for optimizing cutting parameters based on device
             constraints. Defaults to ``None`` in which case ``kwargs`` must be fully specified
             for passing to the ``cut_method``.
+        deferred_measurement (bool): Whether to use the deferred measurement principle to
+            switch mid-circuit measurements to terminal measurements. Will consume an extra wire
+            for each mid-circuit measurement.
         replace_wire_cuts (bool): Whether to replace :class:`~.WireCut` nodes with
             :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs. Defaults to ``False``.
         kwargs: Additional keyword arguments to be passed to the callable ``cut_method``.
@@ -2381,16 +2399,18 @@ def find_and_place_cuts(
             cut_graph = place_wire_cuts(graph=graph, cut_edges=cut_edges)
             replace_wire_cut_nodes(cut_graph)
             frags, comm_graph = fragment_graph(cut_graph)
+            print("============")
+            for f in frags:
+                print(graph_to_tape(f).draw())
 
-            if (
-                (len(frags) == k)
-                and ((k not in valid_cut_edges) or (len(valid_cut_edges[k]) > len(cut_edges)))
-                and all(
-                    len({w for _, _, w in f.edges(data="wire")})
-                    + comm_graph.degree()[j] * deferred_measurement
-                    <= cut_strategy.max_free_wires
-                    for j, f in enumerate(frags)
-                )
+            if _is_valid_cut(
+                fragments=frags,
+                comm_graph=comm_graph,
+                num_cuts=len(cut_edges),
+                num_fragments=k,
+                cut_candidates=valid_cut_edges,
+                deferred_measurement=deferred_measurement,
+                max_free_wires=cut_strategy.max_free_wires,
             ):
                 valid_cut_edges[k] = cut_edges
 
@@ -2410,3 +2430,29 @@ def find_and_place_cuts(
         replace_wire_cut_nodes(cut_graph)
 
     return cut_graph
+
+
+def _is_valid_cut(
+    fragments,
+    comm_graph,
+    num_cuts,
+    num_fragments,
+    cut_candidates,
+    deferred_measurement,
+    max_free_wires,
+):
+    """Helper function for determining if a cut is a valid canditate."""
+
+    correct_num_fragments = len(fragments) == num_fragments
+    no_candidate_yet = (num_fragments not in cut_candidates) or (
+        len(cut_candidates[num_fragments]) > num_cuts
+    )
+    all_fragments_fit = all(
+        len({w for _, _, w in f.edges(data="wire")})
+        + comm_graph.out_degree()[j] * deferred_measurement
+        <= max_free_wires
+        for j, f in enumerate(fragments)
+    )
+
+    print(correct_num_fragments, no_candidate_yet, all_fragments_fit)
+    return correct_num_fragments and no_candidate_yet and all_fragments_fit

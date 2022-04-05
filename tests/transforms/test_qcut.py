@@ -3491,7 +3491,7 @@ class TestCutStrategy:
     def test_by_fragment_sizes(self, max_wires_by_fragment, max_gates_by_fragment):
         """Test that the user provided by-fragment limits properly propagates."""
         strategy = qcut.CutStrategy(
-            min_free_wires=2,
+            max_free_wires=2,
         )
         if (
             max_wires_by_fragment
@@ -3755,7 +3755,17 @@ class TestKaHyPar:
         )
 
     @pytest.mark.parametrize("with_manual_cut", [False, True])
-    def test_find_and_place_cuts(self, with_manual_cut):
+    @pytest.mark.parametrize(
+        "cut_strategy",
+        [
+            None,
+            # qcut.CutStrategy(qml.device("default.qubit", wires=3)),
+            # qcut.CutStrategy(max_free_wires=2),
+            qcut.CutStrategy(max_free_wires=3),
+        ],
+    )
+    @pytest.mark.parametrize("deferred_measurement", [False])
+    def test_find_and_place_cuts(self, with_manual_cut, cut_strategy, deferred_measurement):
         """Integration tests for auto cutting pipeline."""
         pytest.importorskip("kahypar")
 
@@ -3775,17 +3785,34 @@ class TestKaHyPar:
             qml.RY(0.6, wires="b")
             qml.expval(qml.PauliX(wires=[0]) @ qml.PauliY(wires=["a"]) @ qml.PauliZ(wires=["b"]))
 
-        expected_num_cut_edges = 2
-        num_frags = 2
-
         graph = qcut.tape_to_graph(tape)
-        cut_graph = qcut.find_and_place_cuts(
-            graph=graph,
-            num_fragments=num_frags,
-            imbalance=0.5,
-            replace_wire_cuts=True,
-            seed=self.seed,
-        )
+
+        if cut_strategy is None:
+            expected_num_cut_edges = 2
+            num_frags = 2
+            cut_graph = qcut.find_and_place_cuts(
+                graph=graph,
+                num_fragments=num_frags,
+                imbalance=0.5,
+                replace_wire_cuts=True,
+                seed=self.seed,
+            )
+
+        else:
+            cut_graph = qcut.find_and_place_cuts(
+                graph=graph,
+                cut_strategy=cut_strategy,
+                deferred_measurement=deferred_measurement,
+                replace_wire_cuts=True,
+                seed=self.seed,
+            )
+
+            if (cut_strategy.max_free_wires > 2) or (not deferred_measurement):
+                expected_num_cut_edges = 2
+                num_frags = 2
+            else:
+                expected_num_cut_edges = 3
+                num_frags = 3
 
         assert (
             len([n for n in cut_graph.nodes if isinstance(n, qcut.MeasureNode)])
