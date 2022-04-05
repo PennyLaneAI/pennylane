@@ -33,7 +33,7 @@ from pennylane import qchem
 )
 def test_molecular_density_matrix(n_electron, c, p_ref):
     r"""Test that molecular_density_matrix returns the correct matrix."""
-    p = qchem.hf.mol_density_matrix(n_electron, c)
+    p = qchem.mol_density_matrix(n_electron, c)
     assert np.allclose(p, p_ref)
 
 
@@ -53,9 +53,9 @@ def test_molecular_density_matrix(n_electron, c, p_ref):
 )
 def test_overlap_matrix(symbols, geometry, alpha, s_ref):
     r"""Test that overlap_matrix returns the correct matrix."""
-    mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
-    s = qchem.hf.overlap_matrix(mol.basis_set)(*args)
+    s = qchem.overlap_matrix(mol.basis_set)(*args)
     assert np.allclose(s, s_ref)
 
 
@@ -72,8 +72,8 @@ def test_overlap_matrix(symbols, geometry, alpha, s_ref):
 def test_overlap_matrix_nodiff(symbols, geometry, s_ref):
     r"""Test that overlap_matrix returns the correct matrix when no differentiable parameter is
     used."""
-    mol = qchem.hf.Molecule(symbols, geometry)
-    s = qchem.hf.overlap_matrix(mol.basis_set)()
+    mol = qchem.Molecule(symbols, geometry)
+    s = qchem.overlap_matrix(mol.basis_set)()
     assert np.allclose(s, s_ref)
 
 
@@ -133,10 +133,10 @@ def test_overlap_matrix_nodiff(symbols, geometry, s_ref):
 )
 def test_gradient_overlap_matrix(symbols, geometry, alpha, coeff, g_alpha_ref, g_coeff_ref):
     r"""Test that the overlap gradients are correct."""
-    mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     args = [mol.alpha, mol.coeff]
-    g_alpha = autograd.jacobian(qchem.hf.overlap_matrix(mol.basis_set), argnum=0)(*args)
-    g_coeff = autograd.jacobian(qchem.hf.overlap_matrix(mol.basis_set), argnum=1)(*args)
+    g_alpha = autograd.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=0)(*args)
+    g_coeff = autograd.jacobian(qchem.overlap_matrix(mol.basis_set), argnum=1)(*args)
     assert np.allclose(g_alpha, g_alpha_ref)
     assert np.allclose(g_coeff, g_coeff_ref)
 
@@ -159,9 +159,9 @@ def test_gradient_overlap_matrix(symbols, geometry, alpha, coeff, g_alpha_ref, g
 )
 def test_moment_matrix(symbols, geometry, alpha, e, idx, s_ref):
     r"""Test that moment_matrix returns the correct matrix."""
-    mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
-    s = qchem.hf.moment_matrix(mol.basis_set, e, idx)(*args)
+    s = qchem.moment_matrix(mol.basis_set, e, idx)(*args)
     assert np.allclose(s, s_ref)
 
 
@@ -180,8 +180,8 @@ def test_moment_matrix(symbols, geometry, alpha, e, idx, s_ref):
 def test_moment_matrix_nodiff(symbols, geometry, e, idx, s_ref):
     r"""Test that moment_matrix returns the correct matrix when no differentiable parameter is
     used."""
-    mol = qchem.hf.Molecule(symbols, geometry)
-    s = qchem.hf.moment_matrix(mol.basis_set, e, idx)()
+    mol = qchem.Molecule(symbols, geometry)
+    s = qchem.moment_matrix(mol.basis_set, e, idx)()
     assert np.allclose(s, s_ref)
 
 
@@ -244,10 +244,10 @@ def test_moment_matrix_nodiff(symbols, geometry, e, idx, s_ref):
 )
 def test_gradient_moment_matrix(symbols, geometry, alpha, coeff, e, idx, g_alpha_ref, g_coeff_ref):
     r"""Test that the moment matrix gradients are correct."""
-    mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     args = [mol.alpha, mol.coeff]
-    g_alpha = autograd.jacobian(qchem.hf.moment_matrix(mol.basis_set, e, idx), argnum=0)(*args)
-    g_coeff = autograd.jacobian(qchem.hf.moment_matrix(mol.basis_set, e, idx), argnum=1)(*args)
+    g_alpha = autograd.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnum=0)(*args)
+    g_coeff = autograd.jacobian(qchem.moment_matrix(mol.basis_set, e, idx), argnum=1)(*args)
 
     assert np.allclose(g_alpha, g_alpha_ref)
     assert np.allclose(g_coeff, g_coeff_ref)
@@ -274,9 +274,9 @@ def test_gradient_moment_matrix(symbols, geometry, alpha, coeff, e, idx, g_alpha
 )
 def test_kinetic_matrix(symbols, geometry, alpha, t_ref):
     r"""Test that kinetic_matrix returns the correct matrix."""
-    mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [alpha]
-    t = qchem.hf.kinetic_matrix(mol.basis_set)(*args)
+    t = qchem.kinetic_matrix(mol.basis_set)(*args)
     assert np.allclose(t, t_ref)
 
 
@@ -298,8 +298,8 @@ def test_kinetic_matrix(symbols, geometry, alpha, t_ref):
 def test_kinetic_matrix_nodiff(symbols, geometry, t_ref):
     r"""Test that kinetic_matrix returns the correct matrix when no differentiable parameter is
     used."""
-    mol = qchem.hf.Molecule(symbols, geometry)
-    t = qchem.hf.kinetic_matrix(mol.basis_set)()
+    mol = qchem.Molecule(symbols, geometry)
+    t = qchem.kinetic_matrix(mol.basis_set)()
     assert np.allclose(t, t_ref)
 
 
@@ -359,10 +359,10 @@ def test_kinetic_matrix_nodiff(symbols, geometry, t_ref):
 )
 def test_gradient_kinetic_matrix(symbols, geometry, alpha, coeff, g_alpha_ref, g_coeff_ref):
     r"""Test that the kinetic gradients are correct."""
-    mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     args = [mol.alpha, mol.coeff]
-    g_alpha = autograd.jacobian(qchem.hf.kinetic_matrix(mol.basis_set), argnum=0)(*args)
-    g_coeff = autograd.jacobian(qchem.hf.kinetic_matrix(mol.basis_set), argnum=1)(*args)
+    g_alpha = autograd.jacobian(qchem.kinetic_matrix(mol.basis_set), argnum=0)(*args)
+    g_coeff = autograd.jacobian(qchem.kinetic_matrix(mol.basis_set), argnum=1)(*args)
     assert np.allclose(g_alpha, g_alpha_ref)
     assert np.allclose(g_coeff, g_coeff_ref)
 
@@ -389,9 +389,9 @@ def test_gradient_kinetic_matrix(symbols, geometry, alpha, coeff, g_alpha_ref, g
 )
 def test_attraction_matrix(symbols, geometry, alpha, v_ref):
     r"""Test that attraction_matrix returns the correct matrix."""
-    mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [mol.alpha]
-    v = qchem.hf.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    v = qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(v, v_ref)
 
 
@@ -417,10 +417,10 @@ def test_attraction_matrix(symbols, geometry, alpha, v_ref):
 )
 def test_attraction_matrix_diffR(symbols, geometry, alpha, v_ref):
     r"""Test that attraction_matrix returns the correct matrix when positions are differentiable."""
-    mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     r_basis = mol.coordinates
     args = [mol.coordinates, mol.alpha, r_basis]
-    v = qchem.hf.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    v = qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(v, v_ref)
 
 
@@ -442,8 +442,8 @@ def test_attraction_matrix_diffR(symbols, geometry, alpha, v_ref):
 )
 def test_attraction_matrix_nodiff(symbols, geometry, v_ref):
     r"""Test that attraction_matrix returns the correct matrix."""
-    mol = qchem.hf.Molecule(symbols, geometry)
-    v = qchem.hf.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)()
+    mol = qchem.Molecule(symbols, geometry)
+    v = qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)()
     assert np.allclose(v, v_ref)
 
 
@@ -484,12 +484,12 @@ def test_attraction_matrix_nodiff(symbols, geometry, v_ref):
 )
 def test_gradient_attraction_matrix(symbols, geometry, alpha, coeff, g_r_ref):
     r"""Test that the attraction gradients are correct."""
-    mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
     r_basis = mol.coordinates
     args = [mol.coordinates, mol.alpha, mol.coeff, r_basis]
 
     g_r = autograd.jacobian(
-        qchem.hf.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates), argnum=0
+        qchem.attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates), argnum=0
     )(*args)
     assert np.allclose(g_r, g_r_ref)
 
@@ -522,9 +522,9 @@ def test_gradient_attraction_matrix(symbols, geometry, alpha, coeff, g_r_ref):
 )
 def test_repulsion_tensor(symbols, geometry, alpha, e_ref):
     r"""Test that repulsion_tensor returns the correct matrix."""
-    mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [mol.alpha]
-    e = qchem.hf.repulsion_tensor(mol.basis_set)(*args)
+    e = qchem.repulsion_tensor(mol.basis_set)(*args)
     assert np.allclose(e, e_ref)
 
 
@@ -553,8 +553,8 @@ def test_repulsion_tensor(symbols, geometry, alpha, e_ref):
 def test_repulsion_tensor_nodiff(symbols, geometry, e_ref):
     r"""Test that repulsion_tensor returns the correct matrix when no differentiable parameter is
     used."""
-    mol = qchem.hf.Molecule(symbols, geometry)
-    e = qchem.hf.repulsion_tensor(mol.basis_set)()
+    mol = qchem.Molecule(symbols, geometry)
+    e = qchem.repulsion_tensor(mol.basis_set)()
     assert np.allclose(e, e_ref)
 
 
@@ -580,9 +580,9 @@ def test_repulsion_tensor_nodiff(symbols, geometry, e_ref):
 )
 def test_core_matrix(symbols, geometry, alpha, c_ref):
     r"""Test that core_matrix returns the correct matrix."""
-    mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     args = [mol.alpha]
-    c = qchem.hf.core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    c = qchem.core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(c, c_ref)
 
 
@@ -605,8 +605,8 @@ def test_core_matrix(symbols, geometry, alpha, c_ref):
 def test_core_matrix_nodiff(symbols, geometry, c_ref):
     r"""Test that core_matrix returns the correct matrix when no differentiable parameter is
     used."""
-    mol = qchem.hf.Molecule(symbols, geometry)
-    c = qchem.hf.core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)()
+    mol = qchem.Molecule(symbols, geometry)
+    c = qchem.core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)()
     assert np.allclose(c, c_ref)
 
 
@@ -632,8 +632,8 @@ def test_core_matrix_nodiff(symbols, geometry, c_ref):
 )
 def test_core_matrix_diff_positions(symbols, geometry, alpha, c_ref):
     r"""Test that core_matrix returns the correct matrix when positions are differentiable."""
-    mol = qchem.hf.Molecule(symbols, geometry, alpha=alpha)
+    mol = qchem.Molecule(symbols, geometry, alpha=alpha)
     r_basis = mol.coordinates
     args = [mol.coordinates, mol.alpha, r_basis]
-    c = qchem.hf.core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
+    c = qchem.core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     assert np.allclose(c, c_ref)

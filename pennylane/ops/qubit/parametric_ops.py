@@ -1184,7 +1184,7 @@ class CRX(Operation):
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: The controlled-RX operator satisfies a four-term parameter-shift rule
-      (see Appendix F, https://arxiv.org/abs/2104.05695):
+      (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
       .. math::
 
@@ -1333,7 +1333,7 @@ class CRY(Operation):
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: The controlled-RY operator satisfies a four-term parameter-shift rule
-      (see Appendix F, https://arxiv.org/abs/2104.05695):
+      (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
       .. math::
 
@@ -1475,7 +1475,7 @@ class CRZ(Operation):
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: The controlled-RZ operator satisfies a four-term parameter-shift rule
-      (see Appendix F, https://arxiv.org/abs/2104.05695):
+      (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
       .. math::
 
@@ -1636,7 +1636,7 @@ class CRot(Operation):
     * Number of wires: 2
     * Number of parameters: 3
     * Gradient recipe: The controlled-Rot operator satisfies a four-term parameter-shift rule
-      (see Appendix F, https://arxiv.org/abs/2104.05695):
+      (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
       .. math::
 
