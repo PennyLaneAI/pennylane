@@ -561,6 +561,7 @@ class Hamiltonian(Observable):
             ops.extend(H.ops.copy())
             new_hamiltonian = qml.Hamiltonian(coeffs, ops, simplify=True)
             qml.QueuingContext.safe_update_info(self, owner=new_hamiltonian)
+            qml.QueuingContext.safe_update_info(H, owner=new_hamiltonian)
             return new_hamiltonian
 
         if isinstance(H, (Tensor, Observable)):
