@@ -193,7 +193,7 @@ class OpWithAllReps(qml.operation.Operation):
 
     @staticmethod
     def compute_sparse_matrix(theta):
-        return sp.sparse.coo_array(qml.math.eye(4))
+        return sp.sparse.coo_matrix(qml.math.eye(4))
 
     @staticmethod
     def compute_terms(theta):
@@ -245,7 +245,7 @@ class OpWrongSparseMatrix(OpWithAllReps):
 
     @staticmethod
     def compute_sparse_matrix(theta):
-        return sp.sparse.coo_array(qml.math.ones((4, 4)))
+        return sp.sparse.coo_matrix(qml.math.ones((4, 4)))
 
 
 class OpWrongGenerator(OpWithAllReps):
