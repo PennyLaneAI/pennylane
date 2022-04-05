@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-From pennylane/base:latest
+FROM pennylane/base:latest
 
 # Update and install Qchem
 RUN DEBIAN_FRONTEND="noninteractive" apt-get install tzdata # need to perform this again
@@ -25,7 +25,8 @@ WORKDIR /opt/pennylane/qchem
 RUN git submodule update --init --recursive
 RUN pip install wheel && pip install openfermionpyscf && pip install -r requirements.txt \
     && python3 setup.py install \
-    && make test
+    && pip install -i https://test.pypi.org/simple/ pennylane-lightning --pre --upgrade \
+    && make test && make coverage
 
 # Image build completed.
 CMD echo "Successfully built Docker image"
