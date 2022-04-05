@@ -14,15 +14,15 @@
 """
 This submodule contains the templates for Hilbert Schmidt tests.
 """
-
+# pylint: disable-msg=too-many-arguments
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 
 
 class HilbertSchmidt(Operation):
     r"""Create a Hilbert Schmidt template that can be used to compute the Hilbert Schmidt Test (HST). The HST is a
-    useful quantity used when we want to compile an unitary U with an approximate unitary V. The HST is used as a
-    distance between U and V, the value of the HST is 0 if and only if V is equal to U (up to global phase).
+    useful quantity used when we want to compile an unitary `U` with an approximate unitary `V`. The HST is used as a
+    distance between `U` and `V`, the value of the HST is 0 if and only if `V` is equal to `U` (up to global phase).
     Therefore we can define a cost by:
 
     .. math::
@@ -39,10 +39,10 @@ class HilbertSchmidt(Operation):
     It defines our decomposition for the Hilbert Schmidt Test template.
 
     Args:
-        v_params (array): Parameters for the quantum function V.
-        v_function (Callable): Quantum function that represents the approximate compiled unitary V.
+        v_params (array): Parameters for the quantum function `V`.
+        v_function (Callable): Quantum function that represents the approximate compiled unitary `V`.
         v_wires (int or Iterable[Number, str]]): the wire(s) the approximate compiled unitary act on.
-        u_tape (.QuantumTape): U, the unitary to be compiled as a ``qml.tape.QuantumTape``.
+        u_tape (.QuantumTape): `U`, the unitary to be compiled as a ``qml.tape.QuantumTape``.
 
     Raises:
         QuantumFunctionError: ``v_function`` is not a valid Quantum function.
@@ -51,8 +51,10 @@ class HilbertSchmidt(Operation):
 
     .. UsageDetails::
 
-        Consider that we want to evaluate the Hilbert Schmidt Test cost between the unitary U and its approximate
-        unitary V.
+        Consider that we want to evaluate the Hilbert Schmidt Test cost between the unitary `U` and an approximate
+        unitary `V`. We need to define some functions where it is possible to use the ``.HilbertSchmidt`` template.
+        Here the considered unitary is ``Hadamard`` and we try to compute the cost for the approximate unitary ``RZ``.
+        For an angle which is equal to 0 (identity), we have the maximal cost which is 1.
 
         .. code-block:: python
 
@@ -167,7 +169,7 @@ class HilbertSchmidt(Operation):
                 decomp_ops.append(qml.Hadamard(wire))
         return decomp_ops
 
-    def adjoint(self):
+    def adjoint(self):  # pylint: disable=arguments-differ
         adjoint_op = HilbertSchmidt(
             *self.parameters,
             u_tape=self.hyperparameters["u_tape"],
@@ -179,16 +181,22 @@ class HilbertSchmidt(Operation):
 
 
 class HilbertSchmidtLocal(HilbertSchmidt):
-    r"""Create a Local Hilbert Schmidt template that can be used to compute the Local Hilbert Schmidt Test. Where the
-    cost is defined by:
-
-    .. math:: L_{HST} = 1 - \frac{1}{d^2} \left|Tr(V^{\dagger}U)\right|^2
+    r"""Create a Local Hilbert Schmidt template that can be used to compute the  Local Hilbert Schmidt Test (LHST).
+    The LHST is a useful quantity used when we want to compile an unitary `U` with an approximate unitary `V`. The
+    LHST is used as a distance between `U` and `V`, it is similar to the Hilbert schmidt test but the measurement is
+    made only on one qubit at the end of the circuit. The LHST cost is always smaller than the HST cost and is useful
+    for large unitaries.
 
     Args:
-        v_params (array): Parameters for the quantum function V.
-        v_function (Callable): Quantum function that represents the approximate compiled unitary.
+        v_params (array): Parameters for the quantum function `V`.
+        v_function (Callable): Quantum function that represents the approximate compiled unitary `V`.
         v_wires (int or Iterable[Number, str]]): the wire(s) the approximate compiled unitary act on.
-        u_tape (.QuantumTape): The unitary to be compiled as a ``qml.tape.QuantumTape``.
+        u_tape (.QuantumTape): `U`, the unitary to be compiled as a ``qml.tape.QuantumTape``.
+
+    Raises:
+        QuantumFunctionError: ``v_function`` is not a valid Quantum function.
+        QuantumFunctionError: `U` and `V` do not have the same number of wires.
+        QuantumFunctionError: The wires ``v_wires`` are a subset of `V` wires.
 
     **Reference**
 
@@ -233,7 +241,7 @@ class HilbertSchmidtLocal(HilbertSchmidt):
 
         return decomp_ops
 
-    def adjoint(self):
+    def adjoint(self):  # pylint: disable=arguments-differ
         adjoint_op = HilbertSchmidtLocal(
             *self.parameters,
             u_circuit=self.hyperparameters["u_tape"],
