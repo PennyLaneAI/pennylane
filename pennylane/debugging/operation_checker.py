@@ -14,6 +14,7 @@ r"""
 This file contains the OperationChecker debugging and developing tool.
 """
 import inspect
+from functools import partial
 
 import scipy.linalg as la
 
@@ -29,6 +30,25 @@ from pennylane.operation import (
     DecompositionUndefinedError,
     AnyWires,
 )
+
+try:
+    import jax
+
+    has_jax = True
+except ModuleNotFoundError:
+    has_jax = False
+try:
+    import tensorflow as tf
+
+    has_tf = True
+except ModuleNotFoundError:
+    has_tf = False
+try:
+    import torch
+
+    has_torch = True
+except ModuleNotFoundError:
+    has_torch = False
 
 _colors = {
     "error": "91",  # red
@@ -93,7 +113,25 @@ def is_diagonal(matrix, atol=1e-10):
     return np.allclose(off_diagonal, np.zeros_like(matrix), atol=atol, rtol=0.0)
 
 
-def complex_jacobian(fn):
+def torch_jacobian(fn):
+    """Functional jacobian in the torch interface with the same
+    syntax as qml.jacobian. Note that this is not performant!"""
+    return lambda *args: torch.autograd.functional.jacobian(fn, args)
+
+
+def tf_jacobian(fn):
+    """Functional jacobian in the tensorflow interface with the same
+    syntax as qml.jacobian. Note that this is not performant!"""
+
+    def jac_fn(*args):
+        with tf.GradientTape() as tape:
+            out = fn(*args)
+        return tuple(0.0 if val is None else val.numpy() for val in tape.jacobian(out, args))
+
+    return jac_fn
+
+
+def complex_jacobian(fn, jacobian_fn=qml.jacobian):
     r"""Compute the Jacobian of a complex-valued function with real-valued inputs.
 
     Args:
@@ -111,9 +149,18 @@ def complex_jacobian(fn):
         of functions :math:`f:\mathbb{R}\mapsto\mathbb{C}^k`.
 
     """
-    r_jac = qml.jacobian(lambda *args, **kwargs: qml.math.real(fn(*args, **kwargs)))
-    i_jac = qml.jacobian(lambda *args, **kwargs: qml.math.imag(fn(*args, **kwargs)))
-    return lambda *args, **kwargs: r_jac(*args, **kwargs) + 1j * i_jac(*args, **kwargs)
+    r_jac = jacobian_fn(lambda *args, **kwargs: qml.math.real(fn(*args, **kwargs)))
+    i_jac = jacobian_fn(lambda *args, **kwargs: qml.math.imag(fn(*args, **kwargs)))
+
+    def complex_jac(*args, **kwargs):
+        rjac = r_jac(*args, **kwargs)
+        ijac = i_jac(*args, **kwargs)
+        if isinstance(rjac, tuple):
+            return tuple(r + 1j * i for r, i in zip(rjac, ijac))
+
+        return rjac + 1j * ijac
+
+    return complex_jac
 
 
 def recipe_yields_commutator(recipe, op, par, wires):
@@ -633,7 +680,9 @@ class OperationChecker:
         self._check_properties(op, parameters, wires)
         self._check_decompositions(op, parameters, wires)
         if issubclass(op, qml.operation.Operation):
-            self._check_differentiability(op, parameters, wires)
+            self._check_parameter_shift(op, parameters, wires)
+
+        self._check_derivatives(op, parameters, wires)
 
     def _check_wires(self, op, wires):
         """Check that ``num_wires`` is defined, that provided wires match the given number
@@ -930,7 +979,63 @@ class OperationChecker:
                 "error",
             )
 
-    def _check_differentiability(self, op, parameters, wires):
+    def _check_derivatives(self, op, parameters, wires):
+        """Check that the matrix representation of an operation obtained via qml.matrix
+        is differentiable in the autograd interface."""
+        for par in parameters:
+            num = len(par)
+            if num not in self.tmp["possible_num_params"] or num == 0:
+                continue
+            try:
+                qml.matrix(op(*par, wires=wires))
+            except qml.operation.MatrixUndefinedError:
+                continue
+            if getattr(op, "grad_method", None) is None:
+                continue
+            instance_fn = lambda *args: qml.matrix(op(*args, wires=wires))
+
+            par_autograd = tuple(
+                p if isinstance(p, str) else np.array(p, requires_grad=True) for p in par
+            )
+            autograd_jac = complex_jacobian(instance_fn)(*par_autograd)
+            if num == 1:
+                autograd_jac = (autograd_jac,)
+            # TODO: allow for string arguments by setting argnum
+            if has_jax and not any(isinstance(p, str) for p in par):
+                par_jax = tuple(jax.numpy.array(p) for p in par)
+                jax_jacobian = partial(jax.jacobian, argnums=list(range(num)))
+                jax_jac = complex_jacobian(instance_fn, jax_jacobian)(*par_jax)
+                if num == 1:
+                    jax_jac = (jax_jac,)
+                if not all(qml.math.allclose(ag, j) for ag, j in zip(autograd_jac, jax_jac)):
+                    self.print_(
+                        f"The jacobian of the matrix for {self.tmp['name']} does not match between\n"
+                        "the autograd and jax interfaces."
+                        f"\n{autograd_jac}\n{jax_jac}",
+                        "error",
+                    )
+            # TODO: allow for string arguments by setting argnum
+            if has_torch and not any(isinstance(p, str) for p in par):
+                par_torch = tuple(torch.tensor(p, requires_grad=True) for p in par)
+                torch_jac = complex_jacobian(instance_fn, torch_jacobian)(*par_torch)
+                if not all(qml.math.allclose(ag, t) for ag, t in zip(autograd_jac, torch_jac)):
+                    self.print_(
+                        f"The jacobian of the matrix for {self.tmp['name']} does not match between\n"
+                        "the autograd and torch interfaces.",
+                        "error",
+                    )
+            # TODO: allow for string arguments by setting argnum
+            if has_tf and not any(isinstance(p, str) for p in par):
+                par_tf = tuple(tf.Variable(p) for p in par)
+                tf_jac = complex_jacobian(instance_fn, tf_jacobian)(*par_tf)
+                if not all(qml.math.allclose(ag, t) for ag, t in zip(autograd_jac, tf_jac)):
+                    self.print_(
+                        f"The jacobian of the matrix for {self.tmp['name']} does not match between\n"
+                        "the autograd and tensorflow interfaces.",
+                        "error",
+                    )
+
+    def _check_parameter_shift(self, op, parameters, wires):
         """Check that an operation is differentiable if it is marked to be, and that
         the correct derivative is produced. Note that this can be computationally expensive."""
         if issubclass(op, qml.operation.Channel):
@@ -945,10 +1050,9 @@ class OperationChecker:
         if grad_method is None:
             return
         grad_method_is_hardcoded = isinstance(grad_method, str)
-        # TODO: the following line would fail _in general_ because of num_params
         has_grad_recipe = (
             getattr(op, "grad_recipe", None) is not None
-            and op.grad_recipe != [None] * op.num_params
+            and op.grad_recipe != [None] * self.tmp["possible_num_params"][0]
         )
         if grad_method_is_hardcoded and op.grad_method != "A" and has_grad_recipe:
             self.print_(

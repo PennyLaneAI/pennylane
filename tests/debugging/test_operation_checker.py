@@ -185,11 +185,11 @@ class OpWithAllReps(qml.operation.Operation):
 
     @staticmethod
     def compute_eigvals(theta):
-        return qml.math.ones(4)
+        return qml.math.convert_like(qml.math.ones(4), theta)
 
     @staticmethod
     def compute_matrix(theta):
-        return qml.math.eye(4)
+        return qml.math.convert_like(qml.math.eye(4), theta)
 
     @staticmethod
     def compute_sparse_matrix(theta):
@@ -227,7 +227,10 @@ class OpFlexibleNumParamsComputeMatrix(qml.operation.Operation):
 
     @staticmethod
     def compute_matrix(*angles):
-        return qml.math.eye(2)
+        if len(angles) > 0:
+            return qml.math.convert_like(qml.math.eye(2), angles[0])
+        else:
+            return qml.math.eye(2)
 
 
 ops_with_comment = [
@@ -281,7 +284,7 @@ class OpWrongMatrix(OpWithAllReps):
 
     @staticmethod
     def compute_matrix(theta):
-        return qml.math.ones((4, 4))
+        return qml.math.convert_like(qml.math.ones((4, 4)), theta)
 
 
 class OpWrongSparseMatrix(OpWithAllReps):
@@ -322,7 +325,7 @@ class OpWrongEigvals(OpWithAllReps):
 
     @staticmethod
     def compute_eigvals(theta):
-        return -1 * qml.math.ones(4)
+        return -1 * qml.math.convert_like(qml.math.ones(4), theta)
 
 
 class OpWrongRotAngles(qml.operation.Operation):
@@ -349,7 +352,7 @@ class OpWrongDiagGates(qml.operation.Operation):
 
     @staticmethod
     def compute_matrix(theta):
-        return qml.math.ones((4, 4))
+        return qml.math.convert_like(qml.math.ones((4, 4)), theta)
 
     @staticmethod
     def compute_diagonalizing_gates(theta, wires):
@@ -389,7 +392,7 @@ class OpRestrictiveNumParamsComputeEigvals(qml.operation.Operation):
 
     @staticmethod
     def compute_eigvals(first_angle, *angles):
-        return qml.math.eye(2)
+        return qml.math.ones(2)
 
 
 error_ops = [
@@ -433,7 +436,7 @@ class OpWrongMatrixShape(OpWithAllReps):
 
     @staticmethod
     def compute_matrix(theta):
-        return qml.math.ones((2, 4))
+        return qml.math.convert_like(qml.math.ones((2, 4)), theta)
 
 
 class OpWrongMatrixSize(OpWithAllReps):
@@ -441,7 +444,7 @@ class OpWrongMatrixSize(OpWithAllReps):
 
     @staticmethod
     def compute_matrix(theta):
-        return qml.math.ones((2, 2))
+        return qml.math.convert_like(qml.math.ones((2, 2)), theta)
 
 
 class OpWrongNumParamsComputeMatrix(OpWithAllReps):
@@ -450,7 +453,7 @@ class OpWrongNumParamsComputeMatrix(OpWithAllReps):
 
     @staticmethod
     def compute_matrix(theta, phi):
-        return qml.math.ones((4, 4))
+        return qml.math.convert_like(qml.math.ones((4, 4)), theta)
 
 
 class OpRestrictiveNumParamsComputeMatrix(qml.operation.Operation):
@@ -464,7 +467,7 @@ class OpRestrictiveNumParamsComputeMatrix(qml.operation.Operation):
 
     @staticmethod
     def compute_matrix(first_angle, *angles):
-        return qml.math.eye(2)
+        return qml.math.convert_like(qml.math.eye(2), first_angle)
 
 
 fatal_error_ops = [
