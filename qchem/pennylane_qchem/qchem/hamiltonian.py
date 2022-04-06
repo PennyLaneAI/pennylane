@@ -17,6 +17,7 @@ This module contains the functions needed for computing the molecular Hamiltonia
 # pylint: disable= too-many-branches, too-many-arguments, too-many-locals, too-many-nested-blocks
 import autograd.numpy as anp
 
+from pennylane.tape import stop_recording
 from .hartree_fock import nuclear_energy, scf
 from .observable_hf import fermionic_observable, qubit_observable
 
@@ -214,8 +215,9 @@ def mol_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         Returns:
             Hamiltonian: the qubit Hamiltonian
         """
-        h_ferm = fermionic_hamiltonian(mol, cutoff, core, active)(*args)
-
-        return qubit_observable(h_ferm)
+        with stop_recording():
+            h_ferm = fermionic_hamiltonian(mol, cutoff, core, active)(*args)
+            out = qubit_observable(h_ferm)
+        return out
 
     return _molecular_hamiltonian

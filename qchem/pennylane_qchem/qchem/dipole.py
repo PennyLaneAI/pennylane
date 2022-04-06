@@ -16,6 +16,7 @@ This module contains the functions needed for computing the dipole moment.
 """
 import autograd.numpy as anp
 
+from pennylane.tape import stop_recording
 from .basis_data import atomic_numbers
 from .hartree_fock import scf
 from .matrices import moment_matrix
@@ -302,10 +303,11 @@ def dipole_moment(mol, cutoff=1.0e-18, core=None, active=None):
         Returns:
             (list[Hamiltonian]): x, y and z components of the dipole moment observable
         """
-        d = []
-        d_ferm = fermionic_dipole(mol, cutoff, core, active)(*args)
-        for i in d_ferm:
-            d.append(qubit_observable(i, cutoff=cutoff))
+        with stop_recording():
+            d = []
+            d_ferm = fermionic_dipole(mol, cutoff, core, active)(*args)
+            for i in d_ferm:
+                d.append(qubit_observable(i, cutoff=cutoff))
 
         return d
 
