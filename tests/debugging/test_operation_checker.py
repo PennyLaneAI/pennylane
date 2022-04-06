@@ -533,6 +533,7 @@ class TestCustomOperations:
     def test_errors_derivative_interfaces(self, interface):
         """Tests that an operation with a matrix that is not differentiable
         in a given interface is reported with an error."""
+        pytest.importorskip(interface)
 
         class FlawedDerivativeMatrixOp(qml.operation.Operation):
             num_wires = 1
