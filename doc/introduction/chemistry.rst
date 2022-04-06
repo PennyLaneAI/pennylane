@@ -49,7 +49,7 @@ where:
 Internally, :func:`~.molecular_hamiltonian` calls the following functions in order
 to generate the qubit Hamiltonian:
 
-.. currentmodule:: pennylane_qchem.qchem
+.. currentmodule:: pennylane.qchem
 
 .. autosummary::
 
