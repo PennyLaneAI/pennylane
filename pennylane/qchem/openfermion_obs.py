@@ -21,8 +21,6 @@ import numpy as np
 
 import pennylane as qml
 
-from . import openfermion
-
 # Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
 bohr_angs = 0.529177210903
 
@@ -105,6 +103,10 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     + (0.075) [Z2]
     + (-0.075) [Z0 Z2]
     """
+    try:
+        import openfermion
+    except ImportError as Error:
+        raise ImportError("The OpenFermion package is required.") from Error
 
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
         raise TypeError(
@@ -189,6 +191,10 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     -0.44829969610163756 [2^ 2] +
     -0.44829969610163756 [3^ 3]
     """
+    try:
+        import openfermion
+    except ImportError as Error:
+        raise ImportError("The OpenFermion package is required.") from Error
 
     orbitals = matrix_elements.shape[0]
 
@@ -354,6 +360,10 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     + 0.08950028803070323 [3^ 3^ 1 1]
     + 0.352552816086392 [3^ 3^ 3 3]
     """
+    try:
+        import openfermion
+    except ImportError as Error:
+        raise ImportError("The OpenFermion package is required.") from Error
 
     orbitals = matrix_elements.shape[0]
 
@@ -569,6 +579,10 @@ def dipole_of(
     + (0.26611147045300276) [Y1 Z2 Z3 Z4 Y5]
     + (0.26611147045300276) [X1 Z2 Z3 Z4 X5]
     """
+    try:
+        import openfermion
+    except ImportError as Error:
+        raise ImportError("The OpenFermion package is required.") from Error
 
     atomic_numbers = {
         "H": 1,
@@ -767,6 +781,10 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
     (-0.2427428049645989+0j) [Z1 Z2 Z3] +(0.1762764080276107+0j) [Z1 Z3] +
     (-0.2427428049645989+0j) [Z2]
     """
+    try:
+        import openfermion
+    except ImportError as Error:
+        raise ImportError("The OpenFermion package is required.") from Error
 
     # loading HF data from the hdf5 file
     molecule = openfermion.MolecularData(filename=hf_file.strip())
@@ -898,6 +916,11 @@ def molecular_hamiltonian(
     + (0.12293305056183801) [Z1 Z3]
     + (0.176276408043196) [Z2 Z3]
     """
+
+    try:
+        import openfermion
+    except ImportError as Error:
+        raise ImportError("The OpenFermion package is required.") from Error
 
     hf_file = meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
 
