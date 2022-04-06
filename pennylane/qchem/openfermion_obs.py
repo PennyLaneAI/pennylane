@@ -14,7 +14,7 @@
 """This module contains functions to construct many-body observables whose expectation
 values can be used to simulate molecular properties.
 """
-# pylint: disable=too-many-arguments, too-few-public-methods, import-outside-toplevel, too-many-branches
+# pylint: disable=too-many-arguments, too-few-public-methods, too-many-branches
 import os
 
 import numpy as np
@@ -104,6 +104,7 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     + (-0.075) [Z0 Z2]
     """
     try:
+        # pylint: disable=import-outside-toplevel
         import openfermion
     except ImportError as Error:
         raise ImportError("The OpenFermion package is required.") from Error
@@ -192,6 +193,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     -0.44829969610163756 [3^ 3]
     """
     try:
+        # pylint: disable=import-outside-toplevel
         import openfermion
     except ImportError as Error:
         raise ImportError("The OpenFermion package is required.") from Error
@@ -361,6 +363,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     + 0.352552816086392 [3^ 3^ 3 3]
     """
     try:
+        # pylint: disable=import-outside-toplevel
         import openfermion
     except ImportError as Error:
         raise ImportError("The OpenFermion package is required.") from Error
@@ -580,6 +583,7 @@ def dipole_of(
     + (0.26611147045300276) [X1 Z2 Z3 Z4 X5]
     """
     try:
+        # pylint: disable=import-outside-toplevel
         import openfermion
     except ImportError as Error:
         raise ImportError("The OpenFermion package is required.") from Error
@@ -708,6 +712,7 @@ def meanfield(
     ./h2_pyscf_sto-3g
     """
     try:
+        # pylint: disable=import-outside-toplevel
         import openfermion
     except ImportError as Error:
         raise ImportError("The OpenFermion package is required.") from Error
@@ -786,6 +791,7 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
     (-0.2427428049645989+0j) [Z2]
     """
     try:
+        # pylint: disable=import-outside-toplevel
         import openfermion
     except ImportError as Error:
         raise ImportError("The OpenFermion package is required.") from Error
@@ -922,6 +928,7 @@ def molecular_hamiltonian(
     """
 
     try:
+        # pylint: disable=import-outside-toplevel
         import openfermion
     except ImportError as Error:
         raise ImportError("The OpenFermion package is required.") from Error
