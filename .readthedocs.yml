@@ -22,11 +22,8 @@ python:
   version: 3.8
   install:
     - requirements: doc/requirements.txt
-    - requirements: qchem/requirements.txt
     - method: pip
       path: .
-    - method: pip
-      path: qchem
 
 build:
   image: latest
