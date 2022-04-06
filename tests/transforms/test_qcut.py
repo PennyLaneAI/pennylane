@@ -3628,7 +3628,7 @@ class TestCutCircuitTransformValidation:
 
 
 class TestCutCircuitExpansion:
-    """Test of expansion in the cut_circuit function"""
+    """Test of expansion in the cut_circuit and cut_circuit_mc functions"""
 
     transform_measurement_pairs = [
             (qcut.cut_circuit, qml.expval(qml.PauliZ(0))),
