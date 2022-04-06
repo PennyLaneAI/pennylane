@@ -1899,7 +1899,7 @@ def _qcut_expand_fn(
     tape: QuantumTape,
     max_depth: int = 1,
 ):
-    """Expansion function for sample-based circuit cutting.
+    """Expansion function for circuit cutting.
 
     Expands operations until reaching a depth that includes :class:`~.WireCut` operations.
     """
