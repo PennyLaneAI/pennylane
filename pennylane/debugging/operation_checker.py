@@ -910,8 +910,8 @@ class OperationChecker:
         eigvals of a matrix representation of the same operation."""
         if matrix is None or eigvals is None:
             return
-        mat_eigvals = np.linalg.eigvals(matrix)
-        if not np.allclose(mat_eigvals, eigvals):
+        mat_eigvals = np.sort(np.round(np.linalg.eigvals(matrix), 14))
+        if not np.allclose(mat_eigvals, np.sort(np.round(eigvals, 14))):
             self.print_(
                 f"The eigenvalues of the matrix and the stored eigvals for {self.tmp['name']} "
                 "do not match.",
@@ -939,7 +939,7 @@ class OperationChecker:
             )
             return
         if eigvals is not None and not np.allclose(
-            np.sort(eigvals), np.sort(np.diag(diagonalized))
+            np.sort(np.round(eigvals, 14)), np.sort(np.round(np.diag(diagonalized), 14))
         ):
             self.print_(
                 "The diagonalizing gates diagonalize the matrix but produce wrong "
