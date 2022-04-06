@@ -13,4 +13,4 @@
 # limitations under the License.
 
 
-from .adjoint import Adjoint
+from .adjoint import Adjoint, adjoint

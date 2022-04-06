@@ -14,9 +14,16 @@
 """
 This submodule defines an operation modifier that indicates the adjoint of an operator.
 """
-import pennylane as qml
-from pennylane.operation import Operator, AnyWires
+from pennylane.operation import Operator, Operation, AnyWires, AdjointUndefinedError
+from pennylane.queuing import QueuingContext
 
+def adjoint(op):
+    try:
+        new_op = op.adjoint()
+        QueuingContext.safe_update_info(op, owner=new_op)
+        return new_op
+    except AdjointUndefinedError:
+        return Adjoint(op)
 
 class Adjoint(Operator):
 
@@ -28,7 +35,7 @@ class Adjoint(Operator):
         super().__init__(*base.parameters, wires=base.wires, do_queue=do_queue, id=id)
         self._name = f"Adjoint({self.base.name})"
 
-    def queue(self, context=qml.QueuingContext):
+    def queue(self, context=QueuingContext):
         try:
             context.update_info(self.base, owner=self)
         except qml.queuing.QueuingError:
@@ -55,28 +62,51 @@ class Adjoint(Operator):
         return self.base.label(decimals, base_label)+"†"
     
     @staticmethod
-    def compute_matrix(*params, base=None, base_hyperparameters=None):
+    def compute_matrix(*params, base=None):
 
-        base_matrix = base.compute_matrix(*params, **base_hyperparameters)
+        base_matrix = base.compute_matrix(*params, **base.hyperparameters)
         return qml.math.transpose(qml.math.conjugate(base_matrix))
     
     @classmethod
-    def compute_decomposition(cls, *params, wires, base=None, base_hyperparameters=None):
+    def compute_decomposition(cls, *params, wires, base=None):
         try:
             return base.adjoint()
         except qml.operation.AdjointUndefinedError:
-            base_decomp = base.compute_decomposition(*params, wires, **base_hyperparameters)
+            base_decomp = base.compute_decomposition(*params, wires, **base.hyperparameters)
             return [Adjoint(op) for op in reversed(base_decomp)]
         
     @staticmethod
-    def compute_sparse_matrix(*params, base=None, **hyperparams):
-        base_matrix = base.compute_sparse_matrix(*params, **hyperparams)
+    def compute_sparse_matrix(*params, base=None):
+        base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
         return qml.math.transpose(qml.math.conjugate(base_matrix))
     
     @staticmethod
-    def compute_eigvals(*params, base=None, **hyperparams):
-        base_eigvals = base.compute_eigvals(*params, **hyperparams)
+    def compute_eigvals(*params, base=None):
+        base_eigvals = base.compute_eigvals(*params, **base.hyperparameters)
         return [qml.math.conjugate(x) for x in base_eigvals]
+
+    @property
+    def has_matrix(self):
+        return self.base.has_matrix
+
+
+    ## Operation specific properties ##########################################
+
+    @property
+    def grad_method(self):
+        return self.base.grad_method
+
+    @property
+    def grad_recipe(self):
+        return self.base.grad_recipe
+
+    @property
+    def basis(self):
+        return self.base.basis
+
+    @property
+    def control_wires(self):
+        return self.base.control_wires
 
     @property
     def single_qubit_rot_angles(self):
@@ -84,10 +114,14 @@ class Adjoint(Operator):
         return -phi, -theta, -omega
 
     # get_parameter_shift ?
-
     @property
     def parameter_frequencies(self):
         return self.base.parameter_frequencies
 
-    # generator
+    def generator(self):
+        if isinstance(self, Operation): # stand in for being unitary and inverse=adjoint
+            return -1.0 * self.base.generator()
+        return super().generator()
 
+    def adjoint(self):
+        return self.base
