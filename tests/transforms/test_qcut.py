@@ -3631,9 +3631,9 @@ class TestCutCircuitExpansion:
     """Test of expansion in the cut_circuit and cut_circuit_mc functions"""
 
     transform_measurement_pairs = [
-            (qcut.cut_circuit, qml.expval(qml.PauliZ(0))),
-            (qcut.cut_circuit_mc, qml.sample(wires=[0])),
-        ]
+        (qcut.cut_circuit, qml.expval(qml.PauliZ(0))),
+        (qcut.cut_circuit_mc, qml.sample(wires=[0])),
+    ]
 
     @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_no_expansion(self, mocker, cut_transform, measurement):
