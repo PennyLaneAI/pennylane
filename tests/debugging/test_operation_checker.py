@@ -529,6 +529,29 @@ class TestCustomOperations:
         assert all(err_str in output for err_str in err_strs)
         assert result == "error"
 
+    @pytest.mark.parametrize("interface", ["jax", "torch", "tensorflow"])
+    def test_errors_derivative_interfaces(self, interface):
+        """Tests that an operation with a matrix that is not differentiable
+        in a given interface is reported with an error."""
+
+        class FlawedDerivativeMatrixOp(qml.operation.Operation):
+            num_wires = 1
+            num_params = 1
+            grad_method = "F"
+
+            @staticmethod
+            def compute_matrix(theta):
+                if qml.math._multi_dispatch([theta]) == interface:
+                    # The "wrong" matrix
+                    return -theta * qml.math.convert_like(qml.math.ones((2, 2)), theta)
+                # The "correct" matrix
+                return theta * qml.math.convert_like(qml.math.ones((2, 2)), theta)
+
+        result, output = self.Checker(FlawedDerivativeMatrixOp)
+        assert result == "error"
+        assert "The jacobian of the matrix for FlawedDerivativeMatrixOp" in output
+        assert f"autograd and {interface} interfaces" in output
+
     @pytest.mark.parametrize("fatal_error_op", fatal_error_ops)
     def test_fatal_errors(self, fatal_error_op):
         """Test that custom operations correctly are reported with a fatal error."""
