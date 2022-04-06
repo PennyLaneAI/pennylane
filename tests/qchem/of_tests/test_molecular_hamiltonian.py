@@ -8,6 +8,7 @@ from pennylane.ops import Hamiltonian
 
 import numpy as np
 
+openfermion = pytest.importorskip("openfermion")
 
 symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
 coordinates = np.array(

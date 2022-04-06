@@ -707,6 +707,10 @@ def meanfield(
     >>> meanfield(symbols, coordinates, name="h2")
     ./h2_pyscf_sto-3g
     """
+    try:
+        import openfermion
+    except ImportError as Error:
+        raise ImportError("The OpenFermion package is required.") from Error
 
     if coordinates.size != 3 * len(symbols):
         raise ValueError(
