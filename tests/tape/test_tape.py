@@ -88,22 +88,22 @@ class TestConstruction:
 
         # test that the internal tape._measurements list is created properly
         assert isinstance(tape._measurements[0], MeasurementProcess)
-        assert tape._measurements[0].return_type == qml.operation.Expectation
+        assert tape._measurements[0].return_type == qml.measurements.Expectation
         assert tape._measurements[0].obs == obs[0]
 
         assert isinstance(tape._measurements[1], MeasurementProcess)
-        assert tape._measurements[1].return_type == qml.operation.Probability
+        assert tape._measurements[1].return_type == qml.measurements.Probability
 
         # test the public observables property
         assert len(tape.observables) == 2
         assert tape.observables[0].name == "PauliX"
-        assert tape.observables[1].return_type == qml.operation.Probability
+        assert tape.observables[1].return_type == qml.measurements.Probability
 
         # test the public measurements property
         assert len(tape.measurements) == 2
         assert all(isinstance(m, MeasurementProcess) for m in tape.measurements)
-        assert tape.observables[0].return_type == qml.operation.Expectation
-        assert tape.observables[1].return_type == qml.operation.Probability
+        assert tape.observables[0].return_type == qml.measurements.Expectation
+        assert tape.observables[1].return_type == qml.measurements.Probability
 
     def test_tensor_observables_matmul(self):
         """Test that tensor observables are correctly processed from the annotated
@@ -117,7 +117,7 @@ class TestConstruction:
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs2]
-        assert tape.measurements[0].return_type is qml.operation.Expectation
+        assert tape.measurements[0].return_type is qml.measurements.Expectation
         assert tape.measurements[0].obs is t_obs2
 
     def test_tensor_observables_rmatmul(self):
@@ -133,7 +133,7 @@ class TestConstruction:
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs2]
-        assert tape.measurements[0].return_type is qml.operation.Expectation
+        assert tape.measurements[0].return_type is qml.measurements.Expectation
         assert tape.measurements[0].obs is t_obs2
 
     def test_tensor_observables_tensor_init(self):
@@ -149,7 +149,7 @@ class TestConstruction:
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs2]
-        assert tape.measurements[0].return_type is qml.operation.Expectation
+        assert tape.measurements[0].return_type is qml.measurements.Expectation
         assert tape.measurements[0].obs is t_obs2
 
     def test_tensor_observables_tensor_matmul(self):
@@ -166,7 +166,7 @@ class TestConstruction:
 
         assert tape.operations == [op]
         assert tape.observables == [t_obs]
-        assert tape.measurements[0].return_type is qml.operation.Variance
+        assert tape.measurements[0].return_type is qml.measurements.Variance
         assert tape.measurements[0].obs is t_obs
 
     def test_qubit_diagonalization(self, make_tape):
@@ -272,6 +272,139 @@ class TestConstruction:
         s = tape.__repr__()
         expected = "<QuantumTape: wires=[0], params=1>"
         assert s == expected
+
+    def test_circuit_property(self):
+        """Test that the underlying circuit property returns the correct
+        operations and measurements making up the circuit."""
+        r = 1.234
+        terminal_measurement = qml.expval(qml.PauliZ(0))
+
+        def f(x):
+            qml.PauliX(1)
+            qml.RY(x, wires=1)
+            qml.PauliZ(1)
+
+        with qml.tape.QuantumTape() as tape:
+            m_0 = qml.measure(0)
+            qml.cond(m_0, f)(r)
+            qml.apply(terminal_measurement)
+
+        target_wire = qml.wires.Wires(1)
+
+        assert len(tape.circuit) == 5
+        assert tape.circuit[0].return_type == qml.measurements.MidMeasure
+
+        assert isinstance(tape.circuit[1], qml.transforms.condition.Conditional)
+        assert isinstance(tape.circuit[1].then_op, qml.PauliX)
+        assert tape.circuit[1].then_op.wires == target_wire
+
+        assert isinstance(tape.circuit[2], qml.transforms.condition.Conditional)
+        assert isinstance(tape.circuit[2].then_op, qml.RY)
+        assert tape.circuit[2].then_op.wires == target_wire
+        assert tape.circuit[2].then_op.data == [r]
+
+        assert isinstance(tape.circuit[3], qml.transforms.condition.Conditional)
+        assert isinstance(tape.circuit[3].then_op, qml.PauliZ)
+        assert tape.circuit[3].then_op.wires == target_wire
+
+        assert tape.circuit[4] is terminal_measurement
+
+
+class TestIteration:
+    """Test the capabilities related to iterating over tapes."""
+
+    @pytest.fixture
+    def make_tape(self):
+        ops = []
+        meas = []
+
+        with QuantumTape() as tape:
+            ops += [qml.RX(0.432, wires=0)]
+            ops += [qml.Rot(0.543, 0, 0.23, wires=0)]
+            ops += [qml.CNOT(wires=[0, "a"])]
+            ops += [qml.RX(0.133, wires=4)]
+            meas += [qml.expval(qml.PauliX(wires="a"))]
+            meas += [qml.probs(wires=[0, "a"])]
+
+        return tape, ops, meas
+
+    def test_tape_is_iterable(self, make_tape):
+        """Test the iterable protocol: that we can iterate over a tape because
+        an iterator object can be obtained using the iter function."""
+        tape, ops, meas = make_tape
+
+        expected = ops + meas
+
+        tape_iterator = iter(tape)
+
+        iterating = True
+
+        counter = 0
+
+        while iterating:
+            try:
+                next_tape_elem = next(tape_iterator)
+
+                assert next_tape_elem is expected[counter]
+                counter += 1
+
+            except StopIteration:
+
+                # StopIteration is raised by next when there are no more
+                # elements to iterate over
+                iterating = False
+
+        assert counter == len(expected)
+
+    def test_tape_is_sequence(self, make_tape):
+        """Test the sequence protocol: that a tape is a sequence because its
+        __len__ and __getitem__ methods work as expected."""
+        tape, ops, meas = make_tape
+
+        expected = ops + meas
+
+        for idx, exp_elem in enumerate(expected):
+            tape[idx] is exp_elem
+
+        assert len(tape) == len(expected)
+
+    def test_tape_as_list(self, make_tape):
+        """Test that a tape can be converted to a list."""
+        tape, ops, meas = make_tape
+        tape = list(tape)
+
+        expected = ops + meas
+        for op, exp_op in zip(tape, expected):
+            assert op is exp_op
+
+        assert len(tape) == len(expected)
+
+    def test_iteration_preserves_circuit(self):
+        """Test that iterating through a tape doesn't change the underlying
+        list of operations and measurements in the circuit."""
+
+        circuit = [
+            qml.RX(0.432, wires=0),
+            qml.Rot(0.543, 0, 0.23, wires=0),
+            qml.CNOT(wires=[0, "a"]),
+            qml.RX(0.133, wires=4),
+            qml.expval(qml.PauliX(wires="a")),
+            qml.probs(wires=[0, "a"]),
+        ]
+
+        with QuantumTape() as tape:
+            for op in circuit:
+                qml.apply(op)
+
+        # Check that the underlying circuit is as expected
+        assert tape.circuit == circuit
+
+        # Iterate over the tape
+        for op in tape:
+            op
+
+        # Check that the underlying circuit is still as expected
+        assert tape.circuit == circuit
 
 
 class TestGraph:
@@ -862,7 +995,11 @@ class TestExpand:
 
         assert len(new_tape.operations) == 5
 
-        expected = [qml.operation.Probability, qml.operation.Expectation, qml.operation.Variance]
+        expected = [
+            qml.measurements.Probability,
+            qml.measurements.Expectation,
+            qml.measurements.Variance,
+        ]
         assert [m.return_type is r for m, r in zip(new_tape.measurements, expected)]
 
         expected = [None, None, None]
@@ -951,18 +1088,13 @@ class TestExecution:
         assert tape.output_dim == 1
 
         # test execution with no parameters
-        res1 = tape.execute(dev)
-        assert tape.get_parameters() == params
-
-        # test execution with parameters
-        res2 = tape.execute(dev, params=[0.5, 0.6])
+        res1 = dev.execute(tape)
         assert tape.get_parameters() == params
 
         # test setting parameters
         tape.set_parameters(params=[0.5, 0.6])
-        res3 = tape.execute(dev)
-        assert np.allclose(res2, res3, atol=tol, rtol=0)
-        assert not np.allclose(res1, res2, atol=tol, rtol=0)
+        res3 = dev.execute(tape)
+        assert not np.allclose(res1, res3, atol=tol, rtol=0)
         assert tape.get_parameters() == [0.5, 0.6]
 
     def test_no_output_execute(self):
@@ -975,55 +1107,9 @@ class TestExecution:
             qml.RX(params[0], wires=[0])
             qml.RY(params[1], wires=[1])
 
-        res = tape.execute(dev)
+        res = dev.execute(tape)
         assert res.size == 0
         assert np.all(res == np.array([]))
-
-    def test_incorrect_output_dim_estimate(self):
-        """Test that a quantum tape with an incorrect inferred output dimension
-        corrects itself after evaluation."""
-        dev = qml.device("default.qubit", wires=3)
-        params = [1.0, 1.0, 1.0]
-
-        with QuantumTape() as tape:
-            qml.RX(params[0], wires=[0])
-            qml.RY(params[1], wires=[1])
-            qml.RZ(params[2], wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=0)
-            qml.probs(wires=[1])
-
-        # estimate output dim should be correct
-        assert tape.output_dim == sum([2, 2])
-
-        # modify the output dim
-        tape._output_dim = 2
-
-        res = tape.execute(dev)
-        assert tape.output_dim == sum([2, 2])
-
-    def test_incorrect_ragged_output_dim_estimate(self):
-        """Test that a quantum tape with an incorrect *ragged* output dimension
-        estimate corrects itself after evaluation."""
-        dev = qml.device("default.qubit", wires=3)
-        params = [1.0, 1.0, 1.0]
-
-        with QuantumTape() as tape:
-            qml.RX(params[0], wires=[0])
-            qml.RY(params[1], wires=[1])
-            qml.RZ(params[2], wires=[2])
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=0)
-            qml.probs(wires=[1, 2])
-
-        # estimate output dim should be correct
-        assert tape.output_dim == sum([2, 4])
-
-        # modify the output dim
-        tape._output_dim = 2
-
-        res = tape.execute(dev)
-        assert tape.output_dim == sum([2, 4])
 
     def test_single_expectation_value(self, tol):
         """Tests correct output shape and evaluation for a tape
@@ -1040,7 +1126,7 @@ class TestExecution:
 
         assert tape.output_dim == 1
 
-        res = tape.execute(dev)
+        res = dev.execute(tape)
         assert res.shape == (1,)
 
         expected = np.sin(y) * np.cos(x)
@@ -1062,7 +1148,7 @@ class TestExecution:
 
         assert tape.output_dim == 2
 
-        res = tape.execute(dev)
+        res = dev.execute(tape)
         assert res.shape == (2,)
 
         expected = [np.cos(x), np.sin(y)]
@@ -1084,7 +1170,7 @@ class TestExecution:
 
         assert tape.output_dim == 2
 
-        res = tape.execute(dev)
+        res = dev.execute(tape)
         assert res.shape == (2,)
 
         expected = [np.cos(x), np.cos(y) ** 2]
@@ -1106,7 +1192,7 @@ class TestExecution:
 
         assert tape.output_dim == 5
 
-        res = tape.execute(dev)
+        res = dev.execute(tape)
 
         assert isinstance(res[0], float)
         assert np.allclose(res[0], np.cos(x), atol=tol, rtol=0)
@@ -1127,7 +1213,7 @@ class TestExecution:
             qml.CNOT(wires=[0, 1])
             qml.sample(qml.PauliZ(0) @ qml.PauliX(1))
 
-        res = tape.execute(dev)
+        res = dev.execute(tape)
         assert res.shape == (1, 10)
 
     def test_multiple_samples(self):
@@ -1144,7 +1230,7 @@ class TestExecution:
             qml.sample(qml.PauliZ(0))
             qml.sample(qml.PauliZ(1))
 
-        res = tape.execute(dev)
+        res = dev.execute(tape)
         assert res.shape == (2, 10)
 
     def test_samples_expval(self):
@@ -1161,7 +1247,7 @@ class TestExecution:
             qml.sample(qml.PauliZ(0))
             qml.expval(qml.PauliZ(1))
 
-        res = tape.execute(dev)
+        res = dev.execute(tape)
         assert res[0].shape == (10,)
         assert isinstance(res[1], np.ndarray)
 
@@ -1174,23 +1260,8 @@ class TestExecution:
             qml.expval(qml.PauliZ(0))
 
         tape = tape.expand(stop_at=lambda obj: obj.name in dev.operations)
-        res = tape.execute(dev)
+        res = dev.execute(tape)
         assert np.allclose(res, np.cos(0.1), atol=tol, rtol=0)
-
-    def test_multiple_observables_same_wire(self):
-        """Test if an error is raised when multiple observables are evaluated on the same wire
-        without first running tape.expand()."""
-        dev = qml.device("default.qubit", wires=2)
-
-        with QuantumTape() as tape:
-            qml.expval(qml.PauliX(0) @ qml.PauliZ(1))
-            qml.expval(qml.PauliX(0))
-
-        with pytest.raises(qml.QuantumFunctionError, match="Multiple observables are being"):
-            tape.execute(dev)
-
-        new_tape = tape.expand()
-        new_tape.execute(dev)
 
 
 class TestCVExecution:
@@ -1211,7 +1282,7 @@ class TestCVExecution:
 
         assert tape.output_dim == 1
 
-        res = tape.execute(dev)
+        res = dev.batch_execute([tape])[0]
         assert res.shape == (1,)
 
     def test_multiple_output_values(self, tol):
@@ -1230,7 +1301,7 @@ class TestCVExecution:
 
         assert tape.output_dim == 2
 
-        res = tape.execute(dev)
+        res = dev.batch_execute([tape])[0]
         assert res.shape == (2,)
 
 
@@ -1353,28 +1424,6 @@ class TestTapeCopying:
         # however, the underlying operation *parameters* are still shared
         # to support PyTorch, which does not support deep copying of tensors
         assert copied_tape.operations[0].data[0] is tape.operations[0].data[0]
-
-    def test_casting(self):
-        """Test that copying and casting works as expected"""
-        with QuantumTape() as tape:
-            qml.BasisState(np.array([1, 0]), wires=[0, 1])
-            qml.RY(0.5, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
-
-        # copy and cast to a JacobianTape
-        copied_tape = tape.copy(tape_cls=qml.tape.JacobianTape)
-
-        # check that the copying worked
-        assert copied_tape is not tape
-        assert copied_tape.operations == tape.operations
-        assert copied_tape.observables == tape.observables
-        assert copied_tape.measurements == tape.measurements
-        assert copied_tape.operations[0] is tape.operations[0]
-
-        # check that the casting worked
-        assert isinstance(copied_tape, qml.tape.JacobianTape)
-        assert not isinstance(tape, qml.tape.JacobianTape)
 
 
 class TestStopRecording:
@@ -1709,3 +1758,37 @@ class TestHashing:
             qml.expval(H)
 
         assert tape1.hash == tape2.hash
+
+
+class TestTapeDraw:
+    """Test the tape draw method."""
+
+    def test_default_kwargs(self):
+        """Test tape draw with default keyword arguments."""
+
+        with QuantumTape() as tape:
+            qml.RX(1.23456, wires=0)
+            qml.RY(2.3456, wires="a")
+            qml.RZ(3.4567, wires=1.234)
+
+        assert tape.draw() == qml.drawer.tape_text(tape)
+        assert tape.draw(decimals=2) == qml.drawer.tape_text(tape, decimals=2)
+
+    def test_show_matrices(self):
+        """Test show_matrices keyword argument."""
+
+        with QuantumTape() as tape:
+            qml.QubitUnitary(qml.numpy.eye(2), wires=0)
+
+        assert tape.draw() == qml.drawer.tape_text(tape)
+        assert tape.draw(show_matrices=True) == qml.drawer.tape_text(tape, show_matrices=True)
+
+    def test_max_length_keyword(self):
+        """Test the max_length keyword argument."""
+
+        with QuantumTape() as tape:
+            for _ in range(50):
+                qml.PauliX(0)
+
+        assert tape.draw() == qml.drawer.tape_text(tape)
+        assert tape.draw(max_length=20) == qml.drawer.tape_text(tape, max_length=20)

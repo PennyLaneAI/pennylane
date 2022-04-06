@@ -60,11 +60,17 @@ jobs:
         if: contains(matrix.config.interfaces, 'jax')
         run: pip3 install jax jaxlib
 
+      - name: Install KaHyPar
+        run: pip3 install kahypar==1.1.7
+
       - name: Install PennyLane
         run: |
           pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
+
+      - name: Install Lightning-master
+        run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
         run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS
@@ -167,7 +173,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get install -y openbabel
           conda install psi4 psi4-rt python=3.7 -c psi4
           pip uninstall h5py -y
           pip install pytest pytest-cov pytest-mock flaky h5py==3.2.1
@@ -182,7 +187,13 @@ jobs:
 
       - name: Run tests
         run: |
+          python -m pytest tests/hf --cov=pennylane $COVERAGE_FLAGS
           cd qchem && python -m pytest tests --cov=pennylane_qchem $COVERAGE_FLAGS
+
+      - name: Upload HF coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./coverage.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1

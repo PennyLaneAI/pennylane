@@ -34,6 +34,9 @@ from .channel import __all__ as _channel__ops__
 
 from .math import *
 
+class AdjointError(Exception):
+    """Exception for non-adjointable operations."""
+
 
 __all__ = _cv__all__ + _qubit__all__ + _channel__ops__
 __all_ops__ = list(_cv__ops__ | _qubit__ops__)

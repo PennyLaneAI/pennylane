@@ -18,6 +18,7 @@ of a quantum tape.
 # pylint: disable=protected-access,too-many-arguments
 import functools
 import warnings
+from collections.abc import Sequence
 
 import numpy as np
 from scipy.special import factorial
@@ -28,7 +29,9 @@ from .gradient_transform import (
     gradient_transform,
     grad_method_validation,
     choose_grad_methods,
+    gradient_analysis,
 )
+from .general_shift_rules import generate_shifted_tapes
 
 
 @functools.lru_cache(maxsize=None)
@@ -151,41 +154,6 @@ def finite_diff_coeffs(n, approx_order, strategy):
     return coeffs_and_shifts
 
 
-def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
-    r"""Generate a list of tapes where the corresponding trainable parameter
-    index has been shifted by the values given.
-
-    Args:
-        tape (.QuantumTape): input quantum tape
-        idx (int): trainable parameter index to shift the parameter of
-        shifts (Sequence[float or int]): sequence of shift values
-        multipliers (Sequence[float or int]): Sequence of multiplier values to
-            scale the parameter by. If not provided, the parameter will
-            not be scaled.
-
-    Returns:
-        list[QuantumTape]: List of quantum tapes. Each tape has parameter
-        ``idx`` shifted by consecutive values of ``shift``. The length
-        of the returned list of tapes will match the length of ``shifts``.
-    """
-    params = list(tape.get_parameters())
-    tapes = []
-
-    for i, s in enumerate(shifts):
-        new_params = params.copy()
-        shifted_tape = tape.copy(copy_operations=True)
-
-        if multipliers is not None:
-            m = multipliers[i]
-            new_params[idx] = new_params[idx] * qml.math.convert_like(m, new_params[idx])
-
-        new_params[idx] = new_params[idx] + qml.math.convert_like(s, new_params[idx])
-        shifted_tape.set_parameters(new_params)
-        tapes.append(shifted_tape)
-
-    return tapes
-
-
 @gradient_transform
 def finite_diff(
     tape,
@@ -272,7 +240,7 @@ def finite_diff(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> with qml.tape.JacobianTape() as tape:
+        >>> with qml.tape.QuantumTape() as tape:
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
@@ -280,10 +248,10 @@ def finite_diff(
         ...     qml.var(qml.PauliZ(0))
         >>> gradient_tapes, fn = qml.gradients.finite_diff(tape)
         >>> gradient_tapes
-        [<JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>]
+        [<QuantumTape: wires=[0], params=3>,
+         <QuantumTape: wires=[0], params=3>,
+         <QuantumTape: wires=[0], params=3>,
+         <QuantumTape: wires=[0], params=3>]
 
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
@@ -302,11 +270,11 @@ def finite_diff(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return [], lambda _: ()
+        return [], lambda _: qml.math.zeros([tape.output_dim, 0])
 
     if validate_params:
         if "grad_method" not in tape._par_info[0]:
-            tape._update_gradient_info()
+            gradient_analysis(tape, grad_fn=finite_diff)
         diff_methods = grad_method_validation("numeric", tape)
     else:
         diff_methods = ["F" for i in tape.trainable_params]
@@ -347,6 +315,11 @@ def finite_diff(
         shapes.append(len(g_tapes))
 
     def processing_fn(results):
+        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        # pylint: disable=protected-access
+        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+            results = [qml.math.squeeze(res) for res in results]
+
         grads = []
         start = 1 if c0 is not None and f0 is None else 0
         r0 = f0 or results[0]
@@ -378,9 +351,9 @@ def finite_diff(
         # In the future, we might want to change this so that only tuples
         # of arrays are returned.
         for i, g in enumerate(grads):
-            g = qml.math.convert_like(g, results[0])
             if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
-                grads[i] = qml.math.hstack(g)
+                if qml.math.ndim(g) > 0:
+                    grads[i] = qml.math.hstack(g)
 
         return qml.math.T(qml.math.stack(grads))
 

@@ -554,6 +554,27 @@ class TestBarrier:
         assert queue[1].name == "Barrier"
         assert queue[4].name == "Barrier"
 
+    def test_barrier_control(self):
+        """Test if Barrier is correctly included in queue when controlling"""
+        dev = qml.device("default.qubit", wires=3)
+
+        def barrier():
+            qml.PauliX(wires=0)
+            qml.Barrier(wires=[0, 1])
+            qml.CNOT(wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circuit():
+            barrier()
+            qml.ctrl(barrier, 2)()
+            return qml.state()
+
+        circuit()
+        tape = circuit.tape.expand(stop_at=lambda op: op.name in ["Barrier", "PauliX", "CNOT"])
+
+        assert tape.operations[1].name == "Barrier"
+        assert tape.operations[4].name == "Barrier"
+
 
 class TestWireCut:
     """Tests for the WireCut operator"""

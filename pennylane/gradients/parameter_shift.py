@@ -17,6 +17,8 @@ of a qubit-based quantum tape.
 """
 # pylint: disable=protected-access,too-many-arguments,too-many-statements
 import warnings
+from collections.abc import Sequence
+
 import numpy as np
 
 import pennylane as qml
@@ -25,9 +27,15 @@ from .gradient_transform import (
     gradient_transform,
     grad_method_validation,
     choose_grad_methods,
+    gradient_analysis,
 )
-from .finite_difference import finite_diff, generate_shifted_tapes
-from .general_shift_rules import process_shifts
+from .finite_difference import finite_diff
+from .general_shift_rules import (
+    process_shifts,
+    _iterate_shift_rule,
+    frequencies_to_period,
+    generate_shifted_tapes,
+)
 
 
 NONINVOLUTORY_OBS = {
@@ -66,10 +74,17 @@ def _square_observable(obs):
     return NONINVOLUTORY_OBS[obs.name](obs)
 
 
-def _get_operation_recipe(tape, t_idx, shifts):
+def _get_operation_recipe(tape, t_idx, shifts, order=1):
     """Utility function to return the parameter-shift rule
     of the operation corresponding to trainable parameter
     t_idx on tape.
+
+    Args:
+        tape (.QuantumTape): Tape containing the operation to differentiate
+        t_idx (int): Parameter index of the operation to differentiate within the tape
+        shifts (Sequence[float or int]): Shift values to use if no static ``grad_recipe`` is
+            provided by the operation to differentiate
+        order (int): Order of the differentiation
 
     This function performs multiple attempts to obtain the recipe:
 
@@ -84,13 +99,38 @@ def _get_operation_recipe(tape, t_idx, shifts):
     That is, the order of precedence is :meth:`~.grad_recipe`, custom
     :attr:`~.parameter_frequencies`, and finally :meth:`.generator` via the default
     implementation of the frequencies.
+
+    If order is set to 2, the rule for the second-order derivative is obtained instead.
     """
+    if order not in {1, 2}:
+        raise NotImplementedError("_get_operation_recipe only is implemented for orders 1 and 2.")
+
     op, p_idx = tape.get_operation(t_idx)
 
     # Try to use the stored grad_recipe of the operation
     recipe = op.grad_recipe[p_idx]
     if recipe is not None:
-        return process_shifts(np.array(recipe).T, check_duplicates=False)
+        recipe = qml.math.array(recipe)
+        if order == 1:
+            # TODO: The following only works because `process_shifts` does not notice that
+            # recipe.T has 3 instead of 2 rows, because we don't use the check for duplicates
+            # This should be improved.
+            return process_shifts(recipe.T, check_duplicates=False)
+
+        # Try to obtain the period of the operator frequencies for iteration of custom recipe
+        try:
+            period = frequencies_to_period(op.parameter_frequencies[p_idx])
+        except qml.operation.ParameterFrequenciesUndefinedError:
+            period = None
+
+        # Iterate the custom recipe to obtain the second-order recipe
+        if qml.math.allclose(recipe[:, 1], qml.math.ones_like(recipe[:, 1])):
+            # If the multipliers are ones, we do not include them in the iteration
+            # but keep track of them manually
+            iter_c, iter_s = process_shifts(_iterate_shift_rule(recipe[:, ::2], order, period).T)
+            return qml.math.stack([iter_c, qml.math.ones_like(iter_c), iter_s])
+
+        return process_shifts(_iterate_shift_rule(recipe, order, period).T)
 
     # Try to obtain frequencies, either via custom implementation or from generator eigvals
     try:
@@ -102,42 +142,11 @@ def _get_operation_recipe(tape, t_idx, shifts):
         ) from e
 
     # Create shift rule from frequencies with given shifts
-    coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=1)
+    coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=order)
     # The generated shift rules do not include a rescaling of the parameter, only shifts.
     mults = np.ones_like(coeffs)
 
     return coeffs, mults, shifts
-
-
-def _gradient_analysis(tape, use_graph=True):
-    """Update the parameter information dictionary of the tape with
-    gradient information of each parameter."""
-
-    if getattr(tape, "_gradient_fn", None) is param_shift:
-        # gradient analysis has already been performed on this tape
-        return
-
-    tape._gradient_fn = param_shift
-
-    for idx, info in tape._par_info.items():
-
-        if idx not in tape.trainable_params:
-            # non-trainable parameters do not require a grad_method
-            info["grad_method"] = None
-        else:
-            op = tape._par_info[idx]["op"]
-
-            if not qml.operation.has_grad_method(op):
-                # no differentiation method is registered for this operation
-                info["grad_method"] = None
-
-            elif (tape._graph is not None) or use_graph:
-                if not any(tape.graph.has_path(op, ob) for ob in tape.observables):
-                    # there is no influence of this operation on any of the observables
-                    info["grad_method"] = "0"
-                    continue
-
-            info["grad_method"] = op.grad_method
 
 
 def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0=None):
@@ -188,7 +197,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
 
         if op.name == "Hamiltonian":
             # operation is a Hamiltonian
-            if op.return_type is not qml.operation.Expectation:
+            if op.return_type is not qml.measurements.Expectation:
                 raise ValueError(
                     "Can only differentiate Hamiltonian "
                     f"coefficients for expectations, not {op.return_type.value}"
@@ -234,6 +243,11 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         shapes.append(len(g_tapes))
 
     def processing_fn(results):
+        # Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        # pylint: disable=protected-access
+        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+            results = [qml.math.squeeze(res) for res in results]
+
         grads = []
         start = 1 if unshifted_coeffs and f0 is None else 0
         r0 = f0 or results[0]
@@ -268,9 +282,9 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         # In the future, we might want to change this so that only tuples
         # of arrays are returned.
         for i, g in enumerate(grads):
-            g = qml.math.convert_like(g, res[0])
             if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
-                grads[i] = qml.math.hstack(g)
+                if qml.math.ndim(g) > 0:
+                    grads[i] = qml.math.hstack(g)
 
         return qml.math.T(qml.math.stack(grads))
 
@@ -306,7 +320,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
     argnum = argnum or tape.trainable_params
 
     # Determine the locations of any variance measurements in the measurement queue.
-    var_mask = [m.return_type is qml.operation.Variance for m in tape.measurements]
+    var_mask = [m.return_type is qml.measurements.Variance for m in tape.measurements]
     var_idx = np.where(var_mask)[0]
 
     # Get <A>, the expectation value of the tape with unshifted parameters.
@@ -316,7 +330,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
     for i in var_idx:
         obs = expval_tape._measurements[i].obs
         expval_tape._measurements[i] = qml.measurements.MeasurementProcess(
-            qml.operation.Expectation, obs=obs
+            qml.measurements.Expectation, obs=obs
         )
 
     gradient_tapes = [expval_tape]
@@ -356,7 +370,7 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
             # involutory observables A in the queue with A^2.
             obs = _square_observable(expval_sq_tape._measurements[i].obs)
             expval_sq_tape._measurements[i] = qml.measurements.MeasurementProcess(
-                qml.operation.Expectation, obs=obs
+                qml.measurements.Expectation, obs=obs
             )
 
         # Non-involutory observables are present; the partial derivative of <A^2>
@@ -368,24 +382,28 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
         gradient_tapes.extend(pdA2_tapes)
 
     def processing_fn(results):
+        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        # pylint: disable=protected-access
+        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+            results = [qml.math.squeeze(res) for res in results]
+
         # We need to expand the dimensions of the variance mask,
         # and convert it to be the same type as the results.
         res = results[0]
         ragged = getattr(results[0], "dtype", None) is np.dtype("object")
 
         mask = []
-        for m, r in zip(var_mask, results[0]):
+        for m, r in zip(var_mask, qml.math.atleast_1d(results[0])):
             array_func = np.ones if m else np.zeros
             shape = qml.math.shape(r)
-            shape = (1,) if shape == tuple() else shape
             mask.append(array_func(shape, dtype=bool))
 
-        if ragged:
+        if ragged and qml.math.ndim(res) > 0:
             res = qml.math.hstack(res)
             mask = qml.math.hstack(mask)
 
-        mask = qml.math.convert_like(qml.math.reshape(mask, [-1, 1]), res)
         f0 = qml.math.expand_dims(res, -1)
+        mask = qml.math.convert_like(qml.math.reshape(mask, qml.math.shape(f0)), res)
 
         pdA = pdA_fn(results[1:tape_boundary])
         pdA2 = 0
@@ -487,7 +505,7 @@ def param_shift(
     For more general shift rules, both regarding the shifts and the frequencies, and
     for more technical details, see
     `Vidal and Theis (2018) <https://arxiv.org/abs/1812.06323>`_ and
-    `Wierichs et al. (2021) <https://arxiv.org/abs/2107.12390>`_.
+    `Wierichs et al. (2022) <https://doi.org/10.22331/q-2022-03-30-677>`_.
 
     **Gradients of variances**
 
@@ -573,7 +591,7 @@ def param_shift(
         device evaluation. Instead, the processed tapes, and post-processing
         function, which together define the gradient are directly returned:
 
-        >>> with qml.tape.JacobianTape() as tape:
+        >>> with qml.tape.QuantumTape() as tape:
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
         ...     qml.RX(params[2], wires=0)
@@ -581,12 +599,12 @@ def param_shift(
         ...     qml.var(qml.PauliZ(0))
         >>> gradient_tapes, fn = qml.gradients.param_shift(tape)
         >>> gradient_tapes
-        [<JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>,
-         <JacobianTape: wires=[0, 1], params=3>]
+        [<QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>,
+         <QuantumTape: wires=[0, 1], params=3>]
 
         This can be useful if the underlying circuits representing the gradient
         computation need to be analyzed.
@@ -600,7 +618,7 @@ def param_shift(
          [ 0.69916862  0.34072424  0.69202359]]
     """
 
-    if any(m.return_type is qml.operation.State for m in tape.measurements):
+    if any(m.return_type is qml.measurements.State for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of circuits that return the state is not supported."
         )
@@ -611,9 +629,9 @@ def param_shift(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return [], lambda _: ()
+        return [], lambda _: np.zeros((tape.output_dim, 0))
 
-    _gradient_analysis(tape)
+    gradient_analysis(tape, grad_fn=param_shift)
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = grad_method_validation(method, tape)
 
@@ -643,7 +661,7 @@ def param_shift(
     if gradient_recipes is None:
         gradient_recipes = [None] * len(argnum)
 
-    if any(m.return_type is qml.operation.Variance for m in tape.measurements):
+    if any(m.return_type is qml.measurements.Variance for m in tape.measurements):
         g_tapes, fn = var_param_shift(tape, argnum, shifts, gradient_recipes, f0)
     else:
         g_tapes, fn = expval_param_shift(tape, argnum, shifts, gradient_recipes, f0)

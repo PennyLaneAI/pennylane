@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,11 +20,10 @@ import contextlib
 import copy
 from threading import RLock
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
-from pennylane.operation import DecompositionUndefinedError, Sample
+from pennylane.operation import DecompositionUndefinedError
+from pennylane.measurements import Sample
 
 from .unwrap import UnwrapTape
 
@@ -118,10 +117,10 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     .. code-block:: python
 
-        with JacobianTape() as tape:
+        with QuantumTape() as tape:
             qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
 
-            with JacobianTape() as tape2:
+            with QuantumTape() as tape2:
                 qml.Rot(0.543, 0.1, 0.4, wires=0)
 
             qml.CNOT(wires=[0, 'a'])
@@ -132,7 +131,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     >>> tape.operations
     [BasisState(array([1, 1]), wires=[0, 'a']),
-     <JacobianTape: wires=[0], params=3>,
+     <QuantumTape: wires=[0], params=3>,
      CNOT(wires=[0, 'a']),
      RY(0.2, wires=['a'])]
 
@@ -153,8 +152,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
         # by default expand all objects
         stop_at = lambda obj: False
 
-    new_tape = tape.__class__()
-    new_tape.__bare__ = getattr(tape, "__bare__", tape.__class__)
+    new_tape = QuantumTape()
 
     # Check for observables acting on the same wire. If present, observables must be
     # qubit-wise commuting Pauli words. In this case, the tape is expanded with joint
@@ -211,6 +209,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
     # Update circuit info
     new_tape._update_circuit_info()
     new_tape._output_dim = tape.output_dim
+    new_tape._qfunc_output = tape._qfunc_output
     return new_tape
 
 
@@ -235,8 +234,11 @@ class QuantumTape(AnnotatedQueue):
             qml.RX(0.133, wires='a')
             qml.expval(qml.PauliZ(wires=[0]))
 
-    Once constructed, information about the quantum circuit can be queried:
+    Once constructed, the tape may act as a quantum circuit and information
+    about the quantum circuit can be queried:
 
+    >>> list(tape)
+    [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(PauliZ(wires=[0]))]
     >>> tape.operations
     [RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
     >>> tape.observables
@@ -248,25 +250,35 @@ class QuantumTape(AnnotatedQueue):
     >>> tape.num_params
     3
 
+    Iterating over the quantum circuit can be done by iterating over the tape
+    object:
+
+    >>> for op in tape:
+    ...     print(op)
+    RX(0.432, wires=[0])
+    RY(0.543, wires=[0])
+    CNOT(wires=[0, 'a'])
+    RX(0.133, wires=['a'])
+    expval(PauliZ(wires=[0]))
+
+    Tapes can also as sequences and support indexing and the ``len`` function:
+
+    >>> tape[0]
+    RX(0.432, wires=[0])
+    >>> len(tape)
+    5
+
     The :class:`~.CircuitGraph` can also be accessed:
 
     >>> tape.graph
     <pennylane.circuit_graph.CircuitGraph object at 0x7fcc0433a690>
 
     Once constructed, the quantum tape can be executed directly on a supported
-    device:
+    device via the :func:`~.pennylane.execute` function:
 
     >>> dev = qml.device("default.qubit", wires=[0, 'a'])
-
-    Execution can take place either using the in-place constructed parameters,
-
-    >>> tape.execute(dev)
-    [0.77750694]
-
-    or by providing parameters at run time:
-
-    >>> tape.execute(dev, params=[0.1, 0.1, 0.1])
-    [0.99003329]
+    >>> qml.execute([tape], dev, gradient_fn=None)
+    [array([0.77750694])]
 
     The trainable parameters of the tape can be explicitly set, and the values of
     the parameters modified in-place:
@@ -323,6 +335,7 @@ class QuantumTape(AnnotatedQueue):
         self._specs = None
         self._depth = None
         self._output_dim = 0
+        self._qfunc_output = None
 
         self.wires = qml.wires.Wires([])
         self.num_wires = 0
@@ -355,6 +368,42 @@ class QuantumTape(AnnotatedQueue):
             self._process_queue()
         finally:
             QuantumTape._lock.release()
+
+    @property
+    def circuit(self):
+        """Returns the quantum circuit recorded by the tape.
+
+        The circuit is created with the assumptions that:
+
+        * The ``operations`` attribute contains quantum operations and
+          mid-circuit measurements and
+        * The ``measurements`` attribute contains terminal measurements.
+
+        Note that the resulting list could contain MeasurementProcess objects
+        that some devices may not support.
+
+        Returns:
+
+            list[.Operator, .MeasurementProcess]: the quantum circuit
+            containing quantum operations and measurements as recorded by the
+            tape.
+        """
+        return self.operations + self.measurements
+
+    def __iter__(self):
+        """list[.Operator, .MeasurementProcess]: Return an iterator to the
+        underlying quantum circuit object."""
+        return iter(self.circuit)
+
+    def __getitem__(self, idx):
+        """list[.Operator]: Return the indexed operator from underlying quantum
+        circuit object."""
+        return self.circuit[idx]
+
+    def __len__(self):
+        """int: Return the number of operations and measurements in the
+        underlying quantum circuit object."""
+        return len(self.circuit)
 
     @property
     def interface(self):
@@ -436,7 +485,7 @@ class QuantumTape(AnnotatedQueue):
 
             elif isinstance(obj, qml.measurements.MeasurementProcess):
 
-                if obj.return_type == qml.operation.MidMeasure:
+                if obj.return_type == qml.measurements.MidMeasure:
 
                     # TODO: for now, consider mid-circuit measurements as tape
                     # operations such that the order of the operators in the
@@ -449,15 +498,15 @@ class QuantumTape(AnnotatedQueue):
                     self._measurements.append(obj)
 
                     # attempt to infer the output dimension
-                    if obj.return_type is qml.operation.Probability:
+                    if obj.return_type is qml.measurements.Probability:
                         self._output_dim += 2 ** len(obj.wires)
-                    elif obj.return_type is qml.operation.State:
+                    elif obj.return_type is qml.measurements.State:
                         continue  # the output_dim is worked out automatically
                     else:
                         self._output_dim += 1
 
                     # check if any sampling is occuring
-                    if obj.return_type is qml.operation.Sample:
+                    if obj.return_type is qml.measurements.Sample:
                         self.is_sampled = True
 
         self._update()
@@ -539,10 +588,10 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
 
-                with JacobianTape() as tape2:
+                with QuantumTape() as tape2:
                     qml.Rot(0.543, 0.1, 0.4, wires=0)
 
                 qml.CNOT(wires=[0, 'a'])
@@ -553,7 +602,7 @@ class QuantumTape(AnnotatedQueue):
 
         >>> tape.operations
         [BasisState(array([1, 1]), wires=[0, 'a']),
-         <JacobianTape: wires=[0], params=3>,
+         <QuantumTape: wires=[0], params=3>,
          CNOT(wires=[0, 'a']),
          RY(0.2, wires=['a'])]
 
@@ -590,7 +639,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.BasisState(np.array([1, 1]), wires=[0, 'a'])
                 qml.RX(0.432, wires=0)
                 qml.Rot(0.543, 0.1, 0.4, wires=0).inv()
@@ -709,21 +758,20 @@ class QuantumTape(AnnotatedQueue):
         automatically excluded from the Jacobian computation.
 
         The number of trainable parameters determines the number of parameters passed to
-        :meth:`~.set_parameters`, :meth:`~.execute`, and :meth:`~.JacobianTape.jacobian`,
-        and changes the default output size of methods :meth:`~.JacobianTape.jacobian` and
-        :meth:`~.get_parameters()`.
+        :meth:`~.set_parameters`, and changes the default output size of method :meth:`~.get_parameters()`.
 
         .. note::
 
-            Since the :meth:`~.JacobianTape.jacobian` method is not called for devices that support
-            native backpropagation (such as ``default.qubit.tf`` and ``default.qubit.autograd``),
-            this property contains no relevant information when using backpropagation to compute gradients.
+            For devices that support native backpropagation (such as
+            ``default.qubit.tf`` and ``default.qubit.autograd``), this
+            property contains no relevant information when using
+            backpropagation to compute gradients.
 
         **Example**
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -792,7 +840,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -839,7 +887,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -926,7 +974,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -949,7 +997,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -984,7 +1032,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            with JacobianTape() as tape:
+            with QuantumTape() as tape:
                 qml.RX(0.432, wires=0)
                 qml.RY(0.543, wires=0)
                 qml.CNOT(wires=[0, 'a'])
@@ -1097,47 +1145,36 @@ class QuantumTape(AnnotatedQueue):
 
         return self._specs
 
-    def draw(self, charset="unicode", wire_order=None, show_all_wires=False, max_length=None):
-        """Draw the quantum tape as a circuit diagram.
-
-        Consider the following circuit as an example:
-
-        .. code-block:: python3
-
-            with QuantumTape() as tape:
-                qml.Hadamard(0)
-                qml.CRX(2.3, wires=[0, 1])
-                qml.Rot(1.2, 3.2, 0.7, wires=[1])
-                qml.CRX(-2.3, wires=[0, 1])
-                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-
-        We can draw the tape after construction:
-
-        >>> print(tape.draw())
-        0: ──H──╭C────────────────────────────╭C─────────╭┤ ⟨Z ⊗ Z⟩
-        1: ─────╰RX(2.3)──Rot(1.2, 3.2, 0.7)──╰RX(-2.3)──╰┤ ⟨Z ⊗ Z⟩
-        >>> print(tape.draw(charset="ascii"))
-        0: --H--+C----------------------------+C---------+| <Z @ Z>
-        1: -----+RX(2.3)--Rot(1.2, 3.2, 0.7)--+RX(-2.3)--+| <Z @ Z>
+    # pylint: disable=too-many-arguments
+    def draw(
+        self,
+        wire_order=None,
+        show_all_wires=False,
+        decimals=None,
+        max_length=100,
+        show_matrices=False,
+    ):
+        """Draw the quantum tape as a circuit diagram. See :func:`~.drawer.tape_text` for more information.
 
         Args:
-            charset (str, optional): The charset that should be used. Currently, "unicode" and
-                "ascii" are supported.
             wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit
             show_all_wires (bool): If True, all wires, including empty wires, are printed.
-            max_length (int, optional): Maximum string width (columns) when printing the circuit to the CLI.
-
-        Raises:
-            ValueError: if the given charset is not supported
+            decimals (int): How many decimal points to include when formatting operation parameters.
+                Default ``None`` will omit parameters from operation labels.
+            max_length (Int) : Maximum length of a individual line.  After this length, the diagram will
+                begin anew beneath the previous lines.
+            show_matrices=False (bool): show matrix valued parameters below all circuit diagrams
 
         Returns:
             str: the circuit representation of the tape
         """
-        return self.graph.draw(
-            charset=charset,
+        return qml.drawer.tape_text(
+            self,
             wire_order=wire_order,
             show_all_wires=show_all_wires,
+            decimals=decimals,
             max_length=max_length,
+            show_matrices=show_matrices,
         )
 
     def to_openqasm(self, wires=None, rotations=True, measure_all=True, precision=None):
@@ -1195,6 +1232,7 @@ class QuantumTape(AnnotatedQueue):
                 if op.inverse:
                     op.inv()
 
+        # pylint: disable=no-member
         # decompose the queue
         operations = tape.expand(depth=2, stop_at=lambda obj: obj.name in OPENQASM_GATES).operations
 
@@ -1246,7 +1284,7 @@ class QuantumTape(AnnotatedQueue):
     def data(self, params):
         self.set_parameters(params, trainable_only=False)
 
-    def copy(self, copy_operations=False, tape_cls=None):
+    def copy(self, copy_operations=False):
         """Returns a shallow copy of the quantum tape.
 
         Args:
@@ -1254,16 +1292,11 @@ class QuantumTape(AnnotatedQueue):
                 Otherwise, if False, the copied tape operations will simply be references
                 to the original tape operations; changing the parameters of one tape will likewise
                 change the parameters of all copies.
-            tape_cls (.QuantumTape): Cast the copied tape to a specific quantum tape subclass.
-                If not provided, the same subclass is used as the original tape.
 
         Returns:
             .QuantumTape: a shallow copy of the tape
         """
-        if tape_cls is None:
-            tape = self.__class__()
-        else:
-            tape = tape_cls()
+        tape = QuantumTape()
 
         if copy_operations:
             # Perform a shallow copy of all operations in the state prep, operation, and measurement
@@ -1297,109 +1330,3 @@ class QuantumTape(AnnotatedQueue):
         fingerprint.extend(m.hash for m in self.measurements)
         fingerprint.extend(self.trainable_params)
         return hash(tuple(fingerprint))
-
-    # ========================================================
-    # execution methods
-    # ========================================================
-
-    def execute(self, device, params=None):
-        """Execute the tape on a quantum device.
-
-        Args:
-            device (.Device): a PennyLane device
-                that can execute quantum operations and return measurement statistics
-            params (list[Any]): The quantum tape operation parameters. If not provided,
-                the current tape parameters are used (via :meth:`~.get_parameters`).
-
-        **Example**
-
-        .. code-block:: python
-
-            with JacobianTape() as tape:
-                qml.RX(0.432, wires=0)
-                qml.RY(0.543, wires=0)
-                qml.CNOT(wires=[0, 'a'])
-                qml.RX(0.133, wires='a')
-                qml.probs(wires=[0, 'a'])
-
-        If parameters are not provided, the existing tape parameters are used:
-
-        >>> dev = qml.device("default.qubit", wires=[0, 'a'])
-        >>> tape.execute(dev)
-        array([[8.84828969e-01, 3.92449987e-03, 4.91235209e-04, 1.10755296e-01]])
-
-        Parameters can be optionally passed during execution:
-
-        >>> tape.execute(dev, params=[1.0, 0.0, 1.0])
-        array([[0.5931328 , 0.17701835, 0.05283049, 0.17701835]])
-
-        Parameters provided for execution are temporary, and do not affect
-        the tapes' parameters in-place:
-
-        >>> tape.get_parameters()
-        [0.432, 0.543, 0.133]
-        """
-        if params is None:
-            params = self.get_parameters()
-
-        return self._execute(params, device=device)
-
-    def execute_device(self, params, device):
-        """Execute the tape on a quantum device.
-
-        This is a low-level method, intended to be called by an interface,
-        and does not support autodifferentiation.
-
-        For more details on differentiable tape execution, see :meth:`~.execute`.
-
-        Args:
-            device (~.Device): a PennyLane device
-                that can execute quantum operations and return measurement statistics
-            params (list[Any]): The quantum tape operation parameters. If not provided,
-                the current tape parameter values are used (via :meth:`~.get_parameters`).
-        """
-        if not all(len(o.diagonalizing_gates()) == 0 for o in self._obs_sharing_wires):
-            raise qml.QuantumFunctionError(
-                "Multiple observables are being evaluated on the same wire. Call tape.expand() "
-                "prior to execution to support this."
-            )
-
-        device.reset()
-
-        # backup the current parameters
-        saved_parameters = self.get_parameters()
-
-        # temporarily mutate the in-place parameters
-        self.set_parameters(params)
-
-        if isinstance(device, qml.QubitDevice):
-            res = device.execute(self)
-        else:
-            res = device.execute(self.operations, self.observables, {})
-
-        # Update output dim if incorrect.
-        # Note that we cannot assume the type of `res`, so
-        # we use duck typing to catch any 'array like' object.
-        try:
-            if isinstance(res, np.ndarray) and res.dtype is np.dtype("object"):
-                output_dim = sum([len(i) for i in res])
-            else:
-                output_dim = np.prod(res.shape)
-
-            if self.output_dim != output_dim:
-                # update the inferred output dimension with the correct value
-                self._output_dim = output_dim
-
-        except (AttributeError, TypeError):
-            # unable to determine the output dimension
-            pass
-
-        # restore original parameters
-        self.set_parameters(saved_parameters)
-
-        return res
-
-    # interfaces can optionally override the _execute method
-    # if they need to perform any logic in between the user's
-    # call to tape.execute and the internal call to tape.execute_device.
-    _execute = execute_device

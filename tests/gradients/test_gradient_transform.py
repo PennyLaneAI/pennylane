@@ -24,14 +24,13 @@ from pennylane.gradients.gradient_transform import (
 
 
 class TestGradMethodValidation:
-    """Test the helper function grad_method_validation, which is a
-    reduced copy of the eponymous method of ``JacobianTape``."""
+    """Test the helper function grad_method_validation."""
 
     @pytest.mark.parametrize("method", ["analytic", "best"])
     def test_with_nondiff_parameters(self, method):
         """Test that trainable parameters without grad_method
         are detected correctly, raising an exception."""
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.expval(qml.PauliZ(0))
@@ -43,7 +42,7 @@ class TestGradMethodValidation:
     def test_with_numdiff_parameters_and_analytic(self):
         """Test that trainable parameters with numerical grad_method ``"F"``
         together with ``method="analytic"`` raises an exception."""
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.expval(qml.PauliZ(0))
@@ -54,8 +53,7 @@ class TestGradMethodValidation:
 
 
 class TestChooseGradMethods:
-    """Test the helper function choose_grad_methods, which is a
-    reduced copy of the eponymous method of ``JacobianTape``."""
+    """Test the helper function choose_grad_methods"""
 
     all_diff_methods = [
         ["A"] * 2,
@@ -227,8 +225,6 @@ class TestGradientTransformIntegration:
         assert isinstance(res, tuple) and len(res) == 2
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
-    # TODO: Include the following test once the gradient_transform is fixed regarding the
-    # usage of qml.math.squeeze.
     def test_multiple_tensor_arguments_old_version(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when multiple tensor QNode arguments are present"""
@@ -266,8 +262,6 @@ class TestGradientTransformIntegration:
         res = qml.gradients.param_shift(circuit)(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # TODO: Include the following test once the gradient_transform is fixed regarding the
-    # usage of qml.math.squeeze.
     def test_high_dimensional_single_parameter_arg_and_single_gate(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single high-dimensional tensor QNode arguments is used"""
@@ -284,8 +278,6 @@ class TestGradientTransformIntegration:
         res = qml.gradients.param_shift(circuit)(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # TODO: Include the following test once the gradient_transform is fixed regarding the
-    # usage of qml.math.squeeze.
     def test_single_gate_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single QNode argument and gate are present"""
@@ -456,8 +448,8 @@ class TestGradientTransformIntegration:
 
         # the gradient function can be called with different shot values
         grad_fn = qml.gradients.param_shift(circuit)
-        assert grad_fn(x).shape == (1, 1)
-        assert grad_fn(x, shots=[(1, 1000)]).shape == (1000, 1)
+        assert grad_fn(x).shape == ()
+        assert grad_fn(x, shots=[(1, 1000)]).shape == (1000,)
 
         # the original QNode is unaffected
         assert circuit(x).shape == tuple()

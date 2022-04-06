@@ -580,7 +580,7 @@ class TestMetricTensor:
         """Test that a tape with Ising gates has the correct metric tensor tapes."""
 
         dev = qml.device("default.qubit", wires=3)
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.Hadamard(0)
             qml.Hadamard(2)
             qml.IsingXX(0.2, wires=[0, 1])
@@ -1353,7 +1353,7 @@ def aux_wire_ansatz_1(x, y):
 def test_get_aux_wire(aux_wire, ansatz):
     """Test ``_get_aux_wire`` without device_wires."""
     x, y = np.array([0.2, 0.1], requires_grad=True)
-    with qml.tape.JacobianTape() as tape:
+    with qml.tape.QuantumTape() as tape:
         ansatz(x, y)
     out = _get_aux_wire(aux_wire, tape, None)
 
@@ -1366,7 +1366,7 @@ def test_get_aux_wire(aux_wire, ansatz):
 def test_get_aux_wire_with_device_wires():
     """Test ``_get_aux_wire`` with device_wires."""
     x, y = np.array([0.2, 0.1], requires_grad=True)
-    with qml.tape.JacobianTape() as tape:
+    with qml.tape.QuantumTape() as tape:
         qml.RX(x, wires=0)
         qml.RX(x, wires="one")
 
