@@ -101,6 +101,8 @@
     [(#2385)](https://github.com/PennyLaneAI/pennylane/pull/2385)
   - The 6-31G basis set is added to the qchem basis set repo
     [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
+  - The dependency on openbabel is removed
+    [(#2415)](https://github.com/PennyLaneAI/pennylane/pull/2415)
 
 * Development of a circuit-cutting compiler extension to circuits with sampling
   measurements has begun:
@@ -288,6 +290,9 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   [(#2339)](https://github.com/PennyLaneAI/pennylane/pull/2339)
 
 <h3>Bug fixes</h3>
+
+* PennyLane Lightning version in Docker container is pulled from latest wheel-builds.
+  [(#2416)](https://github.com/PennyLaneAI/pennylane/pull/2416)
 
 * Optimizers only consider a variable trainable if they have `requires_grad = True`.
   [(#2381)](https://github.com/PennyLaneAI/pennylane/pull/2381)
