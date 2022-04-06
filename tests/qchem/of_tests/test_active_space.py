@@ -4,7 +4,7 @@ import pytest
 
 from pennylane import qchem
 
-from openfermion import MolecularData
+openfermion = pytest.importorskip("openfermion")
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
@@ -24,7 +24,7 @@ ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_fi
 def test_active_spaces(mol_name, act_electrons, act_orbitals, core_ref, active_ref):
     r"""Test the correctness of the generated active spaces"""
 
-    molecule = MolecularData(filename=os.path.join(ref_dir, mol_name))
+    molecule = openfermion.MolecularData(filename=os.path.join(ref_dir, mol_name))
 
     core, active = qchem.active_space(
         molecule.n_electrons,
@@ -56,7 +56,7 @@ def test_active_spaces(mol_name, act_electrons, act_orbitals, core_ref, active_r
 def test_inconsistent_active_spaces(mol_name, act_electrons, act_orbitals, message_match):
     r"""Test that an error is raised if an inconsistent active space is generated"""
 
-    molecule = MolecularData(filename=os.path.join(ref_dir, mol_name))
+    molecule = openfermion.MolecularData(filename=os.path.join(ref_dir, mol_name))
 
     with pytest.raises(ValueError, match=message_match):
         qchem.active_space(

@@ -1,11 +1,13 @@
-import os
 
-import numpy as np
 import pytest
-from openfermion import FermionOperator, QubitOperator
 
 import pennylane as qml
 from pennylane import qchem
+
+openfermion = pytest.importorskip("openfermion")
+
+FermionOperator = openfermion.FermionOperator
+QubitOperator = openfermion.QubitOperator
 
 t = FermionOperator("0^ 0", 0.5) + FermionOperator("1^ 1", -0.5)
 

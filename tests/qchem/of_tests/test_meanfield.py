@@ -2,9 +2,10 @@ import os
 
 import numpy as np
 import pytest
-from openfermion import MolecularData
 
 from pennylane import qchem
+
+openfermion = pytest.importorskip("openfermion")
 
 name = "h2"
 symbols, coordinates = (["H", "H"], np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414]))
@@ -64,7 +65,7 @@ def test_hf_calculations(package, tmpdir, psi4_support, tol):
         symbols, coordinates, name=name, package=package, outpath=tmpdir.strpath
     )
 
-    molecule = MolecularData(filename=fullpath)
+    molecule = openfermion.MolecularData(filename=fullpath)
 
     assert molecule.n_atoms == n_atoms
     assert molecule.n_electrons == n_electrons
