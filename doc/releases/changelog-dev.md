@@ -136,6 +136,9 @@
     contained operations or tapes.
     [(#2399)](https://github.com/PennyLaneAI/pennylane/pull/2399)
 
+  - Integration tests have been added for the `qcut.cut_circuit_mc()` transform
+    [(#2407)](https://github.com/PennyLaneAI/pennylane/pull/2407)
+
 <h3>Improvements</h3>
 
 * `default.qubit` and `default.mixed` now skip over identity operators instead of performing matrix multiplication
