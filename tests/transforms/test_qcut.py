@@ -3646,11 +3646,9 @@ class TestCutCircuitExpansion:
             qml.apply(measurement)
 
         spy = mocker.spy(cut_transform, "expand_fn")
-        shots = 10
-        if tape.measurements[0].return_type is qml.measurements.Sample:
-            cut_transform(tape, shots, device_wires=[0])
-        else:
-            cut_transform(tape, device_wires=[0])
+
+        kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+        cut_transform(tape, device_wires=[0], **kwargs)
 
         spy.assert_called_once()
 
@@ -3665,11 +3663,9 @@ class TestCutCircuitExpansion:
             qml.apply(measurement)
 
         spy = mocker.spy(cut_transform, "expand_fn")
-        shots = 10
-        if tape.measurements[0].return_type is qml.measurements.Sample:
-            cut_transform(tape, shots, device_wires=[0])
-        else:
-            cut_transform(tape, device_wires=[0])
+
+        kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+        cut_transform(tape, device_wires=[0], **kwargs)
 
         assert spy.call_count == 1
 
@@ -3685,11 +3681,8 @@ class TestCutCircuitExpansion:
             qml.apply(measurement)
 
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
-            shots = 10
-            if tape.measurements[0].return_type is qml.measurements.Sample:
-                cut_transform(tape, shots, device_wires=[0])
-            else:
-                cut_transform(tape, device_wires=[0])
+            kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+            cut_transform(tape, device_wires=[0], **kwargs)
 
     def test_expansion_ttn(self, mocker):
         """Test if wire cutting is compatible with the tree tensor network operation"""
