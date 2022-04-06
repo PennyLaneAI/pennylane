@@ -3630,13 +3630,12 @@ class TestCutCircuitTransformValidation:
 class TestCutCircuitExpansion:
     """Test of expansion in the cut_circuit function"""
 
-    @pytest.mark.parametrize(
-        "cut_transform, measurement",
-        [
+    transform_measurement_pairs = [
             (qcut.cut_circuit, qml.expval(qml.PauliZ(0))),
             (qcut.cut_circuit_mc, qml.sample(wires=[0])),
-        ],
-    )
+        ]
+
+    @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_no_expansion(self, mocker, cut_transform, measurement):
         """Test if no/trivial expansion occurs if WireCut operations are already present in the
         tape"""
@@ -3655,13 +3654,7 @@ class TestCutCircuitExpansion:
 
         spy.assert_called_once()
 
-    @pytest.mark.parametrize(
-        "cut_transform, measurement",
-        [
-            (qcut.cut_circuit, qml.expval(qml.PauliZ(0))),
-            (qcut.cut_circuit_mc, qml.sample(wires=[0])),
-        ],
-    )
+    @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion(self, mocker, cut_transform, measurement):
         """Test if expansion occurs if WireCut operations are present in a nested tape"""
         with qml.tape.QuantumTape() as tape:
@@ -3680,13 +3673,7 @@ class TestCutCircuitExpansion:
 
         assert spy.call_count == 1
 
-    @pytest.mark.parametrize(
-        "cut_transform, measurement",
-        [
-            (qcut.cut_circuit, qml.expval(qml.PauliZ(0))),
-            (qcut.cut_circuit_mc, qml.sample(wires=[0])),
-        ],
-    )
+    @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion_error(self, cut_transform, measurement):
         """Test if a ValueError is raised if expansion continues beyond the maximum depth"""
         with qml.tape.QuantumTape() as tape:
