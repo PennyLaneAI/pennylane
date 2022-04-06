@@ -1900,6 +1900,7 @@ def _qcut_expand_fn(
     max_depth: int = 1,
 ):
     """Expansion function for sample-based circuit cutting.
+
     Expands operations until reaching a depth that includes :class:`~.WireCut` operations.
     """
     for op in tape.operations:
@@ -1915,7 +1916,7 @@ def _qcut_expand_fn(
     )
 
 
-def cut_circuit_expand(
+def _cut_circuit_expand(
     tape: QuantumTape,
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
@@ -1927,7 +1928,7 @@ def cut_circuit_expand(
     return _qcut_expand_fn(tape, max_depth)
 
 
-def cut_circuit_mc_expand(
+def _cut_circuit_mc_expand(
     tape: QuantumTape,
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
@@ -1940,8 +1941,8 @@ def cut_circuit_mc_expand(
     return _qcut_expand_fn(tape, max_depth)
 
 
-cut_circuit.expand_fn = cut_circuit_expand
-cut_circuit_mc.expand_fn = cut_circuit_mc_expand
+cut_circuit.expand_fn = _cut_circuit_expand
+cut_circuit_mc.expand_fn = _cut_circuit_mc_expand
 
 
 def remap_tape_wires(tape: QuantumTape, wires: Sequence) -> QuantumTape:
