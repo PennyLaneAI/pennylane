@@ -3645,7 +3645,7 @@ class TestCutCircuitExpansion:
             qml.RY(0.4, wires=0)
             qml.apply(measurement)
 
-        spy = mocker.spy(cut_transform, "expand_fn")
+        spy = mocker.spy(qcut, "_qcut_expand_fn")
 
         kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
         cut_transform(tape, device_wires=[0], **kwargs)
@@ -3662,12 +3662,12 @@ class TestCutCircuitExpansion:
             qml.RY(0.4, wires=0)
             qml.apply(measurement)
 
-        spy = mocker.spy(cut_transform, "expand_fn")
+        spy = mocker.spy(qcut, "_qcut_expand_fn")
 
         kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
         cut_transform(tape, device_wires=[0], **kwargs)
 
-        assert spy.call_count == 1
+        assert spy.call_count == 2
 
     @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion_error(self, cut_transform, measurement):
@@ -3709,9 +3709,9 @@ class TestCutCircuitExpansion:
         qnode = qml.QNode(circuit, dev_big)
         qnode_cut = qcut.cut_circuit(qml.QNode(circuit, dev_cut))
 
-        spy = mocker.spy(qcut.cut_circuit, "expand_fn")
+        spy = mocker.spy(qcut, "_qcut_expand_fn")
         res = qnode_cut(template_weights)
-        assert spy.call_count == 1
+        assert spy.call_count == 2
 
         assert np.isclose(res, qnode(template_weights))
 
@@ -3738,9 +3738,9 @@ class TestCutCircuitExpansion:
 
         qnode_cut = qcut.cut_circuit_mc(qml.QNode(circuit, dev_cut))
 
-        spy = mocker.spy(qcut.cut_circuit_mc, "expand_fn")
+        spy = mocker.spy(qcut, "_qcut_expand_fn")
         qnode_cut(template_weights)
-        assert spy.call_count == 1
+        assert spy.call_count == 2
 
 
 class TestCutStrategy:
