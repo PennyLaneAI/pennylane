@@ -141,10 +141,10 @@ def diagonalize_qwc_pauli_words(qwc_grouping):
     if isinstance(first_pauli_name, list):
         first_pauli_name = first_pauli_name[0]
     all_paulis_same_kind = all(
-            all(first_pauli_name == sub_word_name for sub_word_name in pauli_word.name)
-            if isinstance(pauli_word.name, list)
-            else first_pauli_name == pauli_word.name
-            for pauli_word in qwc_grouping
+        all(first_pauli_name == sub_word_name for sub_word_name in pauli_word.name)
+        if isinstance(pauli_word.name, list)
+        else first_pauli_name == pauli_word.name
+        for pauli_word in qwc_grouping
     )
     if not all_paulis_same_kind:
         m_paulis = len(qwc_grouping)
