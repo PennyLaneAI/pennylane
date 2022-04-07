@@ -1965,7 +1965,7 @@ def _cut_circuit_mc_expand(
 ):
     """Main entry point for expanding operations in sample-based tapes until
     reaching a depth that includes :class:`~.WireCut` operations."""
-    # pylint: disable=unused-argument
+    # pylint: disable=unused-argument, too-many-arguments
     return _qcut_expand_fn(tape, max_depth, auto_cutter)
 
 
