@@ -2473,7 +2473,7 @@ class TestCutCircuitMCTransform:
     )
     def test_all_interfaces_samples(self, interface_import, interface):
         """
-        Tests that the `cut_circuit_mc` returns the correct type of sample
+        Tests that `cut_circuit_mc` returns the correct type of sample
         output value in all interfaces
         """
         lib = pytest.importorskip(interface_import)
@@ -2516,7 +2516,7 @@ class TestCutCircuitMCTransform:
     )
     def test_all_interfaces_mc(self, interface_import, interface):
         """
-        Tests that the `cut_circuit_mc` returns the correct type of expectation
+        Tests that `cut_circuit_mc` returns the correct type of expectation
         value output in all interfaces
         """
         lib = pytest.importorskip(interface_import)
@@ -2547,8 +2547,8 @@ class TestCutCircuitMCTransform:
         assert isinstance(res, type(convert_input))
 
     def test_mc_with_mid_circuit_measurement(self, mocker):
-        """Tests the full sample-based circuit cutting pipeline returns the
-        correct value and gradient for a circuit that contains mid-circuit
+        """Tests the full sample-based circuit cutting pipeline successfully returns a
+        single value for a circuit that contains mid-circuit
         measurements and terminal sample measurements using the `cut_circuit_mc`
         transform."""
 
@@ -2577,7 +2577,7 @@ class TestCutCircuitMCTransform:
     def test_mc_circuit_with_disconnected_components(self, mocker):
         """Tests if a sample-based circuit that is fragmented into subcircuits such
         that some of the subcircuits are disconnected from the final terminal sample
-        measurements are executed correctly"""
+        measurements is executed successfully"""
         shots = 10
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
@@ -2597,7 +2597,7 @@ class TestCutCircuitMCTransform:
 
     def test_mc_circuit_with_trivial_wire_cut(self, mocker):
         """Tests that a sample-based circuit with a trivial wire cut (not
-        separating the circuit into fragments) is executed correctly"""
+        separating the circuit into fragments) is executed successfully"""
         shots = 10
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
@@ -2619,8 +2619,8 @@ class TestCutCircuitMCTransform:
 
     def test_mc_complicated_circuit(self, mocker):
         """
-        Tests that the full sample-based circuit cutting pipeline returns the correct value and
-        gradient for a complex circuit with multiple wire cut scenarios. The circuit is cut into
+        Tests that the full sample-based circuit cutting pipeline successfully returns a
+        value for a complex circuit with multiple wire cut scenarios. The circuit is cut into
         fragments of at most 2 qubits and is drawn below:
 
         0: ──X──//─╭C───//──RX─╭C───//─╭C──╭//────────────────────┤
