@@ -104,7 +104,7 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     + (-0.075) [Z0 Z2]
     """
     try:
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel, unused-import
         import openfermion, openfermionpyscf
     except ImportError as Error:
         raise ImportError(
@@ -196,7 +196,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     -0.44829969610163756 [3^ 3]
     """
     try:
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel, unused-import
         import openfermion, openfermionpyscf
     except ImportError as Error:
         raise ImportError(
@@ -369,7 +369,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     + 0.352552816086392 [3^ 3^ 3 3]
     """
     try:
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel, unused-import
         import openfermion, openfermionpyscf
     except ImportError as Error:
         raise ImportError(
@@ -592,7 +592,7 @@ def dipole_of(
     + (0.26611147045300276) [X1 Z2 Z3 Z4 X5]
     """
     try:
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel, unused-import
         import openfermion, openfermionpyscf
     except ImportError as Error:
         raise ImportError(
@@ -724,7 +724,7 @@ def meanfield(
     ./h2_pyscf_sto-3g
     """
     try:
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel, unused-import
         import openfermion, openfermionpyscf
     except ImportError as Error:
         raise ImportError(
@@ -806,7 +806,7 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
     (-0.2427428049645989+0j) [Z2]
     """
     try:
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel, unused-import
         import openfermion, openfermionpyscf
     except ImportError as Error:
         raise ImportError(
@@ -945,7 +945,7 @@ def molecular_hamiltonian(
     + (0.176276408043196) [Z2 Z3]
     """
     try:
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel, unused-import
         import openfermion, openfermionpyscf
     except ImportError as Error:
         raise ImportError(
