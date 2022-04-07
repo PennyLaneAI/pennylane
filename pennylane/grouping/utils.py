@@ -253,8 +253,8 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
         elif name == "PauliZ":
             binary_pauli[n_qubits + wire] = 1
 
-        else:
-            raise ValueError()
+        elif name != "Identity":
+            raise ValueError("name {}".format(name))
 
     return binary_pauli
 
