@@ -4,6 +4,7 @@ import pytest
 import pennylane as qml
 
 openfermion = pytest.importorskip("openfermion")
+openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
 coeffs = []
 coeffs.append(

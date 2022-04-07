@@ -4,6 +4,7 @@ import pennylane as qml
 from pennylane import qchem
 
 openfermion = pytest.importorskip("openfermion")
+openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
 FermionOperator = openfermion.FermionOperator
 QubitOperator = openfermion.QubitOperator

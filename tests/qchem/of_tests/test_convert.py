@@ -25,6 +25,7 @@ from pennylane import numpy as np
 from pennylane import qchem
 
 openfermion = pytest.importorskip("openfermion")
+openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
 
 @pytest.fixture(
