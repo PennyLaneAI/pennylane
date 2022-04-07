@@ -105,9 +105,12 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     """
     try:
         # pylint: disable=import-outside-toplevel
-        import openfermion
+        import openfermion, openfermionpyscf
     except ImportError as Error:
-        raise ImportError("The OpenFermion package is required.") from Error
+        raise ImportError(
+            "This feature requires openfermion, openfermionpyscf. They can be"
+            " installed with `pip install openfermion openfermionpyscf`."
+        ) from Error
 
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
         raise TypeError(
@@ -194,9 +197,12 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     """
     try:
         # pylint: disable=import-outside-toplevel
-        import openfermion
+        import openfermion, openfermionpyscf
     except ImportError as Error:
-        raise ImportError("The OpenFermion package is required.") from Error
+        raise ImportError(
+            "This feature requires openfermion, openfermionpyscf. They can be"
+            " installed with `pip install openfermion openfermionpyscf`."
+        ) from Error
 
     orbitals = matrix_elements.shape[0]
 
@@ -364,9 +370,12 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     """
     try:
         # pylint: disable=import-outside-toplevel
-        import openfermion
+        import openfermion, openfermionpyscf
     except ImportError as Error:
-        raise ImportError("The OpenFermion package is required.") from Error
+        raise ImportError(
+            "This feature requires openfermion, openfermionpyscf. They can be"
+            " installed with `pip install openfermion openfermionpyscf`."
+        ) from Error
 
     orbitals = matrix_elements.shape[0]
 
@@ -584,9 +593,12 @@ def dipole_of(
     """
     try:
         # pylint: disable=import-outside-toplevel
-        import openfermion
+        import openfermion, openfermionpyscf
     except ImportError as Error:
-        raise ImportError("The OpenFermion package is required.") from Error
+        raise ImportError(
+            "This feature requires openfermion, openfermionpyscf. They can be"
+            " installed with `pip install openfermion openfermionpyscf`."
+        ) from Error
 
     atomic_numbers = {
         "H": 1,
@@ -713,9 +725,12 @@ def meanfield(
     """
     try:
         # pylint: disable=import-outside-toplevel
-        import openfermion
+        import openfermion, openfermionpyscf
     except ImportError as Error:
-        raise ImportError("The OpenFermion package is required.") from Error
+        raise ImportError(
+            "This feature requires openfermion, openfermionpyscf. They can be"
+            " installed with `pip install openfermion openfermionpyscf`."
+        ) from Error
 
     if coordinates.size != 3 * len(symbols):
         raise ValueError(
@@ -792,9 +807,12 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
     """
     try:
         # pylint: disable=import-outside-toplevel
-        import openfermion
+        import openfermion, openfermionpyscf
     except ImportError as Error:
-        raise ImportError("The OpenFermion package is required.") from Error
+        raise ImportError(
+            "This feature requires openfermion, openfermionpyscf. They can be"
+            " installed with `pip install openfermion openfermionpyscf`."
+        ) from Error
 
     # loading HF data from the hdf5 file
     molecule = openfermion.MolecularData(filename=hf_file.strip())
@@ -926,12 +944,14 @@ def molecular_hamiltonian(
     + (0.12293305056183801) [Z1 Z3]
     + (0.176276408043196) [Z2 Z3]
     """
-
     try:
         # pylint: disable=import-outside-toplevel
-        import openfermion
+        import openfermion, openfermionpyscf
     except ImportError as Error:
-        raise ImportError("The OpenFermion package is required.") from Error
+        raise ImportError(
+            "This feature requires openfermion, openfermionpyscf. They can be"
+            " installed with `pip install openfermion openfermionpyscf`."
+        ) from Error
 
     hf_file = meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
 
