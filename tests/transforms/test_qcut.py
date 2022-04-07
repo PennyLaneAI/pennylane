@@ -3425,11 +3425,11 @@ class TestCutStrategy:
             imbalance_tolerance=imbalance_tolerance,
         )
 
-        avg_size = int(num_wires / k + 1 - 1e-7)
+        avg_size = int(num_gates / k + 1 - 1e-7)
         if imbalance_tolerance is not None:
             assert imbalance <= imbalance_tolerance
         else:
-            assert imbalance == free_wires / avg_size - 1
+            assert imbalance == (num_gates - (k - 1)) / avg_size - 1
 
     @pytest.mark.parametrize("num_wires", [50, 10])
     def test_infer_wire_imbalance_raises(
@@ -3760,8 +3760,8 @@ class TestKaHyPar:
         [
             None,
             qcut.CutStrategy(qml.device("default.qubit", wires=3)),
-            qcut.CutStrategy(max_free_wires=2),
             qcut.CutStrategy(max_free_wires=4),
+            qcut.CutStrategy(max_free_wires=2),  # extreme constraint forcing exhausive probing.
         ],
     )
     def test_find_and_place_cuts(self, with_manual_cut, cut_strategy):
@@ -3809,8 +3809,8 @@ class TestKaHyPar:
                 expected_num_cut_edges = 2
                 num_frags = 2
             else:
-                expected_num_cut_edges = 15
-                num_frags = 14
+                expected_num_cut_edges = 14
+                num_frags = 13
 
         assert (
             len([n for n in cut_graph.nodes if isinstance(n, qcut.MeasureNode)])
@@ -3821,7 +3821,12 @@ class TestKaHyPar:
             == expected_num_cut_edges
         )
 
-        if num_frags <= 2:
+        frags, comm_graph = qcut.fragment_graph(cut_graph)
+
+        assert len(frags) == num_frags
+        assert len(comm_graph.edges) == expected_num_cut_edges
+
+        if num_frags == 2:
             # Cutting wire "a" is more balanced, thus will be cut if there's no manually placed cut on
             # wire 1:
             expected_cut_wire = 1 if with_manual_cut else "a"
@@ -3831,10 +3836,5 @@ class TestKaHyPar:
                 if isinstance(n, (qcut.MeasureNode, qcut.PrepareNode))
             )
 
-        frags, comm_graph = qcut.fragment_graph(cut_graph)
-
-        assert len(frags) == num_frags
-        assert len(comm_graph.edges) == expected_num_cut_edges
-
-        expected_fragment_sizes = [7, 11] if with_manual_cut else [8, 10]
-        assert expected_fragment_sizes == [f.number_of_nodes() for f in frags]
+            expected_fragment_sizes = [7, 11] if with_manual_cut else [8, 10]
+            assert expected_fragment_sizes == [f.number_of_nodes() for f in frags]

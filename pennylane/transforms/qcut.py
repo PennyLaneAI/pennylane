@@ -1844,14 +1844,18 @@ class CutStrategy:
                 "`free_gates` should be no less than the average number of gates per fragment. "
                 f"Got {free_gates} >= {avg_fragment_gates} ."
             )
+        if free_gates > num_gates - k:
+            # Case where gate depth not limited (`-k` since each fragments has to have >= 1 gates):
+            free_gates = num_gates
+            # A small adjustment is added to the imbalance factor to prevents small ks from resulting
+            # in extremely unbalanced fragments. It will heuristically force the smallest fragment size
+            # to be >= 3 if the average fragment size is greater than 5. In other words, tiny fragments
+            # are only allowed when average fragmeng size is small in the first place.
+            balancing_adjustment = 2 if avg_fragment_gates > 5 else 0
+            free_gates = free_gates - (k - 1 + balancing_adjustment)
 
-        # A small adjustment is added to the imbalance factor to prevents small ks from resulting
-        # in extremely unbalanced fragments. It will heuristically force the smallest fragment size
-        # to be >= 3 if the average fragment size is greater than 5. In other words, tiny fragments
-        # are only allowed when average fragmeng size is small in the first place.
-        balancing_adjustment = 2 if avg_fragment_gates > 5 else 0
-        gate_imbalance = (free_gates - (k - 1 + balancing_adjustment)) / avg_fragment_gates - 1
-        imbalance = max(gate_imbalance, 0.01)  # numerical stability
+        gate_imbalance = free_gates / avg_fragment_gates - 1
+        imbalance = max(gate_imbalance, 0.1/avg_fragment_gates)  # numerical stability
         if imbalance_tolerance is not None:
             imbalance = min(imbalance, imbalance_tolerance)
 
@@ -2063,7 +2067,7 @@ def kahypar_cut(
     edge_weights: List[Union[int, float]] = None,
     node_weights: List[Union[int, float]] = None,
     fragment_weights: List[Union[int, float]] = None,
-    hyperwire_weight: int = None,
+    hyperwire_weight: int = 1,
     seed: int = None,
     config_path: Union[str, Path] = None,
     trial: int = None,
@@ -2086,9 +2090,9 @@ def kahypar_cut(
         fragment_weights (List[Union[int, float]]): Maximum size constraints by fragment. Defaults
             to no such constraints, with ``imbalance`` the only parameter affecting fragment sizes.
         hyperwire_weight (int): Weight on the artificially appended hyperedges representing wires.
-            Defaults to 0 which leads to no such insertion. If greater than 0, hyperedges will be
+            Setting it to 0 leads to no such insertion. If greater than 0, hyperedges will be
             appended with the provided weight, to encourage the resulting fragments to cluster gates
-            on the same wire together.
+            on the same wire together. Defaults to 1.
         seed (int): KaHyPar's seed. Defaults to the seed in the config file which defaults to -1,
             i.e. unfixed seed.
         config_path (str): KaHyPar's ``.ini`` config file path. Defaults to its SEA20 paper config.
@@ -2407,21 +2411,26 @@ def find_and_place_cuts(
         valid_cut_edges = {}
         for (k, _), cut_edges in cut_edges_probed.items():
             cut_graph = place_wire_cuts(graph=graph, cut_edges=cut_edges)
+            num_cuts = sum(isinstance(n, WireCut) for n in cut_graph.nodes)
+
             replace_wire_cut_nodes(cut_graph)
             frags, comm_graph = fragment_graph(cut_graph)
-            # print("============")
-            # for f in frags:
-            #     print(graph_to_tape(f).draw())
 
             if _is_valid_cut(
                 fragments=frags,
-                num_cuts=len(cut_edges),
+                num_cuts=num_cuts,
                 num_fragments=k,
                 cut_candidates=valid_cut_edges,
                 max_free_wires=cut_strategy.max_free_wires,
             ):
                 valid_cut_edges[k] = cut_edges
+                # print("============")
+                # for f in frags:
+                #     # print({w for _, _, w in f.edges(data="wire")})
+                #     # print(f.edges)
+                #     print(graph_to_tape(f).draw(), '\n')
 
+        print(list(valid_cut_edges.keys()))
         if len(valid_cut_edges) < 1:
             raise ValueError(
                 "Unable to find a circuit cutting that satisfies all constraints. "
@@ -2460,10 +2469,10 @@ def _is_valid_cut(
         len(cut_candidates[num_fragments]) > num_cuts
     )
     all_fragments_fit = all(
-        len({w for _, _, w in f.edges(data="wire")}) <= max_free_wires
+        len(graph_to_tape(f).wires) <= max_free_wires
         for j, f in enumerate(fragments)
     )
 
-    # print(num_fragments, max_free_wires)
+    # print(num_fragments, len(fragments), max_free_wires)
     # print(correct_num_fragments, no_candidate_yet, all_fragments_fit)
     return correct_num_fragments and no_candidate_yet and all_fragments_fit
