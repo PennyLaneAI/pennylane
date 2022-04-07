@@ -94,6 +94,9 @@ class HilbertSchmidt(Operation):
 
     def __init__(self, *params, v_function, v_wires, u_tape, do_queue=True, id=None):
 
+        if not isinstance(u_tape, qml.tape.QuantumTape):
+            raise qml.QuantumFunctionError("The argument u_tape must be a QuantumTape.")
+
         u_wires = u_tape.wires
         self.hyperparameters["u_tape"] = u_tape
 
@@ -110,9 +113,6 @@ class HilbertSchmidt(Operation):
 
         if len(u_wires) != len(v_wires):
             raise qml.QuantumFunctionError("U and V must have the same number of wires.")
-
-        if not isinstance(u_tape, qml.tape.QuantumTape):
-            raise qml.QuantumFunctionError("The argument u_tape must be a QuantumTape.")
 
         if not qml.wires.Wires(v_wires).contains_wires(v_tape.wires):
             raise qml.QuantumFunctionError("All wires in v_tape must be in v_wires.")
