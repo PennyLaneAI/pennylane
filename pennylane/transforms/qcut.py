@@ -2071,7 +2071,8 @@ class CutStrategy:
         num_fragments_probed (Union[int, Sequence[int]]): Single, or 2-Sequence of, number(s)
             specifying the potential (range of) number of fragments for the partitioner to attempt.
             Optional, defaults to probing all valid strategies derivable from the circuit and
-            devices.
+            devices. When provided, has precedence over all other arguments affecting partitioning
+            exploration, such as ``max_free_wires``, ``min_free_wires``, or ``exhausive``.
         max_free_gates (int): Maximum allowed circuit depth for the deepest available device.
             Optional, defaults to unlimited depth.
         min_free_gates (int): Maximum allowed circuit depth for the shallowest available device.
@@ -2081,7 +2082,7 @@ class CutStrategy:
             constraint on the partitioning problem.
         trials_per_probe (int): Number of repeated partitioning trials for a random automatic
             cutting method to attempt per set of partitioning parameters. For a deterministic
-            cutting method, this can be set to 1. Defaults to 10.
+            cutting method, this can be set to 1. Defaults to 4.
 
     **Example**
 
@@ -2115,7 +2116,7 @@ class CutStrategy:
     #: The global maximum allowed imbalance for all partition trials.
     imbalance_tolerance: float = None
     #: Number of trials to repeat for per set of partition parameters probed.
-    trials_per_probe: int = 10
+    trials_per_probe: int = 4
 
     #: Class attribute, threshold for warning about too many fragments.
     HIGH_NUM_FRAGMENTS: ClassVar[int] = 20
@@ -2189,6 +2190,11 @@ class CutStrategy:
             max_gates_by_fragment (Sequence[int]): User-predetermined list of gate limits by
                 fragment. If supplied, the number of fragments will be derived from it and
                 exploration of other choices will not be made.
+            exhausive (bool): Toggle for an exhausive search which will attempt all potentially
+                possible numbers of fragments into which the circuit is partitioned. If ``True``,
+                for a circuit with N gates, N - 1 attempts will be made with ``num_fragments``
+                ranging from [2, N], i.e. from bi-partitioning to complete partitioning where each
+                fragment has exactly a single gate. Default to ``True``.
 
         Returns:
             List[Dict[str, Any]]: A list of minimal kwargs being passed to a graph
@@ -2208,7 +2214,7 @@ class CutStrategy:
         """
         tape_wires = set(w for _, _, w in tape_dag.edges.data("wire"))
         num_tape_wires = len(tape_wires)
-        num_tape_gates = len([n for n in tape_dag.nodes if not isinstance(n, WireCut)])
+        num_tape_gates = sum(not isinstance(n, WireCut) for n in tape_dag.nodes)
         self._validate_input(max_wires_by_fragment, max_gates_by_fragment)
 
         probed_cuts = self._infer_probed_cuts(
@@ -2309,6 +2315,11 @@ class CutStrategy:
             max_gates_by_fragment (Sequence[int]): User-predetermined list of gate limits by
                 fragment. If supplied, the number of fragments will be derived from it and
                 exploration of other choices will not be made.
+            exhausive (bool): Toggle for an exhausive search which will attempt all potentially
+                possible numbers of fragments into which the circuit is partitioned. If ``True``,
+                ``num_tape_gates - 1`` attempts will be made with ``num_fragments`` ranging from
+                [2, ``num_tape_gates``], i.e. from bi-partitioning to complete partitioning where
+                each fragment has exactly a single gate. Default to ``True``.
 
         Returns:
             List[Dict[str, Any]]: A list of minimal set of kwargs being passed to a graph

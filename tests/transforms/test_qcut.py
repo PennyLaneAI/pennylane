@@ -3855,7 +3855,10 @@ class TestCutStrategy:
     @pytest.mark.parametrize("num_fragments_probed", [None, 4, (4, 6)])
     @pytest.mark.parametrize("imbalance_tolerance", [None, 0, 0.1])
     @pytest.mark.parametrize("tape_dag", tape_dags)
-    def test_get_cut_kwargs(self, devices, num_fragments_probed, imbalance_tolerance, tape_dag):
+    @pytest.mark.parametrize("exhausive", [True, False])
+    def test_get_cut_kwargs(
+        self, devices, num_fragments_probed, imbalance_tolerance, tape_dag, exhausive
+    ):
         """Test that the cut kwargs can be derived."""
 
         strategy = qcut.CutStrategy(
@@ -3864,12 +3867,21 @@ class TestCutStrategy:
             imbalance_tolerance=imbalance_tolerance,
         )
 
-        all_cut_kwargs = strategy.get_cut_kwargs(tape_dag=tape_dag)
+        all_cut_kwargs = strategy.get_cut_kwargs(tape_dag=tape_dag, exhausive=exhausive)
 
         assert all_cut_kwargs
         assert all("imbalance" in kwargs and "num_fragments" in kwargs for kwargs in all_cut_kwargs)
         if imbalance_tolerance is not None:
             assert all([kwargs["imbalance"] <= imbalance_tolerance for kwargs in all_cut_kwargs])
+        if num_fragments_probed is not None:
+            assert {v['num_fragments'] for v in all_cut_kwargs} == (
+                set(range(num_fragments_probed[0], num_fragments_probed[-1] + 1))
+                if isinstance(num_fragments_probed, (list, tuple))
+                else {num_fragments_probed}
+            )
+        elif exhausive:
+            num_tape_gates = sum(not isinstance(n, qcut.WireCut) for n in tape_dag.nodes)
+            assert {v['num_fragments'] for v in all_cut_kwargs} == set(range(2, num_tape_gates+1))
 
     @pytest.mark.parametrize(
         "num_fragments_probed", [1, qcut.CutStrategy.HIGH_NUM_FRAGMENTS + 1, (2, 100)]
