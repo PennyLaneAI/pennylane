@@ -238,7 +238,7 @@ def paulix_ops(generators, num_qubits):
     ops_generator = [g.ops[0] if isinstance(g.ops, list) else g.ops for g in generators]
     bmat = _binary_matrix(ops_generator, num_qubits)
 
-    paulix_ops = []
+    paulixops = []
     for row in range(bmat.shape[0]):
         bmatrow = bmat[row]
         bmatrest = np.delete(bmat, row, axis=0)
@@ -248,68 +248,10 @@ def paulix_ops(generators, num_qubits):
             if bmatrow[col] and np.array_equal(
                 bmatrest[:, col], np.zeros(bmat.shape[0] - 1, dtype=int)
             ):
-                paulix_ops.append(qml.PauliX(col))
+                paulixops.append(qml.PauliX(col))
                 break
 
-    return paulix_ops
-
-
-# def generate_symmetries(qubit_op, num_qubits):
-#     r"""Compute the generator set of the symmetries :math:`\mathbf{\tau}` and the corresponding single-qubit
-#     set of the Pauli-X operators :math:`\mathbf{\sigma^x}` that are used to build the Clifford operators
-#     :math:`U`, according to the following relation:
-#
-#     .. math::
-#
-#         U_i = \frac{1}{\sqrt{2}}(\tau_i+\sigma^{x}_{q}).
-#
-#     Here, :math:`\sigma^{x}_{q}` is the Pauli-X operator acting on qubit :math:`q`. These :math:`U_i` can be
-#     used to transform the Hamiltonian :math:`H` in such a way that it acts trivially or at most with one
-#     Pauli-gate on a subset of qubits, which allows us to taper off those qubits from the simulation
-#     using :func:`~.transform_hamiltonian`.
-#
-#     Args:
-#         qubit_op (Hamiltonian): Hamiltonian for which symmetries are to be generated to perform tapering
-#         num_qubits (int): number of wires required to define the Hamiltonian
-#
-#     Returns:
-#         tuple (list[Hamiltonian], list[Operation]):
-#
-#             * list[Hamiltonian]: list of generators of symmetries, :math:`\mathbf{\tau}`,
-#               for the Hamiltonian.
-#             * list[Operation]: list of single-qubit Pauli-X operators which will be used
-#               to build the Clifford operators :math:`U`.
-#
-#     **Example**
-#
-#     >>> symbols = ['H', 'H']
-#     >>> geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
-#     >>> mol = qml.hf.Molecule(symbols, geometry)
-#     >>> H, qubits = qml.hf.generate_hamiltonian(mol)(geometry), 4
-#     >>> generators, paulixops = qml.hf.tapering.generate_symmetries(H, qubits)
-#     >>> generators, paulixops
-#     ([(1.0) [Z0 Z1], (1.0) [Z0 Z2], (1.0) [Z0 Z3]],
-#     [PauliX(wires=[1]), PauliX(wires=[2]), PauliX(wires=[3])])
-#     """
-#     # Generate binary matrix for qubit_op
-#     binary_matrix = _binary_matrix(qubit_op.ops, num_qubits)
-#
-#     # Get reduced row echelon form of binary matrix
-#     rref_binary_matrix = _reduced_row_echelon(binary_matrix)
-#     rref_binary_matrix_red = rref_binary_matrix[
-#         ~np.all(rref_binary_matrix == 0, axis=1)
-#     ]  # remove all-zero rows
-#
-#     # Get kernel (i.e., nullspace) for trimmed binary matrix using gaussian elimination
-#     nullspace = _kernel(rref_binary_matrix_red)
-#
-#     # Get generators tau from the calculated nullspace
-#     generators = symmetry_generators(nullspace, num_qubits)
-#
-#     # Get unitaries from the calculated nullspace
-#     paulixops = paulix_ops(generators, num_qubits)
-#
-#     return generators, paulixops
+    return paulixops
 
 
 def _observable_mult(obs_a, obs_b):
@@ -346,7 +288,7 @@ def _observable_mult(obs_a, obs_b):
     return simplify(qml.Hamiltonian(qml.math.stack(c), o))
 
 
-def clifford(generators, paulix_ops):
+def clifford(generators, paulixops):
     r"""Compute a Clifford operator from a set of generators and Pauli-X operators.
 
     This function computes :math:`U = U_0U_1...U_k` for a set of :math:`k` generators and
@@ -354,7 +296,7 @@ def clifford(generators, paulix_ops):
 
     Args:
         generators (list[Hamiltonian]): generators expressed as PennyLane Hamiltonians
-        paulix_ops (list[Operation]): list of single-qubit Pauli-X operators
+        paulixops (list[Operation]): list of single-qubit Pauli-X operators
 
     Returns:
         Hamiltonian: Clifford operator expressed as a PennyLane Hamiltonian
@@ -365,8 +307,8 @@ def clifford(generators, paulix_ops):
     >>> t2 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIZI')])
     >>> t3 = qml.Hamiltonian([1.0], [qml.grouping.string_to_pauli_word('ZIIZ')])
     >>> generators = [t1, t2, t3]
-    >>> paulix_ops = [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)]
-    >>> u = clifford(generators, paulix_ops)
+    >>> paulixops = [qml.PauliX(1), qml.PauliX(2), qml.PauliX(3)]
+    >>> u = clifford(generators, paulixops)
     >>> print(u)
       (0.3535533905932737) [Z1 Z2 X3]
     + (0.3535533905932737) [X1 X2 X3]
@@ -379,7 +321,7 @@ def clifford(generators, paulix_ops):
     """
     cliff = []
     for i, t in enumerate(generators):
-        cliff.append(1 / 2**0.5 * (paulix_ops[i] + t))
+        cliff.append(1 / 2**0.5 * (paulixops[i] + t))
 
     u = functools.reduce(lambda i, j: _observable_mult(i, j), cliff)
 
@@ -481,7 +423,7 @@ def optimal_sector(qubit_op, generators, active_electrons):
     >>> geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
     >>> mol = qml.hf.Molecule(symbols, geometry)
     >>> H = qml.hf.generate_hamiltonian(mol)(geometry)
-    >>> generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
+    >>> generators, paulixops = qml.hf.generate_symmetries(H, len(H.wires))
     >>> qml.hf.optimal_sector(H, generators, 2)
         [1, -1, -1]
     """
@@ -511,7 +453,7 @@ def optimal_sector(qubit_op, generators, active_electrons):
     return perm
 
 
-def taper_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires):
+def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     r"""Transform a Hartree-Fock state with a Clifford operator and taper qubits.
 
     The fermionic operators defining the molecule's Hartree-Fock (HF) state are first mapped onto a qubit operator
@@ -523,7 +465,7 @@ def taper_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires):
 
     Args:
         generators (list[Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
-        paulix_ops (list[Operation]):  list of single-qubit Pauli-X operators
+        paulixops (list[Operation]):  list of single-qubit Pauli-X operators
         paulix_sector (list[int]): list of eigenvalues of Pauli-X operators
         num_electrons (int): number of active electrons in the system for generating the Hartree-Fock bitstring
         num_wires (int): number of wires in the system for generating the Hartree-Fock bitstring
@@ -539,9 +481,9 @@ def taper_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires):
     >>> mol = hf.Molecule(symbols, geometry, charge=1)
     >>> H = hf.generate_hamiltonian(mol)(geometry)
     >>> n_qubits, n_elec = len(H.wires), mol.n_electrons
-    >>> generators, paulix_ops = hf.generate_symmetries(H, n_qubits)
+    >>> generators, paulixops = hf.generate_symmetries(H, n_qubits)
     >>> paulix_sector = hf.optimal_sector(H, generators, n_elec)
-    >>> hf.transform_hf(generators, paulix_ops, paulix_sector,
+    >>> hf.transform_hf(generators, paulixops, paulix_sector,
     ...                 n_elec, n_qubits)
     tensor([1, 1], requires_grad=True)
     """
@@ -570,7 +512,7 @@ def taper_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires):
     ferm_op = functools.reduce(lambda i, j: _observable_mult(i, j), fermop_terms)
 
     # taper the HF observable using the symmetries obtained from the molecular hamiltonian
-    fermop_taper = taper(ferm_op, generators, paulix_ops, paulix_sector)
+    fermop_taper = taper(ferm_op, generators, paulixops, paulix_sector)
     fermop_mat = _binary_matrix(fermop_taper.ops, len(fermop_taper.wires))
 
     # iterate over the terms in tapered HF observable and build the tapered HF state
