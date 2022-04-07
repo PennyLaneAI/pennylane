@@ -254,7 +254,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
             binary_pauli[n_qubits + wire] = 1
 
         elif name != "Identity":
-            raise ValueError("name {}".format(name))
+            raise ValueError(f"Invalid name {name}")
 
     return binary_pauli
 
