@@ -101,6 +101,8 @@
     [(#2385)](https://github.com/PennyLaneAI/pennylane/pull/2385)
   - The 6-31G basis set is added to the qchem basis set repo
     [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
+  - The dependency on openbabel is removed
+    [(#2415)](https://github.com/PennyLaneAI/pennylane/pull/2415)
 
 * Development of a circuit-cutting compiler extension to circuits with sampling
   measurements has begun:
@@ -135,6 +137,10 @@
     been added. A `qnode` containing `WireCut` operations and `sample` measurements
     can be decorated with `@qml.cut_circuit_mc()` to perform this type of cutting.
     [(#2382)](https://github.com/PennyLaneAI/pennylane/pull/2382)
+
+  - Add expansion to `qcut.cut_circuit_mc()` to search for wire cuts in
+    contained operations or tapes.
+    [(#2399)](https://github.com/PennyLaneAI/pennylane/pull/2399)
 
 <h3>Improvements</h3>
 
