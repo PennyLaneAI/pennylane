@@ -4175,7 +4175,7 @@ class TestKaHyPar:
             qcut.CutStrategy(qml.device("default.qubit", wires=3)),
             qcut.CutStrategy(max_free_wires=4),
             qcut.CutStrategy(max_free_wires=2),  # extreme constraint forcing exhausive probing.
-            qcut.CutStrategy(max_free_wires=2, num_fragments_probed=5)  # impossible to cut
+            qcut.CutStrategy(max_free_wires=2, num_fragments_probed=5),  # impossible to cut
         ],
     )
     def test_find_and_place_cuts(self, with_manual_cut, cut_strategy):
@@ -4260,10 +4260,9 @@ class TestKaHyPar:
 
             expected_fragment_sizes = [7, 11] if with_manual_cut else [8, 10]
             assert expected_fragment_sizes == [f.number_of_nodes() for f in frags]
-    
+
     def test_no_cut_found(self):
         """Test raise when no cut can be found."""
-
 
 
 class TestAutoCutCircuit:
@@ -4376,7 +4375,7 @@ class TestAutoCutCircuit:
     def test_circuit_with_disconnected_components(self):
         """Tests if a circuit that is fragmented into subcircuits such that some of the subcircuits
         are disconnected from the final terminal measurements is executed correctly after automatic
-        cutting. """
+        cutting."""
         pytest.importorskip("kahypar")
 
         dev = qml.device("default.qubit", wires=3)

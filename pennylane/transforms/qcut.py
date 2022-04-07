@@ -2830,13 +2830,7 @@ def find_and_place_cuts(
                 max_free_wires=cut_strategy.max_free_wires,
             ):
                 valid_cut_edges[k] = cut_edges
-                # print("============")
-                # for f in frags:
-                #     # print({w for _, _, w in f.edges(data="wire")})
-                #     # print(f.edges)
-                #     print(graph_to_tape(f).draw(), '\n')
 
-        print(list(valid_cut_edges.keys()))
         if len(valid_cut_edges) < 1:
             raise ValueError(
                 "Unable to find a circuit cutting that satisfies all constraints. "
@@ -2878,6 +2872,4 @@ def _is_valid_cut(
         len(graph_to_tape(f).wires) <= max_free_wires for j, f in enumerate(fragments)
     )
 
-    # print(num_fragments, len(fragments), max_free_wires)
-    # print(correct_num_fragments, no_candidate_yet, all_fragments_fit)
     return correct_num_fragments and no_candidate_yet and all_fragments_fit
