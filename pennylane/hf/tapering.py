@@ -70,7 +70,8 @@ def _binary_matrix(terms, num_qubits, wire_map=None):
 
 
 def _reduced_row_echelon(binary_matrix):
-    r"""Returns the reduced row echelon form (RREF) of a matrix in a binary finite field :math:`\mathbb{Z}_2`.
+    r"""Returns the reduced row echelon form (RREF) of a matrix in a binary finite field
+    :math:`\mathbb{Z}_2`.
 
     Args:
         binary_matrix (array[int]): binary matrix representation of the Hamiltonian
@@ -114,7 +115,8 @@ def _reduced_row_echelon(binary_matrix):
             # store remainder right hand side columns of the pivot row irow
             rpvt_cols = rref_mat[irow, icol:].copy()
 
-            # get the column icol and set its irow element to 0 to avoid XORing pivot row with itself
+            # get the column icol and set its irow element to 0 to
+            # avoid XORing pivot row with itself
             currcol = rref_mat[:, icol].copy()
             currcol[irow] = 0
 
@@ -216,9 +218,10 @@ def symmetry_generators(h):
 
 
 def paulix_ops(generators, num_qubits):
-    r"""Generate the single qubit Pauli-X operators :math:`\sigma^{x}_{i}` for each symmetry :math:`\tau_j`,
-    such that it anti-commutes with :math:`\tau_j` and commutes with all others symmetries :math:`\tau_{k\neq j}`.
-    These are required to obtain the Clifford operators :math:`U` for the Hamiltonian :math:`H`.
+    r"""Generate the single qubit Pauli-X operators :math:`\sigma^{x}_{i}` for each symmetry
+    :math:`\tau_j`, such that it anti-commutes with :math:`\tau_j` and commutes with all others
+    symmetries :math:`\tau_{k\neq j}`. These are required to obtain the Clifford operators
+    :math:`U` for the Hamiltonian :math:`H`.
 
     Args:
         generators (list[Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
@@ -395,19 +398,20 @@ def taper(h, generators, paulixops, paulix_sector):
 def optimal_sector(qubit_op, generators, active_electrons):
     r"""Get the optimal sector which contains the ground state.
 
-    To obtain the optimal sector, we need to choose the right eigenvalues for the symmetry generators :math:`\bm{\tau}`.
-    We can do so by using the following relation between the Pauli-Z qubit operator and the occupation number under a
-    Jordan-Wigner transform.
+    To obtain the optimal sector, we need to choose the right eigenvalues for the symmetry
+    generators :math:`\bm{\tau}`. We can do so by using the following relation between the Pauli-Z
+    qubit operator and the occupation number under amJordan-Wigner transform.
 
     .. math::
 
         \sigma_{i}^{z} = I - 2a_{i}^{\dagger}a_{i}
 
-    According to this relation, the occupied and unoccupied fermionic modes correspond to the -1 and +1 eigenvalues of
-    the Pauli-Z operator, respectively. Since all of the generators :math:`\bm{\tau}` consist only of :math:`I` and
-    Pauli-Z operators, the correct eigenvalue for each :math:`\tau` operator can be simply obtained by applying it on
-    the reference Hartree-Fock (HF) state, and looking at the overlap between the wires on which the Pauli-Z operators
-    act and the wires that correspond to occupied orbitals in the HF state.
+    According to this relation, the occupied and unoccupied fermionic modes correspond to the -1
+    and +1 eigenvalues of the Pauli-Z operator, respectively. Since all of the generators
+    :math:`\bm{\tau}` consist only of :math:`I` and Pauli-Z operators, the correct eigenvalue for
+    each :math:`\tau` operator can be simply obtained by applying it on the reference Hartree-Fock
+    (HF) state, and looking at the overlap between the wires on which the Pauli-Z operators act and
+    the wires that correspond to occupied orbitals in the HF state.
 
     Args:
         qubit_op (Hamiltonian): Hamiltonian for which symmetries are being generated to perform tapering
@@ -456,12 +460,13 @@ def optimal_sector(qubit_op, generators, active_electrons):
 def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     r"""Transform a Hartree-Fock state with a Clifford operator and taper qubits.
 
-    The fermionic operators defining the molecule's Hartree-Fock (HF) state are first mapped onto a qubit operator
-    using the Jordan-Wigner encoding. This operator is then transformed using the Clifford operators :math:`U`
-    obtained from the :math:`\mathbb{Z}_2` symmetries of the molecular Hamiltonian resulting in a qubit operator
-    that acts non-trivially only on a subset of qubits. A new, tapered HF state is built on this reduced subset
-    of qubits by placing the qubits which are acted on by a Pauli-X or Pauli-Y operators in state :math:`|1\rangle`
-    and leaving the rest in state :math:`|0\rangle`.
+    The fermionic operators defining the molecule's Hartree-Fock (HF) state are first mapped onto a
+    qubit operator using the Jordan-Wigner encoding. This operator is then transformed using the
+    Clifford operators :math:`U` obtained from the :math:`\mathbb{Z}_2` symmetries of the molecular
+    Hamiltonian resulting in a qubit operator that acts non-trivially only on a subset of qubits. A
+    new, tapered HF state is built on this reduced subset of qubits by placing the qubits which are
+    acted on by a Pauli-X or Pauli-Y operators in state :math:`|1\rangle` and leaving the rest in
+    state :math:`|0\rangle`.
 
     Args:
         generators (list[Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
