@@ -138,6 +138,10 @@
     can be decorated with `@qml.cut_circuit_mc()` to perform this type of cutting.
     [(#2382)](https://github.com/PennyLaneAI/pennylane/pull/2382)
 
+  - Add expansion to `qcut.cut_circuit_mc()` to search for wire cuts in
+    contained operations or tapes.
+    [(#2399)](https://github.com/PennyLaneAI/pennylane/pull/2399)
+
 <h3>Improvements</h3>
 
 * The parameter-shift Hessian can now be computed for arbitrary
