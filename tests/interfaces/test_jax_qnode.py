@@ -1318,6 +1318,25 @@ class TestJIT:
         expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
 
+    @pytest.mark.filterwarnings(
+        "ignore:Requested adjoint differentiation to be computed with finite shots."
+    )
+    def test_hermitian(self, dev_name, diff_method, mode):
+        """Test jax device works with qml.Hermitian and jitting even when shots>0."""
+        dev = qml.device(dev_name, wires=2, shots=10000)
+
+        if diff_method == "backprop":
+            pytest.skip("Backpropagation is unsupported if shots > 0.")
+
+        projector = np.array(qml.matrix(qml.PauliZ(0) @ qml.PauliZ(1)))
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax", diff_method=diff_method, mode=mode)
+        def circ(projector):
+            return qml.expval(qml.Hermitian(projector, wires=range(2)))
+
+        assert jnp.allclose(circ(projector), 1)
+
     @pytest.mark.xfail(
         reason="Non-trainable parameters are not being correctly unwrapped by the interface"
     )
