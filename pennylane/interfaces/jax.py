@@ -48,7 +48,8 @@ def get_jax_interface_name(tapes):
         "jax-jit"
     """
     for t in tapes:
-        for op in t.operations:
+        for op in t:
+            op = op.obs if hasattr(op, "obs") else op
             for param in op.data:
                 if qml.math.is_abstract(param):
                     return "jax-jit"
@@ -166,8 +167,8 @@ def _execute(
             new_tapes.append(t.copy(copy_operations=True))
             new_tapes[-1].set_parameters(a)
 
-        # with qml.tape.Unwrap(*new_tapes):
-        res, _ = execute_fn(new_tapes, **gradient_kwargs)
+        with qml.tape.Unwrap(*new_tapes):
+            res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
         if len(tapes) > 1:
             res = [jnp.array(r) for r in res]
