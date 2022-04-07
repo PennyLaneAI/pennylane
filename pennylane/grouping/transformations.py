@@ -106,7 +106,7 @@ def diagonalize_pauli_word(pauli_word):
     return diag_term
 
 
-def diagonalize_qwc_pauli_words(qwc_grouping): #pylint: disable=too-many-branches
+def diagonalize_qwc_pauli_words(qwc_grouping):  # pylint: disable=too-many-branches
     """Diagonalizes a list of mutually qubit-wise commutative Pauli words.
 
     Args:
