@@ -180,7 +180,7 @@ class HilbertSchmidt(Operation):
         return adjoint_op
 
 
-class HilbertSchmidtLocal(HilbertSchmidt):
+class LocalHilbertSchmidt(HilbertSchmidt):
     r"""Create a Local Hilbert Schmidt template that can be used to compute the  Local Hilbert Schmidt Test (LHST).
     The LHST is a useful quantity used when we want to compile an unitary `U` with an approximate unitary `V`. The
     LHST is used as a distance between `U` and `V`, it is similar to the Hilbert schmidt test but the measurement is
@@ -242,9 +242,9 @@ class HilbertSchmidtLocal(HilbertSchmidt):
         return decomp_ops
 
     def adjoint(self):  # pylint: disable=arguments-differ
-        adjoint_op = HilbertSchmidtLocal(
+        adjoint_op = LocalHilbertSchmidt(
             *self.parameters,
-            u_circuit=self.hyperparameters["u_tape"],
+            u_tape=self.hyperparameters["u_tape"],
             v_function=self.hyperparameters["v_function"],
             v_wires=self.hyperparameters["v_wires"],
         )
