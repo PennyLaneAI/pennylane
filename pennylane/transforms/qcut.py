@@ -1562,7 +1562,9 @@ def _qcut_expand_fn(
             return tape
 
     if max_depth > 0:
-        return cut_circuit.expand_fn(tape.expand(), max_depth=max_depth - 1, auto_cutter=auto_cutter)
+        return cut_circuit.expand_fn(
+            tape.expand(), max_depth=max_depth - 1, auto_cutter=auto_cutter
+        )
 
     if not (auto_cutter is True or callable(auto_cutter)):
         raise ValueError(
@@ -1772,13 +1774,14 @@ class CutStrategy:
                 f"got {type(self.imbalance_tolerance)} with value {self.imbalance_tolerance}."
             )
 
-        self.min_free_wires = self.min_free_wires or 2
+        self.min_free_wires = self.min_free_wires or 1
 
     def get_cut_kwargs(
         self,
         tape_dag: MultiDiGraph,
         max_wires_by_fragment: Sequence[int] = None,
         max_gates_by_fragment: Sequence[int] = None,
+        exhausive: bool = True,
     ) -> List[Dict[str, Any]]:
         """Derive the complete set of arguments, based on a given circuit, for passing to a graph
         partitioner.
@@ -1811,7 +1814,7 @@ class CutStrategy:
         """
         tape_wires = set(w for _, _, w in tape_dag.edges.data("wire"))
         num_tape_wires = len(tape_wires)
-        num_tape_gates = tape_dag.order()
+        num_tape_gates = len([n for n in tape_dag.nodes if not isinstance(n, WireCut)])
         self._validate_input(max_wires_by_fragment, max_gates_by_fragment)
 
         probed_cuts = self._infer_probed_cuts(
@@ -1819,6 +1822,7 @@ class CutStrategy:
             num_tape_gates=num_tape_gates,
             max_wires_by_fragment=max_wires_by_fragment,
             max_gates_by_fragment=max_gates_by_fragment,
+            exhausive=exhausive,
         )
 
         return probed_cuts
@@ -1841,10 +1845,13 @@ class CutStrategy:
                 f"Got {free_gates} >= {avg_fragment_gates} ."
             )
 
-        wire_imbalance = free_wires / avg_fragment_wires - 1
-        gate_imbalance = free_gates / avg_fragment_gates - 1
-        # imbalance = min(gate_imbalance, wire_imbalance)
-        imbalance = gate_imbalance
+        # A small adjustment is added to the imbalance factor to prevents small ks from resulting
+        # in extremely unbalanced fragments. It will heuristically force the smallest fragment size
+        # to be >= 3 if the average fragment size is greater than 5. In other words, tiny fragments
+        # are only allowed when average fragmeng size is small in the first place.
+        balancing_adjustment = 2 if avg_fragment_gates > 5 else 0
+        gate_imbalance = (free_gates - (k - 1 + balancing_adjustment)) / avg_fragment_gates - 1
+        imbalance = max(gate_imbalance, 0.01)  # numerical stability
         if imbalance_tolerance is not None:
             imbalance = min(imbalance, imbalance_tolerance)
 
@@ -1889,6 +1896,7 @@ class CutStrategy:
         num_tape_gates,
         max_wires_by_fragment=None,
         max_gates_by_fragment=None,
+        exhausive=True,
     ) -> List[Dict[str, Any]]:
         """
         Helper function for deriving the minimal set of best default partitioning constraints
@@ -1917,16 +1925,22 @@ class CutStrategy:
         min_free_wires = self.min_free_wires or max_free_wires
         min_free_gates = self.min_free_gates or max_free_gates
 
-        # The lower bound of k corresponds to executing each fragment on the largest available device.
-        k_lb = 1 + max(
-            (num_tape_wires - 1) // max_free_wires,  # wire limited
-            (num_tape_gates - 1) // max_free_gates,  # gate limited
-        )
-        # The upper bound of k corresponds to executing each fragment on the smallest available device.
-        k_ub = 1 + max(
-            (num_tape_wires - 1) // min_free_wires,  # wire limited
-            (num_tape_gates - 1) // min_free_gates,  # gate limited
-        )
+        if exhausive:
+            k_lb, k_ub = 2, num_tape_gates
+
+        else:
+            # The lower bound of k corresponds to executing each fragment on the largest available
+            # device.
+            k_lb = 1 + max(
+                (num_tape_wires - 1) // max_free_wires,  # wire limited
+                (num_tape_gates - 1) // max_free_gates,  # gate limited
+            )
+            # The upper bound of k corresponds to executing each fragment on the smallest available
+            # device.
+            k_ub = 1 + max(
+                (num_tape_wires - 1) // min_free_wires,  # wire limited
+                (num_tape_gates - 1) // min_free_gates,  # gate limited
+            )
 
         # The global imbalance tolerance, if not given, defaults to a very loose upper bound:
         imbalance_tolerance = k_ub if self.imbalance_tolerance is None else self.imbalance_tolerance
@@ -2278,7 +2292,6 @@ def find_and_place_cuts(
     graph: MultiDiGraph,
     cut_method: Callable = kahypar_cut,
     cut_strategy: CutStrategy = None,
-    deferred_measurement: bool = True,
     replace_wire_cuts=False,
     **kwargs,
 ) -> MultiDiGraph:
@@ -2296,9 +2309,6 @@ def find_and_place_cuts(
         cut_strategy (CutStrategy): Strategy for optimizing cutting parameters based on device
             constraints. Defaults to ``None`` in which case ``kwargs`` must be fully specified
             for passing to the ``cut_method``.
-        deferred_measurement (bool): Whether to use the deferred measurement principle to
-            switch mid-circuit measurements to terminal measurements. Will consume an extra wire
-            for each mid-circuit measurement.
         replace_wire_cuts (bool): Whether to replace :class:`~.WireCut` nodes with
             :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs. Defaults to ``False``.
         kwargs: Additional keyword arguments to be passed to the callable ``cut_method``.
@@ -2399,20 +2409,24 @@ def find_and_place_cuts(
             cut_graph = place_wire_cuts(graph=graph, cut_edges=cut_edges)
             replace_wire_cut_nodes(cut_graph)
             frags, comm_graph = fragment_graph(cut_graph)
-            print("============")
-            for f in frags:
-                print(graph_to_tape(f).draw())
+            # print("============")
+            # for f in frags:
+            #     print(graph_to_tape(f).draw())
 
             if _is_valid_cut(
                 fragments=frags,
-                comm_graph=comm_graph,
                 num_cuts=len(cut_edges),
                 num_fragments=k,
                 cut_candidates=valid_cut_edges,
-                deferred_measurement=deferred_measurement,
                 max_free_wires=cut_strategy.max_free_wires,
             ):
                 valid_cut_edges[k] = cut_edges
+
+        if len(valid_cut_edges) < 1:
+            raise ValueError(
+                "Unable to find a circuit cutting that satisfies all constraints. "
+                "Are the constraints too strict?"
+            )
 
         # Filtering to get the optimal cuts by looking at the number of cuts and num_fragments.
         min_cuts = min(len(cut_edges) for cut_edges in valid_cut_edges.values())
@@ -2434,11 +2448,9 @@ def find_and_place_cuts(
 
 def _is_valid_cut(
     fragments,
-    comm_graph,
     num_cuts,
     num_fragments,
     cut_candidates,
-    deferred_measurement,
     max_free_wires,
 ):
     """Helper function for determining if a cut is a valid canditate."""
@@ -2448,11 +2460,10 @@ def _is_valid_cut(
         len(cut_candidates[num_fragments]) > num_cuts
     )
     all_fragments_fit = all(
-        len({w for _, _, w in f.edges(data="wire")})
-        + comm_graph.out_degree()[j] * deferred_measurement
-        <= max_free_wires
+        len({w for _, _, w in f.edges(data="wire")}) <= max_free_wires
         for j, f in enumerate(fragments)
     )
 
-    print(correct_num_fragments, no_candidate_yet, all_fragments_fit)
+    # print(num_fragments, max_free_wires)
+    # print(correct_num_fragments, no_candidate_yet, all_fragments_fit)
     return correct_num_fragments and no_candidate_yet and all_fragments_fit

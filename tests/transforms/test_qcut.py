@@ -3759,13 +3759,12 @@ class TestKaHyPar:
         "cut_strategy",
         [
             None,
-            # qcut.CutStrategy(qml.device("default.qubit", wires=3)),
-            # qcut.CutStrategy(max_free_wires=2),
-            qcut.CutStrategy(max_free_wires=3),
+            qcut.CutStrategy(qml.device("default.qubit", wires=3)),
+            qcut.CutStrategy(max_free_wires=2),
+            qcut.CutStrategy(max_free_wires=4),
         ],
     )
-    @pytest.mark.parametrize("deferred_measurement", [False])
-    def test_find_and_place_cuts(self, with_manual_cut, cut_strategy, deferred_measurement):
+    def test_find_and_place_cuts(self, with_manual_cut, cut_strategy):
         """Integration tests for auto cutting pipeline."""
         pytest.importorskip("kahypar")
 
@@ -3802,17 +3801,16 @@ class TestKaHyPar:
             cut_graph = qcut.find_and_place_cuts(
                 graph=graph,
                 cut_strategy=cut_strategy,
-                deferred_measurement=deferred_measurement,
                 replace_wire_cuts=True,
                 seed=self.seed,
             )
 
-            if (cut_strategy.max_free_wires > 2) or (not deferred_measurement):
+            if cut_strategy.max_free_wires > 2:
                 expected_num_cut_edges = 2
                 num_frags = 2
             else:
-                expected_num_cut_edges = 3
-                num_frags = 3
+                expected_num_cut_edges = 15
+                num_frags = 14
 
         assert (
             len([n for n in cut_graph.nodes if isinstance(n, qcut.MeasureNode)])
@@ -3823,14 +3821,15 @@ class TestKaHyPar:
             == expected_num_cut_edges
         )
 
-        # Cutting wire "a" is more balanced, thus will be cut if there's no manually placed cut on
-        # wire 1:
-        expected_cut_wire = 1 if with_manual_cut else "a"
-        assert all(
-            list(n.wires) == [expected_cut_wire]
-            for n in cut_graph.nodes
-            if isinstance(n, (qcut.MeasureNode, qcut.PrepareNode))
-        )
+        if num_frags <= 2:
+            # Cutting wire "a" is more balanced, thus will be cut if there's no manually placed cut on
+            # wire 1:
+            expected_cut_wire = 1 if with_manual_cut else "a"
+            assert all(
+                list(n.wires) == [expected_cut_wire]
+                for n in cut_graph.nodes
+                if isinstance(n, (qcut.MeasureNode, qcut.PrepareNode))
+            )
 
         frags, comm_graph = qcut.fragment_graph(cut_graph)
 
