@@ -39,15 +39,17 @@ class HilbertSchmidt(Operation):
     It defines our decomposition for the Hilbert Schmidt Test template.
 
     Args:
-        v_params (array): Parameters for the quantum function `V`.
+        params (array): Parameters for the quantum function `V`.
         v_function (Callable): Quantum function that represents the approximate compiled unitary `V`.
         v_wires (int or Iterable[Number, str]]): the wire(s) the approximate compiled unitary act on.
         u_tape (.QuantumTape): `U`, the unitary to be compiled as a ``qml.tape.QuantumTape``.
 
     Raises:
+        QuantumFunctionError: The argument u_tape must be a QuantumTape.
         QuantumFunctionError: ``v_function`` is not a valid Quantum function.
         QuantumFunctionError: `U` and `V` do not have the same number of wires.
         QuantumFunctionError: The wires ``v_wires`` are a subset of `V` wires.
+        QuantumFunctionError: u_tape and v_tape must act on distinct wires.
 
     .. UsageDetails::
 
@@ -188,15 +190,17 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     for large unitaries.
 
     Args:
-        v_params (array): Parameters for the quantum function `V`.
+        params (array): Parameters for the quantum function `V`.
         v_function (Callable): Quantum function that represents the approximate compiled unitary `V`.
         v_wires (int or Iterable[Number, str]]): the wire(s) the approximate compiled unitary act on.
         u_tape (.QuantumTape): `U`, the unitary to be compiled as a ``qml.tape.QuantumTape``.
 
     Raises:
+        QuantumFunctionError: The argument u_tape must be a QuantumTape.
         QuantumFunctionError: ``v_function`` is not a valid Quantum function.
         QuantumFunctionError: `U` and `V` do not have the same number of wires.
         QuantumFunctionError: The wires ``v_wires`` are a subset of `V` wires.
+        QuantumFunctionError: u_tape and v_tape must act on distinct wires.
 
     **Reference**
 
