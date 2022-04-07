@@ -48,7 +48,63 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
 
     **Example**
 
-    Consider the following quantum circuit to be optimized
+    First let's consider the following circuit where we want to replace sequence of two ``pennylane.S`` gates with a
+    ``pennylane.PauliZ`` gate.
+
+    .. code-block:: python
+
+        def circuit():
+            qml.S(wires=0)
+            qml.PauliZ(wires=0)
+            qml.S(wires=1)
+            qml.CZ(wires=[0, 1])
+            qml.S(wires=1)
+            qml.S(wires=2)
+            qml.CZ(wires=[1, 2])
+            qml.S(wires=2)
+            return qml.expval(qml.PauliX(wires=0))
+
+    Therefore we use the following pattern that implements the identity:
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as pattern:
+            qml.S(wires=0)
+            qml.S(wires=0)
+            qml.PauliZ(wires=0)
+
+    For optimizing the circuit given the given following template of CNOTs we apply the `pattern_matching`
+    transform.
+
+    >>> dev = qml.device('default.qubit', wires=5)
+    >>> qnode = qml.QNode(circuit, dev)
+    >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
+    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+
+    >>> print(qml.draw(qnode)())
+    0: ──S──Z─╭C──────────┤  <X>
+    1: ──S────╰Z──S─╭C────┤
+    2: ──S──────────╰Z──S─┤
+
+    >>> print(qml.draw(optimized_qnode)())
+    0: ──S⁻¹─╭C────┤  <X>
+    1: ──Z───╰Z─╭C─┤
+    2: ──Z──────╰Z─┤
+
+    Note that with this pattern we also replace a ``pennylane.S``, ``pennylane.PauliZ`` sequence by ``pennylane.S``.
+    If one would like avoiding this, it possible to give a custom quantum cost dictionary with a negative cost for
+    ``pennylane.PauliZ``.
+
+    >>> my_cost = {"PauliZ": -1 , "S": 1, "S.inv": 1}
+    >>> optimized_qfunc = pattern_matching_optimization(pattern_tapes=[pattern], custom_quantum_cost=my_cost)(circuit)
+    >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+
+    >>> print(qml.draw(optimized_qnode)())
+    0: ──S──Z─╭C────┤  <X>
+    1: ──Z────╰Z─╭C─┤
+    2: ──Z───────╰Z─┤
+
+    Now we can consider a more complicated example with the following quantum circuit to be optimized
 
     .. code-block:: python
 
@@ -74,7 +130,8 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
             qml.CNOT(wires=[0, 1])
             qml.CNOT(wires=[0, 2])
 
-    For optimizing the circuit given the given following template of CNOTs we apply the `pattern_matching`
+
+    For optimizing the circuit given the given following pattern of CNOTs we apply the `pattern_matching`
     transform.
 
     >>> dev = qml.device('default.qubit', wires=5)

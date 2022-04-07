@@ -411,7 +411,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         self.trainable_args = set()
 
         for index, arg in enumerate(args):
-            if getattr(arg, "requires_grad", True):
+            if getattr(arg, "requires_grad", False):
                 self.trainable_args |= {index}
 
         if self.s is None:

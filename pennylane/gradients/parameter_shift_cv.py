@@ -18,6 +18,7 @@ of a CV-based quantum tape.
 # pylint: disable=protected-access,too-many-arguments,too-many-statements,too-many-branches
 import itertools
 import warnings
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -28,9 +29,9 @@ from .gradient_transform import (
     grad_method_validation,
     choose_grad_methods,
 )
-from .finite_difference import finite_diff, generate_shifted_tapes
+from .finite_difference import finite_diff
 from .parameter_shift import expval_param_shift, _get_operation_recipe
-from .general_shift_rules import process_shifts
+from .general_shift_rules import process_shifts, generate_shifted_tapes
 
 
 def _grad_method(tape, idx):
@@ -118,7 +119,7 @@ def _grad_method(tape, idx):
     return "A"
 
 
-def _gradient_analysis(tape):
+def _gradient_analysis_cv(tape):
     """Update the parameter information dictionary of the tape with
     gradient information of each parameter."""
 
@@ -258,6 +259,11 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     gradient_tapes.extend(pdA2_tapes)
 
     def processing_fn(results):
+        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        # pylint: disable=protected-access
+        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+            results = [qml.math.squeeze(res) for res in results]
+
         mask = qml.math.convert_like(qml.math.reshape(var_mask, [-1, 1]), results[0])
         f0 = qml.math.expand_dims(results[0], -1)
 
@@ -421,11 +427,16 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         gradient_values.append(None)
 
     def processing_fn(results):
+        # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
+        # pylint: disable=protected-access
+        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+            results = [qml.math.squeeze(res) for res in results]
+
         grads = []
         start = 0
 
         if not results:
-            results = [np.zeros([tape.output_dim])]
+            results = [np.squeeze(np.zeros([tape.output_dim]))]
 
         interface = qml.math.get_interface(results[0])
         iterator = enumerate(zip(shapes, gradient_values, obs_indices))
@@ -434,26 +445,28 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
 
             if shape == 0:
                 # parameter has zero gradient
-                g = qml.math.zeros_like(results[0], like=interface)
+                isscalar = qml.math.ndim(results[0]) == 0
+                g = qml.math.zeros_like(qml.math.atleast_1d(results[0]), like=interface)
 
                 if grad_value:
                     g = qml.math.scatter_element_add(g, obs_ind, grad_value, like=interface)
 
-                grads.append(g)
+                grads.append(g[0] if isscalar else g)
                 continue
 
             obs_result = results[start : start + shape]
             start = start + shape
 
             # compute the linear combination of results and coefficients
-            obs_result = qml.math.stack(obs_result[0])
+            isscalar = qml.math.ndim(obs_result[0]) == 0
+            obs_result = qml.math.stack(qml.math.atleast_1d(obs_result[0]))
             g = qml.math.zeros_like(obs_result, like=interface)
 
             if qml.math.get_interface(g) not in ("tensorflow", "autograd"):
                 obs_ind = (obs_ind,)
 
             g = qml.math.scatter_element_add(g, obs_ind, obs_result[obs_ind], like=interface)
-            grads.append(g)
+            grads.append(g[0] if isscalar else g)
 
         # The following is for backwards compatibility; currently,
         # the device stacks multiple measurement arrays, even if not the same
@@ -649,10 +662,7 @@ def param_shift_cv(
             "Computing the gradient of circuits that return the state is not supported."
         )
 
-    _gradient_analysis(tape)
-    gradient_tapes = []
-    shapes = []
-    fns = []
+    _gradient_analysis_cv(tape)
 
     if argnum is None and not tape.trainable_params:
         warnings.warn(
@@ -660,7 +670,11 @@ def param_shift_cv(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return gradient_tapes, lambda _: ()
+        return [], lambda _: qml.math.zeros((tape.output_dim, 0))
+
+    gradient_tapes = []
+    shapes = []
+    fns = []
 
     def _update(data):
         """Utility function to update the list of gradient tapes,
@@ -671,9 +685,8 @@ def param_shift_cv(
 
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = grad_method_validation(method, tape)
-    all_params_grad_method_zero = all(g == "0" for g in diff_methods)
-    if all_params_grad_method_zero:
-        return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+    if all(g == "0" for g in diff_methods):
+        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     method_map = choose_grad_methods(diff_methods, argnum)
     var_present = any(m.return_type is qml.measurements.Variance for m in tape.measurements)

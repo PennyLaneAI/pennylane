@@ -375,7 +375,7 @@ class TestDifferentiable:
 
     def test_differentiation_tf(self, tol):
         """Test that grouping is differentiable with tf tensors as coefficient"""
-        tf = pytest.importorskip("tf")
+        tf = pytest.importorskip("tensorflow")
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
         def group(coeffs, select=None):
