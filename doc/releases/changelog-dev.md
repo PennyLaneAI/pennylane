@@ -176,7 +176,7 @@
     on wires `0` and `2`:
     
     ```python
-    dev = qml.device("default.qubit", wires=2, shots=1000)
+    dev = qml.device("default.qubit", wires=2, shots=10000)
 
     def observable(bitstring):
         return (-1) ** np.sum(bitstring)    
@@ -202,6 +202,7 @@
     
     ```pycon
     >>> circuit(x)
+    tensor(-0.776, requires_grad=True)
     ```
 
   - An automatic graph partitioning method `qcut.kahypar_cut()` has been implemented for cutting
