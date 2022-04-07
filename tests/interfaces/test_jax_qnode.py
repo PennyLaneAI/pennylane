@@ -1321,9 +1321,10 @@ class TestJIT:
     @pytest.mark.filterwarnings(
         "ignore:Requested adjoint differentiation to be computed with finite shots."
     )
-    def test_hermitian(self, dev_name, diff_method, mode):
+    @pytest.mark.parametrize("shots", [10, 1000])
+    def test_hermitian(self, dev_name, diff_method, mode, shots):
         """Test jax device works with qml.Hermitian and jitting even when shots>0."""
-        dev = qml.device(dev_name, wires=2, shots=10000)
+        dev = qml.device(dev_name, wires=2, shots=shots)
 
         if diff_method == "backprop":
             pytest.skip("Backpropagation is unsupported if shots > 0.")
