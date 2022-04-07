@@ -1932,9 +1932,7 @@ def _qcut_expand_fn(
             return tape
 
     if max_depth > 0:
-        return _qcut_expand_fn(
-            tape.expand(), max_depth=max_depth - 1, auto_cutter=auto_cutter
-        )
+        return _qcut_expand_fn(tape.expand(), max_depth=max_depth - 1, auto_cutter=auto_cutter)
 
     if not (auto_cutter is True or callable(auto_cutter)):
         raise ValueError(
@@ -2251,7 +2249,7 @@ class CutStrategy:
             free_gates = free_gates - (k - 1 + balancing_adjustment)
 
         gate_imbalance = free_gates / avg_fragment_gates - 1
-        imbalance = max(gate_imbalance, 0.1/avg_fragment_gates)  # numerical stability
+        imbalance = max(gate_imbalance, 0.1 / avg_fragment_gates)  # numerical stability
         if imbalance_tolerance is not None:
             imbalance = min(imbalance, imbalance_tolerance)
 
@@ -2810,7 +2808,7 @@ def find_and_place_cuts(
             num_cuts = sum(isinstance(n, WireCut) for n in cut_graph.nodes)
 
             replace_wire_cut_nodes(cut_graph)
-            frags, comm_graph = fragment_graph(cut_graph)
+            frags, _ = fragment_graph(cut_graph)
 
             if _is_valid_cut(
                 fragments=frags,
@@ -2865,8 +2863,7 @@ def _is_valid_cut(
         len(cut_candidates[num_fragments]) > num_cuts
     )
     all_fragments_fit = all(
-        len(graph_to_tape(f).wires) <= max_free_wires
-        for j, f in enumerate(fragments)
+        len(graph_to_tape(f).wires) <= max_free_wires for j, f in enumerate(fragments)
     )
 
     # print(num_fragments, len(fragments), max_free_wires)
