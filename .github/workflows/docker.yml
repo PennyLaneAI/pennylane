@@ -1,0 +1,22 @@
+name: Docker builds
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  base-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Build & test PennyLane
+        run: make -f docker/Makefile build-base
