@@ -32,8 +32,6 @@ that compute the desired quantity.
     ~transforms.classical_jacobian
     ~batch_params
     ~batch_input
-    ~draw
-    ~draw_mpl
     ~transforms.get_unitary_matrix
     ~metric_tensor
     ~adjoint_metric_tensor
@@ -101,7 +99,7 @@ There are also utility functions that take a circuit and return a DAG.
 Transform for circuit cutting
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :func:~.cut_circuit transform accepts a QNode and returns a new function that cuts the original circuit,
+The :func:`~.cut_circuit` transform accepts a QNode and returns a new function that cuts the original circuit,
 allowing larger circuits to be split into smaller circuits that are compatible with devices that
 have a restricted number of qubits.
 
@@ -110,7 +108,7 @@ have a restricted number of qubits.
 
     ~cut_circuit
 
-The :func:`~.cut_circuit_mc` is designed to be used for cutting circuits which contain :func:`~.sample`
+The :func:`~.cut_circuit_mc` transform is designed to be used for cutting circuits which contain :func:`~.sample`
 measurements and is implemented using a Monte Carlo method. Similarly to the :func:`~.cut_circuit`
 transform, this transform accepts a QNode and returns a new function that cuts the original circuit.
 This transform can also accept an optional classical processing function to calculate an
@@ -188,7 +186,6 @@ from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
-from .draw import draw, draw_mpl
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
