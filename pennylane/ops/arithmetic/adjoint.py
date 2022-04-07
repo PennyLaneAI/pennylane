@@ -16,6 +16,7 @@ This submodule defines an operation modifier that indicates the adjoint of an op
 """
 from pennylane.operation import Operator, Operation, AnyWires, AdjointUndefinedError
 from pennylane.queuing import QueuingContext
+from pennylane.math import transpose, conjugate
 
 def adjoint(op):
     try:
@@ -65,25 +66,25 @@ class Adjoint(Operator):
     def compute_matrix(*params, base=None):
 
         base_matrix = base.compute_matrix(*params, **base.hyperparameters)
-        return qml.math.transpose(qml.math.conjugate(base_matrix))
+        return transpose(conjugate(base_matrix))
     
     @classmethod
     def compute_decomposition(cls, *params, wires, base=None):
         try:
             return base.adjoint()
-        except qml.operation.AdjointUndefinedError:
+        except AdjointUndefinedError:
             base_decomp = base.compute_decomposition(*params, wires, **base.hyperparameters)
             return [Adjoint(op) for op in reversed(base_decomp)]
         
     @staticmethod
     def compute_sparse_matrix(*params, base=None):
         base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
-        return qml.math.transpose(qml.math.conjugate(base_matrix))
+        return transpose(conjugate(base_matrix))
     
     @staticmethod
     def compute_eigvals(*params, base=None):
         base_eigvals = base.compute_eigvals(*params, **base.hyperparameters)
-        return [qml.math.conjugate(x) for x in base_eigvals]
+        return [conjugate(x) for x in base_eigvals]
 
     @property
     def has_matrix(self):
