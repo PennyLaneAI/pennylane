@@ -93,8 +93,9 @@ class Hermitian(Observable):
         if A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
 
-        if not qml.math.allclose(A, A.conj().T):
-            raise ValueError("Observable must be Hermitian.")
+        if not qml.math.is_abstract(A) and not qml.math.is_abstract(A.conj().T):
+            if not qml.math.allclose(A, A.conj().T):
+                raise ValueError("Observable must be Hermitian.")
 
         return A
 
@@ -111,13 +112,16 @@ class Hermitian(Observable):
             dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the Hermitian observable
         """
         Hmat = self.get_matrix()
-        Hmat = qml.math.to_numpy(Hmat)
-        Hkey = tuple(Hmat.flatten().tolist())
-        if Hkey not in Hermitian._eigs:
-            w, U = np.linalg.eigh(Hmat)
-            Hermitian._eigs[Hkey] = {"eigvec": U, "eigval": w}
+        import jax  # pylint: disable=import-outside-toplevel
 
-        return Hermitian._eigs[Hkey]
+        # Hmat = jax.numpy.array(Hmat)
+        # Hkey = tuple(Hmat.flatten().tolist())
+        # if Hkey not in Hermitian._eigs:
+        #     w, U = np.linalg.eigh(Hmat)
+        #     Hermitian._eigs[Hkey] = {"eigvec": U, "eigval": w}
+        w, U = jax.numpy.linalg.eigh(Hmat)
+
+        return {"eigvec": U, "eigval": w}
 
     def get_eigvals(self):
         """Return the eigenvalues of the specified Hermitian observable.
