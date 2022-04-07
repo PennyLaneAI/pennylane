@@ -295,6 +295,14 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where observables were not considered when determining whether if
+  we should use the ``jax-jit`` interface.
+  [(#2427)](https://github.com/PennyLaneAI/pennylane/pull/2427)
+
+* Fixes a bug where if the number of shots was less than 100, errors arised due
+  to indexing into an array using a DeviceArray.
+  [(#2427)](https://github.com/PennyLaneAI/pennylane/pull/2427)
+
 * PennyLane Lightning version in Docker container is pulled from latest wheel-builds.
   [(#2416)](https://github.com/PennyLaneAI/pennylane/pull/2416)
 
