@@ -2199,7 +2199,7 @@ class TestCutCircuitMCTransform:
         postprocessed to return bitstrings of the original circuit size.
         """
 
-        dev = qml.device("default.qubit", wires=3, shots=1000)
+        dev = qml.device("default.qubit", wires=3, shots=100)
 
         @qml.qnode(dev)
         def circuit(x):
@@ -2230,7 +2230,7 @@ class TestCutCircuitMCTransform:
         Tests that the number of shots used on a device can be temporarily
         altered when executing the QNode
         """
-        shots = 1000
+        shots = 100
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
@@ -2293,7 +2293,7 @@ class TestCutCircuitMCTransform:
         Tests that a circuit with sample measurements containing observables
         gives the correct error
         """
-        shots = 1000
+        shots = 100
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
@@ -2409,7 +2409,7 @@ class TestCutCircuitMCTransform:
         Tests that if a shots argument is passed directly to the qnode when using
         `cut_circuit_mc` the correct error is given
         """
-        shots = 1000
+        shots = 100
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         with pytest.raises(
@@ -2438,7 +2438,7 @@ class TestCutCircuitMCTransform:
         Tests that if no interface is provided when using `cut_circuit_mc` the
         correct output is given
         """
-        shots = 1000
+        shots = 100
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
         @qml.cut_circuit_mc
@@ -2943,7 +2943,7 @@ class TestQCutProcessingFn:
         results = []
 
         # Calculates U_{ijkl} = Tr((b[k] x b[l]) U (b[i] x b[j]) U*)
-        # See Sec. II. A. of https://arxiv.org/abs/1909.07534, below Eq. (2).
+        # See Sec. II. A. of https://doi.org/10.1088/1367-2630/abd7bc, below Eq. (2).
         for inp, out in itertools.product(prod_inp, prod_out):
             input = kron(*[basis[i] for i in inp])
             output = kron(*[basis[i] for i in out])
@@ -3836,15 +3836,14 @@ class TestCutCircuitTransformValidation:
 
 
 class TestCutCircuitExpansion:
-    """Test of expansion in the cut_circuit function"""
+    """Test of expansion in the cut_circuit and cut_circuit_mc functions"""
 
-    @pytest.mark.parametrize(
-        "cut_transform, measurement",
-        [
-            (qcut.cut_circuit, qml.expval(qml.PauliZ(0))),
-            (qcut.cut_circuit_mc, qml.sample(wires=[0])),
-        ],
-    )
+    transform_measurement_pairs = [
+        (qcut.cut_circuit, qml.expval(qml.PauliZ(0))),
+        (qcut.cut_circuit_mc, qml.sample(wires=[0])),
+    ]
+
+    @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_no_expansion(self, mocker, cut_transform, measurement):
         """Test if no/trivial expansion occurs if WireCut operations are already present in the
         tape"""
@@ -3854,22 +3853,14 @@ class TestCutCircuitExpansion:
             qml.RY(0.4, wires=0)
             qml.apply(measurement)
 
-        spy = mocker.spy(cut_transform, "expand_fn")
-        shots = 10
-        if tape.measurements[0].return_type is qml.measurements.Sample:
-            cut_transform(tape, shots, device_wires=[0])
-        else:
-            cut_transform(tape, device_wires=[0])
+        spy = mocker.spy(qcut, "_qcut_expand_fn")
+
+        kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+        cut_transform(tape, device_wires=[0], **kwargs)
 
         spy.assert_called_once()
 
-    @pytest.mark.parametrize(
-        "cut_transform, measurement",
-        [
-            (qcut.cut_circuit, qml.expval(qml.PauliZ(0))),
-            (qcut.cut_circuit_mc, qml.sample(wires=[0])),
-        ],
-    )
+    @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion(self, mocker, cut_transform, measurement):
         """Test if expansion occurs if WireCut operations are present in a nested tape"""
         with qml.tape.QuantumTape() as tape:
@@ -3879,22 +3870,14 @@ class TestCutCircuitExpansion:
             qml.RY(0.4, wires=0)
             qml.apply(measurement)
 
-        spy = mocker.spy(cut_transform, "expand_fn")
-        shots = 10
-        if tape.measurements[0].return_type is qml.measurements.Sample:
-            cut_transform(tape, shots, device_wires=[0])
-        else:
-            cut_transform(tape, device_wires=[0])
+        spy = mocker.spy(qcut, "_qcut_expand_fn")
+
+        kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+        cut_transform(tape, device_wires=[0], **kwargs)
 
         assert spy.call_count == 2
 
-    @pytest.mark.parametrize(
-        "cut_transform, measurement",
-        [
-            (qcut.cut_circuit, qml.expval(qml.PauliZ(0))),
-            (qcut.cut_circuit_mc, qml.sample(wires=[0])),
-        ],
-    )
+    @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
     def test_expansion_error(self, cut_transform, measurement):
         """Test if a ValueError is raised if expansion continues beyond the maximum depth"""
         with qml.tape.QuantumTape() as tape:
@@ -3906,11 +3889,8 @@ class TestCutCircuitExpansion:
             qml.apply(measurement)
 
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
-            shots = 10
-            if tape.measurements[0].return_type is qml.measurements.Sample:
-                cut_transform(tape, shots, device_wires=[0])
-            else:
-                cut_transform(tape, device_wires=[0])
+            kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+            cut_transform(tape, device_wires=[0], **kwargs)
 
     def test_expansion_ttn(self, mocker):
         """Test if wire cutting is compatible with the tree tensor network operation"""
@@ -3937,7 +3917,7 @@ class TestCutCircuitExpansion:
         qnode = qml.QNode(circuit, dev_big)
         qnode_cut = qcut.cut_circuit(qml.QNode(circuit, dev_cut))
 
-        spy = mocker.spy(qcut.cut_circuit, "expand_fn")
+        spy = mocker.spy(qcut, "_qcut_expand_fn")
         res = qnode_cut(template_weights)
         assert spy.call_count == 2
 
@@ -3966,7 +3946,7 @@ class TestCutCircuitExpansion:
 
         qnode_cut = qcut.cut_circuit_mc(qml.QNode(circuit, dev_cut))
 
-        spy = mocker.spy(qcut.cut_circuit_mc, "expand_fn")
+        spy = mocker.spy(qcut, "_qcut_expand_fn")
         qnode_cut(template_weights)
         assert spy.call_count == 2
 

@@ -1,7 +1,3 @@
-# install openbabel
-sudo apt-get -qq update
-sudo apt-get install -y openbabel
-
 # install miniconda
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
 bash miniconda.sh -b -p $HOME/miniconda
@@ -19,8 +15,6 @@ conda activate test-environment
 
 # Install psi4
 conda install psi4 psi4-rt python=$TRAVIS_PYTHON_VERSION -c psi4
-# conda install -c conda-forge openbabel
-# ln -s $HOME/miniconda/envs/test-environment/bin/obabel $HOME/miniconda/envs/test-environment/bin/babel
 
 # install PennyLane and Qchem
 pip install -r requirements.txt
