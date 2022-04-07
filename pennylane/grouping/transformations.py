@@ -140,7 +140,14 @@ def diagonalize_qwc_pauli_words(qwc_grouping):
     first_pauli_name = qwc_grouping[0].name
     if isinstance(first_pauli_name, list):
         first_pauli_name = first_pauli_name[0]
-    all_paulis_same_kind = all([all([first_pauli_name == sub_word_name for sub_word_name in pauli_word.name]) if isinstance(pauli_word.name, list) else first_pauli_name == pauli_word.name for pauli_word in qwc_grouping])
+    all_paulis_same_kind = all(
+        [
+            all([first_pauli_name == sub_word_name for sub_word_name in pauli_word.name])
+            if isinstance(pauli_word.name, list)
+            else first_pauli_name == pauli_word.name
+            for pauli_word in qwc_grouping
+        ]
+    )
     if not all_paulis_same_kind:
         m_paulis = len(qwc_grouping)
         all_wires = Wires.all_wires([pauli_word.wires for pauli_word in qwc_grouping])
@@ -150,12 +157,14 @@ def diagonalize_qwc_pauli_words(qwc_grouping):
                 qwc_grouping[i],
                 wire_map=wire_map,
                 check_is_pauli_word=False,
-            ) for i in range(m_paulis)]
+            )
+            for i in range(m_paulis)
+        ]
         for i in range(m_paulis):
             for j in range(i + 1, m_paulis):
                 if not is_qwc(
-                        pauli_binaries[i],
-                        pauli_binaries[j],
+                    pauli_binaries[i],
+                    pauli_binaries[j],
                 ):
                     raise ValueError(
                         f"{qwc_grouping[i]} and {qwc_grouping[j]} are not qubit-wise commuting."
