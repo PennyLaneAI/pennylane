@@ -3628,36 +3628,49 @@ class TestCutCircuitTransformValidation:
 
 
 class TestCutCircuitExpansion:
-    """Test of expansion in the cut_circuit function"""
+    """Test of expansion in the cut_circuit and cut_circuit_mc functions"""
 
-    def test_no_expansion(self, mocker):
+    transform_measurement_pairs = [
+        (qcut.cut_circuit, qml.expval(qml.PauliZ(0))),
+        (qcut.cut_circuit_mc, qml.sample(wires=[0])),
+    ]
+
+    @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
+    def test_no_expansion(self, mocker, cut_transform, measurement):
         """Test if no/trivial expansion occurs if WireCut operations are already present in the
         tape"""
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.3, wires=0)
             qml.WireCut(wires=0)
             qml.RY(0.4, wires=0)
-            qml.expval(qml.PauliZ(0))
+            qml.apply(measurement)
 
-        spy = mocker.spy(qcut.cut_circuit, "expand_fn")
-        qcut.cut_circuit(tape, device_wires=[0])
+        spy = mocker.spy(qcut, "_qcut_expand_fn")
+
+        kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+        cut_transform(tape, device_wires=[0], **kwargs)
+
         spy.assert_called_once()
 
-    def test_expansion(self, mocker):
+    @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
+    def test_expansion(self, mocker, cut_transform, measurement):
         """Test if expansion occurs if WireCut operations are present in a nested tape"""
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.3, wires=0)
             with qml.tape.QuantumTape() as _:
                 qml.WireCut(wires=0)
             qml.RY(0.4, wires=0)
-            qml.expval(qml.PauliZ(0))
+            qml.apply(measurement)
 
-        spy = mocker.spy(qcut.cut_circuit, "expand_fn")
-        qcut.cut_circuit(tape, device_wires=[0])
+        spy = mocker.spy(qcut, "_qcut_expand_fn")
+
+        kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+        cut_transform(tape, device_wires=[0], **kwargs)
 
         assert spy.call_count == 2
 
-    def test_expansion_error(self):
+    @pytest.mark.parametrize("cut_transform, measurement", transform_measurement_pairs)
+    def test_expansion_error(self, cut_transform, measurement):
         """Test if a ValueError is raised if expansion continues beyond the maximum depth"""
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.3, wires=0)
@@ -3665,10 +3678,11 @@ class TestCutCircuitExpansion:
                 with qml.tape.QuantumTape() as __:
                     qml.WireCut(wires=0)
             qml.RY(0.4, wires=0)
-            qml.expval(qml.PauliZ(0))
+            qml.apply(measurement)
 
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
-            qcut.cut_circuit(tape, device_wires=[0], max_depth=1)
+            kwargs = {"shots": 10} if measurement.return_type is qml.measurements.Sample else {}
+            cut_transform(tape, device_wires=[0], **kwargs)
 
     def test_expansion_ttn(self, mocker):
         """Test if wire cutting is compatible with the tree tensor network operation"""
@@ -3695,11 +3709,38 @@ class TestCutCircuitExpansion:
         qnode = qml.QNode(circuit, dev_big)
         qnode_cut = qcut.cut_circuit(qml.QNode(circuit, dev_cut))
 
-        spy = mocker.spy(qcut.cut_circuit, "expand_fn")
+        spy = mocker.spy(qcut, "_qcut_expand_fn")
         res = qnode_cut(template_weights)
         assert spy.call_count == 2
 
         assert np.isclose(res, qnode(template_weights))
+
+    def test_expansion_mc_ttn(self, mocker):
+        """Test if wire cutting is compatible with the tree tensor network operation"""
+
+        def block(weights, wires):
+            qml.CNOT(wires=[wires[0], wires[1]])
+            qml.RY(weights[0], wires=wires[0])
+            qml.RY(weights[1], wires=wires[1])
+            qml.WireCut(wires=wires[1])
+
+        n_wires = 4
+        n_block_wires = 2
+        n_params_block = 2
+        n_blocks = qml.TTN.get_n_blocks(range(n_wires), n_block_wires)
+        template_weights = [[0.1, -0.3]] * n_blocks
+
+        dev_cut = qml.device("default.qubit", wires=2, shots=10)
+
+        def circuit(template_weights):
+            qml.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)
+            return qml.sample(wires=[n_wires - 1])
+
+        qnode_cut = qcut.cut_circuit_mc(qml.QNode(circuit, dev_cut))
+
+        spy = mocker.spy(qcut, "_qcut_expand_fn")
+        qnode_cut(template_weights)
+        assert spy.call_count == 2
 
 
 class TestCutStrategy:
