@@ -3874,14 +3874,14 @@ class TestCutStrategy:
         if imbalance_tolerance is not None:
             assert all([kwargs["imbalance"] <= imbalance_tolerance for kwargs in all_cut_kwargs])
         if num_fragments_probed is not None:
-            assert {v['num_fragments'] for v in all_cut_kwargs} == (
+            assert {v["num_fragments"] for v in all_cut_kwargs} == (
                 set(range(num_fragments_probed[0], num_fragments_probed[-1] + 1))
                 if isinstance(num_fragments_probed, (list, tuple))
                 else {num_fragments_probed}
             )
         elif exhausive:
             num_tape_gates = sum(not isinstance(n, qcut.WireCut) for n in tape_dag.nodes)
-            assert {v['num_fragments'] for v in all_cut_kwargs} == set(range(2, num_tape_gates+1))
+            assert {v["num_fragments"] for v in all_cut_kwargs} == set(range(2, num_tape_gates + 1))
 
     @pytest.mark.parametrize(
         "num_fragments_probed", [1, qcut.CutStrategy.HIGH_NUM_FRAGMENTS + 1, (2, 100)]
@@ -4175,6 +4175,7 @@ class TestKaHyPar:
             qcut.CutStrategy(qml.device("default.qubit", wires=3)),
             qcut.CutStrategy(max_free_wires=4),
             qcut.CutStrategy(max_free_wires=2),  # extreme constraint forcing exhausive probing.
+            qcut.CutStrategy(max_free_wires=2, num_fragments_probed=5)  # impossible to cut
         ],
     )
     def test_find_and_place_cuts(self, with_manual_cut, cut_strategy):
@@ -4209,6 +4210,14 @@ class TestKaHyPar:
                 replace_wire_cuts=True,
                 seed=self.seed,
             )
+
+        elif cut_strategy.num_fragments_probed:
+            with pytest.raises(ValueError):
+                cut_graph = qcut.find_and_place_cuts(
+                    graph=graph,
+                    cut_strategy=cut_strategy,
+                )
+            return
 
         else:
             cut_graph = qcut.find_and_place_cuts(
@@ -4251,3 +4260,157 @@ class TestKaHyPar:
 
             expected_fragment_sizes = [7, 11] if with_manual_cut else [8, 10]
             assert expected_fragment_sizes == [f.number_of_nodes() for f in frags]
+    
+    def test_no_cut_found(self):
+        """Test raise when no cut can be found."""
+
+
+
+class TestAutoCutCircuit:
+    """Integration tests for automitic-cutting-enabled `cut_circuit` transform.
+    Mostly borrowing tests cases from ``TestCutCircuitTransform``.
+    """
+
+    @pytest.mark.parametrize("max_depth", [0, 1])
+    @pytest.mark.parametrize("free_wires", [3, 4])
+    def test_complicated_circuit(self, max_depth, free_wires, mocker):
+        """
+        Tests that the full automatic circuit cutting pipeline returns the correct value and
+        gradient for a complex circuit with multiple wire cut scenarios. The circuit is the
+        uncut version of the circuit in ``TestCutCircuitTransform.test_complicated_circuit``.
+        Note auto cut happens after expansion.
+
+        0: ──BasisState(M0)─╭C───RX─╭C──╭C────────────────────┤
+        1: ─────────────────╰X──────╰X──╰Z────────────────╭RX─┤ ╭<Z@Z@Z>
+        2: ──H──────────────╭C─────────────╭RY────────╭RY─│───┤ ├<Z@Z@Z>
+        3: ─────────────────╰RY──H──╭C───H─╰C──╭RY──H─╰C──│───┤ ╰<Z@Z@Z>
+        4: ─────────────────────────╰RY──H─────╰C─────────╰C──┤
+        """
+        pytest.importorskip("kahypar")
+
+        dev_original = qml.device("default.qubit", wires=5)
+
+        # We need a 4-qubit device to account for mid-circuit measurements
+        dev_cut = qml.device("default.qubit", wires=free_wires)
+
+        def two_qubit_unitary(param, wires):
+            qml.Hadamard(wires=[wires[0]])
+            qml.CRY(param, wires=[wires[0], wires[1]])
+
+        def f(params):
+            qml.BasisState(np.array([1]), wires=[0])
+
+            qml.CNOT(wires=[0, 1])
+            qml.RX(params[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.CZ(wires=[0, 1])
+
+            two_qubit_unitary(params[1], wires=[2, 3])
+            two_qubit_unitary(params[2] ** 2, wires=[3, 4])
+            two_qubit_unitary(np.sin(params[3]), wires=[3, 2])
+            two_qubit_unitary(np.sqrt(params[4]), wires=[4, 3])
+            two_qubit_unitary(np.cos(params[1]), wires=[3, 2])
+            qml.CRX(params[2], wires=[4, 1])
+
+            return qml.expval(qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3))
+
+        params = np.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
+
+        circuit = qml.QNode(f, dev_original)
+        cut_circuit = qcut.cut_circuit(qml.QNode(f, dev_cut), auto_cutter=True, max_depth=max_depth)
+
+        res_expected = circuit(params)
+        grad_expected = qml.grad(circuit)(params)
+
+        spy = mocker.spy(qcut, "qcut_processing_fn")
+        res = cut_circuit(params)
+        spy.assert_called_once()
+        grad = qml.grad(cut_circuit)(params)
+
+        assert np.isclose(res, res_expected)
+        assert np.allclose(grad, grad_expected)
+
+    @flaky(max_runs=3)
+    @pytest.mark.parametrize("shots", [None, int(1e7)])
+    def test_standard_circuit(self, mocker, shots):
+        """
+        Tests that the full circuit cutting pipeline returns the correct value for a typical
+        scenario. The circuit is the uncut version of the circuit in
+        ``TestCutCircuitTransform.test_standard_circuit``:
+
+        0: ─╭U(M1)───────────────────╭U(M4)─┤ ╭<Z@X>
+        1: ─╰U(M1)─────╭U(M2)────────╰U(M4)─┤ │
+        2: ─╭U(M0)─────╰U(M2)─╭U(M3)────────┤ │
+        3: ─╰U(M0)────────────╰U(M3)────────┤ ╰<Z@X>
+        """
+        pytest.importorskip("kahypar")
+
+        dev_original = qml.device("default.qubit", wires=4)
+
+        # We need a 3-qubit device
+        dev_cut = qml.device("default.qubit", wires=3, shots=shots)
+        us = [unitary_group.rvs(2**2, random_state=i) for i in range(5)]
+
+        def f():
+            qml.QubitUnitary(us[0], wires=[0, 1])
+            qml.QubitUnitary(us[1], wires=[2, 3])
+
+            qml.QubitUnitary(us[2], wires=[1, 2])
+
+            qml.QubitUnitary(us[3], wires=[0, 1])
+            qml.QubitUnitary(us[4], wires=[2, 3])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(3))
+
+        circuit = qml.QNode(f, dev_original)
+        cut_circuit = qcut.cut_circuit(qml.QNode(f, dev_cut), auto_cutter=True)
+
+        res_expected = circuit()
+
+        spy = mocker.spy(qcut, "qcut_processing_fn")
+        res = cut_circuit()
+        spy.assert_called_once()
+
+        atol = 1e-2 if shots else 1e-8
+        assert np.isclose(res, res_expected, atol=atol)
+
+    def test_circuit_with_disconnected_components(self):
+        """Tests if a circuit that is fragmented into subcircuits such that some of the subcircuits
+        are disconnected from the final terminal measurements is executed correctly after automatic
+        cutting. """
+        pytest.importorskip("kahypar")
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.transforms.cut_circuit(auto_cutter=True)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            # qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RY(x**2, wires=2)
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+        x = 0.4
+        res = circuit(x)
+        assert np.allclose(res, np.cos(x))
+
+    def test_circuit_with_trivial_wire_cut(self):
+        """Tests that a circuit with a trivial wire cut (not separating the circuit into
+        fragments) is executed correctly after automatic cutting."""
+        pytest.importorskip("kahypar")
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.transforms.cut_circuit(auto_cutter=True)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(wires=[0]))
+
+        x = 0.4
+        res = circuit(x)
+        assert np.allclose(res, np.cos(x))

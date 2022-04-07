@@ -1925,7 +1925,6 @@ def _qcut_expand_fn(
 
     Expands operations until reaching a depth that includes :class:`~.WireCut` operations.
     """
-    # pylint: disable=unused-argument
 
     for op in tape.operations:
         if isinstance(op, WireCut):
@@ -1948,11 +1947,12 @@ def _cut_circuit_expand(
     use_opt_einsum: bool = False,
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
+    auto_cutter: Union[bool, Callable] = False,
 ):
     """Main entry point for expanding operations until reaching a depth that
     includes :class:`~.WireCut` operations."""
     # pylint: disable=unused-argument
-    return _qcut_expand_fn(tape, max_depth)
+    return _qcut_expand_fn(tape, max_depth, auto_cutter)
 
 
 def _cut_circuit_mc_expand(
@@ -1961,11 +1961,12 @@ def _cut_circuit_mc_expand(
     device_wires: Optional[Wires] = None,
     classical_processing_fn: Optional[callable] = None,
     max_depth: int = 1,
+    auto_cutter: Union[bool, Callable] = False,
 ):
     """Main entry point for expanding operations in sample-based tapes until
     reaching a depth that includes :class:`~.WireCut` operations."""
     # pylint: disable=unused-argument
-    return _qcut_expand_fn(tape, max_depth)
+    return _qcut_expand_fn(tape, max_depth, auto_cutter)
 
 
 cut_circuit.expand_fn = _cut_circuit_expand
@@ -2334,22 +2335,22 @@ class CutStrategy:
         min_free_wires = self.min_free_wires or max_free_wires
         min_free_gates = self.min_free_gates or max_free_gates
 
-        if exhausive:
-            k_lb, k_ub = 2, num_tape_gates
+        # The lower bound of k corresponds to executing each fragment on the largest available
+        # device.
+        k_lb = 1 + max(
+            (num_tape_wires - 1) // max_free_wires,  # wire limited
+            (num_tape_gates - 1) // max_free_gates,  # gate limited
+        )
+        # The upper bound of k corresponds to executing each fragment on the smallest available
+        # device.
+        k_ub = 1 + max(
+            (num_tape_wires - 1) // min_free_wires,  # wire limited
+            (num_tape_gates - 1) // min_free_gates,  # gate limited
+        )
 
-        else:
-            # The lower bound of k corresponds to executing each fragment on the largest available
-            # device.
-            k_lb = 1 + max(
-                (num_tape_wires - 1) // max_free_wires,  # wire limited
-                (num_tape_gates - 1) // max_free_gates,  # gate limited
-            )
-            # The upper bound of k corresponds to executing each fragment on the smallest available
-            # device.
-            k_ub = 1 + max(
-                (num_tape_wires - 1) // min_free_wires,  # wire limited
-                (num_tape_gates - 1) // min_free_gates,  # gate limited
-            )
+        if exhausive:
+            k_lb = max(2, k_lb)
+            k_ub = num_tape_gates
 
         # The global imbalance tolerance, if not given, defaults to a very loose upper bound:
         imbalance_tolerance = k_ub if self.imbalance_tolerance is None else self.imbalance_tolerance
