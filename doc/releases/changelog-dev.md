@@ -169,6 +169,40 @@
     >>> results.shape
     (123, 2)
     ```
+    
+    Using the Monte Carlo approach of [Peng et. al](https://arxiv.org/abs/1904.00102), the
+    `cut_circuit_mc` transform also supports returning sample-based expectation values of
+    observables that are diagonal in the computational basis, as shown below for a `ZZ` measurement
+    on wires `0` and `2`:
+    
+    ```python
+    dev = qml.device("default.qubit", wires=2, shots=1000)
+
+    def observable(bitstring):
+        return (-1) ** np.sum(bitstring)    
+    
+    @qml.cut_circuit_mc(classical_processing_fn=observable)
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(0.89, wires=0)
+        qml.RY(0.5, wires=1)
+        qml.RX(1.3, wires=2)
+
+        qml.CNOT(wires=[0, 1])
+        qml.WireCut(wires=1)
+        qml.CNOT(wires=[1, 2])
+
+        qml.RX(x, wires=0)
+        qml.RY(0.7, wires=1)
+        qml.RX(2.3, wires=2)
+        return qml.sample(wires=[0, 2])
+    ```
+    
+    We can now approximate the expectation value of the observable using
+    
+    ```pycon
+    >>> circuit(x)
+    ```
 
   - An automatic graph partitioning method `qcut.kahypar_cut()` has been implemented for cutting
     arbitrary tape-converted graphs using the general purpose graph partitioning framework
