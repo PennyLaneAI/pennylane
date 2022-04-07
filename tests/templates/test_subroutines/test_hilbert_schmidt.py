@@ -16,7 +16,6 @@ Unit tests for the qft template.
 """
 import pytest
 
-import numpy as np
 import pennylane as qml
 
 
@@ -140,6 +139,77 @@ class TestHilbertSchmidt:
             assert i.data == j.data
             assert i.wires == j.wires
 
+    def test_v_not_quantum_function(self):
+        """Test that we cannot pass a non quantum function to the HS operation"""
+
+        with qml.tape.QuantumTape(do_queue=False) as U:
+            qml.Hadamard(wires=0)
+
+        with qml.tape.QuantumTape(do_queue=False) as v_circuit:
+            qml.RZ(0.1, wires=1)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="The argument v_function must be a callable quantum " "function.",
+        ):
+            qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=U)
+
+    def test_u_v_same_number_of_wires(self):
+        """Test that U and V must have the same number of wires."""
+
+        with qml.tape.QuantumTape(do_queue=False) as U:
+            qml.CNOT(wires=[0, 1])
+
+        def v_circuit(params):
+            qml.RZ(params[0], wires=1)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="U and V must have the same number of wires."
+        ):
+            qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[2], u_tape=U)
+
+    def test_u_quantum_tape(self):
+        """Test that U must be a quantum tape."""
+
+        def u_circuit():
+            qml.CNOT(wires=[0, 1])
+
+        def v_circuit(params):
+            qml.RZ(params[0], wires=1)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="The argument u_tape must be a QuantumTape."
+        ):
+            qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=u_circuit)
+
+    def test_v_wires(self):
+        """Test that all wires in V are also in v_wires."""
+
+        with qml.tape.QuantumTape(do_queue=False) as U:
+            qml.Hadamard(wires=0)
+
+        def v_circuit(params):
+            qml.RZ(params[0], wires=2)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="All wires in v_tape must be in v_wires."
+        ):
+            qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=U)
+
+    def test_distinct_wires(self):
+        """Test that U and V have distinct wires."""
+
+        with qml.tape.QuantumTape(do_queue=False) as U:
+            qml.Hadamard(wires=0)
+
+        def v_circuit(params):
+            qml.RZ(params[0], wires=0)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="u_tape and v_tape must act on distinct wires."
+        ):
+            qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[0], u_tape=U)
+
 
 class TestLocalHilbertSchmidt:
     """Tests for the Local Hilbert Schmidt template."""
@@ -259,3 +329,74 @@ class TestLocalHilbertSchmidt:
             assert i.name == j.name
             assert i.data == j.data
             assert i.wires == j.wires
+
+    def test_v_not_quantum_function(self):
+        """Test that we cannot pass a non quantum function to the HS operation"""
+
+        with qml.tape.QuantumTape(do_queue=False) as U:
+            qml.Hadamard(wires=0)
+
+        with qml.tape.QuantumTape(do_queue=False) as v_circuit:
+            qml.RZ(0.1, wires=1)
+
+        with pytest.raises(
+            qml.QuantumFunctionError,
+            match="The argument v_function must be a callable quantum " "function.",
+        ):
+            qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=U)
+
+    def test_u_v_same_number_of_wires(self):
+        """Test that U and V must have the same number of wires."""
+
+        with qml.tape.QuantumTape(do_queue=False) as U:
+            qml.CNOT(wires=[0, 1])
+
+        def v_circuit(params):
+            qml.RZ(params[0], wires=1)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="U and V must have the same number of wires."
+        ):
+            qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[2], u_tape=U)
+
+    def test_u_quantum_tape(self):
+        """Test that U must be a quantum tape."""
+
+        def u_circuit():
+            qml.CNOT(wires=[0, 1])
+
+        def v_circuit(params):
+            qml.RZ(params[0], wires=1)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="The argument u_tape must be a QuantumTape."
+        ):
+            qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=u_circuit)
+
+    def test_v_wires(self):
+        """Test that all wires in V are also in v_wires."""
+
+        with qml.tape.QuantumTape(do_queue=False) as U:
+            qml.Hadamard(wires=0)
+
+        def v_circuit(params):
+            qml.RZ(params[0], wires=2)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="All wires in v_tape must be in v_wires."
+        ):
+            qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u_tape=U)
+
+    def test_distinct_wires(self):
+        """Test that U and V have distinct wires."""
+
+        with qml.tape.QuantumTape(do_queue=False) as U:
+            qml.Hadamard(wires=0)
+
+        def v_circuit(params):
+            qml.RZ(params[0], wires=0)
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="u_tape and v_tape must act on distinct wires."
+        ):
+            qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[0], u_tape=U)
