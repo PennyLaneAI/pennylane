@@ -32,8 +32,8 @@ def import_of():
         import openfermion, openfermionpyscf
     except ImportError as Error:
         raise ImportError(
-            "This feature requires openfermion and openfermionpyscf. "
-            "They can be installed with: pip install openfermion openfermionpyscf."
+            "This feature requires openfermionpyscf. "
+            "It can be installed with: pip install openfermionpyscf."
         ) from Error
 
     return openfermion, openfermionpyscf
