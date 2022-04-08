@@ -6,6 +6,7 @@ import pytest
 
 from pennylane import qchem
 
+# TODO: Bring importorskip inside relevant tests.
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
 

@@ -8,6 +8,7 @@ from pennylane.ops import Hamiltonian
 
 import numpy as np
 
+# TODO: Bring importorskip inside relevant tests.
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
