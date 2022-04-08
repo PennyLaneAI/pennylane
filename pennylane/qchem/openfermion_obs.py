@@ -14,7 +14,7 @@
 """This module contains functions to construct many-body observables whose expectation
 values can be used to simulate molecular properties.
 """
-# pylint: disable=too-many-arguments, too-few-public-methods, too-many-branches,
+# pylint: disable=too-many-arguments, too-few-public-methods, too-many-branches, unused-variable
 import os
 
 import numpy as np
