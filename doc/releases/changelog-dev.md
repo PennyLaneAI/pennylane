@@ -147,6 +147,7 @@
 * Wires can be passed as the final argument to an `Operator`, instead of requiring
   the wires to be explicitly specified with keyword `wires`. This functionality already
   existed for `Observable`'s, but now extends to all `Operator`'s.
+  [(#2432)](https://github.com/PennyLaneAI/pennylane/pull/2432)
 
   >>> qml.S(0)
   S(wires=[0])
