@@ -82,6 +82,20 @@ def kron(*args):
         return np.kron(args[0], kron(*args[1:]))
 
 
+def fn(x):
+    """
+    Classical processing function for MC circuit cutting
+    """
+    if x[0] == 0 and x[1] == 0:
+        return 1
+    if x[0] == 0 and x[1] == 1:
+        return -1
+    if x[0] == 1 and x[1] == 0:
+        return -1
+    if x[0] == 1 and x[1] == 1:
+        return 1
+
+
 # tape containing mid-circuit measurements
 with qml.tape.QuantumTape() as mcm_tape:
     qml.Hadamard(wires=0)
@@ -2020,16 +2034,6 @@ class TestMCPostprocessing:
         ]
         convert_fixed_samples = [qml.math.convert_like(fs, lib.ones(1)) for fs in fixed_samples]
 
-        def fn(x):
-            if x[0] == 0 and x[1] == 0:
-                return 1
-            if x[0] == 0 and x[1] == 1:
-                return -1
-            if x[0] == 1 and x[1] == 0:
-                return -1
-            if x[0] == 1 and x[1] == 1:
-                return 1
-
         fixed_settings = np.array([[0, 7, 1], [5, 7, 2], [1, 0, 3], [5, 1, 1]])
 
         spy_prod = mocker.spy(np, "prod")
@@ -2165,19 +2169,9 @@ class TestCutCircuitMCTransform:
             qml.RX(2.3, wires=2)
             return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=2))
 
-        def fn(x):
-            if x[0] == 0 and x[1] == 0:
-                return 1
-            if x[0] == 0 and x[1] == 1:
-                return -1
-            if x[0] == 1 and x[1] == 0:
-                return -1
-            if x[0] == 1 and x[1] == 1:
-                return 1
-
         dev = qml.device("default.qubit", wires=2, shots=10000)
 
-        @qml.cut_circuit_mc(classical_processing_fn=fn)
+        @qml.cut_circuit_mc(fn)
         @qml.qnode(dev)
         def circuit(v):
             qml.RX(v, wires=0)
@@ -2467,6 +2461,221 @@ class TestCutCircuitMCTransform:
         res = cut_circuit(v)
         assert res.shape == (shots, 2)
         assert type(res) == np.ndarray
+
+    @pytest.mark.parametrize(
+        "interface_import,interface",
+        [
+            ("autograd.numpy", "autograd"),
+            ("tensorflow", "tensorflow"),
+            ("torch", "torch"),
+            ("jax.numpy", "jax"),
+        ],
+    )
+    def test_all_interfaces_samples(self, interface_import, interface):
+        """
+        Tests that `cut_circuit_mc` returns the correct type of sample
+        output value in all interfaces
+        """
+        lib = pytest.importorskip(interface_import)
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc
+        @qml.qnode(dev, interface=interface)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, lib.ones(1))
+
+        res = cut_circuit(convert_input)
+
+        assert res.shape == (shots, 2)
+        assert isinstance(res, type(convert_input))
+
+    @pytest.mark.parametrize(
+        "interface_import,interface",
+        [
+            ("autograd.numpy", "autograd"),
+            ("tensorflow", "tensorflow"),
+            ("torch", "torch"),
+            ("jax.numpy", "jax"),
+        ],
+    )
+    def test_all_interfaces_mc(self, interface_import, interface):
+        """
+        Tests that `cut_circuit_mc` returns the correct type of expectation
+        value output in all interfaces
+        """
+        lib = pytest.importorskip(interface_import)
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc(fn)
+        @qml.qnode(dev, interface=interface)
+        def cut_circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        convert_input = qml.math.convert_like(v, lib.ones(1))
+        res = cut_circuit(convert_input)
+
+        assert isinstance(res, type(convert_input))
+
+    def test_mc_with_mid_circuit_measurement(self, mocker):
+        """Tests the full sample-based circuit cutting pipeline successfully returns a
+        single value for a circuit that contains mid-circuit
+        measurements and terminal sample measurements using the `cut_circuit_mc`
+        transform."""
+
+        shots = 10
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.cut_circuit_mc(fn)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.RX(np.sin(x) ** 2, wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(wires=[0, 1])
+
+        spy = mocker.spy(qcut, "qcut_processing_fn_mc")
+        x = np.array(0.531, requires_grad=True)
+        res = circuit(x)
+
+        spy.assert_called_once()
+        assert res.size == 1
+
+    def test_mc_circuit_with_disconnected_components(self, mocker):
+        """Tests if a sample-based circuit that is fragmented into subcircuits such
+        that some of the subcircuits are disconnected from the final terminal sample
+        measurements is executed successfully"""
+        shots = 10
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+
+        @qml.cut_circuit_mc(fn)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.RY(x**2, wires=2)
+            return qml.sample(wires=[0, 1])
+
+        x = 0.4
+        res = circuit(x)
+        assert res.size == 1
+
+    def test_mc_circuit_with_trivial_wire_cut(self, mocker):
+        """Tests that a sample-based circuit with a trivial wire cut (not
+        separating the circuit into fragments) is executed successfully"""
+        shots = 10
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.cut_circuit_mc(fn)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(wires=[0, 1])
+
+        spy = mocker.spy(qcut, "qcut_processing_fn_mc")
+
+        x = 0.4
+        res = circuit(x)
+        assert res.size == 1
+        assert len(spy.call_args[0][0]) == shots
+        assert len(spy.call_args[0]) == 1
+
+    def test_mc_complicated_circuit(self, mocker):
+        """
+        Tests that the full sample-based circuit cutting pipeline successfully returns a
+        value for a complex circuit with multiple wire cut scenarios. The circuit is cut into
+        fragments of at most 2 qubits and is drawn below:
+
+        0: ──X──//─╭C───//──RX─╭C───//─╭C──╭//────────────────────┤
+        1: ────────╰X──────────╰X───//─╰Z──╰//────────────────╭RX─┤ ╭Sample
+        2: ──H─╭C──────────────────────╭RY────────────────╭RY─│───┤ ├Sample
+        3: ────╰RY──//──H──╭C───//──H──╰C───//─╭RY──//──H─╰C──│───┤ ╰Sample
+        4: ────────────────╰RY──H──────────────╰C─────────────╰C──┤
+        """
+
+        # We need a 4-qubit device to account for mid-circuit measurements
+        shots = 10
+        dev = qml.device("default.qubit", wires=4, shots=shots)
+
+        def two_qubit_unitary(param, wires):
+            qml.Hadamard(wires=[wires[0]])
+            qml.CRY(param, wires=[wires[0], wires[1]])
+
+        @qml.cut_circuit_mc(fn)
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.BasisState(np.array([1]), wires=[0])
+            qml.WireCut(wires=0)
+
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=0)
+            qml.RX(params[0], wires=0)
+            qml.CNOT(wires=[0, 1])
+
+            qml.WireCut(wires=0)
+            qml.WireCut(wires=1)
+
+            qml.CZ(wires=[0, 1])
+            qml.WireCut(wires=[0, 1])
+
+            two_qubit_unitary(params[1], wires=[2, 3])
+            qml.WireCut(wires=3)
+            two_qubit_unitary(params[2] ** 2, wires=[3, 4])
+            qml.WireCut(wires=3)
+            two_qubit_unitary(np.sin(params[3]), wires=[3, 2])
+            qml.WireCut(wires=3)
+            two_qubit_unitary(np.sqrt(params[4]), wires=[4, 3])
+            qml.WireCut(wires=3)
+            two_qubit_unitary(np.cos(params[1]), wires=[3, 2])
+            qml.CRX(params[2], wires=[4, 1])
+
+            return qml.sample(wires=[1, 2, 3])
+
+        spy = mocker.spy(qcut, "qcut_processing_fn_mc")
+
+        params = np.array([0.4, 0.5, 0.6, 0.7, 0.8], requires_grad=True)
+        res = circuit(params)
+
+        spy.assert_called_once()
+        assert res.size == 1
 
 
 class TestContractTensors:
