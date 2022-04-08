@@ -2616,6 +2616,7 @@ class TestCutCircuitMCTransform:
         res = circuit(x)
         assert res.size == 1
         assert len(spy.call_args[0][0]) == shots
+        assert len(spy.call_args[0]) == 1
 
     def test_mc_complicated_circuit(self, mocker):
         """
