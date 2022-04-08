@@ -950,6 +950,8 @@ def cut_circuit_mc(
     device_wires: Optional[Wires] = None,
     classical_processing_fn: Optional[callable] = None,
     max_depth: int = 1,
+    auto_cutter: Union[bool, Callable] = False,
+    **kwargs,
 ) -> Tuple[Tuple[QuantumTape], Callable]:
     """
     Cut up a circuit containing sample measurements into smaller fragments using a
@@ -976,6 +978,13 @@ def cut_circuit_mc(
             If not supplied, the transform will output samples.
         max_depth (int): The maximum depth used to expand the circuit while searching for wire cuts.
             Only applicable when transforming a QNode.
+        auto_cutter (Union[bool, Callable]): toggle for enabling automatic cutting with the default
+            :func:`kahypar_cut` partition method. Can also pass a graph partitioning function that
+            takes an input graph and returns a list of edges to be cut based on a given set of
+            constraints and objective. The default :func:`kahypar_cut` function requires KaHyPar to
+            be installed using ``pip install kahypar`` for Linux and Mac users or visiting the
+            instructions `here <https://kahypar.org>`__ to compile from source for Windows users.
+        kwargs: Additional keyword arguments to be passed to a callable ``auto_cutter`` argument.
 
     Returns:
         Callable: Function which accepts the same arguments as the QNode.
@@ -1046,6 +1055,7 @@ def cut_circuit_mc(
             ~transforms.qcut.expand_fragment_tapes_mc
             ~transforms.qcut.qcut_processing_fn_sample
             ~transforms.qcut.qcut_processing_fn_mc
+            ~transforms.qcut.find_and_place_cuts
 
         The following shows how these elementary steps are combined as part of the
         ``cut_circuit_mc()`` transform.
@@ -1191,7 +1201,7 @@ def cut_circuit_mc(
         ... )
         array(4.)
     """
-    # pylint: disable=unused-argument
+    # pylint: disable=unused-argument, too-many-arguments
 
     if len(tape.measurements) != 1:
         raise ValueError(
@@ -1214,6 +1224,18 @@ def cut_circuit_mc(
             )
 
     g = tape_to_graph(tape)
+
+    if auto_cutter is True or callable(auto_cutter):
+
+        cut_strategy = CutStrategy(max_free_wires=len(device_wires))
+
+        g = find_and_place_cuts(
+            graph=g,
+            cut_method=auto_cutter if callable(auto_cutter) else kahypar_cut,
+            cut_strategy=cut_strategy,
+            **kwargs,
+        )
+
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f) for f in fragments]

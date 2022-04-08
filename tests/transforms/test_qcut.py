@@ -4426,3 +4426,90 @@ class TestAutoCutCircuit:
         x = 0.4
         res = circuit(x)
         assert np.allclose(res, np.cos(x))
+
+    @flaky(max_runs=3)
+    def test_cut_circuit_mc_expval(self):
+        """
+        Tests that a circuit containing sampling measurements can be cut and
+        recombined to give the correct expectation value
+        """
+
+        dev_sim = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev_sim)
+        def target_circuit(v):
+            qml.RX(v, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(v, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=2))
+
+        def fn(x):
+            if x[0] == 0 and x[1] == 0:
+                return 1
+            if x[0] == 0 and x[1] == 1:
+                return -1
+            if x[0] == 1 and x[1] == 0:
+                return -1
+            if x[0] == 1 and x[1] == 1:
+                return 1
+
+        dev = qml.device("default.qubit", wires=2, shots=10000)
+
+        @qml.cut_circuit_mc(classical_processing_fn=fn, auto_cutter=True)
+        @qml.qnode(dev)
+        def circuit(v):
+            qml.RX(v, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(v, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        cut_res_mc = circuit(v)
+
+        target = target_circuit(v)
+        assert np.isclose(cut_res_mc, target, atol=0.1)  # not guaranteed to pass each time
+
+    def test_cut_circuit_mc_sample(self):
+        """
+        Tests that a circuit containing sampling measurements can be cut and
+        postprocessed to return bitstrings of the original circuit size.
+        """
+
+        dev = qml.device("default.qubit", wires=3, shots=100)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
+
+            qml.CNOT(wires=[0, 1])
+            qml.CNOT(wires=[1, 2])
+
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
+
+        v = 0.319
+        target = circuit(v)
+
+        cut_circuit_bs = qcut.cut_circuit_mc(circuit, device_wires=Wires([1, 2]), auto_cutter=True)
+        cut_res_bs = cut_circuit_bs(v)
+
+        assert cut_res_bs.shape == target.shape
+        assert type(cut_res_bs) == type(target)
