@@ -204,7 +204,9 @@ class AmplitudeEmbedding(Operation):
             # pad
             if pad_with is not None and n_features < 2 ** len(wires):
                 padding = [pad_with] * (2 ** len(wires) - n_features)
-                if hasattr(feature_set, "device") and feature_set.device.type == "cuda":
+                if (
+                    hasattr(feature_set, "device") and feature_set.device.type == "cuda"
+                ):  # pragma: no cover
                     ## Torch tensor, send to same GPU
                     dat_type = type(feature_set)
                     padding = dat_type(padding).to(feature_set.device)

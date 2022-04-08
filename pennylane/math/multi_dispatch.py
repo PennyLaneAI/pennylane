@@ -252,10 +252,10 @@ def concatenate(values, axis=0, like=None):
         if axis is None:
             # flatten and then concatenate zero'th dimension
             # to reproduce numpy's behaviour
-            values = [np.flatten(torch.as_tensor(t, device=torch.device(device))) for t in values]
+            values = [np.flatten(torch.as_tensor(t, device=torch.device(device))) for t in values] # pragma: no cover
             axis = 0
         else:
-            values = [torch.as_tensor(t, device=torch.device(device)) for t in values]
+            values = [torch.as_tensor(t, device=torch.device(device)) for t in values] # pragma: no cover
 
     if like == "tensorflow" and axis is None:
         # flatten and then concatenate zero'th dimension
