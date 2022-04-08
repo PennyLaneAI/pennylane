@@ -320,17 +320,3 @@ def device(name, *args, **kwargs):
 def version():
     """Returns the PennyLane version number."""
     return __version__
-
-
-# add everything as long as it's not a module and not prefixed with _
-_all = sorted(
-    [
-        name
-        for name, function in globals().items()
-        if not (name.startswith("_") or isinstance(function, types.ModuleType))
-    ]
-)
-
-
-def __dir__():  # pragma: no cover
-    return _all
