@@ -295,6 +295,19 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug with the padding capability of `AmplitudeEmbedding` where the
+  inputs are on the GPU.
+  [(#2431)](https://github.com/PennyLaneAI/pennylane/pull/2431)
+
+* Fixes a bug where observables were not considered when determining the use of
+  the `jax-jit` interface.
+  [(#2427)](https://github.com/PennyLaneAI/pennylane/pull/2427)
+
+* Fixes a bug where computing statistics for a relatively few number of shots
+  (e.g., `shots=10`), an error arose due to indexing into an array using a
+  `DeviceArray`.
+  [(#2427)](https://github.com/PennyLaneAI/pennylane/pull/2427)
+
 * PennyLane Lightning version in Docker container is pulled from latest wheel-builds.
   [(#2416)](https://github.com/PennyLaneAI/pennylane/pull/2416)
 
@@ -339,5 +352,6 @@ This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
 
-Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
-Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
+Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri,
+Christina Lee, Romain Moyard, Zeyue Niu, Lee James O'Riordan, Jay Soni, Antal
+Száva, Maurice Weber, David Wierichs.
