@@ -4433,6 +4433,7 @@ class TestAutoCutCircuit:
         Tests that a circuit containing sampling measurements can be cut and
         recombined to give the correct expectation value
         """
+        pytest.importorskip("kahypar")
 
         dev_sim = qml.device("default.qubit", wires=3)
 
@@ -4488,6 +4489,7 @@ class TestAutoCutCircuit:
         Tests that a circuit containing sampling measurements can be cut and
         postprocessed to return bitstrings of the original circuit size.
         """
+        pytest.importorskip("kahypar")
 
         dev = qml.device("default.qubit", wires=3, shots=100)
 
