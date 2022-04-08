@@ -144,6 +144,15 @@
 
 <h3>Improvements</h3>
 
+* Wires can be passed as the final argument to an `Operator`, instead of requiring
+  the wires to be explicitly specified with keyword `wires`. This functionality already
+  existed for `Observable`'s, but now extends to all `Operator`'s.
+
+  >>> qml.S(0)
+  S(wires=[0])
+  >>> qml.CNOT((0,1))
+  CNOT(wires=[0, 1])
+
 * The parameter-shift Hessian can now be computed for arbitrary
   operations that support the general parameter-shift rule for
   gradients, using `qml.gradients.param_shift_hessian`

@@ -878,28 +878,25 @@ class Operator(abc.ABC):
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
 
+        # extract the arguments
         if wires is None:
-            raise ValueError(f"Must specify the wires that {self.name} acts on")
-
-        self._num_params = len(params)
-        # Check if the expected number of parameters coincides with the one received.
-        # This is always true for the default `Operator.num_params` property, but
-        # subclasses may overwrite it to define a fixed expected value.
-        if len(params) != self.num_params:
+            if len(params) != (self.num_params+1):
+                raise ValueError(f"Must specify the wires that {type(self).__name__} acts on")
+            wires = params[-1]
+            params = params[:-1]
+        elif len(params) != self.num_params:
             raise ValueError(
                 f"{self.name}: wrong number of parameters. "
                 f"{len(params)} parameters passed, {self.num_params} expected."
             )
 
-        if isinstance(wires, Wires):
-            self._wires = wires
-        else:
-            self._wires = Wires(wires)  #: Wires: wires on which the operator acts
+        self._num_params = len(params)
+
+        self._wires = wires if isinstance(wires, Wires) else Wires(wires)
 
         # check that the number of wires given corresponds to required number
         if (
-            self.num_wires != AllWires
-            and self.num_wires != AnyWires
+            self.num_wires not in {AllWires, AnyWires}
             and len(self._wires) != self.num_wires
         ):
             raise ValueError(
@@ -1471,20 +1468,6 @@ class Observable(Operator):
     # pylint: disable=abstract-method
     return_type = None
     """None or ObservableReturnTypes: Measurement type that this observable is called with."""
-
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
-        # extract the arguments
-        if wires is None:
-            try:
-                wires = params[-1]
-                params = params[:-1]
-                # error if no arguments are given
-            except IndexError as err:
-                raise ValueError(
-                    f"Must specify the wires that {type(self).__name__} acts on"
-                ) from err
-
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
     def __repr__(self):
         """Constructor-call-like representation."""
