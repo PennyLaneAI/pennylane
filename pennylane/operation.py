@@ -880,7 +880,7 @@ class Operator(abc.ABC):
 
         # extract the arguments
         if wires is None:
-            if len(params) != (self.num_params+1):
+            if len(params) != (self.num_params + 1):
                 raise ValueError(f"Must specify the wires that {type(self).__name__} acts on")
             wires = params[-1]
             params = params[:-1]
@@ -895,10 +895,7 @@ class Operator(abc.ABC):
         self._wires = wires if isinstance(wires, Wires) else Wires(wires)
 
         # check that the number of wires given corresponds to required number
-        if (
-            self.num_wires not in {AllWires, AnyWires}
-            and len(self._wires) != self.num_wires
-        ):
+        if self.num_wires not in {AllWires, AnyWires} and len(self._wires) != self.num_wires:
             raise ValueError(
                 f"{self.name}: wrong number of wires. "
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
