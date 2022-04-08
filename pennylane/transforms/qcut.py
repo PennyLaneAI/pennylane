@@ -1698,6 +1698,33 @@ def cut_circuit(
     >>> qml.grad(circuit)(x)
     -0.276982865449393
 
+    Alternatively, if the optimal wire-cut placement is unknown for an arbitrary circuit, the
+    ``auto_cutter`` option can be enabled to make attempts in finding such a optimal cut. The
+    following examples shows this capability on the same circuit as above but with the
+    :class:`~.WireCut` removed:
+
+    .. code-block:: python
+
+        @qml.cut_circuit(auto_cutter=True)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.RY(0.9, wires=1)
+            qml.RX(0.3, wires=2)
+
+            qml.CZ(wires=[0, 1])
+            qml.RY(-0.4, wires=0)
+
+            qml.CZ(wires=[1, 2])
+
+            return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+
+    >>> x = np.array(0.531, requires_grad=True)
+    >>> circuit(0.531)
+    0.47165198882111165
+    >>> qml.grad(circuit)(x)
+    -0.276982865449393
+
     .. UsageDetails::
 
         Manually placing :class:`~.WireCut` operations and decorating the QNode with the
@@ -1716,6 +1743,7 @@ def cut_circuit(
             ~transforms.qcut.expand_fragment_tape
             ~transforms.qcut.qcut_processing_fn
             ~transforms.qcut.CutStrategy
+            ~transforms.qcut.find_and_place_cuts
 
         The following shows how these elementary steps are combined as part of the
         ``cut_circuit()`` transform.
@@ -1751,6 +1779,35 @@ def cut_circuit(
             :align: center
             :width: 60%
             :target: javascript:void(0);
+
+        If, however, the optimal location of the :class:`~.WireCut` is unknown, we can use
+        :func:`~.find_and_place_cuts` to make attempts in automatically finding such a cut
+        given the device constraints. Using the same circuit as above but with the
+        :class:`~.WireCut` removed, the same (optimal) cut can be recovered with automatic
+        cutting:
+
+        .. code-block:: python
+
+            with qml.tape.QuantumTape() as uncut_tape:
+                qml.RX(0.531, wires=0)
+                qml.RY(0.9, wires=1)
+                qml.RX(0.3, wires=2)
+
+                qml.CZ(wires=[0, 1])
+                qml.RY(-0.4, wires=0)
+
+                qml.CZ(wires=[1, 2])
+
+                qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+
+        >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
+                graph=qml.transforms.qcut.tape_to_graph(uncut_tape),
+                cut_strategy=qcut.CutStrategy(max_free_wires=2),
+            )
+        >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
+         0: ──RX(0.531)──╭C──RY(-0.4)──────╭┤ ⟨Z ⊗ Z ⊗ Z⟩
+         1: ──RY(0.9)────╰Z──//────────╭C──├┤ ⟨Z ⊗ Z ⊗ Z⟩
+         2: ──RX(0.3)──────────────────╰Z──╰┤ ⟨Z ⊗ Z ⊗ Z⟩
 
         Our next step is to remove the :class:`~.WireCut` nodes in the graph and replace with
         :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs.
@@ -2798,6 +2855,83 @@ def find_and_place_cuts(
          a: ──RX(0.3)──────╭C──╭X──╭C────────────RX(0.5)──╭┤ ⟨Y ⊗ Z⟩
          b: ──RY(0.4)──────╰X──│───╰X────────────RY(0.6)──╰┤ ⟨Y ⊗ Z⟩
          1: ──PrepareNode──────╰C───MeasureNode────────────┤
+
+    Alternatively, if all we want to do is to find the optimal way to fit a circuit onto a smaller
+    device, a :class:`~.CutStrategy` can be used to populate the necessary explorations of cutting
+    parameters. As an extreme example, if the only device at our desposal is a 2-qubit device, a
+    simple cut strategy is to simply specify the the ``max_free_wires`` argument (or equivalently
+    directly passing a :class:`~.Device` to the ``device`` argument):
+
+    >>> cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=2)
+    >>> print(cut_strategy.get_cut_kwargs(graph))
+     [{'num_fragments': 2, 'imbalance': 0.5714285714285714},
+      {'num_fragments': 3, 'imbalance': 1.4},
+      {'num_fragments': 4, 'imbalance': 1.75},
+      {'num_fragments': 5, 'imbalance': 2.3333333333333335},
+      {'num_fragments': 6, 'imbalance': 2.0},
+      {'num_fragments': 7, 'imbalance': 3.0},
+      {'num_fragments': 8, 'imbalance': 2.5},
+      {'num_fragments': 9, 'imbalance': 2.0},
+      {'num_fragments': 10, 'imbalance': 1.5},
+      {'num_fragments': 11, 'imbalance': 1.0},
+      {'num_fragments': 12, 'imbalance': 0.5},
+      {'num_fragments': 13, 'imbalance': 0.05},
+      {'num_fragments': 14, 'imbalance': 0.1}]
+
+    The printed list above shows all the possible cutting configurations one can attempt to perform
+    in order to search for the optimal cut. This is done by directly passing a
+    :class:`~.CutStrategy` to :func:`~.find_and_place_cuts`:
+
+    >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
+            graph=graph,
+            cut_strategy=cut_strategy,
+        )
+    >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
+     0: ──RX──//─╭C──//────────╭C──//─────────┤ ╭<X@Y@Z>
+     1: ──RY──//─╰X──//─╭C──//─╰X─────────────┤ │
+     a: ──RX──//─╭C──//─╰X──//─╭C──//──RX──//─┤ ├<X@Y@Z>
+     b: ──RY──//─╰X──//────────╰X──//──RY─────┤ ╰<X@Y@Z>
+
+    As one can tell, quite a few cuts have to be made in order to execute the circuit on solely
+    2-qubit devices. To verify, let's print the fragments:
+
+    >>> qml.transforms.qcut.replace_wire_cut_nodes(cut_graph)
+    >>> frags, comm_graph = qml.transforms.qcut.fragment_graph(cut_graph)
+    >>> for t in frags:
+    ...     print(qml.transforms.qcut.graph_to_tape(t).draw())
+
+    .. code-block::
+
+         0: ──RX──MeasureNode─┤
+
+         1: ──RY──MeasureNode─┤
+
+         a: ──RX──MeasureNode─┤
+
+         b: ──RY──MeasureNode─┤
+
+         0: ──PrepareNode─╭C──MeasureNode─┤
+         1: ──PrepareNode─╰X──MeasureNode─┤
+
+         a: ──PrepareNode─╭C──MeasureNode─┤
+         b: ──PrepareNode─╰X──MeasureNode─┤
+
+         1: ──PrepareNode─╭C──MeasureNode─┤
+         a: ──PrepareNode─╰X──MeasureNode─┤
+
+         0: ──PrepareNode─╭C──MeasureNode─┤
+         1: ──PrepareNode─╰X──────────────┤
+
+         b: ──PrepareNode─╭X──MeasureNode─┤
+         a: ──PrepareNode─╰C──MeasureNode─┤
+
+         a: ──PrepareNode──RX──MeasureNode─┤
+
+         b: ──PrepareNode──RY─┤  <Z>
+
+         0: ──PrepareNode─┤  <X>
+
+         a: ──PrepareNode─┤  <Y>
 
     """
 
