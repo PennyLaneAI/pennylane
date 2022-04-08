@@ -37,20 +37,26 @@ Creating your device
 --------------------
 
 The first step in creating your PennyLane plugin is to create your device class.
-This is as simple as importing the abstract base class :class:`~.QubitDevice` from PennyLane,
+This is as simple as importing the abstract base class :class:`~.Device` from PennyLane,
 and subclassing it:
 
 .. code-block:: python
 
-    from pennylane import QubitDevice
+    from pennylane import Device
 
-    class MyDevice(QubitDevice):
+    class MyDevice(Device):
         """MyDevice docstring"""
         name = 'My custom device'
         short_name = 'example.mydevice'
         pennylane_requires = '0.1.0'
         version = '0.0.1'
         author = 'Ada Lovelace'
+
+.. note::
+
+    Most devices inherit from a subclass of :class:`~.Device` called :class:`~.QubitDevice`,
+    which contains a lot of functionality specific to computations based on qubits. We will
+    take a deeper look at this important case below.
 
 Here, we have begun defining some important class attributes that allow PennyLane to identify
 and use the device. These include:
@@ -467,71 +473,14 @@ In general, as all supported operations have their gradient formula defined and 
 PennyLane, testing that your device calculates the correct gradients is not required.
 For more details on the PennyLane device test utility, see :mod:`pennylane.devices.tests`.
 
-Supporting new operations
--------------------------
+Supporting custom operators
+---------------------------
 
-If you would like to support an operation that is not currently supported by
-PennyLane, you can subclass the :class:`~.Operation` class, and
-define the number of parameters the operation takes, and the number of wires the operation
-acts on. For example, to define a custom gate depending on parameter :math:`\phi`,
+If you would like to support an operator (such as a gate or observable) that is not currently supported by
+PennyLane, you can subclass the :class:`~.Operator` class. Detailed information can be found in the
+section :doc:`/development/adding_operators`.
 
-.. code-block:: python
-
-    class CustomGate(Operation):
-        """Custom gate"""
-        num_params = 2
-        num_wires = 1
-        par_domain = 'R'
-
-        grad_method = 'A'
-        grad_recipe = None
-
-        @classmethod
-        def _matrix(cls, *params):
-            """Returns the matrix representation of the operator for the
-            provided parameter values, in the computational basis."""
-            return np.array([[params[0], 1], [1, -params[1]]]) / math.sqrt(2)
-
-        @staticmethod
-        def decomposition(*params, wires):
-            """(Optional) Returns a list of PennyLane operations that decompose
-            the custom gate."""
-            return [qml.RZ(params[0]/2, wires=wires[0]), qml.PauliX(params[1], wires=wires[0])]
-
-where
-
-* :attr:`~.Operator.num_params`: the number of parameters the operation takes
-
-* :attr:`~.Operator.num_wires`: the number of wires the operation acts on.
-
-  You may use :attr:`pennylane.operation.All` to represent an operation that
-  acts on all wires, or :attr:`pennylane.operation.Any` to represent an operation that
-  can act on any number of wires (for example, operations where the number of
-  wires they act on is a function of the operation parameter).
-
-* :attr:`~.Operator.par_domain`: the domain of the gate parameters; ``'N'`` for natural
-  numbers (including zero), ``'R'`` for floats, ``'A'`` for arrays of floats/complex numbers,
-  ``'L'`` for list of arrays of floats/complex numbers and ``None`` if the gate does not have
-  free parameters
-
-* :attr:`~.Operation.grad_method`: the gradient computation method; ``'A'`` for the analytic
-  method, ``'F'`` for finite differences, and ``None`` if the operation may not be differentiated
-
-* :attr:`~.Operation.grad_recipe`: The gradient recipe for the analytic ``'A'``
-  method. This is a tuple with one nested list per operation parameter. For
-  parameter :math:`\phi_k`, the nested list contains elements of the form
-  :math:`[c_i, a_i, s_i]`, resulting in a gradient recipe of
-
-  .. math:: \frac{\partial}{\partial\phi_k}f(\phi_k) = \sum_{i} c_i f(a_i \phi_k+s_i),
-
-  where :math:`f` is the expectation value of an observable on a circuit that has been evolved by
-  the operation being considered with parameter :math:`\phi_k`.
-
-  Note that if ``grad_recipe = None``, the default gradient recipe containing
-  the two terms :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]` and :math:`[c_1, a_1,
-  s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
-
-The user can then import this operation directly from your plugin, and use it when defining a QNode:
+Users can then import this operator directly from your plugin, and use it when defining a QNode:
 
 .. code-block:: python
 
@@ -546,89 +495,10 @@ The user can then import this operation directly from your plugin, and use it wh
 
 .. warning::
 
-    If you are providing custom operations not natively supported by PennyLane, it is recommended
-    that the plugin unit tests **do** provide tests to ensure that PennyLane returns the correct
+    If you are providing custom operators not natively supported by PennyLane, it is recommended
+    that the plugin unit tests provide tests to ensure that PennyLane returns the correct
     gradient for the custom operations.
 
-If the custom operation is diagonal in the computational basis, it can be added to the
+If the custom operator is diagonal in the computational basis, it can be added to the
 ``diagonal_in_z_basis`` attribute in ``pennylane.ops.qubit.attributes``. Devices can use this
 information to implement faster simulations.
-
-Supporting new observables
---------------------------
-
-Custom observables can be added in an identical manner to operations above, but with three
-small changes:
-
-* The :class:`~.Observable` class should instead be subclassed.
-
-* The class attribute :attr:`~.Observable.eigvals` should be defined, returning
-  the eigenvalues of the observable.
-
-* The method :meth:`~.Observable.diagonalizing_gates` should be defined. This method
-  returns a list of PennyLane :class:`~.Operation` objects that diagonalize the observable
-  in the computational basis. This is used to support devices that can only perform
-  measurements in the computational basis.
-
-For example:
-
-.. code-block:: python
-
-    class CustomObservable(Observable):
-        """Custom observable"""
-        num_params = 0
-        num_wires = 1
-        par_domain = None
-        eigvals = np.array([0.2, 0.1])
-
-        def diagonalizing_gates(self):
-            return [PauliX(wires=self.wires), Hadamard(wires=self.wires)]
-
-        @staticmethod
-        def _matrix(*params):
-            return np.array([[0, 1], [1, 0]]) / math.sqrt(2)
-
-
-:html:`<div class="note admonition" id="aside1"><a data-toggle="collapse" data-parent="#aside1" href="#content1" class="collapsed"><p class="first admonition-title">CV devices and operations (click to expand) <i class="fas fa-chevron-circle-down"></i></p></a><div id="content1" class="collapse" data-parent="#aside1" style="height: 0px;">`
-
-**Note: CV devices currently subclass from the base** :class:`~.Device` **class. However, this
-class is deprecated, and a new** ``CVDevice`` **class will be available soon.**
-
-For custom continuous-variable operations or observables, the :class:`~.CVOperation` or
-:class:`~.CVObservable` classes must be subclassed instead.
-
-In addition, for Gaussian CV operations, you may need to provide the static class method
-:meth:`~.CV._heisenberg_rep` that returns the Heisenberg representation of the operator given
-its list of parameters:
-
-.. code-block:: python
-
-    class Custom(CVOperation):
-        """Custom gate"""
-        n_params = 2
-        n_wires = 1
-        par_domain = 'R'
-        grad_method = 'A'
-        grad_recipe = None
-
-        @staticmethod
-        def _heisenberg_rep(params):
-            return function(params)
-
-* For operations, the ``_heisenberg_rep`` method should return the matrix of the linear
-  transformation carried out by the gate for the given parameter values. This is used internally for
-  calculating the gradient using the analytic method (``grad_method = 'A'``).
-
-* For observables, this method should return a real vector (first-order observables) or symmetric
-  matrix (second-order observables) of coefficients which represent the expansion of the observable in
-  the basis of monomials of the quadrature operators.
-
-  - For single-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x, \p)`.
-
-  - For multi-mode Operations we use the basis :math:`\mathbf{r} = (\I, \x_0, \p_0, \x_1, \p_1,
-    \ldots)`, where :math:`\x_k` and :math:`\p_k` are the quadrature operators of qumode :math:`k`.
-
-Non-Gaussian CV operations and observables are currently only supported via the finite difference
-method of gradient computation.
-
-:html:`</div></div>`

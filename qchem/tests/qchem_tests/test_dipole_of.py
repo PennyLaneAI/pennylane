@@ -196,7 +196,7 @@ ops_h2o.append(
 def test_dipole_obs(symbols, coords, charge, core, active, mapping, coeffs, ops, tol, tmpdir):
     r"""Tests the correctness of the dipole observable computed by the ``dipole`` function."""
 
-    dip = qml.qchem.dipole(
+    dip = qml.qchem.dipole_of(
         symbols,
         coords,
         charge=charge,
@@ -230,7 +230,7 @@ def test_dipole(symbols, coords, charge, hf_state, exp_dipole, tol, tmpdir):
 
     dev = qml.device("default.qubit", wires=n_qubits)
 
-    dip_obs = qml.qchem.dipole(symbols, coords, charge=charge, outpath=tmpdir.strpath)
+    dip_obs = qml.qchem.dipole_of(symbols, coords, charge=charge, outpath=tmpdir.strpath)
 
     def circuit(param, wires):
         qml.BasisState(hf_state, wires=wires)
@@ -251,4 +251,4 @@ def test_exceptions_dipole(symbols, coords, mult, msg_match):
     """Test exceptions of the ``dipole`` function."""
 
     with pytest.raises(ValueError, match=msg_match):
-        qml.qchem.dipole(symbols, coords, mult=mult)
+        qml.qchem.dipole_of(symbols, coords, mult=mult)
