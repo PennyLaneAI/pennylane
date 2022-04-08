@@ -946,10 +946,10 @@ def qcut_processing_fn_mc(
 @batch_transform
 def cut_circuit_mc(
     tape: QuantumTape,
+    classical_processing_fn: Optional[callable],
+    max_depth: int,
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
-    classical_processing_fn: Optional[callable] = None,
-    max_depth: int = 1,
 ) -> Tuple[Tuple[QuantumTape], Callable]:
     """
     Cut up a circuit containing sample measurements into smaller fragments using a
@@ -1930,10 +1930,10 @@ def _cut_circuit_expand(
 
 def _cut_circuit_mc_expand(
     tape: QuantumTape,
+    classical_processing_fn,
+    max_depth,
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
-    classical_processing_fn: Optional[callable] = None,
-    max_depth: int = 1,
 ):
     """Main entry point for expanding operations in sample-based tapes until
     reaching a depth that includes :class:`~.WireCut` operations."""

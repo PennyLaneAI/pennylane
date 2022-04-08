@@ -2171,7 +2171,7 @@ class TestCutCircuitMCTransform:
 
         dev = qml.device("default.qubit", wires=2, shots=10000)
 
-        @qml.cut_circuit_mc(classical_processing_fn=fn)
+        @qml.cut_circuit_mc(fn, 1)
         @qml.qnode(dev)
         def circuit(v):
             qml.RX(v, wires=0)
@@ -2219,7 +2219,7 @@ class TestCutCircuitMCTransform:
         v = 0.319
         target = circuit(v)
 
-        cut_circuit_bs = qcut.cut_circuit_mc(circuit)
+        cut_circuit_bs = qcut.cut_circuit_mc(circuit, None, 1)
         cut_res_bs = cut_circuit_bs(v)
 
         assert cut_res_bs.shape == target.shape
@@ -2233,7 +2233,7 @@ class TestCutCircuitMCTransform:
         shots = 100
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.cut_circuit_mc
+        @qml.cut_circuit_mc(classical_processing_fn=None, max_depth=1)
         @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -2268,7 +2268,7 @@ class TestCutCircuitMCTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.cut_circuit_mc
+        @qml.cut_circuit_mc(classical_processing_fn=None, max_depth=1)
         @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -2296,7 +2296,7 @@ class TestCutCircuitMCTransform:
         shots = 100
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.cut_circuit_mc
+        @qml.cut_circuit_mc(classical_processing_fn=None, max_depth=1)
         @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -2324,7 +2324,7 @@ class TestCutCircuitMCTransform:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.cut_circuit_mc(shots=456)
+        @qml.cut_circuit_mc(classical_processing_fn=None, max_depth=1, shots=456)
         @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -2353,7 +2353,7 @@ class TestCutCircuitMCTransform:
         """
         dev = qml.device("default.qubit", wires=3, shots=100)
 
-        @qml.cut_circuit_mc
+        @qml.cut_circuit_mc(classical_processing_fn=None, max_depth=1)
         @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -2382,7 +2382,7 @@ class TestCutCircuitMCTransform:
         """
         dev = qml.device("default.qubit", wires=2, shots=100)
 
-        @qml.cut_circuit_mc
+        @qml.cut_circuit_mc(classical_processing_fn=None, max_depth=1)
         @qml.qnode(dev)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -2417,7 +2417,7 @@ class TestCutCircuitMCTransform:
             match="Detected 'shots' as an argument of the quantum function to transform. ",
         ):
 
-            @qml.cut_circuit_mc
+            @qml.cut_circuit_mc(classical_processing_fn=None, max_depth=1)
             @qml.qnode(dev)
             def cut_circuit(x, shots=shots):
                 qml.RX(x, wires=0)
@@ -2441,7 +2441,7 @@ class TestCutCircuitMCTransform:
         shots = 100
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.cut_circuit_mc
+        @qml.cut_circuit_mc(classical_processing_fn=None, max_depth=1)
         @qml.qnode(dev, interface=None)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -2481,7 +2481,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.cut_circuit_mc
+        @qml.cut_circuit_mc(classical_processing_fn=None, max_depth=1)
         @qml.qnode(dev, interface=interface)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -2524,7 +2524,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.cut_circuit_mc(classical_processing_fn=fn)
+        @qml.cut_circuit_mc(fn, 1)
         @qml.qnode(dev, interface=interface)
         def cut_circuit(x):
             qml.RX(x, wires=0)
@@ -2555,7 +2555,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
-        @qml.cut_circuit_mc(classical_processing_fn=fn)
+        @qml.cut_circuit_mc(fn, 1)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -2581,7 +2581,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = qml.device("default.qubit", wires=3, shots=shots)
 
-        @qml.cut_circuit_mc(classical_processing_fn=fn)
+        @qml.cut_circuit_mc(fn, 1)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -2601,7 +2601,7 @@ class TestCutCircuitMCTransform:
         shots = 10
         dev = qml.device("default.qubit", wires=2, shots=shots)
 
-        @qml.cut_circuit_mc(classical_processing_fn=fn)
+        @qml.cut_circuit_mc(fn, 1)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -2639,7 +2639,7 @@ class TestCutCircuitMCTransform:
             qml.Hadamard(wires=[wires[0]])
             qml.CRY(param, wires=[wires[0], wires[1]])
 
-        @qml.cut_circuit_mc(classical_processing_fn=fn)
+        @qml.cut_circuit_mc(fn, 1)
         @qml.qnode(dev)
         def circuit(params):
             qml.BasisState(np.array([1]), wires=[0])
