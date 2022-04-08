@@ -142,6 +142,10 @@
     contained operations or tapes.
     [(#2399)](https://github.com/PennyLaneAI/pennylane/pull/2399)
 
+  - Integrate automatic cutting with `qcut.CutStrategy` into `qcut.cut_circuit()`
+    and `qcut.cut_circuit_mc()`.
+    [(#2428)](https://github.com/PennyLaneAI/pennylane/pull/2428)
+
 <h3>Improvements</h3>
 
 * The parameter-shift Hessian can now be computed for arbitrary
