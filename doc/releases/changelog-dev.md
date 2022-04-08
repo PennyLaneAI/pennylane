@@ -107,13 +107,14 @@
 * <h4> Finite-shot circuit cutting ✂️</h4>
 
   * You can now run `N`-wire circuits containing sample-based measurements on
-    devices with fewer than `N` wires by placing `WireCut` operations in a
-    circuit with sample measurements. With this, full bitstings can be returned
-    using fewer qubits at the expense of more device executions. The main
-    entry point for this functionality is the `@qml.cut_circuit_mc` transform
-    which can be applied to a QNode as a decorator. Additionally, this transform
-    can take an optional classical processing function as an argument, if
-    supplied an expectation value will be returned.
+    devices with fewer than `N` wires by inserting `WireCut` operations into
+    the circuit and decorating your QNode with `@qml.cut_circuit_mc`.
+    With this, samples from the original circuit can be simulated using
+    a Monte Carlo method,
+    using fewer qubits at the expense of more device executions. Additionally,
+    this transform
+    can take an optional classical processing function as an argument
+    and return an expectation value.
     [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
     [(#2321)](https://github.com/PennyLaneAI/pennylane/pull/2321)
     [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
