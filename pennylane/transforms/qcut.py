@@ -946,8 +946,8 @@ def qcut_processing_fn_mc(
 @batch_transform
 def cut_circuit_mc(
     tape: QuantumTape,
-    classical_processing_fn: Optional[callable],
-    max_depth: int,
+    classical_processing_fn: Optional[callable] = None,
+    max_depth: int = 1,
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
 ) -> Tuple[Tuple[QuantumTape], Callable]:
@@ -1930,8 +1930,8 @@ def _cut_circuit_expand(
 
 def _cut_circuit_mc_expand(
     tape: QuantumTape,
-    classical_processing_fn,
-    max_depth,
+    classical_processing_fn: Optional[callable] = None,
+    max_depth: int = 1,
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
 ):
