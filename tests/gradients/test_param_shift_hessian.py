@@ -40,10 +40,10 @@ class TestCollectRecipes:
             DummyOp(0.3, wires=0)
 
         diag, offdiag = _collect_recipes(tape, tape.trainable_params, ("A", "A"), None, None)
-        assert qml.math.allclose(diag[0], qml.math.array(channel_recipe_2nd_order).T)
-        assert qml.math.allclose(diag[1], qml.math.array(dummy_recipe_2nd_order).T)
-        assert qml.math.allclose(offdiag[0], qml.math.array(channel_recipe).T)
-        assert qml.math.allclose(offdiag[1], qml.math.array(dummy_recipe).T)
+        assert qml.math.allclose(diag[0], qml.math.array(channel_recipe_2nd_order))
+        assert qml.math.allclose(diag[1], qml.math.array(dummy_recipe_2nd_order))
+        assert qml.math.allclose(offdiag[0], qml.math.array(channel_recipe))
+        assert qml.math.allclose(offdiag[1], qml.math.array(dummy_recipe))
 
 
 class TestGenerateOffDiagTapes:
@@ -54,8 +54,8 @@ class TestGenerateOffDiagTapes:
             qml.RX(np.array(0.2), wires=[0])
             qml.RY(np.array(0.9), wires=[0])
 
-        recipe_0 = np.array([[-0.5, 1.0, 0.0], [0.5, 1.0, np.pi]]).T
-        recipe_1 = np.array([[-0.25, 1.0, 0.0], [0.25, 1.0, np.pi]]).T
+        recipe_0 = np.array([[-0.5, 1.0, 0.0], [0.5, 1.0, np.pi]])
+        recipe_1 = np.array([[-0.25, 1.0, 0.0], [0.25, 1.0, np.pi]])
         h_tapes, c, unshifted_coeff = _generate_off_diag_tapes(tape, (0, 1), recipe_0, recipe_1)
 
         assert len(h_tapes) == 3  # Four tapes of which one is not shifted -> Three tapes
@@ -121,7 +121,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        c, s = qml.gradients.generate_shift_rule((0.5, 1))
+        c, s = qml.gradients.generate_shift_rule((0.5, 1)).T
         recipe = list(zip(c, np.ones_like(c), s))
 
         class DummyOp(qml.CRX):

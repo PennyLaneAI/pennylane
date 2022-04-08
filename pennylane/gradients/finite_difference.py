@@ -310,7 +310,7 @@ def finite_diff(
             shapes.append(0)
             continue
 
-        g_tapes = generate_shifted_tapes(tape, i, shifts * h)
+        g_tapes = generate_shifted_tapes(tape, (i,), [shifts * h])
         gradient_tapes.extend(g_tapes)
         shapes.append(len(g_tapes))
 

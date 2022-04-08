@@ -103,7 +103,7 @@ class TestShiftedTapes:
 
         tape.trainable_params = {0, 2}
         shifts = [0.1, -0.2, 1.6]
-        res = generate_shifted_tapes(tape, 1, shifts=shifts)
+        res = generate_shifted_tapes(tape, (1,), (shifts,))
 
         assert len(res) == len(shifts)
         assert res[0].get_parameters(trainable_only=False) == [1.0, 2.0, 3.1, 4.0]
@@ -123,7 +123,7 @@ class TestShiftedTapes:
         tape.trainable_params = {0, 2}
         shifts = [0.3, 0.6]
         multipliers = [0.2, 0.5]
-        res = generate_shifted_tapes(tape, 0, shifts=shifts, multipliers=multipliers)
+        res = generate_shifted_tapes(tape, (0,), (shifts,), [multipliers])
 
         assert len(res) == 2
         assert res[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]

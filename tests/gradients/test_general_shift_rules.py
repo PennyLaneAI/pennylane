@@ -105,7 +105,7 @@ class TestGenerateShiftRule:
         frequencies = (1,)
 
         n_terms = 2
-        correct_terms = [[0.5, -0.5], [np.pi / 2, -np.pi / 2]]
+        correct_terms = [[0.5, np.pi / 2], [-0.5, -np.pi / 2]]
         generated_terms = generate_shift_rule(frequencies)
 
         assert np.allclose(generated_terms, correct_terms)
@@ -118,8 +118,10 @@ class TestGenerateShiftRule:
 
         n_terms = 4
         correct_terms = [
-            [0.8535533905932737, -0.8535533905932737, -0.14644660940672624, 0.14644660940672624],
-            [np.pi / 4, -np.pi / 4, 3 * np.pi / 4, -3 * np.pi / 4],
+            [0.8535533905932737, np.pi / 4],
+            [-0.8535533905932737, -np.pi / 4],
+            [-0.14644660940672624, 3 * np.pi / 4],
+            [0.14644660940672624, -3 * np.pi / 4],
         ]
         generated_terms = generate_shift_rule(frequencies)
 
@@ -147,7 +149,7 @@ class TestGenerateShiftRule:
 
         generated_terms = generate_shift_rule(frequencies)
 
-        assert np.allclose(generated_terms.T, correct_terms)
+        assert np.allclose(generated_terms, correct_terms)
 
     def test_eight_term_rule_non_equidistant_custom_shifts(self):
         """Tests the correct non-equidistant eight term shift rule is generated given the
@@ -171,7 +173,7 @@ class TestGenerateShiftRule:
 
         generated_terms = generate_shift_rule(frequencies, custom_shifts)
 
-        assert np.allclose(generated_terms.T, correct_terms)
+        assert np.allclose(generated_terms, correct_terms)
 
     def test_non_integer_frequency_default_shifts(self):
         """Tests the correct four term shift rule is generated given non-integer frequencies."""
@@ -188,7 +190,7 @@ class TestGenerateShiftRule:
 
         generated_terms = generate_shift_rule(frequencies)
 
-        assert np.allclose(generated_terms.T, correct_terms)
+        assert np.allclose(generated_terms, correct_terms)
 
     def test_non_integer_frequency_custom_shifts(self):
         """Tests the correct four term shift rule is generated given non-integer frequencies using
@@ -213,7 +215,7 @@ class TestGenerateShiftRule:
 
         generated_terms = generate_shift_rule(frequencies, custom_shifts)
 
-        assert np.allclose(generated_terms.T, correct_terms)
+        assert np.allclose(generated_terms, correct_terms)
 
     def test_near_singular_warning(self):
         """Tests a warning is raised if the determinant of the matrix to be inverted is near zero
@@ -230,7 +232,7 @@ class TestGenerateShiftRule:
         frequencies = (1,)
         generated_terms = generate_shift_rule(frequencies, order=2)
         correct_terms = [[-0.5, 0], [0.5, -np.pi]]
-        assert np.allclose(generated_terms.T, correct_terms)
+        assert np.allclose(generated_terms, correct_terms)
 
     def test_second_order_two_term_shift_rule_custom_shifts(self):
         """Test that the second order shift rule is correct and
@@ -238,7 +240,7 @@ class TestGenerateShiftRule:
         frequencies = (1,)
         generated_terms = generate_shift_rule(frequencies, shifts=(np.pi / 4,), order=2)
         correct_terms = [[-1, 0], [0.5, -np.pi / 2], [0.5, np.pi / 2]]
-        assert np.allclose(generated_terms.T, correct_terms)
+        assert np.allclose(generated_terms, correct_terms)
 
     def test_second_order_four_term_shift_rule(self):
         """Test that the second order shift rule is correct and
@@ -251,7 +253,7 @@ class TestGenerateShiftRule:
             [0.25, np.pi],
             [-0.125, -2 * np.pi],
         ]
-        assert np.allclose(generated_terms.T, correct_terms)
+        assert np.allclose(generated_terms, correct_terms)
 
     def test_second_order_non_equidistant_shift_rule(self):
         """Test that the second order shift rule is correct and
@@ -267,7 +269,7 @@ class TestGenerateShiftRule:
             [0.08578644, -3 * np.pi / 4],
             [0.08578644, 3 * np.pi / 4],
         ]
-        assert np.allclose(generated_terms.T, correct_terms)
+        assert np.allclose(generated_terms, correct_terms)
 
 
 class TestMultiShiftRule:
@@ -276,22 +278,22 @@ class TestMultiShiftRule:
     def test_single_parameter(self):
         """Test that the generate_multi_shift_rule function
         correctly returns a single-parameter shift rule"""
-        res = generate_multi_shift_rule([(1,)]).T
+        res = generate_multi_shift_rule([(1,)])
         expected = [[0.5, np.pi / 2], [-0.5, -np.pi / 2]]
         assert np.allclose(res, expected)
 
-        res = generate_multi_shift_rule([(1,)], orders=[2]).T
+        res = generate_multi_shift_rule([(1,)], orders=[2])
         expected = [[-0.5, 0], [0.5, -np.pi]]
         assert np.allclose(res, expected)
 
-        res = generate_multi_shift_rule([(1,)], orders=[2], shifts=[(np.pi / 4,)]).T
+        res = generate_multi_shift_rule([(1,)], orders=[2], shifts=[(np.pi / 4,)])
         expected = [[-1, 0], [0.5, -np.pi / 2], [0.5, np.pi / 2]]
         assert np.allclose(res, expected)
 
     def test_two_single_frequency(self):
         """Test that two independent single-frequency parameters
         are correctly combined."""
-        res = generate_multi_shift_rule([(1,), (1,)]).T
+        res = generate_multi_shift_rule([(1,), (1,)])
         expected = [
             [0.25, np.pi / 2, np.pi / 2],
             [-0.25, np.pi / 2, -np.pi / 2],
@@ -303,7 +305,7 @@ class TestMultiShiftRule:
     def test_three_single_frequency(self):
         """Test that three independent single-frequency parameters
         are correctly combined."""
-        res = generate_multi_shift_rule([(1,), (1,), (1,)]).T
+        res = generate_multi_shift_rule([(1,), (1,), (1,)])
         expected = [
             [0.125, np.pi / 2, np.pi / 2, np.pi / 2],
             [-0.125, np.pi / 2, np.pi / 2, -np.pi / 2],
@@ -323,7 +325,7 @@ class TestMultiShiftRule:
         c2 = (np.sqrt(2) - 1) / (4 * np.sqrt(2))
         f = [(1,), (0.5, 1)]
 
-        res = generate_multi_shift_rule(f).T
+        res = generate_multi_shift_rule(f)
         expected = [
             [c1 * 0.5, np.pi / 2, np.pi / 2],
             [-c1 * 0.5, np.pi / 2, -np.pi / 2],
@@ -374,7 +376,7 @@ class TestShiftedTapes:
 
         tape.trainable_params = {0, 2}
         shifts = [0.1, -0.2, 1.6]
-        res = generate_shifted_tapes(tape, 1, shifts=shifts)
+        res = generate_shifted_tapes(tape, [1], (shifts,))
 
         assert len(res) == len(shifts)
         assert res[0].get_parameters(trainable_only=False) == [1.0, 2.0, 3.1, 4.0]
@@ -394,7 +396,7 @@ class TestShiftedTapes:
         tape.trainable_params = {0, 2}
         shifts = [0.3, 0.6]
         multipliers = [0.2, 0.5]
-        res = generate_shifted_tapes(tape, 0, shifts=shifts, multipliers=multipliers)
+        res = generate_shifted_tapes(tape, (0,), (shifts,), (multipliers,))
 
         assert len(res) == 2
         assert res[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
