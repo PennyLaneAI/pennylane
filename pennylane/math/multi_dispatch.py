@@ -245,7 +245,7 @@ def concatenate(values, axis=0, like=None):
 
         device = (
             "cuda"
-            if any([t.device.type == "cuda" for t in values if isinstance(t, torch.Tensor)])
+            if any(t.device.type == "cuda" for t in values if isinstance(t, torch.Tensor))
             else "cpu"
         )
 
