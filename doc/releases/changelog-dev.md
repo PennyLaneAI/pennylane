@@ -343,5 +343,6 @@ This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
 
-Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
-Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
+Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri,
+Christina Lee, Romain Moyard, Zeyue Niu, Lee James O'Riordan, Jay Soni, Antal
+Száva, Maurice Weber, David Wierichs.
