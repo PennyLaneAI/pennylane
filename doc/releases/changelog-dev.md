@@ -104,43 +104,114 @@
   - The dependency on openbabel is removed
     [(#2415)](https://github.com/PennyLaneAI/pennylane/pull/2415)
 
-* Development of a circuit-cutting compiler extension to circuits with sampling
-  measurements has begun:
+* <h4> Finite-shot circuit cutting ✂️</h4>
 
-    - The existing `qcut.tape_to_graph()` method has been extended to convert a
-    sample measurement without an observable specified to multiple single-qubit sample
-    nodes.
+  * You can now run `N`-wire circuits containing sample-based measurements on
+    devices with fewer than `N` wires by inserting `WireCut` operations into
+    the circuit and decorating your QNode with `@qml.cut_circuit_mc`.
+    With this, samples from the original circuit can be simulated using
+    a Monte Carlo method,
+    using fewer qubits at the expense of more device executions. Additionally,
+    this transform
+    can take an optional classical processing function as an argument
+    and return an expectation value.
     [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
+    [(#2321)](https://github.com/PennyLaneAI/pennylane/pull/2321)
+    [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
+    [(#2358)](https://github.com/PennyLaneAI/pennylane/pull/2358)
+    [(#2382)](https://github.com/PennyLaneAI/pennylane/pull/2382)
+    [(#2399)](https://github.com/PennyLaneAI/pennylane/pull/2399)
+    [(#2407)](https://github.com/PennyLaneAI/pennylane/pull/2407)
+
+    The following `3`-qubit circuit contains a `WireCut` operation and a `sample`
+    measurement. When decorated with `@qml.cut_circuit_mc`, we can cut the circuit
+    into two `2`-qubit fragments:
+
+    ```python
+
+      dev = qml.device("default.qubit", wires=2, shots=1000)
+
+      @qml.cut_circuit_mc
+      @qml.qnode(dev)
+      def circuit(x):
+          qml.RX(0.89, wires=0)
+          qml.RY(0.5, wires=1)
+          qml.RX(1.3, wires=2)
+
+          qml.CNOT(wires=[0, 1])
+          qml.WireCut(wires=1)
+          qml.CNOT(wires=[1, 2])
+
+          qml.RX(x, wires=0)
+          qml.RY(0.7, wires=1)
+          qml.RX(2.3, wires=2)
+          return qml.sample(wires=[0, 2])
+    ```
+
+    we can then execute the circuit as usual by calling the QNode:
+
+    ```pycon
+    >>> x = 0.3
+    >>> circuit(x)
+    tensor([[1, 1],
+            [0, 1],
+            [0, 1],
+            ...,
+            [0, 1],
+            [0, 1],
+            [0, 1]], requires_grad=True)
+    ```
+
+    Furthermore, the number of shots can be temporarily altered when calling
+    the QNode:
+
+    ```pycon
+    >>> results = circuit(x, shots=123)
+    >>> results.shape
+    (123, 2)
+    ```
+    
+    Using the Monte Carlo approach of [Peng et. al](https://arxiv.org/abs/1904.00102), the
+    `cut_circuit_mc` transform also supports returning sample-based expectation values of
+    observables that are diagonal in the computational basis, as shown below for a `ZZ` measurement
+    on wires `0` and `2`:
+    
+    ```python
+    dev = qml.device("default.qubit", wires=2, shots=10000)
+
+    def observable(bitstring):
+        return (-1) ** np.sum(bitstring)    
+    
+    @qml.cut_circuit_mc(classical_processing_fn=observable)
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(0.89, wires=0)
+        qml.RY(0.5, wires=1)
+        qml.RX(1.3, wires=2)
+
+        qml.CNOT(wires=[0, 1])
+        qml.WireCut(wires=1)
+        qml.CNOT(wires=[1, 2])
+
+        qml.RX(x, wires=0)
+        qml.RY(0.7, wires=1)
+        qml.RX(2.3, wires=2)
+        return qml.sample(wires=[0, 2])
+    ```
+    
+    We can now approximate the expectation value of the observable using
+    
+    ```pycon
+    >>> circuit(x)
+    tensor(-0.776, requires_grad=True)
+    ```
+
   - An automatic graph partitioning method `qcut.kahypar_cut()` has been implemented for cutting
     arbitrary tape-converted graphs using the general purpose graph partitioning framework
     [KaHyPar](https://pypi.org/project/kahypar/) which needs to be installed separately.
     To integrate with the existing manual cut pipeline, method `qcut.find_and_place_cuts()` and related
     utilities are implemented which uses `qcut.kahypar_cut()` as the default auto cutter.
     [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
-
-  - The existing `qcut.graph_to_tape()` method has been extended to convert
-    graphs containing sample measurement nodes to tapes.
-    [(#2321)](https://github.com/PennyLaneAI/pennylane/pull/2321)
-
-  - A `qcut.expand_fragment_tapes_mc()` method has been added to expand fragment
-    tapes to random configurations by replacing measure and prepare nodes with
-    sampled Pauli measurements and state preparations.
-    [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
-
-  - Postprocessing functions `qcut.qcut_processing_fn_sample()` and
-    `qcut.qcut_processing_fn_mc()` have been added to return samples and expectation
-    values, respectively, of recombined fragments using the Monte Carlo sampling
-    approach.
-    [(#2358)](https://github.com/PennyLaneAI/pennylane/pull/2358)
-
-  - A user-facing transform for circuit cutting with sample measurements has
-    been added. A `qnode` containing `WireCut` operations and `sample` measurements
-    can be decorated with `@qml.cut_circuit_mc()` to perform this type of cutting.
-    [(#2382)](https://github.com/PennyLaneAI/pennylane/pull/2382)
-
-  - Add expansion to `qcut.cut_circuit_mc()` to search for wire cuts in
-    contained operations or tapes.
-    [(#2399)](https://github.com/PennyLaneAI/pennylane/pull/2399)
 
 <h3>Improvements</h3>
 
