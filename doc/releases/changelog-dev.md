@@ -129,23 +129,23 @@
 
     ```python
 
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+      dev = qml.device("default.qubit", wires=2, shots=1000)
 
-        @qml.cut_circuit_mc
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(0.89, wires=0)
-            qml.RY(0.5, wires=1)
-            qml.RX(1.3, wires=2)
+      @qml.cut_circuit_mc
+      @qml.qnode(dev)
+      def circuit(x):
+          qml.RX(0.89, wires=0)
+          qml.RY(0.5, wires=1)
+          qml.RX(1.3, wires=2)
 
-            qml.CNOT(wires=[0, 1])
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=[1, 2])
+          qml.CNOT(wires=[0, 1])
+          qml.WireCut(wires=1)
+          qml.CNOT(wires=[1, 2])
 
-            qml.RX(x, wires=0)
-            qml.RY(0.7, wires=1)
-            qml.RX(2.3, wires=2)
-            return qml.sample(wires=[0, 2])
+          qml.RX(x, wires=0)
+          qml.RY(0.7, wires=1)
+          qml.RX(2.3, wires=2)
+          return qml.sample(wires=[0, 2])
     ```
 
     we can then execute the circuit as usual by calling the QNode:
