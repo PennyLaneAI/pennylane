@@ -928,6 +928,7 @@ class QubitDevice(Device):
             ]  # Add np.array here for Jax support.
             powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
+            indices = np.array(indices)  # Add np.array here for Jax support.
             try:
                 samples = observable.get_eigvals()[indices]
             except qml.operation.EigvalsUndefinedError as e:
