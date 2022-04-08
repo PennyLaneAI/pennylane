@@ -2583,7 +2583,8 @@ def kahypar_cut(
         context.suppressOutput(True)
 
     # KaHyPar fixes seed to 42 by default, need to manually sample seed to randomize:
-    context.setSeed(np.random.default_rng(seed).choice(2**15))
+    kahypar_seed = np.random.default_rng(seed).choice(2**15)
+    context.setSeed(kahypar_seed)
 
     kahypar.partition(hypergraph, context)
 
@@ -2805,17 +2806,27 @@ def find_and_place_cuts(
     if isinstance(cut_strategy, CutStrategy):
         cut_kwargs_probed = cut_strategy.get_cut_kwargs(cut_graph)
 
+        # Need to reseed if a seed is passed:
+        seed = kwargs.pop("seed", None)
+        seeds = np.random.default_rng(seed).choice(2**15, cut_strategy.trials_per_probe).tolist()
+
         cut_edges_probed = {
             (cut_kwargs["num_fragments"], trial_id): cut_method(
                 cut_graph,
-                **{**cut_kwargs, **kwargs},  # kwargs has higher precedence for colliding keys
+                **{
+                    **cut_kwargs,
+                    **kwargs,
+                    "seed": seed,
+                },  # kwargs has higher precedence for colliding keys
             )
             for cut_kwargs in cut_kwargs_probed
-            for trial_id in range(cut_strategy.trials_per_probe)
+            for trial_id, seed in zip(range(cut_strategy.trials_per_probe), seeds)
         }
 
         valid_cut_edges = {}
         for (k, _), cut_edges in cut_edges_probed.items():
+            # The easiest way to tell if a cut is valid is to just do the fragment graph.
+
             cut_graph = place_wire_cuts(graph=graph, cut_edges=cut_edges)
             num_cuts = sum(isinstance(n, WireCut) for n in cut_graph.nodes)
 
@@ -2837,12 +2848,7 @@ def find_and_place_cuts(
                 "Are the constraints too strict?"
             )
 
-        # Filtering to get the optimal cuts by looking at the number of cuts and num_fragments.
-        min_cuts = min(len(cut_edges) for cut_edges in valid_cut_edges.values())
-        optim_cuts = {
-            k: cut_edges for k, cut_edges in valid_cut_edges.items() if len(cut_edges) == min_cuts
-        }
-        cut_edges = optim_cuts[min(optim_cuts)]  # choose the lowest num_fragments among best ones.
+        cut_edges = _get_optim_cut(valid_cut_edges)
 
     else:
         cut_edges = cut_method(cut_graph, **kwargs)
@@ -2873,3 +2879,13 @@ def _is_valid_cut(
     )
 
     return correct_num_fragments and no_candidate_yet and all_fragments_fit
+
+
+def _get_optim_cut(valid_cut_edges):
+    """Picks out the best cut from a dict of valid candidate cuts."""
+
+    min_cuts = min(len(cut_edges) for cut_edges in valid_cut_edges.values())
+    optim_cuts = {
+        k: cut_edges for k, cut_edges in valid_cut_edges.items() if len(cut_edges) == min_cuts
+    }
+    return optim_cuts[min(optim_cuts)]  # choose the lowest num_fragments among best ones.
