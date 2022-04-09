@@ -234,7 +234,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
 
         # generate the gradient tapes
         gradient_coeffs.append(coeffs)
-        g_tapes = generate_shifted_tapes(tape, (idx,), (op_shifts,), (multipliers,))
+        g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers)
 
         gradient_tapes.extend(g_tapes)
         shapes.append(len(g_tapes))

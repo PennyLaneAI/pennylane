@@ -152,7 +152,7 @@ def expval_hessian_param_shift(
             dc_i, dm_i, ds_i = dc_i[1:], dm_i[1:], ds_i[1:]
 
         # Create the shifted tapes for the diagonal entry and store them along with coefficients
-        diag_tapes = generate_shifted_tapes(tape, (i,), (ds_i,), (dm_i,))
+        diag_tapes = generate_shifted_tapes(tape, i, ds_i, dm_i)
         hessian_tapes.extend(diag_tapes)
         hessian_coeffs.append(dc_i)
 

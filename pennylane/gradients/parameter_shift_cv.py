@@ -351,7 +351,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
                 "gradient recipe of more than two terms."
             )
 
-        shifted_tapes = generate_shifted_tapes(tape, (idx,), (op_shifts,), (multipliers,))
+        shifted_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers)
 
         # evaluate transformed observables at the original parameter point
         # first build the Heisenberg picture transformation matrix Z

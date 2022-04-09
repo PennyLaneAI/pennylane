@@ -401,14 +401,24 @@ def generate_shifted_tapes(tape, indices, shifts, multipliers=None):
             and ``multipliers``.
     """
     params = list(tape.get_parameters())
-    multipliers = np.ones_like(shifts) if multipliers is None else multipliers
+    shifts = qml.math.array(shifts)
+    if len(shifts.shape)==1:
+        shifts = shifts.reshape((shifts.shape[0], 1))
+        indices = [indices]
+    if multipliers is None:
+        multipliers = np.ones_like(shifts)
+    else:
+        multipliers = qml.math.array(multipliers)
+        if len(multipliers.shape)==1:
+            multipliers = multipliers.reshape((multipliers.shape[0], 1))
+
     tapes = []
 
     for _shifts, _multipliers in zip(shifts, multipliers):
         new_params = params.copy()
         shifted_tape = tape.copy(copy_operations=True)
         for idx, shift, multiplier in zip(indices, _shifts, _multipliers):
-            dtype = new_params[idx].dtype
+            dtype = getattr(new_params[idx], "dtype", None) or type(new_params[idx])
             new_params[idx] = new_params[idx] * qml.math.convert_like(multiplier, new_params[idx])
             new_params[idx] = new_params[idx] + qml.math.convert_like(shift, new_params[idx])
             new_params[idx] = qml.math.cast(new_params[idx], dtype)

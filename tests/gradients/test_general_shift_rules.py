@@ -26,6 +26,54 @@ from pennylane.gradients.general_shift_rules import (
 )
 
 
+class TestEigvalsToFrequencies:
+    """Tests for the eigvals_to_frequencies function"""
+
+    def test_two_eigvals(self):
+        """Test the case of two eigenvalues"""
+        res = qml.gradients.eigvals_to_frequencies((-0.5, 0.5))
+        expected = (1,)
+        assert res == expected
+
+    def test_four_eigvals(self):
+        """Test the case of four eigenvalues"""
+        res = qml.gradients.eigvals_to_frequencies((0.5, -0.5, 0, 0))
+        expected = (0.5, 1)
+        assert res == expected
+
+    def test_nonequidistant_eigvals(self):
+        """Test the case of non-equidistant eigenvalues"""
+        res = qml.gradients.eigvals_to_frequencies((0.453, 0.65, -1.2, 0))
+        expected = (0.453, 1.2, 1.85, 1.653, 0.65, 0.197)
+        assert res == expected
+
+def TestFrequenciesToPeriod:
+    """Tests for the frequencies_to_period function"""
+
+    def test_single_frequency(self):
+        """Test with a single frequency."""
+        res = frequencies_to_period((0.8,))
+        expected = 2.5 * np.pi
+        assert res == expected
+
+    def test_equidistant_frequencies(self):
+        """Test with equidistant frequencies."""
+        res = frequencies_to_period((0.7, 1.4, 2.1))
+        expected = 2 * np.pi / 0.7
+        assert res == expected
+
+    def test_nonequidistant_frequencies(self):
+        """Test with non-equidistant frequencies."""
+        res = frequencies_to_period((1.8, 2.7, 9.0))
+        expected = 2 * np.pi / 0.9
+        assert res == expected
+
+    def test_with_decimals(self):
+        """Test with rounding "very" non-equidistant frequencies."""
+        res = frequencies_to_period((0.8, 1.6002), decimals=3)
+        expected = 2.5 * np.pi
+        assert res == expected
+
 class TestIterateShiftRuleWithMultipliers:
     """Tests `_iterate_shift_rule_with_multipliers` to produce the correct rules."""
 
@@ -339,29 +387,9 @@ class TestMultiShiftRule:
         assert np.allclose(res, expected)
 
 
-class TestEigvalsToFrequency:
-    """Tests for the eigvals_to_frequencies function"""
-
-    def test_two_eigvals(self):
-        """Test the case of two eigenvalues"""
-        res = qml.gradients.eigvals_to_frequencies((-0.5, 0.5))
-        expected = (1,)
-        assert res == expected
-
-    def test_four_eigvals(self):
-        """Test the case of four eigenvalues"""
-        res = qml.gradients.eigvals_to_frequencies((0.5, -0.5, 0, 0))
-        expected = (0.5, 1)
-        assert res == expected
-
-    def test_nonequidistant_eigvals(self):
-        """Test the case of non-equidistant eigenvalues"""
-        res = qml.gradients.eigvals_to_frequencies((0.453, 0.65, -1.2, 0))
-        expected = (0.453, 1.2, 1.85, 1.653, 0.65, 0.197)
-        assert res == expected
 
 
-class TestShiftedTapes:
+class TestGenerateShiftedTapes:
     """Tests for the generate_shifted_tapes function"""
 
     def test_behaviour(self):
@@ -376,7 +404,7 @@ class TestShiftedTapes:
 
         tape.trainable_params = {0, 2}
         shifts = [0.1, -0.2, 1.6]
-        res = generate_shifted_tapes(tape, [1], (shifts,))
+        res = generate_shifted_tapes(tape, 1, shifts)
 
         assert len(res) == len(shifts)
         assert res[0].get_parameters(trainable_only=False) == [1.0, 2.0, 3.1, 4.0]
@@ -396,7 +424,7 @@ class TestShiftedTapes:
         tape.trainable_params = {0, 2}
         shifts = [0.3, 0.6]
         multipliers = [0.2, 0.5]
-        res = generate_shifted_tapes(tape, (0,), (shifts,), (multipliers,))
+        res = generate_shifted_tapes(tape, 0, shifts, multipliers)
 
         assert len(res) == 2
         assert res[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]

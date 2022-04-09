@@ -194,7 +194,7 @@ def grad_fn(tape, dev, fn=qml.gradients.param_shift, **kwargs):
 
 
 class TestShiftedTapes:
-    """Tests for the generation of shifted tapes"""
+    """Tests for the generation of shifted tapes within the param_shift function."""
 
     def test_behaviour(self):
         """Test that the function behaves as expected"""
@@ -207,7 +207,7 @@ class TestShiftedTapes:
             qml.expval(qml.PauliZ(0))
 
         tape.trainable_params = {0, 2}
-        gradient_recipes = [[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], [[1, 1, 1], [2, 2, 2], [3, 3, 3]]]
+        gradient_recipes = ([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], [[1, 1, 1], [2, 2, 2], [3, 3, 3]])
         tapes, _ = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
 
         assert len(tapes) == 5
@@ -375,13 +375,13 @@ class TestParamShift:
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.QuantumTape() as tape1:
-            qml.RX(1, wires=[0])
-            qml.RX(1, wires=[1])
+            qml.RX(1., wires=[0])
+            qml.RX(1., wires=[1])
             qml.expval(qml.PauliZ(0))
 
         with qml.tape.QuantumTape() as tape2:
-            qml.RX(1, wires=[0])
-            qml.RX(1, wires=[1])
+            qml.RX(1., wires=[0])
+            qml.RX(1., wires=[1])
             qml.expval(qml.PauliZ(1))
 
         tapes, fn = qml.gradients.param_shift(tape1)
