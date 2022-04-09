@@ -13,16 +13,10 @@ name = "h2"
 symbols, coordinates = (["H", "H"], np.array([0.0, 0.0, -0.66140414, 0.0, 0.0, 0.66140414]))
 
 
-@pytest.mark.parametrize(
-    ("package", "basis"), [("PySCF", "sto-3g"), ("PySCF", "6-31g"), ("Psi4", "sto-3g")]
-)
-def test_path_to_file(package, basis, tmpdir, psi4_support):
+@pytest.mark.parametrize(("package", "basis"), [("PySCF", "sto-3g"), ("PySCF", "6-31g")])
+def test_path_to_file(package, basis, tmpdir):
     r"""Test the correctness of the full path to the file containing the meanfield
     electronic structure"""
-
-    if package == "Psi4" and not psi4_support:
-        pytest.skip("Skipped, no Psi4 support")
-
     filename = name.strip() + "_" + package.lower() + "_" + basis.strip()
     exp_path = os.path.join(tmpdir.strpath, filename)
 
@@ -33,13 +27,9 @@ def test_path_to_file(package, basis, tmpdir, psi4_support):
     assert res_path == exp_path
 
 
-@pytest.mark.parametrize("package", ["Psi4", "PySCF"])
-def test_hf_calculations(package, tmpdir, psi4_support, tol):
+@pytest.mark.parametrize("package", ["PySCF"])
+def test_hf_calculations(package, tmpdir, tol):
     r"""Test the correctness of the HF calculation"""
-
-    if package == "Psi4" and not psi4_support:
-        pytest.skip("Skipped, no Psi4 support")
-
     n_atoms = 2
     n_electrons = 2
     n_orbitals = 2
@@ -80,7 +70,7 @@ def test_hf_calculations(package, tmpdir, psi4_support, tol):
 
 def test_not_available_qc_package(tmpdir):
     r"""Test that an error is raised if the input quantum chemistry package
-    is neither Psi4 nor PySCF"""
+    is not PySCF"""
 
     with pytest.raises(TypeError, match="Integration with quantum chemistry package"):
         qchem.meanfield(

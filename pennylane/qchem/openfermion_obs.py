@@ -532,7 +532,7 @@ def dipole_of(
         basis (str): Atomic basis set used to represent the molecular orbitals. Basis set
             availability per element can be found
             `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx-basiselement>`_
-        package (str): quantum chemistry package (pyscf or psi4) used to solve the
+        package (str): quantum chemistry package (pyscf) used to solve the
             mean field electronic structure problem
         core (list): indices of core orbitals
         active (list): indices of active orbitals
@@ -665,9 +665,9 @@ def meanfield(
     r"""Generates a file from which the mean field electronic structure
     of the molecule can be retrieved.
 
-    This function uses OpenFermion-PySCF and OpenFermion-Psi4 plugins to
+    This function uses OpenFermion-PySCF plugins to
     perform the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
-    chemistry packages ``PySCF`` and ``Psi4``, respectively. The mean field electronic
+    chemistry packages ``PySCF``. The mean field electronic
     structure is saved in an hdf5-formatted file.
 
     The charge of the molecule can be given to simulate cationic/anionic systems.
@@ -697,7 +697,6 @@ def meanfield(
             availability per element can be found
             `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx-basiselement>`_
         package (str): Quantum chemistry package used to solve the Hartree-Fock equations.
-            Either ``'pyscf'`` or ``'psi4'`` can be used.
         outpath (str): path to output directory
 
     Returns:
@@ -719,10 +718,10 @@ def meanfield(
 
     package = package.strip().lower()
 
-    if package not in ("psi4", "pyscf"):
+    if package not in ("pyscf"):
         error_message = (
             f"Integration with quantum chemistry package '{package}' is not available. \n Please set"
-            f" 'package' to 'pyscf' or 'psi4'."
+            f" 'package' to 'pyscf'."
         )
         raise TypeError(error_message)
 
@@ -735,12 +734,6 @@ def meanfield(
     ]
 
     molecule = openfermion.MolecularData(geometry, basis, mult, charge, filename=path_to_file)
-
-    if package == "psi4":
-        # pylint: disable=import-outside-toplevel
-        from openfermionpsi4 import run_psi4
-
-        run_psi4(molecule, run_scf=1, verbose=0, tolerate_error=1)
 
     if package == "pyscf":
         # pylint: disable=import-outside-toplevel
@@ -831,9 +824,9 @@ def molecular_hamiltonian(
     This function drives the construction of the second-quantized electronic Hamiltonian
     of a molecule and its transformation to the basis of Pauli matrices.
 
-    #. OpenFermion-PySCF or OpenFermion-Psi4 plugins are used to launch
+    #. OpenFermion-PySCF plugin is used to launch
        the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
-       chemistry package ``PySCF`` or ``Psi4``, respectively.
+       chemistry package ``PySCF``.
 
        - The net charge of the molecule can be given to simulate
          cationic/anionic systems. Also, the spin multiplicity can be input
@@ -874,7 +867,7 @@ def molecular_hamiltonian(
         basis (str): Atomic basis set used to represent the molecular orbitals. Basis set
             availability per element can be found
             `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx-basiselement>`_
-        package (str): quantum chemistry package (pyscf or psi4) used to solve the
+        package (str): quantum chemistry package (pyscf) used to solve the
             mean field electronic structure problem
         active_electrons (int): Number of active electrons. If not specified, all electrons
             are considered to be active.
