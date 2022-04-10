@@ -13,5 +13,4 @@ dask[delayed]
 autoray
 matplotlib
 opt_einsum
-pyscf>=1.7.2,<2.0
 openfermionpyscf==0.5
