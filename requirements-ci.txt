@@ -13,5 +13,5 @@ dask[delayed]
 autoray
 matplotlib
 opt_einsum
---only-binary=pyscf
+--only-binary = pyscf
 openfermionpyscf
