@@ -34,8 +34,6 @@ from pennylane.hf.tapering import (
     transform_hf,
 )
 
-pytest.skip(allow_module_level=True)
-
 
 @pytest.mark.parametrize(
     ("terms", "num_qubits", "result"),

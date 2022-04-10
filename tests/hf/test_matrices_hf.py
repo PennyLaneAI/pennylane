@@ -27,8 +27,6 @@ from pennylane.hf.matrices import (
 )
 from pennylane.hf.molecule import Molecule
 
-pytest.skip(allow_module_level=True)
-
 
 @pytest.mark.parametrize(
     ("n_electron", "c", "p_ref"),
