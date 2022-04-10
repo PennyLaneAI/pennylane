@@ -14,4 +14,3 @@ autoray
 matplotlib
 opt_einsum
 openfermionpyscf
-mkl

@@ -44,7 +44,7 @@ jobs:
         uses: s-weigand/setup-conda@v1
         with:
           activate-conda: true
-          python-version: 3.7
+          python-version: 3.8
           conda-channels: anaconda, conda-forge
 
       - name: Install dependencies
@@ -123,7 +123,7 @@ jobs:
         uses: s-weigand/setup-conda@v1
         with:
           activate-conda: true
-          python-version: 3.7
+          python-version: 3.8
           conda-channels: anaconda, conda-forge
 
       - name: Install dependencies
