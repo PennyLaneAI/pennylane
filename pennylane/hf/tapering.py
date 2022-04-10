@@ -414,9 +414,9 @@ def optimal_sector(qubit_op, generators, active_electrons):
     the wires that correspond to occupied orbitals in the HF state.
 
     Args:
-        qubit_op (Hamiltonian): Hamiltonian for which symmetries are being generated to perform tapering
+        qubit_op (Hamiltonian): Hamiltonian for which symmetries are being generated
         generators (list[Hamiltonian]): list of symmetry generators for the Hamiltonian
-        active_electrons (int): The number of active electrons in the system for generating the Hartree-Fock bitstring
+        active_electrons (int): The number of active electrons in the system
 
     Returns:
         list[int]: eigenvalues corresponding to the optimal sector which contains the ground state
@@ -472,7 +472,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
         generators (list[Hamiltonian]): list of generators of symmetries, taus, for the Hamiltonian
         paulixops (list[Operation]):  list of single-qubit Pauli-X operators
         paulix_sector (list[int]): list of eigenvalues of Pauli-X operators
-        num_electrons (int): number of active electrons in the system for generating the Hartree-Fock bitstring
+        num_electrons (int): number of active electrons in the system
         num_wires (int): number of wires in the system for generating the Hartree-Fock bitstring
 
     Returns:
