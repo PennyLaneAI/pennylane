@@ -2036,10 +2036,10 @@ def _cut_circuit_expand(
 
 def _cut_circuit_mc_expand(
     tape: QuantumTape,
-    shots: Optional[int] = None,
-    device_wires: Optional[Wires] = None,
     classical_processing_fn: Optional[callable] = None,
     max_depth: int = 1,
+    shots: Optional[int] = None,
+    device_wires: Optional[Wires] = None,
     auto_cutter: Union[bool, Callable] = False,
 ):
     """Main entry point for expanding operations in sample-based tapes until
