@@ -21,8 +21,6 @@ from pennylane.hf.molecule import Molecule
 from pennylane.hf.basis_set import BasisFunction
 from pennylane.hf.hartree_fock import generate_scf
 
-pytest.skip(allow_module_level=True)
-
 
 class TestMolecule:
     """Tests for generating a molecule object."""
