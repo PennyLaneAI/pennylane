@@ -40,16 +40,8 @@ jobs:
         with:
           python-version: ${{ matrix.config.python-version }}
 
-#      - name: Setup conda
-#        uses: s-weigand/setup-conda@v1
-#        with:
-#          activate-conda: true
-#          python-version: 3.8
-#          conda-channels: anaconda, conda-forge
-
       - name: Install dependencies
         run: |
-#          conda install -c pyscf pyscf
           python -m pip install --upgrade pip
           pip install -r requirements-ci.txt
           pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
@@ -119,16 +111,8 @@ jobs:
         with:
           python-version: 3.8
 
-#      - name: Setup conda
-#        uses: s-weigand/setup-conda@v1
-#        with:
-#          activate-conda: true
-#          python-version: 3.8
-#          conda-channels: anaconda, conda-forge
-
       - name: Install dependencies
         run: |
-#          conda install -c pyscf pyscf
           python -m pip install --upgrade pip
           pip install -r requirements-ci.txt
           pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
