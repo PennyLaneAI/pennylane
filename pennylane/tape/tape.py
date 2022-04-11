@@ -951,7 +951,7 @@ class QuantumTape(AnnotatedQueue):
 
         Args:
             num_systems (int): the number of qubits/qumodes
-            device (~.Device): a PennyLane device
+            device (.Device): a PennyLane device
 
         Returns:
             int: the number of basis states
