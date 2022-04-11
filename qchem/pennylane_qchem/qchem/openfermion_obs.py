@@ -15,19 +15,24 @@
 values can be used to simulate molecular properties.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods
+import os
+
 import numpy as np
 
 import pennylane as qml
 
 from . import openfermion
 
+# Bohr-Angstrom correlation coefficient (https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0)
+bohr_angs = 0.529177210903
+
 
 def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
 
-    r"""Builds the Fermion many-body observable whose expectation value can be
+    r"""Builds the fermionic many-body observable whose expectation value can be
     measured in PennyLane.
 
-    The second-quantized operator of the Fermion many-body system can combine one-particle
+    The second-quantized operator of the fermionic many-body system can combine one-particle
     and two-particle operators as in the case of electronic Hamiltonians :math:`\hat{H}`:
 
     .. math::
@@ -44,7 +49,7 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     are the particle creation and annihilation operators, respectively.
     :math:`\langle \alpha \vert \hat{t} \vert \beta \rangle` denotes the matrix element of
     the single-particle operator :math:`\hat{t}` entering the observable. For example,
-    in electronic structure calculations, this is the case for: the kinetic energy operator,
+    in electronic structure calculations, this is the case for the kinetic energy operator,
     the nuclei Coulomb potential, or any other external fields included in the Hamiltonian.
     On the other hand, :math:`\langle \alpha, \beta \vert \hat{v} \vert \gamma, \delta \rangle`
     denotes the matrix element of the two-particle operator :math:`\hat{v}`, for example, the
@@ -449,7 +454,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     return v_op
 
 
-def dipole(
+def dipole_of(
     symbols,
     coordinates,
     name="molecule",
@@ -631,9 +636,277 @@ def dipole(
     return dip
 
 
-__all__ = [
-    "observable",
-    "dipole",
-    "one_particle",
-    "two_particle",
-]
+def meanfield(
+    symbols,
+    coordinates,
+    name="molecule",
+    charge=0,
+    mult=1,
+    basis="sto-3g",
+    package="pyscf",
+    outpath=".",
+):  # pylint: disable=too-many-arguments
+    r"""Generates a file from which the mean field electronic structure
+    of the molecule can be retrieved.
+
+    This function uses OpenFermion-PySCF and OpenFermion-Psi4 plugins to
+    perform the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
+    chemistry packages ``PySCF`` and ``Psi4``, respectively. The mean field electronic
+    structure is saved in an hdf5-formatted file.
+
+    The charge of the molecule can be given to simulate cationic/anionic systems.
+    Also, the spin multiplicity can be input to determine the number of unpaired electrons
+    occupying the HF orbitals as illustrated in the figure below.
+
+    |
+
+    .. figure:: ../../_static/qchem/hf_references.png
+        :align: center
+        :width: 50%
+
+    |
+
+    Args:
+        symbols (list[str]): symbols of the atomic species in the molecule
+        coordinates (array[float]): 1D array with the atomic positions in Cartesian
+            coordinates. The coordinates must be given in atomic units and the size of the array
+            should be ``3*N`` where ``N`` is the number of atoms.
+        name (str): molecule label
+        charge (int): net charge of the system
+        mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1` for
+            :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
+            Possible values for ``mult`` are :math:`1, 2, 3, \ldots`. If not specified,
+            a closed-shell HF state is assumed.
+        basis (str): Atomic basis set used to represent the HF orbitals. Basis set
+            availability per element can be found
+            `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx-basiselement>`_
+        package (str): Quantum chemistry package used to solve the Hartree-Fock equations.
+            Either ``'pyscf'`` or ``'psi4'`` can be used.
+        outpath (str): path to output directory
+
+    Returns:
+        str: absolute path to the file containing the mean field electronic structure
+
+    **Example**
+
+    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+    >>> meanfield(symbols, coordinates, name="h2")
+    ./h2_pyscf_sto-3g
+    """
+
+    if coordinates.size != 3 * len(symbols):
+        raise ValueError(
+            f"The size of the array 'coordinates' has to be 3*len(symbols) = {3 * len(symbols)};"
+            f" got 'coordinates.size' = {coordinates.size}"
+        )
+
+    package = package.strip().lower()
+
+    if package not in ("psi4", "pyscf"):
+        error_message = (
+            f"Integration with quantum chemistry package '{package}' is not available. \n Please set"
+            f" 'package' to 'pyscf' or 'psi4'."
+        )
+        raise TypeError(error_message)
+
+    filename = name + "_" + package.lower() + "_" + basis.strip()
+    path_to_file = os.path.join(outpath.strip(), filename)
+
+    geometry = [
+        [symbol, tuple(np.array(coordinates)[3 * i : 3 * i + 3] * bohr_angs)]
+        for i, symbol in enumerate(symbols)
+    ]
+
+    molecule = openfermion.MolecularData(geometry, basis, mult, charge, filename=path_to_file)
+
+    if package == "psi4":
+        # pylint: disable=import-outside-toplevel
+        from openfermionpsi4 import run_psi4
+
+        run_psi4(molecule, run_scf=1, verbose=0, tolerate_error=1)
+
+    if package == "pyscf":
+        # pylint: disable=import-outside-toplevel
+        from openfermionpyscf import run_pyscf
+
+        run_pyscf(molecule, run_scf=1, verbose=0)
+
+    return path_to_file
+
+
+def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
+    r"""Decomposes the molecular Hamiltonian into a linear combination of Pauli operators using
+    OpenFermion tools.
+
+    This function uses OpenFermion functions to build the second-quantized electronic Hamiltonian
+    of the molecule and map it to the Pauli basis using the Jordan-Wigner or Bravyi-Kitaev
+    transformation.
+
+    Args:
+        hf_file (str): absolute path to the hdf5-formatted file with the
+            Hartree-Fock electronic structure
+        mapping (str): Specifies the transformation to map the fermionic Hamiltonian to the
+            Pauli basis. Input values can be ``'jordan_wigner'`` or ``'bravyi_kitaev'``.
+        core (list): indices of core orbitals, i.e., the orbitals that are
+            not correlated in the many-body wave function
+        active (list): indices of active orbitals, i.e., the orbitals used to
+            build the correlated many-body wave function
+
+    Returns:
+        QubitOperator: an instance of OpenFermion's ``QubitOperator``
+
+    **Example**
+
+    >>> decompose('./pyscf/sto-3g/h2', mapping='bravyi_kitaev')
+    (-0.04207897696293986+0j) [] + (0.04475014401986122+0j) [X0 Z1 X2] +
+    (0.04475014401986122+0j) [X0 Z1 X2 Z3] +(0.04475014401986122+0j) [Y0 Z1 Y2] +
+    (0.04475014401986122+0j) [Y0 Z1 Y2 Z3] +(0.17771287459806262+0j) [Z0] +
+    (0.17771287459806265+0j) [Z0 Z1] +(0.1676831945625423+0j) [Z0 Z1 Z2] +
+    (0.1676831945625423+0j) [Z0 Z1 Z2 Z3] +(0.12293305054268105+0j) [Z0 Z2] +
+    (0.12293305054268105+0j) [Z0 Z2 Z3] +(0.1705973832722409+0j) [Z1] +
+    (-0.2427428049645989+0j) [Z1 Z2 Z3] +(0.1762764080276107+0j) [Z1 Z3] +
+    (-0.2427428049645989+0j) [Z2]
+    """
+
+    # loading HF data from the hdf5 file
+    molecule = openfermion.MolecularData(filename=hf_file.strip())
+
+    # getting the terms entering the second-quantized Hamiltonian
+    terms_molecular_hamiltonian = molecule.get_molecular_hamiltonian(
+        occupied_indices=core, active_indices=active
+    )
+
+    # generating the fermionic Hamiltonian
+    fermionic_hamiltonian = openfermion.transforms.get_fermion_operator(terms_molecular_hamiltonian)
+
+    mapping = mapping.strip().lower()
+
+    if mapping not in ("jordan_wigner", "bravyi_kitaev"):
+        raise TypeError(
+            f"The '{mapping}' transformation is not available. \n "
+            f"Please set 'mapping' to 'jordan_wigner' or 'bravyi_kitaev'."
+        )
+
+    # fermionic-to-qubit transformation of the Hamiltonian
+    if mapping == "bravyi_kitaev":
+        return openfermion.transforms.bravyi_kitaev(fermionic_hamiltonian)
+
+    return openfermion.transforms.jordan_wigner(fermionic_hamiltonian)
+
+
+def molecular_hamiltonian(
+    symbols,
+    coordinates,
+    name="molecule",
+    charge=0,
+    mult=1,
+    basis="sto-3g",
+    package="pyscf",
+    active_electrons=None,
+    active_orbitals=None,
+    mapping="jordan_wigner",
+    outpath=".",
+    wires=None,
+):  # pylint:disable=too-many-arguments
+    r"""Generates the qubit Hamiltonian of a molecule.
+
+    This function drives the construction of the second-quantized electronic Hamiltonian
+    of a molecule and its transformation to the basis of Pauli matrices.
+
+    #. OpenFermion-PySCF or OpenFermion-Psi4 plugins are used to launch
+       the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
+       chemistry package ``PySCF`` or ``Psi4``, respectively.
+
+       - The net charge of the molecule can be given to simulate
+         cationic/anionic systems. Also, the spin multiplicity can be input
+         to determine the number of unpaired electrons occupying the HF orbitals
+         as illustrated in the left panel of the figure below.
+
+       - The basis of Gaussian-type *atomic* orbitals used to represent the *molecular* orbitals
+         can be specified to go beyond the minimum basis approximation. Basis set availability
+         per element can be found
+         `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx-basiselement>`_
+
+    #. An active space can be defined for a given number of *active electrons*
+       occupying a reduced set of *active orbitals* in the vicinity of the frontier
+       orbitals as sketched in the right panel of the figure below.
+
+    #. Finally, the second-quantized Hamiltonian is mapped to the Pauli basis and
+       converted to a PennyLane observable.
+
+    |
+
+    .. figure:: ../../_static/qchem/fig_mult_active_space.png
+        :align: center
+        :width: 90%
+
+    |
+
+    Args:
+        symbols (list[str]): symbols of the atomic species in the molecule
+        coordinates (array[float]): 1D array with the atomic positions in Cartesian
+            coordinates. The coordinates must be given in atomic units and the size of the array
+            should be ``3*N`` where ``N`` is the number of atoms.
+        name (str): name of the molecule
+        charge (int): Net charge of the molecule. If not specified a a neutral system is assumed.
+        mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1`
+            for :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
+            Possible values of ``mult`` are :math:`1, 2, 3, \ldots`. If not specified,
+            a closed-shell HF state is assumed.
+        basis (str): Atomic basis set used to represent the molecular orbitals. Basis set
+            availability per element can be found
+            `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx-basiselement>`_
+        package (str): quantum chemistry package (pyscf or psi4) used to solve the
+            mean field electronic structure problem
+        active_electrons (int): Number of active electrons. If not specified, all electrons
+            are considered to be active.
+        active_orbitals (int): Number of active orbitals. If not specified, all orbitals
+            are considered to be active.
+        mapping (str): transformation (``'jordan_wigner'`` or ``'bravyi_kitaev'``) used to
+            map the fermionic Hamiltonian to the qubit Hamiltonian
+        outpath (str): path to the directory containing output files
+        wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
+            For types Wires/list/tuple, each item in the iterable represents a wire label
+            corresponding to the qubit number equal to its index.
+            For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted for
+            partial mapping. If None, will use identity map.
+
+    Returns:
+        tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
+        and the number of qubits
+
+    **Example**
+
+    >>> symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+    >>> H, qubits = molecular_hamiltonian(symbols, coordinates)
+    >>> print(qubits)
+    4
+    >>> print(H)
+    (-0.04207897647782188) [I0]
+    + (0.17771287465139934) [Z0]
+    + (0.1777128746513993) [Z1]
+    + (-0.24274280513140484) [Z2]
+    + (-0.24274280513140484) [Z3]
+    + (0.17059738328801055) [Z0 Z1]
+    + (0.04475014401535161) [Y0 X1 X2 Y3]
+    + (-0.04475014401535161) [Y0 Y1 X2 X3]
+    + (-0.04475014401535161) [X0 X1 Y2 Y3]
+    + (0.04475014401535161) [X0 Y1 Y2 X3]
+    + (0.12293305056183801) [Z0 Z2]
+    + (0.1676831945771896) [Z0 Z3]
+    + (0.1676831945771896) [Z1 Z2]
+    + (0.12293305056183801) [Z1 Z3]
+    + (0.176276408043196) [Z2 Z3]
+    """
+
+    hf_file = meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
+
+    molecule = openfermion.MolecularData(filename=hf_file)
+
+    core, active = qml.qchem.active_space(
+        molecule.n_electrons, molecule.n_orbitals, mult, active_electrons, active_orbitals
+    )
+
+    h_of, qubits = (decompose(hf_file, mapping, core, active), 2 * len(active))
+
+    return qml.qchem.convert.import_operator(h_of, wires=wires), qubits

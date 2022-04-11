@@ -19,7 +19,7 @@ from pennylane import numpy as np
 from pennylane.gradients import param_shift_cv
 from pennylane.gradients.parameter_shift_cv import (
     _grad_method,
-    _gradient_analysis,
+    _gradient_analysis_cv,
     _transform_observable,
 )
 
@@ -46,7 +46,7 @@ class TestGradAnalysis:
         assert _grad_method(tape, 3) == "A"
         assert _grad_method(tape, 4) == "A"
 
-        _gradient_analysis(tape)
+        _gradient_analysis_cv(tape)
 
         assert tape._par_info[0]["grad_method"] is None
         assert tape._par_info[1]["grad_method"] == "A"
@@ -54,7 +54,7 @@ class TestGradAnalysis:
         assert tape._par_info[3]["grad_method"] == "A"
         assert tape._par_info[4]["grad_method"] == "A"
 
-        _gradient_analysis(tape)
+        _gradient_analysis_cv(tape)
 
     def test_independent(self):
         """Test that an independent variable is properly marked
@@ -68,7 +68,7 @@ class TestGradAnalysis:
         assert _grad_method(tape, 0) == "A"
         assert _grad_method(tape, 1) == "0"
 
-        _gradient_analysis(tape)
+        _gradient_analysis_cv(tape)
 
         assert tape._par_info[0]["grad_method"] == "A"
         assert tape._par_info[1]["grad_method"] == "0"
@@ -310,7 +310,7 @@ class TestParameterShiftLogic:
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
-        assert res == ()
+        assert res.shape == (1, 0)
 
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is

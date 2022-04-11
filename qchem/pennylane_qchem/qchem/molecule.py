@@ -15,9 +15,9 @@
 This module contains functions and classes to create a Molecule object. This object stores all
 the necessary information to perform a Hartree-Fock calculation for a given molecule.
 """
+# pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
 import itertools
 
-# pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
 from pennylane import numpy as np
 
 from .basis_data import atomic_numbers
@@ -69,8 +69,8 @@ class Molecule:
         coeff=None,
     ):
 
-        if basis_name not in ["sto-3g", "STO-3G"]:
-            raise ValueError("Currently, the only supported basis set is 'sto-3g'.")
+        if basis_name not in ["sto-3g", "STO-3G", "6-31g", "6-31G"]:
+            raise ValueError("Currently, the only supported basis sets are 'sto-3g' and '6-31g'.")
 
         if set(symbols) - set(atomic_numbers):
             raise ValueError(f"Atoms in {set(symbols) - set(atomic_numbers)} are not supported.")

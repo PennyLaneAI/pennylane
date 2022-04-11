@@ -6,6 +6,13 @@ of circuits.
 
 .. currentmodule:: pennylane.drawer
 
+.. automodapi:: pennylane.drawer
+    :no-heading:
+    :no-inheritance-diagram:
+    :no-inherited-members:
+    :skip: available_styles
+    :skip: use_style
+
 Styling Matplotlib Circuit Graphics
 -----------------------------------
 
@@ -50,14 +57,3 @@ Currently Available Styles
 +-----+-----+-----+
 +|bws|+|bwd|+|def|+
 +-----+-----+-----+
-
-
-Developer Methods
------------------
-
-.. automodapi:: pennylane.drawer
-    :no-heading:
-    :no-inheritance-diagram:
-    :no-inherited-members:
-    :skip: available_styles
-    :skip: use_style

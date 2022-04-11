@@ -18,16 +18,88 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
 from pennylane.gradients.gradient_transform import gradient_analysis
+from pennylane.gradients.parameter_shift import _get_operation_recipe
 from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
+
+
+class TestGetOperationRecipe:
+    """Test the helper function `_get_operation_recipe` that obtains the
+    `grad_recipe` for a given operation in a tape."""
+
+    @pytest.mark.parametrize(
+        "orig_op, frequencies, shifts",
+        [
+            (qml.RX, (1.0,), None),
+            (qml.RX, (1.0,), (np.pi / 2,)),
+            (qml.CRY, (0.5, 1), None),
+            (qml.CRY, (0.5, 1), (0.4, 0.8)),
+        ],
+    )
+    def test_custom_recipe_first_order(self, orig_op, frequencies, shifts):
+        """Test that a custom recipe is returned correctly for first-order derivatives."""
+        c, s = qml.gradients.generate_shift_rule(frequencies, shifts=shifts)
+        recipe = list(zip(c, np.ones_like(c), s))
+
+        class DummyOp(orig_op):
+            grad_recipe = (recipe,)
+
+        with qml.tape.QuantumTape() as tape:
+            DummyOp(0.2, wires=list(range(DummyOp.num_wires)))
+
+        out_recipe = _get_operation_recipe(tape, 0, shifts=shifts, order=1)
+        assert qml.math.allclose(out_recipe[0], c)
+        assert qml.math.allclose(out_recipe[1], np.ones_like(c))
+
+        if shifts is None:
+            assert qml.math.allclose(out_recipe[2], s)
+        else:
+            exp_out_shifts = [-s for s in shifts[::-1]] + list(shifts)
+            assert qml.math.allclose(np.sort(s), exp_out_shifts)
+            assert qml.math.allclose(np.sort(out_recipe[2]), np.sort(exp_out_shifts))
+
+    @pytest.mark.parametrize(
+        "orig_op, frequencies, shifts",
+        [
+            (qml.RX, (1.0,), None),
+            (qml.RX, (1.0,), (np.pi / 2,)),
+            (qml.CRY, (0.5, 1), None),
+            (qml.CRY, (0.5, 1), (0.4, 0.8)),
+        ],
+    )
+    def test_custom_recipe_second_order(self, orig_op, frequencies, shifts):
+        """Test that a custom recipe is returned correctly for second-order derivatives."""
+        c, s = qml.gradients.generate_shift_rule(frequencies, shifts=shifts)
+        recipe = list(zip(c, np.ones_like(c), s))
+
+        class DummyOp(orig_op):
+            grad_recipe = (recipe,)
+
+        with qml.tape.QuantumTape() as tape:
+            DummyOp(0.2, wires=list(range(DummyOp.num_wires)))
+
+        out_recipe = _get_operation_recipe(tape, 0, shifts=shifts, order=2)
+        c2, s2 = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=2)
+        assert qml.math.allclose(out_recipe[0], c2)
+        assert qml.math.allclose(out_recipe[1], np.ones_like(c2))
+        assert qml.math.allclose(out_recipe[2], s2)
+
+    @pytest.mark.parametrize("order", [0, 3])
+    def test_error_wrong_order(self, order):
+        """Test that get_operation_recipe raises an error for orders other than 1 and 2"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.2, wires=0)
+
+        with pytest.raises(NotImplementedError, match="only is implemented for orders 1 and 2."):
+            _get_operation_recipe(tape, 0, shifts=None, order=order)
 
 
 class TestGradAnalysis:
     """Tests for parameter gradient methods"""
 
     def test_non_differentiable(self):
-        """Test that a non-differentiable parameter is
-        correctly marked"""
+        """Test that a non-differentiable parameter is correctly marked"""
         psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
 
         with qml.tape.QuantumTape() as tape:
@@ -239,7 +311,8 @@ class TestParamShift:
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
-        assert res == ()
+        assert isinstance(res, np.ndarray)
+        assert res.shape == (1, 0)
 
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is

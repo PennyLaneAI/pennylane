@@ -1925,7 +1925,7 @@ class MultiControlledX(Operation):
     @staticmethod
     def _decomposition_with_many_workers(control_wires, target_wire, work_wires):
         """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
-        https://arxiv.org/pdf/quant-ph/9503016.pdf, which requires a suitably large register of
+        https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
         work wires"""
         num_work_wires_needed = len(control_wires) - 2
         work_wires = work_wires[:num_work_wires_needed]
@@ -1968,7 +1968,7 @@ class MultiControlledX(Operation):
     @staticmethod
     def _decomposition_with_one_worker(control_wires, target_wire, work_wire):
         """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.3 of
-        https://arxiv.org/pdf/quant-ph/9503016.pdf, which requires a single work wire"""
+        https://arxiv.org/abs/quant-ph/9503016, which requires a single work wire"""
         tot_wires = len(control_wires) + 2
         partition = int(np.ceil(tot_wires / 2))
 

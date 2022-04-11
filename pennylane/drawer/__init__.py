@@ -14,15 +14,14 @@
 """
 This module provides the circuit drawing functionality used to display circuits visually.
 
-.. currentmodule:: pennylane.circuit_drawer
+.. currentmodule:: pennylane.drawer
 .. autosummary::
     :toctree: api
 
 """
 
+from .draw import draw, draw_mpl
 from .tape_text import tape_text
 from .tape_mpl import tape_mpl
 from .mpldrawer import MPLDrawer
-from .drawable_layers import drawable_layers
-from .utils import convert_wire_order
 from .style import available_styles, use_style
