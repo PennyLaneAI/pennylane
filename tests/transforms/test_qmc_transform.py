@@ -42,7 +42,7 @@ def r_unitary(gate, alpha, control_wires, target_wire):
     To implement a uniformly-controlled rotation using single qubit rotations and CNOT gates,
     a decomposition based on Gray codes is used. For this purpose, the multi-controlled rotation
     angles alpha have to be converted into a set of non-controlled rotation angles theta.
-    For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/pdf/quant-ph/0504100.pdf>`_.
+    For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/abs/quant-ph/0504100>`_.
 
     Args:
         gate (.Operation): gate to be applied, needs to have exactly one parameter

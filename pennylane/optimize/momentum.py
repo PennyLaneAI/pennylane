@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Momentum optimizer"""
-from pennylane.utils import _flatten, unflatten
-from pennylane.numpy import ndarray, tensor
 from .gradient_descent import GradientDescentOptimizer
 
 
@@ -59,46 +57,27 @@ class MomentumOptimizer(GradientDescentOptimizer):
         args_new = list(args)
 
         if self.accumulation is None:
-            self.accumulation = [None] * len(args)
+            self.accumulation = [0.0] * len(args)
 
         trained_index = 0
         for index, arg in enumerate(args):
-            if getattr(arg, "requires_grad", True):
-                x_flat = _flatten(arg)
-                grad_flat = _flatten(grad[trained_index])
+            if getattr(arg, "requires_grad", False):
+
+                self._update_accumulation(index, grad[trained_index])
+                args_new[index] = arg - self.accumulation[index]
+
                 trained_index += 1
-
-                self._update_accumulation(index, grad_flat)
-
-                x_new_flat = [e - a for a, e in zip(self.accumulation[index], x_flat)]
-
-                args_new[index] = unflatten(x_new_flat, arg)
-
-                if isinstance(arg, ndarray):
-                    # Due to a bug in unflatten, input PennyLane tensors
-                    # are being unwrapped. Here, we cast them back to PennyLane
-                    # tensors.
-                    # TODO: remove when the following is fixed:
-                    # https://github.com/PennyLaneAI/pennylane/issues/966
-                    args_new[index] = args_new[index].view(tensor)
-                    args_new[index].requires_grad = True
 
         return args_new
 
-    def _update_accumulation(self, index, grad_flat):
+    def _update_accumulation(self, index, grad):
         r"""Update the accumulation.
 
         Args:
             index (int): index of argument to update.
-            grad_flat (list): flattened list form of gradient.
+            grad (ndarray): gradient at index
         """
-        if self.accumulation[index] is None:
-            self.accumulation[index] = [self.stepsize * g for g in grad_flat]
-        else:
-            self.accumulation[index] = [
-                self.momentum * a + self.stepsize * g
-                for a, g in zip(self.accumulation[index], grad_flat)
-            ]
+        self.accumulation[index] = self.momentum * self.accumulation[index] + self.stepsize * grad
 
     def reset(self):
         """Reset optimizer by erasing memory of past steps."""

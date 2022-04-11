@@ -16,73 +16,102 @@ This module contains functions for computing the parameter-shift hessian
 of a qubit-based quantum tape.
 """
 import warnings
+import itertools as it
 from collections.abc import Sequence
 
-import numpy as np
-
 import pennylane as qml
+from pennylane import numpy as np
 
-from .gradient_transform import gradient_analysis, grad_method_validation
+from .gradient_transform import (
+    gradient_analysis,
+    grad_method_validation,
+    choose_grad_methods,
+)
 from .hessian_transform import hessian_transform
+from .parameter_shift import _get_operation_recipe
+from .general_shift_rules import (
+    _combine_shift_rules_with_multipliers,
+    generate_shifted_tapes,
+    generate_multishifted_tapes,
+)
 
 
-def _process_hessian_recipe(hessian_recipe, tol=1e-10):
-    """Utility function to process Hessian recipes."""
-
-    hessian_recipe = np.array(hessian_recipe).T
-    # remove all small coefficients, shifts, and multipliers
-    hessian_recipe[np.abs(hessian_recipe) < tol] = 0
-    # remove columns where the coefficients are 0
-    hessian_recipe = hessian_recipe[:, :, ~(hessian_recipe[0, 0] == 0)]
-    # sort columns according to abs(shift2) then abs(shift1)
-    hessian_recipe = hessian_recipe[:, :, np.lexsort(np.abs(hessian_recipe)[:, -1])]
-
-    return hessian_recipe[0, 0], hessian_recipe[0, 1], hessian_recipe[:, 2].T
-
-
-def generate_multishifted_tapes(tape, idx, shifts):
-    r"""Generate a list of tapes where the corresponding trainable parameter
-    indices have been shifted by the values given.
-
-    Args:
-        tape (.QuantumTape): input quantum tape
-        idx (list[int]): trainable parameter indices to shift the parameters of
-        shifts (list[list[float or int]]): nested list of shift values, each
-            list containing a value for each index
-
-    Returns:
-        list[QuantumTape]: List of quantum tapes. Each tape has multiple parameters
-            (indicated by ``idx``) shifted by the values of ``shifts``. The length
-            of the returned list of tapes will match the length of ``shifts``.
+def _collect_recipes(tape, argnum, diff_methods, diagonal_shifts, off_diagonal_shifts):
+    r"""Extract second order recipes for the tape operations for the diagonal of the Hessian
+    as well as the first-order derivative recipes for the off-diagonal entries.
     """
-    params = list(tape.get_parameters())
-    tapes = []
+    diag_recipes = []
+    partial_offdiag_recipes = []
+    for i in range(tape.num_params):
+        if i not in argnum or diff_methods[i] == "0":
+            # hessian will be set to 0 for this row/column
+            diag_recipes.append(None)
+            partial_offdiag_recipes.append((None, None, None))
+            continue
 
-    for shift in shifts:
-        new_params = params.copy()
-        shifted_tape = tape.copy(copy_operations=True)
+        # Get the diagonal second-order derivative recipe
+        idx = argnum.index(i)
+        diag_shifts = None if diagonal_shifts is None else diagonal_shifts[idx]
+        diag_recipes.append(_get_operation_recipe(tape, i, diag_shifts, order=2))
 
-        for id_, s in zip(idx, shift):
-            dtype = new_params[id_].dtype
-            new_params[id_] = new_params[id_] + qml.math.convert_like(s, new_params[id_])
-            new_params[id_] = qml.math.cast(new_params[id_], dtype)
+        # Create the first-order gradient recipes per parameter
+        _shifts = None if off_diagonal_shifts is None else off_diagonal_shifts[idx]
+        partial_offdiag_recipes.append(_get_operation_recipe(tape, i, _shifts, order=1))
 
-        shifted_tape.set_parameters(new_params)
-        tapes.append(shifted_tape)
-
-    return tapes
+    return diag_recipes, partial_offdiag_recipes
 
 
-def compute_hessian_tapes(tape, diff_methods, f0=None):
+def _generate_off_diag_tapes(tape, idx, recipe_i, recipe_j):
+    r"""Combine two univariate first order recipes and create
+    multi-shifted tapes to compute the off-diagonal entry of the Hessian."""
+
+    if recipe_j[0] is None:
+        return [], None, None
+
+    # The rows of combined_rulesT contain the coefficients (1), the multipliers (2) and the
+    # shifts (2) in that order, with the number in brackets indicating the number of columns
+    combined_rulesT = _combine_shift_rules_with_multipliers(
+        [qml.math.stack(recipe_i).T, qml.math.stack(recipe_j).T]
+    )
+    # If there are unmultiplied, unshifted tapes, the coefficient is memorized and the term
+    # removed from the list of tapes to create
+    if np.allclose(combined_rulesT[1:3, 0], 1.0) and np.allclose(combined_rulesT[3:5, 0], 0.0):
+        unshifted_coeff = combined_rulesT[0, 0]
+        combined_rulesT = combined_rulesT[:, 1:]
+    else:
+        unshifted_coeff = None
+
+    h_tapes = generate_multishifted_tapes(tape, idx, combined_rulesT[3:5].T, combined_rulesT[1:3].T)
+
+    return h_tapes, combined_rulesT[0], unshifted_coeff
+
+
+def expval_hessian_param_shift(
+    tape, argnum, diff_methods, diagonal_shifts, off_diagonal_shifts, f0
+):
     r"""Generate the Hessian tapes that are used in the computation of the second derivative of a
     quantum tape, using analytical parameter-shift rules to do so exactly. Also define a
-    post-processing function to combine the results of evaluating the Hessian tapes.
+    post-processing function to combine the results of evaluating the tapes into the Hessian.
 
     Args:
-        tape (.QuantumTape): input quantum tape
+        tape (.QuantumTape): quantum tape to differentiate
+        argnum (int or list[int] or None): Parameter indices to differentiate
+            with respect to. If not provided, the Hessian with respect to all
+            trainable indices is returned.
         diff_methods (list[string]): The differentiation method to use for each trainable parameter.
             Can be "A" or "0", where "A" is the analytical parameter shift rule and "0" indicates
             a 0 derivative (that is the parameter does not affect the tape's output).
+        diagonal_shifts (list[tuple[int or float]]): List containing tuples of shift values
+            for the Hessian diagonal.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple length should match the number of frequencies for that parameter.
+            If unspecified, equidistant shifts are used.
+        off_diagonal_shifts (list[tuple[int or float]]): List containing tuples of shift
+            values for the off-diagonal entries of the Hessian.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple should match the number of frequencies for that parameter.
+            The combination of shifts into bivariate shifts is performed automatically.
+            If unspecified, equidistant shifts are used.
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the Hessian tapes include the original input tape, the 'f0' value is used
             instead of evaluating the input tape, reducing the number of device invocations.
@@ -92,64 +121,63 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
             addition to a post-processing function to be applied to the results of the evaluated
             tapes.
     """
+    # pylint: disable=too-many-arguments, too-many-statements
+    argnum = tape.trainable_params if argnum is None else argnum
     h_dim = tape.num_params
+
+    unshifted_coeffs = {}
+    # Marks whether we will need to add the unshifted tape to all Hessian tapes.
+    add_unshifted = f0 is None
+
+    # Assemble all univariate recipes for the diagonal and as partial components for the
+    # off-diagonal entries.
+    diag_recipes, partial_offdiag_recipes = _collect_recipes(
+        tape, argnum, diff_methods, diagonal_shifts, off_diagonal_shifts
+    )
 
     hessian_tapes = []
     hessian_coeffs = []
-    unshifted_coeffs = {}
-    shapes = []
-
-    # The Hessian for a 2-term parameter-shift rule can be expressed via the following recipes.
-    # Off-diagonal elements of the Hessian require shifts to two different parameter indices.
-    # A recipe can thus be expressed via the tape patterns:
-    #       [[coeff, dummy], [mult, dummy], [shift1, shift2]]    (dummy values for ndarray creation)
-    # Each corresponding to one term in the parameter-shift formula:
-    #       didj f(x) = coeff * f(mult*x + shift1*ei + shift2*ej) + ...
-    diag_recipe = [[[0.5], [1], [np.pi]], [[-0.5], [1], [0]]]
-    off_diag_recipe = [
-        [[0.25, 1], [1, 1], [np.pi / 2, np.pi / 2]],
-        [[-0.25, 1], [1, 1], [-np.pi / 2, np.pi / 2]],
-        [[-0.25, 1], [1, 1], [np.pi / 2, -np.pi / 2]],
-        [[0.25, 1], [1, 1], [-np.pi / 2, -np.pi / 2]],
-    ]
-
     for i in range(h_dim):
-        # optimization: skip partial derivatives that are zero
-        if diff_methods[i] == "0":
-            # We may fill in coefficients and shapes for the entire row.
-            hessian_coeffs.extend([[]] * h_dim)
-            shapes.extend(((i, j), 0) for j in range(h_dim))
+        # The diagonal recipe is None if the parameter is not trainable or not in argnum
+        if diag_recipes[i] is None:
+            hessian_coeffs.extend([None] * (h_dim - i))
             continue
 
-        # Prefill Hessian in the lower triangular part for optimization below
-        hessian_coeffs.extend([[]] * i)
-        shapes.extend(((i, j), 0) for j in range(i))
+        # Obtain the recipe for the diagonal.
+        dc_i, dm_i, ds_i = diag_recipes[i]
+        # Add the unshifted tape if it is required for this diagonal, it has not been
+        # added yet, and it is required because f0 was not provided.
+        if ds_i[0] == 0 and dm_i[0] == 1.0:
+            if add_unshifted:
+                hessian_tapes.insert(0, tape)
+                add_unshifted = False
+            unshifted_coeffs[(i, i)] = dc_i[0]
+            dc_i, dm_i, ds_i = dc_i[1:], dm_i[1:], ds_i[1:]
 
-        # optimization: only generate tapes for upper triangular matrix (j >= i)
-        for j in range(i, h_dim):
-            # optimization: skip partial derivatives that are zero
-            if diff_methods[j] == "0":
-                hessian_coeffs.append([])
-                shapes.append(((i, j), 0))
-                continue
+        # Create the shifted tapes for the diagonal entry and store them along with coefficients
+        diag_tapes = generate_shifted_tapes(tape, i, ds_i, dm_i)
+        hessian_tapes.extend(diag_tapes)
+        hessian_coeffs.append(dc_i)
 
-            recipe = diag_recipe if i == j else off_diag_recipe
-            coeffs, _, shifts = _process_hessian_recipe(recipe)
+        recipe_i = partial_offdiag_recipes[i]
+        for j in range(i + 1, h_dim):
+            recipe_j = partial_offdiag_recipes[j]
 
-            # optimization: only compute the unshifted tape once
-            if all(np.array(shifts[0]) == 0):
-                if not unshifted_coeffs and f0 is None:
-                    hessian_tapes.insert(0, tape)
-
-                unshifted_coeffs[(i, j)] = coeffs[0]
-                coeffs, shifts = coeffs[1:], shifts[1:]
-
-            # generate the Hessian tapes
-            hessian_coeffs.append(coeffs)
-            h_tapes = generate_multishifted_tapes(tape, (i, j), shifts)
-
-            hessian_tapes.extend(h_tapes)
-            shapes.append(((i, j), len(h_tapes)))
+            # Create tapes and coefficients for the off-diagonal entry by combining
+            # the two univariate first-order derivative recipes.
+            off_diag_data = _generate_off_diag_tapes(tape, (i, j), recipe_i, recipe_j)
+            hessian_tapes.extend(off_diag_data[0])
+            hessian_coeffs.append(off_diag_data[1])
+            # It should not be possible to obtain an unshifted tape for the off-diagonal
+            # terms if there hasn't already been one for the diagonal terms.
+            # TODO: This will depend on the decision on how diagonal_shifts are formatted.
+            # TODO: If this is confirmed, remove the following safety check
+            if off_diag_data[2] is not None:
+                raise ValueError(
+                    "A tape without parameter shifts was created unexpectedly during "
+                    "the computation of the Hessian. Please submit a bug report "
+                    "at https://github.com/PennyLaneAI/pennylane/issues"
+                )  # pragma: no cover
 
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
@@ -162,29 +190,31 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
         out_dim = qml.math.shape(results)[1:]
         # The desired shape of the Hessian is:
         #       (QNode output dimensions, # trainable gate args, # trainable gate args),
-        # but first we accumulate all elements into a list, since no array assingment is possible.
+        # but first we accumulate all elements into a list, since no array assignment is possible.
         hessian = []
         # Keep track of tape results already consumed.
         start = 1 if unshifted_coeffs and f0 is None else 0
         # Results of the unshifted tape.
         r0 = results[0] if start == 1 else f0
 
-        for k, ((i, j), s) in enumerate(shapes):
-            res = results[start : start + s]
-            start = start + s
-
-            # Compute the elements of the Hessian as the linear combination of
-            # results and coefficients, barring optimization cases.
+        for i, j in it.product(range(h_dim), repeat=2):
             if j < i:
-                hess = hessian[j * h_dim + i]
-            elif s == 0:
-                hess = qml.math.zeros(out_dim)
-            else:
-                res = qml.math.stack(res)
-                coeffs = qml.math.cast(qml.math.convert_like(hessian_coeffs[k], res), res.dtype)
-                hess = qml.math.tensordot(res, coeffs, [[0], [0]])
-                if (i, j) in unshifted_coeffs:
-                    hess = hess + unshifted_coeffs[(i, j)] * r0
+                hessian.append(hessian[j * h_dim + i])
+                continue
+            k = i * h_dim + j - i * (i + 1) // 2
+            coeffs = hessian_coeffs[k]
+            if coeffs is None or len(coeffs) == 0:
+                hessian.append(qml.math.zeros(out_dim))
+                continue
+
+            res = results[start : start + len(coeffs)]
+            start = start + len(coeffs)
+
+            res = qml.math.stack(res)
+            coeffs = qml.math.cast(qml.math.convert_like(coeffs, res), res.dtype)
+            hess = qml.math.tensordot(res, coeffs, [[0], [0]])
+            if (i, j) in unshifted_coeffs:
+                hess = hess + unshifted_coeffs[(i, j)] * r0
 
             hessian.append(hess)
 
@@ -199,7 +229,7 @@ def compute_hessian_tapes(tape, diff_methods, f0=None):
 
 
 @hessian_transform
-def param_shift_hessian(tape, f0=None):
+def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_shifts=None, f0=None):
     r"""Transform a QNode to compute the parameter-shift Hessian with respect to its trainable
     parameters.
 
@@ -211,17 +241,24 @@ def param_shift_hessian(tape, f0=None):
 
     >>> qml.jacobian(qml.grad(cost))(weights)
 
-    .. note::
-
-        Currently, parametric gates are only supported if they obey a two-term shift rule,
-        which includes the following operations:
-
-        "RX", "RY", "RZ", "Rot", "PhaseShift", "ControlledPhaseShift", "MultiRZ", "PauliRot",
-        "U1", "U2", "U3", "SingleExcitationMinus", "SingleExcitationPlus", "DoubleExcitationMinus",
-        "DoubleExcitationPlus", "OrbitalRotation".
-
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
+        argnum (int or list[int] or None): Parameter indices to differentiate
+            with respect to. If not provided, the Hessian with respect to all
+            trainable indices is returned. Note that the indices refer to tape
+            parameters both if ``tape`` is a tape, and if it is a QNode.
+        diagonal_shifts (list[tuple[int or float]]): List containing tuples of shift values
+            for the Hessian diagonal. The shifts are understood as first-order derivative
+            shifts and are iterated to obtain the second-order derivative.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple length should match the number of frequencies for that parameter.
+            If unspecified, equidistant shifts are used.
+        off_diagonal_shifts (list[tuple[int or float]]): List containing tuples of shift
+            values for the off-diagonal entries of the Hessian.
+            If provided, one tuple of shifts should be given per trainable parameter
+            and the tuple should match the number of frequencies for that parameter.
+            The combination of shifts into bivariate shifts is performed automatically.
+            If unspecified, equidistant shifts are used.
         f0 (tensor_like[float] or None): Output of the evaluated input tape. If provided,
             and the Hessian tapes include the original input tape, the 'f0' value is used
             instead of evaluating the input tape, reducing the number of device invocations.
@@ -253,46 +290,83 @@ def param_shift_hessian(tape, f0=None):
     >>> @qml.qnode(dev)
     ... def circuit(x):
     ...     qml.RX(x[0], wires=0)
-    ...     qml.RY(x[1], wires=0)
-    ...     return qml.expval(qml.PauliZ(0))
-    >>> x = np.array([0.1, 0.2], requires_grad=True)
+    ...     qml.CRY(x[1], wires=[0, 1])
+    ...     return qml.expval(qml.PauliZ(0)@qml.PauliZ(1))
+
+    >>> x = np.array([0.5, 0.2], requires_grad=True)
     >>> qml.gradients.param_shift_hessian(circuit)(x)
-    tensor([[-0.97517033,  0.01983384],
-            [ 0.01983384, -0.97517033]], requires_grad=True)
+    tensor([[-0.86883595,  0.04762358],
+            [ 0.04762358,  0.05998862]], requires_grad=True)
 
     .. UsageDetails::
 
-        The Hessian transform can also be applied to a quantum tape, instead producing the
-        parameter-shifted Hessian tapes and a post-processing function to combine execution
-        results:
+        The Hessian transform can also be applied to a quantum tape instead of a QNode, producing
+        the parameter-shifted tapes and a post-processing function to combine the execution
+        results of these tapes into the Hessian:
 
         >>> circuit(x)  # generate the QuantumTape inside the QNode
         >>> tape = circuit.qtape
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape)
-        >>> hessian_tapes
-        [<QuantumTape: wires=[0], params=2>,
-         <QuantumTape: wires=[0], params=2>,
-         <QuantumTape: wires=[0], params=2>,
-         <QuantumTape: wires=[0], params=2>,
-         <QuantumTape: wires=[0], params=2>,
-         <QuantumTape: wires=[0], params=2>,
-         <QuantumTape: wires=[0], params=2>]
+        >>> len(hessian_tapes)
+        13
+        >>> all(isinstance(tape, qml.tape.QuantumTape) for tape in hessian_tapes)
+        True
         >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
-        array([[-0.97517033,  0.01983384],
-                [ 0.01983384, -0.97517033]])
+        array([[-0.86883595,  0.04762358],
+               [ 0.04762358,  0.05998862]])
 
         The Hessian tapes can be inspected via their draw function, which reveals the different
-        gate arguments generated from parameter-shift rules:
+        gate arguments generated from parameter-shift rules (we only draw the first four out of
+        all 13 tapes here):
 
         >>> for h_tape in hessian_tapes:
         ...     print(qml.drawer.tape_text(h_tape, decimals=1))
-        0: ──RX(0.1)──RY(0.2)─┤  <Z>
-        0: ──RX(3.2)──RY(0.2)─┤  <Z>
-        0: ──RX(1.7)──RY(1.8)─┤  <Z>
-        0: ──RX(-1.5)──RY(1.8)─┤  <Z>
-        0: ──RX(1.7)──RY(-1.4)─┤  <Z>
-        0: ──RX(-1.5)──RY(-1.4)─┤  <Z>
-        0: ──RX(0.1)──RY(3.3)─┤  <Z>
+        0: ──RX(0.5)─╭C───────┤ ╭<Z@Z>
+        1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
+        0: ──RX(-2.6)─╭C───────┤ ╭<Z@Z>
+        1: ───────────╰RY(0.2)─┤ ╰<Z@Z>
+        0: ──RX(2.1)─╭C───────┤ ╭<Z@Z>
+        1: ──────────╰RY(1.8)─┤ ╰<Z@Z>
+        0: ──RX(2.1)─╭C────────┤ ╭<Z@Z>
+        1: ──────────╰RY(-1.4)─┤ ╰<Z@Z>
+
+        To enable more detailed control over the parameter shifts, shift values can be provided
+        per parameter, and separately for the diagonal and the off-diagonal terms.
+        Here we choose them based on the parameters ``x`` themselves, mostly yielding multiples of
+        the original parameters in the shifted tapes.
+
+        >>> diag_shifts = [(x[0] / 2,), (x[1] / 2, x[1])]
+        >>> offdiag_shifts = [(x[0],), (x[1], 2 * x[1])]
+        >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(
+        ...     tape, diagonal_shifts=diag_shifts, off_diagonal_shifts=offdiag_shifts
+        ... )
+        >>> for h_tape in hessian_tapes:
+        ...     print(qml.drawer.tape_text(h_tape, decimals=1))
+        0: ──RX(0.5)─╭C───────┤ ╭<Z@Z>
+        1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
+        0: ──RX(0.0)─╭C───────┤ ╭<Z@Z>
+        1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
+        0: ──RX(1.0)─╭C───────┤ ╭<Z@Z>
+        1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
+        0: ──RX(1.0)─╭C───────┤ ╭<Z@Z>
+        1: ──────────╰RY(0.4)─┤ ╰<Z@Z>
+
+        .. note::
+
+            Note that the ``diagonal_shifts`` are interpreted as *first-order* derivative
+            shift values. That means they are used to generate a first-order derivative
+            recipe, which then is iterated in order to obtain the second-order derivative
+            for the diagonal Hessian entry. Explicit control over the used second-order
+            shifts is not implemented.
+
+        Finally, the `argnum` argument can be used to compute the Hessian only for some of the
+        variational parameters. This refers to QNode input arguments if ``tape`` is a QNode
+        and to trainable tape parameters if ``tape`` is a tape.
+
+        >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(tape, argnum=(1,))
+        >>> postproc_fn(qml.execute(hessian_tapes, dev, None))
+        array([[0.        , 0.        ],
+               [0.        , 0.05998862]])
 
     """
 
@@ -303,54 +377,60 @@ def param_shift_hessian(tape, f0=None):
         )
 
     # The parameter-shift Hessian implementation currently doesn't support variance measurements.
+    # TODO: Support variances similar to how param_shift does it
     if any(m.return_type is qml.measurements.Variance for m in tape.measurements):
         raise ValueError(
             "Computing the Hessian of circuits that return variances is currently not supported."
         )
 
-    if not tape.trainable_params:
+    if argnum is None and not tape.trainable_params:
         warnings.warn(
             "Attempted to compute the hessian of a tape with no trainable parameters. "
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return [], lambda _: ()
+        return [], lambda _: qml.math.zeros((tape.output_dim, 0, 0))
 
-    # The parameter-shift Hessian implementation currently only supports
-    # the two-term parameter-shift rule. Raise an error for unsupported operations.
-    supported_ops = (
-        "RX",
-        "RY",
-        "RZ",
-        "Rot",
-        "PhaseShift",
-        "ControlledPhaseShift",
-        "MultiRZ",
-        "PauliRot",
-        "U1",
-        "U2",
-        "U3",
-        "SingleExcitationMinus",
-        "SingleExcitationPlus",
-        "DoubleExcitationMinus",
-        "DoubleExcitationPlus",
-        "OrbitalRotation",
-    )
+    if argnum is None:
+        compare_to = tape.num_params
+        compare_to_str = f"trainable tape parameters ({compare_to})"
+    else:
+        compare_to = len(argnum)
+        compare_to_str = f"provided arguments to differentiate ({compare_to})"
 
-    for idx in range(tape.num_params):
-        op, _ = tape.get_operation(idx)
-        if op.name not in supported_ops:
-            raise ValueError(
-                f"The operation {op.name} is currently not supported for the parameter-shift "
-                f"Hessian. Only two-term parameter shift rules are currently supported."
-            )
-
-    gradient_analysis(tape, grad_fn=qml.gradients.param_shift)
-    diff_methods = grad_method_validation("analytic", tape)
-
-    if all(g == "0" for g in diff_methods):
-        return [], lambda _: np.zeros(
-            [tape.output_dim, len(tape.trainable_params), len(tape.trainable_params)]
+    if diagonal_shifts is not None and len(diagonal_shifts) != compare_to:
+        raise ValueError(
+            "The number of provided sets of shift values for diagonal entries "
+            f"({len(diagonal_shifts)}) does not match the number of {compare_to_str}."
+        )
+    if off_diagonal_shifts is not None and len(off_diagonal_shifts) != compare_to:
+        raise ValueError(
+            "The number of provided sets of shift values for off-diagonal entries "
+            f"({len(off_diagonal_shifts)}) does not match the number of {compare_to_str}."
         )
 
-    return compute_hessian_tapes(tape, diff_methods, f0)
+    gradient_analysis(tape, grad_fn=qml.gradients.param_shift)
+    # If argnum is given, the grad_method_validation may allow parameters with
+    # finite-difference as method. If they are among the requested argnum, we catch this
+    # further below (as no fallback function analogue to `parameter_shift` is used currently).
+    method = "analytic" if argnum is None else "best"
+    diff_methods = grad_method_validation(method, tape)
+
+    if all(g == "0" for g in diff_methods):
+        par_dim = len(tape.trainable_params)
+        return [], lambda _: qml.math.zeros([tape.output_dim, par_dim, par_dim])
+
+    method_map = choose_grad_methods(diff_methods, argnum)
+
+    unsupported_params = {idx for idx, g in method_map.items() if g == "F"}
+    if unsupported_params:
+        raise ValueError(
+            "The parameter-shift Hessian currently does not support the operations "
+            f"for parameter(s) {unsupported_params}."
+        )
+
+    argnum = list(method_map.keys())
+
+    return expval_hessian_param_shift(
+        tape, argnum, diff_methods, diagonal_shifts, off_diagonal_shifts, f0
+    )

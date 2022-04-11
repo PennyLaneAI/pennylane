@@ -1132,19 +1132,25 @@ class TestDefaultQubitIntegration:
         }
         assert cap == capabilities
 
-    def test_qubit_circuit(self, qubit_device_1_wire, tol):
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_qubit_circuit(self, qubit_device_1_wire, r_dtype, tol):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
 
         p = 0.543
 
-        @qml.qnode(qubit_device_1_wire)
+        dev = qubit_device_1_wire
+        dev.R_DTYPE = r_dtype
+
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliY(0))
 
         expected = -np.sin(p)
 
-        assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
+        res = circuit(p)
+        assert np.isclose(res, expected, atol=tol, rtol=0)
+        assert res.dtype == r_dtype
 
     def test_qubit_identity(self, qubit_device_1_wire, tol):
         """Test that the default qubit plugin provides correct result for the Identity expectation"""
@@ -1845,6 +1851,56 @@ class TestTensorSample:
             / 16
         )
         assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
+
+
+class TestDtypePreserved:
+    """Test that the user-defined dtype of the device is preserved for QNode
+    evaluation"""
+
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            qml.expval(qml.PauliY(0)),
+            qml.var(qml.PauliY(0)),
+            qml.probs(wires=[1]),
+            qml.probs(wires=[2, 0]),
+        ],
+    )
+    def test_real_dtype(self, qubit_device_3_wires, r_dtype, measurement, tol):
+        """Test that the default qubit plugin provides correct result for a simple circuit"""
+        p = 0.543
+
+        dev = qubit_device_3_wires
+        dev.R_DTYPE = r_dtype
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.apply(measurement)
+
+        res = circuit(p)
+        assert res.dtype == r_dtype
+
+    @pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
+    @pytest.mark.parametrize(
+        "measurement",
+        [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
+    )
+    def test_complex_dtype(self, qubit_device_3_wires, c_dtype, measurement, tol):
+        """Test that the default qubit plugin provides correct result for a simple circuit"""
+        p = 0.543
+
+        dev = qubit_device_3_wires
+        dev.C_DTYPE = c_dtype
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.apply(measurement)
+
+        res = circuit(p)
+        assert res.dtype == c_dtype
 
 
 class TestProbabilityIntegration:

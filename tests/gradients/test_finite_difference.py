@@ -221,7 +221,7 @@ class TestFiniteDiff:
         res = post_processing(qml.execute(g_tapes, dev, None))
 
         assert g_tapes == []
-        assert res == ()
+        assert res.shape == (1, 0)
 
     def test_all_zero_diff_methods(self):
         """Test that the transform works correctly when the diff method for every parameter is
@@ -375,10 +375,11 @@ class TestFiniteDiff:
                 """Diagonalizing gates"""
                 return []
 
-        class DeviceSupporingSpecialObservable(DefaultQubit):
+        class DeviceSupportingSpecialObservable(DefaultQubit):
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
+            R_DTYPE = SpecialObservable
 
             def expval(self, observable, **kwargs):
                 if self.analytic and isinstance(observable, SpecialObservable):
@@ -387,7 +388,7 @@ class TestFiniteDiff:
 
                 return super().expval(observable, **kwargs)
 
-        dev = DeviceSupporingSpecialObservable(wires=1, shots=None)
+        dev = DeviceSupportingSpecialObservable(wires=1, shots=None)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def qnode(x):

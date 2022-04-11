@@ -75,20 +75,6 @@ are required:
 
     conda install psi4 psi4-rt -c psi4
 
-* `Open Babel <https://openbabel.org>`__ (optional but recommended to run the full test suite)
-
-  Open Babel can be installed using ``apt`` if on Ubuntu/Debian:
-
-  .. code-block:: bash
-
-      sudo apt install openbabel
-
-  or using Anaconda:
-
-  .. code-block:: bash
-
-      conda install -c conda-forge openbabel
-
 Installation
 ------------
 

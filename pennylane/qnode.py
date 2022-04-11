@@ -407,6 +407,7 @@ class QNode:
                 )
                 device.expand_fn = expand_fn
                 device.batch_transform = batch_transform
+
                 return "backprop", {}, device
 
             raise qml.QuantumFunctionError(

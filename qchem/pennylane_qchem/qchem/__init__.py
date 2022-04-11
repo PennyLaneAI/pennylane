@@ -13,21 +13,47 @@
 # limitations under the License.
 """The PennyLane quantum chemistry package. Supports OpenFermion, PySCF,
 and Psi4 for quantum chemistry calculations using PennyLane."""
-from .structure import *
-from .obs import *
-
-__all__ = [
-    "read_structure",
-    "meanfield",
-    "active_space",
-    "decompose",
-    "convert_observable",
-    "molecular_hamiltonian",
-    "hf_state",
-    "excitations",
-    "excitations_to_wires",
-    "_qubit_operator_to_terms",
-    "_terms_to_qubit_operator",
-    "_qubit_operators_equivalent",
-    "obs",
-]
+from .openfermion_obs import (
+    observable,
+    one_particle,
+    two_particle,
+    dipole_of,
+    meanfield,
+    decompose,
+    molecular_hamiltonian,
+)
+from .basis_set import BasisFunction, atom_basis_data, mol_basis_data
+from .convert import import_operator
+from .dipole import dipole_integrals, fermionic_dipole, dipole_moment
+from .hamiltonian import electron_integrals, fermionic_hamiltonian, mol_hamiltonian
+from .hartree_fock import scf, nuclear_energy, hf_energy
+from .integrals import (
+    primitive_norm,
+    contracted_norm,
+    expansion,
+    gaussian_overlap,
+    overlap_integral,
+    hermite_moment,
+    gaussian_moment,
+    moment_integral,
+    gaussian_kinetic,
+    kinetic_integral,
+    nuclear_attraction,
+    attraction_integral,
+    electron_repulsion,
+    repulsion_integral,
+)
+from .matrices import (
+    mol_density_matrix,
+    overlap_matrix,
+    moment_matrix,
+    kinetic_matrix,
+    attraction_matrix,
+    repulsion_tensor,
+    core_matrix,
+)
+from .molecule import Molecule
+from .observable_hf import fermionic_observable, qubit_observable, jordan_wigner, simplify
+from .particle_number import particle_number
+from .spin import spin2, spinz
+from .structure import read_structure, active_space, excitations, hf_state, excitations_to_wires

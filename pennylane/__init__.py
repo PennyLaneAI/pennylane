@@ -39,6 +39,7 @@ from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
+from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
 from pennylane.io import *
 from pennylane.measurements import density_matrix, measure, expval, probs, sample, state, var
@@ -58,8 +59,7 @@ from pennylane.transforms import (
     batch_input,
     batch_transform,
     cut_circuit,
-    draw,
-    draw_mpl,
+    cut_circuit_mc,
     ControlledOperation,
     compile,
     ctrl,
@@ -75,6 +75,8 @@ from pennylane.transforms import (
     apply_controlled_Q,
     commutation_dag,
     is_commuting,
+    pattern_matching,
+    pattern_matching_optimization,
     simplify,
 )
 from pennylane.ops.functions import *
