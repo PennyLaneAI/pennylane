@@ -24,7 +24,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
 
-if not sys.version_info < (3, 10):
+if not sys.version_info < (3, 9):
     pytest.skip(allow_module_level=True)
 
 
