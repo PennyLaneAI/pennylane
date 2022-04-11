@@ -939,7 +939,7 @@ class QuantumTape(AnnotatedQueue):
             op.data[self._par_info[idx]["p_idx"]] = p
 
     @staticmethod
-    def _get_num_basis_states(num_systems, device):
+    def _get_num_basis_states(num_wires, device):
         """Auxiliary function to determine the number of basis states given the
         number of systems and a quantum device.
 
@@ -950,7 +950,7 @@ class QuantumTape(AnnotatedQueue):
         subsystem equals the cutoff value.
 
         Args:
-            num_systems (int): the number of qubits/qumodes
+            num_wires (int): the number of qubits/qumodes
             device (.Device): a PennyLane device
 
         Returns:
@@ -958,7 +958,7 @@ class QuantumTape(AnnotatedQueue):
         """
         cutoff = getattr(device, "cutoff", None)
         base = 2 if cutoff is None else cutoff
-        return base**num_systems
+        return base**num_wires
 
     @staticmethod
     def _single_measurement_shape(measurement_process, device):
