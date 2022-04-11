@@ -1145,7 +1145,7 @@ class QuantumTape(AnnotatedQueue):
         execution, tapes do not store the computed shape.
 
         Args:
-            device (~.Device): the device that will be used for the tape execution
+            device (.Device): the device that will be used for the tape execution
 
         Raises:
             TapeError: raised for unsupported cases for
