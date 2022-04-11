@@ -978,10 +978,10 @@ def cut_circuit_mc(
             If not supplied, the transform will output samples.
         max_depth (int): The maximum depth used to expand the circuit while searching for wire cuts.
             Only applicable when transforming a QNode.
-        auto_cutter (Union[bool, Callable]): toggle for enabling automatic cutting with the default
-            :func:`kahypar_cut` partition method. Can also pass a graph partitioning function that
+        auto_cutter (Union[bool, Callable]): Toggle for enabling automatic cutting with the default
+            :func:`~.kahypar_cut` partition method. Can also pass a graph partitioning function that
             takes an input graph and returns a list of edges to be cut based on a given set of
-            constraints and objective. The default :func:`kahypar_cut` function requires KaHyPar to
+            constraints and objective. The default :func:`~.kahypar_cut` function requires KaHyPar to
             be installed using ``pip install kahypar`` for Linux and Mac users or visiting the
             instructions `here <https://kahypar.org>`__ to compile from source for Windows users.
         kwargs: Additional keyword arguments to be passed to a callable ``auto_cutter`` argument.
@@ -1669,10 +1669,10 @@ def cut_circuit(
                     QNode's device wires. Required when transforming a tape.
         max_depth (int): The maximum depth used to expand the circuit while searching for wire cuts.
             Only applicable when transforming a QNode.
-        auto_cutter (Union[bool, Callable]): toggle for enabling automatic cutting with the default
-            :func:`kahypar_cut` partition method. Can also pass a graph partitioning function that
+        auto_cutter (Union[bool, Callable]): Toggle for enabling automatic cutting with the default
+            :func:`~.kahypar_cut` partition method. Can also pass a graph partitioning function that
             takes an input graph and returns a list of edges to be cut based on a given set of
-            constraints and objective. The default :func:`kahypar_cut` function requires KaHyPar to
+            constraints and objective. The default :func:`~.kahypar_cut` function requires KaHyPar to
             be installed using ``pip install kahypar`` for Linux and Mac users or visiting the
             instructions `here <https://kahypar.org>`__ to compile from source for Windows users.
         kwargs: Additional keyword arguments to be passed to a callable ``auto_cutter`` argument.
@@ -1824,7 +1824,7 @@ def cut_circuit(
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
                 graph=qml.transforms.qcut.tape_to_graph(uncut_tape),
-                cut_strategy=qcut.CutStrategy(max_free_wires=2),
+                cut_strategy=qml.transforms.qcut.CutStrategy(max_free_wires=2),
             )
         >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
          0: ──RX(0.531)──╭C──RY(-0.4)──────╭┤ ⟨Z ⊗ Z ⊗ Z⟩
@@ -2274,7 +2274,7 @@ class CutStrategy:
                 possible numbers of fragments into which the circuit is partitioned. If ``True``,
                 for a circuit with N gates, N - 1 attempts will be made with ``num_fragments``
                 ranging from [2, N], i.e. from bi-partitioning to complete partitioning where each
-                fragment has exactly a single gate. Default to ``True``.
+                fragment has exactly a single gate. Defaults to ``True``.
 
         Returns:
             List[Dict[str, Any]]: A list of minimal kwargs being passed to a graph
@@ -2399,7 +2399,7 @@ class CutStrategy:
                 possible numbers of fragments into which the circuit is partitioned. If ``True``,
                 ``num_tape_gates - 1`` attempts will be made with ``num_fragments`` ranging from
                 [2, ``num_tape_gates``], i.e. from bi-partitioning to complete partitioning where
-                each fragment has exactly a single gate. Default to ``True``.
+                each fragment has exactly a single gate. Defaults to ``True``.
 
         Returns:
             List[Dict[str, Any]]: A list of minimal set of kwargs being passed to a graph
@@ -2672,8 +2672,6 @@ def kahypar_cut(
     # compress() ignores the extra hyperwires at the end if there is any.
     cut_edges = list(compress(graph.edges, cut_edge_mask))
 
-    # fragment_sizes = [hypergraph.blockSize(p) for p in range(num_fragments)]
-    # return cut_edges, fragment_sizes
     return cut_edges
 
 
@@ -2880,7 +2878,7 @@ def find_and_place_cuts(
 
     Alternatively, if all we want to do is to find the optimal way to fit a circuit onto a smaller
     device, a :class:`~.CutStrategy` can be used to populate the necessary explorations of cutting
-    parameters. As an extreme example, if the only device at our desposal is a 2-qubit device, a
+    parameters. As an extreme example, if the only device at our disposal is a 2-qubit device, a
     simple cut strategy is to simply specify the the ``max_free_wires`` argument (or equivalently
     directly passing a :class:`~.Device` to the ``device`` argument):
 

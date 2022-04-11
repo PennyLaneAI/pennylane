@@ -4488,7 +4488,7 @@ class TestKaHyPar:
 
 
 class TestAutoCutCircuit:
-    """Integration tests for automitic-cutting-enabled `cut_circuit` transform.
+    """Integration tests for automatic-cutting-enabled `cut_circuit` transform.
     Mostly borrowing tests cases from ``TestCutCircuitTransform``.
     """
 
@@ -4511,7 +4511,6 @@ class TestAutoCutCircuit:
 
         dev_original = qml.device("default.qubit", wires=5)
 
-        # We need a 4-qubit device to account for mid-circuit measurements
         dev_cut = qml.device("default.qubit", wires=free_wires)
 
         def two_qubit_unitary(param, wires):
@@ -4607,7 +4606,6 @@ class TestAutoCutCircuit:
         def circuit(x):
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
-            # qml.WireCut(wires=1)
             qml.CNOT(wires=[1, 2])
             qml.RY(x**2, wires=2)
             return qml.expval(qml.PauliZ(wires=[0]))

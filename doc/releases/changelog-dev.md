@@ -210,9 +210,9 @@
     arbitrary tape-converted graphs using the general purpose graph partitioning framework
     [KaHyPar](https://pypi.org/project/kahypar/) which needs to be installed separately.
     To integrate with the existing low-level manual cut pipeline, method `qcut.find_and_place_cuts()`,
-    which uses `qcut.kahypar_cut()` as the default auto cutter, are implemented.
+    which uses `qcut.kahypar_cut()` as the default auto cutter, has been implemented.
     The automatic cutting feature is further integrated into the high-level interfaces
-    `qcut.cut_circuit()` and `qcut.cut_circuit_mc()` for simple fool-proof execution of arbitrary
+    `qcut.cut_circuit()` and `qcut.cut_circuit_mc()` for automatic execution of arbitrary
     circuits on smaller devices.
     [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
     [(#2428)](https://github.com/PennyLaneAI/pennylane/pull/2428)
