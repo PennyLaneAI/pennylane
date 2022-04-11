@@ -44,7 +44,7 @@ class SingleExcitation(Operation):
     * Number of wires: 2
     * Number of parameters: 1
     * Gradient recipe: The ``SingleExcitation`` operator satisfies a four-term parameter-shift rule
-      (see Appendix F, https://arxiv.org/abs/2104.05695)
+      (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -461,7 +461,7 @@ class DoubleExcitation(Operation):
     * Number of wires: 4
     * Number of parameters: 1
     * Gradient recipe: The ``DoubleExcitation`` operator satisfies a four-term parameter-shift rule
-      (see Appendix F, https://arxiv.org/abs/2104.05695):
+      (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -552,7 +552,7 @@ class DoubleExcitation(Operation):
         .. seealso:: :meth:`~.DoubleExcitation.decomposition`.
 
         For the source of this decomposition, see page 17 of
-        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://arxiv.org/abs/2104.05695>`_ .
+        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://doi.org/10.1088/1367-2630/ac2cb3>`_ .
 
         Args:
             phi (float): rotation angle :math:`\phi`
@@ -853,7 +853,7 @@ class OrbitalRotation(Operation):
     * Number of parameters: 1
     * Gradient recipe: The ``OrbitalRotation`` operator has 4 equidistant frequencies
       :math:`\{0.5, 1, 1.5, 2\}`, and thus permits an 8-term parameter-shift rule.
-      (see https://arxiv.org/abs/2107.12390).
+      (see `Wierichs et al. (2022) <https://doi.org/10.22331/q-2022-03-30-677>`__).
 
     Args:
         phi (float): rotation angle :math:`\phi`
@@ -971,7 +971,7 @@ class OrbitalRotation(Operation):
         .. seealso:: :meth:`~.OrbitalRotation.decomposition`.
 
         For the source of this decomposition, see page 18 of
-        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://arxiv.org/abs/2104.05695>`_ .
+        `"Local, Expressive, Quantum-Number-Preserving VQE Ansatze for Fermionic Systems" <https://doi.org/10.1088/1367-2630/ac2cb3>`_ .
 
         Args:
             phi (float): rotation angle :math:`\phi`

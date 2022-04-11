@@ -122,7 +122,7 @@ class single_tape_transform:
         @qml.single_tape_transform
         def my_transform(tape, x, y):
             # loop through all operations on the input tape
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "CRX":
                     wires = op.wires
                     param = op.parameters[0]
@@ -240,7 +240,7 @@ def qfunc_transform(tape_transform):
 
         @qml.qfunc_transform
         def my_transform(tape, x, y):
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "CRX":
                     wires = op.wires
                     param = op.parameters[0]

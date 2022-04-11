@@ -808,6 +808,24 @@ class TestApplyOperation:
         spy_diag.assert_not_called()
         spy_channel.assert_called_once()
 
+    def test_identity_skipped(self, mocker):
+        """Test that applying the identity does not perform any additional computations."""
+
+        op = qml.Identity(0)
+        dev = qml.device("default.mixed", wires=1)
+
+        spy_diagonal_unitary = mocker.spy(dev, "_apply_diagonal_unitary")
+        spy_apply_channel = mocker.spy(dev, "_apply_channel")
+
+        initialstate = dev.state.__copy__()
+
+        dev._apply_operation(op)
+
+        assert qml.math.allclose(dev.state, initialstate)
+
+        spy_diagonal_unitary.assert_not_called()
+        spy_apply_channel.assert_not_called()
+
 
 class TestApply:
     """Unit tests for the main method `apply()`. We check that lists of operations are applied

@@ -36,7 +36,7 @@ class TestSingleTapeTransform:
 
         @qml.single_tape_transform
         def my_transform(tape, a, b):
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "CRX":
                     wires = op.wires
                     param = op.parameters[0]
@@ -84,7 +84,7 @@ class TestQFuncTransforms:
         is applied to an invalid function"""
 
         def identity_transform(tape):
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 op.queue()
 
         my_transform = qml.qfunc_transform(identity_transform)
@@ -97,7 +97,7 @@ class TestQFuncTransforms:
         to a quantum function"""
 
         def my_transform(tape):
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "CRX":
                     wires = op.wires
                     param = op.parameters[0]
@@ -134,7 +134,7 @@ class TestQFuncTransforms:
 
         @qml.qfunc_transform
         def my_transform(tape):
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "CRX":
                     wires = op.wires
                     param = op.parameters[0]
@@ -167,7 +167,7 @@ class TestQFuncTransforms:
         to a quantum function"""
 
         def my_transform(tape, a, b):
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "CRX":
                     wires = op.wires
                     param = op.parameters[0]
@@ -206,7 +206,7 @@ class TestQFuncTransforms:
 
         @qml.qfunc_transform
         def my_transform(tape, a, b):
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "CRX":
                     wires = op.wires
                     param = op.parameters[0]
@@ -242,7 +242,7 @@ class TestQFuncTransforms:
 
         @qml.qfunc_transform
         def convert_cnots(tape):
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "CNOT":
                     wires = op.wires
                     qml.Hadamard(wires=wires[0])
@@ -252,7 +252,7 @@ class TestQFuncTransforms:
 
         @qml.qfunc_transform
         def expand_hadamards(tape, x):
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "Hadamard":
                     qml.RZ(x, wires=op.wires)
                 else:
@@ -277,7 +277,7 @@ class TestQFuncTransforms:
 
         @qml.qfunc_transform
         def expand_hadamards(tape):
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "Hadamard":
                     qml.RZ(np.pi, wires=op.wires)
                     qml.RY(np.pi / 2, wires=op.wires)
@@ -306,7 +306,7 @@ class TestQFuncTransforms:
         """Test that qfunc transforms are not created during Sphinx builds"""
 
         def original_fn(tape):
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "Hadamard":
                     qml.RZ(np.pi, wires=op.wires)
                     qml.RY(np.pi / 2, wires=op.wires)
@@ -336,7 +336,7 @@ class TestQFuncTransformGradients:
     @qml.qfunc_transform
     def my_transform(tape, a, b):
         """Test transform"""
-        for op in tape.operations + tape.measurements:
+        for op in tape:
             if op.name == "CRX":
                 wires = op.wires
                 param = op.parameters[0]

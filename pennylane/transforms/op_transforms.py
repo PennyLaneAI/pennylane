@@ -151,7 +151,7 @@ class op_transform:
         @simplify_rotation.tape_transform
         @qml.qfunc_transform
         def simplify_rotation(tape):
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "Rot":
                     simplify_rotation(op)
                 else:
@@ -377,7 +377,7 @@ class op_transform:
             @simplify_rotation.tape_transform
             @qml.qfunc_transform
             def simplify_rotation(tape):
-                for op in tape.operations + tape.measurements:
+                for op in tape:
                     if op.name == "Rot":
                         simplify_rotation(op)
                     else:

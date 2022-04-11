@@ -77,11 +77,13 @@ def test_no_measure(tol):
 class TestExpval:
     """Tests for the expval function"""
 
-    def test_value(self, tol):
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_value(self, tol, r_dtype):
         """Test that the expval interface works"""
         dev = qml.device("default.qubit", wires=2)
+        dev.R_DTYPE = r_dtype
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -91,6 +93,7 @@ class TestExpval:
         expected = -np.sin(x)
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert res.dtype == r_dtype
 
     def test_not_an_observable(self):
         """Test that a qml.QuantumFunctionError is raised if the provided
@@ -121,11 +124,13 @@ class TestExpval:
 class TestVar:
     """Tests for the var function"""
 
-    def test_value(self, tol):
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_value(self, tol, r_dtype):
         """Test that the var function works"""
         dev = qml.device("default.qubit", wires=2)
+        dev.R_DTYPE = r_dtype
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.var(qml.PauliZ(0))
@@ -135,6 +140,7 @@ class TestVar:
         expected = np.sin(x) ** 2
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert res.dtype == r_dtype
 
     def test_not_an_observable(self):
         """Test that a qml.QuantumFunctionError is raised if the provided

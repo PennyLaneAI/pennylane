@@ -21,3 +21,4 @@ tensornetwork==0.3
 toml
 torch==1.9.0+cpu
 torchvision==0.10.0+cpu
+jinja2==3.0.3

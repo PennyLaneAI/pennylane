@@ -861,10 +861,12 @@ class TestBatchExecution:
 
         assert spy.call_count == n_tapes
 
-    def test_result(self, mock_qubit_device_with_paulis_and_methods, tol):
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_result(self, mock_qubit_device_with_paulis_and_methods, r_dtype, tol):
         """Tests that the result has the correct shape and entry types."""
 
         dev = mock_qubit_device_with_paulis_and_methods(wires=2)
+        dev.R_DTYPE = r_dtype
 
         tapes = [self.tape1, self.tape2]
         res = dev.batch_execute(tapes)
@@ -872,6 +874,8 @@ class TestBatchExecution:
         assert len(res) == 2
         assert np.allclose(res[0], dev.execute(self.tape1), rtol=tol, atol=0)
         assert np.allclose(res[1], dev.execute(self.tape2), rtol=tol, atol=0)
+        assert res[0].dtype == r_dtype
+        assert res[1].dtype == r_dtype
 
     def test_result_empty_tape(self, mock_qubit_device_with_paulis_and_methods, tol):
         """Tests that the result has the correct shape and entry types for empty tapes."""

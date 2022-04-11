@@ -124,9 +124,6 @@ class hessian_transform(qml.batch_transform):
 
             qhess = _wrapper(*args, **kwargs)
 
-            if any(m.return_type is qml.measurements.Probability for m in qnode.qtape.measurements):
-                qhess = qml.math.squeeze(qhess)
-
             if not hybrid:
                 return qhess
 
@@ -149,7 +146,7 @@ class hessian_transform(qml.batch_transform):
                 if jac is not None:
                     # Check for a Jacobian equal to the identity matrix.
                     shape = qml.math.shape(jac)
-                    is_square = shape == (1,) or (len(shape) == 2 and shape[0] == shape[1])
+                    is_square = len(shape) == 2 and shape[0] == shape[1]
                     if is_square and qml.math.allclose(jac, qml.numpy.eye(shape[0])):
                         hessians.append(qhess)
                         continue

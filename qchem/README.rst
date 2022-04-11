@@ -46,20 +46,6 @@ PennyLane-Qchem requires Python version 3.5 and above, and the following depende
 
 * `OpenFermion <https://github.com/quantumlib/OpenFermion>`__ >= 1.0
 
-* `Open Babel <https://openbabel.org>`__ (optional)
-
-  Open Babel can be installed using ``apt`` if on Ubuntu/Debian:
-
-  .. code-block:: bash
-
-      sudo apt install openbabel
-
-  or using Anaconda:
-
-  .. code-block:: bash
-
-      conda install -c conda-forge openbabel
-
 Once the requirements are installed, PennyLane-Qchem can be installed using pip:
 
 .. code-block:: bash

@@ -461,54 +461,6 @@ def ones_like(tensor, dtype=None):
     return np.ones_like(tensor)
 
 
-def safe_squeeze(tensor, axis=None, exclude_axis=None):
-    """Squeeze a tensor either along all axes, specified axes or all
-    but a set of excluded axes. For selective squeezing, catch errors
-    and do nothing if the selected axes do not have size 1.
-
-    Args:
-        tensor (tensor_like): input tensor
-        axis (int or Sequence[int]): Axis/axes to squeeze
-        exclude_axis (int or Sequence[int]): Axis/axes not to squeeze
-
-    Return:
-        tensor_like: The input tensor with those axes removed that were specified
-        or not excluded and that have size 1. If no axes are specified or excluded,
-        all axes are attempted to be squeezed.
-    """
-    if get_interface(tensor) == "tensorflow":
-        from tensorflow.python.framework.errors_impl import InvalidArgumentError
-
-        exception = InvalidArgumentError
-    else:
-        exception = ValueError
-
-    num_axes = len(np.shape(tensor))
-    if axis is None:
-        if exclude_axis is None:
-            return np.squeeze(tensor)
-        if np.isscalar(exclude_axis):
-            exclude_axis = [exclude_axis if exclude_axis >= 0 else num_axes + exclude_axis]
-        else:
-            exclude_axis = [(i if i >= 0 else num_axes + i) for i in exclude_axis]
-        axis = [i for i in range(num_axes) if not i in exclude_axis]
-    elif np.isscalar(axis):
-        axis = [axis if axis >= 0 else num_axes + axis]
-    else:
-        axis = [(i if i >= 0 else num_axes + i) for i in axis]
-
-    for ax in sorted(set(axis)):
-        # Modify the axis index to squeeze by the number of squeezes already
-        # performed - this works because we squeeze in increasing axis index order.
-        # If the axis index is negative, no modification is needed.
-        ax -= num_axes - len(np.shape(tensor))
-        try:
-            tensor = np.squeeze(tensor, axis=ax)
-        except exception:
-            pass
-    return tensor
-
-
 @multi_dispatch(argnum=[0], tensor_list=[0])
 def stack(values, axis=0, like=None):
     """Stack a sequence of tensors along the specified axis.
