@@ -641,7 +641,6 @@ class TestJaxExecuteIntegration:
     @pytest.mark.parametrize(
         "ret, mes",
         [
-            ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], "single return type"),
             ([qml.state()], "Only Variance and Expectation"),
         ],
     )
