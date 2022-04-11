@@ -373,7 +373,7 @@ class TestShiftedTapes:
             qml.expval(qml.PauliZ(0))
 
         tape.trainable_params = {0, 2}
-        shifts = [0.1, -0.2, 1.6]
+        shifts = tuple([0.1, -0.2, 1.6])
         res = generate_shifted_tapes(tape, 1, shifts=shifts)
 
         assert len(res) == len(shifts)
@@ -392,8 +392,8 @@ class TestShiftedTapes:
             qml.expval(qml.PauliZ(0))
 
         tape.trainable_params = {0, 2}
-        shifts = [0.3, 0.6]
-        multipliers = [0.2, 0.5]
+        shifts = tuple([0.3, 0.6])
+        multipliers = tuple([0.2, 0.5])
         res = generate_shifted_tapes(tape, 0, shifts=shifts, multipliers=multipliers)
 
         assert len(res) == 2

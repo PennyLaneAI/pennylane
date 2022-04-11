@@ -393,6 +393,7 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
     return _combine_shift_rules(rules)
 
 
+@functools.lru_cache
 def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
     r"""Generate a list of tapes where a marked trainable parameter
     has been shifted by the values given.
@@ -400,8 +401,8 @@ def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
     Args:
         tape (.QuantumTape): input quantum tape
         idx (int): index of the trainable parameter to shift
-        shifts (Sequence[float or int]): sequence of shift values
-        multipliers (Sequence[float or int]): Sequence of multiplier values to
+        shifts (Tuple[float or int]): sequence of shift values
+        multipliers (Tuple[float or int]): Tuple of multiplier values to
             scale the parameter by before shifting. If provided has to have the
             same length as ``shifts``. If not provided, the parameter will not
             be scaled.
