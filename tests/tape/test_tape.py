@@ -1787,6 +1787,7 @@ multi_measurements = [
 ]
 
 
+@pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
 class TestOutputShape:
     """Tests for determining the tape output shape of tapes."""
 
