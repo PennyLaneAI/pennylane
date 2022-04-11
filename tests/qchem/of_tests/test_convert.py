@@ -24,6 +24,10 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
 
+if not sys.version_info < (3, 10):
+    pytest.skip(allow_module_level=True)
+
+
 # TODO: Bring importorskip inside relevant tests.
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")

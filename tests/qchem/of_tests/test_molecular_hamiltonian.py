@@ -1,14 +1,16 @@
 import os
+import sys
 
+import numpy as np
 import pytest
 
 from pennylane import qchem
-
 from pennylane.ops import Hamiltonian
 
-import numpy as np
+# TODO: Bring pytest skip to relevant tests.
+if not sys.version_info < (3, 10):
+    pytest.skip(allow_module_level=True)
 
-# TODO: Bring importorskip inside relevant tests.
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
