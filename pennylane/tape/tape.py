@@ -940,7 +940,7 @@ class QuantumTape(AnnotatedQueue):
 
     @staticmethod
     def _single_measurement_shape(measurement_process, device):
-        """Auxiliary function of get_output_shape that determines the output
+        """Auxiliary function of shape that determines the output
         shape of a tape with a single measurement.
 
         Args:
@@ -951,17 +951,11 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             tuple: output shape
         """
-
-        shape = tuple()
-
-        ret_type = measurement_process.return_type
-        shape = measurement_process.shape(device)
-
-        return shape
+        return measurement_process.shape(device)
 
     @staticmethod
     def _multi_homogenous_measurement_shape(mps, device):
-        """Auxiliary function of get_output_shape that determines the output
+        """Auxiliary function of shape that determines the output
         shape of a tape with multiple homogenous measurements.
 
         .. note::
@@ -1018,6 +1012,8 @@ class QuantumTape(AnnotatedQueue):
 
                 shape = (len(mps), device.shots)
 
+            # No other measurement type to check
+
         else:
             # Shot vector was defined
 
@@ -1059,7 +1055,7 @@ class QuantumTape(AnnotatedQueue):
 
         return shape
 
-    def get_output_shape(self, device):
+    def shape(self, device):
         """Produces the output shape of the tape by inspecting its measurements
         and the device used for execution.
 
@@ -1147,8 +1143,8 @@ class QuantumTape(AnnotatedQueue):
                 )
         return output_shape
 
-    def get_output_domain(self):
-        """Returns the numeric type corresponding to the output domain of the
+    def result_type(self):
+        """Returns the numeric type corresponding to the result type of the
         tape by inspecting its measurements.
 
         This function can be used to determine the dtpe of the tape output
@@ -1159,10 +1155,10 @@ class QuantumTape(AnnotatedQueue):
                 example when the tape contains heterogeneous measurements
 
         Returns:
-            type: the numeric type corresponding to the output domain of the
+            type: the numeric type corresponding to the result type of the
             tape
         """
-        output_domain = float
+        result_type = float
 
         for observable in self._measurements:
             ret_type = observable.return_type
@@ -1175,16 +1171,16 @@ class QuantumTape(AnnotatedQueue):
                     np.issubdtype(e.dtype, int) for e in observable.get_eigvals()
                 ):
                     # qml.sample() or integer eigvals
-                    output_domain = int
+                    result_type = int
                 else:
-                    output_domain = float
+                    result_type = float
 
                 # Note: if one of the sample measurements contains outputs that
                 # are real, then the entire result will be real
-                if output_domain == float:
-                    return output_domain
+                if result_type == float:
+                    return result_type
 
-        return output_domain
+        return result_type
 
     def unwrap(self):
         """A context manager that unwraps a tape with tensor-like parameters
@@ -1488,7 +1484,6 @@ class QuantumTape(AnnotatedQueue):
                 if op.inverse:
                     op.inv()
 
-        # pylint: disable=no-member
         # decompose the queue
         # pylint: disable=no-member
         operations = tape.expand(depth=2, stop_at=lambda obj: obj.name in OPENQASM_GATES).operations

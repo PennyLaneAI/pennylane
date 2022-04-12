@@ -1821,8 +1821,7 @@ class TestOutputShape:
             else:
                 expected_shape = (1, shots, num_wires)
 
-        print(measurement, dev.shots)
-        assert tape.get_output_shape(dev) == expected_shape
+        assert tape.shape(dev) == expected_shape
 
     @pytest.mark.parametrize("measurement, expected_shape", measures)
     @pytest.mark.parametrize("shots", [None, 1, 10, (1, 1, 5, 1)])
@@ -1863,7 +1862,7 @@ class TestOutputShape:
 
         res_shape = res_shape if res_shape != tuple() else 1
         print(measurement, dev.shots)
-        assert tape.get_output_shape(dev) == res_shape
+        assert tape.shape(dev) == res_shape
 
     def test_output_shapes_single_qnode_check_cutoff(self):
         """Test that the tape output shape is correct when computing
@@ -1916,7 +1915,7 @@ class TestOutputShape:
             return qml.probs(wires=[0])
 
         res_shape = qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift_cv)[0]
-        assert tape.get_output_shape(dev) == res_shape.shape
+        assert tape.shape(dev) == res_shape.shape
 
     @pytest.mark.parametrize("measurements, expected", multi_measurements)
     @pytest.mark.parametrize("shots", [None, 1, 10])
@@ -1938,7 +1937,7 @@ class TestOutputShape:
             expected[1] = shots
             expected = tuple(expected)
 
-        res = tape.get_output_shape(dev)
+        res = tape.shape(dev)
         assert res == expected
 
         execution_results = cost(tape, dev)
@@ -1975,7 +1974,7 @@ class TestOutputShape:
 
         # Update expected as we're using a shotvector
         expected = (len(shots),) + expected
-        res = tape.get_output_shape(dev)
+        res = tape.shape(dev)
         assert res == expected
 
         execution_results = cost(tape, dev)
@@ -2000,7 +1999,7 @@ class TestOutputShape:
 
         expected = (num_samples, shots)
 
-        res = tape.get_output_shape(dev)
+        res = tape.shape(dev)
         assert res == expected
 
         execution_results = cost(tape, dev)
@@ -2028,7 +2027,7 @@ class TestOutputShape:
             shape = (num_samples,) if s == 1 else (s, num_samples)
             expected.append(shape)
 
-        res = tape.get_output_shape(dev)
+        res = tape.shape(dev)
         for r, e in zip(res, expected):
             assert r == e
 
@@ -2047,7 +2046,7 @@ class TestOutputShape:
             qml.probs(wires=[1, 2])
 
         with pytest.raises(TapeError, match="multiple probability measurements"):
-            tape.get_output_shape(dev)
+            tape.shape(dev)
 
     def test_raises_multiple_different_measurements(self):
         """Test that getting the output shape of a tape that contains multiple
@@ -2064,7 +2063,7 @@ class TestOutputShape:
             TapeError,
             match="contains multiple types of measurements is unsupported",
         ):
-            tape.get_output_shape(dev)
+            tape.shape(dev)
 
     def test_raises_multi_state(self):
         """Test that getting the output shape of a tape that contains multiple
@@ -2078,7 +2077,7 @@ class TestOutputShape:
             qml.density_matrix(wires=0)
 
         with pytest.raises(TapeError, match="multiple state measurements is not supported"):
-            tape.get_output_shape(dev)
+            tape.shape(dev)
 
     def test_raises_sample_shot_vector(self):
         """Test that getting the output shape of a tape that returns samples
@@ -2094,7 +2093,7 @@ class TestOutputShape:
             TapeError,
             match="returning samples along with a device with a shot vector",
         ):
-            tape.get_output_shape(dev)
+            tape.shape(dev)
 
     def test_raises_sample_shot_vector(self):
         """Test that getting the output shape of a tape that returns samples
@@ -2110,7 +2109,7 @@ class TestOutputShape:
             MeasurementShapeError,
             match="returning samples along with a device with a shot vector",
         ):
-            tape.get_output_shape(dev)
+            tape.shape(dev)
 
 
 class TestOutputDomain:
@@ -2135,7 +2134,7 @@ class TestOutputDomain:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, float)
-        assert circuit.qtape.get_output_domain() is float
+        assert circuit.qtape.result_type() is float
 
     def test_complex_state(self):
         """Test that a tape with qml.state correctly determines that the output
@@ -2152,7 +2151,7 @@ class TestOutputDomain:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, complex)
-        assert circuit.qtape.get_output_domain() is complex
+        assert circuit.qtape.result_type() is complex
 
     @pytest.mark.parametrize("ret", [qml.sample(), qml.sample(qml.PauliZ(wires=0))])
     def test_sample_int_eigvals(self, ret):
@@ -2178,7 +2177,7 @@ class TestOutputDomain:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, int)
-        assert circuit.qtape.get_output_domain() is int
+        assert circuit.qtape.result_type() is int
 
     # TODO: add cases for each interface once qml.Hermitian supports other
     # interfaces
@@ -2204,7 +2203,7 @@ class TestOutputDomain:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, float)
-        assert circuit.qtape.get_output_domain() is float
+        assert circuit.qtape.result_type() is float
 
     def test_sample_real_and_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for
@@ -2230,7 +2229,7 @@ class TestOutputDomain:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, float)
-        assert circuit.qtape.get_output_domain() is float
+        assert circuit.qtape.result_type() is float
 
 
 class TestTapeDraw:
