@@ -20,8 +20,6 @@ import contextlib
 import copy
 from threading import RLock
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.queuing import AnnotatedQueue, QueuingContext, QueuingError
 from pennylane.operation import DecompositionUndefinedError
@@ -1143,12 +1141,9 @@ class QuantumTape(AnnotatedQueue):
                 )
         return output_shape
 
-    def result_type(self):
-        """Returns the numeric type corresponding to the result type of the
-        tape by inspecting its measurements.
-
-        This function can be used to determine the dtpe of the tape output
-        results before executing the tape.
+    def numeric_type(self):
+        """Returns the expected numeric type of the tape result by inspecting
+        its measurements.
 
         Raises:
             TapeError: raised for unsupported cases for
@@ -1158,29 +1153,23 @@ class QuantumTape(AnnotatedQueue):
             type: the numeric type corresponding to the result type of the
             tape
         """
-        result_type = float
+        measurement_types = set(meas.return_type for meas in self._measurements)
+        if len(measurement_types) > 1:
+            raise TapeError(
+                "Getting the numeric type of a tape that contains multiple types of measurements is unsupported."
+            )
 
-        for observable in self._measurements:
-            ret_type = observable.return_type
-            if ret_type == qml.measurements.State:
-                return complex
+        if list(measurement_types)[0] == qml.measurements.Sample:
 
-            if ret_type == qml.measurements.Sample:
-
-                if observable.obs is None or all(
-                    np.issubdtype(e.dtype, int) for e in observable.get_eigvals()
-                ):
-                    # qml.sample() or integer eigvals
-                    result_type = int
-                else:
-                    result_type = float
-
+            for observable in self._measurements:
                 # Note: if one of the sample measurements contains outputs that
-                # are real, then the entire result will be real
-                if result_type == float:
-                    return result_type
+                # is real, then the entire result will be real
+                if observable.numeric_type == float:
+                    return observable.numeric_type
 
-        return result_type
+            return int
+
+        return self._measurements[0].numeric_type
 
     def unwrap(self):
         """A context manager that unwraps a tape with tensor-like parameters

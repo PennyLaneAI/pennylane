@@ -2134,7 +2134,7 @@ class TestOutputDomain:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, float)
-        assert circuit.qtape.result_type() is float
+        assert circuit.qtape.numeric_type() is float
 
     def test_complex_state(self):
         """Test that a tape with qml.state correctly determines that the output
@@ -2151,7 +2151,7 @@ class TestOutputDomain:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, complex)
-        assert circuit.qtape.result_type() is complex
+        assert circuit.qtape.numeric_type() is complex
 
     @pytest.mark.parametrize("ret", [qml.sample(), qml.sample(qml.PauliZ(wires=0))])
     def test_sample_int_eigvals(self, ret):
@@ -2177,7 +2177,7 @@ class TestOutputDomain:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, int)
-        assert circuit.qtape.result_type() is int
+        assert circuit.qtape.numeric_type() is int
 
     # TODO: add cases for each interface once qml.Hermitian supports other
     # interfaces
@@ -2203,7 +2203,7 @@ class TestOutputDomain:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, float)
-        assert circuit.qtape.result_type() is float
+        assert circuit.qtape.numeric_type() is float
 
     def test_sample_real_and_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for
@@ -2229,7 +2229,7 @@ class TestOutputDomain:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, float)
-        assert circuit.qtape.result_type() is float
+        assert circuit.qtape.numeric_type() is float
 
 
 class TestTapeDraw:
