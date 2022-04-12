@@ -27,7 +27,7 @@ from pennylane.transforms.decompositions import two_qubit_decomposition, zyz_dec
 
 
 @qfunc_transform
-def peephole_optimization(tape, size_qubits_subsets, custom_quantum_cost=None):
+def peephole_optimization(tape, qubit_subset_sizes, custom_quantum_cost=None):
     r"""Quantum function transform to optimize a circuit given a list of qubits subset (peephole) size (1, 2). First the
     algorithm finds all maximal sequences of gates acting on a all subset of qubits of a given size. Then all
     sequences are optimized by using 1 qubits and 2 qubits optimal decompositions.
@@ -92,7 +92,7 @@ def peephole_optimization(tape, size_qubits_subsets, custom_quantum_cost=None):
     1: ─│───RZ(1.57)─────────────╭C──SX─╭C──Rot(-1.57,1.57,1.57)─╰X─┤
     2: ─╰X──Rot(0.00,1.57,-1.57)─╰X──S──╰X──Rot(0.00,1.57,-1.57)────┤
 
-    The algortihm finds the sequence [0, 1, 2, 3, 4, 7, 8, 9, 10, 11] (acting on qubits 1 and 2) as we can push CNOT
+    The algorithm finds the sequence [0, 1, 2, 3, 4, 7, 8, 9, 10, 11] (acting on qubits 1 and 2) as we can push CNOT
     5 to the right and CNOT 6 to the left. The longest sequence contains 4 CNOT which is not optimal and can bbe
     reduced to two by optimal synthesis of 4x4 unitaries. Therefore the sequences of gates is replaced and therefore
     the whole circuit is optimized.
@@ -112,23 +112,23 @@ def peephole_optimization(tape, size_qubits_subsets, custom_quantum_cost=None):
     inverse_wires_map = OrderedDict(zip(consecutive_wires, tape.wires))
 
     # Check the validity of the size of qubits subsets.
-    if size_qubits_subsets not in [[1], [2], [1, 2], [2, 1]]:
+    if qubit_subset_sizes not in [[1], [2], [1, 2], [2, 1]]:
         raise qml.QuantumFunctionError(
             "The list of number of qubits is not a valid. It should be a list containing 1 and or 2."
         )
 
-    for size_qubits_subset in size_qubits_subsets:
+    for qubit_subset_size in qubit_subset_sizes:
         # Construct Dag representation of the circuit and the pattern.
         circuit_dag = commutation_dag(tape)()
 
-        # FInd all maximal seuqences for a circuit with a given qubity subset size.
-        max_sequences = maximal_sequences(circuit_dag, size_qubits_subset)
+        # Find all maximal sequences for a circuit with a given qubit subset size.
+        max_sequences = maximal_sequences(circuit_dag, qubit_subset_size)
 
         # Optimizes the circuit for compatible maximal sequences
         if max_sequences:
             # Initialize the optimization by substitution of the different sequences
             substitution = SequencesSubstitution(
-                max_sequences, circuit_dag, size_qubits_subset, custom_quantum_cost
+                max_sequences, circuit_dag, qubit_subset_size, custom_quantum_cost
             )
             substitution.substitution()
             already_sub = []
@@ -250,16 +250,16 @@ def maximal_sequences(circuit_dag, size_qubit_subset):
     return sequence_list
 
 
-def _compare_operation_qubits_number(node_1, qubits_subset_size):
+def _compare_operation_qubits_number(node_1, qubit_subset_size):
     """Compare the number of qubits in the operation with the qubits subset size.
 
     Args:
         node_1 (.CommutationDAGNode): First operation.
-        qubits_subset_size (int): Qubits subset size.
+        qubit_subset_size (int): Qubit subset size.
     Return:
         Bool: True if the operation has as much or less qubits than the qubits subset size.
     """
-    return len(node_1.op.wires) <= qubits_subset_size
+    return len(node_1.op.wires) <= qubit_subset_size
 
 
 def _not_fixed_qubits(n_qubits_circuit, exclude_qubits):
@@ -287,7 +287,7 @@ def _first_gate_qubits(node_c):
     return node_c.wires
 
 
-def _merge_first_match_and_not_fixed(list_first_match, list_not_fixed, size_qubits_subset):
+def _merge_first_match_and_not_fixed(list_first_match, list_not_fixed, qubit_subset_size):
     """
     Function that returns the final qubits configuration given the first match constraints and the permutation of
     qubits not in the first match.
@@ -295,7 +295,7 @@ def _merge_first_match_and_not_fixed(list_first_match, list_not_fixed, size_qubi
     Args:
         list_first_match (list): list of qubits indices for the first match.
         list_not_fixed (list): possible permutation for the circuit qubits not in the first match.
-        size_qubits_subset (int): Size of the qubits subset.
+        qubit_subset_size (int): Size of the qubit subset.
 
     Returns:
         list(set(int)): list of qubits configurations to consider.
@@ -303,7 +303,7 @@ def _merge_first_match_and_not_fixed(list_first_match, list_not_fixed, size_qubi
     list_circuit = []
 
     combinations = itertools.combinations(
-        list_not_fixed, size_qubits_subset - len(list_first_match)
+        list_not_fixed, qubit_subset_size - len(list_first_match)
     )
 
     for combination in combinations:
@@ -471,7 +471,7 @@ class ForwardSequence:
             # Update of the successors to visit.
             successors_to_visit.pop(0)
 
-            # Update the seequence_nodes_list with new attribute successor to visit and sort the list.
+            # Update the sequence_nodes_list with new attribute successor to visit and sort the list.
             self.sequence_nodes_list.append([v_first.node_id, v_first, successors_to_visit])
             self.sequence_nodes_list.sort(key=lambda x: x[2])
 
@@ -905,19 +905,19 @@ class SubstitutionConfig:
 class SequencesSubstitution:  # pylint: disable=too-few-public-methods
     """Class to run the substitution algorithm from the list of maximal sequences."""
 
-    def __init__(self, max_sequences, circuit_dag, size_qubits_subset, custom_quantum_cost=None):
+    def __init__(self, max_sequences, circuit_dag, qubit_subset_size, custom_quantum_cost=None):
         """
         Initialize TemplateSubstitution with necessary arguments.
         Args:
             max_sequences (list(int)): list of maximal matches obtained from the running the pattern matching algorithm.
             circuit_dag (.CommutationDAG): circuit in the dag dependency form.
-            size_qubits_subset (int): Size of the qubits subset.
+            qubit_subset_size (int): Size of the qubit subset.
             custom_quantum_cost (dict): Optional, dictionary containing gate names and their respective costs.
         """
 
         self.sequence_stack = max_sequences
         self.circuit_dag = circuit_dag
-        self.size_qubits_subset = size_qubits_subset
+        self.qubit_subset_size = qubit_subset_size
 
         self.substitution_list = []
         self.unmatched_list = []
@@ -1029,7 +1029,7 @@ class SequencesSubstitution:  # pylint: disable=too-few-public-methods
         """Compare the quantum cost between the original sequence and the optimized sequence.
         Args:
             sequence (.QuantumTape): tape of the sequence.
-            sequence_opt (.QuantumTape): tape of the optimized sequencee.
+            sequence_opt (.QuantumTape): tape of the optimized sequence.
         Returns:
             bool: True if the quantum cost is reduced.
         """
@@ -1043,7 +1043,7 @@ class SequencesSubstitution:  # pylint: disable=too-few-public-methods
         return cost_sequence > cost_sequence_opt
 
     def substitution(self):
-        """From the list of maximal sequences, it creates all subsitution configurations necessary to create the
+        """From the list of maximal sequences, it creates all substitution configurations necessary to create the
         optimized version of the circuit.
         """
 
@@ -1061,11 +1061,11 @@ class SequencesSubstitution:  # pylint: disable=too-few-public-methods
 
             sequence_matrix = qml.matrix(sequence)
 
-            if self.size_qubits_subset == 1:
+            if self.qubit_subset_size == 1:
                 with qml.tape.QuantumTape(do_queue=False) as sequence_opt:
                     zyz_decomposition(sequence_matrix, sequence.wires)
 
-            if self.size_qubits_subset == 2:
+            if self.qubit_subset_size == 2:
                 with qml.tape.QuantumTape(do_queue=False) as sequence_opt:
                     two_qubit_decomposition(sequence_matrix, sequence.wires)
 
