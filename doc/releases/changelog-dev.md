@@ -372,6 +372,9 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
+* Call `pip show` with the subprocess library to avoid outputting a common warning.
+  [(#2422)](https://github.com/PennyLaneAI/pennylane/pull/2422)
+
 * Fixes a bug where observables were not considered when determining the use of
   the `jax-jit` interface.
   [(#2427)](https://github.com/PennyLaneAI/pennylane/pull/2427)
@@ -424,6 +427,5 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
-
 Olivia Di Matteo, Christian Gogolin, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee,
-Romain Moyard, Zeyue Niu, Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
+Romain Moyard, Zeyue Niu, Matthew Silverman, Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
