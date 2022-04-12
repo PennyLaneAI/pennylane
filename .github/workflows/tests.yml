@@ -165,7 +165,7 @@ jobs:
           fetch-depth: 2
 
       - name: Setup conda
-        uses: s-weigand/setup-conda@v2
+        uses: s-weigand/setup-conda@v1
         with:
           activate-conda: true
           python-version: 3.7
