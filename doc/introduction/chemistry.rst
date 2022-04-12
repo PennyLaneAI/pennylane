@@ -78,15 +78,6 @@ The atomic structure of a molecule can be imported from an external file using t
 The geometry of the molecule is returned as a list containing the symbol and the Cartesian
 coordinates of each atomic species.
 
-.. note::
-
-    The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported
-    out of the box. Additionally, if `Open Babel <https://openbabel.org/>`_ is
-    installed, `any format recognized by Open Babel
-    <https://openbabel.org/wiki/Category:Formats>`_ is also supported.
-
-    See the :func:`~.read_structure` function for more details.
-
 Solving the Hartree-Fock equations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

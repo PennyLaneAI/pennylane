@@ -36,21 +36,6 @@ def psi4_support():
     return support
 
 
-@pytest.fixture(scope="module")
-def babel_support():
-    """Boolean fixture for Babel support"""
-    if cmd_exists("obabel"):
-        return True
-
-    return False
-
-
-@pytest.fixture()
-def requires_babel(babel_support):
-    if not babel_support:
-        pytest.skip("Skipped, no Babel support")
-
-
 @pytest.fixture(
     scope="module",
     params=[

@@ -1,33 +1,10 @@
-import pytest
-from pennylane import qchem
-import numpy as np
 import os
-import subprocess
+
+import numpy as np
+
+from pennylane import qchem
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
-
-
-@pytest.mark.parametrize(
-    "names",
-    [
-        ["h2.SDF", "h2_ref.xyz"],
-        ["gdb3.mol5.PDB", "gdb3.mol5_ref.xyz"],
-        ["gdb3.mol5.XYZ", "gdb3.mol5_ref.xyz"],
-    ],
-)
-def test_conversion_from_folder(names, tmpdir, requires_babel):
-    r"""Test the conversion of molecular structure file with different formats"""
-
-    filename = os.path.join(ref_dir, names[0])
-    qchem.read_structure(filename, outpath=tmpdir)
-
-    with open(tmpdir.join("structure.xyz")) as g:
-        gen_file = g.readlines()[2:]
-
-    with open(os.path.join(ref_dir, names[1])) as f:
-        ref_file = f.readlines()[2:]
-
-    assert gen_file == ref_file
 
 
 def test_reading_xyz_file(tmpdir):
@@ -67,20 +44,3 @@ def test_reading_xyz_file(tmpdir):
 
     assert symbols == ref_symbols
     assert np.allclose(coordinates, ref_coords)
-
-
-def test_subprocess_run(monkeypatch, requires_babel):
-    r"""Test 'subprocess.run' function running babel to convert the molecular structure
-    file to xyz format"""
-
-    with monkeypatch.context() as m:
-
-        def fake_run(*args, **kwargs):
-            raise subprocess.CalledProcessError(1, "obabel")
-
-        m.setattr(subprocess, "run", fake_run)
-
-        with pytest.raises(
-            RuntimeError, match="Open Babel error. See the following Open Babel output for details"
-        ):
-            qchem.read_structure("fake_mol_geo.SDF")

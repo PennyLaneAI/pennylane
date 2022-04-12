@@ -64,7 +64,6 @@ def test_building_hamiltonian(
     nact_orbs,
     mapping,
     psi4_support,
-    requires_babel,
     tmpdir,
 ):
     r"""Test that the generated Hamiltonian `built_hamiltonian` is an instance of the PennyLane
