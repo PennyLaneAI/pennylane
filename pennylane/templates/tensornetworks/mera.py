@@ -146,13 +146,16 @@ class MERA(Operation):
             @qml.qnode(dev)
             def circuit(template_weights):
                 qml.MERA(range(n_wires),n_block_wires,block, n_params_block, template_weights)
-                return qml.expval(qml.PauliZ(wires=n_wires-1))
+                return qml.expval(qml.PauliZ(wires=1))
+        
+        It may be necessary to reorder the wires to see the MERA architecture clearly:
 
-        >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
-        0: ─╭C──RY(0.10)──╭C──RY(0.10)────────────────╭X──RY(-0.30)─┤
-        1: ─╰X──RY(-0.30)─│─────────────╭X──RY(-0.30)─╰C──RY(0.10)──┤
-        2: ───────────────╰X──RY(-0.30)─│─────────────╭C──RY(0.10)──┤
-        3: ─────────────────────────────╰C──RY(0.10)──╰X──RY(-0.30)─┤  <Z>
+        >>> print(qml.draw(circuit,expansion_strategy='device',wire_order=[2,0,1,3])(template_weights))
+
+        2: ───────────────╭C──RY(0.10)──╭X──RY(-0.30)───────────────┤
+        0: ─╭X──RY(-0.30)─│─────────────╰C──RY(0.10)──╭C──RY(0.10)──┤
+        1: ─╰C──RY(0.10)──│─────────────╭X──RY(-0.30)─╰X──RY(-0.30)─┤  <Z>
+        3: ───────────────╰X──RY(-0.30)─╰C──RY(0.10)────────────────┤
 
     """
 
