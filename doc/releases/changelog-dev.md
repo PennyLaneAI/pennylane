@@ -239,8 +239,8 @@
 * The `qml.specs` transform now accepts an `expansion_strategy` keyword argument.
   [(#2395)](https://github.com/PennyLaneAI/pennylane/pull/2395)
 
-* Added the `QuantumTape.get_output_shape` and `QuantumTape.get_output_domain`
-  methods to allow gathering information about the output shape and domain of
+* Added the `QuantumTape.shape` and `QuantumTape.numeric_type`
+  methods to allow gathering information about the shape and numeric type of
   quantum tapes.
   [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
 
