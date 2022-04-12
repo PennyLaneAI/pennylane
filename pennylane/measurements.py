@@ -215,7 +215,7 @@ class MeasurementProcess:
         the shot vector defined.
 
         The shape is device dependent even if the return type has a shape
-        pre-defined.
+        pre-defined (e.g., expectation values, states, etc.).
         """
         shot_vector = device._shot_vector
         num_shot_elements = sum([s.copies for s in shot_vector])
