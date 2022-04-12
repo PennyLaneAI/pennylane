@@ -1072,12 +1072,51 @@ class QuantumTape(AnnotatedQueue):
         """Produces the output shape of the tape by inspecting its measurements
         and the device used for execution.
 
-        Note: the computed shape is not stored because the output shape may be
-        dependent on the device used for execution.
+        .. note::
+
+            The computed shape is not stored because the output shape may be
+            dependent on the device used for execution.
+
+        **Examples:**
+
+            .. code-block:: py
+
+                import pennylane as qml
+                from pennylane.gradients import param_shift
+                from pennylane import numpy as np
+
+                dev = qml.device("default.qubit", wires=2)
+                a = np.array([0.1, 0.2, 0.3])
+
+                def func(a):
+                    qml.RY(a[0], wires=0)
+                    qml.RX(a[1], wires=0)
+                    qml.RY(a[2], wires=0)
+
+                with qml.tape.QuantumTape() as tape:
+                    func(a)
+                    qml.state()
+
+                # 1. Execute the tape
+                tape_execute_res = qml.execute(
+                    [tape],
+                    dev,
+                    cache=None,
+                    interface="autograd",
+                    gradient_fn=param_shift
+                )
+
+                # Get the result of the first tape execution
+                tape_execute_res = tape_execute_res[0]
+
+            .. code-block:: pycon
+
+                >>> print(tape_execute_res.shape)
+                (1, 4)
 
         There is a difference between the shape of results obtained by:
-        1. Using the low-level `qml.execute` pipeline for executing a
-           `QuantumTape`;
+
+        1. Using the low-level `qml.execute` pipeline for executing a `QuantumTape`;
         2. Evaluating a QNode.
 
         The shape returned by this method corresponds to case 1. QNode
@@ -1088,35 +1127,7 @@ class QuantumTape(AnnotatedQueue):
         1. `(1,4)`;
         2. `(4,)`
 
-        .. code-block:: py
-
-            import pennylane as qml
-            from pennylane.gradients import param_shift
-            from pennylane import numpy as np
-
-            dev = qml.device("default.qubit", wires=2)
-            a = np.array([0.1, 0.2, 0.3])
-
-            def func(a):
-                qml.RY(a[0], wires=0)
-                qml.RX(a[1], wires=0)
-                qml.RY(a[2], wires=0)
-
-            with qml.tape.QuantumTape() as tape:
-                func(a)
-                qml.state()
-
-            # 1. Execute the tape
-            tape_execute_res = qml.execute(
-                [tape],
-                dev,
-                cache=None,
-                interface="autograd",
-                gradient_fn=param_shift
-            )
-
-            # Get the result of the first tape execution
-            tape_execute_res = tape_execute_res[0]
+        .. code-block:: python
 
             # 2. Evaluate the QNode
             @qml.qnode(dev,interface='autograd')

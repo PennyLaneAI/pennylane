@@ -173,7 +173,7 @@ class MeasurementProcess:
                 return self._shape
 
             if self.return_type in (Probability, State, Sample):
-                raise ValueError(
+                raise MeasurementShapeError(
                     f"Return type {self.return_type} requires the device argument to be passed to obtain the shape."
                 )
 
@@ -591,10 +591,17 @@ def sample(op=None, wires=None):
             f"{op.name} is not an observable: cannot be used with sample"
         )
 
-    if op is None or all(np.issubdtype(e.dtype, int) for e in qml.eigvals(op)):
-        # Computational basis samples or otherwise integer eigvals
-        numeric_type = int
-    else:
+    try:
+        eigvals = qml.eigvals(op)
+        if op is None or all(np.issubdtype(e.dtype, int) for e in eigvals):
+            # Computational basis samples or otherwise integer eigvals
+            numeric_type = int
+        else:
+            numeric_type = float
+
+    except qml.operation.EigvalsUndefinedError:
+
+        # Default to float
         numeric_type = float
 
     if wires is not None:

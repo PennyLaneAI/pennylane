@@ -120,6 +120,44 @@ class TestExpval:
 
         circuit()
 
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_numeric_type(self, obs):
+        """Test that the numeric type is correct."""
+        res = qml.expval(obs)
+        assert res.numeric_type is float
+
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_numeric_type(self, obs):
+        """Test that the numeric type is correct."""
+        res = qml.expval(obs)
+        assert res.numeric_type is float
+
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_shape(self, obs):
+        """Test that the shape is correct."""
+        res = qml.expval(obs)
+        assert res.shape() == (1,)
+
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_shape_shot_vector(self, obs):
+        """Test that the shape is correct with the shot vector too."""
+        res = qml.expval(obs)
+        shot_vector = (1, 2, 3)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        assert res.shape(dev) == (len(shot_vector),)
+
 
 class TestVar:
     """Tests for the var function"""
@@ -166,6 +204,61 @@ class TestVar:
             return res
 
         circuit()
+
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_numeric_type(self, obs):
+        """Test that the numeric type is correct."""
+        res = qml.var(obs)
+        assert res.numeric_type is float
+
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_shape(self, obs):
+        """Test that the shape is correct."""
+        res = qml.var(obs)
+        assert res.shape() == (1,)
+
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_shape_shot_vector(self, obs):
+        """Test that the shape is correct with the shot vector too."""
+        res = qml.var(obs)
+        shot_vector = (1, 2, 3)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        assert res.shape(dev) == (len(shot_vector),)
+
+
+class TestProbs:
+    """Tests for the probs function"""
+
+    @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
+    def test_numeric_type(self, wires):
+        """Test that the numeric type is correct."""
+        res = qml.probs(wires=wires)
+        assert res.numeric_type is float
+
+    @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
+    @pytest.mark.parametrize("shots", [None, 10])
+    def test_shape(self, wires, shots):
+        """Test that the shape is correct."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+        res = qml.probs(wires=wires)
+        assert res.shape(dev) == (1, 2 ** len(wires))
+
+    @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
+    def test_shape_shot_vector(self, wires):
+        """Test that the shape is correct with the shot vector too."""
+        res = qml.probs(wires=wires)
+        shot_vector = (1, 2, 3)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        assert res.shape(dev) == (len(shot_vector), 2 ** len(wires))
 
 
 class TestSample:
@@ -332,6 +425,60 @@ class TestSample:
             return res
 
         circuit()
+
+    @pytest.mark.parametrize(
+        "obs,exp",
+        [
+            (None, int),
+            (qml.PauliZ(0), int),
+            (qml.Hermitian(np.diag([1, 2]), 0), float),
+            (qml.Hermitian(np.diag([1.0, 2.0]), 0), float),
+        ],
+    )
+    def test_numeric_type(self, obs, exp):
+        """Test that the numeric type is correct."""
+        res = qml.sample(obs) if obs is not None else qml.sample()
+        assert res.numeric_type is exp
+
+    @pytest.mark.parametrize(
+        "obs",
+        [
+            None,
+            qml.PauliZ(0),
+            qml.Hermitian(np.diag([1, 2]), 0),
+            qml.Hermitian(np.diag([1.0, 2.0]), 0),
+        ],
+    )
+    def test_shape(self, obs):
+        """Test that the shape is correct."""
+        shots = 10
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+        res = qml.sample(obs) if obs is not None else qml.sample()
+        expected = (1, shots) if obs is not None else (1, shots, 3)
+        assert res.shape(dev) == expected
+
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_shape_shot_vector(self, obs):
+        """Test that the shape is correct with the shot vector too."""
+        shot_vector = (1, 2, 3)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        res = qml.sample(obs)
+        expected = ((), (2,), (3,))
+        assert res.shape(dev) == expected
+
+    def test_shape_shot_vector_no_obs(self):
+        """Test that the shape is correct with the shot vector too."""
+        shot_vector = (1, 2, 3)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        res = qml.sample()
+        with pytest.raises(
+            qml.measurements.MeasurementShapeError,
+            match="Getting the output shape of a measurement returning samples along with a device with a shot vector is not supported.",
+        ):
+            res.shape(dev)
 
 
 class TestMeasure:
