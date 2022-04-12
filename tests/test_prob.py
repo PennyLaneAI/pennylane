@@ -438,8 +438,8 @@ def test_hamiltonian_error(coeffs, obs, init_state, tol):
 
 
 def test_probs_no_wires_obs_raises():
-    """Test that an informative error is raised when no wires or observable are
-    passed to qml.probs."""
+    """Test that an informative error is raised when no wires or observables
+    are passed to qml.probs."""
     num_wires = 1
 
     dev = qml.device("default.qubit", wires=num_wires, shots=None)
