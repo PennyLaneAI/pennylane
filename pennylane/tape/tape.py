@@ -1013,44 +1013,55 @@ class QuantumTape(AnnotatedQueue):
             # No other measurement type to check
 
         else:
-            # Shot vector was defined
+            shape = QuantumTape._shape_shot_vector_multi_homogenous(mps, device)
 
-            if ret_type in (qml.measurements.Expectation, qml.measurements.Variance):
-                num = sum(shottup.copies for shottup in shot_vector)
-                shape = (num, len(mps))
+        return shape
 
-            elif ret_type == qml.measurements.Probability:
+    @staticmethod
+    def _shape_shot_vector_multi_homogenous(mps, device):
+        """Auxiliary function for determining the output shape of the tape for
+        multiple homogenous measurements for a device with a shot vector."""
+        shape = tuple()
 
-                wires_num_set = {len(meas.wires) for meas in mps}
-                same_num_wires = len(wires_num_set) == 1
-                if same_num_wires:
-                    # All probability measurements have the same number of
-                    # wires, gather the length from the first one
+        ret_type = mps[0].return_type
+        shot_vector = device._shot_vector
 
-                    len_wires = len(mps[0].wires)
-                    dim = mps[0]._get_num_basis_states(len_wires, device)
-                    shot_copies_sum = sum(s.copies for s in shot_vector)
-                    shape = (shot_copies_sum, len(mps), dim)
+        # Shot vector was defined
+        if ret_type in (qml.measurements.Expectation, qml.measurements.Variance):
+            num = sum(shottup.copies for shottup in shot_vector)
+            shape = (num, len(mps))
 
-                else:
-                    # There are a varying number of wires that the probability
-                    # measurement processes act on
-                    # TODO: revisit when issues with this case are resolved
-                    raise TapeError(
-                        "Getting the output shape of a tape with multiple probability measurements "
-                        "along with a device that defines a shot vector is not supported."
-                    )
+        elif ret_type == qml.measurements.Probability:
 
-            elif ret_type == qml.measurements.Sample:
-                shape = []
-                for shot_val in device.shot_vector:
-                    for _ in range(shot_val.copies):
-                        shots = shot_val.shots
-                        if shots != 1:
-                            shape.append(tuple([shots, len(mps)]))
-                        else:
-                            shape.append((len(mps),))
+            wires_num_set = {len(meas.wires) for meas in mps}
+            same_num_wires = len(wires_num_set) == 1
+            if same_num_wires:
+                # All probability measurements have the same number of
+                # wires, gather the length from the first one
 
+                len_wires = len(mps[0].wires)
+                dim = mps[0]._get_num_basis_states(len_wires, device)
+                shot_copies_sum = sum(s.copies for s in shot_vector)
+                shape = (shot_copies_sum, len(mps), dim)
+
+            else:
+                # There are a varying number of wires that the probability
+                # measurement processes act on
+                # TODO: revisit when issues with this case are resolved
+                raise TapeError(
+                    "Getting the output shape of a tape with multiple probability measurements "
+                    "along with a device that defines a shot vector is not supported."
+                )
+
+        elif ret_type == qml.measurements.Sample:
+            shape = []
+            for shot_val in device.shot_vector:
+                for _ in range(shot_val.copies):
+                    shots = shot_val.shots
+                    if shots != 1:
+                        shape.append(tuple([shots, len(mps)]))
+                    else:
+                        shape.append((len(mps),))
         return shape
 
     def shape(self, device):
