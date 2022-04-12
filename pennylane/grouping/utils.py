@@ -145,7 +145,9 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_wor
             converted to binary vector representation
         n_qubits (int): number of qubits to specify dimension of binary vector representation
         wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys, and
-             unique integer labels as their values
+            unique integer labels as their values
+        check_is_pauli_word (bool): If True (default) then a check is run to verify that pauli_word
+            is infact a Pauli word
 
     Returns:
         array: the ``2*n_qubits`` dimensional binary vector representation of the input Pauli word
