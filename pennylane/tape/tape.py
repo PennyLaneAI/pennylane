@@ -939,28 +939,6 @@ class QuantumTape(AnnotatedQueue):
             op.data[self._par_info[idx]["p_idx"]] = p
 
     @staticmethod
-    def _get_num_basis_states(num_wires, device):
-        """Auxiliary function to determine the number of basis states given the
-        number of systems and a quantum device.
-
-        This function is meant to be used with the Probability measurement to
-        determine how many outcomes there will be. With qubit based devices
-        we'll have two outcomes for each subsystem. With continuous variable
-        devices that impose a Fock cutoff the number of basis states per
-        subsystem equals the cutoff value.
-
-        Args:
-            num_wires (int): the number of qubits/qumodes
-            device (.Device): a PennyLane device
-
-        Returns:
-            int: the number of basis states
-        """
-        cutoff = getattr(device, "cutoff", None)
-        base = 2 if cutoff is None else cutoff
-        return base**num_wires
-
-    @staticmethod
     def _single_measurement_shape(measurement_process, device):
         """Auxiliary function of get_output_shape that determines the output
         shape of a tape with a single measurement.
@@ -977,63 +955,7 @@ class QuantumTape(AnnotatedQueue):
         shape = tuple()
 
         ret_type = measurement_process.return_type
-        if device._shot_vector is None:
-            if measurement_process.shape is not None:
-
-                shape = measurement_process.shape
-
-            elif ret_type == qml.measurements.Probability:
-                len_wires = len(measurement_process.wires)
-                dim = QuantumTape._get_num_basis_states(len_wires, device)
-                shape = (dim,)
-
-            elif ret_type == qml.measurements.State:
-
-                # Note: qml.density_matrix has its shape defined, so we're handling
-                # the qml.state case; acts on all device wires
-                dim = 2 ** len(device.wires)
-                shape = (dim,)
-
-            elif ret_type == qml.measurements.Sample:
-
-                if measurement_process.obs is not None:
-                    # qml.sample(some_observable) case
-                    shape = (device.shots,) if device.shots != 1 else 1
-                else:
-                    # qml.sample() case
-                    if device.shots is None or device.shots == 1:
-                        shape = (len(device.wires),)
-                    else:
-                        shape = (device.shots, len(device.wires))
-
-        else:
-            # Shot vector was defined
-
-            shot_vector = device._shot_vector
-            num_shot_elements = sum([s.copies for s in shot_vector])
-            if measurement_process.shape is not None:
-
-                shape = (num_shot_elements,)
-
-            elif ret_type == qml.measurements.Probability:
-
-                len_wires = len(measurement_process.wires)
-                dim = QuantumTape._get_num_basis_states(len_wires, device)
-                shape = (num_shot_elements, dim)
-
-            elif ret_type == qml.measurements.Sample:
-                if measurement_process.obs is not None:
-                    shape = tuple(
-                        (shot_val,) if shot_val != 1 else tuple()
-                        for shot_val in device._raw_shot_sequence
-                    )
-                else:
-                    # TODO: revisit when qml.sample without an observable fully
-                    # supports shot vectors
-                    raise TapeError(
-                        "Getting the output shape of a tape returning samples along with "
-                        "a device with a shot vector is not supported."
-                    )
+        shape = measurement_process.shape(device)
 
         return shape
 
@@ -1084,7 +1006,7 @@ class QuantumTape(AnnotatedQueue):
                     # wires, gather the length from the first one
 
                     len_wires = len(mps[0].wires)
-                    dim = QuantumTape._get_num_basis_states(len_wires, device)
+                    dim = mps[0]._get_num_basis_states(len_wires, device)
                     shape = (len(mps), dim)
 
                 else:
@@ -1112,7 +1034,7 @@ class QuantumTape(AnnotatedQueue):
                     # wires, gather the length from the first one
 
                     len_wires = len(mps[0].wires)
-                    dim = QuantumTape._get_num_basis_states(len_wires, device)
+                    dim = mps[0]._get_num_basis_states(len_wires, device)
                     shot_copies_sum = sum(s.copies for s in shot_vector)
                     shape = (shot_copies_sum, len(mps), dim)
 

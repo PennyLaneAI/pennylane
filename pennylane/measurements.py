@@ -73,6 +73,11 @@ MidMeasure = ObservableReturnTypes.MidMeasure
 basis in the middle of the circuit."""
 
 
+class MeasurementShapeError(ValueError):
+    """An error raised when an unsupported operation is attempted with a
+    quantum tape."""
+
+
 class MeasurementProcess:
     """Represents a measurement process occurring at the end of a
     quantum variational circuit.
@@ -112,7 +117,7 @@ class MeasurementProcess:
 
             self._eigvals = np.array(eigvals)
 
-        self.shape = shape
+        self._shape = shape
         """tuple[int]: The output shape of the measurement proccess. For some a
         shape is not applicable or the shape may depend on device options, in
         such cases ``shape=None``."""
@@ -132,6 +137,95 @@ class MeasurementProcess:
 
         # Queue the measurement process
         self.queue()
+
+    def shape(self, device=None):
+
+        if device is None:
+            if self._shape is not None:
+                return self._shape
+
+            if self.return_type in (Probability, State, Sample):
+                raise ValueError(
+                    f"Return type {self.return_type} requires the device argument to be passed to obtain the shape."
+                )
+
+        if device._shot_vector is None:
+            if self.return_type == Probability:
+                len_wires = len(self.wires)
+                dim = self._get_num_basis_states(len_wires, device)
+                return (1, dim)
+
+            if self.return_type == State and self._shape is None:
+
+                # Note: qml.density_matrix has its shape defined, so we're handling
+                # the qml.state case; acts on all device wires
+                dim = 2 ** len(device.wires)
+                return (1, dim)
+
+            if self.return_type == Sample:
+                len_wires = len(device.wires)
+
+                if self.obs is not None:
+                    # qml.sample(some_observable) case
+                    return (1, device.shots)
+
+                # qml.sample() case
+                return (1, device.shots, len_wires)
+
+            # The other return types should have their shapes pre-defined
+            return self._shape
+
+        else:
+            # Shot vector was defined
+
+            shot_vector = device._shot_vector
+            num_shot_elements = sum([s.copies for s in shot_vector])
+            if self._shape is not None:
+
+                shape = (num_shot_elements,)
+
+            elif self.return_type == qml.measurements.Probability:
+
+                len_wires = len(self.wires)
+                dim = self._get_num_basis_states(len_wires, device)
+                shape = (num_shot_elements, dim)
+
+            elif self.return_type == qml.measurements.Sample:
+                if self.obs is not None:
+                    shape = tuple(
+                        (shot_val,) if shot_val != 1 else tuple()
+                        for shot_val in device._raw_shot_sequence
+                    )
+                else:
+                    # TODO: revisit when qml.sample without an observable fully
+                    # supports shot vectors
+                    raise MeasurementShapeError(
+                        "Getting the output shape of a measurement returning samples along with "
+                        "a device with a shot vector is not supported."
+                    )
+            return shape
+
+    @staticmethod
+    def _get_num_basis_states(num_wires, device):
+        """Auxiliary function to determine the number of basis states given the
+        number of systems and a quantum device.
+
+        This function is meant to be used with the Probability measurement to
+        determine how many outcomes there will be. With qubit based devices
+        we'll have two outcomes for each subsystem. With continuous variable
+        devices that impose a Fock cutoff the number of basis states per
+        subsystem equals the cutoff value.
+
+        Args:
+            num_wires (int): the number of qubits/qumodes
+            device (.Device): a PennyLane device
+
+        Returns:
+            int: the number of basis states
+        """
+        cutoff = getattr(device, "cutoff", None)
+        base = 2 if cutoff is None else cutoff
+        return base**num_wires
 
     def diagonalizing_gates(self):
         """Returns the gates that diagonalize the measured wires such that they
@@ -343,7 +437,7 @@ def expval(op):
             f"{op.name} is not an observable: cannot be used with expval"
         )
 
-    return MeasurementProcess(Expectation, obs=op, shape=1)
+    return MeasurementProcess(Expectation, obs=op, shape=(1,))
 
 
 def var(op):
@@ -376,7 +470,7 @@ def var(op):
     if not isinstance(op, Observable):
         raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
 
-    return MeasurementProcess(Variance, obs=op, shape=1)
+    return MeasurementProcess(Variance, obs=op, shape=(1,))
 
 
 def sample(op=None, wires=None):
@@ -645,7 +739,7 @@ def density_matrix(wires):
     # pylint: disable=protected-access
     wires = qml.wires.Wires(wires)
     dim = 2 ** len(wires)
-    shape = (dim, dim)
+    shape = (1, dim, dim)
     return MeasurementProcess(State, wires=wires, shape=shape)
 
 

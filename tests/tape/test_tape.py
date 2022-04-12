@@ -22,7 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import CircuitGraph
 from pennylane.tape import QuantumTape, TapeError
-from pennylane.measurements import MeasurementProcess, expval, sample, var
+from pennylane.measurements import MeasurementProcess, expval, sample, var, MeasurementShapeError
 
 
 def TestOperationMonkeypatching():
@@ -1765,12 +1765,12 @@ def cost(tape, dev):
 
 
 measures = [
-    (qml.expval(qml.PauliZ(0)), 1),
-    (qml.var(qml.PauliZ(0)), 1),
-    (qml.probs(wires=[0]), (2,)),
-    (qml.probs(wires=[0, 1]), (4,)),
-    (qml.state(), (8,)),
-    (qml.density_matrix(wires=[0, 1]), (4, 4)),
+    (qml.expval(qml.PauliZ(0)), (1,)),
+    (qml.var(qml.PauliZ(0)), (1,)),
+    (qml.probs(wires=[0]), (1, 2)),
+    (qml.probs(wires=[0, 1]), (1, 4)),
+    (qml.state(), (1, 8)),
+    (qml.density_matrix(wires=[0, 1]), (1, 4, 4)),
     (qml.sample(qml.PauliZ(0)), None),
     (qml.sample(), None),
 ]
@@ -1796,6 +1796,9 @@ class TestOutputShape:
     def test_output_shapes_single(self, measurement, expected_shape, shots):
         """Test that the output shape produced by the tape matches the expected
         output shape."""
+        if shots is None and measurement.return_type is qml.measurements.Sample:
+            pytest.skip("Sample doesn't support analytic computations.")
+
         num_wires = 3
         dev = qml.device("default.qubit", wires=num_wires, shots=shots)
 
@@ -1811,8 +1814,14 @@ class TestOutputShape:
         if expected_shape is None:
             expected_shape = shot_dim if shot_dim == 1 else (shot_dim,)
 
-        if measurement.return_type is qml.measurements.Sample and measurement.obs is None:
-            expected_shape = (num_wires,) if shots is None or dev.shots == 1 else (shots, num_wires)
+        if measurement.return_type is qml.measurements.Sample:
+            if measurement.obs is not None:
+                expected_shape = (1, shots)
+
+            else:
+                expected_shape = (1, shots, num_wires)
+
+        print(measurement, dev.shots)
         assert tape.get_output_shape(dev) == expected_shape
 
     @pytest.mark.parametrize("measurement, expected_shape", measures)
@@ -1845,20 +1854,15 @@ class TestOutputShape:
             qml.RX(b, wires=0)
             qml.apply(measurement)
 
-        @qml.qnode(dev)
-        def circuit(a, b):
-            qml.RY(a, wires=0)
-            qml.RX(b, wires=0)
-            return qml.apply(measurement)
-
-        res = circuit(a, b)
+        res = qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift)[0]
 
         if isinstance(res, tuple):
             res_shape = tuple([r.shape for r in res])
         else:
-            res_shape = circuit(a, b).shape
+            res_shape = res.shape
 
         res_shape = res_shape if res_shape != tuple() else 1
+        print(measurement, dev.shots)
         assert tape.get_output_shape(dev) == res_shape
 
     def test_output_shapes_single_qnode_check_cutoff(self):
@@ -1911,8 +1915,8 @@ class TestOutputShape:
         def circuit(a, b):
             return qml.probs(wires=[0])
 
-        res_shape = circuit(a, b).shape
-        assert tape.get_output_shape(dev) == res_shape
+        res_shape = qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift_cv)[0]
+        assert tape.get_output_shape(dev) == res_shape.shape
 
     @pytest.mark.parametrize("measurements, expected", multi_measurements)
     @pytest.mark.parametrize("shots", [None, 1, 10])
@@ -2103,7 +2107,7 @@ class TestOutputShape:
             qml.sample()
 
         with pytest.raises(
-            TapeError,
+            MeasurementShapeError,
             match="returning samples along with a device with a shot vector",
         ):
             tape.get_output_shape(dev)
