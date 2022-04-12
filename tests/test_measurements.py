@@ -133,15 +133,6 @@ class TestExpval:
         "obs",
         [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
     )
-    def test_numeric_type(self, obs):
-        """Test that the numeric type is correct."""
-        res = qml.expval(obs)
-        assert res.numeric_type is float
-
-    @pytest.mark.parametrize(
-        "obs",
-        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
-    )
     def test_shape(self, obs):
         """Test that the shape is correct."""
         res = qml.expval(obs)
