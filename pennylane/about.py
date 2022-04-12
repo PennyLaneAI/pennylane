@@ -16,18 +16,11 @@ This module contains the :func:`about` function to display all the details of th
 e.g., OS, version, `Numpy` and `Scipy` versions, installation method.
 """
 import platform
-import importlib
 import sys
+from subprocess import check_output
 from pkg_resources import iter_entry_points
 import numpy
 import scipy
-
-# The following if/else block enables support for pip versions 19.3.x
-_parent_module = importlib.util.find_spec("pip._internal.main") or importlib.util.find_spec(
-    "pip._internal"
-)
-_internal_main = importlib.util.module_from_spec(_parent_module)
-_parent_module.loader.exec_module(_internal_main)
 
 
 def about():
@@ -35,7 +28,7 @@ def about():
     Prints the information for pennylane installation.
     """
     plugin_devices = iter_entry_points("pennylane.plugins")
-    _internal_main.main(["show", "pennylane"])
+    print(check_output([sys.executable, "-m", "pip", "show", "pennylane"]).decode())
     print(f"Platform info:           {platform.platform(aliased=True)}")
     print(
         f"Python version:          {sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]}"
