@@ -4376,6 +4376,7 @@ class TestKaHyPar:
             range(len(graph.nodes) + len(cut_edges))
         )
 
+    @pytest.mark.parametrize("local_measurement", [False, True])
     @pytest.mark.parametrize("with_manual_cut", [False, True])
     @pytest.mark.parametrize(
         "cut_strategy",
@@ -4387,7 +4388,7 @@ class TestKaHyPar:
             qcut.CutStrategy(max_free_wires=2, num_fragments_probed=5),  # impossible to cut
         ],
     )
-    def test_find_and_place_cuts(self, with_manual_cut, cut_strategy):
+    def test_find_and_place_cuts(self, local_measurement, with_manual_cut, cut_strategy):
         """Integration tests for auto cutting pipeline."""
         pytest.importorskip("kahypar")
 
@@ -4418,6 +4419,7 @@ class TestKaHyPar:
                 imbalance=0.5,
                 replace_wire_cuts=True,
                 seed=self.seed,
+                local_measurement=local_measurement,
             )
 
         elif cut_strategy.num_fragments_probed:
@@ -4425,6 +4427,7 @@ class TestKaHyPar:
                 cut_graph = qcut.find_and_place_cuts(
                     graph=graph,
                     cut_strategy=cut_strategy,
+                    local_measurement=local_measurement,
                 )
             return
 
@@ -4434,6 +4437,7 @@ class TestKaHyPar:
                 cut_strategy=cut_strategy,
                 replace_wire_cuts=True,
                 seed=self.seed,
+                local_measurement=local_measurement,
             )
 
             if cut_strategy.max_free_wires > 2:
@@ -4442,8 +4446,8 @@ class TestKaHyPar:
             else:
                 # There's some inherent randomness in Kahypar that's not fixable by seed.
                 # Need to make this condition a bit relaxed for the extreme case.
-                expected_num_cut_edges = [14, 15]
-                num_frags = [13, 14]
+                expected_num_cut_edges = [10, 11, 14, 15]
+                num_frags = [9, 10, 13, 14]
 
         frags, comm_graph = qcut.fragment_graph(cut_graph)
 
@@ -4551,7 +4555,7 @@ class TestAutoCutCircuit:
         assert np.allclose(grad, grad_expected)
 
     @flaky(max_runs=3)
-    @pytest.mark.parametrize("shots", [None, int(1e7)])
+    @pytest.mark.parametrize("shots", [None])  # using analytic mode only to save time.
     def test_standard_circuit(self, mocker, shots):
         """
         Tests that the full circuit cutting pipeline returns the correct value for a typical
@@ -4633,63 +4637,6 @@ class TestAutoCutCircuit:
         x = 0.4
         res = circuit(x)
         assert np.allclose(res, np.cos(x))
-
-    @flaky(max_runs=3)
-    def test_cut_circuit_mc_expval(self):
-        """
-        Tests that a circuit containing sampling measurements can be cut and
-        recombined to give the correct expectation value
-        """
-        pytest.importorskip("kahypar")
-
-        dev_sim = qml.device("default.qubit", wires=3)
-
-        @qml.qnode(dev_sim)
-        def target_circuit(v):
-            qml.RX(v, wires=0)
-            qml.RY(0.5, wires=1)
-            qml.RX(1.3, wires=2)
-
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-
-            qml.RX(v, wires=0)
-            qml.RY(0.7, wires=1)
-            qml.RX(2.3, wires=2)
-            return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=2))
-
-        def fn(x):
-            if x[0] == 0 and x[1] == 0:
-                return 1
-            if x[0] == 0 and x[1] == 1:
-                return -1
-            if x[0] == 1 and x[1] == 0:
-                return -1
-            if x[0] == 1 and x[1] == 1:
-                return 1
-
-        dev = qml.device("default.qubit", wires=2, shots=10000)
-
-        @qml.cut_circuit_mc(classical_processing_fn=fn, auto_cutter=True)
-        @qml.qnode(dev)
-        def circuit(v):
-            qml.RX(v, wires=0)
-            qml.RY(0.5, wires=1)
-            qml.RX(1.3, wires=2)
-
-            qml.CNOT(wires=[0, 1])
-            qml.CNOT(wires=[1, 2])
-
-            qml.RX(v, wires=0)
-            qml.RY(0.7, wires=1)
-            qml.RX(2.3, wires=2)
-            return qml.sample(wires=[0, 2])
-
-        v = 0.319
-        cut_res_mc = circuit(v)
-
-        target = target_circuit(v)
-        assert np.isclose(cut_res_mc, target, atol=0.1)  # not guaranteed to pass each time
 
     def test_cut_circuit_mc_sample(self):
         """
