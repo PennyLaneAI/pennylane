@@ -7,7 +7,7 @@ import pytest
 import pennylane as qml
 
 # TODO: Bring pytest skip to relevant tests.
-if not sys.version_info < (3, 10):
+if not (3, 9) < sys.version_info < (3, 10):
     pytest.skip(allow_module_level=True)
 
 openfermion = pytest.importorskip("openfermion")

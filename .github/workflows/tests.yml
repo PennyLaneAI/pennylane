@@ -48,7 +48,7 @@ jobs:
           pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
 
       - name: Conditionally install openfermionpyscf
-        if: contains('3.7 3.8 3.9', matrix.config.python-version)
+        if: contains(' 3.9', matrix.config.python-version)
         run: pip3 install openfermionpyscf
 
       - name: Conditionally install PyTorch
