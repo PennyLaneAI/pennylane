@@ -79,7 +79,7 @@ jobs:
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
 
@@ -146,7 +146,7 @@ jobs:
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
 
@@ -173,7 +173,6 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get install -y openbabel
           conda install psi4 psi4-rt python=3.7 -c psi4
           pip uninstall h5py -y
           pip install pytest pytest-cov pytest-mock flaky h5py==3.2.1
@@ -192,11 +191,11 @@ jobs:
           cd qchem && python -m pytest tests --cov=pennylane_qchem $COVERAGE_FLAGS
 
       - name: Upload HF coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           file: ./qchem/coverage.xml

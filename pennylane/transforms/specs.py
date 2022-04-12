@@ -21,7 +21,7 @@ def _get_absolute_import_path(fn):
     return f"{inspect.getmodule(fn).__name__}.{fn.__name__}"
 
 
-def specs(qnode, max_expansion=None):
+def specs(qnode, max_expansion=None, expansion_strategy=None):
     """Resource information about a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
@@ -33,6 +33,15 @@ def specs(qnode, max_expansion=None):
     Keyword Args:
         max_expansion (int): The number of times the internal circuit should be expanded when
             calculating the specification. Defaults to ``qnode.max_expansion``.
+        expansion_strategy (str): The strategy to use when circuit expansions or decompositions
+            are required.
+
+            - ``gradient``: The QNode will attempt to decompose
+              the internal circuit such that all circuit operations are supported by the gradient
+              method.
+
+            - ``device``: The QNode will attempt to decompose the internal circuit
+              such that all circuit operations are natively supported by the device.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
@@ -97,12 +106,15 @@ def specs(qnode, max_expansion=None):
             dict[str, Union[defaultdict,int]]: dictionaries that contain QNode specifications
         """
         initial_max_expansion = qnode.max_expansion
-        qnode.max_expansion = initial_max_expansion if max_expansion is None else max_expansion
+        initial_expansion_strategy = getattr(qnode, "expansion_strategy", None)
 
         try:
+            qnode.max_expansion = initial_max_expansion if max_expansion is None else max_expansion
+            qnode.expansion_strategy = expansion_strategy or initial_expansion_strategy
             qnode.construct(args, kwargs)
         finally:
             qnode.max_expansion = initial_max_expansion
+            qnode.expansion_strategy = initial_expansion_strategy
 
         info = qnode.qtape.specs.copy()
 

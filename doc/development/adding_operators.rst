@@ -315,7 +315,8 @@ implementations. The onus is on the contributors of new operators to add them to
 Adding your new operator to PennyLane
 #####################################
 
-Once the new operator is coded up, it is added to the appropriate folder in ``pennylane/ops/``. The
+If you want PennyLane to natively support your new operator, you have to make a Pull Request that adds it
+to the appropriate folder in ``pennylane/ops/``. The
 tests are added to a file of a similar name and location in ``tests/ops/``. If your operator defines an
 ansatz, add it to the appropriate subfolder in ``pennylane/templates/``.
 

@@ -22,7 +22,7 @@ from pennylane.operation import Operation, AnyWires
 
 class GateFabric(Operation):
     r"""Implements a local, expressive, and quantum-number-preserving ansatz proposed by
-    Anselmetti *et al.* in `arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_.
+    `Anselmetti et al. (2021) <https://doi.org/10.1088/1367-2630/ac2cb3>`_.
 
     This template prepares the :math:`N`-qubit trial state by applying :math:`D` layers of gate-fabric blocks
     :math:`\hat{U}_{GF}(\vec{\theta},\vec{\phi})` to the Hartree-Fock state in the Jordan-Wigner basis
@@ -43,8 +43,8 @@ class GateFabric(Operation):
         :width: 100%
         :target: javascript:void(0);
 
-    The gate element :math:`\hat{Q}(\theta, \phi)` (`arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_) is composed of
-    a four-qubit spin-adapted spatial orbital rotation gate, which is implemented by the :class:`~.OrbitalRotation()`
+    The gate element :math:`\hat{Q}(\theta, \phi)` (`Anselmetti et al. (2021) <https://doi.org/10.1088/1367-2630/ac2cb3>`_)
+    is composed of a four-qubit spin-adapted spatial orbital rotation gate, which is implemented by the :class:`~.OrbitalRotation()`
     operation and a four-qubit diagonal pair-exchange gate, which is equivalent to the :class:`~.DoubleExcitation()`
     operation. In addition to these two gates, the gate element :math:`\hat{Q}(\theta, \phi)` can also include an optional
     constant :math:`\hat{\Pi} \in \{\hat{I}, \text{OrbitalRotation}(\pi)\}` gate.
@@ -57,7 +57,8 @@ class GateFabric(Operation):
     |
 
     The four-qubit :class:`~.DoubleExcitation()` and :class:`~.OrbitalRotation()` gates given here are equivalent to the
-    :math:`\text{QNP}_{PX}(\theta)` and :math:`\text{QNP}_{OR}(\phi)` gates presented in `arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_,
+    :math:`\text{QNP}_{PX}(\theta)` and :math:`\text{QNP}_{OR}(\phi)` gates presented in
+    `Anselmetti et al. (2021) <https://doi.org/10.1088/1367-2630/ac2cb3>`_,
     respectively. Moreover, regardless of the choice of :math:`\hat{\Pi}`, this gate fabric will exactly preserve the number of particles
     and total spin of the state.
 
