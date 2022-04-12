@@ -1769,10 +1769,13 @@ measures = [
     (qml.var(qml.PauliZ(0)), (1,)),
     (qml.probs(wires=[0]), (1, 2)),
     (qml.probs(wires=[0, 1]), (1, 4)),
-    (qml.state(), (1, 8)),
+    (qml.state(), (1, 8)),  # Assumes 3-qubit device
     (qml.density_matrix(wires=[0, 1]), (1, 4, 4)),
-    (qml.sample(qml.PauliZ(0)), None),
-    (qml.sample(), None),
+    (
+        qml.sample(qml.PauliZ(0)),
+        None,
+    ),  # Shape is None because the expected shape is in the test case
+    (qml.sample(), None),  # Shape is None because the expected shape is in the test case
 ]
 
 multi_measurements = [
@@ -1861,7 +1864,6 @@ class TestOutputShape:
             res_shape = res.shape
 
         res_shape = res_shape if res_shape != tuple() else 1
-        print(measurement, dev.shots)
         assert tape.shape(dev) == res_shape
 
     def test_output_shapes_single_qnode_check_cutoff(self):
@@ -2112,8 +2114,8 @@ class TestOutputShape:
             tape.shape(dev)
 
 
-class TestOutputDomain:
-    """Tests for determining the tape output shape of tapes."""
+class TestNumericType:
+    """Tests for determining the numeric type of the tape output."""
 
     @pytest.mark.parametrize(
         "ret", [qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(0)), qml.probs(wires=[0])]
@@ -2136,7 +2138,10 @@ class TestOutputDomain:
         assert np.issubdtype(result.dtype, float)
         assert circuit.qtape.numeric_type() is float
 
-    def test_complex_state(self):
+    @pytest.mark.parametrize(
+        "ret", [qml.state(), qml.density_matrix(wires=[0, 1]), qml.density_matrix(wires=[2, 0])]
+    )
+    def test_complex_state(self, ret):
         """Test that a tape with qml.state correctly determines that the output
         domain will be complex."""
         dev = qml.device("default.qubit", wires=3)
@@ -2145,7 +2150,7 @@ class TestOutputDomain:
         def circuit(a, b):
             qml.RY(a, wires=[0])
             qml.RZ(b, wires=[0])
-            return qml.state()
+            return qml.apply(ret)
 
         result = circuit(0.3, 0.2)
 
