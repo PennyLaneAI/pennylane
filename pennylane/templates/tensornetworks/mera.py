@@ -31,7 +31,7 @@ def compute_indices(wires, n_block_wires):
     Returns:
         layers (array): array of wire labels for each block
     """
-    
+
     n_wires = len(wires)
 
     if n_block_wires % 2 != 0:
@@ -53,30 +53,40 @@ def compute_indices(wires, n_block_wires):
             f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
         )
 
-    n_layers = np.floor(np.log2(n_wires/n_block_wires)).astype(int)*2 + 1
-    wires_list=[]
+    n_layers = np.floor(np.log2(n_wires / n_block_wires)).astype(int) * 2 + 1
+    wires_list = []
     wires_list.append(list(wires[0:n_block_wires]))
     highest_index = n_block_wires
-    for i in range(n_layers-1):
-        n_elements_pre = 2**((i+1)//2)
-        if i%2 == 0:
-            new_list=[]
+    for i in range(n_layers - 1):
+        n_elements_pre = 2 ** ((i + 1) // 2)
+        if i % 2 == 0:
+            new_list = []
             list_len = len(wires_list)
-            for j in range(list_len-n_elements_pre,list_len):
-                new_wires = [wires[i] for i in range(highest_index,highest_index+n_block_wires//2)]
-                highest_index+=n_block_wires//2
-                new_list.append(wires_list[j][0:n_block_wires//2]+new_wires)
-                new_wires = [wires[i] for i in range(highest_index,highest_index+n_block_wires//2)]
-                highest_index+=n_block_wires//2
-                new_list.append(new_wires+wires_list[j][n_block_wires//2::])
-            wires_list = wires_list+new_list
+            for j in range(list_len - n_elements_pre, list_len):
+                new_wires = [
+                    wires[i] for i in range(highest_index, highest_index + n_block_wires // 2)
+                ]
+                highest_index += n_block_wires // 2
+                new_list.append(wires_list[j][0 : n_block_wires // 2] + new_wires)
+                new_wires = [
+                    wires[i] for i in range(highest_index, highest_index + n_block_wires // 2)
+                ]
+                highest_index += n_block_wires // 2
+                new_list.append(new_wires + wires_list[j][n_block_wires // 2 : :])
+            wires_list = wires_list + new_list
         else:
-            list_len=len(wires_list)
-            new_list=[]
-            for j in range(list_len-n_elements_pre,list_len-1):
-                new_list.append(wires_list[j][n_block_wires//2::]+wires_list[j+1][0:n_block_wires//2])
-            new_list.append(wires_list[j+1][n_block_wires//2::]+wires_list[list_len-n_elements_pre][0:n_block_wires//2])
-            wires_list=wires_list+new_list
+            list_len = len(wires_list)
+            new_list = []
+            for j in range(list_len - n_elements_pre, list_len - 1):
+                new_list.append(
+                    wires_list[j][n_block_wires // 2 : :]
+                    + wires_list[j + 1][0 : n_block_wires // 2]
+                )
+            new_list.append(
+                wires_list[j + 1][n_block_wires // 2 : :]
+                + wires_list[list_len - n_elements_pre][0 : n_block_wires // 2]
+            )
+            wires_list = wires_list + new_list
     return wires_list[::-1]
 
 
@@ -139,9 +149,9 @@ class MERA(Operation):
                 return qml.expval(qml.PauliZ(wires=n_wires-1))
 
         >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
-        0: ─╭C──RY(0.10)──╭C──RY(0.10)────────────────╭X──RY(-0.30)─┤     
-        1: ─╰X──RY(-0.30)─│─────────────╭X──RY(-0.30)─╰C──RY(0.10)──┤     
-        2: ───────────────╰X──RY(-0.30)─│─────────────╭C──RY(0.10)──┤     
+        0: ─╭C──RY(0.10)──╭C──RY(0.10)────────────────╭X──RY(-0.30)─┤
+        1: ─╰X──RY(-0.30)─│─────────────╭X──RY(-0.30)─╰C──RY(0.10)──┤
+        2: ───────────────╰X──RY(-0.30)─│─────────────╭C──RY(0.10)──┤
         3: ─────────────────────────────╰C──RY(0.10)──╰X──RY(-0.30)─┤  <Z>
 
     """
@@ -167,7 +177,7 @@ class MERA(Operation):
         ind_gates = compute_indices(wires, n_block_wires)
         n_wires = len(wires)
         shape = qml.math.shape(template_weights)  # (n_params_block, n_blocks)
-        n_blocks = int(2**(np.floor(np.log2(n_wires/n_block_wires))+2)-3)
+        n_blocks = int(2 ** (np.floor(np.log2(n_wires / n_block_wires)) + 2) - 3)
 
         if shape == ():
             template_weights = np.random.rand(n_params_block, int(n_blocks))
@@ -241,5 +251,5 @@ class MERA(Operation):
                 f"n_block_wires must be smaller than or equal to the number of wires; got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
             )
 
-        n_blocks = 2**(np.floor(np.log2(n_wires/n_block_wires))+2)-3
+        n_blocks = 2 ** (np.floor(np.log2(n_wires / n_block_wires)) + 2) - 3
         return int(n_blocks)
