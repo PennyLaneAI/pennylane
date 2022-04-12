@@ -1020,7 +1020,11 @@ class QuantumTape(AnnotatedQueue):
     @staticmethod
     def _shape_shot_vector_multi_homogenous(mps, device):
         """Auxiliary function for determining the output shape of the tape for
-        multiple homogenous measurements for a device with a shot vector."""
+        multiple homogenous measurements for a device with a shot vector.
+
+        Note: it is assumed that getting the output shape of a tape with
+        multiple state measurements is not supported.
+        """
         shape = tuple()
 
         ret_type = mps[0].return_type
