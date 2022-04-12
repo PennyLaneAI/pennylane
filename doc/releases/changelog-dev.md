@@ -215,6 +215,15 @@
 
 <h3>Improvements</h3>
 
+* Added the `QuantumTape.shape` and `QuantumTape.numeric_type`
+  methods to allow gathering information about the shape and numeric type of
+  quantum tapes.
+  [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
+
+* Defined a `MeasurementProcess.shape` method and a
+  `MeasurementProcess.numeric_type` attribute.
+  [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
+
 * The parameter-shift Hessian can now be computed for arbitrary
   operations that support the general parameter-shift rule for
   gradients, using `qml.gradients.param_shift_hessian`
@@ -238,11 +247,6 @@
 
 * The `qml.specs` transform now accepts an `expansion_strategy` keyword argument.
   [(#2395)](https://github.com/PennyLaneAI/pennylane/pull/2395)
-
-* Added the `QuantumTape.shape` and `QuantumTape.numeric_type`
-  methods to allow gathering information about the shape and numeric type of
-  quantum tapes.
-  [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
 
 * `default.qubit` and `default.mixed` now skip over identity operators instead of performing matrix multiplication
   with the identity.
