@@ -38,6 +38,7 @@ from pennylane.measurements import (
     MeasurementProcess,
     MeasurementValue,
     MeasurementValueError,
+    MeasurementShapeError,
 )
 
 
@@ -250,6 +251,19 @@ class TestProbs:
         shot_vector = (1, 2, 3)
         dev = qml.device("default.qubit", wires=3, shots=shot_vector)
         assert res.shape(dev) == (len(shot_vector), 2 ** len(wires))
+
+    @pytest.mark.parametrize(
+        "measurement",
+        [qml.probs(wires=[0]), qml.state(), qml.sample(qml.PauliZ(0))],
+    )
+    def test_shape_no_device_error(self, measurement):
+        """Test that an error is raised if a device is not passed when querying
+        the shape of certain measurements."""
+        with pytest.raises(
+            MeasurementShapeError,
+            match="requires the device argument to be passed to obtain the shape",
+        ):
+            measurement.shape()
 
 
 class TestSample:

@@ -2236,6 +2236,24 @@ class TestNumericType:
         assert np.issubdtype(result.dtype, float)
         assert circuit.qtape.numeric_type() is float
 
+    def test_multi_type_measurements_numeric_type_error(self):
+        """Test that querying the numeric type of a tape with several types of
+        measurements raises an error."""
+        a = 0.3
+        b = 0.3
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RY(a, wires=[0])
+            qml.RZ(b, wires=[0])
+            qml.expval(qml.PauliZ(0))
+            qml.probs(wires=[0])
+
+        with pytest.raises(
+            TapeError,
+            match="Getting the numeric type of a tape that contains multiple types of measurements is unsupported.",
+        ):
+            tape.numeric_type()
+
 
 class TestTapeDraw:
     """Test the tape draw method."""
