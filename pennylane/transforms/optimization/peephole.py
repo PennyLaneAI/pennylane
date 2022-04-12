@@ -302,9 +302,7 @@ def _merge_first_match_and_not_fixed(list_first_match, list_not_fixed, qubit_sub
     """
     list_circuit = []
 
-    combinations = itertools.combinations(
-        list_not_fixed, qubit_subset_size - len(list_first_match)
-    )
+    combinations = itertools.combinations(list_not_fixed, qubit_subset_size - len(list_first_match))
 
     for combination in combinations:
         current_set = set(list_first_match)

@@ -44,7 +44,7 @@ class TestPeepholeOptimization:
         qnode = qml.QNode(circuit, dev)
         qnode()
 
-        optimized_qfunc = peephole_optimization(size_qubits_subsets=[2])(circuit)
+        optimized_qfunc = peephole_optimization(qubit_subset_sizes=[2])(circuit)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -75,7 +75,7 @@ class TestPeepholeOptimization:
         qnode = qml.QNode(circuit, dev)
         qnode()
 
-        optimized_qfunc = peephole_optimization(size_qubits_subsets=[1])(circuit)
+        optimized_qfunc = peephole_optimization(qubit_subset_sizes=[1])(circuit)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -122,7 +122,7 @@ class TestPeepholeOptimization:
         }
 
         optimized_qfunc = peephole_optimization(
-            size_qubits_subsets=[2], custom_quantum_cost=custom_cost
+            qubit_subset_sizes=[2], custom_quantum_cost=custom_cost
         )(circuit)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
@@ -173,7 +173,7 @@ class TestPeepholeOptimization:
         qnode = qml.QNode(circuit, dev)
         qnode()
 
-        optimized_qfunc = peephole_optimization(size_qubits_subsets=[2])(circuit)
+        optimized_qfunc = peephole_optimization(qubit_subset_sizes=[2])(circuit)
         optimized_qnode = qml.QNode(optimized_qfunc, dev)
         optimized_qnode()
 
@@ -212,7 +212,7 @@ class TestPeepholeOptimization:
             qml.QuantumFunctionError,
             match="The list of number of qubits is not a valid. It should be a list containing 1 and or 2.",
         ):
-            optimized_qfunc = peephole_optimization(size_qubits_subsets=[3])(circuit)
+            optimized_qfunc = peephole_optimization(qubit_subset_sizes=[3])(circuit)
             optimized_qnode = qml.QNode(optimized_qfunc, dev)
             optimized_qnode()
 
