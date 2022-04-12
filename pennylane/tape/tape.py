@@ -1049,7 +1049,7 @@ class QuantumTape(AnnotatedQueue):
                 shape = (shot_copies_sum, len(mps), dim)
 
             else:
-                # There are a varying number of wires that the probability
+                # There is a varying number of wires that the probability
                 # measurement processes act on
                 # TODO: revisit when issues with this case are resolved
                 raise TapeError(
@@ -1189,7 +1189,7 @@ class QuantumTape(AnnotatedQueue):
 
             for observable in self._measurements:
                 # Note: if one of the sample measurements contains outputs that
-                # is real, then the entire result will be real
+                # are real, then the entire result will be real
                 if observable.numeric_type == float:
                     return observable.numeric_type
 
