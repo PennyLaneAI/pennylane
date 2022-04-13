@@ -215,8 +215,8 @@
 
 <h3>Improvements</h3>
 
-* Added the `QuantumTape.shape` and `QuantumTape.numeric_type`
-  methods to allow gathering information about the shape and numeric type of
+* Added the `QuantumTape.shape` method and `QuantumTape.numeric_type`
+  attribute to allow extracting information about the shape and numeric type of
   quantum tapes.
   [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
 
