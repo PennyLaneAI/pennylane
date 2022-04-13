@@ -408,7 +408,8 @@ def transform_hamiltonian(h, generators, paulix_ops, paulix_sector):
 
     val = np.ones(len(h.terms()[0])) * complex(1.0)
 
-    wiremap = dict(zip(u.wires, range(len(u.wires) + 1)))
+    wireset = u.wires + h.wires
+    wiremap = dict(zip(wireset, range(len(wireset) + 1)))
     paulix_wires = [x.wires[0] for x in paulix_ops]
     for idx, w in enumerate(paulix_wires):
         for i in range(len(h.terms()[0])):
