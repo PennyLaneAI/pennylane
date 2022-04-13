@@ -1827,15 +1827,12 @@ class TestOutputShape:
         assert tape.shape(dev) == expected_shape
 
     @pytest.mark.parametrize("measurement, expected_shape", measures)
-    @pytest.mark.parametrize("shots", [None, 1, 10, (1, 1, 5, 1)])
+    @pytest.mark.parametrize("shots", [None, 1, 10, (1, 2, 5, 3)])
     def test_output_shapes_single_qnode_check(self, measurement, expected_shape, shots):
         """Test that the output shape produced by the tape matches the output
         shape of a QNode for a single measurement."""
         if shots is None and measurement.return_type is qml.measurements.Sample:
             pytest.skip("Sample doesn't support analytic computations.")
-
-        if shots is not None and measurement.return_type is qml.measurements.State:
-            pytest.skip("State only supports analytic computations.")
 
         # TODO: revisit when qml.sample without an observable has been updated
         # with shot vectors

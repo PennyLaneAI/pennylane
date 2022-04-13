@@ -227,10 +227,14 @@ class MeasurementProcess:
         """
         shot_vector = device._shot_vector
         num_shot_elements = sum([s.copies for s in shot_vector])
+        shape = ()
 
         if self._shape is not None:
 
-            shape = (num_shot_elements,)
+            # Expval, var and density_matrix case
+            shape = list(self._shape)
+            shape[0] *= num_shot_elements
+            shape = tuple(shape)
 
         elif self.return_type == qml.measurements.Probability:
 
@@ -251,6 +255,14 @@ class MeasurementProcess:
                     "Getting the output shape of a measurement returning samples along with "
                     "a device with a shot vector is not supported."
                 )
+
+        elif self.return_type == qml.measurements.State:
+
+            # Note: qml.density_matrix has its shape defined, so we're handling
+            # the qml.state case; acts on all device wires
+            dim = 2 ** len(device.wires)
+            shape = (num_shot_elements, dim)
+
         return shape
 
     @staticmethod
