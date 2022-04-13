@@ -155,8 +155,8 @@ class DefaultQubit(QubitDevice):
         "Hamiltonian",
     }
 
-    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
-        super().__init__(wires, shots, cache=cache, analytic=analytic)
+    def __init__(self, wires, *, shots=None, cache=0, analytic=None, dtype=np.float64):
+        super().__init__(wires, shots, cache=cache, analytic=analytic, dtype=dtype)
         self._debugger = None
 
         # Create the initial state. Internally, we store the

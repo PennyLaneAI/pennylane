@@ -168,10 +168,11 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for single wire
         operations that have no parameters."""
 
-        qubit_device_1_wire._state = np.array(input)
+        qubit_device_1_wire._state = np.array(input, dtype = qubit_device_1_wire.C_DTYPE)
         qubit_device_1_wire.apply([operation(wires=[0]).inv()])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
+        assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
 
     test_data_two_wires_no_parameters = [
         (qml.CNOT, [1, 0, 0, 0], [1, 0, 0, 0]),

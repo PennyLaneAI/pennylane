@@ -178,7 +178,7 @@ class QubitDevice(Device):
         "Projector",
     }
 
-    def __init__(self, wires=1, shots=None, cache=0, analytic=None, dtype = np.float64):
+    def __init__(self, wires=1, shots=None, cache=0, analytic=None, dtype=np.float64):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
         if dtype is np.float64:
