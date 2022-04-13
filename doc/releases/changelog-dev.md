@@ -133,13 +133,14 @@
         qml.MERA(range(n_wires),n_block_wires,block, n_params_block, template_weights)
         return qml.expval(qml.PauliZ(wires=1))
   ```
+  It may be necessary to reorder the wires to see the MERA architecture clearly:
   ```pycon
-  >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
+   >>> print(qml.draw(circuit,expansion_strategy='device',wire_order=[2,0,1,3])(template_weights))
 
-  0: ─╭X──RY(-0.30)───────────────╭C──RY(0.10)──╭C──RY(0.10)──┤
-  1: ─╰C──RY(0.10)──╭X──RY(-0.30)─│─────────────╰X──RY(-0.30)─┤  <Z>
-  2: ─╭C──RY(0.10)──│─────────────╰X──RY(-0.30)───────────────┤
-  3: ─╰X──RY(-0.30)─╰C──RY(0.10)──────────────────────────────┤
+  2: ───────────────╭C──RY(0.10)──╭X──RY(-0.30)───────────────┤
+  0: ─╭X──RY(-0.30)─│─────────────╰C──RY(0.10)──╭C──RY(0.10)──┤
+  1: ─╰C──RY(0.10)──│─────────────╭X──RY(-0.30)─╰X──RY(-0.30)─┤  <Z>
+  3: ───────────────╰X──RY(-0.30)─╰C──RY(0.10)────────────────┤
   ```
 
 * <h4> Finite-shot circuit cutting ✂️</h4>
