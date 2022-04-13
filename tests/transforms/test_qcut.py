@@ -4064,9 +4064,9 @@ class TestCutStrategy:
     @pytest.mark.parametrize("num_fragments_probed", [None, 4, (4, 6)])
     @pytest.mark.parametrize("imbalance_tolerance", [None, 0, 0.1])
     @pytest.mark.parametrize("tape_dag", tape_dags)
-    @pytest.mark.parametrize("exhausive", [True, False])
+    @pytest.mark.parametrize("exhaustive", [True, False])
     def test_get_cut_kwargs(
-        self, devices, num_fragments_probed, imbalance_tolerance, tape_dag, exhausive
+        self, devices, num_fragments_probed, imbalance_tolerance, tape_dag, exhaustive
     ):
         """Test that the cut kwargs can be derived."""
 
@@ -4076,7 +4076,7 @@ class TestCutStrategy:
             imbalance_tolerance=imbalance_tolerance,
         )
 
-        all_cut_kwargs = strategy.get_cut_kwargs(tape_dag=tape_dag, exhausive=exhausive)
+        all_cut_kwargs = strategy.get_cut_kwargs(tape_dag=tape_dag, exhaustive=exhaustive)
 
         assert all_cut_kwargs
         assert all("imbalance" in kwargs and "num_fragments" in kwargs for kwargs in all_cut_kwargs)
@@ -4088,7 +4088,7 @@ class TestCutStrategy:
                 if isinstance(num_fragments_probed, (list, tuple))
                 else {num_fragments_probed}
             )
-        elif exhausive:
+        elif exhaustive:
             num_tape_gates = sum(not isinstance(n, qcut.WireCut) for n in tape_dag.nodes)
             assert {v["num_fragments"] for v in all_cut_kwargs} == set(range(2, num_tape_gates + 1))
 
@@ -4384,7 +4384,7 @@ class TestKaHyPar:
             None,
             qcut.CutStrategy(qml.device("default.qubit", wires=3)),
             qcut.CutStrategy(max_free_wires=4),
-            qcut.CutStrategy(max_free_wires=2),  # extreme constraint forcing exhausive probing.
+            qcut.CutStrategy(max_free_wires=2),  # extreme constraint forcing exhaustive probing.
             qcut.CutStrategy(max_free_wires=2, num_fragments_probed=5),  # impossible to cut
         ],
     )

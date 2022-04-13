@@ -2086,6 +2086,7 @@ def _cut_circuit_expand(
     device_wires: Optional[Wires] = None,
     max_depth: int = 1,
     auto_cutter: Union[bool, Callable] = False,
+    **kwargs,
 ):
     """Main entry point for expanding operations until reaching a depth that
     includes :class:`~.WireCut` operations."""
@@ -2100,6 +2101,7 @@ def _cut_circuit_mc_expand(
     shots: Optional[int] = None,
     device_wires: Optional[Wires] = None,
     auto_cutter: Union[bool, Callable] = False,
+    **kwargs,
 ):
     """Main entry point for expanding operations in sample-based tapes until
     reaching a depth that includes :class:`~.WireCut` operations."""
@@ -2211,7 +2213,7 @@ class CutStrategy:
             specifying the potential (range of) number of fragments for the partitioner to attempt.
             Optional, defaults to probing all valid strategies derivable from the circuit and
             devices. When provided, has precedence over all other arguments affecting partitioning
-            exploration, such as ``max_free_wires``, ``min_free_wires``, or ``exhausive``.
+            exploration, such as ``max_free_wires``, ``min_free_wires``, or ``exhaustive``.
         max_free_gates (int): Maximum allowed circuit depth for the deepest available device.
             Optional, defaults to unlimited depth.
         min_free_gates (int): Maximum allowed circuit depth for the shallowest available device.
@@ -2315,7 +2317,7 @@ class CutStrategy:
         tape_dag: MultiDiGraph,
         max_wires_by_fragment: Sequence[int] = None,
         max_gates_by_fragment: Sequence[int] = None,
-        exhausive: bool = True,
+        exhaustive: bool = True,
     ) -> List[Dict[str, Any]]:
         """Derive the complete set of arguments, based on a given circuit, for passing to a graph
         partitioner.
@@ -2329,7 +2331,7 @@ class CutStrategy:
             max_gates_by_fragment (Sequence[int]): User-predetermined list of gate limits by
                 fragment. If supplied, the number of fragments will be derived from it and
                 exploration of other choices will not be made.
-            exhausive (bool): Toggle for an exhausive search which will attempt all potentially
+            exhaustive (bool): Toggle for an exhaustive search which will attempt all potentially
                 possible numbers of fragments into which the circuit is partitioned. If ``True``,
                 for a circuit with N gates, N - 1 attempts will be made with ``num_fragments``
                 ranging from [2, N], i.e. from bi-partitioning to complete partitioning where each
@@ -2361,7 +2363,7 @@ class CutStrategy:
             num_tape_gates=num_tape_gates,
             max_wires_by_fragment=max_wires_by_fragment,
             max_gates_by_fragment=max_gates_by_fragment,
-            exhausive=exhausive,
+            exhaustive=exhaustive,
         )
 
         return probed_cuts
@@ -2439,7 +2441,7 @@ class CutStrategy:
         num_tape_gates,
         max_wires_by_fragment=None,
         max_gates_by_fragment=None,
-        exhausive=True,
+        exhaustive=True,
     ) -> List[Dict[str, Any]]:
         """
         Helper function for deriving the minimal set of best default partitioning constraints
@@ -2454,7 +2456,7 @@ class CutStrategy:
             max_gates_by_fragment (Sequence[int]): User-predetermined list of gate limits by
                 fragment. If supplied, the number of fragments will be derived from it and
                 exploration of other choices will not be made.
-            exhausive (bool): Toggle for an exhausive search which will attempt all potentially
+            exhaustive (bool): Toggle for an exhaustive search which will attempt all potentially
                 possible numbers of fragments into which the circuit is partitioned. If ``True``,
                 ``num_tape_gates - 1`` attempts will be made with ``num_fragments`` ranging from
                 [2, ``num_tape_gates``], i.e. from bi-partitioning to complete partitioning where
@@ -2486,7 +2488,7 @@ class CutStrategy:
             (num_tape_gates - 1) // min_free_gates,  # gate limited
         )
 
-        if exhausive:
+        if exhaustive:
             k_lb = max(2, k_lb)
             k_ub = num_tape_gates
 
