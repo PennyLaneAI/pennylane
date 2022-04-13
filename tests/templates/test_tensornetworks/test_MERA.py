@@ -334,16 +334,15 @@ class TestAttributes:
     @pytest.mark.parametrize(
         ("wires", "n_block_wires", "expected_n_blocks"),
         [
-            (range(4), 2, 3),
-            (range(5), 2, 4),
+            (range(4), 2, 5),
+            (range(5), 2, 5),
             (range(6), 2, 5),
-            (range(10), 4, 4),
-            (range(11), 4, 4),
+            (range(10), 4, 5),
+            (range(25), 6, 13),
         ],
     )
     def test_get_n_blocks(self, wires, n_block_wires, expected_n_blocks):
         """Test that the number of blocks attribute returns the correct number of blocks."""
-
         assert qml.MERA.get_n_blocks(wires, n_block_wires) == expected_n_blocks
 
     @pytest.mark.filterwarnings("ignore")
@@ -351,7 +350,7 @@ class TestAttributes:
         ("wires", "n_block_wires"),
         [(range(4), 5), (range(9), 20)],
     )
-    def test_get_n_blocks(self, wires, n_block_wires):
+    def test_get_n_blocks_error(self, wires, n_block_wires):
         """Test that the number of blocks attribute raises an error when n_block_wires is too large."""
 
         with pytest.raises(
