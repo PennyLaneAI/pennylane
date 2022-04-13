@@ -133,6 +133,7 @@ class MeasurementProcess:
             List[.Operation]: the operations that diagonalize the observables
         """
         try:
+            # pylint: disable=no-member
             return self.expand().operations
         except qml.operation.DecompositionUndefinedError:
             return []
@@ -517,6 +518,12 @@ def probs(wires=None, op=None):
          the computational basis
     """
     # pylint: disable=protected-access
+
+    if wires is None and op is None:
+        raise qml.QuantumFunctionError(
+            "qml.probs requires either the wires or the observable to be passed."
+        )
+
     if isinstance(op, qml.Hamiltonian):
         raise qml.QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 

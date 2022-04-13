@@ -79,10 +79,6 @@ class DefaultQubit(QubitDevice):
         shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to ``None`` if not specified, which means that the device
             returns analytical results.
-        cache (int): Number of device executions to store in a cache to speed up subsequent
-            executions. A value of ``0`` indicates that no caching will take place. Once filled,
-            older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date.
     """
 
     name = "Default qubit PennyLane plugin"
@@ -155,8 +151,8 @@ class DefaultQubit(QubitDevice):
         "Hamiltonian",
     }
 
-    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
-        super().__init__(wires, shots, cache=cache, analytic=analytic)
+    def __init__(self, wires, *, shots=None, analytic=None):
+        super().__init__(wires, shots, analytic=analytic)
         self._debugger = None
 
         # Create the initial state. Internally, we store the
