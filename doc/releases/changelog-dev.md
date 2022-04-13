@@ -399,6 +399,10 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug in the `qml.PauliRot` operation, where computing the generator was not taking into
+  account the operation wires.
+  [(#2442)](https://github.com/PennyLaneAI/pennylane/pull/2442)
+
 * Fixes a bug with the padding capability of `AmplitudeEmbedding` where the
   inputs are on the GPU.
   [(#2431)](https://github.com/PennyLaneAI/pennylane/pull/2431)

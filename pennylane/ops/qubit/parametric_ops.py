@@ -891,7 +891,7 @@ class PauliRot(Operation):
     **Details:**
 
     * Number of wires: Any
-    * Number of parameters: 2 (1 differentiable parameter)
+    * Number of parameters: 1
     * Gradient recipe: :math:`\frac{d}{d\theta}f(RP(\theta)) = \frac{1}{2}\left[f(RP(\theta +\pi/2)) - f(RP(\theta-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`RP(\theta)`.
 
@@ -920,7 +920,7 @@ class PauliRot(Operation):
     0.8775825618903724
     """
     num_wires = AnyWires
-    num_params = 2
+    num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     do_check_domain = False
@@ -936,7 +936,8 @@ class PauliRot(Operation):
     }
 
     def __init__(self, theta, pauli_word, wires=None, do_queue=True, id=None):
-        super().__init__(theta, pauli_word, wires=wires, do_queue=do_queue, id=id)
+        super().__init__(theta, wires=wires, do_queue=do_queue, id=id)
+        self.hyperparameters["pauli_word"] = pauli_word
 
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
@@ -975,7 +976,8 @@ class PauliRot(Operation):
         'PauliRot\n(0.10)'
 
         """
-        op_label = base_label or ("R" + self.parameters[1])
+        pauli_word = self.hyperparameters["pauli_word"]
+        op_label = base_label or ("R" + pauli_word)
 
         if self.inverse:
             op_label += "⁻¹"
@@ -1069,8 +1071,9 @@ class PauliRot(Operation):
         )
 
     def generator(self):
-        pauli_word = self.parameters[1]
-        return -0.5 * qml.grouping.string_to_pauli_word(pauli_word)
+        pauli_word = self.hyperparameters["pauli_word"]
+        wire_map = {w: i for i, w in enumerate(self.wires)}
+        return -0.5 * qml.grouping.string_to_pauli_word(pauli_word, wire_map=wire_map)
 
     @staticmethod
     def compute_eigvals(theta, pauli_word):  # pylint: disable=arguments-differ
@@ -1106,7 +1109,7 @@ class PauliRot(Operation):
         return MultiRZ.compute_eigvals(theta, len(pauli_word))
 
     @staticmethod
-    def compute_decomposition(theta, pauli_word, wires):
+    def compute_decomposition(theta, wires, pauli_word):
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1160,7 +1163,7 @@ class PauliRot(Operation):
         return ops
 
     def adjoint(self):
-        return PauliRot(-self.parameters[0], self.parameters[1], wires=self.wires)
+        return PauliRot(-self.parameters[0], self.hyperparameters["pauli_word"], wires=self.wires)
 
 
 class CRX(Operation):
