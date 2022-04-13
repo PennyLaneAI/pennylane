@@ -920,15 +920,15 @@ def molecular_hamiltonian(
         geometry_hf = coordinates.flatten()
 
     if package == "dhf":
-        mol = qml.hf.Molecule(symbols, geometry_dhf)
+        mol = qml.qchem.Molecule(symbols, geometry_dhf)
         core, active = qml.qchem.active_space(
             mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
         )
         if args is None:
-            return qml.hf.generate_hamiltonian(mol, core=core, active=active)(), mol.n_orbitals * 2
+            return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(), mol.n_orbitals * 2
         if geometry_dhf.requires_grad:
             args[0] = geometry_dhf
-        return qml.hf.generate_hamiltonian(mol, core=core, active=active)(*args), mol.n_orbitals * 2
+        return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args), mol.n_orbitals * 2
 
     hf_file = meanfield(symbols, geometry_hf, name, charge, mult, basis, package, outpath)
 
