@@ -610,6 +610,14 @@ def test_transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_
             ),
             1,
         ),
+        (
+            ["H", "H", "H", "H"],
+            np.array(
+                [[0.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 2.0], [0.0, 0.0, 3.0]],
+                requires_grad=True,
+            ),
+            0,
+        ),
     ],
 )
 def test_hf_energy(symbols, geometry, charge):

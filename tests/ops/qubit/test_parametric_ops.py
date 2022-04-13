@@ -1256,7 +1256,7 @@ class TestPauliRot:
 
         theta = 0.4
         op = qml.PauliRot(theta, "Z", wires=0)
-        decomp_ops = qml.PauliRot.compute_decomposition(theta, "Z", wires=0)
+        decomp_ops = qml.PauliRot.compute_decomposition(theta, wires=0, pauli_word="Z")
 
         assert np.allclose(
             op.get_eigvals(), np.array([np.exp(-1j * theta / 2), np.exp(1j * theta / 2)])
@@ -1390,7 +1390,7 @@ class TestPauliRot:
 
         @qml.qnode(dev)
         def decomp_circuit(theta):
-            qml.PauliRot.compute_decomposition(theta, "XX", wires=[0, 1])
+            qml.PauliRot.compute_decomposition(theta, wires=[0, 1], pauli_word="XX")
             return qml.expval(qml.PauliZ(0))
 
         assert np.allclose(circuit(angle), decomp_circuit(angle))
@@ -1482,6 +1482,17 @@ class TestPauliRot:
         val = np.cos(-theta / 2) + 1j * np.sin(-theta / 2)
         exp = torch.tensor(np.diag([val, val]), device=torch_device)
         assert torch.allclose(mat, exp)
+
+    def test_pauli_rot_generator(self):
+        """Test that the generator of the PauliRot operation
+        is correctly returned."""
+        op = qml.PauliRot(0.65, "ZY", wires=["a", 7])
+        gen, coeff = qml.generator(op)
+        expected = qml.PauliZ("a") @ qml.PauliY(7)
+
+        assert coeff == -0.5
+        assert gen.obs[0].name == expected.obs[0].name
+        assert gen.obs[1].wires == expected.obs[1].wires
 
 
 class TestMultiRZ:
