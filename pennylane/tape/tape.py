@@ -1076,6 +1076,17 @@ class QuantumTape(AnnotatedQueue):
             The computed shape is not stored because the output shape may be
             dependent on the device used for execution.
 
+        Args:
+            device (.Device): the device that will be used for the tape execution
+
+        Raises:
+            TapeError: raised for unsupported cases for
+                example when the tape contains heterogeneous measurements
+
+        Returns:
+            Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
+            tape result
+
         **Example:**
 
         .. code-block:: python
@@ -1094,33 +1105,10 @@ class QuantumTape(AnnotatedQueue):
                 func(a)
                 qml.state()
 
-            # 1. Execute the tape
-            tape_execute_res = qml.execute(
-                [tape],
-                dev,
-                cache=None,
-                interface="autograd",
-                gradient_fn=param_shift
-            )
-
-            # Get the result of the first tape execution
-            tape_execute_res = tape_execute_res[0]
-
         .. code-block:: pycon
 
-            >>> print(tape_execute_res.shape)
+            >>> print(tape.shape(dev))
             (1, 4)
-
-        Args:
-            device (.Device): the device that will be used for the tape execution
-
-        Raises:
-            TapeError: raised for unsupported cases for
-                example when the tape contains heterogeneous measurements
-
-        Returns:
-            Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
-            tape result
         """
         output_shape = tuple()
 
@@ -1136,6 +1124,7 @@ class QuantumTape(AnnotatedQueue):
                 )
         return output_shape
 
+    @property
     def numeric_type(self):
         """Returns the expected numeric type of the tape result by inspecting
         its measurements.
@@ -1147,6 +1136,29 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             type: the numeric type corresponding to the result type of the
             tape
+
+        **Example:**
+
+        .. code-block:: python
+
+            from pennylane.gradients import param_shift
+
+            dev = qml.device("default.qubit", wires=2)
+            a = np.array([0.1, 0.2, 0.3])
+
+            def func(a):
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+
+            with qml.tape.QuantumTape() as tape:
+                func(a)
+                qml.state()
+
+        .. code-block:: pycon
+
+            >>> print(tape.numeric_type())
+            complex
         """
         measurement_types = set(meas.return_type for meas in self._measurements)
         if len(measurement_types) > 1:

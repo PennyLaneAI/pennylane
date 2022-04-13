@@ -2136,7 +2136,7 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, float)
-        assert circuit.qtape.numeric_type() is float
+        assert circuit.qtape.numeric_type is float
 
     @pytest.mark.parametrize(
         "ret", [qml.state(), qml.density_matrix(wires=[0, 1]), qml.density_matrix(wires=[2, 0])]
@@ -2156,7 +2156,7 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, complex)
-        assert circuit.qtape.numeric_type() is complex
+        assert circuit.qtape.numeric_type is complex
 
     @pytest.mark.parametrize("ret", [qml.sample(), qml.sample(qml.PauliZ(wires=0))])
     def test_sample_int_eigvals(self, ret):
@@ -2182,7 +2182,7 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, int)
-        assert circuit.qtape.numeric_type() is int
+        assert circuit.qtape.numeric_type is int
 
     # TODO: add cases for each interface once qml.Hermitian supports other
     # interfaces
@@ -2208,7 +2208,7 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, float)
-        assert circuit.qtape.numeric_type() is float
+        assert circuit.qtape.numeric_type is float
 
     def test_sample_real_and_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for
@@ -2234,7 +2234,7 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, float)
-        assert circuit.qtape.numeric_type() is float
+        assert circuit.qtape.numeric_type is float
 
     def test_multi_type_measurements_numeric_type_error(self):
         """Test that querying the numeric type of a tape with several types of
@@ -2252,7 +2252,7 @@ class TestNumericType:
             TapeError,
             match="Getting the numeric type of a tape that contains multiple types of measurements is unsupported.",
         ):
-            tape.numeric_type()
+            tape.numeric_type
 
 
 class TestTapeDraw:
