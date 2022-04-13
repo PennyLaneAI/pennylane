@@ -1769,7 +1769,7 @@ def cut_circuit(
     are then postprocessed to give the result of the original circuit:
 
     >>> x = np.array(0.531, requires_grad=True)
-    >>> circuit(0.531)
+    >>> circuit(x)
     0.47165198882111165
 
     Futhermore, the output of the cut circuit is also differentiable:
