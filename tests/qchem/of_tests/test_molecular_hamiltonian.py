@@ -8,7 +8,7 @@ from pennylane import qchem
 from pennylane.ops import Hamiltonian
 
 # TODO: Bring pytest skip to relevant tests.
-if not (3, 8) < sys.version_info < (3, 10):
+if not (3, 9) < sys.version_info < (3, 10):
     pytest.skip(allow_module_level=True)
 
 openfermion = pytest.importorskip("openfermion")
@@ -79,7 +79,7 @@ def test_building_hamiltonian(
         coordinates,
         charge=charge,
         mult=mult,
-        package=package,
+        method=package,
         active_electrons=nact_els,
         active_orbitals=nact_orbs,
         mapping=mapping,
@@ -194,10 +194,10 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
     backend."""
     geometry.requires_grad = True
     args = [geometry]
-    h_args = qchem.molecular_hamiltonian(symbols, geometry, package="dhf", args=args)[0]
+    h_args = qchem.molecular_hamiltonian(symbols, geometry, method="dhf", args=args)[0]
 
     geometry.requires_grad = False
-    h_noargs = qchem.molecular_hamiltonian(symbols, geometry, package="dhf")[0]
+    h_noargs = qchem.molecular_hamiltonian(symbols, geometry, method="dhf")[0]
 
     h_ref = Hamiltonian(h_ref_data[0], h_ref_data[1])
 

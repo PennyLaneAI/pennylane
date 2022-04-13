@@ -812,7 +812,7 @@ def molecular_hamiltonian(
     charge=0,
     mult=1,
     basis="sto-3g",
-    package="pyscf",
+    method="pyscf",
     active_electrons=None,
     active_orbitals=None,
     mapping="jordan_wigner",
@@ -825,7 +825,10 @@ def molecular_hamiltonian(
     This function drives the construction of the second-quantized electronic Hamiltonian
     of a molecule and its transformation to the basis of Pauli matrices.
 
-    #. OpenFermion-PySCF plugin is used to launch
+    The `method` can be either "dhf", which uses an in-built differentiable Hartree-Fock solver, or
+    "pyscf", which uses the OpenFermion-PySCF plugin.
+
+    #. OpenFermion-PySCF plugin can be used to launch
        the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
        chemistry package ``PySCF``.
 
@@ -910,8 +913,6 @@ def molecular_hamiltonian(
     + (0.12293305056183801) [Z1 Z3]
     + (0.176276408043196) [Z2 Z3]
     """
-    openfermion, _ = import_of()
-
     if len(coordinates) == len(symbols) * 3:
         geometry_dhf = coordinates.reshape(len(symbols), 3)
         geometry_hf = coordinates
@@ -919,7 +920,7 @@ def molecular_hamiltonian(
         geometry_dhf = coordinates
         geometry_hf = coordinates.flatten()
 
-    if package == "dhf":
+    if method == "dhf":
         mol = qml.qchem.Molecule(symbols, geometry_dhf)
         core, active = qml.qchem.active_space(
             mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
@@ -930,7 +931,9 @@ def molecular_hamiltonian(
             args[0] = geometry_dhf
         return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args), mol.n_orbitals * 2
 
-    hf_file = meanfield(symbols, geometry_hf, name, charge, mult, basis, package, outpath)
+    openfermion, _ = import_of()
+
+    hf_file = meanfield(symbols, geometry_hf, name, charge, mult, basis, method, outpath)
 
     molecule = openfermion.MolecularData(filename=hf_file)
 
