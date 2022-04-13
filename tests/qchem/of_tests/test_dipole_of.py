@@ -1,10 +1,17 @@
 import os
+import sys
 
 import numpy as np
 import pytest
 
 import pennylane as qml
 
+# TODO: Bring pytest skip to relevant tests.
+if not (3, 9) < sys.version_info < (3, 10):
+    pytest.skip(allow_module_level=True)
+
+openfermion = pytest.importorskip("openfermion")
+openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
 h2 = ["H", "H"]
 x_h2 = np.array([0.0, 0.0, -0.661, 0.0, 0.0, 0.661])

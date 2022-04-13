@@ -1884,9 +1884,9 @@ def cut_circuit(
                 cut_strategy=qml.transforms.qcut.CutStrategy(max_free_wires=2),
             )
         >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
-         0: ──RX(0.531)──╭C──RY(-0.4)──────╭┤ ⟨Z ⊗ Z ⊗ Z⟩
-         1: ──RY(0.9)────╰Z──//────────╭C──├┤ ⟨Z ⊗ Z ⊗ Z⟩
-         2: ──RX(0.3)──────────────────╰Z──╰┤ ⟨Z ⊗ Z ⊗ Z⟩
+        0: ──RX─╭C──RY────┤ ╭<Z@Z@Z>
+        1: ──RY─╰Z──//─╭C─┤ ├<Z@Z@Z>
+        2: ──RX────────╰Z─┤ ╰<Z@Z@Z>
 
         Our next step is to remove the :class:`~.WireCut` nodes in the graph and replace with
         :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs.

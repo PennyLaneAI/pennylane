@@ -24,7 +24,12 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane import qchem
 
+# TODO: Bring pytest skip to relevant tests.
+if not (3, 9) < sys.version_info < (3, 10):
+    pytest.skip(allow_module_level=True)
+
 openfermion = pytest.importorskip("openfermion")
+openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
 
 @pytest.fixture(
@@ -606,7 +611,7 @@ def test_fail_import_openfermion(monkeypatch):
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "openfermion", None)
 
-        with pytest.raises(ImportError, match="The OpenFermion package is required"):
+        with pytest.raises(ImportError, match="This feature requires openfermion"):
             qml.qchem.convert._pennylane_to_openfermion(
                 np.array([0.1 + 0.0j, 0.0]),
                 [
