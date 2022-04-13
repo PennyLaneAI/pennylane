@@ -134,7 +134,7 @@ class MeasurementProcess:
             self._eigvals = np.array(eigvals)
 
         self._shape = shape
-        """tuple[int]: The output shape of the measurement proccess. For some a
+        """tuple[int] or None: The output shape of the measurement proccess. For some a
         shape is not applicable or the shape may depend on device options, in
         such cases ``shape=None``."""
 
