@@ -964,18 +964,18 @@ def cut_circuit_mc(
 
     Args:
         tape (QuantumTape): the tape of the full circuit to be cut
-        shots (int): Number of shots. When transforming a QNode, this argument is
-            set by the device's ``shots`` value or at QNode call time (if provided).
-            Required when transforming a tape.
-        device_wires (Wires): Wires of the device that the cut circuits are to be run on.
-                    When transforming a QNode, this argument is optional and will be set to the
-                    QNode's device wires. Required when transforming a tape.
         classical_processing_fn (callable): A classical postprocessing function to be applied to
             the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``.
             and the output should be a single number within the interval :math:`[-1, 1]`.
             If not supplied, the transform will output samples.
         max_depth (int): The maximum depth used to expand the circuit while searching for wire cuts.
             Only applicable when transforming a QNode.
+        shots (int): Number of shots. When transforming a QNode, this argument is
+            set by the device's ``shots`` value or at QNode call time (if provided).
+            Required when transforming a tape.
+        device_wires (Wires): Wires of the device that the cut circuits are to be run on.
+                    When transforming a QNode, this argument is optional and will be set to the
+                    QNode's device wires. Required when transforming a tape.
 
     Returns:
         Callable: Function which accepts the same arguments as the QNode.
@@ -1681,7 +1681,7 @@ def cut_circuit(
     are then postprocessed to give the result of the original circuit:
 
     >>> x = np.array(0.531, requires_grad=True)
-    >>> circuit(0.531)
+    >>> circuit(x)
     0.47165198882111165
 
     Futhermore, the output of the cut circuit is also differentiable:
