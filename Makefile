@@ -46,7 +46,6 @@ clean:
 	rm -rf .coverage coverage_html_report/
 	rm -rf tmp
 	rm -rf *.dat
-	make -C qchem clean
 
 docs:
 	make -C doc html
