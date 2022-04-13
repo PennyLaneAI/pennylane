@@ -1122,7 +1122,7 @@ class QuantumTape(AnnotatedQueue):
         The shape returned by this method corresponds to case 1. QNode
         evaluation may include an additional squeezing step.
 
-        For example, for `qml.state` the result in each case would be (see
+        For example, for ``qml.state`` the result in each case would be (see
         example below):
 
         1. ``(1,4)``;
