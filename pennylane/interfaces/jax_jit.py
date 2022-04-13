@@ -113,16 +113,16 @@ def _validate_tapes(tapes):
                 )
 
 
-def _domain_to_dtype(domain):
+def _numeric_type_to_dtype(numeric_type):
 
     single_precision = dtype is jnp.float32
-    if domain is int:
+    if numeric_type is int:
         return jnp.int32 if single_precision else jnp.int64
 
-    if domain is float:
+    if numeric_type is float:
         return jnp.float32 if single_precision else jnp.float64
 
-    # domain is complex
+    # numeric_type is complex
     return jnp.complex64 if single_precision else jnp.complex128
 
 
@@ -159,8 +159,8 @@ def _execute(
 
         # shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
         # shapes, _ = get_shapes_and_dtype(tapes, device)
-        shapes = [t.get_output_shape(device) for t in tapes]
-        dtypes = [_domain_to_dtype(t.get_output_domain()) for t in tapes]
+        shapes = [t.shape(device) for t in tapes]
+        dtypes = [_numeric_type_to_dtype(t.numeric_type) for t in tapes]
 
         # Note: for qml.probs we'll first have a [1,dim] shape for the tape
         # which is then reduced by the QNode

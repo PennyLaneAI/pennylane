@@ -638,38 +638,6 @@ class TestJaxExecuteIntegration:
         res = jax.grad(cost)(params, cache=None)
         assert res.shape == (3,)
 
-    @pytest.mark.parametrize(
-        "ret, mes",
-        [
-            ([qml.state()], "Only Variance and Expectation"),
-        ],
-    )
-    def test_raises_for_jax_jit(self, execute_kwargs, interface, ret, mes):
-        """Tests multiple measurements and unsupported measurements raise an
-        error for the jit JAX interface."""
-        dev = qml.device("default.qubit", wires=2)
-        params = jnp.array([0.1, 0.2, 0.3])
-
-        def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
-                qml.RY(a[0], wires=0)
-                qml.RX(a[1], wires=0)
-                qml.RY(a[2], wires=0)
-                [qml.apply(r) for r in ret]
-
-            res = qml.interfaces.execute(
-                # Test only applicable for the jax jit interface
-                [tape],
-                dev,
-                cache=cache,
-                interface="jax-jit",
-                **execute_kwargs
-            )
-            return res[0][0]
-
-        with pytest.raises(InterfaceUnsupportedError, match=mes):
-            cost(params, cache=None)
-
 
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
 class TestVectorValued:
@@ -857,7 +825,7 @@ class TestVectorValuedJIT:
                 qml.RY(a[2], wires=0)
                 qml.expval(qml.PauliZ(1))
 
-            res = qml.interfaces.batch.execute(
+            res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
             )
             return res[0][0]
@@ -887,7 +855,7 @@ class TestVectorValuedJIT:
         )
         if "adjoint" in grad_meth and any(
             r.return_type
-            in (qml.operation.Probability, qml.operation.State, qml.operation.Variance)
+            in (qml.measurements.Probability, qml.measurements.State, qml.measurements.Variance)
             for r in ret
         ):
             pytest.skip("Adjoint does not support probs")
@@ -901,7 +869,7 @@ class TestVectorValuedJIT:
                 for r in ret:
                     qml.apply(r)
 
-            res = qml.interfaces.batch.execute(
+            res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
             )[0]
             return res
@@ -929,7 +897,7 @@ class TestVectorValuedJIT:
                 qml.RY(a[2], wires=0)
                 qml.sample(qml.PauliZ(0))
 
-            res = qml.interfaces.batch.execute(
+            res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
             )[0]
             return res
@@ -951,7 +919,7 @@ class TestVectorValuedJIT:
                 qml.expval(qml.PauliZ(0))
                 qml.expval(qml.PauliZ(1))
 
-            res = qml.interfaces.batch.execute(
+            res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
             )[0]
             return res[0] + res[1]
