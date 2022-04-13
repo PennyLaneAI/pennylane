@@ -147,7 +147,7 @@ class MERA(Operation):
             def circuit(template_weights):
                 qml.MERA(range(n_wires),n_block_wires,block, n_params_block, template_weights)
                 return qml.expval(qml.PauliZ(wires=1))
-        
+
         It may be necessary to reorder the wires to see the MERA architecture clearly:
 
         >>> print(qml.draw(circuit,expansion_strategy='device',wire_order=[2,0,1,3])(template_weights))
