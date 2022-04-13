@@ -22,7 +22,7 @@ import scipy
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.tapering import (
-    _binary_matrix,  # generate_symmetries,
+    _binary_matrix,
     _kernel,
     _observable_mult,
     _reduced_row_echelon,
@@ -271,7 +271,7 @@ def test_kernel(binary_matrix, result):
 )
 def test_generate_paulis(generators, num_qubits, result):
     r"""Test that generate_paulis returns the correct result."""
-    pauli_ops = paulix_ops(generators, num_qubits)
+    pauli_ops = qml.paulix_ops(generators, num_qubits)
     for p1, p2 in zip(pauli_ops, result):
         assert p1.compare(p2)
 
@@ -296,7 +296,7 @@ def test_generate_symmetries(symbols, geometry, num_qubits, res_generators):
 
     mol = qml.hf.Molecule(symbols, geometry)
     hamiltonian = qml.hf.generate_hamiltonian(mol)()
-    generators = symmetry_generators(hamiltonian)
+    generators = qml.symmetry_generators(hamiltonian)
 
     for g1, g2 in zip(generators, res_generators):
         assert g1.compare(g2)
@@ -388,7 +388,7 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
     r"""Test that transform_hamiltonian returns the correct hamiltonian."""
     mol = qml.hf.Molecule(symbols, geometry)
     h = qml.hf.generate_hamiltonian(mol)()
-    ham_calc = taper(h, generator, paulixops, paulix_sector)
+    ham_calc = qml.taper(h, generator, paulixops, paulix_sector)
 
     # sort Hamiltonian terms and then compare with reference
     sorted_terms = list(sorted(zip(ham_calc.terms()[0], ham_calc.terms()[1])))
@@ -480,7 +480,7 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
 
 
 @pytest.mark.parametrize(
-    ("generators", "paulix_ops", "paulix_sector", "num_electrons", "num_wires", "result"),
+    ("generators", "paulixops", "paulix_sector", "num_electrons", "num_wires", "result"),
     [
         (
             [
@@ -545,12 +545,12 @@ def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons,
         ),
     ],
 )
-def test_transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires, result):
+def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_wires, result):
     r"""Test that transform_hf returns the correct result."""
 
     tapered_hf_state = taper_hf(
         generators,
-        paulix_ops,
+        paulixops,
         paulix_sector,
         num_electrons,
         num_wires,
@@ -589,11 +589,11 @@ def test_hf_energy(symbols, geometry, charge):
     mol = qml.hf.Molecule(symbols, geometry, charge)
     hamiltonian = qml.hf.generate_hamiltonian(mol)(geometry)
     hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
-    generators = symmetry_generators(hamiltonian)
-    paulixops = paulix_ops(generators, len(hamiltonian.wires))
+    generators = qml.symmetry_generators(hamiltonian)
+    paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
     paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
 
-    hamiltonian_tapered = taper(hamiltonian, generators, paulixops, paulix_sector)
+    hamiltonian_tapered = qml.taper(hamiltonian, generators, paulixops, paulix_sector)
     hf_state_tapered = taper_hf(
         generators, paulixops, paulix_sector, mol.n_electrons, len(hamiltonian.wires)
     )
