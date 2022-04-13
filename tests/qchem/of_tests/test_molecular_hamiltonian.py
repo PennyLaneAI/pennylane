@@ -1,13 +1,18 @@
 import os
+import sys
 
+import numpy as np
 import pytest
 
 from pennylane import qchem
-
 from pennylane.ops import Hamiltonian
 
-import numpy as np
+# TODO: Bring pytest skip to relevant tests.
+if not (3, 9) < sys.version_info < (3, 10):
+    pytest.skip(allow_module_level=True)
 
+openfermion = pytest.importorskip("openfermion")
+openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
 symbols = ["C", "C", "N", "H", "H", "H", "H", "H"]
 coordinates = np.array(
@@ -50,10 +55,10 @@ coordinates = np.array(
         "mapping",
     ),
     [
-        (0, 1, "psi4", 2, 2, "jordan_WIGNER"),
+        (0, 1, "pyscf", 2, 2, "jordan_WIGNER"),
         (1, 2, "pyscf", 3, 4, "BRAVYI_kitaev"),
         (-1, 2, "pyscf", 1, 2, "jordan_WIGNER"),
-        (2, 1, "psi4", 2, 2, "BRAVYI_kitaev"),
+        (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
 def test_building_hamiltonian(
@@ -63,17 +68,12 @@ def test_building_hamiltonian(
     nact_els,
     nact_orbs,
     mapping,
-    psi4_support,
     tmpdir,
 ):
     r"""Test that the generated Hamiltonian `built_hamiltonian` is an instance of the PennyLane
     Hamiltonian class and the correctness of the total number of qubits required to run the
     quantum simulation. The latter is tested for different values of the molecule's charge and
     for active spaces with different size"""
-
-    if package == "psi4" and not psi4_support:
-        pytest.skip("Skipped, no Psi4 support")
-
     built_hamiltonian, qubits = qchem.molecular_hamiltonian(
         symbols,
         coordinates,
