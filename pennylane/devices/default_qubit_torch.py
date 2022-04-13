@@ -162,7 +162,7 @@ class DefaultQubitTorch(DefaultQubit):
         self._torch_device_specified = torch_device is not None
         self._torch_device = torch_device
 
-        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
+        super().__init__(wires, shots=shots, analytic=analytic)
 
         # Move state to torch device (e.g. CPU, GPU, XLA, ...)
         self._state.requires_grad = True
