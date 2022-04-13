@@ -110,7 +110,7 @@
   Quantum circuits with the shape
   of a multi-scale entanglement renormalization ansatz can now be easily implemented
   using the new `qml.MERA` template. This follows the style of previous 
-  tensor network templates and is very similar to
+  tensor network templates and is similar to
   [quantum convolutional neural networks](https://arxiv.org/abs/1810.03787).
   ```python
     import pennylane as qml
