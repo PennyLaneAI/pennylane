@@ -1884,9 +1884,9 @@ def cut_circuit(
                 cut_strategy=qml.transforms.qcut.CutStrategy(max_free_wires=2),
             )
         >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
-         0: ──RX(0.531)──╭C──RY(-0.4)──────╭┤ ⟨Z ⊗ Z ⊗ Z⟩
-         1: ──RY(0.9)────╰Z──//────────╭C──├┤ ⟨Z ⊗ Z ⊗ Z⟩
-         2: ──RX(0.3)──────────────────╰Z──╰┤ ⟨Z ⊗ Z ⊗ Z⟩
+        0: ──RX─╭C──RY────┤ ╭<Z@Z@Z>
+        1: ──RY─╰Z──//─╭C─┤ ├<Z@Z@Z>
+        2: ──RX────────╰Z─┤ ╰<Z@Z@Z>
 
         Our next step is to remove the :class:`~.WireCut` nodes in the graph and replace with
         :class:`~.MeasureNode` and :class:`~.PrepareNode` pairs.
@@ -2211,7 +2211,7 @@ class CutStrategy:
             specifying the potential (range of) number of fragments for the partitioner to attempt.
             Optional, defaults to probing all valid strategies derivable from the circuit and
             devices. When provided, has precedence over all other arguments affecting partitioning
-            exploration, such as ``max_free_wires``, ``min_free_wires``, or ``exhausive``.
+            exploration, such as ``max_free_wires``, ``min_free_wires``, or ``exhaustive``.
         max_free_gates (int): Maximum allowed circuit depth for the deepest available device.
             Optional, defaults to unlimited depth.
         min_free_gates (int): Maximum allowed circuit depth for the shallowest available device.

@@ -4554,7 +4554,6 @@ class TestAutoCutCircuit:
         assert np.isclose(res, res_expected)
         assert np.allclose(grad, grad_expected)
 
-    @flaky(max_runs=3)
     @pytest.mark.parametrize("shots", [None])  # using analytic mode only to save time.
     def test_standard_circuit(self, mocker, shots):
         """
