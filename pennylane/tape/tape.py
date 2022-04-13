@@ -83,8 +83,7 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 
 
 class TapeError(ValueError):
-    """An error raised when an unsupported operation is attempted with a
-    quantum tape."""
+    """An error raised with a quantum tape."""
 
 
 def get_active_tape():
