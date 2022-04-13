@@ -96,6 +96,19 @@ class MeasurementProcess:
             some measurement processes a shape is not applicable or the shape may
             depend on device options, in such cases ``shape=None``.
         numeric_type (class): The expected Python numeric type of the result.
+
+    **Example**
+
+    The top-level measusrements in PennyLane produce ``MeasurementProcess``
+    objects e.g., with shapes and numeric types defined:
+
+    .. code-block:: pycon
+
+        >>> mp = qml.expval(qml.PauliZ(0))
+        >>> mp.shape()
+        (1,)
+        >>> mp.numeric_type
+        float
     """
 
     # pylint: disable=too-few-public-methods
