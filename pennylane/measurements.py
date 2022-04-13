@@ -21,6 +21,7 @@ and measurement samples using AnnotatedQueues.
 import copy
 import uuid
 import warnings
+import functools
 from enum import Enum
 from typing import Generic, TypeVar
 
@@ -157,6 +158,7 @@ class MeasurementProcess:
         # Queue the measurement process
         self.queue()
 
+    @functools.lru_cache()
     def shape(self, device=None):
         """The expected output shape of the MeasurementProcess.
 
@@ -215,6 +217,7 @@ class MeasurementProcess:
 
         return self._shot_vector_shape(device)
 
+    @functools.lru_cache()
     def _shot_vector_shape(self, device):
         """Auxiliary function for getting the output shape when the device has
         the shot vector defined.
@@ -251,6 +254,7 @@ class MeasurementProcess:
         return shape
 
     @staticmethod
+    @functools.lru_cache()
     def _get_num_basis_states(num_wires, device):
         """Auxiliary function to determine the number of basis states given the
         number of systems and a quantum device.
