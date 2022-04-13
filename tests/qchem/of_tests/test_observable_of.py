@@ -1,11 +1,19 @@
-import os
+import sys
 
-import numpy as np
 import pytest
-from openfermion import FermionOperator, QubitOperator
 
 import pennylane as qml
 from pennylane import qchem
+
+# TODO: Bring pytest skip to relevant tests.
+if not (3, 9) < sys.version_info < (3, 10):
+    pytest.skip(allow_module_level=True)
+
+openfermion = pytest.importorskip("openfermion")
+openfermionpyscf = pytest.importorskip("openfermionpyscf")
+
+FermionOperator = openfermion.FermionOperator
+QubitOperator = openfermion.QubitOperator
 
 t = FermionOperator("0^ 0", 0.5) + FermionOperator("1^ 1", -0.5)
 
@@ -141,3 +149,19 @@ def test_exceptions_observable(fermion_ops, mapping, msg_match):
 
     with pytest.raises(TypeError, match=msg_match):
         qchem.observable(fermion_ops, mapping=mapping)
+
+
+def test_import_of(monkeypatch):
+    """Test if an ImportError is raised by import_of function."""
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "openfermion", None)
+
+        with pytest.raises(ImportError, match="This feature requires openfermion"):
+            qml.qchem.openfermion_obs.import_of()
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "openfermionpyscf", None)
+
+        with pytest.raises(ImportError, match="This feature requires openfermion"):
+            qml.qchem.openfermion_obs.import_of()
