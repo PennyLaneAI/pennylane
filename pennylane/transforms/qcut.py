@@ -982,8 +982,8 @@ def cut_circuit_mc(
             set by the device's ``shots`` value or at QNode call time (if provided).
             Required when transforming a tape.
         device_wires (Wires): Wires of the device that the cut circuits are to be run on.
-                    When transforming a QNode, this argument is optional and will be set to the
-                    QNode's device wires. Required when transforming a tape.
+            When transforming a QNode, this argument is optional and will be set to the
+            QNode's device wires. Required when transforming a tape.
         kwargs: Additional keyword arguments to be passed to a callable ``auto_cutter`` argument.
             For the default KaHyPar cutter, please refer to the docstring of functions
             :func:`~.find_and_place_cuts` and :func:`~.kahypar_cut` for the available arguments.
@@ -1726,8 +1726,8 @@ def cut_circuit(
             e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
             differentiable contraction.
         device_wires (Wires): Wires of the device that the cut circuits are to be run on.
-                    When transforming a QNode, this argument is optional and will be set to the
-                    QNode's device wires. Required when transforming a tape.
+            When transforming a QNode, this argument is optional and will be set to the
+            QNode's device wires. Required when transforming a tape.
         max_depth (int): The maximum depth used to expand the circuit while searching for wire cuts.
             Only applicable when transforming a QNode.
         kwargs: Additional keyword arguments to be passed to a callable ``auto_cutter`` argument.
@@ -2332,7 +2332,7 @@ class CutStrategy:
                 fragment. If supplied, the number of fragments will be derived from it and
                 exploration of other choices will not be made.
             exhaustive (bool): Toggle for an exhaustive search which will attempt all potentially
-                possible numbers of fragments into which the circuit is partitioned. If ``True``,
+                valid numbers of fragments into which the circuit is partitioned. If ``True``,
                 for a circuit with N gates, N - 1 attempts will be made with ``num_fragments``
                 ranging from [2, N], i.e. from bi-partitioning to complete partitioning where each
                 fragment has exactly a single gate. Defaults to ``True``.
@@ -2457,7 +2457,7 @@ class CutStrategy:
                 fragment. If supplied, the number of fragments will be derived from it and
                 exploration of other choices will not be made.
             exhaustive (bool): Toggle for an exhaustive search which will attempt all potentially
-                possible numbers of fragments into which the circuit is partitioned. If ``True``,
+                valid numbers of fragments into which the circuit is partitioned. If ``True``,
                 ``num_tape_gates - 1`` attempts will be made with ``num_fragments`` ranging from
                 [2, ``num_tape_gates``], i.e. from bi-partitioning to complete partitioning where
                 each fragment has exactly a single gate. Defaults to ``True``.
