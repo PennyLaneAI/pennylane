@@ -1080,9 +1080,7 @@ class QuantumTape(AnnotatedQueue):
 
         .. code-block:: python
 
-            import pennylane as qml
             from pennylane.gradients import param_shift
-            from pennylane import numpy as np
 
             dev = qml.device("default.qubit", wires=2)
             a = np.array([0.1, 0.2, 0.3])
@@ -1112,35 +1110,6 @@ class QuantumTape(AnnotatedQueue):
 
             >>> print(tape_execute_res.shape)
             (1, 4)
-
-        There is a difference between the shape of results obtained by:
-
-        1. Using the low-level ``qml.execute`` pipeline for executing a ``QuantumTape``;
-        2. Evaluating a QNode.
-
-        The shape returned by this method corresponds to case 1. QNode
-        evaluation may include an additional squeezing step.
-
-        For example, for `qml.state` the result in each case would be (see
-        example below):
-
-        1. ``(1,4)``;
-        2. ``(4,)``
-
-        .. code-block:: python
-
-            # 2. Evaluate the QNode
-            @qml.qnode(dev,interface='autograd')
-            def circuit(a):
-                func(a)
-                return qml.state()
-
-            res_qnode = circuit(a)
-
-        .. code-block:: pycon
-
-            >>> print(tape_execute_res.shape, res_qnode.shape)
-            (1, 4) (4,)
 
         Args:
             device (.Device): the device that will be used for the tape execution
