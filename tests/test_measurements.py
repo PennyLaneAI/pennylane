@@ -434,10 +434,30 @@ class TestSample:
     @pytest.mark.parametrize(
         "obs,exp",
         [
-            (None, int),
+            # Single observables
+            (None, int),  # comp basis samples
+            (qml.PauliX(0), int),
+            (qml.PauliY(0), int),
             (qml.PauliZ(0), int),
+            (qml.Hadamard(0), int),
+            (qml.Identity(0), int),
             (qml.Hermitian(np.diag([1, 2]), 0), float),
             (qml.Hermitian(np.diag([1.0, 2.0]), 0), float),
+            # Tensor product observables
+            (
+                qml.PauliX("c")
+                @ qml.PauliY("a")
+                @ qml.PauliZ(1)
+                @ qml.Hadamard("wire1")
+                @ qml.Identity("b"),
+                int,
+            ),
+            (qml.Projector([0, 1], wires=[0, 1]) @ qml.PauliZ(2), float),
+            (qml.Hermitian(np.array(np.eye(2)), wires=[0]) @ qml.PauliZ(2), float),
+            (
+                qml.Projector([0, 1], wires=[0, 1]) @ qml.Hermitian(np.array(np.eye(2)), wires=[2]),
+                float,
+            ),
         ],
     )
     def test_numeric_type(self, obs, exp):

@@ -591,18 +591,19 @@ def sample(op=None, wires=None):
             f"{op.name} is not an observable: cannot be used with sample"
         )
 
-    try:
-        eigvals = qml.eigvals(op)
-        if op is None or all(np.issubdtype(e.dtype, int) for e in eigvals):
-            # Computational basis samples or otherwise integer eigvals
-            numeric_type = int
-        else:
+    # Note: we only assume an integer numeric type if the observable is a
+    # built-in observable with integer eigenvalues or a tensor product thereof
+    if op is None:
+
+        # Computational basis samples
+        numeric_type = int
+    else:
+        int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
+        tensor_terms = [op] if not hasattr(op, "obs") else op.obs
+        if not all(o.__class__ in int_eigval_obs for o in tensor_terms):
             numeric_type = float
-
-    except qml.operation.EigvalsUndefinedError:
-
-        # Default to float
-        numeric_type = float
+        else:
+            numeric_type = int
 
     if wires is not None:
         if op is not None:
