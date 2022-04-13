@@ -122,6 +122,7 @@
     [(#2382)](https://github.com/PennyLaneAI/pennylane/pull/2382)
     [(#2399)](https://github.com/PennyLaneAI/pennylane/pull/2399)
     [(#2407)](https://github.com/PennyLaneAI/pennylane/pull/2407)
+    [(#2444)](https://github.com/PennyLaneAI/pennylane/pull/2444)
 
     The following `3`-qubit circuit contains a `WireCut` operation and a `sample`
     measurement. When decorated with `@qml.cut_circuit_mc`, we can cut the circuit
