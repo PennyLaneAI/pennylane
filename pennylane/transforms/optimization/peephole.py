@@ -177,12 +177,12 @@ def peephole_optimization(tape, qubit_subset_sizes, custom_quantum_cost=None):
         apply(m)
 
 
-def maximal_sequences(circuit_dag, size_qubit_subset):
-    r"""Function that applies an algorithm to find all maximal sequences of gates acting on a given qubits subset size.
+def maximal_sequences(circuit_dag, qubit_subset_size):
+    r"""Function that applies an algorithm to find all maximal sequences of gates acting on a given qubit subset size.
 
     Args:
         circuit_dag (.CommutationDAG): A commutation DAG representing the circuit to be optimized.
-        size_qubit_subset(int): Size of the qubits subset that are considered.
+        qubit_subset_size(int): Size of the qubits subset that are considered.
 
     Returns:
         list(Sequence): the list of maximal sequences.
@@ -191,7 +191,7 @@ def maximal_sequences(circuit_dag, size_qubit_subset):
         QuantumFunctionError: The subset size is greater than the number of qubits in the circuit.
     """
     # Check the validity of the qubits subset size.
-    if size_qubit_subset > circuit_dag.num_wires:
+    if qubit_subset_size > circuit_dag.num_wires:
         raise qml.QuantumFunctionError(
             "The qubits subset considered must be smaller or equal than the number of qubits in the "
             "circuit."
@@ -203,7 +203,7 @@ def maximal_sequences(circuit_dag, size_qubit_subset):
     # Loop through all possible initial matches
     for node_c in circuit_dag.get_nodes():
         # Check that the gate acts on less or equal number of qubits than the given size.
-        if _compare_operation_qubits_number(node_c[1], size_qubit_subset):
+        if _compare_operation_qubits_number(node_c[1], qubit_subset_size):
             # List the not fixed qubits
             not_fixed_qubits_conf = _not_fixed_qubits(circuit_dag.num_wires, node_c[1].wires)
 
@@ -212,7 +212,7 @@ def maximal_sequences(circuit_dag, size_qubit_subset):
 
             # Qubit configuration given the first operation and number of qubits.
             qubits_confs = _merge_first_match_and_not_fixed(
-                first_match_qubits_conf, not_fixed_qubits_conf, size_qubit_subset
+                first_match_qubits_conf, not_fixed_qubits_conf, qubit_subset_size
             )
 
             # Loops over the diffrent qubits configurations
