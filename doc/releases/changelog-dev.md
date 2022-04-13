@@ -318,6 +318,10 @@
 
 <h3>Breaking changes</h3>
 
+* The caching ability of `QubitDevice` has been removed, using the caching of
+  the QNode is preferred.
+  [(#2443)](https://github.com/PennyLaneAI/pennylane/pull/2443)
+
 * The `update_stepsize` method is being deleted from `GradientDescentOptimizer` and its child
   optimizers.  The `stepsize` property can be interacted with directly instead.
   [(#2370)](https://github.com/PennyLaneAI/pennylane/pull/2370)
