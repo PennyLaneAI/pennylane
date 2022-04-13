@@ -139,7 +139,54 @@ def test_building_hamiltonian(
                     PauliZ(wires=[2]) @ PauliZ(wires=[3]),
                 ],
             ),
-        )
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            # computed with OpenFermion; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # h_q = openfermion.transforms.jordan_wigner(h_f)
+            # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
+            (
+                np.array(
+                    [
+                        0.2981788017,
+                        0.2081336485,
+                        0.2081336485,
+                        0.1786097698,
+                        0.042560361,
+                        -0.042560361,
+                        -0.042560361,
+                        0.042560361,
+                        -0.3472487379,
+                        0.1329029281,
+                        -0.3472487379,
+                        0.175463289,
+                        0.175463289,
+                        0.1329029281,
+                        0.1847091733,
+                    ]
+                ),
+                [
+                    Identity(wires=[0]),
+                    PauliZ(wires=[0]),
+                    PauliZ(wires=[1]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[1]),
+                    PauliY(wires=[0]) @ PauliX(wires=[1]) @ PauliX(wires=[2]) @ PauliY(wires=[3]),
+                    PauliY(wires=[0]) @ PauliY(wires=[1]) @ PauliX(wires=[2]) @ PauliX(wires=[3]),
+                    PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]),
+                    PauliX(wires=[0]) @ PauliY(wires=[1]) @ PauliY(wires=[2]) @ PauliX(wires=[3]),
+                    PauliZ(wires=[2]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[2]),
+                    PauliZ(wires=[3]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[3]),
+                    PauliZ(wires=[1]) @ PauliZ(wires=[2]),
+                    PauliZ(wires=[1]) @ PauliZ(wires=[3]),
+                    PauliZ(wires=[2]) @ PauliZ(wires=[3]),
+                ],
+            ),
+        ),
     ],
 )
 def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
