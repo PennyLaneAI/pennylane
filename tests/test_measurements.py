@@ -1115,7 +1115,7 @@ class TestState:
 
     @pytest.mark.parametrize("shots", [None, 1, 10])
     def test_shape(self, shots):
-        """Test that the shape is correct for qml.state."""
+        """Test that the shape is correct for qml.density_matrix."""
         dev = qml.device("default.qubit", wires=3, shots=shots)
         res = qml.density_matrix(wires=[0, 1])
         assert res.shape(dev) == (1, 2**2, 2**2)
