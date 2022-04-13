@@ -219,6 +219,11 @@ vv_qubit_device_and_diff_method = [
     ["default.qubit", "parameter-shift", "backward", "jax-python"],
     ["default.qubit", "adjoint", "forward", "jax-python"],
     ["default.qubit", "adjoint", "backward", "jax-python"],
+    # Jit
+    ["default.qubit", "finite-diff", "backward", "jax-jit"],
+    ["default.qubit", "parameter-shift", "backward", "jax-jit"],
+    ["default.qubit", "adjoint", "forward", "jax-jit"],
+    ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
 
@@ -258,6 +263,11 @@ class TestVectorValuedQNode:
 
         expected = [np.cos(a), -np.cos(a) * np.sin(b)]
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        if diff_method in {"finite-diff", "parameter-shift"} and interface == "jax-jit":
+
+            # No jax.jacobian support for call
+            pytest.xfail(reason="batching rules are implemented only for id_tap, not for call.")
 
         res = jax.jacobian(circuit, argnums=[0, 1])(a, b)
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]).T
@@ -321,6 +331,10 @@ class TestVectorValuedQNode:
             qml.CNOT(wires=[0, 1])
             return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
 
+        if diff_method in {"finite-diff", "parameter-shift"} and interface == "jax-jit":
+            # No jax.jacobian support for call
+            pytest.xfail(reason="batching rules are implemented only for id_tap, not for call.")
+
         jac_fn = jax.jacobian(circuit, argnums=[0, 1])
         res = jac_fn(a, b)
         expected = np.array([[-np.sin(a), 0], [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]]).T
@@ -353,6 +367,10 @@ class TestVectorValuedQNode:
             qml.RY(a[0], wires=0)
             qml.RX(a[1], wires=0)
             return qml.expval(qml.PauliZ(0))
+
+        if diff_method in {"finite-diff", "parameter-shift"} and interface == "jax-jit":
+            # No jax.jacobian support for call
+            pytest.xfail(reason="batching rules are implemented only for id_tap, not for call.")
 
         jax.jacobian(circuit)(a)
 

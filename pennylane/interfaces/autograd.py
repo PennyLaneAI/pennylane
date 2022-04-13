@@ -57,6 +57,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
+    # pylint: disable=no-member
     parameters = autograd.builtins.tuple(
         [autograd.builtins.list(t.get_parameters()) for t in tapes]
     )
@@ -112,7 +113,6 @@ def _execute(
         if isinstance(res[i], np.ndarray):
             # For backwards compatibility, we flatten ragged tape outputs
             # when there is no sampling
-            print(res[i])
             r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
             res[i] = np.tensor(r)
 

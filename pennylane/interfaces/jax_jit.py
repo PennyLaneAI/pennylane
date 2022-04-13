@@ -24,6 +24,7 @@ from jax.experimental import host_callback
 import numpy as np
 import pennylane as qml
 from pennylane.interfaces import InterfaceUnsupportedError
+from pennylane.interfaces.jax import _raise_vector_valued_fwd
 
 dtype = jnp.float64
 
@@ -276,6 +277,8 @@ def _execute_with_fwd(
         return res, tuple([jacs, params])
 
     def wrapped_exec_bwd(params, g):
+
+        _raise_vector_valued_fwd(tapes)
 
         # Use the jacobian that was computed on the forward pass
         jacs, params = params
