@@ -818,6 +818,7 @@ def molecular_hamiltonian(
     mapping="jordan_wigner",
     outpath=".",
     wires=None,
+    args=None,
 ):  # pylint:disable=too-many-arguments
     r"""Generates the qubit Hamiltonian of a molecule.
 
@@ -910,6 +911,18 @@ def molecular_hamiltonian(
     + (0.176276408043196) [Z2 Z3]
     """
     openfermion, _ = import_of()
+
+    if package == "dhf":
+        geometry = coordinates.reshape(len(symbols), 3)
+        mol = qml.hf.Molecule(symbols, geometry)
+        core, active = qml.qchem.active_space(
+            mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
+        )
+        if args is None:
+            return qml.hf.generate_hamiltonian(mol, core=core, active=active)(), mol.n_orbitals * 2
+        if geometry.requires_grad:
+            args[0] = geometry
+        return qml.hf.generate_hamiltonian(mol, core=core, active=active)(*args), mol.n_orbitals * 2
 
     hf_file = meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
 
