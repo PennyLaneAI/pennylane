@@ -6,10 +6,10 @@
 
 * Adds an optimization transform that matches pieces of user-provided identity templates in a circuit and replaces them with an equivalent component.
   [(#2032)](https://github.com/PennyLaneAI/pennylane/pull/2032)
-  
+
   First let's consider the following circuit where we want to replace sequence of two ``pennylane.S`` gates with a
   ``pennylane.PauliZ`` gate.
-  
+
   ```python
   def circuit():
       qml.S(wires=0)
@@ -34,7 +34,7 @@
 
   For optimizing the circuit given the given following template of CNOTs we apply the `pattern_matching`
   transform.
-  
+
   ```pycon
   >>> dev = qml.device('default.qubit', wires=5)
   >>> qnode = qml.QNode(circuit, dev)
@@ -58,12 +58,12 @@
 * Added a swap based transpiler transform.
   [(#2118)](https://github.com/PennyLaneAI/pennylane/pull/2118)
 
-  The transpile function takes a quantum function and a coupling map as inputs and compiles the circuit to ensure that it can be 
+  The transpile function takes a quantum function and a coupling map as inputs and compiles the circuit to ensure that it can be
   executed on corresponding hardware. The transform can be used as a decorator in the following way:
 
   ```python
   dev = qml.device('default.qubit', wires=4)
-  
+
   @qml.qnode(dev)
   @qml.transforms.transpile(coupling_map=[(0, 1), (1, 2), (2, 3)])
   def circuit(param):
@@ -71,12 +71,12 @@
       qml.CNOT(wires=[0, 2])
       qml.CNOT(wires=[0, 3])
       qml.PhaseShift(param, wires=0)
-      return qml.probs(wires=[0, 1, 2, 3]) 
+      return qml.probs(wires=[0, 1, 2, 3])
   ```
 
-* A differentiable quantum chemistry module is added to `qml.qchem`. The new module inherits a 
+* A differentiable quantum chemistry module is added to `qml.qchem`. The new module inherits a
   modified version of the differentiable Hartree-Fock solver from `qml.hf`, contains new functions
-  for building a differentiable dipole moment observable and also contains modified functions for 
+  for building a differentiable dipole moment observable and also contains modified functions for
   building spin and particle number observables independent of external libraries.
 
   - New functions are added for computing multipole moment molecular integrals
@@ -170,18 +170,18 @@
     >>> results.shape
     (123, 2)
     ```
-    
+
     Using the Monte Carlo approach of [Peng et. al](https://arxiv.org/abs/1904.00102), the
     `cut_circuit_mc` transform also supports returning sample-based expectation values of
     observables that are diagonal in the computational basis, as shown below for a `ZZ` measurement
     on wires `0` and `2`:
-    
+
     ```python
     dev = qml.device("default.qubit", wires=2, shots=10000)
 
     def observable(bitstring):
-        return (-1) ** np.sum(bitstring)    
-    
+        return (-1) ** np.sum(bitstring)
+
     @qml.cut_circuit_mc(classical_processing_fn=observable)
     @qml.qnode(dev)
     def circuit(x):
@@ -198,9 +198,9 @@
         qml.RX(2.3, wires=2)
         return qml.sample(wires=[0, 2])
     ```
-    
+
     We can now approximate the expectation value of the observable using
-    
+
     ```pycon
     >>> circuit(x)
     tensor(-0.776, requires_grad=True)
@@ -291,12 +291,12 @@
   ```
 
 * The function `qml.eigvals` is modified to use the efficient `scipy.sparse.linalg.eigsh`
-  method for obtaining the eigenvalues of a `SparseHamiltonian`. This `scipy` method is called 
+  method for obtaining the eigenvalues of a `SparseHamiltonian`. This `scipy` method is called
   to compute :math:`k` eigenvalues of a sparse :math:`N \times N` matrix if `k` is smaller
-  than :math:`N-1`. If a larger :math:`k` is requested, the dense matrix representation of 
+  than :math:`N-1`. If a larger :math:`k` is requested, the dense matrix representation of
   the Hamiltonian is constructed and the regular `qml.math.linalg.eigvalsh` is applied.
   [(#2333)](https://github.com/PennyLaneAI/pennylane/pull/2333)
-  
+
 * The function `qml.ctrl` was given the optional argument `control_values=None`.
   If overridden, `control_values` takes an integer or a list of integers corresponding to
   the binary value that each control value should take. The same change is reflected in
@@ -306,7 +306,7 @@
 
 * Operators now have a `has_matrix` property denoting whether or not the operator defines a matrix.
   [(#2331)](https://github.com/PennyLaneAI/pennylane/pull/2331)
-  
+
 * Circuit cutting now performs expansion to search for wire cuts in contained operations or tapes.
   [(#2340)](https://github.com/PennyLaneAI/pennylane/pull/2340)
 
@@ -317,6 +317,39 @@
 <h3>Deprecations</h3>
 
 <h3>Breaking changes</h3>
+
+* The caching ability of `QubitDevice` has been removed, using the caching on
+  the QNode level is the recommended alternative going forward.
+  [(#2443)](https://github.com/PennyLaneAI/pennylane/pull/2443)
+
+  One way for replicating the removed `QubitDevice` caching behaviour is by
+  creating a `cache` object (e.g., a dictionary) and passing it to the `QNode`:
+  ```python
+  n_wires = 4
+  wires = range(n_wires)
+
+  dev = qml.device('default.qubit', wires=n_wires)
+
+  cache = {}
+
+  @qml.qnode(dev, diff_method='parameter-shift', cache=cache)
+  def expval_circuit(params):
+      qml.templates.BasicEntanglerLayers(params, wires=wires, rotation=qml.RX)
+      return qml.expval(qml.PauliZ(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliZ(3))
+
+  shape = qml.templates.BasicEntanglerLayers.shape(5, n_wires)
+  params = np.random.random(shape)
+  ```
+  ```pycon
+  >>> expval_circuit(params)
+  tensor(0.20598436, requires_grad=True)
+  >>> dev.num_executions
+  1
+  >>> expval_circuit(params)
+  tensor(0.20598436, requires_grad=True)
+  >>> dev.num_executions
+  1
+  ```
 
 * The `update_stepsize` method is being deleted from `GradientDescentOptimizer` and its child
   optimizers.  The `stepsize` property can be interacted with directly instead.
@@ -339,7 +372,7 @@
       does not seem to have uses outside of that situation.
   - `qml.CircuitGraph.draw` has been deleted, as we draw tapes instead.
 
-The tape method `qml.tape.QuantumTape.draw` now simply calls `qml.drawer.tape_text`. 
+The tape method `qml.tape.QuantumTape.draw` now simply calls `qml.drawer.tape_text`.
 In the new pathway, the `charset` keyword is deleted, the `max_length` keyword defaults to `100`, and
 the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tape)`
 
@@ -356,7 +389,7 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   In addition, several other components which powered the deprecated QNode have been removed:
 
   - The deprecated, non-batch compatible interfaces, have been removed.
-  
+
   - The deprecated tape subclasses `QubitParamShiftTape`, `JacobianTape`, `CVParamShiftTape`, and
     `ReversibleTape` have been removed.
 
@@ -401,17 +434,17 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   circuit.
   [(#2328)](https://github.com/PennyLaneAI/pennylane/pull/2328)
 
-* Fixes a bug in which the `expval`/`var` of a `Tensor(Observable)` would depend on the order 
-  in which the observable is defined: 
+* Fixes a bug in which the `expval`/`var` of a `Tensor(Observable)` would depend on the order
+  in which the observable is defined:
   ```python
   @qml.qnode(dev)
   def circ(op):
     qml.RX(0.12, wires=0)
     qml.RX(1.34, wires=1)
     qml.RX(3.67, wires=2)
-    
+
     return qml.expval(op)
-  
+
   op1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
   op2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
   ```

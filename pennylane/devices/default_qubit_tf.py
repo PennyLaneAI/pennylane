@@ -158,7 +158,7 @@ class DefaultQubitTF(DefaultQubit):
         return res
 
     def __init__(self, wires, *, shots=None, analytic=None):
-        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
+        super().__init__(wires, shots=shots, analytic=analytic)
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]
