@@ -32,6 +32,7 @@ import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
 import pennylane.hf
+import pennylane.qchem
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian, finite_diff
 from pennylane._qubit_device import QubitDevice
@@ -319,45 +320,3 @@ def device(name, *args, **kwargs):
 def version():
     """Returns the PennyLane version number."""
     return __version__
-
-
-# add everything as long as it's not a module and not prefixed with _
-_all = sorted(
-    [
-        name
-        for name, function in globals().items()
-        if not (name.startswith("_") or isinstance(function, types.ModuleType))
-    ]
-)
-
-
-_qchem = None
-
-
-def __getattr__(name):
-    """Ensure that the qchem module is imported lazily"""
-    if name == "qchem":
-        global _qchem  # pylint: disable=global-statement
-
-        if _qchem is None:
-
-            for entry in pkg_resources.iter_entry_points("pennylane.qchem"):
-                if entry.name == "OpenFermion":
-                    _qchem = entry.load()
-
-            if _qchem is None:
-                raise ImportError(
-                    "PennyLane-QChem not installed. \n\nTo access the qchem "
-                    "module, you can install PennyLane-QChem via pip:"
-                    "\n\npip install pennylane-qchem"
-                    "\n\nFor more details, see the quantum chemistry documentation:"
-                    "\nhttps://pennylane.readthedocs.io/en/stable/introduction/chemistry.html"
-                )
-
-        return _qchem
-
-    raise AttributeError(f"module {__name__} has no attribute {name}")
-
-
-def __dir__():  # pragma: no cover
-    return _all + ["qchem"]
