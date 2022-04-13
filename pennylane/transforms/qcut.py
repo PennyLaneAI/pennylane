@@ -1113,7 +1113,7 @@ def cut_circuit_mc(
         If, however, the optimal location of the :class:`~.WireCut` is unknown, we can use
         :func:`~.find_and_place_cuts` to make attempts in automatically finding such a cut
         given the device constraints. Using the same circuit as above but with the
-        :class:`~.WireCut` removed, a slightly different cut with identical cost can be dicovered
+        :class:`~.WireCut` removed, a slightly different cut with identical cost can be discovered
         and placed into the circuit with automatic cutting:
 
         .. code-block:: python
@@ -1778,7 +1778,7 @@ def cut_circuit(
     -0.276982865449393
 
     Alternatively, if the optimal wire-cut placement is unknown for an arbitrary circuit, the
-    ``auto_cutter`` option can be enabled to make attempts in finding such a optimal cut. The
+    ``auto_cutter`` option can be enabled to make attempts in finding such an optimal cut. The
     following examples shows this capability on the same circuit as above but with the
     :class:`~.WireCut` removed:
 
@@ -1799,7 +1799,7 @@ def cut_circuit(
             return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
 
     >>> x = np.array(0.531, requires_grad=True)
-    >>> circuit(0.531)
+    >>> circuit(x)
     0.47165198882111165
     >>> qml.grad(circuit)(x)
     -0.276982865449393
@@ -1880,8 +1880,8 @@ def cut_circuit(
                 qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
-                graph=qml.transforms.qcut.tape_to_graph(uncut_tape),
-                cut_strategy=qml.transforms.qcut.CutStrategy(max_free_wires=2),
+                graph = qml.transforms.qcut.tape_to_graph(uncut_tape),
+                cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=2),
             )
         >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
         0: ──RX─╭C──RY────┤ ╭<Z@Z@Z>
