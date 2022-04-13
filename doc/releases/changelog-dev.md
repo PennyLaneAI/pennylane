@@ -366,6 +366,10 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug with the padding capability of `AmplitudeEmbedding` where the
+  inputs are on the GPU.
+  [(#2431)](https://github.com/PennyLaneAI/pennylane/pull/2431)
+
 * Fixes a bug by adding a comprehensible error message for calling `qml.probs`
   without passing wires or an observable.
   [(#2438)](https://github.com/PennyLaneAI/pennylane/pull/2438)
@@ -427,4 +431,4 @@ This release contains contributions from (in alphabetical order):
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
 
 Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
-Matthew Silverman, Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
+Matthew Silverman, Lee James O'Riordan, Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
