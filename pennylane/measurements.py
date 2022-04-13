@@ -162,8 +162,8 @@ class MeasurementProcess:
 
         Note that the output shape is dependent on the device when:
 
-        * The return_type is either Probability, State (from qml.state) or
-          Sample;
+        * The ``return_type`` is either ``Probability``, ``State`` (from :func:`.state`) or
+          ``Sample``;
         * The shot vector was defined in the device.
 
         Args:
