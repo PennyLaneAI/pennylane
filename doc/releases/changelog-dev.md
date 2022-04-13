@@ -126,6 +126,7 @@
     [(#2382)](https://github.com/PennyLaneAI/pennylane/pull/2382)
     [(#2399)](https://github.com/PennyLaneAI/pennylane/pull/2399)
     [(#2407)](https://github.com/PennyLaneAI/pennylane/pull/2407)
+    [(#2444)](https://github.com/PennyLaneAI/pennylane/pull/2444)
 
     The following `3`-qubit circuit contains a `WireCut` operation and a `sample`
     measurement. When decorated with `@qml.cut_circuit_mc`, we can cut the circuit
@@ -218,6 +219,15 @@
     [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
 
 <h3>Improvements</h3>
+
+* Added the `QuantumTape.shape` method and `QuantumTape.numeric_type`
+  attribute to allow extracting information about the shape and numeric type of
+  quantum tapes.
+  [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
+
+* Defined a `MeasurementProcess.shape` method and a
+  `MeasurementProcess.numeric_type` attribute.
+  [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
 
 * The parameter-shift Hessian can now be computed for arbitrary
   operations that support the general parameter-shift rule for

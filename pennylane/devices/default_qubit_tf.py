@@ -150,10 +150,11 @@ class DefaultQubitTF(DefaultQubit):
         try:
             res = tf.convert_to_tensor(array, dtype=dtype)
         except InvalidArgumentError:
-            res = tf.concat([tf.reshape(i, [-1]) for i in array], axis=0)
+            axis = 0
+            res = tf.concat([tf.reshape(i, [-1]) for i in array], axis)
 
             if dtype is not None:
-                res = tf.cast(res, dtype=dtype)
+                res = tf.cast(res, dtype)
 
         return res
 
