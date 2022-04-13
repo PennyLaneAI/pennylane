@@ -837,14 +837,15 @@ class TestVectorValuedJIT:
         ([qml.probs(wires=0)], (1, 2)),
         ([qml.state()], (1, 4)),
         ([qml.density_matrix(wires=0)], (1, 2, 2)),
+        # Multi measurements
         ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], (2,)),
         ([qml.var(qml.PauliZ(0)), qml.var(qml.PauliZ(1))], (2,)),
-        ([qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1))], (2,)),
+        ([qml.probs(wires=0), qml.probs(wires=1)], (2, 2)),
     ]
 
     @pytest.mark.parametrize("ret, out_dim", ret_and_output_dim)
     def test_vector_valued_qnode(self, execute_kwargs, ret, out_dim):
-        """Tests computing multiple expectation values in a tape."""
+        """Tests the shape of vector valued QNode results."""
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
 

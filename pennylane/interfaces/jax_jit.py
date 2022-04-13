@@ -23,7 +23,6 @@ from jax.experimental import host_callback
 
 import numpy as np
 import pennylane as qml
-from pennylane.measurements import Variance, Expectation
 from pennylane.interfaces import InterfaceUnsupportedError
 
 dtype = jnp.float64
@@ -61,8 +60,6 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     if max_diff > 1:
         raise InterfaceUnsupportedError("The JAX interface only supports first order derivatives.")
 
-    # _validate_tapes(tapes)
-
     for tape in tapes:
         # set the trainable parameters
         params = tape.get_parameters(trainable_only=False)
@@ -91,29 +88,9 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
     )
 
 
-def _validate_tapes(tapes):
-    """Validates that the input tapes are compatible with JAX support.
-
-    Raises:
-        ValueError: if tapes with non-scalar outputs were provided or a return
-        type other than variance and expectation value was used
-    """
-    for t in tapes:
-
-        if len(t.observables) != 1:
-            raise InterfaceUnsupportedError(
-                "The jittable JAX interface currently only supports quantum nodes with a single return type."
-            )
-
-        for o in t.observables:
-            return_type = o.return_type
-            if return_type is not Variance and return_type is not Expectation:
-                raise InterfaceUnsupportedError(
-                    f"Only Variance and Expectation returns are supported for the jittable JAX interface, given {return_type}."
-                )
-
-
 def _numeric_type_to_dtype(numeric_type):
+    """Auxiliary function for converting from Python numeric types to JAX
+    dtypes based on the precision defined for the interface."""
 
     single_precision = dtype is jnp.float32
     if numeric_type is int:
@@ -136,10 +113,6 @@ def _execute(
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
 
-    # Only have scalar outputs
-
-    # TODO: remove
-    # total_size = len(tapes)
     total_params = np.sum([len(p) for p in params])
 
     @jax.custom_vjp
@@ -157,8 +130,6 @@ def _execute(
 
             return res
 
-        # shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
-        # shapes, _ = get_shapes_and_dtype(tapes, device)
         shapes = [t.shape(device) for t in tapes]
         dtypes = [_numeric_type_to_dtype(t.numeric_type) for t in tapes]
 
@@ -254,10 +225,6 @@ def _execute_with_fwd(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
-    # Only have scalar outputs
-    total_size = len(tapes)
-
     @jax.custom_vjp
     def wrapped_exec(params):
         def wrapper(p):
@@ -273,8 +240,30 @@ def _execute_with_fwd(
             # On the forward execution return the jacobian too
             return res, jacs
 
-        fwd_shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
-        jacobian_shape = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
+        fwd_shapes = [t.shape(device) for t in tapes]
+        fwd_dtypes = [_numeric_type_to_dtype(t.numeric_type) for t in tapes]
+
+        # Note: for qml.probs we'll first have a [1,dim] shape for the tape
+        # which is then reduced by the QNode
+        fwd_shapes = [
+            jax.ShapeDtypeStruct(tuple([shape]), dtype)
+            if isinstance(shape, int)
+            else jax.ShapeDtypeStruct(tuple(shape), dtype)
+            for shape, dtype in zip(fwd_shapes, fwd_dtypes)
+        ]
+
+        jacobian_shape = [t.shape(device) + (len(p),) for t in tapes for p in params]
+        jac_dtypes = [_numeric_type_to_dtype(t.numeric_type) for t in tapes]
+
+        # Note: for qml.probs we'll first have a [1,dim] shape for the tape
+        # which is then reduced by the QNode
+        jacobian_shape = [
+            jax.ShapeDtypeStruct(tuple([shape]), dtype)
+            if isinstance(shape, int)
+            else jax.ShapeDtypeStruct(tuple(shape), dtype)
+            for shape, dtype in zip(jacobian_shape, jac_dtypes)
+        ]
+
         res, jacs = host_callback.call(
             wrapper,
             params,
