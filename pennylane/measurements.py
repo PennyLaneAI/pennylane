@@ -93,22 +93,15 @@ class MeasurementProcess:
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
         shape (tuple[int] or None): The output shape of the measurement proccess. For
-            some measurement processes a shape is not applicable or the shape may
-            depend on device options, in such cases ``shape=None``.
-        numeric_type (class): The expected Python numeric type of the result.
-
-    **Example**
-
-    The top-level measusrements in PennyLane produce ``MeasurementProcess``
-    objects e.g., with shapes and numeric types defined:
-
-    .. code-block:: pycon
-
-        >>> mp = qml.expval(qml.PauliZ(0))
-        >>> mp.shape()
-        (1,)
-        >>> mp.numeric_type
-        float
+            some measurement processes a shape is not applicable or the shape
+            may depend on device options, in such cases ``shape=None``. The
+            shape is determined by the return type. For example, assuming a
+            device with ``shots=None``, expectation values and variances define
+            ``shape=(1,)``, whereas probabilities in the qubit define
+            ``shape=(1, 2**num_wires)`` where ``num_wires`` is the number of
+            wires the measurement acts on.
+        numeric_type (type): The expected Python numeric type of the result;
+            either ``int``, ``float`` or ``complex``.
     """
 
     # pylint: disable=too-few-public-methods
