@@ -366,6 +366,10 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug by adding a comprehensible error message for calling `qml.probs`
+  without passing wires or an observable.
+  [(#2438)](https://github.com/PennyLaneAI/pennylane/pull/2438)
+
 * Call `pip show` with the subprocess library to avoid outputting a common warning.
   [(#2422)](https://github.com/PennyLaneAI/pennylane/pull/2422)
 
