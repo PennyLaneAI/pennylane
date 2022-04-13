@@ -139,8 +139,7 @@ class MeasurementProcess:
         such cases ``shape=None``."""
 
         self.numeric_type = numeric_type
-        """tuple[int]: The Python numeric type of the result produced by the
-        ``MeasurementProcess``."""
+        """tuple[int]: The Python numeric type of the measurement result."""
 
         # TODO: remove the following lines once devices
         # have been refactored to accept and understand recieving
