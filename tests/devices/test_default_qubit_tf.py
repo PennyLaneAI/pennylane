@@ -1548,3 +1548,20 @@ class TestHighLevelIntegration:
 
         assert isinstance(grad, tf.Tensor)
         assert grad.shape == weights.shape
+
+
+def test_asarray_ragged_dtype_conversion(monkeypatch):
+    """Test that the _asarray internal method handles ragged arrays well when
+    the dtype argument was provided."""
+    from tensorflow.python.framework.errors_impl import InvalidArgumentError
+
+    dev = qml.device("default.qubit.tf", wires=2)
+
+    def mock_func(arr, dtype):
+        raise InvalidArgumentError(
+            None, None, "SomeMessage"
+        )  # args passed are non-significant for test case
+
+    monkeypatch.setattr(tf, "convert_to_tensor", mock_func)
+    res = dev._asarray(np.array([1]), tf.float32)
+    assert res.dtype == tf.float32
