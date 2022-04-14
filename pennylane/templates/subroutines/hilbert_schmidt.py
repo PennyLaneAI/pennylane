@@ -79,7 +79,7 @@ class HilbertSchmidt(Operation):
             def cost_hst(parameters, v_function, v_wires, u_tape):
                 return (1 - hilbert_test(v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape)[0])
 
-        Now that you have defined your cost function you can call it for specific parameters.
+        Now that the cost function has been defined it can be called for specific parameters:
 
         >>> cost_hst([0], v_function = v_circuit, v_wires = [1], u_tape = U)
         1
