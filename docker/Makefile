@@ -6,6 +6,7 @@ help:
 	@echo "build-base"
 	@echo "build-interface"
 	@echo "build-interface-gpu"
+	@echo "build-mlir"
 
 available-interfaces:
 	@echo "The following interfaces are available for PennyLane:"
@@ -18,6 +19,10 @@ available-plugins:
 
 build-base:
 	@docker build -t pennylane/base -f docker/pennylane.dockerfile .
+
+build-mlir:
+	@docker build -t pennylane/base -f docker/pennylane.dockerfile . \
+	&& docker build -t pennylane/mlir -f docker/llvm.dockerfile .
 
 build-interface:
 	@docker build -t pennylane/base -f docker/pennylane.dockerfile . \

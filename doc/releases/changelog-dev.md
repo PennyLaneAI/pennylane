@@ -547,6 +547,9 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   the qubit operator that is prepared for tapering the HF state.  
   [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
 
+* Add docker image with LLVM/MLIR, Python bindings and pennylane.
+  [(#2447)](https://github.com/PennyLaneAI/pennylane/pull/2447)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
@@ -555,4 +558,4 @@ This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Utkarsh Azad, Thomas Bromley, Alain Delgado,
 Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
-Matthew Silverman, Lee James O'Riordan, Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
+Matthew Silverman, Erick Ochoa Lopez, Lee James O'Riordan, Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
