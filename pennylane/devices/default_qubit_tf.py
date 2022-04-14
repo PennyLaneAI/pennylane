@@ -142,7 +142,10 @@ class DefaultQubitTF(DefaultQubit):
     _imag = staticmethod(tf.math.imag)
     _roll = staticmethod(tf.roll)
     _stack = staticmethod(tf.stack)
-    _const_mul = staticmethod(tf.math.multiply)
+
+    @staticmethod
+    def _const_mul(constant, array):
+        return constant * array
 
     @staticmethod
     def _asarray(array, dtype=None):
@@ -153,7 +156,7 @@ class DefaultQubitTF(DefaultQubit):
                 return tf.cast(array, dtype)
 
         try:
-            res = tf.convert_to_tensor(array, dtype=dtype)
+            res = tf.convert_to_tensor(array, dtype)
         except InvalidArgumentError:
             axis = 0
             res = tf.concat([tf.reshape(i, [-1]) for i in array], axis)
