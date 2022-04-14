@@ -49,7 +49,7 @@ class TestHilbertSchmidt:
             assert i.wires == j.wires
 
     def test_hs_adjoint_method(self):
-        """Test the adjoint method of the HS operation for 1 qubit."""
+        """Test the adjoint method of the HS operation for a 1 qubit unitary."""
 
         with qml.tape.QuantumTape(do_queue=False) as U:
             qml.RX(0.3, wires=0)
