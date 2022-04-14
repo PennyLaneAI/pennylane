@@ -55,7 +55,7 @@ class HilbertSchmidt(Operation):
             * The wires ``v_wires`` are a subset of ``V`` wires.
             * ``u_tape`` and ``v_tape`` must act on distinct wires.
 
-    .. Reference::
+    **Reference**
 
     [1] Sumeet Khatri, Ryan LaRose, Alexander Poremba, Lukasz Cincio, Andrew T. Sornborger and Patrick J. Coles
     Quantum-assisted Quantum Compiling.
