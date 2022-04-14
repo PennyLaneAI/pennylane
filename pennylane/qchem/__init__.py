@@ -57,3 +57,11 @@ from .observable_hf import fermionic_observable, qubit_observable, jordan_wigner
 from .particle_number import particle_number
 from .spin import spin2, spinz
 from .structure import read_structure, active_space, excitations, hf_state, excitations_to_wires
+from .tapering import (
+    clifford,
+    paulix_ops,
+    symmetry_generators,
+    optimal_sector,
+    taper,
+    taper_hf,
+)
