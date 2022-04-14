@@ -22,7 +22,7 @@ from pennylane.operation import AnyWires, Operation
 class HilbertSchmidt(Operation):
     r"""Create a Hilbert Schmidt template that can be used to compute the Hilbert Schmidt Test (HST). The HST is a
     useful quantity used when we want to compile an unitary `U` with an approximate unitary `V`. The HST is used as a
-    distance between `U` and `V`, the value of the HST is 0 if and only if `V` is equal to `U` (up to global phase).
+    distance between `U` and `V`, the result of executing the HST is 0 if and only if `V` is equal to `U` (up to a global phase).
     Therefore we can define a cost by:
 
     .. math::
