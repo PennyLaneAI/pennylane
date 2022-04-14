@@ -212,7 +212,7 @@ class TestHilbertSchmidt:
 
 
 class TestLocalHilbertSchmidt:
-    """Tests for the Local Hilbert Schmidt template."""
+    """Tests for the Local Hilbert-Schmidt template."""
 
     def test_lhs_decomposition_1_qubit(self):
         """Test if the LHS operation is correctly decomposed"""
