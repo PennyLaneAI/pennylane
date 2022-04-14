@@ -521,7 +521,7 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
 
     # build a wireset to match wires with that of the tapered Hamiltonian
     gen_wires = Wires.all_wires([generator.wires for generator in generators])
-    xop_wires = Wires.all_wires([paulix_op.wires for paulix_op in paulix_ops])
+    xop_wires = Wires.all_wires([paulix_op.wires for paulix_op in paulixops])
     wireset = Wires.unique_wires([gen_wires, xop_wires])
 
     # iterate over the terms in tapered HF observable and build the tapered HF state
