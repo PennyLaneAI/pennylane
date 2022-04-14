@@ -8,9 +8,6 @@ from pennylane import qchem
 from pennylane.ops import Hamiltonian
 
 # TODO: Bring pytest skip to relevant tests.
-# if not (3, 6) < sys.version_info < (3, 10):
-#     pytest.skip(allow_module_level=True)
-
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
