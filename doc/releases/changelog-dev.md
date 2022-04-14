@@ -411,7 +411,7 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 * Fixes a bug where `qml.DiagonalQubitUnitary` did not support `@jax.jit`
   and `@tf.function`.
-  [(#)]()
+  [(#2445)](https://github.com/PennyLaneAI/pennylane/pull/2445)
 
 * Fixes a bug in the `qml.PauliRot` operation, where computing the generator was not taking into
   account the operation wires.
