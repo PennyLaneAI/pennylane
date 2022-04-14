@@ -812,7 +812,7 @@ def molecular_hamiltonian(
     charge=0,
     mult=1,
     basis="sto-3g",
-    method="pyscf",
+    method="dhf",
     active_electrons=None,
     active_orbitals=None,
     mapping="jordan_wigner",
@@ -871,7 +871,7 @@ def molecular_hamiltonian(
         basis (str): Atomic basis set used to represent the molecular orbitals. Basis set
             availability per element can be found
             `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx-basiselement>`_
-        package (str): quantum chemistry package (pyscf) used to solve the
+        method (str): quantum chemistry method used to solve the
             mean field electronic structure problem
         active_electrons (int): Number of active electrons. If not specified, all electrons
             are considered to be active.
