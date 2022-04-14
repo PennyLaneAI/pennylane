@@ -70,6 +70,7 @@ class QubitDevice(Device):
             expectation values of observables. If ``None``, the device calculates probability, expectation values,
             and variances analytically. If an integer, it specifies the number of samples to estimate these quantities.
             If a list of integers is passed, the circuit evaluations are batched over the list of shots.
+        dtype: Real floating point precision type to use. Complex datatype is automatically deduced.
     """
 
     # pylint: disable=too-many-public-methods

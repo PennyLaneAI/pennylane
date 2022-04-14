@@ -72,18 +72,18 @@ def qubit_device(n_subsystems):
 
 
 @pytest.fixture(scope="function", params=[np.float32, np.float64])
-def qubit_device_1_wire():
-    return qml.device("default.qubit", wires=1)
+def qubit_device_1_wire(request):
+    return qml.device("default.qubit", wires=1, dtype=request.param)
 
 
 @pytest.fixture(scope="function", params=[np.float32, np.float64])
-def qubit_device_2_wires():
-    return qml.device("default.qubit", wires=2)
+def qubit_device_2_wires(request):
+    return qml.device("default.qubit", wires=2, dtype=request.param)
 
 
 @pytest.fixture(scope="function", params=[np.float32, np.float64])
-def qubit_device_3_wires():
-    return qml.device("default.qubit", wires=3)
+def qubit_device_3_wires(request):
+    return qml.device("default.qubit", wires=3, dtype=request.param)
 
 
 @pytest.fixture(scope="session")

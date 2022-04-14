@@ -156,10 +156,11 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for single wire
         operations that have no parameters."""
 
-        qubit_device_1_wire._state = np.array(input)
+        qubit_device_1_wire._state = np.array(input, dtype = qubit_device_1_wire.C_DTYPE)
         qubit_device_1_wire.apply([operation(wires=[0])])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
+        assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_no_parameters_inverses)
     def test_apply_operation_single_wire_no_parameters_inverse(
@@ -277,12 +278,13 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for two wire
         operations that have no parameters."""
 
-        qubit_device_2_wires._state = np.array(input).reshape((2, 2))
+        qubit_device_2_wires._state = np.array(input, dtype = qubit_device_2_wires.C_DTYPE).reshape((2, 2))
         qubit_device_2_wires.apply([operation(wires=[0, 1])])
 
         assert np.allclose(
             qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
+        assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
     all_two_wires_no_parameters_inv = (
         test_data_two_wires_no_parameters
@@ -298,7 +300,7 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for two wire
         operations that have no parameters."""
 
-        qubit_device_2_wires._state = np.array(input).reshape((2, 2))
+        qubit_device_2_wires._state = np.array(input, dtype = qubit_device_2_wires.C_DTYPE).reshape((2, 2))
         qubit_device_2_wires.apply([operation(wires=[0, 1]).inv()])
 
         assert np.allclose(
@@ -307,6 +309,7 @@ class TestApply:
             atol=tol,
             rtol=0,
         )
+        assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
     test_data_three_wires_no_parameters = [
         (qml.CSWAP, [1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0]),
@@ -321,12 +324,14 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for three wire
         operations that have no parameters."""
 
-        qubit_device_3_wires._state = np.array(input).reshape((2, 2, 2))
+        qubit_device_3_wires._state = np.array(input, dtype = qubit_device_3_wires.C_DTYPE).reshape((2, 2, 2))
         qubit_device_3_wires.apply([operation(wires=[0, 1, 2])])
 
         assert np.allclose(
             qubit_device_3_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
+        print(qubit_device_3_wires.C_DTYPE)
+        assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_three_wires_no_parameters)
     def test_apply_operation_three_wires_no_parameters_inverse(
@@ -335,12 +340,13 @@ class TestApply:
         """Tests that applying the inverse of an operation yields the expected output state for three wire
         operations that have no parameters."""
 
-        qubit_device_3_wires._state = np.array(input).reshape((2, 2, 2))
+        qubit_device_3_wires._state = np.array(input, dtype = qubit_device_3_wires.C_DTYPE).reshape((2, 2, 2))
         qubit_device_3_wires.apply([operation(wires=[0, 1, 2]).inv()])
 
         assert np.allclose(
             qubit_device_3_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
+        assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
 
     @pytest.mark.parametrize(
         "operation,expected_output,par",
@@ -548,11 +554,12 @@ class TestApply:
         operations that have parameters."""
 
         # parameter = par[0]
-        qubit_device_1_wire._state = np.array(input)
+        qubit_device_1_wire._state = np.array(input, dtype = qubit_device_1_wire.C_DTYPE)
 
         qubit_device_1_wire.apply([operation(*par, wires=[0])])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
+        assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
 
     @pytest.mark.parametrize(
         "operation,input,expected_output,par", test_data_single_wire_with_parameters_inverses
@@ -563,10 +570,11 @@ class TestApply:
         """Tests that applying the inverse of an operation yields the expected output state for single wire
         operations that have parameters."""
 
-        qubit_device_1_wire._state = np.array(input)
+        qubit_device_1_wire._state = np.array(input, dtype = qubit_device_1_wire.C_DTYPE)
         qubit_device_1_wire.apply([operation(*par, wires=[0]).inv()])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
+        assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
 
     test_data_two_wires_with_parameters = [
         (qml.CRX, [0, 1, 0, 0], [0, 1, 0, 0], [math.pi / 2]),
@@ -726,12 +734,13 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for two wire
         operations that have parameters."""
 
-        qubit_device_2_wires._state = np.array(input).reshape((2, 2))
+        qubit_device_2_wires._state = np.array(input, dtype = qubit_device_2_wires.C_DTYPE).reshape((2, 2))
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1])])
 
         assert np.allclose(
             qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
+        assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
     @pytest.mark.parametrize(
         "operation,input,expected_output,par", test_data_two_wires_with_parameters_inverses
@@ -742,12 +751,13 @@ class TestApply:
         """Tests that applying the inverse of an operation yields the expected output state for two wire
         operations that have parameters."""
 
-        qubit_device_2_wires._state = np.array(input).reshape((2, 2))
+        qubit_device_2_wires._state = np.array(input, dtype = qubit_device_2_wires.C_DTYPE).reshape((2, 2))
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1]).inv()])
 
         assert np.allclose(
             qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
+        assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
     def test_apply_errors_qubit_state_vector(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
@@ -2078,7 +2088,7 @@ class TestApplyOps:
     """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
     gates in DefaultQubit."""
 
-    state = np.arange(2**4).reshape((2, 2, 2, 2))
+    state = np.arange(2**4, dtype=np.complex256).reshape((2, 2, 2, 2))
     dev = qml.device("default.qubit", wires=4)
     single_qubit_ops = [
         (qml.PauliX, dev._apply_x),
