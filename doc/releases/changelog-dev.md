@@ -103,6 +103,10 @@
     [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
   - The dependency on openbabel is removed
     [(#2415)](https://github.com/PennyLaneAI/pennylane/pull/2415)
+  - Differentiable and non-differentiable backends can be selected for building a Hamiltonian
+    [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
+  - The quantum chemistry functionalities are unified
+    [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
 
 * <h4> Finite-shot circuit cutting ✂️</h4>
 
