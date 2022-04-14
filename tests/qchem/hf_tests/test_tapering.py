@@ -292,7 +292,7 @@ def test_symmetry_generators(symbols, geometry, num_qubits, res_generators):
     r"""Test that symmetry_generators returns the correct result."""
 
     mol = qml.qchem.Molecule(symbols, geometry)
-    hamiltonian = qml.qchem.mol_hamiltonian(mol)()
+    hamiltonian = qml.qchem.diff_hamiltonian(mol)()
     generators = qml.symmetry_generators(hamiltonian)
 
     for g1, g2 in zip(generators, res_generators):
@@ -384,7 +384,7 @@ def test_cliford(generator, paulixops, result):
 def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_sector, ham_ref):
     r"""Test that transform_hamiltonian returns the correct hamiltonian."""
     mol = qml.qchem.Molecule(symbols, geometry)
-    h = qml.qchem.mol_hamiltonian(mol)()
+    h = qml.qchem.diff_hamiltonian(mol)()
     ham_calc = qml.taper(h, generator, paulixops, paulix_sector)
 
     # sort Hamiltonian terms and then compare with reference
@@ -439,7 +439,7 @@ def test_transform_hamiltonian(symbols, geometry, generator, paulixops, paulix_s
 def test_optimal_sector(symbols, geometry, charge, generators, num_electrons, result):
     r"""Test that find_optimal_sector returns the correct result."""
     mol = qml.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qml.qchem.mol_hamiltonian(mol)()
+    hamiltonian = qml.qchem.diff_hamiltonian(mol)()
 
     perm = optimal_sector(hamiltonian, generators, num_electrons)
 
@@ -470,7 +470,7 @@ def test_optimal_sector(symbols, geometry, charge, generators, num_electrons, re
 def test_exceptions_optimal_sector(symbols, geometry, generators, num_electrons, msg_match):
     r"""Test that find_optimal_sector returns the correct result."""
     mol = qml.qchem.Molecule(symbols, geometry)
-    hamiltonian = qml.qchem.mol_hamiltonian(mol)()
+    hamiltonian = qml.qchem.diff_hamiltonian(mol)()
 
     with pytest.raises(ValueError, match=msg_match):
         optimal_sector(hamiltonian, generators, num_electrons)
@@ -592,7 +592,7 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
 def test_hf_energy(symbols, geometry, charge):
     r"""Test that HF energy obtained from the tapered Hamiltonian and tapered Hartree Fock state is consistent."""
     mol = qml.qchem.Molecule(symbols, geometry, charge)
-    hamiltonian = qml.qchem.mol_hamiltonian(mol)(geometry)
+    hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
     hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
     generators = qml.symmetry_generators(hamiltonian)
     paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
