@@ -921,7 +921,7 @@ def molecular_hamiltonian(
         geometry_hf = coordinates.flatten()
 
     if method == "dhf":
-        if args is None:
+        if args is None and type(geometry_dhf) is qml.numpy.tensor:
             geometry_dhf.requires_grad = False
         mol = qml.qchem.Molecule(symbols, geometry_dhf)
         core, active = qml.qchem.active_space(
