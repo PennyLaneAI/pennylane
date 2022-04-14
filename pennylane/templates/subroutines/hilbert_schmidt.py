@@ -200,11 +200,13 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         u_tape (.QuantumTape): `U`, the unitary to be compiled as a ``qml.tape.QuantumTape``.
 
     Raises:
-        QuantumFunctionError: The argument u_tape must be a QuantumTape.
-        QuantumFunctionError: ``v_function`` is not a valid Quantum function.
-        QuantumFunctionError: `U` and `V` do not have the same number of wires.
-        QuantumFunctionError: The wires ``v_wires`` are a subset of `V` wires.
-        QuantumFunctionError: u_tape and v_tape must act on distinct wires.
+        QuantumFunctionError:
+
+            * The argument u_tape must be a QuantumTape.
+            * ``v_function`` is not a valid Quantum function.
+            * `U` and `V` do not have the same number of wires.
+            * The wires ``v_wires`` are a subset of `V` wires.
+            * u_tape and v_tape must act on distinct wires.
 
     **Reference**
 
