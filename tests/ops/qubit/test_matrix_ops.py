@@ -267,7 +267,7 @@ class TestDiagonalQubitUnitary:
         expected = -jnp.sin(x)
         assert np.allclose(grad, expected)
 
-    @pytest.mark.slow # test takes 12 seconds due to tf.function
+    @pytest.mark.slow  # test takes 12 seconds due to tf.function
     def test_tf_function(self):
         """Test that the diagonal matrix unitary operation works
         within a QNode that uses TensorFlow autograph"""
