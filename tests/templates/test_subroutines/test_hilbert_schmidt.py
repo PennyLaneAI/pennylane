@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the qft template.
+Unit tests for the Hilbert-Schmidt templates.
 """
 import pytest
 
