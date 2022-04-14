@@ -135,7 +135,7 @@ class HilbertSchmidt(Operation):
     def compute_decomposition(
         params, wires, u_tape, v_tape, v_function=None, v_wires=None
     ):  # pylint: disable=arguments-differ,unused-argument
-        r"""Representation of the operator as a product of other operators (static method)."""
+        r"""Representation of the operator as a product of other operators."""
         n_wires = len(u_tape.wires + v_tape.wires)
         decomp_ops = []
 
