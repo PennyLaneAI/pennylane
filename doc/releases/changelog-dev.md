@@ -103,6 +103,8 @@
     [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
   - The dependency on openbabel is removed
     [(#2415)](https://github.com/PennyLaneAI/pennylane/pull/2415)
+  - The tapering functions are added to qchem
+    [(#2426)](https://github.com/PennyLaneAI/pennylane/pull/2426)
 
 * <h4> Finite-shot circuit cutting ✂️</h4>
 
