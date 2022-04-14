@@ -33,7 +33,7 @@ class HilbertSchmidt(Operation):
 
     .. figure:: ../../_static/templates/subroutines/hst.png
         :align: center
-        :width: 60%
+        :width: 80%
         :target: javascript:void(0);
 
     It defines our decomposition for the Hilbert Schmidt Test template.
