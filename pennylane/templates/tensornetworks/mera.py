@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the TTN template.
+Contains the MERA template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import warnings
@@ -53,41 +53,54 @@ def compute_indices(wires, n_block_wires):
             f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
         )
 
-    n_wires = 2 ** (int(np.log2(len(wires) / n_block_wires))) * n_block_wires
-    n_layers = int(np.log2(n_wires // n_block_wires)) + 1
+    # number of layers in MERA
+    n_layers = np.floor(np.log2(n_wires / n_block_wires)).astype(int) * 2 + 1
+    wires_list = []
+    wires_list.append(list(wires[0:n_block_wires]))
+    highest_index = n_block_wires
 
-    layers = [
-        [
-            wires[i]
-            for i in range(
-                x + 2 ** (j - 1) * n_block_wires // 2 - n_block_wires // 2,
-                x + n_block_wires // 2 + 2 ** (j - 1) * n_block_wires // 2 - n_block_wires // 2,
+    # compute block indices for all layers
+    for i in range(n_layers - 1):
+        # number of blocks in previous layer
+        n_elements_pre = 2 ** ((i + 1) // 2)
+        if i % 2 == 0:
+            # layer with new wires
+            new_list = []
+            list_len = len(wires_list)
+            for j in range(list_len - n_elements_pre, list_len):
+                new_wires = [
+                    wires[k] for k in range(highest_index, highest_index + n_block_wires // 2)
+                ]
+                highest_index += n_block_wires // 2
+                new_list.append(wires_list[j][0 : n_block_wires // 2] + new_wires)
+                new_wires = [
+                    wires[k] for k in range(highest_index, highest_index + n_block_wires // 2)
+                ]
+                highest_index += n_block_wires // 2
+                new_list.append(new_wires + wires_list[j][n_block_wires // 2 : :])
+            wires_list = wires_list + new_list
+        else:
+            # layer only using previous wires
+            list_len = len(wires_list)
+            new_list = []
+            for j in range(list_len - n_elements_pre, list_len - 1):
+                new_list.append(
+                    wires_list[j][n_block_wires // 2 : :]
+                    + wires_list[j + 1][0 : n_block_wires // 2]
+                )
+            new_list.append(
+                wires_list[j + 1][n_block_wires // 2 : :]
+                + wires_list[list_len - n_elements_pre][0 : n_block_wires // 2]
             )
-        ]
-        + [
-            wires[i]
-            for i in range(
-                x
-                + 2 ** (j - 1) * n_block_wires // 2
-                + 2 ** (j - 1) * n_block_wires // 2
-                - n_block_wires // 2,
-                x
-                + 2 ** (j - 1) * n_block_wires // 2
-                + n_block_wires // 2
-                + 2 ** (j - 1) * n_block_wires // 2
-                - n_block_wires // 2,
-            )
-        ]
-        for j in range(1, n_layers + 1)
-        for x in range(0, n_wires - n_block_wires // 2, 2 ** (j - 1) * n_block_wires)
-    ]
-
-    return layers
+            wires_list = wires_list + new_list
+    return wires_list[::-1]
 
 
-class TTN(Operation):
-    """The TTN template broadcasts an input circuit across many wires following the architecture of a tree tensor network.
-    The result is similar to the architecture in `arXiv:1803.11537 <https://arxiv.org/abs/1803.11537>`_.
+class MERA(Operation):
+    """The MERA template broadcasts an input circuit across many wires following the
+    architecture of a multi-scale entanglement renormalization ansatz tensor network.
+    This architecture can be found in `arXiv:quant-ph/0610099 <https://arxiv.org/abs/quant-ph/0610099>`
+    and closely resembles `quantum convolutional neural networks <https://arxiv.org/abs/1810.03787>`_.
 
     The argument ``block`` is a user-defined quantum circuit. Each ``block`` may depend on a different set of parameters.
     These are passed as a list by the ``template_weights`` argument.
@@ -110,14 +123,14 @@ class TTN(Operation):
             unitary(parameter1, parameter2, ... parameterD, wires)
 
         For a block with multiple parameters, ``n_params_block`` is equal to the number of parameters in ``block``.
-        For a block with a single parameter, ``n_params_block`` is equal to the length of the parameter.
+        For a block with a single parameter, ``n_params_block`` is equal to the length of the parameter array.
 
         To avoid using ragged arrays, all block parameters should have the same dimension.
 
         The length of the ``template_weights`` argument should match the number of blocks.
-        The expected number of blocks can be obtained from ``qml.TTN.get_n_blocks(wires, n_block_wires)``.
+        The expected number of blocks can be obtained from ``qml.MERA.get_n_blocks(wires, n_block_wires)``.
 
-        This example demonstrates the use of ``TTN`` for a simple block.
+        This example demonstrates the use of ``MERA`` for a simple block.
 
         .. code-block:: python
 
@@ -132,21 +145,23 @@ class TTN(Operation):
             n_wires = 4
             n_block_wires = 2
             n_params_block = 2
-            n_blocks = qml.TTN.get_n_blocks(range(n_wires),n_block_wires)
+            n_blocks = qml.MERA.get_n_blocks(range(n_wires),n_block_wires)
             template_weights = [[0.1,-0.3]]*n_blocks
 
             dev= qml.device('default.qubit',wires=range(n_wires))
             @qml.qnode(dev)
             def circuit(template_weights):
-                qml.TTN(range(n_wires),n_block_wires,block, n_params_block, template_weights)
-                return qml.expval(qml.PauliZ(wires=n_wires-1))
+                qml.MERA(range(n_wires),n_block_wires,block, n_params_block, template_weights)
+                return qml.expval(qml.PauliZ(wires=1))
 
-        >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
-        0: ─╭C──RY(0.10)────────────────┤
-        1: ─╰X──RY(-0.30)─╭C──RY(0.10)──┤
-        2: ─╭C──RY(0.10)──│─────────────┤
-        3: ─╰X──RY(-0.30)─╰X──RY(-0.30)─┤  <Z>
+        It may be necessary to reorder the wires to see the MERA architecture clearly:
 
+        >>> print(qml.draw(circuit,expansion_strategy='device',wire_order=[2,0,1,3])(template_weights))
+
+        2: ───────────────╭C──RY(0.10)──╭X──RY(-0.30)───────────────┤
+        0: ─╭X──RY(-0.30)─│─────────────╰C──RY(0.10)──╭C──RY(0.10)──┤
+        1: ─╰C──RY(0.10)──│─────────────╭X──RY(-0.30)─╰X──RY(-0.30)─┤  <Z>
+        3: ───────────────╰X──RY(-0.30)─╰C──RY(0.10)────────────────┤
     """
 
     num_wires = AnyWires
@@ -170,7 +185,7 @@ class TTN(Operation):
         ind_gates = compute_indices(wires, n_block_wires)
         n_wires = len(wires)
         shape = qml.math.shape(template_weights)  # (n_params_block, n_blocks)
-        n_blocks = 2 ** int(np.log2(n_wires / n_block_wires)) * 2 - 1
+        n_blocks = int(2 ** (np.floor(np.log2(n_wires / n_block_wires)) + 2) - 3)
 
         if shape == ():
             template_weights = np.random.rand(n_params_block, int(n_blocks))
@@ -197,9 +212,7 @@ class TTN(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-
-
-        .. seealso:: :meth:`~.TTN.decomposition`.
+        .. seealso:: :meth:`~.MERA.decomposition`.
 
         Args:
             weights (list[tensor_like]): list containing the weights for all blocks
@@ -244,5 +257,5 @@ class TTN(Operation):
                 f"n_block_wires must be smaller than or equal to the number of wires; got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
             )
 
-        n_blocks = 2 ** int(np.log2(n_wires / n_block_wires)) * 2 - 1
-        return n_blocks
+        n_blocks = 2 ** (np.floor(np.log2(n_wires / n_block_wires)) + 2) - 3
+        return int(n_blocks)

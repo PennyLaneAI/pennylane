@@ -129,6 +129,45 @@
   - The quantum chemistry functionalities are unified
     [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
 
+* Adds a MERA template.
+  [(#2418)](https://github.com/PennyLaneAI/pennylane/pull/2418)
+
+  Quantum circuits with the shape
+  of a multi-scale entanglement renormalization ansatz can now be easily implemented
+  using the new `qml.MERA` template. This follows the style of previous 
+  tensor network templates and is similar to
+  [quantum convolutional neural networks](https://arxiv.org/abs/1810.03787).
+  ```python
+    import pennylane as qml
+    import numpy as np
+
+    def block(weights, wires):
+        qml.CNOT(wires=[wires[0],wires[1]])
+        qml.RY(weights[0], wires=wires[0])
+        qml.RY(weights[1], wires=wires[1])
+
+    n_wires = 4
+    n_block_wires = 2
+    n_params_block = 2
+    n_blocks = qml.MERA.get_n_blocks(range(n_wires),n_block_wires)
+    template_weights = [[0.1,-0.3]]*n_blocks
+
+    dev= qml.device('default.qubit',wires=range(n_wires))
+    @qml.qnode(dev)
+    def circuit(template_weights):
+        qml.MERA(range(n_wires),n_block_wires,block, n_params_block, template_weights)
+        return qml.expval(qml.PauliZ(wires=1))
+  ```
+  It may be necessary to reorder the wires to see the MERA architecture clearly:
+  ```pycon
+   >>> print(qml.draw(circuit,expansion_strategy='device',wire_order=[2,0,1,3])(template_weights))
+
+  2: ───────────────╭C──RY(0.10)──╭X──RY(-0.30)───────────────┤
+  0: ─╭X──RY(-0.30)─│─────────────╰C──RY(0.10)──╭C──RY(0.10)──┤
+  1: ─╰C──RY(0.10)──│─────────────╭X──RY(-0.30)─╰X──RY(-0.30)─┤  <Z>
+  3: ───────────────╰X──RY(-0.30)─╰C──RY(0.10)────────────────┤
+  ```
+
 * <h4> Finite-shot circuit cutting ✂️</h4>
 
   * You can now run `N`-wire circuits containing sample-based measurements on
