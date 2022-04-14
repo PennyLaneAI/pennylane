@@ -641,7 +641,7 @@ class TestJaxExecuteIntegration:
 
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
 class TestVectorValued:
-    """Test vector-valued returns for the JAX Python interface."""
+    """Test vector-valued jacobian returns for the JAX Python interface."""
 
     def test_multiple_expvals(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
