@@ -20,7 +20,7 @@ import pennylane as qml
 
 
 class TestHilbertSchmidt:
-    """Tests for the Hilbert Schmidt template."""
+    """Tests for the Hilbert-Schmidt template."""
 
     def test_hs_decomposition_1_qubit(self):
         """Test if the HS operation is correctly decomposed for a 1 qubit unitary."""
