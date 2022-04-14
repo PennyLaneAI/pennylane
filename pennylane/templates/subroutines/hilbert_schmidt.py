@@ -56,7 +56,7 @@ class HilbertSchmidt(Operation):
         Consider that we want to evaluate the Hilbert Schmidt Test cost between the unitary ``U`` and an approximate
         unitary ``V``. We need to define some functions where it is possible to use the :class:`~.HilbertSchmidt` template.
         Here the considered unitary is ``Hadamard`` and we try to compute the cost for the approximate unitary ``RZ``.
-        For an angle which is equal to 0 (identity), we have the maximal cost which is 1.
+        For an angle that is equal to ``0`` (``Identity``), we have the maximal cost which is ``1``.
 
         .. code-block:: python
 
