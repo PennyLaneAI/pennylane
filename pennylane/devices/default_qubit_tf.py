@@ -142,9 +142,16 @@ class DefaultQubitTF(DefaultQubit):
     _imag = staticmethod(tf.math.imag)
     _roll = staticmethod(tf.roll)
     _stack = staticmethod(tf.stack)
+    _const_mul = staticmethod(tf.math.multiply)
 
     @staticmethod
     def _asarray(array, dtype=None):
+        if isinstance(array, tf.Tensor):
+            if dtype is None or dtype == array.dtype:
+                return array
+            else:
+                return tf.cast(array, dtype)
+
         try:
             res = tf.convert_to_tensor(array, dtype=dtype)
         except InvalidArgumentError:

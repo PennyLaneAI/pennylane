@@ -128,13 +128,11 @@ class DefaultQubitTorch(DefaultQubit):
             switching device to ``default.qubit`` and using ``diff_method="parameter-shift"``.
         torch_device='cpu' (str): the device on which the computation will be
         run, e.g., ``'cpu'`` or ``'cuda'``
+        dtype: Real valued type to use. Must be one of torch.float64 or torch.float128 
     """
 
     name = "Default qubit (Torch) PennyLane plugin"
     short_name = "default.qubit.torch"
-
-    C_DTYPE = torch.complex128
-    R_DTYPE = torch.float64
 
     _abs = staticmethod(torch.abs)
     _einsum = staticmethod(torch.einsum)
@@ -154,17 +152,16 @@ class DefaultQubitTorch(DefaultQubit):
     _imag = staticmethod(torch.imag)
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
+    _const_mul = staticmethod(torch.mul)
 
-    def __init__(self, wires, *, shots=None, analytic=None, torch_device=None, dtype=torch.float64):
+    def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
 
         # Store if the user specified a Torch device. Otherwise the execute
         # method attempts to infer the Torch device from the gate parameters.
         self._torch_device_specified = torch_device is not None
         self._torch_device = torch_device
 
-        assert dtype in [torch.float32, torch.float64]
-
-        super().__init__(wires, shots=shots, analytic=analytic, dtype=dtype)
+        super().__init__(wires, r_dtype=torch.float64, c_dtype=torch.complex128, shots=shots, analytic=analytic)
 
         # Move state to torch device (e.g. CPU, GPU, XLA, ...)
         self._state.requires_grad = True
