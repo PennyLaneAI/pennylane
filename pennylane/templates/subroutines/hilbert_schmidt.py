@@ -36,7 +36,7 @@ class HilbertSchmidt(Operation):
         :width: 80%
         :target: javascript:void(0);
 
-    It defines our decomposition for the Hilbert Schmidt Test template.
+    It defines our decomposition for the Hilbert-Schmidt Test template.
 
     Args:
         params (array): Parameters for the quantum function `V`.
