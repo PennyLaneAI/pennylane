@@ -155,14 +155,16 @@ class DefaultQubitTorch(DefaultQubit):
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
 
-    def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
+    def __init__(self, wires, *, shots=None, analytic=None, torch_device=None, dtype=torch.float64):
 
         # Store if the user specified a Torch device. Otherwise the execute
         # method attempts to infer the Torch device from the gate parameters.
         self._torch_device_specified = torch_device is not None
         self._torch_device = torch_device
 
-        super().__init__(wires, shots=shots, analytic=analytic)
+        assert dtype in [torch.float32, torch.float64]
+
+        super().__init__(wires, shots=shots, analytic=analytic, dtype=dtype)
 
         # Move state to torch device (e.g. CPU, GPU, XLA, ...)
         self._state.requires_grad = True

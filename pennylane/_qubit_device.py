@@ -73,8 +73,6 @@ class QubitDevice(Device):
     """
 
     # pylint: disable=too-many-public-methods
-    C_DTYPE = np.complex128
-    R_DTYPE = np.float64
 
     _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)

@@ -126,8 +126,6 @@ class DefaultQubitTF(DefaultQubit):
     name = "Default qubit (TensorFlow) PennyLane plugin"
     short_name = "default.qubit.tf"
 
-    C_DTYPE = tf.complex128
-    R_DTYPE = tf.float64
     _asarray = staticmethod(tf.convert_to_tensor)
     _dot = staticmethod(lambda x, y: tf.tensordot(x, y, axes=1))
     _abs = staticmethod(tf.abs)
@@ -159,6 +157,9 @@ class DefaultQubitTF(DefaultQubit):
 
     def __init__(self, wires, *, shots=None, analytic=None):
         super().__init__(wires, shots=shots, analytic=analytic)
+
+        self.C_DTYPE = tf.complex128
+        self.R_DTYPE = tf.float64
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]
