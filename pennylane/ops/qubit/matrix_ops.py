@@ -403,7 +403,9 @@ class DiagonalQubitUnitary(Operation):
         """
         D = qml.math.asarray(D)
 
-        if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):
+        if not qml.math.is_abstract(D) and not qml.math.allclose(
+            D * qml.math.conj(D), qml.math.ones_like(D)
+        ):
             raise ValueError("Operator must be unitary.")
 
         return D

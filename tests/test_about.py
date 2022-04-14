@@ -44,26 +44,3 @@ def test_about():
     assert "Scipy version" in out
     assert "default.qubit" in out
     assert "default.gaussian" in out
-
-
-def test_qchem_not_installed_error(monkeypatch):
-    """Test QChem causes an import error on access
-    if not installed"""
-
-    class Entry:
-        """Dummy entry point for mocking"""
-
-        name = None
-
-    with monkeypatch.context() as m:
-        m.setattr(pkg_resources, "iter_entry_points", lambda name: [Entry()])
-
-        importlib.reload(qml)
-
-        with pytest.raises(ImportError, match="PennyLane-QChem not installed."):
-            print(qml.qchem)
-
-        with pytest.raises(ImportError, match="PennyLane-QChem not installed."):
-            qml.qchem.generate_hamiltonian()
-
-    importlib.reload(qml)

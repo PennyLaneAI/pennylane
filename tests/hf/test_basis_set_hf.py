@@ -19,6 +19,7 @@ import pytest
 from pennylane import numpy as np
 from pennylane.hf.basis_set import BasisFunction, atom_basis_data, mol_basis_data
 
+
 basis_data_H = [
     (
         "sto-3g",

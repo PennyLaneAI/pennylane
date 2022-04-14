@@ -246,6 +246,53 @@ class TestDiagonalQubitUnitary:
         with pytest.raises(ValueError, match="Operator must be unitary"):
             qml.DiagonalQubitUnitary.compute_matrix(np.array([1, 2]))
 
+    def test_jax_jit(self):
+        """Test that the diagonal matrix unitary operation works
+        within a QNode that uses the JAX JIT"""
+        jax = pytest.importorskip("jax")
+        jnp = jax.numpy
+
+        dev = qml.device("default.qubit", wires=1, shots=None)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            diag = jnp.exp(1j * x * jnp.array([1, -1]) / 2)
+            qml.Hadamard(wires=0)
+            qml.DiagonalQubitUnitary(diag, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        x = 0.654
+        grad = jax.grad(circuit)(x)
+        expected = -jnp.sin(x)
+        assert np.allclose(grad, expected)
+
+    @pytest.mark.slow  # test takes 12 seconds due to tf.function
+    def test_tf_function(self):
+        """Test that the diagonal matrix unitary operation works
+        within a QNode that uses TensorFlow autograph"""
+        tf = pytest.importorskip("tensorflow")
+
+        dev = qml.device("default.qubit", wires=1, shots=None)
+
+        @tf.function
+        @qml.qnode(dev, interface="tf")
+        def circuit(x):
+            x = tf.cast(x, tf.complex128)
+            diag = tf.math.exp(1j * x * tf.constant([1.0 + 0j, -1.0 + 0j]) / 2)
+            qml.Hadamard(wires=0)
+            qml.DiagonalQubitUnitary(diag, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        x = tf.Variable(0.452)
+
+        with tf.GradientTape() as tape:
+            loss = circuit(x)
+
+        grad = tape.gradient(loss, x)
+        expected = -tf.math.sin(x)
+        assert np.allclose(grad, expected)
+
 
 X = np.array([[0, 1], [1, 0]])
 
