@@ -108,8 +108,7 @@ class DefaultQubitAutograd(DefaultQubit):
 
     @staticmethod
     def _const_mul(constant, arr):
-        res = constant * arr
-        return res.astype(arr.dtype)
+        return constant * arr
 
     def __init__(self, wires, *, shots=None, analytic=None):
         super().__init__(wires, shots=shots, analytic=analytic)
