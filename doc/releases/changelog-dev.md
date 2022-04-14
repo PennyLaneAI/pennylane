@@ -122,6 +122,7 @@
     [(#2382)](https://github.com/PennyLaneAI/pennylane/pull/2382)
     [(#2399)](https://github.com/PennyLaneAI/pennylane/pull/2399)
     [(#2407)](https://github.com/PennyLaneAI/pennylane/pull/2407)
+    [(#2444)](https://github.com/PennyLaneAI/pennylane/pull/2444)
 
     The following `3`-qubit circuit contains a `WireCut` operation and a `sample`
     measurement. When decorated with `@qml.cut_circuit_mc`, we can cut the circuit
@@ -206,14 +207,27 @@
     tensor(-0.776, requires_grad=True)
     ```
 
-  - An automatic graph partitioning method `qcut.kahypar_cut()` has been implemented for cutting
+  * An automatic graph partitioning method `qcut.kahypar_cut()` has been implemented for cutting
     arbitrary tape-converted graphs using the general purpose graph partitioning framework
     [KaHyPar](https://pypi.org/project/kahypar/) which needs to be installed separately.
-    To integrate with the existing manual cut pipeline, method `qcut.find_and_place_cuts()` and related
-    utilities are implemented which uses `qcut.kahypar_cut()` as the default auto cutter.
+    To integrate with the existing low-level manual cut pipeline, method `qcut.find_and_place_cuts()`,
+    which uses `qcut.kahypar_cut()` as the default auto cutter, has been implemented.
+    The automatic cutting feature is further integrated into the high-level interfaces
+    `qcut.cut_circuit()` and `qcut.cut_circuit_mc()` for automatic execution of arbitrary
+    circuits on smaller devices.
     [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
+    [(#2428)](https://github.com/PennyLaneAI/pennylane/pull/2428)
 
 <h3>Improvements</h3>
+
+* Added the `QuantumTape.shape` method and `QuantumTape.numeric_type`
+  attribute to allow extracting information about the shape and numeric type of
+  quantum tapes.
+  [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
+
+* Defined a `MeasurementProcess.shape` method and a
+  `MeasurementProcess.numeric_type` attribute.
+  [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
 
 * The parameter-shift Hessian can now be computed for arbitrary
   operations that support the general parameter-shift rule for
@@ -399,6 +413,14 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug where `qml.DiagonalQubitUnitary` did not support `@jax.jit`
+  and `@tf.function`.
+  [(#2445)](https://github.com/PennyLaneAI/pennylane/pull/2445)
+
+* Fixes a bug in the `qml.PauliRot` operation, where computing the generator was not taking into
+  account the operation wires.
+  [(#2442)](https://github.com/PennyLaneAI/pennylane/pull/2442)
+
 * Fixes a bug with the padding capability of `AmplitudeEmbedding` where the
   inputs are on the GPU.
   [(#2431)](https://github.com/PennyLaneAI/pennylane/pull/2431)
@@ -455,13 +477,16 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   ```
   [(#2276)](https://github.com/PennyLaneAI/pennylane/pull/2276)
 
+* Fixes a bug where `qml.hf.transform_hf()` would fail due to missing wires in
+  the qubit operator that is prepared for tapering the HF state.  
+  [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
-
+Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Utkarsh Azad, Thomas Bromley, Alain Delgado,
 Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
 Matthew Silverman, Lee James O'Riordan, Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
