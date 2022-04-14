@@ -3559,8 +3559,12 @@ class TestCutCircuitTransform:
         dev_2 = qml.device("default.qubit", wires=["Alice", 3.14, "Bob"])
 
         uncut_circuit = qml.QNode(circuit, dev_uncut)
-        cut_circuit_1 = qml.transforms.cut_circuit(qml.QNode(circuit, dev_1), use_opt_einsum)
-        cut_circuit_2 = qml.transforms.cut_circuit(qml.QNode(circuit, dev_2), use_opt_einsum)
+        cut_circuit_1 = qml.transforms.cut_circuit(
+            qml.QNode(circuit, dev_1), use_opt_einsum=use_opt_einsum
+        )
+        cut_circuit_2 = qml.transforms.cut_circuit(
+            qml.QNode(circuit, dev_2), use_opt_einsum=use_opt_einsum
+        )
 
         res_expected = uncut_circuit()
         res_1 = cut_circuit_1()
