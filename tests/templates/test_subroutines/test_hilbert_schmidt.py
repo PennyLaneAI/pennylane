@@ -23,7 +23,7 @@ class TestHilbertSchmidt:
     """Tests for the Hilbert Schmidt template."""
 
     def test_hs_decomposition_1_qubit(self):
-        """Test if the HS operation is correctly decomposed for 1 qubit."""
+        """Test if the HS operation is correctly decomposed for a 1 qubit unitary."""
         with qml.tape.QuantumTape(do_queue=False) as U:
             qml.Hadamard(wires=0)
 
