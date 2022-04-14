@@ -485,7 +485,7 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 * The centralized [Xanadu Sphinx Theme](https://github.com/XanaduAI/xanadu-sphinx-theme)
   is now used to style the Sphinx documentation.
-  [(#2XXX)](https://github.com/PennyLaneAI/pennylane/pull/2XXX)
+  [(#2450)](https://github.com/PennyLaneAI/pennylane/pull/2450)
 
 <h3>Contributors</h3>
 
