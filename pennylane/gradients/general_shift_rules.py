@@ -393,7 +393,7 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
     return _combine_shift_rules(rules)
 
 
-@functools.lru_cache
+@functools.lru_cache(maxsize=None)
 def generate_shifted_tapes(tape, idx, shifts, multipliers=None):
     r"""Generate a list of tapes where a marked trainable parameter
     has been shifted by the values given.
