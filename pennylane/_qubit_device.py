@@ -178,11 +178,13 @@ class QubitDevice(Device):
         "Projector",
     }
 
-    def __init__(self, wires=1, shots=None, *, r_dtype = np.float64, c_dtype = np.complex128, analytic=None):
+    def __init__(
+        self, wires=1, shots=None, *, r_dtype=np.float64, c_dtype=np.complex128, analytic=None
+    ):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
-        assert 'float' in str(r_dtype)
-        assert 'complex' in str(c_dtype)
+        assert "float" in str(r_dtype)
+        assert "complex" in str(c_dtype)
 
         self.C_DTYPE = c_dtype
         self.R_DTYPE = r_dtype

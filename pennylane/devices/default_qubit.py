@@ -151,7 +151,9 @@ class DefaultQubit(QubitDevice):
         "Hamiltonian",
     }
 
-    def __init__(self, wires, *, r_dtype = np.float64, c_dtype=np.complex128, shots=None, analytic=None):
+    def __init__(
+        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
+    ):
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
 

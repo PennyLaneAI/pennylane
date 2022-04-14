@@ -156,7 +156,7 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for single wire
         operations that have no parameters."""
 
-        qubit_device_1_wire._state = np.array(input, dtype = qubit_device_1_wire.C_DTYPE)
+        qubit_device_1_wire._state = np.array(input, dtype=qubit_device_1_wire.C_DTYPE)
         qubit_device_1_wire.apply([operation(wires=[0])])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
@@ -169,7 +169,7 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for single wire
         operations that have no parameters."""
 
-        qubit_device_1_wire._state = np.array(input, dtype = qubit_device_1_wire.C_DTYPE)
+        qubit_device_1_wire._state = np.array(input, dtype=qubit_device_1_wire.C_DTYPE)
         qubit_device_1_wire.apply([operation(wires=[0]).inv()])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
@@ -278,7 +278,9 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for two wire
         operations that have no parameters."""
 
-        qubit_device_2_wires._state = np.array(input, dtype = qubit_device_2_wires.C_DTYPE).reshape((2, 2))
+        qubit_device_2_wires._state = np.array(input, dtype=qubit_device_2_wires.C_DTYPE).reshape(
+            (2, 2)
+        )
         qubit_device_2_wires.apply([operation(wires=[0, 1])])
 
         assert np.allclose(
@@ -300,7 +302,9 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for two wire
         operations that have no parameters."""
 
-        qubit_device_2_wires._state = np.array(input, dtype = qubit_device_2_wires.C_DTYPE).reshape((2, 2))
+        qubit_device_2_wires._state = np.array(input, dtype=qubit_device_2_wires.C_DTYPE).reshape(
+            (2, 2)
+        )
         qubit_device_2_wires.apply([operation(wires=[0, 1]).inv()])
 
         assert np.allclose(
@@ -324,7 +328,9 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for three wire
         operations that have no parameters."""
 
-        qubit_device_3_wires._state = np.array(input, dtype = qubit_device_3_wires.C_DTYPE).reshape((2, 2, 2))
+        qubit_device_3_wires._state = np.array(input, dtype=qubit_device_3_wires.C_DTYPE).reshape(
+            (2, 2, 2)
+        )
         qubit_device_3_wires.apply([operation(wires=[0, 1, 2])])
 
         assert np.allclose(
@@ -340,7 +346,9 @@ class TestApply:
         """Tests that applying the inverse of an operation yields the expected output state for three wire
         operations that have no parameters."""
 
-        qubit_device_3_wires._state = np.array(input, dtype = qubit_device_3_wires.C_DTYPE).reshape((2, 2, 2))
+        qubit_device_3_wires._state = np.array(input, dtype=qubit_device_3_wires.C_DTYPE).reshape(
+            (2, 2, 2)
+        )
         qubit_device_3_wires.apply([operation(wires=[0, 1, 2]).inv()])
 
         assert np.allclose(
@@ -554,7 +562,7 @@ class TestApply:
         operations that have parameters."""
 
         # parameter = par[0]
-        qubit_device_1_wire._state = np.array(input, dtype = qubit_device_1_wire.C_DTYPE)
+        qubit_device_1_wire._state = np.array(input, dtype=qubit_device_1_wire.C_DTYPE)
 
         qubit_device_1_wire.apply([operation(*par, wires=[0])])
 
@@ -570,7 +578,7 @@ class TestApply:
         """Tests that applying the inverse of an operation yields the expected output state for single wire
         operations that have parameters."""
 
-        qubit_device_1_wire._state = np.array(input, dtype = qubit_device_1_wire.C_DTYPE)
+        qubit_device_1_wire._state = np.array(input, dtype=qubit_device_1_wire.C_DTYPE)
         qubit_device_1_wire.apply([operation(*par, wires=[0]).inv()])
 
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
@@ -734,7 +742,9 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for two wire
         operations that have parameters."""
 
-        qubit_device_2_wires._state = np.array(input, dtype = qubit_device_2_wires.C_DTYPE).reshape((2, 2))
+        qubit_device_2_wires._state = np.array(input, dtype=qubit_device_2_wires.C_DTYPE).reshape(
+            (2, 2)
+        )
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1])])
 
         assert np.allclose(
@@ -751,7 +761,9 @@ class TestApply:
         """Tests that applying the inverse of an operation yields the expected output state for two wire
         operations that have parameters."""
 
-        qubit_device_2_wires._state = np.array(input, dtype = qubit_device_2_wires.C_DTYPE).reshape((2, 2))
+        qubit_device_2_wires._state = np.array(input, dtype=qubit_device_2_wires.C_DTYPE).reshape(
+            (2, 2)
+        )
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1]).inv()])
 
         assert np.allclose(

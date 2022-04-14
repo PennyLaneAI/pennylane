@@ -1109,7 +1109,7 @@ class TestParameterShiftRule:
             observables = DefaultQubit.observables.union({"SpecialObservable"})
 
             @staticmethod
-            def _asarray(arr, dtype = None):
+            def _asarray(arr, dtype=None):
                 return arr
 
             def init(self, *args, **kwargs):

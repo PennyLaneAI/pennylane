@@ -381,7 +381,7 @@ class TestFiniteDiff:
             observables = DefaultQubit.observables.union({"SpecialObservable"})
 
             @staticmethod
-            def _asarray(arr, dtype = None):
+            def _asarray(arr, dtype=None):
                 return arr
 
             def __init__(self, *args, **kwargs):
