@@ -152,8 +152,7 @@ class DefaultQubitTF(DefaultQubit):
         if isinstance(array, tf.Tensor):
             if dtype is None or dtype == array.dtype:
                 return array
-            else:
-                return tf.cast(array, dtype)
+            return tf.cast(array, dtype)
 
         try:
             res = tf.convert_to_tensor(array, dtype)
@@ -167,10 +166,10 @@ class DefaultQubitTF(DefaultQubit):
         return res
 
     def __init__(self, wires, *, shots=None, analytic=None):
-        super().__init__(wires, shots=shots, analytic=analytic)
+        r_dtype = tf.float64
+        c_dtype = tf.complex128
 
-        self.C_DTYPE = tf.complex128
-        self.R_DTYPE = tf.float64
+        super().__init__(wires, shots=shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
 
         # prevent using special apply method for this gate due to slowdown in TF implementation
         del self._apply_ops["CZ"]
