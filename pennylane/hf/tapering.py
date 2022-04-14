@@ -350,9 +350,10 @@ def taper(h, generators, paulixops, paulix_sector):
     >>> geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
     >>> mol = qml.hf.Molecule(symbols, geometry)
     >>> H = qml.hf.generate_hamiltonian(mol)(geometry)
-    >>> generators, paulixops = qml.hf.generate_symmetries(H, len(H.wires))
+    >>> generators= qml.hf.symmetry_generators(H)
+    >>> paulixops = paulix_ops(generators, 4)
     >>> paulix_sector = [1, -1, -1]
-    >>> H_tapered = transform_hamiltonian(H, generators, paulixops, paulix_sector)
+    >>> H_tapered = taper(H, generators, paulixops, paulix_sector)
     >>> print(H_tapered)
       ((-0.321034397355757+0j)) [I0]
     + ((0.1809270275619003+0j)) [X0]
@@ -480,9 +481,10 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     >>> mol = hf.Molecule(symbols, geometry, charge=1)
     >>> H = hf.generate_hamiltonian(mol)(geometry)
     >>> n_qubits, n_elec = len(H.wires), mol.n_electrons
-    >>> generators, paulixops = hf.generate_symmetries(H, n_qubits)
+    >>> generators= qml.hf.symmetry_generators(H)
+    >>> paulixops = paulix_ops(generators, 4)
     >>> paulix_sector = hf.optimal_sector(H, generators, n_elec)
-    >>> hf.transform_hf(generators, paulixops, paulix_sector,
+    >>> hf.taper_hf(generators, paulixops, paulix_sector,
     ...                 n_elec, n_qubits)
     tensor([1, 1], requires_grad=True)
     """
