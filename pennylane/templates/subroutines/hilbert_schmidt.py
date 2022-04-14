@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule contains the templates for Hilbert Schmidt tests.
+This submodule contains the templates for the Hilbert-Schmidt tests.
 """
 # pylint: disable-msg=too-many-arguments
 import pennylane as qml
