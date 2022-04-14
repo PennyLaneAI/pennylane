@@ -929,8 +929,6 @@ def molecular_hamiltonian(
         )
         if args is None:
             return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(), 2 * len(active)
-        if geometry_dhf.requires_grad:
-            args[0] = geometry_dhf
         return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args), 2 * len(active)
 
     openfermion, _ = import_of()

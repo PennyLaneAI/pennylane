@@ -190,7 +190,7 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
     r"""Test that molecular_hamiltonian returns the correct Hamiltonian with the differentiable
     backend."""
     geometry.requires_grad = True
-    args = [geometry]
+    args = [geometry.reshape(2, 3)]
     h_args = qchem.molecular_hamiltonian(symbols, geometry, method="dhf", args=args)[0]
 
     geometry.requires_grad = False
