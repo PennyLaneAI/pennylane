@@ -70,9 +70,6 @@ class HilbertSchmidt(Operation):
 
         .. code-block:: python
 
-            import pennylane as qml
-            from pennylane.templates import HilbertSchmidt
-
             with qml.tape.QuantumTape(do_queue=False) as u_tape:
                 qml.Hadamard(wires=0)
 
