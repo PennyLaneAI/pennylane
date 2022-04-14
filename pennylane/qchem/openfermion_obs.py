@@ -818,6 +818,8 @@ def molecular_hamiltonian(
     mapping="jordan_wigner",
     outpath=".",
     wires=None,
+    alpha=None,
+    coeff=None,
     args=None,
 ):  # pylint:disable=too-many-arguments
     r"""Generates the qubit Hamiltonian of a molecule.
@@ -885,6 +887,9 @@ def molecular_hamiltonian(
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted for
             partial mapping. If None, will use identity map.
+        alpha (array[float]): exponents of the primitive Gaussian functions
+        coeff (array[float]): coefficients of the contracted Gaussian functions
+        args (array[array[float]]): initial values of the differentiable parameters
 
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
@@ -923,7 +928,7 @@ def molecular_hamiltonian(
     if method == "dhf":
         if args is None and type(geometry_dhf) is qml.numpy.tensor:
             geometry_dhf.requires_grad = False
-        mol = qml.qchem.Molecule(symbols, geometry_dhf)
+        mol = qml.qchem.Molecule(symbols, geometry_dhf, alpha=alpha, coeff=coeff)
         core, active = qml.qchem.active_space(
             mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
         )
