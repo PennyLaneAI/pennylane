@@ -48,7 +48,7 @@ class HilbertSchmidt(Operation):
         QuantumFunctionError: The argument u_tape must be a QuantumTape.
         QuantumFunctionError: ``v_function`` is not a valid Quantum function.
         QuantumFunctionError: ``U`` and ``V`` do not have the same number of wires.
-        QuantumFunctionError: The wires ``v_wires`` are a subset of `V` wires.
+        QuantumFunctionError: The wires ``v_wires`` are a subset of ``V`` wires.
         QuantumFunctionError: u_tape and v_tape must act on distinct wires.
 
     .. UsageDetails::
