@@ -262,7 +262,7 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. customgalleryitem::
     :link: ../code/api/pennylane.LocalHilbertSchmidt.html
-    :description: HilbertSchmidt
+    :description: LocalHilbertSchmidt
     :figure: ../_static/templates/subroutines/lhst.png
 
 .. raw:: html
