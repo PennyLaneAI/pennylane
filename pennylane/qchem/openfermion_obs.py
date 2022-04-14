@@ -928,10 +928,10 @@ def molecular_hamiltonian(
             mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
         )
         if args is None:
-            return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(), mol.n_orbitals * 2
+            return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(), 2 * len(active)
         if geometry_dhf.requires_grad:
             args[0] = geometry_dhf
-        return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args), mol.n_orbitals * 2
+        return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args), 2 * len(active)
 
     openfermion, _ = import_of()
 
