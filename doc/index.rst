@@ -8,12 +8,6 @@ PennyLane Documentation
 .. raw:: html
 
     <style>
-        #right-column.card {
-            box-shadow: none!important;
-        }
-        #right-column.card:hover {
-            box-shadow: none!important;
-        }
         .breadcrumb {
             display: none;
         }
@@ -21,60 +15,39 @@ PennyLane Documentation
             text-align: center;
             margin-bottom: 15px;
         }
+        p.lead.grey-text {
+            margin-bottom: 30px;
+        }
         .footer-relations {
             border-top: 0px;
         }
     </style>
+
     <div class="container mt-2 mb-2">
         <p class="lead grey-text">
-            PennyLane is a cross-platform Python library for differentiable programming of quantum computers.
-            Train a quantum computer the same way as a neural network.
+            PennyLane is a cross-platform Python library for differentiable
+            programming of quantum computers. Train a quantum computer the same
+            way as a neural network.
         </p>
         <div class="row mt-3">
-            <div class="col-lg-4 mb-2 adlign-items-stretch">
-                <a href="introduction/pennylane.html">
-                    <div class="card rounded-lg" style="height:100%;">
-                        <div class="d-flex">
-                            <div>
-                                <h3 class="card-title pl-3 mt-4">
-                                Using PennyLane
-                                </h3>
-                                <p class="mb-3 grey-text px-3">
-                                    A guided tour of the core features of PennyLane <i class="fas fa-angle-double-right"></i>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-lg-4 mb-2 align-items-stretch">
-                <a href="development/guide.html">
-                <div class="card rounded-lg" style="height:100%;">
-                    <div class="d-flex">
-                        <div>
-                            <h3 class="card-title pl-3 mt-4">
-                            Developing
-                            </h3>
-                            <p class="mb-3 grey-text px-3">How you can contribute to the development of PennyLane <i class="fas fa-angle-double-right"></i></p>
-                        </div>
-                    </div>
-                </div>
-            </a>
-            </div>
-            <div class="col-lg-4 mb-2 align-items-stretch">
-                <a href="code/qml.html">
-                <div class="card rounded-lg" style="height:100%;">
-                    <div class="d-flex">
-                        <div>
-                            <h3 class="card-title pl-3 mt-4">
-                            API
-                            </h3>
-                            <p class="mb-3 grey-text px-3">Explore the PennyLane API <i class="fas fa-angle-double-right"></i></p>
-                        </div>
-                    </div>
-                </div>
-            </a>
-            </div>
+
+.. index-card::
+    :name: Using PennyLane
+    :link: introduction/pennylane.html
+    :description: A guided tour of the core features of PennyLane
+
+.. index-card::
+    :name: Developing
+    :link: development/guide.html
+    :description: How you can contribute to the development of PennyLane
+
+.. index-card::
+    :name: API
+    :link: code/qml.html
+    :description: Explore the PennyLane API
+
+.. raw:: html
+
         </div>
     </div>
 
