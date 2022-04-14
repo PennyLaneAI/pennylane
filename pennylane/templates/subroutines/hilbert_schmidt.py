@@ -41,7 +41,7 @@ class HilbertSchmidt(Operation):
     Args:
         params (array): Parameters for the quantum function `V`.
         v_function (callable): Quantum function that represents the approximate compiled unitary `V`.
-        v_wires (int or Iterable[Number, str]]): the wire(s) the approximate compiled unitary act on.
+        v_wires (int or Iterable[Number, str]]): The wire(s) the approximate compiled unitary act on.
         u_tape (.QuantumTape): `U`, the unitary to be compiled as a ``qml.tape.QuantumTape``.
 
     Raises:
