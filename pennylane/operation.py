@@ -890,6 +890,10 @@ class Operator(abc.ABC):
                 ) from err
 
         self._num_params = len(params)
+
+        # Check if the expected number of parameters coincides with the one received.
+        # This is always true for the default `Operator.num_params` property, but
+        # subclasses may overwrite it to define a fixed expected value.
         if len(params) != self.num_params:
             if wires_from_args and len(params) == (self.num_params - 1):
                 raise ValueError(f"Must specify the wires that {type(self).__name__} acts on")
