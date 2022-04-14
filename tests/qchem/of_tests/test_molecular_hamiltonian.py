@@ -1,16 +1,13 @@
-import os
 import sys
 
-import numpy as np
 import pytest
 
+from pennylane import Identity, PauliX, PauliY, PauliZ
+from pennylane import numpy as np
 from pennylane import qchem
 from pennylane.ops import Hamiltonian
 
 # TODO: Bring pytest skip to relevant tests.
-if not (3, 9) < sys.version_info < (3, 10):
-    pytest.skip(allow_module_level=True)
-
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
@@ -79,7 +76,7 @@ def test_building_hamiltonian(
         coordinates,
         charge=charge,
         mult=mult,
-        package=package,
+        method=package,
         active_electrons=nact_els,
         active_orbitals=nact_orbs,
         mapping=mapping,
@@ -88,3 +85,125 @@ def test_building_hamiltonian(
 
     assert isinstance(built_hamiltonian, Hamiltonian)
     assert qubits == 2 * nact_orbs
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "h_ref_data"),
+    [
+        (
+            ["H", "H"],
+            np.array([0.0, 0.0, 0.0, 0.0, 0.0, 1.0]),
+            # computed with OpenFermion; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # h_q = openfermion.transforms.jordan_wigner(h_f)
+            # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
+            (
+                np.array(
+                    [
+                        0.2981788017,
+                        0.2081336485,
+                        0.2081336485,
+                        0.1786097698,
+                        0.042560361,
+                        -0.042560361,
+                        -0.042560361,
+                        0.042560361,
+                        -0.3472487379,
+                        0.1329029281,
+                        -0.3472487379,
+                        0.175463289,
+                        0.175463289,
+                        0.1329029281,
+                        0.1847091733,
+                    ]
+                ),
+                [
+                    Identity(wires=[0]),
+                    PauliZ(wires=[0]),
+                    PauliZ(wires=[1]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[1]),
+                    PauliY(wires=[0]) @ PauliX(wires=[1]) @ PauliX(wires=[2]) @ PauliY(wires=[3]),
+                    PauliY(wires=[0]) @ PauliY(wires=[1]) @ PauliX(wires=[2]) @ PauliX(wires=[3]),
+                    PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]),
+                    PauliX(wires=[0]) @ PauliY(wires=[1]) @ PauliY(wires=[2]) @ PauliX(wires=[3]),
+                    PauliZ(wires=[2]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[2]),
+                    PauliZ(wires=[3]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[3]),
+                    PauliZ(wires=[1]) @ PauliZ(wires=[2]),
+                    PauliZ(wires=[1]) @ PauliZ(wires=[3]),
+                    PauliZ(wires=[2]) @ PauliZ(wires=[3]),
+                ],
+            ),
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]]),
+            # computed with OpenFermion; data reordered
+            # h_mol = molecule.get_molecular_hamiltonian()
+            # h_f = openfermion.transforms.get_fermion_operator(h_mol)
+            # h_q = openfermion.transforms.jordan_wigner(h_f)
+            # h_pl = qchem.convert_observable(h_q, wires=[0, 1, 2, 3], tol=(5e-5))
+            (
+                np.array(
+                    [
+                        0.2981788017,
+                        0.2081336485,
+                        0.2081336485,
+                        0.1786097698,
+                        0.042560361,
+                        -0.042560361,
+                        -0.042560361,
+                        0.042560361,
+                        -0.3472487379,
+                        0.1329029281,
+                        -0.3472487379,
+                        0.175463289,
+                        0.175463289,
+                        0.1329029281,
+                        0.1847091733,
+                    ]
+                ),
+                [
+                    Identity(wires=[0]),
+                    PauliZ(wires=[0]),
+                    PauliZ(wires=[1]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[1]),
+                    PauliY(wires=[0]) @ PauliX(wires=[1]) @ PauliX(wires=[2]) @ PauliY(wires=[3]),
+                    PauliY(wires=[0]) @ PauliY(wires=[1]) @ PauliX(wires=[2]) @ PauliX(wires=[3]),
+                    PauliX(wires=[0]) @ PauliX(wires=[1]) @ PauliY(wires=[2]) @ PauliY(wires=[3]),
+                    PauliX(wires=[0]) @ PauliY(wires=[1]) @ PauliY(wires=[2]) @ PauliX(wires=[3]),
+                    PauliZ(wires=[2]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[2]),
+                    PauliZ(wires=[3]),
+                    PauliZ(wires=[0]) @ PauliZ(wires=[3]),
+                    PauliZ(wires=[1]) @ PauliZ(wires=[2]),
+                    PauliZ(wires=[1]) @ PauliZ(wires=[3]),
+                    PauliZ(wires=[2]) @ PauliZ(wires=[3]),
+                ],
+            ),
+        ),
+    ],
+)
+def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
+    r"""Test that molecular_hamiltonian returns the correct Hamiltonian with the differentiable
+    backend."""
+    geometry.requires_grad = True
+    args = [geometry.reshape(2, 3)]
+    h_args = qchem.molecular_hamiltonian(symbols, geometry, method="dhf", args=args)[0]
+
+    geometry.requires_grad = False
+    h_noargs = qchem.molecular_hamiltonian(symbols, geometry, method="dhf")[0]
+
+    h_ref = Hamiltonian(h_ref_data[0], h_ref_data[1])
+
+    assert np.allclose(np.sort(h_args.coeffs), np.sort(h_ref.coeffs))
+    assert Hamiltonian(np.ones(len(h_args.coeffs)), h_args.ops).compare(
+        Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
+    )
+
+    assert np.allclose(np.sort(h_noargs.coeffs), np.sort(h_ref.coeffs))
+    assert Hamiltonian(np.ones(len(h_noargs.coeffs)), h_noargs.ops).compare(
+        Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
+    )
