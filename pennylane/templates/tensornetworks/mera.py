@@ -123,7 +123,7 @@ class MERA(Operation):
             unitary(parameter1, parameter2, ... parameterD, wires)
 
         For a block with multiple parameters, ``n_params_block`` is equal to the number of parameters in ``block``.
-        For a block with a single parameter, ``n_params_block`` is equal to the length of the parameter.
+        For a block with a single parameter, ``n_params_block`` is equal to the length of the parameter array.
 
         To avoid using ragged arrays, all block parameters should have the same dimension.
 
