@@ -390,25 +390,11 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
+            num_params = 1
             grad_method = None
 
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(0.54)
-
-    def test_wire_passed_positionally(self):
-        """Test exception raised if wire is passed as a positional arg"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            grad_method = None
-
-            @property
-            def num_params(self):
-                return 1
-
-        with pytest.raises(ValueError, match="Must specify the wires"):
-            DummyOp(0.54, 0)
 
     def test_id(self):
         """Test that the id attribute of an operator can be set."""

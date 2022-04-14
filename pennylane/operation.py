@@ -878,21 +878,25 @@ class Operator(abc.ABC):
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
 
-        # extract the arguments
-        self._num_params = len(params)
+        wires_from_args = False
         if wires is None:
-            if len(params) != (self.num_params + 1):
-                raise ValueError(f"Must specify the wires that {type(self).__name__} acts on")
-            wires = params[-1]
-            params = params[:-1]
-            self._num_params = len(params)
+            try:
+                wires = params[-1]
+                params = params[:-1]
+                wires_from_args = True
+            except IndexError as err:
+                raise ValueError(
+                    f"Must specify the wires that {type(self).__name__} acts on"
+                ) from err
 
-        elif len(params) != self.num_params:
+        self._num_params = len(params)
+        if len(params) != self.num_params:
+            if wires_from_args and len(params) == (self.num_params - 1):
+                raise ValueError(f"Must specify the wires that {type(self).__name__} acts on")
             raise ValueError(
                 f"{self.name}: wrong number of parameters. "
                 f"{len(params)} parameters passed, {self.num_params} expected."
             )
-        
 
         self._wires = wires if isinstance(wires, Wires) else Wires(wires)
 
