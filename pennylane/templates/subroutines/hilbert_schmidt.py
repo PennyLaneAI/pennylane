@@ -153,7 +153,7 @@ class HilbertSchmidt(Operation):
 
         # Unitary U
         for op_u in u_tape.operations:
-            # Define outside this function, it needs to be applied.
+            # The operation has been defined outside of this function, to queue it we call qml.apply.
             qml.apply(op_u)
             decomp_ops.append(op_u)
 
