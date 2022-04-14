@@ -190,6 +190,11 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     made only on one qubit at the end of the circuit. The LHST cost is always smaller than the HST cost and is useful
     for large unitaries.
 
+    .. figure:: ../../_static/templates/subroutines/lhst.png
+        :align: center
+        :width: 80%
+        :target: javascript:void(0);
+
     Args:
         params (array): Parameters for the quantum function `V`.
         v_function (Callable): Quantum function that represents the approximate compiled unitary `V`.
