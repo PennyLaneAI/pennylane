@@ -1,10 +1,17 @@
 import os
+import sys
 
 import numpy as np
 import pytest
 
 from pennylane import qchem
-from openfermion import MolecularData
+
+# TODO: Bring pytest skip to relevant tests.
+if not (3, 9) < sys.version_info < (3, 10):
+    pytest.skip(allow_module_level=True)
+
+openfermion = pytest.importorskip("openfermion")
+openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
 ref_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test_ref_files")
 
@@ -126,7 +133,7 @@ def test_table_one_particle(core, active, t_op_exp):
     r"""Test the correctness of the FermionOperator built by the `'one_particle'` function
     of the `obs` module"""
 
-    hf = MolecularData(filename=os.path.join(ref_dir, "h2o_psi4"))
+    hf = openfermion.MolecularData(filename=os.path.join(ref_dir, "h2o_psi4"))
 
     t_op = qchem.one_particle(hf.one_body_integrals, core=core, active=active)
 

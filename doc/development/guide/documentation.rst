@@ -509,8 +509,7 @@ the following additional packages are required:
 In addition, some pages in the documentation have additional dependencies:
 
 * The latest version of PyTorch and TensorFlow are required to build the interface documentation,
-* The latest version of TensorNetwork is required to build the ``default.tensor`` documentation, and
-* PennyLane-QChem must be installed to build the quantum chemistry documentation.
+* The latest version of TensorNetwork is required to build the ``default.tensor`` documentation.
 
 These can all be installed via ``pip``:
 
