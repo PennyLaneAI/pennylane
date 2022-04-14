@@ -28,7 +28,7 @@ class HilbertSchmidt(Operation):
     .. math::
         C_{HST} = 1 - \frac{1}{d^2} \left|Tr(V^{\dagger}U)\right|^2,
 
-    where the quantity :math:`\frac{1}{d^2} \left|Tr(V^{\dagger}U)\right|^2` is the Hilbert Schmidt Test. It is
+    where the quantity :math:`\frac{1}{d^2} \left|Tr(V^{\dagger}U)\right|^2` is obtained by executing the Hilbert-Schmidt Test. It is
     equivalent to taking the outcome probability of the state :math:`|0 ... 0\rangle` for the following circuit:
 
     .. figure:: ../../_static/templates/subroutines/hst.png
