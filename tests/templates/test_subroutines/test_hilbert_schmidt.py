@@ -107,6 +107,39 @@ class TestHilbertSchmidt:
             assert i.data == j.data
             assert i.wires == j.wires
 
+    def test_hs_decomposition_2_qubits_custom_wires(self):
+        """Test if the HS operation is correctly decomposed for 2 qubits with custom wires."""
+        with qml.tape.QuantumTape(do_queue=False) as U:
+            qml.SWAP(wires=["a", "b"])
+
+        def v_circuit(params):
+            qml.RZ(params[0], wires="c")
+            qml.CNOT(wires=["c", "d"])
+
+        op = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=["c", "d"], u_tape=U)
+
+        with qml.tape.QuantumTape() as tape_dec:
+            op.decomposition()
+
+        expected_operations = [
+            qml.Hadamard(wires=["a"]),
+            qml.Hadamard(wires=["b"]),
+            qml.CNOT(wires=["a", "c"]),
+            qml.CNOT(wires=["b", "d"]),
+            qml.SWAP(wires=["a", "b"]),
+            qml.RZ(-0.1, wires=["c"]),
+            qml.CNOT(wires=["c", "d"]),
+            qml.CNOT(wires=["b", "d"]),
+            qml.CNOT(wires=["a", "c"]),
+            qml.Hadamard(wires=["a"]),
+            qml.Hadamard(wires=["b"]),
+        ]
+
+        for i, j in zip(tape_dec.operations, expected_operations):
+            assert i.name == j.name
+            assert i.data == j.data
+            assert i.wires == j.wires
+
     def test_hs_adjoint_method_2_qubits(self):
         """Test the adjoint method of the HS operations for 2 qubits."""
 
@@ -234,6 +267,33 @@ class TestLocalHilbertSchmidt:
             qml.RZ(-0.1, wires=[1]),
             qml.CNOT(wires=[0, 1]),
             qml.Hadamard(wires=[0]),
+        ]
+
+        for i, j in zip(tape_dec.operations, expected_operations):
+            assert i.name == j.name
+            assert i.data == j.data
+            assert i.wires == j.wires
+
+    def test_lhs_decomposition_1_qubit_custom_wires(self):
+        """Test if the LHS operation is correctly decomposed with custom wires."""
+        with qml.tape.QuantumTape(do_queue=False) as U:
+            qml.Hadamard(wires="a")
+
+        def v_circuit(params):
+            qml.RZ(params[0], wires="b")
+
+        op = qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=["b"], u_tape=U)
+
+        with qml.tape.QuantumTape() as tape_dec:
+            op.decomposition()
+
+        expected_operations = [
+            qml.Hadamard(wires=["a"]),
+            qml.CNOT(wires=["a", "b"]),
+            qml.Hadamard(wires=["a"]),
+            qml.RZ(-0.1, wires=["b"]),
+            qml.CNOT(wires=["a", "b"]),
+            qml.Hadamard(wires=["a"]),
         ]
 
         for i, j in zip(tape_dec.operations, expected_operations):

@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Adds an optimization transform that matches pieces of user-provided identity templates in a circuit and replaces them with an equivalent component.
+* Added an optimization transform that matches pieces of user-provided identity templates in a circuit and replaces them with an equivalent component.
   [(#2032)](https://github.com/PennyLaneAI/pennylane/pull/2032)
   
   First let's consider the following circuit where we want to replace sequence of two ``pennylane.S`` gates with a
@@ -54,6 +54,21 @@
 
   For more details on using pattern matching optimization you can check the corresponding documentation and also the
   following [paper](https://dl.acm.org/doi/full/10.1145/3498325).
+  
+* Added two new templates the `HilbertSchmidt` template and the `LocalHilbertSchmidt` template.
+  [(#2364)](https://github.com/PennyLaneAI/pennylane/pull/2364)
+  
+  ```python
+  from pennylane.templates import HilbertSchmidt
+
+  with qml.tape.QuantumTape(do_queue=False) as u_tape:
+      qml.Hadamard(wires=0)
+
+  def v_function(params):
+      qml.RZ(params[0], wires=1)
+  
+  hilbert_template = qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=[1], u_tape=u_tape)
+  ```
 
 * Added a swap based transpiler transform.
   [(#2118)](https://github.com/PennyLaneAI/pennylane/pull/2118)
@@ -418,6 +433,5 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Thomas Bromley, Alain Delgado,
-
 Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
 Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
