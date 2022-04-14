@@ -590,7 +590,8 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
     ],
 )
 def test_hf_energy(symbols, geometry, charge):
-    r"""Test that HF energy obtained from the tapered Hamiltonian and tapered Hartree Fock state is consistent."""
+    r"""Test that HF energy obtained from the tapered Hamiltonian and tapered Hartree Fock state
+    is consistent."""
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
     hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
