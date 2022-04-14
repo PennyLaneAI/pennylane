@@ -28,9 +28,6 @@ from pennylane.hf.tapering import (
     _reduced_row_echelon,
     clifford,
     optimal_sector,
-    paulix_ops,
-    symmetry_generators,
-    taper,
     taper_hf,
 )
 
@@ -291,7 +288,7 @@ def test_generate_paulis(generators, num_qubits, result):
         ),
     ],
 )
-def test_generate_symmetries(symbols, geometry, num_qubits, res_generators):
+def test_symmetry_generators(symbols, geometry, num_qubits, res_generators):
     r"""Test that symmetry_generators returns the correct result."""
 
     mol = qml.hf.Molecule(symbols, geometry)

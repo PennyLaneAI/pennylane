@@ -426,7 +426,7 @@ def optimal_sector(qubit_op, generators, active_electrons):
     >>> geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
     >>> mol = qml.hf.Molecule(symbols, geometry)
     >>> H = qml.hf.generate_hamiltonian(mol)(geometry)
-    >>> generators, paulixops = qml.hf.generate_symmetries(H, len(H.wires))
+    >>> generators, paulixops = qml.hf.symmetry_generators(H, len(H.wires))
     >>> qml.hf.optimal_sector(H, generators, 2)
         [1, -1, -1]
     """
