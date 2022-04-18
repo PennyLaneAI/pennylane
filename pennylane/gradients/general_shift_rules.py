@@ -186,8 +186,8 @@ def _iterate_shift_rule_with_multipliers(rule, order, period):
     times along the same parameter axis for higher-order derivatives."""
     combined_rules = []
 
-    for partial_rule in itertools.product(rule, repeat=order):
-        c, m, s = np.stack(partial_rule).T
+    for partial_rules in itertools.product(rule, repeat=order):
+        c, m, s = np.stack(partial_rules).T
         cumul_shift = 0.0
         for _m, _s in zip(m, s):
             cumul_shift *= _m
@@ -234,78 +234,6 @@ def _combine_shift_rules(rules):
         combined_rules.append(np.stack(combined))
 
     return np.stack(combined_rules)
-
-
-def _iterate_shift_rule_with_multipliers(rule, order, period):
-    r"""Helper method to repeat a shift rule that includes multipliers multiple
-    times along the same parameter axis for higher-order derivatives."""
-    combined_rules = []
-
-    # TODO: Optimization: Only iterate over half of the combinations and
-    # double their coefficients (does this work with multipliers?)
-    for partial_rule in itertools.product(rule, repeat=order):
-        c, m, s = np.stack(partial_rule).T
-        cumul_coeff = np.prod(c)
-        cumul_shift = 0.0
-        cumul_mult = np.prod(m)
-        for _m, _s in zip(m, s):
-            cumul_shift *= _m
-            cumul_shift += _s
-        if period is not None:
-            cumul_shift = np.mod(cumul_shift + 0.5 * period, period) - 0.5 * period
-        combined_rules.append(np.stack([cumul_coeff, cumul_mult, cumul_shift]))
-
-    # combine all terms in the linear combination into a single
-    # array, with coefficients on the first column and shifts on the second column.
-    return qml.math.stack(combined_rules)
-
-
-def _iterate_shift_rule(rule, order, period=None):
-    r"""Helper method to repeat a shift rule multiple times along the same
-    parameter axis for higher-order derivatives."""
-    if len(rule[0]) == 3:
-        return _iterate_shift_rule_with_multipliers(rule, order, period)
-
-    combined_rules = []
-
-    # TODO: Optimization: Only iterate over half of the combinations and
-    # double their coefficients
-    for partial_rule in itertools.product(rule, repeat=order):
-        c, s = np.stack(partial_rule).T
-        cumul_shift = sum(s)
-        if period is not None:
-            cumul_shift = np.mod(cumul_shift + 0.5 * period, period) - 0.5 * period
-        combined_rules.append(np.stack([np.prod(c), cumul_shift]))
-
-    # combine all terms in the linear combination into a single
-    # array, with coefficients on the first column and shifts on the second column.
-    return qml.math.stack(combined_rules)
-
-
-def _combine_shift_rules_with_multipliers(rules):
-    r"""Helper method to combine shift rules for multiple parameters that
-    contain multipliers into simultaneous multivariate shift rules."""
-    combined_rules = []
-
-    for partial_rules in itertools.product(*rules):
-        c, m, s = np.stack(partial_rules).T
-        combined = np.concatenate([[np.prod(c)], m, s])
-        combined_rules.append(np.stack(combined))
-
-    return np.stack(combined_rules).T
-
-
-def _combine_shift_rules(rules):
-    r"""Helper method to combine shift rules for multiple parameters into
-    simultaneous multivariate shift rules."""
-    combined_rules = []
-
-    for partial_rules in itertools.product(*rules):
-        c, s = np.stack(partial_rules).T
-        combined = np.concatenate([[np.prod(c)], s])
-        combined_rules.append(np.stack(combined))
-
-    return np.stack(combined_rules).T
 
 
 @functools.lru_cache()
