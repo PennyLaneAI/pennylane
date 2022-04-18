@@ -189,6 +189,11 @@ can be broadcast with the shape and connectivity of tensor networks.
     :description: Tree Tensor Network
     :figure: ../_static/templates/tensornetworks/TTN_template.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.MERA.html
+    :description: Multi-scale Entanglement Renormalization Ansatz 
+    :figure: ../_static/templates/tensornetworks/MERA_template.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
