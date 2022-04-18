@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage provides the functionality to perform quantum chemistry calculations.
+
 
 .. currentmodule:: pennylane.qchem
 .. autosummary::
