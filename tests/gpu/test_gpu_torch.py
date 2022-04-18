@@ -145,6 +145,26 @@ class TestTorchDevice:
         ):
             circuit(p)
 
+    def test_amplitude_embedding(self):
+        """Test that the padding capability of amplitude embedding works with
+        GPUs."""
+        n_wires = 2
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit_cuda(inputs):
+            qml.AmplitudeEmbedding(inputs, wires=range(n_wires), pad_with=0, normalize=True)
+            return qml.expval(qml.PauliZ(0))
+
+        inputs = torch.rand(n_wires)  # embedding shorter than 2 ** n_wires
+        res1 = circuit_cuda(inputs)
+        assert not res1.is_cuda
+
+        inputs = inputs.to(torch.device("cuda"))  # move to GPU
+        res2 = circuit_cuda(inputs)
+
+        assert res2.is_cuda
+
 
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
 class TestqnnTorchLayer:
