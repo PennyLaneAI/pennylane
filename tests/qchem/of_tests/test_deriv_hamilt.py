@@ -6,9 +6,6 @@ import pytest
 import pennylane as qml
 
 # TODO: Bring pytest skip to relevant tests.
-if not (3, 9) < sys.version_info < (3, 10):
-    pytest.skip(allow_module_level=True)
-
 openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
@@ -180,7 +177,12 @@ def test_finit_diff_hamilt(i, coeffs, ops, tol, tmpdir):
     # parametrized Hamiltonian of the water molecule
     def hamilt(x):
         return qml.qchem.molecular_hamiltonian(
-            ["H", "O", "H"], x, active_electrons=2, active_orbitals=2, outpath=tmpdir.strpath
+            ["H", "O", "H"],
+            x,
+            method="pyscf",
+            active_electrons=2,
+            active_orbitals=2,
+            outpath=tmpdir.strpath,
         )[0]
 
     x = np.array(
@@ -213,7 +215,12 @@ def test_grad_components(idx, tmpdir):
     # parametrized Hamiltonian of the water molecule
     def hamilt(x):
         return qml.qchem.molecular_hamiltonian(
-            ["H", "O", "H"], x, active_electrons=2, active_orbitals=2, outpath=tmpdir.strpath
+            ["H", "O", "H"],
+            x,
+            method="pyscf",
+            active_electrons=2,
+            active_orbitals=2,
+            outpath=tmpdir.strpath,
         )[0]
 
     x = np.array(
@@ -279,7 +286,12 @@ def test_second_derivative_hamilt(idx, coeffs, ops, tol, tmpdir):
     # parametrized Hamiltonian of the water molecule
     def hamilt(x):
         return qml.qchem.molecular_hamiltonian(
-            ["H", "O", "H"], x, active_electrons=2, active_orbitals=2, outpath=tmpdir.strpath
+            ["H", "O", "H"],
+            x,
+            method="pyscf",
+            active_electrons=2,
+            active_orbitals=2,
+            outpath=tmpdir.strpath,
         )[0]
 
     x = np.array(

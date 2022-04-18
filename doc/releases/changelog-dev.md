@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-* Adds an optimization transform that matches pieces of user-provided identity templates in a circuit and replaces them with an equivalent component.
+* Added an optimization transform that matches pieces of user-provided identity templates in a circuit and replaces them with an equivalent component.
   [(#2032)](https://github.com/PennyLaneAI/pennylane/pull/2032)
 
   First let's consider the following circuit where we want to replace sequence of two ``pennylane.S`` gates with a
@@ -54,6 +54,27 @@
 
   For more details on using pattern matching optimization you can check the corresponding documentation and also the
   following [paper](https://dl.acm.org/doi/full/10.1145/3498325).
+  
+* Added two new templates the `HilbertSchmidt` template and the `LocalHilbertSchmidt` template.
+  [(#2364)](https://github.com/PennyLaneAI/pennylane/pull/2364)
+  
+  ```python
+  with qml.tape.QuantumTape(do_queue=False) as u_tape:
+      qml.Hadamard(wires=0)
+
+  def v_function(params):
+      qml.RZ(params[0], wires=1)
+  
+  @qml.qnode(dev)
+  def hilbert_test(v_params, v_function, v_wires, u_tape):
+      qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
+      return qml.probs(u_tape.wires + v_wires)
+
+  def cost_hst(parameters, v_function, v_wires, u_tape):
+      return (1 - hilbert_test(v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape)[0])
+  
+  cost = cost_hst(v_params=[0.1], v_function=v_function, v_wires=[1], u_tape=u_tape)
+  ```
 
 * Added a swap based transpiler transform.
   [(#2118)](https://github.com/PennyLaneAI/pennylane/pull/2118)
@@ -103,6 +124,51 @@
     [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
   - The dependency on openbabel is removed
     [(#2415)](https://github.com/PennyLaneAI/pennylane/pull/2415)
+  - The tapering functions are added to qchem
+    [(#2426)](https://github.com/PennyLaneAI/pennylane/pull/2426)
+  - Differentiable and non-differentiable backends can be selected for building a Hamiltonian
+    [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
+  - The quantum chemistry functionalities are unified
+    [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
+
+* Adds a MERA template.
+  [(#2418)](https://github.com/PennyLaneAI/pennylane/pull/2418)
+
+  Quantum circuits with the shape
+  of a multi-scale entanglement renormalization ansatz can now be easily implemented
+  using the new `qml.MERA` template. This follows the style of previous 
+  tensor network templates and is similar to
+  [quantum convolutional neural networks](https://arxiv.org/abs/1810.03787).
+  ```python
+    import pennylane as qml
+    import numpy as np
+
+    def block(weights, wires):
+        qml.CNOT(wires=[wires[0],wires[1]])
+        qml.RY(weights[0], wires=wires[0])
+        qml.RY(weights[1], wires=wires[1])
+
+    n_wires = 4
+    n_block_wires = 2
+    n_params_block = 2
+    n_blocks = qml.MERA.get_n_blocks(range(n_wires),n_block_wires)
+    template_weights = [[0.1,-0.3]]*n_blocks
+
+    dev= qml.device('default.qubit',wires=range(n_wires))
+    @qml.qnode(dev)
+    def circuit(template_weights):
+        qml.MERA(range(n_wires),n_block_wires,block, n_params_block, template_weights)
+        return qml.expval(qml.PauliZ(wires=1))
+  ```
+  It may be necessary to reorder the wires to see the MERA architecture clearly:
+  ```pycon
+   >>> print(qml.draw(circuit,expansion_strategy='device',wire_order=[2,0,1,3])(template_weights))
+
+  2: ───────────────╭C──RY(0.10)──╭X──RY(-0.30)───────────────┤
+  0: ─╭X──RY(-0.30)─│─────────────╰C──RY(0.10)──╭C──RY(0.10)──┤
+  1: ─╰C──RY(0.10)──│─────────────╭X──RY(-0.30)─╰X──RY(-0.30)─┤  <Z>
+  3: ───────────────╰X──RY(-0.30)─╰C──RY(0.10)────────────────┤
+  ```
 
 * <h4> Finite-shot circuit cutting ✂️</h4>
 
@@ -207,12 +273,16 @@
     tensor(-0.776, requires_grad=True)
     ```
 
-  - An automatic graph partitioning method `qcut.kahypar_cut()` has been implemented for cutting
+  * An automatic graph partitioning method `qcut.kahypar_cut()` has been implemented for cutting
     arbitrary tape-converted graphs using the general purpose graph partitioning framework
     [KaHyPar](https://pypi.org/project/kahypar/) which needs to be installed separately.
-    To integrate with the existing manual cut pipeline, method `qcut.find_and_place_cuts()` and related
-    utilities are implemented which uses `qcut.kahypar_cut()` as the default auto cutter.
+    To integrate with the existing low-level manual cut pipeline, method `qcut.find_and_place_cuts()`,
+    which uses `qcut.kahypar_cut()` as the default auto cutter, has been implemented.
+    The automatic cutting feature is further integrated into the high-level interfaces
+    `qcut.cut_circuit()` and `qcut.cut_circuit_mc()` for automatic execution of arbitrary
+    circuits on smaller devices.
     [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
+    [(#2428)](https://github.com/PennyLaneAI/pennylane/pull/2428)
 
 <h3>Improvements</h3>
 
@@ -408,6 +478,10 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   [(#2339)](https://github.com/PennyLaneAI/pennylane/pull/2339)
 
 <h3>Bug fixes</h3>
+
+* Fixes a bug where `qml.DiagonalQubitUnitary` did not support `@jax.jit`
+  and `@tf.function`.
+  [(#2445)](https://github.com/PennyLaneAI/pennylane/pull/2445)
 
 * Fixes a bug in the `qml.PauliRot` operation, where computing the generator was not taking into
   account the operation wires.
