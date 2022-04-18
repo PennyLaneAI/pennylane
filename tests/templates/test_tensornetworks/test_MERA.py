@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the TTN template.
+Tests for the MERA template.
 """
 import pytest
 import numpy as np
 import pennylane as qml
-from pennylane.templates.tensornetworks.ttn import *
+from pennylane.templates.tensornetworks.mera import *
 
 
 def circuit0_block(wires):
@@ -32,17 +32,21 @@ def circuit1_block(weights1, weights2, weights3, wires):
 
 
 def circuit2_block(weights, wires):
-    qml.RZ(weights[0], wires=wires[0])
-    qml.RZ(weights[1], wires=wires[1])
+    qml.RY(weights[0], wires=wires[0])
+    qml.RY(weights[1], wires=wires[1])
 
 
-def circuit2_TTN(weights, wires):
-    qml.RZ(weights[0][0], wires=wires[0])
-    qml.RZ(weights[0][1], wires=wires[1])
-    qml.RZ(weights[1][0], wires=wires[2])
-    qml.RZ(weights[1][1], wires=wires[3])
-    qml.RZ(weights[2][0], wires=wires[1])
-    qml.RZ(weights[2][1], wires=wires[3])
+def circuit2_MERA(weights, wires):
+    qml.RY(weights[0][0], wires=wires[1])
+    qml.RY(weights[0][1], wires=wires[0])
+    qml.RY(weights[1][0], wires=wires[2])
+    qml.RY(weights[1][1], wires=wires[3])
+    qml.RY(weights[2][0], wires=wires[3])
+    qml.RY(weights[2][1], wires=wires[1])
+    qml.RY(weights[3][0], wires=wires[0])
+    qml.RY(weights[3][1], wires=wires[2])
+    qml.RY(weights[4][0], wires=wires[0])
+    qml.RY(weights[4][1], wires=wires[1])
 
 
 def circuit3_block(weights, wires):
@@ -52,7 +56,7 @@ def circuit3_block(weights, wires):
     qml.StronglyEntanglingLayers(SELWeights, wires)
 
 
-def circuit3_TTN(weights, wires):
+def circuit3_MERA(weights, wires):
     SELWeights1 = np.array(
         [
             [
@@ -77,13 +81,31 @@ def circuit3_TTN(weights, wires):
             ]
         ]
     )
-    qml.StronglyEntanglingLayers(SELWeights1, wires=wires[0:2])
-    qml.StronglyEntanglingLayers(SELWeights2, wires=wires[2:4])
-    qml.StronglyEntanglingLayers(SELWeights3, wires=[wires[1], wires[3]])
+    SELWeights4 = np.array(
+        [
+            [
+                [weights[3][0], weights[3][1], weights[3][2]],
+                [weights[3][0], weights[3][1], weights[3][2]],
+            ]
+        ]
+    )
+    SELWeights5 = np.array(
+        [
+            [
+                [weights[4][0], weights[4][1], weights[4][2]],
+                [weights[4][0], weights[4][1], weights[4][2]],
+            ]
+        ]
+    )
+    qml.StronglyEntanglingLayers(SELWeights1, wires=wires[1::-1])
+    qml.StronglyEntanglingLayers(SELWeights2, wires=wires[2::])
+    qml.StronglyEntanglingLayers(SELWeights3, wires=[wires[3], wires[1]])
+    qml.StronglyEntanglingLayers(SELWeights4, wires=[wires[0], wires[2]])
+    qml.StronglyEntanglingLayers(SELWeights5, wires=[wires[0], wires[1]])
 
 
-class TestIndicesTTN:
-    """Test function that computes TTN indices"""
+class TestIndicesMERA:
+    """Test function that computes MERA indices"""
 
     @pytest.mark.parametrize(
         ("n_wires", "n_block_wires"),
@@ -147,9 +169,19 @@ class TestIndicesTTN:
     @pytest.mark.parametrize(
         ("wires", "n_block_wires", "expected_indices"),
         [
-            ([1, 2, 3, 4], 2, [[1, 2], [3, 4], [2, 4]]),
-            (range(12), 6, [[0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10, 11], [3, 4, 5, 9, 10, 11]]),
-            (["a", "b", "c", "d"], 2, [["a", "b"], ["c", "d"], ["b", "d"]]),
+            ([1, 2, 3, 4], 2, [[2, 1], [3, 4], [4, 2], [1, 3], [1, 2]]),
+            (
+                range(12),
+                6,
+                [
+                    [3, 4, 5, 0, 1, 2],
+                    [6, 7, 8, 9, 10, 11],
+                    [9, 10, 11, 3, 4, 5],
+                    [0, 1, 2, 6, 7, 8],
+                    [0, 1, 2, 3, 4, 5],
+                ],
+            ),
+            (["a", "b", "c", "d"], 2, [["b", "a"], ["c", "d"], ["d", "b"], ["a", "c"], ["a", "b"]]),
         ],
     )
     def test_indices_output(self, wires, n_block_wires, expected_indices):
@@ -187,7 +219,7 @@ class TestTemplateInputs:
     def test_exception_wrong_input(self, block, n_params_block, wires, n_block_wires, msg_match):
         """Verifies that an exception is raised if the number of wires or n_block_wires is incorrect."""
         with pytest.raises(ValueError, match=msg_match):
-            TTN(wires, n_block_wires, block, n_params_block)
+            MERA(wires, n_block_wires, block, n_params_block)
 
     def test_warning_many_wires(self):
         """Verifies that a warning is raised if n_wires doesn't correspond to n_block_wires."""
@@ -201,7 +233,7 @@ class TestTemplateInputs:
             match=f"The number of wires should be n_block_wires times 2\\^n; "
             f"got n_wires/n_block_wires = {n_wires/n_block_wires}",
         ):
-            TTN(wires, n_block_wires, block=None, n_params_block=n_params_block)
+            MERA(wires, n_block_wires, block=None, n_params_block=n_params_block)
 
     @pytest.mark.parametrize(
         ("block", "n_params_block", "wires", "n_block_wires", "block_weights", "msg_match"),
@@ -211,7 +243,7 @@ class TestTemplateInputs:
                 2,
                 [1, 2, 3, 4],
                 2,
-                [[1, 2, 3], [1, 2, 3], [1, 2, 3]],
+                [[1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3], [1, 2, 3]],
                 "Weights tensor must have last dimension of length 2; got 3",
             ),
             (
@@ -220,7 +252,7 @@ class TestTemplateInputs:
                 [1, 2, 3, 4],
                 2,
                 [[1, 2], [2, 3], [4, 5], [6, 7]],
-                "Weights tensor must have first dimension of length 3; got 4",
+                "Weights tensor must have first dimension of length 5; got 4",
             ),
         ],
     )
@@ -229,7 +261,7 @@ class TestTemplateInputs:
     ):
         """Verifies that an exception is raised if the weights shape is incorrect."""
         with pytest.raises(ValueError, match=msg_match):
-            TTN(wires, n_block_wires, block, n_params_block, block_weights)
+            MERA(wires, n_block_wires, block, n_params_block, block_weights)
 
     @pytest.mark.parametrize(
         ("block", "n_params_block", "wires", "n_block_wires", "template_weights"),
@@ -240,15 +272,33 @@ class TestTemplateInputs:
                 3,
                 [1, 2, 3, 4],
                 2,
-                [[0.1, 0.1, 0.2], [0.2, 0.2, 0.3], [0.2, 0.3, 0.1]],
+                [
+                    [0.1, 0.1, 0.2],
+                    [0.2, 0.2, 0.3],
+                    [0.2, 0.3, 0.1],
+                    [0.1, 0.1, 0.2],
+                    [0.2, 0.2, 0.3],
+                ],
             ),
-            (circuit2_block, 2, [0, 1, 2, 3], 2, [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]]),
+            (
+                circuit2_block,
+                2,
+                [0, 1, 2, 3],
+                2,
+                [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4], [-0.2, 0.3], [0.1, 0.2]],
+            ),
             (
                 circuit3_block,
                 3,
                 [1, 2, 3, 4],
                 2,
-                [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4], [0.5, 0.2, 0.3]],
+                [
+                    [0.1, 0.2, 0.3],
+                    [0.2, 0.3, -0.4],
+                    [0.5, 0.2, 0.3],
+                    [0.2, 0.3, -0.4],
+                    [0.1, 0.2, 0.3],
+                ],
             ),
         ],
     )
@@ -258,7 +308,7 @@ class TestTemplateInputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
+            qml.MERA(wires, n_block_wires, block, n_params_block, template_weights)
             return qml.expval(qml.PauliZ(wires=wires[-1]))
 
         circuit()
@@ -284,17 +334,16 @@ class TestAttributes:
     @pytest.mark.parametrize(
         ("wires", "n_block_wires", "expected_n_blocks"),
         [
-            (range(4), 2, 3),
-            (range(5), 2, 3),
-            (range(8), 2, 7),
-            (range(10), 4, 3),
-            (range(25), 6, 7),
+            (range(4), 2, 5),
+            (range(5), 2, 5),
+            (range(6), 2, 5),
+            (range(10), 4, 5),
+            (range(25), 6, 13),
         ],
     )
     def test_get_n_blocks(self, wires, n_block_wires, expected_n_blocks):
         """Test that the number of blocks attribute returns the correct number of blocks."""
-
-        assert qml.TTN.get_n_blocks(wires, n_block_wires) == expected_n_blocks
+        assert qml.MERA.get_n_blocks(wires, n_block_wires) == expected_n_blocks
 
     @pytest.mark.filterwarnings("ignore")
     @pytest.mark.parametrize(
@@ -309,7 +358,7 @@ class TestAttributes:
             match=f"n_block_wires must be smaller than or equal to the number of wires; "
             f"got n_block_wires = {n_block_wires} and number of wires = {len(wires)}",
         ):
-            qml.TTN.get_n_blocks(wires, n_block_wires)
+            qml.MERA.get_n_blocks(wires, n_block_wires)
 
 
 class TestDifferentiability:
@@ -317,7 +366,15 @@ class TestDifferentiability:
 
     @pytest.mark.parametrize(
         ("block", "n_params_block", "wires", "n_block_wires", "template_weights"),
-        [(circuit2_block, 2, [0, 1, 2, 3], 2, [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]])],
+        [
+            (
+                circuit2_block,
+                2,
+                [0, 1, 2, 3],
+                2,
+                [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4], [0.1, 0.2], [-0.2, 0.3]],
+            )
+        ],
     )
     def test_template_differentiable(
         self, block, n_params_block, wires, n_block_wires, template_weights
@@ -327,7 +384,7 @@ class TestDifferentiability:
 
         @qml.qnode(dev)
         def circuit(template_weights):
-            qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
+            qml.MERA(wires, n_block_wires, block, n_params_block, template_weights)
             return qml.expval(qml.PauliZ(wires=wires[-1]))
 
         qml.grad(circuit)(qml.numpy.array(template_weights, requires_grad=True))
@@ -349,16 +406,22 @@ class TestTemplateOutputs:
                 2,
                 [0, 1, 2, 3],
                 2,
-                [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]],
-                circuit2_TTN,
+                [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4], [0.1, 0.2], [-0.2, 0.3]],
+                circuit2_MERA,
             ),
             (
                 circuit3_block,
                 3,
                 [1, 2, 3, 4],
                 2,
-                [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4], [0.5, 0.2, 0.3]],
-                circuit3_TTN,
+                [
+                    [0.1, 0.2, 0.3],
+                    [0.2, 0.3, -0.4],
+                    [0.5, 0.2, 0.3],
+                    [0.1, 0.2, 0.3],
+                    [0.2, 0.3, -0.4],
+                ],
+                circuit3_MERA,
             ),
         ],
     )
@@ -370,15 +433,15 @@ class TestTemplateOutputs:
 
         @qml.qnode(dev)
         def circuit():
-            qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
-            return qml.expval(qml.PauliX(wires=wires[-1]))
+            qml.MERA(wires, n_block_wires, block, n_params_block, template_weights)
+            return qml.expval(qml.PauliZ(wires=wires[1]))
 
         template_result = circuit()
 
         @qml.qnode(dev)
         def circuit():
             expected_circuit(template_weights, wires)
-            return qml.expval(qml.PauliX(wires=wires[-1]))
+            return qml.expval(qml.PauliZ(wires=wires[1]))
 
         manual_result = circuit()
         assert np.isclose(template_result, manual_result)
