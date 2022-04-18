@@ -4,6 +4,17 @@
 
 <h3>New features since last release</h3>
 
+* Added a debugging utility `OperatorChecker` that can be used to analyse custom
+  operations for correctness and self-consistency.
+  [(#2383)](https://github.com/PennyLaneAI/pennylane/pull/2383)
+
+  The `OperatorChecker` checks that the class methods of a provided operation
+  work with the same parameters and all representations are consistent with
+  each other. If applicable, it also checks auto-differentiation of matrix
+  representations as well as differentiation via gradient recipes.
+  For details and examples please consider the
+  [OperatorChecker documentation](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.debugging.OperatorChecker.html).
+
 * Added an optimization transform that matches pieces of user-provided identity templates in a circuit and replaces them with an equivalent component.
   [(#2032)](https://github.com/PennyLaneAI/pennylane/pull/2032)
 

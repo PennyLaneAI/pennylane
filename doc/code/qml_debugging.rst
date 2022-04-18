@@ -1,5 +1,5 @@
-qml.interfaces
-==============
+qml.debugging
+=============
 
 Overview
 --------

@@ -15,5 +15,5 @@
 This subpackage provides debugging tools and helper functionalities for
 users and developers.
 """
-from .operation_checker import OperationChecker, CheckerError
+from .operator_checker import OperatorChecker, CheckerError
 from .snapshots import snapshots
