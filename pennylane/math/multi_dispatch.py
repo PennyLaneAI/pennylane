@@ -239,16 +239,28 @@ def concatenate(values, axis=0, like=None):
     <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
     array([6.00e-01, 1.00e-01, 6.00e-01, 1.00e-01, 2.00e-01, 3.00e-01, 5.00e+00, 8.00e+00, 1.01e+02], dtype=float32)>
     """
+
     if like == "torch":
         import torch
+
+        device = (
+            "cuda"
+            if any(t.device.type == "cuda" for t in values if isinstance(t, torch.Tensor))
+            else "cpu"
+        )
 
         if axis is None:
             # flatten and then concatenate zero'th dimension
             # to reproduce numpy's behaviour
-            values = [np.flatten(torch.as_tensor(t)) for t in values]
+            values = [
+                np.flatten(torch.as_tensor(t, device=torch.device(device)))  # pragma: no cover
+                for t in values
+            ]
             axis = 0
         else:
-            values = [torch.as_tensor(t) for t in values]
+            values = [
+                torch.as_tensor(t, device=torch.device(device)) for t in values  # pragma: no cover
+            ]
 
     if like == "tensorflow" and axis is None:
         # flatten and then concatenate zero'th dimension
