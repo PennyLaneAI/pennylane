@@ -25,6 +25,7 @@ from pennylane.operation import Observable, AnyWires
 class TestGetOperationRecipe:
     """Test the helper function `_get_operation_recipe` that obtains the
     `grad_recipe` for a given operation in a tape."""
+
     @pytest.mark.parametrize(
         "orig_op, frequencies, shifts",
         [
@@ -38,7 +39,7 @@ class TestGetOperationRecipe:
         """Test that a custom recipe is returned correctly for first-order derivatives."""
         c, s = qml.gradients.generate_shift_rule(frequencies, shifts=shifts).T
         recipe = list(zip(c, np.ones_like(c), s))
-        
+
         class DummyOp(orig_op):
             grad_recipe = (recipe,)
 
