@@ -123,6 +123,10 @@
 
 <h3>Improvements</h3>
 
+* The `gradients` module now uses faster subroutines and uniform
+  formats of gradient rules.
+  [(#2452)](https://github.com/XanaduAI/pennylane/pull/2452)
+
 * The parameter-shift Hessian can now be computed for arbitrary
   operations that support the general parameter-shift rule for
   gradients, using `qml.gradients.param_shift_hessian`
