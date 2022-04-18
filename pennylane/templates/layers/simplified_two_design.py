@@ -22,14 +22,14 @@ from pennylane.operation import Operation, AnyWires
 class SimplifiedTwoDesign(Operation):
     r"""
     Layers consisting of a simplified 2-design architecture of Pauli-Y rotations and controlled-Z entanglers
-    proposed in `Cerezo et al. (2020) <https://arxiv.org/abs/2001.00550>`_.
+    proposed in `Cerezo et al. (2021) <https://doi.org/10.1038/s41467-021-21728-w>`_.
 
     A 2-design is an ensemble of unitaries whose statistical properties are the same as sampling random unitaries
     with respect to the Haar measure up to the first 2 moments.
 
     The template is not a strict 2-design, since
     it does not consist of universal 2-qubit gates as building blocks, but has been shown in
-    `Cerezo et al. (2020) <https://arxiv.org/abs/2001.00550>`_ to exhibit important properties to study "barren plateaus"
+    `Cerezo et al. (2021) <https://doi.org/10.1038/s41467-021-21728-w>`_ to exhibit important properties to study "barren plateaus"
     in quantum optimization landscapes.
 
     The template starts with an initial layer of single qubit Pauli-Y rotations, before the main

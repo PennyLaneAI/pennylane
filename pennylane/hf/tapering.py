@@ -23,6 +23,7 @@ import numpy
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.hf.hamiltonian import _generate_qubit_operator, simplify
+from pennylane.wires import Wires
 
 
 def _binary_matrix(terms, num_qubits, wire_map=None):
@@ -407,7 +408,8 @@ def transform_hamiltonian(h, generators, paulix_ops, paulix_sector):
 
     val = np.ones(len(h.terms()[0])) * complex(1.0)
 
-    wiremap = dict(zip(h.wires, range(len(h.wires) + 1)))
+    wireset = u.wires + h.wires
+    wiremap = dict(zip(wireset, range(len(wireset) + 1)))
     paulix_wires = [x.wires[0] for x in paulix_ops]
     for idx, w in enumerate(paulix_wires):
         for i in range(len(h.terms()[0])):
@@ -558,6 +560,11 @@ def transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires
     fermop_taper = transform_hamiltonian(ferm_op, generators, paulix_ops, paulix_sector)
     fermop_mat = _binary_matrix(fermop_taper.ops, len(fermop_taper.wires))
 
+    # build a wireset to match wires with that of the tapered Hamiltonian
+    gen_wires = Wires.all_wires([generator.wires for generator in generators])
+    xop_wires = Wires.all_wires([paulix_op.wires for paulix_op in paulix_ops])
+    wireset = Wires.unique_wires([gen_wires, xop_wires])
+
     # iterate over the terms in tapered HF observable and build the tapered HF state
     tapered_hartree_fock = []
     for col in fermop_mat.T[fermop_mat.shape[1] // 2 :]:
@@ -565,5 +572,7 @@ def transform_hf(generators, paulix_ops, paulix_sector, num_electrons, num_wires
             tapered_hartree_fock.append(1)
         else:
             tapered_hartree_fock.append(0)
+    while len(tapered_hartree_fock) < len(wireset):
+        tapered_hartree_fock.append(0)
 
     return np.array(tapered_hartree_fock).astype(int)

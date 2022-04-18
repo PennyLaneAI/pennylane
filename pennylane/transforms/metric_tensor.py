@@ -214,7 +214,7 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
             \mathfrak{Re}\left\{\langle \partial_i\psi|\partial_j\psi\rangle\right\}
 
         and can be computed using an augmented circuit with an additional qubit.
-        See for example `the appendix of McArdle et al. <https://arxiv.org/pdf/1804.03023.pdf>`__
+        See for example the appendix of `McArdle et al. (2019) <https://doi.org/10.1038/s41534-019-0187-2>`__
         for details.
         The block-diagonal of the tensor is computed using the covariance matrix approach.
 

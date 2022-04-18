@@ -1,22 +1,14 @@
 Quantum Chemistry
 =================
 
-PennyLane provides a differentiable Hartree-Fock solver module :mod:`~.hf` and a quantum chemistry
-module :mod:`~.qchem` to perform quantum simulations of the electronic structure of molecules. These
-modules contain tools to construct the electronic Hamiltonian of molecules that can be used to
-implement the Variational Quantum Eigensolver (VQE) algorithm.
+PennyLane provides a differentiable Hartree-Fock solver module :mod:`~.qchem` to perform quantum
+simulations of the electronic structure of molecules. This module contain tools to construct the
+electronic Hamiltonian of molecules that can be used to implement the Variational Quantum
+Eigensolver (VQE) algorithm.
 
 .. figure:: ../_static/sketch_pennylane_qchem.png
     :width: 80%
     :align: center
-
-.. note::
-
-    To access the ``qchem`` module, the ``PennyLane-QChem`` plugin must be installed separately:
-
-    .. code-block::
-
-        pip install pennylane-qchem
 
 Building the electronic Hamiltonian
 -----------------------------------
@@ -49,7 +41,7 @@ where:
 Internally, :func:`~.molecular_hamiltonian` calls the following functions in order
 to generate the qubit Hamiltonian:
 
-.. currentmodule:: pennylane_qchem.qchem
+.. currentmodule:: pennylane.qchem
 
 .. autosummary::
 
@@ -78,15 +70,6 @@ The atomic structure of a molecule can be imported from an external file using t
 The geometry of the molecule is returned as a list containing the symbol and the Cartesian
 coordinates of each atomic species.
 
-.. note::
-
-    The `xyz <https://en.wikipedia.org/wiki/XYZ_file_format>`_ format is supported
-    out of the box. Additionally, if `Open Babel <https://openbabel.org/>`_ is
-    installed, `any format recognized by Open Babel
-    <https://openbabel.org/wiki/Category:Formats>`_ is also supported.
-
-    See the :func:`~.read_structure` function for more details.
-
 Solving the Hartree-Fock equations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -97,7 +80,8 @@ using the electronic structure packages `PySCF <https://github.com/sunqm/pyscf>`
 <http://psicode.org/>`_, respectively.
 
 For this, it is required to specify a string to label the molecule. Furthermore, the net charge,
-the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_ and the  `atomic basis functions <https://www.basissetexchange.org/>`_ can also be specified.
+the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_ and the
+`atomic basis functions <https://www.basissetexchange.org/>`_ can also be specified.
 
 .. code-block:: python
 
@@ -120,7 +104,8 @@ Mapping the Hamiltonian to the Pauli basis
 
 The function :func:`~.active_space` is used to create an `active space <https://en.wikipedia
 .org/wiki/Complete_active_space>`__  by classifying the Hartree-Fock molecular orbitals as
-core, active, and external orbitals. Within this approximation, a certain number of *active electrons* can populate the *active orbitals*.
+core, active, and external orbitals. Within this approximation, a certain number of
+*active electrons* can populate the *active orbitals*.
 
 .. code-block:: python
 
@@ -149,7 +134,8 @@ and map it to a linear combination of Pauli operators via the `Jordan-Wigner
         active=active
     )
 
-Here, ``qubit_hamiltonian`` is an instance of the QubitOperator class of `OpenFermion <https://github.com/quantumlib/OpenFermion>`_.
+Here, ``qubit_hamiltonian`` is an instance of the QubitOperator class of
+`OpenFermion <https://github.com/quantumlib/OpenFermion>`_.
 
 .. _pl_qchem_vqe:
 

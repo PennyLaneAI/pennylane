@@ -341,8 +341,8 @@ def max_independent_set(graph: Union[nx.Graph, rx.PyGraph], constrained: bool = 
 
         .. note::
 
-            This method of constrained QAOA was introduced by Hadfield, Wang, Gorman, Rieffel, Venturelli, and Biswas
-            in arXiv:1709.03489.
+            This method of constrained QAOA was introduced by
+            `Hadfield, Wang, Gorman, Rieffel, Venturelli, and Biswas (2019) <https://doi.org/10.3390/a12020034>`__.
 
         The Maximum Independent Set cost Hamiltonian for constrained QAOA is defined as:
 

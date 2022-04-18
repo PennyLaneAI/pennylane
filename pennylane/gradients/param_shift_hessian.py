@@ -243,7 +243,7 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         argnum (int or list[int] or None): Parameter indices to differentiate
             with respect to. If not provided, the Hessian with respect to all
             trainable indices is returned. Note that the indices refer to tape
-            parameters if ``tape`` is a tape, and to QNode arguments if it is a QNode.
+            parameters both if ``tape`` is a tape, and if it is a QNode.
         diagonal_shifts (list[tuple[int or float]]): List containing tuples of shift values
             for the Hessian diagonal. The shifts are understood as first-order derivative
             shifts and are iterated to obtain the second-order derivative.

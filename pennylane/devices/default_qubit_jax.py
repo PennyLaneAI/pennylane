@@ -160,7 +160,7 @@ class DefaultQubitJax(DefaultQubit):
         else:
             self.C_DTYPE = jnp.complex64
             self.R_DTYPE = jnp.float32
-        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
+        super().__init__(wires, shots=shots, analytic=analytic)
 
         # prevent using special apply methods for these gates due to slowdown in jax
         # implementation

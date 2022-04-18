@@ -27,7 +27,6 @@ from pennylane.gradients.general_shift_rules import (
     _iterate_shift_rule_with_multipliers,
 )
 
-
 class TestEigvalsToFrequencies:
     """Tests for the eigvals_to_frequencies function"""
 
@@ -76,7 +75,6 @@ class TestFrequenciesToPeriod:
         res = frequencies_to_period((0.8, 1.6002), decimals=3)
         expected = 2.5 * np.pi
         assert res == expected
-
 
 class TestIterateShiftRuleWithMultipliers:
     """Tests `_iterate_shift_rule_with_multipliers` to produce the correct rules."""

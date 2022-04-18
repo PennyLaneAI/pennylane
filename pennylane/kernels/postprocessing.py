@@ -116,7 +116,8 @@ def flip_matrix(K):
         array[float]: Kernel matrix with flipped negative eigenvalues.
 
     Reference:
-        This method is introduced in `arXiv:2103.16774 <https://arxiv.org/abs/2103.16774>`_.
+        This method is introduced in
+        `Wang, Du, Luo & Tao (2021) <https://doi.org/10.22331/q-2021-08-30-531>`_.
 
     **Example:**
 

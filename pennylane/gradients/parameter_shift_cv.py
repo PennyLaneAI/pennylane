@@ -663,9 +663,6 @@ def param_shift_cv(
         )
 
     _gradient_analysis_cv(tape)
-    gradient_tapes = []
-    shapes = []
-    fns = []
 
     if argnum is None and not tape.trainable_params:
         warnings.warn(
@@ -673,7 +670,11 @@ def param_shift_cv(
             "If this is unintended, please mark trainable parameters in accordance with the "
             "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
         )
-        return gradient_tapes, lambda _: ()
+        return [], lambda _: qml.math.zeros((tape.output_dim, 0))
+
+    gradient_tapes = []
+    shapes = []
+    fns = []
 
     def _update(data):
         """Utility function to update the list of gradient tapes,
@@ -684,9 +685,8 @@ def param_shift_cv(
 
     method = "analytic" if fallback_fn is None else "best"
     diff_methods = grad_method_validation(method, tape)
-    all_params_grad_method_zero = all(g == "0" for g in diff_methods)
-    if all_params_grad_method_zero:
-        return gradient_tapes, lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
+    if all(g == "0" for g in diff_methods):
+        return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     method_map = choose_grad_methods(diff_methods, argnum)
     var_present = any(m.return_type is qml.measurements.Variance for m in tape.measurements)

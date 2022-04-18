@@ -70,7 +70,8 @@ class QNGOptimizer(GradientDescentOptimizer):
     For more details, see:
 
         James Stokes, Josh Izaac, Nathan Killoran, Giuseppe Carleo.
-        "Quantum Natural Gradient." `arXiv:1909.02108 <https://arxiv.org/abs/1909.02108>`_, 2019.
+        "Quantum Natural Gradient."
+        `Quantum 4, 269 <https://doi.org/10.22331/q-2020-05-25-269>`_, 2020.
 
     .. note::
 

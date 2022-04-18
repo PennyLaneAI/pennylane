@@ -4,7 +4,6 @@
 help:
 	@echo "Makefile commands:"
 	@echo "build-base"
-	@echo "build-qchem"
 	@echo "build-interface"
 	@echo "build-interface-gpu"
 
@@ -19,10 +18,6 @@ available-plugins:
 
 build-base:
 	@docker build -t pennylane/base -f docker/pennylane.dockerfile .
-
-build-qchem:
-	@docker build -t pennylane/base -f docker/pennylane.dockerfile . \
-	&& docker build -t pennylane/qchem -f docker/qchem.dockerfile .
 
 build-interface:
 	@docker build -t pennylane/base -f docker/pennylane.dockerfile . \

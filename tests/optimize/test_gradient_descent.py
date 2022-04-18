@@ -197,33 +197,3 @@ class TestGradientDescentOptimizer:
         x_new = sgd_opt.step(f, x_start, grad_fn=df)
         x_correct = x_start - df(x_start) * stepsize
         assert np.allclose(x_new, x_correct, atol=tol)
-
-    def test_update_stepsize(self):
-        """
-        Tests whether the stepsize value is updated correctly and whether a ``UserWarning``
-        is raised when the ``update_stepsize`` method is used.
-        """
-
-        eta = 0.5
-        opt = GradientDescentOptimizer(eta)
-        assert opt.stepsize == eta
-
-        eta2 = 0.1
-        with pytest.warns(UserWarning, match="'update_stepsize' is deprecated. Stepsize value can"):
-            opt.update_stepsize(eta2)
-        assert opt.stepsize == eta2
-
-    def test_private_stepsize(self):
-        """
-        Tests whether it is possible to get and set ``stepsize`` using ``_stepsize``
-        and whether a ``UserWarning`` is raised while doing so.
-        """
-        eta = 0.5
-        opt = GradientDescentOptimizer(eta)
-        with pytest.warns(UserWarning, match="'_stepsize' is deprecated. Please use 'stepsize'"):
-            assert opt._stepsize == eta
-
-        eta2 = 0.1
-        with pytest.warns(UserWarning, match="'_stepsize' is deprecated. Please use 'stepsize'"):
-            opt._stepsize = eta2
-        assert opt.stepsize == eta2
