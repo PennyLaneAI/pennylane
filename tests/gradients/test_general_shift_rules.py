@@ -18,6 +18,8 @@ import numpy as np
 import pennylane as qml
 
 from pennylane.gradients.general_shift_rules import (
+    eigvals_to_frequencies,
+    frequencies_to_period,
     generate_shift_rule,
     _get_shift_rule,
     generate_multi_shift_rule,
@@ -31,23 +33,23 @@ class TestEigvalsToFrequencies:
 
     def test_two_eigvals(self):
         """Test the case of two eigenvalues"""
-        res = qml.gradients.eigvals_to_frequencies((-0.5, 0.5))
+        res = eigvals_to_frequencies((-0.5, 0.5))
         expected = (1,)
         assert res == expected
 
     def test_four_eigvals(self):
         """Test the case of four eigenvalues"""
-        res = qml.gradients.eigvals_to_frequencies((0.5, -0.5, 0, 0))
+        res = eigvals_to_frequencies((0.5, -0.5, 0, 0))
         expected = (0.5, 1)
         assert res == expected
 
     def test_nonequidistant_eigvals(self):
         """Test the case of non-equidistant eigenvalues"""
-        res = qml.gradients.eigvals_to_frequencies((0.453, 0.65, -1.2, 0))
+        res = eigvals_to_frequencies((0.453, 0.65, -1.2, 0))
         expected = (0.453, 1.2, 1.85, 1.653, 0.65, 0.197)
         assert res == expected
 
-def TestFrequenciesToPeriod:
+class TestFrequenciesToPeriod:
     """Tests for the frequencies_to_period function"""
 
     def test_single_frequency(self):
