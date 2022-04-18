@@ -12,27 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-
-
-.. currentmodule:: pennylane.qchem
-.. autosummary::
-    :toctree: api
-
-    basis_data
-    basis_set
-    convert
-    dipole
-    hamiltonian
-    hartree_fock
-    integrals
-    matrices
-    molecule
-    observable_hf
-    openfermion_obs
-    particle_number
-    spin
-    structure
-    tapering
+This subpackage provides the functionality to perform quantum chemistry calculations.
 """
 from .openfermion_obs import (
     observable,

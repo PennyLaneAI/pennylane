@@ -12,8 +12,24 @@ observables.
 
 .. rubric:: Modules
 
-.. automodule:: pennylane.qchem
+.. autosummary::
+    :toctree: api
 
+    basis_data
+    basis_set
+    convert
+    dipole
+    hamiltonian
+    hartree_fock
+    integrals
+    matrices
+    molecule
+    observable_hf
+    openfermion_obs
+    particle_number
+    spin
+    structure
+    tapering
 
 Differentiable Hartree-Fock
 ---------------------------
