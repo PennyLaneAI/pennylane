@@ -94,8 +94,6 @@ class TestGetOperationRecipe:
             _get_operation_recipe(tape, 0, shifts=None, order=order)
 
 
-
-
 def grad_fn(tape, dev, fn=qml.gradients.param_shift, **kwargs):
     """Utility function to automate execution and processing of gradient tapes"""
     tapes, fn = fn(tape, **kwargs)
@@ -284,13 +282,13 @@ class TestParamShift:
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.QuantumTape() as tape1:
-            qml.RX(1., wires=[0])
-            qml.RX(1., wires=[1])
+            qml.RX(1.0, wires=[0])
+            qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(0))
 
         with qml.tape.QuantumTape() as tape2:
-            qml.RX(1., wires=[0])
-            qml.RX(1., wires=[1])
+            qml.RX(1.0, wires=[0])
+            qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(1))
 
         tapes, fn = qml.gradients.param_shift(tape1)

@@ -115,6 +115,7 @@ class TestGradAnalysis:
         assert tape._par_info[1]["grad_method"] == "F"
         assert tape._par_info[2]["grad_method"] == "A"
 
+
 class TestGradMethodValidation:
     """Test the helper function grad_method_validation."""
 

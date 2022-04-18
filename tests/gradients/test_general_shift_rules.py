@@ -49,6 +49,7 @@ class TestEigvalsToFrequencies:
         expected = (0.453, 1.2, 1.85, 1.653, 0.65, 0.197)
         assert res == expected
 
+
 class TestFrequenciesToPeriod:
     """Tests for the frequencies_to_period function"""
 
@@ -75,6 +76,7 @@ class TestFrequenciesToPeriod:
         res = frequencies_to_period((0.8, 1.6002), decimals=3)
         expected = 2.5 * np.pi
         assert res == expected
+
 
 class TestIterateShiftRuleWithMultipliers:
     """Tests `_iterate_shift_rule_with_multipliers` to produce the correct rules."""
@@ -387,8 +389,6 @@ class TestMultiShiftRule:
             [-c2 * 0.5, -np.pi / 2, -3 * np.pi / 2],
         ]
         assert np.allclose(res, expected)
-
-
 
 
 class TestGenerateShiftedTapes:

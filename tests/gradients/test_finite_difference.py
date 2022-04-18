@@ -87,6 +87,7 @@ class TestCoeffs:
         assert np.allclose(coeffs, [-2.5, 4 / 3, 4 / 3, -1 / 12, -1 / 12])
         assert np.allclose(shifts, [0, -1, 1, -2, 2])
 
+
 class TestFiniteDiff:
     """Tests for the finite difference gradient transform"""
 
@@ -238,13 +239,13 @@ class TestFiniteDiff:
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.QuantumTape() as tape1:
-            qml.RX(1., wires=[0])
-            qml.RX(1., wires=[1])
+            qml.RX(1.0, wires=[0])
+            qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(0))
 
         with qml.tape.QuantumTape() as tape2:
-            qml.RX(1., wires=[0])
-            qml.RX(1., wires=[1])
+            qml.RX(1.0, wires=[0])
+            qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(1))
 
         tapes, fn = finite_diff(tape1, approx_order=1)
