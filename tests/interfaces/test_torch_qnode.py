@@ -1071,7 +1071,7 @@ class TestTapeExpansion:
             return qml.expval(qml.PauliX(0))
 
         spy = mocker.spy(circuit.device, "batch_execute")
-        x = torch.tensor(0.5, requires_grad=True)
+        x = torch.tensor(0.5, requires_grad=True, dtype=torch.float64)
 
         loss = circuit(x)
 
