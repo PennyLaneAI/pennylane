@@ -166,7 +166,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
 
     .. math::
 
-        \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i \hat{I},
+        \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i,
 
     where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
     nuclear coordinates of the :math:`i`-th atom of the molecule.
@@ -251,7 +251,7 @@ def dipole_moment(mol, cutoff=1.0e-18, core=None, active=None):
 
     .. math::
 
-        \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i \hat{I},
+        \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i,
 
     where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
     nuclear coordinates of the :math:`i`-th atom of the molecule.

@@ -114,11 +114,11 @@ def _process_wires(wires, n_wires=None):
 
 
 def _openfermion_to_pennylane(qubit_operator, wires=None):
-    r"""Converts OpenFermion ``QubitOperator`` to a 2-tuple of coefficients and
+    r"""Convert OpenFermion ``QubitOperator`` to a 2-tuple of coefficients and
     PennyLane Pauli observables.
 
     Args:
-        qubit_operator (QubitOperator): Fermionic-to-qubit transformed operator in terms of
+        qubit_operator (QubitOperator): fermionic-to-qubit transformed operator in terms of
             Pauli matrices
         wires (Wires, list, tuple, dict): Custom wire mapping used to convert the qubit operator
             to an observable terms measurable in a PennyLane ansatz.
@@ -173,7 +173,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
 
 
 def _pennylane_to_openfermion(coeffs, ops, wires=None):
-    r"""Converts a 2-tuple of complex coefficients and PennyLane operations to
+    r"""Convert a 2-tuple of complex coefficients and PennyLane operations to
     OpenFermion ``QubitOperator``.
 
     This function is the inverse of ``_qubit_operator_to_terms``.
@@ -181,7 +181,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
     Args:
         coeffs (array[complex]):
             coefficients for each observable, same length as ops
-        ops (Iterable[pennylane.operation.Observable]): List of PennyLane observables as
+        ops (Iterable[pennylane.operation.Observable]): list of PennyLane observables as
             Tensor products of Pauli observables
         wires (Wires, list, tuple, dict): Custom wire mapping used to convert to qubit operator
             from an observable terms measurable in a PennyLane ansatz.
@@ -260,7 +260,7 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
 def _openfermion_pennylane_equivalent(
     openfermion_qubit_operator, pennylane_qubit_operator, wires=None
 ):
-    r"""Checks equivalence between OpenFermion :class:`~.QubitOperator` and Pennylane  VQE
+    r"""Check equivalence between OpenFermion :class:`~.QubitOperator` and Pennylane VQE
     ``Hamiltonian`` (Tensor product of Pauli matrices).
 
     Equality is based on OpenFermion :class:`~.QubitOperator`'s equality.
@@ -285,15 +285,15 @@ def _openfermion_pennylane_equivalent(
 
 
 def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e08):
-    r"""Converts an external operator to a Pennylane operator.
+    r"""Convert an external operator to a Pennylane operator.
 
     The external format currently supported is openfermion.
 
     Args:
-        qubit_observable: External qubit operator that will be converted
+        qubit_observable: external qubit operator that will be converted
         format (str): the format of the operator object to convert from
-        wires (.Wires, list, tuple, dict): Custom wire mapping used to convert the ``QubitOperator``
-            to a PennyLane operator.
+        wires (.Wires, list, tuple, dict): Custom wire mapping used to convert the external qubit
+            operator to a PennyLane operator.
             For types ``Wires``/list/tuple, each item in the iterable represents a wire label
             for the corresponding qubit index.
             For type dict, only int-keyed dictionaries (for qubit-to-wire conversion) are accepted.
@@ -305,7 +305,7 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e08
     Returns:
         (.Hamiltonian): PennyLane :class:`~.Hamiltonian`
         representing any operator expressed as linear combinations of observables, e.g.,
-        :math:`\sum_{k=0}^{N-1} c_k O_k`.
+        :math:`\sum_{k=0}^{N-1} c_k O_k`
 
     **Example**
 

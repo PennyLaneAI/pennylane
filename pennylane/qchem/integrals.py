@@ -165,7 +165,7 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
 
         E_0^{00} = e^{-qr^2},
 
-    and :math:`E_t^{ij} = 0` is :math:`t < 0` or :math:`t > (i+j)`.
+    and :math:`E_t^{ij} = 0` if :math:`t < 0` or :math:`t > (i+j)`.
 
     Args:
         la (integer): angular momentum component for the first Gaussian function
@@ -887,7 +887,7 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
     r"""Compute the electron-electron repulsion integral between four primitive Gaussian functions.
 
     The electron repulsion integral between four Gaussian functions denoted by :math:`a`, :math:`b`
-    , :math:`c` and :math:`d` can be computed as
+    , :math:`c` and :math:`d` is computed as
     [`Helgaker (1995) p820 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
 
     .. math::

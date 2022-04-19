@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions and classes to create a Molecule object. This object stores all
+This module contains functions and classes to create a
+:class:`~pennylane.qchem.molecule.Molecule` object. This object stores all
 the necessary information to perform a Hartree-Fock calculation for a given molecule.
 """
 # pylint: disable=too-few-public-methods, too-many-arguments, too-many-instance-attributes
@@ -41,7 +42,7 @@ class Molecule:
             :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals. Possible
             values of ``mult`` are :math:`1, 2, 3, \ldots`.
         basis_name (str): Atomic basis set used to represent the molecular orbitals. Currently, the
-            only supported basis set is 'sto-3g'.
+            only supported basis sets are 'STO-3G' and '6-31G'.
         l (tuple[int]): angular momentum quantum numbers of the basis function
         alpha (array[float]): exponents of the primitive Gaussian functions
         coeff (array[float]): coefficients of the contracted Gaussian functions

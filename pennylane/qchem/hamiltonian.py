@@ -74,7 +74,7 @@ def electron_integrals(mol, core=None, active=None):
         active (list[int]): indices of the active orbitals
 
     Returns:
-        function: function that computes the core constant, and the one- and two-electron integrals
+        function: function that computes the core constant and the one- and two-electron integrals
 
     **Example**
 

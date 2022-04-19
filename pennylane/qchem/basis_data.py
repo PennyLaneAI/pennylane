@@ -14,7 +14,7 @@
 """
 This module contains basis set parameters defining Gaussian-type orbitals for a selected number of
 atoms. The data are taken from the Basis Set Exchange `library <https://www.basissetexchange.org>`_.
-The current data include the STO-3G basis set for atoms with atomic numbers 1-10.
+The current data include the STO-3G and 6-31G basis sets for atoms with atomic numbers 1-10.
 """
 
 atomic_numbers = {

@@ -5,8 +5,8 @@ qml.hf
 
 .. warning::
 
-    The ``qml.hf`` subpackage is deprecated and will be removed in an upcoming release.
-    Please use :mod:`.qchem` to perform differentiable Hartree-Fock calculations.
+    The ``hf`` subpackage is deprecated and will be removed in an upcoming release. Please use
+    the :mod:`~pennylane.qchem` module to perform differentiable Hartree-Fock calculations.
 
 .. rubric:: Modules
 

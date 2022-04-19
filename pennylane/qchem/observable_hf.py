@@ -123,8 +123,9 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
 def jordan_wigner(op):
     r"""Convert a fermionic operator to a qubit operator using the Jordan-Wigner mapping.
 
-    The one-body fermionic operator :math:`a_2^\dagger a_0` is constructed as [2, 0] and the
-    two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` is constructed as [4, 3, 2, 1].
+    For instance, the one-body fermionic operator :math:`a_2^\dagger a_0` should be constructed as
+    [2, 0] and the two-body operator :math:`a_4^\dagger a_3^\dagger a_2 a_1` should be constructed
+    as [4, 3, 2, 1].
 
     Args:
         op (list[int]): the fermionic operator
