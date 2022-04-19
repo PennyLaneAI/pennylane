@@ -396,10 +396,11 @@
 
 <h3>Deprecations</h3>
 
-* `get_unitary_matrix` is removed, users should use `qml.matrix` instead.
-  [(#2457)](https://github.com/PennyLaneAI/pennylane/pull/2457)
-
 <h3>Breaking changes</h3>
+
+* The `get_unitary_matrix` transform has been removed, users should use
+  `qml.matrix` instead.
+  [(#2457)](https://github.com/PennyLaneAI/pennylane/pull/2457)
 
 * The caching ability of `QubitDevice` has been removed, using the caching on
   the QNode level is the recommended alternative going forward.
