@@ -28,9 +28,10 @@ where:
 * ``qubits`` is the number of qubits needed to perform the quantum simulation.
 
 The :func:`~.molecular_hamiltonian` function can be also used to construct the molecular Hamiltonian
-with a non-differentiable backend that uses the OpenFermion plugin interfaced with the electronic
-structure package PySCF. The non-differentiable backend can be selected by setting `method='pyscf'`
-in :func:`~.molecular_hamiltonian`.
+with a non-differentiable backend that uses the
+`OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
+electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_. The non-differentiable
+backend can be selected by setting `method='pyscf'` in :func:`~.molecular_hamiltonian`.
 
 Furthermore, the net charge,
 the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the

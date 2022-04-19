@@ -183,3 +183,28 @@ integral can be differentiated with respect to the basis set parameters as follo
 >>> print(g_alpha)
 [[ 0.00169332 -0.14826928 -0.37296693]
  [ 0.00169332 -0.14826928 -0.37296693]]
+
+
+OpenFermion-PySCF backend
+-------------------------
+
+The :func:`~.molecular_hamiltonian` function can be also used to construct the molecular Hamiltonian
+with a non-differentiable backend that uses the
+`OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
+electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_. The non-differentiable
+backend can be selected by setting `method='pyscf'` in :func:`~.molecular_hamiltonian`:
+
+.. code-block:: python
+
+    from pennylane import qchem
+    from pennylane import numpy as np
+
+    symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
+    h, qubits = qchem.molecular_hamiltonian(
+        symbols,
+        coordinates,
+        charge=0,
+        mult=1,
+        basis='sto-3g',
+        method='pyscf'
+    )
