@@ -71,7 +71,7 @@ def atom_basis_data(name, atom):
 
     This function extracts the angular momentum, exponents, and contraction coefficients of
     Gaussian functions forming atomic orbitals for a given atom. These values are taken from the
-    basis set data provided in :mod:`.basis_data`.
+    basis set data provided in :mod:`~pennylane.qchem.basis_data`.
 
     Args:
         name (str): name of the basis set

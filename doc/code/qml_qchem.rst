@@ -23,9 +23,9 @@ and construct observables such as molecular Hamiltonian, dipole moment, spin and
     integrals
     matrices
     molecule
+    number
     observable_hf
     openfermion_obs
-    particle_number
     spin
     structure
     tapering
