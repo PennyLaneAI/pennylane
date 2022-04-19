@@ -82,7 +82,7 @@ def electron_integrals(mol, core=None, active=None):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> electron_integrals(mol)(*args)
     (1.0,
@@ -157,7 +157,7 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> h = fermionic_hamiltonian(mol)(*args)
     """
@@ -194,7 +194,7 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> h = diff_hamiltonian(mol)(*args)
     >>> h.coeffs

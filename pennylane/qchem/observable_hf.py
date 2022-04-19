@@ -97,7 +97,7 @@ def qubit_observable(o_ferm, cutoff=1.0e-12):
     >>> coeffs = np.array([1.0, 1.0])
     >>> ops = [[0, 0], [0, 0]]
     >>> f = (coeffs, ops)
-    >>> print(qubit_operator(f))
+    >>> print(qubit_observable(f))
     ((-1+0j)) [Z0]
     + ((1+0j)) [I0]
     """
@@ -258,8 +258,8 @@ def _pauli_mult(p1, p2):
 
     **Example**
 
-    >>> p1 = [(0, "X"), (1, "Y")],  # X_0 @ Y_1
-    >>> p2 = [(0, "X"), (2, "Y")],  # X_0 @ Y_2
+    >>> p1 = [(0, "X"), (1, "Y")]  # X_0 @ Y_1
+    >>> p2 = [(0, "X"), (2, "Y")]  # X_0 @ Y_2
     >>> _pauli_mult(p1, p2)
     ([(2, "Y"), (1, "Y")], 1.0) # p1 @ p2 = X_0 @ Y_1 @ X_0 @ Y_2
     """

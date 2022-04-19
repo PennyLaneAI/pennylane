@@ -99,7 +99,7 @@ def scf(mol, n_steps=50, tol=1e-8):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> v_fock, coeffs, fock_matrix, h_core, rep_tensor = scf(mol)(*args)
     >>> v_fock
@@ -190,7 +190,7 @@ def nuclear_energy(charges, r):
 
     >>> symbols  = ['H', 'F']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad = True)
-    >>> mol = qml.hf.Molecule(symbols, geometry)
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> args = [mol.coordinates]
     >>> e = nuclear_energy(mol.nuclear_charges, mol.coordinates)(*args)
     >>> print(e)
@@ -234,7 +234,7 @@ def hf_energy(mol):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> hf_energy(mol)(*args)
     -1.065999461545263

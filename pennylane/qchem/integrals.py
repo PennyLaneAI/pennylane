@@ -270,7 +270,7 @@ def overlap_integral(basis_a, basis_b):
 
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> mol = qml.hf.Molecule(symbols, geometry)
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> args = []
     >>> overlap_integral(mol.basis_set[0], mol.basis_set[0])(*args)
     1.0
@@ -459,7 +459,7 @@ def moment_integral(basis_a, basis_b, order, idx):
 
     >>> symbols  = ['H', 'Li']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad = True)
-    >>> mol = qml.hf.Molecule(symbols, geometry)
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> args = [mol.r] # initial values of the differentiable parameters
     >>> order, idx =  1, 0
     >>> moment_integral(mol.basis_set[0], mol.basis_set[1], order, idx)(*args)
@@ -630,7 +630,7 @@ def kinetic_integral(basis_a, basis_b):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [mol.alpha]
     >>> kinetic_integral(mol.basis_set[0], mol.basis_set[1])(*args)
     0.38325367405312843
@@ -833,7 +833,7 @@ def attraction_integral(r, basis_a, basis_b):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> basis_a = mol.basis_set[0]
     >>> basis_b = mol.basis_set[1]
     >>> args = [mol.alpha]
@@ -976,7 +976,7 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d):
     >>>                   [3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> basis_a = mol.basis_set[0]
     >>> basis_b = mol.basis_set[1]
     >>> args = [mol.alpha]

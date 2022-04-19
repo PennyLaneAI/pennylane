@@ -356,7 +356,7 @@ def excitations_to_wires(singles, doubles, wires=None):
     >>> singles = [[0, 2], [1, 3]]
     >>> doubles = [[0, 1, 2, 3]]
     >>> singles_wires, doubles_wires = excitations_to_wires(singles, doubles)
-    >>> print(single_wires)
+    >>> print(singles_wires)
     [[0, 1, 2], [1, 2, 3]]
     >>> print(doubles_wires)
     [[[0, 1], [2, 3]]]

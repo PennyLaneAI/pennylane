@@ -128,7 +128,7 @@ class Molecule:
 
         >>> symbols  = ['H', 'H']
         >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-        >>> mol = qml.hf.Molecule(symbols, geometry)
+        >>> mol = qml.qchem.Molecule(symbols, geometry)
         >>> ao = mol.atomic_orbital(0)
         >>> ao(0.0, 0.0, 0.0)
         0.62824688
@@ -173,8 +173,8 @@ class Molecule:
 
         >>> symbols  = ['H', 'H']
         >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-        >>> mol = qml.hf.Molecule(symbols, geometry)
-        >>> qml.hf.scf(mol)() # run scf to obtain the optimized molecular orbitals
+        >>> mol = qml.qchem.Molecule(symbols, geometry)
+        >>> qml.qchem.scf(mol)() # run scf to obtain the optimized molecular orbitals
         >>> mo = mol.molecular_orbital(1)
         >>> mo(0.0, 0.0, 0.0)
         0.01825128

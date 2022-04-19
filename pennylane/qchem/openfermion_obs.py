@@ -24,7 +24,7 @@ import pennylane as qml
 bohr_angs = 0.529177210903
 
 
-def import_of():
+def _import_of():
     """Import openfermion and openfermionpyscf."""
     try:
         # pylint: disable=import-outside-toplevel, unused-import
@@ -116,7 +116,7 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     + (0.075) [Z2]
     + (-0.075) [Z0 Z2]
     """
-    openfermion, _ = import_of()
+    openfermion, _ = _import_of()
 
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
         raise TypeError(
@@ -192,6 +192,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     **Example**
 
+    >>> import numpy as np
     >>> matrix_elements = np.array([[-1.27785301e+00,  0.00000000e+00],
     ...                             [ 1.52655666e-16, -4.48299696e-01]])
     >>> t_op = one_particle(matrix_elements)
@@ -201,7 +202,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     -0.44829969610163756 [2^ 2] +
     -0.44829969610163756 [3^ 3]
     """
-    openfermion, _ = import_of()
+    openfermion, _ = _import_of()
 
     orbitals = matrix_elements.shape[0]
 
@@ -324,6 +325,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     **Example**
 
+    >>> import numpy as np
     >>> matrix_elements = np.array([[[[ 6.82389533e-01, -1.45716772e-16],
     ...                               [-2.77555756e-17,  1.79000576e-01]],
     ...                              [[-2.77555756e-17,  1.79000576e-16],
@@ -334,40 +336,28 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     ...                               [ 0.00000000e+00,  7.05105632e-01]]]])
     >>> v_op = two_particle(matrix_elements)
     >>> print(v_op)
-    0.3411947665760211 [0^ 0^ 0 0]
-    + 0.08950028803070323 [0^ 0^ 2 2]
-    + 0.3411947665760211 [0^ 1^ 1 0]
-    + 0.08950028803070323 [0^ 1^ 3 2]
-    + 0.08950028803070323 [0^ 2^ 0 2]
-    + 0.3353663891543792 [0^ 2^ 2 0]
-    + 0.08950028803070323 [0^ 3^ 1 2]
-    + 0.3353663891543792 [0^ 3^ 3 0]
-    + 0.3411947665760211 [1^ 0^ 0 1]
-    + 0.08950028803070323 [1^ 0^ 2 3]
-    + 0.3411947665760211 [1^ 1^ 1 1]
-    + 0.08950028803070323 [1^ 1^ 3 3]
-    + 0.08950028803070323 [1^ 2^ 0 3]
-    + 0.3353663891543792 [1^ 2^ 2 1]
-    + 0.08950028803070323 [1^ 3^ 1 3]
-    + 0.3353663891543792 [1^ 3^ 3 1]
-    + 0.3353663891543792 [2^ 0^ 0 2]
-    + 0.08950028803070323 [2^ 0^ 2 0]
-    + 0.3353663891543792 [2^ 1^ 1 2]
-    + 0.08950028803070323 [2^ 1^ 3 0]
-    + 0.08950028803070323 [2^ 2^ 0 0]
-    + 0.352552816086392 [2^ 2^ 2 2]
-    + 0.08950028803070323 [2^ 3^ 1 0]
-    + 0.352552816086392 [2^ 3^ 3 2]
-    + 0.3353663891543792 [3^ 0^ 0 3]
-    + 0.08950028803070323 [3^ 0^ 2 1]
-    + 0.3353663891543792 [3^ 1^ 1 3]
-    + 0.08950028803070323 [3^ 1^ 3 1]
-    + 0.08950028803070323 [3^ 2^ 0 1]
-    + 0.352552816086392 [3^ 2^ 2 3]
-    + 0.08950028803070323 [3^ 3^ 1 1]
-    + 0.352552816086392 [3^ 3^ 3 3]
+    0.3411947665 [0^ 0^ 0 0] +
+    0.089500288 [0^ 0^ 2 2] +
+    0.3411947665 [0^ 1^ 1 0] +
+    0.089500288 [0^ 1^ 3 2] +
+    0.335366389 [0^ 2^ 2 0] +
+    0.335366389 [0^ 3^ 3 0] +
+    0.3411947665 [1^ 0^ 0 1] +
+    0.089500288 [1^ 0^ 2 3] +
+    0.3411947665 [1^ 1^ 1 1] +
+    0.089500288 [1^ 1^ 3 3] +
+    0.335366389 [1^ 2^ 2 1] +
+    0.335366389 [1^ 3^ 3 1] +
+    0.089500288 [2^ 0^ 2 0] +
+    0.089500288 [2^ 1^ 3 0] +
+    0.352552816 [2^ 2^ 2 2] +
+    0.352552816 [2^ 3^ 3 2] +
+    0.089500288 [3^ 0^ 2 1] +
+    0.089500288 [3^ 1^ 3 1] +
+    0.352552816 [3^ 2^ 2 3] +
+    0.352552816 [3^ 3^ 3 3]
     """
-    openfermion, _ = import_of()
+    openfermion, _ = _import_of()
 
     orbitals = matrix_elements.shape[0]
 
@@ -559,8 +549,8 @@ def dipole_of(
     >>> coordinates = np.array([0.028, 0.054, 0.0, 0.986, 1.610, 0.0, 1.855, 0.002, 0.0])
     >>> dip_obs = dipole(symbols, coordinates, charge=1)
     >>> print(dipole_obs)
-    [<Hamiltonian: terms=19, wires=[0, 1, 2, 3, 4, 5]>,
-    <Hamiltonian: terms=19, wires=[0, 1, 2, 3, 4, 5]>,
+    [<Hamiltonian: terms=18, wires=[0, 1, 2, 3, 4, 5]>,
+    <Hamiltonian: terms=18, wires=[0, 1, 2, 3, 4, 5]>,
     <Hamiltonian: terms=1, wires=[0]>]
 
     >>> print(dip_obs[0]) # x-component of D
@@ -583,7 +573,7 @@ def dipole_of(
     + (0.26611147045300276) [Y1 Z2 Z3 Z4 Y5]
     + (0.26611147045300276) [X1 Z2 Z3 Z4 X5]
     """
-    openfermion, _ = import_of()
+    openfermion, _ = _import_of()
 
     atomic_numbers = {
         "H": 1,
@@ -707,7 +697,7 @@ def meanfield(
     >>> meanfield(symbols, coordinates, name="h2")
     ./h2_pyscf_sto-3g
     """
-    openfermion, openfermionpyscf = import_of()
+    openfermion, openfermionpyscf = _import_of()
 
     if coordinates.size != 3 * len(symbols):
         raise ValueError(
@@ -776,7 +766,7 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
     (-0.2427428049645989+0j) [Z1 Z2 Z3] +(0.1762764080276107+0j) [Z1 Z3] +
     (-0.2427428049645989+0j) [Z2]
     """
-    openfermion, _ = import_of()
+    openfermion, _ = _import_of()
 
     # loading HF data from the hdf5 file
     molecule = openfermion.MolecularData(filename=hf_file.strip())
@@ -922,7 +912,7 @@ def molecular_hamiltonian(
             return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(), 2 * len(active)
         return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args), 2 * len(active)
 
-    openfermion, _ = import_of()
+    openfermion, _ = _import_of()
 
     hf_file = meanfield(symbols, geometry_hf, name, charge, mult, basis, method, outpath)
 

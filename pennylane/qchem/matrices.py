@@ -74,7 +74,7 @@ def overlap_matrix(basis_functions):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> overlap_matrix(mol.basis_set)(*args)
     array([[1.0, 0.7965883009074122], [0.7965883009074122, 1.0]])
@@ -124,7 +124,7 @@ def moment_matrix(basis_functions, order, idx):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> order, idx = 1, 0
     >>> moment_matrix(mol.basis_set, order, idx)(*args)
@@ -174,9 +174,9 @@ def kinetic_matrix(basis_functions):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> kinetic_integral_matrix(mol.basis_set)(*args)
+    >>> kinetic_matrix(mol.basis_set)(*args)
     array([[0.76003189, 0.38325367], [0.38325367, 0.76003189]])
     """
 
@@ -225,7 +225,7 @@ def attraction_matrix(basis_functions, charges, r):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> attraction_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     array([[-2.03852057, -1.60241667], [-1.60241667, -2.03852057]])
@@ -287,7 +287,7 @@ def repulsion_tensor(basis_functions):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> repulsion_tensor(mol.basis_set)(*args)
     array([[[[0.77460595, 0.56886144], [0.56886144, 0.65017747]],
@@ -359,7 +359,7 @@ def core_matrix(basis_functions, charges, r):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> core_matrix(mol.basis_set, mol.nuclear_charges, mol.coordinates)(*args)
     array([[-1.27848869, -1.21916299], [-1.21916299, -1.27848869]])
