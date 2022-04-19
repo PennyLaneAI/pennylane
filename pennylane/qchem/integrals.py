@@ -260,8 +260,8 @@ def overlap_integral(basis_a, basis_b):
     r"""Return a function that computes the overlap integral for two contracted Gaussian functions.
 
     Args:
-        basis_a (~.qchem.BasisFunction): first basis function
-        basis_b (~.qchem.BasisFunction): second basis function
+        basis_a (~qchem.basis_set.BasisFunction): first basis function
+        basis_b (~qchem.basis_set.BasisFunction): second basis function
 
     Returns:
         function: function that computes the overlap integral
@@ -447,8 +447,8 @@ def moment_integral(basis_a, basis_b, order, idx):
     can be :math:`0, 1, 2` for :math:`x, y, z` components, respectively.
 
     Args:
-        basis_a (~.qchem.BasisFunction): left basis function
-        basis_b (~.qchem.BasisFunction): right basis function
+        basis_a (~qchem.basis_set.BasisFunction): left basis function
+        basis_b (~qchem.basis_set.BasisFunction): right basis function
         order (integer): exponent of the position component
         idx (integer): index determining the dimension of the multipole moment integral
 
@@ -618,8 +618,8 @@ def kinetic_integral(basis_a, basis_b):
     r"""Return a function that computes the kinetic integral for two contracted Gaussian functions.
 
     Args:
-        basis_a (~.qchem.BasisFunction): first basis function
-        basis_b (~.qchem.BasisFunction): second basis function
+        basis_a (~qchem.basis_set.BasisFunction): first basis function
+        basis_b (~qchem.basis_set.BasisFunction): second basis function
 
     Returns:
         function: function that computes the kinetic integral
@@ -821,8 +821,8 @@ def attraction_integral(r, basis_a, basis_b):
 
     Args:
         r (array[float]): position vector of nucleus
-        basis_a (~.qchem.BasisFunction): first basis function
-        basis_b (~.qchem.BasisFunction): second basis function
+        basis_a (~qchem.basis_set.BasisFunction): first basis function
+        basis_b (~qchem.basis_set.BasisFunction): second basis function
 
     Returns:
         function: function that computes the electron-nuclear attraction integral
@@ -961,10 +961,10 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d):
     Gaussian functions.
 
     Args:
-        basis_a (~.qchem.BasisFunction): first basis function
-        basis_b (~.qchem.BasisFunction): second basis function
-        basis_c (~.qchem.BasisFunction): third basis function
-        basis_d (~.qchem.BasisFunction): fourth basis function
+        basis_a (~qchem.basis_set.BasisFunction): first basis function
+        basis_b (~qchem.basis_set.BasisFunction): second basis function
+        basis_c (~qchem.basis_set.BasisFunction): third basis function
+        basis_d (~qchem.basis_set.BasisFunction): fourth basis function
     Returns:
         function: function that computes the electron repulsion integral
 

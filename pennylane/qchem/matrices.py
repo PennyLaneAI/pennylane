@@ -63,7 +63,7 @@ def overlap_matrix(basis_functions):
     r"""Return a function that computes the overlap matrix for a given set of basis functions.
 
     Args:
-        basis_functions (list[~.qchem.BasisFunction]): basis functions
+        basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
 
     Returns:
         function: function that computes the overlap matrix
@@ -111,7 +111,7 @@ def moment_matrix(basis_functions, order, idx):
     r"""Return a function that computes the multipole moment matrix for a set of basis functions.
 
     Args:
-        basis_functions (list[~.qchem.BasisFunction]): basis functions
+        basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
         order (integer): exponent of the position component
         idx (integer): index determining the dimension of the multipole moment integral
 
@@ -163,7 +163,7 @@ def kinetic_matrix(basis_functions):
     r"""Return a function that computes the kinetic matrix for a given set of basis functions.
 
     Args:
-        basis_functions (list[~.qchem.BasisFunction]): basis functions
+        basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
 
     Returns:
         function: function that computes the kinetic matrix
@@ -212,7 +212,7 @@ def attraction_matrix(basis_functions, charges, r):
     basis functions.
 
     Args:
-        basis_functions (list[~.qchem.BasisFunction]): basis functions
+        basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
         charges (list[int]): nuclear charges
         r (array[float]): nuclear positions
 
@@ -276,7 +276,7 @@ def repulsion_tensor(basis_functions):
     functions.
 
     Args:
-        basis_functions (list[~.qchem.BasisFunction]): basis functions
+        basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
 
     Returns:
         function: function that computes the electron repulsion tensor
@@ -346,7 +346,7 @@ def core_matrix(basis_functions, charges, r):
     The core matrix is computed as a sum of the kinetic and electron-nuclear attraction matrices.
 
     Args:
-        basis_functions (list[~.qchem.BasisFunction]): basis functions
+        basis_functions (list[~qchem.basis_set.BasisFunction]): basis functions
         charges (list[int]): nuclear charges
         r (array[float]): nuclear positions
 

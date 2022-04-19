@@ -69,7 +69,7 @@ def electron_integrals(mol, core=None, active=None):
     orbital expansion coefficient matrix.
 
     Args:
-        mol (~.qchem.Molecule): the molecule object
+        mol (~qchem.molecule.Molecule): the molecule object
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
 
@@ -145,7 +145,7 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the fermionic hamiltonian.
 
     Args:
-        mol (~.qchem.Molecule): the molecule object
+        mol (~qchem.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible electronic integrals
 
     Returns:
@@ -182,7 +182,7 @@ def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the qubit hamiltonian.
 
     Args:
-        mol (~.qchem.Molecule): the molecule object
+        mol (~qchem.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible electronic integrals
 
     Returns:

@@ -68,7 +68,7 @@ def dipole_integrals(mol, core=None, active=None):
     where :math:`N_\mathrm{core}` is the number of core orbitals.
 
     Args:
-        mol (~.qchem.Molecule): the molecule object
+        mol (~qchem.molecule.Molecule): the molecule object
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
 
@@ -172,7 +172,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
     nuclear coordinates of the :math:`i`-th atom of the molecule.
 
     Args:
-        mol (~.qchem.Molecule): the molecule object
+        mol (~qchem.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible dipole moment integrals
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
@@ -266,7 +266,7 @@ def dipole_moment(mol, cutoff=1.0e-18, core=None, active=None):
     single-qubit Pauli operators :math:`X, Y, Z, I`.
 
     Args:
-        mol (~.qchem.Molecule): the molecule object
+        mol (~qchem.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible dipole moment integrals
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
