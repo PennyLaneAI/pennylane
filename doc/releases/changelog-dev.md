@@ -10,8 +10,6 @@
   formats of gradient rules.
   [(#2452)](https://github.com/XanaduAI/pennylane/pull/2452)
 
-<h3>Deprecations</h3>
-
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
