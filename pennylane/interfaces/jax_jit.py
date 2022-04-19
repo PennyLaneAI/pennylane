@@ -17,6 +17,7 @@ to a PennyLane Device class.
 """
 
 # pylint: disable=too-many-arguments
+from doctest import NORMALIZE_WHITESPACE
 import jax
 import jax.numpy as jnp
 from jax.experimental import host_callback
@@ -122,7 +123,6 @@ def _execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
     # Only have scalar outputs
     total_size = len(tapes)
     total_params = np.sum([len(p) for p in params])
@@ -206,11 +206,26 @@ def _execute(
 
             return (tuple(res),)
 
-        # Gradient function is a device method.
-        with qml.tape.Unwrap(*tapes):
-            jacs = gradient_fn(tapes, **gradient_kwargs)
+        def wrapper(p):
+            new_tapes = []
+            for t, a in zip(tapes, p):
+                new_tapes.append(t.copy(copy_operations=True))
+                new_tapes[-1].set_parameters(a)
+                new_tapes[-1].trainable_params = t.trainable_params
 
-        vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
+            # Gradient function is a device method.
+            with qml.tape.Unwrap(*new_tapes):
+                jacs = gradient_fn(new_tapes, **gradient_kwargs)
+
+            return jacs
+
+        shapes = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
+        jacs = host_callback.call(wrapper, params, result_shape=shapes)
+
+        vjps = []
+        for d, jac in zip(g, jacs):
+            vjps.append(qml.gradients.compute_vjp(d, jac))
+
         res = [[jnp.array(p) for p in v] for v in vjps]
         return (tuple(res),)
 
