@@ -56,6 +56,7 @@ jobs:
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
           git commit -m "exclude files from pr"
+          # check for new changes on the rc branch only based on the diff between master and rc
           if ! git diff master HEAD --quiet -- $(git diff --name-only master...); then
             echo "new_changes=true" >> $GITHUB_ENV
             git push --set-upstream origin "$BRANCH"
