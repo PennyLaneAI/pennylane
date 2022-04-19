@@ -812,19 +812,25 @@ def molecular_hamiltonian(
     charge=0,
     mult=1,
     basis="sto-3g",
-    package="pyscf",
+    method="dhf",
     active_electrons=None,
     active_orbitals=None,
     mapping="jordan_wigner",
     outpath=".",
     wires=None,
+    alpha=None,
+    coeff=None,
+    args=None,
 ):  # pylint:disable=too-many-arguments
     r"""Generates the qubit Hamiltonian of a molecule.
 
     This function drives the construction of the second-quantized electronic Hamiltonian
     of a molecule and its transformation to the basis of Pauli matrices.
 
-    #. OpenFermion-PySCF plugin is used to launch
+    The `method` can be either "dhf", which uses an in-built differentiable Hartree-Fock solver, or
+    "pyscf", which uses the OpenFermion-PySCF plugin.
+
+    #. OpenFermion-PySCF plugin can be used to launch
        the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
        chemistry package ``PySCF``.
 
@@ -867,7 +873,7 @@ def molecular_hamiltonian(
         basis (str): Atomic basis set used to represent the molecular orbitals. Basis set
             availability per element can be found
             `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx-basiselement>`_
-        package (str): quantum chemistry package (pyscf) used to solve the
+        method (str): quantum chemistry method used to solve the
             mean field electronic structure problem
         active_electrons (int): Number of active electrons. If not specified, all electrons
             are considered to be active.
@@ -881,6 +887,9 @@ def molecular_hamiltonian(
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted for
             partial mapping. If None, will use identity map.
+        alpha (array[float]): exponents of the primitive Gaussian functions
+        coeff (array[float]): coefficients of the contracted Gaussian functions
+        args (array[array[float]]): initial values of the differentiable parameters
 
     Returns:
         tuple[pennylane.Hamiltonian, int]: the fermionic-to-qubit transformed Hamiltonian
@@ -909,9 +918,27 @@ def molecular_hamiltonian(
     + (0.12293305056183801) [Z1 Z3]
     + (0.176276408043196) [Z2 Z3]
     """
+    if len(coordinates) == len(symbols) * 3:
+        geometry_dhf = coordinates.reshape(len(symbols), 3)
+        geometry_hf = coordinates
+    elif len(coordinates) == len(symbols):
+        geometry_dhf = coordinates
+        geometry_hf = coordinates.flatten()
+
+    if method == "dhf":
+        if args is None and type(geometry_dhf) is qml.numpy.tensor:
+            geometry_dhf.requires_grad = False
+        mol = qml.qchem.Molecule(symbols, geometry_dhf, alpha=alpha, coeff=coeff)
+        core, active = qml.qchem.active_space(
+            mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
+        )
+        if args is None:
+            return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(), 2 * len(active)
+        return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args), 2 * len(active)
+
     openfermion, _ = import_of()
 
-    hf_file = meanfield(symbols, coordinates, name, charge, mult, basis, package, outpath)
+    hf_file = meanfield(symbols, geometry_hf, name, charge, mult, basis, method, outpath)
 
     molecule = openfermion.MolecularData(filename=hf_file)
 

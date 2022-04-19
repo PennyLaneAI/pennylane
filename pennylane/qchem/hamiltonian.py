@@ -178,7 +178,7 @@ def fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     return _fermionic_hamiltonian
 
 
-def mol_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
+def diff_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the qubit hamiltonian.
 
     Args:
@@ -196,7 +196,7 @@ def mol_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
-    >>> h = mol_hamiltonian(mol)(*args)
+    >>> h = diff_hamiltonian(mol)(*args)
     >>> h.coeffs
     tensor([ 0.29817879+0.j,  0.20813365+0.j,  0.20813365+0.j,
              0.17860977+0.j,  0.04256036+0.j, -0.04256036+0.j,
