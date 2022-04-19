@@ -150,10 +150,10 @@ class TestMeasurementTransformations:
         ),
         ([PauliX("a")], ([RY(-np.pi / 2, wires=["a"])], [PauliZ(wires=["a"])])),
         (
-            [PauliX(0) @ PauliY(1), PauliY(1) @ PauliX(0)],
+            [PauliX(0), PauliX(1) @ PauliX(0)],
             (
-                [RY(-1.5707963267948966, wires=[0]), RX(1.5707963267948966, wires=[1])],
-                [PauliZ(wires=[0]) @ PauliZ(wires=[1]), PauliZ(wires=[0]) @ PauliZ(wires=[1])],
+                [RY(-1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[1])],
+                [PauliZ(wires=[0]), PauliZ(wires=[1]) @ PauliZ(wires=[0])]
             ),
         ),
     ]

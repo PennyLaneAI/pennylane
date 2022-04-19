@@ -138,7 +138,6 @@ def diagonalize_qwc_pauli_words(qwc_grouping):  # pylint: disable=too-many-branc
     # If all Paulis are the same kind they are naturally QWC and we
     # don't need to do the expensive quadratic scaling check
     first_pauli_name = qwc_grouping[0].name
-    # print(f"\ninitial first pauli name: {first_pauli_name}")
     if isinstance(first_pauli_name, list):
         first_pauli_name = first_pauli_name[0]
     all_paulis_same_kind = all(
@@ -147,15 +146,6 @@ def diagonalize_qwc_pauli_words(qwc_grouping):  # pylint: disable=too-many-branc
         else first_pauli_name == pauli_word.name
         for pauli_word in qwc_grouping
     )
-    #
-    # print(f"----- All PauliWords in grouping are the same: {all_paulis_same_kind} -----")
-    # for index, pauli_word in enumerate(qwc_grouping):
-    #     print(f"\n--- index = {index} ---")
-    #     if isinstance(pauli_word.name, list):
-    #         for sub_word_name in pauli_word.name:
-    #             print(first_pauli_name, sub_word_name, first_pauli_name == sub_word_name)
-    #     else:
-    #         print(first_pauli_name, pauli_word.name, first_pauli_name == pauli_word.name)
 
     if not all_paulis_same_kind:
         m_paulis = len(qwc_grouping)
