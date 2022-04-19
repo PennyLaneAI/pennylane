@@ -86,7 +86,7 @@ def scf(mol, n_steps=50, tol=1e-8):
     which is solved with conventional methods iteratively.
 
     Args:
-        mol (Molecule): the molecule object
+        mol (~.qchem.Molecule): the molecule object
         n_steps (int): the number of iterations
         tol (float): convergence tolerance
 
@@ -223,7 +223,7 @@ def hf_energy(mol):
     r"""Return a function that computes the Hartree-Fock energy.
 
     Args:
-        mol (Molecule): the molecule object
+        mol (~.qchem.Molecule): the molecule object
 
     Returns:
         function: function that computes the Hartree-Fock energy
