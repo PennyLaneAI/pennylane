@@ -523,9 +523,9 @@ class QuantumTape(AnnotatedQueue):
         )
         self.num_wires = len(self.wires)
 
-        self.is_sampled = any(m.return_type is Sample for m in self.measurements)
-        self.all_sampled = all(m.return_type is Sample for m in self.measurements)
-        self.is_sampled = any(m.return_type is Sample for m in self.measurements)
+        return_types = [m.return_type is Sample for m in self.measurements]
+        self.is_sampled = any(return_types)
+        self.all_sampled = all(return_types)
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -1557,7 +1557,21 @@ class QuantumTape(AnnotatedQueue):
             tape._ops = self._ops.copy()
             tape._measurements = self._measurements.copy()
 
-        tape._update()
+        tape._graph = None
+        tape._specs = None
+        tape._depth = None
+
+        tape.wires = copy.copy(self.wires)
+        tape.num_wires = self.num_wires
+        tape.is_sampled = self.is_sampled
+        tape.all_sampled = self.all_sampled
+
+        tape._update_par_info()
+
+        tape._update_trainable_params()
+        tape._obs_sharing_wires = [copy.copy(shared_wires) for shared_wires in self._obs_sharing_wires]
+        tape._obs_sharing_wires_id = [copy.copy(wire_id) for wire_id in self._obs_sharing_wires_id]
+
         tape.trainable_params = self.trainable_params.copy()
         tape._output_dim = self.output_dim
 
