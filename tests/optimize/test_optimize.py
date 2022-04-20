@@ -115,9 +115,7 @@ class TestOverOpts:
         """Check non-trainable argument does not get updated"""
 
         def func(a, b, c, d):
-            if not qml.math.allclose(b, 1.0):
-                # Tests Nesterov momentum optimizer only shifts arguments of the trainable parameters
-                raise ValueError("Only accepts a b of 1.0.")
+            assert qml.math.allclose(b, 1.0)
             return a * b * c * d
 
         a = np.array(0.1, requires_grad=True)
