@@ -217,8 +217,9 @@ H          0.00000        0.00000        0.35000
 """
 
 
-def test_read_structure(tmpdir):
-    """Test loading a program using a path object"""
+def test_mol_hamiltonian_with_read_structure(tmpdir):
+    """Test that the pipeline of using molecular_hamiltonian with
+    read_structure executes without errors."""
     f_name = "h2.xyz"
     filename = tmpdir.join(f_name)
 
@@ -227,3 +228,5 @@ def test_read_structure(tmpdir):
 
     symbols, coordinates = qchem.read_structure(str(filename))
     H, num_qubits = qchem.molecular_hamiltonian(symbols, coordinates)
+    assert len(H.terms()) == 2
+    assert num_qubits == 4
