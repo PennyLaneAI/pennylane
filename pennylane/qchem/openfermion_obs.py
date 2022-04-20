@@ -942,9 +942,9 @@ def molecular_hamiltonian(
         )
         if args is None:
             h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
-            return qml.Hamiltonian(h.coeffs.real, h.ops), 2 * len(active)
+            return qml.Hamiltonian(qml.numpy.real(h.coeffs), h.ops), 2 * len(active)
         h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
-        return qml.Hamiltonian(h.coeffs.real, h.ops), 2 * len(active)
+        return qml.Hamiltonian(qml.numpy.real(h.coeffs), h.ops), 2 * len(active)
 
     openfermion, _ = import_of()
 
