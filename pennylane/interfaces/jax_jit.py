@@ -122,24 +122,23 @@ def _execute(
     gradient_kwargs=None,
     _n=1,
 ):  # pylint: disable=dangerous-default-value,unused-argument
-
     # Only have scalar outputs
     total_size = len(tapes)
     total_params = np.sum([len(p) for p in params])
+
+    # Copy a given tape with operations and set parameters
+    def cp_tape(t, a):
+        tc = t.copy(copy_operations=True)
+        tc.set_parameters(a)
+        return tc
 
     @jax.custom_vjp
     def wrapped_exec(params):
         def wrapper(p):
             """Compute the forward pass."""
-            new_tapes = []
-
-            for t, a in zip(tapes, p):
-                new_tapes.append(t.copy(copy_operations=True))
-                new_tapes[-1].set_parameters(a)
-
+            new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
             with qml.tape.Unwrap(*new_tapes):
                 res, _ = execute_fn(new_tapes, **gradient_kwargs)
-
             return res
 
         shapes = [jax.ShapeDtypeStruct((1,), dtype) for _ in range(total_size)]
@@ -155,15 +154,10 @@ def _execute(
 
             def non_diff_wrapper(args):
                 """Compute the VJP in a non-differentiable manner."""
-                new_tapes = []
                 p = args[:-1]
                 dy = args[-1]
 
-                for t, a in zip(tapes, p):
-                    new_tapes.append(t.copy(copy_operations=True))
-                    new_tapes[-1].set_parameters(a)
-                    new_tapes[-1].trainable_params = t.trainable_params
-
+                new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                     new_tapes,
                     dy,
@@ -206,10 +200,15 @@ def _execute(
 
             return (tuple(res),)
 
-        # Gradient function is a device method.
-        with qml.tape.Unwrap(*tapes):
-            jacs = gradient_fn(tapes, **gradient_kwargs)
+        def jacs_wrapper(p):
+            """Compute the jacs"""
+            new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
+            with qml.tape.Unwrap(*new_tapes):
+                jacs = gradient_fn(new_tapes, **gradient_kwargs)
+            return jacs
 
+        shapes = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
+        jacs = host_callback.call(jacs_wrapper, params, result_shape=shapes)
         vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
         res = [[jnp.array(p) for p in v] for v in vjps]
         return (tuple(res),)
