@@ -149,6 +149,13 @@ class TestMeasurementTransformations:
             ),
         ),
         ([PauliX("a")], ([RY(-np.pi / 2, wires=["a"])], [PauliZ(wires=["a"])])),
+        (
+            [PauliX(0), PauliX(1) @ PauliX(0)],
+            (
+                [RY(-1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[1])],
+                [PauliZ(wires=[0]), PauliZ(wires=[1]) @ PauliZ(wires=[0])],
+            ),
+        ),
     ]
 
     @pytest.mark.parametrize("qwc_grouping,qwc_sol_tuple", qwc_diagonalization_io)
@@ -175,6 +182,7 @@ class TestMeasurementTransformations:
         [PauliX("a"), PauliY("a")],
         [PauliZ(0) @ Identity(1), PauliZ(0) @ PauliZ(1), PauliX(0) @ Identity(1)],
         [PauliX("a") @ PauliX(0), PauliZ(0) @ PauliZ("a")],
+        [PauliZ("a") @ PauliY(1), PauliZ(1) @ PauliY("a")],
     ]
 
     @pytest.mark.parametrize("not_qwc_grouping", not_qwc_groupings)
