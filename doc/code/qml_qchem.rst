@@ -5,7 +5,8 @@ Overview
 --------
 
 The quantum chemistry module provides the functionality to perform Hartree-Fock calculations
-and construct observables such as molecular Hamiltonians as well as dipole moment, spin and particle number operators.
+and construct observables such as molecular Hamiltonians as well as dipole moment, spin and particle
+number operators.
 
 .. currentmodule:: pennylane.qchem
 
@@ -207,3 +208,10 @@ backend can be selected by setting `method='pyscf'` in :func:`~.molecular_hamilt
         basis='sto-3g',
         method='pyscf'
     )
+
+The non-differentiable backend requires the ``OpenFermion-PySCF`` plugin to be installed by the user
+with
+
+.. code-block:: bash
+
+    pip install openfermionpyscf
