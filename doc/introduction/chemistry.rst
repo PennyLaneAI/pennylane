@@ -16,23 +16,25 @@ to generate the electronic Hamiltonian in a single call. For example,
 
 .. code-block:: python
 
-    from pennylane import qchem
+    import pennylane as qml
     from pennylane import numpy as np
 
-    symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-    h, qubits = qchem.molecular_hamiltonian(symbols, coordinates)
+    symbols = ["H", "H"]
+    geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
+    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
 
 where:
 
-* ``h`` is the qubit Hamiltonian of the molecule represented as a PennyLane Hamiltonian, and
+* ``hamiltonian`` is the qubit Hamiltonian of the molecule represented as a PennyLane Hamiltonian and
 
 * ``qubits`` is the number of qubits needed to perform the quantum simulation.
 
-The :func:`~.molecular_hamiltonian` function can be also used to construct the molecular Hamiltonian
+The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular Hamiltonian
 with an external backend that uses the
 `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
-electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_, which requires separate installation.
-This backend is non-differentiable and can be selected by setting `method='pyscf'` in :func:`~.molecular_hamiltonian`.
+electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_, which requires separate
+installation. This backend is non-differentiable and can be selected by setting
+`method='pyscf'` in :func:`~.molecular_hamiltonian`.
 
 Furthermore, the net charge,
 the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the
@@ -41,17 +43,13 @@ specified for each backend.
 
 .. code-block:: python
 
-    from pennylane import qchem
-    from pennylane import numpy as np
-
-    symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-    h, qubits = qchem.molecular_hamiltonian(
+    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(
         symbols,
         coordinates,
         charge=0,
         mult=1,
         basis='sto-3g',
-        method='pyscf'
+        method='pyscf',
         active_electrons=2,
         active_orbitals=2
     )
@@ -64,12 +62,7 @@ file using the :func:`~.read_structure` function:
 
 .. code-block:: python
 
-    >>> symbols, coordinates = qchem.read_structure('h2.xyz')
-    >>> print(symbols, coordinates)
-    ['H', 'H'] [0.    0.   -0.66140414    0.    0.    0.66140414]
-
-The geometry of the molecule is returned as a list containing the symbol and the Cartesian
-coordinates of each atomic species.
+    symbols, geometry = qml.qchem.read_structure('h2.xyz')
 
 
 VQE simulations
@@ -85,14 +78,11 @@ expectation value of a Hamiltonian can be calculated using ``qml.expval``:
 
 .. code-block:: python
 
-    import pennylane as qml
-    from pennylane import qchem
-    from pennylane import numpy as np
-
     dev = qml.device('default.qubit', wires=4)
 
-    symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-    hamiltonian, qubits = qchem.molecular_hamiltonian(symbols, coordinates)
+    symbols = ["H", "H"]
+    geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
+    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
 
     @qml.qnode(dev)
     def circuit(params):
@@ -100,12 +90,16 @@ expectation value of a Hamiltonian can be calculated using ``qml.expval``:
         qml.DoubleExcitation(params, wires=[0, 1, 2, 3])
         return qml.expval(hamiltonian)
 
-    params = np.array(0.0, requires_grad=True)
+    params = np.array(0.20885146442480412, requires_grad=True)
     circuit(params)
+
+.. code-block:: text
+
+    tensor(-1.13618912, requires_grad=True)
 
 The circuit parameter can be optimized using the interface of choice.
 
 .. note::
 
-    For more details on VQE and the quantum chemistry functionality available in ``qml.qchem``,
-    check out the PennyLane quantum chemistry tutorials.
+    For more details on VQE and the quantum chemistry functionality available in
+    :mod:`~pennylane.qchem`, check out the PennyLane quantum chemistry tutorials.
