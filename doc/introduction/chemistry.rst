@@ -103,7 +103,7 @@ expectation value of a Hamiltonian can be calculated using ``qml.expval``:
     params = np.array(0.0, requires_grad=True)
     circuit(params)
 
-The circuit parameter can be optimized using the machine learning interface of choice.
+The circuit parameter can be optimized using the interface of choice.
 
 .. note::
 
