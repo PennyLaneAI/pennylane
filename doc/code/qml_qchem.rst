@@ -45,9 +45,8 @@ without increasing the size of the basis set. Overall, the solver allows users t
 differentiable algorithms for quantum chemistry.
 
 The differentiable HF solver computes the integrals over basis functions, constructs the relevant
-matrices, and
-performs self-consistent-field iterations to obtain a set of optimized molecular orbital
-coefficients. These coefficients and the computed integrals over basis functions are used to
+matrices, and performs self-consistent-field iterations to obtain a set of optimized molecular
+orbital coefficients. These coefficients and the computed integrals over basis functions are used to
 construct the one- and two-body electron integrals in the molecular orbital basis, which can be
 used to generate differentiable second-quantized Hamiltonians and dipole moments in the fermionic
 and qubit basis.
@@ -70,38 +69,36 @@ geometry of the molecule and the basis set parameters are all differentiable.
     coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
                       [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
 
-We create a molecule object with differentiable atomic coordinates and basis set parameters and then
-construct the Hamiltonian.
+We then construct the Hamiltonian.
 
 .. code-block:: python3
 
-    mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-    args_mol = [geometry, alpha, coeff] # initial values of the differentiable parameters
+    args = [geometry, alpha, coeff] # initial values of the differentiable parameters
 
-    hamiltonian = qml.qchem.diff_hamiltonian(mol)(*args_mol)
+    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, alpha=alpha, coeff=coeff, args=args)
 
 >>> print(hamiltonian)
-  ((-0.3596823592263728+0j)) [I0]
-+ ((-0.11496335836149135+0j)) [Z3]
-+ ((-0.1149633583614913+0j)) [Z2]
-+ ((0.1308241430373499+0j)) [Z0]
-+ ((0.1308241430373499+0j)) [Z1]
-+ ((0.10316898251626505+0j)) [Z0 Z2]
-+ ((0.10316898251626505+0j)) [Z1 Z3]
-+ ((0.1532995999427217+0j)) [Z0 Z3]
-+ ((0.1532995999427217+0j)) [Z2 Z1]
-+ ((0.1540549585580985+0j)) [Z0 Z1]
-+ ((0.1609686663985837+0j)) [Z3 Z2]
-+ ((-0.05013061742645664+0j)) [Y0 X2 X3 Y1]
-+ ((-0.05013061742645664+0j)) [X0 Y2 Y3 X1]
-+ ((0.05013061742645664+0j)) [Y0 X2 Y3 X1]
-+ ((0.05013061742645664+0j)) [X0 Y2 X3 Y1]
+  (-0.35968235922631075) [I0]
++ (-0.11496335836166222) [Z2]
++ (-0.11496335836166222) [Z3]
++ (0.13082414303722753) [Z1]
++ (0.13082414303722759) [Z0]
++ (0.1031689825163302) [Z0 Z2]
++ (0.1031689825163302) [Z1 Z3]
++ (0.15329959994281844) [Z0 Z3]
++ (0.15329959994281844) [Z1 Z2]
++ (0.15405495855815063) [Z0 Z1]
++ (0.1609686663987323) [Z2 Z3]
++ (-0.05013061742648825) [Y0 Y1 X2 X3]
++ (-0.05013061742648825) [X0 X1 Y2 Y3]
++ (0.05013061742648825) [Y0 X1 X2 Y3]
++ (0.05013061742648825) [X0 Y1 Y2 X3]
 
 The generated Hamiltonian can be used in a circuit where the molecular geometry, the basis set
 parameters, and the circuit parameters are optimized simultaneously. Further information about
 molecular geometry optimization with PennyLane is provided in this
 `paper <https://arxiv.org/abs/2106.13840>`__ and this
-`demo <https://pennylane.ai/qml/demos/tutorial_mol_geo_opt.html>`__ .
+`demo <https://pennylane.ai/qml/demos/tutorial_mol_geo_opt.html>`__.
 
 .. code-block:: python3
 
@@ -114,10 +111,11 @@ molecular geometry optimization with PennyLane is provided in this
         def circuit(*args):
             qml.BasisState(hf_state, wires=[0, 1, 2, 3])
             qml.DoubleExcitation(*args[0][0], wires=[0, 1, 2, 3])
-            return qml.expval(qml.qchem.diff_hamiltonian(mol)(*args[1:]))
+            return qml.expval(qml.qchem.molecular_hamiltonian(mol.symbols, mol.coordinates, alpha=mol.alpha, coeff=mol.coeff, args=args[1:])[0])
         return circuit
 
-Now that the circuit is defined, we can create a geometry and parameter optimization loop:
+Now that the circuit is defined, we can create a geometry and parameter optimization loop. For
+convenience, we create a molecule object that stores the molecular parameters.
 
 .. code-block:: python3
 
@@ -150,13 +148,13 @@ Running this optimization, we get the following output in atomic units:
 
 .. code-block:: text
 
-    Step: 0, Energy: -1.0491709019853235, Maximum Force: 0.15801947189250276
-    Step: 5, Energy: -1.134986263549686, Maximum Force: 0.037660772858684355
-    Step: 10, Energy: -1.1399960673348044, Maximum Force: 0.005175326423590643
-    Step: 15, Energy: -1.1403213849556897, Maximum Force: 0.0004138322831406249
-    Step: 20, Energy: -1.1403680839521801, Maximum Force: 8.223301624310508e-06
+    Step: 0, Energy: -1.0491709019856188, Maximum Absolute Force: 0.1580194718925249
+    Step: 5, Energy: -1.1349862621177522, Maximum Absolute Force: 0.037660768852544046
+    Step: 10, Energy: -1.1399960666483346, Maximum Absolute Force: 0.005175323916673413
+    Step: 15, Energy: -1.140321384816611, Maximum Absolute Force: 0.0004138319900744425
+    Step: 20, Energy: -1.1403680839339787, Maximum Absolute Force: 8.223248376348913e-06
 
-Note that the computed energy is lower than the Full-CI energy, -1.1373060483 Ha, computed without
+Note that the computed energy is lower than the Full-CI energy, -1.1373060483 Ha, obtained without
 optimizing the basis set parameters.
 
 The components of the HF solver can also be differentiated individually. For instance, the overlap
@@ -196,13 +194,14 @@ backend can be selected by setting `method='pyscf'` in :func:`~.molecular_hamilt
 
 .. code-block:: python
 
-    from pennylane import qchem
+    import pennylane as qml
     from pennylane import numpy as np
 
-    symbols, coordinates = (['H', 'H'], np.array([0., 0., -0.66140414, 0., 0., 0.66140414]))
-    h, qubits = qchem.molecular_hamiltonian(
+    symbols = ["H", "H"]
+    geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
+    hamiltonian, qubits = qml.qchem.molecular_hamiltonian(
         symbols,
-        coordinates,
+        geometry,
         charge=0,
         mult=1,
         basis='sto-3g',
