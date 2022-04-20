@@ -485,6 +485,7 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 * Fixes a bug where non-trainable arguments were shifted in the `NesterovMomentumOptimizer`
   if a trainable argument was after it in the argument list.
+  [(#2466)](https://github.com/PennyLaneAI/pennylane/pull/2466)
 
 * Fixes a bug where `qml.DiagonalQubitUnitary` did not support `@jax.jit`
   and `@tf.function`.
