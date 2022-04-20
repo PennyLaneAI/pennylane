@@ -1,11 +1,12 @@
 Quantum Chemistry
 =================
 
-PennyLane provides the :mod:`~.qchem` module to perform quantum chemistry simulations. This module
+PennyLane provides the :mod:`~.qchem` module to perform quantum chemistry simulations. It
 contains a differentiable Hartree-Fock solver and the functionality to construct a
-fully-differentiable molecular Hamiltonian that can be used to implement the Variational Quantum
-Eigensolver (VQE) algorithm. The :mod:`~.qchem` module also provides tools for building other
-observables such as molecular dipole moment, spin and particle number observables.
+fully-differentiable molecular Hamiltonian that can be used as input to quantum algorithms
+such as the variational quantum eigensolver (VQE) algorithm. The :mod:`~.qchem` module
+also provides tools for building other observables such as molecular dipole moment, spin
+and particle number observables.
 
 Building the electronic Hamiltonian
 -----------------------------------
@@ -28,10 +29,10 @@ where:
 * ``qubits`` is the number of qubits needed to perform the quantum simulation.
 
 The :func:`~.molecular_hamiltonian` function can be also used to construct the molecular Hamiltonian
-with a non-differentiable backend that uses the
+with an external backend that uses the
 `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
-electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_. The non-differentiable
-backend can be selected by setting `method='pyscf'` in :func:`~.molecular_hamiltonian`.
+electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_, which requires separate installation.
+This backend is non-differentiable and can be selected by setting `method='pyscf'` in :func:`~.molecular_hamiltonian`.
 
 Furthermore, the net charge,
 the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the
@@ -102,8 +103,7 @@ expectation value of a Hamiltonian can be calculated using ``qml.expval``:
     params = np.array(0.0, requires_grad=True)
     circuit(params)
 
-The circuit parameter can be optimized using the machine learning interface of choice
-until the energy difference between two consecutive iterations has converged to near zero.
+The circuit parameter can be optimized using the machine learning interface of choice.
 
 .. note::
 

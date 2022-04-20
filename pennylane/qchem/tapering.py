@@ -353,7 +353,7 @@ def taper(h, generators, paulixops, paulix_sector):
 
     >>> symbols = ["H", "H"]
     >>> geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
-    >>> H, q = qml.qchem.molecular_hamiltonian(symbols, geometry)
+    >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
     >>> generators = qml.qchem.symmetry_generators(H)
     >>> paulixops = paulix_ops(generators, 4)
     >>> paulix_sector = [1, -1, -1]
@@ -427,7 +427,7 @@ def optimal_sector(qubit_op, generators, active_electrons):
 
     >>> symbols = ["H", "H"]
     >>> geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
-    >>> H, q = qml.qchem.molecular_hamiltonian(symbols, geometry)
+    >>> H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
     >>> generators = qml.qchem.symmetry_generators(H)
     >>> qml.qchem.optimal_sector(H, generators, 2)
         [1, -1, -1]

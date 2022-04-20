@@ -4,8 +4,8 @@ qml.qchem
 Overview
 --------
 
-The quantum chemistry subpackage provides the functionality to perform Hartree-Fock calculations
-and construct observables such as molecular Hamiltonian, dipole moment, spin and particle number.
+The quantum chemistry module provides the functionality to perform Hartree-Fock calculations
+and construct observables such as molecular Hamiltonians as well as dipole moment, spin and particle number operators.
 
 .. currentmodule:: pennylane.qchem
 
