@@ -28,7 +28,7 @@ bohr_angs = 0.529177210903
 def import_of():
     """Import openfermion and openfermionpyscf."""
     try:
-        # pylint: disable=import-outside-toplevel, unused-import
+        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
         import openfermion, openfermionpyscf
     except ImportError as Error:
         raise ImportError(
@@ -926,7 +926,7 @@ def molecular_hamiltonian(
         geometry_hf = coordinates.flatten()
 
     if method == "dhf":
-        if args is None and type(geometry_dhf) is qml.numpy.tensor:
+        if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
             geometry_dhf.requires_grad = False
         mol = qml.qchem.Molecule(
             symbols,
