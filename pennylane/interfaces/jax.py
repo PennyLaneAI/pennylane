@@ -161,14 +161,15 @@ def _execute(
     """The main interface execution function where jacobians of the execute
     function are computed by the registered backward function."""
 
+    # Copy a given tape with operations and set parameters
+    def cp_tape(t, a):
+        tc = t.copy(copy_operations=True)
+        tc.set_parameters(a)
+        return tc
+
     @jax.custom_vjp
     def wrapped_exec(params):
-        new_tapes = []
-
-        for t, a in zip(tapes, params):
-            new_tapes.append(t.copy(copy_operations=True))
-            new_tapes[-1].set_parameters(a)
-
+        new_tapes = [cp_tape(t, a) for t, a in zip(tapes, params)]
         with qml.tape.Unwrap(*new_tapes):
             res, _ = execute_fn(new_tapes, **gradient_kwargs)
 
@@ -185,17 +186,12 @@ def _execute(
     def wrapped_exec_bwd(params, g):
 
         if isinstance(gradient_fn, qml.gradients.gradient_transform):
-
             args = tuple(params) + (g,)
-            new_tapes = []
+
             p = args[:-1]
             dy = args[-1]
 
-            for t, a in zip(tapes, p):
-                new_tapes.append(t.copy(copy_operations=True))
-                new_tapes[-1].set_parameters(a)
-                new_tapes[-1].trainable_params = t.trainable_params
-
+            new_tapes = [cp_tape(t, a) for t, a in zip(tapes, p)]
             with qml.tape.Unwrap(*new_tapes):
                 vjp_tapes, processing_fn = qml.gradients.batch_vjp(
                     new_tapes,
