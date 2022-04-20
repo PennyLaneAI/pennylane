@@ -17,6 +17,7 @@
   existed for `Observable`'s, but now extends to all `Operator`'s.
   [(#2432)](https://github.com/PennyLaneAI/pennylane/pull/2432)
 
+  ```pycon
   >>> qml.S(0)
   S(wires=[0])
   >>> qml.CNOT((0,1))
