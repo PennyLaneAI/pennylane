@@ -16,7 +16,6 @@ This module contains the autograd wrappers :class:`grad` and :func:`jacobian`
 """
 import warnings
 
-import numpy as onp
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
 from autograd.numpy.numpy_boxes import ArrayBox
