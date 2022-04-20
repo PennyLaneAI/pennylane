@@ -483,6 +483,9 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
+* Fixes a bug with `@jax.jit` for grad when `diff_method="adjoint"` and `mode="backward"`.
+  [(#2460)](https://github.com/PennyLaneAI/pennylane/pull/2460)
+
 * Fixes a bug where `qml.DiagonalQubitUnitary` did not support `@jax.jit`
   and `@tf.function`.
   [(#2445)](https://github.com/PennyLaneAI/pennylane/pull/2445)
@@ -557,6 +560,6 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Utkarsh Azad, Thomas Bromley, Alain Delgado,
+Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Thomas Bromley, Alain Delgado,
 Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
 Matthew Silverman, Lee James O'Riordan, Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
