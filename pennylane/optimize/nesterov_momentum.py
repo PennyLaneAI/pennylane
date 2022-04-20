@@ -59,7 +59,9 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         """
         shifted_args = list(args)
 
-        trainable_indices = [i for i, arg in enumerate(args) if getattr(arg, "requires_grad", False)]
+        trainable_indices = [
+            i for i, arg in enumerate(args) if getattr(arg, "requires_grad", False)
+        ]
 
         if self.accumulation:
             for index in trainable_indices:
