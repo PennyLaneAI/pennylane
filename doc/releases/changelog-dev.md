@@ -12,6 +12,18 @@
 
 <h3>Improvements</h3>
 
+* Wires can be passed as the final argument to an `Operator`, instead of requiring
+  the wires to be explicitly specified with keyword `wires`. This functionality already
+  existed for `Observable`'s, but now extends to all `Operator`'s.
+  [(#2432)](https://github.com/PennyLaneAI/pennylane/pull/2432)
+
+  ```pycon
+  >>> qml.S(0)
+  S(wires=[0])
+  >>> qml.CNOT((0,1))
+  CNOT(wires=[0, 1])
+  ```
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
@@ -22,4 +34,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Christian Gogolin
+Christian Gogolin, Christina Lee
