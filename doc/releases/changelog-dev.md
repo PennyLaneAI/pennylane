@@ -22,6 +22,7 @@
   S(wires=[0])
   >>> qml.CNOT((0,1))
   CNOT(wires=[0, 1])
+  ```
 
 <h3>Breaking changes</h3>
 
