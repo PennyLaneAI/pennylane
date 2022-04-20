@@ -28,7 +28,7 @@ bohr_angs = 0.529177210903
 def import_of():
     """Import openfermion and openfermionpyscf."""
     try:
-        # pylint: disable=import-outside-toplevel, unused-import
+        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
         import openfermion, openfermionpyscf
     except ImportError as Error:
         raise ImportError(
@@ -919,22 +919,32 @@ def molecular_hamiltonian(
     + (0.176276408043196) [Z2 Z3]
     """
     if len(coordinates) == len(symbols) * 3:
-        geometry_dhf = coordinates.reshape(len(symbols), 3)
+        geometry_dhf = qml.numpy.array(coordinates.reshape(len(symbols), 3))
         geometry_hf = coordinates
     elif len(coordinates) == len(symbols):
-        geometry_dhf = coordinates
+        geometry_dhf = qml.numpy.array(coordinates)
         geometry_hf = coordinates.flatten()
 
     if method == "dhf":
-        if args is None and type(geometry_dhf) is qml.numpy.tensor:
+        if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
             geometry_dhf.requires_grad = False
-        mol = qml.qchem.Molecule(symbols, geometry_dhf, alpha=alpha, coeff=coeff)
+        mol = qml.qchem.Molecule(
+            symbols,
+            geometry_dhf,
+            charge=charge,
+            mult=mult,
+            basis_name=basis,
+            alpha=alpha,
+            coeff=coeff,
+        )
         core, active = qml.qchem.active_space(
             mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
         )
         if args is None:
-            return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(), 2 * len(active)
-        return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args), 2 * len(active)
+            h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
+            return qml.Hamiltonian(qml.numpy.real(h.coeffs), h.ops), 2 * len(active)
+        h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
+        return qml.Hamiltonian(qml.numpy.real(h.coeffs), h.ops), 2 * len(active)
 
     openfermion, _ = import_of()
 

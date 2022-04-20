@@ -130,6 +130,7 @@
     [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
   - The quantum chemistry functionalities are unified
     [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
+    [(#2465)](https://github.com/PennyLaneAI/pennylane/pull/2465)
 
 * Adds a MERA template.
   [(#2418)](https://github.com/PennyLaneAI/pennylane/pull/2418)
