@@ -211,7 +211,7 @@ class TestAttributes:
         ("wires", "n_block_wires"),
         [(range(4), 5), (range(9), 20)],
     )
-    def test_get_n_blocks(self, wires, n_block_wires):
+    def test_get_n_blocks_error(self, wires, n_block_wires):
         """Test that the number of blocks attribute raises an error when n_block_wires is too large."""
 
         with pytest.raises(
