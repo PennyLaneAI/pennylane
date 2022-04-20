@@ -399,6 +399,10 @@
 
 <h3>Breaking changes</h3>
 
+* The `qml.finite_diff` function has been deleted. Please use `qml.gradients.finite_diff` to compute
+  the gradient of tapes of QNodes. Otherwise, manual implementation is required.
+  [(#2464)](https://github.com/PennyLaneAI/pennylane/pull/2464)
+
 * The `get_unitary_matrix` transform has been removed, users should use
   `qml.matrix` instead.
   [(#2457)](https://github.com/PennyLaneAI/pennylane/pull/2457)
