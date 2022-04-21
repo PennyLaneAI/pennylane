@@ -23,6 +23,7 @@ from autograd.core import make_vjp as _make_vjp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.extend import vspace
 from autograd.wrap_util import unary_to_nary
+import pennylane as qml
 
 make_vjp = unary_to_nary(_make_vjp)
 
@@ -323,9 +324,10 @@ def jacobian(func, argnum=None):
                 "'requires_grad' attribute or 'argnum' keyword."
             )
 
-        jac = tuple(_jacobian(func, arg)(*args, **kwargs) for arg in _argnum)
+        jac = _jacobian(func, _argnum)(*args, **kwargs)
+        jac = qml.numpy.squeeze(jac, 1)
 
-        return jac[0] if unpack else jac
+        return jac
 
     return _jacobian_function
 
