@@ -145,14 +145,7 @@
   
   symbols = ["H", "H"]
   geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(
-      symbols,
-      geometry,
-      charge=0,
-      mult=1,
-      basis='sto-3g',
-      method='pyscf'
-  )
+  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, method='pyscf')
   ```
 
   - New functions are added for computing multipole moment molecular integrals
