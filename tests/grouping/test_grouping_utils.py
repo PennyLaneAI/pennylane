@@ -99,6 +99,13 @@ class TestGroupingUtils:
         n_qubits = 3
         assert pytest.raises(ValueError, pauli_to_binary, pauli_word, n_qubits, wire_map)
 
+    @pytest.mark.parametrize("pauli_word,binary_pauli", ops_to_vecs_explicit_wires)
+    def test_pauli_to_binary_no_check(self, pauli_word, binary_pauli):
+        """Tests that pauli_to_binary runs well when pauli words are provided and
+        check_is_pauli_word is False."""
+
+        assert (pauli_to_binary(pauli_word, check_is_pauli_word=False) == binary_pauli).all()
+
     @pytest.mark.parametrize("vec,op", vecs_to_ops_explicit_wires)
     def test_binary_to_pauli_no_wire_map(self, vec, op):
         """Test conversion of Pauli in binary vector representation to operator form when no

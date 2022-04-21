@@ -247,6 +247,7 @@ class Device(abc.ABC):
             # device is in analytic mode
             self._shots = shots
             self._shot_vector = None
+            self._raw_shot_sequence = None
 
         elif isinstance(shots, int):
             # device is in sampling mode (unbatched)
@@ -261,6 +262,7 @@ class Device(abc.ABC):
         elif isinstance(shots, Sequence) and not isinstance(shots, str):
             # device is in batched sampling mode
             self._shots, self._shot_vector = _process_shot_sequence(shots)
+            self._raw_shot_sequence = shots
 
         else:
             raise DeviceError(
