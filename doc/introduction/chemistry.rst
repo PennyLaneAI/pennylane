@@ -1,19 +1,18 @@
 Quantum Chemistry
 =================
 
-PennyLane provides the :mod:`qchem <pennylane.qchem>` module to perform quantum chemistry
-simulations. It contains a differentiable Hartree-Fock solver and the functionality to construct a
+PennyLane provides the :mod:`~.qchem` module to perform quantum chemistry simulations. It
+contains a differentiable Hartree-Fock solver and the functionality to construct a
 fully-differentiable molecular Hamiltonian that can be used as input to quantum algorithms
-such as the variational quantum eigensolver (VQE) algorithm. The :mod:`qchem <pennylane.qchem>`
-module also provides tools for building other observables such as molecular dipole moment, spin
+such as the variational quantum eigensolver (VQE) algorithm. The :mod:`~.qchem` module
+also provides tools for building other observables such as molecular dipole moment, spin
 and particle number observables.
 
 Building the electronic Hamiltonian
 -----------------------------------
 
-The `:mod:`qchem <pennylane.qchem>` module provides access to a driver function
-:func:`~.molecular_hamiltonian` to generate the electronic Hamiltonian in a single call. For
-example,
+The ``qchem`` module provides access to a driver function :func:`~.molecular_hamiltonian`
+to generate the electronic Hamiltonian in a single call. For example,
 
 .. code-block:: python
 
@@ -103,4 +102,4 @@ The circuit parameter can be optimized using the interface of choice.
 .. note::
 
     For more details on VQE and the quantum chemistry functionality available in
-    :mod:`qchem <pennylane.qchem>`, check out the PennyLane quantum chemistry tutorials.
+    :mod:`~pennylane.qchem`, check out the PennyLane quantum chemistry tutorials.
