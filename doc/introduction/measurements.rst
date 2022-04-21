@@ -77,7 +77,7 @@ by a ``Hadamard`` and ``CNOT`` gate.
     import pennylane as qml
     from pennylane import numpy as np
 
-    dev = qml.device("default.qubit", wires=2, shots=1)
+    dev = qml.device("default.qubit", wires=2, shots=1000)
 
     @qml.qnode(dev)
     def circuit():
