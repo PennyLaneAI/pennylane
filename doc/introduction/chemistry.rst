@@ -11,7 +11,7 @@ and particle number observables.
 Building the electronic Hamiltonian
 -----------------------------------
 
-The ``qchem`` module provides access to a driver function :func:`~.molecular_hamiltonian`
+The :mod:`~.qchem` module provides access to a driver function :func:`~.molecular_hamiltonian`
 to generate the electronic Hamiltonian in a single call. For example,
 
 .. code-block:: python
