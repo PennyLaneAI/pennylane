@@ -1,176 +1,10 @@
 :orphan:
 
-# Release 0.23.0-dev (development release)
+# Release 0.23.0-dev (current release)
 
 <h3>New features since last release</h3>
 
-* Added an optimization transform that matches pieces of user-provided identity templates in a circuit and replaces them with an equivalent component.
-  [(#2032)](https://github.com/PennyLaneAI/pennylane/pull/2032)
-
-  First let's consider the following circuit where we want to replace sequence of two ``pennylane.S`` gates with a
-  ``pennylane.PauliZ`` gate.
-
-  ```python
-  def circuit():
-      qml.S(wires=0)
-      qml.PauliZ(wires=0)
-      qml.S(wires=1)
-      qml.CZ(wires=[0, 1])
-      qml.S(wires=1)
-      qml.S(wires=2)
-      qml.CZ(wires=[1, 2])
-      qml.S(wires=2)
-      return qml.expval(qml.PauliX(wires=0))
-  ```
-
-  Therefore we use the following pattern that implements the identity:
-
-  ```python
-  with qml.tape.QuantumTape() as pattern:
-      qml.S(wires=0)
-      qml.S(wires=0)
-      qml.PauliZ(wires=0)
-  ```
-
-  For optimizing the circuit given the given following template of CNOTs we apply the `pattern_matching`
-  transform.
-
-  ```pycon
-  >>> dev = qml.device('default.qubit', wires=5)
-  >>> qnode = qml.QNode(circuit, dev)
-  >>> optimized_qfunc = qml.transforms.pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
-  >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-
-  >>> print(qml.draw(qnode)())
-  0: ──S──Z─╭C──────────┤  <X>
-  1: ──S────╰Z──S─╭C────┤
-  2: ──S──────────╰Z──S─┤
-
-  >>> print(qml.draw(optimized_qnode)())
-  0: ──S⁻¹─╭C────┤  <X>
-  1: ──Z───╰Z─╭C─┤
-  2: ──Z──────╰Z─┤
-  ```
-
-  For more details on using pattern matching optimization you can check the corresponding documentation and also the
-  following [paper](https://dl.acm.org/doi/full/10.1145/3498325).
-  
-* Added two new templates the `HilbertSchmidt` template and the `LocalHilbertSchmidt` template.
-  [(#2364)](https://github.com/PennyLaneAI/pennylane/pull/2364)
-  
-  ```python
-  with qml.tape.QuantumTape(do_queue=False) as u_tape:
-      qml.Hadamard(wires=0)
-
-  def v_function(params):
-      qml.RZ(params[0], wires=1)
-  
-  @qml.qnode(dev)
-  def hilbert_test(v_params, v_function, v_wires, u_tape):
-      qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
-      return qml.probs(u_tape.wires + v_wires)
-
-  def cost_hst(parameters, v_function, v_wires, u_tape):
-      return (1 - hilbert_test(v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape)[0])
-  
-  cost = cost_hst(v_params=[0.1], v_function=v_function, v_wires=[1], u_tape=u_tape)
-  ```
-
-* Added a swap based transpiler transform.
-  [(#2118)](https://github.com/PennyLaneAI/pennylane/pull/2118)
-
-  The transpile function takes a quantum function and a coupling map as inputs and compiles the circuit to ensure that it can be
-  executed on corresponding hardware. The transform can be used as a decorator in the following way:
-
-  ```python
-  dev = qml.device('default.qubit', wires=4)
-
-  @qml.qnode(dev)
-  @qml.transforms.transpile(coupling_map=[(0, 1), (1, 2), (2, 3)])
-  def circuit(param):
-      qml.CNOT(wires=[0, 1])
-      qml.CNOT(wires=[0, 2])
-      qml.CNOT(wires=[0, 3])
-      qml.PhaseShift(param, wires=0)
-      return qml.probs(wires=[0, 1, 2, 3])
-  ```
-
-* A differentiable quantum chemistry module is added to `qml.qchem`. The new module inherits a
-  modified version of the differentiable Hartree-Fock solver from `qml.hf`, contains new functions
-  for building a differentiable dipole moment observable and also contains modified functions for
-  building spin and particle number observables independent of external libraries.
-
-  - New functions are added for computing multipole moment molecular integrals
-    [(#2166)](https://github.com/PennyLaneAI/pennylane/pull/2166)
-  - New functions are added for building a differentiable dipole moment observable
-    [(#2173)](https://github.com/PennyLaneAI/pennylane/pull/2173)
-  - External dependencies are replaced with local functions for spin and particle number observables
-    [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
-    [(#2362)](https://github.com/PennyLaneAI/pennylane/pull/2362)
-  - New functions are added for building fermionic and qubit observables
-    [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
-  - A new module is created for hosting openfermion to pennylane observable conversion functions
-    [(#2199)](https://github.com/PennyLaneAI/pennylane/pull/2199)
-    [(#2371)](https://github.com/PennyLaneAI/pennylane/pull/2371)
-  - Expressive names are used for the Hartree-Fock solver functions
-    [(#2272)](https://github.com/PennyLaneAI/pennylane/pull/2272)
-  - These new additions are added to a feature branch
-    [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
-  - The efficiency of computing molecular integrals and Hamiltonian is improved
-    [(#2316)](https://github.com/PennyLaneAI/pennylane/pull/2316)
-  - The qchem and new hf modules are merged
-    [(#2385)](https://github.com/PennyLaneAI/pennylane/pull/2385)
-  - The 6-31G basis set is added to the qchem basis set repo
-    [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
-  - The dependency on openbabel is removed
-    [(#2415)](https://github.com/PennyLaneAI/pennylane/pull/2415)
-  - The tapering functions are added to qchem
-    [(#2426)](https://github.com/PennyLaneAI/pennylane/pull/2426)
-  - Differentiable and non-differentiable backends can be selected for building a Hamiltonian
-    [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
-  - The quantum chemistry functionalities are unified
-    [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
-
-* Adds a MERA template.
-  [(#2418)](https://github.com/PennyLaneAI/pennylane/pull/2418)
-
-  Quantum circuits with the shape
-  of a multi-scale entanglement renormalization ansatz can now be easily implemented
-  using the new `qml.MERA` template. This follows the style of previous 
-  tensor network templates and is similar to
-  [quantum convolutional neural networks](https://arxiv.org/abs/1810.03787).
-  ```python
-    import pennylane as qml
-    import numpy as np
-
-    def block(weights, wires):
-        qml.CNOT(wires=[wires[0],wires[1]])
-        qml.RY(weights[0], wires=wires[0])
-        qml.RY(weights[1], wires=wires[1])
-
-    n_wires = 4
-    n_block_wires = 2
-    n_params_block = 2
-    n_blocks = qml.MERA.get_n_blocks(range(n_wires),n_block_wires)
-    template_weights = [[0.1,-0.3]]*n_blocks
-
-    dev= qml.device('default.qubit',wires=range(n_wires))
-    @qml.qnode(dev)
-    def circuit(template_weights):
-        qml.MERA(range(n_wires),n_block_wires,block, n_params_block, template_weights)
-        return qml.expval(qml.PauliZ(wires=1))
-  ```
-  It may be necessary to reorder the wires to see the MERA architecture clearly:
-  ```pycon
-   >>> print(qml.draw(circuit,expansion_strategy='device',wire_order=[2,0,1,3])(template_weights))
-
-  2: ───────────────╭C──RY(0.10)──╭X──RY(-0.30)───────────────┤
-  0: ─╭X──RY(-0.30)─│─────────────╰C──RY(0.10)──╭C──RY(0.10)──┤
-  1: ─╰C──RY(0.10)──│─────────────╭X──RY(-0.30)─╰X──RY(-0.30)─┤  <Z>
-  3: ───────────────╰X──RY(-0.30)─╰C──RY(0.10)────────────────┤
-  ```
-
-* <h4> Finite-shot circuit cutting ✂️</h4>
+<h4> Finite-shot circuit cutting ✂️</h4>
 
   * You can now run `N`-wire circuits containing sample-based measurements on
     devices with fewer than `N` wires by inserting `WireCut` operations into
@@ -283,6 +117,180 @@
     circuits on smaller devices.
     [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
     [(#2428)](https://github.com/PennyLaneAI/pennylane/pull/2428)
+
+<h4>Pattern matching optimization </h4>
+
+* Added an optimization transform that matches pieces of user-provided identity templates in a circuit and replaces them with an equivalent component.
+  [(#2032)](https://github.com/PennyLaneAI/pennylane/pull/2032)
+
+  First let's consider the following circuit where we want to replace sequence of two ``pennylane.S`` gates with a
+  ``pennylane.PauliZ`` gate.
+
+  ```python
+  def circuit():
+      qml.S(wires=0)
+      qml.PauliZ(wires=0)
+      qml.S(wires=1)
+      qml.CZ(wires=[0, 1])
+      qml.S(wires=1)
+      qml.S(wires=2)
+      qml.CZ(wires=[1, 2])
+      qml.S(wires=2)
+      return qml.expval(qml.PauliX(wires=0))
+  ```
+
+  Therefore we use the following pattern that implements the identity:
+
+  ```python
+  with qml.tape.QuantumTape() as pattern:
+      qml.S(wires=0)
+      qml.S(wires=0)
+      qml.PauliZ(wires=0)
+  ```
+
+  For optimizing the circuit given the given following template of CNOTs we apply the `pattern_matching`
+  transform.
+
+  ```pycon
+  >>> dev = qml.device('default.qubit', wires=5)
+  >>> qnode = qml.QNode(circuit, dev)
+  >>> optimized_qfunc = qml.transforms.pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
+  >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
+
+  >>> print(qml.draw(qnode)())
+  0: ──S──Z─╭C──────────┤  <X>
+  1: ──S────╰Z──S─╭C────┤
+  2: ──S──────────╰Z──S─┤
+
+  >>> print(qml.draw(optimized_qnode)())
+  0: ──S⁻¹─╭C────┤  <X>
+  1: ──Z───╰Z─╭C─┤
+  2: ──Z──────╰Z─┤
+  ```
+
+  For more details on using pattern matching optimization you can check the corresponding documentation and also the
+  following [paper](https://dl.acm.org/doi/full/10.1145/3498325).
+
+<h4>New templates </h4>
+
+* Added two new templates the `HilbertSchmidt` template and the `LocalHilbertSchmidt` template.
+  [(#2364)](https://github.com/PennyLaneAI/pennylane/pull/2364)
+
+  ```python
+  with qml.tape.QuantumTape(do_queue=False) as u_tape:
+      qml.Hadamard(wires=0)
+
+  def v_function(params):
+      qml.RZ(params[0], wires=1)
+
+  @qml.qnode(dev)
+  def hilbert_test(v_params, v_function, v_wires, u_tape):
+      qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
+      return qml.probs(u_tape.wires + v_wires)
+
+  def cost_hst(parameters, v_function, v_wires, u_tape):
+      return (1 - hilbert_test(v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape)[0])
+
+  cost = cost_hst(v_params=[0.1], v_function=v_function, v_wires=[1], u_tape=u_tape)
+  ```
+
+* Adds a MERA template.
+  [(#2418)](https://github.com/PennyLaneAI/pennylane/pull/2418)
+
+  Quantum circuits with the shape
+  of a multi-scale entanglement renormalization ansatz can now be easily implemented
+  using the new `qml.MERA` template. This follows the style of previous
+  tensor network templates and is similar to
+  [quantum convolutional neural networks](https://arxiv.org/abs/1810.03787).
+  ```python
+    import pennylane as qml
+    import numpy as np
+
+    def block(weights, wires):
+        qml.CNOT(wires=[wires[0],wires[1]])
+        qml.RY(weights[0], wires=wires[0])
+        qml.RY(weights[1], wires=wires[1])
+
+    n_wires = 4
+    n_block_wires = 2
+    n_params_block = 2
+    n_blocks = qml.MERA.get_n_blocks(range(n_wires),n_block_wires)
+    template_weights = [[0.1,-0.3]]*n_blocks
+
+    dev= qml.device('default.qubit',wires=range(n_wires))
+    @qml.qnode(dev)
+    def circuit(template_weights):
+        qml.MERA(range(n_wires),n_block_wires,block, n_params_block, template_weights)
+        return qml.expval(qml.PauliZ(wires=1))
+  ```
+  It may be necessary to reorder the wires to see the MERA architecture clearly:
+  ```pycon
+   >>> print(qml.draw(circuit,expansion_strategy='device',wire_order=[2,0,1,3])(template_weights))
+
+  2: ───────────────╭C──RY(0.10)──╭X──RY(-0.30)───────────────┤
+  0: ─╭X──RY(-0.30)─│─────────────╰C──RY(0.10)──╭C──RY(0.10)──┤
+  1: ─╰C──RY(0.10)──│─────────────╭X──RY(-0.30)─╰X──RY(-0.30)─┤  <Z>
+  3: ───────────────╰X──RY(-0.30)─╰C──RY(0.10)────────────────┤
+  ```
+
+<h4>New transforms </h4>
+
+* Added a swap based transpiler transform.
+  [(#2118)](https://github.com/PennyLaneAI/pennylane/pull/2118)
+
+  The transpile function takes a quantum function and a coupling map as inputs and compiles the circuit to ensure that it can be
+  executed on corresponding hardware. The transform can be used as a decorator in the following way:
+
+  ```python
+  dev = qml.device('default.qubit', wires=4)
+
+  @qml.qnode(dev)
+  @qml.transforms.transpile(coupling_map=[(0, 1), (1, 2), (2, 3)])
+  def circuit(param):
+      qml.CNOT(wires=[0, 1])
+      qml.CNOT(wires=[0, 2])
+      qml.CNOT(wires=[0, 3])
+      qml.PhaseShift(param, wires=0)
+      return qml.probs(wires=[0, 1, 2, 3])
+  ```
+
+<h4>QChem reborn </h4>
+
+* A differentiable quantum chemistry module is added to `qml.qchem`. The new module inherits a
+  modified version of the differentiable Hartree-Fock solver from `qml.hf`, contains new functions
+  for building a differentiable dipole moment observable and also contains modified functions for
+  building spin and particle number observables independent of external libraries.
+
+  - New functions are added for computing multipole moment molecular integrals
+    [(#2166)](https://github.com/PennyLaneAI/pennylane/pull/2166)
+  - New functions are added for building a differentiable dipole moment observable
+    [(#2173)](https://github.com/PennyLaneAI/pennylane/pull/2173)
+  - External dependencies are replaced with local functions for spin and particle number observables
+    [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
+    [(#2362)](https://github.com/PennyLaneAI/pennylane/pull/2362)
+  - New functions are added for building fermionic and qubit observables
+    [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
+  - A new module is created for hosting openfermion to pennylane observable conversion functions
+    [(#2199)](https://github.com/PennyLaneAI/pennylane/pull/2199)
+    [(#2371)](https://github.com/PennyLaneAI/pennylane/pull/2371)
+  - Expressive names are used for the Hartree-Fock solver functions
+    [(#2272)](https://github.com/PennyLaneAI/pennylane/pull/2272)
+  - These new additions are added to a feature branch
+    [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
+  - The efficiency of computing molecular integrals and Hamiltonian is improved
+    [(#2316)](https://github.com/PennyLaneAI/pennylane/pull/2316)
+  - The qchem and new hf modules are merged
+    [(#2385)](https://github.com/PennyLaneAI/pennylane/pull/2385)
+  - The 6-31G basis set is added to the qchem basis set repo
+    [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
+  - The dependency on openbabel is removed
+    [(#2415)](https://github.com/PennyLaneAI/pennylane/pull/2415)
+  - The tapering functions are added to qchem
+    [(#2426)](https://github.com/PennyLaneAI/pennylane/pull/2426)
+  - Differentiable and non-differentiable backends can be selected for building a Hamiltonian
+    [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
+  - The quantum chemistry functionalities are unified
+    [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
 
 <h3>Improvements</h3>
 
@@ -555,7 +563,7 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   [(#2276)](https://github.com/PennyLaneAI/pennylane/pull/2276)
 
 * Fixes a bug where `qml.hf.transform_hf()` would fail due to missing wires in
-  the qubit operator that is prepared for tapering the HF state.  
+  the qubit operator that is prepared for tapering the HF state.
   [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
 
 <h3>Documentation</h3>
