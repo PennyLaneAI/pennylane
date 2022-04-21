@@ -444,8 +444,6 @@
   accessed via the top-level `qml` namespace.
   [(#2396)](https://github.com/PennyLaneAI/pennylane/pull/2396)
 
-<h3>Deprecations</h3>
-
 <h3>Breaking changes</h3>
 
 * The `qml.finite_diff` function has been deleted. Please use `qml.gradients.finite_diff` to compute
@@ -611,8 +609,6 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 * Fixes a bug where `qml.hf.transform_hf()` would fail due to missing wires in
   the qubit operator that is prepared for tapering the HF state.
   [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
-
-<h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
