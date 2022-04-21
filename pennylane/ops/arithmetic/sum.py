@@ -18,6 +18,7 @@ computing the sum of operations.
 import warnings
 import numpy as np
 import pennylane as qml
+from pennylane import numpy as qnp
 
 
 def sum(*summands):
@@ -55,4 +56,14 @@ class Sum(qml.operation.Operator):
         return [1.0]*len(self.summands), self.summands
 
     def get_matrix(self):
-        return sum(m.get_matrix(wire_order=self.wires) for m in self.summands)
+        return self._sum(m.get_matrix(wire_order=self.wires) for m in self.summands)
+
+    def _sum(self, *mats):
+        """Super inefficient Sum method just as a proof of concept"""
+        res = qnp.zeros(len(self.wires))
+        print(mats)
+
+        for mat in mats:
+            res += mat
+
+        return res
