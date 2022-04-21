@@ -118,7 +118,94 @@
     [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
     [(#2428)](https://github.com/PennyLaneAI/pennylane/pull/2428)
 
-<h4>Pattern matching optimization </h4>
+<h4>QChem unification ⚛️  🏰</h4>
+
+* The quantum chemistry functionality is unified in the `qml.qchem` module. The new module provides
+  a differentiable Hartree-Fock solver and contains the functionality to construct a
+  fully-differentiable molecular Hamiltonian. The `qml.qchem` module also provides tools for
+  building other observables such as molecular dipole moment, spin and particle number.
+
+  The :mod:`~.qchem` module provides access to a driver function :func:`~.molecular_hamiltonian`
+  to generate the electronic Hamiltonian in a single call. For example,
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+
+  symbols = ["H", "H"]
+  geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
+  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
+  ```
+
+  The following code shows the construction of the Hamiltonian for the hydrogen molecule where the
+  geometry of the molecule and the basis set parameters are all differentiable.
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+
+  symbols = ["H", "H"]
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True)
+
+  # The exponents and contraction coefficients of the Gaussian basis functions
+  alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
+                    [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
+  coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
+                    [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
+
+  args = [geometry, alpha, coeff] # initial values of the differentiable parameters
+  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, alpha=alpha, coeff=coeff, args=args)
+  ```
+
+  The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular
+  Hamiltonian with an external backend that uses the
+  `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
+  electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_, which requires separate
+  installation. This backend is non-differentiable and can be selected by setting
+  `method='pyscf'` in :func:`~.molecular_hamiltonian`.
+
+  ```python
+  import pennylane as qml
+  from pennylane import numpy as np
+
+  symbols = ["H", "H"]
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
+  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, method='pyscf')
+  ```
+  - New functions are added for computing multipole moment molecular integrals
+    [(#2166)](https://github.com/PennyLaneAI/pennylane/pull/2166)
+  - New functions are added for building a differentiable dipole moment observable
+    [(#2173)](https://github.com/PennyLaneAI/pennylane/pull/2173)
+  - External dependencies are replaced with local functions for spin and particle number observables
+    [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
+    [(#2362)](https://github.com/PennyLaneAI/pennylane/pull/2362)
+  - New functions are added for building fermionic and qubit observables
+    [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
+  - A new module is created for hosting openfermion to pennylane observable conversion functions
+    [(#2199)](https://github.com/PennyLaneAI/pennylane/pull/2199)
+    [(#2371)](https://github.com/PennyLaneAI/pennylane/pull/2371)
+  - Expressive names are used for the Hartree-Fock solver functions
+    [(#2272)](https://github.com/PennyLaneAI/pennylane/pull/2272)
+  - These new additions are added to a feature branch
+    [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
+  - The efficiency of computing molecular integrals and Hamiltonian is improved
+    [(#2316)](https://github.com/PennyLaneAI/pennylane/pull/2316)
+  - The qchem and new hf modules are merged
+    [(#2385)](https://github.com/PennyLaneAI/pennylane/pull/2385)
+  - The 6-31G basis set is added to the qchem basis set repo
+    [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
+  - The dependency on openbabel is removed
+    [(#2415)](https://github.com/PennyLaneAI/pennylane/pull/2415)
+  - The tapering functions are added to qchem
+    [(#2426)](https://github.com/PennyLaneAI/pennylane/pull/2426)
+  - Differentiable and non-differentiable backends can be selected for building a Hamiltonian
+    [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
+  - The quantum chemistry functionalities are unified
+    [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
+    [(#2465)](https://github.com/PennyLaneAI/pennylane/pull/2465)
+    [(#2454)](https://github.com/PennyLaneAI/pennylane/pull/2454)
+
+<h4>Pattern matching optimization 🔎 💎 </h4>
 
 * Added an optimization transform that matches pieces of user-provided identity templates in a circuit and replaces them with an equivalent component.
   [(#2032)](https://github.com/PennyLaneAI/pennylane/pull/2032)
@@ -171,9 +258,11 @@
   For more details on using pattern matching optimization you can check the corresponding documentation and also the
   following [paper](https://dl.acm.org/doi/full/10.1145/3498325).
 
-<h4>New templates </h4>
+<h4>Measure the distance between two unitaries📏</h4>
 
-* Added two new templates the `HilbertSchmidt` template and the `LocalHilbertSchmidt` template.
+* Added the `HilbertSchmidt` and the
+  `LocalHilbertSchmidt` templates to be used for computing distance measures
+  between unitaries.
   [(#2364)](https://github.com/PennyLaneAI/pennylane/pull/2364)
 
   ```python
@@ -194,18 +283,16 @@
   cost = cost_hst(v_params=[0.1], v_function=v_function, v_wires=[1], u_tape=u_tape)
   ```
 
-* Adds a MERA template.
+<h4>More tensor network support 🕸️</h4>
+
+* Adds the `qml.MERA` template for implementing quantum circuits with the shape
+  of a multi-scale entanglement renormalization ansatz (MERA).
   [(#2418)](https://github.com/PennyLaneAI/pennylane/pull/2418)
 
-  Quantum circuits with the shape
-  of a multi-scale entanglement renormalization ansatz can now be easily implemented
-  using the new `qml.MERA` template. This follows the style of previous
-  tensor network templates and is similar to
+  MERA follows the style of previous tensor network templates and is similar to
   [quantum convolutional neural networks](https://arxiv.org/abs/1810.03787).
-  ```python
-    import pennylane as qml
-    import numpy as np
 
+  ```python
     def block(weights, wires):
         qml.CNOT(wires=[wires[0],wires[1]])
         qml.RY(weights[0], wires=wires[0])
@@ -233,13 +320,14 @@
   3: ───────────────╰X──RY(-0.30)─╰C──RY(0.10)────────────────┤
   ```
 
-<h4>New transforms </h4>
+<h4>New transform for transpilation ⚙️ </h4>
 
 * Added a swap based transpiler transform.
   [(#2118)](https://github.com/PennyLaneAI/pennylane/pull/2118)
 
-  The transpile function takes a quantum function and a coupling map as inputs and compiles the circuit to ensure that it can be
-  executed on corresponding hardware. The transform can be used as a decorator in the following way:
+  The transpile function takes a quantum function and a coupling map as inputs
+  and compiles the circuit to ensure that it can be executed on corresponding
+  hardware. The transform can be used as a decorator in the following way:
 
   ```python
   dev = qml.device('default.qubit', wires=4)
@@ -253,93 +341,6 @@
       qml.PhaseShift(param, wires=0)
       return qml.probs(wires=[0, 1, 2, 3])
   ```
-
-<h4>QChem reborn </h4>
-
-* The quantum chemistry functionality is unified in the `qml.qchem` module. The new module provides
-  a differentiable Hartree-Fock solver and contains the functionality to construct a
-  fully-differentiable molecular Hamiltonian. The `qml.qchem` module also provides tools for
-  building other observables such as molecular dipole moment, spin and particle number.
-
-  The :mod:`~.qchem` module provides access to a driver function :func:`~.molecular_hamiltonian`
-  to generate the electronic Hamiltonian in a single call. For example,
-
-  ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-  
-  symbols = ["H", "H"]
-  geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
-  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
-  ```
-
-  The following code shows the construction of the Hamiltonian for the hydrogen molecule where the
-  geometry of the molecule and the basis set parameters are all differentiable.
-
-  ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-  
-  symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True)
-  
-  # The exponents and contraction coefficients of the Gaussian basis functions
-  alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
-  coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
-  
-  args = [geometry, alpha, coeff] # initial values of the differentiable parameters
-  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, alpha=alpha, coeff=coeff, args=args)
-  ```
-
-  The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular
-  Hamiltonian with an external backend that uses the
-  `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
-  electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_, which requires separate
-  installation. This backend is non-differentiable and can be selected by setting
-  `method='pyscf'` in :func:`~.molecular_hamiltonian`.
-
-  ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-  
-  symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, method='pyscf')
-  ```
-  - New functions are added for computing multipole moment molecular integrals
-    [(#2166)](https://github.com/PennyLaneAI/pennylane/pull/2166)
-  - New functions are added for building a differentiable dipole moment observable
-    [(#2173)](https://github.com/PennyLaneAI/pennylane/pull/2173)
-  - External dependencies are replaced with local functions for spin and particle number observables
-    [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
-    [(#2362)](https://github.com/PennyLaneAI/pennylane/pull/2362)
-  - New functions are added for building fermionic and qubit observables
-    [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
-  - A new module is created for hosting openfermion to pennylane observable conversion functions
-    [(#2199)](https://github.com/PennyLaneAI/pennylane/pull/2199)
-    [(#2371)](https://github.com/PennyLaneAI/pennylane/pull/2371)
-  - Expressive names are used for the Hartree-Fock solver functions
-    [(#2272)](https://github.com/PennyLaneAI/pennylane/pull/2272)
-  - These new additions are added to a feature branch
-    [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
-  - The efficiency of computing molecular integrals and Hamiltonian is improved
-    [(#2316)](https://github.com/PennyLaneAI/pennylane/pull/2316)
-  - The qchem and new hf modules are merged
-    [(#2385)](https://github.com/PennyLaneAI/pennylane/pull/2385)
-  - The 6-31G basis set is added to the qchem basis set repo
-    [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
-  - The dependency on openbabel is removed
-    [(#2415)](https://github.com/PennyLaneAI/pennylane/pull/2415)
-  - The tapering functions are added to qchem
-    [(#2426)](https://github.com/PennyLaneAI/pennylane/pull/2426)
-  - Differentiable and non-differentiable backends can be selected for building a Hamiltonian
-    [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
-  - The quantum chemistry functionalities are unified
-    [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
-    [(#2465)](https://github.com/PennyLaneAI/pennylane/pull/2465)
-    [(#2454)](https://github.com/PennyLaneAI/pennylane/pull/2454)
 
 <h3>Improvements</h3>
 
