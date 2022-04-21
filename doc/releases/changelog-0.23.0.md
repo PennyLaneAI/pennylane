@@ -627,7 +627,8 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 This release contains contributions from (in alphabetical order):
 
 Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Ali Asadi,
-Utkarsh Azad, Thomas Bromley, Alain Delgado, Olivia Di Matteo, Anthony Hayes,
-David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Angus Lowe, Romain
-Moyard, Zeyue Niu, Matthew Silverman, Lee James O'Riordan, Maria Schuld, Jay
-Soni, Antal Száva, Maurice Weber, David Wierichs.
+Utkarsh Azad, Sam Banning, Thomas Bromley, Alain Delgado, Isaac De Vlugt,
+Olivia Di Matteo, Amintor Dusko, Anthony Hayes, David Ittah, Josh Izaac, Soran
+Jahangiri, Nathan Killoran, Christina Lee, Angus Lowe, Romain Moyard, Zeyue
+Niu, Matthew Silverman, Lee James O'Riordan, Maria Schuld, Jay Soni, Antal
+Száva, Maurice Weber, David Wierichs.
