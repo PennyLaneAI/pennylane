@@ -446,51 +446,14 @@ class QuantumTape(AnnotatedQueue):
         self._prep = []
         self._ops = []
         self._measurements = []
-        self._output_dim = 0
 
         for obj, info in self._queue.items():
 
             if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
                 getattr(self, obj._queue_category).append(obj)
 
-                obj.inverse = info.get("inverse", getattr(obj, "inverse", False))
-
-            if isinstance(obj, qml.measurements.MeasurementProcess):
-
-                # attempt to infer the output dimension
-                if obj.return_type is qml.measurements.Probability:
-                    self._output_dim += 2 ** len(obj.wires)
-                elif obj.return_type is qml.measurements.State:
-                    continue  # the output_dim is worked out automatically
-                else:
-                    self._ops.append(obj)
-
-            elif isinstance(obj, qml.measurements.MeasurementProcess):
-
-                if obj.return_type == qml.measurements.MidMeasure:
-
-                    # TODO: for now, consider mid-circuit measurements as tape
-                    # operations such that the order of the operators in the
-                    # tape is correct
-                    self._ops.append(obj)
-                else:
-
-                    # measurement process
-                    self._measurements.append(obj)
-
-                    # attempt to infer the output dimension
-                    if obj.return_type is qml.measurements.Probability:
-                        # TODO: what if we had a CV device here? Having the base as
-                        # 2 would have to be swapped to the cutoff value
-                        self._output_dim += 2 ** len(obj.wires)
-                    elif obj.return_type is qml.measurements.State:
-                        continue  # the output_dim is worked out automatically
-                    else:
-                        self._output_dim += 1
-
-                # check if any sampling is occuring
-                if obj.return_type is qml.measurements.Sample:
-                    self.is_sampled = True
+                if hasattr(obj, "inverse"):
+                    obj.inverse = info.get("inverse", obj.inverse)
 
         self._update()
 
@@ -503,7 +466,17 @@ class QuantumTape(AnnotatedQueue):
 
         self.is_sampled = any(m.return_type is Sample for m in self.measurements)
         self.all_sampled = all(m.return_type is Sample for m in self.measurements)
-        self.is_sampled = any(m.return_type is Sample for m in self.measurements)
+
+    def _update_output_dim(self):
+        self._output_dim = 0
+        for m in self.measurements:
+            # attempt to infer the output dimension
+            if m.return_type is qml.measurements.Probability:
+                # TODO: what if we had a CV device here? Having the base as
+                # 2 would have to be swapped to the cutoff value
+                self._output_dim += 2 ** len(m.wires)
+            elif m.return_type is not qml.measurements.State:
+                self._output_dim += 1
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -553,6 +526,7 @@ class QuantumTape(AnnotatedQueue):
         self._update_par_info()
         self._update_trainable_params()
         self._update_observables()
+        self._update_output_dim()
 
     def expand(self, depth=1, stop_at=None, expand_measurements=False):
         """Expand all operations in the processed queue to a specific depth.
