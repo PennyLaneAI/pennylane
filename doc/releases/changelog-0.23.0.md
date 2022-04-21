@@ -6,15 +6,9 @@
 
 <h4> Finite-shot circuit cutting ✂️</h4>
 
-  * You can now run `N`-wire circuits containing sample-based measurements on
-    devices with fewer than `N` wires by inserting `WireCut` operations into
-    the circuit and decorating your QNode with `@qml.cut_circuit_mc`.
-    With this, samples from the original circuit can be simulated using
-    a Monte Carlo method,
-    using fewer qubits at the expense of more device executions. Additionally,
-    this transform
-    can take an optional classical processing function as an argument
-    and return an expectation value.
+  * The new `@qml.cut_circuit_mc` transform allows evaluating QNodes of
+    `N`-wire circuits with `WireCut` operations and sample-based measurements
+    on devices with fewer than `N` wires.
     [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
     [(#2321)](https://github.com/PennyLaneAI/pennylane/pull/2321)
     [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
@@ -23,6 +17,12 @@
     [(#2399)](https://github.com/PennyLaneAI/pennylane/pull/2399)
     [(#2407)](https://github.com/PennyLaneAI/pennylane/pull/2407)
     [(#2444)](https://github.com/PennyLaneAI/pennylane/pull/2444)
+
+    With these new additions, samples from the original circuit can be
+    simulated using a Monte Carlo method, using fewer qubits at the expense of
+    more device executions.  Additionally, this transform can take an optional
+    classical processing function as an argument and return an expectation
+    value.
 
     The following `3`-qubit circuit contains a `WireCut` operation and a `sample`
     measurement. When decorated with `@qml.cut_circuit_mc`, we can cut the circuit
@@ -107,23 +107,27 @@
     tensor(-0.776, requires_grad=True)
     ```
 
-  * An automatic graph partitioning method `qcut.kahypar_cut()` has been implemented for cutting
+  * Added the automatic graph partitioning method `qcut.kahypar_cut()` for cutting
     arbitrary tape-converted graphs using the general purpose graph partitioning framework
-    [KaHyPar](https://pypi.org/project/kahypar/) which needs to be installed separately.
+    [KaHyPar](https://pypi.org/project/kahypar/).
+    [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
+    [(#2428)](https://github.com/PennyLaneAI/pennylane/pull/2428)
+
+    Note that `KaHyPar` needs to be installed separately.
+
     To integrate with the existing low-level manual cut pipeline, method `qcut.find_and_place_cuts()`,
     which uses `qcut.kahypar_cut()` as the default auto cutter, has been implemented.
     The automatic cutting feature is further integrated into the high-level interfaces
     `qcut.cut_circuit()` and `qcut.cut_circuit_mc()` for automatic execution of arbitrary
     circuits on smaller devices.
-    [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
-    [(#2428)](https://github.com/PennyLaneAI/pennylane/pull/2428)
 
 <h4>QChem unification ⚛️  🏰</h4>
 
-* The quantum chemistry functionality is unified in the `qml.qchem` module. The new module provides
-  a differentiable Hartree-Fock solver and contains the functionality to construct a
-  fully-differentiable molecular Hamiltonian. The `qml.qchem` module also provides tools for
-  building other observables such as molecular dipole moment, spin and particle number.
+* The quantum chemistry functionality is unified in the `qml.qchem` module
+  providing a differentiable Hartree-Fock solver and the functionality to
+  construct a fully-differentiable molecular Hamiltonian. The `qml.qchem`
+  module also provides tools for building other observables such as molecular
+  dipole moment, spin and particle number.
 
   The :mod:`~.qchem` module provides access to a driver function :func:`~.molecular_hamiltonian`
   to generate the electronic Hamiltonian in a single call. For example,
@@ -198,7 +202,8 @@
 
 <h4>Pattern matching optimization 🔎 💎 </h4>
 
-* Added an optimization transform that matches pieces of user-provided identity templates in a circuit and replaces them with an equivalent component.
+* Added an optimization transform that matches pieces of user-provided identity
+  templates in a circuit and replaces them with an equivalent component.
   [(#2032)](https://github.com/PennyLaneAI/pennylane/pull/2032)
 
   First let's consider the following circuit where we want to replace sequence of two ``pennylane.S`` gates with a
@@ -336,40 +341,6 @@
 
 <h3>Improvements</h3>
 
-* Added the `QuantumTape.shape` method and `QuantumTape.numeric_type`
-  attribute to allow extracting information about the shape and numeric type of
-  quantum tapes.
-  [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
-
-* Defined a `MeasurementProcess.shape` method and a
-  `MeasurementProcess.numeric_type` attribute.
-  [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
-
-* The parameter-shift Hessian can now be computed for arbitrary
-  operations that support the general parameter-shift rule for
-  gradients, using `qml.gradients.param_shift_hessian`
-  [(#2319)](https://github.com/XanaduAI/pennylane/pull/2319)
-
-  Multiple ways to obtain the
-  gradient recipe are supported, in the following order of preference:
-
-  - A custom `grad_recipe`. It is iterated to obtain the shift rule for
-    the second-order derivatives in the diagonal entries of the Hessian.
-
-  - Custom `parameter_frequencies`. The second-order shift rule can
-    directly be computed using them.
-
-  - An operation's `generator`. Its eigenvalues will be used to obtain
-    `parameter_frequencies`, if they are not given explicitly for an operation.
-
-* The `qml.specs` transform now accepts an `expansion_strategy` keyword argument.
-  [(#2395)](https://github.com/PennyLaneAI/pennylane/pull/2395)
-
-* `default.qubit` and `default.mixed` now skip over identity operators instead of performing matrix multiplication
-  with the identity.
-  [(#2356)](https://github.com/PennyLaneAI/pennylane/pull/2356)
-  [(#2365)](https://github.com/PennyLaneAI/pennylane/pull/2365)
-
 * `QuantumTape` objects are now iterable and accessing the
   operations and measurements of the underlying quantum circuit is more
   seamless.
@@ -416,6 +387,40 @@
    expval(PauliZ(wires=[0]))]
   ```
 
+* Added the `QuantumTape.shape` method and `QuantumTape.numeric_type`
+  attribute to allow extracting information about the shape and numeric type of
+  quantum tapes.
+  [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
+
+* Defined a `MeasurementProcess.shape` method and a
+  `MeasurementProcess.numeric_type` attribute.
+  [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
+
+* The parameter-shift Hessian can now be computed for arbitrary
+  operations that support the general parameter-shift rule for
+  gradients, using `qml.gradients.param_shift_hessian`
+  [(#2319)](https://github.com/XanaduAI/pennylane/pull/2319)
+
+  Multiple ways to obtain the
+  gradient recipe are supported, in the following order of preference:
+
+  - A custom `grad_recipe`. It is iterated to obtain the shift rule for
+    the second-order derivatives in the diagonal entries of the Hessian.
+
+  - Custom `parameter_frequencies`. The second-order shift rule can
+    directly be computed using them.
+
+  - An operation's `generator`. Its eigenvalues will be used to obtain
+    `parameter_frequencies`, if they are not given explicitly for an operation.
+
+* The `qml.specs` transform now accepts an `expansion_strategy` keyword argument.
+  [(#2395)](https://github.com/PennyLaneAI/pennylane/pull/2395)
+
+* `default.qubit` and `default.mixed` now skip over identity operators instead of performing matrix multiplication
+  with the identity.
+  [(#2356)](https://github.com/PennyLaneAI/pennylane/pull/2356)
+  [(#2365)](https://github.com/PennyLaneAI/pennylane/pull/2365)
+
 * The function `qml.eigvals` is modified to use the efficient `scipy.sparse.linalg.eigsh`
   method for obtaining the eigenvalues of a `SparseHamiltonian`. This `scipy` method is called
   to compute :math:`k` eigenvalues of a sparse :math:`N \times N` matrix if `k` is smaller
@@ -442,14 +447,6 @@
   [(#2396)](https://github.com/PennyLaneAI/pennylane/pull/2396)
 
 <h3>Breaking changes</h3>
-
-* The `qml.finite_diff` function has been deleted. Please use `qml.gradients.finite_diff` to compute
-  the gradient of tapes of QNodes. Otherwise, manual implementation is required.
-  [(#2464)](https://github.com/PennyLaneAI/pennylane/pull/2464)
-
-* The `get_unitary_matrix` transform has been removed, users should use
-  `qml.matrix` instead.
-  [(#2457)](https://github.com/PennyLaneAI/pennylane/pull/2457)
 
 * The caching ability of `QubitDevice` has been removed, using the caching on
   the QNode level is the recommended alternative going forward.
@@ -483,6 +480,14 @@
   >>> dev.num_executions
   1
   ```
+
+* The `qml.finite_diff` function has been deleted. Please use `qml.gradients.finite_diff` to compute
+  the gradient of tapes of QNodes. Otherwise, manual implementation is required.
+  [(#2464)](https://github.com/PennyLaneAI/pennylane/pull/2464)
+
+* The `get_unitary_matrix` transform has been removed, users should use
+  `qml.matrix` instead.
+  [(#2457)](https://github.com/PennyLaneAI/pennylane/pull/2457)
 
 * The `update_stepsize` method is being deleted from `GradientDescentOptimizer` and its child
   optimizers.  The `stepsize` property can be interacted with directly instead.
