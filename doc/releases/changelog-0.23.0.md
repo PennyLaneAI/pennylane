@@ -190,7 +190,7 @@
   - The tapering functions are added to qchem
     [(#2426)](https://github.com/PennyLaneAI/pennylane/pull/2426)
   - Differentiable and non-differentiable backends can be selected for building a Hamiltonian
-    [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
+    [(#2352)](https://github.com/PennyLaneAI/pennylane/pull/2352)
   - The quantum chemistry functionalities are unified
     [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
     [(#2465)](https://github.com/PennyLaneAI/pennylane/pull/2465)
@@ -362,10 +362,6 @@
   - An operation's `generator`. Its eigenvalues will be used to obtain
     `parameter_frequencies`, if they are not given explicitly for an operation.
 
-* Most compilation transforms, and relevant subroutines, have been updated to
-  support just-in-time compilation with `jax.jit`.
-  [(#1894)](https://github.com/PennyLaneAI/pennylane/pull/1894/)
-
 * The `qml.specs` transform now accepts an `expansion_strategy` keyword argument.
   [(#2395)](https://github.com/PennyLaneAI/pennylane/pull/2395)
 
@@ -536,37 +532,40 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 
 <h3>Bug fixes</h3>
 
-* Fixes a bug where non-trainable arguments were shifted in the `NesterovMomentumOptimizer`
+* Fixed a bug arising when multiplying `Hamiltonian` objects.
+  [(#2466)](https://github.com/PennyLaneAI/pennylane/pull/2466)
+
+* Fixed a bug where non-trainable arguments were shifted in the `NesterovMomentumOptimizer`
   if a trainable argument was after it in the argument list.
   [(#2466)](https://github.com/PennyLaneAI/pennylane/pull/2466)
 
-* Fixes a bug with `@jax.jit` for grad when `diff_method="adjoint"` and `mode="backward"`.
+* Fixed a bug with `@jax.jit` for grad when `diff_method="adjoint"` and `mode="backward"`.
   [(#2460)](https://github.com/PennyLaneAI/pennylane/pull/2460)
 
-* Fixes a bug where `qml.DiagonalQubitUnitary` did not support `@jax.jit`
+* Fixed a bug where `qml.DiagonalQubitUnitary` did not support `@jax.jit`
   and `@tf.function`.
   [(#2445)](https://github.com/PennyLaneAI/pennylane/pull/2445)
 
-* Fixes a bug in the `qml.PauliRot` operation, where computing the generator was not taking into
+* Fixed a bug in the `qml.PauliRot` operation, where computing the generator was not taking into
   account the operation wires.
   [(#2442)](https://github.com/PennyLaneAI/pennylane/pull/2442)
 
-* Fixes a bug with the padding capability of `AmplitudeEmbedding` where the
+* Fixed a bug with the padding capability of `AmplitudeEmbedding` where the
   inputs are on the GPU.
   [(#2431)](https://github.com/PennyLaneAI/pennylane/pull/2431)
 
-* Fixes a bug by adding a comprehensible error message for calling `qml.probs`
+* Fixed a bug by adding a comprehensible error message for calling `qml.probs`
   without passing wires or an observable.
   [(#2438)](https://github.com/PennyLaneAI/pennylane/pull/2438)
 
 * Call `pip show` with the subprocess library to avoid outputting a common warning.
   [(#2422)](https://github.com/PennyLaneAI/pennylane/pull/2422)
 
-* Fixes a bug where observables were not considered when determining the use of
+* Fixed a bug where observables were not considered when determining the use of
   the `jax-jit` interface.
   [(#2427)](https://github.com/PennyLaneAI/pennylane/pull/2427)
 
-* Fixes a bug where computing statistics for a relatively few number of shots
+* Fixed a bug where computing statistics for a relatively few number of shots
   (e.g., `shots=10`), an error arose due to indexing into an array using a
   `DeviceArray`.
   [(#2427)](https://github.com/PennyLaneAI/pennylane/pull/2427)
@@ -577,16 +576,19 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
 * Optimizers only consider a variable trainable if they have `requires_grad = True`.
   [(#2381)](https://github.com/PennyLaneAI/pennylane/pull/2381)
 
-* Fixes a bug with `qml.expval`, `qml.var`, `qml.state` and
+* Fixed a bug with `qml.expval`, `qml.var`, `qml.state` and
   `qml.probs` (when `qml.probs` is the only measurement) where the `dtype`
   specified on the device did not match the `dtype` of the QNode output.
   [(#2367)](https://github.com/PennyLaneAI/pennylane/pull/2367)
 
-* Fixes cases with `qml.measure` where unexpected operations were added to the
-  circuit.
-  [(#2328)](https://github.com/PennyLaneAI/pennylane/pull/2328)
+* Fixed a bug where the output shapes from batch transforms are inconsistent
+  with the QNode output shape.
+  [(#2215)](https://github.com/PennyLaneAI/pennylane/pull/2215)
 
-* Fixes a bug in which the `expval`/`var` of a `Tensor(Observable)` would depend on the order
+* Fixed a bug caused by the squeezing in `qml.gradients.param_shift_hessian`.
+  [(#2215)](https://github.com/PennyLaneAI/pennylane/pull/2215)
+
+* Fixed a bug in which the `expval`/`var` of a `Tensor(Observable)` would depend on the order
   in which the observable is defined:
   ```python
   @qml.qnode(dev)
@@ -607,9 +609,15 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   ```
   [(#2276)](https://github.com/PennyLaneAI/pennylane/pull/2276)
 
-* Fixes a bug where `qml.hf.transform_hf()` would fail due to missing wires in
+* Fixed a bug where `qml.hf.transform_hf()` would fail due to missing wires in
   the qubit operator that is prepared for tapering the HF state.
   [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
+
+<h3>Documentation</h3>
+
+* The sections on adding operator and observable support in the "How to add a
+  plugin" section of the plugins page have been updated.
+  [(#2389)](https://github.com/PennyLaneAI/pennylane/pull/2389)
 
 <h3>Contributors</h3>
 
