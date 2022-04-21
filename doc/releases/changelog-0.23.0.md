@@ -444,6 +444,9 @@
   accessed via the top-level `qml` namespace.
   [(#2396)](https://github.com/PennyLaneAI/pennylane/pull/2396)
 
+* Raise a warning where caching produces identical shot noise on execution results with finite shots.
+  [(#2478)](https://github.com/PennyLaneAI/pennylane/pull/2478)
+
 <h3>Deprecations</h3>
 
 <h3>Breaking changes</h3>
