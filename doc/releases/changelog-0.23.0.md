@@ -129,9 +129,6 @@
   to generate the electronic Hamiltonian in a single call. For example,
 
   ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-
   symbols = ["H", "H"]
   geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
   hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
@@ -141,9 +138,6 @@
   geometry of the molecule and the basis set parameters are all differentiable.
 
   ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-
   symbols = ["H", "H"]
   geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True)
 
@@ -165,9 +159,6 @@
   `method='pyscf'` in :func:`~.molecular_hamiltonian`.
 
   ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-
   symbols = ["H", "H"]
   geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
   hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, method='pyscf')
@@ -279,8 +270,10 @@
 
   def cost_hst(parameters, v_function, v_wires, u_tape):
       return (1 - hilbert_test(v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape)[0])
-
-  cost = cost_hst(v_params=[0.1], v_function=v_function, v_wires=[1], u_tape=u_tape)
+  ```
+  ```pycon
+  >>> cost_hst(parameters=[0.1], v_function=v_function, v_wires=[1], u_tape=u_tape)
+  tensor(0.999, requires_grad=True)
   ```
 
 <h4>More tensor network support 🕸️</h4>
@@ -312,8 +305,7 @@
   ```
   It may be necessary to reorder the wires to see the MERA architecture clearly:
   ```pycon
-   >>> print(qml.draw(circuit,expansion_strategy='device',wire_order=[2,0,1,3])(template_weights))
-
+  >>> print(qml.draw(circuit,expansion_strategy='device',wire_order=[2,0,1,3])(template_weights))
   2: ───────────────╭C──RY(0.10)──╭X──RY(-0.30)───────────────┤
   0: ─╭X──RY(-0.30)─│─────────────╰C──RY(0.10)──╭C──RY(0.10)──┤
   1: ─╰C──RY(0.10)──│─────────────╭X──RY(-0.30)─╰X──RY(-0.30)─┤  <Z>
