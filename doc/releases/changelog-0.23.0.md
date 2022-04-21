@@ -436,6 +436,7 @@
 
 * Operators now have a `has_matrix` property denoting whether or not the operator defines a matrix.
   [(#2331)](https://github.com/PennyLaneAI/pennylane/pull/2331)
+  [(#2476)](https://github.com/PennyLaneAI/pennylane/pull/2476)
 
 * Circuit cutting now performs expansion to search for wire cuts in contained operations or tapes.
   [(#2340)](https://github.com/PennyLaneAI/pennylane/pull/2340)
