@@ -22,6 +22,7 @@ devices with autodifferentiation support.
 from functools import wraps
 import itertools
 from cachetools import LRUCache
+import warnings
 
 import pennylane as qml
 
@@ -42,7 +43,9 @@ SUPPORTED_INTERFACES = list(itertools.chain(*INTERFACE_NAMES.values()))
 """list[str]: allowed interface strings"""
 
 
-def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
+def cache_execute(
+    fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None, finite_shots=False
+):
     """Decorator that adds caching to a function that executes
     multiple tapes on a device.
 
@@ -119,6 +122,13 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
             if hashes[i] in cache:
                 # Tape exists within the cache, store the cached result
                 cached_results[i] = cache[hashes[i]]
+                # Warn the user in case of finite shots with cached results
+                if finite_shots:
+                    warnings.warn(
+                        "Cached execution with finite shots detected: note that the shot noise "
+                        "will be the same on all results from executions with identical arguments.",
+                        UserWarning,
+                    )
             else:
                 # Tape does not exist within the cache, store the tape
                 # for execution via the execution function.
@@ -291,12 +301,20 @@ def execute(
         if "passthru_interface" in device.capabilities():
             return batch_fn(
                 qml.interfaces.cache_execute(
-                    batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+                    batch_execute,
+                    cache,
+                    return_tuple=False,
+                    expand_fn=expand_fn,
+                    finite_shots=device.shots is not None,
                 )(tapes)
             )
         with qml.tape.Unwrap(*tapes):
             res = qml.interfaces.cache_execute(
-                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+                batch_execute,
+                cache,
+                return_tuple=False,
+                expand_fn=expand_fn,
+                finite_shots=device.shots is not None,
             )(tapes)
 
         return batch_fn(res)
@@ -304,12 +322,18 @@ def execute(
     if gradient_fn == "backprop" or interface is None:
         return batch_fn(
             qml.interfaces.cache_execute(
-                batch_execute, cache, return_tuple=False, expand_fn=expand_fn
+                batch_execute,
+                cache,
+                return_tuple=False,
+                expand_fn=expand_fn,
+                finite_shots=device.shots is not None,
             )(tapes)
         )
 
     # the default execution function is batch_execute
-    execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
+    execute_fn = qml.interfaces.cache_execute(
+        batch_execute, cache, expand_fn=expand_fn, finite_shots=device.shots is not None
+    )
     _mode = "backward"
 
     if gradient_fn == "device":
@@ -339,6 +363,7 @@ def execute(
                 cache,
                 pass_kwargs=True,
                 return_tuple=False,
+                finite_shots=device.shots is not None,
             )
 
     elif mode == "forward":
