@@ -763,7 +763,7 @@ def expand_fragment_tapes_mc(
 
         >>> configs, settings = qml.transforms.qcut.expand_fragment_tapes_mc(tapes, communication_graph, 3)
         >>> print(settings)
-        [[3 6 2]]
+        [[1 6 2]]
         >>> for i, (c1, c2) in enumerate(zip(configs[0], configs[1])):
         ...     print(f"config {i}:")
         ...     print(c1.draw())
