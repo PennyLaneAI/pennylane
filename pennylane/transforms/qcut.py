@@ -1092,6 +1092,7 @@ def cut_circuit_mc(
         Consider the circuit below:
 
         .. code-block:: python
+
             np.random.seed(42)
 
             with qml.tape.QuantumTape() as tape:
