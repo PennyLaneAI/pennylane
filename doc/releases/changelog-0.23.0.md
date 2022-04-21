@@ -619,10 +619,15 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   plugin" section of the plugins page have been updated.
   [(#2389)](https://github.com/PennyLaneAI/pennylane/pull/2389)
 
+* Added the missing arxiv reference in `LieAlgebra` optimizer.
+  [(#2325)](https://github.com/PennyLaneAI/pennylane/pull/2325)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Thomas Bromley, Alain Delgado,
-Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
-Matthew Silverman, Lee James O'Riordan, Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
+Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Ali Asadi,
+Utkarsh Azad, Thomas Bromley, Alain Delgado, Olivia Di Matteo, Anthony Hayes,
+David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Angus Lowe, Romain
+Moyard, Zeyue Niu, Matthew Silverman, Lee James O'Riordan, Maria Schuld, Jay
+Soni, Antal Száva, Maurice Weber, David Wierichs.
