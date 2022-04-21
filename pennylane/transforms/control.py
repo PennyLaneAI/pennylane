@@ -189,7 +189,7 @@ def ctrl(fn, control, control_values=None):
         fn (function): Any python function that applies pennylane operations.
         control (Wires): The control wire(s).
         control_values (int or list[int]): The value(s) the control wire(s) should take.
-            Integers other than x=0 or x=1 will treated as int(bool(x)).
+            Integers other than 0 or 1 will be treated as ``int(bool(x))``.
 
     Returns:
         function: A new function that applies the controlled equivalent of ``fn``. The returned
