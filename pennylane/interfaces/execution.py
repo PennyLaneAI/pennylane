@@ -21,8 +21,8 @@ devices with autodifferentiation support.
 # pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
 from functools import wraps
 import itertools
-from cachetools import LRUCache
 import warnings
+from cachetools import LRUCache
 
 import pennylane as qml
 
