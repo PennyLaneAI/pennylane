@@ -41,6 +41,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-ci.txt
           pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
+
       - name: Conditionally install openfermionpyscf
         if: contains(' 3.9', matrix.config.python-version)
         run: pip3 install openfermionpyscf
@@ -103,6 +104,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-ci.txt
           pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
+
       - name: Conditionally install PyTorch
         if: contains(matrix.config.device, 'torch')
         run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
@@ -128,9 +130,8 @@ jobs:
 
   upload:
     runs-on: ubuntu-latest
-    needs: [core-tests, device-tests]
     # Make sure that the PennyLane is not released unless the tests are passing.
-    if: ${{ always() && !cancelled() && needs.build.result == 'success' }}
+    needs: [core-tests, device-tests]
     steps:
       - uses: actions/checkout@v2
 
@@ -149,4 +150,4 @@ jobs:
         uses: pypa/gh-action-pypi-publish@master
         with:
           user: __token__
-          password: ${{ secrets.TEST_PYPI }}
+          password: ${{ secrets.PYPI }}
