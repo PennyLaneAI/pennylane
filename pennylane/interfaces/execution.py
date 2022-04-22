@@ -22,9 +22,11 @@ devices with autodifferentiation support.
 from functools import wraps
 import itertools
 import warnings
+import contextlib
 from cachetools import LRUCache
 
 import pennylane as qml
+from pennylane import Device
 
 from .set_shots import set_shots
 
@@ -43,9 +45,7 @@ SUPPORTED_INTERFACES = list(itertools.chain(*INTERFACE_NAMES.values()))
 """list[str]: allowed interface strings"""
 
 
-def cache_execute(
-    fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None, finite_shots=False
-):
+def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=None):
     """Decorator that adds caching to a function that executes
     multiple tapes on a device.
 
@@ -122,7 +122,15 @@ def cache_execute(
             if hashes[i] in cache:
                 # Tape exists within the cache, store the cached result
                 cached_results[i] = cache[hashes[i]]
-                # Warn the user in case of finite shots with cached results
+                # Introspect the set_shots decorator of the input function:
+                # warn the user in case of finite shots with cached results
+                finite_shots=False
+                for var in fn.__closure__:  # retrieve captured context manager instance
+                    if isinstance(var.cell_contents, contextlib._GeneratorContextManager):
+                        # retrieve device instance from set_shots arguments
+                        for arg in var.cell_contents.args:
+                            if isinstance(arg, Device):
+                                finite_shots=isinstance(arg.shots, int)
                 if finite_shots:
                     warnings.warn(
                         "Cached execution with finite shots detected: note that the shot noise "
@@ -305,7 +313,6 @@ def execute(
                     cache,
                     return_tuple=False,
                     expand_fn=expand_fn,
-                    finite_shots=device.shots is not None,
                 )(tapes)
             )
         with qml.tape.Unwrap(*tapes):
@@ -314,7 +321,6 @@ def execute(
                 cache,
                 return_tuple=False,
                 expand_fn=expand_fn,
-                finite_shots=device.shots is not None,
             )(tapes)
 
         return batch_fn(res)
@@ -326,14 +332,11 @@ def execute(
                 cache,
                 return_tuple=False,
                 expand_fn=expand_fn,
-                finite_shots=device.shots is not None,
             )(tapes)
         )
 
     # the default execution function is batch_execute
-    execute_fn = qml.interfaces.cache_execute(
-        batch_execute, cache, expand_fn=expand_fn, finite_shots=device.shots is not None
-    )
+    execute_fn = qml.interfaces.cache_execute(batch_execute, cache, expand_fn=expand_fn)
     _mode = "backward"
 
     if gradient_fn == "device":
@@ -363,7 +366,6 @@ def execute(
                 cache,
                 pass_kwargs=True,
                 return_tuple=False,
-                finite_shots=device.shots is not None,
             )
 
     elif mode == "forward":
