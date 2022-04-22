@@ -207,3 +207,26 @@ def test_differentiable_hamiltonian(symbols, geometry, h_ref_data):
     assert Hamiltonian(np.ones(len(h_noargs.coeffs)), h_noargs.ops).compare(
         Hamiltonian(np.ones(len(h_ref.coeffs)), h_ref.ops)
     )
+
+
+file_content = """\
+2
+in Angstrom
+H          0.00000        0.00000       -0.35000
+H          0.00000        0.00000        0.35000
+"""
+
+
+def test_mol_hamiltonian_with_read_structure(tmpdir):
+    """Test that the pipeline of using molecular_hamiltonian with
+    read_structure executes without errors."""
+    f_name = "h2.xyz"
+    filename = tmpdir.join(f_name)
+
+    with open(filename, "w") as f:
+        f.write(file_content)
+
+    symbols, coordinates = qchem.read_structure(str(filename))
+    H, num_qubits = qchem.molecular_hamiltonian(symbols, coordinates)
+    assert len(H.terms()) == 2
+    assert num_qubits == 4

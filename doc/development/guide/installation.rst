@@ -54,27 +54,6 @@ requirements:
 
   - Only using the ``tf.GradientTape`` context for gradient computation.
 
-QChem dependencies
-~~~~~~~~~~~~~~~~~~
-
-Finally, for development of the QChem package, the following dependencies
-are required:
-
-* `OpenFermion <https://github.com/quantumlib/OpenFermion>`__ >= 0.10
-
-* `pySCF <https://sunqm.github.io/pyscf>`__ < 2.0
-  and `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-pyscf>`__ >= 0.4
-
-* `Psi4 <http://www.psicode.org/>`__ and
-  `OpenFermion-Psi4 <https://github.com/quantumlib/OpenFermion-Psi4>`__ >= 0.4
-  (optional but recommended to run the full test suite)
-
-  The easiest way to install Psi4 is via Ananconda:
-
-  .. code-block:: bash
-
-    conda install psi4 psi4-rt -c psi4
-
 Installation
 ------------
 
