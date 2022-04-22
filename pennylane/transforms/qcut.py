@@ -254,7 +254,7 @@ def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
                 _add_operator_node(graph, s_, order, wire_latest_node)
         else:
             _add_operator_node(graph, m, order, wire_latest_node)
-            order += 1
+        order += 1
 
     return graph
 
@@ -2003,6 +2003,7 @@ def cut_circuit(
             ) from e
 
     g = tape_to_graph(tape)
+    pos = set(n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess))
 
     if auto_cutter is True or callable(auto_cutter):
 
