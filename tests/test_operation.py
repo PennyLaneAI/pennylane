@@ -37,6 +37,7 @@ from pennylane.wires import Wires
     "return_type", ("Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure")
 )
 def test_obersvablereturntypes_import_warnings(return_type):
+    """Test that accessing the observable return types through qml.operation emit a warning."""
 
     with pytest.warns(UserWarning, match=r"is deprecated"):
         getattr(qml.operation, return_type)
