@@ -1453,14 +1453,23 @@ class TestGraphToTape:
 class TestGetMeasurements:
     """Tests for the _get_measurements function"""
 
-    def test_multiple_measurements_raises(self):
-        """Tests if the function raises a ValueError when more than 1 fixed measurement is
-        specified"""
-        group = [qml.Identity(0)]
+    def test_multiple_measurements(self):
+        """Tests if the function correctly calculates the product of observables when there is more
+        than one measurement in ``measurements``"""
+        group = [qml.Identity(0), qml.PauliX(0)]
         meas = [qml.expval(qml.PauliX(1)), qml.expval(qml.PauliY(2))]
 
-        with pytest.raises(ValueError, match="with a single output measurement"):
-            qcut._get_measurements(group, meas)
+        expvals = qcut._get_measurements(group, meas)
+        expected_expvals = [
+            qml.expval(qml.PauliX(1) @ qml.Identity(0)),
+            qml.expval(qml.PauliX(1) @ qml.PauliX(0)),
+            qml.expval(qml.PauliY(2) @ qml.Identity(0)),
+            qml.expval(qml.PauliY(2) @ qml.PauliX(0)),
+        ]
+        assert len(expvals) == len(expected_expvals)
+
+        for m1, m2 in zip(expvals, expected_expvals):
+            compare_measurements(m1, m2)
 
     def test_non_expectation_raises(self):
         """Tests if the function raises a ValueError when the fixed measurement is not an

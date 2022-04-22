@@ -501,43 +501,35 @@ def _get_measurements(
 ) -> List[MeasurementProcess]:
     """Pairs each observable in ``group`` with the circuit ``measurements``.
 
-    Only a single measurement of an expectation value is currently supported
-    in ``measurements``.
-
     Args:
         group (Sequence[Operator]): a collection of observables
         measurements (Sequence[MeasurementProcess]): measurements from the circuit
 
     Returns:
         List[MeasurementProcess]: the expectation values of ``g @ obs``, where ``g`` is iterated
-        over ``group`` and ``obs`` is the observable composing the single measurement
-        in ``measurements``
+        over ``group`` and ``obs`` is iterated over the observables in ``measurements``
     """
     if len(group) == 0:
         # This ensures the measurements of the original tape are carried over to the
         # following tape configurations in the absence of any MeasureNodes in the fragment
         return measurements
 
-    n_measurements = len(measurements)
-    if n_measurements > 1:
-        raise ValueError(
-            "The circuit cutting workflow only supports circuits with a single output "
-            "measurement"
-        )
-    if n_measurements == 0:
+    if len(measurements) == 0:
         return [expval(g) for g in group]
 
-    measurement = measurements[0]
+    expvals = []
 
-    if measurement.return_type is not Expectation:
-        raise ValueError(
-            "The circuit cutting workflow only supports circuits with expectation "
-            "value measurements"
-        )
+    for m in measurements:
 
-    obs = measurement.obs
+        if m.return_type is not Expectation:
+            raise ValueError("The circuit cutting workflow only supports circuits with "
+                             "expectation value measurements")
 
-    return [expval(copy.copy(obs) @ g) for g in group]
+        for g in group:
+            obs = copy.copy(m.obs)
+            expvals.append(qml.expval(obs @ g))
+
+    return expvals
 
 
 def _prep_zero_state(wire):
@@ -1982,10 +1974,17 @@ def cut_circuit(
         0.47165198882111165
     """
     # pylint: disable=unused-argument
-    if len(tape.measurements) != 1:
+    all_pauli_words = all(qml.grouping.is_pauli_word(m.obs) for m in tape.measurements)
+
+    if len(tape.measurements) > 1 and not all_pauli_words:
         raise ValueError(
-            "The circuit cutting workflow only supports circuits with a single output "
-            "measurement"
+            "The circuit cutting workflow only supports returning either: (i) an expectation value "
+            "of a single observable; (ii) expectation values of a collection of tensor products of "
+            "Pauli operators."
+        )
+    if len(tape.measurements) == 0:
+        raise ValueError(
+            "At least one measurement must be returned in the circuit cutting workflow"
         )
 
     if not all(m.return_type is Expectation for m in tape.measurements):
