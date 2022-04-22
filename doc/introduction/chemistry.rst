@@ -7,7 +7,7 @@ fully-differentiable molecular Hamiltonian that can be used as input to quantum 
 such as the variational quantum eigensolver (VQE) algorithm. The :mod:`~.qchem` module
 also provides tools for building other observables such as molecular dipole moment, spin
 and particle number observables. The theoretical foundation of the quantum chemistry functionality
-in PennyLane is explained `here <https://arxiv.org/abs/2111.09967>`_.
+in PennyLane is explained in our `white paper <https://arxiv.org/abs/2111.09967>`_.
 
 Building the electronic Hamiltonian
 -----------------------------------
