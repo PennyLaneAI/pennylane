@@ -11,8 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The PennyLane quantum chemistry package. Supports OpenFermion, PySCF,
-and Psi4 for quantum chemistry calculations using PennyLane."""
+"""
+This subpackage provides the functionality to perform quantum chemistry calculations.
+"""
 from .openfermion_obs import (
     observable,
     one_particle,
@@ -54,7 +55,7 @@ from .matrices import (
 )
 from .molecule import Molecule
 from .observable_hf import fermionic_observable, qubit_observable, jordan_wigner, simplify
-from .particle_number import particle_number
+from .number import particle_number
 from .spin import spin2, spinz
 from .structure import read_structure, active_space, excitations, hf_state, excitations_to_wires
 from .tapering import (

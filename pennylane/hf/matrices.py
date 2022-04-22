@@ -61,7 +61,7 @@ def generate_overlap_matrix(basis_functions):
     r"""Return a function that computes the overlap matrix for a given set of basis functions.
 
     Args:
-        basis_functions (list[BasisFunction]): basis functions
+        basis_functions (list[~hf.basis_set.BasisFunction]): basis functions
 
     Returns:
         function: function that computes the overlap matrix
@@ -109,7 +109,7 @@ def generate_kinetic_matrix(basis_functions):
     r"""Return a function that computes the kinetic matrix for a given set of basis functions.
 
     Args:
-        basis_functions (list[BasisFunction]): basis functions
+        basis_functions (list[~hf.basis_set.BasisFunction]): basis functions
 
     Returns:
         function: function that computes the kinetic matrix
@@ -158,7 +158,7 @@ def generate_attraction_matrix(basis_functions, charges, r):
     basis functions.
 
     Args:
-        basis_functions (list[BasisFunction]): basis functions
+        basis_functions (list[~hf.basis_set.BasisFunction]): basis functions
         charges (list[int]): nuclear charges
         r (array[float]): nuclear positions
 
@@ -226,7 +226,7 @@ def generate_repulsion_tensor(basis_functions):
     functions.
 
     Args:
-        basis_functions (list[BasisFunction]): basis functions
+        basis_functions (list[~hf.basis_set.BasisFunction]): basis functions
 
     Returns:
         function: function that computes the electron repulsion tensor
@@ -296,7 +296,7 @@ def generate_core_matrix(basis_functions, charges, r):
     The core matrix is computed as a sum of the kinetic and electron-nuclear attraction matrices.
 
     Args:
-        basis_functions (list[BasisFunction]): basis functions
+        basis_functions (list[~hf.basis_set.BasisFunction]): basis functions
         charges (list[int]): nuclear charges
         r (array[float]): nuclear positions
 
