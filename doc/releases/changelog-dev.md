@@ -25,6 +25,7 @@
   ```
   
 * Instead of checking types, objects are processed in `QuantumTape`'s based on a new `_queue_category` property.
+  [(#2408)](https://github.com/PennyLaneAI/pennylane/pull/2408)
 
   
 <h3>Breaking changes</h3>
