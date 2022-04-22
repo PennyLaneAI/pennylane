@@ -180,6 +180,7 @@
     [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
     [(#2465)](https://github.com/PennyLaneAI/pennylane/pull/2465)
     [(#2454)](https://github.com/PennyLaneAI/pennylane/pull/2454)
+    [(#2482)](https://github.com/PennyLaneAI/pennylane/pull/2482)
 
 * Adds a MERA template.
   [(#2418)](https://github.com/PennyLaneAI/pennylane/pull/2418)
@@ -614,7 +615,7 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
 
 * Fixed a bug with custom device defined jacobians not being returned properly.
-  [(#108)](https://github.com/PennyLaneAI/pennylane-sf/pull/108/files)
+  [(#2485)](https://github.com/PennyLaneAI/pennylane-sf/pull/2485)
 
 <h3>Documentation</h3>
 
