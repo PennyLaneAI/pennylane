@@ -1076,6 +1076,9 @@ class Operator(abc.ABC):
     def _queue_category(self):
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
 
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
+
         Options are:
             * `"_prep"`
             * `"_ops"`
