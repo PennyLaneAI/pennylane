@@ -1095,7 +1095,7 @@ class TestShots:
 
     def test_warning_finite_shots_dev(self):
         """Tests that a warning is raised when caching is used with finite shots."""
-        dev = qml.device("default.qubit", wires=2, shots=5)
+        dev = qml.device("default.qubit", wires=1, shots=5)
 
         @qml.qnode(dev, cache={})
         def circuit(x):
@@ -1109,7 +1109,7 @@ class TestShots:
 
     def test_warning_finite_shots_override(self):
         """Tests that a warning is raised when caching is used with finite shots."""
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev, cache={})
         def circuit(x):
@@ -1120,6 +1120,34 @@ class TestShots:
         circuit(0.3)
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
             circuit(0.3, shots=5)
+
+    def test_warning_finite_shots_tape(self):
+        """Tests that a warning is raised when caching is used with finite shots."""
+        dev = qml.device("default.qubit", wires=1, shots=5)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RZ(0.3, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        # no warning on the first execution
+        cache = {}
+        qml.execute([tape], dev, None, cache=cache)
+        with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
+            qml.execute([tape], dev, None, cache=cache)
+
+    def test_no_warning_infinite_shots(self):
+        """Tests that no warning is raised when caching is used with infinite shots."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, cache={})
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("error", message="Cached execution with finite shots detected")
+            circuit(0.3)
+            circuit(0.3)
 
 
 @pytest.mark.xfail
