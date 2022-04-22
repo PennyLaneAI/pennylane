@@ -109,6 +109,7 @@ from pennylane.wires import Wires
 
 from .utils import pauli_eigs
 
+
 def __getattr__(name):
     warning_names = {"Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure"}
     if name in warning_names:
@@ -119,7 +120,7 @@ def __getattr__(name):
     try:
         return globals()[name]
     except KeyError as e:
-        raise AttributeError from e 
+        raise AttributeError from e
 
 
 def expand_matrix(base_matrix, wires, wire_order):
