@@ -195,7 +195,7 @@ def _add_operator_node(graph: MultiDiGraph, op: Operator, order: int, wire_lates
         wire_latest_node[wire] = op
 
 
-def tape_to_graph(tape: QuantumTape, include_measurements: bool=True) -> MultiDiGraph:
+def tape_to_graph(tape: QuantumTape) -> MultiDiGraph:
     """
     Converts a quantum tape to a directed multigraph.
 
@@ -206,7 +206,6 @@ def tape_to_graph(tape: QuantumTape, include_measurements: bool=True) -> MultiDi
 
     Args:
         tape (QuantumTape): tape to be converted into a directed multigraph
-        include_measurements (bool): whether to include the tapes measurements in the graph
 
     Returns:
         nx.MultiDiGraph: a directed multigraph that captures the circuit structure
@@ -235,9 +234,6 @@ def tape_to_graph(tape: QuantumTape, include_measurements: bool=True) -> MultiDi
 
     for order, op in enumerate(tape.operations):
         _add_operator_node(graph, op, order, wire_latest_node)
-
-    if not include_measurements:
-        return graph
 
     order += 1  # pylint: disable=undefined-loop-variable
     for m in tape.measurements:
@@ -2006,7 +2002,7 @@ def cut_circuit(
                 "installed using:\npip install opt_einsum"
             ) from e
 
-    g = tape_to_graph(tape, include_measurements=not all_pauli_words)
+    g = tape_to_graph(tape)
 
     if auto_cutter is True or callable(auto_cutter):
 
