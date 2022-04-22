@@ -180,6 +180,7 @@
     [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
     [(#2465)](https://github.com/PennyLaneAI/pennylane/pull/2465)
     [(#2454)](https://github.com/PennyLaneAI/pennylane/pull/2454)
+    [(#2482)](https://github.com/PennyLaneAI/pennylane/pull/2482)
 
 * Adds a MERA template.
   [(#2418)](https://github.com/PennyLaneAI/pennylane/pull/2418)
