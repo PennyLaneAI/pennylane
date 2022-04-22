@@ -134,7 +134,7 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     return set(zip(pauli_1.wires, pauli_1.name)) == set(zip(pauli_2.wires, pauli_2.name))
 
 
-def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
+def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_word=True):
     """Converts a Pauli word to the binary vector representation.
 
     This functions follows convention that the first half of binary vector components specify
@@ -145,7 +145,9 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
             converted to binary vector representation
         n_qubits (int): number of qubits to specify dimension of binary vector representation
         wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys, and
-             unique integer labels as their values
+            unique integer labels as their values
+        check_is_pauli_word (bool): If True (default) then a check is run to verify that pauli_word
+            is infact a Pauli word
 
     Returns:
         array: the ``2*n_qubits`` dimensional binary vector representation of the input Pauli word
@@ -214,7 +216,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     array([1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0.])
     """
 
-    if not is_pauli_word(pauli_word):
+    if check_is_pauli_word and not is_pauli_word(pauli_word):
         raise TypeError(f"Expected a Pauli word Observable instance, instead got {pauli_word}.")
 
     if wire_map is None:
