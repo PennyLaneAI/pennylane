@@ -521,6 +521,11 @@ class TestTapeToGraph:
                 assert node.return_type is qml.measurements.Sample
                 assert node.obs.name == expected_node.obs.name
 
+    def test_not_include_measurements(self):
+        """Test if measurements are not included when include_measurements is False"""
+        g = qcut.tape_to_graph(tape, include_measurements=False)
+        assert not any(isinstance(n, qml.measurements.MeasurementProcess) for n in g.nodes)
+
 
 class TestReplaceWireCut:
     """
