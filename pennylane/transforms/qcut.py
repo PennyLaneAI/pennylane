@@ -2032,11 +2032,6 @@ def cut_circuit(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
 
-    fragment_meas_positions = [sorted(n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess)) for g in fragments]
-    for pos in fragment_meas_positions:
-        if len(pos) < total_measurements:
-            pos.append(-1)  # -1 denotes an identity measurement
-
     fragment_tapes = [graph_to_tape(f) for f in fragments]
 
     fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
@@ -2051,6 +2046,16 @@ def cut_circuit(
         measure_nodes.append(m)
 
     tapes = tuple(tape for c in configurations for tape in c)
+
+    if all_pauli_words and total_measurements > 1:
+        all_meas_positions = sorted(
+            n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess))
+        fragment_meas_positions = [
+            sorted(n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess)) for
+            g in fragments]
+        for pos in fragment_meas_positions:
+            if len(pos) < total_measurements:
+                pos.append(-1)  # -1 denotes an identity measurement
 
     return tapes, partial(
         qcut_processing_fn,
