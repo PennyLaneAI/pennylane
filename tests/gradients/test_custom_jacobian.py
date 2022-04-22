@@ -3,8 +3,8 @@ import pennylane as qml
 
 from pennylane.devices.default_qubit import DefaultQubit
 
-class CustomJacobianDevice(DefaultQubit):
 
+class CustomJacobianDevice(DefaultQubit):
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities()
@@ -12,11 +12,10 @@ class CustomJacobianDevice(DefaultQubit):
         return capabilities
 
     def jacobian(self, tape):
-        return np.array([1., 2., 3., 4.])
+        return np.array([1.0, 2.0, 3.0, 4.0])
 
 
 class TestCustomJacobian:
-
     def test_custom_jacobians(self):
         dev = CustomJacobianDevice(wires=2)
 
@@ -27,9 +26,7 @@ class TestCustomJacobian:
 
         d_circuit = qml.jacobian(circuit, argnum=0)
 
-        params = np.array(1., requires_grad=True)
+        params = np.array(1.0, requires_grad=True)
 
         d_out = d_circuit(params)
-        assert np.allclose(d_out, np.array([1., 2., 3., 4.]))
-
-
+        assert np.allclose(d_out, np.array([1.0, 2.0, 3.0, 4.0]))
