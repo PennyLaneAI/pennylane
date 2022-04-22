@@ -180,6 +180,7 @@
     [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
     [(#2465)](https://github.com/PennyLaneAI/pennylane/pull/2465)
     [(#2454)](https://github.com/PennyLaneAI/pennylane/pull/2454)
+    [(#2482)](https://github.com/PennyLaneAI/pennylane/pull/2482)
 
 * Adds a MERA template.
   [(#2418)](https://github.com/PennyLaneAI/pennylane/pull/2418)
@@ -446,6 +447,11 @@
 
 <h3>Deprecations</h3>
 
+* The `ObservableReturnTypes` `Sample`, `Variance`, `Expectation`, `Probability`, `State`, and `MidMeasure`
+  have been moved to `measurements` from `operation`.
+  [(#2329)](https://github.com/PennyLaneAI/pennylane/pull/2329)
+  [(#2481)](https://github.com/PennyLaneAI/pennylane/pull/2481)
+
 <h3>Breaking changes</h3>
 
 * The `qml.finite_diff` function has been deleted. Please use `qml.gradients.finite_diff` to compute
@@ -513,10 +519,6 @@
 The tape method `qml.tape.QuantumTape.draw` now simply calls `qml.drawer.tape_text`.
 In the new pathway, the `charset` keyword is deleted, the `max_length` keyword defaults to `100`, and
 the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tape)`
-
-* The `ObservableReturnTypes` `Sample`, `Variance`, `Expectation`, `Probability`, `State`, and `MidMeasure`
-  have been moved to `measurements` from `operation`.
-  [(#2329)](https://github.com/PennyLaneAI/pennylane/pull/2329)
 
 * The deprecated QNode, available via `qml.qnode_old.QNode`, has been removed. Please
   transition to using the standard `qml.QNode`.
