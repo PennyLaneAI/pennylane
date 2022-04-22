@@ -100,31 +100,6 @@ def grad_fn(tape, dev, fn=qml.gradients.param_shift, **kwargs):
     return fn(dev.batch_execute(tapes))
 
 
-class TestShiftedTapes:
-    """Tests for the generation of shifted tapes within the param_shift function."""
-
-    def test_behaviour(self):
-        """Test that the function behaves as expected"""
-
-        with qml.tape.QuantumTape() as tape:
-            qml.PauliZ(0)
-            qml.RX(1.0, wires=0)
-            qml.CNOT(wires=[0, 2])
-            qml.Rot(2.0, 3.0, 4.0, wires=0)
-            qml.expval(qml.PauliZ(0))
-
-        tape.trainable_params = {0, 2}
-        gradient_recipes = ([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], [[1, 1, 1], [2, 2, 2], [3, 3, 3]])
-        tapes, _ = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
-
-        assert len(tapes) == 5
-        assert tapes[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
-        assert tapes[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]
-        assert tapes[2].get_parameters(trainable_only=False) == [1.0, 2.0, 1 * 3.0 + 1, 4.0]
-        assert tapes[3].get_parameters(trainable_only=False) == [1.0, 2.0, 2 * 3.0 + 2, 4.0]
-        assert tapes[4].get_parameters(trainable_only=False) == [1.0, 2.0, 3 * 3.0 + 3, 4.0]
-
-
 class TestParamShift:
     """Unit tests for the param_shift function"""
 
@@ -238,6 +213,28 @@ class TestParamShift:
 
         tapes, _ = qml.gradients.param_shift(circuit.tape)
         assert tapes == []
+
+    def test_with_gradient_recipes(self):
+        """Test that the function behaves as expected"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliZ(0)
+            qml.RX(1.0, wires=0)
+            qml.CNOT(wires=[0, 2])
+            qml.Rot(2.0, 3.0, 4.0, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 2}
+        gradient_recipes = ([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], [[1, 1, 1], [2, 2, 2], [3, 3, 3]])
+        tapes, _ = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+
+        assert len(tapes) == 5
+        assert tapes[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
+        assert tapes[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]
+        assert tapes[2].get_parameters(trainable_only=False) == [1.0, 2.0, 1 * 3.0 + 1, 4.0]
+        assert tapes[3].get_parameters(trainable_only=False) == [1.0, 2.0, 2 * 3.0 + 2, 4.0]
+        assert tapes[4].get_parameters(trainable_only=False) == [1.0, 2.0, 3 * 3.0 + 3, 4.0]
+
 
     def test_recycled_unshifted_tape(self):
         """Test that if the gradient recipe has a zero-shift component, then

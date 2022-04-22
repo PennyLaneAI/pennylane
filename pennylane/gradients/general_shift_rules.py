@@ -34,7 +34,7 @@ def process_shifts(rule, tol=1e-10, batch_duplicates=True):
         tol (float): floating point tolerance used when comparing shifts/coefficients
             Terms with coefficients below ``tol`` will be removed.
         batch_duplicates (bool): whether to check the input ``rule`` for duplicate
-            shift values in its second row.
+            shift values in its second column.
 
     Returns:
         array: The processed shift rule with small entries rounded to 0, sorted
@@ -209,9 +209,7 @@ def _iterate_shift_rule(rule, order, period=None):
 
     # TODO: optimization: Without multipliers, the order of shifts does not matter,
     # so that we can only iterate over the symmetric part of the combined_rules tensor.
-    # This requires the corresponding multinomial prefactors to be factored into the coeffs.
-
-    # the following might become slow if high-order derivatives or very large rules are used
+    # This requires the corresponding multinomial prefactors to be included in the coeffs.
     combined_rules = np.array(list(itertools.product(rule, repeat=order)))
     # multiply the coefficients of each rule
     coeffs = np.prod(combined_rules[..., 0], axis=1)
@@ -381,25 +379,27 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
 
 
 def generate_shifted_tapes(tape, indices, shifts, multipliers=None):
-    r"""Generate a list of tapes where multiple marked trainable parameters
-    have been shifted simultaneously by the values given.
+    r"""Generate a list of tapes where one or multiple marked trainable
+    parameter(s) has/have been shifted by the provided shift values.
 
     Args:
         tape (.QuantumTape): input quantum tape
-        indices (int): indices of the trainable parameters to shift
-        shifts (Sequence[Sequence[float or int]]): Nested sequence of shift values
-            with the same length as ``indices``. The length of the inner sequence
-            determines how many parameter-shifted tapes are created.
-        multipliers (Sequence[Sequence[float or int]]): Sequence of multiplier values
-            matching the shape of ``shifts``. Each multiplier scales the corresponding
-            gate parameter before the shift is applied. If not provided, the parameters
-            will not be scaled.
+        indices (int or Sequence[int]): index/indices of the trainable parameter(s) to shift
+        shifts (Sequence[float or int] or Sequence[Sequence[float or int]]): (Nested) sequence
+            of shift values. If ``indices`` is a single ``int``, ``shifts`` should be a flat
+            sequence, otherwise it should be a nested sequence with the same length as ``indices``.
+            The length of the (inner) sequence(s) determines how many parameter-shifted tapes 
+            are created.
+        multipliers (Sequence[float or int] or Sequence[Sequence[float or int]]): (Nested) sequence
+            of multiplier values of the same format as `shifts``. Each multiplier scales the
+            corresponding gate parameter before the shift is applied. If not provided, the
+            parameters will not be scaled.
 
     Returns:
-        list[QuantumTape]: List of quantum tapes. Each tape has multiple parameters
+        list[QuantumTape]: List of quantum tapes. Each tape has one or multiple parameters
             (indicated by ``indices``) shifted by the values of ``shifts``. The length
-            of the returned list of tapes will match the second dimension of ``shifts``
-            and ``multipliers``.
+            of the returned list of tapes will match the last dimension of ``shifts``
+            and ``multipliers`` (if provided).
     """
     params = list(tape.get_parameters())
     shifts = qml.math.array(shifts)

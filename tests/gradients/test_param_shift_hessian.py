@@ -80,7 +80,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -100,7 +100,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.Hadamard(wires=1)
             qml.CRX(x, wires=[1, 0])
@@ -128,7 +128,7 @@ class TestParameterShiftHessian:
 
             grad_recipe = (recipe,)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.Hadamard(wires=1)
             DummyOp(x, wires=[1, 0])
@@ -148,7 +148,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RY(x, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -167,7 +167,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -188,7 +188,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -208,7 +208,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -229,7 +229,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -250,7 +250,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0] + x[1] + x[2], wires=0)
             qml.RY(x[1] - x[0] + 3 * x[2], wires=0)
@@ -271,7 +271,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -291,7 +291,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[0, 0], wires=0)
             qml.RY(x[0, 1], wires=0)
@@ -311,7 +311,7 @@ class TestParameterShiftHessian:
         """Test that the correct Hessian is calculated with multiple QNode arguments (0D->1D)"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -338,7 +338,7 @@ class TestParameterShiftHessian:
         """Test that the correct Hessian is calculated with multiple QNode arguments (1D->1D)"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x, y, z):
             qml.RX(x[0], wires=1)
             qml.RY(y[0], wires=0)
@@ -366,7 +366,7 @@ class TestParameterShiftHessian:
         """Test that the correct Hessian is calculated with multiple QNode arguments (2D->1D)"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x, y, z):
             qml.RX(x[0, 0], wires=0)
             qml.RY(y[0, 0], wires=1)
@@ -395,7 +395,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(z[0] + z[1], wires=0)
@@ -421,7 +421,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -441,7 +441,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=3)
+        @qml.qnode(dev, max_diff=3, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -549,7 +549,7 @@ class TestParameterShiftHessian:
 
             grad_method = "F"
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -574,7 +574,7 @@ class TestParameterShiftHessian:
 
             grad_method = "F"
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -594,7 +594,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -614,7 +614,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -638,7 +638,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(y, wires=0)
@@ -659,7 +659,7 @@ class TestParameterShiftHessian:
             pytest.importorskip(interface)
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -698,7 +698,7 @@ class TestParameterShiftHessian:
         identified to be 0, and that no tapes were generated."""
         dev = qml.device("default.qubit", wires=4)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(params):
             qml.Rot(*params, wires=0)
             return qml.probs([2, 3])
@@ -788,7 +788,7 @@ class TestParamShiftHessianWithKwargs:
         """Test that diagonal shifts are used and yield the correct Hessian."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -832,7 +832,7 @@ class TestParamShiftHessianWithKwargs:
         """Test that off-diagonal shifts are used and yield the correct Hessian."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.CRY(x[1], wires=[0, 1])
@@ -878,7 +878,7 @@ class TestParamShiftHessianWithKwargs:
         """Test that providing an argnum to indicated differentiable parameters works."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x, y):
             qml.RX(x, wires=0)
             qml.CRY(y, wires=[0, 1])
@@ -906,7 +906,7 @@ class TestParamShiftHessianWithKwargs:
         off_diagonal_shifts = [(0.4,), (0.3, 2.1)]
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x, y):
             qml.RX(x, wires=0)
             qml.CRY(y, wires=[0, 1])
@@ -965,7 +965,7 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -1012,7 +1012,7 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, max_diff=2)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -1036,7 +1036,7 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", max_diff=3)
+        @qml.qnode(dev, max_diff=3)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -1059,7 +1059,7 @@ class TestInterfaces:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
