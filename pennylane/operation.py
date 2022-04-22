@@ -111,6 +111,7 @@ from .utils import pauli_eigs
 
 
 def __getattr__(name):
+    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
     warning_names = {"Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure"}
     if name in warning_names:
         obj = getattr(qml.measurements, name)
