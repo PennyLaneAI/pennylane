@@ -388,7 +388,7 @@ def _find_new_wire(wires: Wires) -> int:
 
 
 # pylint: disable=protected-access
-def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
+def graph_to_tape(graph: MultiDiGraph, total_measurements: int=1) -> QuantumTape:
     """
     Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
 
@@ -403,6 +403,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
 
     Args:
         graph (nx.MultiDiGraph): directed multigraph to be converted to a tape
+        total_measurements (int): the number of measurements in the original uncut circuit
 
     Returns:
         QuantumTape: the quantum tape corresponding to the input graph
@@ -436,14 +437,14 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
     wires = Wires.all_wires([n.wires for n in graph.nodes])
 
     ordered_ops = sorted(
-        [(order, op) for op, order in graph.nodes(data="order")], key=lambda x: x[0]
+        [(order, copy.copy(op)) for op, order in graph.nodes(data="order")], key=lambda x: x[0]
     )
     wire_map = {w: w for w in wires}
     reverse_wire_map = {v: k for k, v in wire_map.items()}
 
-    copy_ops = [copy.copy(op) for _, op in ordered_ops if not isinstance(op, MeasurementProcess)]
-    copy_meas = [copy.copy(op) for _, op in ordered_ops if isinstance(op, MeasurementProcess)]
-    observables = []
+    copy_ops = [op for _, op in ordered_ops if not isinstance(op, MeasurementProcess)]
+    copy_meas = [pair for pair in ordered_ops if isinstance(pair[1], MeasurementProcess)]
+    observables = {}
 
     with QuantumTape() as tape:
         for op in copy_ops:
@@ -465,7 +466,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                 reverse_wire_map[new_wire] = original_wire
 
         if copy_meas:
-            return_types = set(meas.return_type for meas in copy_meas)
+            return_types = set(meas.return_type for ord, meas in copy_meas)
             if len(return_types) > 1:
                 raise ValueError(
                     "Only a single return type can be used for measurement "
@@ -479,19 +480,29 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumTape:
                     "are supported in graph_to_tape"
                 )
 
-            for meas in copy_meas:
+            for ord, meas in copy_meas:
                 obs = meas.obs
                 obs._wires = Wires([wire_map[w] for w in obs.wires])
-                observables.append(obs)
+
+                obs_list = observables.get(ord, []) + [obs]
+                observables[ord] = obs_list
 
                 if return_type is Sample:
                     apply(meas)
 
             if return_type is Expectation:
-                if len(observables) > 1:
-                    qml.expval(Tensor(*observables))
-                else:
-                    qml.expval(obs)
+                ordered = sorted(observables.keys())
+
+                for ord in ordered:
+                    obs = observables[ord]
+
+                    if len(obs) > 1:
+                        qml.expval(Tensor(*obs))
+                    else:
+                        qml.expval(obs[0])
+
+                if len(observables) < total_measurements:
+                    qml.expval(qml.Identity(0))
 
     return tape
 
@@ -2003,7 +2014,6 @@ def cut_circuit(
             ) from e
 
     g = tape_to_graph(tape)
-    pos = set(n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess))
 
     if auto_cutter is True or callable(auto_cutter):
 
