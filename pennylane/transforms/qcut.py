@@ -1985,14 +1985,15 @@ def cut_circuit(
         0.47165198882111165
     """
     # pylint: disable=unused-argument
+    total_measurements = len(tape.measurements)
     all_pauli_words = all(qml.grouping.is_pauli_word(m.obs) for m in tape.measurements)
 
-    if len(tape.measurements) > 1 and not all_pauli_words:
+    if total_measurements > 1 and not all_pauli_words:
         raise ValueError(
             "The circuit cutting workflow only supports returning multiple measurements when "
             "the composing observables are all tensor products of Pauli operators"
         )
-    if len(tape.measurements) == 0:
+    if total_measurements == 0:
         raise ValueError(
             "At least one measurement must be returned in the circuit cutting workflow"
         )
@@ -2030,6 +2031,12 @@ def cut_circuit(
 
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
+
+    fragment_meas_positions = [sorted(n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess)) for g in fragments]
+    for pos in fragment_meas_positions:
+        if len(pos) < total_measurements:
+            pos.append(-1)  # -1 denotes an identity measurement
+
     fragment_tapes = [graph_to_tape(f) for f in fragments]
     fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
