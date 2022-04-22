@@ -615,7 +615,7 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
 
 * Fixed a bug with custom device defined jacobians not being returned properly.
-  [(#108)](https://github.com/PennyLaneAI/pennylane-sf/pull/108/files)
+  [(#2485)](https://github.com/PennyLaneAI/pennylane-sf/pull/2485)
 
 <h3>Documentation</h3>
 
