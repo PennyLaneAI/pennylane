@@ -6,128 +6,160 @@
 
 <h4> Finite-shot circuit cutting ✂️</h4>
 
-  * The new `@qml.cut_circuit_mc` transform allows evaluating QNodes of
-    `N`-wire circuits with `WireCut` operations and sample-based measurements
-    on devices with fewer than `N` wires.
-    [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
-    [(#2321)](https://github.com/PennyLaneAI/pennylane/pull/2321)
-    [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
-    [(#2358)](https://github.com/PennyLaneAI/pennylane/pull/2358)
-    [(#2382)](https://github.com/PennyLaneAI/pennylane/pull/2382)
-    [(#2399)](https://github.com/PennyLaneAI/pennylane/pull/2399)
-    [(#2407)](https://github.com/PennyLaneAI/pennylane/pull/2407)
-    [(#2444)](https://github.com/PennyLaneAI/pennylane/pull/2444)
+* The new `@qml.cut_circuit_mc` transform allows evaluating QNodes of
+  `N`-wire circuits with `WireCut` operations and sample-based measurements
+  on devices with fewer than `N` wires.
+  [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
+  [(#2321)](https://github.com/PennyLaneAI/pennylane/pull/2321)
+  [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
+  [(#2358)](https://github.com/PennyLaneAI/pennylane/pull/2358)
+  [(#2382)](https://github.com/PennyLaneAI/pennylane/pull/2382)
+  [(#2399)](https://github.com/PennyLaneAI/pennylane/pull/2399)
+  [(#2407)](https://github.com/PennyLaneAI/pennylane/pull/2407)
+  [(#2444)](https://github.com/PennyLaneAI/pennylane/pull/2444)
 
-    With these new additions, samples from the original circuit can be
-    simulated using a Monte Carlo method, using fewer qubits at the expense of
-    more device executions.  Additionally, this transform can take an optional
-    classical processing function as an argument and return an expectation
-    value.
+  With these new additions, samples from the original circuit can be
+  simulated using a Monte Carlo method, using fewer qubits at the expense of
+  more device executions.  Additionally, this transform can take an optional
+  classical processing function as an argument and return an expectation
+  value.
 
-    The following `3`-qubit circuit contains a `WireCut` operation and a `sample`
-    measurement. When decorated with `@qml.cut_circuit_mc`, we can cut the circuit
-    into two `2`-qubit fragments:
+  The following `3`-qubit circuit contains a `WireCut` operation and a `sample`
+  measurement. When decorated with `@qml.cut_circuit_mc`, we can cut the circuit
+  into two `2`-qubit fragments:
 
-    ```python
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=1000)
 
-      dev = qml.device("default.qubit", wires=2, shots=1000)
+  @qml.cut_circuit_mc
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(0.89, wires=0)
+      qml.RY(0.5, wires=1)
+      qml.RX(1.3, wires=2)
 
-      @qml.cut_circuit_mc
-      @qml.qnode(dev)
-      def circuit(x):
-          qml.RX(0.89, wires=0)
-          qml.RY(0.5, wires=1)
-          qml.RX(1.3, wires=2)
+      qml.CNOT(wires=[0, 1])
+      qml.WireCut(wires=1)
+      qml.CNOT(wires=[1, 2])
 
-          qml.CNOT(wires=[0, 1])
-          qml.WireCut(wires=1)
-          qml.CNOT(wires=[1, 2])
+      qml.RX(x, wires=0)
+      qml.RY(0.7, wires=1)
+      qml.RX(2.3, wires=2)
+      return qml.sample(wires=[0, 2])
+  ```
 
-          qml.RX(x, wires=0)
-          qml.RY(0.7, wires=1)
-          qml.RX(2.3, wires=2)
-          return qml.sample(wires=[0, 2])
-    ```
+  we can then execute the circuit as usual by calling the QNode:
 
-    we can then execute the circuit as usual by calling the QNode:
+  ```pycon
+  >>> x = 0.3
+  >>> circuit(x)
+  tensor([[1, 1],
+          [0, 1],
+          [0, 1],
+          ...,
+          [0, 1],
+          [0, 1],
+          [0, 1]], requires_grad=True)
+  ```
 
-    ```pycon
-    >>> x = 0.3
-    >>> circuit(x)
-    tensor([[1, 1],
-            [0, 1],
-            [0, 1],
-            ...,
-            [0, 1],
-            [0, 1],
-            [0, 1]], requires_grad=True)
-    ```
+  Furthermore, the number of shots can be temporarily altered when calling
+  the QNode:
 
-    Furthermore, the number of shots can be temporarily altered when calling
-    the QNode:
+  ```pycon
+  >>> results = circuit(x, shots=123)
+  >>> results.shape
+  (123, 2)
+  ```
 
-    ```pycon
-    >>> results = circuit(x, shots=123)
-    >>> results.shape
-    (123, 2)
-    ```
+  Using the Monte Carlo approach of [Peng et. al](https://arxiv.org/abs/1904.00102), the
+  `cut_circuit_mc` transform also supports returning sample-based expectation values of
+  observables that are diagonal in the computational basis, as shown below for a `ZZ` measurement
+  on wires `0` and `2`:
 
-    Using the Monte Carlo approach of [Peng et. al](https://arxiv.org/abs/1904.00102), the
-    `cut_circuit_mc` transform also supports returning sample-based expectation values of
-    observables that are diagonal in the computational basis, as shown below for a `ZZ` measurement
-    on wires `0` and `2`:
+  ```python
+  dev = qml.device("default.qubit", wires=2, shots=10000)
 
-    ```python
-    dev = qml.device("default.qubit", wires=2, shots=10000)
+  def observable(bitstring):
+      return (-1) ** np.sum(bitstring)
 
-    def observable(bitstring):
-        return (-1) ** np.sum(bitstring)
+  @qml.cut_circuit_mc(classical_processing_fn=observable)
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(0.89, wires=0)
+      qml.RY(0.5, wires=1)
+      qml.RX(1.3, wires=2)
 
-    @qml.cut_circuit_mc(classical_processing_fn=observable)
-    @qml.qnode(dev)
-    def circuit(x):
-        qml.RX(0.89, wires=0)
-        qml.RY(0.5, wires=1)
-        qml.RX(1.3, wires=2)
+      qml.CNOT(wires=[0, 1])
+      qml.WireCut(wires=1)
+      qml.CNOT(wires=[1, 2])
 
-        qml.CNOT(wires=[0, 1])
-        qml.WireCut(wires=1)
-        qml.CNOT(wires=[1, 2])
+      qml.RX(x, wires=0)
+      qml.RY(0.7, wires=1)
+      qml.RX(2.3, wires=2)
+      return qml.sample(wires=[0, 2])
+  ```
 
-        qml.RX(x, wires=0)
-        qml.RY(0.7, wires=1)
-        qml.RX(2.3, wires=2)
-        return qml.sample(wires=[0, 2])
-    ```
+  We can now approximate the expectation value of the observable using
 
-    We can now approximate the expectation value of the observable using
+  ```pycon
+  >>> circuit(x)
+  tensor(-0.776, requires_grad=True)
+  ```
 
-    ```pycon
-    >>> circuit(x)
-    tensor(-0.776, requires_grad=True)
-    ```
+* Added the automatic graph partitioning method `qcut.kahypar_cut()` for cutting
+  arbitrary tape-converted graphs using the general purpose graph partitioning framework
+  [KaHyPar](https://pypi.org/project/kahypar/).
+  [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
+  [(#2428)](https://github.com/PennyLaneAI/pennylane/pull/2428)
 
-  * Added the automatic graph partitioning method `qcut.kahypar_cut()` for cutting
-    arbitrary tape-converted graphs using the general purpose graph partitioning framework
-    [KaHyPar](https://pypi.org/project/kahypar/).
-    [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
-    [(#2428)](https://github.com/PennyLaneAI/pennylane/pull/2428)
+  Note that `KaHyPar` needs to be installed separately.
 
-    Note that `KaHyPar` needs to be installed separately.
-
-    To integrate with the existing low-level manual cut pipeline, method `qcut.find_and_place_cuts()`,
-    which uses `qcut.kahypar_cut()` as the default auto cutter, has been implemented.
-    The automatic cutting feature is further integrated into the high-level interfaces
-    `qcut.cut_circuit()` and `qcut.cut_circuit_mc()` for automatic execution of arbitrary
-    circuits on smaller devices.
+  For integration with the  existing low-level manual cut pipeline, refer to
+  the `qcut.find_and_place_cuts()` function.
+  ```pycon
+  @qml.cut_circuit(auto_cutter=True)
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      qml.RY(0.9, wires=1)
+      qml.RX(0.3, wires=2)
+      qml.CZ(wires=[0, 1])
+      qml.RY(-0.4, wires=0)
+      qml.CZ(wires=[1, 2])
+      return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+  ```
+  ```pycon
+  >>> x = np.array(0.531, requires_grad=True)
+  >>> circuit(x)
+  0.47165198882111165
+  >>> qml.grad(circuit)(x)
+  -0.276982865449393
+  ```
 
 <h4>QChem unification ⚛️  🏰</h4>
 
 * The quantum chemistry functionality is unified in the `qml.qchem` module
-  providing a differentiable Hartree-Fock solver and the functionality to
-  construct a fully-differentiable molecular Hamiltonian. The `qml.qchem`
-  module also provides tools for building other observables such as molecular
-  dipole moment, spin and particle number.
+  providing a differentiable Hartree-Fock solver, the functionality to
+  construct a fully-differentiable molecular Hamiltonian and tools for building
+  other observables such as molecular dipole moment, spin and particle number.
+  [(#2166)](https://github.com/PennyLaneAI/pennylane/pull/2166)
+  [(#2173)](https://github.com/PennyLaneAI/pennylane/pull/2173)
+  [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
+  [(#2362)](https://github.com/PennyLaneAI/pennylane/pull/2362)
+  [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
+  [(#2199)](https://github.com/PennyLaneAI/pennylane/pull/2199)
+  [(#2371)](https://github.com/PennyLaneAI/pennylane/pull/2371)
+  [(#2272)](https://github.com/PennyLaneAI/pennylane/pull/2272)
+  [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
+  [(#2316)](https://github.com/PennyLaneAI/pennylane/pull/2316)
+  [(#2385)](https://github.com/PennyLaneAI/pennylane/pull/2385)
+  [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
+  [(#2415)](https://github.com/PennyLaneAI/pennylane/pull/2415)
+  [(#2426)](https://github.com/PennyLaneAI/pennylane/pull/2426)
+  [(#2352)](https://github.com/PennyLaneAI/pennylane/pull/2352)
+  [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
+  [(#2465)](https://github.com/PennyLaneAI/pennylane/pull/2465)
+  [(#2454)](https://github.com/PennyLaneAI/pennylane/pull/2454)
 
   The :mod:`~.qchem` module provides access to a driver function :func:`~.molecular_hamiltonian`
   to generate the electronic Hamiltonian in a single call. For example,
@@ -167,38 +199,22 @@
   geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
   hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, method='pyscf')
   ```
+
+  Summary of QChem changes:
   - New functions are added for computing multipole moment molecular integrals
-    [(#2166)](https://github.com/PennyLaneAI/pennylane/pull/2166)
   - New functions are added for building a differentiable dipole moment observable
-    [(#2173)](https://github.com/PennyLaneAI/pennylane/pull/2173)
   - External dependencies are replaced with local functions for spin and particle number observables
-    [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
-    [(#2362)](https://github.com/PennyLaneAI/pennylane/pull/2362)
   - New functions are added for building fermionic and qubit observables
-    [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
   - A new module is created for hosting openfermion to pennylane observable conversion functions
-    [(#2199)](https://github.com/PennyLaneAI/pennylane/pull/2199)
-    [(#2371)](https://github.com/PennyLaneAI/pennylane/pull/2371)
   - Expressive names are used for the Hartree-Fock solver functions
-    [(#2272)](https://github.com/PennyLaneAI/pennylane/pull/2272)
   - These new additions are added to a feature branch
-    [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
   - The efficiency of computing molecular integrals and Hamiltonian is improved
-    [(#2316)](https://github.com/PennyLaneAI/pennylane/pull/2316)
   - The qchem and new hf modules are merged
-    [(#2385)](https://github.com/PennyLaneAI/pennylane/pull/2385)
   - The 6-31G basis set is added to the qchem basis set repo
-    [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
   - The dependency on openbabel is removed
-    [(#2415)](https://github.com/PennyLaneAI/pennylane/pull/2415)
   - The tapering functions are added to qchem
-    [(#2426)](https://github.com/PennyLaneAI/pennylane/pull/2426)
   - Differentiable and non-differentiable backends can be selected for building a Hamiltonian
-    [(#2352)](https://github.com/PennyLaneAI/pennylane/pull/2352)
   - The quantum chemistry functionalities are unified
-    [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
-    [(#2465)](https://github.com/PennyLaneAI/pennylane/pull/2465)
-    [(#2454)](https://github.com/PennyLaneAI/pennylane/pull/2454)
 
 <h4>Pattern matching optimization 🔎 💎 </h4>
 
