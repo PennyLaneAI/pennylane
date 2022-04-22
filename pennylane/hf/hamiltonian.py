@@ -69,7 +69,7 @@ def generate_electron_integrals(mol, core=None, active=None):
     orbital expansion coefficient matrix.
 
     Args:
-        mol (Molecule): the molecule object
+        mol (~hf.molecule.Molecule): the molecule object
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
 
@@ -145,7 +145,7 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the fermionic hamiltonian.
 
     Args:
-        mol (Molecule): the molecule object
+        mol (~hf.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible electronic integrals
 
     Returns:
@@ -208,7 +208,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the qubit hamiltonian.
 
     Args:
-        mol (Molecule): the molecule object
+        mol (~hf.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible electronic integrals
 
     Returns:
@@ -419,8 +419,8 @@ def _pauli_mult(p1, p2):
 
     **Example**
 
-    >>> p1 = [(0, "X"), (1, "Y")],  # X_0 @ Y_1
-    >>> p2 = [(0, "X"), (2, "Y")],  # X_0 @ Y_2
+    >>> p1 = [(0, "X"), (1, "Y")]  # X_0 @ Y_1
+    >>> p2 = [(0, "X"), (2, "Y")]  # X_0 @ Y_2
     >>> _pauli_mult(p1, p2)
     ([(2, "Y"), (1, "Y")], 1.0) # p1 @ p2 = X_0 @ Y_1 @ X_0 @ Y_2
     """

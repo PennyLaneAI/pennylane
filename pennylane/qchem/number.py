@@ -20,7 +20,7 @@ from .observable_hf import qubit_observable
 
 
 def particle_number(orbitals):
-    r"""Computes the particle number observable :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha`
+    r"""Compute the particle number observable :math:`\hat{N}=\sum_\alpha \hat{n}_\alpha`
     in the Pauli basis.
 
     The particle number operator is given by
