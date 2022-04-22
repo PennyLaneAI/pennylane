@@ -28,7 +28,6 @@ from pennylane.queuing import apply, QueuingContext
 import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
-import pennylane.measurements
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
