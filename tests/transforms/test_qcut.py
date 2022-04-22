@@ -3796,15 +3796,15 @@ class TestCutCircuitTransformValidation:
     """Tests of validation checks in the cut_circuit function"""
 
     def test_multiple_measurements_raises(self):
-        """Tests if a ValueError is raised when a tape with multiple measurements is requested
-        to be cut"""
+        """Tests if a ValueError is raised when a tape with multiple measurements that are not all
+        Pauli words is requested to be cut"""
 
         with qml.tape.QuantumTape() as tape:
             qml.WireCut(wires=0)
-            qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliZ(1))
+            qml.expval(qml.Hadamard(wires=0))
+            qml.expval(qml.Hadamard(wires=1))
 
-        with pytest.raises(ValueError, match="The circuit cutting workflow only supports circuits"):
+        with pytest.raises(ValueError, match="only supports returning multiple measurements when"):
             qcut.cut_circuit(tape)
 
     def test_no_measurements_raises(self):
@@ -3813,7 +3813,7 @@ class TestCutCircuitTransformValidation:
         with qml.tape.QuantumTape() as tape:
             qml.WireCut(wires=0)
 
-        with pytest.raises(ValueError, match="The circuit cutting workflow only supports circuits"):
+        with pytest.raises(ValueError, match="At least one measurement must be"):
             qcut.cut_circuit(tape)
 
     def test_non_expectation_raises(self):

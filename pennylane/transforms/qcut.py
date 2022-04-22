@@ -1978,9 +1978,8 @@ def cut_circuit(
 
     if len(tape.measurements) > 1 and not all_pauli_words:
         raise ValueError(
-            "The circuit cutting workflow only supports returning either: (i) an expectation value "
-            "of a single observable; (ii) expectation values of a collection of tensor products of "
-            "Pauli operators."
+            "The circuit cutting workflow only supports returning multiple measurements when "
+            "the composing observables are all tensor products of Pauli operators"
         )
     if len(tape.measurements) == 0:
         raise ValueError(
