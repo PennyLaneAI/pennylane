@@ -16,6 +16,7 @@
 import pytest
 
 import pennylane as qml
+from pennylane import numpy as np
 from pennylane.ops.arithmetic import Adjoint
 
 class TestInitialization:
@@ -97,29 +98,122 @@ def test_label():
     op = Adjoint(base)
     assert op.label(decimals=2) == 'Rot\n(1.23,\n2.35,\n3.46)†'
 
+def test_has_matrix_true():
+
+    base = qml.PauliX(0)
+    op = Adjoint(base)
+
+    assert op.has_matrix
+
+def test_has_matrix_false():
+    # This will fail till rc bug fix merged in
+    base = qml.QubitStateVector([1,0], wires=0)
+    op = Adjoint(base)
+
+    assert not op.has_matrix
+
+def test_control_wires():
+
+    op = Adjoint(qml.CNOT(wires=("a", "b")))
+    assert op.control_wires == qml.wires.Wires('a')
+
+def test_adjoint_of_adjoint():
+
+    base = qml.PauliX(0)
+    op = Adjoint(base)
+    
+    assert op.adjoint() is base
+
+def test_diagonalizing_gates():
+    base = qml.Hadamard(0)
+    diag_gate = Adjoint(base).diagonalizing_gates()[0]
+
+    assert isinstance(diag_gate, qml.RY)
+    assert qml.math.allclose(diag_gate.data[0], -np.pi/4) 
+
 class TestMatrix:
 
-    def test_parametrized_gate(self):
-
-        base = qml.RX(1.234, wires=0)
+    def check_matrix(self, x, interface):
+        base = qml.RX(x, wires=0)
         base_matrix = base.get_matrix()
-        expected = qml.math.conjugate(qml.math.transpose(base_matrix))
+        expected = qml.math.conj(qml.math.transpose(base_matrix))
 
-        op = Adjoint(base)
+        mat = Adjoint(base).get_matrix()
+        
+        assert qml.math.allclose(expected, mat)
+        assert qml.math.get_interface(mat) == interface
 
-        assert qml.math.allclose(expected, op.get_matrix())
+
+    def test_matrix_autograd(self):
+        self.check_matrix(np.array(1.2345), "autograd")
 
     def test_matrix_jax(self):
 
         jnp = pytest.importorskip("jax.numpy")
+        self.check_matrix(jnp.array(1.2345), "jax")
 
-        base = qml.RX(jnp.array(1.2345), wires=0)
-        expected = qml.math.conjugate(qml.math.transpose(base.get_matrix()))
+    def test_matrix_torch(self):
 
-        op = Adjoint(base)
-        mat = op.get_matrix()
+        torch = pytest.importorskip("torch")
+        self.check_matrix(torch.tensor(1.2345), "torch")
 
-        assert qml.math.allclose(expected, op.get_matrix())
-        assert qml.math.get_interface(mat) == "jax"
+    def test_matrix_tf(self):
 
-    def test_matrix_tensorflow(self)
+        tf = pytest.importorskip("tensorflow")
+        self.check_matrix(tf.Variable(1.2345), "tensorflow")
+
+    def test_no_matrix_defined(self):
+        base = qml.QubitStateVector([1,0], wires=0)
+        
+        with pytest.raises(qml.operation.MatrixUndefinedError):
+            Adjoint(base).get_matrix()
+
+
+class TestEigvals:
+
+    @pytest.mark.parametrize("base", (qml.PauliX(0), qml.Hermitian(np.array([[6+0j, 1-2j],[1+2j, -1]]), wires=0)))
+    def test_hermitian_eigvals(self, base):
+        base_eigvals = base.get_eigvals()
+        adj_eigvals = Adjoint(base).get_eigvals()
+        assert qml.math.allclose(base_eigvals, adj_eigvals)
+
+    def test_non_hermitian_eigvals(self):
+
+        adj_eigvals = Adjoint(qml.SX(0)).get_eigvals()
+        assert adj_eigvals == [1-0j, -1j]
+
+    def test_no_matrix_defined_eigvals(self):
+
+        base = qml.QubitStateVector([1,0], wires=0)
+
+        with pytest.raises(qml.operation.EigvalsUndefinedError):
+            Adjoint(base).get_eigvals()
+
+class TestDecomposition:
+
+    def test_decomp_custom_adjoint_defined(self):
+
+        decomp = Adjoint(qml.Hadamard(0)).decomposition()
+        assert len(decomp) == 1
+        assert isinstance(decomp[0], qml.Hadamard)
+
+    def test_decomp(self):
+
+        base = qml.SX(0)
+        base_decomp = base.decomposition()
+        decomp = Adjoint(base).decomposition()
+
+        for adj_op, base_op in zip(decomp, reversed(base_decomp)):
+            assert isinstance(adj_op, Adjoint)
+            assert adj_op.base.__class__ == base_op.__class__
+            assert qml.math.allclose(adj_op.data, base_op.data)
+
+    def test_no_base_gate_decomposition(self):
+
+        nr_wires = 2
+        rho = np.zeros((2 ** nr_wires, 2 ** nr_wires), dtype=np.complex128)
+        rho[0, 0] = 1  # initialize the pure state density matrix for the |0><0| state
+        base = qml.QubitDensityMatrix(rho, wires=(0,1))
+
+        with pytest.raises(qml.operation.DecompositionUndefinedError):
+            Adjoint(base).decomposition()

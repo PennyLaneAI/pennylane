@@ -16,7 +16,7 @@ This submodule defines an operation modifier that indicates the adjoint of an op
 """
 from pennylane.operation import Operator, Operation, AnyWires, AdjointUndefinedError
 from pennylane.queuing import QueuingContext, QueuingError
-from pennylane.math import transpose, conjugate
+from pennylane.math import transpose, conj
 
 def adjoint(op):
     try:
@@ -74,25 +74,28 @@ class Adjoint(Operator):
     def compute_matrix(*params, base=None):
 
         base_matrix = base.compute_matrix(*params, **base.hyperparameters)
-        return transpose(conjugate(base_matrix))
+        return transpose(conj(base_matrix))
     
-    @classmethod
-    def compute_decomposition(cls, *params, wires, base=None):
+    @staticmethod
+    def compute_decomposition(*params, wires, base=None):
         try:
-            return base.adjoint()
+            return [base.adjoint()]
         except AdjointUndefinedError:
             base_decomp = base.compute_decomposition(*params, wires, **base.hyperparameters)
             return [Adjoint(op) for op in reversed(base_decomp)]
         
-    @staticmethod
-    def compute_sparse_matrix(*params, base=None):
-        base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
-        return transpose(conjugate(base_matrix))
+    def sparse_matrix(self, wires=None):
+        base_matrix = self.base.sparse_matrix(wires=wires)
+        return transpose(conj(base_matrix))
     
+    def get_eigvals(self):
+        # Cannot define ``compute_eigvals`` because Hermitian only defines ``get_eigvals``
+        return [conj(x) for x in self.base.get_eigvals()]
+
     @staticmethod
-    def compute_eigvals(*params, base=None):
-        base_eigvals = base.compute_eigvals(*params, **base.hyperparameters)
-        return [conjugate(x) for x in base_eigvals]
+    def compute_diagonalizing_gates(*params, wires, base=None):
+        return base.compute_diagonalizing_gates(*params, wires, **base.hyperparameters)
+
 
     @property
     def has_matrix(self):
