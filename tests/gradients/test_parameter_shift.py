@@ -235,7 +235,6 @@ class TestParamShift:
         assert tapes[3].get_parameters(trainable_only=False) == [1.0, 2.0, 2 * 3.0 + 2, 4.0]
         assert tapes[4].get_parameters(trainable_only=False) == [1.0, 2.0, 3 * 3.0 + 3, 4.0]
 
-
     def test_recycled_unshifted_tape(self):
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter

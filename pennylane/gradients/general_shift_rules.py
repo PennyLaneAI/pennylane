@@ -388,7 +388,7 @@ def generate_shifted_tapes(tape, indices, shifts, multipliers=None):
         shifts (Sequence[float or int] or Sequence[Sequence[float or int]]): (Nested) sequence
             of shift values. If ``indices`` is a single ``int``, ``shifts`` should be a flat
             sequence, otherwise it should be a nested sequence with the same length as ``indices``.
-            The length of the (inner) sequence(s) determines how many parameter-shifted tapes 
+            The length of the (inner) sequence(s) determines how many parameter-shifted tapes
             are created.
         multipliers (Sequence[float or int] or Sequence[Sequence[float or int]]): (Nested) sequence
             of multiplier values of the same format as `shifts``. Each multiplier scales the
