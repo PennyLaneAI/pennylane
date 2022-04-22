@@ -6,7 +6,8 @@ contains a differentiable Hartree-Fock solver and the functionality to construct
 fully-differentiable molecular Hamiltonian that can be used as input to quantum algorithms
 such as the variational quantum eigensolver (VQE) algorithm. The :mod:`~.qchem` module
 also provides tools for building other observables such as molecular dipole moment, spin
-and particle number observables.
+and particle number observables. The theoretical foundation of the quantum chemistry functionality
+in PennyLane is explained `here <https://arxiv.org/abs/2111.09967>`_.
 
 Building the electronic Hamiltonian
 -----------------------------------
