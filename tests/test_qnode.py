@@ -14,6 +14,7 @@
 """Unit tests for the QNode"""
 from collections import defaultdict
 import pytest
+import warnings
 import numpy as np
 from scipy.sparse import coo_matrix
 
@@ -1091,6 +1092,34 @@ class TestShots:
         res = circuit(0.8, shots=2)
         assert len(res) == 2
         assert dev.shots == 3
+
+    def test_warning_finite_shots_dev(self):
+        """Tests that a warning is raised when caching is used with finite shots."""
+        dev = qml.device("default.qubit", wires=2, shots=5)
+
+        @qml.qnode(dev, cache={})
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # no warning on the first execution
+        circuit(0.3)
+        with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
+            circuit(0.3)
+
+    def test_warning_finite_shots_override(self):
+        """Tests that a warning is raised when caching is used with finite shots."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, cache={})
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        # no warning on the first execution
+        circuit(0.3)
+        with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
+            circuit(0.3, shots=5)
 
 
 @pytest.mark.xfail
