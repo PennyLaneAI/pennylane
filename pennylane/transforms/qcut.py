@@ -502,7 +502,7 @@ def graph_to_tape(graph: MultiDiGraph, total_measurements: int=1) -> QuantumTape
                         qml.expval(obs[0])
 
                 if len(observables) < total_measurements:
-                    qml.expval(qml.Identity(0))
+                    qml.expval(qml.Identity(wires[0]))
 
     return tape
 
@@ -2038,6 +2038,7 @@ def cut_circuit(
             pos.append(-1)  # -1 denotes an identity measurement
 
     fragment_tapes = [graph_to_tape(f) for f in fragments]
+
     fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
