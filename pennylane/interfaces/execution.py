@@ -122,8 +122,10 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
             if hashes[i] in cache:
                 # Tape exists within the cache, store the cached result
                 cached_results[i] = cache[hashes[i]]
+
                 # Introspect the set_shots decorator of the input function:
-                # warn the user in case of finite shots with cached results
+                #   warn the user in case of finite shots with cached results
+                # pylint: disable=protected-access
                 finite_shots = False
                 for var in fn.__closure__:  # retrieve captured context manager instance
                     if isinstance(var.cell_contents, contextlib._GeneratorContextManager):
