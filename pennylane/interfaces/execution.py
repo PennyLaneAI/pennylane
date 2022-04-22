@@ -141,8 +141,12 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
 
                 if finite_shots:
                     warnings.warn(
-                        "Cached execution with finite shots detected: note that the shot noise "
-                        "will be the same on all results from executions with identical arguments.",
+                        "Cached execution with finite shots detected!\n"
+                        "Note that samples as well as all noisy quantities computed via sampling "
+                        "will be identical across executions. This situation arises where tapes "
+                        "are executed with identical operations, measurements, and parameters.\n"
+                        "To avoid this behavior, provide 'cache=False' to the QNode or execution "
+                        "function.",
                         UserWarning,
                     )
             else:
