@@ -22,11 +22,11 @@ devices with autodifferentiation support.
 from functools import wraps
 import itertools
 import warnings
-import contextlib
+import inspect
+from contextlib import _GeneratorContextManager
 from cachetools import LRUCache
 
 import pennylane as qml
-from pennylane import Device
 
 from .set_shots import set_shots
 
@@ -125,14 +125,20 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
 
                 # Introspect the set_shots decorator of the input function:
                 #   warn the user in case of finite shots with cached results
-                # pylint: disable=protected-access
                 finite_shots = False
-                for var in fn.__closure__:  # retrieve captured context manager instance
-                    if isinstance(var.cell_contents, contextlib._GeneratorContextManager):
-                        # retrieve device instance from set_shots arguments
-                        for arg in var.cell_contents.args:
-                            if isinstance(arg, Device):
-                                finite_shots = isinstance(arg.shots, int)
+
+                closure = inspect.getclosurevars(fn).nonlocals
+                if "original_fn" in closure:  # deal with expand_fn wrapper above
+                    closure = inspect.getclosurevars(closure["original_fn"]).nonlocals
+
+                # retrieve the captured context manager instance (for set_shots)
+                if "self" in closure and isinstance(closure["self"], _GeneratorContextManager):
+                    # retrieve the shots from the arguments or device instance
+                    if closure["self"].func.__name__ == "set_shots":
+                        dev, shots = closure["self"].args
+                        shots = dev.shots if shots is False else shots
+                        finite_shots = isinstance(shots, int)
+
                 if finite_shots:
                     warnings.warn(
                         "Cached execution with finite shots detected: note that the shot noise "
