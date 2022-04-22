@@ -15,7 +15,7 @@
 This submodule defines an operation modifier that indicates the adjoint of an operator.
 """
 from pennylane.operation import Operator, Operation, AnyWires, AdjointUndefinedError
-from pennylane.queuing import QueuingContext
+from pennylane.queuing import QueuingContext, QueuingError
 from pennylane.math import transpose, conjugate
 
 def adjoint(op):
@@ -27,6 +27,26 @@ def adjoint(op):
         return Adjoint(op)
 
 class Adjoint(Operator):
+    """
+    The Adjoint of an operator.
+
+    Args:
+        base (~.operation.Operator): The operator that is adjointed.
+    
+    **Example:**
+
+    >>> op = Adjoint(qml.S(0))
+    >>> op.name
+    'Adjoint(S)'
+    >>> qml.matrix(op)
+    array([[1.-0.j, 0.-0.j],
+       [0.-0.j, 0.-1.j]])
+    >>> qml.generator(Adjoint(qml.RX(1.0, wires=0)))
+    (PauliX(wires=[0]), 0.5)
+    >>> Adjoint(qml.RX(1.234, wires=0)).data
+    [1.234]
+
+    """
 
     num_wires = AnyWires
 
@@ -39,25 +59,13 @@ class Adjoint(Operator):
     def queue(self, context=QueuingContext):
         try:
             context.update_info(self.base, owner=self)
-        except qml.queuing.QueuingError:
+        except QueuingError:
             self.base.queue(context=context)
             context.update_info(self.base, owner=self)
 
         context.append(self, owns=self.base)
 
         return self
-    
-    @property
-    def num_params(self):
-        return self.base.num_params
-    
-    @property
-    def parameters(self):
-        return self.base.parameters
-    
-    @property
-    def wires(self):
-        return self.base.wires
 
     def label(self, decimals=None, base_label=None):
         return self.base.label(decimals, base_label)+"†"
@@ -90,7 +98,6 @@ class Adjoint(Operator):
     def has_matrix(self):
         return self.base.has_matrix
 
-
     ## Operation specific properties ##########################################
 
     @property
@@ -120,7 +127,7 @@ class Adjoint(Operator):
         return self.base.parameter_frequencies
 
     def generator(self):
-        if isinstance(self, Operation): # stand in for being unitary and inverse=adjoint
+        if isinstance(self.base, Operation): # stand in for being unitary and inverse=adjoint
             return -1.0 * self.base.generator()
         return super().generator()
 

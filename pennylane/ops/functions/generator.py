@@ -29,7 +29,7 @@ def _generator_observable(gen, op):
     as provided by the original gate.
     """
     if isinstance(gen, (qml.Hermitian, qml.SparseHamiltonian)):
-        if not op.inverse:
+        if not getattr(op, "inverse", False):
             return gen
 
         param = gen.parameters[0]
@@ -64,7 +64,7 @@ def _generator_hamiltonian(gen, op):
     elif isinstance(gen, qml.operation.Observable):
         H = 1.0 * gen
 
-    if op.inverse:
+    if getattr(op, "inverse", False):
         H = -1.0 * H
 
     return H
@@ -95,7 +95,7 @@ def _generator_prefactor(gen, op):
             obs = gen
             prefactor = 1.0
 
-    if op.inverse:
+    if getattr(op, "inverse", False):
         prefactor *= -1.0
 
     return obs, prefactor
