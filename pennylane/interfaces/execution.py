@@ -124,13 +124,13 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
                 cached_results[i] = cache[hashes[i]]
                 # Introspect the set_shots decorator of the input function:
                 # warn the user in case of finite shots with cached results
-                finite_shots=False
+                finite_shots = False
                 for var in fn.__closure__:  # retrieve captured context manager instance
                     if isinstance(var.cell_contents, contextlib._GeneratorContextManager):
                         # retrieve device instance from set_shots arguments
                         for arg in var.cell_contents.args:
                             if isinstance(arg, Device):
-                                finite_shots=isinstance(arg.shots, int)
+                                finite_shots = isinstance(arg.shots, int)
                 if finite_shots:
                     warnings.warn(
                         "Cached execution with finite shots detected: note that the shot noise "
