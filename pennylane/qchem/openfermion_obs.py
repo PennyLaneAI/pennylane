@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains functions to construct many-body observables whose expectation
-values can be used to simulate molecular properties.
+"""This module contains functions to construct many-body observables with ``OpenFermion-PySCF``.
 """
 # pylint: disable=too-many-arguments, too-few-public-methods, too-many-branches, unused-variable
 import os
@@ -25,10 +24,10 @@ import pennylane as qml
 bohr_angs = 0.529177210903
 
 
-def import_of():
+def _import_of():
     """Import openfermion and openfermionpyscf."""
     try:
-        # pylint: disable=import-outside-toplevel, unused-import
+        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
         import openfermion, openfermionpyscf
     except ImportError as Error:
         raise ImportError(
@@ -117,7 +116,7 @@ def observable(fermion_ops, init_term=0, mapping="jordan_wigner", wires=None):
     + (0.075) [Z2]
     + (-0.075) [Z0 Z2]
     """
-    openfermion, _ = import_of()
+    openfermion, _ = _import_of()
 
     if mapping.strip().lower() not in ("jordan_wigner", "bravyi_kitaev"):
         raise TypeError(
@@ -193,6 +192,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     **Example**
 
+    >>> import numpy as np
     >>> matrix_elements = np.array([[-1.27785301e+00,  0.00000000e+00],
     ...                             [ 1.52655666e-16, -4.48299696e-01]])
     >>> t_op = one_particle(matrix_elements)
@@ -202,7 +202,7 @@ def one_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     -0.44829969610163756 [2^ 2] +
     -0.44829969610163756 [3^ 3]
     """
-    openfermion, _ = import_of()
+    openfermion, _ = _import_of()
 
     orbitals = matrix_elements.shape[0]
 
@@ -325,6 +325,7 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
 
     **Example**
 
+    >>> import numpy as np
     >>> matrix_elements = np.array([[[[ 6.82389533e-01, -1.45716772e-16],
     ...                               [-2.77555756e-17,  1.79000576e-01]],
     ...                              [[-2.77555756e-17,  1.79000576e-16],
@@ -335,40 +336,28 @@ def two_particle(matrix_elements, core=None, active=None, cutoff=1.0e-12):
     ...                               [ 0.00000000e+00,  7.05105632e-01]]]])
     >>> v_op = two_particle(matrix_elements)
     >>> print(v_op)
-    0.3411947665760211 [0^ 0^ 0 0]
-    + 0.08950028803070323 [0^ 0^ 2 2]
-    + 0.3411947665760211 [0^ 1^ 1 0]
-    + 0.08950028803070323 [0^ 1^ 3 2]
-    + 0.08950028803070323 [0^ 2^ 0 2]
-    + 0.3353663891543792 [0^ 2^ 2 0]
-    + 0.08950028803070323 [0^ 3^ 1 2]
-    + 0.3353663891543792 [0^ 3^ 3 0]
-    + 0.3411947665760211 [1^ 0^ 0 1]
-    + 0.08950028803070323 [1^ 0^ 2 3]
-    + 0.3411947665760211 [1^ 1^ 1 1]
-    + 0.08950028803070323 [1^ 1^ 3 3]
-    + 0.08950028803070323 [1^ 2^ 0 3]
-    + 0.3353663891543792 [1^ 2^ 2 1]
-    + 0.08950028803070323 [1^ 3^ 1 3]
-    + 0.3353663891543792 [1^ 3^ 3 1]
-    + 0.3353663891543792 [2^ 0^ 0 2]
-    + 0.08950028803070323 [2^ 0^ 2 0]
-    + 0.3353663891543792 [2^ 1^ 1 2]
-    + 0.08950028803070323 [2^ 1^ 3 0]
-    + 0.08950028803070323 [2^ 2^ 0 0]
-    + 0.352552816086392 [2^ 2^ 2 2]
-    + 0.08950028803070323 [2^ 3^ 1 0]
-    + 0.352552816086392 [2^ 3^ 3 2]
-    + 0.3353663891543792 [3^ 0^ 0 3]
-    + 0.08950028803070323 [3^ 0^ 2 1]
-    + 0.3353663891543792 [3^ 1^ 1 3]
-    + 0.08950028803070323 [3^ 1^ 3 1]
-    + 0.08950028803070323 [3^ 2^ 0 1]
-    + 0.352552816086392 [3^ 2^ 2 3]
-    + 0.08950028803070323 [3^ 3^ 1 1]
-    + 0.352552816086392 [3^ 3^ 3 3]
+    0.3411947665 [0^ 0^ 0 0] +
+    0.089500288 [0^ 0^ 2 2] +
+    0.3411947665 [0^ 1^ 1 0] +
+    0.089500288 [0^ 1^ 3 2] +
+    0.335366389 [0^ 2^ 2 0] +
+    0.335366389 [0^ 3^ 3 0] +
+    0.3411947665 [1^ 0^ 0 1] +
+    0.089500288 [1^ 0^ 2 3] +
+    0.3411947665 [1^ 1^ 1 1] +
+    0.089500288 [1^ 1^ 3 3] +
+    0.335366389 [1^ 2^ 2 1] +
+    0.335366389 [1^ 3^ 3 1] +
+    0.089500288 [2^ 0^ 2 0] +
+    0.089500288 [2^ 1^ 3 0] +
+    0.352552816 [2^ 2^ 2 2] +
+    0.352552816 [2^ 3^ 3 2] +
+    0.089500288 [3^ 0^ 2 1] +
+    0.089500288 [3^ 1^ 3 1] +
+    0.352552816 [3^ 2^ 2 3] +
+    0.352552816 [3^ 3^ 3 3]
     """
-    openfermion, _ = import_of()
+    openfermion, _ = _import_of()
 
     orbitals = matrix_elements.shape[0]
 
@@ -560,8 +549,8 @@ def dipole_of(
     >>> coordinates = np.array([0.028, 0.054, 0.0, 0.986, 1.610, 0.0, 1.855, 0.002, 0.0])
     >>> dip_obs = dipole(symbols, coordinates, charge=1)
     >>> print(dipole_obs)
-    [<Hamiltonian: terms=19, wires=[0, 1, 2, 3, 4, 5]>,
-    <Hamiltonian: terms=19, wires=[0, 1, 2, 3, 4, 5]>,
+    [<Hamiltonian: terms=18, wires=[0, 1, 2, 3, 4, 5]>,
+    <Hamiltonian: terms=18, wires=[0, 1, 2, 3, 4, 5]>,
     <Hamiltonian: terms=1, wires=[0]>]
 
     >>> print(dip_obs[0]) # x-component of D
@@ -584,7 +573,7 @@ def dipole_of(
     + (0.26611147045300276) [Y1 Z2 Z3 Z4 Y5]
     + (0.26611147045300276) [X1 Z2 Z3 Z4 X5]
     """
-    openfermion, _ = import_of()
+    openfermion, _ = _import_of()
 
     atomic_numbers = {
         "H": 1,
@@ -708,7 +697,7 @@ def meanfield(
     >>> meanfield(symbols, coordinates, name="h2")
     ./h2_pyscf_sto-3g
     """
-    openfermion, openfermionpyscf = import_of()
+    openfermion, openfermionpyscf = _import_of()
 
     if coordinates.size != 3 * len(symbols):
         raise ValueError(
@@ -777,7 +766,7 @@ def decompose(hf_file, mapping="jordan_wigner", core=None, active=None):
     (-0.2427428049645989+0j) [Z1 Z2 Z3] +(0.1762764080276107+0j) [Z1 Z3] +
     (-0.2427428049645989+0j) [Z2]
     """
-    openfermion, _ = import_of()
+    openfermion, _ = _import_of()
 
     # loading HF data from the hdf5 file
     molecule = openfermion.MolecularData(filename=hf_file.strip())
@@ -822,7 +811,7 @@ def molecular_hamiltonian(
     coeff=None,
     args=None,
 ):  # pylint:disable=too-many-arguments
-    r"""Generates the qubit Hamiltonian of a molecule.
+    r"""Generate the qubit Hamiltonian of a molecule.
 
     This function drives the construction of the second-quantized electronic Hamiltonian
     of a molecule and its transformation to the basis of Pauli matrices.
@@ -830,26 +819,18 @@ def molecular_hamiltonian(
     The `method` can be either "dhf", which uses an in-built differentiable Hartree-Fock solver, or
     "pyscf", which uses the OpenFermion-PySCF plugin.
 
-    #. OpenFermion-PySCF plugin can be used to launch
-       the Hartree-Fock (HF) calculation for the polyatomic system using the quantum
-       chemistry package ``PySCF``.
+    The net charge of the molecule can be given to simulate cationic/anionic systems. Also, the
+    spin multiplicity can be input to determine the number of unpaired electrons occupying the HF
+    orbitals as illustrated in the left panel of the figure below.
 
-       - The net charge of the molecule can be given to simulate
-         cationic/anionic systems. Also, the spin multiplicity can be input
-         to determine the number of unpaired electrons occupying the HF orbitals
-         as illustrated in the left panel of the figure below.
+    The basis of Gaussian-type *atomic* orbitals used to represent the *molecular* orbitals can be
+    specified to go beyond the minimum basis approximation.
 
-       - The basis of Gaussian-type *atomic* orbitals used to represent the *molecular* orbitals
-         can be specified to go beyond the minimum basis approximation. Basis set availability
-         per element can be found
-         `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx-basiselement>`_
+    An active space can be defined for a given number of *active electrons* occupying a reduced set
+    of *active orbitals* as sketched in the right panel of the figure below.
 
-    #. An active space can be defined for a given number of *active electrons*
-       occupying a reduced set of *active orbitals* in the vicinity of the frontier
-       orbitals as sketched in the right panel of the figure below.
-
-    #. Finally, the second-quantized Hamiltonian is mapped to the Pauli basis and
-       converted to a PennyLane observable.
+    The atomic coordinates must be in atomic units and could be given as a 1D array of
+    size ``3*N`` or a 2D array of shape ``(N, 3)`` where ``N`` is the number of atoms.
 
     |
 
@@ -861,26 +842,21 @@ def molecular_hamiltonian(
 
     Args:
         symbols (list[str]): symbols of the atomic species in the molecule
-        coordinates (array[float]): 1D array with the atomic positions in Cartesian
-            coordinates. The coordinates must be given in atomic units and the size of the array
-            should be ``3*N`` where ``N`` is the number of atoms.
+        coordinates (array[float]): atomic positions in Cartesian coordinates and in atomic units
         name (str): name of the molecule
-        charge (int): Net charge of the molecule. If not specified a a neutral system is assumed.
+        charge (int): Net charge of the molecule. If not specified a neutral system is assumed.
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1`
             for :math:`N_\mathrm{unpaired}` unpaired electrons occupying the HF orbitals.
             Possible values of ``mult`` are :math:`1, 2, 3, \ldots`. If not specified,
             a closed-shell HF state is assumed.
-        basis (str): Atomic basis set used to represent the molecular orbitals. Basis set
-            availability per element can be found
-            `here <www.psicode.org/psi4manual/master/basissets_byelement.html#apdx-basiselement>`_
+        basis (str): atomic basis set used to represent the molecular orbitals
         method (str): quantum chemistry method used to solve the
             mean field electronic structure problem
         active_electrons (int): Number of active electrons. If not specified, all electrons
             are considered to be active.
         active_orbitals (int): Number of active orbitals. If not specified, all orbitals
             are considered to be active.
-        mapping (str): transformation (``'jordan_wigner'`` or ``'bravyi_kitaev'``) used to
-            map the fermionic Hamiltonian to the qubit Hamiltonian
+        mapping (str): transformation used to map the fermionic Hamiltonian to the qubit Hamiltonian
         outpath (str): path to the directory containing output files
         wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
             For types Wires/list/tuple, each item in the iterable represents a wire label
@@ -919,24 +895,34 @@ def molecular_hamiltonian(
     + (0.176276408043196) [Z2 Z3]
     """
     if len(coordinates) == len(symbols) * 3:
-        geometry_dhf = coordinates.reshape(len(symbols), 3)
+        geometry_dhf = qml.numpy.array(coordinates.reshape(len(symbols), 3))
         geometry_hf = coordinates
     elif len(coordinates) == len(symbols):
-        geometry_dhf = coordinates
+        geometry_dhf = qml.numpy.array(coordinates)
         geometry_hf = coordinates.flatten()
 
     if method == "dhf":
-        if args is None and type(geometry_dhf) is qml.numpy.tensor:
+        if args is None and isinstance(geometry_dhf, qml.numpy.tensor):
             geometry_dhf.requires_grad = False
-        mol = qml.qchem.Molecule(symbols, geometry_dhf, alpha=alpha, coeff=coeff)
+        mol = qml.qchem.Molecule(
+            symbols,
+            geometry_dhf,
+            charge=charge,
+            mult=mult,
+            basis_name=basis,
+            alpha=alpha,
+            coeff=coeff,
+        )
         core, active = qml.qchem.active_space(
             mol.n_electrons, mol.n_orbitals, mult, active_electrons, active_orbitals
         )
         if args is None:
-            return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(), 2 * len(active)
-        return qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args), 2 * len(active)
+            h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)()
+            return qml.Hamiltonian(qml.numpy.real(h.coeffs), h.ops), 2 * len(active)
+        h = qml.qchem.diff_hamiltonian(mol, core=core, active=active)(*args)
+        return qml.Hamiltonian(qml.numpy.real(h.coeffs), h.ops), 2 * len(active)
 
-    openfermion, _ = import_of()
+    openfermion, _ = _import_of()
 
     hf_file = meanfield(symbols, geometry_hf, name, charge, mult, basis, method, outpath)
 

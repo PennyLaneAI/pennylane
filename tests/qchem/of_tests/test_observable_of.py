@@ -149,16 +149,16 @@ def test_exceptions_observable(fermion_ops, mapping, msg_match):
 
 
 def test_import_of(monkeypatch):
-    """Test if an ImportError is raised by import_of function."""
+    """Test if an ImportError is raised by _import_of function."""
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "openfermion", None)
 
         with pytest.raises(ImportError, match="This feature requires openfermion"):
-            qml.qchem.openfermion_obs.import_of()
+            qml.qchem.openfermion_obs._import_of()
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "openfermionpyscf", None)
 
         with pytest.raises(ImportError, match="This feature requires openfermion"):
-            qml.qchem.openfermion_obs.import_of()
+            qml.qchem.openfermion_obs._import_of()

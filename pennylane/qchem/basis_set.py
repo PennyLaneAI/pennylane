@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains functions and classes to create a BasisFunction object from standard basis sets
-such as STO-3G.
+This module contains functions and classes to create a
+:class:`~pennylane.qchem.basis_set.BasisFunction` object from standard basis sets such as STO-3G.
 """
 # pylint: disable=too-few-public-methods
 from .basis_data import POPLE631G, STO3G
@@ -71,7 +71,7 @@ def atom_basis_data(name, atom):
 
     This function extracts the angular momentum, exponents, and contraction coefficients of
     Gaussian functions forming atomic orbitals for a given atom. These values are taken from the
-    basis set data provided in ``basis_data.py``.
+    basis set data provided in :mod:`~pennylane.qchem.basis_data`.
 
     Args:
         name (str): name of the basis set
