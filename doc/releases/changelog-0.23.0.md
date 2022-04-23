@@ -617,12 +617,15 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   the qubit operator that is prepared for tapering the HF state.  
   [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
 
+* Fixed a bug with custom device defined jacobians not being returned properly.
+  [(#2485)](https://github.com/PennyLaneAI/pennylane-sf/pull/2485)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Thomas Bromley, Alain Delgado,
-Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
-Matthew Silverman, Lee James O'Riordan, Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
+Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Samuel Banning, 
+Thomas Bromley, Alain Delgado, Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee,
+Romain Moyard, Zeyue Niu, Matthew Silverman, Lee James O'Riordan, Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
