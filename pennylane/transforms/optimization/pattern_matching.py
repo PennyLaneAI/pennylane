@@ -308,7 +308,7 @@ def pattern_matching(circuit_dag, pattern_dag):
     >>> pattern_dag = qml.commutation_dag(pattern)()
     >>> all_max_matches = qml.pattern_matching(circuit_dag, pattern_dag)
 
-    The matches are accessible by looping through the list outputted by `qml.pattern_matching`. This output is a list
+    The matches are accessible by looping through the list outputted by ``qml.pattern_matching``. This output is a list
     of lists containing indices. Each list represents a match between a gate in the pattern with a gate in the circuit.
     The first indices represent the gates in the pattern and the second indices provides indices for the gates in the
     circuit (by order of appearance).
