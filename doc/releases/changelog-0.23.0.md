@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.23.0-dev (development release)
+# Release 0.23.0 (current release)
 
 <h3>New features since last release</h3>
 
@@ -95,58 +95,10 @@
       return qml.probs(wires=[0, 1, 2, 3])
   ```
 
-* The quantum chemistry functionality is unified in the `qml.qchem` module. The new module provides
-  a differentiable Hartree-Fock solver and contains the functionality to construct a
-  fully-differentiable molecular Hamiltonian. The `qml.qchem` module also provides tools for
-  building other observables such as molecular dipole moment, spin and particle number.
-
-  The :mod:`~.qchem` module provides access to a driver function :func:`~.molecular_hamiltonian`
-  to generate the electronic Hamiltonian in a single call. For example,
-
-  ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-  
-  symbols = ["H", "H"]
-  geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
-  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
-  ```
-
-  The following code shows the construction of the Hamiltonian for the hydrogen molecule where the
-  geometry of the molecule and the basis set parameters are all differentiable.
-
-  ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-  
-  symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True)
-  
-  # The exponents and contraction coefficients of the Gaussian basis functions
-  alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
-  coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
-  
-  args = [geometry, alpha, coeff] # initial values of the differentiable parameters
-  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, alpha=alpha, coeff=coeff, args=args)
-  ```
-
-  The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular
-  Hamiltonian with an external backend that uses the
-  `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
-  electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_, which requires separate
-  installation. This backend is non-differentiable and can be selected by setting
-  `method='pyscf'` in :func:`~.molecular_hamiltonian`.
-
-  ```python
-  import pennylane as qml
-  from pennylane import numpy as np
-  
-  symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, method='pyscf')
-  ```
+* A differentiable quantum chemistry module is added to `qml.qchem`. The new module inherits a
+  modified version of the differentiable Hartree-Fock solver from `qml.hf`, contains new functions
+  for building a differentiable dipole moment observable and also contains modified functions for
+  building spin and particle number observables independent of external libraries.
 
   - New functions are added for computing multipole moment molecular integrals
     [(#2166)](https://github.com/PennyLaneAI/pennylane/pull/2166)
@@ -178,9 +130,6 @@
     [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
   - The quantum chemistry functionalities are unified
     [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
-    [(#2465)](https://github.com/PennyLaneAI/pennylane/pull/2465)
-    [(#2454)](https://github.com/PennyLaneAI/pennylane/pull/2454)
-    [(#2482)](https://github.com/PennyLaneAI/pennylane/pull/2482)
 
 * Adds a MERA template.
   [(#2418)](https://github.com/PennyLaneAI/pennylane/pull/2418)
@@ -445,21 +394,9 @@
   accessed via the top-level `qml` namespace.
   [(#2396)](https://github.com/PennyLaneAI/pennylane/pull/2396)
 
-* Raise a warning where caching produces identical shot noise on execution results with finite shots.
-  [(#2478)](https://github.com/PennyLaneAI/pennylane/pull/2478)
-
 <h3>Deprecations</h3>
 
-* The `ObservableReturnTypes` `Sample`, `Variance`, `Expectation`, `Probability`, `State`, and `MidMeasure`
-  have been moved to `measurements` from `operation`.
-  [(#2329)](https://github.com/PennyLaneAI/pennylane/pull/2329)
-  [(#2481)](https://github.com/PennyLaneAI/pennylane/pull/2481)
-
 <h3>Breaking changes</h3>
-
-* The `qml.finite_diff` function has been deleted. Please use `qml.gradients.finite_diff` to compute
-  the gradient of tapes of QNodes. Otherwise, manual implementation is required.
-  [(#2464)](https://github.com/PennyLaneAI/pennylane/pull/2464)
 
 * The `get_unitary_matrix` transform has been removed, users should use
   `qml.matrix` instead.
@@ -523,6 +460,10 @@ The tape method `qml.tape.QuantumTape.draw` now simply calls `qml.drawer.tape_te
 In the new pathway, the `charset` keyword is deleted, the `max_length` keyword defaults to `100`, and
 the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tape)`
 
+* The `ObservableReturnTypes` `Sample`, `Variance`, `Expectation`, `Probability`, `State`, and `MidMeasure`
+  have been moved to `measurements` from `operation`.
+  [(#2329)](https://github.com/PennyLaneAI/pennylane/pull/2329)
+
 * The deprecated QNode, available via `qml.qnode_old.QNode`, has been removed. Please
   transition to using the standard `qml.QNode`.
   [(#2336)](https://github.com/PennyLaneAI/pennylane/pull/2336)
@@ -541,13 +482,6 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   [(#2339)](https://github.com/PennyLaneAI/pennylane/pull/2339)
 
 <h3>Bug fixes</h3>
-
-* Fixes a bug where non-trainable arguments were shifted in the `NesterovMomentumOptimizer`
-  if a trainable argument was after it in the argument list.
-  [(#2466)](https://github.com/PennyLaneAI/pennylane/pull/2466)
-
-* Fixes a bug with `@jax.jit` for grad when `diff_method="adjoint"` and `mode="backward"`.
-  [(#2460)](https://github.com/PennyLaneAI/pennylane/pull/2460)
 
 * Fixes a bug where `qml.DiagonalQubitUnitary` did not support `@jax.jit`
   and `@tf.function`.
@@ -617,15 +551,12 @@ the `decimals` and `show_matrices` keywords are added. `qml.drawer.tape_text(tap
   the qubit operator that is prepared for tapering the HF state.  
   [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
 
-* Fixed a bug with custom device defined jacobians not being returned properly.
-  [(#2485)](https://github.com/PennyLaneAI/pennylane-sf/pull/2485)
-
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Ali Asadi, Utkarsh Azad, Samuel Banning, 
-Thomas Bromley, Alain Delgado, Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee,
-Romain Moyard, Zeyue Niu, Matthew Silverman, Lee James O'Riordan, Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
+Karim Alaa El-Din, Guillermo Alonso-Linaje, Juan Miguel Arrazola, Utkarsh Azad, Thomas Bromley, Alain Delgado,
+Olivia Di Matteo, Anthony Hayes, David Ittah, Josh Izaac, Soran Jahangiri, Christina Lee, Romain Moyard, Zeyue Niu,
+Matthew Silverman, Lee James O'Riordan, Jay Soni, Antal Száva, Maurice Weber, David Wierichs.
