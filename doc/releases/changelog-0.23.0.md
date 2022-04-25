@@ -88,7 +88,7 @@
   Note that `KaHyPar` needs to be installed separately with the `auto_cutter=True` option.
 
   For integration with the  existing low-level manual cut pipeline, refer to
-  the [documentation of the `qcut.find_and_place_cuts`
+  the [documentation of the qcut.find_and_place_cuts
   function](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.qcut.find_and_place_cuts.html)
   .
   ```pycon
