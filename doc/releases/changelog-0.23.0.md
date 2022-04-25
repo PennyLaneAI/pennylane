@@ -4,11 +4,11 @@
 
 <h3>New features since last release</h3>
 
-<h4> Finite-shot circuit cutting ✂️</h4>
+<h4> More practical circuit cutting ✂️</h4>
 
-* The new `@qml.cut_circuit_mc` transform allows evaluating QNodes of
-  `N`-wire circuits with `WireCut` operations and sample-based measurements
-  on devices with fewer than `N` wires.
+* Quantum circuit cutting (running `N`-wire circuits on devices with fewer than
+  `N` wires) is now supported for QNodes of finite-shots using the new
+  `@qml.cut_circuit_mc` transform.
   [(#2313)](https://github.com/PennyLaneAI/pennylane/pull/2313)
   [(#2321)](https://github.com/PennyLaneAI/pennylane/pull/2321)
   [(#2332)](https://github.com/PennyLaneAI/pennylane/pull/2332)
@@ -20,7 +20,7 @@
 
   With these new additions, samples from the original circuit can be
   simulated using a Monte Carlo method, using fewer qubits at the expense of
-  more device executions.  Additionally, this transform can take an optional
+  more device executions. Additionally, this transform can take an optional
   classical processing function as an argument and return an expectation
   value.
 
