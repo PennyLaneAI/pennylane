@@ -74,7 +74,7 @@ where a quantum computer is used to prepare the trial wave function of a molecul
 the expectation value of the *electronic Hamiltonian*, while a classical optimizer is used to
 find its ground state.
 
-PennyLane supports treating Hamiltonians just like any other observable, and the 
+PennyLane supports treating Hamiltonians just like any other observable, and the
 expectation value of a Hamiltonian can be calculated using ``qml.expval``:
 
 .. code-block:: python
