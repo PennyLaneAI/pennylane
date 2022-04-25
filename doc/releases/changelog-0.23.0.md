@@ -640,7 +640,7 @@
   [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
 
 * Fixed a bug with custom device defined jacobians not being returned properly.
-  [(#2485)](https://github.com/PennyLaneAI/pennylane-sf/pull/2485)
+  [(#2485)](https://github.com/PennyLaneAI/pennylane/pull/2485)
 
 <h3>Documentation</h3>
 
