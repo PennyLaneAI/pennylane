@@ -428,6 +428,7 @@ class QuantumTape(AnnotatedQueue):
     # construction methods
     # ========================================================
 
+    """Tapes may be nested.  Nested tapes should be processed into the `_ops` list."""
     _queue_category = "_ops"
 
     def _process_queue(self):
