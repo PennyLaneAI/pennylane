@@ -112,10 +112,7 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
     if recipe is not None:
         recipe = qml.math.array(recipe)
         if order == 1:
-            # TODO: The following only works because `process_shifts` does not notice that
-            # recipe.T has 3 instead of 2 rows, because we don't use the check for duplicates
-            # This should be improved.
-            return process_shifts(recipe.T, check_duplicates=False)
+            return process_shifts(recipe, batch_duplicates=False)
 
         # Try to obtain the period of the operator frequencies for iteration of custom recipe
         try:
@@ -127,10 +124,10 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
         if qml.math.allclose(recipe[:, 1], qml.math.ones_like(recipe[:, 1])):
             # If the multipliers are ones, we do not include them in the iteration
             # but keep track of them manually
-            iter_c, iter_s = process_shifts(_iterate_shift_rule(recipe[:, ::2], order, period).T)
-            return qml.math.stack([iter_c, qml.math.ones_like(iter_c), iter_s])
+            iter_c, iter_s = process_shifts(_iterate_shift_rule(recipe[:, ::2], order, period)).T
+            return qml.math.stack([iter_c, qml.math.ones_like(iter_c), iter_s]).T
 
-        return process_shifts(_iterate_shift_rule(recipe, order, period).T)
+        return process_shifts(_iterate_shift_rule(recipe, order, period))
 
     # Try to obtain frequencies, either via custom implementation or from generator eigvals
     try:
@@ -142,11 +139,11 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
         ) from e
 
     # Create shift rule from frequencies with given shifts
-    coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=order)
+    coeffs, shifts = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=order).T
     # The generated shift rules do not include a rescaling of the parameter, only shifts.
     mults = np.ones_like(coeffs)
 
-    return coeffs, mults, shifts
+    return qml.math.stack([coeffs, mults, shifts]).T
 
 
 def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0=None):
@@ -214,11 +211,11 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         arg_idx = argnum.index(idx)
         recipe = gradient_recipes[arg_idx]
         if recipe is not None:
-            recipe = process_shifts(np.array(recipe).T)
+            recipe = process_shifts(np.array(recipe))
         else:
             op_shifts = None if shifts is None else shifts[arg_idx]
             recipe = _get_operation_recipe(tape, idx, shifts=op_shifts)
-        coeffs, multipliers, op_shifts = recipe
+        coeffs, multipliers, op_shifts = recipe.T
         fns.append(None)
 
         # Extract zero-shift term if present (if so, it will always be the first)
@@ -233,7 +230,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
             # Store the unshifted coefficient. We know that
             # it will always be the first coefficient due to processing.
             unshifted_coeffs.append(coeffs[0])
-            coeffs, multipliers, op_shifts = recipe[:, 1:]
+            coeffs, multipliers, op_shifts = recipe[1:].T
 
         # generate the gradient tapes
         gradient_coeffs.append(coeffs)

@@ -88,48 +88,6 @@ class TestCoeffs:
         assert np.allclose(shifts, [0, -1, 1, -2, 2])
 
 
-class TestShiftedTapes:
-    """Tests for the generate_shifted_tapes function"""
-
-    def test_behaviour(self):
-        """Test that the function behaves as expected"""
-
-        with qml.tape.QuantumTape() as tape:
-            qml.PauliZ(0)
-            qml.RX(1.0, wires=0)
-            qml.CNOT(wires=[0, 2])
-            qml.Rot(2.0, 3.0, 4.0, wires=0)
-            qml.expval(qml.PauliZ(0))
-
-        tape.trainable_params = {0, 2}
-        shifts = [0.1, -0.2, 1.6]
-        res = generate_shifted_tapes(tape, 1, shifts=shifts)
-
-        assert len(res) == len(shifts)
-        assert res[0].get_parameters(trainable_only=False) == [1.0, 2.0, 3.1, 4.0]
-        assert res[1].get_parameters(trainable_only=False) == [1.0, 2.0, 2.8, 4.0]
-        assert res[2].get_parameters(trainable_only=False) == [1.0, 2.0, 4.6, 4.0]
-
-    def test_multipliers(self):
-        """Test that the function behaves as expected when multipliers are used"""
-
-        with qml.tape.QuantumTape() as tape:
-            qml.PauliZ(0)
-            qml.RX(1.0, wires=0)
-            qml.CNOT(wires=[0, 2])
-            qml.Rot(2.0, 3.0, 4.0, wires=0)
-            qml.expval(qml.PauliZ(0))
-
-        tape.trainable_params = {0, 2}
-        shifts = [0.3, 0.6]
-        multipliers = [0.2, 0.5]
-        res = generate_shifted_tapes(tape, 0, shifts=shifts, multipliers=multipliers)
-
-        assert len(res) == 2
-        assert res[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
-        assert res[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]
-
-
 class TestFiniteDiff:
     """Tests for the finite difference gradient transform"""
 
@@ -281,13 +239,13 @@ class TestFiniteDiff:
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.QuantumTape() as tape1:
-            qml.RX(1, wires=[0])
-            qml.RX(1, wires=[1])
+            qml.RX(1.0, wires=[0])
+            qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(0))
 
         with qml.tape.QuantumTape() as tape2:
-            qml.RX(1, wires=[0])
-            qml.RX(1, wires=[1])
+            qml.RX(1.0, wires=[0])
+            qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(1))
 
         tapes, fn = finite_diff(tape1, approx_order=1)
