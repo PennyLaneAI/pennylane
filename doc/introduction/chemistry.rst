@@ -35,7 +35,10 @@ with an external backend that uses the
 `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
 electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_, which requires separate
 installation. This backend is non-differentiable and can be selected by setting
-``method='pyscf'`` in :func:`~.molecular_hamiltonian`.
+``method='pyscf'`` in :func:`~.molecular_hamiltonian`. Additionally, if the electronic Hamiltonian
+is built independently using `OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools, it
+can be readily converted to a PennyLane observable using the
+:func:`~.pennylane.qchem.import_operator` function.
 
 Furthermore, the net charge,
 the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the
