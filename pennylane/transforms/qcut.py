@@ -388,7 +388,7 @@ def _find_new_wire(wires: Wires) -> int:
 
 
 # pylint: disable=protected-access
-def graph_to_tape(graph: MultiDiGraph, total_measurements: int=1) -> QuantumTape:
+def graph_to_tape(graph: MultiDiGraph, total_measurements: int = 1) -> QuantumTape:
     """
     Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
 
@@ -502,7 +502,8 @@ def graph_to_tape(graph: MultiDiGraph, total_measurements: int=1) -> QuantumTape
                         qml.expval(obs[0])
 
                 if len(observables) < total_measurements:
-                    qml.expval(qml.Identity(wires[0]))
+                    arbitrary_wire = obs[0].wires[0]
+                    qml.expval(qml.Identity(arbitrary_wire))
 
     return tape
 
@@ -2031,9 +2032,7 @@ def cut_circuit(
 
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
-
-    fragment_tapes = [graph_to_tape(f) for f in fragments]
-
+    fragment_tapes = [graph_to_tape(f, total_measurements=total_measurements) for f in fragments]
     fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
