@@ -622,7 +622,7 @@
   plugin" section of the plugins page have been updated.
   [(#2389)](https://github.com/PennyLaneAI/pennylane/pull/2389)
 
-* Added the missing arxiv reference in `LieAlgebra` optimizer.
+* The missing arXiv reference in the `LieAlgebra` optimizer has been fixed.
   [(#2325)](https://github.com/PennyLaneAI/pennylane/pull/2325)
 
 <h3>Contributors</h3>
