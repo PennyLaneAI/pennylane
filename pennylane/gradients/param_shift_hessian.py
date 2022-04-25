@@ -32,6 +32,7 @@ from .parameter_shift import _get_operation_recipe
 from .general_shift_rules import (
     _combine_shift_rules,
     generate_shifted_tapes,
+    generate_multishifted_tapes,
 )
 
 
@@ -78,7 +79,7 @@ def _generate_off_diag_tapes(tape, idx, recipe_i, recipe_j):
     else:
         unshifted_coeff = None
 
-    h_tapes = generate_shifted_tapes(tape, idx, combined_rules[:, 3:5], combined_rules[:, 1:3])
+    h_tapes = generate_multishifted_tapes(tape, idx, combined_rules[:, 3:5], combined_rules[:, 1:3])
 
     return h_tapes, combined_rules[:, 0], unshifted_coeff
 

@@ -24,6 +24,7 @@ from pennylane.gradients.general_shift_rules import (
     _get_shift_rule,
     generate_multi_shift_rule,
     generate_shifted_tapes,
+    generate_multishifted_tapes,
     _iterate_shift_rule_with_multipliers,
 )
 
@@ -431,3 +432,70 @@ class TestGenerateShiftedTapes:
         assert len(res) == 2
         assert res[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
         assert res[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]
+
+
+class TestGenerateMultishiftedTapes:
+    """Tests for the generate_multishifted_tapes function"""
+
+    def test_with_single_par(self):
+        """Test that the function shifts a single tape parameter as expected"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliZ(0)
+            qml.RX(1.0, wires=0)
+            qml.CNOT(wires=[0, 2])
+            qml.Rot(2.0, 3.0, 4.0, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 2}
+        shifts = [[0.1], [-0.2], [1.6]]
+        res = generate_multishifted_tapes(tape, [1], shifts)
+
+        assert len(res) == len(shifts)
+        assert res[0].get_parameters(trainable_only=False) == [1.0, 2.0, 3.1, 4.0]
+        assert res[1].get_parameters(trainable_only=False) == [1.0, 2.0, 2.8, 4.0]
+        assert res[2].get_parameters(trainable_only=False) == [1.0, 2.0, 4.6, 4.0]
+
+    def test_with_multiple_pars(self):
+        """Test that the function shifts multiple tape parameters as expected"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliZ(0)
+            qml.RX(1, wires=0)
+            qml.CNOT(wires=[0, 2])
+            qml.Rot(2.0, 3.0, 4.0, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 2, 3}
+        shifts = [[0.1, -0.5], [-0.2, 0.9], [1.6, 0.1]]
+        res = generate_multishifted_tapes(tape, [0, 2], shifts)
+
+        assert len(res) == len(shifts)
+        assert res[0].get_parameters(trainable_only=False) == [1.1, 2.0, 3.0, 3.5]
+        assert res[1].get_parameters(trainable_only=False) == [0.8, 2.0, 3.0, 4.9]
+        assert res[2].get_parameters(trainable_only=False) == [2.6, 2.0, 3.0, 4.1]
+
+    def test_with_multipliers(self):
+        """Test that the function behaves as expected when multipliers are used"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliZ(0)
+            qml.RX(1.0, wires=0)
+            qml.CNOT(wires=[0, 2])
+            qml.Rot(2.0, 3.0, 4.0, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 2}
+        shifts = [[0.3, -0.6], [0.2, 0.6], [0.6, 0.0]]
+        multipliers = [[0.2, 0.5], [-0.3, 0], [1.0, 1]]
+        expected = [
+            [0.5 * 1.0 - 0.6, 2.0, 0.2 * 3.0 + 0.3, 4.0],
+            [0 * 1.0 + 0.6, 2.0, -0.3 * 3.0 + 0.2, 4.0],
+            [1 * 1.0 + 0.0, 2.0, 1.0 * 3.0 + 0.6, 4.0],
+        ]
+
+        res = generate_multishifted_tapes(tape, [1, 0], shifts, multipliers)
+
+        assert len(res) == len(shifts)
+        for new_tape, exp in zip(res, expected):
+            assert new_tape.get_parameters(trainable_only=False) == exp
