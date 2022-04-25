@@ -222,8 +222,8 @@
       qml.PauliZ(wires=0)
   ```
 
-  For optimizing the circuit given the given following template of CNOTs we apply the `pattern_matching`
-  transform.
+  To optimize the circuit with this identity pattern, we apply the
+  `qml.transforms.pattern_matching` transform.
 
   ```pycon
   >>> dev = qml.device('default.qubit', wires=5)
