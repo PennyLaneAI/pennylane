@@ -508,7 +508,7 @@
   1
   ```
 
-* The `qml.finite_diff` function has been deleted. Please use `qml.gradients.finite_diff` to compute
+* The `qml.finite_diff` function has been removed. Please use `qml.gradients.finite_diff` to compute
   the gradient of tapes of QNodes. Otherwise, manual implementation is required.
   [(#2464)](https://github.com/PennyLaneAI/pennylane/pull/2464)
 
