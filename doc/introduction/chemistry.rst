@@ -1,3 +1,8 @@
+.. role:: html(raw)
+   :format: html
+
+.. _intro_ref_chm:
+
 Quantum Chemistry
 =================
 
@@ -107,3 +112,79 @@ The circuit parameter can be optimized using the interface of choice.
 
     For more details on VQE and the quantum chemistry functionality available in
     :mod:`~pennylane.qchem`, check out the PennyLane quantum chemistry tutorials.
+
+
+Quantum chemistry functions and classes
+---------------------------------------
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.import_operator
+    ~pennylane.qchem.active_space
+    ~pennylane.qchem.atom_basis_data
+    ~pennylane.qchem.attraction_integral
+    ~pennylane.qchem.attraction_matrix
+    ~pennylane.qchem.clifford
+    ~pennylane.qchem.contracted_norm
+    ~pennylane.qchem.core_matrix
+    ~pennylane.qchem.decompose
+    ~pennylane.qchem.diff_hamiltonian
+    ~pennylane.qchem.dipole_integrals
+    ~pennylane.qchem.dipole_moment
+    ~pennylane.qchem.dipole_of
+    ~pennylane.qchem.electron_integrals
+    ~pennylane.qchem.electron_repulsion
+    ~pennylane.qchem.excitations
+    ~pennylane.qchem.excitations_to_wires
+    ~pennylane.qchem.expansion
+    ~pennylane.qchem.fermionic_dipole
+    ~pennylane.qchem.fermionic_hamiltonian
+    ~pennylane.qchem.fermionic_observable
+    ~pennylane.qchem.gaussian_kinetic
+    ~pennylane.qchem.gaussian_moment
+    ~pennylane.qchem.gaussian_overlap
+    ~pennylane.qchem.hermite_moment
+    ~pennylane.qchem.hf_energy
+    ~pennylane.qchem.hf_state
+    ~pennylane.qchem.jordan_wigner
+    ~pennylane.qchem.kinetic_integral
+    ~pennylane.qchem.kinetic_matrix
+    ~pennylane.qchem.meanfield
+    ~pennylane.qchem.mol_basis_data
+    ~pennylane.qchem.mol_density_matrix
+    ~pennylane.qchem.meanfield
+    ~pennylane.qchem.mol_basis_data
+    ~pennylane.qchem.mol_density_matrix
+    ~pennylane.qchem.molecular_hamiltonian
+    ~pennylane.qchem.moment_integral
+    ~pennylane.qchem.moment_matrix
+    ~pennylane.qchem.nuclear_attraction
+    ~pennylane.qchem.nuclear_energy
+    ~pennylane.qchem.observable
+    ~pennylane.qchem.one_particle
+    ~pennylane.qchem.optimal_sector
+    ~pennylane.qchem.overlap_integral
+    ~pennylane.qchem.overlap_matrix
+    ~pennylane.qchem.particle_number
+    ~pennylane.paulix_ops
+    ~pennylane.qchem.primitive_norm
+    ~pennylane.qchem.qubit_observable
+    ~pennylane.qchem.read_structure
+    ~pennylane.qchem.repulsion_integral
+    ~pennylane.qchem.repulsion_tensor
+    ~pennylane.qchem.scf
+    ~pennylane.qchem.simplify
+    ~pennylane.qchem.spin2
+    ~pennylane.qchem.spinz
+    ~pennylane.symmetry_generators
+    ~pennylane.taper
+    ~pennylane.qchem.taper_hf
+    ~pennylane.qchem.two_particle
+    ~pennylane.qchem.BasisFunction
+    ~pennylane.qchem.Molecule
+
+:html:`</div>`
