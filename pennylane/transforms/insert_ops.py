@@ -220,7 +220,7 @@ def insert(
     if not isinstance(op_args, Sequence):
         op_args = [op_args]
 
-    num_preps = len(circuit._prep)
+    num_preps = len(circuit._prep) # pylint: disable=protected-access
 
     for i in range(num_preps):
         apply(circuit.operations[i])
