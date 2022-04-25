@@ -1348,12 +1348,8 @@ class TestJIT:
     )
     @pytest.mark.parametrize("shots", [10, 1000])
     def test_probs_obs_none(self, dev_name, diff_method, mode, shots):
-        """Test that the jax device works with qml.probs and jitting even
-        when shots>0.
-
-        Note: before a fix, the cases of shots=10 and shots=1000 were failing due
-        to different reasons, hence the parametrization in the test.
-        """
+        """Test that the jax device works with qml.probs, a MeasurementProcess
+        that has obs=None even when shots>0."""
         dev = qml.device(dev_name, wires=2, shots=shots)
 
         if diff_method == "backprop":
