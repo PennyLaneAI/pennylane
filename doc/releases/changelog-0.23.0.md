@@ -383,6 +383,26 @@
   the output returned by a quantum tape after execution.
   [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
 
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+  a = np.array([0.1, 0.2, 0.3])
+
+  def func(a):
+      qml.RY(a[0], wires=0)
+      qml.RX(a[1], wires=0)
+      qml.RY(a[2], wires=0)
+
+  with qml.tape.QuantumTape() as tape:
+      func(a)
+      qml.state()
+  ```
+  ```pycon
+  >>> tape.shape(dev)
+  (1, 4)
+  >>> tape.numeric_type
+  complex
+  ```
+
 * Defined a `MeasurementProcess.shape` method and a
   `MeasurementProcess.numeric_type` attribute.
   [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
