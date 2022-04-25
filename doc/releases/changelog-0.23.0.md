@@ -270,7 +270,7 @@
   tensor(0.999, requires_grad=True)
   ```
   For more information refer to the [documentation of
-  qml.HilbertSchmidt](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.HilbertSchmidt.html?highlight=hilbertschmidt#pennylane.HilbertSchmidt).
+  qml.HilbertSchmidt](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.HilbertSchmidt.html).
 
 <h4>More tensor network support 🕸️</h4>
 
