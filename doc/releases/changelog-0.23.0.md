@@ -426,7 +426,10 @@
   - An operation's `generator`. Its eigenvalues will be used to obtain
     `parameter_frequencies`, if they are not given explicitly for an operation.
 
-* The `qml.specs` transform now accepts an `expansion_strategy` keyword argument.
+* The strategy for expanding a circuit can now be specified with the
+  `qml.specs` transform, for example to calculate the specifications of the
+  circuit that will actually be executed by the device
+  (`expansion_strategy="device"`).
   [(#2395)](https://github.com/PennyLaneAI/pennylane/pull/2395)
 
 * `default.qubit` and `default.mixed` now skip over identity operators instead of performing matrix multiplication
