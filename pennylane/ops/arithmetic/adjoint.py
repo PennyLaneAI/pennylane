@@ -21,10 +21,17 @@ from pennylane.math import transpose, conj
 def adjoint(op):
     try:
         new_op = op.adjoint()
-        QueuingContext.safe_update_info(op, owner=new_op)
-        return new_op
     except AdjointUndefinedError:
         return Adjoint(op)
+
+    try:
+        QueuingContext.update_info(op, owner = new_op)
+    except QueuingError:
+        op.queue(QueuingContext)
+        QueuingContext.update_info(op, owner = new_op)
+    QueuingContext.update_info(new_op, owns=op)
+    return new_op
+
 
 class Adjoint(Operator):
     """
