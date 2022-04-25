@@ -161,6 +161,8 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
     3: ─├C─│───H─╰X─╰C─┤
     4: ─╰C─╰X──────────┤
 
+    .. seealso:: :func:`~.pattern_matching`
+
     **Reference:**
 
     [1] Iten, R., Moyard, R., Metger, T., Sutter, D. and Woerner, S., 2022.
@@ -273,6 +275,56 @@ def pattern_matching(circuit_dag, pattern_dag):
 
     Returns:
         list(Match): the list of maximal matches.
+
+    **Example**
+
+    First let's consider the following circuit
+
+    .. code-block:: python
+
+        def circuit():
+            qml.S(wires=0)
+            qml.PauliZ(wires=0)
+            qml.S(wires=1)
+            qml.CZ(wires=[0, 1])
+            qml.S(wires=1)
+            qml.S(wires=2)
+            qml.CZ(wires=[1, 2])
+            qml.S(wires=2)
+            return qml.expval(qml.PauliX(wires=0))
+
+    where we want to find all maximal matches of a pattern containing a sequence of two ``pennylane.S`` gates and
+    a ``pennylane.PauliZ`` gate:
+
+    .. code-block:: python
+
+        with qml.tape.QuantumTape() as pattern:
+            qml.S(wires=0)
+            qml.S(wires=0)
+            qml.PauliZ(wires=0)
+
+    >>> circuit_dag = qml.commutation_dag(circuit)()
+    >>> pattern_dag = qml.commutation_dag(pattern)()
+    >>> all_max_matches = qml.pattern_matching(circuit_dag, pattern_dag)
+
+    It is possible to access the matches by looping through the list. The first integers indices represent the gates
+    in the pattern and the second intergers the gates in the circuit (by order of appearance).
+
+    >>> for match_conf in all_max_matches:
+    ...     print(match_conf.match)
+
+    [[0, 0], [2, 1]]
+    [[0, 2], [1, 4]]
+    [[0, 4], [1, 2]]
+    [[0, 5], [1, 7]]
+    [[0, 7], [1, 5]]
+
+    **Reference:**
+
+    [1] Iten, R., Moyard, R., Metger, T., Sutter, D. and Woerner, S., 2022.
+    Exact and practical pattern matching for quantum circuit optimization.
+    `doi.org/10.1145/3498325 <https://dl.acm.org/doi/abs/10.1145/3498325>`_
+
     """
     # Match list
     match_list = []
