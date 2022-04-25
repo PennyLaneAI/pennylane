@@ -527,11 +527,11 @@
 * The old circuit text drawing infrastructure has been removed.
   [(#2310)](https://github.com/PennyLaneAI/pennylane/pull/2310)
 
+  - `RepresentationResolver` was replaced by the `Operator.label` method.
   - `qml.drawer.CircuitDrawer` was replaced by `qml.drawer.tape_text`.
   - `qml.drawer.CHARSETS` was removed because unicode is assumed to be accessible.
   - `Grid` and `qml.drawer.drawable_grid` were removed because the custom data class was replaced
     by list of sets of operators or measurements.
-  - `RepresentationResolver` was replaced by the `Operator.label` method.
   - `qml.transforms.draw_old` was replaced by `qml.draw`.
   - `qml.CircuitGraph.greedy_layers` was deleted, as it was no longer needed by the circuit drawer and
     did not seem to have uses outside of that situation.
@@ -559,7 +559,8 @@
 
 <h3>Bug fixes</h3>
 
-* Fixed a bug arising when multiplying `Hamiltonian` objects.
+* Fixed a bug in the `qml.PauliRot` operation, where computing the generator was
+  not taking into account the operation wires.
   [(#2466)](https://github.com/PennyLaneAI/pennylane/pull/2466)
 
 * Fixed a bug where non-trainable arguments were shifted in the `NesterovMomentumOptimizer`
