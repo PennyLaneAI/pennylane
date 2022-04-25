@@ -196,7 +196,8 @@
   templates in a circuit and replaces them with an equivalent component.
   [(#2032)](https://github.com/PennyLaneAI/pennylane/pull/2032)
 
-  First let's consider the following circuit where we want to replace sequence of two ``pennylane.S`` gates with a
+  For example, consider the following circuit where we want to
+  replace sequence of two `pennylane.S` gates with a
   ``pennylane.PauliZ`` gate.
 
   ```python
