@@ -619,7 +619,8 @@
 
 * Fixed a bug in which the `expval`/`var` of a `Tensor(Observable)` would depend on the order
   in which the observable is defined:
-  ```python
+  [(#2276)](https://github.com/PennyLaneAI/pennylane/pull/2276)
+  ```pycon
   @qml.qnode(dev)
   def circ(op):
     qml.RX(0.12, wires=0)
@@ -628,15 +629,11 @@
 
     return qml.expval(op)
 
-  op1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
-  op2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
-  ```
-
-  ```
+  >>> op1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
+  >>> op2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
   >>> print(circ(op1), circ(op2))
   -0.8636111153905662 -0.8636111153905662
   ```
-  [(#2276)](https://github.com/PennyLaneAI/pennylane/pull/2276)
 
 * Fixed a bug where `qml.hf.transform_hf()` would fail due to missing wires in
   the qubit operator that is prepared for tapering the HF state.
