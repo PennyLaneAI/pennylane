@@ -64,6 +64,7 @@ Utility functions
 
     finite_diff_coeffs
     generate_shifted_tapes
+    generate_multishifted_tapes
     generate_shift_rule
     generate_multi_shift_rule
     eigvals_to_frequencies
@@ -300,4 +301,5 @@ from .general_shift_rules import (
     generate_shift_rule,
     generate_multi_shift_rule,
     generate_shifted_tapes,
+    generate_multishifted_tapes,
 )
