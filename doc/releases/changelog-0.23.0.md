@@ -332,8 +332,8 @@
 
 <h3>Improvements</h3>
 
-* `QuantumTape` objects are now iterable and accessing the
-  operations and measurements of the underlying quantum circuit is more
+* `QuantumTape` objects are now iterable, allowing iteration over the
+  contained operations and measurements.
   seamless.
   [(#2342)](https://github.com/PennyLaneAI/pennylane/pull/2342)
 
