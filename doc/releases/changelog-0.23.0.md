@@ -404,7 +404,9 @@
   ```
 
 * Defined a `MeasurementProcess.shape` method and a
-  `MeasurementProcess.numeric_type` attribute.
+  `MeasurementProcess.numeric_type` attribute to allow extracting information
+  about the shape and numeric type of results obtained when evaluating QNodes
+  using the specific measurement process.
   [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
 
 * The parameter-shift Hessian can now be computed for arbitrary
