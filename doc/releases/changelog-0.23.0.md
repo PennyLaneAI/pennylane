@@ -432,7 +432,8 @@
   (`expansion_strategy="device"`).
   [(#2395)](https://github.com/PennyLaneAI/pennylane/pull/2395)
 
-* `default.qubit` and `default.mixed` now skip over identity operators instead of performing matrix multiplication
+* The `default.qubit` and `default.mixed` devices now skip over identity
+  operators instead of performing matrix multiplication
   with the identity.
   [(#2356)](https://github.com/PennyLaneAI/pennylane/pull/2356)
   [(#2365)](https://github.com/PennyLaneAI/pennylane/pull/2365)
