@@ -558,7 +558,8 @@
   without passing wires or an observable.
   [(#2438)](https://github.com/PennyLaneAI/pennylane/pull/2438)
 
-* Call `pip show` with the subprocess library to avoid outputting a common warning.
+* The behaviour of `qml.about()` was modified to avoid warnings being emitted
+  due to legacy behaviour of `pip`.
   [(#2422)](https://github.com/PennyLaneAI/pennylane/pull/2422)
 
 * Fixed a bug where observables were not considered when determining the use of
