@@ -298,7 +298,7 @@ def pattern_matching(circuit_dag, pattern_dag):
 
     .. code-block:: python
 
-        with qml.tape.QuantumTape() as pattern:
+        def pattern():
             qml.S(wires=0)
             qml.S(wires=0)
             qml.PauliZ(wires=0)
