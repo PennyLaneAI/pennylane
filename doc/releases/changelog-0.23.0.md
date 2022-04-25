@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4> More practical circuit cutting ✂️</h4>
+<h4> More powerful circuit cutting ✂️</h4>
 
 * Quantum circuit cutting (running `N`-wire circuits on devices with fewer than
   `N` wires) is now supported for QNodes of finite-shots using the new
