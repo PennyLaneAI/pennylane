@@ -310,8 +310,8 @@ def pattern_matching(circuit_dag, pattern_dag):
 
     The matches are accessible by looping through the list outputted by `qml.pattern_matching`. This output is a list
     of lists containing indices. Each list represents a match between a gate in the pattern with a gate in the circuit.
-    The first indices represent the pattern gates and the second indices provides indices for the gates in the circuit
-    (by order of appearance).
+    The first indices represent the gates in the pattern and the second indices provides indices for the gates in the
+    circuit (by order of appearance).
 
     >>> for match_conf in all_max_matches:
     ...     print(match_conf.match)
@@ -322,7 +322,7 @@ def pattern_matching(circuit_dag, pattern_dag):
     [[0, 7], [1, 5]]
 
     The first match of this list corresponds to match the first gate (:class:`~.S`) in the pattern with the first gate
-    in the circuit and also the third pattern gate (:class:`~.PauliZ`) with the second circuit gate.
+    in the circuit and also the third gate in the pattern (:class:`~.PauliZ`) with the second circuit gate.
 
     .. seealso:: :func:`~.pattern_matching_optimization`
 
