@@ -252,10 +252,15 @@
   between unitaries.
   [(#2364)](https://github.com/PennyLaneAI/pennylane/pull/2364)
 
+  Given a unitary `U`, `qml.HilberSchmidt` can be used to measure the distance
+  between unitaries and to define a cost function (`cost_hst`) used for
+  learning a unitary `V` that is equivalent to `U` up to a global phase:
   ```python
+  # Represents unitary U
   with qml.tape.QuantumTape(do_queue=False) as u_tape:
       qml.Hadamard(wires=0)
 
+  # Represents unitary V
   def v_function(params):
       qml.RZ(params[0], wires=1)
 
@@ -271,6 +276,8 @@
   >>> cost_hst(parameters=[0.1], v_function=v_function, v_wires=[1], u_tape=u_tape)
   tensor(0.999, requires_grad=True)
   ```
+  For more information refer to the [documentation of
+  qml.HilbertSchmidt](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.HilbertSchmidt.html?highlight=hilbertschmidt#pennylane.HilbertSchmidt).
 
 <h4>More tensor network support 🕸️</h4>
 
