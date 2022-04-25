@@ -462,6 +462,16 @@
   accessed via the top-level `qml` namespace.
   [(#2396)](https://github.com/PennyLaneAI/pennylane/pull/2396)
 
+* Raise a warning where caching produces identical shot noise on execution results with finite shots.
+  [(#2478)](https://github.com/PennyLaneAI/pennylane/pull/2478)
+
+<h3>Deprecations</h3>
+
+* The `ObservableReturnTypes` `Sample`, `Variance`, `Expectation`, `Probability`, `State`, and `MidMeasure`
+  have been moved to `measurements` from `operation`.
+  [(#2329)](https://github.com/PennyLaneAI/pennylane/pull/2329)
+  [(#2481)](https://github.com/PennyLaneAI/pennylane/pull/2481)
+
 <h3>Breaking changes</h3>
 
 * The caching ability of `QubitDevice` has been removed, using the caching on
@@ -528,10 +538,6 @@
   - The tape method `qml.tape.QuantumTape.draw` now simply calls `qml.drawer.tape_text`.
   - In the new pathway, the `charset` keyword is deleted, the `max_length` keyword defaults to `100`, and
     the `decimals` and `show_matrices` keywords are added.
-
-* The `ObservableReturnTypes` `Sample`, `Variance`, `Expectation`, `Probability`, `State`, and `MidMeasure`
-  have been moved to `measurements` from `operation`.
-  [(#2329)](https://github.com/PennyLaneAI/pennylane/pull/2329)
 
 * The deprecated QNode, available via `qml.qnode_old.QNode`, has been removed. Please
   transition to using the standard `qml.QNode`.
@@ -632,6 +638,9 @@
 * Fixed a bug where `qml.hf.transform_hf()` would fail due to missing wires in
   the qubit operator that is prepared for tapering the HF state.
   [(#2441)](https://github.com/PennyLaneAI/pennylane/pull/2441)
+
+* Fixed a bug with custom device defined jacobians not being returned properly.
+  [(#2485)](https://github.com/PennyLaneAI/pennylane-sf/pull/2485)
 
 <h3>Documentation</h3>
 
