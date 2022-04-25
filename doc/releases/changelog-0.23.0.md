@@ -475,7 +475,7 @@
 
 <h3>Breaking changes</h3>
 
-* The caching ability of `QubitDevice` has been removed, using the caching on
+* The caching ability of devices has been removed. Using the caching on
   the QNode level is the recommended alternative going forward.
   [(#2443)](https://github.com/PennyLaneAI/pennylane/pull/2443)
 
