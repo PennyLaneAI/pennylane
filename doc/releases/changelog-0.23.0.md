@@ -198,7 +198,7 @@
 
   For example, consider the following circuit where we want to
   replace sequence of two `pennylane.S` gates with a
-  ``pennylane.PauliZ`` gate.
+  `pennylane.PauliZ` gate.
 
   ```python
   def circuit():
