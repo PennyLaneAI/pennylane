@@ -136,85 +136,59 @@
   -0.276982865449393
   ```
 
-<h4>QChem unification ⚛️  🏰</h4>
+<h4>Grand QChem unification ⚛️  🏰</h4>
 
-* The quantum chemistry functionality is unified in the `qml.qchem` module
-  providing a differentiable Hartree-Fock solver, the functionality to
-  construct a fully-differentiable molecular Hamiltonian and tools for building
-  other observables such as molecular dipole moment, spin and particle number.
-  [(#2166)](https://github.com/PennyLaneAI/pennylane/pull/2166)
-  [(#2173)](https://github.com/PennyLaneAI/pennylane/pull/2173)
-  [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
-  [(#2362)](https://github.com/PennyLaneAI/pennylane/pull/2362)
-  [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
+* Quantum chemistry functionality --- previously split between an external
+  `pennylane-qchem` package and internal `qml.hf` differentiable Hartree-Fock
+  solver --- is now unified into a single, included, `qml.qchem` module.
+  [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
+  [(#2385)](https://github.com/PennyLaneAI/pennylane/pull/2385)
+  [(#2352)](https://github.com/PennyLaneAI/pennylane/pull/2352)
+  [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
+  [(#2454)](https://github.com/PennyLaneAI/pennylane/pull/2454)  
   [(#2199)](https://github.com/PennyLaneAI/pennylane/pull/2199)
   [(#2371)](https://github.com/PennyLaneAI/pennylane/pull/2371)
   [(#2272)](https://github.com/PennyLaneAI/pennylane/pull/2272)
-  [(#2164)](https://github.com/PennyLaneAI/pennylane/pull/2164)
-  [(#2316)](https://github.com/PennyLaneAI/pennylane/pull/2316)
-  [(#2385)](https://github.com/PennyLaneAI/pennylane/pull/2385)
-  [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
+  [(#2230)](https://github.com/PennyLaneAI/pennylane/pull/2230)
   [(#2415)](https://github.com/PennyLaneAI/pennylane/pull/2415)
   [(#2426)](https://github.com/PennyLaneAI/pennylane/pull/2426)
-  [(#2352)](https://github.com/PennyLaneAI/pennylane/pull/2352)
-  [(#2420)](https://github.com/PennyLaneAI/pennylane/pull/2420)
   [(#2465)](https://github.com/PennyLaneAI/pennylane/pull/2465)
-  [(#2454)](https://github.com/PennyLaneAI/pennylane/pull/2454)
 
-  The :mod:`~.qchem` module provides access to a driver function :func:`~.molecular_hamiltonian`
-  to generate the electronic Hamiltonian in a single call. For example,
+  The `qml.qchem` module provides a differentiable Hartree-Fock solver and the functionality to
+  construct a fully-differentiable molecular Hamiltonian.
+  
+  For example, one can continue to generate molecular Hamiltonians using  
+  `qml.qchem.molecular_hamiltonian`:
 
   ```python
   symbols = ["H", "H"]
   geometry = np.array([[0., 0., -0.66140414], [0., 0., 0.66140414]])
-  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry)
+  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, method="dhf")
   ```
 
-  The following code shows the construction of the Hamiltonian for the hydrogen molecule where the
-  geometry of the molecule and the basis set parameters are all differentiable.
+  By default, this will use the differentiable Hartree-Fock solver; however, simply set
+  `method="pyscf"` to continue to use PySCF for Hartree-Fock calculations.
 
-  ```python
-  symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]], requires_grad=True)
+* Functions are added for building a differentiable dipole moment observable. Functions for 
+  computing multipole moment molecular integrals, needed for building the dipole moment observable, 
+  are also added.
+  [(#2173)](https://github.com/PennyLaneAI/pennylane/pull/2173)
+  [(#2166)](https://github.com/PennyLaneAI/pennylane/pull/2166)
 
-  # The exponents and contraction coefficients of the Gaussian basis functions
-  alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554]], requires_grad = True)
-  coeff = np.array([[0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454]], requires_grad = True)
+* The efficiency of computing molecular integrals and Hamiltonian is improved. This has been done 
+  by adding optimized functions for building fermionic and qubit observables and optimizing 
+  the functions used for computing the electron repulsion integrals.
+  [(#2316)](https://github.com/PennyLaneAI/pennylane/pull/2316)
 
-  args = [geometry, alpha, coeff] # initial values of the differentiable parameters
-  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, alpha=alpha, coeff=coeff, args=args)
-  ```
 
-  The :func:`~.molecular_hamiltonian` function can also be used to construct the molecular
-  Hamiltonian with an external backend that uses the
-  `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
-  electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_, which requires separate
-  installation. This backend is non-differentiable and can be selected by setting
-  `method='pyscf'` in :func:`~.molecular_hamiltonian`.
+* The 6-31G basis set is added to the qchem basis set repo. This addition allows performing 
+  differentiable Hartree-Fock calculations with basis sets beyond the minimal sto-3g basis set
+  for atoms with atomic number 1-10.
+  [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
 
-  ```python
-  symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]])
-  hamiltonian, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, method='pyscf')
-  ```
-
-  Summary of QChem changes:
-  - New functions are added for computing multipole moment molecular integrals
-  - New functions are added for building a differentiable dipole moment observable
-  - External dependencies are replaced with local functions for spin and particle number observables
-  - New functions are added for building fermionic and qubit observables
-  - A new module is created for hosting openfermion to pennylane observable conversion functions
-  - Expressive names are used for the Hartree-Fock solver functions
-  - These new additions are added to a feature branch
-  - The efficiency of computing molecular integrals and Hamiltonian is improved
-  - The qchem and new hf modules are merged
-  - The 6-31G basis set is added to the qchem basis set repo
-  - The dependency on openbabel is removed
-  - The tapering functions are added to qchem
-  - Differentiable and non-differentiable backends can be selected for building a Hamiltonian
-  - The quantum chemistry functionalities are unified
+* External dependencies are replaced with local functions for spin and particle number observables. 
+  [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
+  [(#2362)](https://github.com/PennyLaneAI/pennylane/pull/2362)
 
 <h4>Pattern matching optimization 🔎 💎 </h4>
 
