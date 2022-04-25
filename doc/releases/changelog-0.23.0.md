@@ -213,7 +213,7 @@
       return qml.expval(qml.PauliX(wires=0))
   ```
 
-  Therefore we use the following pattern that implements the identity:
+  We specify use the following pattern that implements the identity:
 
   ```python
   with qml.tape.QuantumTape() as pattern:
