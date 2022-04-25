@@ -340,7 +340,6 @@
 
 * `QuantumTape` objects are now iterable, allowing iteration over the
   contained operations and measurements.
-  seamless.
   [(#2342)](https://github.com/PennyLaneAI/pennylane/pull/2342)
 
   ```python
