@@ -319,6 +319,8 @@ def pattern_matching(circuit_dag, pattern_dag):
     [[0, 5], [1, 7]]
     [[0, 7], [1, 5]]
 
+    .. seealso:: :func:`~.pattern_matching_optimization`
+
     **Reference:**
 
     [1] Iten, R., Moyard, R., Metger, T., Sutter, D. and Woerner, S., 2022.
