@@ -329,6 +329,13 @@
       qml.PhaseShift(param, wires=0)
       return qml.probs(wires=[0, 1, 2, 3])
   ```
+  ```pycon
+  >>> print(qml.draw(circuit)(0.3))
+  0: ─╭C───────╭C──────────╭C──Rϕ(0.30)─┤ ╭Probs
+  1: ─╰X─╭SWAP─╰X────╭SWAP─╰X───────────┤ ├Probs
+  2: ────╰SWAP─╭SWAP─╰SWAP──────────────┤ ├Probs
+  3: ──────────╰SWAP────────────────────┤ ╰Probs
+  ```
 
 <h3>Improvements</h3>
 
