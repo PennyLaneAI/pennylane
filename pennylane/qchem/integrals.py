@@ -165,7 +165,7 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
 
         E_0^{00} = e^{-qr^2},
 
-    and :math:`E_t^{ij} = 0` is :math:`t < 0` or :math:`t > (i+j)`.
+    and :math:`E_t^{ij} = 0` if :math:`t < 0` or :math:`t > (i+j)`.
 
     Args:
         la (integer): angular momentum component for the first Gaussian function
@@ -260,8 +260,8 @@ def overlap_integral(basis_a, basis_b):
     r"""Return a function that computes the overlap integral for two contracted Gaussian functions.
 
     Args:
-        basis_a (BasisFunction): first basis function
-        basis_b (BasisFunction): second basis function
+        basis_a (~qchem.basis_set.BasisFunction): first basis function
+        basis_b (~qchem.basis_set.BasisFunction): second basis function
 
     Returns:
         function: function that computes the overlap integral
@@ -270,7 +270,7 @@ def overlap_integral(basis_a, basis_b):
 
     >>> symbols  = ['H', 'H']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
-    >>> mol = qml.hf.Molecule(symbols, geometry)
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> args = []
     >>> overlap_integral(mol.basis_set[0], mol.basis_set[0])(*args)
     1.0
@@ -447,8 +447,8 @@ def moment_integral(basis_a, basis_b, order, idx):
     can be :math:`0, 1, 2` for :math:`x, y, z` components, respectively.
 
     Args:
-        basis_a (BasisFunction): left basis function
-        basis_b (BasisFunction): right basis function
+        basis_a (~qchem.basis_set.BasisFunction): left basis function
+        basis_b (~qchem.basis_set.BasisFunction): right basis function
         order (integer): exponent of the position component
         idx (integer): index determining the dimension of the multipole moment integral
 
@@ -459,7 +459,7 @@ def moment_integral(basis_a, basis_b, order, idx):
 
     >>> symbols  = ['H', 'Li']
     >>> geometry = np.array([[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]], requires_grad = True)
-    >>> mol = qml.hf.Molecule(symbols, geometry)
+    >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> args = [mol.r] # initial values of the differentiable parameters
     >>> order, idx =  1, 0
     >>> moment_integral(mol.basis_set[0], mol.basis_set[1], order, idx)(*args)
@@ -618,8 +618,8 @@ def kinetic_integral(basis_a, basis_b):
     r"""Return a function that computes the kinetic integral for two contracted Gaussian functions.
 
     Args:
-        basis_a (BasisFunction): first basis function
-        basis_b (BasisFunction): second basis function
+        basis_a (~qchem.basis_set.BasisFunction): first basis function
+        basis_b (~qchem.basis_set.BasisFunction): second basis function
 
     Returns:
         function: function that computes the kinetic integral
@@ -630,7 +630,7 @@ def kinetic_integral(basis_a, basis_b):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [mol.alpha]
     >>> kinetic_integral(mol.basis_set[0], mol.basis_set[1])(*args)
     0.38325367405312843
@@ -821,8 +821,8 @@ def attraction_integral(r, basis_a, basis_b):
 
     Args:
         r (array[float]): position vector of nucleus
-        basis_a (BasisFunction): first basis function
-        basis_b (BasisFunction): second basis function
+        basis_a (~qchem.basis_set.BasisFunction): first basis function
+        basis_b (~qchem.basis_set.BasisFunction): second basis function
 
     Returns:
         function: function that computes the electron-nuclear attraction integral
@@ -833,7 +833,7 @@ def attraction_integral(r, basis_a, basis_b):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> basis_a = mol.basis_set[0]
     >>> basis_b = mol.basis_set[1]
     >>> args = [mol.alpha]
@@ -887,7 +887,7 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
     r"""Compute the electron-electron repulsion integral between four primitive Gaussian functions.
 
     The electron repulsion integral between four Gaussian functions denoted by :math:`a`, :math:`b`
-    , :math:`c` and :math:`d` can be computed as
+    , :math:`c` and :math:`d` is computed as
     [`Helgaker (1995) p820 <https://www.worldscientific.com/doi/abs/10.1142/9789812832115_0001>`_]
 
     .. math::
@@ -961,10 +961,10 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d):
     Gaussian functions.
 
     Args:
-        basis_a (BasisFunction): first basis function
-        basis_b (BasisFunction): second basis function
-        basis_c (BasisFunction): third basis function
-        basis_d (BasisFunction): fourth basis function
+        basis_a (~qchem.basis_set.BasisFunction): first basis function
+        basis_b (~qchem.basis_set.BasisFunction): second basis function
+        basis_c (~qchem.basis_set.BasisFunction): third basis function
+        basis_d (~qchem.basis_set.BasisFunction): fourth basis function
     Returns:
         function: function that computes the electron repulsion integral
 
@@ -976,7 +976,7 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d):
     >>>                   [3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404],
     >>>                   [3.425250914, 0.6239137298, 0.168855404]], requires_grad = True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> basis_a = mol.basis_set[0]
     >>> basis_b = mol.basis_set[1]
     >>> args = [mol.alpha]
