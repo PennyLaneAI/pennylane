@@ -293,7 +293,7 @@ def pattern_matching(circuit_dag, pattern_dag):
             qml.S(wires=2)
             return qml.expval(qml.PauliX(wires=0))
 
-    where we want to find all maximal matches of a pattern containing a sequence of two ``pennylane.S`` gates and
+    Assume that we want to find all maximal matches of a pattern containing a sequence of two :class:`~.S` gates and
     a ``pennylane.PauliZ`` gate:
 
     .. code-block:: python
