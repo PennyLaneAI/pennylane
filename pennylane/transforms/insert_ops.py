@@ -21,7 +21,6 @@ from typing import Type, Union
 from pennylane import Device, apply
 from pennylane.operation import Operation
 from pennylane.tape import QuantumTape
-from pennylane.ops.qubit.state_preparation import state_prep_ops
 from pennylane.transforms.qfunc_transforms import qfunc_transform
 
 # pylint: disable=too-many-branches
@@ -221,7 +220,7 @@ def insert(
     if not isinstance(op_args, Sequence):
         op_args = [op_args]
 
-    num_preps = sum(o.base_name in state_prep_ops for o in circuit.operations)
+    num_preps = len(circuit._prep)
 
     for i in range(num_preps):
         apply(circuit.operations[i])

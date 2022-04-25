@@ -20,8 +20,6 @@ import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 
-state_prep_ops = {"BasisState", "QubitStateVector", "QubitDensityMatrix"}
-
 
 class BasisState(Operation):
     r"""BasisState(n, wires)
