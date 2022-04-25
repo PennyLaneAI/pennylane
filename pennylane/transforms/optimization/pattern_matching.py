@@ -303,23 +303,21 @@ def pattern_matching(circuit_dag, pattern_dag):
             qml.S(wires=0)
             qml.PauliZ(wires=0)
 
-    .. code-block:: python
 
-        >>> circuit_dag = qml.commutation_dag(circuit)()
-        >>> pattern_dag = qml.commutation_dag(pattern)()
-        >>> all_max_matches = qml.pattern_matching(circuit_dag, pattern_dag)
+    >>> circuit_dag = qml.commutation_dag(circuit)()
+    >>> pattern_dag = qml.commutation_dag(pattern)()
+    >>> all_max_matches = qml.pattern_matching(circuit_dag, pattern_dag)
 
-        It is possible to access the matches by looping through the list. The first integers indices represent the gates
-        in the pattern and the second intergers the gates in the circuit (by order of appearance).
+    It is possible to access the matches by looping through the list. The first integers indices represent the gates
+    in the pattern and the second intergers the gates in the circuit (by order of appearance).
 
-        >>> for match_conf in all_max_matches:
-        ...     print(match_conf.match)
-
-        [[0, 0], [2, 1]]
-        [[0, 2], [1, 4]]
-        [[0, 4], [1, 2]]
-        [[0, 5], [1, 7]]
-        [[0, 7], [1, 5]]
+    >>> for match_conf in all_max_matches:
+    ...     print(match_conf.match)
+    [[0, 0], [2, 1]]
+    [[0, 2], [1, 4]]
+    [[0, 4], [1, 2]]
+    [[0, 5], [1, 7]]
+    [[0, 7], [1, 5]]
 
     **Reference:**
 
