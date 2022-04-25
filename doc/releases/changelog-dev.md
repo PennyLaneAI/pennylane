@@ -12,6 +12,10 @@
 
 <h3>Improvements</h3>
 
+* The `gradients` module now uses faster subroutines and uniform
+  formats of gradient rules.
+  [(#2452)](https://github.com/XanaduAI/pennylane/pull/2452)
+
 * Wires can be passed as the final argument to an `Operator`, instead of requiring
   the wires to be explicitly specified with keyword `wires`. This functionality already
   existed for `Observable`'s, but now extends to all `Operator`'s.
