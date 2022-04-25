@@ -230,20 +230,20 @@
   >>> qnode = qml.QNode(circuit, dev)
   >>> optimized_qfunc = qml.transforms.pattern_matching_optimization(pattern_tapes=[pattern])(circuit)
   >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
-
   >>> print(qml.draw(qnode)())
   0: ──S──Z─╭C──────────┤  <X>
   1: ──S────╰Z──S─╭C────┤
   2: ──S──────────╰Z──S─┤
-
   >>> print(qml.draw(optimized_qnode)())
   0: ──S⁻¹─╭C────┤  <X>
   1: ──Z───╰Z─╭C─┤
   2: ──Z──────╰Z─┤
   ```
 
-  For more details on using pattern matching optimization you can check the corresponding documentation and also the
-  following [paper](https://dl.acm.org/doi/full/10.1145/3498325).
+  For more details on using pattern matching optimization you can check the
+  [corresponding
+  documentation](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.pattern_matching_optimization.html)
+  and also the following [paper](https://dl.acm.org/doi/full/10.1145/3498325).
 
 <h4>Measure the distance between two unitaries📏</h4>
 
