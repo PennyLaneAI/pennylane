@@ -628,14 +628,12 @@
   in which the observable is defined:
   [(#2276)](https://github.com/PennyLaneAI/pennylane/pull/2276)
   ```pycon
-  @qml.qnode(dev)
-  def circ(op):
-    qml.RX(0.12, wires=0)
-    qml.RX(1.34, wires=1)
-    qml.RX(3.67, wires=2)
-
-    return qml.expval(op)
-
+  >>> @qml.qnode(dev)
+  ... def circ(op):
+  ...   qml.RX(0.12, wires=0)
+  ...   qml.RX(1.34, wires=1)
+  ...   qml.RX(3.67, wires=2)
+  ...   return qml.expval(op)
   >>> op1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
   >>> op2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
   >>> print(circ(op1), circ(op2))
