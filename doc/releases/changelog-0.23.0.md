@@ -73,8 +73,7 @@
 
   The `cut_circuit_mc` transform also supports returning sample-based
   expectation values of observables using the `classical_processing_fn`
-  argument. Refer to the `UsageDetails` section of the [`cut_circuit_mc`
-  transform
+  argument. Refer to the `UsageDetails` section of the [transform
   documentation](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.cut_circuit_mc.html)
   for an example.
 
@@ -88,7 +87,7 @@
   Note that `KaHyPar` needs to be installed separately with the `auto_cutter=True` option.
 
   For integration with the  existing low-level manual cut pipeline, refer to
-  the [documentation of the qcut.find_and_place_cuts
+  the [documentation of the
   function](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.qcut.find_and_place_cuts.html)
   .
   ```pycon
