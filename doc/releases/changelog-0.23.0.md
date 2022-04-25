@@ -78,16 +78,19 @@
   documentation](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.cut_circuit_mc.html)
   for an example.
 
-* Added the automatic graph partitioning method `qcut.kahypar_cut()` for cutting
-  arbitrary tape-converted graphs using the general purpose graph partitioning framework
+* The `cut_circuit` transform now supports automatic graph partitioning by
+  specifying `auto_cutter=True` to cut arbitrary tape-converted graphs using
+  the general purpose graph partitioning framework
   [KaHyPar](https://pypi.org/project/kahypar/).
   [(#2330)](https://github.com/PennyLaneAI/pennylane/pull/2330)
   [(#2428)](https://github.com/PennyLaneAI/pennylane/pull/2428)
 
-  Note that `KaHyPar` needs to be installed separately.
+  Note that `KaHyPar` needs to be installed separately with the `auto_cutter=True` option.
 
   For integration with the  existing low-level manual cut pipeline, refer to
-  the `qcut.find_and_place_cuts()` function.
+  the [documentation of the `qcut.find_and_place_cuts`
+  function](https://pennylane.readthedocs.io/en/latest/code/api/pennylane.transforms.qcut.find_and_place_cuts.html)
+  .
   ```pycon
   @qml.cut_circuit(auto_cutter=True)
   @qml.qnode(dev)
