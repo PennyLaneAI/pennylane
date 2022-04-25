@@ -1603,6 +1603,7 @@ def _to_tensors(
     results,
     prepare_nodes: Sequence[Sequence[PrepareNode]],
     measure_nodes: Sequence[Sequence[MeasureNode]],
+    meas_positions: Optional[Tuple[List[int], List[List[int]]]] = None,
 ) -> List:
     """Process a flat list of execution results from all circuit fragments into the corresponding
     tensors.
@@ -1622,24 +1623,38 @@ def _to_tensors(
         measure_nodes (Sequence[Sequence[MeasureNode]]): a sequence whose length is equal to the
             number of circuit fragments, with each element used here to determine the number of
             measurement nodes in a given fragment
+        meas_positions (Tuple[List[int], List[List[int]]]): optional data required for cutting
+            circuits that have multiple Pauli word measurements
 
     Returns:
-        List[tensor_like]: the tensors for each circuit fragment in the communication graph
+        List[tensor_like] or List[List[tensor_like]]: the tensors for each circuit fragment in the
+        communication graph, or if ``meas_positions`` is provided, a list over fragments
+        containing lists over measurements whose elements are the tensors
     """
+    frag_meas_positions = [[1] * len(prepare_nodes)] if meas_positions is None else meas_positions[1]
+
     ctr = 0
     tensors = []
 
-    for p, m in zip(prepare_nodes, measure_nodes):
-        n_prep = len(p)
-        n_meas = len(m)
-        n = n_prep + n_meas
+    for p, m, pos in zip(prepare_nodes, measure_nodes, frag_meas_positions):
+        tensors_per_measurement = []
 
-        dim = 4**n
-        results_slice = results[ctr : dim + ctr]
+        for _ in range(len(pos)):
+            n_prep = len(p)
+            n_meas = len(m)
+            n = n_prep + n_meas
 
-        tensors.append(_process_tensor(results_slice, n_prep, n_meas))
+            dim = 4**n
 
-        ctr += dim
+            results_slice = results[ctr : dim + ctr]
+
+            tensors_per_measurement.append(_process_tensor(results_slice, n_prep, n_meas))
+
+            ctr += dim
+        if len(tensors_per_measurement) == 1:
+            tensors.append(tensors_per_measurement[0])
+        else:
+            tensors.append(tensors_per_measurement)
 
     if results.shape[0] != ctr:
         raise ValueError(f"The results argument should be a flat list of length {ctr}")
@@ -1653,6 +1668,7 @@ def qcut_processing_fn(
     prepare_nodes: Sequence[Sequence[PrepareNode]],
     measure_nodes: Sequence[Sequence[MeasureNode]],
     use_opt_einsum: bool = False,
+    meas_positions: Optional[Tuple[List[int], List[List[int]]]] = None,
 ):
     """Processing function for the :func:`cut_circuit() <pennylane.cut_circuit>` transform.
 
@@ -1678,6 +1694,8 @@ def qcut_processing_fn(
             for faster tensor contractions of large networks but must be installed separately using,
             e.g., ``pip install opt_einsum``. Both settings for ``use_opt_einsum`` result in a
             differentiable contraction.
+        meas_positions (Tuple[List[int], List[List[int]]]): optional data required for cutting
+            circuits that have multiple Pauli word measurements
 
     Returns:
         float or tensor_like: the output of the original uncut circuit arising from contracting
@@ -1685,7 +1703,7 @@ def qcut_processing_fn(
     """
     flat_results = qml.math.concatenate(results)
 
-    tensors = _to_tensors(flat_results, prepare_nodes, measure_nodes)
+    tensors = _to_tensors(flat_results, prepare_nodes, measure_nodes, meas_positions)
     result = contract_tensors(
         tensors, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum
     )
@@ -2033,6 +2051,10 @@ def cut_circuit(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f, total_measurements=total_measurements) for f in fragments]
+    for t in fragment_tapes:
+        print(t.draw())
+        print(t.measurements)
+        print()
     fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
@@ -2047,14 +2069,18 @@ def cut_circuit(
     tapes = tuple(tape for c in configurations for tape in c)
 
     if all_pauli_words and total_measurements > 1:
-        all_meas_positions = sorted(
-            n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess))
+        all_meas_positions = sorted(set(
+            n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess)))
         fragment_meas_positions = [
-            sorted(n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess)) for
+            sorted(set(n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess))) for
             g in fragments]
         for pos in fragment_meas_positions:
             if len(pos) < total_measurements:
                 pos.append(-1)  # -1 denotes an identity measurement
+
+        meas_positions =(all_meas_positions, fragment_meas_positions)
+    else:
+        meas_positions = None
 
     return tapes, partial(
         qcut_processing_fn,
@@ -2062,6 +2088,7 @@ def cut_circuit(
         prepare_nodes=prepare_nodes,
         measure_nodes=measure_nodes,
         use_opt_einsum=use_opt_einsum,
+        meas_positions=meas_positions,
     )
 
 
