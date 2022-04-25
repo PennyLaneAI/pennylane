@@ -150,16 +150,34 @@
   [(#2173)](https://github.com/PennyLaneAI/pennylane/pull/2173)
   [(#2166)](https://github.com/PennyLaneAI/pennylane/pull/2166)
 
+  The dipole moment observable can be constructed using `qml.qchem.dipole_moment`:
+
+  ```python
+  symbols  = ['H', 'H']
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+  mol = qml.qchem.Molecule(symbols, geometry)
+  args = [geometry]
+  D = qml.qchem.dipole_moment(mol)(*args)
+  ```
+  
 * The efficiency of computing molecular integrals and Hamiltonian is improved. This has been done 
   by adding optimized functions for building fermionic and qubit observables and optimizing 
   the functions used for computing the electron repulsion integrals.
   [(#2316)](https://github.com/PennyLaneAI/pennylane/pull/2316)
 
 
-* The 6-31G basis set is added to the qchem basis set repo. This addition allows performing 
-  differentiable Hartree-Fock calculations with basis sets beyond the minimal sto-3g basis set
-  for atoms with atomic number 1-10.
+* The `6-31G` basis set is added to the qchem basis set repo. This addition allows performing 
+  differentiable Hartree-Fock calculations with basis sets beyond the minimal `sto-3g` basis set
+  for atoms with atomic number 1-10. 
   [(#2372)](https://github.com/PennyLaneAI/pennylane/pull/2372)
+
+  The `6-31G` basis set can be usd to construct a Hamiltonian as  
+
+  ```python
+  symbols = ["H", "H"]
+  geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+  H, qubits = qml.qchem.molecular_hamiltonian(symbols, geometry, basis="6-31g")
+  ```
 
 * External dependencies are replaced with local functions for spin and particle number observables. 
   [(#2197)](https://github.com/PennyLaneAI/pennylane/pull/2197)
