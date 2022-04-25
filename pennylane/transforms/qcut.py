@@ -734,7 +734,7 @@ def expand_fragment_tapes_mc(
 
     Returns:
         Tuple[List[QuantumTape], np.ndarray]: the tapes corresponding to each configuration and the
-            settings that track each configuration pair
+        settings that track each configuration pair
 
     **Example**
 

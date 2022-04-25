@@ -537,9 +537,7 @@ class Operator(abc.ABC):
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        return (cls.compute_matrix != Operator.compute_matrix) or (
-            cls.get_matrix != Operator.get_matrix
-        )
+        return cls.compute_matrix != Operator.compute_matrix
 
     @property
     def matrix(self):
