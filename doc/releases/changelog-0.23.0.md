@@ -380,7 +380,7 @@
 
 * Added the `QuantumTape.shape` method and `QuantumTape.numeric_type`
   attribute to allow extracting information about the shape and numeric type of
-  quantum tapes.
+  the output returned by a quantum tape after execution.
   [(#2044)](https://github.com/PennyLaneAI/pennylane/pull/2044)
 
 * Defined a `MeasurementProcess.shape` method and a
