@@ -600,6 +600,7 @@
 * Fixed a bug where observables were not considered when determining the use of
   the `jax-jit` interface.
   [(#2427)](https://github.com/PennyLaneAI/pennylane/pull/2427)
+  [(#2474)](https://github.com/PennyLaneAI/pennylane/pull/2474)
 
 * Fixed a bug where computing statistics for a relatively few number of shots
   (e.g., `shots=10`), an error arose due to indexing into an array using a
