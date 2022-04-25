@@ -516,7 +516,7 @@
   `qml.matrix` instead.
   [(#2457)](https://github.com/PennyLaneAI/pennylane/pull/2457)
 
-* The `update_stepsize` method is being deleted from `GradientDescentOptimizer` and its child
+* The `update_stepsize` method has been removed from `GradientDescentOptimizer` and its child
   optimizers.  The `stepsize` property can be interacted with directly instead.
   [(#2370)](https://github.com/PennyLaneAI/pennylane/pull/2370)
 
@@ -524,21 +524,21 @@
   provided gradient functions *must* return the same shape as `qml.grad`.
   [(#2381)](https://github.com/PennyLaneAI/pennylane/pull/2381)
 
-* The old circuit text drawing infrastructure is being deleted.
+* The old circuit text drawing infrastructure has been removed.
   [(#2310)](https://github.com/PennyLaneAI/pennylane/pull/2310)
 
-  - `qml.drawer.CircuitDrawer` is replaced by `qml.drawer.tape_text`.
-  - `qml.drawer.CHARSETS` is deleted because we now assume everyone has access to unicode.
-  - `Grid` and `qml.drawer.drawable_grid` are removed because the custom data class is replaced
+  - `qml.drawer.CircuitDrawer` was replaced by `qml.drawer.tape_text`.
+  - `qml.drawer.CHARSETS` was removed because unicode is assumed to be accessible.
+  - `Grid` and `qml.drawer.drawable_grid` were removed because the custom data class was replaced
     by list of sets of operators or measurements.
-  - `RepresentationResolver` is replaced by the `Operator.label` method.
-  - `qml.transforms.draw_old` is replaced by `qml.draw`.
-  - `qml.CircuitGraph.greedy_layers` is deleted, as it is no longer needed by the circuit drawer and
-    does not seem to have uses outside of that situation.
-  - `qml.CircuitGraph.draw` has been deleted, as we draw tapes instead.
+  - `RepresentationResolver` was replaced by the `Operator.label` method.
+  - `qml.transforms.draw_old` was replaced by `qml.draw`.
+  - `qml.CircuitGraph.greedy_layers` was deleted, as it was no longer needed by the circuit drawer and
+    did not seem to have uses outside of that situation.
+  - `qml.CircuitGraph.draw` was deleted, as we draw tapes instead.
   - The tape method `qml.tape.QuantumTape.draw` now simply calls `qml.drawer.tape_text`.
-  - In the new pathway, the `charset` keyword is deleted, the `max_length` keyword defaults to `100`, and
-    the `decimals` and `show_matrices` keywords are added.
+  - In the new pathway, the `charset` keyword was deleted, the `max_length` keyword defaults to `100`, and
+    the `decimals` and `show_matrices` keywords were added.
 
 * The deprecated QNode, available via `qml.qnode_old.QNode`, has been removed. Please
   transition to using the standard `qml.QNode`.
