@@ -428,7 +428,8 @@ class QuantumTape(AnnotatedQueue):
     # construction methods
     # ========================================================
 
-    # Tapes may be nested.  Nested tapes should be processed into the `_ops` list.
+    # This is a temporary attribute to fix the operator queuing behaviour.
+    # Tapes may be nested and therefore processed into the `_ops` list.
     _queue_category = "_ops"
 
     def _process_queue(self):

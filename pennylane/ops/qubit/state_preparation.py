@@ -59,6 +59,7 @@ class BasisState(Operation):
 
     grad_method = None
 
+    # This is a temporary attribute to fix the operator queuing behaviour
     _queue_category = "_prep"
 
     @staticmethod
@@ -127,6 +128,7 @@ class QubitStateVector(Operation):
 
     grad_method = None
 
+    # This is a temporary attribute to fix the operator queuing behaviour
     _queue_category = "_prep"
 
     @staticmethod
@@ -210,6 +212,7 @@ class QubitDensityMatrix(Operation):
 
     grad_method = None
 
+    # This is a temporary attribute to fix the operator queuing behaviour
     _queue_category = "_prep"
 
     def adjoint(self):
