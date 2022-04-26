@@ -1637,25 +1637,36 @@ def _to_tensors(
     tensors = []
 
     for p, m, pos in zip(prepare_nodes, measure_nodes, frag_meas_positions):
-        tensors_per_measurement = []
+        n_meas_fixed = len(pos)
+        n_prep = len(p)
+        n_meas = len(m)
+        n = n_prep + n_meas
 
-        for _ in range(len(pos)):
-            n_prep = len(p)
-            n_meas = len(m)
-            n = n_prep + n_meas
+        dim = 4 ** n * n_meas_fixed
 
-            dim = 4**n
+        results_slice = results[ctr: dim + ctr]
+        results_per_measurement = [[] for _ in range(n_meas_fixed)]
 
-            results_slice = results[ctr : dim + ctr]
+        ctr_stride = 0
+        ctr_inner = 0
 
-            tensors_per_measurement.append(_process_tensor(results_slice, n_prep, n_meas))
+        while ctr_inner < dim:
+            stride = 2 if ctr_stride % 3 == 0 else 1
+            ctr_stride += 1
 
-            ctr += dim
+            for i in range(n_meas_fixed):
+                results_per_measurement[i].extend(results_slice[ctr_inner:ctr_inner+stride])
+                ctr_inner += stride
+
+        # print(results_slice)
+        print(np.round(np.array(results_per_measurement[0]), 6))
+        # print(np.allclose(results_slice, results_per_measurement))
+        tensors_per_measurement = [_process_tensor(r, n_prep, n_meas) for r in results_per_measurement]
         tensors.append(tensors_per_measurement)
 
-    if results.shape[0] != ctr:
-        raise ValueError(f"The results argument should be a flat list of length {ctr}")
-
+    # if results.shape[0] != ctr:
+    #     raise ValueError(f"The results argument should be a flat list of length {ctr}")
+    # print(tensors)
     return tensors
 
 
@@ -2082,7 +2093,8 @@ def cut_circuit(
         measure_nodes.append(m)
 
     tapes = tuple(tape for c in configurations for tape in c)
-
+    # for tape in tapes:
+    #     print(tape.draw())
     if all_pauli_words and total_measurements > 1:
         all_meas_positions = sorted(set(
             n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess)))
