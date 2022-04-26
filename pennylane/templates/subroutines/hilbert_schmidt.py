@@ -59,7 +59,8 @@ class HilbertSchmidt(Operation):
     Quantum-assisted Quantum Compiling.
     `arxiv/1807.00800 <https://arxiv.org/pdf/1807.00800.pdf>`_
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Consider that we want to evaluate the Hilbert-Schmidt Test cost between the unitary ``U`` and an approximate
         unitary ``V``. We need to define some functions where it is possible to use the :class:`~.HilbertSchmidt`
