@@ -241,7 +241,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
             @qml.qnode(dev)
             def local_hilbert_test(v_params, v_function, v_wires, u_tape):
-                qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
+                qml.LocalHilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
                 return qml.probs(u_tape.wires + v_wires)
 
             def cost_lhst(parameters, v_function, v_wires, u_tape):
@@ -249,8 +249,8 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         Now that the cost function has been defined it can be called for specific parameters:
 
-    >>> cost_lhst([3*np.pi/2, 3*np.pi/2, np.pi/2], v_function = v_function, v_wires = [1], u_tape = u_tape)
-    0.5
+        >>> cost_lhst([3*np.pi/2, 3*np.pi/2, np.pi/2], v_function = v_function, v_wires = [1], u_tape = u_tape)
+        0.5
     """
 
     @staticmethod
