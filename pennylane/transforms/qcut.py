@@ -1651,10 +1651,7 @@ def _to_tensors(
             tensors_per_measurement.append(_process_tensor(results_slice, n_prep, n_meas))
 
             ctr += dim
-        if len(tensors_per_measurement) == 1:
-            tensors.append(tensors_per_measurement[0])
-        else:
-            tensors.append(tensors_per_measurement)
+        tensors.append(tensors_per_measurement)
 
     if results.shape[0] != ctr:
         raise ValueError(f"The results argument should be a flat list of length {ctr}")
@@ -1704,8 +1701,30 @@ def qcut_processing_fn(
     flat_results = qml.math.concatenate(results)
 
     tensors = _to_tensors(flat_results, prepare_nodes, measure_nodes, meas_positions)
+
+    all_meas_positions, fragment_meas_positions = meas_positions
+
+    if len(all_meas_positions) > 1:
+        results = []
+        for meas in all_meas_positions:
+            tensors_to_contract = []
+            for ts, positions in zip(tensors, fragment_meas_positions):
+                if meas in positions:
+                    indx = positions.index(meas)
+                else:
+                    indx = positions.index(-1)
+                tensors_to_contract.append(ts[indx])
+
+            result = contract_tensors(
+                tensors_to_contract, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum
+            )
+            results.append(result)
+        return results
+    else:
+        tensors_to_contract = [t[0] for t in tensors]
+
     result = contract_tensors(
-        tensors, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum
+        tensors_to_contract, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum
     )
     return result
 
@@ -2051,10 +2070,6 @@ def cut_circuit(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f, total_measurements=total_measurements) for f in fragments]
-    for t in fragment_tapes:
-        print(t.draw())
-        print(t.measurements)
-        print()
     fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
 
