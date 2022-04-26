@@ -19,8 +19,8 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.ops.arithmetic import Adjoint
 
-class TestInitialization:
 
+class TestInitialization:
     def test_nonparametric_ops(self):
 
         base = qml.PauliX("a")
@@ -28,7 +28,7 @@ class TestInitialization:
         op = Adjoint(base)
 
         assert op.base is base
-        assert op.hyperparameters['base'] is base
+        assert op.hyperparameters["base"] is base
         assert op.name == "Adjoint(PauliX)"
 
         assert op.num_params == 0
@@ -45,7 +45,7 @@ class TestInitialization:
         op = Adjoint(base)
 
         assert op.base is base
-        assert op.hyperparameters['base'] is base
+        assert op.hyperparameters["base"] is base
         assert op.name == "Adjoint(Rot)"
 
         assert op.num_params == 3
@@ -56,12 +56,12 @@ class TestInitialization:
 
     def test_hamiltonian_base(self):
 
-        base = 2.0*qml.PauliX(0) @ qml.PauliY(0) + qml.PauliZ("b")
+        base = 2.0 * qml.PauliX(0) @ qml.PauliY(0) + qml.PauliZ("b")
 
         op = Adjoint(base)
 
         assert op.base is base
-        assert op.hyperparameters['base'] is base
+        assert op.hyperparameters["base"] is base
         assert op.name == "Adjoint(Hamiltonian)"
 
         assert op.num_params == 2
@@ -72,15 +72,14 @@ class TestInitialization:
 
 
 class TestQueueing:
-
     def test_queueing(self):
 
         with qml.tape.QuantumTape() as tape:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
             op = Adjoint(base)
 
-        assert tape._queue[base]['owner'] is op
-        assert tape._queue[op]['owns'] is base
+        assert tape._queue[base]["owner"] is op
+        assert tape._queue[op]["owns"] is base
         assert tape.operations == [op]
 
     def test_queueing_base_defined_outside(self):
@@ -89,14 +88,16 @@ class TestQueueing:
         with qml.tape.QuantumTape() as tape:
             op = Adjoint(base)
 
-        assert tape._queue[base]['owner'] is op
-        assert tape._queue[op]['owns'] is base
+        assert tape._queue[base]["owner"] is op
+        assert tape._queue[op]["owns"] is base
         assert tape.operations == [op]
+
 
 def test_label():
     base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
     op = Adjoint(base)
-    assert op.label(decimals=2) == 'Rot\n(1.23,\n2.35,\n3.46)†'
+    assert op.label(decimals=2) == "Rot\n(1.23,\n2.35,\n3.46)†"
+
 
 def test_has_matrix_true():
 
@@ -105,44 +106,47 @@ def test_has_matrix_true():
 
     assert op.has_matrix
 
+
 def test_has_matrix_false():
     # This will fail till rc bug fix merged in
-    base = qml.QubitStateVector([1,0], wires=0)
+    base = qml.QubitStateVector([1, 0], wires=0)
     op = Adjoint(base)
 
     assert not op.has_matrix
 
+
 def test_control_wires():
 
     op = Adjoint(qml.CNOT(wires=("a", "b")))
-    assert op.control_wires == qml.wires.Wires('a')
+    assert op.control_wires == qml.wires.Wires("a")
+
 
 def test_adjoint_of_adjoint():
 
     base = qml.PauliX(0)
     op = Adjoint(base)
-    
+
     assert op.adjoint() is base
+
 
 def test_diagonalizing_gates():
     base = qml.Hadamard(0)
     diag_gate = Adjoint(base).diagonalizing_gates()[0]
 
     assert isinstance(diag_gate, qml.RY)
-    assert qml.math.allclose(diag_gate.data[0], -np.pi/4) 
+    assert qml.math.allclose(diag_gate.data[0], -np.pi / 4)
+
 
 class TestMatrix:
-
     def check_matrix(self, x, interface):
         base = qml.RX(x, wires=0)
         base_matrix = base.get_matrix()
         expected = qml.math.conj(qml.math.transpose(base_matrix))
 
         mat = Adjoint(base).get_matrix()
-        
+
         assert qml.math.allclose(expected, mat)
         assert qml.math.get_interface(mat) == interface
-
 
     def test_matrix_autograd(self):
         self.check_matrix(np.array(1.2345), "autograd")
@@ -163,15 +167,16 @@ class TestMatrix:
         self.check_matrix(tf.Variable(1.2345), "tensorflow")
 
     def test_no_matrix_defined(self):
-        base = qml.QubitStateVector([1,0], wires=0)
-        
+        base = qml.QubitStateVector([1, 0], wires=0)
+
         with pytest.raises(qml.operation.MatrixUndefinedError):
             Adjoint(base).get_matrix()
 
 
 class TestEigvals:
-
-    @pytest.mark.parametrize("base", (qml.PauliX(0), qml.Hermitian(np.array([[6+0j, 1-2j],[1+2j, -1]]), wires=0)))
+    @pytest.mark.parametrize(
+        "base", (qml.PauliX(0), qml.Hermitian(np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]]), wires=0))
+    )
     def test_hermitian_eigvals(self, base):
         base_eigvals = base.get_eigvals()
         adj_eigvals = Adjoint(base).get_eigvals()
@@ -180,17 +185,17 @@ class TestEigvals:
     def test_non_hermitian_eigvals(self):
 
         adj_eigvals = Adjoint(qml.SX(0)).get_eigvals()
-        assert adj_eigvals == [1-0j, -1j]
+        assert adj_eigvals == [1 - 0j, -1j]
 
     def test_no_matrix_defined_eigvals(self):
 
-        base = qml.QubitStateVector([1,0], wires=0)
+        base = qml.QubitStateVector([1, 0], wires=0)
 
         with pytest.raises(qml.operation.EigvalsUndefinedError):
             Adjoint(base).get_eigvals()
 
-class TestDecomposition:
 
+class TestDecomposition:
     def test_decomp_custom_adjoint_defined(self):
 
         decomp = Adjoint(qml.Hadamard(0)).decomposition()
@@ -211,9 +216,9 @@ class TestDecomposition:
     def test_no_base_gate_decomposition(self):
 
         nr_wires = 2
-        rho = np.zeros((2 ** nr_wires, 2 ** nr_wires), dtype=np.complex128)
+        rho = np.zeros((2**nr_wires, 2**nr_wires), dtype=np.complex128)
         rho[0, 0] = 1  # initialize the pure state density matrix for the |0><0| state
-        base = qml.QubitDensityMatrix(rho, wires=(0,1))
+        base = qml.QubitDensityMatrix(rho, wires=(0, 1))
 
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             Adjoint(base).decomposition()

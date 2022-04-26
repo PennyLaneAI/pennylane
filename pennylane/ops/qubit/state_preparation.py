@@ -146,6 +146,7 @@ class QubitStateVector(Operation):
         """
         return [MottonenStatePreparation(state, wires)]
 
+
 class QubitDensityMatrix(Operation):
     r"""QubitDensityMatrix(state, wires)
     Prepare subsystems using the given density matrix.

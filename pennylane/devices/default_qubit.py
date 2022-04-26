@@ -112,7 +112,7 @@ class DefaultQubit(QubitDevice):
         "ISWAP",
         "Adjoint(ISWAP)",
         "SISWAP",
-        "Adjoint(SISWAP)"
+        "Adjoint(SISWAP)",
         "SQISW",
         "CSWAP",
         "Toffoli",
@@ -249,7 +249,9 @@ class DefaultQubit(QubitDevice):
 
         if operation.__class__.__name__ in self._apply_ops:
             axes = self.wires.indices(wires)
-            return self._apply_ops[operation.__class__.__name__](state, axes, inverse=operation.inverse)
+            return self._apply_ops[operation.__class__.__name__](
+                state, axes, inverse=operation.inverse
+            )
 
         matrix = self._get_unitary_matrix(operation)
 

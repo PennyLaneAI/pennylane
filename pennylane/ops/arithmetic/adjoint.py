@@ -18,20 +18,6 @@ from pennylane.operation import Operator, Operation, AnyWires, AdjointUndefinedE
 from pennylane.queuing import QueuingContext, QueuingError
 from pennylane.math import transpose, conj
 
-def adjoint(op):
-    try:
-        new_op = op.adjoint()
-    except AdjointUndefinedError:
-        return Adjoint(op)
-
-    try:
-        QueuingContext.update_info(op, owner = new_op)
-    except QueuingError:
-        op.queue(QueuingContext)
-        QueuingContext.update_info(op, owner = new_op)
-    QueuingContext.update_info(new_op, owns=op)
-    return new_op
-
 
 class Adjoint(Operator):
     """
@@ -39,7 +25,7 @@ class Adjoint(Operator):
 
     Args:
         base (~.operation.Operator): The operator that is adjointed.
-    
+
     **Example:**
 
     >>> op = Adjoint(qml.S(0))
@@ -59,7 +45,7 @@ class Adjoint(Operator):
 
     def __init__(self, base=None, do_queue=True, id=None):
         self.base = base
-        self.hyperparameters['base'] = base
+        self.hyperparameters["base"] = base
         super().__init__(*base.parameters, wires=base.wires, do_queue=do_queue, id=id)
         self._name = f"Adjoint({self.base.name})"
 
@@ -75,14 +61,14 @@ class Adjoint(Operator):
         return self
 
     def label(self, decimals=None, base_label=None):
-        return self.base.label(decimals, base_label)+"†"
-    
+        return self.base.label(decimals, base_label) + "†"
+
     @staticmethod
     def compute_matrix(*params, base=None):
 
         base_matrix = base.compute_matrix(*params, **base.hyperparameters)
         return transpose(conj(base_matrix))
-    
+
     @staticmethod
     def compute_decomposition(*params, wires, base=None):
         try:
@@ -90,11 +76,11 @@ class Adjoint(Operator):
         except AdjointUndefinedError:
             base_decomp = base.compute_decomposition(*params, wires, **base.hyperparameters)
             return [Adjoint(op) for op in reversed(base_decomp)]
-        
+
     def sparse_matrix(self, wires=None):
         base_matrix = self.base.sparse_matrix(wires=wires)
         return transpose(conj(base_matrix))
-    
+
     def get_eigvals(self):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``get_eigvals``
         return [conj(x) for x in self.base.get_eigvals()]
@@ -102,7 +88,6 @@ class Adjoint(Operator):
     @staticmethod
     def compute_diagonalizing_gates(*params, wires, base=None):
         return base.compute_diagonalizing_gates(*params, wires, **base.hyperparameters)
-
 
     @property
     def has_matrix(self):
@@ -137,7 +122,7 @@ class Adjoint(Operator):
         return self.base.parameter_frequencies
 
     def generator(self):
-        if isinstance(self.base, Operation): # stand in for being unitary and inverse=adjoint
+        if isinstance(self.base, Operation):  # stand in for being unitary and inverse=adjoint
             return -1.0 * self.base.generator()
         return super().generator()
 

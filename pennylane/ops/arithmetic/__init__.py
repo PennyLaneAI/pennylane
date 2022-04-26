@@ -16,4 +16,4 @@ This module contains classes and functions for Operator arithmetic.
 
 """
 
-from .adjoint import Adjoint, adjoint
+from .adjoint import Adjoint

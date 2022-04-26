@@ -14,8 +14,27 @@
 """Code for the adjoint transform."""
 from collections.abc import Sequence
 from functools import wraps
-import pennylane as qml
+
+
+from pennylane.operation import Operator, AdjointUndefinedError
+from pennylane.queuing import QueuingContext, QueuingError
 from pennylane.tape import QuantumTape, stop_recording
+from pennylane.ops.arithmetic import Adjoint
+
+
+def _single_op_adjoint(op):
+    try:
+        new_op = op.adjoint()
+    except AdjointUndefinedError:
+        return Adjoint(op)
+
+    try:
+        QueuingContext.update_info(op, owner=new_op)
+    except QueuingError:
+        pass
+    if QueuingContext.recording():
+        QueuingContext.update_info(new_op, owns=op)
+    return new_op
 
 
 def adjoint(fn):
@@ -24,7 +43,8 @@ def adjoint(fn):
     This transform can be used to apply the adjoint of an arbitrary sequence of operations.
 
     Args:
-        fn (function): A quantum function that applies quantum operations.
+        fn (function, ~.operation.Operator): A single operator or a quantum function that
+            applies quantum operations.
 
     Returns:
         function: A new function that will apply the same operations but adjointed and in reverse order.
@@ -109,7 +129,10 @@ def adjoint(fn):
         >>> print(qml.draw(circuit)())
         0: ──RX(0.12)──RX(-0.12)─┤  <Z>
     """
-    if not callable(fn):
+    if isinstance(fn, Operator):
+        return _single_op_adjoint(fn)
+
+    elif not callable(fn):
         raise ValueError(
             f"The object {fn} of type {type(fn)} is not callable. "
             "This error might occur if you apply adjoint to a list "
@@ -125,26 +148,8 @@ def adjoint(fn):
             # we called op.expand(): get the outputted tape
             tape = res
 
-        adjoint_ops = []
-        for op in reversed(tape.operations):
-            try:
-                new_op = op.adjoint()
-                adjoint_ops.append(new_op)
-            except qml.operation.AdjointUndefinedError:
-                # Expand the operation and adjoint the result.
-                new_ops = adjoint(op.expand)()
+        adjoint_ops = [_single_op_adjoint(op) for op in reversed(tape.operations)]
 
-                if isinstance(new_ops, QuantumTape):
-                    new_ops = new_ops.operations
-
-                if not isinstance(new_ops, Sequence):
-                    new_ops = [new_ops]
-
-                adjoint_ops.extend(new_ops)
-
-        if len(adjoint_ops) == 1:
-            adjoint_ops = adjoint_ops[0]
-
-        return adjoint_ops
+        return adjoint_ops[0] if len(adjoint_ops) == 1 else adjoint_ops
 
     return wrapper

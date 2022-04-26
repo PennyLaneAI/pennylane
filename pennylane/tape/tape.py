@@ -476,7 +476,7 @@ class QuantumTape(AnnotatedQueue):
 
                 # invert the operation if required
                 if isinstance(obj, qml.operation.Operation):
-                     obj.inverse = info.get("inverse", obj.inverse)
+                    obj.inverse = info.get("inverse", obj.inverse)
 
                 if isinstance(obj, STATE_PREP_OPS):
                     if self._ops:
