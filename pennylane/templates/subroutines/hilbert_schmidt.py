@@ -59,6 +59,8 @@ class HilbertSchmidt(Operation):
     Quantum-assisted Quantum Compiling.
     `arxiv/1807.00800 <https://arxiv.org/pdf/1807.00800.pdf>`_
 
+    .. seealso:: :class:`~.LocalHilbertSchmidt`
+
     .. UsageDetails::
 
         Consider that we want to evaluate the Hilbert-Schmidt Test cost between the unitary ``U`` and an approximate
@@ -211,6 +213,44 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     [1] Sumeet Khatri, Ryan LaRose, Alexander Poremba, Lukasz Cincio, Andrew T. Sornborger and Patrick J. Coles
     Quantum-assisted Quantum Compiling.
     `arxiv/1807.00800 <https://arxiv.org/pdf/1807.00800.pdf>`_
+
+    .. seealso:: :class:`~.HilbertSchmidt`
+
+    .. UsageDetails::
+
+        Consider that we want to evaluate the Local Hilbert-Schmidt Test cost between the unitary ``U`` and an
+        approximate unitary ``V``. We need to define some functions where it is possible to use the
+        :class:`~.LocalHilbertSchmidt` template. Here the considered unitary is ``CZ`` and we try to compute the
+        cost for the approximate unitary.
+
+        .. code-block:: python
+
+            import numpy as np
+
+            with qml.tape.QuantumTape(do_queue=False) as u_tape:
+                qml.CZ(wires=[0,1])
+
+            def v_function(params):
+                qml.RZ(params[0], wires=2)
+                qml.RZ(params[1], wires=3)
+                qml.CNOT(wires=[2, 3])
+                qml.RZ(params[2], wires=3)
+                qml.CNOT(wires=[2, 3])
+
+            dev = qml.device("default.qubit", wires=4)
+
+            @qml.qnode(dev)
+            def local_hilbert_test(v_params, v_function, v_wires, u_tape):
+                qml.LocalHilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
+                return qml.probs(u_tape.wires + v_wires)
+
+            def cost_lhst(parameters, v_function, v_wires, u_tape):
+                return (1 - local_hilbert_test(v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape)[0])
+
+        Now that the cost function has been defined it can be called for specific parameters:
+
+        >>> cost_lhst([3*np.pi/2, 3*np.pi/2, np.pi/2], v_function = v_function, v_wires = [1], u_tape = u_tape)
+        0.5
     """
 
     @staticmethod
