@@ -153,7 +153,7 @@ like VQE to perform quantum chemistry simulations.
 .. _intro_ref_temp_tn:
 
 Tensor networks
--------------------------
+---------------
 
 Tensor-network templates create quantum circuit architectures where circuit blocks
 can be broadcast with the shape and connectivity of tensor networks.
@@ -166,10 +166,9 @@ can be broadcast with the shape and connectivity of tensor networks.
     :description: :doc:`Tree Tensor Network <../code/api/pennylane.TTN>`
     :figure: _static/templates/tensornetworks/TTN_template.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.MERA.html
-    :description: Multi-scale Entanglement Renormalization Ansatz 
-    :figure: ../_static/templates/tensornetworks/MERA_template.png
+.. gallery-item::
+    :description: :doc:`Multi-scale Entanglement Renormalization Ansatz <../code/api/pennylane.MERA>`
+    :figure: _static/templates/tensornetworks/MERA_template.png
 
 .. raw:: html
 
@@ -226,15 +225,13 @@ Other useful templates which do not belong to the previous categories can be fou
     :description: :doc:`CommutingEvolution <../code/api/pennylane.CommutingEvolution>`
     :figure: _static/templates/subroutines/commuting_evolution.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.HilbertSchmidt.html
-    :description: HilbertSchmidt
-    :figure: ../_static/templates/subroutines/hst.png
+.. gallery-item::
+    :description: :doc:`HilbertSchmidt <../code/api/pennylane.HilbertSchmidt>`
+    :figure: _static/templates/subroutines/hst.png
 
-.. customgalleryitem::
-    :link: ../code/api/pennylane.LocalHilbertSchmidt.html
-    :description: LocalHilbertSchmidt
-    :figure: ../_static/templates/subroutines/lhst.png
+.. gallery-item::
+    :description: :doc:`LocalHilbertSchmidt <../code/api/pennylane.LocalHilbertSchmidt>`
+    :figure: _static/templates/subroutines/lhst.png
 
 .. raw:: html
 
