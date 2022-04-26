@@ -1631,7 +1631,7 @@ def _to_tensors(
         communication graph, or if ``meas_positions`` is provided, a list over fragments
         containing lists over measurements whose elements are the tensors
     """
-    frag_meas_positions = [[1] * len(prepare_nodes)] if meas_positions is None else meas_positions[1]
+    frag_meas_positions = [[1]] * len(prepare_nodes) if meas_positions is None else meas_positions[1]
 
     ctr = 0
     tensors = []
@@ -1702,9 +1702,9 @@ def qcut_processing_fn(
 
     tensors = _to_tensors(flat_results, prepare_nodes, measure_nodes, meas_positions)
 
-    all_meas_positions, fragment_meas_positions = meas_positions
+    if meas_positions is not None:
+        all_meas_positions, fragment_meas_positions = meas_positions
 
-    if len(all_meas_positions) > 1:
         results = []
         for meas in all_meas_positions:
             tensors_to_contract = []
