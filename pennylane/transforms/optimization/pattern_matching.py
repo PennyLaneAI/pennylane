@@ -161,6 +161,8 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
     3: ─├C─│───H─╰X─╰C─┤
     4: ─╰C─╰X──────────┤
 
+    .. seealso:: :func:`~.pattern_matching`
+
     **Reference:**
 
     [1] Iten, R., Moyard, R., Metger, T., Sutter, D. and Woerner, S., 2022.
@@ -273,6 +275,63 @@ def pattern_matching(circuit_dag, pattern_dag):
 
     Returns:
         list(Match): the list of maximal matches.
+
+    **Example**
+
+    First let's consider the following circuit
+
+    .. code-block:: python
+
+        def circuit():
+            qml.S(wires=0)
+            qml.PauliZ(wires=0)
+            qml.S(wires=1)
+            qml.CZ(wires=[0, 1])
+            qml.S(wires=1)
+            qml.S(wires=2)
+            qml.CZ(wires=[1, 2])
+            qml.S(wires=2)
+            return qml.expval(qml.PauliX(wires=0))
+
+    Assume that we want to find all maximal matches of a pattern containing a sequence of two :class:`~.S` gates and
+    a :class:`~.PauliZ` gate:
+
+    .. code-block:: python
+
+        def pattern():
+            qml.S(wires=0)
+            qml.S(wires=0)
+            qml.PauliZ(wires=0)
+
+
+    >>> circuit_dag = qml.commutation_dag(circuit)()
+    >>> pattern_dag = qml.commutation_dag(pattern)()
+    >>> all_max_matches = qml.pattern_matching(circuit_dag, pattern_dag)
+
+    The matches are accessible by looping through the list outputted by ``qml.pattern_matching``. This output is a list
+    of lists containing indices. Each list represents a match between a gate in the pattern with a gate in the circuit.
+    The first indices represent the gates in the pattern and the second indices provides indices for the gates in the
+    circuit (by order of appearance).
+
+    >>> for match_conf in all_max_matches:
+    ...     print(match_conf.match)
+    [[0, 0], [2, 1]]
+    [[0, 2], [1, 4]]
+    [[0, 4], [1, 2]]
+    [[0, 5], [1, 7]]
+    [[0, 7], [1, 5]]
+
+    The first match of this list corresponds to match the first gate (:class:`~.S`) in the pattern with the first gate
+    in the circuit and also the third gate in the pattern (:class:`~.PauliZ`) with the second circuit gate.
+
+    .. seealso:: :func:`~.pattern_matching_optimization`
+
+    **Reference:**
+
+    [1] Iten, R., Moyard, R., Metger, T., Sutter, D. and Woerner, S., 2022.
+    Exact and practical pattern matching for quantum circuit optimization.
+    `doi.org/10.1145/3498325 <https://dl.acm.org/doi/abs/10.1145/3498325>`_
+
     """
     # Match list
     match_list = []
