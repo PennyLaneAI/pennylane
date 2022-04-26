@@ -448,10 +448,19 @@ class QuantumTape(AnnotatedQueue):
         self._prep = []
         self._ops = []
         self._measurements = []
+        list_order = {"_prep": 0, "_ops": 1, "_measurements": 2}
+        current_list = "_prep"
 
         for obj, info in self._queue.items():
 
             if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
+                if list_order[obj._queue_category] > list_order[current_list]:
+                    current_list = obj._queue_category
+                elif list_order[obj._queue_category] < list_order[current_list]:
+                    raise ValueError(
+                        f"Object {obj} must occur prior to {current_list}. "
+                        "Please place earlier in the queue."
+                    )
                 getattr(self, obj._queue_category).append(obj)
 
                 if hasattr(obj, "inverse"):
