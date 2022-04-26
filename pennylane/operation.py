@@ -110,6 +110,20 @@ from pennylane.wires import Wires
 from .utils import pauli_eigs
 
 
+def __getattr__(name):
+    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
+    warning_names = {"Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure"}
+    if name in warning_names:
+        obj = getattr(qml.measurements, name)
+        warning_string = f"qml.operation.{name} is deprecated. Please import from qml.measurements.{name} instead"
+        warnings.warn(warning_string, UserWarning)
+        return obj
+    try:
+        return globals()[name]
+    except KeyError as e:
+        raise AttributeError from e
+
+
 def expand_matrix(base_matrix, wires, wire_order):
     """Re-express a base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
@@ -537,9 +551,7 @@ class Operator(abc.ABC):
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        return (cls.compute_matrix != Operator.compute_matrix) or (
-            cls.get_matrix != Operator.get_matrix
-        )
+        return cls.compute_matrix != Operator.compute_matrix
 
     @property
     def matrix(self):
@@ -878,30 +890,34 @@ class Operator(abc.ABC):
         self._id = id
         self.queue_idx = None  #: int, None: index of the Operator in the circuit queue, or None if not in a queue
 
+        wires_from_args = False
         if wires is None:
-            raise ValueError(f"Must specify the wires that {self.name} acts on")
+            try:
+                wires = params[-1]
+                params = params[:-1]
+                wires_from_args = True
+            except IndexError as err:
+                raise ValueError(
+                    f"Must specify the wires that {type(self).__name__} acts on"
+                ) from err
 
         self._num_params = len(params)
+
         # Check if the expected number of parameters coincides with the one received.
         # This is always true for the default `Operator.num_params` property, but
         # subclasses may overwrite it to define a fixed expected value.
         if len(params) != self.num_params:
+            if wires_from_args and len(params) == (self.num_params - 1):
+                raise ValueError(f"Must specify the wires that {type(self).__name__} acts on")
             raise ValueError(
                 f"{self.name}: wrong number of parameters. "
                 f"{len(params)} parameters passed, {self.num_params} expected."
             )
 
-        if isinstance(wires, Wires):
-            self._wires = wires
-        else:
-            self._wires = Wires(wires)  #: Wires: wires on which the operator acts
+        self._wires = wires if isinstance(wires, Wires) else Wires(wires)
 
         # check that the number of wires given corresponds to required number
-        if (
-            self.num_wires != AllWires
-            and self.num_wires != AnyWires
-            and len(self._wires) != self.num_wires
-        ):
+        if self.num_wires not in {AllWires, AnyWires} and len(self._wires) != self.num_wires:
             raise ValueError(
                 f"{self.name}: wrong number of wires. "
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
@@ -1476,20 +1492,6 @@ class Observable(Operator):
     # pylint: disable=abstract-method
     return_type = None
     """None or ObservableReturnTypes: Measurement type that this observable is called with."""
-
-    def __init__(self, *params, wires=None, do_queue=True, id=None):
-        # extract the arguments
-        if wires is None:
-            try:
-                wires = params[-1]
-                params = params[:-1]
-                # error if no arguments are given
-            except IndexError as err:
-                raise ValueError(
-                    f"Must specify the wires that {type(self).__name__} acts on"
-                ) from err
-
-        super().__init__(*params, wires=wires, do_queue=do_queue, id=id)
 
     def __repr__(self):
         """Constructor-call-like representation."""

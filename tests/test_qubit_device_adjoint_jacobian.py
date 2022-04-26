@@ -102,9 +102,10 @@ class TestAdjointJacobian:
         numeric_val = fn(qml.execute(tapes, dev, None))
         assert np.allclose(calculated_val, numeric_val, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("par", [1, -2, 1.623, -0.051, 0])  # integers, floats, zero
-    def test_ry_gradient(self, par, tol, dev):
+    def test_ry_gradient(self, tol, dev):
         """Test that the gradient of the RY gate matches the exact analytic formula."""
+
+        par = 0.23
 
         with qml.tape.QuantumTape() as tape:
             qml.RY(par, wires=[0])
@@ -114,7 +115,8 @@ class TestAdjointJacobian:
 
         # gradients
         exact = np.cos(par)
-        grad_F = (lambda t, fn: fn(qml.execute(t, dev, None)))(*qml.gradients.finite_diff(tape))
+        tapes, fn = qml.gradients.finite_diff(tape)
+        grad_F = fn(qml.execute(tapes, dev, None))
         grad_A = dev.adjoint_jacobian(tape)
 
         # different methods must agree

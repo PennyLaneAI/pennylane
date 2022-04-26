@@ -166,6 +166,11 @@ can be broadcast with the shape and connectivity of tensor networks.
     :description: :doc:`Tree Tensor Network <../code/api/pennylane.TTN>`
     :figure: _static/templates/tensornetworks/TTN_template.png
 
+.. customgalleryitem::
+    :link: ../code/api/pennylane.MERA.html
+    :description: Multi-scale Entanglement Renormalization Ansatz 
+    :figure: ../_static/templates/tensornetworks/MERA_template.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
@@ -220,6 +225,16 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
     :description: :doc:`CommutingEvolution <../code/api/pennylane.CommutingEvolution>`
     :figure: _static/templates/subroutines/commuting_evolution.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.HilbertSchmidt.html
+    :description: HilbertSchmidt
+    :figure: ../_static/templates/subroutines/hst.png
+
+.. customgalleryitem::
+    :link: ../code/api/pennylane.LocalHilbertSchmidt.html
+    :description: LocalHilbertSchmidt
+    :figure: ../_static/templates/subroutines/lhst.png
 
 .. raw:: html
 
