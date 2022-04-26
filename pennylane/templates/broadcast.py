@@ -224,7 +224,8 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     Raises:
         ValueError: if inputs do not have the correct format
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Broadcasting single gates**
 

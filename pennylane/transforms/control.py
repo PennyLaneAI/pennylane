@@ -246,7 +246,8 @@ def ctrl(fn, control, control_values=None):
         have special control support, the operation is expanded to add control wires
         to each underlying op individually.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Nesting Controls**
 

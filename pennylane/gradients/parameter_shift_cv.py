@@ -615,7 +615,8 @@ def param_shift_cv(
     >>> qml.jacobian(circuit)(params)
     array([ 0.87516064,  0.01273285,  0.88334834, -0.01273285])
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
 

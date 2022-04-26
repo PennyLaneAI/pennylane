@@ -77,7 +77,8 @@ def unitary_to_rot(tape):
     0: ──Rot(-1.35,1.83,-0.61)─┤  <Z>
 
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         This decomposition is not fully differentiable. We **can** differentiate
         with respect to input QNode parameters when they are not used to
