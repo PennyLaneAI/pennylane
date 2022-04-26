@@ -43,11 +43,32 @@ class Adjoint(Operator):
 
     num_wires = AnyWires
 
+    def __copy__(self):
+        cls = self.__class__
+        copied_op = cls.__new__(cls)
+        copied_base = self.base.__copy__()
+        copied_op.base = copied_base
+        copied_op._hyperparameters = {"base": copied_base}
+        for attr, value in vars(self).items():
+            if attr not in {"data", "base", "_hyperparameters"}:
+                setattr(copied_op, attr, value)
+
+        return copied_op
+
     def __init__(self, base=None, do_queue=True, id=None):
         self.base = base
         self.hyperparameters["base"] = base
         super().__init__(*base.parameters, wires=base.wires, do_queue=do_queue, id=id)
         self._name = f"Adjoint({self.base.name})"
+
+    @property
+    def data(self):
+        return self.base.data
+
+    @data.setter
+    def data(self, new_data):
+        """Allows us to set base operation parameters."""
+        self.base.data = new_data
 
     def queue(self, context=QueuingContext):
         try:
@@ -60,12 +81,11 @@ class Adjoint(Operator):
 
         return self
 
-    def label(self, decimals=None, base_label=None):
-        return self.base.label(decimals, base_label) + "†"
+    def label(self, decimals=None, base_label=None, cache=None):
+        return self.base.label(decimals, base_label, cache=cache) + "†"
 
     @staticmethod
     def compute_matrix(*params, base=None):
-
         base_matrix = base.compute_matrix(*params, **base.hyperparameters)
         return transpose(conj(base_matrix))
 

@@ -71,6 +71,28 @@ class TestInitialization:
         assert op.wires == qml.wires.Wires([0, "b"])
 
 
+class TestProperties:
+    def test_data(self):
+        """Test base data can be get and set through Adjoint class."""
+        x = np.array(1.234)
+
+        base = qml.RX(x, wires="a")
+        adj = Adjoint(base)
+
+        assert adj.data == [x]
+
+        # update parameters through adjoint
+        x_new = np.array(2.3456)
+        adj.data = [x_new]
+        assert base.data == [x_new]
+        assert adj.data == [x_new]
+
+        # update base data updates Adjoint data
+        x_new2 = np.array(3.456)
+        base.data = [x_new2]
+        assert adj.data == [x_new2]
+
+
 class TestQueueing:
     def test_queueing(self):
 
@@ -195,15 +217,23 @@ class TestEigvals:
             Adjoint(base).get_eigvals()
 
 
-class TestDecomposition:
+class TestDecompositionExpand:
     def test_decomp_custom_adjoint_defined(self):
-
+        """Test decomposition method when a custom adjoint is defined."""
         decomp = Adjoint(qml.Hadamard(0)).decomposition()
         assert len(decomp) == 1
         assert isinstance(decomp[0], qml.Hadamard)
 
-    def test_decomp(self):
+    def test_expand_custom_adjoint_defined(self):
+        """Test expansion method when a custom adjoint is defined."""
+        base = qml.Hadamard(0)
+        tape = Adjoint(base).expand()
 
+        assert len(tape) == 1
+        assert isinstance(tape[0], qml.Hadamard)
+
+    def test_decomp(self):
+        """Test decomposition when base has decomposition but no custom adjoint."""
         base = qml.SX(0)
         base_decomp = base.decomposition()
         decomp = Adjoint(base).decomposition()
@@ -213,8 +243,21 @@ class TestDecomposition:
             assert adj_op.base.__class__ == base_op.__class__
             assert qml.math.allclose(adj_op.data, base_op.data)
 
-    def test_no_base_gate_decomposition(self):
+    def test_expand(self):
+        """Test expansion when base has decomposition but no custom adjoint."""
 
+        base = qml.SX(0)
+        base_tape = base.expand()
+        tape = Adjoint(base).expand()
+
+        for base_op, adj_op in zip(reversed(base_tape), tape):
+            assert isinstance(adj_op, Adjoint)
+            assert base_op.__class__ == adj_op.base.__class__
+            assert qml.math.allclose(adj_op.data, base_op.data)
+
+    def test_no_base_gate_decomposition(self):
+        """Test that when the base gate doesn't have a decomposition, the Adjoint decomposition
+        method raises the proper error."""
         nr_wires = 2
         rho = np.zeros((2**nr_wires, 2**nr_wires), dtype=np.complex128)
         rho[0, 0] = 1  # initialize the pure state density matrix for the |0><0| state
@@ -222,3 +265,20 @@ class TestDecomposition:
 
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             Adjoint(base).decomposition()
+
+
+class TestIntegration:
+    @pytest.mark.parametrize(
+        "diff_method", ("parameter-shift", "finite-diff", "adjoint", "backprop")
+    )
+    def test_gradient_adj_rx(self, diff_method):
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
+        def circuit(x):
+            Adjoint(qml.RX(x, wires=0))
+            return qml.expval(qml.PauliZ(0))
+
+        x = np.array(1.2345, requires_grad=True)
+        res = qml.grad(circuit)(x)
+        expected = -np.sin(x)
+
+        assert qml.math.allclose(res, expected)

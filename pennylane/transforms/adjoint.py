@@ -22,28 +22,13 @@ from pennylane.tape import QuantumTape, stop_recording
 from pennylane.ops.arithmetic import Adjoint
 
 
-def _single_op_adjoint(op):
-    try:
-        new_op = op.adjoint()
-    except AdjointUndefinedError:
-        return Adjoint(op)
-
-    try:
-        QueuingContext.update_info(op, owner=new_op)
-    except QueuingError:
-        pass
-    if QueuingContext.recording():
-        QueuingContext.update_info(new_op, owns=op)
-    return new_op
-
-
 def adjoint(fn):
     """Create a function that applies the adjoint (inverse) of the provided operation or template.
 
     This transform can be used to apply the adjoint of an arbitrary sequence of operations.
 
     Args:
-        fn (function, ~.operation.Operator): A single operator or a quantum function that
+        fn (function): A single operator or a quantum function that
             applies quantum operations.
 
     Returns:
@@ -57,9 +42,9 @@ def adjoint(fn):
 
     .. code-block:: python3
 
-        def my_ops(a, b, wire):
+        def my_ops(a, wire):
             qml.RX(a, wires=wire)
-            qml.RY(b, wires=wire)
+            qml.SX(wire)
 
     We can create a QNode that applies this quantum function,
     followed by the adjoint of this function:
@@ -69,27 +54,31 @@ def adjoint(fn):
         dev = qml.device('default.qubit', wires=1)
 
         @qml.qnode(dev)
-        def circuit(a, b):
-            my_ops(a, b, wire=0)
-            qml.adjoint(my_ops)(a, b, wire=0)
+        def circuit(a):
+            my_ops(a, wire=0)
+            qml.adjoint(my_ops)(a, wire=0)
             return qml.expval(qml.PauliZ(0))
 
     Printing this out, we can see that the inverse quantum
     function has indeed been applied:
 
-    >>> print(qml.draw(circuit)(0.2, 0.5))
-    0: ──RX(0.20)──RY(0.50)──RY(-0.50)──RX(-0.20)─┤  <Z>
+    >>> print(qml.draw(circuit)(0.2))
+    0: ──RX(0.20)──SX──SX†──RX(-0.20)─┤  <Z>
 
-    The adjoint function can also be applied directly to templates and operations:
+    If a "shortcut" exists to easily compute the adjoint, see :meth:`~.operation.Operator.adjoint`, then this
+    shortcut is eagerly used.  Otherwise, the operator is wrapped in an :class:`~.ops.arithmetic.Adjoint` class
+    for later handling. The adjoint function can also be applied directly to templates and operations:
 
     >>> qml.adjoint(qml.RX)(0.123, wires=0)
-    >>> qml.adjoint(qml.templates.StronglyEntanglingLayers)(weights, wires=[0, 1])
+    RX(-0.123, wires=[0])
+    >>> qml.adjoint(qml.QFT)(wires=(0,1,2,3))
+    Adjoint(QFT)(wires=[0, 1, 2, 3])
 
     .. UsageDetails::
 
         **Adjoint of a function**
 
-        Here, we apply the ``subroutine`` function, and then apply its inverse.
+        Here, we apply the ``subroutine`` function, and then apply its adjoint.
         Notice that in addition to adjointing all of the operations, they are also
         applied in reverse construction order.
 
@@ -109,7 +98,7 @@ def adjoint(fn):
         This creates the following circuit:
 
         >>> print(qml.draw(circuit)())
-        0: ──RX(0.12)──RY(0.46)──RY(-0.46)──RX(-0.12)─┤  <Z>
+        0: ──RX(0.12)──T──T†──RX(-0.12)─┤  <Z>
 
         **Single operation**
 
@@ -129,10 +118,7 @@ def adjoint(fn):
         >>> print(qml.draw(circuit)())
         0: ──RX(0.12)──RX(-0.12)─┤  <Z>
     """
-    if isinstance(fn, Operator):
-        return _single_op_adjoint(fn)
-
-    elif not callable(fn):
+    if not callable(fn):
         raise ValueError(
             f"The object {fn} of type {type(fn)} is not callable. "
             "This error might occur if you apply adjoint to a list "
@@ -148,7 +134,7 @@ def adjoint(fn):
             # we called op.expand(): get the outputted tape
             tape = res
 
-        adjoint_ops = [_single_op_adjoint(op) for op in reversed(tape.operations)]
+        adjoint_ops = [Adjoint(op) for op in reversed(tape.operations)]
 
         return adjoint_ops[0] if len(adjoint_ops) == 1 else adjoint_ops
 

@@ -491,7 +491,6 @@ class Operator(abc.ABC):
         for attr, value in vars(self).items():
             if attr != "data":
                 setattr(copied_op, attr, value)
-
         return copied_op
 
     def __deepcopy__(self, memo):
@@ -1114,7 +1113,7 @@ class Operator(abc.ABC):
             # original operation has no trainable parameters
             tape.trainable_params = {}
 
-        if self.inverse:
+        if getattr(self, "inverse", False):
             tape.inv()
 
         return tape
