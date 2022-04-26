@@ -33,6 +33,16 @@ from pennylane.wires import Wires
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
 
 
+@pytest.mark.parametrize(
+    "return_type", ("Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure")
+)
+def test_obersvablereturntypes_import_warnings(return_type):
+    """Test that accessing the observable return types through qml.operation emit a warning."""
+
+    with pytest.warns(UserWarning, match=r"is deprecated"):
+        getattr(qml.operation, return_type)
+
+
 class TestOperatorConstruction:
     """Test custom operators construction."""
 

@@ -21,6 +21,9 @@ devices with autodifferentiation support.
 # pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
 from functools import wraps
 import itertools
+import warnings
+import inspect
+from contextlib import _GeneratorContextManager
 from cachetools import LRUCache
 
 import pennylane as qml
@@ -119,6 +122,33 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
             if hashes[i] in cache:
                 # Tape exists within the cache, store the cached result
                 cached_results[i] = cache[hashes[i]]
+
+                # Introspect the set_shots decorator of the input function:
+                #   warn the user in case of finite shots with cached results
+                finite_shots = False
+
+                closure = inspect.getclosurevars(fn).nonlocals
+                if "original_fn" in closure:  # deal with expand_fn wrapper above
+                    closure = inspect.getclosurevars(closure["original_fn"]).nonlocals
+
+                # retrieve the captured context manager instance (for set_shots)
+                if "self" in closure and isinstance(closure["self"], _GeneratorContextManager):
+                    # retrieve the shots from the arguments or device instance
+                    if closure["self"].func.__name__ == "set_shots":
+                        dev, shots = closure["self"].args
+                        shots = dev.shots if shots is False else shots
+                        finite_shots = isinstance(shots, int)
+
+                if finite_shots:
+                    warnings.warn(
+                        "Cached execution with finite shots detected!\n"
+                        "Note that samples as well as all noisy quantities computed via sampling "
+                        "will be identical across executions. This situation arises where tapes "
+                        "are executed with identical operations, measurements, and parameters.\n"
+                        "To avoid this behavior, provide 'cache=False' to the QNode or execution "
+                        "function.",
+                        UserWarning,
+                    )
             else:
                 # Tape does not exist within the cache, store the tape
                 # for execution via the execution function.

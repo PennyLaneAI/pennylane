@@ -6,7 +6,8 @@ contains a differentiable Hartree-Fock solver and the functionality to construct
 fully-differentiable molecular Hamiltonian that can be used as input to quantum algorithms
 such as the variational quantum eigensolver (VQE) algorithm. The :mod:`~.qchem` module
 also provides tools for building other observables such as molecular dipole moment, spin
-and particle number observables.
+and particle number observables. The theoretical foundation of the quantum chemistry functionality
+in PennyLane is explained in our `white paper <https://arxiv.org/abs/2111.09967>`_.
 
 Building the electronic Hamiltonian
 -----------------------------------
@@ -34,7 +35,7 @@ with an external backend that uses the
 `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
 electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_, which requires separate
 installation. This backend is non-differentiable and can be selected by setting
-`method='pyscf'` in :func:`~.molecular_hamiltonian`.
+``method='pyscf'`` in :func:`~.molecular_hamiltonian`.
 
 Furthermore, the net charge,
 the `spin multiplicity <https://en.wikipedia.org/wiki/Multiplicity_(chemistry)>`_, the
@@ -73,7 +74,7 @@ where a quantum computer is used to prepare the trial wave function of a molecul
 the expectation value of the *electronic Hamiltonian*, while a classical optimizer is used to
 find its ground state.
 
-PennyLane supports treating Hamiltonians just like any other observable, and the 
+PennyLane supports treating Hamiltonians just like any other observable, and the
 expectation value of a Hamiltonian can be calculated using ``qml.expval``:
 
 .. code-block:: python
