@@ -424,9 +424,7 @@ class MeasurementProcess:
 
         with qml.tape.QuantumTape() as tape:
             self.obs.diagonalizing_gates()
-            MeasurementProcess(
-                self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals()
-            )
+            MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals())
 
         return tape
 

@@ -127,9 +127,7 @@ class TestQubitUnitaryZYZDecomposition:
             # With TF and RZ, need to cast since can't just unwrap
             obtained_mat = qml.RZ(obtained_gates[0].parameters[0].numpy(), wires=0).matrix()
         else:
-            obtained_mat = qml.Rot(
-                *qml.math.unwrap(obtained_gates[0].parameters), wires=0
-            ).matrix()
+            obtained_mat = qml.Rot(*qml.math.unwrap(obtained_gates[0].parameters), wires=0).matrix()
 
         assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
 
