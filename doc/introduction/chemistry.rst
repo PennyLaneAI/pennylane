@@ -128,7 +128,6 @@ Molecular integrals and matrices
     :nosignatures:
 
     ~pennylane.qchem.attraction_integral
-
     ~pennylane.qchem.dipole_integrals
     ~pennylane.qchem.electron_integrals
     ~pennylane.qchem.electron_repulsion
@@ -144,16 +143,13 @@ Molecular integrals and matrices
     ~pennylane.qchem.moment_matrix
     ~pennylane.qchem.overlap_matrix
     ~pennylane.qchem.repulsion_tensor
-
     ~pennylane.qchem.contracted_norm
     ~pennylane.qchem.primitive_norm
     ~pennylane.qchem.expansion
-
     ~pennylane.qchem.gaussian_kinetic
     ~pennylane.qchem.gaussian_moment
     ~pennylane.qchem.gaussian_overlap
     ~pennylane.qchem.hermite_moment
-
     ~pennylane.qchem.nuclear_attraction
 
 :html:`</div>`
