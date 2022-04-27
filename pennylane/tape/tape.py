@@ -458,8 +458,8 @@ class QuantumTape(AnnotatedQueue):
                     current_list = obj._queue_category
                 elif list_order[obj._queue_category] < list_order[current_list]:
                     raise ValueError(
-                        f"Object {obj} must occur prior to {current_list}. "
-                        "Please place earlier in the queue."
+                        f"{obj._queue_category[1:]} operation {obj} must occur prior "
+                        "to {current_list[1:]}. Please place earlier in the queue."
                     )
                 getattr(self, obj._queue_category).append(obj)
 
