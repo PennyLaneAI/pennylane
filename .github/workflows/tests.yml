@@ -89,7 +89,10 @@ jobs:
         run: python testmon_sync.py ${{ github.event.pull_request.base.sha }}
 
       - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --testmon
+        run: python -m pytest --testmon tests --cov=pennylane $COVERAGE_FLAGS
+
+      - name: Upload Testmon Data
+        run: python testmon_sync.py
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
