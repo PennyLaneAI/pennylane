@@ -158,12 +158,12 @@ class Hadamard(Observable, Operation):
         # H = RZ(\pi) RY(\pi/2) RZ(0)
         return [np.pi, np.pi / 2, 0.0]
 
-    def __pow__(self, n):
+    def pow(self, n):
         if n%2 == 0:
             return qml.Identity(wires=self.wires)
         if n%2 == 1:
             return self.__copy__()
-        return super().__pow__(n)
+        return super().pow(n)
 
 
 class PauliX(Observable, Operation):
@@ -295,14 +295,14 @@ class PauliX(Observable, Operation):
     def adjoint(self):
         return PauliX(wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         if n%2 == 0:
             return qml.Identity(wires=self.wires)
         if n%2 == 1:
             return self.__copy__()
         if abs(n%2 - 0.5) < 1e-6:
             return SX(wires=self.wires)
-        return super().__pow__(n)
+        return super().pow(n)
         
 
     def _controlled(self, wire):
@@ -444,12 +444,12 @@ class PauliY(Observable, Operation):
     def adjoint(self):
         return PauliY(wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         if n%2 == 0:
             return qml.Identity(wires=self.wires)
         if n%2 == 1:
             return self.__copy__()
-        return super().__pow__(n)
+        return super().pow(n)
 
     def _controlled(self, wire):
         CY(wires=Wires(wire) + self.wires)
@@ -578,7 +578,7 @@ class PauliZ(Observable, Operation):
     def adjoint(self):
         return PauliZ(wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         if n%2 == 0:
             return qml.Identity(wires=self.wires)
         if n%2 == 1:
@@ -691,7 +691,7 @@ class S(Operation):
         op.inverse = not self.inverse
         return op
 
-    def __pow__(self, n):
+    def pow(self, n):
         n_mod4 = n%4
         pow_map = {
             0 : lambda op: qml.Identity(wires=op.wires),
@@ -798,7 +798,7 @@ class T(Operation):
         """
         return [qml.PhaseShift(np.pi / 4, wires=wires)]
 
-    def __pow__(self, n):
+    def pow(self, n):
         n_mod8 = n%8
         pow_map = {
             0 : lambda op: qml.Identity(wires=op.wires),
@@ -919,7 +919,7 @@ class SX(Operation):
         ]
         return decomp_ops
 
-    def __pow__(self, n):
+    def pow(self, n):
         n_mod4 = n%4
         pow_map = {
             0 : lambda op: qml.Identity(wires=op.wires),
@@ -928,7 +928,7 @@ class SX(Operation):
         }
         if n_mod4 in pow_map:
             return pow_map[n_mod4](self)
-        return super().__pow__(n)
+        return super().pow(n)
 
 
     def adjoint(self):
@@ -997,12 +997,12 @@ class CNOT(Operation):
     def adjoint(self):
         return CNOT(wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         if n%2 == 0:
             return qml.Identity(wires=self.wires)
         if n%2 == 1:
             return self.__copy__()
-        return super().__pow__(n)
+        return super().pow(n)
 
     def _controlled(self, wire):
         Toffoli(wires=Wires(wire) + self.wires)
@@ -1093,12 +1093,12 @@ class CZ(Operation):
     def adjoint(self):
         return CZ(wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         if n%2 == 0:
             return qml.Identity(wires=self.wires)
         if n%2 == 1:
             return self.__copy__()
-        return super().__pow__(n)
+        return super().pow(n)
 
     @property
     def control_wires(self):
@@ -1192,12 +1192,12 @@ class CY(Operation):
     def adjoint(self):
         return CY(wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         if n%2 == 0:
             return qml.Identity(wires=self.wires)
         if n%2 == 1:
             return self.__copy__()
-        return super().__pow__(n)
+        return super().pow(n)
 
     @property
     def control_wires(self):
@@ -1277,12 +1277,12 @@ class SWAP(Operation):
         ]
         return decomp_ops
 
-    def __pow__(self, n):
+    def pow(self, n):
         if n%2 == 0:
             return qml.Identity(wires=self.wires)
         if n%2 == 1:
             return self.__copy__()
-        return super().__pow__(n)
+        return super().pow(n)
 
     def adjoint(self):
         return SWAP(wires=self.wires)
@@ -1403,14 +1403,14 @@ class ISWAP(Operation):
         op.inverse = not self.inverse
         return op
 
-    def __pow__(self, n):
+    def pow(self, n):
         if n%2 == 0:
             return qml.Identity(wires=self.wires)
         if n%2 == 1:
             return self.__copy__()
         if (n%2 - 0.5) < 1e-6:
             return SISWAP(wires=self.wires)
-        return super().__pow__(n)
+        return super().pow(n)
 
 
 class SISWAP(Operation):
@@ -1540,7 +1540,7 @@ class SISWAP(Operation):
         ]
         return decomp_ops
 
-    def __pow__(self, n):
+    def pow(self, n):
         n_mod4 = n%4
         pow_map = {
             0 : lambda op: qml.Identity(wires=op.wires),
@@ -1549,7 +1549,7 @@ class SISWAP(Operation):
         }
         if n_mod4 in pow_map:
             return pow_map(n_mod4)(self)
-        return super().__pow__(n)
+        return super().pow(n)
 
     def adjoint(self):
         op = SISWAP(wires=self.wires)
@@ -1658,12 +1658,12 @@ class CSWAP(Operation):
         ]
         return decomp_ops
 
-    def __pow__(self, n):
+    def pow(self, n):
         if n%2 == 0:
             return qml.Identity(wires=self.wires)
         if n%2 == 1:
             return self.__copy__()
-        return super().__pow__(n)
+        return super().pow(n)
 
     def adjoint(self):
         return CSWAP(wires=self.wires)
@@ -1803,12 +1803,12 @@ class Toffoli(Operation):
     def adjoint(self):
         return Toffoli(wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         if n%2 == 0:
             return qml.Identity(wires=self.wires)
         if n%2 == 1:
             return self.__copy__()
-        return super().__pow__(n)
+        return super().pow(n)
 
     @property
     def control_wires(self):
@@ -1982,12 +1982,12 @@ class MultiControlledX(Operation):
             control_values=self.hyperparameters["control_values"],
         )
 
-    def __pow__(self, n):
+    def pow(self, n):
         if n%2 == 0:
             return qml.Identity(wires=self.wires)
         if n%2 == 1:
             return self.__copy__()
-        return super().__pow__(n)
+        return super().pow(n)
 
     @staticmethod
     def compute_decomposition(wires=None, work_wires=None, control_values=None, **kwargs):
@@ -2191,7 +2191,7 @@ class Barrier(Operation):
     def adjoint(self, do_queue=False):
         return Barrier(wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         return self.__copy__()
 
 
@@ -2242,5 +2242,5 @@ class WireCut(Operation):
     def adjoint(self):
         return WireCut(wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         return self.__copy__()

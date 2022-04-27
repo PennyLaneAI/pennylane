@@ -254,6 +254,9 @@ class DiagGatesUndefinedError(OperatorPropertyUndefined):
 class AdjointUndefinedError(OperatorPropertyUndefined):
     """Raised when an Operator's adjoint version is undefined."""
 
+class PowUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's power is undefined."""
+
 
 class GeneratorUndefinedError(OperatorPropertyUndefined):
     """Exception used to indicate that an operator
@@ -513,9 +516,6 @@ class Operator(abc.ABC):
                 # Deep copy everything else.
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
         return copied_op
-
-    def __pow__(self, n):
-        raise OperatorPropertyUndefined
 
     @property
     def hash(self):
@@ -1342,13 +1342,22 @@ class Operation(Operator):
         original operation. Adjointed ops are equivalent to the inverted operation for unitary
         gates.
 
-        Args:
-            do_queue: Whether to add the adjointed gate to the context queue.
-
         Returns:
             The adjointed operation.
         """
         raise AdjointUndefinedError
+
+    def pow(self, n): # pytlint: disable=no-self-sue
+        """A new operator equal to this one raised to the given power.
+        
+        Args:
+            n (float): exponent for the operator
+
+        Returns:
+            :class:`~.operation.Operator`
+
+        """
+        raise PowUndefinedError
 
     @inverse.setter
     def inverse(self, boolean):

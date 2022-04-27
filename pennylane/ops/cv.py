@@ -120,7 +120,7 @@ class Rotation(CVOperation):
     def adjoint(self):
         return Rotation(-self.parameters[0], wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         return Rotation(self.data[0]*n, wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -181,7 +181,7 @@ class Squeezing(CVOperation):
         new_phi = (phi + np.pi) % (2 * np.pi)
         return Squeezing(r, new_phi, wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         return Squeezing(self.data[0]*n, self.data[1], wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -243,7 +243,7 @@ class Displacement(CVOperation):
         new_phi = (phi + np.pi) % (2 * np.pi)
         return Displacement(a, new_phi, wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         return Displacement(self.data[0]*n, self.data[1], wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -309,7 +309,7 @@ class Beamsplitter(CVOperation):
         theta, phi = self.parameters
         return Beamsplitter(-theta, phi, wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         return BeamSplitter(self.data[0]*n, self.data[1], wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -382,7 +382,7 @@ class TwoModeSqueezing(CVOperation):
         new_phi = (phi + np.pi) % (2 * np.pi)
         return TwoModeSqueezing(r, new_phi, wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         return TwoModeSqueezing(self.data[0]*n, self.data[1], wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -441,7 +441,7 @@ class QuadraticPhase(CVOperation):
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "P", cache=cache)
 
-    def __pow__(self, n):
+    def pow(self, n):
         return QuadraticPhase(self.data[0]*n, wires=self.wires)
 
 
@@ -503,7 +503,7 @@ class ControlledAddition(CVOperation):
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "X", cache=cache)
 
-    def __pow__(self, n):
+    def pow(self, n):
         return ControlledAddition(self.data[0]*n, wires=self.wires)
 
 
@@ -565,7 +565,7 @@ class ControlledPhase(CVOperation):
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "Z", cache=cache)
 
-    def __pow__(self, n):
+    def pow(self, n):
         return ControlledPhase(self.data[0]*n, wires=self.wires)
 
 
@@ -599,7 +599,7 @@ class Kerr(CVOperation):
     def adjoint(self):
         return Kerr(-self.parameters[0], wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         return Kerr(self.data[0]*n, wires=self.wires)
 
 
@@ -633,7 +633,7 @@ class CrossKerr(CVOperation):
     def adjoint(self):
         return CrossKerr(-self.parameters[0], wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         return CrossKerr(self.data[0]*n, wires=self.wires)
 
 
@@ -670,7 +670,7 @@ class CubicPhase(CVOperation):
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "V", cache=cache)
 
-    def __pow__(self, n):
+    def pow(self, n):
         return CubicPhase(self.data[0]*n, wires=self.wires)
 
 

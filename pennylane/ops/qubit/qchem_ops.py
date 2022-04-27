@@ -154,7 +154,7 @@ class SingleExcitation(Operation):
         (phi,) = self.parameters
         return SingleExcitation(-phi, wires=self.wires)
 
-    def __pow__(self, n):
+    def pow(self, n):
         return SingleExcitation(self.data[0]*n, wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
