@@ -356,7 +356,7 @@ class MeasurementProcess:
             "Please use 'qml.eigvals' instead.",
             UserWarning,
         )
-        return self.get_eigvals()
+        return self.eigvals()
 
     def get_eigvals(self):
         r"""Eigenvalues associated with the measurement process.
