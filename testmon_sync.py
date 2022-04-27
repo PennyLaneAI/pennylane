@@ -1,6 +1,9 @@
+"""
+Script for speeding up testing using testmon.
+"""
+
 import sys
 
-# import git
 from azure.storage.blob import ContainerClient
 
 
@@ -8,8 +11,6 @@ CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=testmonstorage;A
 
 if sys.argv[1] == "upload":
     print("uploading .testmondata...")
-    # repo = git.Repo(search_parent_directories=True)
-    # sha = repo.head.object.hexsha
     with open(".testmondata", "rb") as fp:
         client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
         client.upload_blob(f"{sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}", fp)
@@ -20,7 +21,7 @@ elif sys.argv[1] == "download":
             client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
             blob = client.download_blob(f"{sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}")
             blob.readinto(fp)
-    except Exception as e:
+    except Exception as e:  # pylint: ignore=broad-except
         print(f"could not download .testmondata for commit {sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}")
 else:
     raise ValueError()

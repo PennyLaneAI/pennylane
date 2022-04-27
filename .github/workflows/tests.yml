@@ -78,7 +78,7 @@ jobs:
         run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Install Testmon
-        run: python -m pip install pytest-testmon GitPython azure-storage-blob
+        run: python -m pip install pytest-testmon azure-storage-blob
 
       - name: Show GitHub context
         env:
