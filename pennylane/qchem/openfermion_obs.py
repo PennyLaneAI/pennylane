@@ -816,9 +816,6 @@ def molecular_hamiltonian(
     This function drives the construction of the second-quantized electronic Hamiltonian
     of a molecule and its transformation to the basis of Pauli matrices.
 
-    The `method` can be either "dhf", which uses an in-built differentiable Hartree-Fock solver, or
-    "pyscf", which uses the OpenFermion-PySCF plugin.
-
     The net charge of the molecule can be given to simulate cationic/anionic systems. Also, the
     spin multiplicity can be input to determine the number of unpaired electrons occupying the HF
     orbitals as illustrated in the left panel of the figure below.
@@ -828,9 +825,6 @@ def molecular_hamiltonian(
 
     An active space can be defined for a given number of *active electrons* occupying a reduced set
     of *active orbitals* as sketched in the right panel of the figure below.
-
-    The atomic coordinates must be in atomic units and could be given as a 1D array of
-    size ``3*N`` or a 2D array of shape ``(N, 3)`` where ``N`` is the number of atoms.
 
     |
 
@@ -842,7 +836,9 @@ def molecular_hamiltonian(
 
     Args:
         symbols (list[str]): symbols of the atomic species in the molecule
-        coordinates (array[float]): atomic positions in Cartesian coordinates and in atomic units
+        coordinates (array[float]): atomic positions in Cartesian coordinates.
+            The atomic coordinates must be in atomic units and can be given as either a 1D array of
+            size ``3*N``, or a 2D array of shape ``(N, 3)`` where ``N`` is the number of atoms.
         name (str): name of the molecule
         charge (int): Net charge of the molecule. If not specified a neutral system is assumed.
         mult (int): Spin multiplicity :math:`\mathrm{mult}=N_\mathrm{unpaired} + 1`
@@ -850,8 +846,10 @@ def molecular_hamiltonian(
             Possible values of ``mult`` are :math:`1, 2, 3, \ldots`. If not specified,
             a closed-shell HF state is assumed.
         basis (str): atomic basis set used to represent the molecular orbitals
-        method (str): quantum chemistry method used to solve the
-            mean field electronic structure problem
+        method (str): Quantum chemistry method used to solve the
+            mean field electronic structure problem. Available options are ``method="dhf"``
+            to specify the built-in differentiable Hartree-Fock solver, or ``method="pyscf"``
+            to use the OpenFermion-PySCF plugin (this requires that ``openfermionpyscf`` be installed).
         active_electrons (int): Number of active electrons. If not specified, all electrons
             are considered to be active.
         active_orbitals (int): Number of active orbitals. If not specified, all orbitals
@@ -859,7 +857,7 @@ def molecular_hamiltonian(
         mapping (str): transformation used to map the fermionic Hamiltonian to the qubit Hamiltonian
         outpath (str): path to the directory containing output files
         wires (Wires, list, tuple, dict): Custom wire mapping for connecting to Pennylane ansatz.
-            For types Wires/list/tuple, each item in the iterable represents a wire label
+            For types ``Wires``/``list``/``tuple``, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted for
             partial mapping. If None, will use identity map.

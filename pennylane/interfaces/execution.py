@@ -139,7 +139,7 @@ def cache_execute(fn, cache, pass_kwargs=False, return_tuple=True, expand_fn=Non
                         shots = dev.shots if shots is False else shots
                         finite_shots = isinstance(shots, int)
 
-                if finite_shots:
+                if finite_shots and getattr(cache, "_persistent_cache", True):
                     warnings.warn(
                         "Cached execution with finite shots detected!\n"
                         "Note that samples as well as all noisy quantities computed via sampling "
@@ -310,6 +310,7 @@ def execute(
     if isinstance(cache, bool) and cache:
         # cache=True: create a LRUCache object
         cache = LRUCache(maxsize=cachesize, getsizeof=lambda x: qml.math.shape(x)[0])
+        setattr(cache, "_persistent_cache", False)
 
     batch_execute = set_shots(device, override_shots)(device.batch_execute)
 
