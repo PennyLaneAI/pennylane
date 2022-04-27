@@ -6,7 +6,6 @@ import sys
 
 from azure.storage.blob import ContainerClient
 
-
 CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=testmonstorage;AccountKey=TnI/vitXb4j/B1BLdDXLKpgzKMw8XgnKX9CrzaqbmqlVNc4fHjqcy3WUkCTwCd7Hw2fhOnYHvQAP8IvmeQMztQ==;EndpointSuffix=core.windows.net"
 
 if sys.argv[1] == "upload":
