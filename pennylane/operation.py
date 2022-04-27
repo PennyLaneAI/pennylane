@@ -1084,6 +1084,21 @@ class Operator(abc.ABC):
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
+    @property
+    def _queue_category(self):
+        """Used for sorting objects into their respective lists in `QuantumTape` objects.
+
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
+
+        Options are:
+            * `"_prep"`
+            * `"_ops"`
+            * `"_measurements"`
+            * `None`
+        """
+        return "_ops"
+
     def expand(self):
         """Returns a tape that has recorded the decomposition of the operator.
 
@@ -1488,6 +1503,24 @@ class Observable(Operator):
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
+
+    @property
+    def _queue_category(self):
+        """Used for sorting objects into their respective lists in `QuantumTape` objects.
+
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
+
+        Options are:
+            * `"_prep"`
+            * `"_ops"`
+            * `"_measurements"`
+            * None
+
+        Non-pauli observables, like Tensor, Hermitian, and Hamiltonian, should not be processed into any queue.
+        The Pauli observables double as Operations, and should therefore be processed into `_ops` if unowned.
+        """
+        return "_ops" if isinstance(self, Operation) else None
 
     # pylint: disable=abstract-method
     return_type = None
