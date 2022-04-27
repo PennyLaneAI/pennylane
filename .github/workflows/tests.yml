@@ -89,7 +89,7 @@ jobs:
         run: python testmon_sync.py download ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, "-") }} ${{ github.event.pull_request.base.sha }}
 
       - name: Run tests
-        run: python -m pytest --testmon tests --cov=pennylane $COVERAGE_FLAGS
+        run: python -m pytest tests --testmon --cov=pennylane $COVERAGE_FLAGS
 
       - name: List Files
         run: ls
