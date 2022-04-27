@@ -11,13 +11,13 @@ CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=testmonstorage;A
 
 if sys.argv[1] == "upload":
     print("uploading .testmondata...")
-    with open(".testmondata", "rb") as fp:
+    with open("tests/.testmondata", "rb") as fp:
         client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
         client.upload_blob(f"{sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}", fp)
 elif sys.argv[1] == "download":
     try:
         print(f"downloading .testmondata for commit {sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}")
-        with open(".testmondata", "wb") as fp:
+        with open("tests/.testmondata", "wb") as fp:
             client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
             blob = client.download_blob(f"{sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}")
             blob.readinto(fp)
