@@ -77,8 +77,25 @@ jobs:
       - name: Install Lightning-master
         run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
+      - name: Install Testmon
+        run: python -m pip install pytest-testmon azure-storage-blob
+
+      - name: Show GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
+      - name: Get Testmon Data
+        run: python testmon_sync.py download ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, "-") }} ${{ github.event.pull_request.base.sha }}
+
       - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS
+        run: python -m pytest tests --testmon --cov=pennylane $COVERAGE_FLAGS
+
+      - name: List Files
+        run: ls
+
+      - name: Upload Testmon Data
+        run: python testmon_sync.py upload ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, "-") }} ${{ github.event.pull_request.head.sha }}
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
