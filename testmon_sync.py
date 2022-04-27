@@ -21,7 +21,7 @@ elif sys.argv[1] == "download":
             client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
             blob = client.download_blob(f"{sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}")
             blob.readinto(fp)
-    except Exception as e:  # pylint: ignore=broad-except
+    except Exception as e:  # pylint: disable=broad-except
         print(f"could not download .testmondata for commit {sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}")
 else:
     raise ValueError()
