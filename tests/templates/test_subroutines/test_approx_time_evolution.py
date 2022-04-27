@@ -374,7 +374,7 @@ def test_trainable_hamiltonian(dev_name, diff_method):
     def create_tape(coeffs, t):
         H = qml.Hamiltonian(coeffs, obs)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.templates.ApproxTimeEvolution(H, t, 2)
             qml.expval(qml.PauliZ(0))
 

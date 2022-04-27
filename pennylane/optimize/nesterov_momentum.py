@@ -13,8 +13,6 @@
 # limitations under the License.
 """Nesterov momentum optimizer"""
 from pennylane._grad import grad as get_gradient
-from pennylane.utils import _flatten, unflatten
-from pennylane.numpy import ndarray, tensor
 from .momentum import MomentumOptimizer
 
 
@@ -38,7 +36,9 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         momentum (float): user-defined hyperparameter :math:`m`
     """
 
-    def compute_grad(self, objective_fn, args, kwargs, grad_fn=None):
+    def compute_grad(
+        self, objective_fn, args, kwargs, grad_fn=None
+    ):  # pylint: disable=arguments-renamed
         r"""Compute gradient of the objective function at at the shifted point :math:`(x -
         m\times\text{accumulation})` and return it along with the objective function forward pass
         (if available).
@@ -59,35 +59,17 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
         """
         shifted_args = list(args)
 
-        trainable_args = []
-        for arg in args:
-            if getattr(arg, "requires_grad", True):
-                trainable_args.append(arg)
+        trainable_indices = [
+            i for i, arg in enumerate(args) if getattr(arg, "requires_grad", False)
+        ]
 
         if self.accumulation:
-            for index, arg in enumerate(trainable_args):
-                if self.accumulation[index]:
-                    x_flat = _flatten(arg)
-                    acc = _flatten(self.accumulation[index])
-
-                    shifted_x_flat = [e - self.momentum * a for a, e in zip(acc, x_flat)]
-
-                    shifted_args[index] = unflatten(shifted_x_flat, arg)
-
-                    if isinstance(shifted_args[index], ndarray):
-                        # Due to a bug in unflatten, input PennyLane tensors
-                        # are being unwrapped. Here, we cast them back to PennyLane
-                        # tensors.
-                        # TODO: remove when the following is fixed:
-                        # https://github.com/PennyLaneAI/pennylane/issues/966
-                        shifted_args[index] = shifted_args[index].view(tensor)
-                        shifted_args[index].requires_grad = True
+            for index in trainable_indices:
+                shifted_args[index] = args[index] - self.momentum * self.accumulation[index]
 
         g = get_gradient(objective_fn) if grad_fn is None else grad_fn
         grad = g(*shifted_args, **kwargs)
         forward = getattr(g, "forward", None)
 
-        if len(trainable_args) == 1:
-            grad = (grad,)
-
+        grad = (grad,) if len(trainable_indices) == 1 else grad
         return grad, forward

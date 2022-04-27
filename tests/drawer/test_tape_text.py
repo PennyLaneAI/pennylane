@@ -17,6 +17,7 @@ Unit tests for the `pennylane.draw_text` function.
 
 import pytest
 import pennylane as qml
+from pennylane import numpy as np
 
 from pennylane.drawer import tape_text
 from pennylane.drawer.tape_text import _add_grouping_symbols, _add_op, _add_measurement
@@ -54,7 +55,19 @@ class TestHelperFunctions:
     )
     def test_add_measurements(self, op, out):
         """Test private _add_measurement function renders as expected."""
-        assert out == _add_measurement(op, [""] * 4, default_wire_map, None)
+        assert out == _add_measurement(op, [""] * 4, default_wire_map, None, None)
+
+    def test_add_measurements_cache(self):
+        """Test private _add_measurement function with a matrix cache."""
+        cache = {"matrices": []}
+        op = qml.expval(qml.Hermitian(np.eye(2), wires=0))
+        assert _add_measurement(op, ["", ""], {0: 0, 1: 1}, None, cache) == ["<𝓗(M0)>", ""]
+
+        assert qml.math.allclose(cache["matrices"][0], np.eye(2))
+
+        op2 = qml.expval(qml.Hermitian(np.eye(2), wires=1))
+        # new op with same matrix, should have same M0 designation
+        assert _add_measurement(op2, ["", ""], {0: 0, 1: 1}, None, cache) == ["", "<𝓗(M0)>"]
 
     @pytest.mark.parametrize(
         "op, out",
@@ -63,11 +76,13 @@ class TestHelperFunctions:
             (qml.CNOT(wires=(0, 2)), ["╭C", "│", "╰X", "─"]),
             (qml.Toffoli(wires=(0, 1, 3)), ["╭C", "├C", "│", "╰X"]),
             (qml.IsingXX(1.23, wires=(0, 2)), ["╭IsingXX", "│", "╰IsingXX", "─"]),
+            (qml.Snapshot(), ["─|S|", "─|S|", "─|S|", "─|S|"]),
+            (qml.Barrier(), ["─||", "─||", "─||", "─||"]),
         ],
     )
     def test_add_op(self, op, out):
         """Test adding the first operation to array of strings"""
-        assert out == _add_op(op, ["─"] * 4, default_wire_map, None)
+        assert out == _add_op(op, ["─"] * 4, default_wire_map, None, None)
 
     @pytest.mark.parametrize(
         "op, out",
@@ -79,8 +94,18 @@ class TestHelperFunctions:
     )
     def test_add_second_op(self, op, out):
         """Test adding a second operation to the array of strings"""
-        start = _add_op(qml.PauliX(0), ["─"] * 4, default_wire_map, None)
-        assert out == _add_op(op, start, default_wire_map, None)
+        start = _add_op(qml.PauliX(0), ["─"] * 4, default_wire_map, None, None)
+        assert out == _add_op(op, start, default_wire_map, None, None)
+
+    def test_add_op_cache(self):
+        """Test private _add_op method functions with a matrix cache."""
+        cache = {"matrices": []}
+        op1 = qml.QubitUnitary(np.eye(2), wires=0)
+        assert _add_op(op1, ["", ""], {0: 0, 1: 1}, None, cache) == ["U(M0)", ""]
+
+        assert qml.math.allclose(cache["matrices"][0], np.eye(2))
+        op2 = qml.QubitUnitary(np.eye(2), wires=1)
+        assert _add_op(op2, ["", ""], {0: 0, 1: 1}, None, cache) == ["", "U(M0)"]
 
 
 class TestEmptyTapes:
@@ -220,12 +245,12 @@ single_op_tests_data = [
         qml.DoubleExcitationPlus(1.23, wires=(0, 1, 2, 3)),
         "0: ─╭G²₊(1.23)─┤  \n1: ─├G²₊(1.23)─┤  \n2: ─├G²₊(1.23)─┤  \n3: ─╰G²₊(1.23)─┤  ",
     ),
-    (qml.QubitUnitary(qml.numpy.eye(4), wires=(0, 1)), "0: ─╭U─┤  \n1: ─╰U─┤  "),
+    (qml.QubitUnitary(qml.numpy.eye(4), wires=(0, 1)), "0: ─╭U(M0)─┤  \n1: ─╰U(M0)─┤  "),
     (qml.QubitSum(wires=(0, 1, 2)), "0: ─╭Σ─┤  \n1: ─├Σ─┤  \n2: ─╰Σ─┤  "),
     (qml.AmplitudeDamping(0.98, wires=0), "0: ──AmplitudeDamping(0.98)─┤  "),
     (
         qml.QubitStateVector([0, 1, 0, 0], wires=(0, 1)),
-        "0: ─╭QubitStateVector─┤  \n1: ─╰QubitStateVector─┤  ",
+        "0: ─╭QubitStateVector(M0)─┤  \n1: ─╰QubitStateVector(M0)─┤  ",
     ),
     (qml.Kerr(1.234, wires=0), "0: ──Kerr(1.23)─┤  "),
     (
@@ -293,6 +318,55 @@ class TestLayering:
         expected = "0: ──X─╭IsingXX────┤  \n1: ────│─────────X─┤  \n2: ────╰IsingXX────┤  "
 
         assert tape_text(tape, wire_order=[0, 1, 2]) == expected
+
+
+with qml.tape.QuantumTape() as tape_matrices:
+    qml.QubitStateVector([1.0, 0.0], wires=(0, 1))
+    qml.QubitUnitary(np.eye(2), wires=0)
+    qml.expval(qml.Hermitian(np.eye(2), wires=0))
+
+
+class TestShowMatrices:
+    """Test the handling of matrix-valued parameters."""
+
+    def test_default_no_matrix_parameters(self):
+        """Test matrices numbered but not included by default."""
+
+        expected = (
+            "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
+            "1: ─╰QubitStateVector(M0)────────┤         "
+        )
+
+        assert tape_text(tape_matrices) == expected
+
+    def test_show_matrices(self):
+        """Test matrices included when requested."""
+
+        expected = (
+            "0: ─╭QubitStateVector(M0)──U(M1)─┤  <𝓗(M1)>\n"
+            "1: ─╰QubitStateVector(M0)────────┤         \n"
+            "M0 = \n[1.0, 0.0]\n"
+            "M1 = \n[[1. 0.]\n [0. 1.]]"
+        )
+
+        assert tape_text(tape_matrices, show_matrices=True) == expected
+
+    def test_matrix_parameters_provided_cache(self):
+        """Providing an existing matrix cache determines numbering order of matrices.
+        All matrices printed out regardless of use."""
+
+        cache = {"matrices": [np.eye(2), -np.eye(3)]}
+
+        expected = (
+            "0: ─╭QubitStateVector(M2)──U(M0)─┤  <𝓗(M0)>\n"
+            "1: ─╰QubitStateVector(M2)────────┤         \n"
+            "M0 = \n[[1. 0.]\n [0. 1.]]\n"
+            "M1 = \n[[-1. -0. -0.]\n [-0. -1. -0.]\n [-0. -0. -1.]]\n"
+            "M2 = \n[1.0, 0.0]"
+        )
+
+        assert tape_text(tape_matrices, show_matrices=True, cache=cache) == expected
+        assert cache["matrices"][2] == [1.0, 0.0]
 
 
 class TestNestedTapes:

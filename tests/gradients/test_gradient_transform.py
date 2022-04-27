@@ -18,20 +18,112 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients.gradient_transform import (
     gradient_transform,
+    gradient_analysis,
     choose_grad_methods,
     grad_method_validation,
 )
 
 
+class TestGradAnalysis:
+    """Tests for parameter gradient methods"""
+
+    def test_non_differentiable(self):
+        """Test that a non-differentiable parameter is correctly marked"""
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=[0, 1])
+
+        gradient_analysis(tape)
+
+        assert tape._par_info[0]["grad_method"] is None
+        assert tape._par_info[1]["grad_method"] == "A"
+        assert tape._par_info[2]["grad_method"] == "A"
+
+    def test_analysis_caching(self, mocker):
+        """Test that the gradient analysis is only executed once per tape
+        if grad_fn is set an unchanged."""
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=[0, 1])
+
+        spy = mocker.spy(qml.operation, "has_grad_method")
+        gradient_analysis(tape, grad_fn=5)
+        spy.assert_called()
+
+        assert tape._par_info[0]["grad_method"] is None
+        assert tape._par_info[1]["grad_method"] == "A"
+        assert tape._par_info[2]["grad_method"] == "A"
+
+        spy = mocker.spy(qml.operation, "has_grad_method")
+        gradient_analysis(tape, grad_fn=5)
+        spy.assert_not_called()
+
+    def test_independent(self):
+        """Test that an independent variable is properly marked
+        as having a zero gradient"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.expval(qml.PauliY(0))
+
+        gradient_analysis(tape)
+
+        assert tape._par_info[0]["grad_method"] == "A"
+        assert tape._par_info[1]["grad_method"] == "0"
+
+    def test_independent_no_graph_mode(self):
+        """In non-graph mode, it is impossible to determine
+        if a parameter is independent or not"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.expval(qml.PauliY(0))
+
+        gradient_analysis(tape, use_graph=False)
+
+        assert tape._par_info[0]["grad_method"] == "A"
+        assert tape._par_info[1]["grad_method"] == "A"
+
+    def test_finite_diff(self, monkeypatch):
+        """If an op has grad_method=F, this should be respected"""
+        monkeypatch.setattr(qml.RX, "grad_method", "F")
+
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=[0, 1])
+
+        gradient_analysis(tape)
+
+        assert tape._par_info[0]["grad_method"] is None
+        assert tape._par_info[1]["grad_method"] == "F"
+        assert tape._par_info[2]["grad_method"] == "A"
+
+
 class TestGradMethodValidation:
-    """Test the helper function grad_method_validation, which is a
-    reduced copy of the eponymous method of ``JacobianTape``."""
+    """Test the helper function grad_method_validation."""
 
     @pytest.mark.parametrize("method", ["analytic", "best"])
     def test_with_nondiff_parameters(self, method):
         """Test that trainable parameters without grad_method
         are detected correctly, raising an exception."""
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.expval(qml.PauliZ(0))
@@ -43,7 +135,7 @@ class TestGradMethodValidation:
     def test_with_numdiff_parameters_and_analytic(self):
         """Test that trainable parameters with numerical grad_method ``"F"``
         together with ``method="analytic"`` raises an exception."""
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.RX(np.array(0.1, requires_grad=True), wires=0)
             qml.expval(qml.PauliZ(0))
@@ -54,8 +146,7 @@ class TestGradMethodValidation:
 
 
 class TestChooseGradMethods:
-    """Test the helper function choose_grad_methods, which is a
-    reduced copy of the eponymous method of ``JacobianTape``."""
+    """Test the helper function choose_grad_methods"""
 
     all_diff_methods = [
         ["A"] * 2,
@@ -227,8 +318,6 @@ class TestGradientTransformIntegration:
         assert isinstance(res, tuple) and len(res) == 2
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
 
-    # TODO: Include the following test once the gradient_transform is fixed regarding the
-    # usage of qml.math.squeeze.
     def test_multiple_tensor_arguments_old_version(self, tol):
         """Test that a gradient transform acts on QNodes
         correctly when multiple tensor QNode arguments are present"""
@@ -266,8 +355,6 @@ class TestGradientTransformIntegration:
         res = qml.gradients.param_shift(circuit)(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # TODO: Include the following test once the gradient_transform is fixed regarding the
-    # usage of qml.math.squeeze.
     def test_high_dimensional_single_parameter_arg_and_single_gate(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single high-dimensional tensor QNode arguments is used"""
@@ -284,8 +371,6 @@ class TestGradientTransformIntegration:
         res = qml.gradients.param_shift(circuit)(x)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # TODO: Include the following test once the gradient_transform is fixed regarding the
-    # usage of qml.math.squeeze.
     def test_single_gate_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
         when a single QNode argument and gate are present"""
@@ -456,8 +541,8 @@ class TestGradientTransformIntegration:
 
         # the gradient function can be called with different shot values
         grad_fn = qml.gradients.param_shift(circuit)
-        assert grad_fn(x).shape == (1, 1)
-        assert grad_fn(x, shots=[(1, 1000)]).shape == (1000, 1)
+        assert grad_fn(x).shape == ()
+        assert grad_fn(x, shots=[(1, 1000)]).shape == (1000,)
 
         # the original QNode is unaffected
         assert circuit(x).shape == tuple()

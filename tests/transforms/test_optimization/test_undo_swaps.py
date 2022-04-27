@@ -36,7 +36,7 @@ class TestUndoSwaps:
         transformed_qfunc = undo_swaps(qfunc)
 
         tape = qml.transforms.make_tape(transformed_qfunc)()
-        res = tape.execute(qml.device("default.qubit", wires=2))
+        res = qml.device("default.qubit", wires=2).execute(tape)
         assert len(tape.operations) == 2
         assert np.allclose(res[0][0], 0.5)
 
@@ -52,7 +52,7 @@ class TestUndoSwaps:
         transformed_qfunc = undo_swaps(qfunc)
 
         tape = qml.transforms.make_tape(transformed_qfunc)()
-        res = tape.execute(qml.device("default.qubit", wires=2))
+        res = qml.device("default.qubit", wires=2).execute(tape)
         assert len(tape.operations) == 2
         assert np.allclose(res[0][2], 1.0)
 
@@ -75,10 +75,10 @@ class TestUndoSwaps:
         transformed_qfunc = undo_swaps(qfunc1)
 
         tape1 = qml.transforms.make_tape(transformed_qfunc)()
-        res1 = tape1.execute(qml.device("default.qubit", wires=3))
+        res1 = qml.device("default.qubit", wires=3).execute(tape1)
 
         tape2 = qml.transforms.make_tape(qfunc2)()
-        res2 = tape2.execute(qml.device("default.qubit", wires=3))
+        res2 = qml.device("default.qubit", wires=3).execute(tape2)
 
         assert np.allclose(res1, res2)
 
@@ -102,10 +102,10 @@ class TestUndoSwaps:
         transformed_qfunc = undo_swaps(qfunc1)
 
         tape1 = qml.transforms.make_tape(transformed_qfunc)()
-        res1 = tape1.execute(qml.device("default.qubit", wires=3))
+        res1 = qml.device("default.qubit", wires=3).execute(tape1)
 
         tape2 = qml.transforms.make_tape(qfunc2)()
-        res2 = tape2.execute(qml.device("default.qubit", wires=3))
+        res2 = qml.device("default.qubit", wires=3).execute(tape2)
 
         assert np.allclose(res1, res2)
 

@@ -108,6 +108,7 @@ class QuantumPhaseEstimation(Operation):
     grad_method = None
 
     def __init__(self, unitary, target_wires, estimation_wires, do_queue=True, id=None):
+
         target_wires = list(target_wires)
         estimation_wires = list(estimation_wires)
         wires = target_wires + estimation_wires

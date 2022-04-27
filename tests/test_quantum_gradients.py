@@ -178,10 +178,12 @@ class TestCVGradient:
         if O.ev_order == 1:
             grad_A = qml.gradients.param_shift_cv(q, dev=gaussian_dev)(par)
             # the different methods agree
-            assert grad_A == pytest.approx(grad_F, abs=tol)
+            assert qml.math.shape(grad_A) == qml.math.shape(grad_F) == ()
+            assert np.allclose(grad_A, grad_F, atol=tol)
 
         # the different methods agree
-        assert grad_A2 == pytest.approx(grad_F, abs=tol)
+        assert qml.math.shape(grad_A2) == qml.math.shape(grad_F) == ()
+        assert np.allclose(grad_A2, grad_F, atol=tol)
 
     def test_cv_gradients_multiple_gate_parameters(self, gaussian_dev, tol):
         "Tests that gates with multiple free parameters yield correct gradients."
@@ -237,7 +239,7 @@ class TestCVGradient:
 
     def test_cv_gradients_parameters_inside_array(self, gaussian_dev, tol):
         "Tests that free parameters inside an array passed to an Operation yield correct gradients."
-        par = [0.4, 1.3]
+        par = anp.array([0.4, 1.3], requires_grad=True)
 
         def qf(x, y):
             qml.Displacement(0.5, 0, wires=[0])
@@ -309,8 +311,9 @@ class TestCVGradient:
         grad_A2 = qml.gradients.param_shift_cv(qnode, dev=gaussian_dev, force_order2=True)(x)
 
         # the different methods agree
-        assert grad_A == pytest.approx(grad_F, abs=tol)
-        assert grad_A2 == pytest.approx(grad_F, abs=tol)
+        assert qml.math.shape(grad_A) == qml.math.shape(grad_A2) == qml.math.shape(grad_F) == ()
+        assert np.allclose(grad_A, grad_F, atol=tol)
+        assert np.allclose(grad_A2, grad_F, atol=tol)
 
 
 class TestQubitGradient:

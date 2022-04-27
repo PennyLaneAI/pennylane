@@ -37,9 +37,11 @@ from .qchem_ops import *
 from .state_preparation import *
 from .hamiltonian import Hamiltonian
 from ..identity import Identity
+from ..snapshot import Snapshot
 
 ops = {
     "Identity",
+    "Snapshot",
     "Hadamard",
     "PauliX",
     "PauliY",

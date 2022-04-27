@@ -1,11 +1,10 @@
 qml.tape
 ========
 
-Quantum tapes are a datastructure that can represent quantum circuits and measurement statistics in PennyLane. They are queuing contexts that can record quantum operations, execute devices, and compute gradients.
+Quantum tapes are a datastructure that can represent quantum circuits and measurement statistics in PennyLane. They are queuing contexts that can record and process quantum operations and measurements.
 
 In addition to being created internally by QNodes, quantum tapes can also be created,
-nested, expanded (via :meth:`~.QuantumTape.expand`), and executed manually. Tape subclasses also provide
-additional gradient methods:
+nested, expanded (via :meth:`~.QuantumTape.expand`), and executed manually.
 
 Finally, quantum tapes are fully compatible with autodifferentiating via NumPy/Autograd,
 TensorFlow, and PyTorch.

@@ -24,7 +24,7 @@ import autograd
 
 import pennylane as qml
 from pennylane import Device
-from pennylane.interfaces.batch import set_shots, SUPPORTED_INTERFACES
+from pennylane.interfaces import set_shots, SUPPORTED_INTERFACES
 
 
 class QNode:
@@ -371,12 +371,6 @@ class QNode:
         # determine if the device has any child devices that support backpropagation
         backprop_devices = device.capabilities().get("passthru_devices", None)
 
-        if getattr(device, "cache", 0):
-            # TODO: deprecate device caching, and replacing with QNode caching.
-            raise qml.QuantumFunctionError(
-                "Device caching is incompatible with the backprop diff_method"
-            )
-
         if device.shots is not None:
             raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
 
@@ -407,6 +401,7 @@ class QNode:
                 )
                 device.expand_fn = expand_fn
                 device.batch_transform = batch_transform
+
                 return "backprop", {}, device
 
             raise qml.QuantumFunctionError(
@@ -482,10 +477,11 @@ class QNode:
     def construct(self, args, kwargs):
         """Call the quantum function with a tape context, ensuring the operations get queued."""
 
-        self._tape = qml.tape.JacobianTape()
+        self._tape = qml.tape.QuantumTape()
 
         with self.tape:
             self._qfunc_output = self.func(*args, **kwargs)
+        self._tape._qfunc_output = self._qfunc_output
 
         params = self.tape.get_parameters(trainable_only=False)
         self.tape.trainable_params = qml.math.get_trainable_indices(params)
@@ -495,13 +491,18 @@ class QNode:
         else:
             measurement_processes = self._qfunc_output
 
-        if not all(isinstance(m, qml.measure.MeasurementProcess) for m in measurement_processes):
+        if not all(
+            isinstance(m, qml.measurements.MeasurementProcess) for m in measurement_processes
+        ):
             raise qml.QuantumFunctionError(
                 "A quantum function must return either a single measurement, "
                 "or a nonempty sequence of measurements."
             )
 
-        if not all(ret == m for ret, m in zip(measurement_processes, self.tape.measurements)):
+        terminal_measurements = [
+            m for m in self.tape.measurements if m.return_type != qml.measurements.MidMeasure
+        ]
+        if not all(ret == m for ret, m in zip(measurement_processes, terminal_measurements)):
             raise qml.QuantumFunctionError(
                 "All measurements must be returned in the order they are measured."
             )
@@ -513,11 +514,25 @@ class QNode:
                 if len(obj.wires) != self.device.num_wires:
                     raise qml.QuantumFunctionError(f"Operator {obj.name} must act on all wires")
 
+            # pylint: disable=no-member
             if isinstance(obj, qml.ops.qubit.SparseHamiltonian) and self.gradient_fn == "backprop":
                 raise qml.QuantumFunctionError(
                     "SparseHamiltonian observable must be used with the parameter-shift"
                     " differentiation method"
                 )
+
+        # Apply the deferred measurement principle if the device doesn't
+        # support mid-circuit measurements natively
+        # TODO:
+        # 1. Change once mid-circuit measurements are not considered as tape
+        # operations
+        # 2. Move this expansion to Device (e.g., default_expand_fn or
+        # batch_transform method)
+        if any(
+            getattr(obs, "return_type", None) == qml.measurements.MidMeasure
+            for obs in self.tape.operations
+        ):
+            self._tape = qml.defer_measurements(self._tape)
 
         if self.expansion_strategy == "device":
             self._tape = self.device.expand_fn(self.tape, max_expansion=self.max_expansion)
@@ -543,6 +558,7 @@ class QNode:
                 # store the initialization gradient function
                 original_grad_fn = [self.gradient_fn, self.gradient_kwargs, self.device]
 
+                # pylint: disable=not-callable
                 # update the gradient function
                 set_shots(self._original_device, override_shots)(self._update_gradient_fn)()
 

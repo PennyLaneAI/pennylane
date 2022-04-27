@@ -82,7 +82,7 @@ class TestAmplitudeDamping:
         assert np.allclose(op(0.1, wires=0).kraus_matrices(), expected, atol=tol, rtol=0)
 
     def test_gamma_invalid_parameter(self):
-        with pytest.raises(ValueError, match="gamma must be between"):
+        with pytest.raises(ValueError, match="gamma must be in the interval"):
             channel.AmplitudeDamping(1.5, wires=0).kraus_matrices()
 
 
@@ -110,11 +110,11 @@ class TestGeneralizedAmplitudeDamping:
         assert np.allclose(op(0.1, 0.5, wires=0).kraus_matrices()[3], expected_K3, atol=tol, rtol=0)
 
     def test_gamma_invalid_parameter(self):
-        with pytest.raises(ValueError, match="gamma must be between"):
+        with pytest.raises(ValueError, match="gamma must be in the interval"):
             channel.GeneralizedAmplitudeDamping(1.5, 0.0, wires=0).kraus_matrices()
 
     def test_p_invalid_parameter(self):
-        with pytest.raises(ValueError, match="p must be between"):
+        with pytest.raises(ValueError, match="p must be in the interval"):
             channel.GeneralizedAmplitudeDamping(0.0, 1.5, wires=0).kraus_matrices()
 
 
@@ -137,7 +137,7 @@ class TestPhaseDamping:
         assert np.allclose(op(0.1, wires=0).kraus_matrices(), expected, atol=tol, rtol=0)
 
     def test_gamma_invalid_parameter(self):
-        with pytest.raises(ValueError, match="gamma must be between"):
+        with pytest.raises(ValueError, match="gamma must be in the interval"):
             channel.PhaseDamping(1.5, wires=0).kraus_matrices()
 
 
@@ -174,7 +174,7 @@ class TestBitFlip:
         assert np.allclose(gradient, (-2 * np.cos(angle)))
 
     def test_p_invalid_parameter(self):
-        with pytest.raises(ValueError, match="p must be between"):
+        with pytest.raises(ValueError, match="p must be in the interval"):
             channel.BitFlip(1.5, wires=0).kraus_matrices()
 
 
@@ -211,7 +211,7 @@ class TestPhaseFlip:
         assert np.allclose(gradient, 0.0)
 
     def test_p_invalid_parameter(self):
-        with pytest.raises(ValueError, match="p must be between"):
+        with pytest.raises(ValueError, match="p must be in the interval"):
             channel.PhaseFlip(1.5, wires=0).kraus_matrices()
 
 
@@ -250,7 +250,7 @@ class TestDepolarizingChannel:
         assert np.allclose(gradient, -(4 / 3) * np.cos(angle))
 
     def test_p_invalid_parameter(self):
-        with pytest.raises(ValueError, match="p must be between"):
+        with pytest.raises(ValueError, match="p must be in the interval"):
             channel.DepolarizingChannel(1.5, wires=0).kraus_matrices()
 
 
@@ -278,15 +278,15 @@ class TestResetError:
         assert np.allclose(op(p_0, p_1, wires=0).kraus_matrices()[4], expected_K4, atol=tol, rtol=0)
 
     def test_p0_invalid_parameter(self):
-        with pytest.raises(ValueError, match="p_0 must be between"):
+        with pytest.raises(ValueError, match="p_0 must be in the interval"):
             channel.ResetError(1.5, 0.0, wires=0).kraus_matrices()
 
     def test_p1_invalid_parameter(self):
-        with pytest.raises(ValueError, match="p_1 must be between"):
+        with pytest.raises(ValueError, match="p_1 must be in the interval"):
             channel.ResetError(0.0, 1.5, wires=0).kraus_matrices()
 
     def test_p0_p1_sum_not_normalized(self):
-        with pytest.raises(ValueError, match="must be between"):
+        with pytest.raises(ValueError, match="must be in the interval"):
             channel.ResetError(1.0, 1.0, wires=0).kraus_matrices()
 
     @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
@@ -333,7 +333,7 @@ class TestPauliError:
     EXPECTED_ERRORS = [ValueError, ValueError, ValueError, WireError]
     EXPECTED_MESSAGES = [
         "The number of operators must match the number of wires",
-        "p must be between \\[0,1\\]",
+        "p must be in the interval \\[0,1\\]",
         "The specified operators need to be either of 'X', 'Y' or 'Z'",
         "Wires must be unique",
     ]

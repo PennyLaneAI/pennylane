@@ -43,7 +43,9 @@ RUN git submodule update --init --recursive \
     && pip install wheel && pip install -r requirements.txt \
     && python3 setup.py install \
     && pip install pytest pytest-cov pytest-mock flaky \
-    && make test
+    && pip install -i https://test.pypi.org/simple/ pennylane-lightning --pre --upgrade \
+    && pip install openfermionpyscf \
+    && make test && make coverage
 
 # create Second small build.
 FROM ubuntu:latest

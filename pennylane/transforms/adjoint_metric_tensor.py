@@ -192,7 +192,8 @@ def _adjoint_metric_tensor_tape(tape, device):
     psi = _apply_operations(psi, group_after_trainable_op[-1], device)
 
     for j, outer_op in enumerate(trainable_operations):
-        generator_1, prefactor_1 = qml.utils.get_generator(outer_op, return_matrix=True)
+        generator_1, prefactor_1 = qml.generator(outer_op)
+        generator_1 = qml.matrix(generator_1)
 
         # the state vector phi is missing a factor of 1j * prefactor_1
         phi = device._apply_unitary(
@@ -223,7 +224,8 @@ def _adjoint_metric_tensor_tape(tape, device):
             lam = _apply_operations(lam, group_after_trainable_op[i], device, invert=True)
             inner_op = trainable_operations[i]
             # extract and apply G_i
-            generator_2, prefactor_2 = qml.utils.get_generator(inner_op, return_matrix=True)
+            generator_2, prefactor_2 = qml.generator(inner_op)
+            generator_2 = qml.matrix(generator_2)
             # this state vector is missing a factor of 1j * prefactor_2
             mu = device._apply_unitary(lam, qml.math.convert_like(generator_2, lam), inner_op.wires)
             phi_real = qml.math.reshape(qml.math.real(phi), (dim,))

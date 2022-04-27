@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.transforms.insert_ops
-from pennylane.operation import Expectation
+from pennylane.measurements import Expectation
 from pennylane.tape import QuantumTape
 from pennylane.transforms.insert_ops import insert
 

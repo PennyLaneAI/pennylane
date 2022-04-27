@@ -18,7 +18,6 @@ from pennylane import numpy as np
 import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.transforms.optimization import single_qubit_fusion
-from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 
 from utils import *
 
@@ -41,11 +40,9 @@ class TestSingleQubitFusion:
         transformed_qfunc = single_qubit_fusion()(qfunc)
 
         # Compare matrices
-        compute_matrix = get_unitary_matrix(qfunc, [0])
-        matrix_expected = compute_matrix()
+        matrix_expected = qml.matrix(qfunc, [0])()
 
-        compute_transformed_matrix = get_unitary_matrix(transformed_qfunc, [0])
-        matrix_obtained = compute_transformed_matrix()
+        matrix_obtained = qml.matrix(transformed_qfunc, [0])()
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)
 
     def test_single_qubit_fusion_no_gates_after(self):
@@ -71,7 +68,7 @@ class TestSingleQubitFusion:
             qml.RX(-0.2, wires=0)
             qml.RZ(-0.1, wires=0)
 
-        transformed_qfunc = single_qubit_fusion()(qfunc)
+        transformed_qfunc = single_qubit_fusion(atol=1e-7)(qfunc)
         transformed_ops = qml.transforms.make_tape(transformed_qfunc)().operations
         assert len(transformed_ops) == 0
 
@@ -126,11 +123,9 @@ class TestSingleQubitFusion:
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
         # Compare matrices
-        compute_matrix = get_unitary_matrix(qfunc, [0, 1])
-        matrix_expected = compute_matrix()
+        matrix_expected = qml.matrix(qfunc, [0, 1])()
 
-        compute_transformed_matrix = get_unitary_matrix(transformed_qfunc, [0, 1])
-        matrix_obtained = compute_transformed_matrix()
+        matrix_obtained = qml.matrix(transformed_qfunc, [0, 1])()
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)
 
     def test_single_qubit_fusion_multiple_qubits(self):
@@ -156,11 +151,9 @@ class TestSingleQubitFusion:
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
         # Check matrix representation
-        compute_matrix = get_unitary_matrix(qfunc, ["a", "b"])
-        matrix_expected = compute_matrix()
+        matrix_expected = qml.matrix(qfunc, ["a", "b"])()
 
-        compute_transformed_matrix = get_unitary_matrix(transformed_qfunc, ["a", "b"])
-        matrix_obtained = compute_transformed_matrix()
+        matrix_obtained = qml.matrix(transformed_qfunc, ["a", "b"])()
 
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)
 
@@ -292,6 +285,40 @@ class TestSingleQubitFusionInterfaces:
         assert qml.math.allclose(
             jax.grad(original_qnode)(input), jax.grad(transformed_qnode)(input)
         )
+
+        # Check operation list
+        ops = transformed_qnode.qtape.operations
+        compare_operation_lists(ops, expected_op_list, expected_wires_list)
+
+    def test_single_qubit_fusion_jax_jit(self):
+        """Test QNode and gradient in JAX interface with JIT."""
+        jax = pytest.importorskip("jax")
+        from jax import numpy as jnp
+
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
+
+        original_qnode = qml.QNode(qfunc, dev, interface="jax")
+        jitted_qnode = jax.jit(original_qnode)
+
+        transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="jax")
+        jitted_transformed_qnode = jax.jit(transformed_qnode)
+
+        input = jnp.array([0.1, 0.2, 0.3, 0.4], dtype=jnp.float64)
+
+        # Check that the numerical output is the same
+        original_output = original_qnode(input)
+        assert qml.math.allclose(jitted_qnode(input), original_output)
+        assert qml.math.allclose(transformed_qnode(input), original_output)
+        assert qml.math.allclose(jitted_transformed_qnode(input), original_output)
+
+        # Check that the gradients are the same even after jitting
+        original_gradient = jax.grad(original_qnode)(input)
+        assert qml.math.allclose(jax.grad(jitted_qnode)(input), original_gradient)
+        assert qml.math.allclose(jax.grad(transformed_qnode)(input), original_gradient)
+        assert qml.math.allclose(jax.grad(jitted_transformed_qnode)(input), original_gradient)
 
         # Check operation list
         ops = transformed_qnode.qtape.operations

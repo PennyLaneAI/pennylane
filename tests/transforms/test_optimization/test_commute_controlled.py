@@ -18,7 +18,6 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 from pennylane.transforms.optimization import commute_controlled
-from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 from utils import (
     compare_operation_lists,
     check_matrix_equivalence,
@@ -294,10 +293,10 @@ class TestCommuteControlled:
         assert len(original_ops) == len(transformed_ops)
 
         # Compare matrices
-        compute_matrix = get_unitary_matrix(qfunc, [0, 1])
+        compute_matrix = qml.matrix(qfunc, [0, 1])
         matrix_expected = compute_matrix()
 
-        compute_transformed_matrix = get_unitary_matrix(transformed_qfunc, [0, 1])
+        compute_transformed_matrix = qml.matrix(transformed_qfunc, [0, 1])
         matrix_obtained = compute_transformed_matrix()
 
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)

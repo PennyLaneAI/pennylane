@@ -68,10 +68,10 @@ class RandomLayers(Operation):
         .. code-block:: python
 
             import pennylane as qml
-            import numpy as np
+            from pennylane import numpy as np
 
             dev = qml.device("default.qubit", wires=2)
-            weights = [[0.1, -2.1, 1.4]]
+            weights = np.array([[0.1, -2.1, 1.4]])
 
             @qml.qnode(dev)
             def circuit1(weights):
@@ -88,13 +88,13 @@ class RandomLayers(Operation):
 
         You can verify this by drawing the circuits.
 
-            >>> print(qml.draw(circuit1)(weights))
-            0: ─────────────────────╭X──╭X──RZ(1.4)──┤ ⟨Z⟩
-            1: ──RX(0.1)──RX(-2.1)──╰C──╰C───────────┤
+        >>> print(qml.draw(circuit1, expansion_strategy="device")(weights))
+        0: ──────────────────────╭X─╭X──RZ(1.40)─┤  <Z>
+        1: ──RX(0.10)──RX(-2.10)─╰C─╰C───────────┤
 
-            >>> print(qml.draw(circuit2)(weights))
-            0: ─────────────────────╭X──╭X──RZ(1.4)──┤ ⟨Z⟩
-            1: ──RX(0.1)──RX(-2.1)──╰C──╰C───────────┤
+        >>> print(qml.draw(circuit2, expansion_strategy="device")(weights))
+        0: ──────────────────────╭X─╭X──RZ(1.40)─┤  <Z>
+        1: ──RX(0.10)──RX(-2.10)─╰C─╰C───────────┤
 
 
         **Changing the seed**
@@ -102,28 +102,18 @@ class RandomLayers(Operation):
         To change the randomly generated circuit architecture, you have to change the seed passed to the template.
         For example, these two calls of ``RandomLayers`` *do not* create the same circuit:
 
-        .. code-block:: python
-
-            @qml.qnode(dev)
-            def circuit_9(weights):
-                qml.RandomLayers(weights=weights, wires=range(2), seed=9)
-                return qml.expval(qml.PauliZ(0))
-
-            @qml.qnode(dev)
-            def circuit_12(weights):
-                qml.RandomLayers(weights=weights, wires=range(2), seed=12)
-                return qml.expval(qml.PauliZ(0))
-
-        >>> np.allclose(circuit_9(weights), circuit_12(weights))
-        >>> False
-
-        >>> print(qml.draw(circuit_9)(weights))
-        0: ──╭X──RX(0.1)────────────┤ ⟨Z⟩
-        1: ──╰C──RY(-2.1)──RX(1.4)──┤
-
-        >>> print(qml.draw(circuit_12)(weights))
-        0: ──╭X──RZ(0.1)───╭C──╭X───────────┤ ⟨Z⟩
-        1: ──╰C──RX(-2.1)──╰X──╰C──RZ(1.4)──┤
+        >>> @qml.qnode(dev)
+        ... def circuit(weights, seed=None):
+        ...     qml.RandomLayers(weights=weights, wires=range(2), seed=seed)
+        ...     return qml.expval(qml.PauliZ(0))
+        >>> np.allclose(circuit(weights, seed=9), circuit(weights, seed=12))
+        False
+        >>>  print(qml.draw(circuit, expansion_strategy="device")(weights, seed=9))
+        0: ─╭X──RX(0.10)────────────┤  <Z>
+        1: ─╰C──RY(-2.10)──RX(1.40)─┤
+        >>> print(qml.draw(circuit, expansion_strategy="device")(weights, seed=12))
+        0: ─╭X──RZ(0.10)──╭C─╭X───────────┤  <Z>
+        1: ─╰C──RX(-2.10)─╰X─╰C──RZ(1.40)─┤
 
 
         **Automatic creation of random circuits**
@@ -257,7 +247,7 @@ class RandomLayers(Operation):
                     # apply a random rotation gate to a random wire
                     gate = np.random.choice(rotations)
                     rnd_wire = wires.select_random(1)
-                    op_list.append(gate(weights[l, i], wires=rnd_wire))
+                    op_list.append(gate(weights[l][i], wires=rnd_wire))
                     i += 1
 
                 else:

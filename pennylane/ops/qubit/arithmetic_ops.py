@@ -107,7 +107,7 @@ class QubitCarry(Operation):
 
         **Example**
 
-        >>> qml.QubitCarry.compute_matrix()
+        >>> print(qml.QubitCarry.compute_matrix())
         [[1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
          [0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0]
          [0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0]
@@ -237,8 +237,8 @@ class QubitSum(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    def label(self, decimals=None, base_label=None):
-        return super().label(decimals=decimals, base_label=base_label or "Σ")
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Σ", cache=cache)
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -254,7 +254,7 @@ class QubitSum(Operation):
 
         **Example**
 
-        >>> qml.QubitSum.compute_matrix()
+        >>> print(qml.QubitSum.compute_matrix())
         [[1 0 0 0 0 0 0 0]
          [0 1 0 0 0 0 0 0]
          [0 0 0 1 0 0 0 0]

@@ -214,7 +214,7 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
             \mathfrak{Re}\left\{\langle \partial_i\psi|\partial_j\psi\rangle\right\}
 
         and can be computed using an augmented circuit with an additional qubit.
-        See for example `the appendix of McArdle et al. <https://arxiv.org/pdf/1804.03023.pdf>`__
+        See for example the appendix of `McArdle et al. (2019) <https://doi.org/10.1038/s41534-019-0187-2>`__
         for details.
         The block-diagonal of the tensor is computed using the covariance matrix approach.
 
@@ -390,7 +390,7 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
 
         # for each operation in the layer, get the generator
         for op in curr_ops:
-            obs, s = qml.utils.get_generator(op)
+            obs, s = qml.generator(op)
             obs_list[-1].append(obs)
             coeffs_list[-1].append(s)
 
@@ -460,8 +460,8 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
 
     except KeyError as e:
         if allow_nonunitary:
-            gen, coeff = qml.utils.get_generator(op, return_matrix=True)
-            return qml.ControlledQubitUnitary(coeff * gen, control_wires=aux_wire, wires=op.wires)
+            mat = qml.matrix(qml.generator(op, format="observable"))
+            return qml.ControlledQubitUnitary(mat, control_wires=aux_wire, wires=op.wires)
 
         raise ValueError(
             f"Generator for operation {op} not known and non-unitary operations "

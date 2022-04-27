@@ -274,7 +274,7 @@ class TestSpecialGates:
         """Test MultiControlledX gets a special call."""
 
         with QuantumTape() as tape:
-            qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4)
+            qml.MultiControlledX(wires=[0, 1, 2, 3, 4])
 
         _, ax = tape_mpl(tape)
         layer = 0
@@ -294,7 +294,7 @@ class TestSpecialGates:
         """Test MultiControlledX special call with provided control values."""
 
         with QuantumTape() as tape:
-            qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4, control_values="0101")
+            qml.MultiControlledX(wires=[0, 1, 2, 3, 4], control_values="0101")
 
         _, ax = tape_mpl(tape)
 

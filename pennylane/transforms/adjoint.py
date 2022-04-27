@@ -58,7 +58,7 @@ def adjoint(fn):
     function has indeed been applied:
 
     >>> print(qml.draw(circuit)(0.2, 0.5))
-     0: ──RX(0.2)──RY(0.5)──RY(-0.5)──RX(-0.2)──┤ ⟨Z⟩
+    0: ──RX(0.20)──RY(0.50)──RY(-0.50)──RX(-0.20)─┤  <Z>
 
     The adjoint function can also be applied directly to templates and operations:
 
@@ -89,7 +89,7 @@ def adjoint(fn):
         This creates the following circuit:
 
         >>> print(qml.draw(circuit)())
-        0: --RX(0.123)--RY(0.456)--RY(-0.456)--RX(-0.123)--| <Z>
+        0: ──RX(0.12)──RY(0.46)──RY(-0.46)──RX(-0.12)─┤  <Z>
 
         **Single operation**
 
@@ -107,7 +107,7 @@ def adjoint(fn):
         This creates the following circuit:
 
         >>> print(qml.draw(circuit)())
-        0: --RX(0.123)--RX(-0.123)--| <Z>
+        0: ──RX(0.12)──RX(-0.12)─┤  <Z>
     """
     if not callable(fn):
         raise ValueError(

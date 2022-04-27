@@ -21,18 +21,42 @@ from pennylane import numpy as np
 from pennylane.wires import Wires
 
 
-class TestOperations:
-    @pytest.mark.parametrize(
-        "op",
-        [
-            qml.BasisState(np.array([0, 1]), wires=0),
-            qml.QubitStateVector(np.array([1.0, 0.0]), wires=0),
-            qml.QubitDensityMatrix(np.array([[1.0, 0.0], [0.0, 0.0]]), wires=0),
-        ],
-    )
-    def test_adjoint_error_exception(self, op, tol):
-        with pytest.raises(qml.ops.AdjointError):
-            op.adjoint()
+densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
+
+
+@pytest.mark.parametrize(
+    "op",
+    [
+        qml.BasisState(np.array([0, 1]), wires=0),
+        qml.QubitStateVector(np.array([1.0, 0.0]), wires=0),
+        qml.QubitDensityMatrix(densitymat0, wires=0),
+    ],
+)
+def test_adjoint_error_exception(op):
+    with pytest.raises(qml.ops.AdjointError):
+        op.adjoint()
+
+
+@pytest.mark.parametrize(
+    "op, mat, base",
+    [
+        (qml.BasisState(np.array([0, 1]), wires=0), [0, 1], "BasisState"),
+        (qml.QubitStateVector(np.array([1.0, 0.0]), wires=0), [1.0, 0.0], "QubitStateVector"),
+        (qml.QubitDensityMatrix(densitymat0, wires=0), densitymat0, "QubitDensityMatrix"),
+    ],
+)
+def test_labelling_matrix_cache(op, mat, base):
+    """Test state prep matrix parameters interact with labelling matrix cache"""
+
+    assert op.label() == base
+
+    cache = {"matrices": []}
+    assert op.label(cache=cache) == base + "(M0)"
+    assert qml.math.allclose(cache["matrices"][0], mat)
+
+    cache = {"matrices": [0, mat, 0]}
+    assert op.label(cache=cache) == base + "(M1)"
+    assert len(cache["matrices"]) == 3
 
 
 class TestDecomposition:

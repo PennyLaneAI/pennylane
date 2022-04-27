@@ -18,7 +18,7 @@ from itertools import product, combinations
 import numpy as np
 
 
-from pennylane.utils import get_generator
+import pennylane as qml
 
 
 def format_nvec(nvec):
@@ -63,8 +63,7 @@ def get_spectrum(op, decimals):
     Returns:
         set[float]: non-negative frequencies contributed by this input-encoding gate
     """
-    matrix, coeff = get_generator(op, return_matrix=True)
-    matrix = coeff * matrix
+    matrix = qml.matrix(qml.generator(op, format="observable"))
 
     # todo: use qml.math.linalg once it is tested properly
     evals = np.linalg.eigvalsh(matrix)

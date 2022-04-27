@@ -15,21 +15,10 @@ r"""
 Contains the FermionicDoubleExcitation template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import math
-
 import numpy as np
 import pennylane as qml
 from pennylane.operation import Operation, AnyWires
 from pennylane.ops import RZ, RX, CNOT, Hadamard
-
-
-# Four term gradient recipe for controlled rotations
-INV_SQRT2 = 1 / math.sqrt(2)
-c1 = INV_SQRT2 * (np.sqrt(2) + 1) / 4
-c2 = INV_SQRT2 * (np.sqrt(2) - 1) / 4
-a = np.pi / 2
-b = 3 * np.pi / 2
-four_term_grad_recipe = ([[c1, 1, a], [-c1, 1, -a], [-c2, 1, b], [c2, 1, -b]],)
 
 
 def _layer1(weight, s, r, q, p, set_cnot_wires):
@@ -505,7 +494,7 @@ class FermionicDoubleExcitation(Operation):
 
     num_wires = AnyWires
     grad_method = "A"
-    grad_recipe = four_term_grad_recipe
+    parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, weight, wires1=None, wires2=None, do_queue=True, id=None):
 

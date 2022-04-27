@@ -114,7 +114,9 @@ class GroverOperator(Operation):
         return 0
 
     @staticmethod
-    def compute_decomposition(wires, work_wires, **kwargs):  # pylint: disable=arguments-differ
+    def compute_decomposition(
+        wires, work_wires, **kwargs
+    ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -142,8 +144,7 @@ class GroverOperator(Operation):
         op_list.append(
             MultiControlledX(
                 control_values=ctrl_str,
-                control_wires=wires[:-1],
-                wires=wires[-1],
+                wires=wires,
                 work_wires=work_wires,
             )
         )

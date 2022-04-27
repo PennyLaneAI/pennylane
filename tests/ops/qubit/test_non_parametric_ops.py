@@ -554,6 +554,27 @@ class TestBarrier:
         assert queue[1].name == "Barrier"
         assert queue[4].name == "Barrier"
 
+    def test_barrier_control(self):
+        """Test if Barrier is correctly included in queue when controlling"""
+        dev = qml.device("default.qubit", wires=3)
+
+        def barrier():
+            qml.PauliX(wires=0)
+            qml.Barrier(wires=[0, 1])
+            qml.CNOT(wires=[0, 1])
+
+        @qml.qnode(dev)
+        def circuit():
+            barrier()
+            qml.ctrl(barrier, 2)()
+            return qml.state()
+
+        circuit()
+        tape = circuit.tape.expand(stop_at=lambda op: op.name in ["Barrier", "PauliX", "CNOT"])
+
+        assert tape.operations[1].name == "Barrier"
+        assert tape.operations[4].name == "Barrier"
+
 
 class TestWireCut:
     """Tests for the WireCut operator"""
@@ -613,18 +634,18 @@ class TestMultiControlledX:
                 None,
                 [0, 1, 2],
                 [0, 1],
-                "Alternative control values must be passed as a binary string.",
+                "Control values must be passed as a string.",
             ),
             (
                 None,
                 [1],
                 "1",
-                "MultiControlledX: wrong number of wires. 1 wire given. Need at least 2.",
+                r"MultiControlledX: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
             ),
             ([0], None, "", "Must specify the wires where the operation acts on"),
             ([0, 1], 2, "ab", "String of control values can contain only '0' or '1'."),
             ([0, 1], 2, "011", "Length of control bit string must equal number of control wires."),
-            ([0, 1], 2, [0, 1], "Alternative control values must be passed as a binary string."),
+            ([0, 1], 2, [0, 1], "Control values must be passed as a string."),
             ([0, 1], [2, 3], "10", "MultiControlledX accepts a single target wire."),
         ],
     )

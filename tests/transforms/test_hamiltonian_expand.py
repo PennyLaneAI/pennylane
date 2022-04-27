@@ -160,7 +160,7 @@ class TestHamiltonianExpval:
             0.64123,
         ]
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             for i in range(2):
                 qml.RX(np.array(0), wires=0)
                 qml.RX(np.array(0), wires=1)
@@ -204,7 +204,7 @@ class TestHamiltonianExpval:
         ]
 
         with tf.GradientTape() as gtape:
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 for i in range(2):
                     qml.RX(var[i, 0], wires=0)
                     qml.RX(var[i, 1], wires=1)

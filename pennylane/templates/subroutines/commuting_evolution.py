@@ -90,7 +90,7 @@ class CommutingEvolution(Operation):
             coeffs = [1, -1]
             obs = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliY(0) @ qml.PauliX(1)]
             hamiltonian = qml.Hamiltonian(coeffs, obs)
-            frequencies = (2,4)
+            frequencies = (2, 4)
 
             @qml.qnode(dev)
             def circuit(time):
@@ -117,7 +117,7 @@ class CommutingEvolution(Operation):
 
         trainable_hamiltonian = qml.math.requires_grad(hamiltonian.coeffs)
         if frequencies is not None and not trainable_hamiltonian:
-            c, s = generate_shift_rule(frequencies, shifts)
+            c, s = generate_shift_rule(frequencies, shifts).T
             recipe = qml.math.stack([c, qml.math.ones_like(c), s]).T
             self.grad_recipe = (recipe,) + (None,) * len(hamiltonian.data)
             self.grad_method = "A"

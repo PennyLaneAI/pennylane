@@ -68,9 +68,9 @@ class DisplacementEmbedding(Operation):
         And, the resulting circuit is:
 
         >>> print(qml.draw(circuit)(X))
-            0: ──D(1, 0.1)──────────┤
-            1: ──D(2, 0.1)──P(0.1)──┤ ⟨n⟩
-            2: ──D(3, 0.1)──────────┤
+        0: ─╭DisplacementEmbedding(M0)──────────┤
+        1: ─├DisplacementEmbedding(M0)──P(0.10)─┤  <n>
+        2: ─╰DisplacementEmbedding(M0)──────────┤
 
         Using different parameters:
 
@@ -92,9 +92,9 @@ class DisplacementEmbedding(Operation):
         And, the resulting circuit is:
 
         >>> print(qml.draw(circuit)(X))
-            0: ──D(0.5, 1)──────────┤
-            1: ──D(0.5, 2)──P(0.1)──┤ ⟨n⟩
-            2: ──D(0.5, 3)──────────┤
+        0: ─╭DisplacementEmbedding(M0)──────────┤
+        1: ─├DisplacementEmbedding(M0)──P(0.10)─┤  <n>
+        2: ─╰DisplacementEmbedding(M0)──────────┤
     """
 
     num_wires = AnyWires

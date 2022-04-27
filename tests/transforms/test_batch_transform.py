@@ -35,7 +35,7 @@ class TestBatchTransform:
         tape2 = qml.tape.QuantumTape()
 
         # loop through all operations on the input tape
-        for op in tape.operations + tape.measurements:
+        for op in tape:
             if op.name == "RX":
                 wires = op.wires
                 param = op.parameters[0]
@@ -493,11 +493,11 @@ class TestBatchTransformGradients:
         """Generates two tapes, one with all RX replaced with RY,
         and the other with all RX replaced with RZ."""
 
-        tape1 = qml.tape.JacobianTape()
-        tape2 = qml.tape.JacobianTape()
+        tape1 = qml.tape.QuantumTape()
+        tape2 = qml.tape.QuantumTape()
 
         # loop through all operations on the input tape
-        for op in tape.operations + tape.measurements:
+        for op in tape:
             if op.name == "RX":
                 wires = op.wires
                 param = op.parameters[0]
@@ -650,13 +650,13 @@ class TestMapBatchTransform:
         x = 0.6
         y = 0.7
 
-        with qml.tape.JacobianTape() as tape1:
+        with qml.tape.QuantumTape() as tape1:
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
             qml.CNOT(wires=[0, 1])
             qml.expval(H)
 
-        with qml.tape.JacobianTape() as tape2:
+        with qml.tape.QuantumTape() as tape2:
             qml.Hadamard(wires=0)
             qml.CRX(x, wires=[0, 1])
             qml.CNOT(wires=[0, 1])
@@ -683,13 +683,13 @@ class TestMapBatchTransform:
         weights = np.array([0.6, 0.8], requires_grad=True)
 
         def cost(weights):
-            with qml.tape.JacobianTape() as tape1:
+            with qml.tape.QuantumTape() as tape1:
                 qml.RX(weights[0], wires=0)
                 qml.RY(weights[1], wires=1)
                 qml.CNOT(wires=[0, 1])
                 qml.expval(H)
 
-            with qml.tape.JacobianTape() as tape2:
+            with qml.tape.QuantumTape() as tape2:
                 qml.Hadamard(wires=0)
                 qml.CRX(weights[0], wires=[0, 1])
                 qml.CNOT(wires=[0, 1])

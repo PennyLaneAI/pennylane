@@ -112,8 +112,7 @@ def test_grover_diffusion_matrix(n_wires):
     ctrl_str = "0" * (n_wires - 1)
     CX = MultiControlledX(
         control_values=ctrl_str,
-        control_wires=wires[:-1],
-        wires=wires[-1],
+        wires=wires,
         work_wires=None,
     ).get_matrix()
 
@@ -186,7 +185,7 @@ def test_expand(wires):
 
 def test_findstate():
     """Asserts can find state marked by oracle."""
-    wires = range(6)
+    wires = list(range(6))
 
     dev = qml.device("default.qubit", wires=wires)
 
@@ -197,7 +196,7 @@ def test_findstate():
 
         for _ in range(5):
             qml.Hadamard(wires[0])
-            qml.MultiControlledX(wires=wires[0], control_wires=wires[1:])
+            qml.MultiControlledX(wires=wires[1:] + wires[0:1])
             qml.Hadamard(wires[0])
             qml.GroverOperator(wires=wires)
 

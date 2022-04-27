@@ -89,9 +89,9 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     >>> dev = qml.device('default.qubit', wires=[0, 1, 2])
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(0.2, 0.3, 0.4))
-     0: ──H──RX(0.4)──────╭X─────────RX(0.2)──╭X───────┤ ⟨Z⟩
-     1: ──H───────────╭X──╰C──────────────────╰C──╭CY──┤
-     2: ──H──RZ(0.4)──╰C───RZ(-0.4)──RX(0.3)───Y──╰CY──┤
+    0: ──H──RX(0.40)────╭X──────────RX(0.20)─╭X────┤  <Z>
+    1: ──H───────────╭X─╰C───────────────────╰C─╭C─┤
+    2: ──H──RZ(0.40)─╰C──RZ(-0.40)──RX(0.30)──Y─╰Y─┤
 
     We can compile it down to a smaller set of gates using the ``qml.compile``
     transform.
@@ -99,9 +99,9 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
     >>> compiled_qfunc = qml.compile()(qfunc)
     >>> compiled_qnode = qml.QNode(compiled_qfunc, dev)
     >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
-     0: ──H───RX(0.6)───────────────────┤ ⟨Z⟩
-     1: ──H──╭X─────────────────╭CY─────┤
-     2: ──H──╰C────────RX(0.3)──╰CY──Y──┤
+    0: ──H──RX(0.60)─────────────────┤  <Z>
+    1: ──H─╭X──────────────────╭C────┤
+    2: ──H─╰C─────────RX(0.30)─╰Y──Y─┤
 
     You can change up the set of transforms by passing a custom ``pipeline`` to
     ``qml.compile``. The pipeline is a list of transform functions. Furthermore,
@@ -123,10 +123,17 @@ def compile(tape, pipeline=None, basis_set=None, num_passes=1, expand_depth=5):
 
         compiled_qnode = qml.QNode(compiled_qfunc, dev)
 
-    >>> print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
-     0: ──RZ(1.57)──RX(1.57)──RZ(1.57)───RX(0.6)───────────────────────────────────────────────────────────────────────┤ ⟨Z⟩
-     1: ──RZ(1.57)──RX(1.57)──RZ(1.57)──╭X────────RZ(1.57)──────────────────────────────────────────╭C─────────────╭C──┤
-     2: ──RZ(1.57)──RX(1.57)──RZ(1.57)──╰C────────RX(0.3)───RZ(1.57)──RY(3.14)──RZ(1.57)──RY(1.57)──╰X──RY(-1.57)──╰X──┤
+        print(qml.draw(compiled_qnode)(0.2, 0.3, 0.4))
+
+    .. code-block::
+
+        0: ──RZ(1.57)──RX(1.57)──RZ(1.57)──RX(0.60)─────────────────────────────────────────────────────
+        1: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭X─────────RZ(1.57)─────────────────────────────────────────╭C
+        2: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╰C─────────RX(0.30)──RZ(1.57)──RY(3.14)──RZ(1.57)──RY(1.57)─╰X
+
+        ────────────────┤  <Z>
+        ─────────────╭C─┤
+        ───RY(-1.57)─╰X─┤
 
     """
     # Ensure that everything in the pipeline is a valid qfunc or tape transform

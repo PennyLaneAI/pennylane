@@ -12,6 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This subpackage defines functions convert quantum tapes to interface with different machine
-learning libraries.
+This subpackage defines functions for interfacing devices' execution
+capabilities with different machine learning libraries.
+
+.. currentmodule:: pennylane
+
+Execution functions and utilities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~execute
+    ~interfaces.cache_execute
+    ~interfaces.set_shots
+
+Supported interfaces
+~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~interfaces.autograd
+    ~interfaces.jax
+    ~interfaces.jax_jit
+    ~interfaces.tensorflow
+    ~interfaces.tensorflow_autograph
+    ~interfaces.torch
+
 """
+from .execution import cache_execute, execute, INTERFACE_NAMES, SUPPORTED_INTERFACES
+from .set_shots import set_shots
+
+
+class InterfaceUnsupportedError(NotImplementedError):
+    """Exception raised when features not supported by an interface are
+    attempted to be used."""

@@ -41,7 +41,7 @@ class Identity(CVObservable, Operation):
 
     ev_order = 1
 
-    def label(self, decimals=None, base_label=None):
+    def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "I"
 
     @staticmethod
@@ -64,7 +64,7 @@ class Identity(CVObservable, Operation):
 
         **Example**
 
-        >>> qml.Identity.compute_eigvals()
+        >>> print(qml.Identity.compute_eigvals())
         [ 1 1]
         """
         return np.array([1, 1])
@@ -83,7 +83,7 @@ class Identity(CVObservable, Operation):
 
         **Example**
 
-        >>> qml.Identity.compute_matrix()
+        >>> print(qml.Identity.compute_matrix())
         [[1. 0.]
          [0. 1.]]
         """

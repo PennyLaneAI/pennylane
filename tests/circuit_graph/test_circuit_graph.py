@@ -119,7 +119,7 @@ def lst_mp_equality(lst1, lst2):
         if not isinstance(lst1[index], type(lst2[index])):  # if they are different types
             return False  # then return false
 
-        elif isinstance(lst1[index], qml.measure.MeasurementProcess):
+        elif isinstance(lst1[index], qml.measurements.MeasurementProcess):
             lsts_same = lsts_same and measurement_process_equality(lst1[index], lst2[index])
 
         else:
@@ -308,13 +308,13 @@ class TestCircuitGraph:
         none are explicitly provided."""
 
         ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
-        obs_no_wires = [qml.measure.sample(op=None, wires=None)]
-        obs_w_wires = [qml.measure.sample(op=None, wires=[0, 1, 2])]
+        obs_no_wires = [qml.measurements.sample(op=None, wires=None)]
+        obs_w_wires = [qml.measurements.sample(op=None, wires=[0, 1, 2])]
 
         circuit_no_wires = CircuitGraph(ops, obs_no_wires, wires=Wires([0, 1, 2]))
         circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
 
-        sample_w_wires_op = qml.measure.sample(op=None, wires=[0, 1, 2])
+        sample_w_wires_op = qml.measurements.sample(op=None, wires=[0, 1, 2])
         expected_grid = {
             0: [ops[0], ops[1], sample_w_wires_op],
             1: [ops[1], sample_w_wires_op],

@@ -134,7 +134,7 @@ def test_nested_adjoint_on_function():
     )
 
 
-with qml.tape.JacobianTape() as tape:
+with qml.tape.QuantumTape() as tape:
     qml.PauliX(0)
     qml.Hadamard(1)
 

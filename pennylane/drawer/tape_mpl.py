@@ -31,7 +31,7 @@ from .utils import convert_wire_order
 # create a private method here and add it to the ``special_cases`` dictionary
 # These methods should accept arguments in the order of ``drawer, layer, mapped_wires, op``
 
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,no-member
 def _add_swap(drawer, layer, mapped_wires, op):
     drawer.SWAP(layer, mapped_wires)
 
@@ -257,9 +257,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     active_wire_notches = kwargs.get("active_wire_notches", True)
     fontsize = kwargs.get("fontsize", None)
 
-    wire_map = convert_wire_order(
-        tape.operations + tape.measurements, wire_order=wire_order, show_all_wires=show_all_wires
-    )
+    wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
 
     layers = drawable_layers(tape.operations, wire_map=wire_map)
 

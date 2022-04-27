@@ -15,8 +15,7 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
-
+# pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
@@ -59,6 +58,9 @@ class BasisState(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
+
+    # This is a temporary attribute to fix the operator queuing behaviour
+    _queue_category = "_prep"
 
     @staticmethod
     def compute_decomposition(n, wires):
@@ -125,6 +127,9 @@ class QubitStateVector(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
+
+    # This is a temporary attribute to fix the operator queuing behaviour
+    _queue_category = "_prep"
 
     @staticmethod
     def compute_decomposition(state, wires):
@@ -206,6 +211,9 @@ class QubitDensityMatrix(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
+
+    # This is a temporary attribute to fix the operator queuing behaviour
+    _queue_category = "_prep"
 
     def adjoint(self):
         raise qml.ops.AdjointError("No adjoint exists for QubitDensityMatrix operations.")

@@ -26,7 +26,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 import pennylane as qml
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState
+from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Snapshot
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
 from .._version import __version__
@@ -79,10 +79,6 @@ class DefaultQubit(QubitDevice):
         shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to ``None`` if not specified, which means that the device
             returns analytical results.
-        cache (int): Number of device executions to store in a cache to speed up subsequent
-            executions. A value of ``0`` indicates that no caching will take place. Once filled,
-            older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date.
     """
 
     name = "Default qubit PennyLane plugin"
@@ -93,6 +89,7 @@ class DefaultQubit(QubitDevice):
 
     operations = {
         "Identity",
+        "Snapshot",
         "BasisState",
         "QubitStateVector",
         "QubitUnitary",
@@ -154,8 +151,9 @@ class DefaultQubit(QubitDevice):
         "Hamiltonian",
     }
 
-    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
-        super().__init__(wires, shots, cache=cache, analytic=analytic)
+    def __init__(self, wires, *, shots=None, analytic=None):
+        super().__init__(wires, shots, analytic=analytic)
+        self._debugger = None
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [2]*wires.
@@ -213,6 +211,13 @@ class DefaultQubit(QubitDevice):
                 self._apply_state_vector(operation.parameters[0], operation.wires)
             elif isinstance(operation, BasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
+            elif isinstance(operation, Snapshot):
+                if self._debugger and self._debugger.active:
+                    state_vector = np.array(self._flatten(self._state))
+                    if operation.tag:
+                        self._debugger.snapshots[operation.tag] = state_vector
+                    else:
+                        self._debugger.snapshots[len(self._debugger.snapshots)] = state_vector
             else:
                 self._state = self._apply_operation(self._state, operation)
 
@@ -233,6 +238,8 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
+        if operation.base_name == "Identity":
+            return state
         wires = operation.wires
 
         if operation.base_name in self._apply_ops:

@@ -15,7 +15,7 @@
 from typing import Any, Dict, Optional, Sequence, Union
 
 from pennylane import QNode, apply
-from pennylane.math import mean
+from pennylane.math import mean, shape
 from pennylane.tape import QuantumTape
 from pennylane.transforms import batch_transform
 
@@ -221,6 +221,6 @@ def mitigate_with_zne(
         ]  # creates nested list according to reps_per_factor
         results = mean(results, axis=1)
         extrapolated = extrapolate(scale_factors, results, **extrapolate_kwargs)
-        return extrapolated[0] if len(extrapolated) == 1 else extrapolated
+        return extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
 
     return out_tapes, processing_fn

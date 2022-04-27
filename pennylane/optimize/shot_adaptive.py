@@ -350,7 +350,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     def compute_grad(
         self, objective_fn, args, kwargs
-    ):  # pylint: disable=signature-differs,arguments-differ
+    ):  # pylint: disable=signature-differs,arguments-differ,arguments-renamed
         r"""Compute gradient of the objective function, as well as the variance of the gradient,
         at the given point.
 
@@ -411,7 +411,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         self.trainable_args = set()
 
         for index, arg in enumerate(args):
-            if getattr(arg, "requires_grad", True):
+            if getattr(arg, "requires_grad", False):
                 self.trainable_args |= {index}
 
         if self.s is None:

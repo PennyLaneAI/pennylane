@@ -21,11 +21,11 @@ from random import random
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import QubitDevice, DeviceError, QuantumFunctionError
-from pennylane.operation import Sample, Variance, Expectation, Probability, State
+from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 from pennylane.tape import QuantumTape
-from pennylane.measure import state
+from pennylane.measurements import state
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
@@ -268,7 +268,7 @@ class TestObservables:
 
         with qml.tape.QuantumTape() as tape:
             qml.PauliX(wires=0)
-            qml.measure.MeasurementProcess(
+            qml.measurements.MeasurementProcess(
                 return_type="SomeUnsupportedReturnType", obs=qml.PauliZ(0)
             )
 
@@ -615,7 +615,7 @@ class TestSample:
     ):
         """Test that when we sample a device without providing an observable or wires then it
         will return the raw samples"""
-        obs = qml.measure.sample(op=None, wires=None)
+        obs = qml.measurements.sample(op=None, wires=None)
         dev = mock_qubit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 0], [1, 1]])
         dev._samples = generated_samples
@@ -628,7 +628,7 @@ class TestSample:
     ):
         """Test that when we sample a device without providing an observable but we specify
         wires then it returns the generated samples for only those wires"""
-        obs = qml.measure.sample(op=None, wires=[1])
+        obs = qml.measurements.sample(op=None, wires=[1])
         dev = mock_qubit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 0], [1, 1]])
         dev._samples = generated_samples
@@ -832,7 +832,7 @@ class TestBatchExecution:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-    with qml.tape.JacobianTape() as tape2:
+    with qml.tape.QuantumTape() as tape2:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0))
 
@@ -861,10 +861,12 @@ class TestBatchExecution:
 
         assert spy.call_count == n_tapes
 
-    def test_result(self, mock_qubit_device_with_paulis_and_methods, tol):
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_result(self, mock_qubit_device_with_paulis_and_methods, r_dtype, tol):
         """Tests that the result has the correct shape and entry types."""
 
         dev = mock_qubit_device_with_paulis_and_methods(wires=2)
+        dev.R_DTYPE = r_dtype
 
         tapes = [self.tape1, self.tape2]
         res = dev.batch_execute(tapes)
@@ -872,6 +874,8 @@ class TestBatchExecution:
         assert len(res) == 2
         assert np.allclose(res[0], dev.execute(self.tape1), rtol=tol, atol=0)
         assert np.allclose(res[1], dev.execute(self.tape2), rtol=tol, atol=0)
+        assert res[0].dtype == r_dtype
+        assert res[1].dtype == r_dtype
 
     def test_result_empty_tape(self, mock_qubit_device_with_paulis_and_methods, tol):
         """Tests that the result has the correct shape and entry types for empty tapes."""

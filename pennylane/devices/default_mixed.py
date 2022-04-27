@@ -26,6 +26,7 @@ from string import ascii_letters as ABC
 import pennylane.numpy as np
 import pennylane.math as qnp
 from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, QubitDensityMatrix
+from pennylane import Snapshot
 from pennylane.operation import Channel
 from pennylane.wires import Wires
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
@@ -45,10 +46,6 @@ class DefaultMixed(QubitDevice):
         shots (None, int): Number of times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to ``None`` if not specified, which means that
             outputs are computed exactly.
-        cache (int): Number of device executions to store in a cache to speed up subsequent
-            executions. A value of ``0`` indicates that no caching will take place. Once filled,
-            older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date.
     """
 
     name = "Default mixed-state qubit PennyLane plugin"
@@ -59,6 +56,7 @@ class DefaultMixed(QubitDevice):
 
     operations = {
         "Identity",
+        "Snapshot",
         "BasisState",
         "QubitStateVector",
         "QubitDensityMatrix",
@@ -111,14 +109,15 @@ class DefaultMixed(QubitDevice):
         "ThermalRelaxationError",
     }
 
-    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
+    def __init__(self, wires, *, shots=None, analytic=None):
         if isinstance(wires, int) and wires > 23:
             raise ValueError(
                 "This device does not currently support computations on more than 23 wires"
             )
 
         # call QubitDevice init
-        super().__init__(wires, shots, cache=cache, analytic=analytic)
+        super().__init__(wires, shots, analytic=analytic)
+        self._debugger = None
 
         # Create the initial state.
         self._state = self._create_basis_state(0)
@@ -456,6 +455,8 @@ class DefaultMixed(QubitDevice):
             operation (.Operation): operation to apply on the device
         """
         wires = operation.wires
+        if operation.base_name == "Identity":
+            return
 
         if isinstance(operation, QubitStateVector):
             self._apply_state_vector(operation.parameters[0], wires)
@@ -467,6 +468,16 @@ class DefaultMixed(QubitDevice):
 
         if isinstance(operation, QubitDensityMatrix):
             self._apply_density_matrix(operation.parameters[0], wires)
+            return
+
+        if isinstance(operation, Snapshot):
+            if self._debugger and self._debugger.active:
+                dim = 2**self.num_wires
+                density_matrix = self._reshape(self._state, (dim, dim))
+                if operation.tag:
+                    self._debugger.snapshots[operation.tag] = density_matrix
+                else:
+                    self._debugger.snapshots[len(self._debugger.snapshots)] = density_matrix
             return
 
         matrices = self._get_kraus(operation)
