@@ -14,9 +14,12 @@ if len(sys.argv) == 1:
         client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
         client.upload_blob(sha, fp)
 else:
-    commit_hash = sys.argv[1]
-    print(f"downloading .testmondata for commit {commit_hash}")
-    with open(".testmondata", "wb") as fp:
-        client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
-        blob = client.download_blob(commit_hash)
-        blob.readinto(fp)
+    try:
+        commit_hash = sys.argv[1]
+        print(f"downloading .testmondata for commit {commit_hash}")
+        with open(".testmondata", "wb") as fp:
+            client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
+            blob = client.download_blob(commit_hash)
+            blob.readinto(fp)
+    except Exception as e:
+        print(f"could not download .testmondata for commit {commit_hash}")
