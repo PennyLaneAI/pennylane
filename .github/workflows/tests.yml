@@ -80,8 +80,13 @@ jobs:
       - name: Install Testmon
         run: python -m pip install pytest-testmon GitPython azure-storage-blob
 
+      - name: Show GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
       - name: Get Testmon Data
-        run: python testmon_sync.py ${{ github.event.pull_request.head.sha }}
+        run: python testmon_sync.py ${{ github.event.pull_request.base.sha }}
 
       - name: Run tests
         run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS --testmon
