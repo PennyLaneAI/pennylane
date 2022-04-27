@@ -82,7 +82,7 @@ class AmplitudeDamping(Channel):
             raise ValueError("gamma must be in the interval [0,1].")
 
         K0 = np.diag([1, np.sqrt(1 - gamma)])
-        K1 = np.sqrt(gamma) * np.array([[0, 1], [0, 0]]) + 1
+        K1 = np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
         return [K0, K1]
 
 
