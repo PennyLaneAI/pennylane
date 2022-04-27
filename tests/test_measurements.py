@@ -788,7 +788,7 @@ class TestExpansion:
         assert len(tape.measurements) == 1
         assert tape.measurements[0].return_type is Expectation
         assert tape.measurements[0].wires.tolist() == [0, 1]
-        assert np.all(tape.measurements[0].get_eigvals() == np.array([1, -1, -1, 1]))
+        assert np.all(tape.measurements[0].eigvals() == np.array([1, -1, -1, 1]))
 
     def test_expand_hermitian(self, tol):
         """Test the expansion of an hermitian observable"""
@@ -812,7 +812,7 @@ class TestExpansion:
         assert len(tape.measurements) == 1
         assert tape.measurements[0].return_type is Expectation
         assert tape.measurements[0].wires.tolist() == ["a"]
-        assert np.all(tape.measurements[0].get_eigvals() == np.array([0, 5]))
+        assert np.all(tape.measurements[0].eigvals() == np.array([0, 5]))
 
     def test_expand_no_observable(self):
         """Check that an exception is raised if the measurement to

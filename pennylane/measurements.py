@@ -345,7 +345,7 @@ class MeasurementProcess:
         **Example:**
 
         >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
-        >>> m.get_eigvals()
+        >>> m.eigvals()
         array([1, -1])
 
         Returns:
@@ -372,7 +372,7 @@ class MeasurementProcess:
         **Example:**
 
         >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
-        >>> m.get_eigvals()
+        >>> m.eigvals()
         array([1, -1])
 
         Returns:
@@ -380,7 +380,7 @@ class MeasurementProcess:
         """
         if self.obs is not None:
             try:
-                return self.obs.get_eigvals()
+                return self.obs.eigvals()
             except qml.operation.EigvalsUndefinedError:
                 pass
 
@@ -414,7 +414,7 @@ class MeasurementProcess:
         >>> print(tape.operations)
         [QubitUnitary(array([[-0.89442719,  0.4472136 ],
               [ 0.4472136 ,  0.89442719]]), wires=['a'])]
-        >>> print(tape.measurements[0].get_eigvals())
+        >>> print(tape.measurements[0].eigvals())
         [0. 5.]
         >>> print(tape.measurements[0].obs)
         None
@@ -425,7 +425,7 @@ class MeasurementProcess:
         with qml.tape.QuantumTape() as tape:
             self.obs.diagonalizing_gates()
             MeasurementProcess(
-                self.return_type, wires=self.obs.wires, eigvals=self.obs.get_eigvals()
+                self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals()
             )
 
         return tape
