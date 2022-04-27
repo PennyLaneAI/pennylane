@@ -446,6 +446,16 @@ class MeasurementProcess:
         return self
 
     @property
+    def _queue_category(self):
+        """Denotes that `MeasurementProcess` objects should be processed into the `_measurements` list
+        in `QuantumTape` objects.
+
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
+        """
+        return "_ops" if self.return_type is MidMeasure else "_measurements"
+
+    @property
     def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
         if self.obs is None:

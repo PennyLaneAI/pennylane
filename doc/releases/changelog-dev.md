@@ -27,7 +27,12 @@
   >>> qml.CNOT((0,1))
   CNOT(wires=[0, 1])
   ```
+  
+* Instead of checking types, objects are processed in `QuantumTape`'s based on a new `_queue_category` property.
+  This is a temporary fix that will disappear in the future. 
+  [(#2408)](https://github.com/PennyLaneAI/pennylane/pull/2408)
 
+  
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
