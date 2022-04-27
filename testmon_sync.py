@@ -1,25 +1,26 @@
 import sys
 
-import git
+# import git
 from azure.storage.blob import ContainerClient
 
 
 CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=testmonstorage;AccountKey=TnI/vitXb4j/B1BLdDXLKpgzKMw8XgnKX9CrzaqbmqlVNc4fHjqcy3WUkCTwCd7Hw2fhOnYHvQAP8IvmeQMztQ==;EndpointSuffix=core.windows.net"
 
-if len(sys.argv) == 1:
+if sys.argv[1] == "upload":
     print("uploading .testmondata...")
-    repo = git.Repo(search_parent_directories=True)
-    sha = repo.head.object.hexsha
+    # repo = git.Repo(search_parent_directories=True)
+    # sha = repo.head.object.hexsha
     with open(".testmondata", "rb") as fp:
         client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
-        client.upload_blob(sha, fp)
-else:
+        client.upload_blob(f"{sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}", fp)
+elif sys.argv[1] == "download":
     try:
-        commit_hash = sys.argv[1]
-        print(f"downloading .testmondata for commit {commit_hash}")
+        print(f"downloading .testmondata for commit {sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}")
         with open(".testmondata", "wb") as fp:
             client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
-            blob = client.download_blob(commit_hash)
+            blob = client.download_blob(f"{sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}")
             blob.readinto(fp)
     except Exception as e:
-        print(f"could not download .testmondata for commit {commit_hash}")
+        print(f"could not download .testmondata for commit {sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}")
+else:
+    raise ValueError()
