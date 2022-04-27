@@ -4188,6 +4188,7 @@ def make_weakly_connected_tape(
     return tape
 
 
+@pytest.mark.kahypar
 class TestKaHyPar:
     """Tests for the KaHyPar cutting function and utilities."""
 
@@ -4495,6 +4496,7 @@ class TestKaHyPar:
             )
 
 
+@pytest.mark.kahypar
 class TestAutoCutCircuit:
     """Integration tests for automatic-cutting-enabled `cut_circuit` transform.
     Mostly borrowing tests cases from ``TestCutCircuitTransform``.
