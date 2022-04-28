@@ -10,26 +10,10 @@ number observables.
 
 .. currentmodule:: pennylane.qchem
 
-.. rubric:: Modules
-
-.. autosummary::
-    :toctree: api
-
-    basis_data
-    basis_set
-    convert
-    dipole
-    hamiltonian
-    hartree_fock
-    integrals
-    matrices
-    molecule
-    number
-    observable_hf
-    openfermion_obs
-    spin
-    structure
-    tapering
+.. automodapi:: pennylane.qchem
+    :no-heading:
+    :include-all-objects:
+    :no-inheritance-diagram:
 
 Differentiable Hartree-Fock
 ---------------------------
