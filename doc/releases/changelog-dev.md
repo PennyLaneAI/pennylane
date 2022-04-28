@@ -47,4 +47,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Christian Gogolin, Christina Lee
+Christian Gogolin, Christina Lee, Zeyue Niu
