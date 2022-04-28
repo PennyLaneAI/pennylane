@@ -4515,6 +4515,7 @@ class TestKaHyPar:
         6: ────────────────────────────────────────────────────────╰X──RY──//─╭C──RY─┤ ├<Z@Z@Z@Z@Z@Z@Z@Z>
         7: ───────────────────────────────────────────────────────────────────╰X──RY─┤ ╰<Z@Z@Z@Z@Z@Z@Z@Z>
         """
+
         def block(weights, wires):
             qml.CNOT(wires=[wires[0], wires[1]])
             qml.RY(weights[0], wires=wires[0])

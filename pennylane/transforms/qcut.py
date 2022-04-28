@@ -2392,7 +2392,7 @@ class CutStrategy:
         for g in tape_dag.nodes:
             if not isinstance(g, WireCut):
                 for w in g.wires:
-                    wire_depths[w] = wire_depths.get(w, 0) + 1/len(g.wires)
+                    wire_depths[w] = wire_depths.get(w, 0) + 1 / len(g.wires)
         self._validate_input(max_wires_by_fragment, max_gates_by_fragment)
 
         probed_cuts = self._infer_probed_cuts(
@@ -2405,9 +2405,7 @@ class CutStrategy:
         return probed_cuts
 
     @staticmethod
-    def _infer_imbalance(
-        k, wire_depths, free_wires, free_gates, imbalance_tolerance=None
-    ) -> float:
+    def _infer_imbalance(k, wire_depths, free_wires, free_gates, imbalance_tolerance=None) -> float:
         """Helper function for determining best imbalance limit."""
         num_wires = len(wire_depths)
         num_gates = sum(wire_depths.values())
