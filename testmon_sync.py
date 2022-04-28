@@ -11,7 +11,7 @@ CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=testmonstorage;A
 
 if sys.argv[1] == "upload":
     print("uploading .testmondata...")
-    with open("tests/.testmondata", "rb") as fp:
+    with open(".testmondata", "rb") as fp:
         client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
         client.upload_blob('-'.join(sys.argv[2:]), fp)
 elif sys.argv[1] == "download":
@@ -19,7 +19,7 @@ elif sys.argv[1] == "download":
         print(f"downloading .testmondata for commit {'-'.join(sys.argv[2:])}")
         client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
         blob = client.download_blob('-'.join(sys.argv[2:]))
-        with open("tests/.testmondata", "wb") as fp:
+        with open(".testmondata", "wb") as fp:
             blob.readinto(fp)
     except Exception as e:  # pylint: disable=broad-except
         print(f"could not download .testmondata for commit {'-'.join(sys.argv[2:])}")
