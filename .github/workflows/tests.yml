@@ -87,6 +87,7 @@ jobs:
 
       - name: Download Testmon Data Artifact
         uses: actions/download-artifact@v3
+        continue-on-error: true
         with:
           name: ${{ matrix.config.python-version }}-${{ join(matrix.config.interfaces, '-') }}-${{ github.event.pull_request.base.sha }}
           path: .testmondata
