@@ -13,15 +13,15 @@ if sys.argv[1] == "upload":
     print("uploading .testmondata...")
     with open("tests/.testmondata", "rb") as fp:
         client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
-        client.upload_blob(f"{sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}", fp)
+        client.upload_blob(f"{sys.argv[1]}-{sys.argv[2]}-{sys.argv[3]}", fp)
 elif sys.argv[1] == "download":
     try:
         print(f"downloading .testmondata for commit {sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}")
         client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
-        blob = client.download_blob(f"{sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}")
+        blob = client.download_blob(f"{sys.argv[1]}-{sys.argv[2]}-{sys.argv[3]}")
         with open("tests/.testmondata", "wb") as fp:
             blob.readinto(fp)
     except Exception as e:  # pylint: disable=broad-except
-        print(f"could not download .testmondata for commit {sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}")
+        print(f"could not download .testmondata for commit {sys.argv[1]}-{sys.argv[2]}-{sys.argv[3]}")
 else:
     raise ValueError()
