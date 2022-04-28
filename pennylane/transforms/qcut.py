@@ -2560,7 +2560,6 @@ class CutStrategy:
                 )
 
             # Prepare the list of ks to explore:
-            print(k_ub)
             ks = list(range(k_lower, k_upper + 1))
 
             if len(ks) > self.HIGH_PARTITION_ATTEMPTS:

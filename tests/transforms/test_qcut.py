@@ -4492,6 +4492,38 @@ class TestKaHyPar:
                 in expected_num_cut_edges
             )
 
+    @pytest.mark.parametrize("measure_all_wires", [False, True])
+    def test_cut_mps(self, measure_all_wires):
+        def block(weights, wires):
+            qml.CNOT(wires=[wires[0], wires[1]])
+            qml.RY(weights[0], wires=wires[0])
+            qml.RY(weights[1], wires=wires[1])
+
+        n_wires = 8
+        n_block_wires = 2
+        n_params_block = 2
+        n_blocks = qml.MPS.get_n_blocks(range(n_wires), n_block_wires)
+        template_weights = [[0.1, -0.3]] * n_blocks
+
+        cut_strategy = qml.transforms.qcut.CutStrategy(max_free_wires=2)
+
+        with qml.tape.QuantumTape() as tape0:
+            qml.MPS(range(n_wires), n_block_wires, block, n_params_block, template_weights)
+            if measure_all_wires:
+                qml.expval(qml.grouping.string_to_pauli_word("Z" * n_wires))
+            else:
+                qml.expval(qml.PauliZ(wires=n_wires - 1))
+
+        tape = tape0.expand()
+        graph = qcut.tape_to_graph(tape)
+        cut_graph = qcut.find_and_place_cuts(
+            graph=graph,
+            cut_strategy=cut_strategy,
+            replace_wire_cuts=True,
+        )
+        frags, _ = qcut.fragment_graph(cut_graph)
+        assert len(frags) == 7
+
 
 class TestAutoCutCircuit:
     """Integration tests for automatic-cutting-enabled `cut_circuit` transform.
