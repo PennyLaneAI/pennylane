@@ -14,7 +14,6 @@
 """
 Tests for the gradients.finite_difference module.
 """
-from numpy import VisibleDeprecationWarning
 import pytest
 
 from pennylane import numpy as np
@@ -599,7 +598,7 @@ class TestFiniteDiffGradients:
             return jac[1, 0]
 
         x, y = params
-        with pytest.warns(VisibleDeprecationWarning, match=r"Creating an ndarray from ragged"):
+        with pytest.warns(np.DeprecationWarning, match=r"Creating an ndarray from ragged"):
             res = qml.grad(cost_fn)(params)
         expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
