@@ -32,6 +32,10 @@
   This is a temporary fix that will disappear in the future. 
   [(#2408)](https://github.com/PennyLaneAI/pennylane/pull/2408)
 
+* The automatic circuit cutting is improved by making better partition imbalance derivations.
+  Now it is more likely to generate optimal cuts for larger circuits.
+  [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
+
   
 <h3>Breaking changes</h3>
 
