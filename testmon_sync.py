@@ -18,8 +18,7 @@ elif sys.argv[1] == "download":
     try:
         print(f"downloading .testmondata for commit {'-'.join(sys.argv[2:])}")
         client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
-        if len(sys.argv) == 5:
-            blob = client.download_blob('-'.join(sys.argv[2:]))
+        blob = client.download_blob('-'.join(sys.argv[2:]))
         with open("tests/.testmondata", "wb") as fp:
             blob.readinto(fp)
     except Exception as e:  # pylint: disable=broad-except
