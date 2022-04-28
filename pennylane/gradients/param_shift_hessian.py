@@ -30,7 +30,7 @@ from .gradient_transform import (
 from .hessian_transform import hessian_transform
 from .parameter_shift import _get_operation_recipe
 from .general_shift_rules import (
-    _combine_shift_rules_with_multipliers,
+    _combine_shift_rules,
     generate_shifted_tapes,
     generate_multishifted_tapes,
 )
@@ -68,22 +68,20 @@ def _generate_off_diag_tapes(tape, idx, recipe_i, recipe_j):
     if recipe_j[0] is None:
         return [], None, None
 
-    # The rows of combined_rulesT contain the coefficients (1), the multipliers (2) and the
+    # The columns of combined_rules contain the coefficients (1), the multipliers (2) and the
     # shifts (2) in that order, with the number in brackets indicating the number of columns
-    combined_rulesT = _combine_shift_rules_with_multipliers(
-        [qml.math.stack(recipe_i).T, qml.math.stack(recipe_j).T]
-    )
+    combined_rules = _combine_shift_rules([recipe_i, recipe_j])
     # If there are unmultiplied, unshifted tapes, the coefficient is memorized and the term
     # removed from the list of tapes to create
-    if np.allclose(combined_rulesT[1:3, 0], 1.0) and np.allclose(combined_rulesT[3:5, 0], 0.0):
-        unshifted_coeff = combined_rulesT[0, 0]
-        combined_rulesT = combined_rulesT[:, 1:]
+    if np.allclose(combined_rules[0, 1:3], 1.0) and np.allclose(combined_rules[0, 3:5], 0.0):
+        unshifted_coeff = combined_rules[0, 0]
+        combined_rules = combined_rules[1:]
     else:
         unshifted_coeff = None
 
-    h_tapes = generate_multishifted_tapes(tape, idx, combined_rulesT[3:5].T, combined_rulesT[1:3].T)
+    h_tapes = generate_multishifted_tapes(tape, idx, combined_rules[:, 3:5], combined_rules[:, 1:3])
 
-    return h_tapes, combined_rulesT[0], unshifted_coeff
+    return h_tapes, combined_rules[:, 0], unshifted_coeff
 
 
 def expval_hessian_param_shift(
@@ -144,7 +142,7 @@ def expval_hessian_param_shift(
             continue
 
         # Obtain the recipe for the diagonal.
-        dc_i, dm_i, ds_i = diag_recipes[i]
+        dc_i, dm_i, ds_i = diag_recipes[i].T
         # Add the unshifted tape if it is required for this diagonal, it has not been
         # added yet, and it is required because f0 was not provided.
         if ds_i[0] == 0 and dm_i[0] == 1.0:

@@ -33,6 +33,16 @@ from pennylane.wires import Wires
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
 
 
+@pytest.mark.parametrize(
+    "return_type", ("Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure")
+)
+def test_obersvablereturntypes_import_warnings(return_type):
+    """Test that accessing the observable return types through qml.operation emit a warning."""
+
+    with pytest.warns(UserWarning, match=r"is deprecated"):
+        getattr(qml.operation, return_type)
+
+
 class TestOperatorConstruction:
     """Test custom operators construction."""
 
@@ -107,6 +117,27 @@ class TestOperatorConstruction:
 
         assert op3.num_params == 2
 
+    def test_wires_by_final_argument(self):
+        """Test that wires can be passed as the final positional argument."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+        op = DummyOp(1.234, "a")
+        assert op.wires[0] == "a"
+        assert op.data == [1.234]
+
+    def test_no_wires(self):
+        """Test an error is raised if no wires are passed."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+        with pytest.raises(ValueError, match="Must specify the wires"):
+            DummyOp(1.234)
+
     def test_name_setter(self):
         """Tests that we can set the name of an operator"""
 
@@ -161,18 +192,6 @@ class TestOperatorConstruction:
         assert MyOp.has_matrix
         assert MyOp(wires=0).has_matrix
 
-    def test_has_matrix_true_get_matrix(self):
-        """Test has_matrix property also detects overriding of `get_matrix` method."""
-
-        class MyOp(qml.operation.Operator):
-            num_wires = 1
-
-            def get_matrix(self):
-                return np.eye(2)
-
-        assert MyOp.has_matrix
-        assert MyOp(wires=0).has_matrix
-
     def test_has_matrix_false(self):
         """Test has_matrix property defaults to false if `compute_matrix` not overwritten."""
 
@@ -181,6 +200,16 @@ class TestOperatorConstruction:
 
         assert not MyOp.has_matrix
         assert not MyOp(wires=0).has_matrix
+
+    def test_has_matrix_false_concrete_template(self):
+        """Test has_matrix with a concrete operation (StronglyEntanglingLayers)
+        that does not have a matrix defined."""
+
+        rng = qml.numpy.random.default_rng(seed=42)
+        shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+        params = rng.random(shape)
+        op = qml.StronglyEntanglingLayers(params, wires=range(2))
+        assert not op.has_matrix
 
 
 class TestOperationConstruction:
@@ -369,25 +398,11 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
+            num_params = 1
             grad_method = None
 
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(0.54)
-
-    def test_wire_passed_positionally(self):
-        """Test exception raised if wire is passed as a positional arg"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            grad_method = None
-
-            @property
-            def num_params(self):
-                return 1
-
-        with pytest.raises(ValueError, match="Must specify the wires"):
-            DummyOp(0.54, 0)
 
     def test_id(self):
         """Test that the id attribute of an operator can be set."""
