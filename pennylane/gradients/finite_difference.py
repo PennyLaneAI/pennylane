@@ -115,7 +115,7 @@ def finite_diff_coeffs(n, approx_order, strategy):
         raise ValueError("Approximation order must be a positive integer.")
 
     num_points = approx_order + 2 * np.floor((n + 1) / 2) - 1
-    N = num_points + 1 if n % 2 == 0 else num_points
+    N = num_points - 1 if n % 2 == 0 else num_points
 
     if strategy == "forward":
         shifts = np.arange(N, dtype=np.float64)
