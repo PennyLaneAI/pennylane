@@ -923,7 +923,11 @@ class Operator(abc.ABC):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
-        if self.num_wires is AnyWires and len(self._wires) == 0:
+        if (
+            self.num_wires is AnyWires
+            and not getattr(self, "no_wires_ok", False)
+            and len(self._wires) == 0
+        ):
             raise ValueError(
                 f"{self.name}: wrong number of wires. " f"At least one wire has to be given."
             )

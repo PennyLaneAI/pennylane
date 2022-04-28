@@ -160,6 +160,7 @@ class Hamiltonian(Observable):
     """
 
     num_wires = qml.operation.AnyWires
+    no_wires_valid = True
     grad_method = "A"  # supports analytic gradients
 
     def __init__(
