@@ -459,8 +459,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             # or growing too significantly.
             gamma = (
                 (self.stepsize - self.lipschitz * self.stepsize**2 / 2) * chi**2
-                - xi * self.lipschitz * self.stepsize**2 / (2 * s)
-            ) / s
+                - xi * self.lipschitz * self.stepsize**2 / (2 * s + 1e-6)
+            ) / (s + 1e-6)
 
             argmax_gamma = np.unravel_index(np.argmax(gamma), gamma.shape)
             smax = max(s[argmax_gamma], 2)
