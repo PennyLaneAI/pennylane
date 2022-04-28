@@ -923,6 +923,11 @@ class Operator(abc.ABC):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
+        if self.num_wires is AnyWires and len(self._wires) == 0:
+            raise ValueError(
+                f"{self.name}: wrong number of wires. " f"At least one wire has to be given."
+            )
+
         self.data = list(params)  #: list[Any]: parameters of the operator
 
         if do_queue:
@@ -1114,8 +1119,10 @@ class Operator(abc.ABC):
 
             except TypeError:
                 if self.num_params == 0:
+                    # pylint:disable=unexpected-keyword-arg
                     self.decomposition(wires=self.wires)
                 else:
+                    # pylint:disable=unexpected-keyword-arg
                     self.decomposition(*self.parameters, wires=self.wires)
 
                 warnings.warn(
@@ -1129,6 +1136,7 @@ class Operator(abc.ABC):
             # original operation has no trainable parameters
             tape.trainable_params = {}
 
+        # pylint:disable=no-member
         if self.inverse:
             tape.inv()
 
@@ -2447,6 +2455,7 @@ def has_nopar(obj):
 def has_unitary_gen(obj):
     """Returns ``True`` if an operator has a unitary_generator
     according to the ``has_unitary_generator`` flag."""
+    # pylint:disable=no-member
     return obj in qml.ops.qubit.attributes.has_unitary_generator
 
 
