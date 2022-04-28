@@ -13,7 +13,7 @@ if sys.argv[1] == "upload":
     print("uploading .testmondata...")
     with open("tests/.testmondata", "rb") as fp:
         client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
-        client.upload_blob(f"{sys.argv[2]}-{sys.argv[3]}-{sys.argv[4]}", fp)
+        client.upload_blob('-'.join(sys.argv[2:]), fp)
 elif sys.argv[1] == "download":
     try:
         print(f"downloading .testmondata for commit {'-'.join(sys.argv[2:])}")
