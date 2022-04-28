@@ -120,7 +120,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests/ -m kahypar -n auto
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m kahypar -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
