@@ -67,7 +67,7 @@ class Identity(CVObservable, Operation):
         >>> print(qml.Identity.compute_eigvals())
         [ 1 1]
         """
-        return np.array([1, 1])
+        return np.array([1, -1])
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
