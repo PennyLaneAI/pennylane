@@ -168,7 +168,8 @@ class Hermitian(Observable):
             list: list containing the gates diagonalizing the Hermitian observable
         """
         # note: compute_diagonalizing_gates has a custom signature, which is why we overwrite this method
-        return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
+        return "hi"
+        # return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
 
 
 class SparseHamiltonian(Observable):
