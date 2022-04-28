@@ -89,9 +89,7 @@ jobs:
         run: python testmon_sync.py download ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, '-') }} ${{ github.event.pull_request.base.sha }}
 
       - name: Run tests
-#        env:
-#          TESTMON_DATAFILE: /home/runner/work/pennylane/pennylane/.testmondata
-        run: python -m pytest --testmon --rootdir=. tests
+        run: python -m pytest --testmon --rootdir=. tests $COVERAGE_FLAGS
 
       - name: Upload Testmon Data
         run: python testmon_sync.py upload ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, '-') }} ${{ github.event.pull_request.head.sha }}
@@ -103,13 +101,13 @@ jobs:
           path: .testmondata
           retention-days: 5
 
-#      - name: Adjust coverage file for Codecov
-#        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
-#
-#      - name: Upload coverage to Codecov
-#        uses: codecov/codecov-action@v3
-#        with:
-#          file: ./coverage.xml
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
 
 
   device-tests:
