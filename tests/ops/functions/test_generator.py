@@ -36,11 +36,6 @@ class CustomOp(qml.operation.Operation):
     num_params = 1
     num_wires = 1
 
-    def adjoint(self):
-        op = self.__class__(*self.data, wires=self.wires)
-        op.inverse = not self.inverse
-        return op
-
 
 class ObservableOp(CustomOp):
     """Returns the generator as a single observable"""
@@ -215,8 +210,8 @@ class TestPrefactorReturn:
         assert gen.name == "SparseHamiltonian"
         assert np.all(gen.parameters[0].toarray() == SparseOp.H.toarray())
 
-    def test_inverse(self):
-        """Test an inverted generator is correct"""
+    def test_adjoint(self):
+        """Test an adjointed generator is correct"""
 
         gen, prefactor = qml.generator(qml.adjoint(ObservableOp), format="prefactor")(0.5, wires=0)
         assert prefactor == 0.6
@@ -263,18 +258,20 @@ class TestObservableReturn:
         assert gen.name == "SparseHamiltonian"
         assert np.all(gen.parameters[0].toarray() == SparseOp.H.toarray())
 
-    def test_hermitian_inverse(self):
-        """Test a Hermitian inverted generator is correct"""
+    def test_hermitian_adjoint(self):
+        """Test a Hermitian adjointed generator is correct"""
         gen = qml.generator(qml.adjoint(HermitianOp), format="observable")(0.5, wires=0)
-        assert gen.name == "Hermitian"
-        assert np.all(gen.parameters[0] == -HermitianOp.H)
+        assert gen.name == "Hamiltonian"
+        assert gen.terms()[0][0] == -1.0
+        assert gen.terms()[1][0].name == "Hermitian"
+        assert np.all(gen.terms()[1][0].parameters[0] == HermitianOp.H)
 
         gen = qml.generator(HermitianOp(0.5, wires=0).inv(), format="observable")
         assert gen.name == "Hermitian"
         assert np.all(gen.parameters[0] == -HermitianOp.H)
 
-    def test_sparse_hamiltonian_inverse(self):
-        """Test a SparseHamiltonian inverted generator is correct"""
+    def test_sparse_hamiltonian_adjoint(self):
+        """Test a SparseHamiltonian adjointed generator is correct"""
         gen = qml.generator(qml.adjoint(SparseOp), format="observable")(0.5, wires=0)
         assert gen.name == "SparseHamiltonian"
         assert np.all(gen.parameters[0].toarray() == -SparseOp.H.toarray())

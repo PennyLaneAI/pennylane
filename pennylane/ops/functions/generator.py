@@ -37,7 +37,7 @@ def _generator_observable(gen, op):
 
         return gen.__class__(-param, wires=wires)
 
-    if op.inverse:
+    if getattr(op, "inverse", False):
         gen = -1.0 * gen
 
     return gen
