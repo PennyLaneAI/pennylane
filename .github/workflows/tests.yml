@@ -90,7 +90,7 @@ jobs:
         continue-on-error: true
         with:
           name: ${{ matrix.config.python-version }}-${{ join(matrix.config.interfaces, '-') }}-${{ github.event.pull_request.base.sha }}
-          path: .testmondata
+          path: ./.testmondata
 
       - name: List folder
         run: ls -a
@@ -101,14 +101,17 @@ jobs:
       - name: Run tests
         run: python -m pytest --testmon --rootdir=. tests $COVERAGE_FLAGS
 
-      - name: Upload Testmon Data
-        run: python testmon_sync.py upload ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, '-') }} ${{ github.event.pull_request.head.sha }}
+      - name: List folder
+        run: ls -a
+
+#      - name: Upload Testmon Data
+#        run: python testmon_sync.py upload ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, '-') }} ${{ github.event.pull_request.head.sha }}
 
       - name: Upload Testmon Data Artifact
         uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.config.python-version }}-${{ join(matrix.config.interfaces, '-') }}-${{ github.event.pull_request.head.sha }}
-          path: .testmondata
+          path: ./.testmondata
           retention-days: 5
 
       - name: Adjust coverage file for Codecov
