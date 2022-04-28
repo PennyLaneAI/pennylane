@@ -89,18 +89,18 @@ jobs:
         run: python testmon_sync.py download ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, '-') }} ${{ github.event.pull_request.base.sha }}
 
       - name: Run tests
-        run: python -m pytest tests --testmon --testmon-env=pennylane $COVERAGE_FLAGS
+        run: python -m pytest tests --testmon --testmon-env=pennylane
 
       - name: Upload Testmon Data
         run: python testmon_sync.py upload ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, '-') }} ${{ github.event.pull_request.head.sha }}
 
-      - name: Adjust coverage file for Codecov
-        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
+#      - name: Adjust coverage file for Codecov
+#        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+#
+#      - name: Upload coverage to Codecov
+#        uses: codecov/codecov-action@v3
+#        with:
+#          file: ./coverage.xml
 
 
   device-tests:
