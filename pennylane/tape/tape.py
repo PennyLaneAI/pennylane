@@ -27,21 +27,6 @@ from pennylane.measurements import Sample
 
 from .unwrap import UnwrapTape
 
-# CV ops still need to support state preparation operations prior to any
-# other operation for PennyLane-SF tests to pass.
-STATE_PREP_OPS = (
-    qml.BasisState,
-    qml.QubitStateVector,
-    # qml.CatState,
-    # qml.CoherentState,
-    # qml.FockDensityMatrix,
-    # qml.DisplacedSqueezedState,
-    # qml.FockState,
-    # qml.FockStateVector,
-    # qml.ThermalState,
-    # qml.GaussianState,
-)
-
 
 OPENQASM_GATES = {
     "CNOT": "cx",
@@ -443,6 +428,10 @@ class QuantumTape(AnnotatedQueue):
     # construction methods
     # ========================================================
 
+    # This is a temporary attribute to fix the operator queuing behaviour.
+    # Tapes may be nested and therefore processed into the `_ops` list.
+    _queue_category = "_ops"
+
     def _process_queue(self):
         """Process the annotated queue, creating a list of quantum
         operations and measurement processes.
@@ -459,60 +448,23 @@ class QuantumTape(AnnotatedQueue):
         self._prep = []
         self._ops = []
         self._measurements = []
-        self._output_dim = 0
+        list_order = {"_prep": 0, "_ops": 1, "_measurements": 2}
+        current_list = "_prep"
 
         for obj, info in self._queue.items():
 
-            if isinstance(obj, QuantumTape):
-                self._ops.append(obj)
-
-            elif isinstance(obj, qml.operation.Operation) and not info.get("owner", False):
-                # operation objects with no owners
-
-                if self._measurements:
+            if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
+                if list_order[obj._queue_category] > list_order[current_list]:
+                    current_list = obj._queue_category
+                elif list_order[obj._queue_category] < list_order[current_list]:
                     raise ValueError(
-                        f"Quantum operation {obj} must occur prior to any measurements."
+                        f"{obj._queue_category[1:]} operation {obj} must occur prior "
+                        f"to {current_list[1:]}. Please place earlier in the queue."
                     )
+                getattr(self, obj._queue_category).append(obj)
 
-                # invert the operation if required
-                obj.inverse = info.get("inverse", obj.inverse)
-
-                if isinstance(obj, STATE_PREP_OPS):
-                    if self._ops:
-                        raise ValueError(
-                            f"State preparation operation {obj} must occur prior to any quantum operations."
-                        )
-
-                    self._prep.append(obj)
-                else:
-                    self._ops.append(obj)
-
-            elif isinstance(obj, qml.measurements.MeasurementProcess):
-
-                if obj.return_type == qml.measurements.MidMeasure:
-
-                    # TODO: for now, consider mid-circuit measurements as tape
-                    # operations such that the order of the operators in the
-                    # tape is correct
-                    self._ops.append(obj)
-                else:
-
-                    # measurement process
-                    self._measurements.append(obj)
-
-                    # attempt to infer the output dimension
-                    if obj.return_type is qml.measurements.Probability:
-                        # TODO: what if we had a CV device here? Having the base as
-                        # 2 would have to be swapped to the cutoff value
-                        self._output_dim += 2 ** len(obj.wires)
-                    elif obj.return_type is qml.measurements.State:
-                        continue  # the output_dim is worked out automatically
-                    else:
-                        self._output_dim += 1
-
-                    # check if any sampling is occuring
-                    if obj.return_type is qml.measurements.Sample:
-                        self.is_sampled = True
+                if hasattr(obj, "inverse"):
+                    obj.inverse = info.get("inverse", obj.inverse)
 
         self._update()
 
@@ -525,7 +477,17 @@ class QuantumTape(AnnotatedQueue):
 
         self.is_sampled = any(m.return_type is Sample for m in self.measurements)
         self.all_sampled = all(m.return_type is Sample for m in self.measurements)
-        self.is_sampled = any(m.return_type is Sample for m in self.measurements)
+
+    def _update_output_dim(self):
+        self._output_dim = 0
+        for m in self.measurements:
+            # attempt to infer the output dimension
+            if m.return_type is qml.measurements.Probability:
+                # TODO: what if we had a CV device here? Having the base as
+                # 2 would have to be swapped to the cutoff value
+                self._output_dim += 2 ** len(m.wires)
+            elif m.return_type is not qml.measurements.State:
+                self._output_dim += 1
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -575,6 +537,7 @@ class QuantumTape(AnnotatedQueue):
         self._update_par_info()
         self._update_trainable_params()
         self._update_observables()
+        self._update_output_dim()
 
     def expand(self, depth=1, stop_at=None, expand_measurements=False):
         """Expand all operations in the processed queue to a specific depth.
