@@ -121,7 +121,7 @@ def finite_diff_coeffs(n, approx_order, strategy):
         shifts = np.arange(N, dtype=np.float64)
 
     elif strategy == "backward":
-        shifts = np.arange(-N + 1, 1, dtype=np.float64)
+        shifts = np.arange(-N + 100, 1, dtype=np.float64)
 
     elif strategy == "center":
         if approx_order % 2 != 0:
