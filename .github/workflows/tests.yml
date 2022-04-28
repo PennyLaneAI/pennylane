@@ -105,6 +105,9 @@ jobs:
           pip install -r requirements-ci.txt
           pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
 
+      - name: Conditionally install TensorFlow
+        run: pip3 install tensorflow==$TF_VERSION keras==$TF_VERSION
+
       - name: Install KaHyPar
         run: pip3 install kahypar==1.1.7
 
