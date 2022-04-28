@@ -85,8 +85,17 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
 
-      - name: Get Testmon Data
-        run: python testmon_sync.py download ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, '-') }} ${{ github.event.pull_request.base.sha }}
+      - name: Download Testmon Data Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ matrix.config.python-version }}-${{ join(matrix.config.interfaces, '-') }}-${{ github.event.pull_request.base.sha }}
+          path: .testmondata
+
+      - name: List folder
+        run: ls -a
+
+#      - name: Get Testmon Data
+#        run: python testmon_sync.py download ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, '-') }} ${{ github.event.pull_request.base.sha }}
 
       - name: Run tests
         run: python -m pytest --testmon --rootdir=. tests $COVERAGE_FLAGS
@@ -97,7 +106,7 @@ jobs:
       - name: Upload Testmon Data Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, '-') }} ${{ github.event.pull_request.head.sha }}
+          name: ${{ matrix.config.python-version }}-${{ join(matrix.config.interfaces, '-') }}-${{ github.event.pull_request.head.sha }}
           path: .testmondata
           retention-days: 5
 
