@@ -91,9 +91,6 @@ jobs:
       - name: Run tests
         run: python -m pytest tests --testmon --cov=pennylane $COVERAGE_FLAGS
 
-      - name: List Files
-        run: ls
-
       - name: Upload Testmon Data
         run: python testmon_sync.py upload ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, "-") }} ${{ github.event.pull_request.head.sha }}
 
