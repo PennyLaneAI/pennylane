@@ -874,7 +874,8 @@ class QubitDevice(Device):
 
         # estimate the variance
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
-        return np.squeeze(np.var(samples, axis=0))
+        axis = -1 if bin_size is None else -2
+        return np.squeeze(np.mean(samples, axis=axis))
 
     def sample(self, observable, shot_range=None, bin_size=None):
 
