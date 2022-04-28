@@ -89,9 +89,9 @@ jobs:
         run: python testmon_sync.py download ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, '-') }} ${{ github.event.pull_request.base.sha }}
 
       - name: Run tests
-        env:
-          TESTMON_DATAFILE: /home/runner/work/pennylane/pennylane/.testmondata
-        run: python -m pytest tests --testmon
+#        env:
+#          TESTMON_DATAFILE: /home/runner/work/pennylane/pennylane/.testmondata
+        run: python -m pytest --testmon
 
       - name: Upload Testmon Data
         run: python testmon_sync.py upload ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, '-') }} ${{ github.event.pull_request.head.sha }}
