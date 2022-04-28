@@ -3,6 +3,7 @@ Script for speeding up testing using testmon.
 """
 
 import sys
+import os
 
 from azure.storage.blob import ContainerClient
 
@@ -19,6 +20,7 @@ elif sys.argv[1] == "download":
         print(f"downloading .testmondata for commit {'-'.join(sys.argv[2:])}")
         client = ContainerClient.from_connection_string(CONNECTION_STRING, "versions")
         blob = client.download_blob('-'.join(sys.argv[2:]))
+        print(f"saving to {os.getcwd()}/.testmondata")
         with open(".testmondata", "wb") as fp:
             blob.readinto(fp)
     except Exception as e:  # pylint: disable=broad-except
