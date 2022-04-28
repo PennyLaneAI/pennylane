@@ -4026,24 +4026,23 @@ class TestCutStrategy:
     def test_infer_wire_imbalance(self, k, imbalance_tolerance):
         """Test that the imbalance is correctly derived under simple circumstances."""
 
-        num_wires = 10
-        num_gates = 10
+        wire_depths = dict(enumerate(range(10)))
+        num_gates = int(sum(wire_depths.values()))
         free_wires = 3
 
         imbalance = qcut.CutStrategy._infer_imbalance(
             k=k,
-            num_wires=num_wires,
-            num_gates=num_gates,
+            wire_depths=wire_depths,
             free_wires=free_wires,
             free_gates=1000,
             imbalance_tolerance=imbalance_tolerance,
         )
 
-        avg_size = int(num_gates / k + 1 - 1e-7)
+        depth_imbalance = max(wire_depths.values()) * len(wire_depths) / num_gates - 1
         if imbalance_tolerance is not None:
             assert imbalance <= imbalance_tolerance
         else:
-            assert imbalance == (num_gates - (k - 1)) / avg_size - 1
+            assert imbalance == depth_imbalance
 
     @pytest.mark.parametrize("num_wires", [50, 10])
     def test_infer_wire_imbalance_raises(
@@ -4053,13 +4052,12 @@ class TestCutStrategy:
         """Test that the imbalance correctly raises."""
 
         k = 2
-        num_gates = 50
+        wire_depths = {k: 1 if num_wires > 40 else 5 for k in range(num_wires)}
 
         with pytest.raises(ValueError, match=f"`free_{'wires' if num_wires > 40 else 'gates'}`"):
             qcut.CutStrategy._infer_imbalance(
                 k=k,
-                num_wires=num_wires,
-                num_gates=num_gates,
+                wire_depths=wire_depths,
                 free_wires=20,
                 free_gates=20,
             )
