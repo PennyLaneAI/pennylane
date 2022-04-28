@@ -117,7 +117,7 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
         p2 = marginal_prob(prob, o2wires)
         p12 = marginal_prob(prob, shared_wires)
 
-        res = dot(l12, p12) - dot(l1, p1) * dot(l2, p2)
+        res = dot(l12, p12) + dot(l1, p1) * dot(l2, p2)
 
         cov = scatter_element_add(cov, [i, j], res)
         cov = scatter_element_add(cov, [j, i], res)
