@@ -124,7 +124,7 @@ def _get_operation_recipe(tape, t_idx, shifts, order=1):
         if qml.math.allclose(recipe[:, 1], qml.math.ones_like(recipe[:, 1])):
             # If the multipliers are ones, we do not include them in the iteration
             # but keep track of them manually
-            iter_c, iter_s = process_shifts(_iterate_shift_rule(recipe[:, ::2], order, period)).T
+            iter_c, iter_s = process_shifts(_iterate_shift_rule(recipe[:, ::3], order, period)).T
             return qml.math.stack([iter_c, qml.math.ones_like(iter_c), iter_s]).T
 
         return process_shifts(_iterate_shift_rule(recipe, order, period))
