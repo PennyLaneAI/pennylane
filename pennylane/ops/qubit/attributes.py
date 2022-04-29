@@ -203,6 +203,14 @@ may be cast in on backpropagation devices.
 supports_tensorbatching = Attribute(
     [
         "QubitUnitary",
+        "DiagonalQubitUnitary",
+        "RX",
+        "RY",
+        "RZ",
+        "PhaseShift",
+        "ControlledPhaseShift",
+        "Rot",
+        "MultiRZ",
     ]
 )
 

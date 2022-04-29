@@ -71,14 +71,14 @@ class QubitUnitary(Operation):
 
             if not (len(U_shape) in {2, 3} and U_shape[:2] == (dim, dim)):
                 raise ValueError(
-                    f"Input unitary must be of shape {(dim, dim)} or {(dim, dim}, batch_dim) "
+                    f"Input unitary must be of shape {(dim, dim)} or ({dim, dim}, batch_dim) "
                     f"to act on {len(wires)} wires."
                 )
 
             # Check for unitarity; due to variable precision across the different ML frameworks,
             # here we issue a warning to check the operation, instead of raising an error outright.
             # TODO: Implement unitarity check also for tensor-batched arguments U
-            if not (qml.math.is_abstract(U) or len(U_shape)==2 or qml.math.allclose(
+            if not (qml.math.is_abstract(U) or len(U_shape)==3 or qml.math.allclose(
                 qml.math.dot(U, qml.math.transpose(qml.math.conj(U), (1, 0))),
                 qml.math.eye(dim),
                 atol=1e-6,
@@ -444,14 +444,14 @@ class DiagonalQubitUnitary(Operation):
         [QubitUnitary(array([[1, 0], [0, 1]]), wires=[0])]
 
         """
-        return [QubitUnitary(self.compute_matrix(D), wires=wires)]
+        return [QubitUnitary(DiagonalQubitUnitary.compute_matrix(D), wires=wires)]
 
     def adjoint(self):
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
 
     def _controlled(self, control):
         DiagonalQubitUnitary(
-            qml.math.concatenate([np.array([1, 1]), self.parameters[0]]),
+            qml.math.concatenate([np.ones_like(self.parameters[0]), self.parameters[0]]),
             wires=Wires(control) + self.wires,
         )
 

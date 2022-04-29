@@ -96,12 +96,9 @@ class RX(Operation):
         if qml.math.get_interface(theta) == "tensorflow":
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
-
-        js = -1j * s
-
-        return qml.math.diag([c, c]) + qml.math.stack(
-            [qml.math.stack([0, js]), qml.math.stack([js, 0])]
-        )
+    
+        mat = qml.math.stack([qml.math.stack([c, s]), qml.math.stack([s, c])])
+        return mat * qml.math.array([[1+0j, -1j], [-1j, 1+0j]], like=mat)
 
     def adjoint(self):
         return RX(-self.data[0], wires=self.wires)
@@ -177,9 +174,7 @@ class RY(Operation):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        return qml.math.diag([c, c]) + qml.math.stack(
-            [qml.math.stack([0, -s]), qml.math.stack([s, 0])]
-        )
+        return qml.math.stack([qml.math.stack([c, -s]), qml.math.stack([s, c])])
 
     def adjoint(self):
         return RY(-self.data[0], wires=self.wires)
@@ -254,8 +249,9 @@ class RZ(Operation):
             theta = qml.math.cast_like(theta, 1j)
 
         p = qml.math.exp(-0.5j * theta)
+        z = qml.math.zeros_like(p)
 
-        return qml.math.diag([p, qml.math.conj(p)])
+        return qml.math.stack([qml.math.stack([p, z]), qml.math.stack([z, qml.math.conj(p)])])
 
     @staticmethod
     def compute_eigvals(theta):  # pylint: disable=arguments-differ
@@ -368,9 +364,10 @@ class PhaseShift(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        exp_part = qml.math.exp(1j * phi)
+        p = qml.math.exp(1j * phi)
+        z = qml.math.zeros_like(p)
 
-        return qml.math.diag([1, exp_part])
+        return qml.math.stack([qml.math.stack([qml.math.ones_like(p), z]), qml.math.stack([z, p])])
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
@@ -402,9 +399,9 @@ class PhaseShift(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        exp_part = qml.math.exp(1j * phi)
+        p = qml.math.exp(1j * phi)
 
-        return qml.math.stack([1, exp_part])
+        return qml.math.stack([qml.math.ones_like(p), p])
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -512,6 +509,16 @@ class ControlledPhaseShift(Operation):
             phi = qml.math.cast_like(phi, 1j)
 
         exp_part = qml.math.exp(1j * phi)
+        if len(qml.math.shape(phi))>0:
+            o = qml.math.ones_like(phi)
+            z = qml.math.zeros_like(phi)
+            rows = [
+                qml.math.stack([o, z, z, z]),
+                qml.math.stack([z, o, z, z]),
+                qml.math.stack([z, z, o, z]),
+                qml.math.stack([z, z, z, exp_part]),
+            ]
+            return qml.math.stack(rows)
 
         return qml.math.diag([1, 1, 1, exp_part])
 
@@ -546,8 +553,9 @@ class ControlledPhaseShift(Operation):
             phi = qml.math.cast_like(phi, 1j)
 
         exp_part = qml.math.exp(1j * phi)
+        o = qml.math.ones_like(exp_part)
 
-        return qml.math.stack([1, 1, 1, exp_part])
+        return qml.math.stack([o, o, o, exp_part])
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -803,6 +811,13 @@ class MultiRZ(Operation):
             theta = qml.math.cast_like(theta, 1j)
             eigs = qml.math.cast_like(eigs, 1j)
 
+        if len(qml.math.shape(theta)) > 0:
+            eigvals = qml.math.exp(qml.math.tensordot(eigs, -1j / 2 * theta, axes=0))
+            dim = 2**num_wires
+            mat = qml.math.zeros((dim, dim, len(theta)), like=1j)
+            mat[np.diag_indices(dim, ndim=2)] = eigvals
+            return mat
+
         eigvals = qml.math.exp(-1j * theta / 2 * eigs)
         return qml.math.diag(eigvals)
 
@@ -843,6 +858,9 @@ class MultiRZ(Operation):
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
             eigs = qml.math.cast_like(eigs, 1j)
+
+        if len(qml.math.shape(theta)) > 0:
+            return qml.math.exp(qml.math.tensordot(eigs, -1j / 2 * theta, axes=0))
 
         return qml.math.exp(-1j * theta / 2 * eigs)
 
@@ -1035,7 +1053,7 @@ class PauliRot(Operation):
             theta = qml.math.cast_like(theta, 1j)
 
         # Simplest case is if the Pauli is the identity matrix
-        if pauli_word == "I" * len(pauli_word):
+        if set(pauli_word) == {"I"}:
 
             exp = qml.math.exp(-1j * theta / 2)
             iden = qml.math.eye(2 ** len(pauli_word))

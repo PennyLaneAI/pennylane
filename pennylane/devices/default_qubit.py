@@ -705,10 +705,7 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        shape = [2] * (len(device_wires) * 2)
-        if mat.size > 2**(2*len(device_wires)):
-            shape.append(-1)
-        mat = self._cast(self._reshape(mat, shape), dtype=self.C_DTYPE)
+        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
         axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires)
         tdot = self._tensordot(mat, state, axes=axes)
 
@@ -738,10 +735,7 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        shape = [2] * (len(device_wires) * 2)
-        if mat.size > 2**(2*len(device_wires)):
-            shape.append(-1)
-        mat = self._cast(self._reshape(mat, shape), dtype=self.C_DTYPE)
+        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
 
         # Tensor indices of the quantum state
         state_indices = ABC[: self.num_wires]
@@ -761,7 +755,7 @@ class DefaultQubit(QubitDevice):
         )
 
         # We now put together the indices in the notation numpy's einsum requires
-        einsum_indices = f"{new_indices}{affected_indices}...,{state_indices}...->{new_state_indices}..."
+        einsum_indices = f"{new_indices}{affected_indices},{state_indices}->{new_state_indices}"
 
         return self._einsum(einsum_indices, mat, state)
 
