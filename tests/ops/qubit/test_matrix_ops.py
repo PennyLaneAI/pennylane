@@ -233,6 +233,7 @@ class TestDiagonalQubitUnitary:
         assert np.allclose(decomp2[0].data[0], np.diag(D))
 
     def test_controlled(self):
+        """Test that the correct controlled operation is created when controlling a qml.DiagonalQubitUnitary."""
         D = np.array([1j, 1, 1, -1, -1j, 1j, 1, -1])
         op = qml.DiagonalQubitUnitary(D, wires=[1, 2, 3])
         with qml.tape.QuantumTape() as tape:
