@@ -255,6 +255,7 @@ class TestDiagonalQubitUnitary:
         """Test that the diagonal matrix unitary operation works
         within a QNode that uses the JAX JIT"""
         import jax
+
         jnp = jax.numpy
 
         dev = qml.device("default.qubit", wires=1, shots=None)
@@ -598,6 +599,7 @@ class TestInterfaceMatricesLabel:
         """Test matrix cache labelling with tf interface."""
 
         import tensorflow as tf
+
         mat = tf.Variable([[1, 0], [0, -1]])
 
         self.check_interface(mat)
@@ -607,6 +609,7 @@ class TestInterfaceMatricesLabel:
         """Test matrix cache labelling with jax interface."""
 
         import jax.numpy as jnp
+
         mat = jnp.array([[1, 0], [0, -1]])
 
         self.check_interface(mat)

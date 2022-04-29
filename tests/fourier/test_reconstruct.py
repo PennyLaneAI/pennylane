@@ -214,6 +214,7 @@ class TestReconstructEqu:
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for TensorFlow input variables."""
         import tensorflow as tf
+
         # Convert fun to have integer frequencies
         base_f = tf.constant(base_f, dtype=tf.float64)
         _fun = lambda x: fun(x / base_f)
@@ -240,6 +241,7 @@ class TestReconstructEqu:
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for Torch input variables."""
         import torch
+
         # Convert fun to have integer frequencies
         _fun = lambda x: fun(x / base_f)
         _rec = _reconstruct_equ(_fun, num_frequency, interface="torch")
@@ -419,7 +421,7 @@ class TestReconstructGen:
     def test_differentiability_jax(self, fun, spectrum, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for JAX input variables."""
-        import  jax
+        import jax
         from jax.config import config
 
         config.update("jax_enable_x64", True)
@@ -438,6 +440,7 @@ class TestReconstructGen:
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for TensorFlow input variables."""
         import tensorflow as tf
+
         spectrum = tf.constant(spectrum, dtype=tf.float64)
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(fun, spectrum, interface="tensorflow")
@@ -964,6 +967,7 @@ class TestReconstruct:
         if qnode == qnode_4:
             pytest.skip("Gradients are empty in TensorFlow for independent functions.")
         import tensorflow as tf
+
         qnode = qml.QNode(qnode, dev_1, interface="tf")
         params = tuple(tf.Variable(par, dtype=tf.float64) for par in params)
         if spectra is not None:
@@ -1040,6 +1044,7 @@ class TestReconstruct:
     ):
         """Tests the reconstruction and differentiability with Torch."""
         import torch
+
         qnode = qml.QNode(qnode, dev_1, interface="torch")
         params = tuple(torch.tensor(par, requires_grad=True, dtype=torch.float64) for par in params)
         if spectra is not None:

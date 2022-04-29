@@ -59,6 +59,7 @@ def module(get_circuit, n_qubits, output_dim):
     return Net()
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("interface", ["torch"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
 class TestTorchLayer:

@@ -336,6 +336,7 @@ class TestDifferentiable:
         """Test that grouping is differentiable with jax tensors as coefficient"""
         import jax
         import jax.numpy as jnp
+
         coeffs = jnp.array([1.0, 2.0, 3.0])
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
@@ -380,6 +381,7 @@ class TestDifferentiable:
     def test_differentiation_tf(self, tol):
         """Test that grouping is differentiable with tf tensors as coefficient"""
         import tensorflow as tf
+
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
         def group(coeffs, select=None):

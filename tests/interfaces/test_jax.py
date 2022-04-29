@@ -26,6 +26,7 @@ from pennylane.gradients import param_shift
 from pennylane.interfaces import execute
 from pennylane.interfaces import InterfaceUnsupportedError
 
+
 @pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
 class TestJaxExecuteUnitTests:
     """Unit tests for jax execution"""

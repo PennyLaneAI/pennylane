@@ -27,6 +27,7 @@ from pennylane.interfaces import execute
 
 pytestmark = pytest.mark.autograd
 
+
 class TestAutogradExecuteUnitTests:
     """Unit tests for autograd execution"""
 

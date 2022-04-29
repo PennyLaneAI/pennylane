@@ -222,7 +222,6 @@ class TestIsIndependentAutograd:
         assert len(recwarn) == 0
 
 
-
 class TestIsIndependentJax:
     """Tests for is_independent, which tests a function to be
     independent of its inputs, using JAX."""
@@ -321,7 +320,6 @@ class TestIsIndependentJax:
         assert is_independent(f, self.interface, args)
         assert not is_independent(f, self.interface, args, {"kw": True})
         assert is_independent(jac, self.interface, args, {"kw": True})
-
 
 
 class TestIsIndependentTensorflow:

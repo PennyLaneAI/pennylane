@@ -295,6 +295,7 @@ class TestSingleExcitation:
         tensorflow interface"""
 
         import tensorflow as tf
+
         dev = qml.device("default.qubit.tf", wires=2)
 
         @qml.qnode(dev, interface="tf", diff_method=diff_method)
@@ -572,6 +573,7 @@ class TestDoubleExcitation:
         tensorflow interface"""
 
         import tensorflow as tf
+
         dev = qml.device("default.qubit.tf", wires=4)
 
         @qml.qnode(dev, interface="tf", diff_method=diff_method)
@@ -913,6 +915,7 @@ class TestOrbitalRotation:
         tensorflow interface"""
 
         import tensorflow as tf
+
         dev = qml.device("default.qubit.tf", wires=4)
 
         circuit_0 = qml.QNode(self.grad_circuit_0, dev, interface="tf", diff_method=diff_method)

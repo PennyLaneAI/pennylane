@@ -91,6 +91,7 @@ def indices_up_to_dm(n_max):
     return zip(*[a + 1], zip(*[2 ** (b + 1), 2 ** (b + 1)]))
 
 
+@pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")
 class TestKerasLayer:

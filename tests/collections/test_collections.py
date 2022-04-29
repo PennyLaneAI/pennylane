@@ -213,6 +213,7 @@ class TestApply:
     def test_apply_summation_torch(self, tol):
         """Test that summation can be applied using torch"""
         import torch
+
         qnode1, qnode2 = qnodes("torch")
         qc = qml.QNodeCollection([qnode1, qnode2])
         cost = qml.collections.apply(torch.sum, qc)
@@ -227,6 +228,7 @@ class TestApply:
     def test_apply_summation_tf(self, tol):
         """Test that summation can be applied using tf"""
         import tensorflow as tf
+
         qnode1, qnode2 = qnodes("tf")
         qc = qml.QNodeCollection([qnode1, qnode2])
         cost = qml.collections.apply(tf.reduce_sum, qc)
@@ -241,6 +243,7 @@ class TestApply:
     def test_apply_summation_jax(self, tol):
         """Test that summation can be applied using jax"""
         import jax.numpy as jnp
+
         qnode1, qnode2 = qnodes("jax")
         qc = qml.QNodeCollection([qnode1, qnode2])
         cost = qml.collections.apply(jnp.sum, qc)
@@ -272,6 +275,7 @@ class TestApply:
     def test_nested_apply_torch(self, tol):
         """Test that nested apply can be done using torch"""
         import torch
+
         qnode1, qnode2 = qnodes("torch")
         qc = qml.QNodeCollection([qnode1, qnode2])
 
@@ -290,6 +294,7 @@ class TestApply:
     def test_nested_apply_tf(self, tol):
         """Test that nested apply can be done using tf"""
         import tensorflow as tf
+
         qnode1, qnode2 = qnodes("tf")
         qc = qml.QNodeCollection([qnode1, qnode2])
 
@@ -308,6 +313,7 @@ class TestApply:
     def test_nested_apply_jax(self, tol):
         """Test that nested apply can be done using jax"""
         import jax.numpy as jnp
+
         qnode1, qnode2 = qnodes("jax")
         qc = qml.QNodeCollection([qnode1, qnode2])
 
@@ -455,6 +461,7 @@ class TestDot:
     def test_dot_product_tensor_qnodes_torch(self):
         """Test that the dot product of tensor.qnodes can be applied using torch."""
         import torch
+
         qnode1, qnode2 = qnodes("torch")
         qc = qml.QNodeCollection([qnode1, qnode2])
         coeffs = [0.5, -0.1]
@@ -480,6 +487,7 @@ class TestDot:
     def test_dot_product_tensor_qnodes_tf(self):
         """Test that the dot product of tensor.qnodes can be applied using tf."""
         import tensorflow as tf
+
         qnode1, qnode2 = qnodes("tf")
         qc = qml.QNodeCollection([qnode1, qnode2])
         coeffs = [0.5, -0.1]
@@ -662,6 +670,7 @@ class TestDot:
     def test_dot_product_qnodes_tensor_torch(self):
         """Test that the dot product of qnodes.tensor can be applied using torch"""
         import torch
+
         qnode1, _ = qnodes("torch")
         qc = qml.QNodeCollection([qnode1])
         coeffs = [0.5, -0.1]
@@ -684,6 +693,7 @@ class TestDot:
     def test_dot_product_qnodes_tensor_tf(self):
         """Test that the dot product of qnodes.tensor can be applied using tf"""
         import torch
+
         qnode1, _ = qnodes("tf")
         qc = qml.QNodeCollection([qnode1])
         coeffs = [0.5, -0.1]
@@ -706,6 +716,7 @@ class TestDot:
     def test_dot_product_qnodes_tensor_jax(self):
         """Test that the dot product of qnodes.tensor can be applied using jax"""
         import torch
+
         qnode1, _ = qnodes("jax")
         qc = qml.QNodeCollection([qnode1])
         coeffs = [0.5, -0.1]

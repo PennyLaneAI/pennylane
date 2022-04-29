@@ -122,6 +122,7 @@ class TestDecimals:
         """Test torch parameters display as normal numbers."""
 
         import torch
+
         expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
         out = draw(circuit, decimals=1)(torch.tensor(1.23), torch.tensor(2.34), torch.tensor(3.45))
         assert out == expected

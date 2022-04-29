@@ -29,6 +29,7 @@ qubit_device_and_diff_method = [
 
 pytestmark = pytest.mark.autograd
 
+
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
 class TestQNode:
     """Test that using the QNode with Autograd integrates with the PennyLane stack"""

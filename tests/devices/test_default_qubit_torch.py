@@ -171,6 +171,7 @@ def device(scope="function"):
 # Initialization test
 #####################################################
 
+
 @pytest.mark.torch
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
@@ -184,6 +185,7 @@ def test_analytic_deprecation():
 #####################################################
 # Device-level integration tests
 #####################################################
+
 
 @pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
@@ -632,7 +634,9 @@ class TestExpval:
 
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_do_not_split_analytic_torch(self,  device, torch_device, theta, phi, varphi, tol, mocker):
+    def test_do_not_split_analytic_torch(
+        self, device, torch_device, theta, phi, varphi, tol, mocker
+    ):
         """Tests that the Hamiltonian is not split for shots=None using the Torch device."""
 
         dev = device(wires=2, torch_device=torch_device)

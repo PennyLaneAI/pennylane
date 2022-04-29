@@ -727,7 +727,6 @@ class TestParameterShiftHessian:
 
         assert res == ()
 
-
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""

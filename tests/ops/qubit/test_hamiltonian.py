@@ -1432,6 +1432,7 @@ class TestHamiltonianDifferentiation:
 
         import jax
         import jax.numpy as jnp
+
         coeffs = jnp.array([-0.05, 0.17])
         param = jnp.array(1.7)
 
@@ -1472,6 +1473,7 @@ class TestHamiltonianDifferentiation:
 
         import jax
         import jax.numpy as jnp
+
         coeffs = np.array([-0.05, 0.17])
         param = jnp.array(1.7)
 
@@ -1506,6 +1508,7 @@ class TestHamiltonianDifferentiation:
         with the differentiation of a Hamiltonian expectation"""
 
         import torch
+
         coeffs = torch.tensor([-0.05, 0.17], requires_grad=True)
         param = torch.tensor(1.7, requires_grad=True)
 
@@ -1552,6 +1555,7 @@ class TestHamiltonianDifferentiation:
         """Test the torch interface if the coefficients are explicitly set non-trainable"""
 
         import torch
+
         coeffs = torch.tensor([-0.05, 0.17], requires_grad=False)
         param = torch.tensor(1.7, requires_grad=True)
 
@@ -1597,6 +1601,7 @@ class TestHamiltonianDifferentiation:
         with the differentiation of a Hamiltonian expectation"""
 
         import tensorflow as tf
+
         coeffs = tf.Variable([-0.05, 0.17], dtype=tf.double)
         param = tf.Variable(1.7, dtype=tf.double)
 
@@ -1642,6 +1647,7 @@ class TestHamiltonianDifferentiation:
         """Test the tf interface if the coefficients are explicitly set non-trainable"""
 
         import tensorflow as tf
+
         coeffs = tf.constant([-0.05, 0.17], dtype=tf.double)
         param = tf.Variable(1.7, dtype=tf.double)
 

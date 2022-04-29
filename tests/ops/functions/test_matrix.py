@@ -383,7 +383,6 @@ class TestValidation:
 
 
 class TestInterfaces:
-
     @pytest.mark.tf
     def test_tf(self):
         """Test with tensorflow interface"""
@@ -498,7 +497,6 @@ class TestInterfaces:
 
 
 class TestDifferentiation:
-
     @pytest.mark.jax
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_jax(self, v):

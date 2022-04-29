@@ -188,18 +188,26 @@ except ImportError as e:
 def pytest_collection_modifyitems(items, config):
     for item in items:
         markers = {mark.name for mark in item.iter_markers()}
-        if not any(elem in ['autograd', 'torch', 'tf', 'jax'] for elem in markers) or not markers:
+        if not any(elem in ["autograd", "torch", "tf", "jax"] for elem in markers) or not markers:
             item.add_marker(pytest.mark.core)
 
 
 def pytest_runtest_setup(item):
     """Automatically skip tests if they are marked for only certain backends"""
     all_interfaces = {"core", "autograd", "tf", "torch", "jax"}
-    available_interfaces = {"core": True, "autograd": True, "tf": tf_available, "torch": torch_available,
-                            "jax": jax_available}
+    available_interfaces = {
+        "core": True,
+        "autograd": True,
+        "tf": tf_available,
+        "torch": torch_available,
+        "jax": jax_available,
+    }
 
-    allowed_interfaces = [allowed_interface for allowed_interface in all_interfaces
-                          if available_interfaces[allowed_interface] is True]
+    allowed_interfaces = [
+        allowed_interface
+        for allowed_interface in all_interfaces
+        if available_interfaces[allowed_interface] is True
+    ]
 
     # load the marker specifying what the interface is
     marks = {mark.name for mark in item.iter_markers() if mark.name in all_interfaces}
@@ -207,7 +215,7 @@ def pytest_runtest_setup(item):
     if not marks:
         # if the test hasn't specified that it runs on particular interfaces,
         # assume it will work with core only
-        marks = {'core'}
+        marks = {"core"}
 
     for b in marks:
         if b not in allowed_interfaces:

@@ -212,7 +212,6 @@ class TestFiniteDiff:
 
         assert res == ()
 
-
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
@@ -697,6 +696,7 @@ class TestFiniteDiffGradients:
         """Tests that the output of the finite-difference transform
         of a ragged tape can be differentiated using TF, yielding second derivatives."""
         import tensorflow as tf
+
         dev = qml.device("default.qubit.tf", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
 

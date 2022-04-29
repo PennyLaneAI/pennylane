@@ -1492,6 +1492,7 @@ class TestHamiltonianExpvalGradients:
         """Test gradient of multiple trainable Hamiltonian coefficients
         using JAX"""
         import jax
+
         jnp = jax.numpy
 
         coeffs1 = jnp.array([0.1, 0.2, 0.3])

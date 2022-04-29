@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane.devices.default_qubit_jax import DefaultQubitJax
 from pennylane import DeviceError
 
+
 @pytest.mark.jax
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""

@@ -595,6 +595,7 @@ class TestInterfaceIntegration:
         """Test that a gradient transform remains differentiable
         with TF"""
         import tensorflow as tf
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.gradients.param_shift
@@ -648,6 +649,7 @@ class TestInterfaceIntegration:
         """Test that a gradient transform remains differentiable
         with JAX"""
         import jax
+
         jnp = jax.numpy
         dev = qml.device("default.qubit", wires=2)
 

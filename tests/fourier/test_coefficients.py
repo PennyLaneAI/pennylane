@@ -315,6 +315,7 @@ class TestInterfaces:
     def test_coefficients_jax_interface(self):
         """Test that coefficients are correctly computed when using the JAX interface."""
         import jax
+
         # Need to enable float64 support
         from jax.config import config
 

@@ -391,6 +391,7 @@ expected_result = {
     }
 }
 
+
 @pytest.mark.autograd
 class TestAutograd:
     def test_integration_autograd(self):
@@ -415,6 +416,7 @@ class TestAutograd:
         qnode = qml.QNode(circuit, dev, interface="autograd")
         with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
             qnode_spectrum(qnode)(*args)
+
 
 @pytest.mark.torch
 class TestTorch:
@@ -445,6 +447,7 @@ class TestTorch:
         with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
             qnode_spectrum(qnode)(*args)
 
+
 @pytest.mark.tf
 class TestTensorflow:
     def test_integration_tf(self):
@@ -473,6 +476,7 @@ class TestTensorflow:
         qnode = qml.QNode(circuit, dev, interface="tf")
         with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
             qnode_spectrum(qnode)(*args)
+
 
 @pytest.mark.jax
 class TestJax:

@@ -21,6 +21,7 @@ from pennylane import numpy as np
 from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
 from pennylane import DeviceError
 
+
 @pytest.mark.autograd
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""

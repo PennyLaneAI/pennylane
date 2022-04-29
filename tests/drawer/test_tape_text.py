@@ -179,6 +179,7 @@ class TestDecimals:
     def test_torch_parameters(self):
         """Test torch parameters in tape display as normal numbers."""
         import torch
+
         with QuantumTape() as tape_torch:
             qml.Rot(torch.tensor(1.234), torch.tensor(2.345), torch.tensor(3.456), wires=0)
 
@@ -189,6 +190,7 @@ class TestDecimals:
     def test_tensorflow_parameters(self):
         """Test tensorflow parameters display as normal numbers."""
         import tensorflow as tf
+
         with QuantumTape() as tape_tf:
             qml.Rot(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456), wires=0)
 

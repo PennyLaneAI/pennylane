@@ -217,6 +217,7 @@ class TestTFMatrix:
 # Device-level integration tests
 #####################################################
 
+
 @pytest.mark.tf
 class TestApply:
     """Test application of PennyLane operations."""
@@ -541,6 +542,7 @@ THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
+
 @pytest.mark.tf
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestExpval:
@@ -830,6 +832,7 @@ class TestExpval:
         expected = ((a - d) * np.cos(theta) + 2 * re_b * np.sin(theta) * np.sin(phi) + a + d) / 2
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+
 @pytest.mark.tf
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestVar:
@@ -993,6 +996,7 @@ class TestVar:
 # QNode-level integration tests
 #####################################################
 
+
 @pytest.mark.tf
 class TestQNodeIntegration:
     """Integration tests for default.qubit.tf. This test ensures it integrates
@@ -1155,6 +1159,7 @@ class TestQNodeIntegration:
         res = dev.state
         expected = CRot3(a, b, c) @ state
         assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
+
 
 @pytest.mark.tf
 class TestPassthruIntegration:
@@ -1460,6 +1465,7 @@ class TestPassthruIntegration:
         ):
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
+
 @pytest.mark.tf
 class TestSamples:
     """Tests for sampling outputs"""
@@ -1537,6 +1543,7 @@ class TestSamples:
         # expected = [tf.cos(a), tf.cos(a) * tf.cos(b)]
         # assert np.allclose(res, expected, atol=tol, rtol=0)
 
+
 @pytest.mark.tf
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
@@ -1565,6 +1572,7 @@ class TestHighLevelIntegration:
 
         assert isinstance(grad, tf.Tensor)
         assert grad.shape == weights.shape
+
 
 @pytest.mark.tf
 def test_asarray_ragged_dtype_conversion(monkeypatch):

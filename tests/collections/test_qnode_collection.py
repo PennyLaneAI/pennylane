@@ -46,6 +46,7 @@ def qnodes(interface):
 
     return qnode1, qnode2
 
+
 class TestConstruction:
     """Tests for the QNodeCollection construction"""
 
@@ -261,6 +262,7 @@ class TestEvalation:
         """Test correct gradient of the QNodeCollection using
         the torch interface"""
         import torch
+
         qnode1, qnode2 = qnodes("torch")
 
         # calculate the gradient of the collection using pytorch
@@ -300,6 +302,7 @@ class TestEvalation:
         """Test correct gradient of the QNodeCollection using
         the tf interface"""
         import tensorflow as tf
+
         if parallel and qml.tape_mode_active():
             pytest.skip(
                 "There appears to be a race condition when constructing TF tapes in parallel"

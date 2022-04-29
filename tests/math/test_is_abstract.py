@@ -28,6 +28,7 @@ torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
+
 class TestTensorFlow:
     """Test that tensorflow integrates with is_abstract"""
 
