@@ -65,21 +65,24 @@ class QubitUnitary(Operation):
         # of wires fits the dimensions of the matrix
         if not isinstance(self, ControlledQubitUnitary):
             U = params[0]
+            U_shape = qml.math.shape(U)
 
             dim = 2 ** len(wires)
 
-            if qml.math.shape(U) != (dim, dim):
+            if not (len(U_shape) in {2, 3} and U_shape[:2] == (dim, dim)):
                 raise ValueError(
-                    f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
+                    f"Input unitary must be of shape {(dim, dim)} or {(dim, dim}, batch_dim) "
+                    f"to act on {len(wires)} wires."
                 )
 
             # Check for unitarity; due to variable precision across the different ML frameworks,
             # here we issue a warning to check the operation, instead of raising an error outright.
-            if not qml.math.is_abstract(U) and not qml.math.allclose(
-                qml.math.dot(U, qml.math.T(qml.math.conj(U))),
-                qml.math.eye(qml.math.shape(U)[0]),
+            # TODO: Implement unitarity check also for tensor-batched arguments U
+            if not (qml.math.is_abstract(U) or len(U_shape)==2 or qml.math.allclose(
+                qml.math.dot(U, qml.math.transpose(qml.math.conj(U), (1, 0))),
+                qml.math.eye(dim),
                 atol=1e-6,
-            ):
+            )):
                 warnings.warn(
                     f"Operator {U}\n may not be unitary."
                     "Verify unitarity of operation, or use a datatype with increased precision.",
@@ -151,7 +154,9 @@ class QubitUnitary(Operation):
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
 
     def adjoint(self):
-        return QubitUnitary(qml.math.T(qml.math.conj(self.get_matrix())), wires=self.wires)
+        U = self.get_matrix()
+        axis = (1, 0) if len(qml.math.shape(U))==2 else (1, 0, 2)
+        return QubitUnitary(qml.math.transpose(qml.math.conj(U), axis), wires=self.wires)
 
     def _controlled(self, wire):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
@@ -278,6 +283,8 @@ class ControlledQubitUnitary(QubitUnitary):
         target_dim = 2 ** len(u_wires)
         if len(U) != target_dim:
             raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
+        if len(qml.math.shape(U))==3:
+            raise ValueError(f"ControlledQubitUnitary does not support tensor-batching.")
 
         # A multi-controlled operation is a block-diagonal matrix partitioned into
         # blocks where the operation being applied sits in the block positioned at
@@ -373,6 +380,9 @@ class DiagonalQubitUnitary(Operation):
         if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):
             raise ValueError("Operator must be unitary.")
 
+        if len(qml.math.shape(D))==2:
+            return qml.math.transpose(qml.math.stack([qml.math.diag(_D) for _D in D]), (2, 0, 1))
+
         return qml.math.diag(D)
 
     @staticmethod
@@ -403,9 +413,9 @@ class DiagonalQubitUnitary(Operation):
         """
         D = qml.math.asarray(D)
 
-        if not qml.math.is_abstract(D) and not qml.math.allclose(
+        if not (qml.math.is_abstract(D) or qml.math.allclose(
             D * qml.math.conj(D), qml.math.ones_like(D)
-        ):
+        )):
             raise ValueError("Operator must be unitary.")
 
         return D
@@ -434,7 +444,7 @@ class DiagonalQubitUnitary(Operation):
         [QubitUnitary(array([[1, 0], [0, 1]]), wires=[0])]
 
         """
-        return [QubitUnitary(qml.math.diag(D), wires=wires)]
+        return [QubitUnitary(self.compute_matrix(D), wires=wires)]
 
     def adjoint(self):
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
