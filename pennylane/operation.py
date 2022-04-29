@@ -2482,10 +2482,15 @@ def defines_diagonalizing_gates(obj):
 
 @qml.BooleanFn
 def gen_is_hamiltonian(obj):
-    """Returns ``True`` if an operator has a generator defined and it is a Hamiltonian."""
+    """Returns ``True`` if an operator has a generator defined and it is a Hamiltonian
+    with more than one term."""
+
     try:
         o = obj.generator()
     except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
         return False
 
-    return type(o) == qml.Hamiltonian
+    if type(o) == qml.Hamiltonian:
+        if len(o.coeffs) > 1:
+            return True
+    return False
