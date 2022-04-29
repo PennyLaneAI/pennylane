@@ -20,6 +20,7 @@ from autoray import numpy as anp
 from pennylane import numpy as np
 from pennylane import math as fn
 
+pytestmark = pytest.mark.math
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")

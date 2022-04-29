@@ -21,13 +21,18 @@ import pytest
 
 import pennylane as qml
 
+pytestmark = pytest.mark.math
+
+tf = pytest.importorskip("tensorflow", minversion="2.1")
+torch = pytest.importorskip("torch")
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 class TestTensorFlow:
     """Test that tensorflow integrates with is_abstract"""
 
     def test_eager(self):
         """Test that no tensors are abstract when in eager mode"""
-        tf = pytest.importorskip("tensorflow")
 
         def cost(x, w):
             y = x**2
@@ -59,7 +64,6 @@ class TestTensorFlow:
     @pytest.mark.parametrize("jit_compile", [True, False])
     def test_jit(self, jit_compile):
         """Test that all tensors are abstract when in autograd mode"""
-        tf = pytest.importorskip("tensorflow")
 
         @tf.function(jit_compile=jit_compile)
         def cost(x, w):
@@ -95,8 +99,6 @@ class TestJAX:
 
     def test_eager(self):
         """Test that no tensors are abstract when in eager mode"""
-        jax = pytest.importorskip("jax")
-        jnp = jax.numpy
 
         def cost(x, w):
             y = x**2
@@ -125,8 +127,6 @@ class TestJAX:
         """Test that all tensors are abstract when in JIT mode.
         Note that `jax.grad` has slightly different behaviour, and will
         avoid making abstract tensors for non-differentiable arguments."""
-        jax = pytest.importorskip("jax")
-        jnp = jax.numpy
 
         @functools.partial(jax.jit, static_argnums=[2])
         def cost(x, w, w_is_abstract=True):
