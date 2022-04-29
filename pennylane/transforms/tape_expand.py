@@ -188,10 +188,7 @@ Returns:
 
 expand_nonunitary_gen = create_expand_fn(
     depth=10,
-    stop_at=not_tape
-    | is_measurement
-    | has_nopar
-    | (has_gen & has_unitary_gen),
+    stop_at=not_tape | is_measurement | has_nopar | (has_gen & has_unitary_gen),
     docstring=_expand_nonunitary_gen_doc,
 )
 
