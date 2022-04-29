@@ -589,17 +589,15 @@ def test_transform_hf(generators, paulixops, paulix_sector, num_electrons, num_w
         ),
     ],
 )
-def test_hf_energy(symbols, geometry, charge):
-    r"""Test that HF energy obtained from the tapered Hamiltonian and tapered Hartree Fock state
-    is consistent."""
+def test_taper_obs(symbols, geometry, charge):
+    r"""Test that the expectation values of tapered observables with respect to the
+    tapered Hartree-Fock state (:math:`\langle HF|obs|HF \rangle`) are consistent."""
     mol = qml.qchem.Molecule(symbols, geometry, charge)
     hamiltonian = qml.qchem.diff_hamiltonian(mol)(geometry)
     hf_state = np.where(np.arange(len(hamiltonian.wires)) < mol.n_electrons, 1, 0)
     generators = qml.symmetry_generators(hamiltonian)
     paulixops = qml.paulix_ops(generators, len(hamiltonian.wires))
     paulix_sector = optimal_sector(hamiltonian, generators, mol.n_electrons)
-
-    hamiltonian_tapered = qml.taper(hamiltonian, generators, paulixops, paulix_sector)
     hf_state_tapered = taper_hf(
         generators, paulixops, paulix_sector, mol.n_electrons, len(hamiltonian.wires)
     )
@@ -612,15 +610,22 @@ def test_hf_energy(symbols, geometry, charge):
         lambda i, j: np.kron(i, j), [l if s else o for s in hf_state_tapered]
     )
 
-    energy = (
-        scipy.sparse.coo_matrix(state)
-        @ qml.utils.sparse_hamiltonian(hamiltonian)
-        @ scipy.sparse.coo_matrix(state).T
-    ).toarray()
-    energy_tapered = (
-        scipy.sparse.coo_matrix(state_tapered)
-        @ qml.utils.sparse_hamiltonian(hamiltonian_tapered)
-        @ scipy.sparse.coo_matrix(state_tapered).T
-    ).toarray()
-
-    assert np.isclose(energy, energy_tapered)
+    observables = [
+        hamiltonian,
+        qml.qchem.particle_number(len(hamiltonian.wires)),
+        qml.qchem.spin2(mol.n_electrons, len(hamiltonian.wires)),
+        qml.qchem.spinz(len(hamiltonian.wires)),
+    ]
+    for observable in observables:
+        tapered_obs = qml.taper(observable, generators, paulixops, paulix_sector)
+        obs_val = (
+            scipy.sparse.coo_matrix(state)
+            @ qml.utils.sparse_hamiltonian(observable)
+            @ scipy.sparse.coo_matrix(state).T
+        ).toarray()
+        obs_val_tapered = (
+            scipy.sparse.coo_matrix(state_tapered)
+            @ qml.utils.sparse_hamiltonian(tapered_obs)
+            @ scipy.sparse.coo_matrix(state_tapered).T
+        ).toarray()
+        assert np.isclose(obs_val, obs_val_tapered)
