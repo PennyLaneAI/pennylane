@@ -27,6 +27,7 @@ qubit_device_and_diff_method = [
     ["default.qubit", "adjoint", "backward"],
 ]
 
+pytestmark = pytest.mark.autograd
 
 @pytest.mark.parametrize("dev_name,diff_method,mode", qubit_device_and_diff_method)
 class TestQNode:

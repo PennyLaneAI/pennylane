@@ -15,6 +15,8 @@
 
 import pytest
 
+pytestmark = pytest.mark.jax
+
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 import numpy as np
@@ -23,7 +25,6 @@ import pennylane as qml
 from pennylane.gradients import param_shift
 from pennylane.interfaces import execute
 from pennylane.interfaces import InterfaceUnsupportedError
-
 
 @pytest.mark.parametrize("interface", ["jax-jit", "jax-python"])
 class TestJaxExecuteUnitTests:
