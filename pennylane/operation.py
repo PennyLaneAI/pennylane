@@ -2490,7 +2490,7 @@ def gen_is_multi_term_hamiltonian(obj):
     except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
         return False
 
-    if type(o) == qml.Hamiltonian:
+    if isinstance(o, qml.Hamiltonian):
         if len(o.coeffs) > 1:
             return True
     return False
