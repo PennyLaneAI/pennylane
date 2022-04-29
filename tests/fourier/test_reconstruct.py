@@ -59,7 +59,7 @@ def get_RX_circuit(scales):
     return circuit
 
 
-def fun_close(fun1, fun2, zero=None, tol=1e-5, samples=100):
+def fun_close(fun1, fun2, zero=None, tol=1e-5, samples=10):
     X = np.linspace(-np.pi, np.pi, samples)
     if zero is not None:
         X = qml.math.convert_like(X, zero)
@@ -730,7 +730,7 @@ def qnode_2(X, y):
 
 
 def qnode_3(X, Y):
-    for i in range(5):
+    for i in range(3):
         qml.RX(X[i], wires=0)
         qml.RY(Y[i], wires=0)
         qml.RX(X[i], wires=0)
@@ -941,7 +941,7 @@ class TestReconstruct:
                 grad = jax.grad(rec)
                 assert np.isclose(grad(x0), exp_qnode_grad(*params)[inner_key])
                 assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
-                assert fun_close(grad, exp_grad, 10)
+                assert fun_close(grad, exp_grad, samples=3)
 
     @pytest.mark.parametrize(
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
