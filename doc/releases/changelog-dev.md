@@ -32,6 +32,9 @@
   This is a temporary fix that will disappear in the future. 
   [(#2408)](https://github.com/PennyLaneAI/pennylane/pull/2408)
 
+* The `qml.taper` function can now be used to consistently taper any additional observables such as dipole moment,
+  particle number, and spin operators using the symmetries obtained from the Hamiltonian.
+  [(#2510)](https://github.com/PennyLaneAI/pennylane/pull/2510)
   
 <h3>Breaking changes</h3>
 
@@ -43,4 +46,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Christian Gogolin, Christina Lee
+Utkarsh Azad, Christian Gogolin, Christina Lee
