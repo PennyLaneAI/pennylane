@@ -49,7 +49,7 @@ def expand_with_control(tape, control_wire):
             else:
                 # Attempt to decompose the operation and apply
                 # controls to each gate in the decomposition.
-                with new_tape.stop_recording():
+                with new_tape.stop_recording():  # pylint:disable=no-member
                     try:
                         tmp_tape = op.expand()
                     except DecompositionUndefinedError:
