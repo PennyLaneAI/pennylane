@@ -441,7 +441,7 @@ class DiagonalQubitUnitary(Operation):
 
     def _controlled(self, control):
         DiagonalQubitUnitary(
-            qml.math.concatenate([np.array([1, 1]), self.parameters[0]]),
+            qml.math.concatenate([np.ones_like(self.parameters[0]), self.parameters[0]]),
             wires=Wires(control) + self.wires,
         )
 
