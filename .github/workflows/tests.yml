@@ -145,6 +145,8 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
+          # Based on previous experience, PySCF installation might fail or take
+          # longer time with some python versions
           python-version: 3.9
 
       - name: Install dependencies
