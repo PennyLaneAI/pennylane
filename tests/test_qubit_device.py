@@ -142,6 +142,44 @@ def mock_qubit_device_with_paulis_rotations_and_methods(monkeypatch):
         yield get_qubit_device
 
 
+class TestQubitDeviceBasicMethods:
+    """Tests the basic QubitDevice methods"""
+
+    def test_circuit_hash(self, mock_qubit_device):
+        """Test that the circuit_hash method is not implemented by default."""
+        dev = mock_qubit_device()
+        with pytest.raises(NotImplementedError):
+            dev.circuit_hash()
+
+    def test_state(self, mock_qubit_device):
+        """Test that the state method is not implemented by default."""
+        dev = mock_qubit_device()
+        with pytest.raises(NotImplementedError):
+            dev.state()
+
+    def test_density_matrix(self, mock_qubit_device):
+        """Test that the density_matrix method is not implemented by
+        default."""
+        dev = mock_qubit_device()
+        with pytest.raises(NotImplementedError):
+            dev.density_matrix()
+
+    def test_analytic_probability(self, mock_qubit_device):
+        """Test that the analytic_probability method is not implemented by
+        default."""
+        dev = mock_qubit_device()
+        with pytest.raises(NotImplementedError):
+            dev.analytic_probability()
+
+    @pytest.mark.parametrize("meth, exp", [("expval", 1), ("var", 0)])
+    def test_projector(self, mock_qubit_device_with_original_statistics, monkeypatch, meth, exp):
+        """Test that the expval and var methods compute projectors well."""
+        dev = mock_qubit_device_with_original_statistics()
+        monkeypatch.setattr(dev, "analytic_probability", lambda *args, wires=None: np.array([1, 0]))
+        obs = qml.Projector(np.array([0]), wires=0)
+        assert getattr(dev, meth)(obs) == exp
+
+
 class TestOperations:
     """Tests the logic related to operations"""
 
