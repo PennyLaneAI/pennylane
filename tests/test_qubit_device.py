@@ -162,7 +162,7 @@ class TestQubitDeviceBasicMethods:
         default."""
         dev = mock_qubit_device()
         with pytest.raises(NotImplementedError):
-            dev.density_matrix()
+            dev.density_matrix(wires=[0])
 
     def test_analytic_probability(self, mock_qubit_device):
         """Test that the analytic_probability method is not implemented by
