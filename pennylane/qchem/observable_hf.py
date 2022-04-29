@@ -138,7 +138,7 @@ def jordan_wigner(op):
     >>> f  = [0, 0]
     >>> q = jordan_wigner(f)
     >>> q
-    ([(0.5+0j), (-0.5+0j)], [[], [(0, 'Z')]]) # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
+    ([(0.5+0j), (-0.5+0j)], [Identity(wires=[0]), PauliZ(wires=[0])]) # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
     """
     if len(op) == 1:
         op = [((op[0], 1),)]
