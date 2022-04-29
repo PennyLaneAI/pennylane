@@ -38,6 +38,13 @@
   
 <h3>Breaking changes</h3>
 
+<h3>Bug fixes</h3>
+
+* Fixed a bug where `QNGOptimizer` did not work with operators
+  whose generator was a Hamiltonian.
+  [(#2524)](https://github.com/PennyLaneAI/pennylane/pull/2524)
+
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
@@ -46,4 +53,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Utkarsh Azad, Christian Gogolin, Christina Lee
+Guillermo Alonso-Linaje, Utkarsh Azad, Christian Gogolin, Christina Lee
+
