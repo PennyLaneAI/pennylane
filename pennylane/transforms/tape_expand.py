@@ -19,7 +19,7 @@ import contextlib
 import pennylane as qml
 from pennylane.operation import (
     has_gen,
-    gen_is_hamiltonian,
+    gen_is_multi_term_hamiltonian,
     has_grad_method,
     has_nopar,
     has_unitary_gen,
@@ -137,7 +137,7 @@ Returns:
 
 expand_multipar = create_expand_fn(
     depth=10,
-    stop_at=not_tape | is_measurement | has_nopar | (has_gen & ~gen_is_hamiltonian),
+    stop_at=not_tape | is_measurement | has_nopar | (has_gen & ~gen_is_multi_term_hamiltonian),
     docstring=_expand_multipar_doc,
 )
 
@@ -164,7 +164,7 @@ expand_trainable_multipar = create_expand_fn(
     | is_measurement
     | has_nopar
     | (~is_trainable)
-    | (has_gen & ~gen_is_hamiltonian),
+    | (has_gen & ~gen_is_multi_term_hamiltonian),
     docstring=_expand_trainable_multipar_doc,
 )
 
