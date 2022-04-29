@@ -22,7 +22,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
 
-
 # defaults
 TOL = 1e-3
 TF_TOL = 2e-2
@@ -132,51 +131,6 @@ def skip_if_no_dask_support(dask_support):
         pytest.skip("Skipped, no dask support")
 
 
-@pytest.fixture(scope="session")
-def torch_support():
-    """Boolean fixture for PyTorch support"""
-    try:
-        import torch
-        from torch.autograd import Variable
-
-        torch_support = True
-    except ImportError as e:
-        torch_support = False
-
-    return torch_support
-
-
-@pytest.fixture()
-def skip_if_no_torch_support(torch_support):
-    if not torch_support:
-        pytest.skip("Skipped, no torch support")
-
-
-@pytest.fixture(scope="module")
-def tf_support():
-    """Boolean fixture for TensorFlow support"""
-    try:
-        import tensorflow as tf
-
-        tf_support = True
-
-    except ImportError as e:
-        tf_support = False
-
-    return tf_support
-
-
-@pytest.fixture()
-def skip_if_no_tf_support(tf_support):
-    if not tf_support:
-        pytest.skip("Skipped, no tf support")
-
-
-@pytest.fixture
-def skip_if_no_jax_support():
-    pytest.importorskip("jax")
-
-
 #######################################################################
 
 
@@ -203,3 +157,62 @@ def mock_device(monkeypatch):
 def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
+
+
+##########################INTERFACES####################################
+
+try:
+    import tensorflow as tf
+except (ImportError, ModuleNotFoundError) as e:
+    tf_available = False
+else:
+    tf_available = True
+
+try:
+    import torch
+    from torch.autograd import Variable
+
+    torch_available = True
+except ImportError as e:
+    torch_available = False
+
+try:
+    import jax
+    import jax.numpy as jnp
+
+    jax_available = True
+except ImportError as e:
+    jax_available = False
+
+
+def pytest_collection_modifyitems(items, config):
+    for item in items:
+        markers = {mark.name for mark in item.iter_markers()}
+        print(markers, not markers, not any(elem in ['autograd', 'torch', 'tf', 'jax'] for elem in markers))
+        if not any(elem in ['autograd', 'torch', 'tf', 'jax'] for elem in markers) or not markers:
+            item.add_marker(pytest.mark.core)
+
+
+def pytest_runtest_setup(item):
+    """Automatically skip tests if they are marked for only certain backends"""
+    all_interfaces = {"core", "autograd", "tf", "torch", "jax"}
+    available_interfaces = {"core": True, "autograd": True, "tf": tf_available, "torch": torch_available,
+                            "jax": jax_available}
+
+    allowed_interfaces = [allowed_interface for allowed_interface in all_interfaces
+                          if available_interfaces[allowed_interface] is True]
+
+    # load the marker specifying what the interface is
+    marks = {mark.name for mark in item.iter_markers()}
+
+    if not marks:
+        # if the test hasn't specified that it runs on particular interfaces,
+        # assume it will work with core only
+        marks = {'core'}
+
+    for b in marks:
+        if b not in allowed_interfaces:
+            pytest.skip(
+                "\nTest {} only runs with {} interfaces(s), "
+                "but {} interface provided".format(item.nodeid, allowed_interfaces, b)
+            )
