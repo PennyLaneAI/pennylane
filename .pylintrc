@@ -28,7 +28,7 @@ ignored-classes=numpy,scipy,autograd,toml,appdir,autograd.numpy,autograd.numpy.l
 # can either give multiple identifier separated by comma (,) or put this option
 # multiple time (only on the command line, not in the configuration file where
 # it should appear only once).
-disable=line-too-long,invalid-name,too-many-lines,redefined-builtin,too-many-locals,duplicate-code
+disable=line-too-long,invalid-name,too-many-lines,redefined-builtin,too-many-locals,duplicate-code,cyclic-import
 
 [MISCELLANEOUS]
 
