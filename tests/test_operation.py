@@ -1556,12 +1556,12 @@ class TestCriteria:
         assert qml.operation.has_grad_method(self.rot)
         assert not qml.operation.has_grad_method(self.cnot)
 
-    def test_gen_is_hamiltonian(self):
-        """Test gen_is_hamiltonian criterion."""
-        assert qml.operation.gen_is_hamiltonian(self.doubleExcitation)
-        assert not qml.operation.gen_is_hamiltonian(self.cnot)
-        assert not qml.operation.gen_is_hamiltonian(self.rot)
-        assert not qml.operation.gen_is_hamiltonian(self.exp)
+    def test_gen_is_multi_term_hamiltonian(self):
+        """Test gen_is_multi_term_hamiltonian criterion."""
+        assert qml.operation.gen_is_multi_term_hamiltonian(self.doubleExcitation)
+        assert not qml.operation.gen_is_multi_term_hamiltonian(self.cnot)
+        assert not qml.operation.gen_is_multi_term_hamiltonian(self.rot)
+        assert not qml.operation.gen_is_multi_term_hamiltonian(self.exp)
 
     def test_has_multipar(self):
         """Test has_multipar criterion."""
