@@ -112,7 +112,6 @@ jobs:
         with:
           name: ${{ matrix.config.python-version }}-${{ join(matrix.config.interfaces, '-') }}-${{ github.event.pull_request.head.sha }}
           path: /home/runner/work/pennylane/pennylane/.testmondata
-          retention-days: 5
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
