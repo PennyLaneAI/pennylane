@@ -203,7 +203,7 @@ class PauliX(Observable, Operation):
         [[0 1]
          [1 0]]
         """
-        return np.array([[0, 1], [1, 0]])
+        return np.array([[1, 0], [0, 1]])
 
     @staticmethod
     def compute_eigvals():  # pylint: disable=arguments-differ
