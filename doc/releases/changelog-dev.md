@@ -40,7 +40,8 @@
 
 <h3>Bug fixes</h3>
 
-* `QNGOptimizer` did not work with operators whose generator was a Hamiltonian.
+* Fixed a bug where `QNGOptimizer` did not work with operators
+  whose generator was a Hamiltonian.
   [(#2524)](https://github.com/PennyLaneAI/pennylane/pull/2524)
 
 
