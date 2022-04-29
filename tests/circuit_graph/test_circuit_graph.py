@@ -18,6 +18,8 @@ Unit tests for the :mod:`pennylane.circuit_graph` module.
 
 import pytest
 import numpy as np
+import io
+import contextlib
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -221,6 +223,14 @@ class TestCircuitGraph:
         circuit.update_node(ops[0], new)
         assert circuit.operations[0] is new
 
+    def test_update_node_error(self, ops, obs):
+        """Test that changing nodes in the graph may raise an error."""
+        circuit = CircuitGraph(ops, obs, Wires([0, 1, 2]))
+        new = qml.RX(0.1, wires=0)
+        new = qml.CNOT(wires=[0, 1])
+        with pytest.raises(ValueError):
+            circuit.update_node(ops[0], new)
+
     def test_observables(self, circuit, obs):
         """Test that the `observables` property returns the list of observables in the circuit."""
         assert str(circuit.observables) == str(obs)
@@ -328,3 +338,18 @@ class TestCircuitGraph:
 
             assert lst_mp_equality(lst_no_wires, lst_w_wires)
             assert lst_mp_equality(lst_no_wires, lst_expected)
+
+    def test_print_contents(self):
+        """Tests if the circuit prints correct."""
+        ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
+        obs_w_wires = [qml.measurements.sample(op=None, wires=[0, 1, 2])]
+
+        circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
+
+        f = io.StringIO()
+        with contextlib.redirect_stdout(f):
+            circuit_w_wires.print_contents()
+        out = f.getvalue().strip()
+
+        expected = """Operations\n==========\nHadamard(wires=[0])\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])"""
+        assert out == expected
