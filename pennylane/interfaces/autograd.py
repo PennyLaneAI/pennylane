@@ -229,7 +229,15 @@ def vjp(
 
                 vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
 
-        return [qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps]
+        return_vjps = [
+            qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
+        ]
+        if device.capabilities().get("provides_jacobian", False):
+            # in the case where the device provides the jacobian,
+            # the output of grad_fn must be wrapped in a tuple in
+            # order to match the input parameters to _execute.
+            return (return_vjps,)
+        return return_vjps
 
     return grad_fn
 

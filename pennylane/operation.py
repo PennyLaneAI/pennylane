@@ -110,6 +110,20 @@ from pennylane.wires import Wires
 from .utils import pauli_eigs
 
 
+def __getattr__(name):
+    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
+    warning_names = {"Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure"}
+    if name in warning_names:
+        obj = getattr(qml.measurements, name)
+        warning_string = f"qml.operation.{name} is deprecated. Please import from qml.measurements.{name} instead"
+        warnings.warn(warning_string, UserWarning)
+        return obj
+    try:
+        return globals()[name]
+    except KeyError as e:
+        raise AttributeError from e
+
+
 def expand_matrix(base_matrix, wires, wire_order):
     """Re-express a base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
@@ -537,9 +551,7 @@ class Operator(abc.ABC):
 
         Note: Child classes may have this as an instance property instead of as a class property.
         """
-        return (cls.compute_matrix != Operator.compute_matrix) or (
-            cls.get_matrix != Operator.get_matrix
-        )
+        return cls.compute_matrix != Operator.compute_matrix
 
     @property
     def matrix(self):
@@ -1072,6 +1084,21 @@ class Operator(abc.ABC):
         context.append(self)
         return self  # so pre-constructed Observable instances can be queued and returned in a single statement
 
+    @property
+    def _queue_category(self):
+        """Used for sorting objects into their respective lists in `QuantumTape` objects.
+
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
+
+        Options are:
+            * `"_prep"`
+            * `"_ops"`
+            * `"_measurements"`
+            * `None`
+        """
+        return "_ops"
+
     def expand(self):
         """Returns a tape that has recorded the decomposition of the operator.
 
@@ -1476,6 +1503,24 @@ class Observable(Operator):
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
+
+    @property
+    def _queue_category(self):
+        """Used for sorting objects into their respective lists in `QuantumTape` objects.
+
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
+
+        Options are:
+            * `"_prep"`
+            * `"_ops"`
+            * `"_measurements"`
+            * None
+
+        Non-pauli observables, like Tensor, Hermitian, and Hamiltonian, should not be processed into any queue.
+        The Pauli observables double as Operations, and should therefore be processed into `_ops` if unowned.
+        """
+        return "_ops" if isinstance(self, Operation) else None
 
     # pylint: disable=abstract-method
     return_type = None

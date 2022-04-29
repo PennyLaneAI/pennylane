@@ -259,8 +259,8 @@ def generate_overlap(basis_a, basis_b):
     r"""Return a function that computes the overlap integral for two contracted Gaussian functions.
 
     Args:
-        basis_a (BasisFunction): first basis function
-        basis_b (BasisFunction): second basis function
+        basis_a (~hf.basis_set.BasisFunction): first basis function
+        basis_b (~hf.basis_set.BasisFunction): second basis function
 
     Returns:
         function: function that computes the overlap integral
@@ -414,8 +414,8 @@ def generate_kinetic(basis_a, basis_b):
     r"""Return a function that computes the kinetic integral for two contracted Gaussian functions.
 
     Args:
-        basis_a (BasisFunction): first basis function
-        basis_b (BasisFunction): second basis function
+        basis_a (~hf.basis_set.BasisFunction): first basis function
+        basis_b (~hf.basis_set.BasisFunction): second basis function
 
     Returns:
         function: function that computes the kinetic integral
@@ -617,8 +617,8 @@ def generate_attraction(r, basis_a, basis_b):
 
     Args:
         r (array[float]): position vector of nucleus
-        basis_a (BasisFunction): first basis function
-        basis_b (BasisFunction): second basis function
+        basis_a (~hf.basis_set.BasisFunction): first basis function
+        basis_b (~hf.basis_set.BasisFunction): second basis function
 
     Returns:
         function: function that computes the electron-nuclear attraction integral
@@ -757,10 +757,10 @@ def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
     Gaussian functions.
 
     Args:
-        basis_a (BasisFunction): first basis function
-        basis_b (BasisFunction): second basis function
-        basis_c (BasisFunction): third basis function
-        basis_d (BasisFunction): fourth basis function
+        basis_a (~hf.basis_set.BasisFunction): first basis function
+        basis_b (~hf.basis_set.BasisFunction): second basis function
+        basis_c (~hf.basis_set.BasisFunction): third basis function
+        basis_d (~hf.basis_set.BasisFunction): fourth basis function
     Returns:
         function: function that computes the electron repulsion integral
 

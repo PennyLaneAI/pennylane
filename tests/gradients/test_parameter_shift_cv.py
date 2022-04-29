@@ -406,8 +406,8 @@ class TestParameterShiftLogic:
         dev = qml.device("default.gaussian", wires=2)
 
         with qml.tape.QuantumTape() as tape:
-            qml.Displacement(1, 0, wires=[1])
-            qml.Displacement(1, 0, wires=[0])
+            qml.Displacement(1.0, 0.0, wires=[1])
+            qml.Displacement(1.0, 0.0, wires=[0])
             qml.expval(qml.X(0))
 
         tape.trainable_params = {0, 2}

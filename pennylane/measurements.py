@@ -28,7 +28,6 @@ from typing import Generic, TypeVar
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Observable
 from pennylane.wires import Wires
 
 # =============================================================================
@@ -447,6 +446,16 @@ class MeasurementProcess:
         return self
 
     @property
+    def _queue_category(self):
+        """Denotes that `MeasurementProcess` objects should be processed into the `_measurements` list
+        in `QuantumTape` objects.
+
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
+        """
+        return "_ops" if self.return_type is MidMeasure else "_measurements"
+
+    @property
     def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
         if self.obs is None:
@@ -494,7 +503,7 @@ def expval(op):
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
-    if not isinstance(op, (Observable, qml.Hamiltonian)):
+    if not isinstance(op, (qml.operation.Observable, qml.Hamiltonian)):
         raise qml.QuantumFunctionError(
             f"{op.name} is not an observable: cannot be used with expval"
         )
@@ -529,7 +538,7 @@ def var(op):
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
-    if not isinstance(op, Observable):
+    if not isinstance(op, qml.operation.Observable):
         raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
 
     return MeasurementProcess(Variance, obs=op, shape=(1,), numeric_type=float)
@@ -607,7 +616,9 @@ def sample(op=None, wires=None):
         case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
         observable ``obs``.
     """
-    if not isinstance(op, Observable) and op is not None:  # None type is also allowed for op
+    if (
+        not isinstance(op, qml.operation.Observable) and op is not None
+    ):  # None type is also allowed for op
         raise qml.QuantumFunctionError(
             f"{op.name} is not an observable: cannot be used with sample"
         )

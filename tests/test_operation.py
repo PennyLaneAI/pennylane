@@ -33,6 +33,16 @@ from pennylane.wires import Wires
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
 
 
+@pytest.mark.parametrize(
+    "return_type", ("Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure")
+)
+def test_obersvablereturntypes_import_warnings(return_type):
+    """Test that accessing the observable return types through qml.operation emit a warning."""
+
+    with pytest.warns(UserWarning, match=r"is deprecated"):
+        getattr(qml.operation, return_type)
+
+
 class TestOperatorConstruction:
     """Test custom operators construction."""
 
@@ -182,18 +192,6 @@ class TestOperatorConstruction:
         assert MyOp.has_matrix
         assert MyOp(wires=0).has_matrix
 
-    def test_has_matrix_true_get_matrix(self):
-        """Test has_matrix property also detects overriding of `get_matrix` method."""
-
-        class MyOp(qml.operation.Operator):
-            num_wires = 1
-
-            def get_matrix(self):
-                return np.eye(2)
-
-        assert MyOp.has_matrix
-        assert MyOp(wires=0).has_matrix
-
     def test_has_matrix_false(self):
         """Test has_matrix property defaults to false if `compute_matrix` not overwritten."""
 
@@ -202,6 +200,16 @@ class TestOperatorConstruction:
 
         assert not MyOp.has_matrix
         assert not MyOp(wires=0).has_matrix
+
+    def test_has_matrix_false_concrete_template(self):
+        """Test has_matrix with a concrete operation (StronglyEntanglingLayers)
+        that does not have a matrix defined."""
+
+        rng = qml.numpy.random.default_rng(seed=42)
+        shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+        params = rng.random(shape)
+        op = qml.StronglyEntanglingLayers(params, wires=range(2))
+        assert not op.has_matrix
 
 
 class TestOperationConstruction:
