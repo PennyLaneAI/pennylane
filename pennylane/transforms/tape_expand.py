@@ -191,7 +191,7 @@ expand_nonunitary_gen = create_expand_fn(
     stop_at=not_tape
     | is_measurement
     | has_nopar
-    | ((has_gen & ~gen_is_hamiltonian) & has_unitary_gen),
+    | (has_gen & has_unitary_gen),
     docstring=_expand_nonunitary_gen_doc,
 )
 
