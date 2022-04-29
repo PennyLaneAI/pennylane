@@ -84,6 +84,9 @@ class NonQueuingTape(AnnotatedQueue):
     itself to the current queuing context."""
 
     def _process_queue(self):
+        # accesses the parent of the target class that NonQueingTape is mixed into
+        super()._process_queue()  # pylint:disable=no-member
+
         for obj, info in self._queue.items():
             qml.queuing.QueuingContext.append(obj, **info)
 
