@@ -171,7 +171,9 @@ class ControlledOperation(Operation):
                 # Execute all ops adjointed.
                 adjoint(requeue_ops_in_tape)(self.subtape)
 
-        return ControlledOperation(new_tape, self.control_wires, control_values=self.control_values, do_queue=do_queue)
+        return ControlledOperation(
+            new_tape, self.control_wires, control_values=self.control_values, do_queue=do_queue
+        )
 
     def _controlled(self, wires):
         new_values = [1] * len(Wires(wires))
