@@ -139,7 +139,6 @@ Molecular integrals and matrices
     ~pennylane.qchem.core_matrix
     ~pennylane.qchem.kinetic_matrix
     ~pennylane.qchem.mol_density_matrix
-    ~pennylane.qchem.mol_density_matrix
     ~pennylane.qchem.moment_matrix
     ~pennylane.qchem.overlap_matrix
     ~pennylane.qchem.repulsion_tensor
@@ -170,8 +169,8 @@ Differentiable Hartree-Fock
 :html:`</div>`
 
 
-non-Differentiable Hartree-Fock
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Hartree-Fock with external packages
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 :html:`<div class="summary-table">`
 
@@ -202,27 +201,12 @@ Differentiable observables
     ~pennylane.qchem.fermionic_observable
     ~pennylane.qchem.jordan_wigner
     ~pennylane.qchem.molecular_hamiltonian
-    ~pennylane.qchem.observable
     ~pennylane.qchem.qubit_observable
     ~pennylane.qchem.simplify
 
 
 :html:`</div>`
 
-
-non-Differentiable observables
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.qchem.dipole_of
-    ~pennylane.qchem.molecular_hamiltonian
-
-
-:html:`</div>`
 
 Other observables
 ^^^^^^^^^^^^^^^^^
@@ -235,6 +219,8 @@ Other observables
     ~pennylane.qchem.particle_number
     ~pennylane.qchem.spin2
     ~pennylane.qchem.spinz
+    ~pennylane.qchem.observable
+    ~pennylane.qchem.dipole_of
 
 :html:`</div>`
 
