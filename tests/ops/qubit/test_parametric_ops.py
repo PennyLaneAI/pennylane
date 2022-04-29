@@ -543,10 +543,11 @@ class TestMatrix:
             qml.IsingZZ.compute_eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
         )
 
+    @pytest.mark.tf
     def test_isingzz_matrix_tf(self, tol):
         """Tests the matrix representation for IsingZZ for tensorflow, since the method contains
         different logic for this framework"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         def get_expected(theta):
             neg_imag = np.exp(-1j * theta / 2)
@@ -765,6 +766,7 @@ class TestGrad:
         for device, method in device_methods:
             configuration.append([device, method, npp.array(phi, requires_grad=True)])
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingxx_autograd_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingXX."""
@@ -800,6 +802,7 @@ class TestGrad:
         res = qml.grad(circuit)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingyy_autograd_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingYY."""
@@ -835,6 +838,7 @@ class TestGrad:
         res = qml.grad(circuit)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingzz_autograd_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingZZ."""
@@ -862,6 +866,7 @@ class TestGrad:
         res = qml.grad(circuit)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingxx_jax_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingXX."""
@@ -872,8 +877,8 @@ class TestGrad:
         if diff_method in {"parameter-shift"}:
             pytest.skip("Test does not support parameter-shift")
 
-        jax = pytest.importorskip("jax")
-        jnp = pytest.importorskip("jax.numpy")
+        import jax
+        import jax.numpy as jnp
 
         dev = qml.device(dev_name, wires=2)
 
@@ -909,6 +914,7 @@ class TestGrad:
         res = jax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingyy_jax_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingYY."""
@@ -919,8 +925,8 @@ class TestGrad:
         if diff_method in {"parameter-shift"}:
             pytest.skip("Test does not support parameter-shift")
 
-        jax = pytest.importorskip("jax")
-        jnp = pytest.importorskip("jax.numpy")
+        import jax
+        import jax.numpy as jnp
 
         dev = qml.device(dev_name, wires=2)
 
@@ -956,6 +962,7 @@ class TestGrad:
         res = jax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingzz_jax_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingZZ."""
@@ -966,8 +973,8 @@ class TestGrad:
         if diff_method in {"parameter-shift"}:
             pytest.skip("Test does not support parameter-shift")
 
-        jax = pytest.importorskip("jax")
-        jnp = pytest.importorskip("jax.numpy")
+        import jax
+        import jax.numpy as jnp
 
         dev = qml.device(dev_name, wires=2)
 
@@ -993,10 +1000,11 @@ class TestGrad:
         res = jax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingxx_tf_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingXX."""
-        tf = pytest.importorskip("tensorflow", minversion="2.1")
+        import tensorflow as tf
 
         dev = qml.device(dev_name, wires=2)
 
@@ -1034,10 +1042,11 @@ class TestGrad:
         res = tape.gradient(result, phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingyy_tf_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingYY."""
-        tf = pytest.importorskip("tensorflow", minversion="2.1")
+        import tensorflow as tf
 
         dev = qml.device(dev_name, wires=2)
 
@@ -1075,10 +1084,11 @@ class TestGrad:
         res = tape.gradient(result, phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingzz_tf_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingZZ."""
-        tf = pytest.importorskip("tensorflow", minversion="2.1")
+        import tensorflow as tf
 
         dev = qml.device(dev_name, wires=2)
 
@@ -1106,11 +1116,12 @@ class TestGrad:
         res = tape.gradient(result, phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("par", np.linspace(0, 2 * np.pi, 3))
     def test_qnode_with_rx_and_state_jacobian_jax(self, par, tol):
         """Test the jacobian of a complex valued QNode that contains a rotation
         using the JAX interface."""
-        jax = pytest.importorskip("jax")
+        import jax
 
         dev = qml.device("default.qubit", wires=1)
 
@@ -1464,6 +1475,7 @@ class TestPauliRot:
 
         assert gen.compare(-0.5 * expected_gen)
 
+    @pytest.mark.torch
     @pytest.mark.gpu
     @pytest.mark.parametrize("theta", np.linspace(0, 2 * np.pi, 7))
     @pytest.mark.parametrize("torch_device", [None, "cuda"])
@@ -1471,7 +1483,7 @@ class TestPauliRot:
         """Test that the PauliRot operation returns the correct matrix when
         providing a gate parameter on the GPU and only specifying the identity
         operation."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         if torch_device == "cuda" and not torch.cuda.is_available():
             pytest.skip("No GPU available")
@@ -1736,9 +1748,10 @@ class TestLabel:
         assert op.label(decimals=0) == label4
         op.inv()
 
+    @pytest.mark.tf
     def test_label_tf(self):
         """Test label methods work with tensorflow variables"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         op1 = qml.RX(tf.Variable(0.123456), wires=0)
         assert op1.label(decimals=2) == "RX\n(0.12)"
@@ -1749,9 +1762,10 @@ class TestLabel:
         op3 = qml.Rot(tf.Variable(0.1), tf.Variable(0.2), tf.Variable(0.3), wires=0)
         assert op3.label(decimals=2) == "Rot\n(0.10,\n0.20,\n0.30)"
 
+    @pytest.mark.torch
     def test_label_torch(self):
         """Test label methods work with torch tensors"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         op1 = qml.RX(torch.tensor(1.23456), wires=0)
         assert op1.label(decimals=2) == "RX\n(1.23)"
@@ -1762,9 +1776,10 @@ class TestLabel:
         op3 = qml.Rot(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3), wires=0)
         assert op3.label(decimals=2) == "Rot\n(0.10,\n0.20,\n0.30)"
 
+    @pytest.mark.jax
     def test_label_jax(self):
         """Test the label method works with jax"""
-        jax = pytest.importorskip("jax")
+        import jax
 
         op1 = qml.RX(jax.numpy.array(1.23456), wires=0)
         assert op1.label(decimals=2) == "RX\n(1.23)"
