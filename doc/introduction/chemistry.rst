@@ -182,7 +182,6 @@ Hartree-Fock with external packages
     ~pennylane.qchem.one_particle
     ~pennylane.qchem.two_particle
 
-
 :html:`</div>`
 
 
@@ -203,7 +202,6 @@ Differentiable observables
     ~pennylane.qchem.molecular_hamiltonian
     ~pennylane.qchem.qubit_observable
     ~pennylane.qchem.simplify
-
 
 :html:`</div>`
 
@@ -239,7 +237,6 @@ Qubit tapering
     ~pennylane.taper
     ~pennylane.qchem.taper_hf
 
-
 :html:`</div>`
 
 Utility functions
@@ -256,7 +253,6 @@ Utility functions
     ~pennylane.qchem.excitations_to_wires
     ~pennylane.qchem.hf_state
     ~pennylane.qchem.read_structure
-
 
 :html:`</div>`
 
