@@ -19,7 +19,7 @@ pytestmark = pytest.mark.gpu
 
 torch = pytest.importorskip("torch")
 
-
+@pytest.mark.torch
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
 class TestTorchDevice:
     def test_device_to_cuda(self):
@@ -165,7 +165,7 @@ class TestTorchDevice:
 
         assert res2.is_cuda
 
-
+@pytest.mark.torch
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="no cuda support")
 class TestqnnTorchLayer:
     def test_torch_device_cuda_if_tensors_on_cuda(self):

@@ -188,7 +188,6 @@ except ImportError as e:
 def pytest_collection_modifyitems(items, config):
     for item in items:
         markers = {mark.name for mark in item.iter_markers()}
-        print(markers, not markers, not any(elem in ['autograd', 'torch', 'tf', 'jax'] for elem in markers))
         if not any(elem in ['autograd', 'torch', 'tf', 'jax'] for elem in markers) or not markers:
             item.add_marker(pytest.mark.core)
 
@@ -203,7 +202,7 @@ def pytest_runtest_setup(item):
                           if available_interfaces[allowed_interface] is True]
 
     # load the marker specifying what the interface is
-    marks = {mark.name for mark in item.iter_markers()}
+    marks = {mark.name for mark in item.iter_markers() if mark.name in all_interfaces}
 
     if not marks:
         # if the test hasn't specified that it runs on particular interfaces,

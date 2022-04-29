@@ -209,7 +209,6 @@ class TestApply:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.jax
     @pytest.mark.torch
     def test_apply_summation_torch(self, tol):
         """Test that summation can be applied using torch"""
