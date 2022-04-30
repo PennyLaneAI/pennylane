@@ -32,12 +32,22 @@
   This is a temporary fix that will disappear in the future. 
   [(#2408)](https://github.com/PennyLaneAI/pennylane/pull/2408)
 
+* The `qml.taper` function can now be used to consistently taper any additional observables such as dipole moment,
+  particle number, and spin operators using the symmetries obtained from the Hamiltonian.
+  [(#2510)](https://github.com/PennyLaneAI/pennylane/pull/2510)
+  
 * The automatic circuit cutting is improved by making better partition imbalance derivations.
   Now it is more likely to generate optimal cuts for larger circuits.
   [(#2517)](https://github.com/PennyLaneAI/pennylane/pull/2517)
 
-  
 <h3>Breaking changes</h3>
+
+<h3>Bug fixes</h3>
+
+* Fixed a bug where `QNGOptimizer` did not work with operators
+  whose generator was a Hamiltonian.
+  [(#2524)](https://github.com/PennyLaneAI/pennylane/pull/2524)
+
 
 <h3>Deprecations</h3>
 
@@ -47,4 +57,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Christian Gogolin, Christina Lee, Zeyue Niu
+Guillermo Alonso-Linaje, Utkarsh Azad, Christian Gogolin, Christina Lee, Zeyue Niu
