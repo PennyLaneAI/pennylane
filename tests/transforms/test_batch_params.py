@@ -156,6 +156,7 @@ def test_basis_state_preparation(mocker):
     assert np.allclose(res, indiv_res)
 
 
+@pytest.mark.autograd
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
 def test_autograd(diff_method, tol):
     """Test derivatives when using autograd"""
@@ -180,10 +181,12 @@ def test_autograd(diff_method, tol):
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
 def test_jax(diff_method, tol):
     """Test derivatives when using JAX."""
-    jax = pytest.importorskip("jax")
+    import jax
+
     jnp = jax.numpy
     dev = qml.device("default.qubit", wires=2)
 
@@ -206,11 +209,13 @@ def test_jax(diff_method, tol):
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize("diff_method", ["adjoint", "parameter-shift"])
 @pytest.mark.parametrize("interface", ["jax", "jax-jit"])
 def test_jax_jit(diff_method, interface, tol):
     """Test derivatives when using JAX and JIT."""
-    jax = pytest.importorskip("jax")
+    import jax
+
     jnp = jax.numpy
     dev = qml.device("default.qubit", wires=2)
 
@@ -234,10 +239,12 @@ def test_jax_jit(diff_method, interface, tol):
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
 def test_torch(diff_method, tol):
     """Test derivatives when using Torch"""
-    torch = pytest.importorskip("torch")
+    import torch
+
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
@@ -262,10 +269,12 @@ def test_torch(diff_method, tol):
     assert torch.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.tf
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
 def test_tf(diff_method, tol):
     """Test derivatives when using TF"""
-    tf = pytest.importorskip("tensorflow")
+    import tensorflow as tf
+
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params
@@ -290,9 +299,11 @@ def test_tf(diff_method, tol):
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.tf
 def test_tf_autograph(tol):
     """Test derivatives when using TF and autograph"""
-    tf = pytest.importorskip("tensorflow")
+    import tensorflow as tf
+
     dev = qml.device("default.qubit", wires=2)
 
     @qml.batch_params

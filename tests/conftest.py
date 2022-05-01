@@ -159,7 +159,7 @@ def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
 
-    
+
 #######################################################################
 
 try:
@@ -194,7 +194,7 @@ def pytest_collection_modifyitems(items, config):
         if "qchem" in rel_path.parts:
             mark = getattr(pytest.mark, "qchem")
             item.add_marker(mark)
-            
+
     for item in items:
         markers = {mark.name for mark in item.iter_markers()}
         if not any(elem in ["autograd", "torch", "tf", "jax"] for elem in markers) or not markers:
@@ -232,4 +232,3 @@ def pytest_runtest_setup(item):
                 "\nTest {} only runs with {} interfaces(s), "
                 "but {} interface provided".format(item.nodeid, allowed_interfaces, b)
             )
-

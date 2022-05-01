@@ -18,8 +18,6 @@ import pytest
 import numpy as np
 import pennylane as qml
 from pennylane import numpy as pnp
-
-torch = pytest.importorskip("torch", minversion="1.3")
 from pennylane.templates.state_preparations.mottonen import gray_code, _get_alpha_y
 
 
@@ -363,6 +361,9 @@ class TestCasting:
     """Test that the Mottonen state preparation ensures the compatibility with
     interfaces by using casting'"""
 
+    torch = pytest.importorskip("torch", minversion="1.3")
+
+    @pytest.mark.torch
     @pytest.mark.parametrize(
         "inputs, expected",
         [
@@ -375,6 +376,8 @@ class TestCasting:
     )
     def test_scalar_torch(self, inputs, expected):
         """Test that MottonenStatePreparation can be correctly used with the Torch interface."""
+        import torch
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="torch")
