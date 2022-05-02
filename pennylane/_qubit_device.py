@@ -415,7 +415,8 @@ class QubitDevice(Device):
         Returns:
             Union[float, List[float]]: the corresponding statistics
 
-        .. UsageDetails::
+        .. details::
+            :title: Usage Details
 
             The ``shot_range`` and ``bin_size`` arguments allow for the statistics
             to be performed on only a subset of device samples. This finer level

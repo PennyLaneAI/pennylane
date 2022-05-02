@@ -931,7 +931,8 @@ class FockStateVector(CVOperation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         For a single mode with cutoff dimension :math:`N`, the input is a
         1-dimensional vector of length :math:`N`.
@@ -1133,7 +1134,8 @@ class TensorN(CVObservable):
     Args:
         wires (Sequence[Any] or Any): the wire the operation acts on
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Example for multiple modes:
 

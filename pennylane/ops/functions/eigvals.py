@@ -76,7 +76,8 @@ def eigvals(op, k=1, which="SA"):
     This operator transform can also be applied to QNodes, tapes, and quantum functions
     that contain multiple operations; see Usage Details below for more details.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         ``qml.eigvals`` can also be used with QNodes, tapes, or quantum functions that
         contain multiple operations. However, in this situation, **eigenvalues may

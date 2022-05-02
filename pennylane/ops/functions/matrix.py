@@ -60,7 +60,8 @@ def matrix(op, *, wire_order=None):
     This operator transform can also be applied to QNodes, tapes, and quantum functions
     that contain multiple operations; see Usage Details below for more details.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         ``qml.matrix`` can also be used with QNodes, tapes, or quantum functions that
         contain multiple operations.
