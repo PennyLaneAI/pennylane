@@ -361,23 +361,22 @@ class TestCasting:
     """Test that the Mottonen state preparation ensures the compatibility with
     interfaces by using casting'"""
 
-    torch = pytest.importorskip("torch", minversion="1.3")
-
     @pytest.mark.torch
     @pytest.mark.parametrize(
         "inputs, expected",
         [
             (
-                torch.tensor([0.0, 0.7, 0.7, 0.0], requires_grad=True),
+                [0.0, 0.7, 0.7, 0.0],
                 [0.0, 0.5, 0.5, 0.0],
             ),
-            (torch.tensor([0.1, 0.0, 0.0, 0.1], requires_grad=True), [0.5, 0.0, 0.0, 0.5]),
+            ([0.1, 0.0, 0.0, 0.1], [0.5, 0.0, 0.0, 0.5]),
         ],
     )
     def test_scalar_torch(self, inputs, expected):
         """Test that MottonenStatePreparation can be correctly used with the Torch interface."""
         import torch
 
+        inputs = torch.tensor(inputs, requires_grad=True)
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="torch")
