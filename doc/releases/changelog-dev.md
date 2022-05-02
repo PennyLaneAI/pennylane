@@ -27,15 +27,18 @@
   >>> qml.CNOT((0,1))
   CNOT(wires=[0, 1])
   ```
-  
+
 * Instead of checking types, objects are processed in `QuantumTape`'s based on a new `_queue_category` property.
-  This is a temporary fix that will disappear in the future. 
+  This is a temporary fix that will disappear in the future.
   [(#2408)](https://github.com/PennyLaneAI/pennylane/pull/2408)
 
 * The `qml.taper` function can now be used to consistently taper any additional observables such as dipole moment,
   particle number, and spin operators using the symmetries obtained from the Hamiltonian.
   [(#2510)](https://github.com/PennyLaneAI/pennylane/pull/2510)
-  
+
+* The `QNode` class now contains a new method `get_best_method_str` that returns the best differentiation
+  method for a provided device and interface, in human-readable format.
+
 <h3>Breaking changes</h3>
 
 <h3>Bug fixes</h3>
