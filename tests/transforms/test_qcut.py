@@ -2769,7 +2769,6 @@ class TestContractTensors:
 
         assert np.allclose(grad, self.expected_grad)
 
-
     @pytest.mark.parametrize("use_opt_einsum", [True, False])
     def test_basic_grad_tf(self, use_opt_einsum):
         """Test if the basic contraction is differentiable using the tf interface"""
