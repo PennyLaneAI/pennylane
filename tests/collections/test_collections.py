@@ -692,7 +692,6 @@ class TestDot:
         expected = np.dot(qcval, coeffs)
         assert np.allclose(res, expected)
 
-
     def test_dot_product_qnodes_tensor_tf(self):
         """Test that the dot product of qnodes.tensor can be applied using tf"""
         import tensorflow as tf
