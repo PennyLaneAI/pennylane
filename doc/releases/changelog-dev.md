@@ -42,7 +42,7 @@
   methods `eigval()` and `matrix(wire_order=None)`.
   [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
   
-* The `decomposition` property from the `Operator` class was replaced with the `decomposition` method.
+* `Operator.decomposition()` is now an instance method, and no longer accepts parameters.
   [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
 
 <h3>Bug fixes</h3>
