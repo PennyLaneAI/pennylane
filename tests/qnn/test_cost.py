@@ -121,7 +121,7 @@ class TestSquaredErrorLossTorch:
 
         dev = qml.device("default.qubit", wires=num_qubits)
         observables = [qml.PauliZ(0), qml.PauliX(0), qml.PauliZ(1) @ qml.PauliZ(2)]
-        loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="tporch")
+        loss = SquaredErrorLoss(rx_ansatz, observables, dev, interface="torch")
 
         phis = np.ones(num_qubits)
         res = loss(phis, target=np.array([1.0, 0.5, 0.1]))

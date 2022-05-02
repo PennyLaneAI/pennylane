@@ -260,7 +260,7 @@ class TestInterfaces:
     def test_torch(self, tol):
         """Tests the torch interface."""
 
-        import toch
+        import torch
 
         weights = torch.tensor(np.random.random(size=(1, 3)), requires_grad=True)
 

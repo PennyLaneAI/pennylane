@@ -1051,7 +1051,7 @@ class TestNewVQE:
 
     @pytest.mark.torch
     @pytest.mark.slow
-    def test_grad_torch(self, torch_support, tol):
+    def test_grad_torch(self, tol):
         """Tests VQE gradients in the torch interface."""
         import torch
 
