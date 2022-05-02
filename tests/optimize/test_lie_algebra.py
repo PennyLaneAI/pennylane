@@ -105,7 +105,7 @@ def test_lie_algebra_omegas(circuit, hamiltonian):
     omegas_np = []
     for op in ops:
         op = qml.utils.expand(op.get_matrix(), op.wires, wires)
-        omegas_np.append(-np.trace(lie_algebra_np @ op).imag / 2)
+        omegas_np.append(1j*np.trace(lie_algebra_np @ op))
     omegas = opt.get_omegas()
     assert np.allclose(omegas, omegas_np)
 
@@ -152,7 +152,7 @@ def test_lie_algebra_omegas_restricted(circuit, hamiltonian):
     omegas_np = []
     for op in ops:
         op = qml.utils.expand(op.get_matrix(), op.wires, wires)
-        omegas_np.append(-np.trace(lie_algebra_np @ op).imag / 2)
+        omegas_np.append(1j*np.trace(lie_algebra_np @ op))
     omegas = opt.get_omegas()
 
     assert np.allclose(omegas, omegas_np)
@@ -164,7 +164,7 @@ def test_lie_algebra_omegas_restricted(circuit, hamiltonian):
         (circuit_1, hamiltonian_1),
         (circuit_1, hamiltonian_2),
         (circuit_2, hamiltonian_1),
-        (circuit_2, hamiltonian_2),
+        (circuit_3, hamiltonian_3),
     ],
 )
 def test_lie_algebra_evolution(circuit, hamiltonian):
@@ -189,14 +189,13 @@ def test_lie_algebra_evolution(circuit, hamiltonian):
     hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
     lie_algebra_np = hamiltonian_np @ rho - rho @ hamiltonian_np
 
-    phi_exact = expm(-0.001 * lie_algebra_np) @ phi
+    phi_exact = expm(-0.1 * lie_algebra_np*2**nqubits) @ phi
     rho_exact = np.outer(phi_exact, phi_exact.conj())
-    opt = LieAlgebraOptimizer(circuit=lie_circuit, stepsize=0.001, exact=True)
-    opt.step()
-
+    opt = LieAlgebraOptimizer(circuit=lie_circuit, stepsize=0.1, exact=True)
+    e = opt.step_and_cost()
     cost_pl = opt.circuit()
     cost_exact = np.trace(rho_exact @ hamiltonian_np)
-    assert np.allclose(cost_pl, cost_exact, atol=1e-2)
+    assert np.allclose(cost_pl, cost_exact, atol=1e-4)
 
 
 @pytest.mark.parametrize(
@@ -325,7 +324,7 @@ def test_docstring_example():
         circuit, cost = opt.step_and_cost()
     circuit()
 
-    assert np.isclose(cost, -2.23, atol=1e-2)
+    assert np.isclose(cost, -2.23, atol=1e-3)
 
 
 def test_docstring_example_exact():
