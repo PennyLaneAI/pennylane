@@ -22,8 +22,7 @@ import autograd.numpy as anp
 import numpy
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.qchem.observable_hf import simplify
-from pennylane.hf.hamiltonian import _generate_qubit_operator
+from pennylane.qchem.observable_hf import simplify, jordan_wigner
 from pennylane.wires import Wires
 
 
@@ -395,7 +394,20 @@ def taper(h, generators, paulixops, paulix_sector):
     c = anp.multiply(val, h.terms()[0])
     c = qml.math.stack(c)
 
-    return simplify(qml.Hamiltonian(c, o))
+    tapered_ham = simplify(qml.Hamiltonian(c, o))
+    # If simplified Hamiltonian is missing wires, then add wires manually for consistency
+    if wires_tap != list(tapered_ham.wires):
+        identity_op = functools.reduce(
+            lambda i, j: i @ j,
+            [
+                qml.Identity(wire)
+                for wire in Wires.unique_wires([tapered_ham.wires, Wires(wires_tap)])
+            ],
+        )
+        tapered_ham = qml.Hamiltonian(
+            np.array([*tapered_ham.coeffs, 0.0]), [*tapered_ham.ops, identity_op]
+        )
+    return tapered_ham
 
 
 def optimal_sector(qubit_op, generators, active_electrons):
@@ -491,9 +503,6 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     >>> taper_hf(generators, paulixops, paulix_sector, n_elec, n_qubits)
     tensor([1, 1], requires_grad=True)
     """
-
-    pauli_map = {"I": qml.Identity, "X": qml.PauliX, "Y": qml.PauliY, "Z": qml.PauliZ}
-
     # build the untapered Hartree Fock state
     hf = np.where(np.arange(num_wires) < num_electrons, 1, 0)
 
@@ -501,16 +510,10 @@ def taper_hf(generators, paulixops, paulix_sector, num_electrons, num_wires):
     fermop_terms = []
     for idx, bit in enumerate(hf):
         if bit:
-            op_coeffs, op_str = _generate_qubit_operator([idx])
-            op_terms = []
-            for term in op_str:
-                op_term = pauli_map[term[0][1]](term[0][0])
-                for tm in term[1:]:
-                    op_term @= pauli_map[tm[1]](tm[0])
-                op_terms.append(op_term)
+            op_coeffs, op_terms = jordan_wigner([idx])
             op_term = qml.Hamiltonian(np.array(op_coeffs), op_terms)
         else:
-            op_term = qml.Hamiltonian([1], [qml.Identity(idx)])
+            op_term = qml.Hamiltonian([1.0], [qml.Identity(idx)])
         fermop_terms.append(op_term)
 
     ferm_op = functools.reduce(lambda i, j: _observable_mult(i, j), fermop_terms)
