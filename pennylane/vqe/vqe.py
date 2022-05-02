@@ -90,7 +90,8 @@ class ExpvalCost:
     The cost function can then be minimized using any gradient descent-based
     :doc:`optimizer </introduction/optimizers>`.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Optimizing observables:**
 

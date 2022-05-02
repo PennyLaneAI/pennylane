@@ -57,7 +57,8 @@ class RandomLayers(Operation):
             rotations with equal frequency.
         seed (int): seed to generate random architecture, defaults to 42
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Default seed**
 

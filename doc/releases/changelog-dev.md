@@ -55,9 +55,12 @@
 
 <h3>Documentation</h3>
 
+* The centralized [Xanadu Sphinx Theme](https://github.com/XanaduAI/xanadu-sphinx-theme)
+  is now used to style the Sphinx documentation.
+  [(#2450)](https://github.com/PennyLaneAI/pennylane/pull/2450)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Utkarsh Azad, Christian Gogolin, Christina Lee
-
+Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Christina Lee

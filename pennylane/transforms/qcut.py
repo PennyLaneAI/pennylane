@@ -1065,7 +1065,8 @@ def cut_circuit_mc(
     (123, 2)
 
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Manually placing :class:`~.WireCut` operations and decorating the QNode with the
         ``cut_circuit_mc()`` batch transform is the suggested entrypoint into sampling-based
@@ -1839,7 +1840,8 @@ def cut_circuit(
     >>> qml.grad(circuit)(x)
     -0.276982865449393
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Manually placing :class:`~.WireCut` operations and decorating the QNode with the
         ``cut_circuit()`` batch transform is the suggested entrypoint into circuit cutting. However,

@@ -467,7 +467,8 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     For more detailed explanations, usage details and additional examples, see
     the usage details section below.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Input formatting**
 

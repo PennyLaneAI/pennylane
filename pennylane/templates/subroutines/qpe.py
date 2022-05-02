@@ -62,7 +62,8 @@ class QuantumPhaseEstimation(Operation):
         QuantumFunctionError: if the ``target_wires`` and ``estimation_wires`` share a common
             element
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Consider the matrix corresponding to a rotation from an :class:`~.RX` gate:
 
