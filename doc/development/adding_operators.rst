@@ -73,6 +73,54 @@ The basic components of operators are the following:
    * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix, :meth:`.Operator.eigvals`)
      and diagonalizing gates (for the unitaries :meth:`.Operator.diagonalizing_gates`):
 
+               >>> op = qml.PauliX(0)
+               >>> op.diagonalizing_gates()
+               [Hadamard(wires=[0])]
+               >>> op.eigvals()
+               [ 1 -1]
+
+
+
+               >>> op = qml.PauliX(0)
+               >>> op.diagonalizing_gates()
+               [Hadamard(wires=[0])]
+               >>> op.eigvals()
+               [ 1 -1]
+
+
+
+          >>> op = qml.PauliX(0)
+          >>> op.diagonalizing_gates()
+          [Hadamard(wires=[0])]
+          >>> op.eigvals()
+          [ 1 -1]
+
+
+
+               >>> op = qml.PauliX(0)
+               >>> op.diagonalizing_gates()
+               [Hadamard(wires=[0])]
+               >>> op.eigvals()
+               [ 1 -1]
+
+
+
+               >>> op = qml.PauliX(0)
+               >>> op.diagonalizing_gates()
+               [Hadamard(wires=[0])]
+               >>> op.eigvals()
+               [ 1 -1]
+
+
+
+          >>> op = qml.PauliX(0)
+          >>> op.diagonalizing_gates()
+          [Hadamard(wires=[0])]
+          >>> op.eigvals()
+          [ 1 -1]
+
+
+
           >>> op = qml.PauliX(0)
           >>> op.diagonalizing_gates()
           [Hadamard(wires=[0])]

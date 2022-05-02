@@ -326,39 +326,7 @@ class MeasurementProcess:
             return self.obs.wires
         return self._wires
 
-    @property
     def eigvals(self):
-        r"""Eigenvalues associated with the measurement process.
-
-        .. warning::
-            The ``eigvals`` property is deprecated and will be removed in
-            an upcoming release. Please use :class:`qml.eigvals <.pennylane.eigvals>` instead.
-
-        If the measurement process has an associated observable,
-        the eigenvalues will correspond to this observable. Otherwise,
-        they will be the eigenvalues provided when the measurement
-        process was instantiated.
-
-        Note that the eigenvalues are not guaranteed to be in any
-        particular order.
-
-        **Example:**
-
-        >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
-        >>> m.eigvals()
-        array([1, -1])
-
-        Returns:
-            array: eigvals representation
-        """
-        warnings.warn(
-            "The 'eigvals' property is deprecated and will be removed in an upcoming release. "
-            "Please use 'qml.eigvals' instead.",
-            UserWarning,
-        )
-        return self.eigvals()
-
-    def get_eigvals(self):
         r"""Eigenvalues associated with the measurement process.
 
         If the measurement process has an associated observable,
