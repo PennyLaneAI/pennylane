@@ -166,7 +166,7 @@ class LieAlgebraOptimizer:
     For more information on Riemannian gradient flows on Lie groups see
     `T. Schulte-Herbrueggen et. al. (2008) <https://arxiv.org/abs/0802.4195>`_
     and the application to quantum circuits
-    `Wiersema and Killoran (2022) <https://arxiv.org/abs/2202.06976>`_.
+    `Wiersema and Killoran (2021) <https://arxiv.org/abs/>`_.
 
     Args:
         circuit (.QNode): a user defined circuit that does not take any arguments and returns
@@ -358,6 +358,6 @@ class LieAlgebraOptimizer:
         )
 
         # For each observable O_i in the Hamiltonian, we have to calculate all Lie coefficients
-        omegas = 0.5 * (circuits_plus - circuits_min)
+        omegas = (circuits_plus - circuits_min)
 
         return np.dot(self.coeffs, omegas)
