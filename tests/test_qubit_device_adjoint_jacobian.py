@@ -388,10 +388,11 @@ class TestAdjointJacobianQNode:
         # the different methods agree
         assert np.allclose(grad_D, grad_F, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_interface_tf(self, dev):
         """Test if gradients agree between the adjoint and finite-diff methods when using the
         TensorFlow interface"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         def f(params1, params2):
             qml.RX(0.4, wires=[0])
@@ -417,10 +418,11 @@ class TestAdjointJacobianQNode:
 
         assert np.allclose(g1, g2)
 
+    @pytest.mark.torch
     def test_interface_torch(self, dev):
         """Test if gradients agree between the adjoint and finite-diff methods when using the
         Torch interface"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         def f(params1, params2):
             qml.RX(0.4, wires=[0])
@@ -446,10 +448,11 @@ class TestAdjointJacobianQNode:
 
         assert np.allclose(grad_adjoint, grad_fd)
 
+    @pytest.mark.jax
     def test_interface_jax(self, dev):
         """Test if the gradients agree between adjoint and backprop methods in the
         jax interface"""
-        jax = pytest.importorskip("jax")
+        import jax
 
         def f(params1, params2):
             qml.RX(0.4, wires=[0])

@@ -56,10 +56,12 @@ class TestValidation:
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
             circuit.interface = test_interface
 
+    @pytest.mark.torch
     def test_valid_interface(self):
         """Test that changing to a valid interface works as expected, and the
         diff method is updated as required."""
-        torch = pytest.importorskip("torch")
+        import torch
+
         dev = qml.device("default.qubit", wires=1)
 
         @qnode(dev, interface="autograd", diff_method="best")
@@ -157,6 +159,7 @@ class TestValidation:
         ):
             QNode._validate_backprop_method(dev, "another_interface")
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("device_string", ("default.qubit", "default.qubit.autograd"))
     def test_validate_backprop_finite_shots(self, device_string):
         """Test that a device with finite shots cannot be used with backpropagation."""
@@ -633,6 +636,7 @@ class TestDecorator:
 class TestIntegration:
     """Integration tests."""
 
+    @pytest.mark.autograd
     def test_correct_number_of_executions_autograd(self):
         """Test that number of executions are tracked in the autograd interface."""
 
@@ -655,9 +659,10 @@ class TestIntegration:
 
         assert dev.num_executions == 5
 
+    @pytest.mark.tf
     def test_correct_number_of_executions_tf(self):
         """Test that number of executions are tracked in the tf interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         def func():
             qml.Hadamard(wires=0)
@@ -683,9 +688,9 @@ class TestIntegration:
 
         assert dev.num_executions == 6
 
+    @pytest.mark.torch
     def test_correct_number_of_executions_torch(self):
         """Test that number of executions are tracked in the torch interface."""
-        torch = pytest.importorskip("torch")
 
         def func():
             qml.Hadamard(wires=0)
@@ -856,9 +861,11 @@ class TestIntegration:
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
 
+    @pytest.mark.tf
     def test_conditional_ops_tensorflow(self):
         """Test conditional operations with TensorFlow."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="tf", diff_method="parameter-shift")
@@ -896,9 +903,11 @@ class TestIntegration:
         grad2 = tape2.gradient(r2, x2)
         assert np.allclose(grad1, grad2)
 
+    @pytest.mark.torch
     def test_conditional_ops_torch(self):
         """Test conditional operations with Torch."""
-        torch = pytest.importorskip("torch")
+        import torch
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="torch", diff_method="parameter-shift")
@@ -931,10 +940,12 @@ class TestIntegration:
         r2.backward()
         assert np.allclose(x1.grad.detach(), x2.grad.detach())
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("jax_interface", ["jax-python", "jax-jit"])
     def test_conditional_ops_jax(self, jax_interface):
         """Test conditional operations with JAX."""
-        jax = pytest.importorskip("jax")
+        import jax
+
         jnp = jax.numpy
         dev = qml.device("default.qubit", wires=2)
 
