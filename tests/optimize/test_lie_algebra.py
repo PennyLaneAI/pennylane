@@ -283,9 +283,7 @@ def test_lie_algebra_nqubits_check():
         qml.RY(0.5, wires=0)
         return qml.expval(qml.Hamiltonian(coeffs=[-1.0], observables=[qml.PauliX(0)]))
 
-    with pytest.warns(
-        UserWarning, match="The exact Riemannian gradient is exponentially"
-    ):
+    with pytest.warns(UserWarning, match="The exact Riemannian gradient is exponentially"):
         LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
 
 
