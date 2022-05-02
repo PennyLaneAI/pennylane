@@ -2450,7 +2450,7 @@ def has_nopar(obj):
 def has_unitary_gen(obj):
     """Returns ``True`` if an operator has a unitary_generator
     according to the ``has_unitary_generator`` flag."""
-    # static analysis can misidentify qml.ops as the set instance qml.ops.qubit.ops
+    # Linting check disabled as static analysis can misidentify qml.ops as the set instance qml.ops.qubit.ops
     return obj in qml.ops.qubit.attributes.has_unitary_generator  # pylint:disable=no-member
 
 

@@ -20,7 +20,6 @@ import os
 import warnings
 
 import pennylane as qml
-from pennylane.queuing import AnnotatedQueue
 
 
 def make_tape(fn):
@@ -79,7 +78,7 @@ def make_tape(fn):
     return wrapper
 
 
-class NonQueuingTape(AnnotatedQueue):
+class NonQueuingTape(qml.queuing.AnnotatedQueue):
     """Mixin class that creates a tape that does not queue
     itself to the current queuing context."""
 
