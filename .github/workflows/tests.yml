@@ -53,6 +53,9 @@ jobs:
           pip install -r requirements-ci.txt
           pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
 
+      - name: Install execnet
+        run: pip install -U execnet==1.1
+
       - name: Conditionally install PyTorch
         if: matrix.config.interface == 'torch'
         run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
