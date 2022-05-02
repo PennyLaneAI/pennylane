@@ -2478,3 +2478,19 @@ def defines_diagonalizing_gates(obj):
         except DiagGatesUndefinedError:
             return False
         return True
+
+
+@qml.BooleanFn
+def gen_is_multi_term_hamiltonian(obj):
+    """Returns ``True`` if an operator has a generator defined and it is a Hamiltonian
+    with more than one term."""
+
+    try:
+        o = obj.generator()
+    except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
+        return False
+
+    if isinstance(o, qml.Hamiltonian):
+        if len(o.coeffs) > 1:
+            return True
+    return False
