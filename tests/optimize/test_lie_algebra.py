@@ -105,7 +105,7 @@ def test_lie_algebra_omegas(circuit, hamiltonian):
     omegas_np = []
     for op in ops:
         op = qml.utils.expand(op.get_matrix(), op.wires, wires)
-        omegas_np.append(1j*np.trace(lie_algebra_np @ op))
+        omegas_np.append(1j * np.trace(lie_algebra_np @ op))
     omegas = opt.get_omegas()
     assert np.allclose(omegas, omegas_np)
 
@@ -152,7 +152,7 @@ def test_lie_algebra_omegas_restricted(circuit, hamiltonian):
     omegas_np = []
     for op in ops:
         op = qml.utils.expand(op.get_matrix(), op.wires, wires)
-        omegas_np.append(1j*np.trace(lie_algebra_np @ op))
+        omegas_np.append(1j * np.trace(lie_algebra_np @ op))
     omegas = opt.get_omegas()
 
     assert np.allclose(omegas, omegas_np)
@@ -189,10 +189,10 @@ def test_lie_algebra_evolution(circuit, hamiltonian):
     hamiltonian_np = qml.utils.sparse_hamiltonian(hamiltonian, wires).toarray()
     lie_algebra_np = hamiltonian_np @ rho - rho @ hamiltonian_np
 
-    phi_exact = expm(-0.1 * lie_algebra_np*2**nqubits) @ phi
+    phi_exact = expm(-0.1 * lie_algebra_np * 2**nqubits) @ phi
     rho_exact = np.outer(phi_exact, phi_exact.conj())
     opt = LieAlgebraOptimizer(circuit=lie_circuit, stepsize=0.1, exact=True)
-    e = opt.step_and_cost()
+    opt.step_and_cost()
     cost_pl = opt.circuit()
     cost_exact = np.trace(rho_exact @ hamiltonian_np)
     assert np.allclose(cost_pl, cost_exact, atol=1e-4)
@@ -283,7 +283,9 @@ def test_lie_algebra_nqubits_check():
         qml.RY(0.5, wires=0)
         return qml.expval(qml.Hamiltonian(coeffs=[-1.0], observables=[qml.PauliX(0)]))
 
-    with pytest.warns(UserWarning, match="The exact Riemannian gradient is exponentially"):
+    with pytest.warns(
+        UserWarning, match="The exact Riemannian gradient is exponentially"
+    ):
         LieAlgebraOptimizer(circuit=circuit, stepsize=0.001)
 
 
@@ -320,7 +322,7 @@ def test_docstring_example():
 
     opt = LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1)
 
-    for step in range(6):
+    for _ in range(6):
         circuit, cost = opt.step_and_cost()
     circuit()
 
@@ -345,7 +347,7 @@ def test_docstring_example_exact():
 
     opt = LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
 
-    for step in range(6):
+    for _ in range(6):
         _, cost = opt.step_and_cost()
     assert np.isclose(cost, -2.23, atol=1e-2)
 
@@ -367,5 +369,5 @@ def test_example_shots():
 
     opt = LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=False)
 
-    for step in range(3):
-        _, cost = opt.step_and_cost()
+    for _ in range(3):
+        opt.step_and_cost()

@@ -90,8 +90,12 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     for obs in observables:
         for o in obs:
             # create a list of tapes for the plus and minus shifted circuits
-            tapes_plus = [qml.tape.QuantumTape(p + "_p") for p in lie_algebra_basis_names]
-            tapes_min = [qml.tape.QuantumTape(p + "_m") for p in lie_algebra_basis_names]
+            tapes_plus = [
+                qml.tape.QuantumTape(p + "_p") for p in lie_algebra_basis_names
+            ]
+            tapes_min = [
+                qml.tape.QuantumTape(p + "_m") for p in lie_algebra_basis_names
+            ]
 
             # loop through all operations on the input tape
             for op in tape.operations:
@@ -222,7 +226,9 @@ class LieAlgebraOptimizer:
     """
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-instance-attributes
-    def __init__(self, circuit, stepsize=0.01, restriction=None, exact=False, trottersteps=1):
+    def __init__(
+        self, circuit, stepsize=0.01, restriction=None, exact=False, trottersteps=1
+    ):
 
         if not isinstance(circuit, qml.QNode):
             raise TypeError(f"circuit must be a QNode, received {type(circuit)}")
@@ -244,7 +250,9 @@ class LieAlgebraOptimizer:
                 UserWarning,
             )
         if restriction is not None and not isinstance(restriction, qml.Hamiltonian):
-            raise TypeError(f"restriction must be a Hamiltonian, received {type(restriction)}")
+            raise TypeError(
+                f"restriction must be a Hamiltonian, received {type(restriction)}"
+            )
         (
             self.lie_algebra_basis_ops,
             self.lie_algebra_basis_names,
@@ -278,11 +286,16 @@ class LieAlgebraOptimizer:
         non_zero_omegas = -omegas[omegas != 0]
 
         nonzero_idx = np.nonzero(omegas)[0]
-        non_zero_lie_algebra_elements = [self.lie_algebra_basis_names[i] for i in nonzero_idx]
+        non_zero_lie_algebra_elements = [
+            self.lie_algebra_basis_names[i] for i in nonzero_idx
+        ]
 
         lie_gradient = qml.Hamiltonian(
             non_zero_omegas,
-            [qml.grouping.string_to_pauli_word(ps) for ps in non_zero_lie_algebra_elements],
+            [
+                qml.grouping.string_to_pauli_word(ps)
+                for ps in non_zero_lie_algebra_elements
+            ],
         )
         new_circuit = append_time_evolution(
             lie_gradient, self.stepsize, self.trottersteps, self.exact
@@ -358,6 +371,6 @@ class LieAlgebraOptimizer:
         )
 
         # For each observable O_i in the Hamiltonian, we have to calculate all Lie coefficients
-        omegas = (circuits_plus - circuits_min)
+        omegas = circuits_plus - circuits_min
 
         return np.dot(self.coeffs, omegas)
