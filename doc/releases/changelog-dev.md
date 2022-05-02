@@ -38,6 +38,7 @@
 
 * The `QNode` class now contains a new method `get_best_method_str` that returns the best differentiation
   method for a provided device and interface, in human-readable format.
+  [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
 
 <h3>Breaking changes</h3>
 
