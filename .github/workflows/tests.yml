@@ -16,9 +16,6 @@ jobs:
   core-tests:
     runs-on: ubuntu-latest
 
-    env:
-      INTERFACE: ${{ matrix.interface }}
-
     strategy:
       matrix:
         config:
@@ -34,6 +31,8 @@ jobs:
           - {python-version: 3.9, interface: 'core'}
           - {python-version: '3.10', interface: 'core'}
 
+    env:
+      INTERFACE: ${{ matrix.config.interface }}
 
     steps:
       - name: Cancel Previous Runs
