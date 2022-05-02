@@ -118,7 +118,8 @@ def insert(
     0: ──RX(0.90)─╭C──RY(0.50)──AmplitudeDamping(0.20)─┤ ╭<Z@Z>
     1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.20)─┤ ╰<Z@Z>
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Specifying the operation as a quantum function:**
 
