@@ -20,7 +20,6 @@ and measurement samples using AnnotatedQueues.
 # pylint: disable=too-many-instance-attributes
 import copy
 import uuid
-import warnings
 import functools
 from enum import Enum
 from typing import Generic, TypeVar
