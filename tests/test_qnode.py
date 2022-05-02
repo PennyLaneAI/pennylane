@@ -226,6 +226,36 @@ class TestValidation:
         res = QNode.get_best_method(dev, "another_interface")
         assert res == (qml.gradients.finite_diff, {}, dev)
 
+    def test_best_method_str(self, monkeypatch):
+        """Test that the method for determining the best diff method string
+        for a given device and interface works correctly"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
+
+        # device is top priority
+        res = QNode.get_best_method_str(dev, "another_interface")
+        assert res == "device"
+
+        # backprop is next priority
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+        res = QNode.get_best_method_str(dev, "some_interface")
+        assert res == "backprop"
+
+        # The next fallback is parameter-shift.
+        res = QNode.get_best_method_str(dev, "another_interface")
+        assert res == "parameter-shift"
+
+        # finally, if both fail, finite differences is the fallback
+        def capabilities(cls):
+            capabilities = cls._capabilities
+            capabilities.update(model="None")
+            return capabilities
+
+        monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
+        res = QNode.get_best_method_str(dev, "another_interface")
+        assert res == "finite-diff"
+
     def test_diff_method(self, mocker):
         """Test that a user-supplied diff method correctly returns the right
         diff method."""
