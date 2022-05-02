@@ -100,7 +100,7 @@ jobs:
 #        run: python testmon_sync.py download ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, '-') }} ${{ github.event.pull_request.base.sha }}
 
       - name: Run tests
-        run: python -m pytest --testmon --rootdir=. tests $COVERAGE_FLAGS -m "not qcut and not qchem" -n auto
+        run: python -m pytest --testmon --rootdir=.
 
       - name: List folder
         run: ls -a
