@@ -45,11 +45,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-ci.txt
-          pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
-
-      - name: Conditionally install openfermionpyscf
-        if: contains(' 3.9', matrix.config.python-version)
-        run: pip3 install openfermionpyscf
+          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
 
       - name: Conditionally install PyTorch
         if: contains(matrix.config.interfaces, 'torch')
@@ -65,9 +61,6 @@ jobs:
         if: contains(matrix.config.interfaces, 'jax')
         run: pip3 install jax jaxlib
 
-      - name: Install KaHyPar
-        run: pip3 install kahypar==1.1.7
-
       - name: Install PennyLane
         run: |
           pip install -r requirements-ci.txt
@@ -78,7 +71,7 @@ jobs:
         run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS
+        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "not qcut and not qchem" -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
@@ -88,6 +81,100 @@ jobs:
         with:
           file: ./coverage.xml
 
+  qcut:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci.txt
+          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
+
+      - name: Conditionally install TensorFlow
+        run: pip3 install tensorflow==$TF_VERSION keras==$TF_VERSION
+
+      - name: Install KaHyPar
+        run: pip3 install kahypar==1.1.7
+
+      - name: Install PennyLane
+        run: |
+          pip install -r requirements-ci.txt
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m qcut -n auto
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+
+  qchem:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          # Based on previous experience, PySCF installation might fail or take
+          # longer time with some python versions
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci.txt
+          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
+
+      - name: Install openfermionpyscf
+        run: pip3 install openfermionpyscf
+
+      - name: Install PennyLane
+        run: |
+          pip install -r requirements-ci.txt
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m qchem -n auto
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
 
   device-tests:
     runs-on: ubuntu-latest
