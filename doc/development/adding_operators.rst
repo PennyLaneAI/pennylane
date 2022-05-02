@@ -326,12 +326,12 @@ Make sure that all hyperparameters and errors are tested, and that the parameter
 tensors from all supported autodifferentiation frameworks.
 
 Don't forget to also add the new operator to the documentation in the ``docs/introduction/operations.rst`` file, or to
-the template gallery if it is an ansatz. The latter is done by adding a ``customgalleryitem``
+the template gallery if it is an ansatz. The latter is done by adding a ``gallery-item``
 to the correct section in ``doc/introduction/templates.rst``:
 
 .. code-block::
 
-  .. customgalleryitem::
+  .. gallery-item::
     :link: ../code/api/pennylane.templates.<templ_type>.MyNewTemplate.html
     :description: MyNewTemplate
     :figure: ../_static/templates/<templ_type>/my_new_template.png

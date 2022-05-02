@@ -777,7 +777,8 @@ def state():
         classical backpropagation differentiation method (``diff_method="backprop"``) with a
         compatible device.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         A QNode with the ``qml.state`` output can be used in a cost function with
         is then differentiated:

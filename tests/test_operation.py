@@ -1531,6 +1531,7 @@ class TestCVOperation:
 
 
 class TestCriteria:
+    doubleExcitation = qml.DoubleExcitation(0.1, wires=[0, 1, 2, 3])
     rx = qml.RX(qml.numpy.array(0.3, requires_grad=True), wires=1)
     stiff_rx = qml.RX(0.3, wires=1)
     cnot = qml.CNOT(wires=[1, 0])
@@ -1554,6 +1555,13 @@ class TestCriteria:
         assert qml.operation.has_grad_method(self.rx)
         assert qml.operation.has_grad_method(self.rot)
         assert not qml.operation.has_grad_method(self.cnot)
+
+    def test_gen_is_multi_term_hamiltonian(self):
+        """Test gen_is_multi_term_hamiltonian criterion."""
+        assert qml.operation.gen_is_multi_term_hamiltonian(self.doubleExcitation)
+        assert not qml.operation.gen_is_multi_term_hamiltonian(self.cnot)
+        assert not qml.operation.gen_is_multi_term_hamiltonian(self.rot)
+        assert not qml.operation.gen_is_multi_term_hamiltonian(self.exp)
 
     def test_has_multipar(self):
         """Test has_multipar criterion."""

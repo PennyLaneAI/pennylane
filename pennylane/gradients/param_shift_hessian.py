@@ -296,7 +296,8 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
     tensor([[-0.86883595,  0.04762358],
             [ 0.04762358,  0.05998862]], requires_grad=True)
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         The Hessian transform can also be applied to a quantum tape instead of a QNode, producing
         the parameter-shifted tapes and a post-processing function to combine the execution

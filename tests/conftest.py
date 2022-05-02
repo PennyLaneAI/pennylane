@@ -15,13 +15,13 @@
 Pytest configuration file for PennyLane test suite.
 """
 import os
+import pathlib
 
-import pytest
 import numpy as np
+import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultGaussian
-
 
 # defaults
 TOL = 1e-3
@@ -203,3 +203,13 @@ def mock_device(monkeypatch):
 def tear_down_hermitian():
     yield None
     qml.Hermitian._eigs = {}
+
+
+def pytest_collection_modifyitems(config, items):
+    # python 3.4/3.5 compat: rootdir = pathlib.Path(str(config.rootdir))
+    rootdir = pathlib.Path(config.rootdir)
+    for item in items:
+        rel_path = pathlib.Path(item.fspath).relative_to(rootdir)
+        if "qchem" in rel_path.parts:
+            mark = getattr(pytest.mark, "qchem")
+            item.add_marker(mark)

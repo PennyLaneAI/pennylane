@@ -569,7 +569,8 @@ def param_shift(
         :attr:`~.operation.Operation.parameter_frequencies`, and finally
         :meth:`~.operation.Operation.generator` via the default implementation of the frequencies.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
 
