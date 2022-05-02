@@ -38,6 +38,10 @@
   
 <h3>Breaking changes</h3>
 
+* The properties `eigval` and `matrix` from the `Operator` class were replaced with the 
+  methods `eigval()` and `matrix(wire_order=None)`.
+  [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
+
 <h3>Bug fixes</h3>
 
 * Fixed a bug where `QNGOptimizer` did not work with operators
@@ -53,5 +57,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Utkarsh Azad, Christian Gogolin, Christina Lee
+Guillermo Alonso-Linaje, Utkarsh Azad, Christian Gogolin, Christina Lee, Maria Schuld
 
