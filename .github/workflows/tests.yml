@@ -86,7 +86,7 @@ jobs:
 #          path: /home/runner/work/pennylane/pennylane/.testmondata
 
       - name: Get Cached Testmon Data
-        id: cache-testmon
+#        id: cache-testmon
         uses: actions/cache@v3
         with:
           path: ./.testmondata
@@ -114,7 +114,7 @@ jobs:
 #          name: ${{ matrix.config.python-version }}-${{ join(matrix.config.interfaces, '-') }}-${{ github.event.pull_request.head.sha }}
 #          path: /home/runner/work/pennylane/pennylane/.testmondata
       - name: Cache Testmon Data
-        id: cache-testmon
+#        id: cache-testmon
         uses: actions/cache@v3
         with:
           path: ./.testmondata
