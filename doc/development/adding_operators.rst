@@ -73,106 +73,17 @@ The basic components of operators are the following:
    * Representation via the **eigenvalue decomposition** specified by eigenvalues (for the diagonal matrix, :meth:`.Operator.eigvals`)
      and diagonalizing gates (for the unitaries :meth:`.Operator.diagonalizing_gates`):
 
-               >>> op = qml.PauliX(0)
-               >>> op.diagonalizing_gates()
-               [Hadamard(wires=[0])]
-               >>> op.eigvals()
-               [ 1 -1]
-
-
-
-               >>> op = qml.PauliX(0)
-               >>> op.diagonalizing_gates()
-               [Hadamard(wires=[0])]
-               >>> op.eigvals()
-               [ 1 -1]
-
-
-
-          >>> op = qml.PauliX(0)
-          >>> op.diagonalizing_gates()
-          [Hadamard(wires=[0])]
-          >>> op.eigvals()
-          [ 1 -1]
-
-
-
-               >>> op = qml.PauliX(0)
-               >>> op.diagonalizing_gates()
-               [Hadamard(wires=[0])]
-               >>> op.eigvals()
-               [ 1 -1]
-
-
-
-               >>> op = qml.PauliX(0)
-               >>> op.diagonalizing_gates()
-               [Hadamard(wires=[0])]
-               >>> op.eigvals()
-               [ 1 -1]
-
-
-
-          >>> op = qml.PauliX(0)
-          >>> op.diagonalizing_gates()
-          [Hadamard(wires=[0])]
-          >>> op.eigvals()
-          [ 1 -1]
-
-
-
-          >>> op = qml.PauliX(0)
-          >>> op.diagonalizing_gates()
-          [Hadamard(wires=[0])]
-          >>> op.eigvals()
-          [ 1 -1]
-
-
-
-          >>> op = qml.PauliX(0)
-          >>> op.diagonalizing_gates()
-          [Hadamard(wires=[0])]
-          >>> op.eigvals()
-          [ 1 -1]
-
-
-
      >>> op = qml.PauliX(0)
      >>> op.diagonalizing_gates()
      [Hadamard(wires=[0])]
-     >>> op.get_eigvals()
+     >>> op.eigvals()
      [ 1 -1]
 
-    .. note::
-
-        The :meth:`.Operator.get_eigvals` method is temporary and will be renamed to :meth:`.Operator.eigvals` in an
-        upcoming release. It is recommended to use the higher-level :func:`~.eigvals` function where possible.
-
    * Representation as a **matrix** (:meth:`.Operator.matrix`), as specified by a global wire order that tells us where the
-        wires are found on a register:
-
-        >>> op = qml.PauliRot(0.2, "X", wires=["b"])
-        >>> op.matrix(wire_order=["a", "b"])
-        [[9.95e-01-2.26e-18j 2.72e-17-9.98e-02j, 0+0j, 0+0j]
-         [2.72e-17-9.98e-02j 9.95e-01-2.26e-18j, 0+0j, 0+0j]
-         [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
-         [0+0j, 0+0j, 2.72e-17-9.98e-02j 9.95e-01-2.26e-18j]]
-
-
-        wires are found on a register:
-
-        >>> op = qml.PauliRot(0.2, "X", wires=["b"])
-        >>> op.matrix(wire_order=["a", "b"])
-        [[9.95e-01-2.26e-18j 2.72e-17-9.98e-02j, 0+0j, 0+0j]
-         [2.72e-17-9.98e-02j 9.95e-01-2.26e-18j, 0+0j, 0+0j]
-         [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
-         [0+0j, 0+0j, 2.72e-17-9.98e-02j 9.95e-01-2.26e-18j]]
-
-
      wires are found on a register:
 
      >>> op = qml.PauliRot(0.2, "X", wires=["b"])
-     >>> op.get_matrix(wire_order=["a", "b"])
+     >>> op.matrix(wire_order=["a", "b"])
      [[9.95e-01-2.26e-18j 2.72e-17-9.98e-02j, 0+0j, 0+0j]
       [2.72e-17-9.98e-02j 9.95e-01-2.26e-18j, 0+0j, 0+0j]
       [0+0j, 0+0j, 9.95e-01-2.26e-18j 2.72e-17-9.98e-02j]
