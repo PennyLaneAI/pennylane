@@ -77,7 +77,7 @@ jobs:
         run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "$matrix.config.interface not qcut and not qchem" -n auto
+        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "matrix.config.interface not qcut and not qchem" -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
@@ -162,8 +162,11 @@ jobs:
           pip install -r requirements-ci.txt
           pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
 
-      - name: Conditionally install TensorFlow
+      - name: Install TensorFlow
         run: pip3 install tensorflow==$TF_VERSION keras==$TF_VERSION
+
+      - name: Install JAX
+        run: pip3 install jax jaxlib
 
       - name: Install KaHyPar
         run: pip3 install kahypar==1.1.7
