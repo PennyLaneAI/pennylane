@@ -751,7 +751,7 @@ class TestVQE:
 
     @pytest.mark.tf
     @pytest.mark.slow
-    def test_optimize_grad_tf(self, tf_support):
+    def test_optimize_grad_tf(self):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the TensorFlow interface."""
         import tensorflow as tf
@@ -1072,7 +1072,7 @@ class TestNewVQE:
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
     @pytest.mark.tf
-    def test_grad_tf(self, tf_support, tol):
+    def test_grad_tf(self, tol):
         """Tests VQE gradients in the tf interface."""
         import tensorflow as tf
 

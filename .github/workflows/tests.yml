@@ -25,7 +25,6 @@ jobs:
           - {python-version: 3.8, interface: 'torch'}
           - {python-version: 3.8, interface: 'jax'}
           - {python-version: 3.8, interface: 'autograd'}
-          - {python-version: 3.8, interface: 'core'}
           - {python-version: 3.7, interface: 'core'}
           - {python-version: 3.8, interface: 'core'}
           - {python-version: 3.9, interface: 'core'}

@@ -334,7 +334,7 @@ class TestInterfaces:
     def test_tf_jit(self, tol):
         """Tests tf tensors when using JIT."""
 
-        import tensorflow as td
+        import tensorflow as tf
 
         features = tf.Variable([1 / 2, 0, 1 / 2, 0, 1 / 2, 1 / 2, 0, 0])
 
