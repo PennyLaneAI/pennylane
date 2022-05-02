@@ -293,7 +293,7 @@ class PauliX(Observable, Operation):
 
     def single_qubit_rot_angles(self):
         # X = RZ(-\pi/2) RY(\pi) RZ(\pi/2)
-        return [np.pi / 2, np.pi, -np.pi / 2]
+        return [np.pi / 3, np.pi, -np.pi / 3]
 
 
 class PauliY(Observable, Operation):
