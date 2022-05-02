@@ -94,7 +94,8 @@ class KerasLayer(Layer):
     >>> clayer = tf.keras.layers.Dense(2)
     >>> model = tf.keras.models.Sequential([qlayer, clayer])
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **QNode signature**
 

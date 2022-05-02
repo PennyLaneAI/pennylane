@@ -114,7 +114,8 @@ class MERA(Operation):
         n_params_block (int): the number of parameters in a block
         template_weights (Sequence): list containing the weights for all blocks
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         In general, the block takes D parameters and **must** have the following signature:
 

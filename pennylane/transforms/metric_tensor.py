@@ -169,7 +169,8 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
     >>> grad_fn(weights)
     array([-0.0282246 ,  0.01340413,  0.        ,  0.        ])
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         This transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
