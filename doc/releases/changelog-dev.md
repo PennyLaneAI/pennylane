@@ -47,6 +47,12 @@
 
 <h3>Deprecations</h3>
 
+<h3>Bug fixes</h3>
+
+* Fixes a bug in `DiagonalQubitUnitary._controlled` where an invalid operation was queued
+  instead of the controlled version of the diagonal unitary.
+  [(#2525)](https://github.com/PennyLaneAI/pennylane/pull/2525)
+
 <h3>Documentation</h3>
 
 <h3>Contributors</h3>
