@@ -84,7 +84,7 @@ def test_unwrap_torch():
     assert tape.get_parameters(trainable_only=False) == p
 
 
-@pytest.mark.autoograd
+@pytest.mark.autograd
 def test_unwrap_autograd():
     """Test that unwrapping a tape with Autograd parameters
     works as expected"""

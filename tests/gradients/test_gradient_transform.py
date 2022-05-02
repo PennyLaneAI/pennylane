@@ -618,7 +618,7 @@ class TestInterfaceIntegration:
         expected = -2 * (4 * x_**2 * np.cos(2 * x_**2) + np.sin(2 * x_**2))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.toorch
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Test that a gradient transform remains differentiable
         with PyTorch"""

@@ -652,7 +652,7 @@ class TestParameterShiftHessian:
         qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
     @pytest.mark.autograd
-    def test_no_trainable_params_qnode_autograd(self, interface):
+    def test_no_trainable_params_qnode_autograd(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
 

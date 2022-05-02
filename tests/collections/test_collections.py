@@ -650,6 +650,7 @@ class TestDot:
         expected = np.dot(qcval, coeffs)
         assert np.allclose(res, expected)
 
+    @pytest.mark.autograd
     def test_dot_product_qnodes_tensor_autograd(self):
         """Test that the dot product of qnodes.tensor can be applied using autograd"""
 
@@ -667,6 +668,7 @@ class TestDot:
         expected = np.dot(qcval, coeffs)
         assert np.allclose(res, expected)
 
+    @pytest.mark.torch
     def test_dot_product_qnodes_tensor_torch(self):
         """Test that the dot product of qnodes.tensor can be applied using torch"""
         import torch
@@ -690,15 +692,16 @@ class TestDot:
         expected = np.dot(qcval, coeffs)
         assert np.allclose(res, expected)
 
+
     def test_dot_product_qnodes_tensor_tf(self):
         """Test that the dot product of qnodes.tensor can be applied using tf"""
-        import torch
+        import tensorflow as tf
 
         qnode1, _ = qnodes("tf")
         qc = qml.QNodeCollection([qnode1])
         coeffs = [0.5, -0.1]
 
-        coeffs = torch.tensor(coeffs, dtype=torch.float64)
+        coeffs = tf.Variable(coeffs, dtype=tf.float64)
         # test the dot product of qnodes, tensor
         cost = qml.dot(qc, coeffs)
 
@@ -713,9 +716,9 @@ class TestDot:
         expected = np.dot(qcval, coeffs)
         assert np.allclose(res, expected)
 
+    @pytest.mark.jax
     def test_dot_product_qnodes_tensor_jax(self):
         """Test that the dot product of qnodes.tensor can be applied using jax"""
-        import torch
 
         qnode1, _ = qnodes("jax")
         qc = qml.QNodeCollection([qnode1])
