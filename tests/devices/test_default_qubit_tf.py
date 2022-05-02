@@ -126,6 +126,7 @@ def init_state(scope="session"):
 #####################################################
 
 
+@pytest.mark.tf
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -143,6 +144,7 @@ def test_analytic_deprecation():
 #####################################################
 
 
+@pytest.mark.tf
 class TestTFMatrix:
     """Test special case of matrix construction in TensorFlow for
     cases where variables must be casted to complex."""
