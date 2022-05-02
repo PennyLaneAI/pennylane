@@ -85,12 +85,20 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
 
-      - name: Download Testmon Data Artifact
-        uses: actions/download-artifact@v3
-        continue-on-error: true
+#      - name: Download Testmon Data Artifact
+#        uses: actions/download-artifact@v3
+#        continue-on-error: true
+#        with:
+#          name: ${{ matrix.config.python-version }}-${{ join(matrix.config.interfaces, '-') }}-${{ github.event.pull_request.base.sha }}
+#          path: /home/runner/work/pennylane/pennylane/.testmondata
+
+      - name: Get Cached Testmon Data
+        id: cache-testmon
+        uses: actions/cache@v3
         with:
-          name: ${{ matrix.config.python-version }}-${{ join(matrix.config.interfaces, '-') }}-${{ github.event.pull_request.base.sha }}
-          path: /home/runner/work/pennylane/pennylane/.testmondata
+          path: ./.testmondata
+          key: ${{ matrix.config.python-version }}-${{ join(matrix.config.interfaces, '-') }}-${{ github.event.pull_request.base.sha }}
+
 
       - name: List folder
         run: ls -a
@@ -107,11 +115,17 @@ jobs:
 #      - name: Upload Testmon Data
 #        run: python testmon_sync.py upload ${{ matrix.config.python-version }} ${{ join(matrix.config.interfaces, '-') }} ${{ github.event.pull_request.head.sha }}
 
-      - name: Upload Testmon Data Artifact
-        uses: actions/upload-artifact@v3
+#      - name: Upload Testmon Data Artifact
+#        uses: actions/upload-artifact@v3
+#        with:
+#          name: ${{ matrix.config.python-version }}-${{ join(matrix.config.interfaces, '-') }}-${{ github.event.pull_request.head.sha }}
+#          path: /home/runner/work/pennylane/pennylane/.testmondata
+      - name: Cache Testmon Data
+        id: cache-testmon
+        uses: actions/cache@v3
         with:
-          name: ${{ matrix.config.python-version }}-${{ join(matrix.config.interfaces, '-') }}-${{ github.event.pull_request.head.sha }}
-          path: /home/runner/work/pennylane/pennylane/.testmondata
+          path: ./.testmondata
+          key: ${{ matrix.config.python-version }}-${{ join(matrix.config.interfaces, '-') }}-${{ github.event.pull_request.head.sha }}
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
