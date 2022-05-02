@@ -660,7 +660,7 @@ class TestVQE:
 
         assert np.allclose(c1, c2)
 
-    @pytest.test.autograd
+    @pytest.mark.autograd
     def test_optimize_grad(self):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the autograd interface."""

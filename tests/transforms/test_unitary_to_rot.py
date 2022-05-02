@@ -327,7 +327,7 @@ class TestQubitUnitaryDifferentiability:
 
         assert qml.math.allclose(original_input.grad, transformed_input.grad, atol=1e-7)
 
-    @pytest.mark
+    @pytest.mark.tf
     @pytest.mark.parametrize("rot_angles,diff_method", angle_diff_pairs)
     def test_gradient_unitary_to_rot_tf(self, rot_angles, diff_method):
         """Tests differentiability in tensorflow interface."""
