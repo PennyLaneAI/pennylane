@@ -201,6 +201,30 @@ class TestProperties:
         assert not config
         assert default_config
 
+    def test_str(self, default_config):
+        """Test string value of the Configuration object."""
+        config = Configuration("noconfig")
+
+        assert config.__str__() == ""
+
+    def test_str_loaded_config(self, default_config, monkeypatch, default_config_toml):
+        """Test string value of the Configuration object that has been
+        loaded."""
+        config_toml, config_path = default_config_toml
+
+        monkeypatch.chdir(".")
+        monkeypatch.setenv("PENNYLANE_CONF", "")
+        config = Configuration(name=config_path)
+
+        assert config.__str__() == f"{config_toml}"
+
+    def test_repr(self, default_config):
+        """Test repr value of the Configuration object."""
+        path = "noconfig"
+        config = Configuration(path)
+
+        assert config.__repr__() == "PennyLane Configuration <noconfig>"
+
 
 class TestPennyLaneInit:
     """Tests to ensure that the code in PennyLane/__init__.py
