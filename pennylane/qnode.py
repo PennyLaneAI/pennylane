@@ -365,9 +365,8 @@ class QNode:
 
     @staticmethod
     def get_best_method_str(device, interface):
-        """
-        Similar to :meth:`~.get_best_method`, except return the
-            'best' differentiation method in human-readable format.
+        """Similar to :meth:`~.get_best_method`, except return the
+        'best' differentiation method in human-readable format.
 
         This method attempts to determine support for differentiation
         methods using the following order:
@@ -381,7 +380,7 @@ class QNode:
         top to bottom) will be returned.
 
         This method is intended only for debugging purposes. Otherwise,
-            :meth:`~.get_best_method` should be used instead.
+        :meth:`~.get_best_method` should be used instead.
 
         Args:
             device (.Device): PennyLane device
