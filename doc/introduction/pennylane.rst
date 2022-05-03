@@ -4,7 +4,7 @@
 .. _pl_intro:
 
 What is PennyLane?
-================
+==================
 
 .. figure:: ../_static/code.png
     :align: left
