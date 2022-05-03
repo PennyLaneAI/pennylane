@@ -74,6 +74,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-
 Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Edward Jiang, Christina Lee,
 Maria Schuld
