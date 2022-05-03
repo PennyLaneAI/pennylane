@@ -119,6 +119,6 @@ class TestRotGateFusion:
         matrix_expected = qml.matrix(original_ops, [0])()
 
         fused_angles = fuse_rot_angles(angles_1, angles_2)
-        matrix_obtained = qml.Rot(*fused_angles, wires=0).get_matrix()
+        matrix_obtained = qml.Rot(*fused_angles, wires=0).matrix()
 
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)

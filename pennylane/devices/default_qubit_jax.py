@@ -71,7 +71,8 @@ class DefaultQubitJax(DefaultQubit):
     * You must use the ``"jax"`` interface for classical backpropagation, as JAX is
       used as the device backend.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         JAX does randomness in a special way when compared to NumPy, in that all randomness needs to
         be seeded. While we handle this for you automatically in op-by-op mode, when using ``jax.jit``,

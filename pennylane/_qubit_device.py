@@ -428,7 +428,8 @@ class QubitDevice(Device):
         Returns:
             Union[float, List[float]]: the corresponding statistics
 
-        .. UsageDetails::
+        .. details::
+            :title: Usage Details
 
             The ``shot_range`` and ``bin_size`` arguments allow for the statistics
             to be performed on only a subset of device samples. This finer level
@@ -829,7 +830,7 @@ class QubitDevice(Device):
         # exact expectation value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.get_eigvals(), dtype=self.R_DTYPE)
+                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
             except qml.operation.EigvalsUndefinedError as e:
                 raise qml.operation.EigvalsUndefinedError(
                     f"Cannot compute analytic expectations of {observable.name}."
@@ -858,7 +859,7 @@ class QubitDevice(Device):
         # exact variance value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.get_eigvals(), dtype=self.R_DTYPE)
+                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
             except qml.operation.EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
                 raise qml.operation.EigvalsUndefinedError(
@@ -907,7 +908,7 @@ class QubitDevice(Device):
             indices = samples @ powers_of_two
             indices = np.array(indices)  # Add np.array here for Jax support.
             try:
-                samples = observable.get_eigvals()[indices]
+                samples = observable.eigvals()[indices]
             except qml.operation.EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
                 raise qml.operation.EigvalsUndefinedError(

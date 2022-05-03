@@ -45,7 +45,7 @@ class TestSingleOperation:
         when provided as an instantiated operation"""
         op = op_class(wires=0)
         res = qml.matrix(op)
-        expected = op.get_matrix()
+        expected = op.matrix()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
@@ -53,7 +53,7 @@ class TestSingleOperation:
         """Verify that the matrices of non-parametric one qubit gates is correct
         when provided as a qfunc"""
         res = qml.matrix(op_class)(wires=0)
-        expected = op_class(wires=0).get_matrix()
+        expected = op_class(wires=0).matrix()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
@@ -63,14 +63,14 @@ class TestSingleOperation:
         dev = qml.device("default.qubit", wires=1)
         qnode = qml.QNode(lambda: op_class(wires=0) and qml.probs(wires=0), dev)
         res = qml.matrix(qnode)()
-        expected = op_class(wires=0).get_matrix()
+        expected = op_class(wires=0).matrix()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
     def test_matrix_expansion(self, op_class):
         """Verify that matrices are correctly expanded when a wire order is provided"""
         res = qml.matrix(op_class, wire_order=[1, 0, 2])(wires=0)
-        expected = np.kron(np.eye(2), np.kron(op_class(wires=0).get_matrix(), np.eye(2)))
+        expected = np.kron(np.eye(2), np.kron(op_class(wires=0).matrix(), np.eye(2)))
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
@@ -79,7 +79,7 @@ class TestSingleOperation:
         when provided as an instantiated operation"""
         op = op_class(0.54, wires=0)
         res = qml.matrix(op)
-        expected = op.get_matrix()
+        expected = op.matrix()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
@@ -87,7 +87,7 @@ class TestSingleOperation:
         """Verify that the matrices of non-parametric one qubit gates is correct
         when provided as a qfunc"""
         res = qml.matrix(op_class)(0.54, wires=0)
-        expected = op_class(0.54, wires=0).get_matrix()
+        expected = op_class(0.54, wires=0).matrix()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
@@ -97,14 +97,14 @@ class TestSingleOperation:
         dev = qml.device("default.qubit", wires=1)
         qnode = qml.QNode(lambda x: op_class(x, wires=0) and qml.probs(wires=0), dev)
         res = qml.matrix(qnode)(0.54)
-        expected = op_class(0.54, wires=0).get_matrix()
+        expected = op_class(0.54, wires=0).matrix()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_adjoint(self, op_class):
         """Test that the adjoint is correctly taken into account"""
         res = qml.matrix(qml.adjoint(op_class))(0.54, wires=0)
-        expected = op_class(-0.54, wires=0).get_matrix()
+        expected = op_class(-0.54, wires=0).matrix()
         assert np.allclose(res, expected)
 
     def test_ctrl(self):
@@ -401,10 +401,10 @@ class TestInterfaces:
         # expected matrix
         theta_np = theta.numpy()
         matrix1 = np.kron(
-            qml.RZ(beta, wires=0).get_matrix(),
-            np.kron(qml.RZ(theta_np[0], wires=1).get_matrix(), I),
+            qml.RZ(beta, wires=0).matrix(),
+            np.kron(qml.RZ(theta_np[0], wires=1).matrix(), I),
         )
-        matrix2 = np.kron(I, qml.CRY(theta_np[1], wires=[1, 2]).get_matrix())
+        matrix2 = np.kron(I, qml.CRY(theta_np[1], wires=[1, 2]).matrix())
         expected_matrix = matrix2 @ matrix1
 
         assert np.allclose(matrix, expected_matrix)
@@ -430,10 +430,10 @@ class TestInterfaces:
 
         # expected matrix
         matrix1 = np.kron(
-            qml.RZ(theta[0], wires=0).get_matrix(),
-            np.kron(qml.RZ(theta[1], wires=1).get_matrix(), I),
+            qml.RZ(theta[0], wires=0).matrix(),
+            np.kron(qml.RZ(theta[1], wires=1).matrix(), I),
         )
-        matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).get_matrix())
+        matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix())
         expected_matrix = matrix2 @ matrix1
 
         assert np.allclose(matrix, expected_matrix)
@@ -453,10 +453,10 @@ class TestInterfaces:
 
         # expected matrix
         matrix1 = np.kron(
-            qml.RZ(theta[0], wires=0).get_matrix(),
-            np.kron(qml.RZ(theta[1], wires=1).get_matrix(), I),
+            qml.RZ(theta[0], wires=0).matrix(),
+            np.kron(qml.RZ(theta[1], wires=1).matrix(), I),
         )
-        matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).get_matrix())
+        matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix())
         expected_matrix = matrix2 @ matrix1
 
         assert np.allclose(matrix, expected_matrix)
@@ -484,10 +484,10 @@ class TestInterfaces:
 
         # expected matrix
         matrix1 = np.kron(
-            qml.RZ(theta[0], wires=0).get_matrix(),
-            np.kron(qml.RZ(theta[1], wires=1).get_matrix(), I),
+            qml.RZ(theta[0], wires=0).matrix(),
+            np.kron(qml.RZ(theta[1], wires=1).matrix(), I),
         )
-        matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).get_matrix())
+        matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix())
         expected_matrix = matrix2 @ matrix1
 
         assert np.allclose(matrix, expected_matrix)

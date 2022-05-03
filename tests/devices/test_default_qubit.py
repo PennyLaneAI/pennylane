@@ -1728,7 +1728,7 @@ class TestTensorSample:
         dev._samples = dev.generate_samples()
         dev.sample(obs)
 
-        s1 = obs.get_eigvals()
+        s1 = obs.eigvals()
         p = dev.probability(wires=dev.map_wires(obs.wires))
 
         # s1 should only contain 1 and -1
@@ -1768,7 +1768,7 @@ class TestTensorSample:
         dev._samples = dev.generate_samples()
         dev.sample(obs)
 
-        s1 = obs.get_eigvals()
+        s1 = obs.eigvals()
         p = dev.marginal_prob(dev.probability(), wires=obs.wires)
 
         # s1 should only contain 1 and -1
@@ -1816,7 +1816,7 @@ class TestTensorSample:
         dev._samples = dev.generate_samples()
         dev.sample(obs)
 
-        s1 = obs.get_eigvals()
+        s1 = obs.eigvals()
         p = dev.marginal_prob(dev.probability(), wires=obs.wires)
 
         # s1 should only contain the eigenvalues of
@@ -2125,7 +2125,7 @@ class TestApplyOps:
         """Test if the application of single qubit operations is correct."""
         state_out = method(self.state, axes=[1], inverse=inverse)
         op = op(wires=[1])
-        matrix = op.inv().get_matrix() if inverse else op.get_matrix()
+        matrix = op.inv().matrix() if inverse else op.matrix()
         state_out_einsum = np.einsum("ab,ibjk->iajk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
@@ -2134,7 +2134,7 @@ class TestApplyOps:
         """Test if the application of two qubit operations is correct."""
         state_out = method(self.state, axes=[0, 1])
         op = op(wires=[0, 1])
-        matrix = op.inv().get_matrix() if inverse else op.get_matrix()
+        matrix = op.inv().matrix() if inverse else op.matrix()
         matrix = matrix.reshape((2, 2, 2, 2))
         state_out_einsum = np.einsum("abcd,cdjk->abjk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
@@ -2145,7 +2145,7 @@ class TestApplyOps:
         reversed."""
         state_out = method(self.state, axes=[2, 1])
         op = op(wires=[2, 1])
-        matrix = op.inv().get_matrix() if inverse else op.get_matrix()
+        matrix = op.inv().matrix() if inverse else op.matrix()
         matrix = matrix.reshape((2, 2, 2, 2))
         state_out_einsum = np.einsum("abcd,idck->ibak", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
@@ -2156,7 +2156,7 @@ class TestApplyOps:
         smaller than the target wire."""
         state_out = method(self.state, axes=[0, 2, 3])
         op = op(wires=[0, 2, 3])
-        matrix = op.inv().get_matrix() if inverse else op.get_matrix()
+        matrix = op.inv().matrix() if inverse else op.matrix()
         matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,dkef->akbc", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
@@ -2167,7 +2167,7 @@ class TestApplyOps:
         greater than the target wire."""
         state_out = method(self.state, axes=[2, 1, 0])
         op = op(wires=[2, 1, 0])
-        matrix = op.inv().get_matrix() if inverse else op.get_matrix()
+        matrix = op.inv().matrix() if inverse else op.matrix()
         matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,fedk->cbak", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
@@ -2178,7 +2178,7 @@ class TestApplyOps:
         and one control wire is greater than the target wire."""
         state_out = method(self.state, axes=[3, 1, 2])
         op = op(wires=[3, 1, 2])
-        matrix = op.inv().get_matrix() if inverse else op.get_matrix()
+        matrix = op.inv().matrix() if inverse else op.matrix()
         matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,kdfe->kacb", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
@@ -2338,7 +2338,7 @@ class TestApplyOperationUnit:
             res_state, res_mat, res_wires = history[0]
 
             assert np.allclose(res_state, test_state)
-            assert np.allclose(res_mat, np.diag(op.get_matrix()))
+            assert np.allclose(res_mat, np.diag(op.matrix()))
             assert np.allclose(res_wires, wires)
 
     def test_apply_einsum_case(self, mocker, monkeypatch):
@@ -2375,7 +2375,7 @@ class TestApplyOperationUnit:
             res_state, res_mat, res_wires = history[0]
 
             assert np.allclose(res_state, test_state)
-            assert np.allclose(res_mat, op.get_matrix())
+            assert np.allclose(res_mat, op.matrix())
             assert np.allclose(res_wires, wires)
 
     @pytest.mark.parametrize("inverse", [True, False])
@@ -2417,7 +2417,7 @@ class TestApplyOperationUnit:
             res_state, res_mat, res_wires = history[0]
 
             assert np.allclose(res_state, test_state)
-            assert np.allclose(res_mat, op.get_matrix())
+            assert np.allclose(res_mat, op.matrix())
             assert np.allclose(res_wires, wires)
 
     def test_identity_skipped(self, mocker):
