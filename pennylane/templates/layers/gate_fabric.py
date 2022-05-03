@@ -72,7 +72,8 @@ class GateFabric(Operation):
         include_pi (boolean): If True, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
             Default value is :math:`\hat{I}`.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         #. The number of wires :math:`N` has to be equal to the number of
            spin-orbitals included in the active space, and should be even.
