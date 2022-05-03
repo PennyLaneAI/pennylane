@@ -586,7 +586,7 @@ class TestMatrix:
             qml.Rot(a, b, c, wires=0).get_matrix(), arbitrary_rotation(a, b, c), atol=tol, rtol=0
         )
 
-    def test_CRx(self, tol):
+    def test_CRX(self, tol):
         """Test controlled x rotation is correct"""
 
         # test identity for theta=0

@@ -190,19 +190,22 @@ def expand_matrix(base_matrix, wires, wire_order):
     # TODO[Maria]: In future we should consider making ``utils.expand`` differentiable and calling it here.
     wire_order = Wires(wire_order)
     n = len(wires)
+    shape = qml.math.shape(base_matrix)
+    batch_dim = shape[-1] if len(shape) == 3 else None
     interface = qml.math._multi_dispatch(base_matrix)  # pylint: disable=protected-access
 
     # operator's wire positions relative to wire ordering
     op_wire_pos = wire_order.indices(wires)
 
     I = qml.math.reshape(
-        qml.math.eye(2 ** len(wire_order), like=interface), [2] * len(wire_order) * 2
+        qml.math.eye(2 ** len(wire_order), like=interface), [2] * (len(wire_order) * 2)
     )
     axes = (list(range(n, 2 * n)), op_wire_pos)
 
     # reshape op.get_matrix()
     op_matrix_interface = qml.math.convert_like(base_matrix, I)
-    mat_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * n * 2)
+    shape = [2] * (n * 2) + [batch_dim] if batch_dim else [2] * (n * 2)
+    mat_op_reshaped = qml.math.reshape(op_matrix_interface, shape)
     mat_tensordot = qml.math.tensordot(
         mat_op_reshaped, qml.math.cast_like(I, mat_op_reshaped), axes
     )
@@ -210,9 +213,14 @@ def expand_matrix(base_matrix, wires, wire_order):
     unused_idxs = [idx for idx in range(len(wire_order)) if idx not in op_wire_pos]
     # permute matrix axes to match wire ordering
     perm = op_wire_pos + unused_idxs
-    mat = qml.math.moveaxis(mat_tensordot, wire_order.indices(wire_order), perm)
+    sources = wire_order.indices(wire_order)
+    if batch_dim:
+        perm = perm + [-1]
+        sources = sources + [-1]
 
-    mat = qml.math.reshape(mat, (2 ** len(wire_order), 2 ** len(wire_order)))
+    mat = qml.math.moveaxis(mat_tensordot, sources, perm)
+    shape = [2 ** len(wire_order)] * 2 + [batch_dim] if batch_dim else [2 ** len(wire_order)] * 2
+    mat = qml.math.reshape(mat, shape)
 
     return mat
 
@@ -736,7 +744,14 @@ class Operator(abc.ABC):
             # By default, compute the eigenvalues from the matrix representation.
             # This will raise a NotImplementedError if the matrix is undefined.
             try:
-                return qml.math.linalg.eigvals(self.get_matrix())
+                mat = self.get_matrix()
+                if len(qml.math.shape(mat)) == 3:
+                    # linalg.eigvals expects the last two dimensions to be the square dimension
+                    # so that we have to transpose before and after the calculation.
+                    return qml.math.transpose(
+                        qml.math.linalg.eigvals(qml.math.transpose(mat, (2, 0, 1))), (1, 0)
+                    )
+                return qml.math.linalg.eigvals(mat)
             except MatrixUndefinedError as e:
                 raise EigvalsUndefinedError from e
 
@@ -852,7 +867,9 @@ class Operator(abc.ABC):
 
         if len(qml.math.shape(params[0])) != 0:
             # assume that if the first parameter is matrix-valued, there is only a single parameter
-            # this holds true for all current operations and templates
+            # this holds true for all current operations and templates unless tensor-batching
+            # is used
+            # TODO [dwierichs]: Implement a proper label for tensor-batched operators
             if (
                 cache is None
                 or not isinstance(cache.get("matrices", None), list)
@@ -1374,7 +1391,7 @@ class Operation(Operator):
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
         if self.inverse:
-            canonical_matrix = qml.math.conj(qml.math.T(canonical_matrix))
+            canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, 0, 1))
 
         if wire_order is None or self.wires == Wires(wire_order):
             return canonical_matrix

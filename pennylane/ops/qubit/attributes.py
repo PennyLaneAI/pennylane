@@ -211,6 +211,16 @@ supports_tensorbatching = Attribute(
         "ControlledPhaseShift",
         "Rot",
         "MultiRZ",
+        "PauliRot",
+        "CRX",
+        "CRY",
+        "CRZ",
+        "CRot",
+        "U1",
+        "U2",
+        "U3",
+        "IsingXX",
+        "IsingYY",
+        "IsingZZ",
     ]
 )
-
