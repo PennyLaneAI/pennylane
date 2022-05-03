@@ -176,6 +176,18 @@ class TestBackwardsCompatibility:
         assert gen.name == "Hermitian"
         assert gen.wires.tolist() == ["a"]
 
+    def test_generator_property_old_default(self):
+        """Test that if the old-style generator property is the default,
+        a GeneratorUndefinedError is raised and a warning is raised about the old syntax."""
+
+        class DeprecatedClassOp(CustomOp):
+            generator = [None, 1]
+
+        op = DeprecatedClassOp(0.5, wires="a")
+        with pytest.warns(UserWarning, match=r"The Operator\.generator property is deprecated"):
+            with pytest.raises(qml.operation.GeneratorUndefinedError):
+                qml.generator(op)
+
 
 class TestPrefactorReturn:
     """Tests for format="prefactor". This format attempts to isolate a prefactor
