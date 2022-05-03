@@ -77,7 +77,8 @@ class FermionicSingleExcitation(Operation):
             Wires in between are acted on with CNOT gates to compute the parity of the set
             of qubits.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Notice that:
 
