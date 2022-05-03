@@ -102,6 +102,15 @@ def test_analytic_deprecation():
         qml.device("default.qubit", wires=1, shots=1, analytic=True)
 
 
+def test_dtype_errors():
+    with pytest.raises(DeviceError, match="Real datatype must be a floating point type."):
+        qml.device("default.qubit", wires=1, r_dtype=np.complex128)
+    with pytest.raises(
+        DeviceError, match="Complex datatype must be a complex floating point type."
+    ):
+        qml.device("default.qubit", wires=1, c_dtype=np.float64)
+
+
 class TestApply:
     """Tests that operations and inverses of certain operations are applied correctly or that the proper
     errors are raised.
@@ -1875,11 +1884,50 @@ class TestTensorSample:
         assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
 
+@pytest.mark.parametrize(
+    "r_dtype,c_dtype", [(np.float32, np.complex64), (np.float64, np.complex128)]
+)
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
 
-    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    @pytest.mark.parametrize(
+        "op",
+        [
+            qml.SingleExcitation,
+            qml.SingleExcitationPlus,
+            qml.SingleExcitationMinus,
+            qml.DoubleExcitation,
+            qml.DoubleExcitationPlus,
+            qml.DoubleExcitationMinus,
+            qml.OrbitalRotation,
+            qml.QubitSum,
+            qml.QubitCarry,
+        ],
+    )
+    def test_state_dtype_after_op(self, r_dtype, c_dtype, op, tol):
+        """Test that the default qubit plugin preserve data type after an operation.
+        As TestApply class check most of operators, we here only check some subtle examples.
+        """
+
+        dev = qml.device("default.qubit", wires=4, r_dtype=r_dtype, c_dtype=c_dtype)
+
+        n_wires = op.num_wires
+        n_params = op.num_params
+
+        @qml.qnode(dev, diff_method="parameter-shift")
+        def circuit():
+            if n_params == 0:
+                op(wires=range(n_wires))
+            elif n_params == 1:
+                op(0.543, wires=range(n_wires))
+            else:
+                op([0.543] * n_params, wires=range(n_wires))
+            return qml.state()
+
+        res = circuit()
+        assert res.dtype == c_dtype
+
     @pytest.mark.parametrize(
         "measurement",
         [
@@ -1889,12 +1937,11 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype(self, qubit_device_3_wires, r_dtype, measurement, tol):
+    def test_measurement_real_dtype(self, r_dtype, c_dtype, measurement, tol):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = 0.543
 
-        dev = qubit_device_3_wires
-        dev.R_DTYPE = r_dtype
+        dev = qml.device("default.qubit", wires=3, r_dtype=r_dtype, c_dtype=c_dtype)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
@@ -1904,17 +1951,15 @@ class TestDtypePreserved:
         res = circuit(p)
         assert res.dtype == r_dtype
 
-    @pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
     @pytest.mark.parametrize(
         "measurement",
         [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
     )
-    def test_complex_dtype(self, qubit_device_3_wires, c_dtype, measurement, tol):
+    def test_measurement_complex_dtype(self, r_dtype, c_dtype, measurement, tol):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = 0.543
 
-        dev = qubit_device_3_wires
-        dev.C_DTYPE = c_dtype
+        dev = qml.device("default.qubit", wires=3, r_dtype=r_dtype, c_dtype=c_dtype)
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):

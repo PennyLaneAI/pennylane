@@ -25,6 +25,7 @@ import warnings
 import numpy as np
 
 import pennylane as qml
+from pennylane import DeviceError
 from pennylane.operation import operation_derivative
 from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane import Device
@@ -185,9 +186,9 @@ class QubitDevice(Device):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
         if not "float" in str(r_dtype):
-            raise ValueError("Real datatype must be a floating point type.")
+            raise DeviceError("Real datatype must be a floating point type.")
         if not "complex" in str(c_dtype):
-            raise ValueError("Complex datatype must be a complex floating point type.")
+            raise DeviceError("Complex datatype must be a complex floating point type.")
 
         self.C_DTYPE = c_dtype
         self.R_DTYPE = r_dtype
