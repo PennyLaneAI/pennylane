@@ -101,9 +101,9 @@ Device options
 
 When loading a device, the name of the device must always be specified.
 Further options can then be passed as keyword arguments. These options can differ based
-on the device (for a plugin device, refer to the plugin documentation for available device options).
+on the device. For a plugin device, refer to the plugin documentation for available device options.
 
-The two most important important options are the ``wires`` and ``shots`` argument.
+The two most important device options are the ``wires`` and ``shots`` arguments.
 
 Wires
 *****
@@ -213,9 +213,9 @@ or the :func:`~.pennylane.draw_mpl` transform:
 >>> fig, ax = qml.draw_mpl(circuit)(np.pi/4, 0.7)
 >>> plt.show()
 
-.. image:: ../_static/draw_mlp.png
+.. image:: ../_static/draw_mpl.png
     :align: center
-    :width: 200px
+    :width: 300px
     :target: javascript:void(0);
 
 .. _intro_vcirc_decorator:
