@@ -1229,8 +1229,23 @@ def test_error_missing_aux_wire():
 
     with pytest.warns(UserWarning, match="The device does not have a wire that is not used"):
         qml.metric_tensor(circuit, approx=None)(x, z)
-    with pytest.warns(UserWarning, match="The device does not have a wire that is not used"):
-        qml.metric_tensor(circuit, approx=None, aux_wire="wire3")(x, z)
+
+
+def test_error_not_available_aux_wire():
+    """Tests that a special error is raised if aux wires is not available."""
+
+    dev = qml.device("default.qubit", wires=1)
+    x = np.array(0.5, requires_grad=True)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        qml.RY(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    with pytest.warns(UserWarning, match="An auxiliary wire is not available."):
+        qml.metric_tensor(circuit, aux_wire=404)(x)
+
 
 
 def test_error_aux_wire_replaced():

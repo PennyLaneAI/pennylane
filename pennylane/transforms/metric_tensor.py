@@ -659,6 +659,7 @@ def _get_aux_wire(aux_wire, tape, device_wires):
     if aux_wire is not None:
         if device_wires is None or aux_wire in device_wires:
             return aux_wire
+        raise qml.wires.WireError("The requested aux_wire does not exist on the used device.")
 
     if device_wires is not None:
         unused_wires = qml.wires.Wires(device_wires.toset().difference(tape.wires.toset()))
