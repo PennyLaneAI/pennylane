@@ -320,11 +320,10 @@ def test_docstring_example():
 
     opt = LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1)
 
-    for _ in range(6):
+    for _ in range(12):
         circuit, cost = opt.step_and_cost()
     circuit()
-
-    assert np.isclose(cost, -2.23, atol=1e-3)
+    assert np.isclose(cost, -2.236068, atol=1e-3)
 
 
 def test_docstring_example_exact():
@@ -345,9 +344,10 @@ def test_docstring_example_exact():
 
     opt = LieAlgebraOptimizer(circuit=quant_fun, stepsize=0.1, exact=True)
 
-    for _ in range(6):
-        _, cost = opt.step_and_cost()
-    assert np.isclose(cost, -2.23, atol=1e-2)
+    for _ in range(12):
+        circuit, cost = opt.step_and_cost()
+    circuit()
+    assert np.isclose(cost, -2.236068, atol=1e-3)
 
 
 def test_example_shots():
