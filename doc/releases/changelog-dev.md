@@ -35,7 +35,7 @@
 * The `qml.taper` function can now be used to consistently taper any additional observables such as dipole moment,
   particle number, and spin operators using the symmetries obtained from the Hamiltonian.
   [(#2510)](https://github.com/PennyLaneAI/pennylane/pull/2510)
-  
+
 <h3>Breaking changes</h3>
 
 * The properties `eigval` and `matrix` from the `Operator` class were replaced with the 
@@ -47,6 +47,9 @@
 
 * Adds tests, adds no-coverage directives, and removes inaccessible logic to improve code coverage.
   [(#2537)](https://github.com/PennyLaneAI/pennylane/pull/2537)
+  
+* The base class `QubitDevice` now accepts data-types for a statevector.
+  [(#2448)](https://github.com/PennyLaneAI/pennylane/pull/2448)
 
 <h3>Bug fixes</h3>
 
@@ -73,4 +76,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Christina Lee, Maria Schuld
+Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Christina Lee, Chae-Yeun Park, Maria Schuld
