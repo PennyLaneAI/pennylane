@@ -177,7 +177,7 @@ class TestBackwardsCompatibility:
         assert gen.wires.tolist() == ["a"]
 
     def test_generator_property_old_default(self):
-        """Test that if the old-style generator property is the old default,
+        """Test that if the old-style generator property is the default,
         a GeneratorUndefinedError is raised and a warning is raised about the old syntax."""
 
         class DeprecatedClassOp(CustomOp):
