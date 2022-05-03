@@ -181,7 +181,8 @@ class QubitDensityMatrix(Operation):
         state (array[complex]): a density matrix of size ``(2**len(wires), 2**len(wires))``
         wires (Sequence[int] or int): the wire(s) the operation acts on
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Example:
 
