@@ -29,6 +29,7 @@ from pennylane.operation import operation_derivative
 from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane import Device
 from pennylane.math import sum as qmlsum
+from pennylane.math import multiply as qmlmul
 from pennylane.wires import Wires
 
 from pennylane.measurements import MeasurementProcess
@@ -104,7 +105,7 @@ class QubitDevice(Device):
     @staticmethod
     def _const_mul(constant, array):
         """Data type preserving multiply operation"""
-        return np.multiply(constant, array, dtype=array.dtype)
+        return qmlmul(constant, array, dtype=array.dtype)
 
     def _permute_wires(self, observable):
         r"""Given an observable which acts on multiple wires, permute the wires to
@@ -183,8 +184,10 @@ class QubitDevice(Device):
     ):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
-        assert "float" in str(r_dtype)
-        assert "complex" in str(c_dtype)
+        if not "float" in str(r_dtype):
+            raise ValueError("Real datatype must be a floating point type.")
+        if not "complex" in str(c_dtype):
+            raise ValueError("Complex datatype must be a complex floating point type.")
 
         self.C_DTYPE = c_dtype
         self.R_DTYPE = r_dtype

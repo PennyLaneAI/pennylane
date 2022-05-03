@@ -299,7 +299,7 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        return self._apply_phase(state, axes, -1.0)
+        return self._apply_phase(state, axes, -1)
 
     def _apply_hadamard(self, state, axes, **kwargs):
         """Apply the Hadamard gate by combining the results of applying the PauliX and PauliZ gates.

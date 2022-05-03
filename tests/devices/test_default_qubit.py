@@ -561,7 +561,6 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for single wire
         operations that have parameters."""
 
-        # parameter = par[0]
         qubit_device_1_wire._state = np.array(input, dtype=qubit_device_1_wire.C_DTYPE)
 
         qubit_device_1_wire.apply([operation(*par, wires=[0])])
@@ -2100,8 +2099,9 @@ class TestApplyOps:
     """Tests for special methods listed in _apply_ops that use array manipulation tricks to apply
     gates in DefaultQubit."""
 
-    state = np.arange(2**4, dtype=np.complex256).reshape((2, 2, 2, 2))
+    state = np.arange(2**4, dtype=np.complex128).reshape((2, 2, 2, 2))
     dev = qml.device("default.qubit", wires=4)
+
     single_qubit_ops = [
         (qml.PauliX, dev._apply_x),
         (qml.PauliY, dev._apply_y),
