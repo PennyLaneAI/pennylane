@@ -1906,8 +1906,9 @@ class TestDtypePreserved:
         ],
     )
     def test_state_dtype_after_op(self, r_dtype, c_dtype, op, tol):
-        """Test that the default qubit plugin preserve data type after an operation.
-        As TestApply class check most of operators, we here only check some subtle examples.
+        """Test that the default qubit plugin preserves data types of states when an operation is
+        applied. As TestApply class check most of operators, we here only check some subtle
+        examples.
         """
 
         dev = qml.device("default.qubit", wires=4, r_dtype=r_dtype, c_dtype=c_dtype)
