@@ -185,7 +185,7 @@ class QubitDevice(Device):
     ):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
-        if "float" not  in str(r_dtype):
+        if "float" not in str(r_dtype):
             raise DeviceError("Real datatype must be a floating point type.")
         if "complex" not in str(c_dtype):
             raise DeviceError("Complex datatype must be a complex floating point type.")
