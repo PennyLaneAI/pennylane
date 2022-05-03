@@ -36,7 +36,7 @@
   particle number, and spin operators using the symmetries obtained from the Hamiltonian.
   [(#2510)](https://github.com/PennyLaneAI/pennylane/pull/2510)
 
-* The `QNode` class now contains a new method `get_best_method_str` that returns the best differentiation
+* The `QNode` class now contains a new method `best_method_str` that returns the best differentiation
   method for a provided device and interface, in human-readable format.
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
 
@@ -67,4 +67,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Christina Lee
+Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Edward Jiang, Christina Lee

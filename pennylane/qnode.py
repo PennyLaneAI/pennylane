@@ -364,7 +364,7 @@ class QNode:
                     return qml.gradients.finite_diff, {}, device
 
     @staticmethod
-    def get_best_method_str(device, interface):
+    def best_method_str(device, interface):
         """Similar to :meth:`~.get_best_method`, except return the
         'best' differentiation method in human-readable format.
 
