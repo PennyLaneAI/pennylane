@@ -65,7 +65,8 @@ def adjoint(fn):
     >>> qml.adjoint(qml.RX)(0.123, wires=0)
     >>> qml.adjoint(qml.templates.StronglyEntanglingLayers)(weights, wires=[0, 1])
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Adjoint of a function**
 

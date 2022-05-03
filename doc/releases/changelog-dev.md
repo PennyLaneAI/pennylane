@@ -32,15 +32,42 @@
   This is a temporary fix that will disappear in the future. 
   [(#2408)](https://github.com/PennyLaneAI/pennylane/pull/2408)
 
+* The `qml.taper` function can now be used to consistently taper any additional observables such as dipole moment,
+  particle number, and spin operators using the symmetries obtained from the Hamiltonian.
+  [(#2510)](https://github.com/PennyLaneAI/pennylane/pull/2510)
   
 <h3>Breaking changes</h3>
 
+* The properties `eigval` and `matrix` from the `Operator` class were replaced with the 
+  methods `eigval()` and `matrix(wire_order=None)`.
+  [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
+  
+* `Operator.decomposition()` is now an instance method, and no longer accepts parameters.
+  [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
+
+<h3>Bug fixes</h3>
+
+* Fixed a bug where `QNGOptimizer` did not work with operators
+  whose generator was a Hamiltonian.
+  [(#2524)](https://github.com/PennyLaneAI/pennylane/pull/2524)
+
+
 <h3>Deprecations</h3>
 
+<h3>Bug fixes</h3>
+
+* Fixes a bug in `DiagonalQubitUnitary._controlled` where an invalid operation was queued
+  instead of the controlled version of the diagonal unitary.
+  [(#2525)](https://github.com/PennyLaneAI/pennylane/pull/2525)
+
 <h3>Documentation</h3>
+
+* The centralized [Xanadu Sphinx Theme](https://github.com/XanaduAI/xanadu-sphinx-theme)
+  is now used to style the Sphinx documentation.
+  [(#2450)](https://github.com/PennyLaneAI/pennylane/pull/2450)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Christian Gogolin, Christina Lee
+Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Christina Lee, Maria Schuld

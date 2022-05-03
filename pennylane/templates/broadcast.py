@@ -16,7 +16,7 @@ Contains the ``broadcast`` template constructor.
 To add a new pattern:
 * extend the variables ``OPTIONS``, ``n_parameters`` and ``wire_sequence``,
 * update the list in the docstring and add a usage example at the end of the docstring's
-  ``UsageDetails`` section,
+  ``details`` section,
 * add tests to parametrizations in :func:`test_templates_broadcast`.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
@@ -224,7 +224,8 @@ def broadcast(unitary, wires, pattern, parameters=None, kwargs=None):
     Raises:
         ValueError: if inputs do not have the correct format
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Broadcasting single gates**
 

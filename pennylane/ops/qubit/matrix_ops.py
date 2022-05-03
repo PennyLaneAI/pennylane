@@ -158,7 +158,7 @@ class QubitUnitary(Operation):
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
 
     def adjoint(self):
-        U = self.get_matrix()
+        U = self.matrix()
         axis = (1, 0) if len(qml.math.shape(U)) == 2 else (1, 0, 2)
         return QubitUnitary(qml.math.transpose(qml.math.conj(U), axis), wires=self.wires)
 
