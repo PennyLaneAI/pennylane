@@ -617,7 +617,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
         idx = 0
         for prob, obs in zip(diag_res, obs_list):
             for o in obs:
-                l = qml.math.cast(o.get_eigvals(), dtype=np.float64)
+                l = qml.math.cast(o.eigvals(), dtype=np.float64)
                 w = tape.wires.indices(o.wires)
                 p = qml.math.marginal_prob(prob, w)
                 expvals = qml.math.scatter_element_add(expvals, (idx,), qml.math.dot(l, p))
