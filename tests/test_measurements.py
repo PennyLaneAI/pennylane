@@ -724,11 +724,11 @@ class TestProperties:
         obs = qml.Hermitian(np.diag([1, 2, 3]), wires=[0, 1, 2])
         m = MeasurementProcess(Expectation, obs=obs)
 
-        assert np.all(m.get_eigvals() == np.array([1, 2, 3]))
+        assert np.all(m.eigvals() == np.array([1, 2, 3]))
 
         # changing the observable data should be reflected
         obs.data = [np.diag([5, 6, 7])]
-        assert np.all(m.get_eigvals() == np.array([5, 6, 7]))
+        assert np.all(m.eigvals() == np.array([5, 6, 7]))
 
     def test_error_obs_and_eigvals(self):
         """Test that providing both eigenvalues and an observable
@@ -751,7 +751,7 @@ class TestProperties:
         the eigvals method to return a NotImplementedError"""
         obs = qml.NumberOperator(wires=0)
         m = MeasurementProcess(Expectation, obs=obs)
-        assert m.get_eigvals() is None
+        assert m.eigvals() is None
 
     def test_repr(self):
         """Test the string representation of a MeasurementProcess."""
@@ -788,7 +788,7 @@ class TestExpansion:
         assert len(tape.measurements) == 1
         assert tape.measurements[0].return_type is Expectation
         assert tape.measurements[0].wires.tolist() == [0, 1]
-        assert np.all(tape.measurements[0].get_eigvals() == np.array([1, -1, -1, 1]))
+        assert np.all(tape.measurements[0].eigvals() == np.array([1, -1, -1, 1]))
 
     def test_expand_hermitian(self, tol):
         """Test the expansion of an hermitian observable"""
@@ -812,7 +812,7 @@ class TestExpansion:
         assert len(tape.measurements) == 1
         assert tape.measurements[0].return_type is Expectation
         assert tape.measurements[0].wires.tolist() == ["a"]
-        assert np.all(tape.measurements[0].get_eigvals() == np.array([0, 5]))
+        assert np.all(tape.measurements[0].eigvals() == np.array([0, 5]))
 
     def test_expand_no_observable(self):
         """Check that an exception is raised if the measurement to

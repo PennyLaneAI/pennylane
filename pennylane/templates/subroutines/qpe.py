@@ -75,7 +75,7 @@ class QuantumPhaseEstimation(Operation):
 
             phase = 5
             target_wires = [0]
-            unitary = qml.RX(phase, wires=0).get_matrix()
+            unitary = qml.RX(phase, wires=0).matrix()
 
         The ``phase`` parameter can be estimated using ``QuantumPhaseEstimation``. An example is
         shown below using a register of five phase-estimation qubits:

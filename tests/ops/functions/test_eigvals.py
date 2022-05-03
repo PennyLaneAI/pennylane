@@ -46,7 +46,7 @@ class TestSingleOperation:
         when provided as an instantiated operation"""
         op = op_class(wires=0)
         res = qml.eigvals(op)
-        expected = op.get_eigvals()
+        expected = op.eigvals()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
@@ -54,7 +54,7 @@ class TestSingleOperation:
         """Verify that the eigenvalues of non-parametric one qubit gates is correct
         when provided as a qfunc"""
         res = qml.eigvals(op_class)(wires=0)
-        expected = op_class(wires=0).get_eigvals()
+        expected = op_class(wires=0).eigvals()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
@@ -64,7 +64,7 @@ class TestSingleOperation:
         dev = qml.device("default.qubit", wires=1)
         qnode = qml.QNode(lambda: op_class(wires=0) and qml.probs(wires=0), dev)
         res = qml.eigvals(qnode)()
-        expected = op_class(wires=0).get_eigvals()
+        expected = op_class(wires=0).eigvals()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
@@ -73,7 +73,7 @@ class TestSingleOperation:
         when provided as an instantiated operation"""
         op = op_class(0.54, wires=0)
         res = qml.eigvals(op)
-        expected = op.get_eigvals()
+        expected = op.eigvals()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
@@ -81,7 +81,7 @@ class TestSingleOperation:
         """Verify that the eigenvalues of non-parametric one qubit gates is correct
         when provided as a qfunc"""
         res = qml.eigvals(op_class)(0.54, wires=0)
-        expected = op_class(0.54, wires=0).get_eigvals()
+        expected = op_class(0.54, wires=0).eigvals()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
@@ -91,14 +91,14 @@ class TestSingleOperation:
         dev = qml.device("default.qubit", wires=1)
         qnode = qml.QNode(lambda x: op_class(x, wires=0) and qml.probs(wires=0), dev)
         res = qml.eigvals(qnode)(0.54)
-        expected = op_class(0.54, wires=0).get_eigvals()
+        expected = op_class(0.54, wires=0).eigvals()
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_adjoint(self, op_class):
         """Test that the adjoint is correctly taken into account"""
         res = qml.eigvals(qml.adjoint(op_class))(0.54, wires=0)
-        expected = op_class(-0.54, wires=0).get_eigvals()
+        expected = op_class(-0.54, wires=0).eigvals()
         assert np.allclose(res, expected)
 
     def test_ctrl(self):
