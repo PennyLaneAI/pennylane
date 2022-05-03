@@ -784,6 +784,38 @@ class TestDefaultGaussianIntegration:
 
         assert circuit(p) == pytest.approx(1, abs=tol)
 
+    def test_vacuum_x_squared_variance(self, tol):
+        """Test that variance of X^2 is correct for the vacuum
+
+        The expected analytic expression of hbar^2/ 2 follows as:
+
+        Var[X^2] = E[X^4] - E[X^2]
+
+        We assume that we've prepared the vaccuum state.
+
+        X = sqrt(hbar/2) * (a + a_{dagger}), where a and a_{dagger} are the
+        ladder operators.
+
+        Var[X^2] = <0|(sqrt(hbar/2) * (a + a_{dagger}))^ 4|0> -
+        (<0|(sqrt(hbar/2) * (a + a_{dagger})) ^ 2|0>) ^ 2
+
+        Let's label the two terms with (1) and (2).
+
+        In (1), only (a*a*a_{dagger}*a_{dagger} + a*a_{dagger}*a*a_{dagger}),
+        in (2), only (a*a_{dagger}) contributes (normalization excluded). The
+        rest of the terms are zero.
+
+        The a*a_{dagger}=Id+a_{dagger}*a equation is also used to yield
+        Var[X^2] = hbar^2/2.
+        """
+        dev = qml.device("default.gaussian", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.var(qml.PolyXP(np.diag([0, 1, 0]), wires=0))
+
+        assert circuit() == pytest.approx(dev.hbar**2 / 2)
+
     def test_nonzero_shots(self, tol_stochastic):
         """Test that the default gaussian plugin provides correct result for high shot number"""
 
