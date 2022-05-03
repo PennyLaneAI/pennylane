@@ -189,7 +189,8 @@ Most functions or methods should have the following structure:
 
         Minimal example with 1 or 2 code blocks (required).
 
-        .. UsageDetails::
+        .. details::
+            :title: Usage Details
 
             More complicated use cases, options, and larger code blocks (optional).
 
@@ -273,7 +274,8 @@ The class docstring is placed directly below the class definition:
 
         Minimal example with 1 or 2 code blocks (required).
 
-        .. UsageDetails::
+        .. details::
+            :title: Usage Details
 
             More complicated use cases, options, and larger code blocks (optional).
 

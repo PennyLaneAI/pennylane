@@ -100,7 +100,8 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
     **Matplotlib Integration**
 
@@ -372,7 +373,8 @@ class MPLDrawer:
             :width: 60%
             :target: javascript:void(0);
 
-        .. UsageDetails::
+        .. details::
+            :title: Usage Details
 
         This method can accept two different sets of design keywords. ``box_options`` takes
         `Rectangle keywords <https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.Rectangle.html>`_
