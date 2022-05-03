@@ -551,9 +551,9 @@ class DefaultQubit(QubitDevice):
             a 1D array representing the matrix diagonal.
         """
         if unitary in diagonal_in_z_basis:
-            return unitary.get_eigvals()
+            return unitary.eigvals()
 
-        return unitary.get_matrix()
+        return unitary.matrix()
 
     @classmethod
     def capabilities(cls):
