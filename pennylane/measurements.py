@@ -20,7 +20,6 @@ and measurement samples using AnnotatedQueues.
 # pylint: disable=too-many-instance-attributes
 import copy
 import uuid
-import warnings
 import functools
 from enum import Enum
 from typing import Generic, TypeVar
@@ -326,14 +325,9 @@ class MeasurementProcess:
             return self.obs.wires
         return self._wires
 
-    @property
     def eigvals(self):
         r"""Eigenvalues associated with the measurement process.
 
-        .. warning::
-            The ``eigvals`` property is deprecated and will be removed in
-            an upcoming release. Please use :class:`qml.eigvals <.pennylane.eigvals>` instead.
-
         If the measurement process has an associated observable,
         the eigenvalues will correspond to this observable. Otherwise,
         they will be the eigenvalues provided when the measurement
@@ -345,34 +339,7 @@ class MeasurementProcess:
         **Example:**
 
         >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
-        >>> m.get_eigvals()
-        array([1, -1])
-
-        Returns:
-            array: eigvals representation
-        """
-        warnings.warn(
-            "The 'eigvals' property is deprecated and will be removed in an upcoming release. "
-            "Please use 'qml.eigvals' instead.",
-            UserWarning,
-        )
-        return self.get_eigvals()
-
-    def get_eigvals(self):
-        r"""Eigenvalues associated with the measurement process.
-
-        If the measurement process has an associated observable,
-        the eigenvalues will correspond to this observable. Otherwise,
-        they will be the eigenvalues provided when the measurement
-        process was instantiated.
-
-        Note that the eigenvalues are not guaranteed to be in any
-        particular order.
-
-        **Example:**
-
-        >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
-        >>> m.get_eigvals()
+        >>> m.eigvals()
         array([1, -1])
 
         Returns:
@@ -380,7 +347,7 @@ class MeasurementProcess:
         """
         if self.obs is not None:
             try:
-                return self.obs.get_eigvals()
+                return self.obs.eigvals()
             except qml.operation.EigvalsUndefinedError:
                 pass
 
@@ -414,7 +381,7 @@ class MeasurementProcess:
         >>> print(tape.operations)
         [QubitUnitary(array([[-0.89442719,  0.4472136 ],
               [ 0.4472136 ,  0.89442719]]), wires=['a'])]
-        >>> print(tape.measurements[0].get_eigvals())
+        >>> print(tape.measurements[0].eigvals())
         [0. 5.]
         >>> print(tape.measurements[0].obs)
         None
@@ -424,9 +391,7 @@ class MeasurementProcess:
 
         with qml.tape.QuantumTape() as tape:
             self.obs.diagonalizing_gates()
-            MeasurementProcess(
-                self.return_type, wires=self.obs.wires, eigvals=self.obs.get_eigvals()
-            )
+            MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals())
 
         return tape
 

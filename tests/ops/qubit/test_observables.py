@@ -73,13 +73,13 @@ class TestSimpleObservables:
     def test_diagonalization(self, obs, mat, eigs, tol):
         """Test the method transforms standard observables into the Z-gate."""
         ob = obs(wires=0)
-        A = ob.get_matrix()
+        A = ob.matrix()
 
         diag_gates = ob.diagonalizing_gates()
         U = np.eye(2)
 
         if diag_gates:
-            mats = [i.get_matrix() for i in diag_gates]
+            mats = [i.matrix() for i in diag_gates]
             # Need to revert the order in which the matrices are applied such that they adhere to the order
             # of matrix multiplication
             # E.g. for PauliY: [PauliZ(wires=self.wires), S(wires=self.wires), Hadamard(wires=self.wires)]
@@ -130,14 +130,14 @@ class TestSimpleObservables:
     def test_eigvals(self, obs, mat, eigs, tol):
         """Test eigenvalues of standard observables are correct"""
         obs = obs(wires=0)
-        res = obs.get_eigvals()
+        res = obs.eigvals()
         assert np.allclose(res, eigs, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("obs, mat, eigs", OBSERVABLES)
     def test_matrices(self, obs, mat, eigs, tol):
         """Test matrices of standard observables are correct"""
         obs = obs(wires=0)
-        res = obs.get_matrix()
+        res = obs.matrix()
         assert np.allclose(res, mat, atol=tol, rtol=0)
 
 
@@ -190,7 +190,7 @@ class TestHermitian:
 
         key = tuple(observable_1.flatten().tolist())
 
-        qml.Hermitian(observable_1, 0).get_eigvals()
+        qml.Hermitian(observable_1, 0).eigvals()
         assert np.allclose(
             qml.Hermitian._eigs[key]["eigval"], observable_1_eigvals, atol=tol, rtol=0
         )
@@ -205,7 +205,7 @@ class TestHermitian:
 
         key_2 = tuple(observable_2.flatten().tolist())
 
-        qml.Hermitian(observable_2, 0).get_eigvals()
+        qml.Hermitian(observable_2, 0).eigvals()
         assert np.allclose(
             qml.Hermitian._eigs[key_2]["eigval"], observable_2_eigvals, atol=tol, rtol=0
         )
@@ -221,12 +221,12 @@ class TestHermitian:
         """Tests that the eigvals method of the Hermitian class keeps the same dictionary entries upon multiple calls."""
         key = tuple(observable.flatten().tolist())
 
-        qml.Hermitian(observable, 0).get_eigvals()
+        qml.Hermitian(observable, 0).eigvals()
         assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
 
-        qml.Hermitian(observable, 0).get_eigvals()
+        qml.Hermitian(observable, 0).eigvals()
         assert np.allclose(qml.Hermitian._eigs[key]["eigval"], eigvals, atol=tol, rtol=0)
         assert np.allclose(qml.Hermitian._eigs[key]["eigvec"], eigvecs, atol=tol, rtol=0)
         assert len(qml.Hermitian._eigs) == 1
@@ -334,7 +334,7 @@ class TestHermitian:
     def test_hermitian_matrix(self, tol):
         """Test that the hermitian matrix method produces the correct output."""
         H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
-        out = qml.Hermitian(H, wires=0).get_matrix()
+        out = qml.Hermitian(H, wires=0).matrix()
 
         # verify output type
         assert isinstance(out, np.ndarray)
@@ -348,19 +348,19 @@ class TestHermitian:
 
         # test non-square matrix
         with pytest.raises(ValueError, match="must be a square matrix"):
-            qml.Hermitian(H[1:], wires=0).get_matrix()
+            qml.Hermitian(H[1:], wires=0).matrix()
 
         # test non-Hermitian matrix
         H2 = H.copy()
         H2[0, 1] = 2
         with pytest.raises(ValueError, match="must be Hermitian"):
-            qml.Hermitian(H2, wires=0).get_matrix()
+            qml.Hermitian(H2, wires=0).matrix()
 
     def test_matrix_representation(self, tol):
         """Test that the matrix representation is defined correctly"""
         A = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
         res_static = qml.Hermitian.compute_matrix(A)
-        res_dynamic = qml.Hermitian(A, wires=0).get_matrix()
+        res_dynamic = qml.Hermitian(A, wires=0).matrix()
         expected = np.array([[6.0 + 0.0j, 1.0 - 2.0j], [1.0 + 2.0j, -1.0 + 0.0j]])
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
@@ -373,7 +373,7 @@ class TestProjector:
     def test_projector_eigvals(self, basis_state, tol):
         """Tests that the eigvals property of the Projector class returns the correct results."""
         num_wires = len(basis_state)
-        eigvals = qml.Projector(basis_state, wires=range(num_wires)).get_eigvals()
+        eigvals = qml.Projector(basis_state, wires=range(num_wires)).eigvals()
 
         if basis_state[0] == 0:
             observable = np.array([[1, 0], [0, 0]])
@@ -466,7 +466,7 @@ class TestProjector:
     )
     def test_matrix_representation(self, basis_state, expected, n_wires, tol):
         """Test that the matrix representation is defined correctly"""
-        res_dynamic = qml.Projector(basis_state, wires=range(n_wires)).get_matrix()
+        res_dynamic = qml.Projector(basis_state, wires=range(n_wires)).matrix()
         res_static = qml.Projector.compute_matrix(basis_state)
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)

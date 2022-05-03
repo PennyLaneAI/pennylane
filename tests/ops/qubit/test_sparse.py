@@ -90,7 +90,7 @@ class TestSparse:
         """Test that the matrix property of the SparseHamiltonian class returns the correct matrix."""
         num_wires = len(sparse_hamiltonian[0])
         sparse_hamiltonian_coo = coo_matrix(sparse_hamiltonian)
-        res_dynamic = qml.SparseHamiltonian(sparse_hamiltonian_coo, range(num_wires)).get_matrix()
+        res_dynamic = qml.SparseHamiltonian(sparse_hamiltonian_coo, range(num_wires)).matrix()
         res_static = qml.SparseHamiltonian.compute_matrix(sparse_hamiltonian_coo)
         assert isinstance(res_dynamic, np.ndarray)
         assert isinstance(res_static, np.ndarray)
