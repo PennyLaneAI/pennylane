@@ -1247,7 +1247,6 @@ def test_error_not_available_aux_wire():
         qml.metric_tensor(circuit, aux_wire=404)(x)
 
 
-
 def test_error_aux_wire_replaced():
     """Tests that even if an aux_wire is provided, it is superseded by a device
     wire if it does not exist itself on the device, so that the metric_tensor is

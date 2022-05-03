@@ -1,4 +1,4 @@
- # Copyright 2021-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2021-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1228,7 +1228,7 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
                         condition = True
 
                         for back_match in match_backward:
-                            if back_match not in new_matches_scenario_match: # pragma: no cover
+                            if back_match not in new_matches_scenario_match:  # pragma: no cover
                                 condition = False
                                 break
 

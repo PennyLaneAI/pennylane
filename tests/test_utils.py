@@ -342,7 +342,7 @@ class TestFlatten:
 
     def test_flatten_wires(self):
         """Tests flatten a Wires object."""
-        wires = qml.wires.Wires([3,4])
+        wires = qml.wires.Wires([3, 4])
         wires_int = [3, 4]
 
         wires = qml.utils._flatten(wires)
@@ -610,7 +610,7 @@ class TestExpand:
             ([5, 9], [0, 5, 9], np.kron(ONES, VECTOR2)),
             ([0, 9], [0, 5, 9], np.array([1, 2, 1, 2, 3, 4, 3, 4])),
             ([9, 0], [0, 5, 9], np.array([1, 3, 1, 3, 2, 4, 2, 4])),
-            ([0, 1], [0, 1], VECTOR2)
+            ([0, 1], [0, 1], VECTOR2),
         ],
     )
     def test_expand_vector_two_wires(self, original_wires, expanded_wires, expected, tol):

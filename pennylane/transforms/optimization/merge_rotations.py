@@ -130,11 +130,12 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
                 # The Rot gate must be treated separately
                 if current_gate.name == "Rot":
                     if is_abstract(cumulative_angles):
-                        #jax-jit does not support cast_like
+                        # jax-jit does not support cast_like
                         cumulative_angles = cumulative_angles + stack(next_gate.parameters)
                     else:
                         cumulative_angles = fuse_rot_angles(
-                            cumulative_angles, cast_like(stack(next_gate.parameters), cumulative_angles)
+                            cumulative_angles,
+                            cast_like(stack(next_gate.parameters), cumulative_angles),
                         )
                 # Other, single-parameter rotation gates just have the angle summed
                 else:
