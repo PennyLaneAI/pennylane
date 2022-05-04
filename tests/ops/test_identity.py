@@ -39,7 +39,7 @@ def test_label_method():
 def test_matrix_representation(tol):
     """Test the matrix representation"""
     res_static = Identity.compute_matrix()
-    res_dynamic = Identity(wires=0).get_matrix()
+    res_dynamic = Identity(wires=0).matrix()
     expected = np.array([[1.0, 0.0], [0.0, 1.0]])
     assert np.allclose(res_static, expected, atol=tol)
     assert np.allclose(res_dynamic, expected, atol=tol)

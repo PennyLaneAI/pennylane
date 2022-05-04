@@ -56,7 +56,7 @@ class TestParameterFrequencies:
         gen = op.generator()
 
         try:
-            mat = gen.get_matrix()
+            mat = gen.matrix()
         except (AttributeError, qml.operation.MatrixUndefinedError):
 
             if isinstance(gen, qml.Hamiltonian):
@@ -89,9 +89,9 @@ class TestDecomposition:
             mats = []
             for i in reversed(decomp):
                 if i.wires.tolist() == [0]:
-                    mats.append(np.kron(i.get_matrix(), np.eye(2)))
+                    mats.append(np.kron(i.matrix(), np.eye(2)))
                 elif i.wires.tolist() == [1]:
-                    mats.append(np.kron(np.eye(2), i.get_matrix()))
+                    mats.append(np.kron(np.eye(2), i.matrix()))
                 elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
                     new_mat = np.array(
                         [
@@ -104,7 +104,7 @@ class TestDecomposition:
 
                     mats.append(new_mat)
                 else:
-                    mats.append(i.get_matrix())
+                    mats.append(i.matrix())
 
             decomposed_matrix = np.linalg.multi_dot(mats)
             exp = SingleExcitationPlus(phi)
@@ -126,9 +126,9 @@ class TestDecomposition:
             mats = []
             for i in reversed(decomp):
                 if i.wires.tolist() == [0]:
-                    mats.append(np.kron(i.get_matrix(), np.eye(2)))
+                    mats.append(np.kron(i.matrix(), np.eye(2)))
                 elif i.wires.tolist() == [1]:
-                    mats.append(np.kron(np.eye(2), i.get_matrix()))
+                    mats.append(np.kron(np.eye(2), i.matrix()))
                 elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
                     new_mat = np.array(
                         [
@@ -141,7 +141,7 @@ class TestDecomposition:
 
                     mats.append(new_mat)
                 else:
-                    mats.append(i.get_matrix())
+                    mats.append(i.matrix())
 
             decomposed_matrix = np.linalg.multi_dot(mats)
             exp = SingleExcitationMinus(phi)
@@ -154,7 +154,7 @@ class TestSingleExcitation:
     def test_single_excitation_matrix(self, phi):
         """Tests that the SingleExcitation operation calculates the correct matrix"""
         op = qml.SingleExcitation(phi, wires=[0, 1])
-        res_dynamic = op.get_matrix()
+        res_dynamic = op.matrix()
         res_static = qml.SingleExcitation.compute_matrix(phi)
         exp = SingleExcitation(phi)
         assert np.allclose(res_dynamic, exp)
@@ -183,7 +183,7 @@ class TestSingleExcitation:
                     )
                     mats.append(new_mat)
                 else:
-                    mats.append(i.get_matrix())
+                    mats.append(i.matrix())
 
             decomposed_matrix = np.linalg.multi_dot(mats)
             exp = SingleExcitation(phi)
@@ -203,7 +203,7 @@ class TestSingleExcitation:
     def test_single_excitation_plus_matrix(self, phi):
         """Tests that the SingleExcitationPlus operation calculates the correct matrix"""
         op = qml.SingleExcitationPlus(phi, wires=[0, 1])
-        res_dynamic = op.get_matrix()
+        res_dynamic = op.matrix()
         res_static = qml.SingleExcitationPlus.compute_matrix(phi)
         exp = SingleExcitationPlus(phi)
         assert np.allclose(res_dynamic, exp)
@@ -222,7 +222,7 @@ class TestSingleExcitation:
     def test_single_excitation_minus_matrix(self, phi):
         """Tests that the SingleExcitationMinus operation calculates the correct matrix"""
         op = qml.SingleExcitationMinus(phi, wires=[0, 1])
-        res_dynamic = op.get_matrix()
+        res_dynamic = op.matrix()
         res_static = qml.SingleExcitationMinus.compute_matrix(phi)
         exp = SingleExcitationMinus(phi)
         assert np.allclose(res_dynamic, exp)
@@ -343,7 +343,7 @@ class TestDoubleExcitation:
     def test_double_excitation_matrix(self, phi):
         """Tests that the DoubleExcitation operation calculates the correct matrix"""
         op = qml.DoubleExcitation(phi, wires=[0, 1, 2, 3])
-        res_dynamic = op.get_matrix()
+        res_dynamic = op.matrix()
         res_static = qml.DoubleExcitation.compute_matrix(phi)
         exp = DoubleExcitation(phi)
         assert np.allclose(res_dynamic, exp)
@@ -356,7 +356,7 @@ class TestDoubleExcitation:
         decomp2 = qml.DoubleExcitation.compute_decomposition(phi, wires=[0, 1, 2, 3])
 
         for decomp in [decomp1, decomp2]:
-            mats = [m.get_matrix() for m in decomp]
+            mats = [m.matrix() for m in decomp]
             decomposed_matrix = mats[0] @ mats[1]
             exp = DoubleExcitation(phi)
 
@@ -410,7 +410,7 @@ class TestDoubleExcitation:
             for i in reversed(decomp):
                 # Single-qubit gate
                 if len(i.wires.tolist()) == 1:
-                    mat = single_mat_four_qubits(i.get_matrix(), i.wires.tolist()[0])
+                    mat = single_mat_four_qubits(i.matrix(), i.wires.tolist()[0])
                     mats.append(mat)
                 # Two-qubit gate
                 else:
@@ -426,7 +426,7 @@ class TestDoubleExcitation:
     def test_double_excitation_plus_matrix(self, phi):
         """Tests that the DoubleExcitationPlus operation calculates the correct matrix"""
         op = qml.DoubleExcitationPlus(phi, wires=[0, 1, 2, 3])
-        res_dynamic = op.get_matrix()
+        res_dynamic = op.matrix()
         res_static = qml.DoubleExcitationPlus.compute_matrix(phi)
         exp = DoubleExcitationPlus(phi)
         assert np.allclose(res_dynamic, exp)
@@ -447,7 +447,7 @@ class TestDoubleExcitation:
     def test_double_excitation_minus_matrix(self, phi):
         """Tests that the DoubleExcitationMinus operation calculates the correct matrix"""
         op = qml.DoubleExcitationMinus(phi, wires=[0, 1, 2, 3])
-        res_dynamic = op.get_matrix()
+        res_dynamic = op.matrix()
         res_static = qml.DoubleExcitationMinus.compute_matrix(phi)
         exp = DoubleExcitationMinus(phi)
         assert np.allclose(res_dynamic, exp)
@@ -644,7 +644,7 @@ class TestOrbitalRotation:
     def test_orbital_rotation_matrix(self, phi):
         """Tests that the OrbitalRotation operation calculates the correct matrix"""
         op = qml.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-        res_dynamic = op.get_matrix()
+        res_dynamic = op.matrix()
         res_static = qml.OrbitalRotation.compute_matrix(phi)
         exp = OrbitalRotation(phi)
         assert np.allclose(res_dynamic, exp)
@@ -698,7 +698,7 @@ class TestOrbitalRotation:
             for i in reversed(decomp):
                 # Single-qubit gate
                 if len(i.wires.tolist()) == 1:
-                    mat = single_mat_four_qubits(i.get_matrix(), i.wires.tolist()[0])
+                    mat = single_mat_four_qubits(i.matrix(), i.wires.tolist()[0])
                     mats.append(mat)
                 # Two-qubit gate
                 else:

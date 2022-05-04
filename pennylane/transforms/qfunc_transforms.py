@@ -266,7 +266,8 @@ def qfunc_transform(tape_transform):
     allowing the transform itself to be differentiated and trained. For more details,
     see the Differentiability section under Usage Details.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Inline usage**
 

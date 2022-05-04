@@ -9,43 +9,43 @@ PennyLane and its dependencies in development mode, run and add tests, write
 documentation, as well as general best practices and an architectural overview
 of PennyLane, plugins, and devices.
 
-.. titlecard::
+.. title-card::
     :name: Installation
     :description: Installation and dependencies of the PennyLane source code using development mode.
     :link: guide/installation.html
 
 
-.. titlecard::
+.. title-card::
     :name: Contribution guide
     :description: How to get involved in the PennyLane community and help improve PennyLane.
     :link: guide/contributing.html
 
-.. titlecard::
+.. title-card::
     :name: Software tests
     :description: Installing dependencies, running the PennyLane test suite and measuring coverage.
     :link: guide/tests.html
 
-.. titlecard::
+.. title-card::
     :name: Documentation
     :description: Building and contributing modules and packages to the PennyLane documentation.
     :link: guide/documentation.html
 
-.. titlecard::
+.. title-card::
     :name: Submitting a pull request
     :description: Creating and submitting a pull request to the PennyLane repository.
     :link: guide/pullrequests.html
 
-.. titlecard::
+.. title-card::
     :name: Architecture Design Records
     :description: Proposing important PennyLane architectural decisions.
     :link: guide/adr.html
 
-.. .. titlecard::
+.. .. title-card::
 ..     :name: Best practices
 ..     :description: General best practices for contributing and developing for PennyLane.
 ..     :link: guide/bestpractices.html
 
-.. titlecard::
+.. title-card::
     :name: Architectural overview
     :description: Architectural overview of PennyLane, its plugins and devices.
     :link: guide/architecture.html

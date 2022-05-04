@@ -621,8 +621,6 @@ class Hamiltonian(Observable):
             except QueuingError:
                 o.queue(context=context)
                 context.update_info(o, owner=self)
-            except NotImplementedError:
-                pass
 
         context.append(self, owns=tuple(self.ops))
         return self

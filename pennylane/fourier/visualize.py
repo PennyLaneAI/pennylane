@@ -21,7 +21,7 @@ import numpy as np
 # a hard requirement for everything in this module.
 try:
     from matplotlib.colors import to_rgb
-except (ModuleNotFoundError, ImportError) as e:
+except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     raise ImportError(
         "Module matplotlib is required for visualization in the Fourier module. "
         "You can install matplolib via \n\n   pip install matplotlib"
