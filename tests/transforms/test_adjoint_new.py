@@ -1,0 +1,88 @@
+# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import pytest
+import numpy as np
+
+import pennylane as qml
+from pennylane.transforms.adjoint import adjoint
+from pennylane.ops.arithmetic import Adjoint
+
+noncallable_objects = [
+    qml.RX(0.2, wires=0),
+    qml.AngleEmbedding(list(range(2)), wires=range(2)),
+    [qml.Hadamard(1), qml.RX(-0.2, wires=1)],
+    qml.tape.QuantumTape(),
+]
+
+
+@pytest.mark.parametrize("obj", noncallable_objects)
+def test_error_adjoint_on_noncallable(obj):
+    """Test that an error is raised if qml.adjoint is applied to an object that
+    is not callable, as it silently does not have any effect on those."""
+    with pytest.raises(ValueError, match=f"{type(obj)} is not callable."):
+        adjoint(obj)
+
+def test_adjoint_single_op():
+
+    with qml.tape.QuantumTape() as tape:
+        out = adjoint(qml.RX)(1.234, wires="a")
+
+    assert out == tape.circuit[0]
+    assert out.__class__ is Adjoint
+    assert out.base.__class__ is qml.RX
+    assert out.data == [1.234]
+    assert out.wires == qml.wires.Wires("a")
+
+def test_adjoint_on_function():
+    """Test adjoint transform on a function """
+    def func(x, y, z):
+        qml.RX(x, wires=0)
+        qml.RY(y, wires=0)
+        qml.RZ(z, wires=0)
+
+    x = 1.23
+    y = 2.34
+    z = 3.45
+    with qml.tape.QuantumTape() as tape:
+        out = adjoint(func)(x, y, z)
+
+    assert out == tape.circuit
+
+    for op in tape:
+        assert op.__class__ is Adjoint
+
+    # check order reversed
+    assert tape[0].base.__class__ is qml.RZ
+    assert tape[1].base.__class__ is qml.RY
+    assert tape[2].base.__class__ is qml.RX
+
+    # check parameters assigned correctly
+    assert tape[0].data == [z]
+    assert tape[1].data == [y]
+    assert tape[2].data == [x]
+
+def test_nested_adjoint():
+
+    x = 4.321
+    with qml.tape.QuantumTape() as tape:
+        out = adjoint(adjoint(qml.RX))(x, wires="b")
+
+    assert out is tape[0]
+    assert out.__class__ is Adjoint
+    assert out.base.__class__ is Adjoint
+    assert out.base.base is qml.RX
+    assert out.data == [x]
+    assert out.wires == qml.wires.Wires("b")
+
+    

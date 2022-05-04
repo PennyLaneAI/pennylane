@@ -16,6 +16,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.transforms.adjoint import adjoint
+from pennylane.ops.arithmetic import Adjoint
 
 
 def test_adjoint_on_function():
@@ -75,29 +76,6 @@ def test_wirecut_adjoint():
         return qml.state()
 
     assert np.isclose(my_circuit()[0], 1.0)
-
-
-def test_identity_adjoint():
-    """Check that the adjoint for Identity is working"""
-    dev = qml.device("default.qubit", wires=2, shots=100)
-
-    @qml.qnode(dev)
-    def circuit():
-        identity()
-        qml.adjoint(identity)()
-        return qml.state()
-
-    def identity():
-        qml.PauliX(wires=0)
-        qml.Identity(0)
-        qml.CNOT(wires=[0, 1])
-
-    assert circuit()[0] == 1.0
-
-    queue = circuit.tape.queue
-
-    assert queue[1].name == "Identity"
-    assert queue[4].name == "Identity"
 
 
 def test_nested_adjoint():
@@ -162,13 +140,12 @@ class TestOutsideOfQueuing:
 
     @pytest.mark.parametrize("op,wires", non_param_ops)
     def test_single_op_non_param_adjoint(self, op, wires):
-        """Test that the adjoint correctly inverts non-parametrized
+        """Test that the adjoint correctly wraps non-parametrized
         operations"""
         op_adjoint = adjoint(op)(wires=wires)
-        expected = op(wires=wires).adjoint()
 
-        assert type(op_adjoint) == type(expected)
-        assert op_adjoint.wires == expected.wires
+        assert type(op_adjoint) == Adjoint
+        assert op_adjoint.base.__class__ = op
 
     param_ops = [(qml.RX, [0.123], 0), (qml.Rot, [0.1, 0.2, 0.3], [1]), (qml.CRY, [0.1], [1, 4])]
 
