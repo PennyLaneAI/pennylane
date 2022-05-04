@@ -52,8 +52,8 @@
 * Adds tests, adds no-coverage directives, and removes inaccessible logic to improve code coverage.
   [(#2537)](https://github.com/PennyLaneAI/pennylane/pull/2537)
   
-* The base class `QubitDevice` and `DefaultQubit` now accepts data-types for a statevector. This
-  enables a derived class in a plugin to choose data-types the device will use.
+* The base classes `QubitDevice` and `DefaultQubit` now accepts data-types for a statevector. This
+  enables a derived class (device) in a plugin to choose correct data-types.
   [(#2448)](https://github.com/PennyLaneAI/pennylane/pull/2448)
 
   ```pycon
