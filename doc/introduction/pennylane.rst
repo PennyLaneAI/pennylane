@@ -3,8 +3,8 @@
 
 .. _pl_intro:
 
-Overview
-========
+What is PennyLane?
+==================
 
 .. figure:: ../_static/code.png
     :align: left
