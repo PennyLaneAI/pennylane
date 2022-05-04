@@ -89,9 +89,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-<<<<<<< HEAD
-Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Christina Lee, Chae-Yeun Park, Maria Schuld
-=======
 Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Edward Jiang, Christina Lee,
-Maria Schuld
->>>>>>> origin/master
+Chae-Yeun Park, Maria Schuld
