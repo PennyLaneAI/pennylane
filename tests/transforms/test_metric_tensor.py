@@ -1388,5 +1388,4 @@ def test_get_aux_wire_with_device_wires():
 
     assert _get_aux_wire(0, tape, device_wires) == 0
     assert _get_aux_wire("one", tape, device_wires) == "one"
-    assert _get_aux_wire("two", tape, device_wires) == "aux"
     assert _get_aux_wire(None, tape, device_wires) == "aux"
