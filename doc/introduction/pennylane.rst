@@ -14,9 +14,8 @@ Overview
 
 |
 
-PennyLane is a cross-platform Python library for differentiable programming of
-quantum computers, enabling the execution and training of quantum programs on various
-backends.
+PennyLane is a cross-platform Python library for programming quantum computers.
+Its differentiable programming paradigm enables the execution and training of quantum programs on various backends.
 
 PennyLane connects quantum computing with powerful machine learning frameworks
 like `NumPy <https://numpy.org/>`_'s `autograd <https://github.com/HIPS/autograd>`__,
