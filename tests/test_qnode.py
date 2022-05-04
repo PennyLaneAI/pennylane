@@ -196,35 +196,115 @@ class TestValidation:
         ):
             QNode._validate_parameter_shift(dev)
 
-    def test_best_method(self, monkeypatch):
+    def test_best_method_is_device(self, monkeypatch):
         """Test that the method for determining the best diff method
-        for a given device and interface works correctly"""
+        for a given device and interface returns the device"""
         dev = qml.device("default.qubit", wires=1)
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
 
-        # device is top priority
+        # basic check if the device provides a Jacobian
         res = QNode.get_best_method(dev, "another_interface")
         assert res == ("device", {}, dev)
 
-        # backprop is next priority
+        # device is returned even if backpropagation is possible
+        res = QNode.get_best_method(dev, "some_interface")
+        assert res == ("device", {}, dev)
+
+    def test_best_method_is_backprop(self, monkeypatch):
+        """Test that the method for determining the best diff method
+        for a given device and interface returns backpropagation"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+
+        # backprop is returned when the interfaces match and Jacobian is not provided
         res = QNode.get_best_method(dev, "some_interface")
         assert res == ("backprop", {}, dev)
 
-        # The next fallback is parameter-shift.
+    def test_best_method_is_param_shift(self, monkeypatch):
+        """Test that the method for determining the best diff method
+        for a given device and interface returns the parameter shift rule"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+
+        # parameter shift is returned when Jacobian is not provided and
+        # the backprop interfaces do not match
         res = QNode.get_best_method(dev, "another_interface")
         assert res == (qml.gradients.param_shift, {}, dev)
 
-        # finally, if both fail, finite differences is the fallback
+    def test_best_method_is_finite_diff(self, monkeypatch):
+        """Test that the method for determining the best diff method
+        for a given device and interface returns finite differences"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+
         def capabilities(cls):
             capabilities = cls._capabilities
             capabilities.update(model="None")
             return capabilities
 
+        # finite differences is the fallback when we know nothing about the device
         monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
         res = QNode.get_best_method(dev, "another_interface")
         assert res == (qml.gradients.finite_diff, {}, dev)
+
+    def test_best_method_str_is_device(self, monkeypatch):
+        """Test that the method for determining the best diff method string
+        for a given device and interface returns 'device'"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
+
+        # basic check if the device provides a Jacobian
+        res = QNode.best_method_str(dev, "another_interface")
+        assert res == "device"
+
+        # device is returned even if backpropagation is possible
+        res = QNode.best_method_str(dev, "some_interface")
+        assert res == "device"
+
+    def test_best_method_str_is_backprop(self, monkeypatch):
+        """Test that the method for determining the best diff method string
+        for a given device and interface returns 'backprop'"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+
+        # backprop is returned when the interfaces match and Jacobian is not provided
+        res = QNode.best_method_str(dev, "some_interface")
+        assert res == "backprop"
+
+    def test_best_method_str_is_param_shift(self, monkeypatch):
+        """Test that the method for determining the best diff method string
+        for a given device and interface returns 'parameter-shift'"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+
+        # parameter shift is returned when Jacobian is not provided and
+        # the backprop interfaces do not match
+        res = QNode.best_method_str(dev, "another_interface")
+        assert res == "parameter-shift"
+
+    def test_best_method_str_is_finite_diff(self, monkeypatch):
+        """Test that the method for determining the best diff method string
+        for a given device and interface returns 'finite-diff'"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+
+        def capabilities(cls):
+            capabilities = cls._capabilities
+            capabilities.update(model="None")
+            return capabilities
+
+        # finite differences is the fallback when we know nothing about the device
+        monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
+        res = QNode.best_method_str(dev, "another_interface")
+        assert res == "finite-diff"
 
     def test_diff_method(self, mocker):
         """Test that a user-supplied diff method correctly returns the right
