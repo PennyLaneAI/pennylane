@@ -103,6 +103,7 @@ def test_analytic_deprecation():
 
 
 def test_dtype_errors():
+    """Test that if an incorrect dtype is provided to the device then an error is raised."""
     with pytest.raises(DeviceError, match="Real datatype must be a floating point type."):
         qml.device("default.qubit", wires=1, r_dtype=np.complex128)
     with pytest.raises(
