@@ -112,7 +112,8 @@ def cond(condition, true_fn, false_fn=None):
         in ``qml.cond(m_0, qml.RY)``), then ``m_0 == 1`` is considered
         internally.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Conditional quantum functions**
 

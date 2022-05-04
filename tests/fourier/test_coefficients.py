@@ -258,7 +258,7 @@ class TestAntiAliasing:
         """Test that the coefficients obtained through anti-aliasing are the
         same as the ones when we don't anti-alias at the correct degree."""
         coeffs_regular = coefficients(circuit, len(inpt), degree, lowpass_filter=False)
-        coeffs_anti_aliased = coefficients(circuit, len(inpt), degree)
+        coeffs_anti_aliased = coefficients(circuit, len(inpt), degree, lowpass_filter=True)
 
         assert np.allclose(coeffs_regular, coeffs_anti_aliased)
 

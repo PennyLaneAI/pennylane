@@ -57,9 +57,9 @@ class op_transform:
         @qml.op_transform
         def trace(op):
             try:
-                return qml.math.real(qml.math.sum(op.get_eigvals()))
+                return qml.math.real(qml.math.sum(op.eigvals()))
             except qml.operation.EigvalsUndefinedError:
-                return qml.math.real(qml.math.trace(op.get_matrix()))
+                return qml.math.real(qml.math.trace(op.matrix()))
 
     We can use this function as written:
 
