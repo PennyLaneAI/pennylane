@@ -114,7 +114,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
     Step 21: cost = -7.23, shots_used = 82014
     Step 22: cost = -7.31, shots_used = 92838
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         The shot adaptive optimizer is based on the iCANS1 optimizer by
         `Kübler et al. (2020) <https://quantum-journal.org/papers/q-2020-05-11-263/>`__, and works
@@ -459,8 +460,8 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             # or growing too significantly.
             gamma = (
                 (self.stepsize - self.lipschitz * self.stepsize**2 / 2) * chi**2
-                - xi * self.lipschitz * self.stepsize**2 / (2 * s + 1e-6)
-            ) / (s + 1e-6)
+                - xi * self.lipschitz * self.stepsize**2 / (2 * s)
+            ) / s
 
             argmax_gamma = np.unravel_index(np.argmax(gamma), gamma.shape)
             smax = max(s[argmax_gamma], 2)

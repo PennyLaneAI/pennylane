@@ -598,9 +598,7 @@ class TestFiniteDiffGradients:
             return jac[1, 0]
 
         x, y = params
-        with pytest.warns(np.VisibleDeprecationWarning, match=r"Creating an ndarray from ragged"):
-
-            res = qml.grad(cost_fn)(params)
+        res = qml.grad(cost_fn)(params)
         expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
