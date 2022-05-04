@@ -165,8 +165,8 @@ class TestQubitUnitary:
             (Z, qml.RZ, [np.pi]),
             (S, qml.RZ, [np.pi / 2]),
             (T, qml.RZ, [np.pi / 4]),
-            (qml.RZ(0.3, wires=0).matrix(), qml.RZ, [0.3]),
-            (qml.RZ(-0.5, wires=0).matrix(), qml.RZ, [-0.5]),
+            (qml.matrix(qml.RZ(0.3, wires=0)), qml.RZ, [0.3]),
+            (qml.matrix(qml.RZ(-0.5, wires=0)), qml.RZ, [-0.5]),
             (
                 np.array(
                     [
@@ -179,9 +179,9 @@ class TestQubitUnitary:
             ),
             (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
             (X, qml.Rot, [np.pi / 2, np.pi, -np.pi / 2]),
-            (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), qml.Rot, [0.2, 0.5, -0.3]),
+            (qml.matrix(qml.Rot(0.2, 0.5, -0.3, wires=0)), qml.Rot, [0.2, 0.5, -0.3]),
             (
-                np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
+                np.exp(1j * 0.02) * qml.matrix(qml.Rot(-1.0, 2.0, -3.0, wires=0)),
                 qml.Rot,
                 [-1.0, 2.0, -3.0],
             ),
