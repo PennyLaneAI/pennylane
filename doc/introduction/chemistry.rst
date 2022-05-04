@@ -128,28 +128,28 @@ Molecular integrals and matrices
     :nosignatures:
 
     ~pennylane.qchem.attraction_integral
+    ~pennylane.qchem.attraction_matrix
+    ~pennylane.qchem.contracted_norm
+    ~pennylane.qchem.core_matrix
     ~pennylane.qchem.dipole_integrals
     ~pennylane.qchem.electron_integrals
     ~pennylane.qchem.electron_repulsion
-    ~pennylane.qchem.kinetic_integral
-    ~pennylane.qchem.moment_integral
-    ~pennylane.qchem.overlap_integral
-    ~pennylane.qchem.repulsion_integral
-    ~pennylane.qchem.attraction_matrix
-    ~pennylane.qchem.core_matrix
-    ~pennylane.qchem.kinetic_matrix
-    ~pennylane.qchem.mol_density_matrix
-    ~pennylane.qchem.moment_matrix
-    ~pennylane.qchem.overlap_matrix
-    ~pennylane.qchem.repulsion_tensor
-    ~pennylane.qchem.contracted_norm
-    ~pennylane.qchem.primitive_norm
     ~pennylane.qchem.expansion
     ~pennylane.qchem.gaussian_kinetic
     ~pennylane.qchem.gaussian_moment
     ~pennylane.qchem.gaussian_overlap
     ~pennylane.qchem.hermite_moment
+    ~pennylane.qchem.kinetic_integral
+    ~pennylane.qchem.kinetic_matrix
+    ~pennylane.qchem.mol_density_matrix
+    ~pennylane.qchem.moment_integral
+    ~pennylane.qchem.moment_matrix
     ~pennylane.qchem.nuclear_attraction
+    ~pennylane.qchem.overlap_integral
+    ~pennylane.qchem.overlap_matrix
+    ~pennylane.qchem.primitive_norm
+    ~pennylane.qchem.repulsion_integral
+    ~pennylane.qchem.repulsion_tensor
 
 :html:`</div>`
 
@@ -214,13 +214,14 @@ Other observables
 .. autosummary::
     :nosignatures:
 
+    ~pennylane.qchem.dipole_of
+    ~pennylane.qchem.observable
     ~pennylane.qchem.particle_number
     ~pennylane.qchem.spin2
     ~pennylane.qchem.spinz
-    ~pennylane.qchem.observable
-    ~pennylane.qchem.dipole_of
 
 :html:`</div>`
+
 
 Qubit tapering
 ^^^^^^^^^^^^^^
@@ -247,11 +248,11 @@ Utility functions
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.import_operator
     ~pennylane.qchem.active_space
     ~pennylane.qchem.excitations
     ~pennylane.qchem.excitations_to_wires
     ~pennylane.qchem.hf_state
+    ~pennylane.import_operator
     ~pennylane.qchem.read_structure
 
 :html:`</div>`
@@ -264,9 +265,9 @@ Molecule class and basis functions
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.qchem.Molecule
-    ~pennylane.qchem.BasisFunction
     ~pennylane.qchem.atom_basis_data
+    ~pennylane.qchem.BasisFunction
+    ~pennylane.qchem.Molecule
     ~pennylane.qchem.mol_basis_data
 
 :html:`</div>`
