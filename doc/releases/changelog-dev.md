@@ -45,6 +45,9 @@
 * `Operator.decomposition()` is now an instance method, and no longer accepts parameters.
   [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
 
+* Adds tests, adds no-coverage directives, and removes inaccessible logic to improve code coverage.
+  [(#2537)](https://github.com/PennyLaneAI/pennylane/pull/2537)
+
 <h3>Bug fixes</h3>
 
 * Fixed a bug where `QNGOptimizer` did not work with operators
