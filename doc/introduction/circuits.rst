@@ -14,7 +14,8 @@ Quantum circuits
     :target: javascript:void(0);
 
 
-In PennyLane, quantum computations are represented as *quantum node* objects. A quantum node or QNode is used to
+In PennyLane, quantum computations, which involve the execution of one or more quantum circuits,
+are represented as *quantum node* objects. A quantum node is used to
 declare the quantum circuit, and also ties the computation to a specific device that executes it.
 
 QNodes can interface with any of the supported numerical and machine learning libraries---:doc:`NumPy <interfaces/numpy>`,
@@ -60,7 +61,7 @@ constraints:
   :doc:`quantum operators <operations>` or sequences of operators called :doc:`templates`,
   using one instruction per line.
 
-* The function can contain classical flow control structures such as ``for``.
+* The function can contain classical flow control structures such as ``for`` loops or ``if`` statements.
 
 * The quantum function must always return either a single or a tuple of
   *measured observable values*, by applying a :doc:`measurement function <measurements>`
@@ -94,13 +95,13 @@ the available options that can be passed to the device loader.
 .. note::
 
     For example, check out the ``'lightning.qubit'`` `plugin <https://github.com/PennyLaneAI/pennylane-lightning>`_,
-    which is a fast state-vector simulator written in C++.
+    which is a fast state-vector simulator supporting GPUs.
 
 Device options
 ^^^^^^^^^^^^^^
 
 When loading a device, the name of the device must always be specified.
-Further options can then be passed as keyword arguments. These options can differ based
+Further options can then be passed as keyword arguments, and can differ based
 on the device. For a plugin device, refer to the plugin documentation for available device options.
 
 The two most important device options are the ``wires`` and ``shots`` arguments.
