@@ -14,8 +14,9 @@
 """Contains transforms and helpers functions for decomposing arbitrary two-qubit
 unitary operations into elementary gates.
 """
+import numpy as np
+
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane import math
 
 from .single_qubit_unitary import zyz_decomposition
