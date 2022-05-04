@@ -55,7 +55,7 @@ def expand_with_control(tape, control_wire):
                     except DecompositionUndefinedError:
                         with QuantumTape() as tmp_tape:
                             qml.ControlledQubitUnitary(
-                                op.get_matrix(), control_wires=control_wire, wires=op.wires
+                                op.matrix(), control_wires=control_wire, wires=op.wires
                             )
 
                 tmp_tape = expand_with_control(tmp_tape, control_wire)
@@ -247,7 +247,8 @@ def ctrl(fn, control, control_values=None):
         have special control support, the operation is expanded to add control wires
         to each underlying op individually.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Nesting Controls**
 

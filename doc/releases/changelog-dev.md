@@ -38,6 +38,16 @@
   
 <h3>Breaking changes</h3>
 
+* The properties `eigval` and `matrix` from the `Operator` class were replaced with the 
+  methods `eigval()` and `matrix(wire_order=None)`.
+  [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
+  
+* `Operator.decomposition()` is now an instance method, and no longer accepts parameters.
+  [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
+
+* Adds tests, adds no-coverage directives, and removes inaccessible logic to improve code coverage.
+  [(#2537)](https://github.com/PennyLaneAI/pennylane/pull/2537)
+
 <h3>Bug fixes</h3>
 
 * Fixed a bug where `QNGOptimizer` did not work with operators
@@ -55,9 +65,12 @@
 
 <h3>Documentation</h3>
 
+* The centralized [Xanadu Sphinx Theme](https://github.com/XanaduAI/xanadu-sphinx-theme)
+  is now used to style the Sphinx documentation.
+  [(#2450)](https://github.com/PennyLaneAI/pennylane/pull/2450)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Utkarsh Azad, Christian Gogolin, Christina Lee
-
+Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Christina Lee, Maria Schuld

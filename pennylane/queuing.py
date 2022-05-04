@@ -314,7 +314,8 @@ def apply(op, context=QueuingContext):
     >>> print(qml.draw(circuit)(0.6))
     0: ──RX(0.4)──RY(0.6)──RX(0.4)──┤ ⟨Z⟩
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Instantiated measurements can also be applied to queuing contexts
         using ``apply``:
