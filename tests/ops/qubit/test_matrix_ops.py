@@ -252,10 +252,15 @@ class TestDiagonalQubitUnitary:
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
-    def test_error_not_unitary(self):
-        """Tests that error is raised if diagonal does not lead to a unitary"""
+    def test_error_matrix_not_unitary(self):
+        """Tests that error is raised if diagonal by `compute_matrix` does not lead to a unitary"""
         with pytest.raises(ValueError, match="Operator must be unitary"):
             qml.DiagonalQubitUnitary.compute_matrix(np.array([1, 2]))
+
+    def test_error_eigvals_not_unitary(self):
+        """Tests that error is raised by `compute_eigvals` if diagonal does not lead to a unitary"""
+        with pytest.raises(ValueError, match="Operator must be unitary"):
+            qml.DiagonalQubitUnitary.compute_eigvals(np.array([1, 2]))
 
     def test_jax_jit(self):
         """Test that the diagonal matrix unitary operation works
