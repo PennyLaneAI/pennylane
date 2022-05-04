@@ -416,6 +416,10 @@ class TestMergeRotationsInterfaces:
         @qml.qnode(dev, interface="jax")
         @merge_rotations()
         def qfunc():
+            qml.Rot(jax.numpy.array(0.1), jax.numpy.array(0.2), jax.numpy.array(0.3), wires=["w1"])
+            qml.Rot(
+                jax.numpy.array(-0.1), jax.numpy.array(-0.2), jax.numpy.array(-0.3), wires=["w1"]
+            )
             qml.CRX(jax.numpy.array(0.2), wires=["w1", "w2"])
             qml.CRX(jax.numpy.array(-0.2), wires=["w1", "w2"])
             return qml.expval(qml.PauliZ("w1"))
