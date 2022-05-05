@@ -14,7 +14,7 @@
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 # pylint: disable=too-many-branches
 from pennylane import apply
-from pennylane.ops.arithmetic import Adjoint
+from pennylane.arithmetic import Adjoint
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
 
