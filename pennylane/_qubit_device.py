@@ -1016,7 +1016,9 @@ class QubitDevice(Device):
 
         jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
 
-        param_number = len(tape._par_info) - 1  # pylint: disable=protected-access
+        param_number = (
+            len(tape.get_parameters(trainable_only=False, circuit_only=True)) - 1
+        )  # pylint: disable=protected-access
         trainable_param_number = len(tape.trainable_params) - 1
         for op in expanded_ops:
 
