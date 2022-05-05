@@ -364,6 +364,43 @@ class QNode:
                     return qml.gradients.finite_diff, {}, device
 
     @staticmethod
+    def best_method_str(device, interface):
+        """Similar to :meth:`~.get_best_method`, except return the
+        'best' differentiation method in human-readable format.
+
+        This method attempts to determine support for differentiation
+        methods using the following order:
+
+        * ``"device"``
+        * ``"backprop"``
+        * ``"parameter-shift"``
+        * ``"finite-diff"``
+
+        The first differentiation method that is supported (going from
+        top to bottom) will be returned.
+
+        This method is intended only for debugging purposes. Otherwise,
+        :meth:`~.get_best_method` should be used instead.
+
+        Args:
+            device (.Device): PennyLane device
+            interface (str): name of the requested interface
+
+        Returns:
+            str: The gradient function to use in human-readable format.
+        """
+        transform = QNode.get_best_method(device, interface)[0]
+
+        if transform is qml.gradients.finite_diff:
+            return "finite-diff"
+
+        if transform in (qml.gradients.param_shift, qml.gradients.param_shift_cv):
+            return "parameter-shift"
+
+        # only other options at this point are "backprop" or "device"
+        return transform
+
+    @staticmethod
     def _validate_backprop_method(device, interface):
         # determine if the device supports backpropagation
         backprop_interface = device.capabilities().get("passthru_interface", None)

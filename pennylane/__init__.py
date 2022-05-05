@@ -33,7 +33,7 @@ import pennylane.qnn
 import pennylane.templates
 import pennylane.hf
 import pennylane.qchem
-from pennylane.qchem import taper, symmetry_generators, paulix_ops
+from pennylane.qchem import taper, symmetry_generators, paulix_ops, import_operator
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
 from pennylane._qubit_device import QubitDevice
