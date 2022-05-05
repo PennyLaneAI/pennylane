@@ -96,7 +96,8 @@ ops = {
 all_ops = ops.keys()
 
 # All qubit operations should be available to test in the device test suite
-all_available_ops = qml.ops._qubit__ops__.copy()  # pylint: disable=protected-access
+# Linting check disabled as static analysis can misidentify qml.ops as the set instance qml.ops.qubit.ops
+all_available_ops = qml.ops._qubit__ops__.copy()  # pylint: disable=protected-access,no-member
 all_available_ops.remove("CPhase")  # CPhase is an alias of ControlledPhaseShift
 all_available_ops.remove("SQISW")  # SQISW is an alias of SISWAP
 all_available_ops.add("QFT")  # QFT was recently moved to being a template, but let's keep it here

@@ -122,7 +122,8 @@ def adjoint(fn):
         with stop_recording(), QuantumTape() as tape:
             res = fn(*args, **kwargs)
 
-        if not tape.operations:
+        # known issue with pylint recognizing @property members
+        if not tape.operations:  # pylint:disable=no-member
             # we called op.expand(): get the outputted tape
             tape = res
 
