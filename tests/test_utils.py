@@ -341,7 +341,7 @@ class TestFlatten:
             pu.unflatten(np.concatenate([flat_dummy_array, flat_dummy_array]), reshaped)
 
     def test_flatten_wires(self):
-        """Tests flatten a Wires object."""
+        """Tests flattening a Wires object."""
         wires = qml.wires.Wires([3, 4])
         wires_int = [3, 4]
 
