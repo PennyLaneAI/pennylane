@@ -19,7 +19,7 @@ from itertools import product
 import pennylane as qml
 from pennylane import numpy as np
 
-from pennylane.gradients.param_shift_hessian import (
+from pennylane.gradients.parameter_shift_hessian import (
     _process_argnum,
     _collect_recipes,
     _generate_offdiag_tapes,
