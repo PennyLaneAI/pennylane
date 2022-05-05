@@ -56,6 +56,26 @@ class TestInitialization:
 
         assert op.wires == qml.wires.Wires("b")
 
+    def test_template_base(self):
+        """Test adjoint initialization for a template."""
+        rng = np.random.default_rng(seed=42)
+        shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+        params = rng.random(shape)
+
+        base = qml.StronglyEntanglingLayers(params, wires=[0,1])
+        op = Adjoint(base)
+
+        assert op.base is base
+        assert op.hyperparameters["base"] is base
+        assert op.name == 'Adjoint(StronglyEntanglingLayers)'
+        
+        assert op.num_params == 1
+        assert qml.math.allclose(params, op.parameters[0])
+        assert qml.math.allclose(params, op.data[0])
+
+        assert op.wires == qml.wires.Wires((0,1))
+
+
     def test_hamiltonian_base(self):
         """Test adjoint initialization for a hamiltonian."""
         base = 2.0 * qml.PauliX(0) @ qml.PauliY(0) + qml.PauliZ("b")
@@ -103,7 +123,6 @@ class TestProperties:
 
         assert op.has_matrix
 
-
     def test_has_matrix_false(self):
         """Test has_matrix property carries over when base op does not define a matrix."""
         base = qml.QubitStateVector([1, 0], wires=0)
@@ -117,10 +136,46 @@ class TestProperties:
         assert op.control_wires == qml.wires.Wires("a")
 
     def test_queue_category(self):
-        """Test that the """
+        """Test that the queue category `"_ops"` carries over."""
+        op = Adjoint(qml.PauliX(0))
+        assert op._queue_category == "_ops"
+
+    def test_queue_category_None(self):
+        """Test that the queue category `None` for some observables carries over."""
+        op = Adjoint(qml.PauliX(0) @ qml.PauliY(1))
+        assert op._queue_category is None
+
+
+class TestMiscMethods:
+    """Test miscellaneous small methods on the Adjoint class."""
+
+    def test_label(self):
+        """Test that the label method for the adjoint class adds a † to the end."""
+        base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
+        op = Adjoint(base)
+        assert op.label(decimals=2) == "Rot\n(1.23,\n2.35,\n3.46)†"
+
+    def test_adjoint_of_adjoint(self):
+        """Test that the adjoint of an adjoint is the original operation."""
+        base = qml.PauliX(0)
+        op = Adjoint(base)
+
+        assert op.adjoint() is base
+
+    def test_diagonalizing_gates(self):
+        """Assert that the diagonalizing gates method gives the base's diagonalizing gates."""
+        base = qml.Hadamard(0)
+        diag_gate = Adjoint(base).diagonalizing_gates()[0]
+
+        assert isinstance(diag_gate, qml.RY)
+        assert qml.math.allclose(diag_gate.data[0], -np.pi / 4)
+
 
 class TestQueueing:
+    """Test that Adjoint operators queue and update base metadata"""
+
     def test_queueing(self):
+        """Test queuing and metadata when both Adjoint and base defined inside a recording context."""
 
         with qml.tape.QuantumTape() as tape:
             base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
@@ -131,6 +186,7 @@ class TestQueueing:
         assert tape.operations == [op]
 
     def test_queueing_base_defined_outside(self):
+        """Test that base is added to queue even if it's defined outside the recording context."""
 
         base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
         with qml.tape.QuantumTape() as tape:
@@ -141,79 +197,67 @@ class TestQueueing:
         assert tape.operations == [op]
 
 
-def test_label():
-    base = qml.Rot(1.2345, 2.3456, 3.4567, wires="b")
-    op = Adjoint(base)
-    assert op.label(decimals=2) == "Rot\n(1.23,\n2.35,\n3.46)†"
-
-
-
-
-
-def test_adjoint_of_adjoint():
-
-    base = qml.PauliX(0)
-    op = Adjoint(base)
-
-    assert op.adjoint() is base
-
-
-def test_diagonalizing_gates():
-    base = qml.Hadamard(0)
-    diag_gate = Adjoint(base).diagonalizing_gates()[0]
-
-    assert isinstance(diag_gate, qml.RY)
-    assert qml.math.allclose(diag_gate.data[0], -np.pi / 4)
-
-
 class TestMatrix:
+    """Test the matrix method for a variety of interfaces."""
+
     def check_matrix(self, x, interface):
+        """Compares matrices in a interface independent manner."""
         base = qml.RX(x, wires=0)
-        base_matrix = base.get_matrix()
+        base_matrix = base.matrix()
         expected = qml.math.conj(qml.math.transpose(base_matrix))
 
-        mat = Adjoint(base).get_matrix()
+        mat = Adjoint(base).matrix()
 
         assert qml.math.allclose(expected, mat)
         assert qml.math.get_interface(mat) == interface
 
     def test_matrix_autograd(self):
+        """Test the matrix of an Adjoint operator with an autograd parameter."""
         self.check_matrix(np.array(1.2345), "autograd")
 
     def test_matrix_jax(self):
-
+        """Test the matrix of an adjoint operator with a jax parameter."""
         jnp = pytest.importorskip("jax.numpy")
         self.check_matrix(jnp.array(1.2345), "jax")
 
     def test_matrix_torch(self):
-
+        """Test the matrix of an adjoint oeprator with a torch parameter."""
         torch = pytest.importorskip("torch")
         self.check_matrix(torch.tensor(1.2345), "torch")
 
     def test_matrix_tf(self):
-
+        """Test the matrix of an adjoint opreator with a tensorflow parameter."""
         tf = pytest.importorskip("tensorflow")
         self.check_matrix(tf.Variable(1.2345), "tensorflow")
 
     def test_no_matrix_defined(self):
-        base = qml.QubitStateVector([1, 0], wires=0)
+        """Test that if the base has no matrix defined, then Adjoint.matrix also raises a MatrixUndefinedError."""
+        rng = np.random.default_rng(seed=42)
+        shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+        params = rng.random(shape)
+
+        base = qml.StronglyEntanglingLayers(params, wires=[0,1])
 
         with pytest.raises(qml.operation.MatrixUndefinedError):
-            Adjoint(base).get_matrix()
+            Adjoint(base).matrix()
 
 
 class TestEigvals:
+    """Test the Adjoint class adjoint methods."""
+
     @pytest.mark.parametrize(
         "base", (qml.PauliX(0), qml.Hermitian(np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]]), wires=0))
     )
     def test_hermitian_eigvals(self, base):
-        base_eigvals = base.get_eigvals()
-        adj_eigvals = Adjoint(base).get_eigvals()
+        """Test adjoint's eigvals are the same as base eigvals when op is Hermitian."""
+        base_eigvals = base.eigvals()
+        adj_eigvals = Adjoint(base).eigvals()
         assert qml.math.allclose(base_eigvals, adj_eigvals)
 
     def test_non_hermitian_eigvals(self):
+        """Test that the e"""
 
-        adj_eigvals = Adjoint(qml.SX(0)).get_eigvals()
+        adj_eigvals = Adjoint(qml.SX(0)).eigvals()
         assert adj_eigvals == [1 - 0j, -1j]
 
     def test_no_matrix_defined_eigvals(self):
@@ -221,7 +265,7 @@ class TestEigvals:
         base = qml.QubitStateVector([1, 0], wires=0)
 
         with pytest.raises(qml.operation.EigvalsUndefinedError):
-            Adjoint(base).get_eigvals()
+            Adjoint(base).eigvals()
 
 
 class TestDecompositionExpand:
