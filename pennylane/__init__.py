@@ -39,6 +39,7 @@ from pennylane._grad import grad, jacobian
 from pennylane._qubit_device import QubitDevice
 from pennylane._version import __version__
 from pennylane.about import about
+from pennylane.arithmetic import adjoint
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.drawer import draw, draw_mpl
@@ -55,7 +56,6 @@ from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 from pennylane.transforms import (
-    adjoint,
     adjoint_metric_tensor,
     batch_params,
     batch_input,

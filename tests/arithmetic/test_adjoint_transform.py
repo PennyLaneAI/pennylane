@@ -15,8 +15,8 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-from pennylane.transforms.adjoint import adjoint
-from pennylane.ops.arithmetic import Adjoint
+from pennylane import adjoint
+from pennylane.arithmetic import Adjoint
 
 noncallable_objects = [
     qml.RX(0.2, wires=0),
@@ -40,7 +40,7 @@ class TestDifferentCallableTypes:
         with qml.tape.QuantumTape() as tape:
             out = adjoint(qml.RX)(1.234, wires="a")
 
-        assert out == tape.circuit[0]
+        assert out == tape[0]
         assert out.__class__ is Adjoint
         assert out.base.__class__ is qml.RX
         assert out.data == [1.234]
@@ -49,7 +49,13 @@ class TestDifferentCallableTypes:
     def test_adjoint_template(self):
 
         with qml.tape.QuantumTape() as tape:
-            out = adjoint(qml.QFT)()
+            out = adjoint(qml.QFT)(wires=(0,1,2))
+
+        assert len(tape) == 1
+        assert out == tape[0]
+        assert out.__class__ is Adjoint
+        assert out.base.__class__ is qml.QFT
+        assert out.wires == qml.wires.Wires((0,1,2))
 
     def test_adjoint_on_function(self):
         """Test adjoint transform on a function """
@@ -131,3 +137,5 @@ class TestIntegration:
         expected =np.array([0, -1j])
 
         assert np.allclose(res, expected)
+
+    def test_

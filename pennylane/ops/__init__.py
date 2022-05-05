@@ -32,8 +32,6 @@ from .qubit import obs as _qubit__obs__
 
 from .channel import __all__ as _channel__ops__
 
-from .arithmetic import *
-
 
 __all__ = _cv__all__ + _qubit__all__ + _channel__ops__
 __all_ops__ = list(_cv__ops__ | _qubit__ops__)

@@ -46,7 +46,6 @@ containing quantum operations) that are used to construct QNodes.
 .. autosummary::
     :toctree: api
 
-    ~adjoint
     ~ctrl
     ~transforms.cond
     ~defer_measurements
@@ -176,7 +175,6 @@ to help build custom QNode, quantum function, and tape transforms:
 from .batch_transform import batch_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .op_transforms import op_transform
-from .adjoint import adjoint
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .classical_jacobian import classical_jacobian

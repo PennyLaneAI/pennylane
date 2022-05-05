@@ -14,6 +14,10 @@
 """
 This module contains classes and functions for Operator arithmetic.
 
+.. currentmodule:: pennylane.arithmetic
+.. autosummary::
+    :toctree: api
+
 """
 
-from .adjoint import Adjoint
+from .adjoint import adjoint, Adjoint
