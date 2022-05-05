@@ -1044,6 +1044,21 @@ class Operator(abc.ABC):
         """
         return "_ops"
 
+    def adjoint(self, do_queue=False):  # pylint:disable=no-self-use
+        """Create an operation that is the adjoint of this one.
+
+        Adjointed operations are the conjugated and transposed version of the
+        original operation. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        Args:
+            do_queue: Whether to add the adjointed gate to the context queue.
+
+        Returns:
+            The adjointed operation.
+        """
+        raise AdjointUndefinedError
+
     def expand(self):
         """Returns a tape that has recorded the decomposition of the operator.
 
@@ -1261,21 +1276,6 @@ class Operation(Operator):
     def inverse(self):
         """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
-
-    def adjoint(self, do_queue=False):  # pylint:disable=no-self-use
-        """Create an operation that is the adjoint of this one.
-
-        Adjointed operations are the conjugated and transposed version of the
-        original operation. Adjointed ops are equivalent to the inverted operation for unitary
-        gates.
-
-        Args:
-            do_queue: Whether to add the adjointed gate to the context queue.
-
-        Returns:
-            The adjointed operation.
-        """
-        raise AdjointUndefinedError
 
     @inverse.setter
     def inverse(self, boolean):

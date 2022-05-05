@@ -130,11 +130,6 @@ class TestProperties:
 
         assert not op.has_matrix
 
-    def test_control_wires(self):
-        """Test the control_wires of an adjoint are the same as the base op."""
-        op = Adjoint(qml.CNOT(wires=("a", "b")))
-        assert op.control_wires == qml.wires.Wires("a")
-
     def test_queue_category(self):
         """Test that the queue category `"_ops"` carries over."""
         op = Adjoint(qml.PauliX(0))
@@ -169,6 +164,31 @@ class TestMiscMethods:
 
         assert isinstance(diag_gate, qml.RY)
         assert qml.math.allclose(diag_gate.data[0], -np.pi / 4)
+
+class TestOperationSpecificMethProp:
+
+    def test_single_qubit_rot_angles(self):
+
+        param = 1.234
+        base = qml.RX(param, wires=0)
+        op = Adjoint(base)
+
+        base_angles = base.single_qubit_rot_angles()
+        angles = op.single_qubit_rot_angles()
+
+        for angle1, angle2 in zip(angles, base_angles):
+            assert angle1 == -angle2
+
+    @pytest.mark.parametrize("base, basis", ((qml.RX(1.234, wires=0), "X"),
+    (qml.PauliY("a"), "Y"), (qml.PhaseShift(4.56, wires="b"), "Z"), (qml.SX(-1), "X")))
+    def test_basis_property(self, base, basis):
+        op = Adjoint(base)
+        assert op.basis == basis
+
+    def test_control_wires(self):
+        """Test the control_wires of an adjoint are the same as the base op."""
+        op = Adjoint(qml.CNOT(wires=("a", "b")))
+        assert op.control_wires == qml.wires.Wires("a")
 
 
 class TestQueueing:
@@ -255,13 +275,16 @@ class TestEigvals:
         assert qml.math.allclose(base_eigvals, adj_eigvals)
 
     def test_non_hermitian_eigvals(self):
-        """Test that the e"""
+        """Test that the Adjoint eigvals are the conjugate of the base's eigvals."""
 
-        adj_eigvals = Adjoint(qml.SX(0)).eigvals()
-        assert adj_eigvals == [1 - 0j, -1j]
+        base = qml.SX(0)
+        base_eigvals = base.eigvals()
+        adj_eigvals = Adjoint(base).eigvals()
+        
+        assert qml.math.allclose(qml.math.conj(base_eigvals), adj_eigvals)
 
     def test_no_matrix_defined_eigvals(self):
-
+        """Test that if the base does not define eigvals, The Adjoint raises the same error."""
         base = qml.QubitStateVector([1, 0], wires=0)
 
         with pytest.raises(qml.operation.EigvalsUndefinedError):
@@ -269,6 +292,8 @@ class TestEigvals:
 
 
 class TestDecompositionExpand:
+    """Test the decomposition and expand methods for the Adjoint class."""
+
     def test_decomp_custom_adjoint_defined(self):
         """Test decomposition method when a custom adjoint is defined."""
         decomp = Adjoint(qml.Hadamard(0)).decomposition()
@@ -319,6 +344,8 @@ class TestDecompositionExpand:
 
 
 class TestIntegration:
+    """Test the integration of the Adjoint class with qnodes and gradients."""
+
     @pytest.mark.parametrize(
         "diff_method", ("parameter-shift", "finite-diff", "adjoint", "backprop")
     )
@@ -329,7 +356,12 @@ class TestIntegration:
             return qml.expval(qml.PauliZ(0))
 
         x = np.array(1.2345, requires_grad=True)
-        res = qml.grad(circuit)(x)
-        expected = -np.sin(x)
 
-        assert qml.math.allclose(res, expected)
+        res = circuit(x)
+        expected = np.cos(x)
+        assert res == expected
+
+        grad = qml.grad(circuit)(x)
+        expected_grad = -np.sin(x)
+
+        assert qml.math.allclose(grad, expected_grad)
