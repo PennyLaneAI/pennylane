@@ -1389,3 +1389,13 @@ def test_get_aux_wire_with_device_wires():
     assert _get_aux_wire(0, tape, device_wires) == 0
     assert _get_aux_wire("one", tape, device_wires) == "one"
     assert _get_aux_wire(None, tape, device_wires) == "aux"
+
+def test_get_aux_wire_with_unavailable_aux():
+    """Test ``_get_aux_wire`` with device_wires and a requested ``aux_wire`` that is missing."""
+    x, y = np.array([0.2, 0.1], requires_grad=True)
+    with qml.tape.QuantumTape() as tape:
+        qml.RX(x, wires=0)
+        qml.RX(x, wires="one")
+    device_wires = qml.wires.Wires([0, "one"])
+    with pytest.raises(qml.wires.WireError, match="The requested aux_wire does not exist"):
+        _get_aux_wire("two", tape, device_wires)
