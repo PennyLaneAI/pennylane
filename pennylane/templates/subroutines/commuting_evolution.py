@@ -76,7 +76,8 @@ class CommutingEvolution(Operation):
         shifts (tuple[int or float]): The parameter shifts to use in obtaining the
             generalized parameter shift rules. If unspecified, equidistant shifts are used.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         The template is used inside a qnode:
 

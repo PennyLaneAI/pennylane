@@ -164,7 +164,7 @@ def sparse_hamiltonian(H, wires=None):
                     f"Can only sparsify Hamiltonians whose constituent observables consist of "
                     f"(tensor products of) single-qubit operators; got {op}."
                 )
-            obs.append(scipy.sparse.coo_matrix(o.get_matrix()))
+            obs.append(scipy.sparse.coo_matrix(o.matrix()))
 
         mat = [scipy.sparse.eye(2, format="coo")] * n
 

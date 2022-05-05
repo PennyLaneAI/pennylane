@@ -130,7 +130,8 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
             :width: 60%
             :target: javascript:void(0);
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
     **Decimals:**
 

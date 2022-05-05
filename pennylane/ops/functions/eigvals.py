@@ -76,7 +76,8 @@ def eigvals(op, k=1, which="SA"):
     This operator transform can also be applied to QNodes, tapes, and quantum functions
     that contain multiple operations; see Usage Details below for more details.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         ``qml.eigvals`` can also be used with QNodes, tapes, or quantum functions that
         contain multiple operations. However, in this situation, **eigenvalues may
@@ -115,8 +116,8 @@ def eigvals(op, k=1, which="SA"):
             return scipy.sparse.linalg.eigsh(sparse_matrix, k=k, which=which)[0]
         return qml.math.linalg.eigvalsh(sparse_matrix.toarray())
 
-    # TODO: make `get_eigvals` take a `wire_order` argument to mimic `get_matrix`
-    return op.get_eigvals()
+    # TODO: make `eigvals` take a `wire_order` argument to mimic `matrix`
+    return op.eigvals()
 
 
 @eigvals.tape_transform

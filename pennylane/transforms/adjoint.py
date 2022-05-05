@@ -74,7 +74,8 @@ def adjoint(fn):
     >>> qml.adjoint(qml.QFT)(wires=(0,1,2,3))
     Adjoint(QFT)(wires=[0, 1, 2, 3])
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Adjoint of a function**
 
