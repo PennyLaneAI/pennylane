@@ -71,6 +71,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
+  computed for QNodes with parametrized observables (e.g., `qml.Hermitian`).
+  [(#xxx)](https://github.com/PennyLaneAI/pennylane/pull/xxx)
+
 * Fixed a bug where `QNGOptimizer` did not work with operators
   whose generator was a Hamiltonian.
   [(#2524)](https://github.com/PennyLaneAI/pennylane/pull/2524)
