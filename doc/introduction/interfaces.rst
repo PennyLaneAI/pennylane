@@ -248,8 +248,8 @@ Supported configurations
      });
    </script>
    <style>
-      .gr-parent {background-color:#00ff00;}
-      .rd-parent {background-color:#ff0000;}
+       .gr-parent {background-color:#00ff00; color:#00ff00}
+       .rd-parent {background-color:#ff0000; color:#ff0000}
    </style>
 
 The tables below show all the currently supported functionality
