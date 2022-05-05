@@ -57,12 +57,12 @@
 * Adds tests, adds no-coverage directives, and removes inaccessible logic to improve code coverage.
   [(#2537)](https://github.com/PennyLaneAI/pennylane/pull/2537)
   
-* The base classes `QubitDevice` and `DefaultQubit` now accepts data-types for a statevector. This
+* The base classes `QubitDevice` and `DefaultQubit` now accept data-types for a statevector. This
   enables a derived class (device) in a plugin to choose correct data-types.
   [(#2448)](https://github.com/PennyLaneAI/pennylane/pull/2448)
 
   ```pycon
-  >> dev = qml.device("default.qubit", wires=4, r_dtype=np.float32, c_dtype=np.complex64)
+  >>> dev = qml.device("default.qubit", wires=4, r_dtype=np.float32, c_dtype=np.complex64)
   >>> dev.R_DTYPE
   <class 'numpy.float32'>
   >>> dev.C_DTYPE
