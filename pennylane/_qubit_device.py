@@ -1019,7 +1019,13 @@ class QubitDevice(Device):
             # pylint: disable=protected-access
             if hasattr(tape._par_info[k]["op"], "return_type"):
                 warnings.warn(
-                    f"The input parameter of {tape._par_info[k]['op']} was marked as trainable, though adjoint differentiation doesn't support differentiating with regards to the input parameters of an observable being measured."
+                    "Differentiating with respect to the input parameters of "
+                    f"{tape._par_info[k]['op'].name} is not supported with the "
+                    "adjoint differentiation method. Gradients are computed "
+                    "only with regards to the trainable parameters of the circuit.\n\n Mark "
+                    "the parameters of the measured observables as non-trainable "
+                    "to silence this warning.",
+                    UserWarning,
                 )
             else:
                 trainable_params.append(k)
