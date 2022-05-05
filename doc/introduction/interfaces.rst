@@ -263,7 +263,7 @@ The tables below show all the currently supported functionality
       .tb th, .tb td { padding: 1px; border: solid 1px #777; }
    </style>
 
-.. class:: tb
+.. rst-class:: tb
 
 +-------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------+
 |                                                       | **Return type**                                                                                                            |
