@@ -452,9 +452,11 @@ class TestQubitGradient:
         qnode = qml.QNode(circuit, qubit_device_2_wires, diff_method="parameter-shift")
         params = anp.array([0.1, -1.6, np.pi / 5], requires_grad=True)
 
+        h = 1e-4 if qubit_device_2_wires.R_DTYPE is np.float32 else 1e-7
+
         # manual gradients
-        grad_fd1 = qml.gradients.finite_diff(qnode, approx_order=1)(*params)
-        grad_fd2 = qml.gradients.finite_diff(qnode, approx_order=2)(*params)
+        grad_fd1 = qml.gradients.finite_diff(qnode, h=h, approx_order=1)(*params)
+        grad_fd2 = qml.gradients.finite_diff(qnode, h=h, approx_order=2)(*params)
         grad_angle = qml.gradients.param_shift(qnode)(*params)
 
         # automatic gradient
@@ -509,7 +511,9 @@ class TestQubitGradient:
         grad = autograd.grad(error)
         grad_auto = grad(param)
 
-        grad_fd1 = d_error(param, qml.gradients.finite_diff)
+        h = 1e-3 if qubit_device_2_wires.R_DTYPE is np.float32 else 1e-7
+
+        grad_fd1 = d_error(param, lambda x: qml.gradients.finite_diff(x, h=h))
         grad_angle = d_error(param, qml.gradients.param_shift)
 
         # gradients computed with different methods must agree
@@ -517,7 +521,7 @@ class TestQubitGradient:
         assert grad_fd1 == pytest.approx(grad_auto, abs=tol)
         assert grad_angle == pytest.approx(grad_auto, abs=tol)
 
-    def test_hybrid_gradients_autograd_numpy(self, qubit_device_2_wires, tol):
+    def test_hybrid_gradients_autograd_numpy(self, qubit_device_2_wires):
         "Test the gradient of a hybrid computation requiring autograd.numpy functions."
 
         def circuit(x, y):
@@ -545,13 +549,16 @@ class TestQubitGradient:
         grad_classical = autograd.jacobian(classical)
         grad_auto = grad_classical(param)
 
-        grad_fd1 = d_classical(*param, qml.gradients.finite_diff)
+        h = 5e-4 if qubit_device_2_wires.R_DTYPE is np.float32 else 1e-7
+        atol = 2e-3 if qubit_device_2_wires.R_DTYPE is np.float32 else 1e-5
+
+        grad_fd1 = d_classical(*param, lambda x: qml.gradients.finite_diff(x, h=h))
         grad_angle = d_classical(*param, qml.gradients.param_shift)
 
         # gradients computed with different methods must agree
-        assert qml.math.allclose(grad_fd1, grad_angle, atol=tol, rtol=0)
-        assert qml.math.allclose(grad_fd1, grad_auto, atol=tol, rtol=0)
-        assert qml.math.allclose(grad_angle, grad_auto, atol=tol, rtol=0)
+        assert qml.math.allclose(grad_fd1, grad_angle, atol=atol, rtol=0)
+        assert qml.math.allclose(grad_fd1, grad_auto, atol=atol, rtol=0)
+        assert qml.math.allclose(grad_angle, grad_auto, atol=atol, rtol=0)
 
     def test_qnode_gradient_fanout(self, qubit_device_1_wire, tol):
         "Tests that the correct gradient is computed for qnodes which use the same parameter in multiple gates."
