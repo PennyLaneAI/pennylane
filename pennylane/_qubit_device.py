@@ -1014,15 +1014,23 @@ class QubitDevice(Device):
                 if op.name not in ("QubitStateVector", "BasisState", "Snapshot"):
                     expanded_ops.append(op)
 
-        jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
+        trainable_params = []
+        for k in tape.trainable_params:
+            # pylint: disable=protected-access
+            if hasattr(tape._par_info[k]["op"], "return_type"):
+                warnings.warn(
+                    f"The input parameter of {tape._par_info[k]['op']} was marked as trainable, though adjoint differentiation doesn't support differentiating with regards to the input parameters of an observable being measured."
+                )
+            else:
+                trainable_params.append(k)
 
-        param_number = (
-            len(tape.get_parameters(trainable_only=False, circuit_only=True)) - 1
-        )  # pylint: disable=protected-access
-        trainable_param_number = len(tape.trainable_params) - 1
+        jac = np.zeros((len(tape.observables), len(trainable_params)))
+
+        param_number = len(tape.get_parameters(trainable_only=False, circuit_only=True)) - 1
+        trainable_param_number = len(trainable_params) - 1
         for op in expanded_ops:
 
-            if (op.grad_method is not None) and (param_number in tape.trainable_params):
+            if (op.grad_method is not None) and (param_number in trainable_params):
                 d_op_matrix = operation_derivative(op)
 
             op.inv()
@@ -1031,7 +1039,7 @@ class QubitDevice(Device):
             ket = self._apply_operation(ket, op)
 
             if op.grad_method is not None:
-                if param_number in tape.trainable_params:
+                if param_number in trainable_params:
 
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
