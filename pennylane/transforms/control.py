@@ -49,7 +49,7 @@ def expand_with_control(tape, control_wire):
             else:
                 # Attempt to decompose the operation and apply
                 # controls to each gate in the decomposition.
-                with new_tape.stop_recording():
+                with new_tape.stop_recording():  # pylint:disable=no-member
                     try:
                         tmp_tape = op.expand()
                     except DecompositionUndefinedError:
@@ -155,7 +155,7 @@ class ControlledOperation(Operation):
             tape = ctrl_tape
         return tape
 
-    def adjoint(self):
+    def adjoint(self, do_queue=True):
         """Returns a new ControlledOperation that is equal to the adjoint of `self`"""
 
         active_tape = get_active_tape()
@@ -171,7 +171,9 @@ class ControlledOperation(Operation):
                 # Execute all ops adjointed.
                 adjoint(requeue_ops_in_tape)(self.subtape)
 
-        return ControlledOperation(new_tape, self.control_wires, control_values=self.control_values)
+        return ControlledOperation(
+            new_tape, self.control_wires, control_values=self.control_values, do_queue=do_queue
+        )
 
     def _controlled(self, wires):
         new_values = [1] * len(Wires(wires))

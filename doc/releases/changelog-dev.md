@@ -42,10 +42,15 @@
 
 <h3>Breaking changes</h3>
 
-* The properties `eigval` and `matrix` from the `Operator` class were replaced with the 
+* The module `qml.gradients.param_shift_hessian` has been renamed to
+  `qml.gradients.parameter_shift_hessian` in order to distinguish it from the identically named
+  function. Note that the `param_shift_hessian` function is unaffected by this change and can be
+  invoked in the same manner as before via the `qml.gradients` module.
+  [(#2528)](https://github.com/PennyLaneAI/pennylane/pull/2528)
+* The properties `eigval` and `matrix` from the `Operator` class were replaced with the
   methods `eigval()` and `matrix(wire_order=None)`.
   [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
-  
+
 * `Operator.decomposition()` is now an instance method, and no longer accepts parameters.
   [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
 
