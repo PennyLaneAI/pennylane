@@ -33,56 +33,101 @@ def test_error_adjoint_on_noncallable(obj):
     with pytest.raises(ValueError, match=f"{type(obj)} is not callable."):
         adjoint(obj)
 
-def test_adjoint_single_op():
+class TestDifferentCallableTypes:
 
-    with qml.tape.QuantumTape() as tape:
-        out = adjoint(qml.RX)(1.234, wires="a")
+    def test_adjoint_single_op(self):
 
-    assert out == tape.circuit[0]
-    assert out.__class__ is Adjoint
-    assert out.base.__class__ is qml.RX
-    assert out.data == [1.234]
-    assert out.wires == qml.wires.Wires("a")
+        with qml.tape.QuantumTape() as tape:
+            out = adjoint(qml.RX)(1.234, wires="a")
 
-def test_adjoint_on_function():
-    """Test adjoint transform on a function """
-    def func(x, y, z):
-        qml.RX(x, wires=0)
-        qml.RY(y, wires=0)
-        qml.RZ(z, wires=0)
+        assert out == tape.circuit[0]
+        assert out.__class__ is Adjoint
+        assert out.base.__class__ is qml.RX
+        assert out.data == [1.234]
+        assert out.wires == qml.wires.Wires("a")
 
-    x = 1.23
-    y = 2.34
-    z = 3.45
-    with qml.tape.QuantumTape() as tape:
-        out = adjoint(func)(x, y, z)
+    def test_adjoint_template(self):
 
-    assert out == tape.circuit
+        with qml.tape.QuantumTape() as tape:
+            out = adjoint(qml.QFT)()
 
-    for op in tape:
-        assert op.__class__ is Adjoint
+    def test_adjoint_on_function(self):
+        """Test adjoint transform on a function """
+        def func(x, y, z):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            qml.RZ(z, wires=0)
 
-    # check order reversed
-    assert tape[0].base.__class__ is qml.RZ
-    assert tape[1].base.__class__ is qml.RY
-    assert tape[2].base.__class__ is qml.RX
+        x = 1.23
+        y = 2.34
+        z = 3.45
+        with qml.tape.QuantumTape() as tape:
+            out = adjoint(func)(x, y, z)
 
-    # check parameters assigned correctly
-    assert tape[0].data == [z]
-    assert tape[1].data == [y]
-    assert tape[2].data == [x]
+        assert out == tape.circuit
 
-def test_nested_adjoint():
+        for op in tape:
+            assert op.__class__ is Adjoint
 
-    x = 4.321
-    with qml.tape.QuantumTape() as tape:
-        out = adjoint(adjoint(qml.RX))(x, wires="b")
+        # check order reversed
+        assert tape[0].base.__class__ is qml.RZ
+        assert tape[1].base.__class__ is qml.RY
+        assert tape[2].base.__class__ is qml.RX
 
-    assert out is tape[0]
-    assert out.__class__ is Adjoint
-    assert out.base.__class__ is Adjoint
-    assert out.base.base is qml.RX
-    assert out.data == [x]
-    assert out.wires == qml.wires.Wires("b")
+        # check parameters assigned correctly
+        assert tape[0].data == [z]
+        assert tape[1].data == [y]
+        assert tape[2].data == [x]
 
-    
+    def test_nested_adjoint(self):
+
+        x = 4.321
+        with qml.tape.QuantumTape() as tape:
+            out = adjoint(adjoint(qml.RX))(x, wires="b")
+
+        assert out is tape[0]
+        assert out.__class__ is Adjoint
+        assert out.base.__class__ is Adjoint
+        assert out.base.base is qml.RX
+        assert out.data == [x]
+        assert out.wires == qml.wires.Wires("b")
+
+class TestOutsideofQueuing:
+
+    def test_single_op_outside_of_queuing(self):
+
+        x = 1.234
+        out = adjoint(qml.IsingXX)(x, wires=(0,1))
+
+        assert out.__class__ is Adjoint
+        assert out.base.__class__ is qml.IsingXX
+        assert out.data == [1.234]
+        assert out.wires == qml.wires.Wires((0,1))
+
+    def test_function_outside_of_queuing(self):
+
+        def func(wire):
+            qml.S(wire)
+            qml.SX(wire)
+
+        wire = 1.234
+        out = adjoint(func)(wire)
+
+        assert len(out) == 2
+        assert all(op.__class__ is Adjoint for op in out)
+        assert all(op.wires == qml.wires.Wires(wire) for op in out)
+
+class TestIntegration:
+
+    def test_single_op(self):
+
+        @qml.qnode(qml.device('default.qubit', wires=1))
+        def circ():
+            qml.PauliX(0)
+            adjoint(qml.S)(0)
+            return qml.state()
+
+        res = circ()
+        expected =np.array([0, -1j])
+
+        assert np.allclose(res, expected)

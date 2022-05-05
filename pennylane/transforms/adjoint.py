@@ -128,13 +128,9 @@ def adjoint(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         with stop_recording(), QuantumTape() as tape:
-            res = fn(*args, **kwargs)
+            fn(*args, **kwargs)
 
-        if not tape.operations:
-            # we called op.expand(): get the outputted tape
-            tape = res
-
-        adjoint_ops = [Adjoint(op) for op in reversed(tape.operations)]
+        adjoint_ops = [Adjoint(op) for op in reversed(tape)]
 
         return adjoint_ops[0] if len(adjoint_ops) == 1 else adjoint_ops
 

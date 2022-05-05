@@ -21,8 +21,10 @@ from pennylane.ops.arithmetic import Adjoint
 
 
 class TestInitialization:
-    def test_nonparametric_ops(self):
+    """Test the initialization process and standard properties."""
 
+    def test_nonparametric_ops(self):
+        """Test adjoint initialization for a non parameteric operation."""
         base = qml.PauliX("a")
 
         op = Adjoint(base)
@@ -38,7 +40,7 @@ class TestInitialization:
         assert op.wires == qml.wires.Wires("a")
 
     def test_parametric_ops(self):
-
+        """Test adjoint initialization for a standard parametric operation."""
         params = [1.2345, 2.3456, 3.4567]
         base = qml.Rot(*params, wires="b")
 
@@ -55,7 +57,7 @@ class TestInitialization:
         assert op.wires == qml.wires.Wires("b")
 
     def test_hamiltonian_base(self):
-
+        """Test adjoint initialization for a hamiltonian."""
         base = 2.0 * qml.PauliX(0) @ qml.PauliY(0) + qml.PauliZ("b")
 
         op = Adjoint(base)
@@ -72,6 +74,8 @@ class TestInitialization:
 
 
 class TestProperties:
+    """Test Adjoint properties."""
+
     def test_data(self):
         """Test base data can be get and set through Adjoint class."""
         x = np.array(1.234)
@@ -92,6 +96,28 @@ class TestProperties:
         base.data = [x_new2]
         assert adj.data == [x_new2]
 
+    def test_has_matrix_true(self):
+        """Test `has_matrix` property carries over when base op defines matrix."""
+        base = qml.PauliX(0)
+        op = Adjoint(base)
+
+        assert op.has_matrix
+
+
+    def test_has_matrix_false(self):
+        """Test has_matrix property carries over when base op does not define a matrix."""
+        base = qml.QubitStateVector([1, 0], wires=0)
+        op = Adjoint(base)
+
+        assert not op.has_matrix
+
+    def test_control_wires(self):
+        """Test the control_wires of an adjoint are the same as the base op."""
+        op = Adjoint(qml.CNOT(wires=("a", "b")))
+        assert op.control_wires == qml.wires.Wires("a")
+
+    def test_queue_category(self):
+        """Test that the """
 
 class TestQueueing:
     def test_queueing(self):
@@ -121,26 +147,7 @@ def test_label():
     assert op.label(decimals=2) == "Rot\n(1.23,\n2.35,\n3.46)†"
 
 
-def test_has_matrix_true():
 
-    base = qml.PauliX(0)
-    op = Adjoint(base)
-
-    assert op.has_matrix
-
-
-def test_has_matrix_false():
-    # This will fail till rc bug fix merged in
-    base = qml.QubitStateVector([1, 0], wires=0)
-    op = Adjoint(base)
-
-    assert not op.has_matrix
-
-
-def test_control_wires():
-
-    op = Adjoint(qml.CNOT(wires=("a", "b")))
-    assert op.control_wires == qml.wires.Wires("a")
 
 
 def test_adjoint_of_adjoint():

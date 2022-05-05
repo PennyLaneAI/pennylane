@@ -26,6 +26,8 @@ class Adjoint(Operator):
     Args:
         base (~.operation.Operator): The operator that is adjointed.
 
+    .. seealso:: :func:`~.adjoint`, :meth:`~.operation.Operator.adjoint`
+
     **Example:**
 
     >>> op = Adjoint(qml.S(0))
@@ -113,6 +115,20 @@ class Adjoint(Operator):
     def has_matrix(self):
         return self.base.has_matrix
 
+    def adjoint(self):
+        return self.base
+
+    @property
+    def _queue_category(self):
+        """Used for sorting objects into their respective lists in `QuantumTape` objects.
+
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
+
+        Returns ``_queue_cateogory`` for base operator.
+        """
+        return self.base._queue_category
+
     ## Operation specific properties ##########################################
 
     @property
@@ -145,6 +161,3 @@ class Adjoint(Operator):
         if isinstance(self.base, Operation):  # stand in for being unitary and inverse=adjoint
             return -1.0 * self.base.generator()
         return super().generator()
-
-    def adjoint(self):
-        return self.base

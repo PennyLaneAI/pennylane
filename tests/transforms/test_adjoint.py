@@ -145,7 +145,7 @@ class TestOutsideOfQueuing:
         op_adjoint = adjoint(op)(wires=wires)
 
         assert type(op_adjoint) == Adjoint
-        assert op_adjoint.base.__class__ = op
+        assert op_adjoint.base.__class__ == op
 
     param_ops = [(qml.RX, [0.123], 0), (qml.Rot, [0.1, 0.2, 0.3], [1]), (qml.CRY, [0.1], [1, 4])]
 
