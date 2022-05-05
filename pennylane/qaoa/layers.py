@@ -56,7 +56,8 @@ def cost_layer(gamma, hamiltonian):
     Raises:
         ValueError: if the terms of the supplied cost Hamiltonian are not exclusively products of diagonal Pauli gates
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         We first define a cost Hamiltonian:
 
@@ -117,7 +118,8 @@ def mixer_layer(alpha, hamiltonian):
         alpha (int or float): The variational parameter passed into the mixer layer
         hamiltonian (.Hamiltonian): The mixer Hamiltonian
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         We first define a mixer Hamiltonian:
 

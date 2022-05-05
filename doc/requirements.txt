@@ -24,3 +24,4 @@ torchvision==0.10.0+cpu
 jinja2==3.0.3
 retworkx==0.10.2
 networkx==2.6
+xanadu-sphinx-theme==0.1.0

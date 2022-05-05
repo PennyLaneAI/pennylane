@@ -173,6 +173,10 @@ Quantum Chemistry Ops
 
 :html:`</div>`
 
+Electronic Hamiltonians built independently using
+`OpenFermion <https://github.com/quantumlib/OpenFermion>`_ tools can be readily converted to a
+PennyLane observable using the :func:`~.pennylane.import_operator` function.
+
 
 Matrix Ops
 ^^^^^^^^^^

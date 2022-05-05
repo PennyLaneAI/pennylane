@@ -134,7 +134,8 @@ def tape_text(
       2: ─╰QFT──RZ─│──┤           ├Probs
     aux: ──────────╰X─┤  <Z>      ╰Probs
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
     By default, parameters are omitted. By specifying the ``decimals`` keyword, parameters
     are displayed to the specified precision. Matrix-valued parameters are never displayed.

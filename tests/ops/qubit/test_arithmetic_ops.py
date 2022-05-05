@@ -118,7 +118,7 @@ class TestQubitCarry:
         """Test that the matrix representation is defined correctly"""
 
         res_static = qml.QubitCarry.compute_matrix()
-        res_dynamic = qml.QubitCarry(wires=[0, 1, 2, 3]).get_matrix()
+        res_dynamic = qml.QubitCarry(wires=[0, 1, 2, 3]).matrix()
         expected = np.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -222,7 +222,7 @@ class TestQubitSum:
         """Test that the matrix representation is defined correctly"""
 
         res_static = qml.QubitSum.compute_matrix()
-        res_dynamic = qml.QubitSum(wires=[0, 1, 2]).get_matrix()
+        res_dynamic = qml.QubitSum(wires=[0, 1, 2]).matrix()
         expected = np.array(
             [
                 [1, 0, 0, 0, 0, 0, 0, 0],
