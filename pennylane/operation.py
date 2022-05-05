@@ -1074,6 +1074,7 @@ class Operator(abc.ABC):
             # original operation has no trainable parameters
             tape.trainable_params = {}
 
+        # the inverse attribute can be defined by subclasses
         if getattr(self, "inverse", False):
             tape.inv()
 
@@ -2377,7 +2378,8 @@ def has_nopar(obj):
 def has_unitary_gen(obj):
     """Returns ``True`` if an operator has a unitary_generator
     according to the ``has_unitary_generator`` flag."""
-    return obj in qml.ops.qubit.attributes.has_unitary_generator
+    # Linting check disabled as static analysis can misidentify qml.ops as the set instance qml.ops.qubit.ops
+    return obj in qml.ops.qubit.attributes.has_unitary_generator  # pylint:disable=no-member
 
 
 @qml.BooleanFn

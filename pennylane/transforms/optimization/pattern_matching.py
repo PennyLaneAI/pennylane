@@ -812,7 +812,7 @@ class ForwardMatch:  # pylint: disable=too-many-instance-attributes,too-few-publ
         """Apply the forward match algorithm and returns the list of matches given an initial match
         and a qubits configuration.
         """
-        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-branches,too-many-nested-blocks
 
         # Initialization
         self._init_successors_to_visit()
@@ -1078,7 +1078,7 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
         """Run the backward match algorithm and returns the list of matches given an initial match, a forward
         scenario and a circuit qubits configuration.
         """
-        # pylint: disable=too-many-branches, too-many-statements
+        # pylint: disable=too-many-branches,too-many-statements,too-many-nested-blocks
         match_store_list = []
 
         counter = 1

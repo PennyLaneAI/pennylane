@@ -18,6 +18,7 @@ measurement basis, and templates for the circuit implementations.
 import numpy as np
 
 import pennylane as qml
+from pennylane.tape import OperationRecorder
 from pennylane.operation import Tensor
 from pennylane.wires import Wires
 from pennylane.grouping.utils import (
@@ -50,7 +51,7 @@ def qwc_rotation(pauli_operators):
             f"All values of input pauli_operators must be either Identity, PauliX, PauliY, or PauliZ instances,"
             f" instead got pauli_operators = {pauli_operators}."
         )
-    with qml.tape.OperationRecorder() as rec:
+    with OperationRecorder() as rec:
 
         for pauli in pauli_operators:
             if isinstance(pauli, qml.PauliX):
@@ -59,7 +60,8 @@ def qwc_rotation(pauli_operators):
             elif isinstance(pauli, qml.PauliY):
                 qml.RX(np.pi / 2, wires=pauli.wires)
 
-    return rec.queue
+    # known issue with pylint recognizing @property members
+    return rec.queue  # pylint:disable=no-member
 
 
 def diagonalize_pauli_word(pauli_word):
