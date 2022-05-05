@@ -75,6 +75,7 @@
   whose generator was a Hamiltonian.
   [(#2524)](https://github.com/PennyLaneAI/pennylane/pull/2524)
 
+* Fixes a bug with the decomposition of `qml.CommutingEvolution`.
 
 <h3>Deprecations</h3>
 

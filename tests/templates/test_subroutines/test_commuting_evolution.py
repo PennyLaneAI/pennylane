@@ -51,6 +51,25 @@ def test_adjoint():
     assert all(np.isclose(dev1.state, dev2.state))
 
 
+def test_decomposition_expand():
+    """Test that the decomposition of CommutingEvolution is an ApproxTimeEvolution with one step."""
+
+    hamiltonian = 0.5 * qml.PauliX(0) @ qml.PauliY(1)
+    time = 2.345
+
+    op = qml.CommutingEvolution(hamiltonian, time)
+
+    decomp = op.decomposition()
+
+    assert isinstance(decomp, qml.ApproxTimeEvolution)
+    assert all(decomp.hyperparameters["hamiltonian"].coeffs == hamiltonian.coeffs)
+    assert decomp.hyperparameters["n"] == 1
+
+    tape = op.expand()
+    assert len(tape) == 1
+    assert isinstance(tape[0], qml.ApproxTimeEvolution)
+
+
 class TestInputs:
     """Tests for input validation of `CommutingEvolution`."""
 
