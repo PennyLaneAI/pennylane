@@ -1390,6 +1390,7 @@ def test_get_aux_wire_with_device_wires():
     assert _get_aux_wire("one", tape, device_wires) == "one"
     assert _get_aux_wire(None, tape, device_wires) == "aux"
 
+
 def test_get_aux_wire_with_unavailable_aux():
     """Test ``_get_aux_wire`` with device_wires and a requested ``aux_wire`` that is missing."""
     x, y = np.array([0.2, 0.1], requires_grad=True)
