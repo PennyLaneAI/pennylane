@@ -165,8 +165,8 @@ class TestQubitUnitary:
             (Z, qml.RZ, [np.pi]),
             (S, qml.RZ, [np.pi / 2]),
             (T, qml.RZ, [np.pi / 4]),
-            (qml.RZ(0.3, wires=0).matrix(), qml.RZ, [0.3]),
-            (qml.RZ(-0.5, wires=0).matrix(), qml.RZ, [-0.5]),
+            (qml.matrix(qml.RZ(0.3, wires=0)), qml.RZ, [0.3]),
+            (qml.matrix(qml.RZ(-0.5, wires=0)), qml.RZ, [-0.5]),
             (
                 np.array(
                     [
@@ -179,9 +179,9 @@ class TestQubitUnitary:
             ),
             (H, qml.Rot, [np.pi, np.pi / 2, 0.0]),
             (X, qml.Rot, [np.pi / 2, np.pi, -np.pi / 2]),
-            (qml.Rot(0.2, 0.5, -0.3, wires=0).matrix(), qml.Rot, [0.2, 0.5, -0.3]),
+            (qml.matrix(qml.Rot(0.2, 0.5, -0.3, wires=0)), qml.Rot, [0.2, 0.5, -0.3]),
             (
-                np.exp(1j * 0.02) * qml.Rot(-1.0, 2.0, -3.0, wires=0).matrix(),
+                np.exp(1j * 0.02) * qml.matrix(qml.Rot(-1.0, 2.0, -3.0, wires=0)),
                 qml.Rot,
                 [-1.0, 2.0, -3.0],
             ),
@@ -252,10 +252,15 @@ class TestDiagonalQubitUnitary:
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
-    def test_error_not_unitary(self):
-        """Tests that error is raised if diagonal does not lead to a unitary"""
+    def test_error_matrix_not_unitary(self):
+        """Tests that error is raised if diagonal by `compute_matrix` does not lead to a unitary"""
         with pytest.raises(ValueError, match="Operator must be unitary"):
             qml.DiagonalQubitUnitary.compute_matrix(np.array([1, 2]))
+
+    def test_error_eigvals_not_unitary(self):
+        """Tests that error is raised by `compute_eigvals` if diagonal does not lead to a unitary"""
+        with pytest.raises(ValueError, match="Operator must be unitary"):
+            qml.DiagonalQubitUnitary.compute_eigvals(np.array([1, 2]))
 
     def test_jax_jit(self):
         """Test that the diagonal matrix unitary operation works

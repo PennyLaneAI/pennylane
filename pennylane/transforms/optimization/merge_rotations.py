@@ -119,7 +119,6 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
 
         # We need to use stack to get this to work and be differentiable in all interfaces
         cumulative_angles = stack(current_gate.parameters)
-
         # As long as there is a valid next gate, check if we can merge the angles
         while next_gate_idx is not None:
             # Get the next gate
@@ -128,17 +127,25 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
             # If next gate is of the same type, we can merge the angles
             if current_gate.name == next_gate.name and current_gate.wires == next_gate.wires:
                 list_copy.pop(next_gate_idx + 1)
-
                 # The Rot gate must be treated separately
                 if current_gate.name == "Rot":
-                    cumulative_angles = fuse_rot_angles(
-                        cumulative_angles, cast_like(stack(next_gate.parameters), cumulative_angles)
-                    )
+                    if is_abstract(cumulative_angles):
+                        # jax-jit does not support cast_like
+                        cumulative_angles = cumulative_angles + stack(next_gate.parameters)
+                    else:
+                        cumulative_angles = fuse_rot_angles(
+                            cumulative_angles,
+                            cast_like(stack(next_gate.parameters), cumulative_angles),
+                        )
                 # Other, single-parameter rotation gates just have the angle summed
                 else:
-                    cumulative_angles = cumulative_angles + cast_like(
-                        stack(next_gate.parameters), cumulative_angles
-                    )
+                    if is_abstract(cumulative_angles):
+                        # jax-jit does not support cast_like
+                        cumulative_angles = cumulative_angles + stack(next_gate.parameters)
+                    else:
+                        cumulative_angles = cumulative_angles + cast_like(
+                            stack(next_gate.parameters), cumulative_angles
+                        )
             # If it is not, we need to stop
             else:
                 break
