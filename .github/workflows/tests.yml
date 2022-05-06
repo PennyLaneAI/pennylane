@@ -27,7 +27,7 @@ jobs:
           - {python-version: 3.7, suite: 'autograd'}
           - {python-version: 3.8, suite: 'autograd'}
           - {python-version: 3.9, suite: 'autograd'}
-          - {python-version: 3.10, suite: 'autograd'}
+          - {python-version: '3.10', suite: 'autograd'}
           - {python-version: 3.7, suite: 'core'}
           - {python-version: 3.8, suite: 'core'}
           - {python-version: 3.9, suite: 'core'}
