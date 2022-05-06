@@ -45,10 +45,10 @@ class TestOperations:
         """Tests that the Rot gates yielded by single_qubit_rot_angles
         are equivalent to the true operations up to a global phase."""
         angles = op.single_qubit_rot_angles()
-        obtained_mat = qml.Rot(*angles, wires=0).get_matrix()
+        obtained_mat = qml.Rot(*angles, wires=0).matrix()
 
         # Check whether the two matrices are each others conjugate transposes
-        mat_product = qml.math.dot(op.get_matrix(), qml.math.conj(obtained_mat.T))
+        mat_product = qml.math.dot(op.matrix(), qml.math.conj(obtained_mat.T))
         mat_product /= mat_product[0, 0]
 
         assert qml.math.allclose(mat_product, I)

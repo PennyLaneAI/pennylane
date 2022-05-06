@@ -971,7 +971,7 @@ def cut_circuit_mc(
     Args:
         tape (QuantumTape): the tape of the full circuit to be cut
         classical_processing_fn (callable): A classical postprocessing function to be applied to
-            the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``.
+            the reconstructed bitstrings. The expected input is a bitstring; a flat array of length ``wires``,
             and the output should be a single number within the interval :math:`[-1, 1]`.
             If not supplied, the transform will output samples.
         auto_cutter (Union[bool, Callable]): Toggle for enabling automatic cutting with the default
@@ -1069,7 +1069,8 @@ def cut_circuit_mc(
     (123, 2)
 
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Manually placing :class:`~.WireCut` operations and decorating the QNode with the
         ``cut_circuit_mc()`` batch transform is the suggested entrypoint into sampling-based
@@ -1096,6 +1097,8 @@ def cut_circuit_mc(
         Consider the circuit below:
 
         .. code-block:: python
+
+            np.random.seed(42)
 
             with qml.tape.QuantumTape() as tape:
                 qml.Hadamard(wires=0)
@@ -1130,9 +1133,9 @@ def cut_circuit_mc(
                 qml.sample(wires=[0, 1, 2])
 
         >>> cut_graph = qml.transforms.qcut.find_and_place_cuts(
-                graph=qml.transforms.qcut.tape_to_graph(uncut_tape),
-                cut_strategy=qml.transforms.qcut.CutStrategy(max_free_wires=2),
-            )
+        ...     graph=qml.transforms.qcut.tape_to_graph(uncut_tape),
+        ...     cut_strategy=qml.transforms.qcut.CutStrategy(max_free_wires=2),
+        ... )
         >>> print(qml.transforms.qcut.graph_to_tape(cut_graph).draw())
          0: ──H─╭C───────────┤  Sample[|1⟩⟨1|]
          1: ────╰X──//──X─╭C─┤  Sample[|1⟩⟨1|]
@@ -1191,11 +1194,11 @@ def cut_circuit_mc(
 
         >>> shots = 3
         >>> configurations, settings = qml.transforms.qcut.expand_fragment_tapes_mc(
-        ...        fragment_tapes, communication_graph, shots=shots
-        ...    )
+        ...     fragment_tapes, communication_graph, shots=shots
+        ... )
         >>> tapes = tuple(tape for c in configurations for tape in c)
         >>> settings
-        tensor([[0, 4, 7]], requires_grad=True)
+        tensor([[6, 3, 4]], requires_grad=True)
 
         Each configuration is drawn below:
 
@@ -1206,21 +1209,21 @@ def cut_circuit_mc(
         .. code-block::
 
             0: ──H─╭C────┤  Sample[|1⟩⟨1|]
-            1: ────╰X──X─┤  Sample[I]
+            1: ────╰X──X─┤  Sample[Z]
+
+            0: ──H─╭C────┤  Sample[|1⟩⟨1|]
+            1: ────╰X──X─┤  Sample[X]
 
             0: ──H─╭C────┤  Sample[|1⟩⟨1|]
             1: ────╰X──X─┤  Sample[Y]
 
-            0: ──H─╭C────┤  Sample[|1⟩⟨1|]
-            1: ────╰X──X─┤  Sample[Z]
-
             0: ──I─╭C─┤  Sample[|1⟩⟨1|]
             1: ────╰X─┤  Sample[|1⟩⟨1|]
 
-            0: ──H──S─╭C─┤  Sample[|1⟩⟨1|]
+            0: ──X──S─╭C─┤  Sample[|1⟩⟨1|]
             1: ───────╰X─┤  Sample[|1⟩⟨1|]
 
-            0: ──X─╭C─┤  Sample[|1⟩⟨1|]
+            0: ──H─╭C─┤  Sample[|1⟩⟨1|]
             1: ────╰X─┤  Sample[|1⟩⟨1|]
 
         The last step is to execute the tapes and postprocess the results using
@@ -1233,9 +1236,9 @@ def cut_circuit_mc(
         ...     communication_graph,
         ...     shots=shots,
         ... )
-        [array([[1., 0., 0.],
-                [0., 0., 0.],
-                [1., 1., 1.]])]
+        [array([[0., 0., 0.],
+                [1., 0., 0.],
+                [1., 0., 0.]])]
 
         Alternatively, it is possible to calculate an expectation value if a classical
         processing function is provided that will accept the reconstructed circuit bitstrings
@@ -1256,7 +1259,40 @@ def cut_circuit_mc(
         ...     shots,
         ...     fn
         ... )
-        array(4.)
+        array(-4.)
+
+        Using the Monte Carlo approach of [Peng et. al](https://arxiv.org/abs/1904.00102), the
+        `cut_circuit_mc` transform also supports returning sample-based expectation values of
+        observables that are diagonal in the computational basis, as shown below for a `ZZ` measurement
+        on wires `0` and `2`:
+
+        .. code-block::
+
+            dev = qml.device("default.qubit", wires=2, shots=10000)
+
+            def observable(bitstring):
+                return (-1) ** np.sum(bitstring)
+
+            @qml.cut_circuit_mc(classical_processing_fn=observable)
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(0.89, wires=0)
+                qml.RY(0.5, wires=1)
+                qml.RX(1.3, wires=2)
+
+                qml.CNOT(wires=[0, 1])
+                qml.WireCut(wires=1)
+                qml.CNOT(wires=[1, 2])
+
+                qml.RX(x, wires=0)
+                qml.RY(0.7, wires=1)
+                qml.RX(2.3, wires=2)
+                return qml.sample(wires=[0, 2])
+
+        We can now approximate the expectation value of the observable using
+
+        >>> circuit(x)
+        tensor(-0.776, requires_grad=True)
     """
     # pylint: disable=unused-argument, too-many-arguments
 
@@ -1856,7 +1892,8 @@ def cut_circuit(
     >>> qml.grad(circuit)(x)
     -0.276982865449393
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Manually placing :class:`~.WireCut` operations and decorating the QNode with the
         ``cut_circuit()`` batch transform is the suggested entrypoint into circuit cutting. However,
@@ -3180,6 +3217,7 @@ def _is_valid_cut(
 
     correct_num_fragments = k <= num_fragments_requested
     best_candidate_yet = (key not in cut_candidates) or (len(cut_candidates[key]) > num_cuts)
+    # pylint: disable=no-member
     all_fragments_fit = all(
         len(graph_to_tape(f).wires) <= max_free_wires for j, f in enumerate(fragments)
     )

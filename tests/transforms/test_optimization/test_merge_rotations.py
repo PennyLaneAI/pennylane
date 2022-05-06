@@ -160,13 +160,14 @@ class TestMergeRotations:
             qml.RY(0.5, wires=["a"])
             qml.RX(-0.5, wires=[2])
             qml.RX(0.2, wires=[2])
+            qml.RZ(0.2, wires=[2])
 
         transformed_qfunc = merge_rotations(include_gates=["RX", "CRX"])(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        names_expected = ["CRX", "RY", "RY", "RX"]
-        wires_expected = [Wires([0, 1]), Wires("a"), Wires("a"), Wires(2)]
+        names_expected = ["CRX", "RY", "RY", "RX", "RZ"]
+        wires_expected = [Wires([0, 1]), Wires("a"), Wires("a"), Wires(2), Wires(2)]
         compare_operation_lists(ops, names_expected, wires_expected)
 
         assert qml.math.isclose(ops[0].parameters[0], 0.3)
@@ -415,8 +416,12 @@ class TestMergeRotationsInterfaces:
         @qml.qnode(dev, interface="jax")
         @merge_rotations()
         def qfunc():
-            qml.CRX(0.2, wires=["w1", "w2"])
-            qml.CRX(-0.2, wires=["w1", "w2"])
+            qml.Rot(jax.numpy.array(0.1), jax.numpy.array(0.2), jax.numpy.array(0.3), wires=["w1"])
+            qml.Rot(
+                jax.numpy.array(-0.1), jax.numpy.array(-0.2), jax.numpy.array(-0.3), wires=["w1"]
+            )
+            qml.CRX(jax.numpy.array(0.2), wires=["w1", "w2"])
+            qml.CRX(jax.numpy.array(-0.2), wires=["w1", "w2"])
             return qml.expval(qml.PauliZ("w1"))
 
         res = qfunc()

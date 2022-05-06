@@ -10,26 +10,11 @@ number observables.
 
 .. currentmodule:: pennylane.qchem
 
-.. rubric:: Modules
-
-.. autosummary::
-    :toctree: api
-
-    basis_data
-    basis_set
-    convert
-    dipole
-    hamiltonian
-    hartree_fock
-    integrals
-    matrices
-    molecule
-    number
-    observable_hf
-    openfermion_obs
-    spin
-    structure
-    tapering
+.. automodapi:: pennylane.qchem
+    :no-heading:
+    :include-all-objects:
+    :no-inheritance-diagram:
+    :skip: taper, symmetry_generators, paulix_ops, import_operator
 
 Differentiable Hartree-Fock
 ---------------------------
@@ -190,7 +175,7 @@ The :func:`~.molecular_hamiltonian` function can be also used to construct the m
 with a non-differentiable backend that uses the
 `OpenFermion-PySCF <https://github.com/quantumlib/OpenFermion-PySCF>`_ plugin interfaced with the
 electronic structure package `PySCF <https://github.com/sunqm/pyscf>`_. The non-differentiable
-backend can be selected by setting `method='pyscf'` in :func:`~.molecular_hamiltonian`:
+backend can be selected by setting ``method='pyscf'`` in :func:`~.molecular_hamiltonian`:
 
 .. code-block:: python
 

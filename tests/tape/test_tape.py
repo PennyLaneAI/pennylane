@@ -237,7 +237,7 @@ class TestConstruction:
     def test_state_preparation_error(self):
         """Test that an exception is raised if a state preparation comes
         after a quantum operation"""
-        with pytest.raises(ValueError, match="must occur prior to any quantum"):
+        with pytest.raises(ValueError, match="must occur prior to ops"):
             with QuantumTape() as tape:
                 B = qml.PauliX(wires=0)
                 qml.BasisState(np.array([0, 1]), wires=[0, 1])
@@ -245,7 +245,7 @@ class TestConstruction:
     def test_measurement_before_operation(self):
         """Test that an exception is raised if a measurement occurs before a operation"""
 
-        with pytest.raises(ValueError, match="must occur prior to any measurements"):
+        with pytest.raises(ValueError, match="must occur prior to measurements"):
             with QuantumTape() as tape:
                 qml.expval(qml.PauliZ(wires=1))
                 qml.RX(0.5, wires=0)
@@ -1006,7 +1006,7 @@ class TestExpand:
         assert [m.obs is r for m, r in zip(new_tape.measurements, expected)]
 
         expected = [None, [1, -1, -1, 1], [0, 5]]
-        assert [m.get_eigvals() is r for m, r in zip(new_tape.measurements, expected)]
+        assert [m.eigvals() is r for m, r in zip(new_tape.measurements, expected)]
 
     def test_expand_tape_multiple_wires(self):
         """Test the expand() method when measurements with more than one observable on the same

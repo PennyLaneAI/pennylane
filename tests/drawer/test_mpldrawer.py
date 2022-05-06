@@ -346,6 +346,7 @@ class TestCTRL:
 
         assert circ.center == (0, 0)
         assert circ.width == 0.2
+        plt.close()
 
     def test_ctrl_control_values_error(self):
         """Tests a ValueError is raised if different number of wires and control_values."""
@@ -405,6 +406,7 @@ class TestCTRL:
         assert circ.get_facecolor() == to_rgba(plt.rcParams["axes.facecolor"])
         assert circ.get_edgecolor() == to_rgba(plt.rcParams["lines.color"])
         assert circ.get_linewidth() == plt.rcParams["lines.linewidth"]
+        plt.close()
 
     def test_ctrl_target(self):
         """Tests target impacts line extent"""
@@ -505,6 +507,7 @@ class TestCTRL:
         assert ctrl_circ1.get_facecolor() == to_rgba(plt.rcParams["lines.color"])
         # second facecolor should match the background
         assert ctrl_circ2.get_facecolor() == to_rgba(plt.rcParams["axes.facecolor"])
+        plt.close()
 
     def test_CNOT_color(self):
         drawer = MPLDrawer(1, 3)

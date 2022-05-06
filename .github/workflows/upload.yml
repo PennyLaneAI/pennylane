@@ -123,6 +123,7 @@ jobs:
           pip install -r requirements-ci.txt
           python setup.py bdist_wheel
           pip install dist/PennyLane*.whl
+
       - name: Run tests
         run: |
           python -m pytest pennylane/devices/tests \

@@ -69,7 +69,8 @@ class QAOAEmbedding(Operation):
     Raises:
         ValueError: if inputs do not have the correct format
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         The QAOA embedding encodes an :math:`n`-dimensional feature vector into at most :math:`n` qubits. The
         embedding applies layers of a circuit, and each layer is defined by a set of weight parameters.
