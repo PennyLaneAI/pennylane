@@ -35,6 +35,8 @@ qubit_device_and_diff_method = [
     ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
+pytestmark = pytest.mark.jax
+
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 

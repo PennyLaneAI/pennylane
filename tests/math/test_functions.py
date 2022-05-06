@@ -25,6 +25,8 @@ from autograd.numpy.numpy_boxes import ArrayBox
 
 import semantic_version
 
+pytestmark = pytest.mark.all_interfaces
+
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")

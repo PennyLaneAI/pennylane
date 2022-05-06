@@ -139,6 +139,7 @@ class TestHamiltonianExpval:
         with pytest.raises(ValueError, match=r"Passed tape must end in"):
             tapes, fn = qml.transforms.hamiltonian_expand(tape)
 
+    @pytest.mark.autograd
     def test_hamiltonian_dif_autograd(self, tol):
         """Tests that the hamiltonian_expand tape transform is differentiable with the Autograd interface"""
 
@@ -184,10 +185,11 @@ class TestHamiltonianExpval:
         for g, o in zip(grad, output2):
             assert np.allclose(g, o, atol=tol)
 
+    @pytest.mark.tf
     def test_hamiltonian_dif_tensorflow(self):
         """Tests that the hamiltonian_expand tape transform is differentiable with the Tensorflow interface"""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         H = qml.Hamiltonian(
             [-0.2, 0.5, 1], [qml.PauliX(1), qml.PauliZ(1) @ qml.PauliY(2), qml.PauliZ(0)]

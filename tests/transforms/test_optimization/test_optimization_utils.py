@@ -90,6 +90,7 @@ class TestRotGateFusion:
         obtained_quat = _quaternion_product(angles_1, angles_2)
         assert qml.math.allclose(obtained_quat, expected_quat)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize(
         ("angles_1", "angles_2"),
         [

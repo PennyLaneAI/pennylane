@@ -1944,6 +1944,7 @@ class TestOutputShape:
         res_shape = qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift_cv)[0]
         assert tape.shape(dev) == res_shape.shape
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("measurements, expected", multi_measurements)
     @pytest.mark.parametrize("shots", [None, 1, 10])
     def test_multi_measure(self, measurements, expected, shots):
@@ -1971,6 +1972,7 @@ class TestOutputShape:
         expected = execution_results[0].shape
         assert res == expected
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("measurements, expected", multi_measurements)
     def test_multi_measure_shot_vector(self, measurements, expected):
         """Test that the expected output shape is obtained when using multiple
@@ -2008,6 +2010,7 @@ class TestOutputShape:
         expected = execution_results[0].shape
         assert res == expected
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("shots", [1, 10])
     def test_multi_measure_sample(self, shots):
         """Test that the expected output shape is obtained when using multiple
@@ -2033,6 +2036,7 @@ class TestOutputShape:
         expected = execution_results[0].shape
         assert res == expected
 
+    @pytest.mark.autograd
     def test_multi_measure_sample_shot_vector(self):
         """Test that the expected output shape is obtained when using multiple
         qml.sample measurements with a shot vector."""
@@ -2235,6 +2239,7 @@ class TestNumericType:
         assert np.issubdtype(result.dtype, float)
         assert circuit.qtape.numeric_type is float
 
+    @pytest.mark.autograd
     def test_sample_real_and_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for
         multiple sampling measurements with a Hermitian observable with real

@@ -271,15 +271,71 @@ class TestTransformObservable:
 class TestParameterShiftLogic:
     """Test for the dispatching logic of the parameter shift method"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
-    def test_no_trainable_params_qnode(self, interface):
+    @pytest.mark.autograd
+    def test_no_trainable_params_qnode_autograd(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
-        if interface != "autograd":
-            pytest.importorskip(interface)
+
         dev = qml.device("default.gaussian", wires=2)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface="autograd")
+        def circuit(weights):
+            qml.Displacement(weights[0], 0.0, wires=[0])
+            qml.Rotation(weights[1], wires=[0])
+            return qml.expval(qml.X(0))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift_cv(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.torch
+    def test_no_trainable_params_qnode_torch(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+
+        dev = qml.device("default.gaussian", wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(weights):
+            qml.Displacement(weights[0], 0.0, wires=[0])
+            qml.Rotation(weights[1], wires=[0])
+            return qml.expval(qml.X(0))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift_cv(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.tf
+    def test_no_trainable_params_qnode_tf(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+
+        dev = qml.device("default.gaussian", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(weights):
+            qml.Displacement(weights[0], 0.0, wires=[0])
+            qml.Rotation(weights[1], wires=[0])
+            return qml.expval(qml.X(0))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift_cv(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.jax
+    def test_no_trainable_params_qnode_jax(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+
+        dev = qml.device("default.gaussian", wires=2)
+
+        @qml.qnode(dev, interface="jax")
         def circuit(weights):
             qml.Displacement(weights[0], 0.0, wires=[0])
             qml.Rotation(weights[1], wires=[0])
@@ -1016,6 +1072,7 @@ class TestVarianceQuantumGradients:
 class TestParamShiftInterfaces:
     """Test that the transform is differentiable"""
 
+    @pytest.mark.autograd
     def test_autograd_gradient(self, tol):
         """Tests that the output of the parameter-shift CV transform
         can be differentiated using autograd, yielding second derivatives."""
@@ -1041,10 +1098,11 @@ class TestParamShiftInterfaces:
         )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests that the output of the parameter-shift CV transform
         can be executed using TF"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dev = qml.device("default.gaussian", wires=1)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
@@ -1080,10 +1138,11 @@ class TestParamShiftInterfaces:
         )
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests that the output of the parameter-shift CV transform
         can be executed using Torch."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         dev = qml.device("default.gaussian", wires=1)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
@@ -1117,10 +1176,11 @@ class TestParamShiftInterfaces:
         )
         assert np.allclose(hess.detach().numpy(), expected, atol=0.1, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests that the output of the parameter-shift CV transform
         can be differentiated using JAX, yielding second derivatives."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
         from jax.config import config
 

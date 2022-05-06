@@ -25,6 +25,8 @@ from pennylane.devices import DefaultQubit
 from pennylane.gradients import finite_diff, param_shift
 from pennylane.interfaces import execute
 
+pytestmark = pytest.mark.autograd
+
 
 class TestAutogradExecuteUnitTests:
     """Unit tests for autograd execution"""
