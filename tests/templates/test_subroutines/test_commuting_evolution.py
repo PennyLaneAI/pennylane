@@ -86,6 +86,25 @@ def test_matrix():
     assert qml.math.allclose(mat, expected)
 
 
+def test_forward_execution():
+    """Compare the foward execution to an exactly known result."""
+    dev = qml.device("default.qubit", wires=2)
+
+    H = qml.PauliX(0) @ qml.PauliY(1) - 1.0 * qml.PauliY(0) @ qml.PauliX(1)
+    freq = (2, 4)
+
+    @qml.qnode(dev, diff_method=None)
+    def circuit(time):
+        qml.PauliX(0)
+        qml.CommutingEvolution(H, time, freq)
+        return qml.expval(qml.PauliZ(0))
+
+    t = 1.0
+    res = circuit(t)
+    expected = -np.cos(4)
+    assert np.allclose(res, expected)
+
+
 class TestInputs:
     """Tests for input validation of `CommutingEvolution`."""
 
