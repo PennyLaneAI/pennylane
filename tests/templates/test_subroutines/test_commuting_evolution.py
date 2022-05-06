@@ -18,6 +18,8 @@ import pytest
 from pennylane import numpy as np
 import pennylane as qml
 
+from scipy.linalg import expm
+
 
 def test_adjoint():
     """Tests the CommutingEvolution.adjoint method provides the correct adjoint operation."""
@@ -49,6 +51,58 @@ def test_adjoint():
     adjoint_evolution_circuit(-0.13)
 
     assert all(np.isclose(dev1.state, dev2.state))
+
+
+def test_decomposition_expand():
+    """Test that the decomposition of CommutingEvolution is an ApproxTimeEvolution with one step."""
+
+    hamiltonian = 0.5 * qml.PauliX(0) @ qml.PauliY(1)
+    time = 2.345
+
+    op = qml.CommutingEvolution(hamiltonian, time)
+
+    decomp = op.decomposition()
+
+    assert isinstance(decomp, qml.ApproxTimeEvolution)
+    assert all(decomp.hyperparameters["hamiltonian"].coeffs == hamiltonian.coeffs)
+    assert decomp.hyperparameters["n"] == 1
+
+    tape = op.expand()
+    assert len(tape) == 1
+    assert isinstance(tape[0], qml.ApproxTimeEvolution)
+
+
+def test_matrix():
+    """Test that the matrix of commuting evolution is the same as exponentiating -1j * t the hamiltonian."""
+
+    h = 2.34 * qml.PauliX(0)
+    time = 0.234
+    op = qml.CommutingEvolution(h, time)
+
+    mat = qml.matrix(op)
+
+    expected = expm(-1j * time * qml.matrix(h))
+
+    assert qml.math.allclose(mat, expected)
+
+
+def test_forward_execution():
+    """Compare the foward execution to an exactly known result."""
+    dev = qml.device("default.qubit", wires=2)
+
+    H = qml.PauliX(0) @ qml.PauliY(1) - 1.0 * qml.PauliY(0) @ qml.PauliX(1)
+    freq = (2, 4)
+
+    @qml.qnode(dev, diff_method=None)
+    def circuit(time):
+        qml.PauliX(0)
+        qml.CommutingEvolution(H, time, freq)
+        return qml.expval(qml.PauliZ(0))
+
+    t = 1.0
+    res = circuit(t)
+    expected = -np.cos(4)
+    assert np.allclose(res, expected)
 
 
 class TestInputs:

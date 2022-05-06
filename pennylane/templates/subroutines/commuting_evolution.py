@@ -135,7 +135,7 @@ class CommutingEvolution(Operation):
 
     @staticmethod
     def compute_decomposition(
-        *time_and_coeffs, wires, hamiltonian, **kwargs
+        time, *coeffs, wires, hamiltonian, **kwargs
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators.
 
@@ -157,8 +157,8 @@ class CommutingEvolution(Operation):
             list[.Operator]: decomposition of the operator
         """
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
-        hamiltonian = qml.Hamiltonian(time_and_coeffs[1:], hamiltonian.ops)
-        return qml.templates.ApproxTimeEvolution(hamiltonian, time_and_coeffs[1], 1).decomposition()
+        hamiltonian = qml.Hamiltonian(coeffs, hamiltonian.ops)
+        return qml.ApproxTimeEvolution(hamiltonian, time, 1)
 
     def adjoint(self):  # pylint: disable=arguments-differ
 
