@@ -518,7 +518,8 @@ class TestIsIndependentTorch:
     @pytest.mark.parametrize("func, args", zip(constant_functions, args_constant))
     def test_independent(self, func, args):
         """Tests that an independent function is correctly detected as such."""
-        assert is_independent(func, self.interface, args)
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
+            assert is_independent(func, self.interface, args)
 
     @pytest.mark.parametrize(
         "func, args, exp_fail",
@@ -526,10 +527,11 @@ class TestIsIndependentTorch:
     )
     def test_dependent(self, func, args, exp_fail):
         """Tests that a dependent function is correctly detected as such."""
-        if exp_fail:
-            assert is_independent(func, self.interface, args)
-        else:
-            assert not is_independent(func, self.interface, args)
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
+            if exp_fail:
+                assert is_independent(func, self.interface, args)
+            else:
+                assert not is_independent(func, self.interface, args)
 
     @pytest.mark.xfail
     @pytest.mark.parametrize("func, args", zip(overlooked_lambdas, args_overlooked_lambdas))
@@ -544,9 +546,12 @@ class TestIsIndependentTorch:
         f = lambda x, kw=False: 0.1 * x if kw else 0.2
         jac = lambda x, kw: torch.autograd.functional.jacobian(lambda x: f(x, kw), x)
         args = (torch.tensor(0.2),)
-        assert is_independent(f, self.interface, args)
-        assert not is_independent(f, self.interface, args, {"kw": True})
-        assert is_independent(jac, self.interface, args, {"kw": True})
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
+            assert is_independent(f, self.interface, args)
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
+            assert not is_independent(f, self.interface, args, {"kw": True})
+        with pytest.warns(UserWarning, match=r"The function is_independent is only available"):
+            assert is_independent(jac, self.interface, args, {"kw": True})
 
 
 class TestOther:
