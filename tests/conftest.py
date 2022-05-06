@@ -235,8 +235,8 @@ def pytest_runtest_setup(item):
                     pytest.skip(
                         f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
                     )
-
-        elif b not in allowed_interfaces:
-            pytest.skip(
-                f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
-            )
+        else:
+            if b not in allowed_interfaces:
+                pytest.skip(
+                    f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
+                )
