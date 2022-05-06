@@ -243,13 +243,13 @@ Supported configurations
    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
    <script>
      $(document).ready(function() {
-       $('.gr').parent().addClass('gr-parent');
-       $('.rd').parent().addClass('rd-parent');
+       $('.gr').parent().parent().addClass('gr-parent');
+       $('.rd').parent().parent().addClass('rd-parent');
      });
    </script>
    <style>
-       .gr-parent {background-color:#00ff00; color:#00ff00}
-       .rd-parent {background-color:#ff0000; color:#ff0000}
+       .gr-parent {background-color:#bbffbb}
+       .rd-parent {background-color:#ffbbbb}
    </style>
 
 The tables below show all the currently supported functionality
