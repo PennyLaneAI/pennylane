@@ -20,7 +20,7 @@ import pytest
 
 from pennylane import math as fn
 
-pytestmark = pytest.mark.math
+pytestmark = pytest.mark.all_interfaces
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")

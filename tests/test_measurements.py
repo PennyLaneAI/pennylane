@@ -969,6 +969,7 @@ class TestState:
         assert torch.allclose(state_expected, state_val)
         assert state_val.shape == (16,)
 
+    @pytest.mark.autograd
     def test_jacobian_not_supported(self):
         """Test if an error is raised if the jacobian method is called via qml.grad"""
         dev = qml.device("default.qubit", wires=4)

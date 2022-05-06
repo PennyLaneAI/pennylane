@@ -179,7 +179,8 @@ class Molecule:
         >>> mo(0.0, 0.0, 0.0)
         0.01825128
         """
-        c = self.mo_coefficients[index]
+        # molecular coefficients are set by other modules
+        c = self.mo_coefficients[index]  # pylint:disable=unsubscriptable-object
 
         def orbital(x, y, z):
             r"""Evaluate a molecular orbital at a given position.

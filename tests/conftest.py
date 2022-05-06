@@ -71,19 +71,19 @@ def qubit_device(n_subsystems):
     return qml.device("default.qubit", wires=n_subsystems)
 
 
-@pytest.fixture(scope="function")
-def qubit_device_1_wire():
-    return qml.device("default.qubit", wires=1)
+@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
+def qubit_device_1_wire(request):
+    return qml.device("default.qubit", wires=1, r_dtype=request.param[0], c_dtype=request.param[1])
 
 
-@pytest.fixture(scope="function")
-def qubit_device_2_wires():
-    return qml.device("default.qubit", wires=2)
+@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
+def qubit_device_2_wires(request):
+    return qml.device("default.qubit", wires=2, r_dtype=request.param[0], c_dtype=request.param[1])
 
 
-@pytest.fixture(scope="function")
-def qubit_device_3_wires():
-    return qml.device("default.qubit", wires=3)
+@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
+def qubit_device_3_wires(request):
+    return qml.device("default.qubit", wires=3, r_dtype=request.param[0], c_dtype=request.param[1])
 
 
 @pytest.fixture(scope="session")
@@ -195,11 +195,12 @@ def pytest_collection_modifyitems(items, config):
             mark = getattr(pytest.mark, "qchem")
             item.add_marker(mark)
 
+    # Tests that do not have a specific suite marker are marked `core`
     for item in items:
         markers = {mark.name for mark in item.iter_markers()}
         if (
             not any(
-                elem in ["autograd", "torch", "tf", "jax", "qchem", "qcut", "math"]
+                elem in ["autograd", "torch", "tf", "jax", "qchem", "qcut", "all_interfaces"]
                 for elem in markers
             )
             or not markers
@@ -208,11 +209,10 @@ def pytest_collection_modifyitems(items, config):
 
 
 def pytest_runtest_setup(item):
-    """Automatically skip tests if they are marked for only certain backends"""
-    all_interfaces = {"core", "autograd", "tf", "torch", "jax"}
+    """Automatically skip tests if interfaces are not installed"""
+    # Autograd is assumed to be installed
+    interfaces = {"tf", "torch", "jax"}
     available_interfaces = {
-        "core": True,
-        "autograd": True,
         "tf": tf_available,
         "torch": torch_available,
         "jax": jax_available,
@@ -220,21 +220,24 @@ def pytest_runtest_setup(item):
 
     allowed_interfaces = [
         allowed_interface
-        for allowed_interface in all_interfaces
+        for allowed_interface in interfaces
         if available_interfaces[allowed_interface] is True
     ]
 
     # load the marker specifying what the interface is
+    all_interfaces = {"tf", "torch", "jax", "all_interfaces"}
     marks = {mark.name for mark in item.iter_markers() if mark.name in all_interfaces}
 
-    if not marks:
-        # if the test hasn't specified that it runs on particular interfaces,
-        # assume it will work with core only
-        marks = {"core"}
-
     for b in marks:
-        if b not in allowed_interfaces:
-            pytest.skip(
-                "\nTest {} only runs with {} interfaces(s), "
-                "but {} interface provided".format(item.nodeid, allowed_interfaces, b)
-            )
+        if b == "all_interfaces":
+            required_interfaces = {"tf", "torch", "jax"}
+            for interface in required_interfaces:
+                if interface not in allowed_interfaces:
+                    pytest.skip(
+                        f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
+                    )
+        else:
+            if b not in allowed_interfaces:
+                pytest.skip(
+                    f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
+                )

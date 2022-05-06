@@ -168,6 +168,7 @@ class TestValidation:
         with pytest.raises(qml.QuantumFunctionError, match=r"Backpropagation is only supported"):
             QNode._validate_backprop_method(dev, "autograd")
 
+    @pytest.mark.autograd
     def test_parameter_shift_qubit_device(self):
         """Test that the _validate_parameter_shift method
         returns the correct gradient transform for qubit devices."""
@@ -175,6 +176,7 @@ class TestValidation:
         gradient_fn = QNode._validate_parameter_shift(dev)
         assert gradient_fn[0] is qml.gradients.param_shift
 
+    @pytest.mark.autograd
     def test_parameter_shift_cv_device(self):
         """Test that the _validate_parameter_shift method
         returns the correct gradient transform for cv devices."""
@@ -199,35 +201,116 @@ class TestValidation:
         ):
             QNode._validate_parameter_shift(dev)
 
-    def test_best_method(self, monkeypatch):
+    @pytest.mark.autograd
+    def test_best_method_is_device(self, monkeypatch):
         """Test that the method for determining the best diff method
-        for a given device and interface works correctly"""
+        for a given device and interface returns the device"""
         dev = qml.device("default.qubit", wires=1)
         monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
 
-        # device is top priority
+        # basic check if the device provides a Jacobian
         res = QNode.get_best_method(dev, "another_interface")
         assert res == ("device", {}, dev)
 
-        # backprop is next priority
+        # device is returned even if backpropagation is possible
+        res = QNode.get_best_method(dev, "some_interface")
+        assert res == ("device", {}, dev)
+
+    def test_best_method_is_backprop(self, monkeypatch):
+        """Test that the method for determining the best diff method
+        for a given device and interface returns backpropagation"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
         monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+
+        # backprop is returned when the interfaces match and Jacobian is not provided
         res = QNode.get_best_method(dev, "some_interface")
         assert res == ("backprop", {}, dev)
 
-        # The next fallback is parameter-shift.
+    def test_best_method_is_param_shift(self, monkeypatch):
+        """Test that the method for determining the best diff method
+        for a given device and interface returns the parameter shift rule"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+
+        # parameter shift is returned when Jacobian is not provided and
+        # the backprop interfaces do not match
         res = QNode.get_best_method(dev, "another_interface")
         assert res == (qml.gradients.param_shift, {}, dev)
 
-        # finally, if both fail, finite differences is the fallback
+    def test_best_method_is_finite_diff(self, monkeypatch):
+        """Test that the method for determining the best diff method
+        for a given device and interface returns finite differences"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+
         def capabilities(cls):
             capabilities = cls._capabilities
             capabilities.update(model="None")
             return capabilities
 
+        # finite differences is the fallback when we know nothing about the device
         monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
         res = QNode.get_best_method(dev, "another_interface")
         assert res == (qml.gradients.finite_diff, {}, dev)
+
+    def test_best_method_str_is_device(self, monkeypatch):
+        """Test that the method for determining the best diff method string
+        for a given device and interface returns 'device'"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", True)
+
+        # basic check if the device provides a Jacobian
+        res = QNode.best_method_str(dev, "another_interface")
+        assert res == "device"
+
+        # device is returned even if backpropagation is possible
+        res = QNode.best_method_str(dev, "some_interface")
+        assert res == "device"
+
+    def test_best_method_str_is_backprop(self, monkeypatch):
+        """Test that the method for determining the best diff method string
+        for a given device and interface returns 'backprop'"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+
+        # backprop is returned when the interfaces match and Jacobian is not provided
+        res = QNode.best_method_str(dev, "some_interface")
+        assert res == "backprop"
+
+    def test_best_method_str_is_param_shift(self, monkeypatch):
+        """Test that the method for determining the best diff method string
+        for a given device and interface returns 'parameter-shift'"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+
+        # parameter shift is returned when Jacobian is not provided and
+        # the backprop interfaces do not match
+        res = QNode.best_method_str(dev, "another_interface")
+        assert res == "parameter-shift"
+
+    def test_best_method_str_is_finite_diff(self, monkeypatch):
+        """Test that the method for determining the best diff method string
+        for a given device and interface returns 'finite-diff'"""
+        dev = qml.device("default.qubit", wires=1)
+        monkeypatch.setitem(dev._capabilities, "passthru_interface", "some_interface")
+        monkeypatch.setitem(dev._capabilities, "provides_jacobian", False)
+
+        def capabilities(cls):
+            capabilities = cls._capabilities
+            capabilities.update(model="None")
+            return capabilities
+
+        # finite differences is the fallback when we know nothing about the device
+        monkeypatch.setattr(qml.devices.DefaultQubit, "capabilities", capabilities)
+        res = QNode.best_method_str(dev, "another_interface")
+        assert res == "finite-diff"
 
     def test_diff_method(self, mocker):
         """Test that a user-supplied diff method correctly returns the right
@@ -268,6 +351,7 @@ class TestValidation:
         # check that get_best_method was only ever called once
         mock_best.assert_called_once()
 
+    @pytest.mark.autograd
     def test_gradient_transform(self, mocker):
         """Test passing a gradient transform directly to a QNode"""
         dev = qml.device("default.qubit", wires=1)
@@ -336,6 +420,7 @@ class TestValidation:
             def circ():
                 return qml.expval(qml.PauliZ(0))
 
+    @pytest.mark.autograd
     def test_sparse_diffmethod_error(self):
         """Test that an error is raised when the observable is SparseHamiltonian and the
         differentiation method is not parameter-shift."""
@@ -368,6 +453,7 @@ class TestValidation:
             == "<QNode: wires=1, device='default.qubit.autograd', interface='autograd', diff_method='best'>"
         )
 
+    @pytest.mark.autograd
     def test_diff_method_none(self, tol):
         """Test that diff_method=None creates a QNode with no interface, and no
         device swapping."""
@@ -766,6 +852,7 @@ class TestIntegration:
         assert dev.num_executions == 2
         assert cache != {}
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff"])
     def test_single_expectation_value_with_argnum_one(self, diff_method, tol):
         """Tests correct output shape and evaluation for a QNode
@@ -1160,6 +1247,7 @@ class TestShots:
             circuit(0.3)
             circuit(0.3)
 
+    @pytest.mark.autograd
     def test_no_warning_internal_cache_reuse(self):
         """Tests that no warning is raised when only the internal cache is reused."""
         dev = qml.device("default.qubit", wires=1, shots=5)
@@ -1273,6 +1361,7 @@ class TestTapeExpansion:
         assert tape.operations[0].name == "RX"
         assert np.allclose(tape.operations[0].parameters, 3 * x)
 
+    @pytest.mark.autograd
     def test_no_gradient_expansion(self, mocker):
         """Test that an unsupported operation with defined gradient recipe is
         not expanded"""
@@ -1316,6 +1405,7 @@ class TestTapeExpansion:
         # check second derivative
         assert np.allclose(qml.grad(qml.grad(circuit))(x), -9 * np.cos(3 * x))
 
+    @pytest.mark.autograd
     def test_gradient_expansion(self, mocker):
         """Test that a *supported* operation with no gradient recipe is
         expanded when applying the gradient transform, but not for execution."""
