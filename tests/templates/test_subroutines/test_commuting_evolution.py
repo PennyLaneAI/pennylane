@@ -18,6 +18,8 @@ import pytest
 from pennylane import numpy as np
 import pennylane as qml
 
+from scipy.linalg import expm
+
 
 def test_adjoint():
     """Tests the CommutingEvolution.adjoint method provides the correct adjoint operation."""
@@ -68,6 +70,20 @@ def test_decomposition_expand():
     tape = op.expand()
     assert len(tape) == 1
     assert isinstance(tape[0], qml.ApproxTimeEvolution)
+
+
+def test_matrix():
+    """Test that the matrix of commuting evolution is the same as exponentiating -1j * t the hamiltonian."""
+
+    h = 2.34 * qml.PauliX(0)
+    time = 0.234
+    op = qml.CommutingEvolution(h, time)
+
+    mat = qml.matrix(op)
+
+    expected = expm(-1j * time * qml.matrix(h))
+
+    assert qml.math.allclose(mat, expected)
 
 
 class TestInputs:
