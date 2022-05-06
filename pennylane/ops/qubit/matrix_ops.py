@@ -155,7 +155,7 @@ class QubitUnitary(Operation):
 
     def pow(self, n):
         if isinstance(n, int):
-            return QubitUnitary(qml.math.linalg.matrix_power(self.get_matrix(), n), wires=self.wires)
+            return QubitUnitary(qml.math.linalg.matrix_power(self.matrix(), n), wires=self.wires)
         super().pow(n)
 
     def _controlled(self, wire):
@@ -453,7 +453,7 @@ class DiagonalQubitUnitary(Operation):
     def pow(self, n):
         if isinstance(self.data[0], list):
             return DiagonalQubitUnitary([x**n for x in self.data[0]], wires=self.wires)
-        return DiagonalQubitUnitary(self.data[0]**n, wires=self.wires)
+        return DiagonalQubitUnitary(qml.math.float_power(self.data[0], n, dtype=complex), wires=self.wires)
 
     def _controlled(self, control):
         DiagonalQubitUnitary(

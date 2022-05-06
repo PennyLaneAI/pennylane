@@ -34,6 +34,31 @@ from gate_data import (
 class TestQubitUnitary:
     """Tests for the QubitUnitary class."""
 
+    def test_qubit_unitary_noninteger_pow(self):
+        """Test QubitUnitary raised to a non-integer power raises an error."""
+        U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
+
+        op = qml.QubitUnitary(U, wires="a")
+
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(0.123)
+
+
+    @pytest.mark.parametrize("n", (1, 3, -1, -3))
+    def test_qubit_unitary_pow(self, n):
+        """Test qubit unitary raised to an integer power."""
+        U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
+
+        op = qml.QubitUnitary(U, wires="a")
+        new_op = op.pow(n)
+
+        assert new_op.wires == op.wires
+
+        mat_to_pow = qml.math.linalg.matrix_power(qml.matrix(op), n)
+        new_mat = qml.matrix(new_op)
+
+        assert qml.math.allclose(mat_to_pow, new_mat)
+
     @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
     def test_qubit_unitary_autograd(self, U, num_wires):
         """Test that the unitary operator produces the correct output and
@@ -251,6 +276,17 @@ class TestDiagonalQubitUnitary:
         expected = np.array([[1, 0], [0, -1]])
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
+
+    @pytest.mark.parametrize("n", (2, -1, 0.12345))
+    @pytest.mark.parametrize("diag", ([1.0,-1.0], np.array([1.0, -1.0])) )
+    def test_pow(self, n, diag):
+        """Test pow method returns expected results."""
+        op = qml.DiagonalQubitUnitary(diag, wires="b")
+        pow_op = op.pow(n)
+
+        for x_op, x_pow in zip(op.data[0], pow_op.data[0]):
+            assert x_op**n == x_pow
+
 
     def test_error_matrix_not_unitary(self):
         """Tests that error is raised if diagonal by `compute_matrix` does not lead to a unitary"""

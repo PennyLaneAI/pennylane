@@ -1370,6 +1370,11 @@ class TestDefaultRepresentations:
         with pytest.raises(qml.operation.GeneratorUndefinedError):
             gate.generator()
 
+    def test_pow_undefined(self):
+        """Tests that custom error is raised in the default pow decomposition."""
+        with pytest.raises(qml.operation.PowUndefinedError):
+            gate.pow(1.234)
+
 
 class TestChannel:
     """Unit tests for the Channel class"""
