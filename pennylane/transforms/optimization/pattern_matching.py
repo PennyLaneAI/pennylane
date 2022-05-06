@@ -1228,7 +1228,7 @@ class BackwardMatch:  # pylint: disable=too-many-instance-attributes, too-few-pu
                         condition = True
 
                         for back_match in match_backward:
-                            if back_match not in new_matches_scenario_match:
+                            if back_match not in new_matches_scenario_match:  # pragma: no cover
                                 condition = False
                                 break
 

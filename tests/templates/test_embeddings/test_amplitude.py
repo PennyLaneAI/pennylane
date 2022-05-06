@@ -50,8 +50,9 @@ class TestDecomposition:
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "QubitStateVector"
 
+    @pytest.mark.parametrize("normalize", (True, False))
     @pytest.mark.parametrize("inpt", FEATURES)
-    def test_prepares_correct_state(self, inpt):
+    def test_prepares_correct_state(self, inpt, normalize):
         """Checks the state for real and complex inputs."""
 
         n_qubits = 2
@@ -59,7 +60,7 @@ class TestDecomposition:
 
         @qml.qnode(dev)
         def circuit(x=None):
-            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), normalize=False)
+            qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), normalize=normalize)
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
         circuit(x=inpt)
