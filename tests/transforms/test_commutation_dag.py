@@ -266,7 +266,7 @@ class TestCommutingFunction:
             ([[2], [0, 1, 2]], True),
         ],
     )
-    def test_rx_mcz(self, wires, res):
+    def test_mcz_rx(self, wires, res):
         """Commutation between MCZ and RZ"""
 
         def z():
