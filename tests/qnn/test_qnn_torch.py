@@ -389,7 +389,7 @@ class TestTorchLayer:
         assert len(weights) == len(list(layer.parameters()))
 
 
-@pytest.mark.math
+@pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
 @pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py

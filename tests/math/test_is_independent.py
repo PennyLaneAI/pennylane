@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.math import is_independent
 from pennylane.math.is_independent import _get_random_args
 
-pytestmark = pytest.mark.math
+pytestmark = pytest.mark.all_interfaces
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")

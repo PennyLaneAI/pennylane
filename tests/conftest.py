@@ -195,11 +195,12 @@ def pytest_collection_modifyitems(items, config):
             mark = getattr(pytest.mark, "qchem")
             item.add_marker(mark)
 
+    # Test that do not have specific suite marker are marked `coore`
     for item in items:
         markers = {mark.name for mark in item.iter_markers()}
         if (
             not any(
-                elem in ["autograd", "torch", "tf", "jax", "qchem", "qcut", "math"]
+                elem in ["autograd", "torch", "tf", "jax", "qchem", "qcut", "all_interfaces"]
                 for elem in markers
             )
             or not markers
@@ -208,11 +209,9 @@ def pytest_collection_modifyitems(items, config):
 
 
 def pytest_runtest_setup(item):
-    """Automatically skip tests if they are marked for only certain backends"""
-    all_interfaces = {"core", "autograd", "tf", "torch", "jax"}
+    """Automatically skip tests if interfaces are not installed"""
+    all_interfaces = {"tf", "torch", "jax"}
     available_interfaces = {
-        "core": True,
-        "autograd": True,
         "tf": tf_available,
         "torch": torch_available,
         "jax": jax_available,
@@ -227,14 +226,18 @@ def pytest_runtest_setup(item):
     # load the marker specifying what the interface is
     marks = {mark.name for mark in item.iter_markers() if mark.name in all_interfaces}
 
-    if not marks:
-        # if the test hasn't specified that it runs on particular interfaces,
-        # assume it will work with core only
-        marks = {"core"}
-
     for b in marks:
+        if b == "all_interfaces":
+            required_interfaces = {"tf", "torch", "jax"}
+            for interface in required_interfaces:
+                if interface not in allowed_interfaces:
+                    pytest.skip(
+                        f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s)",
+                        f"but {b} interface provided",
+                    )
+
         if b not in allowed_interfaces:
             pytest.skip(
-                "\nTest {} only runs with {} interfaces(s), "
-                "but {} interface provided".format(item.nodeid, allowed_interfaces, b)
+                f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s)",
+                f"but {b} interface provided",
             )

@@ -22,22 +22,6 @@ from pennylane import numpy as pnp
 from pennylane.wires import Wires
 from pennylane.devices import DefaultQubit, DefaultMixed
 
-try:
-    import torch
-except ImportError as e:
-    pass
-
-
-try:
-    import tensorflow as tf
-
-    if tf.__version__[0] == "1":
-        tf.enable_eager_execution()
-
-    from tensorflow import Variable
-except ImportError as e:
-    pass
-
 
 @pytest.fixture(scope="function")
 def seed():
@@ -354,6 +338,7 @@ class TestVQE:
         with pytest.raises(ValueError, match="not a callable function."):
             cost = qml.ExpvalCost(4, hamiltonian, mock_device())
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
     def test_passing_kwargs(self, coeffs, observables, expected):
         """Test that the step size and order used for the finite differences
@@ -697,6 +682,7 @@ class TestVQE:
         assert np.allclose(dc, big_hamiltonian_grad)
         assert np.allclose(dc2, big_hamiltonian_grad)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("opt", [True, False])
     def test_grad_zero_hamiltonian(self, opt):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
@@ -908,6 +894,7 @@ class TestNewVQE:
 
         assert np.allclose(res1, res2, atol=tol)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("shots, dim", [([(1000, 2)], 2), ([30, 30], 2), ([2, 3, 4], 3)])
     def test_shot_distribution(self, shots, dim):
         """Tests that distributed shots work with the new VQE design."""
@@ -1035,6 +1022,7 @@ class TestNewVQE:
         dc = qml.grad(circuit)(w)
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
+    @pytest.mark.autograd
     def test_grad_zero_hamiltonian(self, tol):
         """Tests the VQE gradient for a "zero" Hamiltonian."""
         dev = qml.device("default.qubit", wires=4)
@@ -1148,6 +1136,7 @@ class TestAutogradInterface:
         res = [c(params) for c in circuits]
         assert all(isinstance(val, (np.ndarray, float)) for val in res)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("interface", ["autograd"])
     def test_gradient(self, tol, interface):
         """Test differentiation works"""
@@ -1184,6 +1173,8 @@ class TestTorchInterface:
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device):
         """Test that QNodes have the torch interface"""
+        import torch
+
         dev = mock_device(wires=3)
         circuits = qml.map(ansatz, observables, device=dev, interface="torch")
         assert all(c.interface == "torch" for c in circuits)
@@ -1193,6 +1184,8 @@ class TestTorchInterface:
 
     def test_gradient(self, tol):
         """Test differentiation works"""
+        import torch
+
         dev = qml.device("default.qubit", wires=1)
 
         def ansatz(params, **kwargs):
@@ -1228,6 +1221,8 @@ class TestTFInterface:
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device):
         """Test that QNodes have the tf interface"""
+        import tensorflow as tf
+
         if ansatz == amp_embed_and_strong_ent_layer:
             pytest.skip("TF doesn't work with ragged arrays")
 
@@ -1236,10 +1231,12 @@ class TestTFInterface:
         assert all(c.interface == "tf" for c in circuits)
 
         res = [c(params) for c in circuits]
-        assert all(isinstance(val, (Variable, tf.Tensor)) for val in res)
+        assert all(isinstance(val, (tf.Variable, tf.Tensor)) for val in res)
 
     def test_gradient(self, tol):
         """Test differentiation works"""
+        import tensorflow as tf
+
         dev = qml.device("default.qubit", wires=1)
 
         def ansatz(params, **kwargs):
@@ -1251,7 +1248,7 @@ class TestTFInterface:
 
         H = qml.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
-        params = Variable([a, b], dtype=tf.float64)
+        params = tf.Variable([a, b], dtype=tf.float64)
         cost = qml.ExpvalCost(ansatz, H, dev, interface="tf")
 
         with tf.GradientTape() as tape:
@@ -1267,12 +1264,15 @@ class TestTFInterface:
 
 
 # Multiple interfaces it will bee tested with math module
-@pytest.mark.math
+@pytest.mark.all_interfaces
 class TestMultipleInterfaceIntegration:
     """Tests to ensure that interfaces agree and integrate correctly"""
 
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""
+        import torch
+        import tensorflow as tf
+
         dev = qml.device("default.qubit", wires=2)
 
         coeffs = [0.2, 0.5]
@@ -1285,7 +1285,7 @@ class TestMultipleInterfaceIntegration:
         params = np.random.uniform(low=0, high=2 * np.pi, size=shape)
 
         # TensorFlow interface
-        w = Variable(params)
+        w = tf.Variable(params)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
         cost = qml.ExpvalCost(ansatz, H, dev, interface="tf")
