@@ -56,7 +56,8 @@ class BasicEntanglerLayers(Operation):
     Raises:
         ValueError: if inputs do not have the correct format
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         The template is used inside a qnode:
 

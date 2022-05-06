@@ -2188,8 +2188,8 @@ class Barrier(Operation):
     def _controlled(self, _):
         return Barrier(wires=self.wires)
 
-    def adjoint(self, do_queue=False):
-        return Barrier(wires=self.wires)
+    def adjoint(self, do_queue=True):
+        return Barrier(wires=self.wires, do_queue=do_queue)
 
     def pow(self, n):
         return self.__copy__()

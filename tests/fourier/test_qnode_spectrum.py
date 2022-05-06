@@ -429,7 +429,8 @@ class TestTorch:
         dev = qml.device("default.qubit", wires=3)
         qnode = qml.QNode(circuit, dev, interface="torch")
 
-        res = qnode_spectrum(qnode, argnum=0)(x, w)
+        with pytest.warns(UserWarning, match=r"is_independent"):
+            res = qnode_spectrum(qnode, argnum=0)(x, w)
         assert res
         assert res == expected_result
 
@@ -442,7 +443,8 @@ class TestTorch:
         dev = qml.device("default.qubit", wires=2)
         qnode = qml.QNode(circuit, dev, interface="torch")
         with pytest.raises(ValueError, match="The Jacobian of the classical preprocessing"):
-            qnode_spectrum(qnode)(*args)
+            with pytest.warns(UserWarning, match=r"is_independent"):
+                qnode_spectrum(qnode)(*args)
 
 
 class TestTensorflow:

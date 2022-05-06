@@ -154,7 +154,8 @@ class batch_transform:
     >>> print(gradient)
     2.5800122591960153
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Expansion functions**
 

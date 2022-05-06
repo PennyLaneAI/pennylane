@@ -82,7 +82,8 @@ class TorchLayer(Module):
     >>> clayer = torch.nn.Linear(2, 2)
     >>> model = torch.nn.Sequential(qlayer, clayer)
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **QNode signature**
 

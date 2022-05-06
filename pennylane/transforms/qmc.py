@@ -160,7 +160,8 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
     Raises:
         ValueError: if ``wires`` and ``estimation_wires`` share a common wire
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Consider an input quantum circuit ``fn`` that performs the unitary
 
