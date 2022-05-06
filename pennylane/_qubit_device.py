@@ -939,7 +939,8 @@ class QubitDevice(Device):
 
             * Only expectation values are supported as measurements.
 
-            * Does not work for Hamiltonian observables.
+            * Does not work for parametrized observables like
+              :class:`~.Hamiltonian` or :class:`~.Hermitian`.
 
         Args:
             tape (.QuantumTape): circuit that the function takes the gradient of
