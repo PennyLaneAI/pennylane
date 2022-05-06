@@ -246,7 +246,7 @@ class TestAdjointJacobian:
 
         assert np.allclose(dM1, dM2, atol=tol, rtol=0)
 
-    def test_hermitian_gradient(self, tol):
+    def test_gradient_of_tape_with_hermitian(self, tol):
         """Test that computing the gradient of a tape that obtains the
         expectation value of a Hermitian operator works correctly."""
         dev = qml.device("default.qubit", wires=3)
@@ -514,7 +514,7 @@ class TestAdjointJacobianQNode:
 
         assert np.allclose(grad_adjoint, grad_backprop)
 
-    def test_hermitian_gradient(self, tol):
+    def test_gradient_of_qnode_with_hermitian(self, tol):
         """Test that computing the gradient of a QNode that obtains the
         expectation value of a Hermitian operator works correctly."""
         dev = qml.device("default.qubit", wires=3)
