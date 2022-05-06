@@ -399,7 +399,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             constant = None
 
             # Check if the transformed observable corresponds to a constant term.
-            if len(A.nonzero()[0]) == 1:
+            if len(A.nonzero()) == 1:
                 if A.ndim == 2 and A[0, 0] != 0:
                     constant = A[0, 0]
 
