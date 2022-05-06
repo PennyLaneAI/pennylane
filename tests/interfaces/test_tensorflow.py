@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane.gradients import finite_diff, param_shift
 from pennylane.interfaces import execute
 
+pytestmark = pytest.mark.tf
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 

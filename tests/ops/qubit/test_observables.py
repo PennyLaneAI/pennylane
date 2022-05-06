@@ -251,6 +251,7 @@ class TestHermitian:
         expected = eigvecs.conj().T
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("obs1", EIGVALS_TEST_DATA)
     @pytest.mark.parametrize("obs2", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gates_two_different_observables(self, obs1, obs2, tol):

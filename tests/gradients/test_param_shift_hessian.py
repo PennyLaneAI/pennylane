@@ -651,15 +651,71 @@ class TestParameterShiftHessian:
 
         qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
-    def test_no_trainable_params_qnode(self, interface):
+    @pytest.mark.autograd
+    def test_no_trainable_params_qnode_autograd(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
-        if interface != "autograd":
-            pytest.importorskip(interface)
+
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
+        @qml.qnode(dev, interface="autograd", diff_method="parameter-shift")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift_hessian(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.torch
+    def test_no_trainable_params_qnode_torch(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch", diff_method="parameter-shift")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift_hessian(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.tf
+    def test_no_trainable_params_qnode_tf(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf", diff_method="parameter-shift")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift_hessian(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.jax
+    def test_no_trainable_params_qnode_jax(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -959,9 +1015,10 @@ class TestParamShiftHessianWithKwargs:
 class TestInterfaces:
     """Test the param_shift_hessian method on different interfaces"""
 
+    @pytest.mark.torch
     def test_hessian_transform_with_torch(self):
         """Test that the Hessian transform can be used with Torch (1d -> 1d)"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -981,10 +1038,11 @@ class TestInterfaces:
 
         assert np.allclose(expected, hess.detach())
 
+    @pytest.mark.torch
     def test_hessian_transform_is_differentiable_torch(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation in Torch
         (1d -> 1d)"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1005,10 +1063,11 @@ class TestInterfaces:
 
         assert np.allclose(expected, torch_deriv)
 
+    @pytest.mark.jax
     @pytest.mark.slow
     def test_hessian_transform_with_jax(self):
         """Test that the Hessian transform can be used with JAX (1d -> 1d)"""
-        jax = pytest.importorskip("jax")
+        import jax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1028,11 +1087,12 @@ class TestInterfaces:
 
         assert np.allclose(expected, hess)
 
+    @pytest.mark.jax
     @pytest.mark.slow
     def test_hessian_transform_is_differentiable_jax(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation in JAX
         (1d -> 1d)"""
-        jax = pytest.importorskip("jax")
+        import jax
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1052,10 +1112,11 @@ class TestInterfaces:
 
         assert np.allclose(expected, jax_deriv)
 
+    @pytest.mark.tf
     @pytest.mark.slow
     def test_hessian_transform_with_tensorflow(self):
         """Test that the Hessian transform can be used with TensorFlow (1d -> 1d)"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1076,11 +1137,12 @@ class TestInterfaces:
 
         assert np.allclose(expected, hess)
 
+    @pytest.mark.tf
     @pytest.mark.slow
     def test_hessian_transform_is_differentiable_tensorflow(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation in Tensorflow
         (1d -> 1d)"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 

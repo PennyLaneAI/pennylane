@@ -15,6 +15,8 @@
 import pytest
 import numpy as np
 
+pytestmark = pytest.mark.tf
+
 tf = pytest.importorskip("tensorflow")
 
 import pennylane as qml

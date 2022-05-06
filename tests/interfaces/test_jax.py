@@ -15,6 +15,8 @@
 
 import pytest
 
+pytestmark = pytest.mark.jax
+
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 import numpy as np

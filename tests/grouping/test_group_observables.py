@@ -331,10 +331,12 @@ class TestDifferentiable:
         )
         assert pnp.allclose(jac_fn(coeffs, select=1), pnp.array([[0.0, 0.0, 1.0]]), atol=tol)
 
+    @pytest.mark.jax
     def test_differentiation_jax(self, tol):
         """Test that grouping is differentiable with jax tensors as coefficient"""
-        jax = pytest.importorskip("jax")
-        jnp = pytest.importorskip("jax.numpy")
+        import jax
+        import jax.numpy as jnp
+
         coeffs = jnp.array([1.0, 2.0, 3.0])
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
@@ -348,9 +350,11 @@ class TestDifferentiable:
         )
         assert np.allclose(jac_fn(coeffs, select=1), pnp.array([[0.0, 0.0, 1.0]]), atol=tol)
 
+    @pytest.mark.torch
     def test_differentiation_torch(self, tol):
         """Test that grouping is differentiable with torch tensors as coefficient"""
-        torch = pytest.importorskip("torch")
+        import torch
+
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
         def group(coeffs, select_group=None, select_index=None):
@@ -373,9 +377,11 @@ class TestDifferentiable:
         res.backward()
         assert np.allclose(coeffs.grad, [0.0, 0.0, 1.0], atol=tol)
 
+    @pytest.mark.tf
     def test_differentiation_tf(self, tol):
         """Test that grouping is differentiable with tf tensors as coefficient"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         obs = [PauliX(wires=0), PauliX(wires=1), PauliZ(wires=1)]
 
         def group(coeffs, select=None):

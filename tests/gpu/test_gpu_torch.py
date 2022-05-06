@@ -16,6 +16,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 pytestmark = pytest.mark.gpu
+pytestmark = pytest.mark.torch
 
 torch = pytest.importorskip("torch")
 
