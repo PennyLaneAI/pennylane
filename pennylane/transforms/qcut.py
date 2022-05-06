@@ -1679,7 +1679,6 @@ def _to_tensors(
         n = n_prep + n_meas
 
         dim = 4 ** n * n_meas_fixed
-
         results_slice = results[ctr: dim + ctr]
         results_per_measurement = [[] for _ in range(n_meas_fixed)]
 
@@ -1694,15 +1693,13 @@ def _to_tensors(
                 results_per_measurement[i].extend(results_slice[ctr_inner:ctr_inner+stride])
                 ctr_inner += stride
 
-        # print(results_slice)
-        print(np.round(np.array(results_per_measurement[0]), 6))
-        # print(np.allclose(results_slice, results_per_measurement))
         tensors_per_measurement = [_process_tensor(r, n_prep, n_meas) for r in results_per_measurement]
         tensors.append(tensors_per_measurement)
+        ctr += dim
 
-    # if results.shape[0] != ctr:
-    #     raise ValueError(f"The results argument should be a flat list of length {ctr}")
-    # print(tensors)
+    if results.shape[0] != ctr:
+        raise ValueError(f"The results argument should be a flat list of length {ctr}")
+
     return tensors
 
 
@@ -2130,8 +2127,7 @@ def cut_circuit(
         measure_nodes.append(m)
 
     tapes = tuple(tape for c in configurations for tape in c)
-    # for tape in tapes:
-    #     print(tape.draw())
+
     if all_pauli_words and total_measurements > 1:
         all_meas_positions = sorted(set(
             n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess)))
