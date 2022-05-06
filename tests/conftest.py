@@ -210,7 +210,7 @@ def pytest_collection_modifyitems(items, config):
 
 def pytest_runtest_setup(item):
     """Automatically skip tests if interfaces are not installed"""
-    all_interfaces = {"tf", "torch", "jax"}
+    interfaces = {"tf", "torch", "jax"}
     available_interfaces = {
         "tf": tf_available,
         "torch": torch_available,
@@ -219,11 +219,12 @@ def pytest_runtest_setup(item):
 
     allowed_interfaces = [
         allowed_interface
-        for allowed_interface in all_interfaces
+        for allowed_interface in interfaces
         if available_interfaces[allowed_interface] is True
     ]
 
     # load the marker specifying what the interface is
+    all_interfaces = {"tf", "torch", "jax", "all_interfaces"}
     marks = {mark.name for mark in item.iter_markers() if mark.name in all_interfaces}
 
     for b in marks:
@@ -232,12 +233,10 @@ def pytest_runtest_setup(item):
             for interface in required_interfaces:
                 if interface not in allowed_interfaces:
                     pytest.skip(
-                        f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s)",
-                        f"but {b} interface provided",
+                        f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
                     )
 
-        if b not in allowed_interfaces:
+        elif b not in allowed_interfaces:
             pytest.skip(
-                f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s)",
-                f"but {b} interface provided",
+                f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
             )
