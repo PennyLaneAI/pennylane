@@ -13,7 +13,7 @@ env:
 
 
 jobs:
-  core-&-interface-tests:
+  core-and-interface-tests:
     runs-on: ubuntu-latest
 
     strategy:
