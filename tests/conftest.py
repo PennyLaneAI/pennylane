@@ -195,7 +195,7 @@ def pytest_collection_modifyitems(items, config):
             mark = getattr(pytest.mark, "qchem")
             item.add_marker(mark)
 
-    # Test that do not have specific suite marker are marked `coore`
+    # Tests that do not have a specific suite marker are marked `core`
     for item in items:
         markers = {mark.name for mark in item.iter_markers()}
         if (
@@ -210,6 +210,7 @@ def pytest_collection_modifyitems(items, config):
 
 def pytest_runtest_setup(item):
     """Automatically skip tests if interfaces are not installed"""
+    # Autograd is assumed to be installed
     interfaces = {"tf", "torch", "jax"}
     available_interfaces = {
         "tf": tf_available,

@@ -91,7 +91,7 @@ jobs:
         with:
           file: ./coverage.xml
 
-  mixed-interfaces-tests:
+  all-interfaces-tests:
     runs-on: ubuntu-latest
 
     steps:
