@@ -417,7 +417,7 @@ def _get_jax_execute_fn(interface, tapes):
     """Auxiliary function to determine the execute function to use with the JAX
     interface."""
 
-    # The most general JAX interface was sepcified, automatically determine if
+    # The most general JAX interface was specified, automatically determine if
     # support for jitting is needed by swapping to "jax-jit" or "jax-python"
     if interface == "jax":
         from .jax import get_jax_interface_name
