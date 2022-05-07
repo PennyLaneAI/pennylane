@@ -282,12 +282,12 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
 
     Args:
         tape (pennylane.QNode or .QuantumTape): quantum tape or QNode to differentiate
-        argnum (int or list[int] or array_like or None): Parameter indices to differentiate
+        argnum (int or list[int] or array_like[bool] or None): Parameter indices to differentiate
             with respect to. If not provided, the Hessian with respect to all
             trainable indices is returned. Note that the indices refer to tape
             parameters both if ``tape`` is a tape, and if it is a QNode.
             If an ``array_like`` is provided, it is expected to be a two-dimensional
-            Boolean mask.
+            Boolean mask with the same length as the number of trainable tape parameters .
         diagonal_shifts (list[tuple[int or float]]): List containing tuples of shift values
             for the Hessian diagonal. The shifts are understood as first-order derivative
             shifts and are iterated to obtain the second-order derivative.
