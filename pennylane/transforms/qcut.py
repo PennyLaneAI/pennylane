@@ -1255,6 +1255,39 @@ def cut_circuit_mc(
         ...     fn
         ... )
         array(-4.)
+
+        Using the Monte Carlo approach of [Peng et. al](https://arxiv.org/abs/1904.00102), the
+        `cut_circuit_mc` transform also supports returning sample-based expectation values of
+        observables that are diagonal in the computational basis, as shown below for a `ZZ` measurement
+        on wires `0` and `2`:
+
+        .. code-block::
+
+            dev = qml.device("default.qubit", wires=2, shots=10000)
+
+            def observable(bitstring):
+                return (-1) ** np.sum(bitstring)
+
+            @qml.cut_circuit_mc(classical_processing_fn=observable)
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.RX(0.89, wires=0)
+                qml.RY(0.5, wires=1)
+                qml.RX(1.3, wires=2)
+
+                qml.CNOT(wires=[0, 1])
+                qml.WireCut(wires=1)
+                qml.CNOT(wires=[1, 2])
+
+                qml.RX(x, wires=0)
+                qml.RY(0.7, wires=1)
+                qml.RX(2.3, wires=2)
+                return qml.sample(wires=[0, 2])
+
+        We can now approximate the expectation value of the observable using
+
+        >>> circuit(x)
+        tensor(-0.776, requires_grad=True)
     """
     # pylint: disable=unused-argument, too-many-arguments
 
@@ -3107,6 +3140,7 @@ def _is_valid_cut(
 
     correct_num_fragments = k <= num_fragments_requested
     best_candidate_yet = (key not in cut_candidates) or (len(cut_candidates[key]) > num_cuts)
+    # pylint: disable=no-member
     all_fragments_fit = all(
         len(graph_to_tape(f).wires) <= max_free_wires for j, f in enumerate(fragments)
     )
