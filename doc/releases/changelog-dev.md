@@ -79,7 +79,7 @@
   [(#2542)](https://github.com/PennyLaneAI/pennylane/pull/2542)
 
 * Fixed a bug enabling PennyLane to work with the latest version of Autoray.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#2549)](https://github.com/PennyLaneAI/pennylane/pull/2549)
 
 <h3>Deprecations</h3>
 
