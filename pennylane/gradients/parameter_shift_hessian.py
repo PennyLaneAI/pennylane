@@ -154,10 +154,6 @@ def _generate_diag_tapes(tape, idx, diag_recipes, add_unshifted, tapes, coeffs):
     """Create the required parameter-shifted tapes for a single diagonal entry of
     the Hessian using precomputed second-order shift rules."""
     # pylint: disable=too-many-arguments
-    if diag_recipes[idx] is None:
-        coeffs.append(None)
-        return add_unshifted, None
-
     # Obtain the recipe for the diagonal.
     c, m, s = diag_recipes[idx].T
     if s[0] == 0 and m[0] == 1.0:
@@ -217,7 +213,7 @@ def expval_hessian_param_shift(
     # pylint: disable=too-many-arguments, too-many-statements
     h_dim = tape.num_params
 
-    c_unshifted = {}
+    unshifted_coeffs = {}
     # Marks whether we will need to add the unshifted tape to all Hessian tapes.
     add_unshifted = f0 is None
 
@@ -230,23 +226,22 @@ def expval_hessian_param_shift(
     hessian_tapes = []
     hessian_coeffs = []
     for i, j in it.combinations_with_replacement(range(h_dim), r=2):
-        if i == j:
-            add_unshifted, c_unshifted[(i, i)] = _generate_diag_tapes(
-                tape, i, diag_recipes, add_unshifted, hessian_tapes, hessian_coeffs
-            )
-            continue
-
         if not argnum[i, j]:
             # The (i, j) entry of the Hessian is not to be computed
             hessian_coeffs.append(None)
             continue
 
-        # Create tapes and coefficients for the off-diagonal entry by combining
-        # the two univariate first-order derivative recipes.
-        add_unshifted, c_unshifted[(i, j)] = _generate_offdiag_tapes(
-            tape, (i, j), partial_offdiag_recipes, add_unshifted, hessian_tapes, hessian_coeffs
-        )
-    c_unshifted = {key: val for key, val in c_unshifted.items() if val is not None}
+        if i == j:
+            add_unshifted, unshifted_coeffs[(i, i)] = _generate_diag_tapes(
+                tape, i, diag_recipes, add_unshifted, hessian_tapes, hessian_coeffs
+            )
+        else:
+            # Create tapes and coefficients for the off-diagonal entry by combining
+            # the two univariate first-order derivative recipes.
+            add_unshifted, unshifted_coeffs[(i, j)] = _generate_offdiag_tapes(
+                tape, (i, j), partial_offdiag_recipes, add_unshifted, hessian_tapes, hessian_coeffs
+            )
+    unshifted_coeffs = {key: val for key, val in unshifted_coeffs.items() if val is not None}
 
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
@@ -263,7 +258,7 @@ def expval_hessian_param_shift(
         hessian = []
         # Keep track of tape results already consumed. Start with 1 if the unshifted tape was
         # included in the tapes for the Hessian.
-        start = 1 if c_unshifted and f0 is None else 0
+        start = 1 if unshifted_coeffs and f0 is None else 0
         # Results of the unshifted tape.
         r0 = results[0] if start == 1 else f0
 
@@ -283,8 +278,9 @@ def expval_hessian_param_shift(
             res = qml.math.stack(res)
             coeffs = qml.math.cast(qml.math.convert_like(coeffs, res), res.dtype)
             hess = qml.math.tensordot(res, coeffs, [[0], [0]])
-            if (i, j) in c_unshifted:
-                hess = hess + c_unshifted[(i, j)] * r0
+            unshifted_coeff = unshifted_coeffs.get((i, j), None)
+            if unshifted_coeff is not None:
+                hess = hess + unshifted_coeff * r0
 
             hessian.append(hess)
 
