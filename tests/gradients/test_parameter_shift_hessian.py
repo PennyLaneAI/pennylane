@@ -36,24 +36,31 @@ class TestProcessArgnum:
     tape.trainable_params = {0, 1, 2}
 
     def test_none(self):
-        """Test that for argnum=None all parameters are marked in the returned boolean mask."""
+        """Test that for argnum=None all parameters are marked in the returned Boolean mask."""
         argnum = _process_argnum(None, self.tape)
         assert qml.math.allclose(argnum, qml.math.ones((3, 3), dtype=bool))
 
     @pytest.mark.parametrize("argnum", [0, 2])
     def test_int(self, argnum):
-        """Test that an integer argnum correctly is transformed into a boolean mask
+        """Test that an integer argnum correctly is transformed into a Boolean mask
         with the corresponding diagonal element set to True."""
         new_argnum = _process_argnum(argnum, self.tape)
         expected = qml.math.zeros((3, 3), dtype=bool)
         expected[argnum, argnum] = True
         assert qml.math.allclose(new_argnum, expected)
 
-    def test_sequence(self):
-        """Test that a sequence argnum correctly is transformed into a boolean mask."""
+    def test_index_sequence(self):
+        """Test that a sequence argnum with indices correctly is transformed into a Boolean mask."""
         new_argnum = _process_argnum([1, 2], self.tape)
         expected = qml.math.zeros((3, 3), dtype=bool)
         expected[1:3, 1:3] = True
+        assert qml.math.allclose(new_argnum, expected)
+
+    def test_bool_sequence(self):
+        """Test that a Boolean sequence argnum correctly is transformed into a Boolean mask."""
+        new_argnum = _process_argnum([True, False, True], self.tape)
+        expected = qml.math.zeros((3, 3), dtype=bool)
+        expected[0, 0] = expected[2, 2] = expected[2, 0] = expected[0, 2] = True
         assert qml.math.allclose(new_argnum, expected)
 
     @pytest.mark.parametrize(
@@ -64,24 +71,44 @@ class TestProcessArgnum:
         ],
     )
     def test_boolean_mask(self, argnum):
-        """Test that a boolean mask argnum correctly isn't changed."""
+        """Test that a Boolean mask argnum correctly isn't changed."""
         new_argnum = _process_argnum(argnum, self.tape)
         assert qml.math.allclose(new_argnum, argnum)
 
-    def test_error_wrong_shape(self):
+    def test_error_single_index_too_big(self):
+        with pytest.raises(ValueError, match="The index 10 exceeds the number"):
+            _process_argnum(10, self.tape)
+
+    def test_error_max_index_too_big(self):
+        with pytest.raises(ValueError, match="The index 10 exceeds the number"):
+            _process_argnum([0, 1, 10], self.tape)
+
+    @pytest.mark.parametrize("length", (2, 5))
+    def test_error_1D_bool_wrong_length(self, length):
+        argnum = qml.math.ones(length, dtype=bool)
+        with pytest.raises(ValueError, match="One-dimensional Boolean array argnum"):
+            _process_argnum(argnum, self.tape)
+
+    def test_error_wrong_ndim(self):
         argnum = qml.math.ones((3, 3, 3), dtype=bool)
-        with pytest.raises(ValueError, match="Expected a symmetric Boolean array"):
+        with pytest.raises(ValueError, match="Expected a symmetric 2D Boolean array"):
+            _process_argnum(argnum, self.tape)
+
+    @pytest.mark.parametrize("shape", [(4, 4), (3, 2)])
+    def test_error_wrong_shape(self, shape):
+        argnum = qml.math.ones(shape, dtype=bool)
+        with pytest.raises(ValueError, match="Expected a symmetric 2D Boolean array"):
             _process_argnum(argnum, self.tape)
 
     @pytest.mark.parametrize("dtype", [float, int])
     def test_error_wrong_dtype(self, dtype):
         argnum = qml.math.ones((3, 3), dtype=dtype)
-        with pytest.raises(ValueError, match="Expected a symmetric Boolean array"):
+        with pytest.raises(ValueError, match="Expected a symmetric 2D Boolean array"):
             _process_argnum(argnum, self.tape)
 
     def test_error_asymmetric(self):
         argnum = [[True, False, False], [True, True, False], [False, False, True]]
-        with pytest.raises(ValueError, match="Expected a symmetric Boolean array"):
+        with pytest.raises(ValueError, match="Expected a symmetric 2D Boolean array"):
             _process_argnum(argnum, self.tape)
 
 

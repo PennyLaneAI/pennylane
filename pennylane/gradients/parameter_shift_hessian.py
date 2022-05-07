@@ -39,18 +39,47 @@ def _process_argnum(argnum, tape):
     """Process the argnum keyword argument to ``param_shift_hessian`` from any of ``None``,
     ``int``, ``Sequence[int]``, ``array_like[bool]`` to an ``array_like[bool]``."""
     if argnum is None:
+        # All trainable tape parameters are considered
         argnum = tape.trainable_params
     elif isinstance(argnum, int):
+        if argnum >= tape.num_params:
+            raise ValueError(
+                f"The index {argnum} exceeds the number of "
+                f"trainable tape parameters ({tape.num_params})."
+            )
+        # Make single marked parameter an iterable
         argnum = [argnum]
+
     if len(qml.math.shape(argnum)) == 1:
-        argnum = [i in argnum for i in range(tape.num_params)]
+        # If the iterable is 1D, consider all combinations of all marked parameters
+        if not qml.math.array(argnum).dtype == bool:
+            # If the 1D iterable contains indices, make sure it contains valid indices...
+            if qml.math.max(argnum) >= tape.num_params:
+                raise ValueError(
+                    f"The index {qml.math.max(argnum)} exceeds the number of "
+                    f"trainable tape parameters ({tape.num_params})."
+                )
+            # ...and translate it to Boolean 1D iterable
+            argnum = [i in argnum for i in range(tape.num_params)]
+        elif len(argnum) != tape.num_params:
+            # If the 1D iterable already is Boolean, check its length
+            raise ValueError(
+                "One-dimensional Boolean array argnum is expected to have as many entries as the "
+                f"tape has trainable parameters ({tape.num_params}), but got {len(argnum)}."
+            )
+        # Finally mark all combinations using the outer product
         argnum = qml.math.tensordot(argnum, argnum, axes=0)
+
     elif not (
-        len(qml.math.shape(argnum)) == 2
+        qml.math.shape(argnum) == (tape.num_params,) * 2
         and qml.math.array(argnum).dtype == bool
         and qml.math.allclose(qml.math.transpose(argnum), argnum)
     ):
-        raise ValueError(f"Expected a symmetric Boolean array for argnum, but received {argnum}.")
+        # If the iterable is 2D, make sure it is Boolean, symmetric and of the correct size
+        raise ValueError(
+            f"Expected a symmetric 2D Boolean array with shape {(tape.num_params,) * 2} "
+            f"for argnum, but received {argnum}."
+        )
     return argnum
 
 
@@ -58,30 +87,32 @@ def _collect_recipes(tape, argnum, diff_methods, diagonal_shifts, off_diagonal_s
     r"""Extract second order recipes for the tape operations for the diagonal of the Hessian
     as well as the first-order derivative recipes for the off-diagonal entries.
     """
-    diag_argnum = list(qml.math.where(qml.math.diag(argnum))[0])
-    offdiag = argnum ^ qml.math.diag(qml.math.diag(argnum))
-    offdiag_argnum = list(qml.math.where(qml.math.any(offdiag, axis=0))[0])
+    diag_argnum = qml.math.diag(argnum)
+    offdiag_argnum = qml.math.any(argnum ^ qml.math.diag(qml.math.diag(argnum)), axis=0)
 
     diag_recipes = []
     partial_offdiag_recipes = []
-    for i in range(tape.num_params):
-        if not i in diag_argnum or diff_methods[i] == "0":
+    diag_shifts_idx = offdiag_shifts_idx = 0
+    for i, (d, od) in enumerate(zip(diag_argnum, offdiag_argnum)):
+        if not d or diff_methods[i] == "0":
             # hessian will be set to 0 for this row/column
             diag_recipes.append(None)
         else:
             # Get the diagonal second-order derivative recipe
-            idx = diag_argnum.index(i)
-            diag_shifts = None if diagonal_shifts is None else diagonal_shifts[idx]
+            diag_shifts = None if diagonal_shifts is None else diagonal_shifts[diag_shifts_idx]
             diag_recipes.append(_get_operation_recipe(tape, i, diag_shifts, order=2))
+            diag_shifts_idx += 1
 
-        if not i in offdiag_argnum or diff_methods[i] == "0":
+        if not od or diff_methods[i] == "0":
             # hessian will be set to 0 for this row/column
             partial_offdiag_recipes.append((None, None, None))
         else:
             # Create the first-order gradient recipes per parameter for off-diagonal entries
-            idx = offdiag_argnum.index(i)
-            _shifts = None if off_diagonal_shifts is None else off_diagonal_shifts[idx]
-            partial_offdiag_recipes.append(_get_operation_recipe(tape, i, _shifts, order=1))
+            offdiag_shifts = (
+                None if off_diagonal_shifts is None else off_diagonal_shifts[offdiag_shifts_idx]
+            )
+            partial_offdiag_recipes.append(_get_operation_recipe(tape, i, offdiag_shifts, order=1))
+            offdiag_shifts_idx += 1
 
     return diag_recipes, partial_offdiag_recipes
 
@@ -285,9 +316,9 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         argnum (int or list[int] or array_like[bool] or None): Parameter indices to differentiate
             with respect to. If not provided, the Hessian with respect to all
             trainable indices is returned. Note that the indices refer to tape
-            parameters both if ``tape`` is a tape, and if it is a QNode.
-            If an ``array_like`` is provided, it is expected to be a two-dimensional
-            Boolean mask with the same length as the number of trainable tape parameters .
+            parameters both if ``tape`` is a tape, and if it is a QNode. If an ``array_like``
+            is provided, it is expected to be a symmetric two-dimensional Boolean mask with
+            shape ``(n, n)`` where ``n`` is the number of trainable tape parameters.
         diagonal_shifts (list[tuple[int or float]]): List containing tuples of shift values
             for the Hessian diagonal. The shifts are understood as first-order derivative
             shifts and are iterated to obtain the second-order derivative.
