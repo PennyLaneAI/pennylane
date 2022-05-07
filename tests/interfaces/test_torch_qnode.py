@@ -15,6 +15,8 @@
 import pytest
 import numpy as np
 
+pytestmark = pytest.mark.torch
+
 torch = pytest.importorskip("torch", minversion="1.3")
 from torch.autograd.functional import hessian, jacobian
 

@@ -34,6 +34,7 @@ from gate_data import (
 class TestQubitUnitary:
     """Tests for the QubitUnitary class."""
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
     def test_qubit_unitary_autograd(self, U, num_wires):
         """Test that the unitary operator produces the correct output and
@@ -61,11 +62,12 @@ class TestQubitUnitary:
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
     def test_qubit_unitary_torch(self, U, num_wires):
         """Test that the unitary operator produces the correct output and
         catches incorrect input with torch."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         U = torch.tensor(U)
         out = qml.QubitUnitary(U, wires=range(num_wires)).matrix()
@@ -90,11 +92,12 @@ class TestQubitUnitary:
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
     def test_qubit_unitary_tf(self, U, num_wires):
         """Test that the unitary operator produces the correct output and
         catches incorrect input with tensorflow."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         U = tf.Variable(U)
         out = qml.QubitUnitary(U, wires=range(num_wires)).matrix()
@@ -118,11 +121,11 @@ class TestQubitUnitary:
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("U,num_wires", [(H, 1), (np.kron(H, H), 2)])
     def test_qubit_unitary_jax(self, U, num_wires):
         """Test that the unitary operator produces the correct output and
-        catches incorrect input with autograd."""
-        jax = pytest.importorskip("jax")
+        catches incorrect input with jax."""
         from jax import numpy as jnp
 
         U = jnp.array(U)
@@ -147,10 +150,11 @@ class TestQubitUnitary:
         with pytest.raises(ValueError, match="must be of shape"):
             qml.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("U, num_wires", [(H, 1), (np.kron(H, H), 2)])
     def test_qubit_unitary_jax(self, U, num_wires):
         """Tests that QubitUnitary works with jitting."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         U = jnp.array(U)
@@ -257,15 +261,18 @@ class TestDiagonalQubitUnitary:
         with pytest.raises(ValueError, match="Operator must be unitary"):
             qml.DiagonalQubitUnitary.compute_matrix(np.array([1, 2]))
 
+    @pytest.mark.jax
     def test_error_eigvals_not_unitary(self):
         """Tests that error is raised by `compute_eigvals` if diagonal does not lead to a unitary"""
         with pytest.raises(ValueError, match="Operator must be unitary"):
             qml.DiagonalQubitUnitary.compute_eigvals(np.array([1, 2]))
 
+    @pytest.mark.jax
     def test_jax_jit(self):
         """Test that the diagonal matrix unitary operation works
         within a QNode that uses the JAX JIT"""
-        jax = pytest.importorskip("jax")
+        import jax
+
         jnp = jax.numpy
 
         dev = qml.device("default.qubit", wires=1, shots=None)
@@ -283,11 +290,12 @@ class TestDiagonalQubitUnitary:
         expected = -jnp.sin(x)
         assert np.allclose(grad, expected)
 
+    @pytest.mark.tf
     @pytest.mark.slow  # test takes 12 seconds due to tf.function
     def test_tf_function(self):
         """Test that the diagonal matrix unitary operation works
         within a QNode that uses TensorFlow autograph"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=1, shots=None)
 
@@ -594,26 +602,31 @@ class TestInterfaceMatricesLabel:
         assert op.label(cache=cache) == "U(M1)"
         assert len(cache["matrices"]) == 3
 
+    @pytest.mark.torch
     def test_labelling_torch_tensor(self):
         """Test matrix cache labelling with torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         mat = torch.tensor([[1, 0], [0, -1]])
         self.check_interface(mat)
 
+    @pytest.mark.tf
     def test_labelling_tf_variable(self):
         """Test matrix cache labelling with tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         mat = tf.Variable([[1, 0], [0, -1]])
 
         self.check_interface(mat)
 
+    @pytest.mark.jax
     def test_labelling_jax_variable(self):
         """Test matrix cache labelling with jax interface."""
 
-        jnp = pytest.importorskip("jax.numpy")
+        import jax.numpy as jnp
+
         mat = jnp.array([[1, 0], [0, -1]])
 
         self.check_interface(mat)
