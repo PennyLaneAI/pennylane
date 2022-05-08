@@ -999,7 +999,6 @@ label_data = [
     (qml.SQISW(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
     (qml.Toffoli(wires=(0, 1, 2)), "X", "X"),
-    (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "X", "X"),
     (qml.MultiControlledX(wires=(0, 1, 2, 3)), "X", "X"),
     (qml.Barrier(0), "||", "||"),
     (qml.WireCut(wires=0), "//", "//"),
@@ -1031,7 +1030,6 @@ control_data = [
     (qml.CY(wires=(0, 1)), Wires(0)),
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
     (qml.Toffoli(wires=(0, 1, 2)), Wires([0, 1])),
-    (qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4), Wires([0, 1, 2, 3])),
     (qml.MultiControlledX(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
 ]
 
@@ -1061,7 +1059,7 @@ all_ops = [
     qml.SQISW(wires=(0, 1)),
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
-    qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)),
+    qml.MultiControlledX(wires=(0, 1, 2, 3)),
     qml.Barrier(0),
     qml.WireCut(wires=0),
 ]

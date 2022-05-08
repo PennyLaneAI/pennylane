@@ -600,15 +600,71 @@ class TestMetricTensor:
         ]
         assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
-    def test_no_trainable_params_qnode(self, interface):
+    @pytest.mark.autograd
+    def test_no_trainable_params_qnode_autograd(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
-        if interface != "autograd":
-            pytest.importorskip(interface)
+
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface="autograd")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="tensor of a QNode with no trainable parameters"):
+            res = qml.metric_tensor(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.torch
+    def test_no_trainable_params_qnode_torch(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="tensor of a QNode with no trainable parameters"):
+            res = qml.metric_tensor(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.tf
+    def test_no_trainable_params_qnode_tf(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="tensor of a QNode with no trainable parameters"):
+            res = qml.metric_tensor(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.jax
+    def test_no_trainable_params_qnode_jax(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev, interface="jax")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -844,6 +900,7 @@ class TestFullMetricTensor:
 
     num_wires = 3
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     def test_correct_output_autograd(self, ansatz, params):
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
@@ -862,10 +919,10 @@ class TestFullMetricTensor:
         else:
             assert qml.math.allclose(mt, expected)
 
+    @pytest.mark.jax
     @pytest.mark.skip(reason="JAX does not support the forward pass metric tensor.")
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     def test_correct_output_jax(self, ansatz, params):
-        jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
@@ -886,9 +943,11 @@ class TestFullMetricTensor:
         else:
             assert qml.math.allclose(mt, expected)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     def test_correct_output_torch(self, ansatz, params):
-        torch = pytest.importorskip("torch")
+        import torch
+
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device("default.qubit.torch", wires=self.num_wires + 1)
 
@@ -907,9 +966,11 @@ class TestFullMetricTensor:
         else:
             assert qml.math.allclose(mt, expected)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
     def test_correct_output_tf(self, ansatz, params):
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device("default.qubit.tf", wires=self.num_wires + 1)
 
@@ -1014,6 +1075,7 @@ class TestDifferentiability:
 
     dev = qml.device("default.qubit", wires=3)
 
+    @pytest.mark.autograd
     def test_autograd_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
@@ -1040,6 +1102,7 @@ class TestDifferentiability:
         else:
             assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_autograd(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the autograd interface"""
         circuit = self.get_circuit(ansatz)
@@ -1059,12 +1122,13 @@ class TestDifferentiability:
             jac = qml.jacobian(cost_full, argnum=argnum)(*weights)
             assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the JAX interface"""
         if diff_method == "parameter-shift":
             pytest.skip("Does not support parameter-shift")
 
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         circuit = self.get_circuit(ansatz)
@@ -1076,13 +1140,13 @@ class TestDifferentiability:
         jac = jax.jacobian(cost_diag)(jnp.array(*weights))
         assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the JAX interface"""
         if diff_method == "parameter-shift":
             pytest.skip("Does not support parameter-shift")
 
-        jax = pytest.importorskip("jax")
-        from jax import numpy as jnp
+        import jax
 
         circuit = self.get_circuit(ansatz)
         qnode = qml.QNode(circuit, self.dev, interface="jax", diff_method=diff_method)
@@ -1096,9 +1160,11 @@ class TestDifferentiability:
         expected_full = qml.jacobian(_cost_full)(*weights)
         assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the TF interface"""
-        tf = pytest.importorskip("tensorflow", minversion="2.0")
+        import tensorflow as tf
+
         circuit = self.get_circuit(ansatz)
         qnode = qml.QNode(circuit, self.dev, interface="tf", diff_method=diff_method)
 
@@ -1110,9 +1176,11 @@ class TestDifferentiability:
         jac = tape.jacobian(loss_diag, weights_t)
         assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the TF interface"""
-        tf = pytest.importorskip("tensorflow", minversion="2.0")
+        import tensorflow as tf
+
         circuit = self.get_circuit(ansatz)
         qnode = qml.QNode(circuit, self.dev, interface="tf", diff_method=diff_method)
 
@@ -1125,9 +1193,10 @@ class TestDifferentiability:
         expected_full = qml.jacobian(_cost_full)(*weights)
         assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the torch interface"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         circuit = self.get_circuit(ansatz)
         qnode = qml.QNode(circuit, self.dev, interface="torch", diff_method=diff_method)
@@ -1159,9 +1228,10 @@ class TestDifferentiability:
                 jac.detach().numpy(), expected_diag_jac(*weights), atol=tol, rtol=0
             )
 
+    @pytest.mark.torch
     def test_torch(self, diff_method, tol, ansatz, weights, expected_diag_jac):
         """Test metric tensor differentiability in the torch interface"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         circuit = self.get_circuit(ansatz)
         qnode = qml.QNode(circuit, self.dev, interface="torch", diff_method=diff_method)
@@ -1229,8 +1299,22 @@ def test_error_missing_aux_wire():
 
     with pytest.warns(UserWarning, match="The device does not have a wire that is not used"):
         qml.metric_tensor(circuit, approx=None)(x, z)
-    with pytest.warns(UserWarning, match="The device does not have a wire that is not used"):
-        qml.metric_tensor(circuit, approx=None, aux_wire="wire3")(x, z)
+
+
+def test_error_not_available_aux_wire():
+    """Tests that a special error is raised if aux wires is not available."""
+
+    dev = qml.device("default.qubit", wires=1)
+    x = np.array(0.5, requires_grad=True)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        qml.RY(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    with pytest.warns(UserWarning, match="An auxiliary wire is not available."):
+        qml.metric_tensor(circuit, aux_wire=404)(x)
 
 
 def test_error_aux_wire_replaced():
@@ -1374,5 +1458,15 @@ def test_get_aux_wire_with_device_wires():
 
     assert _get_aux_wire(0, tape, device_wires) == 0
     assert _get_aux_wire("one", tape, device_wires) == "one"
-    assert _get_aux_wire("two", tape, device_wires) == "aux"
     assert _get_aux_wire(None, tape, device_wires) == "aux"
+
+
+def test_get_aux_wire_with_unavailable_aux():
+    """Test ``_get_aux_wire`` with device_wires and a requested ``aux_wire`` that is missing."""
+    x, y = np.array([0.2, 0.1], requires_grad=True)
+    with qml.tape.QuantumTape() as tape:
+        qml.RX(x, wires=0)
+        qml.RX(x, wires="one")
+    device_wires = qml.wires.Wires([0, "one"])
+    with pytest.raises(qml.wires.WireError, match="The requested aux_wire does not exist"):
+        _get_aux_wire("two", tape, device_wires)
