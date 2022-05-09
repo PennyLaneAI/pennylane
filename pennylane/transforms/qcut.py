@@ -539,6 +539,7 @@ def _get_measurements(
 
         for g in group:
             obs = copy.copy(m.obs)
+            g = copy.copy(g)
             expvals.append(qml.expval(obs @ g))
 
     return expvals
@@ -1677,27 +1678,25 @@ def _to_tensors(
         n_prep = len(p)
         n_meas = len(m)
         n = n_prep + n_meas
-        # print(n_prep, n_meas)
 
         dim = 4 ** n * n_meas_fixed
-        # print(dim)
+
         results_slice = results[ctr: dim + ctr]
         results_per_measurement = [[] for _ in range(n_meas_fixed)]
-        # print(results_slice)
+
         ctr_stride = 0
         ctr_inner = 0
 
+        group_lengths = [len(g) for g in qml.grouping.partition_pauli_group(n_meas)]
+
         while ctr_inner < dim:
-            stride = 2 if ctr_stride % 3 == 0 and n_meas > 0 else 1
+            stride = group_lengths[ctr_stride % len(group_lengths)]
             ctr_stride += 1
 
             for i in range(n_meas_fixed):
                 results_per_measurement[i].extend(results_slice[ctr_inner:ctr_inner+stride])
                 ctr_inner += stride
 
-        # print(len(results_per_measurement))
-        # print(results_per_measurement)
-        # print([qml.math.stack(r) for r in results_per_measurement])
         tensors_per_measurement = [_process_tensor(qml.math.stack(r), n_prep, n_meas) for r in results_per_measurement]
         tensors.append(tensors_per_measurement)
         ctr += dim
@@ -2120,6 +2119,7 @@ def cut_circuit(
     replace_wire_cut_nodes(g)
     fragments, communication_graph = fragment_graph(g)
     fragment_tapes = [graph_to_tape(f, total_measurements=total_measurements) for f in fragments]
+
     fragment_tapes = [remap_tape_wires(t, device_wires) for t in fragment_tapes]
 
     expanded = [expand_fragment_tape(t) for t in fragment_tapes]
@@ -2133,8 +2133,7 @@ def cut_circuit(
         measure_nodes.append(m)
 
     tapes = tuple(tape for c in configurations for tape in c)
-    # for tape in tapes:
-    #     print(tape.draw())
+
     if all_pauli_words and total_measurements > 1:
         all_meas_positions = sorted(set(
             n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess)))
@@ -2146,7 +2145,6 @@ def cut_circuit(
                 pos.append(-1)  # -1 denotes an identity measurement
 
         meas_positions =(all_meas_positions, fragment_meas_positions)
-        # print(meas_positions)
     else:
         meas_positions = None
 
@@ -2851,7 +2849,6 @@ def kahypar_cut(
 
     if verbose:
         fragment_sizes = [hypergraph.blockSize(p) for p in range(num_fragments)]
-        print(len(fragment_sizes), fragment_sizes)
 
     return cut_edges
 
