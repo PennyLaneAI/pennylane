@@ -259,11 +259,13 @@ The tables below show all the currently supported functionality
 .. raw:: html
 
    <style>
-      .tb { border-collapse: collapse; }
-      .tb th, .tb td { padding: 1px; border: solid 1px #777; }
+      /* TODO: fix this table style */
+      .conf_table { border-collapse: collapse; }
+      .tbody {text-align: center}
+      .tbody td { margin: 9px; border: solid 9px #777; text-align: center}
    </style>
 
-.. rst-class:: tb
+.. rst-class:: conf_table
 
 +-------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------+
 |                                                       | **Return type**                                                                                                            |
@@ -314,31 +316,35 @@ The tables below show all the currently supported functionality
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
 |                  | ``"backprop"``                     |     :gr:`4`  |   :rd:`11`    |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
-|                  | ``"adjoint"``                      |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :rd:`11`      |   :gr:`7`      | :rd:`6`     |
+|                  | ``"adjoint"``                      |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :rd:`12`      |   :gr:`7`      | :rd:`6`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
-|                  | ``"parameter-shift"``              |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :rd:`11`     | :gr:`8`        |   :gr:`8`   |
+|                  | ``"parameter-shift"``              |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :rd:`12`     | :gr:`8`        |   :gr:`8`   |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
-|                  | ``"finite-diff"``                  |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :rd:`11`     | :gr:`8`        |   :gr:`8`   |
+|                  | ``"finite-diff"``                  |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :rd:`12`     | :gr:`8`        |   :gr:`8`   |
 +------------------+------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
 
 1. Not supported. Gradients are not computed even though ``diff_method`` is provided. Fails with error.
 2. Not supported. Gradients are not computed even though ``diff_method`` is provided. Warns that no auto-differentiation framework is being used, but does not fail.
    Forward pass is still supported.
-3. Not supported. The ``default.qubit`` device does not provide a native way to compute gradients.
-4. Supported, but only when ``shots=None``. If the circuit returns a state, then the circuit itself is not differentiable
-   directly. However, any real scalar-valued post-processing done to the output of the
-   circuit will be differentiable.
+3. Not supported. The ``default.qubit`` device does not provide a native way to compute gradients. See
+   :ref:`here <Native gradient computation>` for details.
+4. Supported, but only when ``shots=None``. See :ref:`here <Analytic backpropagation>` for details.
 
-   The exception is JAX, where differentiating the state directly is possible with ``holomorphic=True``.
-   TensorFlow and PyTorch also allows this but ignores the imaginary parts.
-5. Supported, but only when ``shots=None``.
-6. Not supported. The adjoint differentiation algorithm only applies to expectation values of observables.
-7. Supported. Raises warning when ``shots>0`` since the gradient is always computed analytically.
+   If the circuit returns a state, then the circuit itself is not differentiable
+   directly. However, any real scalar-valued post-processing done to the output of the
+   circuit will be differentiable. See :ref:`here <State gradients>` for details.
+5. Supported, but only when ``shots=None``. See :ref:`here <Analytic backpropagation>` for details.
+6. Not supported. The adjoint differentiation algorithm only applies to expectation values of observables. See
+   :ref:`here <Adjoint differentation>` for details.
+7. Supported. Raises warning when ``shots>0`` since the gradient is always computed analytically. See
+   :ref:`here <Adjoint differentation>` for details.
 8. Supported.
 9. Not supported. The discretization of the output caused by wave function collapse is
-   not differentiable. Forward pass is still supported.
+   not differentiable. Forward pass is still supported. See :ref:`here <Sample gradients>` for details.
 10. Not supported. "We just don't have the theory yet."
 11. Not supported, but due to a bug.
+12. Supported, but only when a ``torch.Tensor`` object is passed to ``qml.Hermitian``. This is a bug and should be fixed to make the ``"torch"``
+    interface consistent with the other interfaces.
 
 .. toctree::
     :hidden:
