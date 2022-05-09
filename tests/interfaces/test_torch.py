@@ -17,6 +17,8 @@ import functools
 import numpy as np
 import pytest
 
+pytestmark = pytest.mark.torch
+
 torch = pytest.importorskip("torch")
 
 import pennylane as qml

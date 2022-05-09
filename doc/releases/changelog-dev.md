@@ -79,6 +79,11 @@
   whose generator was a Hamiltonian.
   [(#2524)](https://github.com/PennyLaneAI/pennylane/pull/2524)
 
+* Fixes a bug with the decomposition of `qml.CommutingEvolution`.
+  [(#2542)](https://github.com/PennyLaneAI/pennylane/pull/2542)
+
+* Fixed a bug enabling PennyLane to work with the latest version of Autoray.
+  [(#2549)](https://github.com/PennyLaneAI/pennylane/pull/2549)
 
 <h3>Deprecations</h3>
 

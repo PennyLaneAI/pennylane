@@ -175,27 +175,32 @@ class TestDecimals:
 
         assert tape_text(tape, decimals=0) == expected
 
+    @pytest.mark.torch
     def test_torch_parameters(self):
         """Test torch parameters in tape display as normal numbers."""
-        torch = pytest.importorskip("torch")
+        import torch
+
         with QuantumTape() as tape_torch:
             qml.Rot(torch.tensor(1.234), torch.tensor(2.345), torch.tensor(3.456), wires=0)
 
         expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
         assert tape_text(tape_torch, decimals=2) == expected
 
+    @pytest.mark.tf
     def test_tensorflow_parameters(self):
         """Test tensorflow parameters display as normal numbers."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         with QuantumTape() as tape_tf:
             qml.Rot(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456), wires=0)
 
         expected = "0: ──Rot(1.23,2.35,3.46)─┤  "
         assert tape_text(tape_tf, decimals=2) == expected
 
+    @pytest.mark.jax
     def test_jax_parameters(self):
         """Test jax parameters in tape display as normal numbers."""
-        jnp = pytest.importorskip("jax.numpy")
+        import jax.numpy as jnp
 
         with QuantumTape() as tape_jax:
             qml.Rot(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456), wires=0)

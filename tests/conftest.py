@@ -132,51 +132,6 @@ def skip_if_no_dask_support(dask_support):
         pytest.skip("Skipped, no dask support")
 
 
-@pytest.fixture(scope="session")
-def torch_support():
-    """Boolean fixture for PyTorch support"""
-    try:
-        import torch
-        from torch.autograd import Variable
-
-        torch_support = True
-    except ImportError as e:
-        torch_support = False
-
-    return torch_support
-
-
-@pytest.fixture()
-def skip_if_no_torch_support(torch_support):
-    if not torch_support:
-        pytest.skip("Skipped, no torch support")
-
-
-@pytest.fixture(scope="module")
-def tf_support():
-    """Boolean fixture for TensorFlow support"""
-    try:
-        import tensorflow as tf
-
-        tf_support = True
-
-    except ImportError as e:
-        tf_support = False
-
-    return tf_support
-
-
-@pytest.fixture()
-def skip_if_no_tf_support(tf_support):
-    if not tf_support:
-        pytest.skip("Skipped, no tf support")
-
-
-@pytest.fixture
-def skip_if_no_jax_support():
-    pytest.importorskip("jax")
-
-
 #######################################################################
 
 
@@ -205,7 +160,33 @@ def tear_down_hermitian():
     qml.Hermitian._eigs = {}
 
 
-def pytest_collection_modifyitems(config, items):
+#######################################################################
+
+try:
+    import tensorflow as tf
+except (ImportError, ModuleNotFoundError) as e:
+    tf_available = False
+else:
+    tf_available = True
+
+try:
+    import torch
+    from torch.autograd import Variable
+
+    torch_available = True
+except ImportError as e:
+    torch_available = False
+
+try:
+    import jax
+    import jax.numpy as jnp
+
+    jax_available = True
+except ImportError as e:
+    jax_available = False
+
+
+def pytest_collection_modifyitems(items, config):
     # python 3.4/3.5 compat: rootdir = pathlib.Path(str(config.rootdir))
     rootdir = pathlib.Path(config.rootdir)
     for item in items:
@@ -213,3 +194,50 @@ def pytest_collection_modifyitems(config, items):
         if "qchem" in rel_path.parts:
             mark = getattr(pytest.mark, "qchem")
             item.add_marker(mark)
+
+    # Tests that do not have a specific suite marker are marked `core`
+    for item in items:
+        markers = {mark.name for mark in item.iter_markers()}
+        if (
+            not any(
+                elem in ["autograd", "torch", "tf", "jax", "qchem", "qcut", "all_interfaces"]
+                for elem in markers
+            )
+            or not markers
+        ):
+            item.add_marker(pytest.mark.core)
+
+
+def pytest_runtest_setup(item):
+    """Automatically skip tests if interfaces are not installed"""
+    # Autograd is assumed to be installed
+    interfaces = {"tf", "torch", "jax"}
+    available_interfaces = {
+        "tf": tf_available,
+        "torch": torch_available,
+        "jax": jax_available,
+    }
+
+    allowed_interfaces = [
+        allowed_interface
+        for allowed_interface in interfaces
+        if available_interfaces[allowed_interface] is True
+    ]
+
+    # load the marker specifying what the interface is
+    all_interfaces = {"tf", "torch", "jax", "all_interfaces"}
+    marks = {mark.name for mark in item.iter_markers() if mark.name in all_interfaces}
+
+    for b in marks:
+        if b == "all_interfaces":
+            required_interfaces = {"tf", "torch", "jax"}
+            for interface in required_interfaces:
+                if interface not in allowed_interfaces:
+                    pytest.skip(
+                        f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
+                    )
+        else:
+            if b not in allowed_interfaces:
+                pytest.skip(
+                    f"\nTest {item.nodeid} only runs with {allowed_interfaces} interfaces(s) but {b} interface provided",
+                )
