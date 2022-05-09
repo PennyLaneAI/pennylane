@@ -44,12 +44,14 @@ This test will be marked automatically as a ``core`` test.
 
 On the other hand, some tests require specific interfaces and need to marked in order to be run on our Github test suite.
 Tests involving interfaces have to be marked with its respective marker: ``@pytest.mark.autograd``, ``@pytest.mark.torch``,
-``@pytest.mark.tf`` and ``@pytest.mark.jax``. It is now prohibited to use  `ìmportorskip()`` inside tests with interfaces.
-The necessary packages related to interfaces have to be imported in the tests directly. All tests with marked interfaces
-are skipped if the necessary interface is not installed.
+``@pytest.mark.tf`` and ``@pytest.mark.jax``. If tests involved multiple interfaces one should add the marker
+``@pytest.mark.all_interfaces``. It is now prohibited to use  `ìmportorskip()`` inside tests with interfaces. Also tests
+involving interfaces must be written separately and it should be avoided to use fixtures. The necessary packages related
+to interfaces have to be imported in the tests directly. All tests with marked interfaces are skipped if the necessary
+interfaces are not installed.
 
-Tests that are not marked and related to specific interfaces will be skipped in the Github test suite and therefore it
-will not be run and added to the coverage.
+Tests that are not marked and also related to specific interfaces will be skipped in the Github test suite and therefore
+it will not be run and the results will not be added to the coverage (inducing a coverage fail).
 
 You can find an example for testing a PennyLane template with Jax:
 
@@ -107,7 +109,7 @@ if Jax is installed and a developer wants to run only Jax related tests, they co
 
     python -m pytest tests -m "jax"
 
-They exist markers for interfaces (``autograd``, ``torch``, ``tf``, ``jax``), for multiple interfaces (``math``) and
+They exist markers for interfaces (``autograd``, ``torch``, ``tf``, ``jax``), for multiple interfaces (``all_interfaces``) and
 also for certain folders (``qchem`` and ``qcut``).
 
 For running ``qchem`` tests, one can run the following:
