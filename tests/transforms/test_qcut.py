@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 from flaky import flaky
-from networkx import MultiDiGraph, number_of_selfloops
+from networkx import MultiDiGraph, number_of_selfloops, barbell_graph
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -4747,3 +4747,45 @@ class TestReturnsMultiplePauliWords:
 
         assert np.allclose(grad, grad_2)
 
+    def test_cut_qaoa_circuit(self, mocker):
+        """Test for a typical max cut QAOA circuit"""
+        cluster_size = 8
+        g = barbell_graph(cluster_size, 1)
+        cost, _ = qml.qaoa.maxcut(g)
+
+        dev_small = qml.device("default.qubit", wires=cluster_size + 1)
+        dev_big = qml.device("default.qubit", wires=2 * cluster_size + 1)
+
+        def circuit(alpha, beta):
+            for n in g.nodes:
+                qml.Hadamard(n)
+
+            for n1, n2 in g.edges:
+                if n1 < cluster_size:
+                    qml.PauliRot(alpha, "ZZ", wires=[n1, n2])
+
+            qml.WireCut(wires=cluster_size)
+            for n1, n2 in g.edges:
+                if n1 > cluster_size:
+                    qml.PauliRot(alpha, "ZZ", wires=[n1, n2])
+
+            for n in g.nodes:
+                qml.RX(beta, wires=n)
+
+            return [qml.expval(op) for op in cost.ops]
+
+        circ = qml.QNode(circuit, dev_big)
+        cut_circ = qml.cut_circuit(qml.QNode(circuit, dev_small))
+
+        alpha = np.array(0.4)
+        beta = np.array(0.5)
+
+        res = circ(alpha, beta)
+
+        spy_exe = mocker.spy(qml, "execute")
+        res_2 = cut_circ(alpha, beta)
+
+        assert np.allclose(res, res_2)
+
+        tapes = spy_exe.call_args[0][0]
+        assert len(tapes) == 3 + 4
