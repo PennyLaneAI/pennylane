@@ -1693,7 +1693,7 @@ def _to_tensors(
                 results_per_measurement[i].extend(results_slice[ctr_inner:ctr_inner+stride])
                 ctr_inner += stride
 
-        tensors_per_measurement = [_process_tensor(r, n_prep, n_meas) for r in results_per_measurement]
+        tensors_per_measurement = [_process_tensor(qml.math.stack(r), n_prep, n_meas) for r in results_per_measurement]
         tensors.append(tensors_per_measurement)
         ctr += dim
 
