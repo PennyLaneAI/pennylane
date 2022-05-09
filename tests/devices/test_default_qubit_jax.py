@@ -22,6 +22,7 @@ from pennylane.devices.default_qubit_jax import DefaultQubitJax
 from pennylane import DeviceError
 
 
+@pytest.mark.jax
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -34,6 +35,7 @@ def test_analytic_deprecation():
         qml.device("default.qubit.jax", wires=1, shots=1, analytic=True)
 
 
+@pytest.mark.jax
 class TestQNodeIntegration:
     """Integration tests for default.qubit.jax. This test ensures it integrates
     properly with the PennyLane UI, in particular the new QNode."""
@@ -372,6 +374,7 @@ class TestQNodeIntegration:
         circuit()  # Just don't crash.
 
 
+@pytest.mark.jax
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
@@ -634,8 +637,27 @@ class TestPassthruIntegration:
         assert jnp.allclose(qnode(), jnp.array([1, 0]))
 
 
+@pytest.mark.jax
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
+
+    def test_do_not_split_analytic_jax(self, mocker):
+        """Tests that the Hamiltonian is not split for shots=None using the jax device."""
+        jax = pytest.importorskip("jax")
+        jnp = pytest.importorskip("jax.numpy")
+
+        dev = qml.device("default.qubit.jax", wires=2)
+        H = qml.Hamiltonian(jnp.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
 
     def test_template_integration(self):
         """Test that a PassthruQNode using default.qubit.jax works with templates."""
@@ -674,6 +696,7 @@ class TestHighLevelIntegration:
         assert grad.shape == weights.shape
 
 
+@pytest.mark.jax
 class TestOps:
     """Unit tests for operations supported by the default.qubit.jax device"""
 

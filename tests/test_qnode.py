@@ -56,10 +56,12 @@ class TestValidation:
         with pytest.raises(qml.QuantumFunctionError, match=expected_error):
             circuit.interface = test_interface
 
+    @pytest.mark.torch
     def test_valid_interface(self):
         """Test that changing to a valid interface works as expected, and the
         diff method is updated as required."""
-        torch = pytest.importorskip("torch")
+        import torch
+
         dev = qml.device("default.qubit", wires=1)
 
         @qnode(dev, interface="autograd", diff_method="best")
@@ -157,6 +159,7 @@ class TestValidation:
         ):
             QNode._validate_backprop_method(dev, "another_interface")
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("device_string", ("default.qubit", "default.qubit.autograd"))
     def test_validate_backprop_finite_shots(self, device_string):
         """Test that a device with finite shots cannot be used with backpropagation."""
@@ -165,6 +168,7 @@ class TestValidation:
         with pytest.raises(qml.QuantumFunctionError, match=r"Backpropagation is only supported"):
             QNode._validate_backprop_method(dev, "autograd")
 
+    @pytest.mark.autograd
     def test_parameter_shift_qubit_device(self):
         """Test that the _validate_parameter_shift method
         returns the correct gradient transform for qubit devices."""
@@ -172,6 +176,7 @@ class TestValidation:
         gradient_fn = QNode._validate_parameter_shift(dev)
         assert gradient_fn[0] is qml.gradients.param_shift
 
+    @pytest.mark.autograd
     def test_parameter_shift_cv_device(self):
         """Test that the _validate_parameter_shift method
         returns the correct gradient transform for cv devices."""
@@ -196,6 +201,7 @@ class TestValidation:
         ):
             QNode._validate_parameter_shift(dev)
 
+    @pytest.mark.autograd
     def test_best_method_is_device(self, monkeypatch):
         """Test that the method for determining the best diff method
         for a given device and interface returns the device"""
@@ -345,6 +351,7 @@ class TestValidation:
         # check that get_best_method was only ever called once
         mock_best.assert_called_once()
 
+    @pytest.mark.autograd
     def test_gradient_transform(self, mocker):
         """Test passing a gradient transform directly to a QNode"""
         dev = qml.device("default.qubit", wires=1)
@@ -413,6 +420,7 @@ class TestValidation:
             def circ():
                 return qml.expval(qml.PauliZ(0))
 
+    @pytest.mark.autograd
     def test_sparse_diffmethod_error(self):
         """Test that an error is raised when the observable is SparseHamiltonian and the
         differentiation method is not parameter-shift."""
@@ -445,6 +453,7 @@ class TestValidation:
             == "<QNode: wires=1, device='default.qubit.autograd', interface='autograd', diff_method='best'>"
         )
 
+    @pytest.mark.autograd
     def test_diff_method_none(self, tol):
         """Test that diff_method=None creates a QNode with no interface, and no
         device swapping."""
@@ -713,6 +722,7 @@ class TestDecorator:
 class TestIntegration:
     """Integration tests."""
 
+    @pytest.mark.autograd
     def test_correct_number_of_executions_autograd(self):
         """Test that number of executions are tracked in the autograd interface."""
 
@@ -735,9 +745,10 @@ class TestIntegration:
 
         assert dev.num_executions == 5
 
+    @pytest.mark.tf
     def test_correct_number_of_executions_tf(self):
         """Test that number of executions are tracked in the tf interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         def func():
             qml.Hadamard(wires=0)
@@ -763,9 +774,9 @@ class TestIntegration:
 
         assert dev.num_executions == 6
 
+    @pytest.mark.torch
     def test_correct_number_of_executions_torch(self):
         """Test that number of executions are tracked in the torch interface."""
-        torch = pytest.importorskip("torch")
 
         def func():
             qml.Hadamard(wires=0)
@@ -841,6 +852,7 @@ class TestIntegration:
         assert dev.num_executions == 2
         assert cache != {}
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff"])
     def test_single_expectation_value_with_argnum_one(self, diff_method, tol):
         """Tests correct output shape and evaluation for a QNode
@@ -936,9 +948,11 @@ class TestIntegration:
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
 
+    @pytest.mark.tf
     def test_conditional_ops_tensorflow(self):
         """Test conditional operations with TensorFlow."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="tf", diff_method="parameter-shift")
@@ -976,9 +990,11 @@ class TestIntegration:
         grad2 = tape2.gradient(r2, x2)
         assert np.allclose(grad1, grad2)
 
+    @pytest.mark.torch
     def test_conditional_ops_torch(self):
         """Test conditional operations with Torch."""
-        torch = pytest.importorskip("torch")
+        import torch
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="torch", diff_method="parameter-shift")
@@ -1011,10 +1027,12 @@ class TestIntegration:
         r2.backward()
         assert np.allclose(x1.grad.detach(), x2.grad.detach())
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("jax_interface", ["jax-python", "jax-jit"])
     def test_conditional_ops_jax(self, jax_interface):
         """Test conditional operations with JAX."""
-        jax = pytest.importorskip("jax")
+        import jax
+
         jnp = jax.numpy
         dev = qml.device("default.qubit", wires=2)
 
@@ -1229,6 +1247,7 @@ class TestShots:
             circuit(0.3)
             circuit(0.3)
 
+    @pytest.mark.autograd
     def test_no_warning_internal_cache_reuse(self):
         """Tests that no warning is raised when only the internal cache is reused."""
         dev = qml.device("default.qubit", wires=1, shots=5)
@@ -1342,6 +1361,7 @@ class TestTapeExpansion:
         assert tape.operations[0].name == "RX"
         assert np.allclose(tape.operations[0].parameters, 3 * x)
 
+    @pytest.mark.autograd
     def test_no_gradient_expansion(self, mocker):
         """Test that an unsupported operation with defined gradient recipe is
         not expanded"""
@@ -1385,6 +1405,7 @@ class TestTapeExpansion:
         # check second derivative
         assert np.allclose(qml.grad(qml.grad(circuit))(x), -9 * np.cos(3 * x))
 
+    @pytest.mark.autograd
     def test_gradient_expansion(self, mocker):
         """Test that a *supported* operation with no gradient recipe is
         expanded when applying the gradient transform, but not for execution."""
