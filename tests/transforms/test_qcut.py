@@ -4697,12 +4697,12 @@ class TestReturnsMultiplePauliWords:
             qml.expval(qml.PauliX(wires=[2]) @ qml.PauliY(wires=4)),
             qml.expval(qml.PauliZ(wires=3)),
             qml.expval(qml.PauliZ(wires=5)),
-            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[5]))
+            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[5])),
         ]
 
         def circuit(x):
             qml.Hadamard(wires=0)
-            qml.RX(x ** 2, wires=0)
+            qml.RX(x**2, wires=0)
             qml.WireCut(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.WireCut(wires=1)
@@ -4726,7 +4726,6 @@ class TestReturnsMultiplePauliWords:
         circ = qml.QNode(circuit, dev_big)
         cut_circ = qml.cut_circuit(qml.QNode(circuit, dev_small))
 
-
         x = np.array(0.4, requires_grad=True)
         res = circ(x)
 
@@ -4739,7 +4738,7 @@ class TestReturnsMultiplePauliWords:
         assert np.allclose(res, res_2)
 
         tapes = spy_exe.call_args[0][0]
-        target_num_tapes = 3 + (3 * 4 ** 2) + (4 * 3 ** 3) + (4 ** 2) + 1
+        target_num_tapes = 3 + (3 * 4**2) + (4 * 3**3) + (4**2) + 1
         assert target_num_tapes == len(tapes)
 
         grad = qml.jacobian(circ)(x)

@@ -534,8 +534,10 @@ def _get_measurements(
     for m in measurements:
 
         if m.return_type is not Expectation:
-            raise ValueError("The circuit cutting workflow only supports circuits with "
-                             "expectation value measurements")
+            raise ValueError(
+                "The circuit cutting workflow only supports circuits with "
+                "expectation value measurements"
+            )
 
         for g in group:
             obs = copy.copy(m.obs)
@@ -1668,7 +1670,9 @@ def _to_tensors(
         communication graph, or if ``meas_positions`` is provided, a list over fragments
         containing lists over measurements whose elements are the tensors
     """
-    frag_meas_positions = [[1]] * len(prepare_nodes) if meas_positions is None else meas_positions[1]
+    frag_meas_positions = (
+        [[1]] * len(prepare_nodes) if meas_positions is None else meas_positions[1]
+    )
 
     ctr = 0
     tensors = []
@@ -1679,9 +1683,9 @@ def _to_tensors(
         n_meas = len(m)
         n = n_prep + n_meas
 
-        dim = 4 ** n * n_meas_fixed
+        dim = 4**n * n_meas_fixed
 
-        results_slice = results[ctr: dim + ctr]
+        results_slice = results[ctr : dim + ctr]
         results_per_measurement = [[] for _ in range(n_meas_fixed)]
 
         ctr_stride = 0
@@ -1694,10 +1698,12 @@ def _to_tensors(
             ctr_stride += 1
 
             for i in range(n_meas_fixed):
-                results_per_measurement[i].extend(results_slice[ctr_inner:ctr_inner+stride])
+                results_per_measurement[i].extend(results_slice[ctr_inner : ctr_inner + stride])
                 ctr_inner += stride
 
-        tensors_per_measurement = [_process_tensor(qml.math.stack(r), n_prep, n_meas) for r in results_per_measurement]
+        tensors_per_measurement = [
+            _process_tensor(qml.math.stack(r), n_prep, n_meas) for r in results_per_measurement
+        ]
         tensors.append(tensors_per_measurement)
         ctr += dim
 
@@ -1764,7 +1770,11 @@ def qcut_processing_fn(
                 tensors_to_contract.append(ts[indx])
 
             result = contract_tensors(
-                tensors_to_contract, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum
+                tensors_to_contract,
+                communication_graph,
+                prepare_nodes,
+                measure_nodes,
+                use_opt_einsum,
             )
             results.append(result)
         return qml.math.stack(results)
@@ -2135,16 +2145,20 @@ def cut_circuit(
     tapes = tuple(tape for c in configurations for tape in c)
 
     if all_pauli_words and total_measurements > 1:
-        all_meas_positions = sorted(set(
-            n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess)))
+        all_meas_positions = sorted(
+            set(n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess))
+        )
         fragment_meas_positions = [
-            sorted(set(n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess))) for
-            g in fragments]
+            sorted(
+                set(n[-1] for n in g.nodes(data="order") if isinstance(n[0], MeasurementProcess))
+            )
+            for g in fragments
+        ]
         for pos in fragment_meas_positions:
             if len(pos) < total_measurements:
                 pos.append(-1)  # -1 denotes an identity measurement
 
-        meas_positions =(all_meas_positions, fragment_meas_positions)
+        meas_positions = (all_meas_positions, fragment_meas_positions)
     else:
         meas_positions = None
 
