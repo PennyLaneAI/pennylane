@@ -151,10 +151,11 @@ class TestLayer:
 
         assert prep == target
 
+    @pytest.mark.tf
     def test_layer_tf(self):
         """Tests that the layering function accepts Tensorflow variables."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         def unitary(param):
             qml.RX(param, wires=0)

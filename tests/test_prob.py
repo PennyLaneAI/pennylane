@@ -124,6 +124,7 @@ def test_integration_analytic_false(tol):
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.autograd
 def test_numerical_analytic_diff_agree(init_state, tol):
     """Test that the finite difference and parameter shift rule
     provide the same Jacobian."""

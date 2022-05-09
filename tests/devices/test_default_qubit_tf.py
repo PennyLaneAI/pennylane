@@ -126,6 +126,7 @@ def init_state(scope="session"):
 #####################################################
 
 
+@pytest.mark.tf
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -143,6 +144,7 @@ def test_analytic_deprecation():
 #####################################################
 
 
+@pytest.mark.tf
 class TestTFMatrix:
     """Test special case of matrix construction in TensorFlow for
     cases where variables must be casted to complex."""
@@ -218,6 +220,7 @@ class TestTFMatrix:
 #####################################################
 
 
+@pytest.mark.tf
 class TestApply:
     """Test application of PennyLane operations."""
 
@@ -519,12 +522,30 @@ class TestApply:
         queue = [qml.CNOT(wires=[1, 2])]
         dev.apply(queue)
 
+    def test_do_not_split_analytic_tf(self, mocker):
+        """Tests that the Hamiltonian is not split for shots=None using the tf device."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit.tf", wires=2)
+        H = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
+
 
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
 
+@pytest.mark.tf
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestExpval:
     """Test expectation values"""
@@ -814,6 +835,7 @@ class TestExpval:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.tf
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestVar:
     """Tests for the variance"""
@@ -977,6 +999,7 @@ class TestVar:
 #####################################################
 
 
+@pytest.mark.tf
 class TestQNodeIntegration:
     """Integration tests for default.qubit.tf. This test ensures it integrates
     properly with the PennyLane UI, in particular the new QNode."""
@@ -1140,6 +1163,7 @@ class TestQNodeIntegration:
         assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
 
 
+@pytest.mark.tf
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
@@ -1444,6 +1468,7 @@ class TestPassthruIntegration:
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
 
+@pytest.mark.tf
 class TestSamples:
     """Tests for sampling outputs"""
 
@@ -1521,6 +1546,7 @@ class TestSamples:
         # assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.tf
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
@@ -1550,6 +1576,7 @@ class TestHighLevelIntegration:
         assert grad.shape == weights.shape
 
 
+@pytest.mark.tf
 def test_asarray_ragged_dtype_conversion(monkeypatch):
     """Test that the _asarray internal method handles ragged arrays well when
     the dtype argument was provided."""
