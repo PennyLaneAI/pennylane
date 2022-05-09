@@ -59,6 +59,7 @@ def module(get_circuit, n_qubits, output_dim):
     return Net()
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("interface", ["torch"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
 class TestTorchLayer:
@@ -388,11 +389,11 @@ class TestTorchLayer:
         assert len(weights) == len(list(layer.parameters()))
 
 
+@pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
 @pytest.mark.usefixtures("get_circuit")  # this fixture is in tests/qnn/conftest.py
-@pytest.mark.usefixtures("skip_if_no_tf_support")
-def test_interface_conversion(get_circuit, skip_if_no_tf_support):
+def test_interface_conversion(get_circuit):
     """Test if input QNodes with all types of interface are converted internally to the PyTorch
     interface"""
     c, w = get_circuit
@@ -400,6 +401,7 @@ def test_interface_conversion(get_circuit, skip_if_no_tf_support):
     assert layer.qnode.interface == "torch"
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("interface", ["torch"])
 @pytest.mark.usefixtures("get_circuit", "module")
 class TestTorchLayerIntegration:
@@ -470,6 +472,7 @@ class TestTorchLayerIntegration:
         assert len(dict_keys) == len(all_params)
 
 
+@pytest.mark.torch
 def test_vjp_is_unwrapped_for_param_shift():
     """Test that the intermediate vjps used by the batch Torch interface
     are unwrapped and no error is raised for a custom operation.

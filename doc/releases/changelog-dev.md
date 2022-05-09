@@ -42,15 +42,32 @@
 
 <h3>Breaking changes</h3>
 
-* The properties `eigval` and `matrix` from the `Operator` class were replaced with the 
+* The module `qml.gradients.param_shift_hessian` has been renamed to
+  `qml.gradients.parameter_shift_hessian` in order to distinguish it from the identically named
+  function. Note that the `param_shift_hessian` function is unaffected by this change and can be
+  invoked in the same manner as before via the `qml.gradients` module.
+  [(#2528)](https://github.com/PennyLaneAI/pennylane/pull/2528)
+* The properties `eigval` and `matrix` from the `Operator` class were replaced with the
   methods `eigval()` and `matrix(wire_order=None)`.
   [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
-  
+
 * `Operator.decomposition()` is now an instance method, and no longer accepts parameters.
   [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
 
 * Adds tests, adds no-coverage directives, and removes inaccessible logic to improve code coverage.
   [(#2537)](https://github.com/PennyLaneAI/pennylane/pull/2537)
+  
+* The base classes `QubitDevice` and `DefaultQubit` now accept data-types for a statevector. This
+  enables a derived class (device) in a plugin to choose correct data-types.
+  [(#2448)](https://github.com/PennyLaneAI/pennylane/pull/2448)
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=4, r_dtype=np.float32, c_dtype=np.complex64)
+  >>> dev.R_DTYPE
+  <class 'numpy.float32'>
+  >>> dev.C_DTYPE
+  <class 'numpy.complex64'>
+  ```
 
 <h3>Bug fixes</h3>
 
@@ -58,6 +75,11 @@
   whose generator was a Hamiltonian.
   [(#2524)](https://github.com/PennyLaneAI/pennylane/pull/2524)
 
+* Fixes a bug with the decomposition of `qml.CommutingEvolution`.
+  [(#2542)](https://github.com/PennyLaneAI/pennylane/pull/2542)
+
+* Fixed a bug enabling PennyLane to work with the latest version of Autoray.
+  [(#2549)](https://github.com/PennyLaneAI/pennylane/pull/2549)
 
 <h3>Deprecations</h3>
 
@@ -78,4 +100,4 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Edward Jiang, Christina Lee,
-Maria Schuld
+Chae-Yeun Park, Maria Schuld
