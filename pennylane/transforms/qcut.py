@@ -1690,11 +1690,7 @@ def _to_tensors(
             ctr_stride += 1
 
             for i in range(n_meas_fixed):
-                if qml.math.get_interface(results_slice) == "tensorflow":
-                    sl = qml.math.strided_slice(results_slice, [ctr_inner], [ctr_inner+stride])
-                    results_per_measurement[i].extend(sl)
-                else:
-                    results_per_measurement[i].extend(results_slice[ctr_inner:ctr_inner+stride])
+                results_per_measurement[i].extend(results_slice[ctr_inner:ctr_inner+stride])
                 ctr_inner += stride
 
         tensors_per_measurement = [_process_tensor(qml.math.stack(r), n_prep, n_meas) for r in results_per_measurement]
