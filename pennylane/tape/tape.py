@@ -796,7 +796,7 @@ class QuantumTape(AnnotatedQueue):
         return op, p_idx
 
     def get_parameters(
-        self, trainable_only=True, circuit_only=False, **kwargs
+        self, trainable_only=True, operations_only=False, **kwargs
     ):  # pylint:disable=unused-argument
         """Return the parameters incident on the tape operations.
 
@@ -805,9 +805,8 @@ class QuantumTape(AnnotatedQueue):
 
         Args:
             trainable_only (bool): if True, returns only trainable parameters
-            circuit_only (bool): if True, returns only parameters from the
-                circuit excluding potential parameters to observables of
-                measurements
+            operations_only (bool): if True, returns only the parameters of the
+                operations excluding parameters to observables of measurements
 
         **Example**
 
@@ -843,7 +842,7 @@ class QuantumTape(AnnotatedQueue):
 
         for p_idx in iterator:
             op = self._par_info[p_idx]["op"]
-            if circuit_only and hasattr(op, "return_type"):
+            if operations_only and hasattr(op, "return_type"):
                 continue
 
             op_idx = self._par_info[p_idx]["p_idx"]

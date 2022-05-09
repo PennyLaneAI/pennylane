@@ -1033,7 +1033,7 @@ class QubitDevice(Device):
 
         jac = np.zeros((len(tape.observables), len(trainable_params)))
 
-        param_number = len(tape.get_parameters(trainable_only=False, circuit_only=True)) - 1
+        param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
         trainable_param_number = len(trainable_params) - 1
         for op in expanded_ops:
 

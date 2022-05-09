@@ -627,17 +627,17 @@ class TestParameters:
         assert tape.trainable_params == list(range(len(params)))
         assert tape.get_parameters() == params
 
-    @pytest.mark.parametrize("circuit_only", [False, True])
-    def test_parameter_processing_circuit_only(self, make_tape_with_hermitian, circuit_only):
-        """Test the circuit_only flag for getting the parameters on a tape with
+    @pytest.mark.parametrize("operations_only", [False, True])
+    def test_parameter_processing_operations_only(self, make_tape_with_hermitian, operations_only):
+        """Test the operations_only flag for getting the parameters on a tape with
         qml.Hermitian is measured"""
         tape, circuit_params, hermitian = make_tape_with_hermitian
         num_all_params = len(circuit_params) + 1  # + 1 for hermitian
         assert tape.num_params == num_all_params
         assert tape.trainable_params == list(range(num_all_params))
         assert (
-            tape.get_parameters(circuit_only=circuit_only) == circuit_params
-            if circuit_only
+            tape.get_parameters(operations_only=operations_only) == circuit_params
+            if operations_only
             else circuit_params + [hermitian]
         )
 
