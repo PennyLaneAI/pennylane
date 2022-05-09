@@ -1414,8 +1414,6 @@ def test_where(interface, t):
         [0, 0, 1, 1, 2, 0, 0, 2, 2],
         [0, 1, 0, 1, 1, 0, 1, 0, 1],
     )
-    if interface == "tf":
-        expected = qml.math.T(expected)
     assert all(fn.allclose(_res, _exp) for _res, _exp in zip(res, expected))
 
 
