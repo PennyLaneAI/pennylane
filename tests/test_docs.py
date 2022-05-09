@@ -22,11 +22,17 @@ from pennylane.measurements import State, Probability, Expectation, Variance, Sa
 
 pytestmark = pytest.mark.all_interfaces
 
-import tensorflow as tf
-import torch
-import torch.autograd.functional as F
-import jax
-from jax import numpy as jnp
+# import tensorflow as tf
+# import torch
+# import torch.autograd.functional as F
+# import jax
+# from jax import numpy as jnp
+
+tf = pytest.importorskip("tensorflow")
+torch = pytest.importorskip("torch")
+F = pytest.importorskip("torch.autograd.functional")
+jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 devices = ["default.qubit"]
 interfaces = [None, "autograd", "jax", "tf", "torch"]
