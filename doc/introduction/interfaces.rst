@@ -259,13 +259,11 @@ The tables below show all the currently supported functionality
 .. raw:: html
 
    <style>
-      /* TODO: fix this table style */
-      .conf_table { border-collapse: collapse; }
-      .tbody {text-align: center}
-      .tbody td { margin: 9px; border: solid 9px #777; text-align: center}
+      .tb { border-collapse: collapse; }
+      .tb th, .tb td { padding: 1px; border: solid 1px black; }
    </style>
 
-.. rst-class:: conf_table
+.. rst-class:: tb
 
 +-------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------+
 |                                                       | **Return type**                                                                                                            |
@@ -353,3 +351,4 @@ The tables below show all the currently supported functionality
     interfaces/torch
     interfaces/tf
     interfaces/jax
+    unsupported
