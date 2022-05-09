@@ -15,17 +15,18 @@
 import pytest
 import re
 
-import tensorflow as tf
-import torch
-import torch.autograd.functional as F
-import jax
-from jax import numpy as jnp
-
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane import QuantumFunctionError
 from pennylane.measurements import State, Probability, Expectation, Variance, Sample
 
+pytestmark = pytest.mark.all_interfaces
+
+import tensorflow as tf
+import torch
+import torch.autograd.functional as F
+import jax
+from jax import numpy as jnp
 
 devices = ["default.qubit"]
 interfaces = [None, "autograd", "jax", "tf", "torch"]
@@ -194,7 +195,6 @@ class TestSupportedConfs:
     """Test that the supported configurations in the documentation
     matches the supported configurations in the code"""
 
-    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", interfaces)
     @pytest.mark.parametrize("return_type", return_types)
     @pytest.mark.parametrize("shots", shotss)
@@ -238,7 +238,6 @@ class TestSupportedConfs:
         else:
             circuit = get_qnode(None, diff_method, return_type, shots)
 
-    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
         "return_type",
@@ -260,7 +259,6 @@ class TestSupportedConfs:
         x = get_variable(interface)
         grad = compute_gradient(x, interface, circuit, return_type)
 
-    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize("return_type", return_types)
     def test_all_backprop_finite_shots(self, interface, return_type):
@@ -278,7 +276,6 @@ class TestSupportedConfs:
         with pytest.raises(QuantumFunctionError, match=msg):
             circuit = get_qnode(interface, "backprop", return_type, 100)
 
-    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize("return_type", [State, "DensityMatrix", Probability, Variance])
     @pytest.mark.parametrize("shots", shotss)
@@ -298,7 +295,6 @@ class TestSupportedConfs:
                 x = get_variable(interface)
                 grad = compute_gradient(x, interface, circuit, return_type)
 
-    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize("return_type", [Expectation, "Hermitian", "Projector"])
     @pytest.mark.parametrize("shots", shotss)
@@ -331,7 +327,6 @@ class TestSupportedConfs:
                 x = get_variable(interface)
                 grad = compute_gradient(x, interface, circuit, return_type)
 
-    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
         "return_type", [Probability, Expectation, "Hermitian", "Projector", Variance]
@@ -354,7 +349,6 @@ class TestSupportedConfs:
         x = get_variable(interface)
         grad = compute_gradient(x, interface, circuit, return_type)
 
-    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize("return_type", [State, "DensityMatrix"])
     @pytest.mark.parametrize("shots", shotss)
@@ -368,7 +362,6 @@ class TestSupportedConfs:
             x = get_variable(interface)
             grad = compute_gradient(x, interface, circuit, return_type)
 
-    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
         "return_type", [Probability, Expectation, "Hermitian", "Projector", Variance]
@@ -391,7 +384,6 @@ class TestSupportedConfs:
         x = get_variable(interface)
         grad = compute_gradient(x, interface, circuit, return_type)
 
-    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize("return_type", [State, "DensityMatrix"])
     @pytest.mark.parametrize("shots", shotss)
@@ -408,7 +400,6 @@ class TestSupportedConfs:
             x = get_variable(interface)
             grad = compute_gradient(x, interface, circuit, return_type)
 
-    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
         "diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"]
@@ -426,7 +417,6 @@ class TestSupportedConfs:
             x = get_variable(interface)
             circuit(x)
 
-    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "finite-diff"])
     def test_all_sample_finite_shots(self, interface, diff_method):
