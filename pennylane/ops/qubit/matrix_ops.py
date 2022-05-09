@@ -151,7 +151,7 @@ class QubitUnitary(Operation):
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
 
     def adjoint(self):
-        return QubitUnitary(qml.math.T(qml.math.conj(self.get_matrix())), wires=self.wires)
+        return QubitUnitary(qml.math.T(qml.math.conj(self.matrix())), wires=self.wires)
 
     def _controlled(self, wire):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
@@ -441,7 +441,7 @@ class DiagonalQubitUnitary(Operation):
 
     def _controlled(self, control):
         DiagonalQubitUnitary(
-            qml.math.concatenate([np.array([1, 1]), self.parameters[0]]),
+            qml.math.concatenate([np.ones_like(self.parameters[0]), self.parameters[0]]),
             wires=Wires(control) + self.wires,
         )
 

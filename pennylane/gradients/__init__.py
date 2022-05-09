@@ -64,6 +64,7 @@ Utility functions
 
     finite_diff_coeffs
     generate_shifted_tapes
+    generate_multishifted_tapes
     generate_shift_rule
     generate_multi_shift_rule
     eigvals_to_frequencies
@@ -284,7 +285,7 @@ import pennylane as qml
 
 from . import parameter_shift
 from . import parameter_shift_cv
-from . import param_shift_hessian
+from . import parameter_shift_hessian
 from . import finite_difference
 
 from .gradient_transform import gradient_transform
@@ -292,7 +293,7 @@ from .hessian_transform import hessian_transform
 from .finite_difference import finite_diff, finite_diff_coeffs
 from .parameter_shift import param_shift
 from .parameter_shift_cv import param_shift_cv
-from .param_shift_hessian import param_shift_hessian
+from .parameter_shift_hessian import param_shift_hessian
 from .vjp import compute_vjp, batch_vjp, vjp
 from .hamiltonian_grad import hamiltonian_grad
 from .general_shift_rules import (
@@ -300,4 +301,5 @@ from .general_shift_rules import (
     generate_shift_rule,
     generate_multi_shift_rule,
     generate_shifted_tapes,
+    generate_multishifted_tapes,
 )

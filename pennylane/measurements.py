@@ -20,7 +20,6 @@ and measurement samples using AnnotatedQueues.
 # pylint: disable=too-many-instance-attributes
 import copy
 import uuid
-import warnings
 import functools
 from enum import Enum
 from typing import Generic, TypeVar
@@ -28,7 +27,6 @@ from typing import Generic, TypeVar
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import Observable
 from pennylane.wires import Wires
 
 # =============================================================================
@@ -327,14 +325,9 @@ class MeasurementProcess:
             return self.obs.wires
         return self._wires
 
-    @property
     def eigvals(self):
         r"""Eigenvalues associated with the measurement process.
 
-        .. warning::
-            The ``eigvals`` property is deprecated and will be removed in
-            an upcoming release. Please use :class:`qml.eigvals <.pennylane.eigvals>` instead.
-
         If the measurement process has an associated observable,
         the eigenvalues will correspond to this observable. Otherwise,
         they will be the eigenvalues provided when the measurement
@@ -346,34 +339,7 @@ class MeasurementProcess:
         **Example:**
 
         >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
-        >>> m.get_eigvals()
-        array([1, -1])
-
-        Returns:
-            array: eigvals representation
-        """
-        warnings.warn(
-            "The 'eigvals' property is deprecated and will be removed in an upcoming release. "
-            "Please use 'qml.eigvals' instead.",
-            UserWarning,
-        )
-        return self.get_eigvals()
-
-    def get_eigvals(self):
-        r"""Eigenvalues associated with the measurement process.
-
-        If the measurement process has an associated observable,
-        the eigenvalues will correspond to this observable. Otherwise,
-        they will be the eigenvalues provided when the measurement
-        process was instantiated.
-
-        Note that the eigenvalues are not guaranteed to be in any
-        particular order.
-
-        **Example:**
-
-        >>> m = MeasurementProcess(Expectation, obs=qml.PauliX(wires=1))
-        >>> m.get_eigvals()
+        >>> m.eigvals()
         array([1, -1])
 
         Returns:
@@ -381,7 +347,7 @@ class MeasurementProcess:
         """
         if self.obs is not None:
             try:
-                return self.obs.get_eigvals()
+                return self.obs.eigvals()
             except qml.operation.EigvalsUndefinedError:
                 pass
 
@@ -415,7 +381,7 @@ class MeasurementProcess:
         >>> print(tape.operations)
         [QubitUnitary(array([[-0.89442719,  0.4472136 ],
               [ 0.4472136 ,  0.89442719]]), wires=['a'])]
-        >>> print(tape.measurements[0].get_eigvals())
+        >>> print(tape.measurements[0].eigvals())
         [0. 5.]
         >>> print(tape.measurements[0].obs)
         None
@@ -425,9 +391,7 @@ class MeasurementProcess:
 
         with qml.tape.QuantumTape() as tape:
             self.obs.diagonalizing_gates()
-            MeasurementProcess(
-                self.return_type, wires=self.obs.wires, eigvals=self.obs.get_eigvals()
-            )
+            MeasurementProcess(self.return_type, wires=self.obs.wires, eigvals=self.obs.eigvals())
 
         return tape
 
@@ -445,6 +409,16 @@ class MeasurementProcess:
             context.append(self)
 
         return self
+
+    @property
+    def _queue_category(self):
+        """Denotes that `MeasurementProcess` objects should be processed into the `_measurements` list
+        in `QuantumTape` objects.
+
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
+        """
+        return "_ops" if self.return_type is MidMeasure else "_measurements"
 
     @property
     def hash(self):
@@ -491,7 +465,7 @@ def expval(op):
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
-    if not isinstance(op, (Observable, qml.Hamiltonian)):
+    if not isinstance(op, (qml.operation.Observable, qml.Hamiltonian)):
         raise qml.QuantumFunctionError(
             f"{op.name} is not an observable: cannot be used with expval"
         )
@@ -526,7 +500,7 @@ def var(op):
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
-    if not isinstance(op, Observable):
+    if not isinstance(op, qml.operation.Observable):
         raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
 
     return MeasurementProcess(Variance, obs=op, shape=(1,), numeric_type=float)
@@ -604,7 +578,9 @@ def sample(op=None, wires=None):
         case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
         observable ``obs``.
     """
-    if not isinstance(op, Observable) and op is not None:  # None type is also allowed for op
+    if (
+        not isinstance(op, qml.operation.Observable) and op is not None
+    ):  # None type is also allowed for op
         raise qml.QuantumFunctionError(
             f"{op.name} is not an observable: cannot be used with sample"
         )
@@ -763,7 +739,8 @@ def state():
         classical backpropagation differentiation method (``diff_method="backprop"``) with a
         compatible device.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         A QNode with the ``qml.state`` output can be used in a cost function with
         is then differentiated:

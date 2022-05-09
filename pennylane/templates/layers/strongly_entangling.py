@@ -114,7 +114,8 @@ class StronglyEntanglingLayers(Operation):
         2: ──Rot(0.07,0.95,0.97)─╰Z─│──╰C─│─────────────────────Rot(0.26,0.66,0.31)─│─────╰C─╭Z─┤
         3: ──Rot(0.81,0.30,0.10)────╰Z────╰C────────────────────Rot(0.52,0.55,0.18)─╰Z───────╰C─┤
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Parameter shape**
 

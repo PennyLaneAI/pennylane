@@ -237,7 +237,7 @@ class TestConstruction:
     def test_state_preparation_error(self):
         """Test that an exception is raised if a state preparation comes
         after a quantum operation"""
-        with pytest.raises(ValueError, match="must occur prior to any quantum"):
+        with pytest.raises(ValueError, match="must occur prior to ops"):
             with QuantumTape() as tape:
                 B = qml.PauliX(wires=0)
                 qml.BasisState(np.array([0, 1]), wires=[0, 1])
@@ -245,7 +245,7 @@ class TestConstruction:
     def test_measurement_before_operation(self):
         """Test that an exception is raised if a measurement occurs before a operation"""
 
-        with pytest.raises(ValueError, match="must occur prior to any measurements"):
+        with pytest.raises(ValueError, match="must occur prior to measurements"):
             with QuantumTape() as tape:
                 qml.expval(qml.PauliZ(wires=1))
                 qml.RX(0.5, wires=0)
@@ -1006,7 +1006,7 @@ class TestExpand:
         assert [m.obs is r for m, r in zip(new_tape.measurements, expected)]
 
         expected = [None, [1, -1, -1, 1], [0, 5]]
-        assert [m.get_eigvals() is r for m, r in zip(new_tape.measurements, expected)]
+        assert [m.eigvals() is r for m, r in zip(new_tape.measurements, expected)]
 
     def test_expand_tape_multiple_wires(self):
         """Test the expand() method when measurements with more than one observable on the same
@@ -1916,6 +1916,7 @@ class TestOutputShape:
         res_shape = qml.execute([tape], dev, gradient_fn=qml.gradients.param_shift_cv)[0]
         assert tape.shape(dev) == res_shape.shape
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("measurements, expected", multi_measurements)
     @pytest.mark.parametrize("shots", [None, 1, 10])
     def test_multi_measure(self, measurements, expected, shots):
@@ -1943,6 +1944,7 @@ class TestOutputShape:
         expected = execution_results[0].shape
         assert res == expected
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("measurements, expected", multi_measurements)
     def test_multi_measure_shot_vector(self, measurements, expected):
         """Test that the expected output shape is obtained when using multiple
@@ -1980,6 +1982,7 @@ class TestOutputShape:
         expected = execution_results[0].shape
         assert res == expected
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("shots", [1, 10])
     def test_multi_measure_sample(self, shots):
         """Test that the expected output shape is obtained when using multiple
@@ -2005,6 +2008,7 @@ class TestOutputShape:
         expected = execution_results[0].shape
         assert res == expected
 
+    @pytest.mark.autograd
     def test_multi_measure_sample_shot_vector(self):
         """Test that the expected output shape is obtained when using multiple
         qml.sample measurements with a shot vector."""
@@ -2207,6 +2211,7 @@ class TestNumericType:
         assert np.issubdtype(result.dtype, float)
         assert circuit.qtape.numeric_type is float
 
+    @pytest.mark.autograd
     def test_sample_real_and_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for
         multiple sampling measurements with a Hermitian observable with real

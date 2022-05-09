@@ -19,7 +19,7 @@ from itertools import product
 import pennylane as qml
 from pennylane import numpy as np
 
-from pennylane.gradients.param_shift_hessian import _collect_recipes, _generate_off_diag_tapes
+from pennylane.gradients.parameter_shift_hessian import _collect_recipes, _generate_off_diag_tapes
 
 
 class TestCollectRecipes:
@@ -40,10 +40,10 @@ class TestCollectRecipes:
             DummyOp(0.3, wires=0)
 
         diag, offdiag = _collect_recipes(tape, tape.trainable_params, ("A", "A"), None, None)
-        assert qml.math.allclose(diag[0], qml.math.array(channel_recipe_2nd_order).T)
-        assert qml.math.allclose(diag[1], qml.math.array(dummy_recipe_2nd_order).T)
-        assert qml.math.allclose(offdiag[0], qml.math.array(channel_recipe).T)
-        assert qml.math.allclose(offdiag[1], qml.math.array(dummy_recipe).T)
+        assert qml.math.allclose(diag[0], qml.math.array(channel_recipe_2nd_order))
+        assert qml.math.allclose(diag[1], qml.math.array(dummy_recipe_2nd_order))
+        assert qml.math.allclose(offdiag[0], qml.math.array(channel_recipe))
+        assert qml.math.allclose(offdiag[1], qml.math.array(dummy_recipe))
 
 
 class TestGenerateOffDiagTapes:
@@ -54,8 +54,8 @@ class TestGenerateOffDiagTapes:
             qml.RX(np.array(0.2), wires=[0])
             qml.RY(np.array(0.9), wires=[0])
 
-        recipe_0 = np.array([[-0.5, 1.0, 0.0], [0.5, 1.0, np.pi]]).T
-        recipe_1 = np.array([[-0.25, 1.0, 0.0], [0.25, 1.0, np.pi]]).T
+        recipe_0 = np.array([[-0.5, 1.0, 0.0], [0.5, 1.0, np.pi]])
+        recipe_1 = np.array([[-0.25, 1.0, 0.0], [0.25, 1.0, np.pi]])
         h_tapes, c, unshifted_coeff = _generate_off_diag_tapes(tape, (0, 1), recipe_0, recipe_1)
 
         assert len(h_tapes) == 3  # Four tapes of which one is not shifted -> Three tapes
@@ -121,7 +121,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        c, s = qml.gradients.generate_shift_rule((0.5, 1))
+        c, s = qml.gradients.generate_shift_rule((0.5, 1)).T
         recipe = list(zip(c, np.ones_like(c), s))
 
         class DummyOp(qml.CRX):
@@ -311,7 +311,7 @@ class TestParameterShiftHessian:
         """Test that the correct Hessian is calculated with multiple QNode arguments (0D->1D)"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(y, wires=1)
@@ -338,7 +338,7 @@ class TestParameterShiftHessian:
         """Test that the correct Hessian is calculated with multiple QNode arguments (1D->1D)"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x, y, z):
             qml.RX(x[0], wires=1)
             qml.RY(y[0], wires=0)
@@ -366,7 +366,7 @@ class TestParameterShiftHessian:
         """Test that the correct Hessian is calculated with multiple QNode arguments (2D->1D)"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x, y, z):
             qml.RX(x[0, 0], wires=0)
             qml.RY(y[0, 0], wires=1)
@@ -395,7 +395,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(z[0] + z[1], wires=0)
@@ -421,7 +421,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -441,7 +441,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=3)
+        @qml.qnode(dev, max_diff=3, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -549,7 +549,7 @@ class TestParameterShiftHessian:
 
             grad_method = "F"
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -574,7 +574,7 @@ class TestParameterShiftHessian:
 
             grad_method = "F"
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -594,7 +594,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -614,7 +614,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -638,7 +638,7 @@ class TestParameterShiftHessian:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x, y, z):
             qml.RX(x, wires=0)
             qml.RY(y, wires=0)
@@ -651,15 +651,71 @@ class TestParameterShiftHessian:
 
         qml.gradients.param_shift_hessian(circuit)(x, y, z)
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
-    def test_no_trainable_params_qnode(self, interface):
+    @pytest.mark.autograd
+    def test_no_trainable_params_qnode_autograd(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
-        if interface != "autograd":
-            pytest.importorskip(interface)
+
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface="autograd", diff_method="parameter-shift")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift_hessian(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.torch
+    def test_no_trainable_params_qnode_torch(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch", diff_method="parameter-shift")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift_hessian(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.tf
+    def test_no_trainable_params_qnode_tf(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf", diff_method="parameter-shift")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="hessian of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift_hessian(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.jax
+    def test_no_trainable_params_qnode_jax(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -698,7 +754,7 @@ class TestParameterShiftHessian:
         identified to be 0, and that no tapes were generated."""
         dev = qml.device("default.qubit", wires=4)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(params):
             qml.Rot(*params, wires=0)
             return qml.probs([2, 3])
@@ -788,7 +844,7 @@ class TestParamShiftHessianWithKwargs:
         """Test that diagonal shifts are used and yield the correct Hessian."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.RY(x[1], wires=0)
@@ -832,7 +888,7 @@ class TestParamShiftHessianWithKwargs:
         """Test that off-diagonal shifts are used and yield the correct Hessian."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x[0], wires=0)
             qml.CRY(x[1], wires=[0, 1])
@@ -878,7 +934,7 @@ class TestParamShiftHessianWithKwargs:
         """Test that providing an argnum to indicated differentiable parameters works."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x, y):
             qml.RX(x, wires=0)
             qml.CRY(y, wires=[0, 1])
@@ -906,7 +962,7 @@ class TestParamShiftHessianWithKwargs:
         off_diagonal_shifts = [(0.4,), (0.3, 2.1)]
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, max_diff=2)
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
         def circuit(x, y):
             qml.RX(x, wires=0)
             qml.CRY(y, wires=[0, 1])
@@ -959,13 +1015,14 @@ class TestParamShiftHessianWithKwargs:
 class TestInterfaces:
     """Test the param_shift_hessian method on different interfaces"""
 
+    @pytest.mark.torch
     def test_hessian_transform_with_torch(self):
         """Test that the Hessian transform can be used with Torch (1d -> 1d)"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -981,10 +1038,11 @@ class TestInterfaces:
 
         assert np.allclose(expected, hess.detach())
 
+    @pytest.mark.torch
     def test_hessian_transform_is_differentiable_torch(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation in Torch
         (1d -> 1d)"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -1005,14 +1063,15 @@ class TestInterfaces:
 
         assert np.allclose(expected, torch_deriv)
 
+    @pytest.mark.jax
     @pytest.mark.slow
     def test_hessian_transform_with_jax(self):
         """Test that the Hessian transform can be used with JAX (1d -> 1d)"""
-        jax = pytest.importorskip("jax")
+        import jax
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, max_diff=2)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -1028,15 +1087,16 @@ class TestInterfaces:
 
         assert np.allclose(expected, hess)
 
+    @pytest.mark.jax
     @pytest.mark.slow
     def test_hessian_transform_is_differentiable_jax(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation in JAX
         (1d -> 1d)"""
-        jax = pytest.importorskip("jax")
+        import jax
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", max_diff=3)
+        @qml.qnode(dev, max_diff=3)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -1052,14 +1112,15 @@ class TestInterfaces:
 
         assert np.allclose(expected, jax_deriv)
 
+    @pytest.mark.tf
     @pytest.mark.slow
     def test_hessian_transform_with_tensorflow(self):
         """Test that the Hessian transform can be used with TensorFlow (1d -> 1d)"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, diff_method="parameter-shift", max_diff=2)
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.RY(x[0], wires=0)
@@ -1076,11 +1137,12 @@ class TestInterfaces:
 
         assert np.allclose(expected, hess)
 
+    @pytest.mark.tf
     @pytest.mark.slow
     def test_hessian_transform_is_differentiable_tensorflow(self):
         """Test that the 3rd derivate can be calculated via auto-differentiation in Tensorflow
         (1d -> 1d)"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 

@@ -18,9 +18,102 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients.gradient_transform import (
     gradient_transform,
+    gradient_analysis,
     choose_grad_methods,
     grad_method_validation,
 )
+
+
+class TestGradAnalysis:
+    """Tests for parameter gradient methods"""
+
+    def test_non_differentiable(self):
+        """Test that a non-differentiable parameter is correctly marked"""
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=[0, 1])
+
+        gradient_analysis(tape)
+
+        assert tape._par_info[0]["grad_method"] is None
+        assert tape._par_info[1]["grad_method"] == "A"
+        assert tape._par_info[2]["grad_method"] == "A"
+
+    def test_analysis_caching(self, mocker):
+        """Test that the gradient analysis is only executed once per tape
+        if grad_fn is set an unchanged."""
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=[0, 1])
+
+        spy = mocker.spy(qml.operation, "has_grad_method")
+        gradient_analysis(tape, grad_fn=5)
+        spy.assert_called()
+
+        assert tape._par_info[0]["grad_method"] is None
+        assert tape._par_info[1]["grad_method"] == "A"
+        assert tape._par_info[2]["grad_method"] == "A"
+
+        spy = mocker.spy(qml.operation, "has_grad_method")
+        gradient_analysis(tape, grad_fn=5)
+        spy.assert_not_called()
+
+    def test_independent(self):
+        """Test that an independent variable is properly marked
+        as having a zero gradient"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.expval(qml.PauliY(0))
+
+        gradient_analysis(tape)
+
+        assert tape._par_info[0]["grad_method"] == "A"
+        assert tape._par_info[1]["grad_method"] == "0"
+
+    def test_independent_no_graph_mode(self):
+        """In non-graph mode, it is impossible to determine
+        if a parameter is independent or not"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.expval(qml.PauliY(0))
+
+        gradient_analysis(tape, use_graph=False)
+
+        assert tape._par_info[0]["grad_method"] == "A"
+        assert tape._par_info[1]["grad_method"] == "A"
+
+    def test_finite_diff(self, monkeypatch):
+        """If an op has grad_method=F, this should be respected"""
+        monkeypatch.setattr(qml.RX, "grad_method", "F")
+
+        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.QubitStateVector(psi, wires=[0, 1])
+            qml.RX(0.543, wires=[0])
+            qml.RY(-0.654, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            qml.probs(wires=[0, 1])
+
+        gradient_analysis(tape)
+
+        assert tape._par_info[0]["grad_method"] is None
+        assert tape._par_info[1]["grad_method"] == "F"
+        assert tape._par_info[2]["grad_method"] == "A"
 
 
 class TestGradMethodValidation:
@@ -474,6 +567,7 @@ class TestInterfaceIntegration:
     """Test that the gradient transforms are differentiable
     using each interface"""
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Test that a gradient transform remains differentiable
         with autograd"""
@@ -496,10 +590,12 @@ class TestInterfaceIntegration:
         expected = -2 * (4 * x**2 * np.cos(2 * x**2) + np.sin(2 * x**2))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Test that a gradient transform remains differentiable
         with TF"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.gradients.param_shift
@@ -522,10 +618,12 @@ class TestInterfaceIntegration:
         expected = -2 * (4 * x_**2 * np.cos(2 * x_**2) + np.sin(2 * x_**2))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Test that a gradient transform remains differentiable
         with PyTorch"""
-        torch = pytest.importorskip("torch")
+        import torch
+
         dev = qml.device("default.qubit", wires=2)
 
         @qml.gradients.param_shift
@@ -546,10 +644,12 @@ class TestInterfaceIntegration:
         expected = -2 * np.cos(2 * x_)
         assert np.allclose(x.grad.detach(), expected, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Test that a gradient transform remains differentiable
         with JAX"""
-        jax = pytest.importorskip("jax")
+        import jax
+
         jnp = jax.numpy
         dev = qml.device("default.qubit", wires=2)
 

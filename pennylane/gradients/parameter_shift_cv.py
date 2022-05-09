@@ -337,11 +337,11 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         arg_idx = argnum.index(idx)
         recipe = gradient_recipes[arg_idx]
         if recipe is not None:
-            recipe = process_shifts(np.array(recipe).T)
+            recipe = process_shifts(np.array(recipe))
         else:
             op_shifts = None if shifts is None else shifts[arg_idx]
             recipe = _get_operation_recipe(tape, idx, shifts=op_shifts)
-        coeffs, multipliers, op_shifts = recipe
+        coeffs, multipliers, op_shifts = recipe.T
 
         if len(op_shifts) != 2:
             # The 2nd order CV parameter-shift rule only accepts two-term shifts
@@ -615,7 +615,8 @@ def param_shift_cv(
     >>> qml.jacobian(circuit)(params)
     array([ 0.87516064,  0.01273285,  0.88334834, -0.01273285])
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         This gradient transform can be applied directly to :class:`QNode <pennylane.QNode>` objects:
 

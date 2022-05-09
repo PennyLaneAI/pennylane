@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
 from copy import copy
 from collections.abc import Iterable
@@ -621,8 +621,6 @@ class Hamiltonian(Observable):
             except QueuingError:
                 o.queue(context=context)
                 context.update_info(o, owner=self)
-            except NotImplementedError:
-                pass
 
         context.append(self, owns=tuple(self.ops))
         return self

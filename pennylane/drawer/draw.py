@@ -72,7 +72,8 @@ def draw(
     1: ────╭RX(2.30)──Rot(1.20,3.20,0.70)─╭RX(-2.30)─┤ ╭<Z@Z>
     0: ──H─╰C─────────────────────────────╰C─────────┤ ╰<Z@Z>
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
 
     By specifying the ``decimals`` keyword, parameters are displayed to the specified precision.
@@ -286,7 +287,8 @@ def draw_mpl(
             :width: 60%
             :target: javascript:void(0);
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Decimals:**
 
