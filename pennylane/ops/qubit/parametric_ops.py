@@ -2509,6 +2509,7 @@ class IsingZZ(Operation):
             tensor_like: eigenvalues
 
         **Example**
+
         >>> qml.IsingZZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j])
         """

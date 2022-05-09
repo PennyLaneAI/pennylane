@@ -53,12 +53,13 @@ class TestQubitUnitary:
         )
 
         op = qml.QubitUnitary(U, wires="a")
-        new_op = op.pow(n)
+        new_ops = op.pow(n)
 
-        assert new_op.wires == op.wires
+        assert len(new_ops) == 1
+        assert new_ops[0].wires == op.wires
 
         mat_to_pow = qml.math.linalg.matrix_power(qml.matrix(op), n)
-        new_mat = qml.matrix(new_op)
+        new_mat = qml.matrix(new_ops[0])
 
         assert qml.math.allclose(mat_to_pow, new_mat)
 
@@ -285,9 +286,10 @@ class TestDiagonalQubitUnitary:
     def test_pow(self, n, diag):
         """Test pow method returns expected results."""
         op = qml.DiagonalQubitUnitary(diag, wires="b")
-        pow_op = op.pow(n)
+        pow_ops = op.pow(n)
+        assert len(pow_ops) == 1
 
-        for x_op, x_pow in zip(op.data[0], pow_op.data[0]):
+        for x_op, x_pow in zip(op.data[0], pow_ops[0].data[0]):
             assert (x_op + 0.0j) ** n == x_pow
 
     def test_error_matrix_not_unitary(self):
@@ -581,13 +583,14 @@ class TestControlledQubitUnitary:
 
         op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
 
-        pow_op = op.pow(n)
+        pow_ops = op.pow(n)
+        assert len(pow_ops) == 1
 
-        assert pow_op.hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
-        assert pow_op.control_wires == op.control_wires
+        assert pow_ops[0].hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
+        assert pow_ops[0].control_wires == op.control_wires
 
         op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
-        assert qml.math.allclose(pow_op.data[0], op_mat_to_pow)
+        assert qml.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
 
     def test_noninteger_pow(self):
         """Test that a ControlledQubitUnitary raised to a non-integer power raises an error."""
