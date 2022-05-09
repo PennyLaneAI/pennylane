@@ -45,7 +45,7 @@ This test will be marked automatically as a ``core`` test.
 On the other hand, some tests require specific interfaces and need to marked in order to be run on our Github test suite.
 Tests involving interfaces have to be marked with its respective marker: ``@pytest.mark.autograd``, ``@pytest.mark.torch``,
 ``@pytest.mark.tf`` and ``@pytest.mark.jax``. If tests involved multiple interfaces, one should add the marker
-``@pytest.mark.all_interfaces``. It is now prohibited to use  ``importorskip()`` inside tests with interfaces. Also tests
+``@pytest.mark.all_interfaces``. It is now prohibited to use ``importorskip`` inside tests with interfaces. Also tests
 involving interfaces must be written separately and it should be avoided to use fixtures. The necessary packages related
 to interfaces have to be imported in the tests directly. All tests with marked interfaces are skipped if the necessary
 interfaces are not installed.
