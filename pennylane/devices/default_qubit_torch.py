@@ -21,10 +21,10 @@ try:
     import torch
 
     VERSION_SUPPORT = semantic_version.match(">=1.8.1", torch.__version__)
-    if not VERSION_SUPPORT:
+    if not VERSION_SUPPORT:  # pragma: no cover
         raise ImportError("default.qubit.torch device requires Torch>=1.8.1")
 
-except ImportError as e:
+except ImportError as e:  # pragma: no cover
     raise ImportError("default.qubit.torch device requires Torch>=1.8.1") from e
 
 import numpy as np
@@ -138,7 +138,9 @@ class DefaultQubitTorch(DefaultQubit):
     _flatten = staticmethod(torch.flatten)
     _reshape = staticmethod(torch.reshape)
     _roll = staticmethod(torch.roll)
-    _stack = staticmethod(lambda arrs, axis=0, out=None: torch.stack(arrs, axis=axis, out=out))
+    _stack = staticmethod(
+        lambda arrs, axis=0, out=None: torch.stack(arrs, axis=axis, out=out)
+    )
     _tensordot = staticmethod(
         lambda a, b, axes: torch.tensordot(
             a, b, axes if isinstance(axes, int) else tuple(map(list, axes))
@@ -163,7 +165,9 @@ class DefaultQubitTorch(DefaultQubit):
         r_dtype = torch.float64
         c_dtype = torch.complex128
 
-        super().__init__(wires, r_dtype=r_dtype, c_dtype=c_dtype, shots=shots, analytic=analytic)
+        super().__init__(
+            wires, r_dtype=r_dtype, c_dtype=c_dtype, shots=shots, analytic=analytic
+        )
 
         # Move state to torch device (e.g. CPU, GPU, XLA, ...)
         self._state.requires_grad = True
@@ -253,9 +257,11 @@ class DefaultQubitTorch(DefaultQubit):
     @staticmethod
     def _dot(x, y):
         if x.device != y.device:
-            if x.device != "cpu":
+
+            # GPU-specific cases
+            if x.device != "cpu":  # pragma: no cover
                 return torch.tensordot(x, y.to(x.device), dims=1)
-            if y.device != "cpu":
+            if y.device != "cpu":  # pragma: no cover
                 return torch.tensordot(x.to(y.device), y, dims=1)
 
         return torch.tensordot(x, y, dims=1)
@@ -277,7 +283,9 @@ class DefaultQubitTorch(DefaultQubit):
 
         # `array` is now a torch tensor
         tensor = array
-        new_tensor = torch.zeros(new_dimensions, dtype=tensor.dtype, device=tensor.device)
+        new_tensor = torch.zeros(
+            new_dimensions, dtype=tensor.dtype, device=tensor.device
+        )
         new_tensor[indices] = tensor
         return new_tensor
 
