@@ -237,6 +237,7 @@ class TestSingleExcitation:
         exp = SingleExcitationMinus(phi)
         assert np.allclose(res, exp)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize(
         "excitation", [qml.SingleExcitation, qml.SingleExcitationPlus, qml.SingleExcitationMinus]
     )
@@ -244,7 +245,6 @@ class TestSingleExcitation:
         """Tests that operations are computed correctly using the
         autograd interface"""
 
-        pytest.importorskip("autograd")
         dev = qml.device("default.qubit.autograd", wires=2)
         state = np.array([0, -1 / np.sqrt(2), 1 / np.sqrt(2), 0])
 
@@ -256,6 +256,7 @@ class TestSingleExcitation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("excitation", "phi"),
@@ -269,7 +270,6 @@ class TestSingleExcitation:
         """Tests that gradients are computed correctly using the
         autograd interface"""
 
-        pytest.importorskip("autograd")
         dev = qml.device("default.qubit.autograd", wires=2)
 
         @qml.qnode(dev)
@@ -280,6 +280,7 @@ class TestSingleExcitation:
 
         assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("excitation", "phi"),
@@ -293,7 +294,8 @@ class TestSingleExcitation:
         """Tests that gradients and operations are computed correctly using the
         tensorflow interface"""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         dev = qml.device("default.qubit.tf", wires=2)
 
         @qml.qnode(dev, interface="tf", diff_method=diff_method)
@@ -309,6 +311,7 @@ class TestSingleExcitation:
         grad = tape.gradient(res, phi_t)
         assert np.allclose(grad, np.sin(phi))
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("excitation", "phi"),
@@ -322,10 +325,7 @@ class TestSingleExcitation:
         """Tests that gradients and operations are computed correctly using the
         jax interface"""
 
-        if diff_method == "parameter-shift":
-            pytest.skip("JAX support for the parameter-shift method is still TBD")
-
-        jax = pytest.importorskip("jax")
+        import jax
 
         dev = qml.device("default.qubit.jax", wires=2)
 
@@ -464,14 +464,13 @@ class TestDoubleExcitation:
 
         assert np.allclose(res, exp)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize(
         "excitation", [qml.DoubleExcitation, qml.DoubleExcitationPlus, qml.DoubleExcitationMinus]
     )
     def test_autograd(self, excitation):
         """Tests that operations are computed correctly using the
         autograd interface"""
-
-        pytest.importorskip("autograd")
 
         dev = qml.device("default.qubit.autograd", wires=4)
         state = np.array(
@@ -488,14 +487,13 @@ class TestDoubleExcitation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
+    @pytest.mark.tf
     @pytest.mark.parametrize(
         "excitation", [qml.DoubleExcitation, qml.DoubleExcitationPlus, qml.DoubleExcitationMinus]
     )
     def test_tf(self, excitation):
         """Tests that operations are computed correctly using the
         tensorflow interface"""
-
-        pytest.importorskip("tensorflow")
 
         dev = qml.device("default.qubit.tf", wires=4)
         state = np.array(
@@ -512,14 +510,13 @@ class TestDoubleExcitation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "excitation", [qml.DoubleExcitation, qml.DoubleExcitationPlus, qml.DoubleExcitationMinus]
     )
     def test_jax(self, excitation):
         """Tests that operations are computed correctly using the
         jax interface"""
-
-        pytest.importorskip("jax")
 
         dev = qml.device("default.qubit.jax", wires=4)
         state = np.array(
@@ -536,6 +533,7 @@ class TestDoubleExcitation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize(
         ("excitation", "phi"),
         [
@@ -547,8 +545,6 @@ class TestDoubleExcitation:
     def test_autograd_grad(self, excitation, phi):
         """Tests that gradients are computed correctly using the
         autograd interface"""
-
-        pytest.importorskip("autograd")
 
         dev = qml.device("default.qubit.autograd", wires=4)
 
@@ -562,6 +558,7 @@ class TestDoubleExcitation:
 
         assert np.allclose(qml.grad(circuit)(phi), np.sin(phi))
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("excitation", "phi"),
@@ -575,7 +572,8 @@ class TestDoubleExcitation:
         """Tests that gradients are computed correctly using the
         tensorflow interface"""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         dev = qml.device("default.qubit.tf", wires=4)
 
         @qml.qnode(dev, interface="tf", diff_method=diff_method)
@@ -592,6 +590,7 @@ class TestDoubleExcitation:
         grad = tape.gradient(res, phi_t)
         assert np.allclose(grad, np.sin(phi))
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("excitation", "phi"),
@@ -605,10 +604,7 @@ class TestDoubleExcitation:
         """Tests that gradients and operations are computed correctly using the
         jax interface"""
 
-        if diff_method == "parameter-shift":
-            pytest.skip("JAX support for the parameter-shift method is still TBD")
-
-        jax = pytest.importorskip("jax")
+        import jax
 
         dev = qml.device("default.qubit.jax", wires=4)
 
@@ -731,11 +727,10 @@ class TestOrbitalRotation:
 
         assert np.allclose(res, expected)
 
+    @pytest.mark.autograd
     def test_autograd(self):
         """Tests that operations are computed correctly using the
         autograd interface"""
-
-        pytest.importorskip("autograd")
 
         dev = qml.device("default.qubit.autograd", wires=4)
         state = np.array(
@@ -769,11 +764,10 @@ class TestOrbitalRotation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
+    @pytest.mark.tf
     def test_tf(self):
         """Tests that operations are computed correctly using the
         tensorflow interface"""
-
-        pytest.importorskip("tensorflow")
 
         dev = qml.device("default.qubit.tf", wires=4)
         state = np.array(
@@ -807,11 +801,12 @@ class TestOrbitalRotation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
+    @pytest.mark.jax
     def test_jax(self):
         """Tests that operations are computed correctly using the
         jax interface"""
 
-        pytest.importorskip("jax")
+        import jax
 
         dev = qml.device("default.qubit.jax", wires=4)
         state = np.array(
@@ -845,11 +840,12 @@ class TestOrbitalRotation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
+    @pytest.mark.torch
     def test_torch(self):
         """Tests that operations are computed correctly using the
         torch interface"""
 
-        pytest.importorskip("torch")
+        import torch
 
         dev = qml.device("default.qubit.torch", wires=4)
         state = np.array(
@@ -883,6 +879,7 @@ class TestOrbitalRotation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         "phi",
@@ -894,8 +891,6 @@ class TestOrbitalRotation:
     def test_autograd_grad(self, phi, diff_method):
         """Tests that gradients are computed correctly using the
         autograd interface"""
-
-        pytest.importorskip("autograd")
 
         dev = qml.device("default.qubit.autograd", wires=4)
 
@@ -909,6 +904,7 @@ class TestOrbitalRotation:
 
         assert np.allclose(qml.grad(total)(phi), self.expected_grad_fn(phi))
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("phi"),
@@ -918,7 +914,8 @@ class TestOrbitalRotation:
         """Tests that gradients are computed correctly using the
         tensorflow interface"""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         dev = qml.device("default.qubit.tf", wires=4)
 
         circuit_0 = qml.QNode(self.grad_circuit_0, dev, interface="tf", diff_method=diff_method)
@@ -933,6 +930,7 @@ class TestOrbitalRotation:
 
         assert np.allclose(grad, self.expected_grad_fn(phi))
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("phi"),
@@ -942,10 +940,7 @@ class TestOrbitalRotation:
         """Tests that gradients and operations are computed correctly using the
         jax interface"""
 
-        if diff_method == "parameter-shift":
-            pytest.skip("JAX support for the parameter-shift method is still TBD")
-
-        jax = pytest.importorskip("jax")
+        import jax
 
         dev = qml.device("default.qubit.jax", wires=4)
 
@@ -957,6 +952,7 @@ class TestOrbitalRotation:
 
         assert np.allclose(jax.grad(total)(phi_j), self.expected_grad_fn(phi))
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
         ("phi"),
@@ -966,7 +962,7 @@ class TestOrbitalRotation:
         """Tests that gradients and operations are computed correctly using the
         torch interface"""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         dev = qml.device("default.qubit.torch", wires=4)
 

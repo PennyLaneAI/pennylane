@@ -1157,6 +1157,7 @@ class TestCommutationDAG:
         for i, edge in enumerate(dag.get_edges()):
             assert edges[i] == edge
 
+    @pytest.mark.autograd
     def test_dag_parameters_autograd(self):
         "Test a the DAG and its attributes for autograd parameters."
 
@@ -1214,10 +1215,10 @@ class TestCommutationDAG:
         for i, edge in enumerate(dag.get_edges()):
             assert edges[i] == edge
 
+    @pytest.mark.tf
     def test_dag_parameters_tf(self):
         "Test a the DAG and its attributes for tensorflow parameters."
-
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -1273,10 +1274,10 @@ class TestCommutationDAG:
         for i, edge in enumerate(dag.get_edges()):
             assert edges[i] == edge
 
+    @pytest.mark.torch
     def test_dag_parameters_torch(self):
         "Test a the DAG and its attributes for torch parameters."
-
-        torch = pytest.importorskip("torch", minversion="1.8")
+        import torch
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -1332,10 +1333,10 @@ class TestCommutationDAG:
         for i, edge in enumerate(dag.get_edges()):
             assert edges[i] == edge
 
+    @pytest.mark.jax
     def test_dag_parameters_jax(self):
         "Test a the DAG and its attributes for jax parameters."
 
-        jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
         dev = qml.device("default.qubit", wires=3)
