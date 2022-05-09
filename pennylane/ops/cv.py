@@ -117,11 +117,8 @@ class Rotation(CVOperation):
     def _heisenberg_rep(p):
         return _rotation(p[0])
 
-    def adjoint(self):
-        return Rotation(-self.parameters[0], wires=self.wires)
-
-    def pow(self, n):
-        return Rotation(self.data[0]*n, wires=self.wires)
+    def adjoint(self, do_queue=True):
+        return Rotation(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "R", cache=cache)
@@ -176,13 +173,10 @@ class Squeezing(CVOperation):
         R = _rotation(p[1] / 2)
         return R @ np.diag([1, math.exp(-p[0]), math.exp(p[0])]) @ R.T
 
-    def adjoint(self):
+    def adjoint(self, do_queue=True):
         r, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
-        return Squeezing(r, new_phi, wires=self.wires)
-
-    def pow(self, n):
-        return Squeezing(self.data[0]*n, self.data[1], wires=self.wires)
+        return Squeezing(r, new_phi, wires=self.wires, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "S", cache=cache)
@@ -238,13 +232,10 @@ class Displacement(CVOperation):
         scale = 2  # sqrt(2 * hbar)
         return np.array([[1, 0, 0], [scale * c * p[0], 1, 0], [scale * s * p[0], 0, 1]])
 
-    def adjoint(self):
+    def adjoint(self, do_queue=True):
         a, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
-        return Displacement(a, new_phi, wires=self.wires)
-
-    def pow(self, n):
-        return Displacement(self.data[0]*n, self.data[1], wires=self.wires)
+        return Displacement(a, new_phi, wires=self.wires, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "D", cache=cache)
@@ -305,12 +296,9 @@ class Beamsplitter(CVOperation):
         U[3:5, 1:3] = s * R
         return U
 
-    def adjoint(self):
+    def adjoint(self, do_queue=True):
         theta, phi = self.parameters
-        return Beamsplitter(-theta, phi, wires=self.wires)
-
-    def pow(self, n):
-        return BeamSplitter(self.data[0]*n, self.data[1], wires=self.wires)
+        return Beamsplitter(-theta, phi, wires=self.wires, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "BS", cache=cache)
@@ -377,13 +365,10 @@ class TwoModeSqueezing(CVOperation):
         U[3:5, 1:3] = S @ R.T
         return U
 
-    def adjoint(self):
+    def adjoint(self, do_queue=True):
         r, phi = self.parameters
         new_phi = (phi + np.pi) % (2 * np.pi)
-        return TwoModeSqueezing(r, new_phi, wires=self.wires)
-
-    def pow(self, n):
-        return TwoModeSqueezing(self.data[0]*n, self.data[1], wires=self.wires)
+        return TwoModeSqueezing(r, new_phi, wires=self.wires, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "S", cache=cache)
@@ -441,9 +426,6 @@ class QuadraticPhase(CVOperation):
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "P", cache=cache)
 
-    def pow(self, n):
-        return QuadraticPhase(self.data[0]*n, wires=self.wires)
-
 
 class ControlledAddition(CVOperation):
     r"""
@@ -497,14 +479,11 @@ class ControlledAddition(CVOperation):
         U[3, 1] = p[0]
         return U
 
-    def adjoint(self):
-        return ControlledAddition(-self.parameters[0], wires=self.wires)
+    def adjoint(self, do_queue=True):
+        return ControlledAddition(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "X", cache=cache)
-
-    def pow(self, n):
-        return ControlledAddition(self.data[0]*n, wires=self.wires)
 
 
 class ControlledPhase(CVOperation):
@@ -559,14 +538,11 @@ class ControlledPhase(CVOperation):
         U[4, 1] = p[0]
         return U
 
-    def adjoint(self):
-        return ControlledPhase(-self.parameters[0], wires=self.wires)
+    def adjoint(self, do_queue=True):
+        return ControlledPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "Z", cache=cache)
-
-    def pow(self, n):
-        return ControlledPhase(self.data[0]*n, wires=self.wires)
 
 
 class Kerr(CVOperation):
@@ -596,11 +572,8 @@ class Kerr(CVOperation):
     def __init__(self, kappa, wires, do_queue=True, id=None):
         super().__init__(kappa, wires=wires, do_queue=do_queue, id=id)
 
-    def adjoint(self):
-        return Kerr(-self.parameters[0], wires=self.wires)
-
-    def pow(self, n):
-        return Kerr(self.data[0]*n, wires=self.wires)
+    def adjoint(self, do_queue=True):
+        return Kerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
 
 class CrossKerr(CVOperation):
@@ -630,11 +603,8 @@ class CrossKerr(CVOperation):
     def __init__(self, kappa, wires, do_queue=True, id=None):
         super().__init__(kappa, wires=wires, do_queue=do_queue, id=id)
 
-    def adjoint(self):
-        return CrossKerr(-self.parameters[0], wires=self.wires)
-
-    def pow(self, n):
-        return CrossKerr(self.data[0]*n, wires=self.wires)
+    def adjoint(self, do_queue=True):
+        return CrossKerr(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
 
 class CubicPhase(CVOperation):
@@ -664,14 +634,11 @@ class CubicPhase(CVOperation):
     def __init__(self, gamma, wires, do_queue=True, id=None):
         super().__init__(gamma, wires=wires, do_queue=do_queue, id=id)
 
-    def adjoint(self):
-        return CubicPhase(-self.parameters[0], wires=self.wires)
+    def adjoint(self, do_queue=True):
+        return CubicPhase(-self.parameters[0], wires=self.wires, do_queue=do_queue)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "V", cache=cache)
-
-    def pow(self, n):
-        return CubicPhase(self.data[0]*n, wires=self.wires)
 
 
 class InterferometerUnitary(CVOperation):

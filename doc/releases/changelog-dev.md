@@ -12,6 +12,10 @@
 
 <h3>Improvements</h3>
 
+* The developer-facing `pow` method has been added to `Operator` with concrete implementations
+  for many classes.
+  [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
+
 * The `gradients` module now uses faster subroutines and uniform
   formats of gradient rules.
   [(#2452)](https://github.com/XanaduAI/pennylane/pull/2452)

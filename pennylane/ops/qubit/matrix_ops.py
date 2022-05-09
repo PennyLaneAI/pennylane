@@ -324,8 +324,11 @@ class ControlledQubitUnitary(QubitUnitary):
 
     def pow(self, n):
         if isinstance(n, int):
-            return ControlledQubitUnitary(qml.math.linalg.matrix_power(self.data[0], n),
-                control_wires=self.control_wires, wires=self.wires)
+            return ControlledQubitUnitary(
+                qml.math.linalg.matrix_power(self.data[0], n),
+                control_wires=self.control_wires,
+                wires=self.hyperparameters["u_wires"],
+            )
         super().pow(n)
 
     def _controlled(self, wire):
@@ -452,8 +455,9 @@ class DiagonalQubitUnitary(Operation):
 
     def pow(self, n):
         if isinstance(self.data[0], list):
-            return DiagonalQubitUnitary([x**n for x in self.data[0]], wires=self.wires)
-        return DiagonalQubitUnitary(qml.math.float_power(self.data[0], n, dtype=complex), wires=self.wires)
+            return DiagonalQubitUnitary([(x + 0.0j) ** n for x in self.data[0]], wires=self.wires)
+        casted_data = qml.math.cast(self.data[0], np.complex128)
+        return DiagonalQubitUnitary(casted_data**n, wires=self.wires)
 
     def _controlled(self, control):
         DiagonalQubitUnitary(

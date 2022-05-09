@@ -170,11 +170,6 @@ class Hermitian(Observable):
         # note: compute_diagonalizing_gates has a custom signature, which is why we overwrite this method
         return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
 
-    def pow(self, n):
-        if isinstance(n, int):
-            return Hermitian(qml.math.linalg.matrix_power(self.get_matrix(), n), wires=self.wires)
-        super().pow(n)
-
 
 class SparseHamiltonian(Observable):
     r"""
@@ -448,8 +443,5 @@ class Projector(Observable):
         return []
 
     def pow(self, n):
-        if n == 0:
-            return qml.Identity(wires=self.wires)
-        if isinstance(n,  int):
-            return self.__copy__()
-        return super().pow(n)
+        print(super())
+        return [self.__copy__()] if (isinstance(n, int) and n > 0) else super().pow(n)

@@ -155,7 +155,7 @@ class SingleExcitation(Operation):
         return SingleExcitation(-phi, wires=self.wires)
 
     def pow(self, n):
-        return SingleExcitation(self.data[0]*n, wires=self.wires)
+        return SingleExcitation(self.data[0] * n, wires=self.wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
@@ -296,7 +296,6 @@ class SingleExcitationMinus(Operation):
     def adjoint(self):
         (phi,) = self.parameters
         return SingleExcitationMinus(-phi, wires=self.wires)
-        
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "G₋", cache=cache)

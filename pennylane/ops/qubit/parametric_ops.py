@@ -107,7 +107,7 @@ class RX(Operation):
         return RX(-self.data[0], wires=self.wires)
 
     def pow(self, n):
-        return RX(self.data[0]*n, wires=self.wires)
+        return [RX(self.data[0] * n, wires=self.wires)]
 
     def _controlled(self, wire):
         CRX(*self.parameters, wires=wire + self.wires)
@@ -188,7 +188,7 @@ class RY(Operation):
         return RY(-self.data[0], wires=self.wires)
 
     def pow(self, n):
-        return RY(self.data[0]*n, wires=self.wires)
+        return [RY(self.data[0] * n, wires=self.wires)]
 
     def _controlled(self, wire):
         CRY(*self.parameters, wires=wire + self.wires)
@@ -301,8 +301,8 @@ class RZ(Operation):
     def adjoint(self):
         return RZ(-self.data[0], wires=self.wires)
 
-    def pow(self):
-        return RZ(self.data[0]*n, wires=self.wires)
+    def pow(self, n):
+        return [RZ(self.data[0] * n, wires=self.wires)]
 
     def _controlled(self, wire):
         CRZ(*self.parameters, wires=wire + self.wires)
@@ -443,7 +443,7 @@ class PhaseShift(Operation):
         return PhaseShift(-self.data[0], wires=self.wires)
 
     def pow(self, n):
-        return PhaseShift(self.data[0]*n, wires=self.wires)
+        return [PhaseShift(self.data[0] * n, wires=self.wires)]
 
     def _controlled(self, wire):
         ControlledPhaseShift(*self.parameters, wires=wire + self.wires)
@@ -600,6 +600,9 @@ class ControlledPhaseShift(Operation):
     def adjoint(self):
         return ControlledPhaseShift(-self.data[0], wires=self.wires)
 
+    def pow(self, n):
+        return [ControlledPhaseShift(self.data[0] * n, wires=self.wires)]
+
     @property
     def control_wires(self):
         return Wires(self.wires[0])
@@ -738,9 +741,6 @@ class Rot(Operation):
     def adjoint(self):
         phi, theta, omega = self.parameters
         return Rot(-omega, -theta, -phi, wires=self.wires)
-
-    def pow(self, n):
-        return Rot(self.data[0]*n, self.data[1]*n, self.data[2]*n, wires=self.wires)
 
     def _controlled(self, wire):
         CRot(*self.parameters, wires=wire + self.wires)
@@ -895,7 +895,7 @@ class MultiRZ(Operation):
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
     def pow(self, n):
-        return MultiRZ(self.data[0]*n, wires=self.wires)
+        return [MultiRZ(self.data[0] * n, wires=self.wires)]
 
 
 class PauliRot(Operation):
@@ -1184,7 +1184,7 @@ class PauliRot(Operation):
         return PauliRot(-self.parameters[0], self.hyperparameters["pauli_word"], wires=self.wires)
 
     def pow(self, n):
-        return PauliRot(self.data[0]*n, self.data[1], wires=self.wires)
+        return [PauliRot(self.data[0] * n, self.hyperparameters["pauli_word"], wires=self.wires)]
 
 
 class CRX(Operation):
@@ -1332,7 +1332,7 @@ class CRX(Operation):
         return CRX(-self.data[0], wires=self.wires)
 
     def pow(self, n):
-        return CRX(self.data[0]*n, wires=self.wires)
+        return [CRX(self.data[0] * n, wires=self.wires)]
 
     @property
     def control_wires(self):
@@ -1474,7 +1474,7 @@ class CRY(Operation):
         return CRY(-self.data[0], wires=self.wires)
 
     def pow(self, n):
-        return CRY(self.data[0]*n, wires=self.wires)
+        return [CRY(self.data[0] * n, wires=self.wires)]
 
     @property
     def control_wires(self):
@@ -1644,7 +1644,7 @@ class CRZ(Operation):
         return CRZ(-self.data[0], wires=self.wires)
 
     def pow(self, n):
-        return CRZ(self.data[0]*n, wires=self.wires)
+        return [CRZ(self.data[0] * n, wires=self.wires)]
 
     @property
     def control_wires(self):
@@ -1809,9 +1809,6 @@ class CRot(Operation):
         phi, theta, omega = self.parameters
         return CRot(-omega, -theta, -phi, wires=self.wires)
 
-    def pow(self, n):
-        return CRot(self.data[0]*n, self.data[1]*n, self.data[2]*n, wires=self.wires)
-
     @property
     def control_wires(self):
         return Wires(self.wires[0])
@@ -1913,7 +1910,7 @@ class U1(Operation):
         return U1(-self.data[0], wires=self.wires)
 
     def pow(self, n):
-        return U1(self.data[0]*n, wires=self.wires)
+        return [U1(self.data[0] * n, wires=self.wires)]
 
 
 class U2(Operation):
@@ -2035,9 +2032,6 @@ class U2(Operation):
         new_delta = (np.pi - phi) % (2 * np.pi)
         new_phi = (np.pi - delta) % (2 * np.pi)
         return U2(new_phi, new_delta, wires=self.wires)
-
-    def pow(self, n):
-        return U3(np.pi/2 *n, self.data[0]*n, self.data[1]*n, wires=self.wires)
 
 
 class U3(Operation):
@@ -2173,9 +2167,6 @@ class U3(Operation):
         new_phi = (np.pi - delta) % (2 * np.pi)
         return U3(theta, new_phi, new_delta, wires=self.wires)
 
-    def pow(self, n):
-        return U3(self.data[0]*n, self.data[1]*n, self.data[2]*n, wires=self.wires)
-
 
 class IsingXX(Operation):
     r"""
@@ -2285,7 +2276,7 @@ class IsingXX(Operation):
         return IsingXX(-phi, wires=self.wires)
 
     def pow(self, n):
-        return IsingXX(self.data[0]*n, wires=self.wires)
+        return [IsingXX(self.data[0] * n, wires=self.wires)]
 
 
 class IsingYY(Operation):
@@ -2394,7 +2385,7 @@ class IsingYY(Operation):
         return IsingYY(-phi, wires=self.wires)
 
     def pow(self, n):
-        return IsingYY(self.data[0]*n, wires=self.wires)
+        return [IsingYY(self.data[0] * n, wires=self.wires)]
 
 
 class IsingZZ(Operation):
@@ -2518,7 +2509,6 @@ class IsingZZ(Operation):
             tensor_like: eigenvalues
 
         **Example**
-
         >>> qml.IsingZZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j])
         """
@@ -2535,4 +2525,4 @@ class IsingZZ(Operation):
         return IsingZZ(-phi, wires=self.wires)
 
     def pow(self, n):
-        return IsingZZ(self.data[0]*n, wires=self.wires)
+        return [IsingZZ(self.data[0] * n, wires=self.wires)]

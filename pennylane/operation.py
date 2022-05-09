@@ -254,6 +254,7 @@ class DiagGatesUndefinedError(OperatorPropertyUndefined):
 class AdjointUndefinedError(OperatorPropertyUndefined):
     """Raised when an Operator's adjoint version is undefined."""
 
+
 class PowUndefinedError(OperatorPropertyUndefined):
     """Raised when an Operator's power is undefined."""
 
@@ -1028,6 +1029,29 @@ class Operator(abc.ABC):
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
+    def pow(self, n):
+        """A new operator equal to this one raised to the given power.
+
+        This *developer* method should be used to define shortcuts and easier decompositions.
+        For example, this method may specify how a Pauli gate raised to an even power is equal
+        to nothing, or we can exponentiate a rotation gate by multiplying the angle by the exponent.
+        This method should *not* return default behavior like a list of the same gate many times.
+
+        Args:
+            n (float): exponent for the operator
+
+        Returns:
+            list[:class:`~.operation.Operator`]
+
+        """
+        # Child methods may call super().pow(n%period)
+        # Hence we define 0 and 1 special cases here.
+        if n == 0:
+            return []
+        if n == 1:
+            return [self.__copy__()]
+        raise PowUndefinedError
+
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
         context.append(self)
@@ -1278,18 +1302,6 @@ class Operation(Operator):
             The adjointed operation.
         """
         raise AdjointUndefinedError
-
-    def pow(self, n): # pytlint: disable=no-self-sue
-        """A new operator equal to this one raised to the given power.
-        
-        Args:
-            n (float): exponent for the operator
-
-        Returns:
-            :class:`~.operation.Operator`
-
-        """
-        raise PowUndefinedError
 
     @inverse.setter
     def inverse(self, boolean):

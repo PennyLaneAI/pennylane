@@ -36,18 +36,21 @@ class TestQubitUnitary:
 
     def test_qubit_unitary_noninteger_pow(self):
         """Test QubitUnitary raised to a non-integer power raises an error."""
-        U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
+        U = np.array(
+            [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
+        )
 
         op = qml.QubitUnitary(U, wires="a")
 
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(0.123)
 
-
     @pytest.mark.parametrize("n", (1, 3, -1, -3))
     def test_qubit_unitary_pow(self, n):
         """Test qubit unitary raised to an integer power."""
-        U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
+        U = np.array(
+            [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
+        )
 
         op = qml.QubitUnitary(U, wires="a")
         new_op = op.pow(n)
@@ -278,15 +281,14 @@ class TestDiagonalQubitUnitary:
         assert np.allclose(res_dynamic, expected, atol=tol)
 
     @pytest.mark.parametrize("n", (2, -1, 0.12345))
-    @pytest.mark.parametrize("diag", ([1.0,-1.0], np.array([1.0, -1.0])) )
+    @pytest.mark.parametrize("diag", ([1.0, -1.0], np.array([1.0, -1.0])))
     def test_pow(self, n, diag):
         """Test pow method returns expected results."""
         op = qml.DiagonalQubitUnitary(diag, wires="b")
         pow_op = op.pow(n)
 
         for x_op, x_pow in zip(op.data[0], pow_op.data[0]):
-            assert x_op**n == x_pow
-
+            assert (x_op + 0.0j) ** n == x_pow
 
     def test_error_matrix_not_unitary(self):
         """Tests that error is raised if diagonal by `compute_matrix` does not lead to a unitary"""
@@ -566,6 +568,40 @@ class TestControlledQubitUnitary:
         mat = qml.PauliX(0).matrix()
         with pytest.raises(qml.operation.DecompositionUndefinedError):
             qml.ControlledQubitUnitary(mat, wires=0, control_wires=1).decomposition()
+
+    @pytest.mark.parametrize("n", (2, -1, -2))
+    def test_pow(self, n):
+        """Tests the metadata and unitary for a controlledQubitUnitary raised to a power."""
+        U1 = np.array(
+            [
+                [0.73708696 + 0.61324932j, 0.27034258 + 0.08685028j],
+                [-0.24979544 - 0.1350197j, 0.95278437 + 0.1075819j],
+            ]
+        )
+
+        op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
+
+        pow_op = op.pow(n)
+
+        assert pow_op.hyperparameters["u_wires"] == op.hyperparameters["u_wires"]
+        assert pow_op.control_wires == op.control_wires
+
+        op_mat_to_pow = qml.math.linalg.matrix_power(op.data[0], n)
+        assert qml.math.allclose(pow_op.data[0], op_mat_to_pow)
+
+    def test_noninteger_pow(self):
+        """Test that a ControlledQubitUnitary raised to a non-integer power raises an error."""
+        U1 = np.array(
+            [
+                [0.73708696 + 0.61324932j, 0.27034258 + 0.08685028j],
+                [-0.24979544 - 0.1350197j, 0.95278437 + 0.1075819j],
+            ]
+        )
+
+        op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
+
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(0.12)
 
 
 label_data = [
