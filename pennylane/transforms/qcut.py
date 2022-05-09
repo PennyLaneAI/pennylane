@@ -1767,7 +1767,7 @@ def qcut_processing_fn(
                 tensors_to_contract, communication_graph, prepare_nodes, measure_nodes, use_opt_einsum
             )
             results.append(result)
-        return results
+        return qml.math.stack(results)
     else:
         tensors_to_contract = [t[0] for t in tensors]
 

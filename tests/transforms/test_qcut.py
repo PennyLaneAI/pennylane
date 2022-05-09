@@ -4687,4 +4687,63 @@ class TestReturnsMultiplePauliWords:
     """Tests that the cut_circuit transform correctly supports circuits that return more than one
     Pauli word"""
 
-    def test_
+    def test_cut_circuit(self, mocker):
+        """Test for an example circuit"""
+        dev_big = qml.device("default.qubit", wires=6)
+        dev_small = qml.device("default.qubit", wires=4)
+        meas = [
+            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliX(wires=[1])),
+            qml.expval(qml.PauliX(wires=[0])),
+            qml.expval(qml.PauliX(wires=[2]) @ qml.PauliY(wires=4)),
+            qml.expval(qml.PauliZ(wires=3)),
+            qml.expval(qml.PauliZ(wires=5)),
+            qml.expval(qml.PauliX(wires=[0]) @ qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[5]))
+        ]
+
+        def circuit(x):
+            qml.Hadamard(wires=0)
+            qml.RX(x ** 2, wires=0)
+            qml.WireCut(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.RX(np.sin(0.6) ** 2, wires=1)
+            qml.CNOT(wires=[1, 2])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(x, wires=2)
+            qml.RX(0.9, wires=3)
+            qml.RY(0.8, wires=3)
+            qml.CNOT(wires=[3, 2])
+            qml.CRY(0.99, wires=[3, 4])
+            qml.WireCut(wires=2)
+            qml.WireCut(wires=3)
+            qml.RY(np.sin(x), wires=2)
+            qml.CZ(wires=[2, 3])
+            qml.RX(0.5, wires=4)
+            qml.RY(np.cos(x), wires=5)
+            return [qml.apply(m) for m in meas]
+
+        circ = qml.QNode(circuit, dev_big)
+        cut_circ = qml.cut_circuit(qml.QNode(circuit, dev_small))
+
+
+        x = np.array(0.4, requires_grad=True)
+        res = circ(x)
+
+        spy = mocker.spy(qcut, "qcut_processing_fn")
+        spy_exe = mocker.spy(qml, "execute")
+
+        res_2 = cut_circ(x)
+
+        spy.assert_called_once()
+        assert np.allclose(res, res_2)
+
+        tapes = spy_exe.call_args[0][0]
+        target_num_tapes = 3 + (3 * 4 ** 2) + (4 * 3 ** 3) + (4 ** 2) + 1
+        assert target_num_tapes == len(tapes)
+
+        grad = qml.jacobian(circ)(x)
+        grad_2 = qml.jacobian(cut_circ)(x)
+
+        assert np.allclose(grad, grad_2)
+
