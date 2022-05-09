@@ -44,8 +44,8 @@ This test will be marked automatically as a ``core`` test.
 
 On the other hand, some tests require specific interfaces and need to marked in order to be run on our Github test suite.
 Tests involving interfaces have to be marked with its respective marker: ``@pytest.mark.autograd``, ``@pytest.mark.torch``,
-``@pytest.mark.tf`` and ``@pytest.mark.jax``. If tests involved multiple interfaces one should add the marker
-``@pytest.mark.all_interfaces``. It is now prohibited to use  `ìmportorskip()`` inside tests with interfaces. Also tests
+``@pytest.mark.tf`` and ``@pytest.mark.jax``. If tests involved multiple interfaces, one should add the marker
+``@pytest.mark.all_interfaces``. It is now prohibited to use  `importorskip()`` inside tests with interfaces. Also tests
 involving interfaces must be written separately and it should be avoided to use fixtures. The necessary packages related
 to interfaces have to be imported in the tests directly. All tests with marked interfaces are skipped if the necessary
 interfaces are not installed.
@@ -84,6 +84,34 @@ You can find an example for testing a PennyLane template with Jax:
         res = circuit(features)
         res2 = circuit2(features)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+You can also find an example of a test involving multiple interfaces:
+
+.. code-block:: python
+
+        def circuit(features):
+            qml.AngleEmbedding(features, range(3))
+            return qml.expval(qml.PauliZ(0))
+
+        @pytest.mark.all_interfaces
+        def test_all_interfaces_gradient_agree(self):
+            """Test the results are similar between torch and tf"""
+            import torch
+            import tensorflow as tf
+
+            dev = qml.device("default.qubit", wires=3)
+
+            features_torch = torch.Tensor([1.0, 1.0, 1.0])
+            features_tf = tf.Variable([1.0, 1.0, 1.0], dtype=tf.float64)
+
+            circuit_torch = qml.QNode(circuit, dev, interface="torch")
+            circuit_tf = qml.QNode(circuit, dev, interface="tf")
+
+            res_torch = circuit_torch(features_torch)
+            res_tf = circuit_tf(features_tf)
+
+            assert np.allclose(res_torch, res_tf)
+
 
 Running the tests
 ~~~~~~~~~~~~~~~~~
