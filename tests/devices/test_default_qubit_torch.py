@@ -172,6 +172,7 @@ def device(scope="function"):
 #####################################################
 
 
+@pytest.mark.torch
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -186,6 +187,7 @@ def test_analytic_deprecation():
 #####################################################
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
 class TestApply:
     """Test application of PennyLane operations."""
@@ -536,6 +538,7 @@ PHI = torch.linspace(0.32, 1, 3, dtype=torch.float64)
 VARPHI = torch.linspace(0.02, 1, 3, dtype=torch.float64)
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestExpval:
@@ -630,6 +633,26 @@ class TestExpval:
         expected = torch.tensor([ev1, ev2], dtype=torch.float64, device=torch_device)
 
         assert torch.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_do_not_split_analytic_torch(
+        self, device, torch_device, theta, phi, varphi, tol, mocker
+    ):
+        """Tests that the Hamiltonian is not split for shots=None using the Torch device."""
+
+        dev = device(wires=2, torch_device=torch_device)
+        H = qml.Hamiltonian(
+            torch.tensor([0.1, 0.2], requires_grad=True), [qml.PauliX(0), qml.PauliZ(1)]
+        )
+
+        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
 
     def test_multi_mode_hermitian_expectation(self, device, torch_device, theta, phi, varphi, tol):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
@@ -890,6 +913,7 @@ class TestExpval:
         assert torch.allclose(res, torch.real(expected), atol=tol, rtol=0)
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestVar:
@@ -1086,6 +1110,7 @@ class TestVar:
 #####################################################
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
 class TestQNodeIntegration:
     """Integration tests for default.qubit.torch. This test ensures it integrates
@@ -1254,6 +1279,7 @@ class TestQNodeIntegration:
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
@@ -1544,6 +1570,7 @@ class TestPassthruIntegration:
         )
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
 class TestSamples:
     """Tests for sampling outputs"""
@@ -1624,6 +1651,7 @@ class TestSamples:
         # assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
