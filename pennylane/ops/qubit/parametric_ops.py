@@ -1093,11 +1093,15 @@ class PauliRot(Operation):
             qml.math.kron,
             [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
+        if interface == "tensorflow":
+            conjugation_matrix = qml.math.cast_like(conjugation_matrix, 1j)
+        # Note: we use einsum with reverse arguments here because it is not multi-dispatched
+        # and the tensordot containing multi_Z_rot_matrix should decide about the interface
         return expand_matrix(
             qml.math.einsum(
-                "ij,jk...->i...k",
-                qml.math.conj(conjugation_matrix),
+                "jk...,ij->i...k",
                 qml.math.tensordot(multi_Z_rot_matrix, conjugation_matrix, axes=[[1], [0]]),
+                qml.math.conj(conjugation_matrix),
             ),
             non_identity_wires,
             list(range(len(pauli_word))),
