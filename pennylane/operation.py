@@ -1299,7 +1299,7 @@ class Operation(Operator):
         gates.
 
         Args:
-             do_queue: Whether to add the adjointed gate to the context queue.
+            do_queue: Whether to add the adjointed gate to the context queue.
 
         Returns:
             The adjointed operation.
