@@ -563,7 +563,6 @@ class ControlledPhaseShift(Operation):
             phi = qml.math.cast_like(phi, 1j)
 
         exp_part = qml.math.exp(1j * phi)
-        shape = qml.math.shape(phi)
         ones = qml.math.ones_like(exp_part)
         return qml.math.stack([ones, ones, ones, exp_part])
 

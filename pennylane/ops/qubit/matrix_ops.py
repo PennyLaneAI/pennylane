@@ -161,7 +161,6 @@ class QubitUnitary(Operation):
             raise DecompositionUndefinedError(
                 "The decomposition of QubitUnitary does not support tensor-batching."
             )
-            return qml.transforms.decompositions.zyz_decomposition(U, Wires(wires)[0])
 
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
 
