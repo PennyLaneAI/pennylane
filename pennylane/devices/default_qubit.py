@@ -152,7 +152,7 @@ class DefaultQubit(QubitDevice):
     }
 
     def __init__(
-        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
+            self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
     ):
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
@@ -485,9 +485,9 @@ class DefaultQubit(QubitDevice):
             assert self.shots is None, f"{observable.name} must be used with shots=None"
 
             backprop_mode = (
-                not isinstance(self.state, np.ndarray)
-                or any(not isinstance(d, (float, np.ndarray)) for d in observable.data)
-            ) and observable.name == "Hamiltonian"
+                                    not isinstance(self.state, np.ndarray)
+                                    or any(not isinstance(d, (float, np.ndarray)) for d in observable.data)
+                            ) and observable.name == "Hamiltonian"
 
             if backprop_mode:
                 # We must compute the expectation value assuming that the Hamiltonian
@@ -508,9 +508,9 @@ class DefaultQubit(QubitDevice):
                     Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
 
                     product = (
-                        qml.math.gather(qml.math.conj(self.state), coo.row)
-                        * Hmat
-                        * qml.math.gather(self.state, coo.col)
+                            qml.math.gather(qml.math.conj(self.state), coo.row)
+                            * Hmat
+                            * qml.math.gather(self.state, coo.col)
                     )
                     c = qml.math.convert_like(coeff, product)
 
@@ -585,7 +585,7 @@ class DefaultQubit(QubitDevice):
             array[complex]: complex array of shape ``[2]*self.num_wires``
             representing the statevector of the basis state
         """
-        state = np.zeros(2**self.num_wires, dtype=np.complex128)
+        state = np.zeros(2 ** self.num_wires, dtype=np.complex128)
         state[index] = 1
         state = self._asarray(state, dtype=self.C_DTYPE)
         return self._reshape(state, [2] * self.num_wires)
@@ -604,9 +604,7 @@ class DefaultQubit(QubitDevice):
             array[complex]: complex tensor of shape ``(2 ** len(wires), 2 ** len(wires))``
             representing the reduced density matrix.
         """
-        state = self._pre_rotated_state
-
-        return qml.math.density_matrix_from_array(state, wires= wires)
+        return qml.math.density_matrix_from_array(self.state, wires=wires)
 
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.
@@ -646,7 +644,7 @@ class DefaultQubit(QubitDevice):
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
-        state = self._scatter(ravelled_indices, state, [2**self.num_wires])
+        state = self._scatter(ravelled_indices, state, [2 ** self.num_wires])
         state = self._reshape(state, [2] * self.num_wires)
         self._state = self._asarray(state, dtype=self.C_DTYPE)
 
@@ -730,7 +728,7 @@ class DefaultQubit(QubitDevice):
         affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
 
         # All affected indices will be summed over, so we need the same number of new indices
-        new_indices = ABC[self.num_wires : self.num_wires + len(device_wires)]
+        new_indices = ABC[self.num_wires: self.num_wires + len(device_wires)]
 
         # The new indices of the state are given by the old ones with the affected indices
         # replaced by the new_indices
@@ -786,5 +784,5 @@ class DefaultQubit(QubitDevice):
         flat_state = self._flatten(self._state)
         real_state = self._real(flat_state)
         imag_state = self._imag(flat_state)
-        prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
+        prob = self.marginal_prob(real_state ** 2 + imag_state ** 2, wires)
         return prob
