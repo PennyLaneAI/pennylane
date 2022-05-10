@@ -1802,7 +1802,7 @@ class TestMultiRZ:
 
     # TODO[dwierichs]: Include this test using tensor-batching once devices support it
     @pytest.mark.skip("QNodes/Devices do not support tensor-batching yet.")
-    def test_differentiability(self, tol):
+    def test_differentiability_batched(self, tol):
         """Test that differentiation of MultiRZ works."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -1862,6 +1862,28 @@ class TestMultiRZ:
 
         op.generator()
         spy.assert_not_called()
+
+    @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
+    def test_multirz_eigvals(self, theta, tol):
+        """Test that the eigenvalues of the MultiRZ gate are correct."""
+        op = qml.MultiRZ(theta, wires=range(3))
+
+        pos_phase = np.exp(1j * theta / 2)
+        neg_phase = np.exp(-1j * theta / 2)
+        expected = np.array(
+            [
+                neg_phase,
+                pos_phase,
+                pos_phase,
+                neg_phase,
+                pos_phase,
+                neg_phase,
+                neg_phase,
+                pos_phase,
+            ]
+        )
+        eigvals = op.eigvals()
+        assert np.allclose(eigvals, expected)
 
 
 label_data = [
