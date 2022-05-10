@@ -12,6 +12,9 @@
 
 <h3>Improvements</h3>
 
+* Introduced an `operations_only` argument to the `tape.get_parameters` method.
+  [(#2543)](https://github.com/PennyLaneAI/pennylane/pull/2543)
+
 * The `gradients` module now uses faster subroutines and uniform
   formats of gradient rules.
   [(#2452)](https://github.com/XanaduAI/pennylane/pull/2452)
@@ -70,6 +73,10 @@
   ```
 
 <h3>Bug fixes</h3>
+
+* Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
+  computed for QNodes with parametrized observables (e.g., `qml.Hermitian`).
+  [(#2543)](https://github.com/PennyLaneAI/pennylane/pull/2543)
 
 * Fixed a bug where `QNGOptimizer` did not work with operators
   whose generator was a Hamiltonian.
