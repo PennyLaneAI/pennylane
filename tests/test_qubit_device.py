@@ -934,6 +934,7 @@ class TestShotList:
         [[(10, 3)], [(10, 3)], (3, 2), 30],
     ]
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_multiple_expval(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test multiple expectation values"""
@@ -970,6 +971,7 @@ class TestShotList:
         [[(10, 3)], [(10, 3)], (3, 4), 30],
     ]
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_probs(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test a probability return"""
@@ -1003,6 +1005,7 @@ class TestShotList:
         [[(10, 3)], [(10, 3)], (3, 2, 2), 30],
     ]
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_multiple_probs(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test multiple probability returns"""

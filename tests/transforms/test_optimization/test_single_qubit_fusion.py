@@ -185,6 +185,7 @@ expected_wires_list = [Wires(0), Wires(1), Wires([1, 2]), Wires([1, 2]), Wires([
 class TestSingleQubitFusionInterfaces:
     """Test that rotation merging works in all interfaces."""
 
+    @pytest.mark.autograd
     def test_single_qubit_fusion_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
@@ -205,9 +206,10 @@ class TestSingleQubitFusionInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.torch
     def test_single_qubit_fusion_torch(self):
         """Test QNode and gradient in torch interface."""
-        torch = pytest.importorskip("torch", minversion="1.8")
+        import torch
 
         original_qnode = qml.QNode(qfunc, dev, interface="torch")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
@@ -231,9 +233,10 @@ class TestSingleQubitFusionInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.tf
     def test_single_qubit_fusion_tf(self):
         """Test QNode and gradient in tensorflow interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         original_qnode = qml.QNode(qfunc, dev, interface="tf")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
@@ -262,9 +265,10 @@ class TestSingleQubitFusionInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.jax
     def test_single_qubit_fusion_jax(self):
         """Test QNode and gradient in JAX interface."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         # Enable float64 support
@@ -290,9 +294,10 @@ class TestSingleQubitFusionInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.jax
     def test_single_qubit_fusion_jax_jit(self):
         """Test QNode and gradient in JAX interface with JIT."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         from jax.config import config

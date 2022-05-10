@@ -84,10 +84,11 @@ class TestQubitUnitaryZYZDecomposition:
 
         assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
     def test_zyz_decomposition_torch(self, U, expected_gate, expected_params):
         """Test that a one-qubit operation in Torch is correctly decomposed."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
 
@@ -108,10 +109,11 @@ class TestQubitUnitaryZYZDecomposition:
 
         assert check_matrix_equivalence(obtained_mat, qml.math.unwrap(U), atol=1e-7)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
     def test_zyz_decomposition_tf(self, U, expected_gate, expected_params):
         """Test that a one-qubit operation in Tensorflow is correctly decomposed."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         U = tf.Variable(U, dtype=tf.complex128)
 
@@ -131,10 +133,11 @@ class TestQubitUnitaryZYZDecomposition:
 
         assert check_matrix_equivalence(obtained_mat, U, atol=1e-7)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("U,expected_gate,expected_params", single_qubit_decomps)
     def test_zyz_decomposition_jax(self, U, expected_gate, expected_params):
         """Test that a one-qubit operation in JAX is correctly decomposed."""
-        jax = pytest.importorskip("jax")
+        import jax
 
         # Enable float64 support
         from jax.config import config
@@ -730,11 +733,12 @@ class TestTwoQubitUnitaryDecomposition:
 class TestTwoQubitUnitaryDecompositionInterfaces:
     """Test the decomposition in the non-autograd interfaces."""
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
     def test_two_qubit_decomposition_torch(self, U, wires):
         """Test that a two-qubit operation in Torch is correctly decomposed."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         U = torch.tensor(U, dtype=torch.complex128)
 
@@ -748,11 +752,12 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_two_qubit_decomposition_tensor_products_torch(self, U_pair, wires):
         """Test that a two-qubit tensor product in Torch is correctly decomposed."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         U1 = torch.tensor(U_pair[0], dtype=torch.complex128)
         U2 = torch.tensor(U_pair[1], dtype=torch.complex128)
@@ -768,11 +773,12 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
     def test_two_qubit_decomposition_tf(self, U, wires):
         """Test that a two-qubit operation in Tensorflow is correctly decomposed."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         U = tf.Variable(U, dtype=tf.complex128)
 
@@ -786,11 +792,12 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_two_qubit_decomposition_tensor_products_tf(self, U_pair, wires):
         """Test that a two-qubit tensor product in Tensorflow is correctly decomposed."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         U1 = tf.Variable(U_pair[0], dtype=tf.complex128)
         U2 = tf.Variable(U_pair[1], dtype=tf.complex128)
@@ -806,12 +813,12 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
     def test_two_qubit_decomposition_jax(self, U, wires):
         """Test that a two-qubit operation in JAX is correctly decomposed."""
-        jax = pytest.importorskip("jax")
-
+        import jax
         from jax.config import config
 
         remember = config.read("jax_enable_x64")
@@ -829,12 +836,12 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
         assert check_matrix_equivalence(U, obtained_matrix, atol=1e-7)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("wires", [[0, 1], ["a", "b"], [3, 2], ["c", 0]])
     @pytest.mark.parametrize("U_pair", samples_su2_su2)
     def test_two_qubit_decomposition_tensor_products_jax(self, U_pair, wires):
         """Test that a two-qubit tensor product in JAX is correctly decomposed."""
-        jax = pytest.importorskip("jax")
-
+        import jax
         from jax.config import config
 
         remember = config.read("jax_enable_x64")

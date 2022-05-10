@@ -383,9 +383,10 @@ class TestValidation:
 
 
 class TestInterfaces:
+    @pytest.mark.tf
     def test_tf(self):
         """Test with tensorflow interface"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         @qml.matrix
         def circuit(beta, theta):
@@ -409,10 +410,11 @@ class TestInterfaces:
 
         assert np.allclose(matrix, expected_matrix)
 
+    @pytest.mark.torch
     def test_torch(self):
         """Test with torch interface"""
 
-        torch = pytest.importorskip("torch", minversion="1.8")
+        import torch
 
         dev = qml.device("default.qubit", wires=3)
 
@@ -438,6 +440,7 @@ class TestInterfaces:
 
         assert np.allclose(matrix, expected_matrix)
 
+    @pytest.mark.autograd
     def test_autograd(self):
         """Test with autograd interface"""
 
@@ -461,10 +464,10 @@ class TestInterfaces:
 
         assert np.allclose(matrix, expected_matrix)
 
+    @pytest.mark.jax
     def test_get_unitary_matrix_interface_jax(self):
         """Test with JAX interface"""
 
-        jax = pytest.importorskip("jax")
         from jax import numpy as jnp
         from jax.config import config
 
@@ -494,10 +497,11 @@ class TestInterfaces:
 
 
 class TestDifferentiation:
+    @pytest.mark.jax
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_jax(self, v):
 
-        jax = pytest.importorskip("jax")
+        import jax
 
         def circuit(theta):
             qml.RX(theta, wires=0)
@@ -518,10 +522,11 @@ class TestDifferentiation:
         assert np.allclose(l, 2 * np.cos(v / 2))
         assert np.allclose(dl, -np.sin(v / 2))
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_torch(self, v):
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         def circuit(theta):
             qml.RX(theta, wires=0)
@@ -542,10 +547,11 @@ class TestDifferentiation:
         assert np.allclose(l.detach(), 2 * np.cos(v / 2))
         assert np.allclose(dl.detach(), -np.sin(v / 2))
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_tensorflow(self, v):
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         def circuit(theta):
             qml.RX(theta, wires=0)
