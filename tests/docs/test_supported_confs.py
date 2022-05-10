@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests that the code behaves as the documentation says"""
+"""Test that the supported configurations in the documentation
+matches the supported configurations in the code"""
 import pytest
 import re
 
@@ -41,18 +42,18 @@ shotss = [None, 100]
 
 diff_methods = ["device", "backprop", "adjoint", "parameter-shift", "finite-diff"]
 return_types = [
-    State,
+    State,  # scalar cost function of the state
+    "StateVector",  # the state directly
     "DensityMatrix",
     Probability,
     Sample,
     Expectation,
-    "Hermitian",
-    "Projector",
+    "Hermitian",  # non-standard variant of expectation values
+    "Projector",  # non-standard variant of expectation values
     Variance,
 ]
 
 grad_types = [Expectation, "Hermitian", "Projector", Variance]
-jacob_types = [State, "DensityMatrix", Probability, Sample]
 
 
 def get_qnode(interface, diff_method, return_type, shots):
@@ -64,6 +65,8 @@ def get_qnode(interface, diff_method, return_type, shots):
         qml.Hadamard(wires=0)
         qml.RX(x[0], wires=0)
         if return_type == State:
+            return qml.state()
+        elif return_type == "StateVector":
             return qml.state()
         elif return_type == "DensityMatrix":
             return qml.density_matrix(wires=0)
@@ -83,21 +86,21 @@ def get_qnode(interface, diff_method, return_type, shots):
     return circuit
 
 
-def get_variable(interface):
+def get_variable(interface, complex=False):
     """Return an interface-specific trainable variable"""
     if interface is None:
-        return np.array([0.1], requires_grad=True)
+        return np.array([0.1])
     elif interface == "autograd":
         return np.array([0.1], requires_grad=True)
     elif interface == "jax":
-        return jnp.array([0.1])
+        return jnp.array([0.1], dtype=np.complex64 if complex else None)
     elif interface == "tf":
-        return tf.Variable([0.1], trainable=True)
+        return tf.Variable([0.1], trainable=True, dtype=np.complex64 if complex else None)
     elif interface == "torch":
-        return torch.tensor([0.1], requires_grad=True)
+        return torch.tensor([0.1], requires_grad=True, dtype=torch.complex64 if complex else None)
 
 
-def compute_gradient(x, interface, circuit, return_type):
+def compute_gradient(x, interface, circuit, return_type, complex=False):
     """Return an interface-specific gradient or jacobian"""
     if interface == "autograd":
         if return_type in grad_types:
@@ -130,6 +133,9 @@ def compute_gradient(x, interface, circuit, return_type):
                 probs = jnp.abs(res) ** 2
                 return probs[0]
 
+            # compute the gradient of the scalar cost function instead
+            # of the jacobian of the state directly - the latter is a
+            # separate test case
             return jax.grad(cost_fn)(x)
         elif return_type == "DensityMatrix":
 
@@ -138,9 +144,12 @@ def compute_gradient(x, interface, circuit, return_type):
                 probs = jnp.abs(res) ** 2
                 return probs[0][0]
 
+            # compute the gradient of the scalar cost function instead
+            # of the jacobian of the state directly - the latter is a
+            # separate test case
             return jax.grad(cost_fn)(x)
         else:
-            return jax.jacrev(circuit)(x)
+            return jax.jacrev(circuit, holomorphic=complex)(x)
     elif interface == "tf":
         with tf.GradientTape() as tape:
             out = circuit(x)
@@ -155,6 +164,10 @@ def compute_gradient(x, interface, circuit, return_type):
 
             with tf.GradientTape() as tape:
                 out = cost_fn(x)
+
+            # compute the gradient of the scalar cost function instead
+            # of the jacobian of the state directly - the latter is a
+            # separate test case
             return tape.gradient(out, [x])
         elif return_type == "DensityMatrix":
 
@@ -165,6 +178,10 @@ def compute_gradient(x, interface, circuit, return_type):
 
             with tf.GradientTape() as tape:
                 out = cost_fn(x)
+
+            # compute the gradient of the scalar cost function instead
+            # of the jacobian of the state directly - the latter is a
+            # separate test case
             return tape.gradient(out, [x])
         else:
             return tape.jacobian(out, [x])
@@ -180,6 +197,9 @@ def compute_gradient(x, interface, circuit, return_type):
                 probs = torch.abs(res) ** 2
                 return probs[0]
 
+            # compute the gradient of the scalar cost function instead
+            # of the jacobian of the state directly - the latter is a
+            # separate test case
             res = cost_fn(x)
             res.backward()
             return x.grad
@@ -190,6 +210,9 @@ def compute_gradient(x, interface, circuit, return_type):
                 probs = torch.abs(res) ** 2
                 return probs[0][0]
 
+            # compute the gradient of the scalar cost function instead
+            # of the jacobian of the state directly - the latter is a
+            # separate test case
             res = cost_fn(x)
             res.backward()
             return x.grad
@@ -356,17 +379,18 @@ class TestSupportedConfs:
         grad = compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
-    @pytest.mark.parametrize("return_type", [State, "DensityMatrix"])
+    @pytest.mark.parametrize("return_type", [State, "StateVector", "DensityMatrix"])
     @pytest.mark.parametrize("shots", shotss)
     def test_all_paramshift_state(self, interface, return_type, shots):
         """Test diff_method=parameter-shift fails for all interfaces and
         the return_types State and DensityMatrix"""
         msg = "Computing the gradient of circuits that return the state is not supported."
+        complex = return_type == "StateVector"
 
         with pytest.raises(ValueError, match=msg):
             circuit = get_qnode(interface, "parameter-shift", return_type, shots)
-            x = get_variable(interface)
-            grad = compute_gradient(x, interface, circuit, return_type)
+            x = get_variable(interface, complex=complex)
+            grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
@@ -391,7 +415,7 @@ class TestSupportedConfs:
         grad = compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
-    @pytest.mark.parametrize("return_type", [State, "DensityMatrix"])
+    @pytest.mark.parametrize("return_type", [State, "StateVector", "DensityMatrix"])
     @pytest.mark.parametrize("shots", shotss)
     def test_all_finitediff_state(self, interface, return_type, shots):
         """Test diff_method=finite-diff fails for all interfaces and
@@ -401,10 +425,12 @@ class TestSupportedConfs:
         # all the interfaces
         msg = "state\\(wires=\\[0?\\]\\)\\ is\\ not\\ in\\ list"
 
+        complex = return_type == "StateVector"
+
         with pytest.raises(ValueError, match=msg):
             circuit = get_qnode(interface, "finite-diff", return_type, shots)
-            x = get_variable(interface)
-            grad = compute_gradient(x, interface, circuit, return_type)
+            x = get_variable(interface, complex=complex)
+            grad = compute_gradient(x, interface, circuit, return_type, complex=complex)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
@@ -447,3 +473,21 @@ class TestSupportedConfs:
         circuit = get_qnode(interface, diff_method, Sample, 100)
         x = get_variable(interface)
         circuit(x)
+
+    def test_autograd_state_backprop(self):
+        """Test gradient of state directly fails for autograd interface"""
+        msg = "cannot reshape array of size 4 into shape (2,1)"
+        msg = re.escape(msg)
+
+        with pytest.raises(ValueError, match=msg):
+            circuit = get_qnode("autograd", "backprop", "StateVector", None)
+            x = get_variable("autograd")
+            grad = compute_gradient(x, "autograd", circuit, "StateVector")
+
+    @pytest.mark.parametrize("interface", ["jax", "tf", "torch"])
+    def test_all_state_backprop(self, interface):
+        """Test gradient of state directly succeeds for non-autograd interfaces"""
+        # should not raise an exception
+        circuit = get_qnode(interface, "backprop", "StateVector", None)
+        x = get_variable(interface, complex=True)
+        grad = compute_gradient(x, interface, circuit, "StateVector", complex=True)
