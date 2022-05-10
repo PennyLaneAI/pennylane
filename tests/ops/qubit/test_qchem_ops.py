@@ -17,8 +17,6 @@ Unit tests for the available qubit operations for quantum chemistry purposes.
 import pytest
 import numpy as np
 from scipy.linalg import expm, fractional_matrix_power
-from sympy import fraction
-from torch import frac
 
 import pennylane as qml
 from pennylane import numpy as pnp
