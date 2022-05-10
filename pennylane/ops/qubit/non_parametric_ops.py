@@ -1513,7 +1513,7 @@ class SISWAP(Operation):
 
     def pow(self, n):
         n_mod4 = n % 4
-        return [SWAP(wires=self.wires)] if n_mod4 == 2 else super().pow(n_mod4)
+        return [ISWAP(wires=self.wires)] if n_mod4 == 2 else super().pow(n_mod4)
 
     def adjoint(self):
         op = SISWAP(wires=self.wires)

@@ -1118,12 +1118,13 @@ class TestPowMethod:
             op.pow(2.43 + offset)
 
     @pytest.mark.parametrize("offset", (0, 4, -4))
-    def tet_SISWAP_pow(self, offset):
+    def test_SISWAP_pow(self, offset):
+        """Test powers of the SISWAP operator"""
         op = qml.SISWAP(wires=("b", "c"))
 
         assert len(op.pow(0 + offset)) == 0
         assert op.pow(1 + offset)[0].__class__ is qml.SISWAP
-        assert op.pow(2 + offset)[0].__class__ is qml.SWAP
+        assert op.pow(2 + offset)[0].__class__ is qml.ISWAP
 
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(2.34 + offset)
