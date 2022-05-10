@@ -35,6 +35,8 @@ qubit_device_and_diff_method = [
     ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
+pytestmark = pytest.mark.jax
+
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
@@ -1333,6 +1335,9 @@ class TestJIT:
 
         if diff_method == "backprop":
             pytest.skip("Backpropagation is unsupported if shots > 0.")
+
+        if diff_method == "adjoint" and mode == "forward":
+            pytest.skip("Computing the gradient for Hermitian is not supported with adjoint.")
 
         projector = np.array(qml.matrix(qml.PauliZ(0) @ qml.PauliZ(1)))
 
