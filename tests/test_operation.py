@@ -1312,7 +1312,6 @@ class MyOp(Operator):
 class MyGate(Operation):
     num_wires = 1
 
-
 op = MyOp(wires=1)
 gate = MyGate(wires=1)
 
@@ -1374,6 +1373,30 @@ class TestDefaultRepresentations:
         with pytest.raises(qml.operation.GeneratorUndefinedError):
             gate.generator()
 
+class MyOpWithMat(Operator):
+    num_wires = 1
+    
+    @staticmethod
+    def compute_matrix(theta):
+        return np.tensordot(np.array([[0.4, 1.2], [1.2, 0.4]]), theta, axes=0)
+
+class TestInheritedRepresentations:
+    """Tests that the default representations allow for
+    inheritance from other representations"""
+
+    def test_eigvals_from_matrix(self):
+        """Test that eigvals can be extracted when a matrix is defined."""
+        # Test with scalar parameter
+        theta = 0.3
+        op = MyOpWithMat(theta, wires=1)
+        eigvals = op.eigvals()
+        assert np.allclose(eigvals, [1.6 * theta, -0.8 * theta])
+
+        # Test with batched parameter
+        theta = np.array([0.3, 0.9, 1.2])
+        op = MyOpWithMat(theta, wires=1)
+        eigvals = op.eigvals()
+        assert np.allclose(eigvals, [1.6 * theta, -0.8 * theta])
 
 class TestChannel:
     """Unit tests for the Channel class"""
