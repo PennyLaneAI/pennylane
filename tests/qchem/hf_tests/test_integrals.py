@@ -395,7 +395,8 @@ class TestMoment:
         ],
     )
     def test_gradient_moment(symbols, geometry, alpha, coeff, e, idx):
-        r"""Test that the moment gradient computed with respect to the basis parameters is correct."""
+        r"""Test that the moment gradient computed with respect to the basis parameters is
+        correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
@@ -464,7 +465,6 @@ class TestKinetic:
         r"""Test that _diff2 function returns a correct value."""
         assert np.allclose(qchem.integrals._diff2(i, j, ri, rj, alpha, beta), d)
 
-
     @pytest.mark.parametrize(
         ("la", "lb", "ra", "rb", "alpha", "beta", "t"),
         [
@@ -483,7 +483,6 @@ class TestKinetic:
     def test_gaussian_kinetic(la, lb, ra, rb, alpha, beta, t):
         r"""Test that gaussian_kinetic function returns a correct value."""
         assert np.allclose(qchem.gaussian_kinetic(la, lb, ra, rb, alpha, beta), t)
-
 
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff", "t_ref"),
@@ -528,7 +527,6 @@ class TestKinetic:
         t = qchem.kinetic_integral(basis_a, basis_b)(*args)
         assert np.allclose(t, t_ref)
 
-
     @pytest.mark.parametrize(
         ("symbols", "geometry", "alpha", "coeff"),
         [
@@ -547,7 +545,8 @@ class TestKinetic:
         ],
     )
     def test_gradient_kinetic(symbols, geometry, alpha, coeff):
-        r"""Test that the kinetic gradient computed with respect to the basis parameters is correct."""
+        r"""Test that the kinetic gradient computed with respect to the basis parameters is
+        correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
         basis_b = mol.basis_set[1]
@@ -584,107 +583,111 @@ class TestKinetic:
         assert np.allclose(g_coeff, g_ref_coeff)
 
 
-@pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coeff", "a_ref"),
-    [
-        # trivial case: integral should be zero since atoms are located very far apart
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
-            np.array(
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                requires_grad=True,
+class TestAttraction:
+    """Tests for attraction integrals"""
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "alpha", "coeff", "a_ref"),
+        [
+            # trivial case: integral should be zero since atoms are located very far apart
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
+                np.array(
+                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                    requires_grad=True,
+                ),
+                np.array(
+                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                    requires_grad=True,
+                ),
+                np.array([0.0]),
             ),
-            np.array(
-                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                requires_grad=True,
+            # nuclear attraction integral obtained from pyscf using mol.intor('int1e_nuc')
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
+                np.array(
+                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                    requires_grad=True,
+                ),
+                np.array(
+                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                    requires_grad=True,
+                ),
+                np.array([0.80120855]),
             ),
-            np.array([0.0]),
-        ),
-        # nuclear attraction integral obtained from pyscf using mol.intor('int1e_nuc')
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=True),
-            np.array(
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                requires_grad=True,
+        ],
+    )
+    def test_attraction_integral(symbols, geometry, alpha, coeff, a_ref):
+        r"""Test that attraction_integral function returns a correct value for the kinetic
+        integral."""
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [p for p in [alpha, coeff] if p.requires_grad]
+
+        if geometry.requires_grad:
+            args = [geometry[0]] + args + [geometry]
+
+        a = qchem.attraction_integral(geometry[0], basis_a, basis_b)(*args)
+        assert np.allclose(a, a_ref)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "alpha", "coeff"),
+        [
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                np.array(
+                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                    requires_grad=True,
+                ),
+                np.array(
+                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                    requires_grad=True,
+                ),
             ),
-            np.array(
-                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                requires_grad=True,
-            ),
-            np.array([0.80120855]),
-        ),
-    ],
-)
-def test_attraction_integral(symbols, geometry, alpha, coeff, a_ref):
-    r"""Test that attraction_integral function returns a correct value for the kinetic integral."""
-    mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-    basis_a = mol.basis_set[0]
-    basis_b = mol.basis_set[1]
-    args = [p for p in [alpha, coeff] if p.requires_grad]
+        ],
+    )
+    def test_gradient_attraction(symbols, geometry, alpha, coeff):
+        r"""Test that the attraction gradient computed with respect to the basis parameters is
+        correct."""
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [mol.alpha, mol.coeff]
+        r_nuc = geometry[0]
 
-    if geometry.requires_grad:
-        args = [geometry[0]] + args + [geometry]
+        g_alpha = autograd.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnum=0)(*args)
+        g_coeff = autograd.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnum=1)(*args)
 
-    a = qchem.attraction_integral(geometry[0], basis_a, basis_b)(*args)
-    assert np.allclose(a, a_ref)
+        # compute attraction gradients with respect to alpha and coeff using finite diff
+        delta = 0.0001
+        g_ref_alpha = np.zeros(6).reshape(alpha.shape)
+        g_ref_coeff = np.zeros(6).reshape(coeff.shape)
 
+        for i in range(len(alpha)):
+            for j in range(len(alpha[0])):
 
-@pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coeff"),
-    [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            np.array(
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                requires_grad=True,
-            ),
-            np.array(
-                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                requires_grad=True,
-            ),
-        ),
-    ],
-)
-def test_gradient_attraction(symbols, geometry, alpha, coeff):
-    r"""Test that the attraction gradient computed with respect to the basis parameters is correct."""
-    mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-    basis_a = mol.basis_set[0]
-    basis_b = mol.basis_set[1]
-    args = [mol.alpha, mol.coeff]
-    r_nuc = geometry[0]
+                alpha_minus = alpha.copy()
+                alpha_plus = alpha.copy()
+                alpha_minus[i][j] = alpha_minus[i][j] - delta
+                alpha_plus[i][j] = alpha_plus[i][j] + delta
+                a_minus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha_minus, coeff])
+                a_plus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha_plus, coeff])
+                g_ref_alpha[i][j] = (a_plus - a_minus) / (2 * delta)
 
-    g_alpha = autograd.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnum=0)(*args)
-    g_coeff = autograd.grad(qchem.attraction_integral(r_nuc, basis_a, basis_b), argnum=1)(*args)
+                coeff_minus = coeff.copy()
+                coeff_plus = coeff.copy()
+                coeff_minus[i][j] = coeff_minus[i][j] - delta
+                coeff_plus[i][j] = coeff_plus[i][j] + delta
+                a_minus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha, coeff_minus])
+                a_plus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha, coeff_plus])
+                g_ref_coeff[i][j] = (a_plus - a_minus) / (2 * delta)
 
-    # compute attraction gradients with respect to alpha and coeff using finite diff
-    delta = 0.0001
-    g_ref_alpha = np.zeros(6).reshape(alpha.shape)
-    g_ref_coeff = np.zeros(6).reshape(coeff.shape)
-
-    for i in range(len(alpha)):
-        for j in range(len(alpha[0])):
-
-            alpha_minus = alpha.copy()
-            alpha_plus = alpha.copy()
-            alpha_minus[i][j] = alpha_minus[i][j] - delta
-            alpha_plus[i][j] = alpha_plus[i][j] + delta
-            a_minus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha_minus, coeff])
-            a_plus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha_plus, coeff])
-            g_ref_alpha[i][j] = (a_plus - a_minus) / (2 * delta)
-
-            coeff_minus = coeff.copy()
-            coeff_plus = coeff.copy()
-            coeff_minus[i][j] = coeff_minus[i][j] - delta
-            coeff_plus[i][j] = coeff_plus[i][j] + delta
-            a_minus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha, coeff_minus])
-            a_plus = qchem.attraction_integral(r_nuc, basis_a, basis_b)(*[alpha, coeff_plus])
-            g_ref_coeff[i][j] = (a_plus - a_minus) / (2 * delta)
-
-    assert np.allclose(g_alpha, g_ref_alpha)
-    assert np.allclose(g_coeff, g_ref_coeff)
+        assert np.allclose(g_alpha, g_ref_alpha)
+        assert np.allclose(g_coeff, g_ref_coeff)
 
 
 @pytest.mark.parametrize(
