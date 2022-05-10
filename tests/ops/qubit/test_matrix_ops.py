@@ -344,6 +344,16 @@ class TestDiagonalQubitUnitary:
         """Tests that error is raised if diagonal by `compute_matrix` does not lead to a unitary"""
         with pytest.raises(ValueError, match="Operator must be unitary"):
             qml.DiagonalQubitUnitary.compute_matrix(np.array(D))
+        with pytest.raises(ValueError, match="Operator must be unitary"):
+            qml.DiagonalQubitUnitary(np.array(D), wires=1).matrix()
+
+    @pytest.mark.parametrize("D", [[1, 2], [[0.2, 1.0, -1.0], [1.0, -1j, 1j]]])
+    def test_error_eigvals_not_unitary(self, D):
+        """Tests that error is raised if diagonal by `compute_matrix` does not lead to a unitary"""
+        with pytest.raises(ValueError, match="Operator must be unitary"):
+            qml.DiagonalQubitUnitary.compute_eigvals(np.array(D))
+        with pytest.raises(ValueError, match="Operator must be unitary"):
+            qml.DiagonalQubitUnitary(np.array(D), wires=0).eigvals()
 
     # TODO[dwierichs]: Add a JIT test using tensor-batching once devices support it
     @pytest.mark.jax
