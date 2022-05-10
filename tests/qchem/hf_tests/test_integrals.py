@@ -80,46 +80,75 @@ class TestParams:
         assert np.allclose(basis_params, (alpha, coeff, r))
 
 
-@pytest.mark.parametrize(
-    ("la", "lb", "ra", "rb", "alpha", "beta", "t", "c"),
-    [
-        (
-            0,
-            0,
-            np.array([1.2]),
-            np.array([1.2]),
-            np.array([3.42525091]),
-            np.array([3.42525091]),
-            0,
-            np.array([1.0]),
-        ),
-        (
-            1,
-            0,
-            np.array([0.0]),
-            np.array([0.0]),
-            np.array([3.42525091]),
-            np.array([3.42525091]),
-            0,
-            np.array([0.0]),
-        ),
-        (
-            1,
-            1,
-            np.array([0.0]),
-            np.array([10.0]),
-            np.array([3.42525091]),
-            np.array([3.42525091]),
-            0,
-            np.array([0.0]),
-        ),
-    ],
-)
-def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
-    r"""Test that expansion function returns correct value."""
-    assert np.allclose(qchem.expansion(la, lb, ra, rb, alpha, beta, t), c)
-    assert np.allclose(qchem.expansion(la, lb, ra, rb, alpha, beta, -1), np.array([0.0]))
-    assert np.allclose(qchem.expansion(0, 1, ra, rb, alpha, beta, 2), np.array([0.0]))
+class TestAuxiliary:
+    """Tests for auxiliary functions needed to compute integrals"""
+
+    @pytest.mark.parametrize(
+        ("la", "lb", "ra", "rb", "alpha", "beta", "t", "c"),
+        [
+            (
+                0,
+                0,
+                np.array([1.2]),
+                np.array([1.2]),
+                np.array([3.42525091]),
+                np.array([3.42525091]),
+                0,
+                np.array([1.0]),
+            ),
+            (
+                1,
+                0,
+                np.array([0.0]),
+                np.array([0.0]),
+                np.array([3.42525091]),
+                np.array([3.42525091]),
+                0,
+                np.array([0.0]),
+            ),
+            (
+                1,
+                1,
+                np.array([0.0]),
+                np.array([10.0]),
+                np.array([3.42525091]),
+                np.array([3.42525091]),
+                0,
+                np.array([0.0]),
+            ),
+        ],
+    )
+    def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
+        r"""Test that expansion function returns correct value."""
+        assert np.allclose(qchem.expansion(la, lb, ra, rb, alpha, beta, t), c)
+        assert np.allclose(qchem.expansion(la, lb, ra, rb, alpha, beta, -1), np.array([0.0]))
+        assert np.allclose(qchem.expansion(0, 1, ra, rb, alpha, beta, 2), np.array([0.0]))
+
+    @pytest.mark.parametrize(
+        ("n", "t", "f_ref"),
+        [(2.75, np.array([0.0, 1.23]), np.array([0.15384615384615385, 0.061750771828252976]))],
+    )
+    def test_boys(n, t, f_ref):
+        r"""Test that the Boys function is evaluated correctly."""
+        f = qchem.integrals._boys(n, t)
+        assert np.allclose(f, f_ref)
+
+    @pytest.mark.parametrize(
+        ("t", "u", "v", "n", "p", "dr", "h_ref"),
+        [
+            (0, 0, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 1.0),
+            (0, 0, 1, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 0.0),
+            (0, 0, 2, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), -4.56700122),
+            (0, 2, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), -4.56700122),
+            (0, 1, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 0.0),
+            (2, 1, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 0.0),
+            (1, 1, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 0.0),
+        ],
+    )
+    def test_hermite_coulomb(t, u, v, n, p, dr, h_ref):
+        r"""Test that the _hermite_coulomb function returns a correct value."""
+        h = qchem.integrals._hermite_coulomb(t, u, v, n, p, dr)
+        assert np.allclose(h, h_ref)
 
 
 class TestOverlap:
@@ -832,31 +861,3 @@ class TestRepulsion:
 
         assert np.allclose(g_alpha, g_ref_alpha)
         assert np.allclose(g_coeff, g_ref_coeff)
-
-
-@pytest.mark.parametrize(
-    ("n", "t", "f_ref"),
-    [(2.75, np.array([0.0, 1.23]), np.array([0.15384615384615385, 0.061750771828252976]))],
-)
-def test_boys(n, t, f_ref):
-    r"""Test that the Boys function is evaluated correctly."""
-    f = qchem.integrals._boys(n, t)
-    assert np.allclose(f, f_ref)
-
-
-@pytest.mark.parametrize(
-    ("t", "u", "v", "n", "p", "dr", "h_ref"),
-    [
-        (0, 0, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 1.0),
-        (0, 0, 1, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 0.0),
-        (0, 0, 2, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), -4.56700122),
-        (0, 2, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), -4.56700122),
-        (0, 1, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 0.0),
-        (2, 1, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 0.0),
-        (1, 1, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 0.0),
-    ],
-)
-def test_hermite_coulomb(t, u, v, n, p, dr, h_ref):
-    r"""Test that the _hermite_coulomb function returns a correct value."""
-    h = qchem.integrals._hermite_coulomb(t, u, v, n, p, dr)
-    assert np.allclose(h, h_ref)
