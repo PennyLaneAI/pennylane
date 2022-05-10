@@ -161,3 +161,31 @@ def marginal_prob(prob, axis):
     prob = np.reshape(prob, [2] * num_wires)
     prob = np.sum(prob, axis=inactive_wires)
     return np.flatten(prob)
+
+
+def density_matrix_from_array(state, wires, check_state=None):
+    # Check that the array is a state vector
+
+    # Get dimension
+    num_wires = int(np.log2(len(state)))
+    np.reshape(state, [2] * num_wires)
+    consecutive_wires = list(range(num_wires))
+
+    # Reshape
+    state = np.array(state, dtype="complex128")
+    state = np.reshape(state, [2] * num_wires)
+
+    if consecutive_wires == wires:
+        density_matrix = np.tensordot(state, np.conj(state), axes=0)
+        density_matrix = np.reshape(density_matrix, (2 ** num_wires, 2 ** num_wires))
+        return density_matrix
+    print(wires)
+    traced_system = [x for x in consecutive_wires if x not in wires]
+
+    # Return the reduced density matrix by using numpy tensor product
+    density_matrix = np.tensordot(
+        state, np.conj(state), axes=(traced_system, traced_system)
+    )
+    density_matrix = np.reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
+    print(density_matrix)
+    return density_matrix

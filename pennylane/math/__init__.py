@@ -51,6 +51,7 @@ from .multi_dispatch import (
 )
 
 from .quantum import cov_matrix, marginal_prob
+from .quantum import density_matrix_from_array
 
 from .utils import (
     allclose,
@@ -93,6 +94,7 @@ __all__ = [
     "is_abstract",
     "is_independent",
     "marginal_prob",
+    "density_matrix_from_array",
     "ones_like",
     "requires_grad",
     "scatter_element_add",
