@@ -690,144 +690,148 @@ class TestAttraction:
         assert np.allclose(g_coeff, g_ref_coeff)
 
 
-@pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coeff", "e_ref"),
-    [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
-            np.array(
-                [
-                    [3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554],
-                ],
-                requires_grad=False,
-            ),
-            np.array(
-                [
-                    [0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454],
-                ],
-                requires_grad=True,
-            ),
-            np.array([0.0]),
-        ),
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            np.array(
-                [
-                    [3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554],
-                ],
-                requires_grad=False,
-            ),
-            np.array(
-                [
-                    [0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454],
-                ],
-                requires_grad=True,
-            ),
-            np.array([0.45590169]),
-        ),
-    ],
-)
-def test_repulsion_integral(symbols, geometry, alpha, coeff, e_ref):
-    r"""Test that repulsion_integral function returns a correct value for the repulsion integral."""
-    mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-    basis_a = mol.basis_set[0]
-    basis_b = mol.basis_set[1]
-    args = [p for p in [alpha, coeff] if p.requires_grad]
+class TestRepulsion:
+    """Tests for repulsion integrals"""
 
-    a = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*args)
-
-    assert np.allclose(a, e_ref)
-
-
-@pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coeff"),
-    [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            np.array(
-                [
-                    [3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554],
-                    [3.42525091, 0.62391373, 0.1688554],
-                ],
-                requires_grad=True,
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "alpha", "coeff", "e_ref"),
+        [
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
+                np.array(
+                    [
+                        [3.42525091, 0.62391373, 0.1688554],
+                        [3.42525091, 0.62391373, 0.1688554],
+                        [3.42525091, 0.62391373, 0.1688554],
+                        [3.42525091, 0.62391373, 0.1688554],
+                    ],
+                    requires_grad=False,
+                ),
+                np.array(
+                    [
+                        [0.15432897, 0.53532814, 0.44463454],
+                        [0.15432897, 0.53532814, 0.44463454],
+                        [0.15432897, 0.53532814, 0.44463454],
+                        [0.15432897, 0.53532814, 0.44463454],
+                    ],
+                    requires_grad=True,
+                ),
+                np.array([0.0]),
             ),
-            np.array(
-                [
-                    [0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454],
-                    [0.15432897, 0.53532814, 0.44463454],
-                ],
-                requires_grad=True,
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                np.array(
+                    [
+                        [3.42525091, 0.62391373, 0.1688554],
+                        [3.42525091, 0.62391373, 0.1688554],
+                        [3.42525091, 0.62391373, 0.1688554],
+                        [3.42525091, 0.62391373, 0.1688554],
+                    ],
+                    requires_grad=False,
+                ),
+                np.array(
+                    [
+                        [0.15432897, 0.53532814, 0.44463454],
+                        [0.15432897, 0.53532814, 0.44463454],
+                        [0.15432897, 0.53532814, 0.44463454],
+                        [0.15432897, 0.53532814, 0.44463454],
+                    ],
+                    requires_grad=True,
+                ),
+                np.array([0.45590169]),
             ),
-        ),
-    ],
-)
-def test_gradient_repulsion(symbols, geometry, alpha, coeff):
-    r"""Test that the repulsion gradient computed with respect to the basis parameters is correct."""
-    mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-    basis_a = mol.basis_set[0]
-    basis_b = mol.basis_set[1]
-    args = [mol.alpha, mol.coeff]
-
-    g_alpha = autograd.grad(qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=0)(
-        *args
+        ],
     )
-    g_coeff = autograd.grad(qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=1)(
-        *args
+    def test_repulsion_integral(symbols, geometry, alpha, coeff, e_ref):
+        r"""Test that repulsion_integral function returns a correct value for the repulsion
+        integral."""
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [p for p in [alpha, coeff] if p.requires_grad]
+
+        a = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(*args)
+
+        assert np.allclose(a, e_ref)
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "alpha", "coeff"),
+        [
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                np.array(
+                    [
+                        [3.42525091, 0.62391373, 0.1688554],
+                        [3.42525091, 0.62391373, 0.1688554],
+                        [3.42525091, 0.62391373, 0.1688554],
+                        [3.42525091, 0.62391373, 0.1688554],
+                    ],
+                    requires_grad=True,
+                ),
+                np.array(
+                    [
+                        [0.15432897, 0.53532814, 0.44463454],
+                        [0.15432897, 0.53532814, 0.44463454],
+                        [0.15432897, 0.53532814, 0.44463454],
+                        [0.15432897, 0.53532814, 0.44463454],
+                    ],
+                    requires_grad=True,
+                ),
+            ),
+        ],
     )
+    def test_gradient_repulsion(symbols, geometry, alpha, coeff):
+        r"""Test that the repulsion gradient computed with respect to the basis parameters is
+        correct."""
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [mol.alpha, mol.coeff]
 
-    # compute repulsion gradients with respect to alpha and coeff using finite diff
-    delta = 0.0001
-    g_ref_alpha = np.zeros(12).reshape(alpha.shape)
-    g_ref_coeff = np.zeros(12).reshape(coeff.shape)
+        g_alpha = autograd.grad(
+            qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=0
+        )(*args)
+        g_coeff = autograd.grad(
+            qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b), argnum=1
+        )(*args)
 
-    for i in range(len(alpha)):
-        for j in range(len(alpha[0])):
+        # compute repulsion gradients with respect to alpha and coeff using finite diff
+        delta = 0.0001
+        g_ref_alpha = np.zeros(12).reshape(alpha.shape)
+        g_ref_coeff = np.zeros(12).reshape(coeff.shape)
 
-            alpha_minus = alpha.copy()
-            alpha_plus = alpha.copy()
-            alpha_minus[i][j] = alpha_minus[i][j] - delta
-            alpha_plus[i][j] = alpha_plus[i][j] + delta
-            e_minus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
-                *[alpha_minus, coeff]
-            )
-            e_plus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
-                *[alpha_plus, coeff]
-            )
-            g_ref_alpha[i][j] = (e_plus - e_minus) / (2 * delta)
+        for i in range(len(alpha)):
+            for j in range(len(alpha[0])):
 
-            coeff_minus = coeff.copy()
-            coeff_plus = coeff.copy()
-            coeff_minus[i][j] = coeff_minus[i][j] - delta
-            coeff_plus[i][j] = coeff_plus[i][j] + delta
-            e_minus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
-                *[alpha, coeff_minus]
-            )
-            e_plus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
-                *[alpha, coeff_plus]
-            )
-            g_ref_coeff[i][j] = (e_plus - e_minus) / (2 * delta)
+                alpha_minus = alpha.copy()
+                alpha_plus = alpha.copy()
+                alpha_minus[i][j] = alpha_minus[i][j] - delta
+                alpha_plus[i][j] = alpha_plus[i][j] + delta
+                e_minus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                    *[alpha_minus, coeff]
+                )
+                e_plus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                    *[alpha_plus, coeff]
+                )
+                g_ref_alpha[i][j] = (e_plus - e_minus) / (2 * delta)
 
-    assert np.allclose(g_alpha, g_ref_alpha)
-    assert np.allclose(g_coeff, g_ref_coeff)
+                coeff_minus = coeff.copy()
+                coeff_plus = coeff.copy()
+                coeff_minus[i][j] = coeff_minus[i][j] - delta
+                coeff_plus[i][j] = coeff_plus[i][j] + delta
+                e_minus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                    *[alpha, coeff_minus]
+                )
+                e_plus = qchem.repulsion_integral(basis_a, basis_b, basis_a, basis_b)(
+                    *[alpha, coeff_plus]
+                )
+                g_ref_coeff[i][j] = (e_plus - e_minus) / (2 * delta)
+
+        assert np.allclose(g_alpha, g_ref_alpha)
+        assert np.allclose(g_coeff, g_ref_coeff)
 
 
 @pytest.mark.parametrize(
