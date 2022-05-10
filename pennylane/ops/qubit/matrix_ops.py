@@ -77,12 +77,12 @@ class QubitUnitary(Operation):
 
             # Check for unitarity; due to variable precision across the different ML frameworks,
             # here we issue a warning to check the operation, instead of raising an error outright.
-            # TODO: Implement unitarity check also for tensor-batched arguments U
+            # TODO[dwierichs]: Implement unitarity check also for tensor-batched arguments U
             if not (
                 qml.math.is_abstract(U)
                 or len(U_shape) == 3
                 or qml.math.allclose(
-                    qml.math.dot(U, qml.math.transpose(qml.math.conj(U), (1, 0))),
+                    qml.math.dot(U, qml.math.T(qml.math.conj(U))),
                     qml.math.eye(dim),
                     atol=1e-6,
                 )
@@ -149,11 +149,19 @@ class QubitUnitary(Operation):
         """
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
         # or a single RZ for diagonal matrices.
-        if qml.math.shape(U) == (2, 2):
+        shape = qml.math.shape(U)
+        if shape == (2, 2):
             return qml.transforms.decompositions.zyz_decomposition(U, Wires(wires)[0])
 
-        if qml.math.shape(U) == (4, 4):
+        if shape == (4, 4):
             return qml.transforms.two_qubit_decomposition(U, Wires(wires))
+
+        # TODO[dwierichs]: Implement decomposition of tensor-batched unitary
+        if len(shape) == 3:
+            raise DecompositionUndefinedError(
+                "The decomposition of QubitUnitary does not support tensor-batching."
+            )
+            return qml.transforms.decompositions.zyz_decomposition(U, Wires(wires)[0])
 
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
 
@@ -241,6 +249,10 @@ class ControlledQubitUnitary(QubitUnitary):
                 "The control wires must be different from the wires specified to apply the unitary on."
             )
 
+        # TODO[dwierichs]: Implement tensor-batching
+        if len(qml.math.shape(params[0])) == 3:
+            raise NotImplementedError("ControlledQubitUnitary does not support tensor-batching.")
+
         self._hyperparameters = {
             "u_wires": wires,
             "control_wires": control_wires,
@@ -287,8 +299,6 @@ class ControlledQubitUnitary(QubitUnitary):
         target_dim = 2 ** len(u_wires)
         if len(U) != target_dim:
             raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
-        if len(qml.math.shape(U)) == 3:
-            raise ValueError(f"ControlledQubitUnitary does not support tensor-batching.")
 
         # A multi-controlled operation is a block-diagonal matrix partitioned into
         # blocks where the operation being applied sits in the block positioned at
@@ -385,7 +395,9 @@ class DiagonalQubitUnitary(Operation):
             raise ValueError("Operator must be unitary.")
 
         if len(qml.math.shape(D)) == 2:
-            return qml.math.transpose(qml.math.stack([qml.math.diag(_D) for _D in D]), (2, 0, 1))
+            return qml.math.transpose(
+                qml.math.stack([qml.math.diag(_D) for _D in qml.math.T(D)]), (1, 2, 0)
+            )
 
         return qml.math.diag(D)
 

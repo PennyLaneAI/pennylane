@@ -192,7 +192,7 @@ def expand_matrix(base_matrix, wires, wire_order):
     n = len(wires)
     shape = qml.math.shape(base_matrix)
     batch_dim = shape[-1] if len(shape) == 3 else None
-    interface = qml.math._multi_dispatch(base_matrix)  # pylint: disable=protected-access
+    interface = qml.math.get_interface(base_matrix)  # pylint: disable=protected-access
 
     # operator's wire positions relative to wire ordering
     op_wire_pos = wire_order.indices(wires)
@@ -209,6 +209,8 @@ def expand_matrix(base_matrix, wires, wire_order):
     mat_tensordot = qml.math.tensordot(
         mat_op_reshaped, qml.math.cast_like(I, mat_op_reshaped), axes
     )
+    if batch_dim:
+        mat_tensordot = qml.math.moveaxis(mat_tensordot, n, -1)
 
     unused_idxs = [idx for idx in range(len(wire_order)) if idx not in op_wire_pos]
     # permute matrix axes to match wire ordering
@@ -815,7 +817,7 @@ class Operator(abc.ABC):
             # assume that if the first parameter is matrix-valued, there is only a single parameter
             # this holds true for all current operations and templates unless tensor-batching
             # is used
-            # TODO [dwierichs]: Implement a proper label for tensor-batched operators
+            # TODO[dwierichs]: Implement a proper label for tensor-batched operators
             if (
                 cache is None
                 or not isinstance(cache.get("matrices", None), list)

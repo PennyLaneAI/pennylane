@@ -26,7 +26,8 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
-from pennylane.utils import expand, pauli_eigs
+from pennylane.operation import expand_matrix
+from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / math.sqrt(2)
@@ -110,7 +111,8 @@ class RX(Operation):
 
     def single_qubit_rot_angles(self):
         # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
-        return [np.pi / 2, self.data[0], -np.pi / 2]
+        pi_half = qml.math.ones_like(self.data[0]) * (np.pi / 2)
+        return [pi_half, self.data[0], -pi_half]
 
 
 class RY(Operation):
@@ -823,7 +825,7 @@ class MultiRZ(Operation):
         if len(shape) > 0:
             eigvals = qml.math.exp(qml.math.tensordot(eigs, -0.5j * theta, axes=0))
             dim = 2**num_wires
-            mat = qml.math.zeros(((dim, dim) + shape), like=eigvals)
+            mat = qml.math.zeros(((dim, dim) + shape), like=eigvals, dtype=complex)
             mat[np.diag_indices(dim, ndim=2)] = eigvals
             return mat
 
@@ -1009,7 +1011,8 @@ class PauliRot(Operation):
         if self.inverse:
             op_label += "⁻¹"
 
-        if decimals is not None:
+        # TODO[dwierichs]: Implement a proper label for tensor-batched operators
+        if decimals is not None and qml.math.shape(self.parameters[0]) == ():
             param_string = f"\n({qml.math.asarray(self.parameters[0]):.{decimals}f})"
             op_label += param_string
 
@@ -1065,7 +1068,7 @@ class PauliRot(Operation):
         if set(pauli_word) == {"I"}:
 
             if len(qml.math.shape(theta)) > 0:
-                raise ValueError(
+                raise NotImplementedError(
                     "PauliRot with the identity matrix does not support tensor-batching."
                 )
             exp = qml.math.exp(-0.5j * theta)
@@ -1091,9 +1094,9 @@ class PauliRot(Operation):
             qml.math.kron,
             [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
-
-        return expand(
-            qml.math.dot(
+        return expand_matrix(
+            qml.math.einsum(
+                "ij,jk...->i...k",
                 qml.math.conj(conjugation_matrix),
                 qml.math.tensordot(multi_Z_rot_matrix, conjugation_matrix, axes=[[1], [0]]),
             ),
@@ -1136,7 +1139,7 @@ class PauliRot(Operation):
         # Identity must be treated specially because its eigenvalues are all the same
         if set(pauli_word) == {"I"}:
             if len(qml.math.shape(theta)) > 0:
-                raise ValueError(
+                raise NotImplementedError(
                     "PauliRot with the identity matrix does not support tensor-batching."
                 )
             return qml.math.exp(-0.5j * theta) * qml.math.ones(2 ** len(pauli_word))
@@ -1330,13 +1333,14 @@ class CRX(Operation):
         RZ(-1.5707963267948966, wires=[1])]
 
         """
+        pi_half = qml.math.ones_like(phi) * (np.pi / 2)
         decomp_ops = [
-            RZ(np.pi / 2, wires=wires[1]),
+            RZ(pi_half, wires=wires[1]),
             RY(phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
             RY(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-            RZ(-np.pi / 2, wires=wires[1]),
+            RZ(-pi_half, wires=wires[1]),
         ]
         return decomp_ops
 
@@ -2038,8 +2042,9 @@ class U2(Operation):
         PhaseShift(1.23, wires=[0])]
 
         """
+        pi_half = qml.math.ones_like(delta) * (np.pi / 2)
         decomp_ops = [
-            Rot(delta, np.pi / 2, -delta, wires=wires),
+            Rot(delta, pi_half, -delta, wires=wires),
             PhaseShift(delta, wires=wires),
             PhaseShift(phi, wires=wires),
         ]
