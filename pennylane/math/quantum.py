@@ -176,11 +176,13 @@ def density_matrix_from_array(state, wires, check_state=None):
 
     if consecutive_wires == wires:
         density_matrix = np.tensordot(state, np.conj(state), axes=0)
+        density_matrix = np.reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
         return density_matrix
 
     traced_system = [x for x in consecutive_wires if x not in wires]
 
     # Return the reduced density matrix by using numpy tensor product
     density_matrix = np.tensordot(state, np.conj(state), axes=(traced_system, traced_system))
+    density_matrix = np.reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
 
     return density_matrix
