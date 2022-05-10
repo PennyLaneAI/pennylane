@@ -939,7 +939,8 @@ class QubitDevice(Device):
 
             * Only expectation values are supported as measurements.
 
-            * Does not work for Hamiltonian observables.
+            * Does not work for parametrized observables like
+              :class:`~.Hamiltonian` or :class:`~.Hermitian`.
 
         Args:
             tape (.QuantumTape): circuit that the function takes the gradient of
@@ -1014,13 +1015,29 @@ class QubitDevice(Device):
                 if op.name not in ("QubitStateVector", "BasisState", "Snapshot"):
                     expanded_ops.append(op)
 
-        jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
+        trainable_params = []
+        for k in tape.trainable_params:
+            # pylint: disable=protected-access
+            if hasattr(tape._par_info[k]["op"], "return_type"):
+                warnings.warn(
+                    "Differentiating with respect to the input parameters of "
+                    f"{tape._par_info[k]['op'].name} is not supported with the "
+                    "adjoint differentiation method. Gradients are computed "
+                    "only with regards to the trainable parameters of the circuit.\n\n Mark "
+                    "the parameters of the measured observables as non-trainable "
+                    "to silence this warning.",
+                    UserWarning,
+                )
+            else:
+                trainable_params.append(k)
 
-        param_number = len(tape._par_info) - 1  # pylint: disable=protected-access
-        trainable_param_number = len(tape.trainable_params) - 1
+        jac = np.zeros((len(tape.observables), len(trainable_params)))
+
+        param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
+        trainable_param_number = len(trainable_params) - 1
         for op in expanded_ops:
 
-            if (op.grad_method is not None) and (param_number in tape.trainable_params):
+            if (op.grad_method is not None) and (param_number in trainable_params):
                 d_op_matrix = operation_derivative(op)
 
             op.inv()
@@ -1029,7 +1046,7 @@ class QubitDevice(Device):
             ket = self._apply_operation(ket, op)
 
             if op.grad_method is not None:
-                if param_number in tape.trainable_params:
+                if param_number in trainable_params:
 
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
