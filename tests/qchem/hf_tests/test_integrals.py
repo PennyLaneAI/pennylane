@@ -432,153 +432,156 @@ class TestMoment:
         assert np.allclose(g_coeff, g_ref_coeff)
 
 
-@pytest.mark.parametrize(
-    ("i", "j", "ri", "rj", "alpha", "beta", "d"),
-    [
-        # _diff2 must return 0.0 for two Gaussians centered far apart at 0.0 and 20.0
-        (
-            0,
-            1,
-            np.array([0.0]),
-            np.array([20.0]),
-            np.array([3.42525091]),
-            np.array([3.42525091]),
-            np.array([0.0]),
-        ),
-        # computed manually
-        (
-            0,
-            0,
-            np.array([0.0]),
-            np.array([1.0]),
-            np.array([3.42525091]),
-            np.array([3.42525091]),
-            np.array([1.01479665]),
-        ),
-    ],
-)
-def test_diff2(i, j, ri, rj, alpha, beta, d):
-    r"""Test that _diff2 function returns a correct value."""
-    assert np.allclose(qchem.integrals._diff2(i, j, ri, rj, alpha, beta), d)
+class TestKinetic:
+    """Tests for kinetic integrals"""
 
-
-@pytest.mark.parametrize(
-    ("la", "lb", "ra", "rb", "alpha", "beta", "t"),
-    [
-        # gaussian_kinetic must return 0.0 for two Gaussians centered far apart
-        (
-            (0, 0, 0),
-            (0, 0, 0),
-            np.array([0.0, 0.0, 0.0]),
-            np.array([20.0, 0.0, 0.0]),
-            np.array([3.42525091]),
-            np.array([3.42525091]),
-            np.array([0.0]),
-        ),
-    ],
-)
-def test_gaussian_kinetic(la, lb, ra, rb, alpha, beta, t):
-    r"""Test that gaussian_kinetic function returns a correct value."""
-    assert np.allclose(qchem.gaussian_kinetic(la, lb, ra, rb, alpha, beta), t)
-
-
-@pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coeff", "t_ref"),
-    [
-        # kinetic_integral must return 0.0 for two Gaussians centered far apart
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
-            np.array(
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                requires_grad=False,
+    @pytest.mark.parametrize(
+        ("i", "j", "ri", "rj", "alpha", "beta", "d"),
+        [
+            # _diff2 must return 0.0 for two Gaussians centered far apart at 0.0 and 20.0
+            (
+                0,
+                1,
+                np.array([0.0]),
+                np.array([20.0]),
+                np.array([3.42525091]),
+                np.array([3.42525091]),
+                np.array([0.0]),
             ),
-            np.array(
-                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                requires_grad=True,
+            # computed manually
+            (
+                0,
+                0,
+                np.array([0.0]),
+                np.array([1.0]),
+                np.array([3.42525091]),
+                np.array([3.42525091]),
+                np.array([1.01479665]),
             ),
-            np.array([0.0]),
-        ),
-        # kinetic integral obtained from pyscf using mol.intor('int1e_kin')
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            np.array(
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                requires_grad=False,
+        ],
+    )
+    def test_diff2(i, j, ri, rj, alpha, beta, d):
+        r"""Test that _diff2 function returns a correct value."""
+        assert np.allclose(qchem.integrals._diff2(i, j, ri, rj, alpha, beta), d)
+
+
+    @pytest.mark.parametrize(
+        ("la", "lb", "ra", "rb", "alpha", "beta", "t"),
+        [
+            # gaussian_kinetic must return 0.0 for two Gaussians centered far apart
+            (
+                (0, 0, 0),
+                (0, 0, 0),
+                np.array([0.0, 0.0, 0.0]),
+                np.array([20.0, 0.0, 0.0]),
+                np.array([3.42525091]),
+                np.array([3.42525091]),
+                np.array([0.0]),
             ),
-            np.array(
-                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                requires_grad=True,
+        ],
+    )
+    def test_gaussian_kinetic(la, lb, ra, rb, alpha, beta, t):
+        r"""Test that gaussian_kinetic function returns a correct value."""
+        assert np.allclose(qchem.gaussian_kinetic(la, lb, ra, rb, alpha, beta), t)
+
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "alpha", "coeff", "t_ref"),
+        [
+            # kinetic_integral must return 0.0 for two Gaussians centered far apart
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]], requires_grad=False),
+                np.array(
+                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                    requires_grad=False,
+                ),
+                np.array(
+                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                    requires_grad=True,
+                ),
+                np.array([0.0]),
             ),
-            np.array([0.38325384]),
-        ),
-    ],
-)
-def test_kinetic_integral(symbols, geometry, alpha, coeff, t_ref):
-    r"""Test that kinetic_integral function returns a correct value for the kinetic integral."""
-    mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-    basis_a = mol.basis_set[0]
-    basis_b = mol.basis_set[1]
-    args = [p for p in [alpha, coeff] if p.requires_grad]
-
-    t = qchem.kinetic_integral(basis_a, basis_b)(*args)
-    assert np.allclose(t, t_ref)
-
-
-@pytest.mark.parametrize(
-    ("symbols", "geometry", "alpha", "coeff"),
-    [
-        (
-            ["H", "H"],
-            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
-            np.array(
-                [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
-                requires_grad=True,
+            # kinetic integral obtained from pyscf using mol.intor('int1e_kin')
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                np.array(
+                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                    requires_grad=False,
+                ),
+                np.array(
+                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                    requires_grad=True,
+                ),
+                np.array([0.38325384]),
             ),
-            np.array(
-                [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
-                requires_grad=True,
+        ],
+    )
+    def test_kinetic_integral(symbols, geometry, alpha, coeff, t_ref):
+        r"""Test that kinetic_integral function returns a correct value for the kinetic integral."""
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [p for p in [alpha, coeff] if p.requires_grad]
+
+        t = qchem.kinetic_integral(basis_a, basis_b)(*args)
+        assert np.allclose(t, t_ref)
+
+
+    @pytest.mark.parametrize(
+        ("symbols", "geometry", "alpha", "coeff"),
+        [
+            (
+                ["H", "H"],
+                np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False),
+                np.array(
+                    [[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]],
+                    requires_grad=True,
+                ),
+                np.array(
+                    [[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]],
+                    requires_grad=True,
+                ),
             ),
-        ),
-    ],
-)
-def test_gradient_kinetic(symbols, geometry, alpha, coeff):
-    r"""Test that the kinetic gradient computed with respect to the basis parameters is correct."""
-    mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
-    basis_a = mol.basis_set[0]
-    basis_b = mol.basis_set[1]
-    args = [mol.alpha, mol.coeff]
+        ],
+    )
+    def test_gradient_kinetic(symbols, geometry, alpha, coeff):
+        r"""Test that the kinetic gradient computed with respect to the basis parameters is correct."""
+        mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
+        basis_a = mol.basis_set[0]
+        basis_b = mol.basis_set[1]
+        args = [mol.alpha, mol.coeff]
 
-    g_alpha = autograd.grad(qchem.kinetic_integral(basis_a, basis_b), argnum=0)(*args)
-    g_coeff = autograd.grad(qchem.kinetic_integral(basis_a, basis_b), argnum=1)(*args)
+        g_alpha = autograd.grad(qchem.kinetic_integral(basis_a, basis_b), argnum=0)(*args)
+        g_coeff = autograd.grad(qchem.kinetic_integral(basis_a, basis_b), argnum=1)(*args)
 
-    # compute kinetic gradients with respect to alpha, coeff and r using finite diff
-    delta = 0.0001
-    g_ref_alpha = np.zeros(6).reshape(alpha.shape)
-    g_ref_coeff = np.zeros(6).reshape(coeff.shape)
+        # compute kinetic gradients with respect to alpha, coeff and r using finite diff
+        delta = 0.0001
+        g_ref_alpha = np.zeros(6).reshape(alpha.shape)
+        g_ref_coeff = np.zeros(6).reshape(coeff.shape)
 
-    for i in range(len(alpha)):
-        for j in range(len(alpha[0])):
+        for i in range(len(alpha)):
+            for j in range(len(alpha[0])):
 
-            alpha_minus = alpha.copy()
-            alpha_plus = alpha.copy()
-            alpha_minus[i][j] = alpha_minus[i][j] - delta
-            alpha_plus[i][j] = alpha_plus[i][j] + delta
-            t_minus = qchem.kinetic_integral(basis_a, basis_b)(*[alpha_minus, coeff])
-            t_plus = qchem.kinetic_integral(basis_a, basis_b)(*[alpha_plus, coeff])
-            g_ref_alpha[i][j] = (t_plus - t_minus) / (2 * delta)
+                alpha_minus = alpha.copy()
+                alpha_plus = alpha.copy()
+                alpha_minus[i][j] = alpha_minus[i][j] - delta
+                alpha_plus[i][j] = alpha_plus[i][j] + delta
+                t_minus = qchem.kinetic_integral(basis_a, basis_b)(*[alpha_minus, coeff])
+                t_plus = qchem.kinetic_integral(basis_a, basis_b)(*[alpha_plus, coeff])
+                g_ref_alpha[i][j] = (t_plus - t_minus) / (2 * delta)
 
-            coeff_minus = coeff.copy()
-            coeff_plus = coeff.copy()
-            coeff_minus[i][j] = coeff_minus[i][j] - delta
-            coeff_plus[i][j] = coeff_plus[i][j] + delta
-            t_minus = qchem.kinetic_integral(basis_a, basis_b)(*[alpha, coeff_minus])
-            t_plus = qchem.kinetic_integral(basis_a, basis_b)(*[alpha, coeff_plus])
-            g_ref_coeff[i][j] = (t_plus - t_minus) / (2 * delta)
+                coeff_minus = coeff.copy()
+                coeff_plus = coeff.copy()
+                coeff_minus[i][j] = coeff_minus[i][j] - delta
+                coeff_plus[i][j] = coeff_plus[i][j] + delta
+                t_minus = qchem.kinetic_integral(basis_a, basis_b)(*[alpha, coeff_minus])
+                t_plus = qchem.kinetic_integral(basis_a, basis_b)(*[alpha, coeff_plus])
+                g_ref_coeff[i][j] = (t_plus - t_minus) / (2 * delta)
 
-    assert np.allclose(g_alpha, g_ref_alpha)
-    assert np.allclose(g_coeff, g_ref_coeff)
+        assert np.allclose(g_alpha, g_ref_alpha)
+        assert np.allclose(g_coeff, g_ref_coeff)
 
 
 @pytest.mark.parametrize(
