@@ -118,7 +118,7 @@ class TestAuxiliary:
             ),
         ],
     )
-    def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
+    def test_expansion(self, la, lb, ra, rb, alpha, beta, t, c):
         r"""Test that expansion function returns correct value."""
         assert np.allclose(qchem.expansion(la, lb, ra, rb, alpha, beta, t), c)
         assert np.allclose(qchem.expansion(la, lb, ra, rb, alpha, beta, -1), np.array([0.0]))
@@ -128,7 +128,7 @@ class TestAuxiliary:
         ("n", "t", "f_ref"),
         [(2.75, np.array([0.0, 1.23]), np.array([0.15384615384615385, 0.061750771828252976]))],
     )
-    def test_boys(n, t, f_ref):
+    def test_boys(self, n, t, f_ref):
         r"""Test that the Boys function is evaluated correctly."""
         f = qchem.integrals._boys(n, t)
         assert np.allclose(f, f_ref)
@@ -145,7 +145,7 @@ class TestAuxiliary:
             (1, 1, 0, 0, 6.85050183, np.array([0.0, 0.0, 0.0]), 0.0),
         ],
     )
-    def test_hermite_coulomb(t, u, v, n, p, dr, h_ref):
+    def test_hermite_coulomb(self, t, u, v, n, p, dr, h_ref):
         r"""Test that the _hermite_coulomb function returns a correct value."""
         h = qchem.integrals._hermite_coulomb(t, u, v, n, p, dr)
         assert np.allclose(h, h_ref)
@@ -344,7 +344,7 @@ class TestMoment:
             ),
         ],
     )
-    def test_hermite_moment(alpha, beta, t, e, rc, ref):
+    def test_hermite_moment(self, alpha, beta, t, e, rc, ref):
         r"""Test that hermite_moment function returns correct values."""
         assert np.allclose(qchem.hermite_moment(alpha, beta, t, e, rc), ref)
 
@@ -364,7 +364,7 @@ class TestMoment:
             ),
         ],
     )
-    def test_gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc, ref):
+    def test_gaussian_moment(self, la, lb, ra, rb, alpha, beta, e, rc, ref):
         r"""Test that gaussian_moment function returns correct values."""
         assert np.allclose(qchem.gaussian_moment(la, lb, ra, rb, alpha, beta, e, rc), ref)
 
@@ -394,7 +394,7 @@ class TestMoment:
             ),
         ],
     )
-    def test_moment_integral(symbols, geometry, e, idx, ref):
+    def test_moment_integral(self, symbols, geometry, e, idx, ref):
         r"""Test that moment_integral function returns a correct value for the moment integral."""
         mol = qchem.Molecule(symbols, geometry)
         basis_a = mol.basis_set[0]
@@ -423,7 +423,7 @@ class TestMoment:
             ),
         ],
     )
-    def test_gradient_moment(symbols, geometry, alpha, coeff, e, idx):
+    def test_gradient_moment(self, symbols, geometry, alpha, coeff, e, idx):
         r"""Test that the moment gradient computed with respect to the basis parameters is
         correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
@@ -490,7 +490,7 @@ class TestKinetic:
             ),
         ],
     )
-    def test_diff2(i, j, ri, rj, alpha, beta, d):
+    def test_diff2(self, i, j, ri, rj, alpha, beta, d):
         r"""Test that _diff2 function returns a correct value."""
         assert np.allclose(qchem.integrals._diff2(i, j, ri, rj, alpha, beta), d)
 
@@ -509,7 +509,7 @@ class TestKinetic:
             ),
         ],
     )
-    def test_gaussian_kinetic(la, lb, ra, rb, alpha, beta, t):
+    def test_gaussian_kinetic(self, la, lb, ra, rb, alpha, beta, t):
         r"""Test that gaussian_kinetic function returns a correct value."""
         assert np.allclose(qchem.gaussian_kinetic(la, lb, ra, rb, alpha, beta), t)
 
@@ -546,7 +546,7 @@ class TestKinetic:
             ),
         ],
     )
-    def test_kinetic_integral(symbols, geometry, alpha, coeff, t_ref):
+    def test_kinetic_integral(self, symbols, geometry, alpha, coeff, t_ref):
         r"""Test that kinetic_integral function returns a correct value for the kinetic integral."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
         basis_a = mol.basis_set[0]
@@ -573,7 +573,7 @@ class TestKinetic:
             ),
         ],
     )
-    def test_gradient_kinetic(symbols, geometry, alpha, coeff):
+    def test_gradient_kinetic(self, symbols, geometry, alpha, coeff):
         r"""Test that the kinetic gradient computed with respect to the basis parameters is
         correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
@@ -648,7 +648,7 @@ class TestAttraction:
             ),
         ],
     )
-    def test_attraction_integral(symbols, geometry, alpha, coeff, a_ref):
+    def test_attraction_integral(self, symbols, geometry, alpha, coeff, a_ref):
         r"""Test that attraction_integral function returns a correct value for the kinetic
         integral."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
@@ -679,7 +679,7 @@ class TestAttraction:
             ),
         ],
     )
-    def test_gradient_attraction(symbols, geometry, alpha, coeff):
+    def test_gradient_attraction(self, symbols, geometry, alpha, coeff):
         r"""Test that the attraction gradient computed with respect to the basis parameters is
         correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
@@ -773,7 +773,7 @@ class TestRepulsion:
             ),
         ],
     )
-    def test_repulsion_integral(symbols, geometry, alpha, coeff, e_ref):
+    def test_repulsion_integral(self, symbols, geometry, alpha, coeff, e_ref):
         r"""Test that repulsion_integral function returns a correct value for the repulsion
         integral."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
@@ -812,7 +812,7 @@ class TestRepulsion:
             ),
         ],
     )
-    def test_gradient_repulsion(symbols, geometry, alpha, coeff):
+    def test_gradient_repulsion(self, symbols, geometry, alpha, coeff):
         r"""Test that the repulsion gradient computed with respect to the basis parameters is
         correct."""
         mol = qchem.Molecule(symbols, geometry, alpha=alpha, coeff=coeff)
