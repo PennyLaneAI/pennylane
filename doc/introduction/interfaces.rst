@@ -333,7 +333,7 @@ The tables below show all the currently supported functionality
    circuit will be differentiable. See :ref:`State gradients <State gradients>` for details.
 5. Supported, but only when ``shots=None``. See :ref:`here <Analytic backpropagation>` for details.
 6. Not supported. The adjoint differentiation algorithm only applies to expectation values of observables. See
-   :ref:`here <Adjoint differentation>` for details.
+   :ref:`Adjoint differentation <Adjoint differentation>` for details.
 7. Supported. Raises warning when ``shots>0`` since the gradient is always computed analytically. See
    :ref:`here <Adjoint differentation>` for details.
 8. Supported.
