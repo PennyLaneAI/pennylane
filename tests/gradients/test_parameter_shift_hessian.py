@@ -19,12 +19,108 @@ from itertools import product
 import pennylane as qml
 from pennylane import numpy as np
 
-from pennylane.gradients.parameter_shift_hessian import _collect_recipes, _generate_off_diag_tapes
+from pennylane.gradients.parameter_shift_hessian import (
+    _process_argnum,
+    _collect_recipes,
+    _generate_offdiag_tapes,
+)
+
+
+class TestProcessArgnum:
+    """Tests for the helper method _process_argnum."""
+
+    with qml.tape.QuantumTape() as tape:
+        qml.RX(0.2, wires=0)
+        qml.CRZ(0.9, wires=[1, 0])
+        qml.RX(0.2, wires=0)
+    tape.trainable_params = {0, 1, 2}
+
+    def test_none(self):
+        """Test that for argnum=None all parameters are marked in the returned Boolean mask."""
+        argnum = _process_argnum(None, self.tape)
+        assert qml.math.allclose(argnum, qml.math.ones((3, 3), dtype=bool))
+
+    @pytest.mark.parametrize("argnum", [0, 2])
+    def test_int(self, argnum):
+        """Test that an integer argnum correctly is transformed into a Boolean mask
+        with the corresponding diagonal element set to True."""
+        new_argnum = _process_argnum(argnum, self.tape)
+        expected = qml.math.zeros((3, 3), dtype=bool)
+        expected[argnum, argnum] = True
+        assert qml.math.allclose(new_argnum, expected)
+
+    def test_index_sequence(self):
+        """Test that a sequence argnum with indices correctly is transformed into a Boolean mask."""
+        new_argnum = _process_argnum([1, 2], self.tape)
+        expected = qml.math.zeros((3, 3), dtype=bool)
+        expected[1:3, 1:3] = True
+        assert qml.math.allclose(new_argnum, expected)
+
+    def test_bool_sequence(self):
+        """Test that a Boolean sequence argnum correctly is transformed into a Boolean mask."""
+        new_argnum = _process_argnum([True, False, True], self.tape)
+        expected = qml.math.zeros((3, 3), dtype=bool)
+        expected[0, 0] = expected[2, 2] = expected[2, 0] = expected[0, 2] = True
+        assert qml.math.allclose(new_argnum, expected)
+
+    @pytest.mark.parametrize(
+        "argnum",
+        [
+            [[True, False, True], [False, False, False], [True, False, False]],
+            [[False, True, True], [True, False, True], [True, True, False]],
+        ],
+    )
+    def test_boolean_mask(self, argnum):
+        """Test that a Boolean mask argnum correctly isn't changed."""
+        new_argnum = _process_argnum(argnum, self.tape)
+        assert qml.math.allclose(new_argnum, argnum)
+
+    def test_error_single_index_too_big(self):
+        with pytest.raises(ValueError, match="The index 10 exceeds the number"):
+            _process_argnum(10, self.tape)
+
+    def test_error_max_index_too_big(self):
+        with pytest.raises(ValueError, match="The index 10 exceeds the number"):
+            _process_argnum([0, 1, 10], self.tape)
+
+    @pytest.mark.parametrize("length", (2, 5))
+    def test_error_1D_bool_wrong_length(self, length):
+        argnum = qml.math.ones(length, dtype=bool)
+        with pytest.raises(ValueError, match="One-dimensional Boolean array argnum"):
+            _process_argnum(argnum, self.tape)
+
+    def test_error_wrong_ndim(self):
+        argnum = qml.math.ones((3, 3, 3), dtype=bool)
+        with pytest.raises(ValueError, match="Expected a symmetric 2D Boolean array"):
+            _process_argnum(argnum, self.tape)
+
+    @pytest.mark.parametrize("shape", [(4, 4), (3, 2)])
+    def test_error_wrong_shape(self, shape):
+        argnum = qml.math.ones(shape, dtype=bool)
+        with pytest.raises(ValueError, match="Expected a symmetric 2D Boolean array"):
+            _process_argnum(argnum, self.tape)
+
+    @pytest.mark.parametrize("dtype", [float, int])
+    def test_error_wrong_dtype(self, dtype):
+        argnum = qml.math.ones((3, 3), dtype=dtype)
+        with pytest.raises(ValueError, match="Expected a symmetric 2D Boolean array"):
+            _process_argnum(argnum, self.tape)
+
+    def test_error_asymmetric(self):
+        argnum = [[True, False, False], [True, True, False], [False, False, True]]
+        with pytest.raises(ValueError, match="Expected a symmetric 2D Boolean array"):
+            _process_argnum(argnum, self.tape)
 
 
 class TestCollectRecipes:
     """Test that gradient recipes are collected/generated correctly based
     on provided shift values, hard-coded recipes of operations, and argnum."""
+
+    with qml.tape.QuantumTape() as tape:
+        qml.RX(0.4, wires=0)
+        qml.CRZ(-0.9, wires=[1, 0])
+        qml.Hadamard(wires=0)
+        qml.SingleExcitation(-1.2, wires=[1, 3])
 
     def test_with_custom_recipes(self):
         dummy_recipe = [(-0.3, 1.0, 0.0), (0.3, 1.0, 0.4)]
@@ -39,32 +135,87 @@ class TestCollectRecipes:
             qml.DepolarizingChannel(0.2, wires=0)
             DummyOp(0.3, wires=0)
 
-        diag, offdiag = _collect_recipes(tape, tape.trainable_params, ("A", "A"), None, None)
-        assert qml.math.allclose(diag[0], qml.math.array(channel_recipe_2nd_order))
+        argnum = qml.math.ones((tape.num_params, tape.num_params), dtype=bool)
+        diag, offdiag = _collect_recipes(tape, argnum, ("A", "A"), None, None)
+        assert qml.math.allclose(diag[0], channel_recipe_2nd_order)
         assert qml.math.allclose(diag[1], qml.math.array(dummy_recipe_2nd_order))
         assert qml.math.allclose(offdiag[0], qml.math.array(channel_recipe))
         assert qml.math.allclose(offdiag[1], qml.math.array(dummy_recipe))
 
+    two_term_recipe = [(0.5, 1.0, np.pi / 2), (-0.5, 1.0, -np.pi / 2)]
+    c0 = (np.sqrt(2) + 1) / (4 * np.sqrt(2))
+    c1 = (np.sqrt(2) - 1) / (4 * np.sqrt(2))
+    four_term_recipe = [
+        (c0, 1.0, np.pi / 2),
+        (-c0, 1.0, -np.pi / 2),
+        (-c1, 1.0, 3 * np.pi / 2),
+        (c1, 1.0, -3 * np.pi / 2),
+    ]
+    two_term_2nd_order = [(-0.5, 1.0, 0.0), (0.5, 1.0, -np.pi)]
+    four_term_2nd_order = [
+        (-0.375, 1.0, 0),
+        (0.25, 1.0, -np.pi),
+        (0.25, 1.0, np.pi),
+        (-0.125, 1.0, -2 * np.pi),
+    ]
+
+    expected_diag_recipes = [two_term_2nd_order, four_term_2nd_order, four_term_2nd_order]
+
+    def test_with_diag_argnum(self):
+        argnum = qml.math.eye(3, dtype=bool)
+        diag, offdiag = _collect_recipes(self.tape, argnum, ("A",) * 3, None, None)
+        for res, exp in zip(diag, self.expected_diag_recipes):
+            assert qml.math.allclose(res, exp)
+        assert all(entry == (None, None, None) for entry in offdiag)
+
+    def test_with_block_diag_argnum(self):
+        argnum = qml.math.array([[True, True, False], [True, True, False], [False, False, True]])
+        diag, offdiag = _collect_recipes(self.tape, argnum, ("A",) * 3, None, None)
+        for res, exp in zip(diag, self.expected_diag_recipes):
+            assert qml.math.allclose(res, exp)
+        assert qml.math.allclose(offdiag[0], self.two_term_recipe)
+        assert qml.math.allclose(offdiag[1], self.four_term_recipe)
+        assert offdiag[2] == (None, None, None)
+
+    def test_with_other_argnum(self):
+        argnum = qml.math.array([[True, True, False], [True, False, True], [False, True, True]])
+        diag, offdiag = _collect_recipes(self.tape, argnum, ("A",) * 3, None, None)
+        for i, (res, exp) in enumerate(zip(diag, self.expected_diag_recipes)):
+            if i == 1:
+                assert res is None
+            else:
+                assert qml.math.allclose(res, exp)
+        assert qml.math.allclose(offdiag[0], self.two_term_recipe)
+        assert qml.math.allclose(offdiag[1], self.four_term_recipe)
+        assert qml.math.allclose(offdiag[2], self.four_term_recipe)
+
 
 class TestGenerateOffDiagTapes:
-    """Test some special features of `_generate_off_diag_tapes`."""
+    """Test some special features of `_generate_offdiag_tapes`."""
 
-    def test_with_zero_shifts(self):
+    @pytest.mark.parametrize("add_unshifted", [True, False])
+    def test_with_zero_shifts(self, add_unshifted):
         with qml.tape.QuantumTape() as tape:
             qml.RX(np.array(0.2), wires=[0])
             qml.RY(np.array(0.9), wires=[0])
 
         recipe_0 = np.array([[-0.5, 1.0, 0.0], [0.5, 1.0, np.pi]])
         recipe_1 = np.array([[-0.25, 1.0, 0.0], [0.25, 1.0, np.pi]])
-        h_tapes, c, unshifted_coeff = _generate_off_diag_tapes(tape, (0, 1), recipe_0, recipe_1)
+        t, c = [], []
+        new_add_unshifted, unshifted_coeff = _generate_offdiag_tapes(
+            tape, (0, 1), [recipe_0, recipe_1], add_unshifted, t, c
+        )
 
-        assert len(h_tapes) == 3  # Four tapes of which one is not shifted -> Three tapes
+        assert len(t) == 3 + int(add_unshifted)  # Four tapes of which the first is not shifted
         assert np.allclose(c, [-0.125, -0.125, 0.125])
         assert np.isclose(unshifted_coeff, 0.125)
+        assert not new_add_unshifted
 
         orig_cls = [orig_op.__class__ for orig_op in tape.operations]
         expected_pars = list(product([0.2, 0.2 + np.pi], [0.9, 0.9 + np.pi]))
-        for exp_par, h_tape in zip(expected_pars[1:], h_tapes):
+        if not add_unshifted:
+            expected_pars = expected_pars[1:]
+        for exp_par, h_tape in zip(expected_pars, t):
             assert len(h_tape.operations) == 2
             assert all(op.__class__ == cls for op, cls in zip(h_tape.operations, orig_cls))
             assert np.allclose(h_tape.get_parameters(), exp_par)
@@ -215,10 +366,10 @@ class TestParameterShiftHessian:
             qml.CNOT(wires=[0, 1])
             qml.RZ(x[2], wires=1)
             qml.Rot(x[0], x[1], x[2], wires=1)
-            return qml.probs(wires=0)
+            return qml.probs(wires=[0, 1])
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=True)
-        shape = (2, 6, 6)  # (num_output_vals, num_gate_args, num_gate_args)
+        shape = (4, 6, 6)  # (num_output_vals, num_gate_args, num_gate_args)
 
         hessian = qml.gradients.param_shift_hessian(circuit, hybrid=False)(x)
 
@@ -236,7 +387,7 @@ class TestParameterShiftHessian:
             qml.CNOT(wires=[0, 1])
             qml.RZ(x[2], wires=1)
             qml.Rot(x[0], x[1], x[2], wires=1)
-            return qml.probs(wires=0)
+            return qml.probs(wires=[0, 1])
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
@@ -256,7 +407,7 @@ class TestParameterShiftHessian:
             qml.RY(x[1] - x[0] + 3 * x[2], wires=0)
             qml.CNOT(wires=[0, 1])
             qml.RZ(x[2] / x[0] - x[1], wires=1)
-            return qml.probs(wires=0)
+            return qml.probs(wires=[0, 1])
 
         x = np.array([0.1, 0.2, 0.3], requires_grad=True)
 
@@ -497,7 +648,7 @@ class TestParameterShiftHessian:
             qml.RX(x[0], wires=0)
             qml.CNOT(wires=[0, 1])
             qml.RY(x[1], wires=0)
-            return qml.expval(qml.PauliZ(1))
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
         x = np.array([0.1, 0.2], requires_grad=True)
 
@@ -930,8 +1081,8 @@ class TestParamShiftHessianWithKwargs:
         assert np.allclose(expected, hessian)
 
     @pytest.mark.parametrize("argnum", [(0,), (1,), (0, 1)])
-    def test_with_argnum(self, argnum):
-        """Test that providing an argnum to indicated differentiable parameters works."""
+    def test_with_1d_argnum(self, argnum):
+        """Test that providing an argnum to indicate differentiable parameters works."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
@@ -954,6 +1105,34 @@ class TestParamShiftHessianWithKwargs:
                 expected[:, i] = 0.0
         hessian = qml.gradients.param_shift_hessian(circuit, argnum=argnum)(*xy)
         assert np.allclose(hessian, expected.T)
+
+    @pytest.mark.parametrize(
+        "argnum",
+        [
+            qml.math.eye(3, dtype=bool),
+            qml.math.array([[True, False, False], [False, False, True], [False, True, True]]),
+            qml.math.array([[False, False, True], [False, False, False], [True, False, False]]),
+        ],
+    )
+    def test_with_2d_argnum(self, argnum):
+        """Test that providing an argnum to indicated differentiable parameters works."""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, max_diff=2, diff_method="parameter-shift")
+        def circuit(par):
+            qml.RX(par[0], wires=0)
+            qml.CRY(par[1], wires=[0, 1])
+            qml.CNOT(wires=[0, 1])
+            qml.CRY(par[2], wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        par = np.array([0.6, -0.2, 0.8], requires_grad=True)
+
+        expected = qml.jacobian(qml.jacobian(circuit))(par)
+        # Set non-argnum argument entries to 0
+        expected = expected * qml.math.array(argnum, dtype=float)[None]
+        hessian = qml.gradients.param_shift_hessian(circuit, argnum=argnum)(par)
+        assert np.allclose(hessian, expected)
 
     @pytest.mark.parametrize("argnum", [(0,), (1,), (0, 1)])
     def test_with_argnum_and_shifts(self, argnum):
@@ -981,7 +1160,7 @@ class TestParamShiftHessianWithKwargs:
             if i not in argnum:
                 expected[:, i] = 0.0
         d_shifts = [diagonal_shifts[arg] for arg in argnum]
-        od_shifts = [off_diagonal_shifts[arg] for arg in argnum]
+        od_shifts = [off_diagonal_shifts[arg] for arg in argnum if len(argnum) > 1]
         hessian = qml.gradients.param_shift_hessian(
             circuit, argnum=argnum, diagonal_shifts=d_shifts, off_diagonal_shifts=od_shifts
         )(*xy)
@@ -999,7 +1178,7 @@ class TestParamShiftHessianWithKwargs:
         with pytest.raises(ValueError, match="sets of shift values for diagonal entries"):
             qml.gradients.param_shift_hessian(tape, argnum=argnum, diagonal_shifts=[])
 
-    @pytest.mark.parametrize("argnum", [None, (0,)])
+    @pytest.mark.parametrize("argnum", [None, (0, 1)])
     def test_error_wrong_offdiagonal_shifts(self, argnum):
         """Test that an error is raised if the number of offdiagonal shifts does
         not match the required number (`len(trainable_params)` or `len(argnum)`)."""
@@ -1007,6 +1186,7 @@ class TestParamShiftHessianWithKwargs:
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.4, wires=0)
             qml.CRY(0.9, wires=[0, 1])
+            qml.RX(-0.4, wires=0)
 
         with pytest.raises(ValueError, match="sets of shift values for off-diagonal entries"):
             qml.gradients.param_shift_hessian(tape, argnum=argnum, off_diagonal_shifts=[])
