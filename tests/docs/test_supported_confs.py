@@ -222,7 +222,7 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("return_type", return_types)
     @pytest.mark.parametrize("shots", shotss)
     def test_all_device(self, interface, return_type, shots):
-        """Test diff_method=device raises an error for all interfaces"""
+        """Test diff_method=device raises an error for all interfaces for default.qubit"""
         msg = (
             "The default.qubit device does not provide a native "
             "method for computing the jacobian."
