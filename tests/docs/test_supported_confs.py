@@ -23,12 +23,6 @@ from pennylane.measurements import State, Probability, Expectation, Variance, Sa
 
 pytestmark = pytest.mark.all_interfaces
 
-# import tensorflow as tf
-# import torch
-# import torch.autograd.functional as F
-# import jax
-# from jax import numpy as jnp
-
 tf = pytest.importorskip("tensorflow")
 torch = pytest.importorskip("torch")
 F = pytest.importorskip("torch.autograd.functional")
