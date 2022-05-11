@@ -1109,7 +1109,7 @@ class TestTensor:
         t = qml.PauliX(0) @ qml.PauliZ(1)
         s = t.sparse_matrix()
 
-        assert np.allclose(s.data, [ 1, -1,  1, -1])
+        assert np.allclose(s.data, [1, -1, 1, -1])
         assert np.allclose(s.indices, [2, 3, 0, 1])
         assert np.allclose(s.indptr, [0, 1, 2, 3, 4])
 
@@ -1120,7 +1120,7 @@ class TestTensor:
         t = qml.PauliX(0) @ qml.PauliZ(1)
         s = t.sparse_matrix(wires=[1, 0])
 
-        assert np.allclose(s.data, [ 1,  1, -1, -1])
+        assert np.allclose(s.data, [1, 1, -1, -1])
         assert np.allclose(s.indices, [1, 0, 3, 2])
         assert np.allclose(s.indptr, [0, 1, 2, 3, 4])
 
@@ -1132,7 +1132,7 @@ class TestTensor:
         s = t.sparse_matrix(wires=[0, 1, 2])
 
         assert s.shape == (8, 8)
-        assert np.allclose(s.data, [ 1.,  1., -1., -1.,  1.,  1., -1., -1.])
+        assert np.allclose(s.data, [1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0])
         assert np.allclose(s.indices, [4, 5, 6, 7, 0, 1, 2, 3])
         assert np.allclose(s.indptr, [0, 1, 2, 3, 4, 5, 6, 7, 8])
 
