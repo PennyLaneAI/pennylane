@@ -487,7 +487,6 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("interface", ["jax", "tf", "torch"])
     def test_all_state_backprop(self, interface):
         """Test gradient of state directly succeeds for non-autograd interfaces"""
-        # should not raise an exception
         circuit = get_qnode(interface, "backprop", "StateVector", None)
         x = get_variable(interface, complex=True)
         grad = compute_gradient(x, interface, circuit, "StateVector", complex=True)
