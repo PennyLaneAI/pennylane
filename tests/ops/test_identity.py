@@ -38,7 +38,7 @@ def test_label_method():
 
 
 @pytest.mark.parametrize("n", (2, -3, 3.455, -1.29))
-def test_identity_pow(self, n):
+def test_identity_pow(n):
     """Test that the identity raised to any power is simply a single copy."""
     op = Identity("b")
     pow_ops = op.pow(n)
