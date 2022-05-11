@@ -64,7 +64,9 @@ def _grad_method(tape, idx):
 
     for m in tape.measurements:
 
-        if (m.return_type is qml.measurements.Probability) or (m.obs.ev_order not in (1, 2)):
+        if (m.return_type is qml.measurements.Probability) or (
+            m.obs.ev_order not in (1, 2)
+        ):
             # Higher-order observables (including probability) only support finite differences.
             best.append("F")
             continue
@@ -149,7 +151,9 @@ def _transform_observable(obs, Z, device_wires):
     # in the position/momentum basis. The returned matrix/vector
     # will have been expanded to act on the entire device.
     if obs.ev_order > 2:
-        raise NotImplementedError("Transforming observables of order > 2 not implemented.")
+        raise NotImplementedError(
+            "Transforming observables of order > 2 not implemented."
+        )
 
     A = obs.heisenberg_obs(device_wires)
 
@@ -170,7 +174,9 @@ def _transform_observable(obs, Z, device_wires):
     return qml.PolyXP(A, wires=device_wires)
 
 
-def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=None, f0=None):
+def var_param_shift(
+    tape, dev_wires, argnum=None, shifts=None, gradient_recipes=None, f0=None
+):
     r"""Partial derivative using the first-order or second-order parameter-shift rule of a tape
     consisting of a mixture of expectation values and variances of observables.
 
@@ -223,7 +229,9 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     gradient_tapes = [expval_tape]
 
     # evaluate the analytic derivative of <A>
-    pdA_tapes, pdA_fn = expval_param_shift(expval_tape, argnum, shifts, gradient_recipes, f0)
+    pdA_tapes, pdA_fn = expval_param_shift(
+        expval_tape, argnum, shifts, gradient_recipes, f0
+    )
     gradient_tapes.extend(pdA_tapes)
 
     # Store the number of first derivative tapes, so that we know
@@ -261,7 +269,9 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     def processing_fn(results):
         # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
-        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+        if tape._qfunc_output is not None and not isinstance(
+            tape._qfunc_output, Sequence
+        ):
             results = [qml.math.squeeze(res) for res in results]
 
         mask = qml.math.convert_like(qml.math.reshape(var_mask, [-1, 1]), results[0])
@@ -277,7 +287,9 @@ def var_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=
     return gradient_tapes, processing_fn
 
 
-def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient_recipes=None):
+def second_order_param_shift(
+    tape, dev_wires, argnum=None, shifts=None, gradient_recipes=None
+):
     r"""Generate the second-order CV parameter-shift tapes and postprocessing methods required
     to compute the gradient of a gate parameter with respect to an
     expectation value.
@@ -368,7 +380,9 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
         B_inv = B.copy()
 
         succ = tape.graph.descendants_in_order((op,))
-        operation_descendents = itertools.filterfalse(qml.circuit_graph._is_observable, succ)
+        operation_descendents = itertools.filterfalse(
+            qml.circuit_graph._is_observable, succ
+        )
         observable_descendents = filter(qml.circuit_graph._is_observable, succ)
 
         for BB in operation_descendents:
@@ -399,7 +413,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             constant = None
 
             # Check if the transformed observable corresponds to a constant term.
-            if len(A.nonzero()) == 1:
+            if len(A.nonzero()[0]) == 1:
                 if A.ndim == 2 and A[0, 0] != 0:
                     constant = A[0, 0]
 
@@ -413,10 +427,10 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             )
 
         if not any(i is None for i in constants):
-            # Check if *all* transformed observables corresponds to a constant term.
-            # term. If this is the case for all transformed observables on the tape,
-            # then <psi|A|psi> = A<psi|psi> = A,
-            # and we can avoid the device execution.
+            # Check if *all* transformed observables corresponds to a constant
+            # term. If this is the case for all transformed observables on the
+            # tape, then <psi|A|psi> = A<psi|psi> = A, and we can avoid the
+            # device execution.
             shapes[-1] = 0
             obs_indices.append(transformed_obs_idx)
             gradient_values.append(constants)
@@ -429,7 +443,9 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
     def processing_fn(results):
         # HOTFIX: Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
-        if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
+        if tape._qfunc_output is not None and not isinstance(
+            tape._qfunc_output, Sequence
+        ):
             results = [qml.math.squeeze(res) for res in results]
 
         grads = []
@@ -449,7 +465,9 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
                 g = qml.math.zeros_like(qml.math.atleast_1d(results[0]), like=interface)
 
                 if grad_value:
-                    g = qml.math.scatter_element_add(g, obs_ind, grad_value, like=interface)
+                    g = qml.math.scatter_element_add(
+                        g, obs_ind, grad_value, like=interface
+                    )
 
                 grads.append(g[0] if isscalar else g)
                 continue
@@ -465,7 +483,9 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             if qml.math.get_interface(g) not in ("tensorflow", "autograd"):
                 obs_ind = (obs_ind,)
 
-            g = qml.math.scatter_element_add(g, obs_ind, obs_result[obs_ind], like=interface)
+            g = qml.math.scatter_element_add(
+                g, obs_ind, obs_result[obs_ind], like=interface
+            )
             grads.append(g[0] if isscalar else g)
 
         # The following is for backwards compatibility; currently,
@@ -690,7 +710,9 @@ def param_shift_cv(
         return [], lambda _: np.zeros([tape.output_dim, len(tape.trainable_params)])
 
     method_map = choose_grad_methods(diff_methods, argnum)
-    var_present = any(m.return_type is qml.measurements.Variance for m in tape.measurements)
+    var_present = any(
+        m.return_type is qml.measurements.Variance for m in tape.measurements
+    )
 
     unsupported_params = []
     first_order_params = []
@@ -745,7 +767,11 @@ def param_shift_cv(
     else:
         # Only expectation values were specified
         if first_order_params:
-            _update(expval_param_shift(tape, first_order_params, shifts, gradient_recipes, f0))
+            _update(
+                expval_param_shift(
+                    tape, first_order_params, shifts, gradient_recipes, f0
+                )
+            )
 
         if second_order_params:
             _update(
