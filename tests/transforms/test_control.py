@@ -315,6 +315,7 @@ def test_controlled_template_and_operations():
 class TestDifferentiation:
     """Tests for differentiation"""
 
+    @pytest.mark.autograd
     def test_autograd(self, diff_method):
         """Test differentiation using autograd"""
         from pennylane import numpy as pnp
@@ -334,9 +335,10 @@ class TestDifferentiation:
 
         assert np.allclose(res, expected)
 
+    @pytest.mark.torch
     def test_torch(self, diff_method):
         """Test differentiation using torch"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
         init_state = torch.tensor([1.0, -1.0], requires_grad=False) / np.sqrt(2)
@@ -356,6 +358,7 @@ class TestDifferentiation:
 
         assert np.allclose(res, expected)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("jax_interface", ["jax", "jax-python", "jax-jit"])
     def test_jax(self, diff_method, jax_interface):
         """Test differentiation using JAX"""
@@ -363,7 +366,8 @@ class TestDifferentiation:
         if diff_method == "backprop" and jax_interface != "jax":
             pytest.skip("The backprop case only accepts interface='jax'")
 
-        jax = pytest.importorskip("jax")
+        import jax
+
         jnp = jax.numpy
 
         dev = qml.device("default.qubit", wires=2)
@@ -381,9 +385,10 @@ class TestDifferentiation:
 
         assert np.allclose(res, expected)
 
+    @pytest.mark.tf
     def test_tf(self, diff_method):
         """Test differentiation using TF"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
         init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / np.sqrt(2)

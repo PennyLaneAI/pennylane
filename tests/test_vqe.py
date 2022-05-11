@@ -22,22 +22,6 @@ from pennylane import numpy as pnp
 from pennylane.wires import Wires
 from pennylane.devices import DefaultQubit, DefaultMixed
 
-try:
-    import torch
-except ImportError as e:
-    pass
-
-
-try:
-    import tensorflow as tf
-
-    if tf.__version__[0] == "1":
-        tf.enable_eager_execution()
-
-    from tensorflow import Variable
-except ImportError as e:
-    pass
-
 
 @pytest.fixture(scope="function")
 def seed():
@@ -354,6 +338,7 @@ class TestVQE:
         with pytest.raises(ValueError, match="not a callable function."):
             cost = qml.ExpvalCost(4, hamiltonian, mock_device())
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("coeffs, observables, expected", hamiltonians_with_expvals)
     def test_passing_kwargs(self, coeffs, observables, expected):
         """Test that the step size and order used for the finite differences
@@ -368,16 +353,13 @@ class TestVQE:
             assert qnode.gradient_kwargs["h"] == 123
             assert qnode.gradient_kwargs["order"] == 2
 
+    @pytest.mark.torch
     @pytest.mark.slow
-    @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize(self, interface, tf_support, torch_support, shots):
+    def test_optimize_torch(self, shots):
         """Test that an ExpvalCost with observable optimization gives the same result as another
         ExpvalCost without observable optimization."""
-        if interface == "tf" and not tf_support:
-            pytest.skip("This test requires TensorFlow")
-        if interface == "torch" and not torch_support:
-            pytest.skip("This test requires Torch")
+        import torch
 
         dev = qml.device("default.qubit", wires=4, shots=shots)
         hamiltonian = big_hamiltonian
@@ -387,7 +369,7 @@ class TestVQE:
             hamiltonian,
             dev,
             optimize=True,
-            interface=interface,
+            interface="torch",
             diff_method="parameter-shift",
         )
         cost2 = qml.ExpvalCost(
@@ -395,7 +377,7 @@ class TestVQE:
             hamiltonian,
             dev,
             optimize=False,
-            interface=interface,
+            interface="torch",
             diff_method="parameter-shift",
         )
 
@@ -415,15 +397,97 @@ class TestVQE:
 
         assert np.allclose(c1, c2, atol=1e-1)
 
-    @pytest.mark.parametrize("interface", ["tf", "torch", "autograd"])
-    def test_optimize_multiple_terms(self, interface, tf_support, torch_support):
+    @pytest.mark.tf
+    @pytest.mark.slow
+    @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
+    def test_optimize_tf(self, shots):
+        """Test that an ExpvalCost with observable optimization gives the same result as another
+        ExpvalCost without observable optimization."""
+
+        dev = qml.device("default.qubit", wires=4, shots=shots)
+        hamiltonian = big_hamiltonian
+
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=True,
+            interface="tf",
+            diff_method="parameter-shift",
+        )
+        cost2 = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=False,
+            interface="tf",
+            diff_method="parameter-shift",
+        )
+
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.random(shape)
+
+        c1 = cost(w)
+        exec_opt = dev.num_executions
+        dev._num_executions = 0
+
+        c2 = cost2(w)
+        exec_no_opt = dev.num_executions
+
+        assert exec_opt == 5  # Number of groups in the Hamiltonian
+        assert exec_no_opt == 15
+
+        assert np.allclose(c1, c2, atol=1e-1)
+
+    @pytest.mark.autograd
+    @pytest.mark.slow
+    @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
+    def test_optimize_autograd(self, shots):
+        """Test that an ExpvalCost with observable optimization gives the same result as another
+        ExpvalCost without observable optimization."""
+
+        dev = qml.device("default.qubit", wires=4, shots=shots)
+        hamiltonian = big_hamiltonian
+
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=True,
+            interface="autograd",
+            diff_method="parameter-shift",
+        )
+        cost2 = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=False,
+            interface="autograd",
+            diff_method="parameter-shift",
+        )
+
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+        w = np.random.random(shape)
+
+        c1 = cost(w)
+        exec_opt = dev.num_executions
+        dev._num_executions = 0
+
+        c2 = cost2(w)
+        exec_no_opt = dev.num_executions
+
+        assert exec_opt == 5  # Number of groups in the Hamiltonian
+        assert exec_no_opt == 15
+
+        assert np.allclose(c1, c2, atol=1e-1)
+
+    @pytest.mark.autograd
+    def test_optimize_multiple_terms_autograd(self):
         """Test that an ExpvalCost with observable optimization gives the same
         result as another ExpvalCost without observable optimization even when there
         are non-unique Hamiltonian terms."""
-        if interface == "tf" and not tf_support:
-            pytest.skip("This test requires TensorFlow")
-        if interface == "torch" and not torch_support:
-            pytest.skip("This test requires Torch")
 
         dev = qml.device("default.qubit", wires=5)
         obs = [
@@ -445,7 +509,7 @@ class TestVQE:
             hamiltonian,
             dev,
             optimize=True,
-            interface=interface,
+            interface="autograd",
             diff_method="parameter-shift",
         )
         cost2 = qml.ExpvalCost(
@@ -453,7 +517,7 @@ class TestVQE:
             hamiltonian,
             dev,
             optimize=False,
-            interface=interface,
+            interface="autograd",
             diff_method="parameter-shift",
         )
 
@@ -473,6 +537,115 @@ class TestVQE:
 
         assert np.allclose(c1, c2)
 
+    @pytest.mark.torch
+    def test_optimize_multiple_terms_torch(self):
+        """Test that an ExpvalCost with observable optimization gives the same
+        result as another ExpvalCost without observable optimization even when there
+        are non-unique Hamiltonian terms."""
+
+        dev = qml.device("default.qubit", wires=5)
+        obs = [
+            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),  # <---- These two terms
+            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[2]),  # <---- are equal
+            qml.PauliZ(wires=[1]),
+            qml.PauliZ(wires=[2]),
+            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[0]),
+            qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[1]),
+            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
+        ]
+
+        coefs = (np.random.rand(len(obs)) - 0.5) * 2
+        hamiltonian = qml.Hamiltonian(coefs, obs)
+
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=True,
+            interface="torch",
+            diff_method="parameter-shift",
+        )
+        cost2 = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=False,
+            interface="torch",
+            diff_method="parameter-shift",
+        )
+
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
+        w = np.random.random(shape)
+
+        c1 = cost(w)
+        exec_opt = dev.num_executions
+        dev._num_executions = 0
+
+        c2 = cost2(w)
+        exec_no_opt = dev.num_executions
+
+        assert exec_opt == 1  # Number of groups in the Hamiltonian
+        assert exec_no_opt == 8
+
+        assert np.allclose(c1, c2)
+
+    @pytest.mark.tf
+    def test_optimize_multiple_terms_tf(self):
+        """Test that an ExpvalCost with observable optimization gives the same
+        result as another ExpvalCost without observable optimization even when there
+        are non-unique Hamiltonian terms."""
+
+        dev = qml.device("default.qubit", wires=5)
+        obs = [
+            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[4]),  # <---- These two terms
+            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[2]),  # <---- are equal
+            qml.PauliZ(wires=[1]),
+            qml.PauliZ(wires=[2]),
+            qml.PauliZ(wires=[1]) @ qml.PauliZ(wires=[2]),
+            qml.PauliZ(wires=[2]) @ qml.PauliZ(wires=[0]),
+            qml.PauliZ(wires=[3]) @ qml.PauliZ(wires=[1]),
+            qml.PauliZ(wires=[4]) @ qml.PauliZ(wires=[3]),
+        ]
+
+        coefs = (np.random.rand(len(obs)) - 0.5) * 2
+        hamiltonian = qml.Hamiltonian(coefs, obs)
+
+        cost = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=True,
+            interface="tf",
+            diff_method="parameter-shift",
+        )
+        cost2 = qml.ExpvalCost(
+            qml.templates.StronglyEntanglingLayers,
+            hamiltonian,
+            dev,
+            optimize=False,
+            interface="tf",
+            diff_method="parameter-shift",
+        )
+
+        np.random.seed(1967)
+        shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
+        w = np.random.random(shape)
+
+        c1 = cost(w)
+        exec_opt = dev.num_executions
+        dev._num_executions = 0
+
+        c2 = cost2(w)
+        exec_no_opt = dev.num_executions
+
+        assert exec_opt == 1  # Number of groups in the Hamiltonian
+        assert exec_no_opt == 8
+
+        assert np.allclose(c1, c2)
+
+    @pytest.mark.autograd
     def test_optimize_grad(self):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the autograd interface."""
@@ -509,6 +682,7 @@ class TestVQE:
         assert np.allclose(dc, big_hamiltonian_grad)
         assert np.allclose(dc2, big_hamiltonian_grad)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("opt", [True, False])
     def test_grad_zero_hamiltonian(self, opt):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
@@ -532,12 +706,12 @@ class TestVQE:
             dc = qml.grad(cost)(w)
         assert np.allclose(dc, 0)
 
+    @pytest.mark.torch
     @pytest.mark.slow
-    def test_optimize_grad_torch(self, torch_support):
+    def test_optimize_grad_torch(self):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the Torch interface."""
-        if not torch_support:
-            pytest.skip("This test requires Torch")
+        import torch
 
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
@@ -561,12 +735,12 @@ class TestVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad)
 
+    @pytest.mark.tf
     @pytest.mark.slow
-    def test_optimize_grad_tf(self, tf_support):
+    def test_optimize_grad_tf(self):
         """Test that the gradient of ExpvalCost is accessible and correct when using observable
         optimization and the TensorFlow interface."""
-        if not tf_support:
-            pytest.skip("This test requires TensorFlow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=4)
         hamiltonian = big_hamiltonian
@@ -720,6 +894,7 @@ class TestNewVQE:
 
         assert np.allclose(res1, res2, atol=tol)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("shots, dim", [([(1000, 2)], 2), ([30, 30], 2), ([2, 3, 4], 3)])
     def test_shot_distribution(self, shots, dim):
         """Tests that distributed shots work with the new VQE design."""
@@ -831,6 +1006,7 @@ class TestNewVQE:
         with pytest.raises(ValueError, match="Can only return the expectation of a single"):
             circuit()
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "best"])
     def test_grad_autograd(self, diff_method, tol):
         """Tests the VQE gradient in the autograd interface."""
@@ -846,6 +1022,7 @@ class TestNewVQE:
         dc = qml.grad(circuit)(w)
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
+    @pytest.mark.autograd
     def test_grad_zero_hamiltonian(self, tol):
         """Tests the VQE gradient for a "zero" Hamiltonian."""
         dev = qml.device("default.qubit", wires=4)
@@ -860,11 +1037,11 @@ class TestNewVQE:
         dc = qml.grad(circuit)(w)
         assert np.allclose(dc, 0, atol=tol)
 
+    @pytest.mark.torch
     @pytest.mark.slow
-    def test_grad_torch(self, torch_support, tol):
+    def test_grad_torch(self, tol):
         """Tests VQE gradients in the torch interface."""
-        if not torch_support:
-            pytest.skip("This test requires Torch")
+        import torch
 
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
@@ -882,10 +1059,10 @@ class TestNewVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
-    def test_grad_tf(self, tf_support, tol):
+    @pytest.mark.tf
+    def test_grad_tf(self, tol):
         """Tests VQE gradients in the tf interface."""
-        if not tf_support:
-            pytest.skip("This test requires TensorFlow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=4)
         H = big_hamiltonian
@@ -904,10 +1081,11 @@ class TestNewVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
+    @pytest.mark.jax
     @pytest.mark.slow
     def test_grad_jax(self, tol):
         """Tests VQE gradients in the jax interface."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         dev = qml.device("default.qubit", wires=4)
@@ -941,6 +1119,7 @@ class TestNewVQE:
         assert res["num_used_wires"] == 2
 
 
+@pytest.mark.autograd
 class TestAutogradInterface:
     """Tests for the Autograd interface (and the NumPy interface for backward compatibility)"""
 
@@ -957,6 +1136,7 @@ class TestAutogradInterface:
         res = [c(params) for c in circuits]
         assert all(isinstance(val, (np.ndarray, float)) for val in res)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("interface", ["autograd"])
     def test_gradient(self, tol, interface):
         """Test differentiation works"""
@@ -985,7 +1165,7 @@ class TestAutogradInterface:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.usefixtures("skip_if_no_torch_support")
+@pytest.mark.torch
 class TestTorchInterface:
     """Tests for the PyTorch interface"""
 
@@ -993,6 +1173,8 @@ class TestTorchInterface:
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device):
         """Test that QNodes have the torch interface"""
+        import torch
+
         dev = mock_device(wires=3)
         circuits = qml.map(ansatz, observables, device=dev, interface="torch")
         assert all(c.interface == "torch" for c in circuits)
@@ -1002,6 +1184,8 @@ class TestTorchInterface:
 
     def test_gradient(self, tol):
         """Test differentiation works"""
+        import torch
+
         dev = qml.device("default.qubit", wires=1)
 
         def ansatz(params, **kwargs):
@@ -1029,7 +1213,7 @@ class TestTorchInterface:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.usefixtures("skip_if_no_tf_support")
+@pytest.mark.tf
 class TestTFInterface:
     """Tests for the TF interface"""
 
@@ -1037,6 +1221,8 @@ class TestTFInterface:
     @pytest.mark.parametrize("observables", OBSERVABLES)
     def test_QNodes_have_right_interface(self, ansatz, observables, params, mock_device):
         """Test that QNodes have the tf interface"""
+        import tensorflow as tf
+
         if ansatz == amp_embed_and_strong_ent_layer:
             pytest.skip("TF doesn't work with ragged arrays")
 
@@ -1045,10 +1231,12 @@ class TestTFInterface:
         assert all(c.interface == "tf" for c in circuits)
 
         res = [c(params) for c in circuits]
-        assert all(isinstance(val, (Variable, tf.Tensor)) for val in res)
+        assert all(isinstance(val, (tf.Variable, tf.Tensor)) for val in res)
 
     def test_gradient(self, tol):
         """Test differentiation works"""
+        import tensorflow as tf
+
         dev = qml.device("default.qubit", wires=1)
 
         def ansatz(params, **kwargs):
@@ -1060,7 +1248,7 @@ class TestTFInterface:
 
         H = qml.Hamiltonian(coeffs, observables)
         a, b = 0.54, 0.123
-        params = Variable([a, b], dtype=tf.float64)
+        params = tf.Variable([a, b], dtype=tf.float64)
         cost = qml.ExpvalCost(ansatz, H, dev, interface="tf")
 
         with tf.GradientTape() as tape:
@@ -1075,13 +1263,16 @@ class TestTFInterface:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.usefixtures("skip_if_no_tf_support")
-@pytest.mark.usefixtures("skip_if_no_torch_support")
+# Multiple interfaces it will bee tested with math module
+@pytest.mark.all_interfaces
 class TestMultipleInterfaceIntegration:
     """Tests to ensure that interfaces agree and integrate correctly"""
 
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""
+        import torch
+        import tensorflow as tf
+
         dev = qml.device("default.qubit", wires=2)
 
         coeffs = [0.2, 0.5]
@@ -1094,7 +1285,7 @@ class TestMultipleInterfaceIntegration:
         params = np.random.uniform(low=0, high=2 * np.pi, size=shape)
 
         # TensorFlow interface
-        w = Variable(params)
+        w = tf.Variable(params)
         ansatz = qml.templates.layers.StronglyEntanglingLayers
 
         cost = qml.ExpvalCost(ansatz, H, dev, interface="tf")

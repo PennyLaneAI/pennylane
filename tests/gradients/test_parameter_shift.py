@@ -154,15 +154,67 @@ class TestParamShift:
         # only called for parameter 0
         assert spy.call_args[0][0:2] == (tape, [0])
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
-    def test_no_trainable_params_qnode(self, interface):
+    @pytest.mark.autograd
+    def test_no_trainable_params_qnode_autograd(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
-        if interface != "autograd":
-            pytest.importorskip(interface)
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface="autograd")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.torch
+    def test_no_trainable_params_qnode_torch(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.tf
+    def test_no_trainable_params_qnode_tf(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.jax
+    def test_no_trainable_params_qnode_jax(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -569,6 +621,7 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_fallback(self, mocker, tol):
         """Test that fallback gradient functions are correctly used"""
         spy = mocker.spy(qml.gradients, "finite_diff")
@@ -609,6 +662,7 @@ class TestParameterShiftRule:
         assert np.allclose(jac[0, 0, 0], -np.cos(x), atol=tol, rtol=0)
         assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_all_fallback(self, mocker, tol):
         """Test that *only* the fallback logic is called if no parameters
         support the parameter-shift rule"""
@@ -1046,6 +1100,7 @@ class TestParameterShiftRule:
 class TestParamShiftGradients:
     """Test that the transform is differentiable"""
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests that the output of the parameter-shift transform
         can be differentiated using autograd, yielding second derivatives."""
@@ -1074,11 +1129,12 @@ class TestParamShiftGradients:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     @pytest.mark.slow
     def test_tf(self, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using TF, yielding second derivatives."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit.tf", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
@@ -1108,10 +1164,11 @@ class TestParamShiftGradients:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using Torch, yielding second derivatives."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         dev = qml.device("default.qubit.torch", wires=2)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
@@ -1136,10 +1193,11 @@ class TestParamShiftGradients:
         expected = np.array([2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)])
         assert np.allclose(hess.detach().numpy(), expected, atol=0.1, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using JAX, yielding second derivatives."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
         from jax.config import config
 
@@ -1368,6 +1426,7 @@ class TestHamiltonianExpvalGradients:
             [-d * np.sin(x), 0, 0, 0, 0, np.cos(x)],
         ]
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using autograd"""
@@ -1385,11 +1444,12 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(res[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
         assert np.allclose(res[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
+    @pytest.mark.tf
     @pytest.mark.slow
     def test_tf(self, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using tf"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         coeffs1 = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
         coeffs2 = tf.Variable([0.7], dtype=tf.float64)
@@ -1408,10 +1468,11 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(hess[0][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
         assert np.allclose(hess[1][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using torch"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         coeffs1 = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64, requires_grad=True)
         coeffs2 = torch.tensor([0.7], dtype=torch.float64, requires_grad=True)
@@ -1432,11 +1493,13 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(hess[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
         assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
+    @pytest.mark.jax
     @pytest.mark.slow
     def test_jax(self, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using JAX"""
-        jax = pytest.importorskip("jax")
+        import jax
+
         jnp = jax.numpy
 
         coeffs1 = jnp.array([0.1, 0.2, 0.3])
