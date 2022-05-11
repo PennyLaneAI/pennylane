@@ -178,7 +178,7 @@ the state directly is not possible without the use of
 gradients can be implemented for most "simple" functions, this is not supported in Autograd
 but is done in the other three interfaces.
 
-Instead, in Autograd, real scalar-valued post-processing should be done to the output state to allow
+Instead, in Autograd, real scalar-valued post-processing should be performed on the output state to allow
 the auto-differentiation frameworks to backpropagate through them. For example, the following
 code uses a scalar cost function dependent on the output state:
 
