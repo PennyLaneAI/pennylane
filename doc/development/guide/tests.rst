@@ -20,7 +20,7 @@ Creating a test
 Every test has to be added to the PennyLane `test folder <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__.
 The test folder follows the structure of the PennyLane module folder. Therefore, tests needs to be added to the corresponding subfolder of the functionality they are testing.
 
-Most tests typcally will not require the use of an interface (such as Autograd, Torch, TensorFlow and Jax). Tests without an interface will be marked
+Most tests typcally will not require the use of an interface or autodifferentiation framework (such as Autograd, Torch, TensorFlow and Jax). Tests without an interface will be marked
 as a ``core`` test automatically by pytest (the functionality for this is located in ``conftest.py``). For such general tests, you can follow the structure of the example below,
 where it is recommended that you follow general pytest guidelines:
 
@@ -43,14 +43,23 @@ where it is recommended that you follow general pytest guidelines:
 This test will be marked automatically as a ``core`` test.
 
 On the other hand, some tests require specific interfaces and need to be marked in order to be run on our Github test suite.
-Tests involving interfaces have to be marked with their respective marker: ``@pytest.mark.autograd``, ``@pytest.mark.torch``,
-``@pytest.mark.tf`` and ``@pytest.mark.jax``. If tests involve multiple interfaces, one should add the marker
+Tests involving interfaces have to be marked with their respective marker:
+
+- ``@pytest.mark.autograd``,
+
+- ``@pytest.mark.torch``,
+
+- ``@pytest.mark.tf``, and
+
+- ``@pytest.mark.jax``.
+
+If tests involve multiple interfaces, one should add the marker
 ``@pytest.mark.all_interfaces``. Additionally, it is now prohibited to use ``importorskip`` to import interface packages inside of a test. Interface tests
 must be written separately for each interface and without the use of fixtures to span multiple interfaces. Instead, the package related
 to interfaces can directly be imported in a marked test. Tests with interface markers are automatically skipped if the necessary
 interfaces are not installed.
 
-Tests that are not marked but do import an interface will lead to a failure in the Github test suite.
+Tests that are not marked but do import an interface will lead to a failure in the GitHub test suite.
 
 Below you can find an example for testing a PennyLane template with Jax:
 
