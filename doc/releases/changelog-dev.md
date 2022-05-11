@@ -4,6 +4,33 @@
 
 <h3>New features since last release</h3>
 
+* Boolean mask indexing of the parameter-shift Hessian
+  [(#2538)](https://github.com/PennyLaneAI/pennylane/pull/2538)
+
+  The `argnum` keyword argument for `param_shift_hessian` 
+  is now allowed to be a twodimensional Boolean `array_like`.
+  Only the indicated entries of the Hessian will then be computed.
+  A particularly useful example is the computation of the diagonal
+  of the Hessian:
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+  with qml.tape.QuantumTape() as tape:
+      qml.RX(0.2, wires=0)
+      qml.RY(-0.9, wires=0)
+      qml.RX(1.1, wires=0)
+      qml.expval(qml.PauliZ(0))
+
+  argnum = qml.math.eye(3, dtype=bool)
+  ```
+  ```pycon
+  >>> tapes, fn = qml.gradients.param_shift_hessian(tape, argnum=argnum)
+  >>> fn(qml.execute(tapes, dev, None))
+  array([[[-0.09928388,  0.        ,  0.        ],
+        [ 0.        , -0.27633945,  0.        ],
+        [ 0.        ,  0.        , -0.09928388]]])
+  ```
+
 * Speed up measuring of commuting Pauli operators
   [(#2425)](https://github.com/PennyLaneAI/pennylane/pull/2425)
 
