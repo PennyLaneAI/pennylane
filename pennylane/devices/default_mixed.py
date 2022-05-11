@@ -172,6 +172,7 @@ class DefaultMixed(QubitDevice):
         # Trace first subsystem by applying kraus operators of the partial trace
         tr_op = self._cast(np.eye(2), dtype=self.C_DTYPE)
         tr_op = self._reshape(tr_op, (2, 1, 2))
+        print(tr_op)
 
         self._apply_channel(tr_op, Wires(traced_wires[0]))
 
@@ -244,6 +245,9 @@ class DefaultMixed(QubitDevice):
 
         # Add the possibility to give a (1,2) shape Kraus operator
         elif (kraus[0].shape == (1, 2)) and (num_ch_wires == 1):
+            print("k", kraus)
+            print("fin")
+            print(len(kraus))
             kraus_shape = [len(kraus)] + list(kraus[0].shape)
             kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
             kraus_dagger_shape = [len(kraus)] + list(kraus[0].shape)[::-1]
