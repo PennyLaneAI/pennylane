@@ -97,9 +97,8 @@ Adjoint differentiation
 
 PennyLane implements the adjoint differentiation method from
 `2009.02823 <https://arxiv.org/pdf/2009.02823.pdf>`__, which only discusses
-the gradient of expectation of observables. In other words, the return value
-of the function wrapped in ``qml.qnode`` must be an object created
-from :func:`~.pennylane.expval`.
+the gradient of expectation of observables. The implementation is specific to the paper, hence the return statement
+of the quantum function wrapped in ``qml.qnode`` can only contain :func:`~.pennylane.expval` as a measurement.
 
 In particular, the following code works as expected:
 
