@@ -62,19 +62,18 @@ class TestInitialization:
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
 
-        base = qml.StronglyEntanglingLayers(params, wires=[0,1])
+        base = qml.StronglyEntanglingLayers(params, wires=[0, 1])
         op = Adjoint(base)
 
         assert op.base is base
         assert op.hyperparameters["base"] is base
-        assert op.name == 'Adjoint(StronglyEntanglingLayers)'
-        
+        assert op.name == "Adjoint(StronglyEntanglingLayers)"
+
         assert op.num_params == 1
         assert qml.math.allclose(params, op.parameters[0])
         assert qml.math.allclose(params, op.data[0])
 
-        assert op.wires == qml.wires.Wires((0,1))
-
+        assert op.wires == qml.wires.Wires((0, 1))
 
     def test_hamiltonian_base(self):
         """Test adjoint initialization for a hamiltonian."""
@@ -165,8 +164,8 @@ class TestMiscMethods:
         assert isinstance(diag_gate, qml.RY)
         assert qml.math.allclose(diag_gate.data[0], -np.pi / 4)
 
-class TestOperationSpecificMethProp:
 
+class TestOperationSpecificMethProp:
     def test_single_qubit_rot_angles(self):
 
         param = 1.234
@@ -179,8 +178,15 @@ class TestOperationSpecificMethProp:
         for angle1, angle2 in zip(angles, base_angles):
             assert angle1 == -angle2
 
-    @pytest.mark.parametrize("base, basis", ((qml.RX(1.234, wires=0), "X"),
-    (qml.PauliY("a"), "Y"), (qml.PhaseShift(4.56, wires="b"), "Z"), (qml.SX(-1), "X")))
+    @pytest.mark.parametrize(
+        "base, basis",
+        (
+            (qml.RX(1.234, wires=0), "X"),
+            (qml.PauliY("a"), "Y"),
+            (qml.PhaseShift(4.56, wires="b"), "Z"),
+            (qml.SX(-1), "X"),
+        ),
+    )
     def test_basis_property(self, base, basis):
         op = Adjoint(base)
         assert op.basis == basis
@@ -256,7 +262,7 @@ class TestMatrix:
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
 
-        base = qml.StronglyEntanglingLayers(params, wires=[0,1])
+        base = qml.StronglyEntanglingLayers(params, wires=[0, 1])
 
         with pytest.raises(qml.operation.MatrixUndefinedError):
             Adjoint(base).matrix()
@@ -280,7 +286,7 @@ class TestEigvals:
         base = qml.SX(0)
         base_eigvals = base.eigvals()
         adj_eigvals = Adjoint(base).eigvals()
-        
+
         assert qml.math.allclose(qml.math.conj(base_eigvals), adj_eigvals)
 
     def test_no_matrix_defined_eigvals(self):

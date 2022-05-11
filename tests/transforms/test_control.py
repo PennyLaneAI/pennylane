@@ -74,12 +74,8 @@ def test_adjoint_of_control():
         qml.CRY(-0.123, wires=[5, 3]),
         qml.CRX(-0.789, wires=[5, 2]),
     ]
-    for tape in [tape1, tape2]:
-        assert len(tape.operations) == 1
-        ctrl_op = tape.operations[0]
-        assert isinstance(ctrl_op, ControlledOperation)
-        expanded = ctrl_op.expand()
-        assert_equal_operations(expanded.operations, expected)
+    for tape in [tape1.expand(depth=2), tape2.expand(depth=1)]:
+        assert_equal_operations(tape.circuit, expected)
 
 
 class TestAdjointOutsideQueuing:

@@ -14,7 +14,7 @@
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 # pylint: disable=too-many-branches
 from pennylane import apply
-from pennylane.arithmetic import Adjoint
+from pennylane.ops.arithmetic import Adjoint
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
 
@@ -28,13 +28,17 @@ from .optimization_utils import find_next_gate
 
 def _ops_equal(op1, op2):
     """Checks if two operators are equal up to class, data, hyperparameters, and wires"""
-    return (op1.__class__ is op2.__class__ and (op1.data == op2.data) and (
-        op1.hyperparameters == op2.hyperparameters) and (op1.wires == op2.wires)
+    return (
+        op1.__class__ is op2.__class__
+        and (op1.data == op2.data)
+        and (op1.hyperparameters == op2.hyperparameters)
+        and (op1.wires == op2.wires)
     )
+
 
 def _are_inverses(op1, op2):
     """Checks if two operators are inverses of each other
-    
+
     Args:
         op1 (~.Operator)
         op2 (~.Operator)
@@ -61,6 +65,7 @@ def _are_inverses(op1, op2):
         return True
 
     return False
+
 
 @qfunc_transform
 def cancel_inverses(tape):

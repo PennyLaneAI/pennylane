@@ -165,7 +165,9 @@ def _create_commute_function():
     for op in no_commutation:
         commutation_map[op] = {}
 
-    commutation_map["Identity"] = pauliz_group.union(swap_group, paulix_group, pauliy_group, identity_only)
+    commutation_map["Identity"] = pauliz_group.union(
+        swap_group, paulix_group, pauliy_group, identity_only
+    )
 
     def commutes_inner(op_name1, op_name2):
         """Determine whether or not two operations commute.
@@ -184,6 +186,7 @@ def _create_commute_function():
             return op_name1 in commutation_map[op_name2]
         except KeyError:
             return False
+
     return commutes_inner
 
 

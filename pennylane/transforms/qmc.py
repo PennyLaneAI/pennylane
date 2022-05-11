@@ -17,7 +17,7 @@ Contains the quantum_monte_carlo transform.
 from functools import wraps
 from pennylane import PauliX, Hadamard, MultiControlledX, CZ
 from pennylane.wires import Wires
-from pennylane.arithmetic import adjoint
+from pennylane.ops.arithmetic import adjoint
 from pennylane.templates import QFT
 
 

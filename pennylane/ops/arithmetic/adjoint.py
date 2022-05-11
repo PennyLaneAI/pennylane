@@ -63,8 +63,13 @@ class Adjoint(Operator):
     def __init__(self, base=None, do_queue=True, id=None):
         self.base = base
         self.hyperparameters["base"] = base
-        super().__init__(*base.parameters, wires=base.wires, do_queue=do_queue, id=id)
+        self._id = id
+        self.queue_idx = None
+
         self._name = f"Adjoint({self.base.name})"
+
+        if do_queue:
+            self.queue()
 
     @property
     def data(self):
@@ -74,6 +79,18 @@ class Adjoint(Operator):
     def data(self, new_data):
         """Allows us to set base operation parameters."""
         self.base.data = new_data
+
+    @property
+    def parameters(self):
+        return self.base.parameters
+
+    @property
+    def num_params(self):
+        return self.base.num_params
+
+    @property
+    def wires(self):
+        return self.base.wires
 
     def queue(self, context=QueuingContext):
         try:

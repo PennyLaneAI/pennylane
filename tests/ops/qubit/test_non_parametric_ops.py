@@ -535,9 +535,9 @@ class TestBarrier:
 
     def test_barrier_adjoint(self):
         """Test if adjoint of a Barrier is decomposes correctly."""
-       
-        base = qml.Barrier(wires=(0,1))
-        adj = qml.ops.Adjoint(base)
+
+        base = qml.Barrier(wires=(0, 1))
+        adj = qml.ops.arithmetic.Adjoint(base)
 
         assert adj.decomposition()[0].name == "Barrier"
 
@@ -1034,13 +1034,13 @@ involution_ops = [  # ops who are their own inverses
     qml.PauliX(0),
     qml.PauliY(0),
     qml.PauliZ(0),
-    qml.CNOT((0,1)),
-    qml.CZ((0,1)),
-    qml.CY((0,1)),
-    qml.SWAP((0,1)),
-    qml.CSWAP((0,1,2)),
-    qml.Toffoli((0,1,2)),
-    qml.MultiControlledX(wires=(0,1,2,3)),
+    qml.CNOT((0, 1)),
+    qml.CZ((0, 1)),
+    qml.CY((0, 1)),
+    qml.SWAP((0, 1)),
+    qml.CSWAP((0, 1, 2)),
+    qml.Toffoli((0, 1, 2)),
+    qml.MultiControlledX(wires=(0, 1, 2, 3)),
     qml.Barrier(0),
     qml.WireCut(0),
 ]
