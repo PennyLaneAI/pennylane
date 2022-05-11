@@ -175,7 +175,7 @@ State gradients
 In general, the state of a quantum circuit will be complex-valued, so differentiating
 the state directly is not possible without the use of
 `complex analysis <https://en.wikipedia.org/wiki/Holomorphic_function>`__. Though complex
-gradients can be implemented for most "simple" functions, this is not done in Autograd
+gradients can be implemented for most "simple" functions, this is not supported in Autograd
 but is done in the other three interfaces.
 
 Instead, in Autograd, real scalar-valued post-processing should be done to the output state to allow
