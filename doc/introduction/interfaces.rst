@@ -338,7 +338,7 @@ The tables below show all the currently supported functionality
    :ref:`Adjoint differentation <Adjoint differentation>` for details.
 8. Supported.
 9. Not supported. The discretization of the output caused by wave function collapse is
-   not differentiable. Forward pass is still supported. See :ref:`here <Sample gradients>` for details.
+   not differentiable. The forward pass is still supported. See :ref:`Sample gradients <Sample gradients>` for details.
 10. Not supported. "We just don't have the theory yet."
 11. Not supported, but due to a bug.
 12. Supported, but only when a ``torch.Tensor`` object is passed to ``qml.Hermitian``. This is a bug and should be fixed to make the ``"torch"``
