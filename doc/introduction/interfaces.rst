@@ -330,7 +330,7 @@ The tables below show all the currently supported functionality
 
    If the circuit returns a state, then the circuit itself is not differentiable
    directly. However, any real scalar-valued post-processing done to the output of the
-   circuit will be differentiable. See :ref:`here <State gradients>` for details.
+   circuit will be differentiable. See :ref:`State gradients <State gradients>` for details.
 5. Supported, but only when ``shots=None``. See :ref:`here <Analytic backpropagation>` for details.
 6. Not supported. The adjoint differentiation algorithm only applies to expectation values of observables. See
    :ref:`here <Adjoint differentation>` for details.
