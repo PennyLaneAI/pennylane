@@ -18,11 +18,11 @@ These requirements can be installed via ``pip``:
 Creating a test
 ~~~~~~~~~~~~~~~
 Every test has to be added to the PennyLane `test folder <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__.
-The test folder is following PennyLane structure, and therefore a test needs to be added to its corresponding folder.
+The test folder follows the structure of the PennyLane module folder. Therefore, tests needs to be added to the corresponding subfolder of the functionality they are testing.
 
-Most tests do not require any interface (Autograd, Torch, TensorFlow and Jax). Tests without interface will be marked
-as ``core`` tests automatically by pytest ``conftest.py``. For general tests, you can follow this example structure,
-where it is only required to follow pytest guidelines:
+Most tests typcally will not require the use of an interface (such as Autograd, Torch, TensorFlow and Jax). Tests without an interface will be marked
+as a ``core`` test automatically by pytest (the functionality for this is located in ``conftest.py``). For such general tests, you can follow the structure of the example below,
+where it is recommended that you follow general pytest guidelines:
 
 .. code-block:: python
 
@@ -42,18 +42,17 @@ where it is only required to follow pytest guidelines:
 
 This test will be marked automatically as a ``core`` test.
 
-On the other hand, some tests require specific interfaces and need to marked in order to be run on our Github test suite.
-Tests involving interfaces have to be marked with its respective marker: ``@pytest.mark.autograd``, ``@pytest.mark.torch``,
-``@pytest.mark.tf`` and ``@pytest.mark.jax``. If tests involved multiple interfaces, one should add the marker
-``@pytest.mark.all_interfaces``. It is now prohibited to use ``importorskip`` inside tests with interfaces. Also tests
-involving interfaces must be written separately and it should be avoided to use fixtures. The necessary packages related
-to interfaces have to be imported in the tests directly. All tests with marked interfaces are skipped if the necessary
+On the other hand, some tests require specific interfaces and need to be marked in order to be run on our Github test suite.
+Tests involving interfaces have to be marked with their respective marker: ``@pytest.mark.autograd``, ``@pytest.mark.torch``,
+``@pytest.mark.tf`` and ``@pytest.mark.jax``. If tests involve multiple interfaces, one should add the marker
+``@pytest.mark.all_interfaces``. Additionally, it is now prohibited to use ``importorskip`` to import interface packages inside of a test. Interface tests
+must be written separately for each interface and without the use of fixtures to span multiple interfaces. Instead, the package related
+to interfaces can directly be imported in a marked test. Tests with interface markers are automatically skipped if the necessary
 interfaces are not installed.
 
-Tests that are not marked and also related to specific interfaces will be skipped in the Github test suite and therefore
-it will not be run and the results will not be added to the coverage (inducing a coverage fail).
+Tests that are not marked but do import an interface will lead to a failure in the Github test suite.
 
-You can find an example for testing a PennyLane template with Jax:
+Below you can find an example for testing a PennyLane template with Jax:
 
 .. code-block:: python
 
@@ -85,7 +84,7 @@ You can find an example for testing a PennyLane template with Jax:
         res2 = circuit2(features)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-You can also find an example of a test involving multiple interfaces:
+Another example of a test involving multiple interfaces is shown below:
 
 .. code-block:: python
 
@@ -123,7 +122,7 @@ The `tests <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__ folde
     python -m pytest tests
 
 Using ``python -m`` ensures that the tests run with the correct Python version if multiple versions are on the system.
-As the entire test suite takes some time, locally running only relevant files speeds the debugging cycle. For example,
+As the entire test suite takes some time, locally running only relevant files speeds up the debugging cycle. For example,
 if a developer was adding a new non-parametric operation, they could run:
 
 .. code-block:: bash
@@ -137,8 +136,8 @@ if Jax is installed and a developer wants to run only Jax related tests, they co
 
     python -m pytest tests -m "jax"
 
-They exist markers for interfaces (``autograd``, ``torch``, ``tf``, ``jax``), for multiple interfaces (``all_interfaces``) and
-also for certain folders (``qchem`` and ``qcut``).
+There exists markers for interfaces (``autograd``, ``torch``, ``tf``, ``jax``), for multiple interfaces (``all_interfaces``) and
+also for certain PennyLane submodules (``qchem`` and ``qcut``).
 
 For running ``qchem`` tests, one can run the following:
 
@@ -152,7 +151,7 @@ The slowest tests are marked with ``slow`` and can be deselected by:
 
     python -m pytest -m "not slow" tests
 
-The ``pytest -m`` option support boolean combination of marker. It is therefore possible to run both Jax and TensorFlow
+The ``pytest -m`` option supports Boolean combinations of markers. It is therefore possible to run both Jax and TensorFlow
 tests by writing:
 
 .. code-block:: bash
