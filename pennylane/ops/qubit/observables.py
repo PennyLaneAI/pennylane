@@ -16,7 +16,7 @@ This submodule contains the discrete-variable quantum observables,
 excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 """
 
-from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 
 import numpy as np
 
@@ -191,7 +191,7 @@ class SparseHamiltonian(Observable):
     * Gradient recipe: None
 
     Args:
-        H (coo_matrix): a sparse matrix in SciPy coordinate list (COO) format with
+        H (csr_matrix): a sparse matrix in SciPy Compressed Sparse Row (CSR) format with
             dimension :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
         wires (Sequence[int] or int): the wire(s) the operation acts on
         do_queue (bool): Indicates whether the operator should be
@@ -205,8 +205,8 @@ class SparseHamiltonian(Observable):
     grad_method = None
 
     def __init__(self, H, wires=None, do_queue=True, id=None):
-        if not isinstance(H, coo_matrix):
-            raise TypeError("Observable must be a scipy sparse coo_matrix.")
+        if not isinstance(H, csr_matrix):
+            raise TypeError("Observable must be a scipy sparse csr_matrix.")
         super().__init__(H, wires=wires, do_queue=do_queue, id=id)
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -226,16 +226,16 @@ class SparseHamiltonian(Observable):
         :meth:`~.SparseHamiltonian.compute_sparse_matrix`.
 
         Args:
-            H (scipy.sparse.coo_matrix): sparse matrix used to create the operator
+            H (scipy.sparse.csr_matrix): sparse matrix used to create the operator
 
         Returns:
             array: dense matrix
 
         **Example**
 
-        >>> from scipy.sparse import coo_matrix
+        >>> from scipy.sparse import csr_matrix
         >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
-        >>> H = coo_matrix(H)
+        >>> H = csr_matrix(H)
         >>> res = qml.SparseHamiltonian.compute_matrix(H)
         >>> res
         [[ 6.+0.j  1.-2.j]
@@ -258,16 +258,16 @@ class SparseHamiltonian(Observable):
         :meth:`~.SparseHamiltonian.compute_matrix`.
 
         Args:
-            H (scipy.sparse.coo_matrix): sparse matrix used to create the operator
+            H (scipy.sparse.csr_matrix): sparse matrix used to create the operator
 
         Returns:
-            scipy.sparse.coo_matrix: sparse matrix
+            scipy.sparse.csr_matrix: sparse matrix
 
         **Example**
 
-        >>> from scipy.sparse import coo_matrix
+        >>> from scipy.sparse import csr_matrix
         >>> H = np.array([[6+0j, 1-2j],[1+2j, -1]])
-        >>> H = coo_matrix(H)
+        >>> H = csr_matrix(H)
         >>> res = qml.SparseHamiltonian.compute_sparse_matrix(H)
         >>> res
         (0, 0)	(6+0j)
@@ -275,7 +275,7 @@ class SparseHamiltonian(Observable):
         (1, 0)	(1+2j)
         (1, 1)	(-1+0j)
         >>> type(res)
-        <class 'scipy.sparse.coo_matrix'>
+        <class 'scipy.sparse.csr_matrix'>
         """
         return H
 
