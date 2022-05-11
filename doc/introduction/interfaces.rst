@@ -335,7 +335,7 @@ The tables below show all the currently supported functionality
 6. Not supported. The adjoint differentiation algorithm only applies to expectation values of observables. See
    :ref:`Adjoint differentation <Adjoint differentation>` for details.
 7. Supported. Raises warning when ``shots>0`` since the gradient is always computed analytically. See
-   :ref:`here <Adjoint differentation>` for details.
+   :ref:`Adjoint differentation <Adjoint differentation>` for details.
 8. Supported.
 9. Not supported. The discretization of the output caused by wave function collapse is
    not differentiable. Forward pass is still supported. See :ref:`here <Sample gradients>` for details.
