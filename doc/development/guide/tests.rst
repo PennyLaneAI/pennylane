@@ -22,7 +22,7 @@ The test folder follows the structure of the PennyLane module folder. Therefore,
 
 Most tests typcally will not require the use of an interface or autodifferentiation framework (such as Autograd, Torch, TensorFlow and Jax). Tests without an interface will be marked
 as a ``core`` test automatically by pytest (the functionality for this is located in ``conftest.py``). For such general tests, you can follow the structure of the example below,
-where it is recommended that you follow general pytest guidelines:
+where it is recommended that you follow general `pytest guidelines <https://docs.pytest.org/>`__:
 
 .. code-block:: python
 
@@ -53,11 +53,14 @@ Tests involving interfaces have to be marked with their respective marker:
 
 - ``@pytest.mark.jax``.
 
-If tests involve multiple interfaces, one should add the marker
-``@pytest.mark.all_interfaces``. Additionally, it is now prohibited to use ``importorskip`` to import interface packages inside of a test. Interface tests
-must be written separately for each interface and without the use of fixtures to span multiple interfaces. Instead, the package related
-to interfaces can directly be imported in a marked test. Tests with interface markers are automatically skipped if the necessary
-interfaces are not installed.
+If tests involve multiple interfaces, one should add the marker:
+
+- ``@pytest.mark.all_interfaces``.
+
+.. warning::
+    Please do not use ``pytest.importorskip`` inside your tests. Instead, simply import the autodifferentiation package
+    as needed inside your marked test. The mark will automatically ensure that the test is skipped if the
+    autodifferentiation framework is not installed.
 
 Tests that are not marked but do import an interface will lead to a failure in the GitHub test suite.
 
