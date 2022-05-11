@@ -146,7 +146,7 @@ Traceback (most recent call last):
 pennylane.QuantumFunctionError: Adjoint differentiation method does not support measurement state
 
 Furthermore, the adjoint differentiation algorithm is analytic by nature. If the user creates a device
-with ``shots>0``, a warning is raised and the analytic gradient is used:
+with ``shots>0``, a warning is raised and gradients are computed analytically:
 
 .. code-block:: python
 
