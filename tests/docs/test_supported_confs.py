@@ -51,7 +51,16 @@ grad_types = [Expectation, "Hermitian", "Projector", Variance]
 
 
 def get_qnode(interface, diff_method, return_type, shots):
-    """Return a QNode with the given attributes"""
+    """Return a QNode with the given attributes.
+    
+    This function includes a general QNode definition that is used to create a
+    specific QNode using the provided parameters:
+    
+    * input interface,
+    * differentiation method,
+    * return type and
+    * the number of shots for the device.
+    """
     dev = qml.device("default.qubit", wires=1, shots=shots)
 
     @qml.qnode(dev, interface=interface, diff_method=diff_method)
