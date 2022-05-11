@@ -31,7 +31,7 @@ from pennylane.transforms.op_transforms import OperationTransformError
 
 
 class CustomOp(qml.operation.Operation):
-    """Base custom operation that defines the adjoint"""
+    """Base custom operation."""
 
     num_params = 1
     num_wires = 1
@@ -222,13 +222,8 @@ class TestPrefactorReturn:
         assert gen.name == "SparseHamiltonian"
         assert np.all(gen.parameters[0].toarray() == SparseOp.H.toarray())
 
-    def test_adjoint(self):
-        """Test an adjointed generator is correct"""
-
-        gen, prefactor = qml.generator(qml.adjoint(ObservableOp), format="prefactor")(0.5, wires=0)
-        assert prefactor == 0.6
-        assert gen.name == "PauliX"
-
+    def test_inverse(self):
+        """Test an inverted generator is correct"""
         gen, prefactor = qml.generator(ObservableOp(0.5, wires=0).inv(), format="prefactor")
         assert prefactor == 0.6
         assert gen.name == "PauliX"
@@ -270,36 +265,21 @@ class TestObservableReturn:
         assert gen.name == "SparseHamiltonian"
         assert np.all(gen.parameters[0].toarray() == SparseOp.H.toarray())
 
-    def test_hermitian_adjoint(self):
-        """Test a Hermitian adjointed generator is correct"""
-        gen = qml.generator(qml.adjoint(HermitianOp), format="observable")(0.5, wires=0)
-        assert gen.name == "Hamiltonian"
-        assert gen.terms()[0][0] == -1.0
-        assert gen.terms()[1][0].name == "Hermitian"
-        assert np.all(gen.terms()[1][0].parameters[0] == HermitianOp.H)
-
+    def test_hermitian_inverse(self):
+        """Test a Hermitian inverted generator is correct"""
         gen = qml.generator(HermitianOp(0.5, wires=0).inv(), format="observable")
         assert gen.name == "Hermitian"
         assert np.all(gen.parameters[0] == -HermitianOp.H)
 
-    def test_sparse_hamiltonian_adjoint(self):
-        """Test a SparseHamiltonian adjointed generator is correct"""
-        gen = qml.generator(qml.adjoint(SparseOp), format="observable")(0.5, wires=0)
-        assert gen.name == "SparseHamiltonian"
-        assert np.all(gen.parameters[0].toarray() == -SparseOp.H.toarray())
-
+    def test_sparse_hamiltonian_inverse(self):
+        """Test a SparseHamiltonian inverted generator is correct"""
         gen = qml.generator(SparseOp(0.5, wires=0).inv(), format="observable")
         assert gen.name == "SparseHamiltonian"
         assert np.all(gen.parameters[0].toarray() == -SparseOp.H.toarray())
 
     def test_hamiltonian_inverse(self):
         """Test a Hamiltonian inverted generator is correct"""
-        gen = qml.generator(qml.adjoint(HamiltonianOp), format="observable")(0.5, wires=[0, 1])
-        assert gen.name == "Hamiltonian"
-
-        res = qml.matrix(gen)
         expected = -qml.matrix(HamiltonianOp(0.23, wires=[0, 1]).generator())
-        assert np.allclose(res, expected)
 
         gen = qml.generator(HamiltonianOp(0.5, wires=[0, 1]).inv(), format="observable")
         assert gen.name == "Hamiltonian"
@@ -356,11 +336,7 @@ class TestHamiltonianReturn:
 
     def test_hermitian_inverse(self):
         """Test a Hermitian inverted generator is correct"""
-        gen = qml.generator(qml.adjoint(HermitianOp), format="hamiltonian")(0.5, wires=0)
-        assert gen.name == "Hamiltonian"
-
         expected = qml.Hamiltonian(*qml.utils.decompose_hamiltonian(HermitianOp.H))
-        assert gen.compare(-1.0 * expected)
 
         gen = qml.generator(HermitianOp(0.5, wires=0).inv(), format="hamiltonian")
         assert gen.name == "Hamiltonian"
@@ -368,11 +344,7 @@ class TestHamiltonianReturn:
 
     def test_sparse_hamiltonian_inverse(self):
         """Test a SparseHamiltonian inverted generator is correct"""
-        gen = qml.generator(qml.adjoint(SparseOp), format="hamiltonian")(0.5, wires=0)
-        assert gen.name == "Hamiltonian"
-
         expected = qml.Hamiltonian(*qml.utils.decompose_hamiltonian(SparseOp.H.toarray()))
-        assert gen.compare(-1.0 * expected)
 
         gen = qml.generator(SparseOp(0.5, wires=0).inv(), format="hamiltonian")
         assert gen.name == "Hamiltonian"
@@ -380,12 +352,7 @@ class TestHamiltonianReturn:
 
     def test_hamiltonian_inverse(self):
         """Test a Hamiltonian inverted generator is correct"""
-        gen = qml.generator(qml.adjoint(HamiltonianOp), format="hamiltonian")(0.5, wires=[0, 1])
-        assert gen.name == "Hamiltonian"
-
-        res = qml.matrix(gen)
         expected = -qml.matrix(HamiltonianOp(0.23, wires=[0, 1]).generator())
-        assert np.allclose(res, expected)
 
         gen = qml.generator(HamiltonianOp(0.5, wires=[0, 1]).inv(), format="hamiltonian")
         assert gen.name == "Hamiltonian"

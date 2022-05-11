@@ -175,7 +175,7 @@ class TestOperationSpecificMethProp:
         base_angles = base.single_qubit_rot_angles()
         angles = op.single_qubit_rot_angles()
 
-        for angle1, angle2 in zip(angles, base_angles):
+        for angle1, angle2 in zip(angles, reversed(base_angles)):
             assert angle1 == -angle2
 
     @pytest.mark.parametrize(
@@ -195,6 +195,37 @@ class TestOperationSpecificMethProp:
         """Test the control_wires of an adjoint are the same as the base op."""
         op = Adjoint(qml.CNOT(wires=("a", "b")))
         assert op.control_wires == qml.wires.Wires("a")
+
+
+class TestDiffInfo:
+    def test_grad_method_None(self):
+        """Test grad_method copies base grad_method when it is None."""
+        base = qml.PauliX(0)
+        op = Adjoint(base)
+
+        assert op.grad_method is None
+
+    @pytest.mark.parametrize("op", (qml.Hermitian(np.eye(2), wires=0), qml.RX(1.2, wires=0)))
+    def test_grad_method_not_None(self, op):
+        assert Adjoint(op).grad_method == op.grad_method
+
+    @pytest.mark.parametrize(
+        "base", (qml.PauliX(0), qml.RX(1.234, wires=0), qml.Rotation(1.234, wires=0))
+    )
+    def test_grad_recipe(self, base):
+        assert Adjoint(base).grad_recipe == base.grad_recipe
+
+    def test_get_parameter_shift(self):
+        """Test `get_parameter_shift` for an operation where it still doesn't raise warnings and errors."""
+        base = qml.Rotation(1.234, wires=0)
+        assert Adjoint(base).get_parameter_shift(0) == base.get_parameter_shift(0)
+
+    @pytest.mark.parametrize(
+        "base",
+        (qml.RX(1.23, wires=0), qml.Rot(1.23, 2.345, 3.456, wires=0), qml.CRX(1.234, wires=(0, 1))),
+    )
+    def test_parameter_frequencies(self, base):
+        assert Adjoint(base).parameter_frequencies == base.parameter_frequencies
 
 
 class TestQueueing:
@@ -359,15 +390,15 @@ class TestIntegration:
         @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circuit(x):
             Adjoint(qml.RX(x, wires=0))
-            return qml.expval(qml.PauliZ(0))
+            return qml.expval(qml.PauliY(0))
 
         x = np.array(1.2345, requires_grad=True)
 
         res = circuit(x)
-        expected = np.cos(x)
-        assert res == expected
+        expected = np.sin(x)
+        assert qml.math.allclose(res, expected)
 
         grad = qml.grad(circuit)(x)
-        expected_grad = -np.sin(x)
+        expected_grad = np.cos(x)
 
         assert qml.math.allclose(grad, expected_grad)

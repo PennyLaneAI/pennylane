@@ -95,7 +95,7 @@ class TestDifferentCallableTypes:
         assert out is tape[0]
         assert out.__class__ is Adjoint
         assert out.base.__class__ is Adjoint
-        assert out.base.base is qml.RX
+        assert out.base.base.__class__ is qml.RX
         assert out.data == [x]
         assert out.wires == qml.wires.Wires("b")
 

@@ -49,6 +49,7 @@ class Adjoint(Operator):
     num_wires = AnyWires
 
     def __copy__(self):
+        # this method needs to be overwritten becuase the base must be copied too.
         cls = self.__class__
         copied_op = cls.__new__(cls)
         copied_base = self.base.__copy__()
@@ -73,6 +74,7 @@ class Adjoint(Operator):
 
     @property
     def data(self):
+        """Trainable parameters that the operator depends on."""
         return self.base.data
 
     @data.setter
@@ -123,9 +125,9 @@ class Adjoint(Operator):
         base_matrix = self.base.sparse_matrix(wires=wires)
         return transpose(conj(base_matrix))
 
-    def get_eigvals(self):
+    def eigvals(self):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``get_eigvals``
-        return [conj(x) for x in self.base.get_eigvals()]
+        return [conj(x) for x in self.base.eigvals()]
 
     @staticmethod
     def compute_diagonalizing_gates(*params, wires, base=None):
@@ -149,15 +151,12 @@ class Adjoint(Operator):
         """
         return self.base._queue_category
 
+    def generator(self):
+        if isinstance(self.base, Operation):  # stand in for being unitary and inverse=adjoint
+            return -1.0 * self.base.generator()
+        return super().generator()
+
     ## Operation specific properties ##########################################
-
-    @property
-    def grad_method(self):
-        return self.base.grad_method
-
-    @property
-    def grad_recipe(self):
-        return self.base.grad_recipe
 
     @property
     def basis(self):
@@ -171,15 +170,20 @@ class Adjoint(Operator):
         omega, theta, phi = self.base.single_qubit_rot_angles()
         return [-phi, -theta, -omega]
 
-    # get_parameter_shift ?
+    @property
+    def grad_method(self):
+        return self.base.grad_method
+
+    @property
+    def grad_recipe(self):
+        return self.base.grad_recipe
+
+    def get_parameter_shift(self, idx):
+        return self.base.get_parameter_shift(idx)
+
     @property
     def parameter_frequencies(self):
         return self.base.parameter_frequencies
-
-    def generator(self):
-        if isinstance(self.base, Operation):  # stand in for being unitary and inverse=adjoint
-            return -1.0 * self.base.generator()
-        return super().generator()
 
 
 def adjoint(fn):
