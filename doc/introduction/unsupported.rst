@@ -13,7 +13,7 @@ In order to use ``diff_method="device"`` for a QNode, the device passed into
 the constructor of a QNode must have its ``"provides_jacobian"`` capability set to ``True``
 and must contain a method ``jacobian(circuits, **kwargs)`` that returns the gradients for
 each quantum circuit. This is not implemented for the ``default.qubit`` device because
-there is no sensible default way to compute them.
+the device doesn't provide such a `jacobian` method (instead allows backpropagation to work).
 
 See the :ref:`custom plugins <plugin_overview>` page for more detail.
 
