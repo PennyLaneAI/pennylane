@@ -6,7 +6,7 @@ Unsupported configurations
 
 .. _Native gradient computation:
 
-Native differentiation
+Device jacobian
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In order to use ``diff_method="device"`` for a QNode, the device passed into
