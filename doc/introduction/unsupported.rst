@@ -119,7 +119,7 @@ In particular, the following code works as expected:
 >>> print_grad()
 [-0.09983342]
 
-But the following code does not:
+But the following code raises an error:
 
 .. code-block:: python
 
