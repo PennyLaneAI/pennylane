@@ -1,7 +1,7 @@
 .. _unsupported_confs:
 
-Unsupported configurations
-==========================
+Unsupported gradient configurations
+===================================
 
 
 .. _Native gradient computation:
