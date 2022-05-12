@@ -136,6 +136,13 @@ class ExpvalCost:
         optimize=False,
         **kwargs,
     ):
+        warnings.warn(
+            "qml.ExpvalCost() will be deprecated, use qml.expval() instead. "
+            "For optimizing Hamiltonian measurements with measuring commuting "
+            "terms in parallel, use the grouping_type keyword in qml.Hamiltonian.",
+            UserWarning,
+        )
+
         if kwargs.get("measure", "expval") != "expval":
             raise ValueError("ExpvalCost can only be used to construct sums of expectation values.")
 
