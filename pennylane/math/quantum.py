@@ -185,9 +185,11 @@ def density_matrix_from_matrix(density_matrix, wires):
 
 def partial_trace(density_matrix, wires):
     # Dimension and reshape
-    rho_dim = density_matrix.shape[0]
-    num_wires = int(rho_dim / 2)
-    np.reshape(density_matrix, [2] * 2 * num_wires)
+    shape = density_matrix.shape[0]
+    num_wires = int(np.log2(shape))
+    rho_dim = 2*num_wires
+
+    density_matrix = np.reshape(density_matrix, [2] * 2 * num_wires)
 
     # Kraus operator for partial tracee
     kraus = qml.math.cast(np.eye(2), dtype="complex128")
@@ -200,7 +202,7 @@ def partial_trace(density_matrix, wires):
         state_indices = ABC[:rho_dim]
 
         # row indices of the quantum state affected by this operation
-        row_wires_list = target_wire
+        row_wires_list = [target_wire]
         row_indices = "".join(ABC_ARRAY[row_wires_list].tolist())
 
         # column indices are shifted by the number of wires
