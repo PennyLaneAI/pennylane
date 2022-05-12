@@ -399,7 +399,7 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             constant = None
 
             # Check if the transformed observable corresponds to a constant term.
-            if len(A.nonzero()) == 1:
+            if len(A.nonzero()[0]) == 1:
                 if A.ndim == 2 and A[0, 0] != 0:
                     constant = A[0, 0]
 
@@ -413,10 +413,10 @@ def second_order_param_shift(tape, dev_wires, argnum=None, shifts=None, gradient
             )
 
         if not any(i is None for i in constants):
-            # Check if *all* transformed observables corresponds to a constant term.
-            # term. If this is the case for all transformed observables on the tape,
-            # then <psi|A|psi> = A<psi|psi> = A,
-            # and we can avoid the device execution.
+            # Check if *all* transformed observables corresponds to a constant
+            # term. If this is the case for all transformed observables on the
+            # tape, then <psi|A|psi> = A<psi|psi> = A, and we can avoid the
+            # device execution.
             shapes[-1] = 0
             obs_indices.append(transformed_obs_idx)
             gradient_values.append(constants)
