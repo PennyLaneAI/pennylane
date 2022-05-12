@@ -39,6 +39,9 @@
 
 <h3>Improvements</h3>
 
+* Test classes are created in qchem test modules to group the integrals and matrices unittests.
+  [(#2545)](https://github.com/PennyLaneAI/pennylane/pull/2545)
+
 * Introduced an `operations_only` argument to the `tape.get_parameters` method.
   [(#2543)](https://github.com/PennyLaneAI/pennylane/pull/2543)
 
@@ -133,5 +136,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Edward Jiang, Christina Lee,
-Chae-Yeun Park, Maria Schuld
+Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Christian Gogolin,
+Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld
