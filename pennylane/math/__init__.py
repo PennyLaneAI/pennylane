@@ -86,7 +86,7 @@ __all__ = [
     "concatenate",
     "convert_like",
     "cov_matrix",
-    "density_matrix_from_matrix"
+    "density_matrix_from_matrix",
     "diag",
     "dot",
     "frobenius_inner_product",
