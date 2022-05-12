@@ -171,7 +171,8 @@ def marginal_prob(prob, axis):
 def density_matrix_from_matrix(density_matrix, wires):
 
     # Return the full density matrix if all the wires are given
-    num_wires = 2
+    shape = density_matrix.shape[0]
+    num_wires = int(np.log2(shape))
     consecutive_wires = list(range(0, num_wires))
     if wires == consecutive_wires:
         return density_matrix
@@ -179,7 +180,6 @@ def density_matrix_from_matrix(density_matrix, wires):
     traced_wires = [x for x in consecutive_wires if x not in wires]
 
     density_matrix = partial_trace(density_matrix, traced_wires)
-
     return np.reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
 
 
@@ -187,7 +187,7 @@ def partial_trace(density_matrix, wires):
     # Dimension and reshape
     shape = density_matrix.shape[0]
     num_wires = int(np.log2(shape))
-    rho_dim = 2*num_wires
+    rho_dim = 2 * num_wires
 
     density_matrix = np.reshape(density_matrix, [2] * 2 * num_wires)
 
@@ -211,11 +211,15 @@ def partial_trace(density_matrix, wires):
 
         # indices in einsum must be replaced with new ones
         num_partial_trace_wires = 1
-        new_row_indices = ABC[rho_dim: rho_dim + num_partial_trace_wires]
-        new_col_indices = ABC[rho_dim + num_partial_trace_wires: rho_dim + 2 * num_partial_trace_wires]
+        new_row_indices = ABC[rho_dim : rho_dim + num_partial_trace_wires]
+        new_col_indices = ABC[
+            rho_dim + num_partial_trace_wires : rho_dim + 2 * num_partial_trace_wires
+        ]
 
         # index for summation over Kraus operators
-        kraus_index = ABC[rho_dim + 2 * num_partial_trace_wires : rho_dim + 2 * num_partial_trace_wires + 1]
+        kraus_index = ABC[
+            rho_dim + 2 * num_partial_trace_wires : rho_dim + 2 * num_partial_trace_wires + 1
+        ]
 
         # new state indices replace row and column indices with new ones
         new_state_indices = functools.reduce(
@@ -231,7 +235,5 @@ def partial_trace(density_matrix, wires):
         )
 
         density_matrix = np.einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
-        num_wires = num_wires - 1
-        rho_dim = rho_dim - 2
 
     return density_matrix
