@@ -442,5 +442,5 @@ class Projector(Observable):
         """
         return []
 
-    def pow(self, n):
-        return [self.__copy__()] if (isinstance(n, int) and n > 0) else super().pow(n)
+    def pow(self, z):
+        return [self.__copy__()] if (isinstance(z, int) and z > 0) else super().pow(z)

@@ -322,16 +322,16 @@ class ControlledQubitUnitary(QubitUnitary):
     def control_wires(self):
         return self.hyperparameters["control_wires"]
 
-    def pow(self, n):
-        if isinstance(n, int):
+    def pow(self, z):
+        if isinstance(z, int):
             return [
                 ControlledQubitUnitary(
-                    qml.math.linalg.matrix_power(self.data[0], n),
+                    qml.math.linalg.matrix_power(self.data[0], z),
                     control_wires=self.control_wires,
                     wires=self.hyperparameters["u_wires"],
                 )
             ]
-        return super().pow(n)
+        return super().pow(z)
 
     def _controlled(self, wire):
         ctrl_wires = sorted(self.control_wires + wire)

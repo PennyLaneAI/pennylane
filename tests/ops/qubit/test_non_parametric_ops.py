@@ -1007,7 +1007,7 @@ class TestPowMethod:
     @pytest.mark.parametrize("op", period_two_ops)
     @pytest.mark.parametrize("n", (2, 6, 0, -2))
     def test_period_two_pow_even(self, op, n):
-        """Test that ops with a period of 2 raised to an even power are an empty lists."""
+        """Test that ops with a period of 2 raised to an even power are empty lists."""
         assert len(op.pow(n)) == 0
 
     @pytest.mark.parametrize("op", period_two_ops)

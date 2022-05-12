@@ -1511,9 +1511,9 @@ class SISWAP(Operation):
         ]
         return decomp_ops
 
-    def pow(self, n):
-        n_mod4 = n % 4
-        return [ISWAP(wires=self.wires)] if n_mod4 == 2 else super().pow(n_mod4)
+    def pow(self, z):
+        z_mod4 = z % 4
+        return [ISWAP(wires=self.wires)] if z_mod4 == 2 else super().pow(z_mod4)
 
     def adjoint(self):
         op = SISWAP(wires=self.wires)
@@ -1622,8 +1622,8 @@ class CSWAP(Operation):
         ]
         return decomp_ops
 
-    def pow(self, n):
-        return super().pow(n % 2)
+    def pow(self, z):
+        return super().pow(z % 2)
 
     def adjoint(self):
         return CSWAP(wires=self.wires)
@@ -1763,8 +1763,8 @@ class Toffoli(Operation):
     def adjoint(self):
         return Toffoli(wires=self.wires)
 
-    def pow(self, n):
-        return super().pow(n % 2)
+    def pow(self, z):
+        return super().pow(z % 2)
 
     @property
     def control_wires(self):
@@ -1938,8 +1938,8 @@ class MultiControlledX(Operation):
             control_values=self.hyperparameters["control_values"],
         )
 
-    def pow(self, n):
-        return super().pow(n % 2)
+    def pow(self, z):
+        return super().pow(z % 2)
 
     @staticmethod
     def compute_decomposition(wires=None, work_wires=None, control_values=None, **kwargs):
@@ -2143,7 +2143,7 @@ class Barrier(Operation):
     def adjoint(self, do_queue=True):
         return Barrier(wires=self.wires, do_queue=do_queue)
 
-    def pow(self, n):
+    def pow(self, z):
         return [self.__copy__()]
 
 
@@ -2194,5 +2194,5 @@ class WireCut(Operation):
     def adjoint(self):
         return WireCut(wires=self.wires)
 
-    def pow(self, n):
+    def pow(self, z):
         return [self.__copy__()]
