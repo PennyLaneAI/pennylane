@@ -51,6 +51,7 @@ from .multi_dispatch import (
 )
 
 from .quantum import cov_matrix, marginal_prob
+from .quantum import density_matrix_from_matrix
 
 from .utils import (
     allclose,
