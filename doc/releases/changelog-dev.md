@@ -136,5 +136,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Edward Jiang, Christina Lee,
-Chae-Yeun Park, Maria Schuld
+Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Christian Gogolin,
+Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld
