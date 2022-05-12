@@ -109,6 +109,47 @@ For example:
 More information, including various fine-tuning options, can be found in
 the :doc:`drawing module <../code/qml_drawer>`.
 
+Debugging with mid-circuit snapshots
+------------------------------------
+
+When debugging quantum circuits run on simulators, it is often useful to inspect the
+current quantum state in between gates.
+
+:class:`~pennylane.Snapshot` is an operator used like a gate, but instead of defining
+a manipulation of the quantum state it saves the internal state of a device
+at arbitrary points in the circuit.
+
+Currently supported devices include:
+
+* `default.qubit`: each snapshot saves the quantum state vector
+* `default.mixed`: each snapshot saves the density matrix
+* `default.gaussian`: each snapshot saves the covariance matrix and vector of means
+
+During normal execution, the snapshots are ignored:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev, interface=None)
+    def circuit():
+        qml.Snapshot()
+        qml.Hadamard(wires=0)
+        qml.Snapshot("very_important_state")
+        qml.CNOT(wires=[0, 1])
+        qml.Snapshot()
+        return qml.expval(qml.PauliX(0))
+
+However, when using the :func:`~pennylane.snapshots`
+transform, intermediate device states will be stored and returned alongside the
+results.
+
+>>> qml.snapshots(circuit)()
+{0: array([1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j]),
+'very_important_state': array([0.707+0.j, 0.+0.j, 0.707+0.j, 0.+0.j]),
+2: array([0.707+0.j, 0.+0.j, 0.+0.j, 0.707+0.j]),
+'execution_results': array(0.)}
+
 DAG representation
 ------------------
 
