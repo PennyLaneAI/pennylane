@@ -178,7 +178,6 @@ def density_matrix_from_matrix(density_matrix, wires):
         return density_matrix
 
     traced_wires = [x for x in consecutive_wires if x not in wires]
-
     density_matrix = partial_trace(density_matrix, traced_wires)
     return np.reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
 
