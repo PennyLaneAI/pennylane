@@ -326,12 +326,12 @@ The tables below show all the currently supported functionality
    Forward pass is still supported.
 3. Not supported. The ``default.qubit`` device does not provide a native way to compute gradients. See
    :ref:`Device jacobian <Device jacobian>` for details.
-4. Supported, but only when ``shots=None``. See :ref:`here <Analytic backpropagation>` for details.
+4. Supported, but only when ``shots=None``. See :ref:`Backpropagation <Analytic backpropagation>` for details.
 
    If the circuit returns a state, then the circuit itself is not differentiable
    directly. However, any real scalar-valued post-processing done to the output of the
    circuit will be differentiable. See :ref:`State gradients <State gradients>` for details.
-5. Supported, but only when ``shots=None``. See :ref:`here <Analytic backpropagation>` for details.
+5. Supported, but only when ``shots=None``. See :ref:`Backpropagation <Analytic backpropagation>` for details.
 6. Not supported. The adjoint differentiation algorithm only applies to expectation values of observables. See
    :ref:`Adjoint differentation <Adjoint differentation>` for details.
 7. Supported. Raises warning when ``shots>0`` since the gradient is always computed analytically. See
