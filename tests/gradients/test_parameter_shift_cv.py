@@ -422,6 +422,11 @@ class TestParameterShiftLogic:
         spy = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
 
         def _mock_transform_observable(obs, Z, device_wires):
+            """A mock version of the _transform_observable internal function
+            such that an operator ``transformed_obs`` of two-dimensions is
+            returned. This function is created such that when definining ``A =
+            transformed_obs.parameters[0]`` the condition ``len(A.nonzero()[0])
+            == 1 and A.ndim == 2 and A[0, 0] != 0`` is ``True``."""
             iden = qml.Identity(0)
             iden.data = [np.array([[1, 0], [0, 0]])]
             return iden
