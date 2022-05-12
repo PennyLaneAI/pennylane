@@ -4,6 +4,33 @@
 
 <h3>New features since last release</h3>
 
+* Boolean mask indexing of the parameter-shift Hessian
+  [(#2538)](https://github.com/PennyLaneAI/pennylane/pull/2538)
+
+  The `argnum` keyword argument for `param_shift_hessian` 
+  is now allowed to be a twodimensional Boolean `array_like`.
+  Only the indicated entries of the Hessian will then be computed.
+  A particularly useful example is the computation of the diagonal
+  of the Hessian:
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+  with qml.tape.QuantumTape() as tape:
+      qml.RX(0.2, wires=0)
+      qml.RY(-0.9, wires=0)
+      qml.RX(1.1, wires=0)
+      qml.expval(qml.PauliZ(0))
+
+  argnum = qml.math.eye(3, dtype=bool)
+  ```
+  ```pycon
+  >>> tapes, fn = qml.gradients.param_shift_hessian(tape, argnum=argnum)
+  >>> fn(qml.execute(tapes, dev, None))
+  array([[[-0.09928388,  0.        ,  0.        ],
+        [ 0.        , -0.27633945,  0.        ],
+        [ 0.        ,  0.        , -0.09928388]]])
+  ```
+
 * Speed up measuring of commuting Pauli operators
   [(#2425)](https://github.com/PennyLaneAI/pennylane/pull/2425)
 
@@ -11,6 +38,12 @@
   when many commuting paulis of the same type are measured.
 
 <h3>Improvements</h3>
+
+* Test classes are created in qchem test modules to group the integrals and matrices unittests.
+  [(#2545)](https://github.com/PennyLaneAI/pennylane/pull/2545)
+
+* Introduced an `operations_only` argument to the `tape.get_parameters` method.
+  [(#2543)](https://github.com/PennyLaneAI/pennylane/pull/2543)
 
 * The `gradients` module now uses faster subroutines and uniform
   formats of gradient rules.
@@ -71,12 +104,19 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
+  computed for QNodes with parametrized observables (e.g., `qml.Hermitian`).
+  [(#2543)](https://github.com/PennyLaneAI/pennylane/pull/2543)
+
 * Fixed a bug where `QNGOptimizer` did not work with operators
   whose generator was a Hamiltonian.
   [(#2524)](https://github.com/PennyLaneAI/pennylane/pull/2524)
 
 * Fixes a bug with the decomposition of `qml.CommutingEvolution`.
   [(#2542)](https://github.com/PennyLaneAI/pennylane/pull/2542)
+
+* Fixed a bug enabling PennyLane to work with the latest version of Autoray.
+  [(#2549)](https://github.com/PennyLaneAI/pennylane/pull/2549)
 
 <h3>Deprecations</h3>
 
@@ -96,5 +136,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Edward Jiang, Christina Lee,
-Chae-Yeun Park, Maria Schuld
+Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Christian Gogolin,
+Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld

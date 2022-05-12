@@ -321,17 +321,6 @@ ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsquee
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
 
-try:
-    if semantic_version.match(">=1.10", _i("torch").__version__):
-        # Autoray uses the deprecated torch.symeig as an alias for eigh, however this has
-        # been deprecated in favour of torch.linalg.eigh.
-        # autoray.py:84: UserWarning: torch.symeig is deprecated in favor of torch.linalg.eigh
-        # and will be removed in a future PyTorch release.
-        del ar.autoray._FUNCS["torch", "linalg.eigh"]
-except ImportError:
-    pass
-
-
 ar.register_function(
     "torch",
     "sqrt",
