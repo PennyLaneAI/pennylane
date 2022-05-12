@@ -392,11 +392,12 @@ class TestTemplates:
 class TestDifferentiation:
     """Differentiation tests"""
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_jax(self, v):
         """Test that differentiation works correctly when using JAX"""
 
-        jax = pytest.importorskip("jax")
+        import jax
 
         def circuit(theta):
             qml.RX(theta, wires=0)
@@ -417,11 +418,12 @@ class TestDifferentiation:
         assert np.allclose(l, 2 * np.cos(v / 2))
         assert np.allclose(dl, -np.sin(v / 2))
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_torch(self, v):
         """Test that differentiation works correctly when using Torch"""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         def circuit(theta):
             qml.RX(theta, wires=0)
@@ -444,11 +446,11 @@ class TestDifferentiation:
         assert np.allclose(l.detach(), 2 * np.cos(v / 2))
         assert np.allclose(dl.detach(), -np.sin(v / 2))
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_tensorflow(self, v):
         """Test that differentiation works correctly when using TF"""
-
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         def circuit(theta):
             qml.RX(theta, wires=0)
@@ -469,6 +471,7 @@ class TestDifferentiation:
         assert np.allclose(l, 2 * np.cos(v / 2))
         assert np.allclose(dl, -np.sin(v / 2))
 
+    @pytest.mark.autograd
     @pytest.mark.xfail(reason="np.linalg.eigvals not differentiable using Autograd")
     @pytest.mark.parametrize("v", np.linspace(0.2, 1.6, 8))
     def test_autograd(self, v):

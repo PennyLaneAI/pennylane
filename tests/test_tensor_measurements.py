@@ -109,6 +109,7 @@ class TestTensorExpval:
 
         assert np.allclose(res, expected, **tolerance)
 
+    @pytest.mark.autograd
     def test_paulix_tensor_pauliy_gradient(self, shots, theta, phi, varphi, tolerance):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qml.device("default.qubit", wires=3, shots=shots)

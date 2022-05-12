@@ -927,8 +927,8 @@ class TestState:
         state_val = func()
         assert np.allclose(state_val, func.device.state)
 
-    @pytest.mark.usefixtures("skip_if_no_tf_support")
-    def test_interface_tf(self, skip_if_no_tf_support):
+    @pytest.mark.tf
+    def test_interface_tf(self):
         """Test that the state correctly outputs in the tensorflow interface"""
         import tensorflow as tf
 
@@ -948,9 +948,10 @@ class TestState:
         assert np.allclose(state_expected, state_val.numpy())
         assert state_val.shape == (16,)
 
+    @pytest.mark.torch
     def test_interface_torch(self):
         """Test that the state correctly outputs in the torch interface"""
-        torch = pytest.importorskip("torch", minversion="1.6")
+        import torch
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -968,6 +969,7 @@ class TestState:
         assert torch.allclose(state_expected, state_val)
         assert state_val.shape == (16,)
 
+    @pytest.mark.autograd
     def test_jacobian_not_supported(self):
         """Test if an error is raised if the jacobian method is called via qml.grad"""
         dev = qml.device("default.qubit", wires=4)
@@ -1014,16 +1016,12 @@ class TestState:
         with pytest.raises(qml.QuantumFunctionError, match="Returning the state is not supported"):
             func()
 
-    @pytest.mark.usefixtures("skip_if_no_tf_support")
-    @pytest.mark.parametrize(
-        "device", ["default.qubit", "default.qubit.tf", "default.qubit.autograd"]
-    )
     @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
-    def test_devices(self, device, diff_method, skip_if_no_tf_support):
+    def test_default_qubit(self, diff_method):
         """Test that the returned state is equal to the expected returned state for all of
         PennyLane's built in statevector devices"""
 
-        dev = qml.device(device, wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev, diff_method=diff_method)
         def func():
@@ -1037,8 +1035,48 @@ class TestState:
         assert np.allclose(state_val, state_expected)
         assert np.allclose(state_val, dev.state)
 
-    @pytest.mark.usefixtures("skip_if_no_tf_support")
-    def test_gradient_with_passthru_tf(self, skip_if_no_tf_support):
+    @pytest.mark.tf
+    @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
+    def test_default_qubit_tf(self, diff_method):
+        """Test that the returned state is equal to the expected returned state for all of
+        PennyLane's built in statevector devices"""
+
+        dev = qml.device("default.qubit.tf", wires=4)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return state()
+
+        state_val = func()
+        state_expected = 0.25 * np.ones(16)
+
+        assert np.allclose(state_val, state_expected)
+        assert np.allclose(state_val, dev.state)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
+    def test_default_qubit_autograd(self, diff_method):
+        """Test that the returned state is equal to the expected returned state for all of
+        PennyLane's built in statevector devices"""
+
+        dev = qml.device("default.qubit.autograd", wires=4)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return state()
+
+        state_val = func()
+        state_expected = 0.25 * np.ones(16)
+
+        assert np.allclose(state_val, state_expected)
+        assert np.allclose(state_val, dev.state)
+
+    @pytest.mark.tf
+    def test_gradient_with_passthru_tf(self):
         """Test that the gradient of the state is accessible when using default.qubit.tf with the
         backprop diff_method."""
         import tensorflow as tf
@@ -1059,6 +1097,7 @@ class TestState:
         expected = tf.stack([-0.5 * tf.sin(x / 2), 0.5 * tf.cos(x / 2)])
         assert np.allclose(grad, expected)
 
+    @pytest.mark.autograd
     def test_gradient_with_passthru_autograd(self):
         """Test that the gradient of the state is accessible when using default.qubit.autograd
         with the backprop diff_method."""
