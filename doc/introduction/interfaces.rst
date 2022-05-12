@@ -314,18 +314,18 @@ The tables below show all the currently supported functionality
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
 |                  | ``"backprop"``                     |     :gr:`4`  |   :rd:`11`    |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
-|                  | ``"adjoint"``                      |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :rd:`12`      |   :gr:`7`      | :rd:`6`     |
+|                  | ``"adjoint"``                      |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :rd:`6`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
-|                  | ``"parameter-shift"``              |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :rd:`12`     | :gr:`8`        |   :gr:`8`   |
+|                  | ``"parameter-shift"``              |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
-|                  | ``"finite-diff"``                  |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :rd:`12`     | :gr:`8`        |   :gr:`8`   |
+|                  | ``"finite-diff"``                  |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |
 +------------------+------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
 
 1. Not supported. Gradients are not computed even though ``diff_method`` is provided. Fails with error.
 2. Not supported. Gradients are not computed even though ``diff_method`` is provided. Warns that no auto-differentiation framework is being used, but does not fail.
    Forward pass is still supported.
 3. Not supported. The ``default.qubit`` device does not provide a native way to compute gradients. See
-   :ref:`here <Native gradient computation>` for details.
+   :ref:`Device jacobian <Device jacobian>` for details.
 4. Supported, but only when ``shots=None``. See :ref:`here <Analytic backpropagation>` for details.
 
    If the circuit returns a state, then the circuit itself is not differentiable
@@ -341,8 +341,6 @@ The tables below show all the currently supported functionality
    not differentiable. The forward pass is still supported. See :ref:`Sample gradients <Sample gradients>` for details.
 10. Not supported. "We just don't have the theory yet."
 11. Not supported, but due to a bug.
-12. Supported, but only when a ``torch.Tensor`` object is passed to ``qml.Hermitian``. This is a bug and should be fixed to make the ``"torch"``
-    interface consistent with the other interfaces.
 
 .. toctree::
     :hidden:
@@ -351,4 +349,4 @@ The tables below show all the currently supported functionality
     interfaces/torch
     interfaces/tf
     interfaces/jax
-    unsupported
+    unsupported_gradients

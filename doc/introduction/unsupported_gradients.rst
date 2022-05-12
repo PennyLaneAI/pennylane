@@ -1,10 +1,9 @@
-.. _unsupported_confs:
+.. _unsupported_gradients:
 
 Unsupported gradient configurations
 ===================================
 
-
-.. _Native gradient computation:
+.. _Device jacobian:
 
 Device jacobian
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
