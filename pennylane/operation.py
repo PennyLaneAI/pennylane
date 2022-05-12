@@ -491,6 +491,7 @@ class Operator(abc.ABC):
         for attr, value in vars(self).items():
             if attr != "data":
                 setattr(copied_op, attr, value)
+
         return copied_op
 
     def __deepcopy__(self, memo):

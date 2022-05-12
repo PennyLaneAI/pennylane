@@ -16,7 +16,6 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access,no-member
-import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
 

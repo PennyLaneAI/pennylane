@@ -90,9 +90,7 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
     """
     # Expand away adjoint ops
     expanded_tape = tape.expand(stop_at=lambda obj: not isinstance(obj, Adjoint))
-
-    # Make a working copy of the list to traverse
-    list_copy = expanded_tape.operations.copy()
+    list_copy = expanded_tape.operations
 
     while len(list_copy) > 0:
         current_gate = list_copy[0]
