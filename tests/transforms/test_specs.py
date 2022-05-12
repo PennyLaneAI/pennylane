@@ -212,3 +212,39 @@ class TestSpecsTransform:
         info = qml.specs(circuit)()
         assert info["diff_method"] == "test_specs.my_transform"
         assert info["gradient_fn"] == "test_specs.my_transform"
+
+
+def test_docstring_example():
+    """Tests an example used in the documentation's quickstarts."""
+
+    dev = qml.device('default.qubit', wires=4)
+
+    @qml.qnode(dev, diff_method='parameter-shift')
+    def circuit(x, y):
+        qml.RX(x[0], wires=0)
+        qml.Toffoli(wires=(0, 1, 2))
+        qml.CRY(x[1], wires=(0, 1))
+        qml.Rot(x[2], x[3], y, wires=0)
+        return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
+
+    x = np.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
+    y = np.array(0.4, requires_grad=False)
+    specs_func = qml.specs(circuit)
+    dic = specs_func(x, y)
+
+    assert dic['gate_sizes'] == {1: 2, 3: 1, 2: 1}
+    assert dic['gate_types'] == {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}
+    assert dic['num_operations'] == 4
+    assert dic['num_observables'] == 2
+    assert dic['num_diagonalizing_gates'] == 1
+    assert dic['num_used_wires'] == 3
+    assert dic['depth'] == 4
+    assert dic['num_trainable_params'] == 4
+    assert dic['num_device_wires'] == 4
+    assert dic['device_name'] == 'default.qubit'
+    assert dic['expansion_strategy'] == 'gradient'
+    assert dic['gradient_options'] == {}
+    assert dic['interface'] == 'autograd'
+    assert dic['diff_method'] == 'parameter-shift'
+    assert dic['gradient_fn'] == 'pennylane.gradients.parameter_shift.param_shift'
+    assert dic['num_gradient_executions'] == 10
