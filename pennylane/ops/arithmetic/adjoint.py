@@ -22,6 +22,7 @@ from pennylane.tape import QuantumTape, stop_recording
 from pennylane.math import transpose, conj
 
 
+# pylint: disable=too-many-public-methods
 class Adjoint(Operator):
     """
     The Adjoint of an operator.
@@ -48,6 +49,7 @@ class Adjoint(Operator):
 
     num_wires = AnyWires
 
+    # pylint: disable=attribute-defined-outside-init
     def __copy__(self):
         # this method needs to be overwritten becuase the base must be copied too.
         cls = self.__class__
@@ -61,6 +63,7 @@ class Adjoint(Operator):
 
         return copied_op
 
+    # pylint: disable=super-init-not-called
     def __init__(self, base=None, do_queue=True, id=None):
         self.base = base
         self.hyperparameters["base"] = base
@@ -108,11 +111,13 @@ class Adjoint(Operator):
     def label(self, decimals=None, base_label=None, cache=None):
         return self.base.label(decimals, base_label, cache=cache) + "†"
 
+    # pylint: disable=arguments-differ
     @staticmethod
     def compute_matrix(*params, base=None):
         base_matrix = base.compute_matrix(*params, **base.hyperparameters)
         return transpose(conj(base_matrix))
 
+    # pylint: disable=arguments-differ
     @staticmethod
     def compute_decomposition(*params, wires, base=None):
         try:
@@ -121,22 +126,27 @@ class Adjoint(Operator):
             base_decomp = base.compute_decomposition(*params, wires, **base.hyperparameters)
             return [Adjoint(op) for op in reversed(base_decomp)]
 
-    def sparse_matrix(self, wires=None):
-        base_matrix = self.base.sparse_matrix(wires=wires)
+    # pylint: disable=arguments-differ
+    @staticmethod
+    def compute_sparse_matrix(*params, base=None):
+        base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
         return transpose(conj(base_matrix))
 
     def eigvals(self):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``get_eigvals``
         return [conj(x) for x in self.base.eigvals()]
 
+    # pylint: disable=arguments-differ
     @staticmethod
     def compute_diagonalizing_gates(*params, wires, base=None):
         return base.compute_diagonalizing_gates(*params, wires, **base.hyperparameters)
 
+    # pylint: disable=arguments-renamed
     @property
     def has_matrix(self):
         return self.base.has_matrix
 
+    # pylint: disable=arguments-differ
     def adjoint(self):
         return self.base
 
@@ -149,7 +159,7 @@ class Adjoint(Operator):
 
         Returns ``_queue_cateogory`` for base operator.
         """
-        return self.base._queue_category
+        return self.base._queue_category  # pylint: disable=protected-access
 
     def generator(self):
         if isinstance(self.base, Operation):  # stand in for being unitary and inverse=adjoint
@@ -160,34 +170,121 @@ class Adjoint(Operator):
 
     @property
     def basis(self):
+        """str or None: The target operation for controlled gates.
+        target operation. If not ``None``, should take a value of ``"X"``, ``"Y"``,
+        or ``"Z"``.
+
+        For example, ``X`` and ``CNOT`` have ``basis = "X"``, whereas
+        ``ControlledPhaseShift`` and ``RZ`` have ``basis = "Z"``.
+        """
         return self.base.basis
 
     @property
     def control_wires(self):
+        r"""Control wires of the operator.
+
+        For operations that are not controlled,
+        this is an empty ``Wires`` object of length ``0``.
+
+        Returns:
+            Wires: The control wires of the operation.
+        """
         return self.base.control_wires
 
     def single_qubit_rot_angles(self):
+        r"""The parameters required to implement a single-qubit gate as an
+        equivalent ``Rot`` gate, up to a global phase.
+
+        Returns:
+            tuple[float, float, float]: A list of values :math:`[\phi, \theta, \omega]`
+            such that :math:`RZ(\omega) RY(\theta) RZ(\phi)` is equivalent to the
+            original operation.
+        """
         omega, theta, phi = self.base.single_qubit_rot_angles()
         return [-phi, -theta, -omega]
 
     @property
     def grad_method(self):
+        """Gradient computation method.
+
+        * ``'A'``: analytic differentiation using the parameter-shift method.
+        * ``'F'``: finite difference numerical differentiation.
+        * ``None``: the operation may not be differentiated.
+
+        Default is ``'F'``, or ``None`` if the Operation has zero parameters.
+        """
         return self.base.grad_method
 
     @property
     def grad_recipe(self):
+        r"""tuple(Union(list[list[float]], None)) or None: Gradient recipe for the
+        parameter-shift method.
+
+        This is a tuple with one nested list per operation parameter. For
+        parameter :math:`\phi_k`, the nested list contains elements of the form
+        :math:`[c_i, a_i, s_i]` where :math:`i` is the index of the
+        term, resulting in a gradient recipe of
+
+        .. math:: \frac{\partial}{\partial\phi_k}f = \sum_{i} c_i f(a_i \phi_k + s_i).
+
+        If ``None``, the default gradient recipe containing the two terms
+        :math:`[c_0, a_0, s_0]=[1/2, 1, \pi/2]` and :math:`[c_1, a_1,
+        s_1]=[-1/2, 1, -\pi/2]` is assumed for every parameter.
+        """
         return self.base.grad_recipe
 
     def get_parameter_shift(self, idx):
+        r"""Multiplier and shift for the given parameter, based on its gradient recipe.
+
+        Args:
+            idx (int): parameter index within the operation
+
+        Returns:
+            list[[float, float, float]]: list of multiplier, coefficient, shift for each term in the gradient recipe
+
+        Note that the default value for ``shift`` is None, which is replaced by the
+        default shift :math:`\pi/2`.
+        """
         return self.base.get_parameter_shift(idx)
 
     @property
     def parameter_frequencies(self):
+        r"""Returns the frequencies for each operator parameter with respect
+        to an expectation value of the form
+        :math:`\langle \psi | U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p})|\psi\rangle`.
+
+        These frequencies encode the behaviour of the operator :math:`U(\mathbf{p})`
+        on the value of the expectation value as the parameters are modified.
+        For more details, please see the :mod:`.pennylane.fourier` module.
+
+        Returns:
+            list[tuple[int or float]]: Tuple of frequencies for each parameter.
+            Note that only non-negative frequency values are returned.
+
+        **Example**
+
+        >>> op = qml.CRot(0.4, 0.1, 0.3, wires=[0, 1])
+        >>> op.parameter_frequencies
+        [(0.5, 1), (0.5, 1), (0.5, 1)]
+
+        For operators that define a generator, the parameter frequencies are directly
+        related to the eigenvalues of the generator:
+
+        >>> op = qml.ControlledPhaseShift(0.1, wires=[0, 1])
+        >>> op.parameter_frequencies
+        [(1,)]
+        >>> gen = qml.generator(op, format="observable")
+        >>> gen_eigvals = qml.eigvals(gen)
+        >>> qml.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
+        (1.0,)
+
+        For more details on this relationship, see :func:`.eigvals_to_frequencies`.
+        """
         return self.base.parameter_frequencies
 
 
 def adjoint(fn):
-    """Create a function that applies the adjoint (inverse) of the provided operation or template.
+    """Create a function that applies the adjoint of the provided operation or template.
 
     This transform can be used to apply the adjoint of an arbitrary sequence of operations.
 
@@ -197,6 +294,13 @@ def adjoint(fn):
 
     Returns:
         function: A new function that will apply the same operations but adjointed and in reverse order.
+
+    .. note::
+
+        While the adjoint and inverse are identical for Unitary gates, not all possible operators are Unitary.
+        This transform can also act on Channels and Hamiltonians, for which the inverse and adjoint are different.
+
+    .. seealso:: :class:`.ops.arithmetic.Adjoint` and :meth:`.operation.Operator.adjoint`
 
     **Example**
 
@@ -227,16 +331,7 @@ def adjoint(fn):
     function has indeed been applied:
 
     >>> print(qml.draw(circuit)(0.2))
-    0: ──RX(0.20)──SX──SX†──RX(-0.20)─┤  <Z>
-
-    If a "shortcut" exists to easily compute the adjoint, see :meth:`~.operation.Operator.adjoint`, then this
-    shortcut is eagerly used.  Otherwise, the operator is wrapped in an :class:`~.ops.arithmetic.Adjoint` class
-    for later handling. The adjoint function can also be applied directly to templates and operations:
-
-    >>> qml.adjoint(qml.RX)(0.123, wires=0)
-    RX(-0.123, wires=[0])
-    >>> qml.adjoint(qml.QFT)(wires=(0,1,2,3))
-    Adjoint(QFT)(wires=[0, 1, 2, 3])
+    0: ──RX(0.20)──SX──SX†──RX(0.20)†─┤  <Z>
 
     .. details::
         :title: Usage Details
@@ -245,7 +340,9 @@ def adjoint(fn):
 
         Here, we apply the ``subroutine`` function, and then apply its adjoint.
         Notice that in addition to adjointing all of the operations, they are also
-        applied in reverse construction order.
+        applied in reverse construction order. Some `Adjoint` gates like those wrapping ``SX``, ``S``, and
+        ``T`` are natively supported by ``default.qubit``. Other gates will be expanded either using a custom
+        adjoint decomposition defined in :meth:`~.operation.Operator.adjoint`.
 
         .. code-block:: python3
 
@@ -263,7 +360,9 @@ def adjoint(fn):
         This creates the following circuit:
 
         >>> print(qml.draw(circuit)())
-        0: ──RX(0.12)──T──T†──RX(-0.12)─┤  <Z>
+        0: ──RX(0.12)──S──S†──RX(0.12)†─┤  <Z>
+        >>> print(qml.draw(circuit, expansion_strategy="device")())
+        0: ──RX(0.12)──S──S†──RX(-0.12)─┤  <Z>
 
         **Single operation**
 
@@ -281,7 +380,7 @@ def adjoint(fn):
         This creates the following circuit:
 
         >>> print(qml.draw(circuit)())
-        0: ──RX(0.12)──RX(-0.12)─┤  <Z>
+        0: ──RX(0.12)──RX(0.12)†─┤  <Z>
     """
     if not callable(fn):
         raise ValueError(

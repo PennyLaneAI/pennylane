@@ -105,12 +105,12 @@ class TestAdjointOutsideQueuing:
 
         assert adjoint_of_controlled_op.control_wires == control_wires
         res_ops = adjoint_of_controlled_op.subtape.operations
-        expected = qml.adjoint(op)(par, wires=wires)
+        subtape_op = res_ops[0]
 
-        for op1, op2 in zip(res_ops, expected):
-            assert type(op1) == type(op2)
-            assert op1.parameters == op2.parameters
-            assert op1.wires == op2.wires
+        assert isinstance(subtape_op, qml.ops.arithmetic.Adjoint)
+        assert isinstance(subtape_op.base, qml.StronglyEntanglingLayers)
+        assert subtape_op.parameters == [par]
+        assert subtape_op.wires == qml.wires.Wires(wires)
 
     def test_cv_template(self):
         """Test a CV template that returns a list of operations for the adjoint
