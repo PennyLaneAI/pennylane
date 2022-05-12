@@ -773,6 +773,8 @@ class TestHamiltonian:
         A = [[1, 0], [0, -1]]
         with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
             H @ A
+        with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
+            H.__rmatmul__(A)
         with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
             H + A
         with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):
