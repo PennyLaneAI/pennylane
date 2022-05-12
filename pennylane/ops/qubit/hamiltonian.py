@@ -547,7 +547,7 @@ class Hamiltonian(Observable):
     def __rmatmul__(self, H):
         r"""The tensor product operation from the right) between a Hamiltonian and
         a Hamiltonian/Tensor/Observable (ie. Hamiltonian.__rmul__(H) = H @ Hamiltonian).
-         """
+        """
         coeffs1 = copy(self.coeffs)
         ops1 = self.ops.copy()
 
