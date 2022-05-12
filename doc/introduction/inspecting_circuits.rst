@@ -109,9 +109,6 @@ For example:
 More information, including various fine-tuning options, can be found in
 the :doc:`drawing module <../code/qml_drawer>`.
 
-Resource estimation
--------------------
-
 DAG representation
 ------------------
 
