@@ -33,7 +33,7 @@ This quantum function uses the :class:`RZ <pennylane.RZ>`,
 Functions applied to operators extract information (such as the matrix representation) or
 transform operators (like turning a gate into a controlled gate).
 
-Below is a list of all quantum operations and operation functions supported by PennyLane.
+Below is a list of all quantum operators and operator functions supported by PennyLane.
 
 Operator functions
 ------------------
@@ -72,7 +72,7 @@ In the functional form, they are usually differentiable with respect to gate arg
 >>> x.grad
 tensor(-0.5910)
 
-Some operator transform can also act on multiple operations, by passing
+Some operator transform can also act on multiple operators, by passing
 quantum functions, QNodes or tapes:
 
 >>> def circuit(theta):
@@ -87,7 +87,7 @@ array([[ 0.92387953+0.j,  0.+0.j ,  0.-0.38268343j,  0.+0.j],
 
 .. _intro_ref_ops_qubit:
 
-Qubit operations
+Qubit operators
 ----------------
 
 .. _intro_ref_ops_qgates:
@@ -301,7 +301,7 @@ solving the minimum clique cover problem, and auxiliary functions, refer to the
 
 .. _intro_ref_ops_cv:
 
-Continuous-Variable (CV) operations
+Continuous-Variable (CV) operators
 -----------------------------------
 
 If you would like to learn more about the CV model of quantum computing, check out the
