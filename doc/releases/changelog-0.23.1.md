@@ -7,8 +7,11 @@
 * Fixed a bug enabling PennyLane to work with the latest version of Autoray.
   [(#2548)](https://github.com/PennyLaneAI/pennylane/pull/2548)
 
+* Deprecating ExpvalCost by adding a UserWarning.
+  [(#2571)](https://github.com/PennyLaneAI/pennylane/pull/2571)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Josh Izaac
+Josh Izaac, Korbinian Kottmann
