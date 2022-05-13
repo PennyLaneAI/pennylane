@@ -198,7 +198,8 @@ class SparseHamiltonian(Observable):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
 
-    **Example:**
+    **Example**
+
         You can construct your Hamiltonian as usual using :class:`~.Hamiltonian` and then utilize
         the utility function :func:`~.utils.sparse_hamiltonian` to construct the sparse matrix that serves as the input
         to ``SparseHamiltonian``:
