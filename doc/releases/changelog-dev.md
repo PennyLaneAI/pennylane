@@ -73,7 +73,7 @@
   method for a provided device and interface, in human-readable format.
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
 
-* Sparse Hamiltonians representation has changed from COOrdinate (COO) to Compressed Sparse Row (CSR) format. The CSR representation is more performant for arithmetic operations and matrix vector products. This change directly impacts `expval()` calculation time, for `qml.SparseHamiltonian`, roughly decreasing it in ~25% for large workflows. Also, the CRS format consumes less memory for the `qml.SparseHamiltonian` storage.
+* Sparse Hamiltonians representation has changed from COOrdinate (COO) to Compressed Sparse Row (CSR) format. The CSR representation is more performant for arithmetic operations and matrix vector products. This change decreases the `expval()` calculation time, for `qml.SparseHamiltonian`, specially for large workflows. Also, the CRS format consumes less memory for the `qml.SparseHamiltonian` storage.
 [(#2561)](https://github.com/PennyLaneAI/pennylane/pull/2561)
 
 <h3>Breaking changes</h3>
