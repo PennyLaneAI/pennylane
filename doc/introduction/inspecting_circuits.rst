@@ -112,9 +112,7 @@ Debugging with mid-circuit snapshots
 
 When debugging quantum circuits run on simulators, we may want to inspect the current quantum state between gates.
 
-:class:`~pennylane.Snapshot` is an operator used like a gate, but instead of defining
-a manipulation of the quantum state it saves the internal state of a device
-at arbitrary points in the circuit.
+:class:`~pennylane.Snapshot` is an operator like a gate, but it saves the device state at its location in the circuit instead of manipulating the quantum state.
 
 Currently supported devices include:
 
