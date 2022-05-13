@@ -112,6 +112,18 @@ class TestRotoselectOptimizer:
         assert np.allclose(x_start, optimal_x_start, atol=tol)
         assert generators == optimal_generators
 
+    def test_rotoselect_optimizer_raises(self):
+        """Tests that step my raise an error."""
+        rotoselect_opt = RotoselectOptimizer()
+
+        def cost_fn(params, generators):
+            Z_1, Y_2 = circuit_1(params, generators=generators)
+            X_1 = circuit_2(params, generators=generators)
+            return 0.5 * Y_2 + 0.8 * Z_1 - 0.2 * X_1
+
+        with pytest.raises(ValueError, match="must be equal to the number of generators"):
+            rotoselect_opt.step(cost_fn, [0.2], [qml.PauliX, qml.PauliZ])
+
     @pytest.mark.parametrize("x_start", [[1.2, 0.2], [-0.62, -2.1], [0.05, 0.8]])
     def test_keywords_rotoselect(self, x_start, tol):
         """test rotoselect accepts keywords"""
