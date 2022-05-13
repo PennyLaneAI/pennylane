@@ -31,7 +31,7 @@ Extracting properties of a circuit
 ----------------------------------
 
 The :func:`~pennylane.specs` transform takes a
-QNode and creates a function that returns specifications or
+QNode and creates a function that returns 
 details about the QNode, including depth, number of gates, and number of
 gradient executions required.
 
