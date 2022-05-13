@@ -31,7 +31,7 @@ class ExpvalCost:
 
         .. code-block:: python
 
-            qml.qnode(dev)
+            @qml.qnode(dev)
             def ansatz(params):
                 some_qfunc(params)
                 return qml.expval(Hamiltonian)
