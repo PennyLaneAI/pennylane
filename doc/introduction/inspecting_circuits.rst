@@ -110,8 +110,7 @@ the :doc:`drawing module <../code/qml_drawer>`.
 Debugging with mid-circuit snapshots
 ------------------------------------
 
-When debugging quantum circuits run on simulators, it is often useful to inspect the
-current quantum state in between gates.
+When debugging quantum circuits run on simulators, we may want to inspect the current quantum state between gates.
 
 :class:`~pennylane.Snapshot` is an operator used like a gate, but instead of defining
 a manipulation of the quantum state it saves the internal state of a device
