@@ -179,7 +179,7 @@ def density_matrix_from_matrix(density_matrix, wires):
 
     traced_wires = [x for x in consecutive_wires if x not in wires]
     density_matrix = partial_trace(density_matrix, traced_wires)
-    return np.reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
+    return density_matrix
 
 
 def partial_trace(density_matrix, wires):
@@ -235,4 +235,4 @@ def partial_trace(density_matrix, wires):
 
         density_matrix = np.einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
 
-    return density_matrix
+    return np.reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
