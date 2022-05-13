@@ -231,7 +231,8 @@ class TestDiffInfo:
     def test_get_parameter_shift(self):
         """Test `get_parameter_shift` for an operation where it still doesn't raise warnings and errors."""
         base = qml.Rotation(1.234, wires=0)
-        assert Adjoint(base).get_parameter_shift(0) == base.get_parameter_shift(0)
+        with pytest.warns(UserWarning, match=r"get_parameter_shift is deprecated."):
+            assert Adjoint(base).get_parameter_shift(0) == base.get_parameter_shift(0)
 
     @pytest.mark.parametrize(
         "base",
@@ -323,7 +324,7 @@ def test_sparse_matrix():
     op = Adjoint(base)
 
     base_sparse_mat = base.sparse_matrix()
-    base_conj_T = qml.math.conj(qml.math.transpose(base_sparse_mat))
+    base_conj_T = qml.numpy.conj(qml.numpy.transpose(base_sparse_mat))
     op_sparse_mat = op.sparse_matrix()
 
     assert isinstance(op_sparse_mat, coo_matrix)

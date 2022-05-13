@@ -21,17 +21,15 @@ from collections import OrderedDict
 import numpy as np
 
 import pennylane as qml
-from pennylane import apply
+from pennylane import apply, adjoint
 from pennylane.transforms import qfunc_transform
 from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.wires import Wires
 from pennylane.ops.qubit.attributes import (
     symmetric_over_all_wires,
 )
-from pennylane.ops.arithmetic import Adjoint
-from pennylane.operation import AdjointUndefinedError
 
-
+# pylint: disable=too-many-statements
 @qfunc_transform
 def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None):
     r"""Quantum function transform to optimize a circuit given a list of patterns (templates).
@@ -248,10 +246,7 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
 
                             inst._wires = Wires(wires)
 
-                            try:
-                                inst.adjoint()
-                            except AdjointUndefinedError:
-                                Adjoint(inst)
+                            adjoint(apply, lazy=False)(inst)
 
                     # Add the unmatched gates.
                     for node_id in substitution.unmatched_list:
@@ -262,7 +257,7 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
                 tape = tape_inside
 
     for op in tape.operations:
-        if isinstance(op, Adjoint):
+        if isinstance(op, qml.ops.arithmetic.Adjoint):
             op.base._wires = Wires([inverse_wires_map[wire] for wire in op.wires.tolist()])
         else:
             op._wires = Wires([inverse_wires_map[wire] for wire in op.wires.tolist()])
@@ -473,9 +468,7 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
     # Controlled gate
     if len(node_c.op.control_wires) >= 1:
         circuit_control = node_c.op.control_wires
-        circuit_target = qml.wires.Wires(
-            [w for w in node_c.op.wires if w not in node_c.op.control_wires]
-        )
+        circuit_target = Wires([w for w in node_c.op.wires if w not in node_c.op.control_wires])
         # Not symmetric target gate or acting on 1 wire (target wires cannot be permuted) (For example Toffoli)
         if control_base[node_p.op.name] not in symmetric_over_all_wires:
             # Permute control

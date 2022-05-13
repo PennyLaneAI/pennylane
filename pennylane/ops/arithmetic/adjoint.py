@@ -129,6 +129,7 @@ class Adjoint(Operator):
     # pylint: disable=arguments-differ
     @staticmethod
     def compute_sparse_matrix(*params, base=None):
+
         base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
         return transpose(conj(base_matrix))
 
@@ -283,7 +284,7 @@ class Adjoint(Operator):
         return self.base.parameter_frequencies
 
 
-def adjoint(fn):
+def adjoint(fn, lazy=True):
     """Create a function that applies the adjoint of the provided operation or template.
 
     This transform can be used to apply the adjoint of an arbitrary sequence of operations.
@@ -291,6 +292,10 @@ def adjoint(fn):
     Args:
         fn (function): A single operator or a quantum function that
             applies quantum operations.
+
+    Keyword Args:
+        lazy=True (bool): If the transform is behaving lazily, all operations are wrapped in a `Adjoint` class
+            and handled later. If ``lazy=False``, operation-specific adjoint decompositions are first attempted.
 
     Returns:
         function: A new function that will apply the same operations but adjointed and in reverse order.
@@ -381,6 +386,24 @@ def adjoint(fn):
 
         >>> print(qml.draw(circuit)())
         0: ──RX(0.12)──RX(0.12)†─┤  <Z>
+
+
+        :title: Developer details
+
+        **Lazy Evaluation**
+
+        When ``lazy=False``, the function first attempts operation-specific decomposition of the
+        adjoint via the :meth:`.operation.Operator.adjoint` method. Only if an Operator doesn't have
+        an :meth:`.operation.Operator.adjoint` method is the object wrapped with the :class:`~.ops.arithmetic.Adjoint`
+        wrapper class.
+
+        >>> qml.adjoint(qml.PauliZ, lazy=False)(0)
+        PauliZ(wires=[0])
+        >>> qml.adjoint(qml.RX, lazy=False)(1.0, wires=0)
+        RX(-1.0, wires=[0])
+        >>> qml.adjoint(qml.S, lazy=False)(0)
+        Adjoint(S)(wires=[0])
+
     """
     if not callable(fn):
         raise ValueError(
@@ -394,8 +417,17 @@ def adjoint(fn):
         with stop_recording(), QuantumTape() as tape:
             fn(*args, **kwargs)
 
-        adjoint_ops = [Adjoint(op) for op in reversed(tape)]
+        if lazy:
+            adjoint_ops = [Adjoint(op) for op in reversed(tape.operations)]
+            return adjoint_ops[0] if len(adjoint_ops) == 1 else adjoint_ops
 
+        def _op_adjoint(op):
+            try:
+                return op.adjoint()
+            except AdjointUndefinedError:
+                return Adjoint(op)
+
+        adjoint_ops = [_op_adjoint(op) for op in reversed(tape.operations)]
         return adjoint_ops[0] if len(adjoint_ops) == 1 else adjoint_ops
 
     return wrapper

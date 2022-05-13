@@ -35,7 +35,10 @@ def test_error_adjoint_on_noncallable(obj):
 
 
 class TestDifferentCallableTypes:
+    """Test the adjoint transform on a variety of possible inputs."""
+
     def test_adjoint_single_op(self):
+        """Test the adjoint transform on a single operation."""
 
         with qml.tape.QuantumTape() as tape:
             out = adjoint(qml.RX)(1.234, wires="a")
@@ -47,6 +50,7 @@ class TestDifferentCallableTypes:
         assert out.wires == qml.wires.Wires("a")
 
     def test_adjoint_template(self):
+        """Test the adjoint transform on a template."""
 
         with qml.tape.QuantumTape() as tape:
             out = adjoint(qml.QFT)(wires=(0, 1, 2))
@@ -87,7 +91,7 @@ class TestDifferentCallableTypes:
         assert tape[2].data == [x]
 
     def test_nested_adjoint(self):
-
+        """Test the adjoint transform on an adjoint transform."""
         x = 4.321
         with qml.tape.QuantumTape() as tape:
             out = adjoint(adjoint(qml.RX))(x, wires="b")
@@ -100,9 +104,53 @@ class TestDifferentCallableTypes:
         assert out.wires == qml.wires.Wires("b")
 
 
-class TestOutsideofQueuing:
-    def test_single_op_outside_of_queuing(self):
+class TestNonLazyExecution:
+    """Test the lazy=False keyword."""
 
+    def test_single_decomposable_op(self):
+        """Test lazy=False for a single op that gets decomposed."""
+        x = 1.23
+        with qml.tape.QuantumTape() as tape:
+            out = adjoint(qml.RX, lazy=False)(x, wires="b")
+
+        assert out is tape[0]
+        assert not isinstance(out, Adjoint)
+        assert isinstance(out, qml.RX)
+        assert out.data == [-x]
+
+    def test_single_nondecomposable_op(self):
+        """Test lazy=False for a single op that can't be decomposed."""
+        with qml.tape.QuantumTape() as tape:
+            out = adjoint(qml.S, lazy=False)(0)
+
+        assert out is tape[0]
+        assert isinstance(out, Adjoint)
+        assert isinstance(out.base, qml.S)
+
+    def test_mixed_function(self):
+        """Test lazy=False with a function that applies operations of both types."""
+        x = 1.23
+
+        def qfunc(x):
+            qml.RZ(x, wires="b")
+            qml.T("b")
+
+        with qml.tape.QuantumTape() as tape:
+            out = adjoint(qfunc, lazy=False)(x)
+
+        assert len(tape) == len(out) == 2
+        assert isinstance(tape[0], Adjoint)
+        assert isinstance(tape[0].base, qml.T)
+
+        assert isinstance(tape[1], qml.RZ)
+        assert tape[1].data[0] == -x
+
+
+class TestOutsideofQueuing:
+    """Test the behaviour of the adjoint transform when not called in a queueing context."""
+
+    def test_single_op(self):
+        """Test the transform on a single op outside of a queuing context."""
         x = 1.234
         out = adjoint(qml.IsingXX)(x, wires=(0, 1))
 
@@ -111,7 +159,9 @@ class TestOutsideofQueuing:
         assert out.data == [1.234]
         assert out.wires == qml.wires.Wires((0, 1))
 
-    def test_function_outside_of_queuing(self):
+    def test_function(self):
+        """Test the transform on a function outside of a queuing context."""
+
         def func(wire):
             qml.S(wire)
             qml.SX(wire)
@@ -122,6 +172,14 @@ class TestOutsideofQueuing:
         assert len(out) == 2
         assert all(op.__class__ is Adjoint for op in out)
         assert all(op.wires == qml.wires.Wires(wire) for op in out)
+
+    def test_nonlazy_op(self):
+        """Test non-lazy mode on a simplifiable op outside of a queuing context."""
+
+        out = adjoint(qml.PauliX, lazy=False)(0)
+
+        assert not isinstance(out, Adjoint)
+        assert isinstance(out, qml.PauliX)
 
 
 class TestIntegration:
