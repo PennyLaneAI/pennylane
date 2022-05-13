@@ -11,8 +11,7 @@ PennyLane offers functionality to inspect, visualize or analyze quantum circuits
 
 .. _intro_qtransforms:
 
-Most of these tools are implemented as **transforms**
-which take a :class:`~pennylane.QNode` instance and return a function:
+Most of these tools are implemented as **transforms**.  Transforms take a :class:`~pennylane.QNode` instance and return a function:
 
 >>> @qml.qnode(dev, diff_method='parameter-shift')
 ... def my_qnode(x, a=True):
