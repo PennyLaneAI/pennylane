@@ -117,6 +117,9 @@
 
 <h3>Deprecations</h3>
 
+* Deprecating ExpvalCost by adding a UserWarning.
+  [(#2571)](https://github.com/PennyLaneAI/pennylane/pull/2571)
+
 <h3>Bug fixes</h3>
 
 * Fixes a bug in `DiagonalQubitUnitary._controlled` where an invalid operation was queued
@@ -133,5 +136,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Edward Jiang, Christina Lee,
+Guillermo Alonso-Linaje, Mikhail Andrenkov, Utkarsh Azad, Christian Gogolin, Edward Jiang, Korbinian Kottmann, Christina Lee,
 Chae-Yeun Park, Maria Schuld
