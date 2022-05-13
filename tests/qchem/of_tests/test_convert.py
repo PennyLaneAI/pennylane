@@ -32,7 +32,7 @@ openfermionpyscf = pytest.importorskip("openfermionpyscf")
 def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
     """Computes the ExpvalCost and catches the initial deprecation warning."""
 
-    with pytest.warns(UserWarning, match="will be deprecated,"):
+    with pytest.warns(UserWarning, match="is deprecated,"):
         res = qml.ExpvalCost(ansatz, hamiltonian, device, **kwargs)
     return res
 
