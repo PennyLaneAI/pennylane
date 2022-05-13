@@ -200,7 +200,9 @@ class SparseHamiltonian(Observable):
 
     **Example**
 
-        You can construct your Hamiltonian as usual using :class:`~.Hamiltonian` and then utilize
+        Sparse Hamiltonians can be constructed directly with a SciPy-compaible sparse matrix.
+        
+        Alternatively, you can construct your Hamiltonian as usual using :class:`~.Hamiltonian`, and then utilize
         the utility function :func:`~.utils.sparse_hamiltonian` to construct the sparse matrix that serves as the input
         to ``SparseHamiltonian``:
 
