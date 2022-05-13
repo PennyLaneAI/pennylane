@@ -132,9 +132,13 @@
   is now used to style the Sphinx documentation.
   [(#2450)](https://github.com/PennyLaneAI/pennylane/pull/2450)
 
+* Added reference to `qml.utils.sparse_hamiltonian` in `qml.SparseHamiltonian` to clarify
+  how to construct sparse Hamiltonians in PennyLane.
+  [(2572)](https://github.com/PennyLaneAI/pennylane/pull/2572)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Christian Gogolin,
-Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld
+Soran Jahangiri, Edward Jiang, Korbinian Kottmann, Christina Lee, Chae-Yeun Park, Maria Schuld
