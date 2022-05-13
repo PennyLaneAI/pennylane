@@ -71,7 +71,7 @@ Traceback (most recent call last):
     raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
 pennylane.QuantumFunctionError: Backpropagation is only supported when shots=None.
 
-Changing ``shots=100`` to ``shots=None`` removes the exception:
+Changing to ``shots=None`` allows computing the analytic gradient:
 
 .. code-block:: python
 
