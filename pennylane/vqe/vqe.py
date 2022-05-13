@@ -36,7 +36,7 @@ class ExpvalCost:
                 some_qfunc(params)
                 return qml.expval(Hamiltonian)
 
-        In order to optimize the Hamiltonian evaluation taking into account commuting terms, use the `grouping_type` keyword in :class:`~.Hamiltonian`
+        In order to optimize the Hamiltonian evaluation taking into account commuting terms, use the ``grouping_type`` keyword in :class:`~.Hamiltonian`.
 
     Create a cost function that gives the expectation value of an input Hamiltonian.
 
