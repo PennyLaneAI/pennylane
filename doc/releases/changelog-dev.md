@@ -118,13 +118,14 @@
 * Fixed a bug enabling PennyLane to work with the latest version of Autoray.
   [(#2549)](https://github.com/PennyLaneAI/pennylane/pull/2549)
 
-<h3>Deprecations</h3>
-
-<h3>Bug fixes</h3>
+* Fixed a bug which caused different behaviour for `Hamiltonian @ Observable` and `Observable @ Hamiltonian`.
+  [(#2570)](https://github.com/PennyLaneAI/pennylane/pull/2570)
 
 * Fixes a bug in `DiagonalQubitUnitary._controlled` where an invalid operation was queued
   instead of the controlled version of the diagonal unitary.
   [(#2525)](https://github.com/PennyLaneAI/pennylane/pull/2525)
+
+<h3>Deprecations</h3>
 
 <h3>Documentation</h3>
 
@@ -137,4 +138,4 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Christian Gogolin,
-Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld
+Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld, Jay Soni
