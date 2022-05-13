@@ -441,3 +441,26 @@ class Projector(Observable):
         []
         """
         return []
+
+    def __mul__(self, other) :
+        r"""" multiplies a hamiltonian by a float
+        Args:
+            Hamiltonian
+            float
+        Returns:
+            Hamiltonina multiplied by the float
+        """
+        
+        obs = qml.Hermitian(np.dot(qml.matrix(self),other), self.wires )
+        H = qml.Hamiltonian(self.coeffs, (obs, ))
+        return H
+
+    def __rmul__(self, other) :
+        return self.__rmul__(other)
+
+
+
+
+
+
+
