@@ -10,12 +10,121 @@ PennyLane offers seamless integration between classical and quantum computations
 circuits in PennyLane, compute :doc:`gradients of quantum circuits <glossary/quantum_gradient>`, and
 connect them easily to the top scientific computing and machine learning libraries.
 
+Training and interfaces
+-----------------------
+
+The bridge between the quantum and classical worlds is provided in PennyLane via interfaces to
+automatic differentiation libraries.
+Currently, four libraries are supported: :doc:`NumPy <interfaces/numpy>`, :doc:`PyTorch
+<interfaces/torch>`, :doc:`JAX <interfaces/jax>`, and :doc:`TensorFlow <interfaces/tf>`. PennyLane makes
+each of these libraries quantum-aware, allowing quantum circuits to be treated just
+like any other operation. Any automatic differentiation framework can be chosen with any device.
+
+In PennyLane, an automatic differentiation framework is declared using the ``interface`` argument when creating
+a :class:`QNode <pennylane.QNode>`, e.g.,
+
+.. code-block:: python
+
+    @qml.qnode(dev, interface="tf")
+    def my_quantum_circuit(...):
+        ...
+
+.. note::
+    If no interface is specified, PennyLane will default to the NumPy interface (powered by the
+    `autograd <https://github.com/HIPS/autograd>`_ library).
+
+This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays, Torch Tensors,
+or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
+the gradients of the quantum circuit accessible to the classical library, enabling the
+optimization of arbitrary hybrid circuits.
+
+When specifying an interface, the objects of the chosen framework are converted
+into NumPy objects and are passed to a device in most cases. Exceptions include
+cases when the devices support end-to-end computations in a framework. Such
+devices may be referred to as backpropagation or passthru devices.
+
+See the links below for walkthroughs of each specific interface:
+
+.. raw:: html
+
+    <style>
+        #interfaces .card {
+            box-shadow: none!important;
+        }
+        #interfaces .card:hover {
+            box-shadow: none!important;
+        }
+    </style>
+    <div id="interfaces" class="container mt-2 mb-2">
+        <div class="row mt-3">
+            <div class="col-lg-3 mb-2 align-items-stretch">
+                <a href="interfaces/numpy.html">
+                    <div class="card rounded-lg py-2" style="height:100%;">
+                        <div class="d-flex justify-content-center align-items-center" style="height:100%;">
+                            <img src="../_static/numpy.png" class="card-img-top" style="width:80%;"></img>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-3 mb-2 align-items-stretch">
+                <a href="interfaces/torch.html">
+                    <div class="card rounded-lg py-2" style="height:100%;">
+                        <div class="d-flex justify-content-center align-items-center" style="height:100%;">
+                          <img src="../_static/pytorch.png" class="card-img-top"></img>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-3 mb-2 align-items-stretch">
+                <a href="interfaces/tf.html">
+                    <div class="card rounded-lg py-2" style="height:100%;">
+                        <div class="d-flex justify-content-center align-items-center" style="height:100%;">
+                            <img src="../_static/tensorflow.png" class="card-img-top" style="width:90%;"></img>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-lg-3 mb-2 align-items-stretch">
+                <a href="interfaces/jax.html">
+                    <div class="card rounded-lg py-2" style="height:100%;">
+                        <div class="d-flex justify-content-center align-items-center" style="height:100%;">
+                            <img src="../_static/jax.png" class="card-img-top" style="max-width:60%;"></img>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+In addition to the core automatic differentiation frameworks discussed above,
+PennyLane also provides higher-level classes for converting QNodes into both Keras and ``torch.nn`` layers:
+
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+
+    pennylane.qnn.KerasLayer
+    pennylane.qnn.TorchLayer
+
+
+.. note::
+
+    QNodes that allow for automatic differentiation will always incur a small overhead on evaluation.
+    If you do not need to compute quantum gradients of a QNode, specifying ``interface=None`` will remove
+    this overhead and result in a slightly faster evaluation. However, gradients will no
+    longer be available.
+
+
 Gradients
 ---------
 
+The interface between PennyLane and automatic differentiation libraries relies on PennyLane's ability
+to compute or estimate gradients of quantum circuits. There are different strategies to do so, and they may
+depend on the device used.
+
 When creating a QNode, you can specify the :doc:`differentiation method
-<glossary/quantum_differentiable_programming>` that PennyLane should use whenever the gradient of
-that QNode is requested.
+<glossary/quantum_differentiable_programming>` like this:
 
 .. code-block:: python
 
@@ -126,109 +235,6 @@ This is because gradient transforms do not take into account classical computati
 support gradients of QNodes.
 For more details on available gradient transforms, as well as learning how to define your own
 gradient transform, please see the :mod:`qml.gradients <pennylane.gradients>` documentation.
-
-Training and interfaces
------------------------
-
-The bridge between the quantum and classical worlds is provided in PennyLane via *interfaces*.
-Currently, there are four built-in interfaces: :doc:`NumPy <interfaces/numpy>`, :doc:`PyTorch
-<interfaces/torch>`, :doc:`JAX <interfaces/jax>`, and :doc:`TensorFlow <interfaces/tf>`. These
-interfaces make each of these libraries quantum-aware, allowing quantum circuits to be treated just
-like any other operation. Any interface can be chosen with any device.
-
-In PennyLane, an interface is declared when creating a :class:`QNode <pennylane.QNode>`, e.g.,
-
-.. code-block:: python
-
-    @qml.qnode(dev, interface="tf")
-    def my_quantum_circuit(...):
-        ...
-
-.. note::
-    If no interface is specified, PennyLane will default to the NumPy interface (powered by the
-    `autograd <https://github.com/HIPS/autograd>`_ library).
-
-This will allow native numerical objects of the specified library (NumPy arrays, Torch Tensors,
-or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
-the gradients of the quantum circuit accessible to the classical library, enabling the
-optimization of arbitrary hybrid circuits.
-
-When specifying an interface, the objects of the chosen framework are converted
-into NumPy objects and are passed to a device in most cases. Exceptions include
-cases when the devices support end-to-end computations in a framework. Such
-devices may be referred to as backpropagation or passthru devices.
-
-See the links below for walkthroughs of each specific interface:
-
-.. raw:: html
-
-    <style>
-        #interfaces .card {
-            box-shadow: none!important;
-        }
-        #interfaces .card:hover {
-            box-shadow: none!important;
-        }
-    </style>
-    <div id="interfaces" class="container mt-2 mb-2">
-        <div class="row mt-3">
-            <div class="col-lg-3 mb-2 align-items-stretch">
-                <a href="interfaces/numpy.html">
-                    <div class="card rounded-lg py-2" style="height:100%;">
-                        <div class="d-flex justify-content-center align-items-center" style="height:100%;">
-                            <img src="../_static/numpy.png" class="card-img-top" style="width:80%;"></img>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-lg-3 mb-2 align-items-stretch">
-                <a href="interfaces/torch.html">
-                    <div class="card rounded-lg py-2" style="height:100%;">
-                        <div class="d-flex justify-content-center align-items-center" style="height:100%;">
-                          <img src="../_static/pytorch.png" class="card-img-top"></img>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-lg-3 mb-2 align-items-stretch">
-                <a href="interfaces/tf.html">
-                    <div class="card rounded-lg py-2" style="height:100%;">
-                        <div class="d-flex justify-content-center align-items-center" style="height:100%;">
-                            <img src="../_static/tensorflow.png" class="card-img-top" style="width:90%;"></img>
-                        </div>
-                    </div>
-                </a>
-            </div>
-            <div class="col-lg-3 mb-2 align-items-stretch">
-                <a href="interfaces/jax.html">
-                    <div class="card rounded-lg py-2" style="height:100%;">
-                        <div class="d-flex justify-content-center align-items-center" style="height:100%;">
-                            <img src="../_static/jax.png" class="card-img-top" style="max-width:60%;"></img>
-                        </div>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </div>
-
-In addition to the core interfaces discussed above, PennyLane also provides higher-level classes for
-converting QNodes into both Keras and ``torch.nn`` layers:
-
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-
-    pennylane.qnn.KerasLayer
-    pennylane.qnn.TorchLayer
-
-
-.. note::
-
-    QNodes with an interface will always incur a small overhead on evaluation. If you do not
-    need to compute quantum gradients of a QNode, specifying ``interface=None`` will remove
-    this overhead and result in a slightly faster evaluation. However, gradients will no
-    longer be available.
 
 
 :html:`</div>`
