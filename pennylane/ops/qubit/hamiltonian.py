@@ -545,7 +545,7 @@ class Hamiltonian(Observable):
         raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
 
     def __rmatmul__(self, H):
-        r"""The tensor product operation from the right) between a Hamiltonian and
+        r"""The tensor product operation (from the right) between a Hamiltonian and
         a Hamiltonian/Tensor/Observable (ie. Hamiltonian.__rmul__(H) = H @ Hamiltonian).
         """
         if isinstance(H, Hamiltonian):  # can't be accessed by '@'
