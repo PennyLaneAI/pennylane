@@ -285,9 +285,7 @@ class TestParameterShiftLogic:
             return qml.expval(qml.X(0))
 
         weights = [0.1, 0.2]
-        with pytest.warns(
-            UserWarning, match="gradient of a QNode with no trainable parameters"
-        ):
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
             res = qml.gradients.param_shift_cv(circuit)(weights)
 
         assert res == ()
@@ -306,9 +304,7 @@ class TestParameterShiftLogic:
             return qml.expval(qml.X(0))
 
         weights = [0.1, 0.2]
-        with pytest.warns(
-            UserWarning, match="gradient of a QNode with no trainable parameters"
-        ):
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
             res = qml.gradients.param_shift_cv(circuit)(weights)
 
         assert res == ()
@@ -327,9 +323,7 @@ class TestParameterShiftLogic:
             return qml.expval(qml.X(0))
 
         weights = [0.1, 0.2]
-        with pytest.warns(
-            UserWarning, match="gradient of a QNode with no trainable parameters"
-        ):
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
             res = qml.gradients.param_shift_cv(circuit)(weights)
 
         assert res == ()
@@ -348,9 +342,7 @@ class TestParameterShiftLogic:
             return qml.expval(qml.X(0))
 
         weights = [0.1, 0.2]
-        with pytest.warns(
-            UserWarning, match="gradient of a QNode with no trainable parameters"
-        ):
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
             res = qml.gradients.param_shift_cv(circuit)(weights)
 
         assert res == ()
@@ -369,9 +361,7 @@ class TestParameterShiftLogic:
         # TODO: remove once #2155 is resolved
         tape.trainable_params = []
 
-        with pytest.warns(
-            UserWarning, match="gradient of a tape with no trainable parameters"
-        ):
+        with pytest.warns(UserWarning, match="gradient of a tape with no trainable parameters"):
             g_tapes, post_processing = qml.gradients.param_shift_cv(tape, dev)
         res = post_processing(qml.execute(g_tapes, dev, None))
 
@@ -432,6 +422,11 @@ class TestParameterShiftLogic:
         spy = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
 
         def _mock_transform_observable(obs, Z, device_wires):
+            """A mock version of the _transform_observable internal function
+            such that an operator ``transformed_obs`` of two-dimensions is
+            returned. This function is created such that when definining ``A =
+            transformed_obs.parameters[0]`` the condition ``len(A.nonzero()[0])
+            == 1 and A.ndim == 2 and A[0, 0] != 0`` is ``True``."""
             iden = qml.Identity(0)
             iden.data = [np.array([[1, 0], [0, 0]])]
             return iden
@@ -461,9 +456,7 @@ class TestParameterShiftLogic:
         """Test that if a device does not support PolyXP
         and the second-order parameter-shift rule is required,
         we fallback to finite differences."""
-        spy_second_order = mocker.spy(
-            qml.gradients.parameter_shift_cv, "second_order_param_shift"
-        )
+        spy_second_order = mocker.spy(qml.gradients.parameter_shift_cv, "second_order_param_shift")
 
         dev = qml.device("default.gaussian", wires=1)
 
@@ -575,9 +568,7 @@ class TestExpectationQuantumGradients:
         grad_A = fn(dev.batch_execute(tapes))
         spy2.assert_not_called()
 
-        tapes, fn = param_shift_cv(
-            tape, dev, gradient_recipes=gradient_recipes, force_order2=True
-        )
+        tapes, fn = param_shift_cv(tape, dev, gradient_recipes=gradient_recipes, force_order2=True)
         grad_A2 = fn(dev.batch_execute(tapes))
         spy2.assert_called()
 
@@ -932,8 +923,7 @@ class TestVarianceQuantumGradients:
         expected = np.array(
             [
                 [
-                    2 * np.exp(2 * r) * np.sin(phi) ** 2
-                    - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
+                    2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
                     2 * np.sinh(2 * r) * np.sin(2 * phi),
                 ]
             ]
@@ -1006,9 +996,7 @@ class TestVarianceQuantumGradients:
 
         tape.trainable_params = {0}
 
-        with pytest.raises(
-            ValueError, match=r"cannot be used with the parameter\(s\) \{0\}"
-        ):
+        with pytest.raises(ValueError, match=r"cannot be used with the parameter\(s\) \{0\}"):
             param_shift_cv(tape, dev, fallback_fn=None)
 
     def test_error_unsupported_grad_recipe(self, monkeypatch):
@@ -1099,8 +1087,7 @@ class TestVarianceQuantumGradients:
         grad = fn(dev.batch_execute(tapes))
         expected = np.array(
             [
-                2 * np.exp(2 * r) * np.sin(phi) ** 2
-                - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
+                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
                 2 * np.sinh(2 * r) * np.sin(2 * phi),
             ]
         )
@@ -1144,9 +1131,7 @@ class TestParamShiftInterfaces:
                 qml.var(qml.X(wires=[0]))
 
             tapes, fn = param_shift_cv(tape, dev)
-            jac = fn(
-                qml.execute(tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev})
-            )
+            jac = fn(qml.execute(tapes, dev, param_shift_cv, gradient_kwargs={"dev": dev}))
             return jac[0, 2]
 
         params = np.array([r, phi], requires_grad=True)
@@ -1188,8 +1173,7 @@ class TestParamShiftInterfaces:
 
         expected = np.array(
             [
-                2 * np.exp(2 * r) * np.sin(phi) ** 2
-                - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
+                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
                 2 * np.sinh(2 * r) * np.sin(2 * phi),
             ]
         )
@@ -1231,8 +1215,7 @@ class TestParamShiftInterfaces:
 
         expected = np.array(
             [
-                2 * np.exp(2 * r) * np.sin(phi) ** 2
-                - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
+                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
                 2 * np.sinh(2 * r) * np.sin(2 * phi),
             ]
         )
@@ -1282,24 +1265,19 @@ class TestParamShiftInterfaces:
         res = cost_fn(params)
         expected = np.array(
             [
-                2 * np.exp(2 * r) * np.sin(phi) ** 2
-                - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
+                2 * np.exp(2 * r) * np.sin(phi) ** 2 - 2 * np.exp(-2 * r) * np.cos(phi) ** 2,
                 2 * np.sinh(2 * r) * np.sin(2 * phi),
             ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        pytest.xfail(
-            "The CV Operation methods have not been updated to support autodiff"
-        )
+        pytest.xfail("The CV Operation methods have not been updated to support autodiff")
 
         res = jax.jacobian(cost_fn)(params)
         expected = np.array(
             [
                 [
-                    4
-                    * np.exp(-2 * r)
-                    * (np.cos(phi) ** 2 + np.exp(4 * r) * np.sin(phi) ** 2),
+                    4 * np.exp(-2 * r) * (np.cos(phi) ** 2 + np.exp(4 * r) * np.sin(phi) ** 2),
                     4 * np.cosh(2 * r) * np.sin(2 * phi),
                 ],
                 [
