@@ -229,20 +229,10 @@ class DefaultMixed(QubitDevice):
         # Computes K^\dagger, needed for the transformation K \rho K^\dagger
         kraus_dagger = [self._conj(self._transpose(k)) for k in kraus]
 
-        # Changes tensor shape
-        if kraus[0].shape[0] == kraus[0].shape[1]:
-            kraus_shape = [len(kraus)] + [2] * num_ch_wires * 2
-            kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
-            kraus_dagger = self._cast(self._reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
-
-        # Add the possibility to give a (1,2) shape Kraus operator
-        elif (kraus[0].shape == (1, 2)) and (num_ch_wires == 1):
-            kraus_shape = [len(kraus)] + list(kraus[0].shape)
-            kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
-            kraus_dagger_shape = [len(kraus)] + list(kraus[0].shape)[::-1]
-            kraus_dagger = self._cast(
-                self._reshape(kraus_dagger, kraus_dagger_shape), dtype=self.C_DTYPE
-            )
+        # Shape kraus operators
+        kraus_shape = [len(kraus)] + [2] * num_ch_wires * 2
+        kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
+        kraus_dagger = self._cast(self._reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
 
         # Tensor indices of the state. For each qubit, need an index for rows *and* columns
         state_indices = ABC[:rho_dim]
