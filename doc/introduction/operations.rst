@@ -35,25 +35,6 @@ transform operators (like turning a gate into a controlled gate).
 
 PennyLane supports the following operators and operator functions:
 
-:ref:`intro_ref_ops_funcs`
-
-:ref:`intro_ref_ops_qubit`:
-
-* :ref:`intro_ref_ops_nonparam`
-* :ref:`intro_ref_ops_qparam`
-* :ref:`intro_ref_ops_qchem`
-* :ref:`intro_ref_ops_matrix`
-* :ref:`intro_ref_ops_arithm`
-* :ref:`intro_ref_ops_qstateprep`
-* :ref:`intro_ref_ops_channels`
-* :ref:`intro_ref_ops_qobs`
-
-:ref:`intro_ref_ops_cv`:
-
-* :ref:`intro_ref_ops_cvgates`
-* :ref:`intro_ref_ops_cvstateprep`
-* :ref:`intro_ref_ops_cvobs`
-
 
 .. _intro_ref_ops_funcs:
 
