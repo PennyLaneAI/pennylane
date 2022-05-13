@@ -28,6 +28,8 @@ from pennylane.wires import Wires
 from pennylane.ops.qubit.attributes import (
     symmetric_over_all_wires,
 )
+from pennylane.ops.arithmetic import Adjoint
+from pennylane.operation import AdjointUndefinedError
 
 
 @qfunc_transform
@@ -243,8 +245,13 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
 
                             node = group.template_dag.get_node(index)
                             inst = copy.deepcopy(node.op)
+
                             inst._wires = Wires(wires)
-                            inst.adjoint()
+
+                            try:
+                                inst.adjoint()
+                            except AdjointUndefinedError:
+                                Adjoint(inst)
 
                     # Add the unmatched gates.
                     for node_id in substitution.unmatched_list:
@@ -255,7 +262,10 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
                 tape = tape_inside
 
     for op in tape.operations:
-        op._wires = Wires([inverse_wires_map[wire] for wire in op.wires.tolist()])
+        if isinstance(op, Adjoint):
+            op.base._wires = Wires([inverse_wires_map[wire] for wire in op.wires.tolist()])
+        else:
+            op._wires = Wires([inverse_wires_map[wire] for wire in op.wires.tolist()])
         apply(op)
 
     # After optimization, simply apply the measurements
@@ -1528,7 +1538,9 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 "RZ": 1,
                 "Hadamard": 1,
                 "T": 1,
+                "Adjoint(T)": 1,
                 "S": 1,
+                "Adjoint(S)": 1,
                 "CNOT": 2,
                 "CZ": 4,
                 "SWAP": 6,

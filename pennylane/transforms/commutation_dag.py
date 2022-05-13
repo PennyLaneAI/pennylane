@@ -23,6 +23,7 @@ import networkx as nx
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.wires import Wires
+from pennylane.ops.arithmetic import Adjoint
 
 
 def commutation_dag(circuit):
@@ -865,7 +866,12 @@ class CommutationDAG:
         wires_map = OrderedDict(zip(tape.wires, consecutive_wires))
 
         for operation in tape.operations:
-            operation._wires = Wires([wires_map[wire] for wire in operation.wires.tolist()])
+            if isinstance(operation, Adjoint):
+                operation.base._wires = Wires(
+                    [wires_map[wire] for wire in operation.wires.tolist()]
+                )
+            else:
+                operation._wires = Wires([wires_map[wire] for wire in operation.wires.tolist()])
             self.add_node(operation)
 
         self._add_successors()
