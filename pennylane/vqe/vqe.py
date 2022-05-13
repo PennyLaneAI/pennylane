@@ -26,8 +26,8 @@ from pennylane import numpy as np
 class ExpvalCost:
     """
     .. warning::
-        `qml.ExpvalCost()` will soon be deprecated, use :class:`~.QNode` and ``qml.expval()`` instead.
-        For example, use:
+        ``ExpvalCost`` is deprecated. Instead, it is recommended to simply
+        pass Hamiltonians to the :func:`~.expval` function inside QNodes.
 
         .. code-block:: python
 
