@@ -1195,6 +1195,20 @@ mul_obs = [
     ),
 ]
 
+matmul_obs = [
+    (qml.PauliX(0), qml.PauliZ(1), Tensor(qml.PauliX(0), qml.PauliZ(1))),  # obs @ obs
+    (
+        qml.PauliX(0),
+        qml.PauliZ(1) @ qml.PauliY(2),
+        Tensor(qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)),
+    ),  # obs @ tensor
+    (
+        qml.PauliX(0),
+        qml.Hamiltonian([1.0], [qml.PauliY(1)]),
+        qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliY(1)]),
+    ),  # obs @ hamiltonian
+]
+
 sub_obs = [
     (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([], [])),
     (
@@ -1282,6 +1296,11 @@ class TestTensorObservableOperations:
     def test_subtraction(self, obs1, obs2, obs):
         """Tests subtraction between Tensors and Observables"""
         assert obs.compare(obs1 - obs2)
+
+    @pytest.mark.parametrize(("obs1", "obs2", "res"), matmul_obs)
+    def test_tensor_product(self, obs1, obs2, res):
+        """Tests the tensor product between Observables"""
+        assert res.compare(obs1 @ obs2)
 
     def test_arithmetic_errors(self):
         """Tests that the arithmetic operations throw the correct errors"""

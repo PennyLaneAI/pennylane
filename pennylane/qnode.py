@@ -48,14 +48,14 @@ class QNode:
               (floats, ints, lists, tuples, dicts) as well as NumPy array arguments,
               and returns NumPy arrays.
 
-            * ``"torch"``: Allows PyTorch to backpropogate
+            * ``"torch"``: Allows PyTorch to backpropagate
               through the QNode. The QNode accepts and returns Torch tensors.
 
-            * ``"tf"``: Allows TensorFlow in eager mode to backpropogate
+            * ``"tf"``: Allows TensorFlow in eager mode to backpropagate
               through the QNode. The QNode accepts and returns
               TensorFlow ``tf.Variable`` and ``tf.tensor`` objects.
 
-            * ``"jax"``: Allows JAX to backpropogate
+            * ``"jax"``: Allows JAX to backpropagate
               through the QNode. The QNode accepts and returns
               JAX ``DeviceArray`` objects.
 
