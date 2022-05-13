@@ -19,8 +19,7 @@ which take a :class:`~pennylane.QNode` instance and return a function:
 ...     # ...
 >>> new_func = my_transform(qnode)
 
-This new function can
-be called with the same arguments as the QNode and returns the desired outcome,
+This new function accepts the same arguments as the QNode and returns the desired outcome,
 such as a dictionary of the QNode's properties, a matplotlib figure drawing the circuit,
 or a DAG representing its connectivity structure.
 
