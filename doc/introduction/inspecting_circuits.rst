@@ -116,9 +116,9 @@ When debugging quantum circuits run on simulators, we may want to inspect the cu
 
 Currently supported devices include:
 
-* `default.qubit`: each snapshot saves the quantum state vector
-* `default.mixed`: each snapshot saves the density matrix
-* `default.gaussian`: each snapshot saves the covariance matrix and vector of means
+* ``default.qubit``: each snapshot saves the quantum state vector
+* ``default.mixed``: each snapshot saves the density matrix
+* ``default.gaussian``: each snapshot saves the covariance matrix and vector of means
 
 During normal execution, the snapshots are ignored:
 
