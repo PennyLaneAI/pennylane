@@ -487,7 +487,10 @@ class QuantumTape(AnnotatedQueue):
             if op_batch_size is None:
                 continue
             if candidate and op_batch_size != candidate:
-                raise ValueError(f"The batch sizes of the tape operations do not match.")
+                raise ValueError(
+                    "The batch sizes of the tape operations do not match, they include "
+                    f"{candidate} and {op_batch_size}."
+                )
             candidate = candidate or op_batch_size
 
         self._batch_size = candidate

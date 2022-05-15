@@ -484,7 +484,7 @@ class Operator(abc.ABC):
     -0.9999987318946099
 
     """
-    # pylint: disable=too-many-public-methods
+    # pylint: disable=too-many-public-methods, too-many-instance-attributes
 
     def __copy__(self):
         cls = self.__class__
