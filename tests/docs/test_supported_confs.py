@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Test that the supported configurations in the documentation
-matches the supported configurations in the code.
+match the supported configurations in the code.
 
 A configuration is specified by:
     1. The quantum device, e.g. "default.qubit"
