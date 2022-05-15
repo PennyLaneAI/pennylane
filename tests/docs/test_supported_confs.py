@@ -58,7 +58,7 @@ wire_specs_list = [
 
 diff_methods = ["device", "backprop", "adjoint", "parameter-shift", "finite-diff"]
 return_types = [
-    State,  # scalar cost function of the state
+    "StateCost",  # scalar cost function of the state
     "StateVector",  # the state directly
     "DensityMatrix",
     Probability,
@@ -69,7 +69,7 @@ return_types = [
     Variance,
 ]
 
-grad_return_cases = [State, "DensityMatrix", Expectation, "Hermitian", "Projector", Variance]
+grad_return_cases = ["StateCost", "DensityMatrix", Expectation, "Hermitian", "Projector", Variance]
 
 
 def get_qnode(interface, diff_method, return_type, shots, wire_specs):
@@ -94,7 +94,7 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
             qml.Hadamard(wires=wire_label)
             qml.RX(x[i], wires=wire_label)
 
-        if return_type == State:
+        if return_type == "StateCost":
             return qml.state()
         elif return_type == "StateVector":
             return qml.state()
@@ -177,12 +177,12 @@ def compute_gradient(x, interface, circuit, return_type, complex=False):
     * return type and
     * whether output is complex
 
-    For the State and DensityMatrix return types, this computes the
+    For the StateCost and DensityMatrix return types, this computes the
     gradient of a scalar cost function dependent on the state instead of
     the jacobian of the state directly. The latter is tested by the
     StateVector return type.
     """
-    if return_type == State:
+    if return_type == "StateCost":
         cost_fn = get_state_cost_fn(circuit)
     elif return_type == "DensityMatrix":
         cost_fn = get_density_matrix_cost_fn(circuit)
@@ -275,7 +275,15 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
         "return_type",
-        [State, "DensityMatrix", Probability, Expectation, "Hermitian", "Projector", Variance],
+        [
+            "StateCost",
+            "DensityMatrix",
+            Probability,
+            Expectation,
+            "Hermitian",
+            "Projector",
+            Variance,
+        ],
     )
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_backprop_none_shots(self, interface, return_type, wire_specs):
@@ -315,7 +323,7 @@ class TestSupportedConfs:
             circuit = get_qnode(interface, "backprop", return_type, 100, wire_specs)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
-    @pytest.mark.parametrize("return_type", [State, "DensityMatrix", Probability, Variance])
+    @pytest.mark.parametrize("return_type", ["StateCost", "DensityMatrix", Probability, Variance])
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_adjoint_nonexp(self, interface, return_type, shots, wire_specs):
@@ -374,7 +382,7 @@ class TestSupportedConfs:
         grad = compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
-    @pytest.mark.parametrize("return_type", [State, "StateVector", "DensityMatrix"])
+    @pytest.mark.parametrize("return_type", ["StateCost", "StateVector", "DensityMatrix"])
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_paramshift_state(self, interface, return_type, shots, wire_specs):
@@ -404,7 +412,7 @@ class TestSupportedConfs:
         grad = compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
-    @pytest.mark.parametrize("return_type", [State, "StateVector", "DensityMatrix"])
+    @pytest.mark.parametrize("return_type", ["StateCost", "StateVector", "DensityMatrix"])
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_finitediff_state(self, interface, return_type, shots, wire_specs):

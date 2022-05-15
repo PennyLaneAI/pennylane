@@ -236,8 +236,6 @@ support gradients of QNodes.
 For more details on available gradient transforms, as well as learning how to define your own
 gradient transform, please see the :mod:`qml.gradients <pennylane.gradients>` documentation.
 
-:html:`</div>`
-
 Supported configurations
 ------------------------
 
@@ -258,9 +256,12 @@ Supported configurations
        .rd-parent {background-color:#ffbbbb}
    </style>
 
-The tables below show all the currently supported functionality
-
-* ``"default.qubit"`` device:
+The table below show all the currently supported functionality for the ``"default.qubit"`` device.
+At the moment, it takes into account the following parameters:
+ * The interface, e.g. ``"jax"``
+ * The differentiation method, e.g. ``"parameter-shift"``
+ * The return value of the QNode, e.g. ``qml.expval()`` or ``qml.probs()``
+ * The number of shots, either None or an integer > 0
 
 .. raw:: html
 
@@ -298,7 +299,7 @@ The tables below show all the currently supported functionality
 +------------------+------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
 | ``"jax"``        | ``"device"``                       |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`3`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
-|                  | ``"backprop"``                     |     :gr:`4`  |   :gr:`4`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     |
+|                  | ``"backprop"``                     |     :gr:`5`  |   :gr:`5`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
 |                  | ``"adjoint"``                      |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :rd:`6`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
@@ -308,7 +309,7 @@ The tables below show all the currently supported functionality
 +------------------+------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
 | ``"tf"``         | ``"device"``                       |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`3`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
-|                  | ``"backprop"``                     |     :gr:`4`  |   :gr:`4`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     |
+|                  | ``"backprop"``                     |     :gr:`5`  |   :gr:`5`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
 |                  | ``"adjoint"``                      |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :rd:`6`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
@@ -318,7 +319,7 @@ The tables below show all the currently supported functionality
 +------------------+------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
 | ``"torch"``      | ``"device"``                       |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`3`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
-|                  | ``"backprop"``                     |     :gr:`4`  |   :rd:`11`    |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     |
+|                  | ``"backprop"``                     |     :gr:`5`  |   :rd:`11`    |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
 |                  | ``"adjoint"``                      |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :rd:`6`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
@@ -347,6 +348,8 @@ The tables below show all the currently supported functionality
    not differentiable. The forward pass is still supported. See :ref:`Sample gradients <Sample gradients>` for details.
 10. Not supported. "We just don't have the theory yet."
 11. Not supported, but due to a bug.
+
+:html:`</div>`
 
 .. toctree::
     :hidden:
