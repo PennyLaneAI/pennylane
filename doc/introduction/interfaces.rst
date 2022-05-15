@@ -258,10 +258,11 @@ Supported configurations
 
 The table below show all the currently supported functionality for the ``"default.qubit"`` device.
 At the moment, it takes into account the following parameters:
- * The interface, e.g. ``"jax"``
- * The differentiation method, e.g. ``"parameter-shift"``
- * The return value of the QNode, e.g. ``qml.expval()`` or ``qml.probs()``
- * The number of shots, either None or an integer > 0
+
+* The interface, e.g. ``"jax"``
+* The differentiation method, e.g. ``"parameter-shift"``
+* The return value of the QNode, e.g. ``qml.expval()`` or ``qml.probs()``
+* The number of shots, either None or an integer > 0
 
 .. raw:: html
 
