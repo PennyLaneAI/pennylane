@@ -81,7 +81,7 @@ class TestOperatorConstruction:
         """Test that an exception is raised if called with wrong number of parameters"""
 
         class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operator that declares num_params as a instance property"""
+            r"""Dummy custom operator that declares num_params as an instance property"""
             num_wires = 1
             grad_method = "A"
 
@@ -96,7 +96,7 @@ class TestOperatorConstruction:
         assert op.num_params == 1
 
         class DummyOp2(qml.operation.Operator):
-            r"""Dummy custom operator that declared num_params as a class property"""
+            r"""Dummy custom operator that declares num_params as a class property"""
             num_params = 4
             num_wires = 1
             grad_method = "A"
@@ -116,6 +116,77 @@ class TestOperatorConstruction:
         op3 = DummyOp3(0.5, 0.6, wires=0)
 
         assert op3.num_params == 2
+
+    def test_incorrect_ndim_params(self):
+        """Test that an exception is raised if called with wrongly-shaped parameters"""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as an instance property"""
+            num_wires = 1
+            grad_method = "A"
+
+            @property
+            def ndim_params(self):
+                return (0,)
+
+        with pytest.raises(ValueError, match=r"wrong number\(s\) of dimensions in parameters"):
+            DummyOp([[[0.5], [0.1]]], wires=0)
+
+        op = DummyOp(0.5, wires=0)
+        assert op.ndim_params == (0,)
+
+        class DummyOp2(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            ndim_params = (1, 2)
+            num_wires = 1
+            grad_method = "A"
+
+        with pytest.raises(ValueError, match=r"wrong number\(s\) of dimensions in parameters"):
+            DummyOp2([0.5], 0.6, wires=0)
+
+        op2 = DummyOp2([0.1], [[0.4, 0.1], [0.2, 1.2]], wires=0)
+        assert op2.ndim_params == (1, 2)
+        assert DummyOp2.ndim_params == (1, 2)
+
+        class DummyOp3(qml.operation.Operator):
+            r"""Dummy custom operator that does not declare ndim_params at all"""
+            num_wires = 1
+            grad_method = "A"
+
+        op3 = DummyOp3(0.5, [[0.6]], wires=0)
+
+        assert op3.ndim_params == (0, 2)
+
+    def test_batched_params(self):
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        # Test with no parameter batched
+        op = DummyOp(0.3, [[0.3, 1.2]], wires=0)
+        assert op.ndim_params == (0, 2)
+        assert op._batch_size == None
+
+        # Test with both parameters batched with same dimension
+        for size in {1, 3}:
+            op = DummyOp([0.3] * size, [[[0.3, 1.2]]] * size, wires=0)
+            assert op.ndim_params == (0, 2)
+            assert op._batch_size == size
+
+        # Test with one parameter batched
+        for size in {1, 3}:
+            op = DummyOp(0.3, [[[0.3, 1.2]]] * size, wires=0)
+            assert op.ndim_params == (0, 2)
+            assert op._batch_size == size
+
+            op = DummyOp([0.3] * size, [[0.3, 1.2]], wires=0)
+            assert op.ndim_params == (0, 2)
+            assert op._batch_size == size
+
+        # Test with mismatching batch dimensions
+        with pytest.raises(ValueError, match="Batching was attempted but the batched dimensions"):
+            DummyOp([0.3] * 4, [[[0.3, 1.2]]] * 3, wires=0)
 
     def test_wires_by_final_argument(self):
         """Test that wires can be passed as the final positional argument."""
@@ -1884,10 +1955,6 @@ def test_docstring_example_of_operator_class(tol):
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
 
-            shape = qml.math.shape(angle)
-            if len(shape) > 1:
-                raise ValueError(f"Expected a scalar angle; got angle of shape {shape}.")
-
             self._hyperparameters = {"do_flip": do_flip}
 
             all_wires = qml.wires.Wires(wire_rot) + qml.wires.Wires(wire_flip)
@@ -1896,6 +1963,10 @@ def test_docstring_example_of_operator_class(tol):
         @property
         def num_params(self):
             return 1
+
+        @property
+        def ndim_params(self):
+            return (0,)
 
         @staticmethod
         def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ

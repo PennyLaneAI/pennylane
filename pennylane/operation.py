@@ -418,12 +418,6 @@ class Operator(abc.ABC):
                 if do_flip and wire_flip is None:
                     raise ValueError("Expected a wire to flip; got None.")
 
-                # note: we use the framework-agnostic math library since
-                # trainable inputs could be tensors of different types
-                shape = qml.math.shape(angle)
-                if len(shape) > 1:
-                    raise ValueError(f"Expected a scalar angle; got angle of shape {shape}.")
-
                 #------------------------------------
 
                 # do_flip is not trainable but influences the action of the operator,
@@ -446,8 +440,16 @@ class Operator(abc.ABC):
             @property
             def num_params(self):
                 # if it is known before creation, define the number of parameters to expect here,
-                # which makes sure an error is raised if the wrong number was passed
+                # which makes sure an error is raised if the wrong number was passed. The angle
+                # parameter is the only trainable parameter of the operation
                 return 1
+
+            @property
+            def ndim_params(self):
+                # if it is known before creation, define the number of dimensions each parameter
+                # is expected to have. This makes sure to raise an error if a wrongly-shaped
+                # parameter was passed. The angle parameter is expected to be a scalar
+                return (0,)
 
             @staticmethod
             def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
@@ -869,10 +871,45 @@ class Operator(abc.ABC):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
+        self._check_batching(params)
+
         self.data = list(params)  #: list[Any]: parameters of the operator
 
         if do_queue:
             self.queue()
+
+    def _check_batching(self, params):
+        """Check if the expected numbers of dimensions of parameters coincides with the
+        ones received and sets the ``_batch_size`` attribute.
+
+        Args:
+            params (tuple): Parameters with which the operator is instantiated
+
+        The check always passes and sets the ``_batch_size`` to ``None`` for the default
+        `Operator.ndim_params` property but subclasses may overwrite it to define fixed
+        expected numbers of dimensions, allowing to infer a batch size.
+        """
+        ndims = tuple(qml.math.ndim(p) for p in params)
+        self._ndim_params = ndims
+        self._batch_size = None
+        if ndims != self.ndim_params:
+            ndims_matches = [
+                (ndim == exp_ndim, ndim == exp_ndim + 1)
+                for ndim, exp_ndim in zip(ndims, self.ndim_params)
+            ]
+            if not all(correct or batched for correct, batched in ndims_matches):
+                raise ValueError(
+                    f"{self.name}: wrong number(s) of dimensions in parameters. "
+                    f"Parameters with ndims {ndims} passed, {self.ndim_params} expected."
+                )
+            first_dims = [
+                qml.math.shape(p)[0] for (_, batched), p in zip(ndims_matches, params) if batched
+            ]
+            if not qml.math.allclose(first_dims, first_dims[0]):
+                raise ValueError(
+                    f"Batching was attempted but the batched dimensions do not match: {first_dims}."
+                )
+            self._batch_size = first_dims[0]
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -893,6 +930,32 @@ class Operator(abc.ABC):
             int: number of parameters
         """
         return self._num_params
+
+    @property
+    def ndim_params(self):
+        """Number of dimensions per trainable parameter of the operator.
+
+        By default, this property returns the numbers of dimensions of the parameters used
+        for the operator creation. If the parameter sizes for an operator subclass are fixed,
+        this property can be overwritten to return the fixed value.
+
+        Returns:
+            tuple: Number of dimensions for each trainable parameter.
+        """
+        return self._ndim_params
+
+    @property
+    def batch_size(self):
+        """Number of dimensions per trainable parameter of the operator.
+
+        By default, this property returns the numbers of dimensions of the parameters used
+        for the operator creation. If the parameter sizes for an operator subclass are fixed,
+        this property can be overwritten to return the fixed value.
+
+        Returns:
+            tuple: Number of dimensions for each trainable parameter.
+        """
+        return self._batch_size
 
     @property
     def wires(self):
