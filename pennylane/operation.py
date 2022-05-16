@@ -1494,7 +1494,7 @@ class Observable(Operator):
         return repr(self.return_type) + "(" + temp + ")"
 
     def __matmul__(self, other):
-        if isinstance(other, Tensor):
+        if isinstance(other, (Tensor, qml.Hamiltonian)):
             return other.__rmatmul__(self)
 
         if isinstance(other, Observable):
