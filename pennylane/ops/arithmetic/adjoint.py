@@ -55,7 +55,6 @@ class Adjoint(Operator):
         cls = self.__class__
         copied_op = cls.__new__(cls)
         copied_base = self.base.__copy__()
-        copied_op.base = copied_base
         copied_op._hyperparameters = {"base": copied_base}
         for attr, value in vars(self).items():
             if attr not in {"data", "base", "_hyperparameters"}:
@@ -65,7 +64,6 @@ class Adjoint(Operator):
 
     # pylint: disable=super-init-not-called
     def __init__(self, base=None, do_queue=True, id=None):
-        self.base = base
         self.hyperparameters["base"] = base
         self._id = id
         self.queue_idx = None
@@ -74,6 +72,10 @@ class Adjoint(Operator):
 
         if do_queue:
             self.queue()
+
+    @property
+    def base(self):
+        return self.hyperparameters['base']
 
     @property
     def data(self):
@@ -305,7 +307,7 @@ def adjoint(fn, lazy=True):
         While the adjoint and inverse are identical for Unitary gates, not all possible operators are Unitary.
         This transform can also act on Channels and Hamiltonians, for which the inverse and adjoint are different.
 
-    .. seealso:: :class:`.ops.arithmetic.Adjoint` and :meth:`.operation.Operator.adjoint`
+    .. seealso:: :class:`~.ops.arithmetic.Adjoint` and :meth:`~.operation.Operator.adjoint`
 
     **Example**
 

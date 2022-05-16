@@ -183,10 +183,7 @@ def _create_commute_function():
             Bool
 
         """
-        try:
-            return op_name1 in commutation_map[op_name2]
-        except KeyError:
-            return False
+        return op_name1 in commutation_map[op_name2]
 
     return commutes_inner
 
