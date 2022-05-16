@@ -930,7 +930,6 @@ class TestVectorValuedJIT:
             return res
 
         res = cost(params, cache=None)
-        print(res, res.shape, res.dtype)
         assert res.shape == (1, dev.shots)
 
     def test_multiple_expvals_grad(self, execute_kwargs):

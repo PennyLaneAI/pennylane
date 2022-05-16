@@ -284,10 +284,10 @@ def _raise_vector_valued_fwd(tapes):
     The output produced by this function matches 1.
     """
     scalar_outputs = all(t.output_dim == 1 for t in tapes)
-    if not scalar_outputs:
-        raise InterfaceUnsupportedError(
-            "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
-        )
+    # if not scalar_outputs:
+    #     raise InterfaceUnsupportedError(
+    #         "Computing the jacobian of vector-valued tapes is not supported currently in forward mode."
+    #     )
 
 
 def _execute_with_fwd(
