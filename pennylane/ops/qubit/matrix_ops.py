@@ -154,7 +154,7 @@ class QubitUnitary(Operation):
         return QubitUnitary(qml.math.T(qml.math.conj(self.matrix())), wires=self.wires)
 
     def pow(self, z):
-        if isinstance(np.zeros, int):
+        if isinstance(z, int):
             return [QubitUnitary(qml.math.linalg.matrix_power(self.matrix(), z), wires=self.wires)]
         return super().pow(z)
 
