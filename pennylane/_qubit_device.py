@@ -22,7 +22,6 @@ import abc
 import itertools
 import warnings
 
-
 import numpy as np
 
 import pennylane as qml
@@ -33,7 +32,6 @@ from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.math import multiply as qmlmul
 from pennylane.wires import Wires
-
 
 from pennylane.measurements import MeasurementProcess
 
