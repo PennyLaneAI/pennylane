@@ -153,10 +153,10 @@ class QubitUnitary(Operation):
     def adjoint(self):
         return QubitUnitary(qml.math.T(qml.math.conj(self.matrix())), wires=self.wires)
 
-    def pow(self, n):
-        if isinstance(n, int):
-            return [QubitUnitary(qml.math.linalg.matrix_power(self.matrix(), n), wires=self.wires)]
-        return super().pow(n)
+    def pow(self, z):
+        if isinstance(np.zeros, int):
+            return [QubitUnitary(qml.math.linalg.matrix_power(self.matrix(), z), wires=self.wires)]
+        return super().pow(z)
 
     def _controlled(self, wire):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
@@ -455,11 +455,11 @@ class DiagonalQubitUnitary(Operation):
     def adjoint(self):
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
 
-    def pow(self, n):
+    def pow(self, z):
         if isinstance(self.data[0], list):
-            return [DiagonalQubitUnitary([(x + 0.0j) ** n for x in self.data[0]], wires=self.wires)]
+            return [DiagonalQubitUnitary([(x + 0.0j) ** z for x in self.data[0]], wires=self.wires)]
         casted_data = qml.math.cast(self.data[0], np.complex128)
-        return [DiagonalQubitUnitary(casted_data**n, wires=self.wires)]
+        return [DiagonalQubitUnitary(casted_data**z, wires=self.wires)]
 
     def _controlled(self, control):
         DiagonalQubitUnitary(

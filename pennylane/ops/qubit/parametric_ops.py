@@ -106,8 +106,8 @@ class RX(Operation):
     def adjoint(self):
         return RX(-self.data[0], wires=self.wires)
 
-    def pow(self, n):
-        return [RX(self.data[0] * n, wires=self.wires)]
+    def pow(self, z):
+        return [RX(self.data[0] * z, wires=self.wires)]
 
     def _controlled(self, wire):
         CRX(*self.parameters, wires=wire + self.wires)
