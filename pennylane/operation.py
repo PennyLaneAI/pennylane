@@ -255,6 +255,10 @@ class AdjointUndefinedError(OperatorPropertyUndefined):
     """Raised when an Operator's adjoint version is undefined."""
 
 
+class PowUndefinedError(OperatorPropertyUndefined):
+    """Raised when an Operator's power is undefined."""
+
+
 class GeneratorUndefinedError(OperatorPropertyUndefined):
     """Exception used to indicate that an operator
     does not have a generator"""
@@ -1024,6 +1028,25 @@ class Operator(abc.ABC):
         no defined generator.
         """
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
+
+    def pow(self, z):
+        """A list of new operators equal to this one raised to the given power.
+
+        Args:
+            z (float): exponent for the operator
+
+        Returns:
+            list[:class:`~.operation.Operator`]
+
+        """
+        # Child methods may call super().pow(z%period) where op**period = I
+        # For example, PauliX**2 = I, SX**4 = I
+        # Hence we define 0 and 1 special cases here.
+        if z == 0:
+            return []
+        if z == 1:
+            return [self.__copy__()]
+        raise PowUndefinedError
 
     def queue(self, context=qml.QueuingContext):
         """Append the operator to the Operator queue."""
