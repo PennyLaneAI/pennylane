@@ -46,7 +46,7 @@ merged.
   characteristics. 
 
 To make sure that the formatting and the quality of the new piece of code is up
-to [PEP8 standards](https://www.python.org/dev/peps/pep-0008/) dedicated tools
+to `PEP8 <https://www.python.org/dev/peps/pep-0008/>`_ dedicated tools
 (``black`` and ``pylint``) should be run locally.
 
 The PennyLane repository provides top-level files (``.pre-commit-config.yaml``
@@ -55,7 +55,8 @@ and a ``pyproject.toml``) for configuring `pre-commit
 pre-commit hook. Once configured, issuing ``git commit`` will run the tools
 automatically. If any of the checks fail, committing fails too. A failed
 ``black`` check will reformat the required files. Running the pre-commit hook
-mechanisms can be disabled for a commit by specifying ``-n/--no-verify``.
+mechanisms can be disabled for a commit by passing the ``-n/--no-verify``
+option.
 
 The ``pre-commit`` package can be installed e.g., via ``pip``:
 
