@@ -117,25 +117,29 @@ class TestDecimals:
         expected = "    0: ──RX(1.00)─┤  <Z>\n    a: ──RY(2.00)─┤     \n1.234: ──RZ(3.00)─┤     "
         assert draw(circuit)(np.array(1), np.array(2), np.array(3)) == expected
 
+    @pytest.mark.torch
     def test_torch_parameters(self):
         """Test torch parameters display as normal numbers."""
 
-        torch = pytest.importorskip("torch")
+        import torch
+
         expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
         out = draw(circuit, decimals=1)(torch.tensor(1.23), torch.tensor(2.34), torch.tensor(3.45))
         assert out == expected
 
+    @pytest.mark.tf
     def test_tensorflow_parameters(self):
         """Test tensorflow parameters display as normal numbers."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
         out = draw(circuit, decimals=1)(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456))
         assert out == expected
 
+    @pytest.mark.jax
     def test_jax_parameters(self):
         """Test jax parameters in tape display as normal numbers."""
-        jnp = pytest.importorskip("jax.numpy")
+        import jax.numpy as jnp
 
         expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
         out = draw(circuit, decimals=1)(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456))

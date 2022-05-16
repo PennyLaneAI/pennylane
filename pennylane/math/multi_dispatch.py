@@ -574,7 +574,13 @@ def where(condition, x=None, y=None):
         interface = _multi_dispatch([condition])
         return np.where(condition, like=interface)
 
-    return np.where(condition, x, y, like=_multi_dispatch([condition, x, y]))
+    interface = _multi_dispatch([condition, x, y])
+    res = np.where(condition, x, y, like=interface)
+
+    if interface == "tensorflow":
+        return np.transpose(np.stack(res))
+
+    return res
 
 
 @multi_dispatch(argnum=[0, 1])

@@ -59,6 +59,9 @@ class BasisState(Operation):
 
     grad_method = None
 
+    # This is a temporary attribute to fix the operator queuing behaviour
+    _queue_category = "_prep"
+
     @staticmethod
     def compute_decomposition(n, wires):
         r"""Representation of the operator as a product of other operators (static method). :
@@ -125,6 +128,9 @@ class QubitStateVector(Operation):
 
     grad_method = None
 
+    # This is a temporary attribute to fix the operator queuing behaviour
+    _queue_category = "_prep"
+
     @staticmethod
     def compute_decomposition(state, wires):
         r"""Representation of the operator as a product of other operators (static method). :
@@ -175,7 +181,8 @@ class QubitDensityMatrix(Operation):
         state (array[complex]): a density matrix of size ``(2**len(wires), 2**len(wires))``
         wires (Sequence[int] or int): the wire(s) the operation acts on
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Example:
 
@@ -205,6 +212,9 @@ class QubitDensityMatrix(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
+
+    # This is a temporary attribute to fix the operator queuing behaviour
+    _queue_category = "_prep"
 
     def adjoint(self):
         raise qml.ops.AdjointError("No adjoint exists for QubitDensityMatrix operations.")

@@ -33,6 +33,16 @@ from pennylane.wires import Wires
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
 
 
+@pytest.mark.parametrize(
+    "return_type", ("Sample", "Variance", "Expectation", "Probability", "State", "MidMeasure")
+)
+def test_obersvablereturntypes_import_warnings(return_type):
+    """Test that accessing the observable return types through qml.operation emit a warning."""
+
+    with pytest.warns(UserWarning, match=r"is deprecated"):
+        getattr(qml.operation, return_type)
+
+
 class TestOperatorConstruction:
     """Test custom operators construction."""
 
@@ -107,6 +117,27 @@ class TestOperatorConstruction:
 
         assert op3.num_params == 2
 
+    def test_wires_by_final_argument(self):
+        """Test that wires can be passed as the final positional argument."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+        op = DummyOp(1.234, "a")
+        assert op.wires[0] == "a"
+        assert op.data == [1.234]
+
+    def test_no_wires(self):
+        """Test an error is raised if no wires are passed."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+        with pytest.raises(ValueError, match="Must specify the wires"):
+            DummyOp(1.234)
+
     def test_name_setter(self):
         """Tests that we can set the name of an operator"""
 
@@ -161,18 +192,6 @@ class TestOperatorConstruction:
         assert MyOp.has_matrix
         assert MyOp(wires=0).has_matrix
 
-    def test_has_matrix_true_get_matrix(self):
-        """Test has_matrix property also detects overriding of `get_matrix` method."""
-
-        class MyOp(qml.operation.Operator):
-            num_wires = 1
-
-            def get_matrix(self):
-                return np.eye(2)
-
-        assert MyOp.has_matrix
-        assert MyOp(wires=0).has_matrix
-
     def test_has_matrix_false(self):
         """Test has_matrix property defaults to false if `compute_matrix` not overwritten."""
 
@@ -181,6 +200,16 @@ class TestOperatorConstruction:
 
         assert not MyOp.has_matrix
         assert not MyOp(wires=0).has_matrix
+
+    def test_has_matrix_false_concrete_template(self):
+        """Test has_matrix with a concrete operation (StronglyEntanglingLayers)
+        that does not have a matrix defined."""
+
+        rng = qml.numpy.random.default_rng(seed=42)
+        shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+        params = rng.random(shape)
+        op = qml.StronglyEntanglingLayers(params, wires=range(2))
+        assert not op.has_matrix
 
 
 class TestOperationConstruction:
@@ -369,25 +398,11 @@ class TestOperationConstruction:
         class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
             num_wires = 1
+            num_params = 1
             grad_method = None
 
         with pytest.raises(ValueError, match="Must specify the wires"):
             DummyOp(0.54)
-
-    def test_wire_passed_positionally(self):
-        """Test exception raised if wire is passed as a positional arg"""
-
-        class DummyOp(qml.operation.Operation):
-            r"""Dummy custom operation"""
-            num_wires = 1
-            grad_method = None
-
-            @property
-            def num_params(self):
-                return 1
-
-        with pytest.raises(ValueError, match="Must specify the wires"):
-            DummyOp(0.54, 0)
 
     def test_id(self):
         """Test that the id attribute of an operator can be set."""
@@ -804,10 +819,10 @@ class TestTensor:
         X = qml.PauliX(0)
         Y = qml.PauliY(2)
         t = Tensor(X, Y)
-        assert np.array_equal(t.get_eigvals(), np.kron([1, -1], [1, -1]))
+        assert np.array_equal(t.eigvals(), np.kron([1, -1], [1, -1]))
 
         # test that the eigvals are now cached and not recalculated
-        assert np.array_equal(t._eigvals_cache, t.get_eigvals())
+        assert np.array_equal(t._eigvals_cache, t.eigvals())
 
     @pytest.mark.usefixtures("tear_down_hermitian")
     def test_eigvals_hermitian(self, tol):
@@ -817,7 +832,7 @@ class TestTensor:
         Herm = qml.Hermitian(hamiltonian, wires=[1, 2])
         t = Tensor(X, Herm)
         d = np.kron(np.array([1.0, -1.0]), np.array([-1.0, 1.0, 1.0, 1.0]))
-        t = t.get_eigvals()
+        t = t.eigvals()
         assert np.allclose(t, d, atol=tol, rtol=0)
 
     def test_eigvals_identity(self, tol):
@@ -826,7 +841,7 @@ class TestTensor:
         Iden = qml.Identity(1)
         t = Tensor(X, Iden)
         d = np.kron(np.array([1.0, -1.0]), np.array([1.0, 1.0]))
-        t = t.get_eigvals()
+        t = t.eigvals()
         assert np.allclose(t, d, atol=tol, rtol=0)
 
     def test_eigvals_identity_and_hermitian(self, tol):
@@ -834,7 +849,7 @@ class TestTensor:
         multiple types of observables"""
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.Identity(2) @ qml.Hermitian(H, wires=[4, 5])
-        res = O.get_eigvals()
+        res = O.eigvals()
         expected = np.kron(np.array([1.0, -1.0]), np.kron(np.array([1.0, 1.0]), np.arange(1, 5)))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -879,14 +894,14 @@ class TestTensor:
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
 
-        O_mat = O.get_matrix()
+        O_mat = O.matrix()
         diag_gates = O.diagonalizing_gates()
 
         # group the diagonalizing gates based on what wires they act on
         U_list = []
         for _, g in itertools.groupby(diag_gates, lambda x: x.wires.tolist()):
             # extract the matrices of each diagonalizing gate
-            mats = [i.get_matrix() for i in g]
+            mats = [i.matrix() for i in g]
 
             # Need to revert the order in which the matrices are applied such that they adhere to the order
             # of matrix multiplication
@@ -907,7 +922,7 @@ class TestTensor:
         U = reduce(np.kron, U_list)
 
         res = U @ O_mat @ U.conj().T
-        expected = np.diag(O.get_eigvals())
+        expected = np.diag(O.eigvals())
 
         # once diagonalized by U, the result should be a diagonal
         # matrix of the eigenvalues.
@@ -919,7 +934,7 @@ class TestTensor:
         H = np.diag([1, 2, 3, 4])
         O = qml.PauliX(0) @ qml.PauliY(1) @ qml.Hermitian(H, [2, 3])
 
-        res = O.get_matrix()
+        res = O.matrix()
         expected = reduce(np.kron, [qml.PauliX.compute_matrix(), qml.PauliY.compute_matrix(), H])
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -928,7 +943,7 @@ class TestTensor:
         """Test that an exception is raised if a wire_order is passed to the matrix method"""
         O = qml.PauliX(0) @ qml.PauliY(1)
         with pytest.raises(NotImplementedError, match="wire_order"):
-            O.get_matrix(wire_order=[1, 0])
+            O.matrix(wire_order=[1, 0])
 
     def test_tensor_matrix_partial_wires_overlap_warning(self, tol):
         """Tests that a warning is raised if the wires the factors in
@@ -939,14 +954,14 @@ class TestTensor:
 
         for O in (O1, O2):
             with pytest.warns(UserWarning, match="partially overlapping"):
-                O.get_matrix()
+                O.matrix()
 
     def test_tensor_matrix_too_large_warning(self, tol):
         """Tests that a warning is raised if wires occur in multiple of the
         factors in the tensor product, leading to a wrongly-sized matrix."""
         O = qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(0)
         with pytest.warns(UserWarning, match="The size of the returned matrix"):
-            O.get_matrix()
+            O.matrix()
 
     @pytest.mark.parametrize("classes", [(qml.PauliX, qml.PauliX), (qml.PauliZ, qml.PauliX)])
     def test_multiplication_matrix(self, tol, classes):
@@ -955,7 +970,7 @@ class TestTensor:
         c1, c2 = classes
         O = c1(0) @ c2(0)
 
-        res = O.get_matrix()
+        res = O.matrix()
         expected = c1.compute_matrix() @ c2.compute_matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -1180,6 +1195,20 @@ mul_obs = [
     ),
 ]
 
+matmul_obs = [
+    (qml.PauliX(0), qml.PauliZ(1), Tensor(qml.PauliX(0), qml.PauliZ(1))),  # obs @ obs
+    (
+        qml.PauliX(0),
+        qml.PauliZ(1) @ qml.PauliY(2),
+        Tensor(qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)),
+    ),  # obs @ tensor
+    (
+        qml.PauliX(0),
+        qml.Hamiltonian([1.0], [qml.PauliY(1)]),
+        qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliY(1)]),
+    ),  # obs @ hamiltonian
+]
+
 sub_obs = [
     (qml.PauliZ(0) @ qml.Identity(1), qml.PauliZ(0), qml.Hamiltonian([], [])),
     (
@@ -1268,6 +1297,11 @@ class TestTensorObservableOperations:
         """Tests subtraction between Tensors and Observables"""
         assert obs.compare(obs1 - obs2)
 
+    @pytest.mark.parametrize(("obs1", "obs2", "res"), matmul_obs)
+    def test_tensor_product(self, obs1, obs2, res):
+        """Tests the tensor product between Observables"""
+        assert res.compare(obs1 @ obs2)
+
     def test_arithmetic_errors(self):
         """Tests that the arithmetic operations throw the correct errors"""
         obs = qml.PauliZ(0)
@@ -1313,7 +1347,7 @@ class TestDefaultRepresentations:
         with pytest.raises(qml.operation.MatrixUndefinedError):
             MyOp.compute_matrix()
         with pytest.raises(qml.operation.MatrixUndefinedError):
-            op.get_matrix()
+            op.matrix()
 
     def test_terms_undefined(self):
         """Tests that custom error is raised in the default terms representation."""
@@ -1336,7 +1370,7 @@ class TestDefaultRepresentations:
         with pytest.raises(qml.operation.EigvalsUndefinedError):
             MyOp.compute_eigvals()
         with pytest.raises(qml.operation.EigvalsUndefinedError):
-            op.get_eigvals()
+            op.eigvals()
 
     def test_diaggates_undefined(self):
         """Tests that custom error is raised in the default diagonalizing gates representation."""
@@ -1516,6 +1550,7 @@ class TestCVOperation:
 
 
 class TestCriteria:
+    doubleExcitation = qml.DoubleExcitation(0.1, wires=[0, 1, 2, 3])
     rx = qml.RX(qml.numpy.array(0.3, requires_grad=True), wires=1)
     stiff_rx = qml.RX(0.3, wires=1)
     cnot = qml.CNOT(wires=[1, 0])
@@ -1539,6 +1574,13 @@ class TestCriteria:
         assert qml.operation.has_grad_method(self.rx)
         assert qml.operation.has_grad_method(self.rot)
         assert not qml.operation.has_grad_method(self.cnot)
+
+    def test_gen_is_multi_term_hamiltonian(self):
+        """Test gen_is_multi_term_hamiltonian criterion."""
+        assert qml.operation.gen_is_multi_term_hamiltonian(self.doubleExcitation)
+        assert not qml.operation.gen_is_multi_term_hamiltonian(self.cnot)
+        assert not qml.operation.gen_is_multi_term_hamiltonian(self.rot)
+        assert not qml.operation.gen_is_multi_term_hamiltonian(self.exp)
 
     def test_has_multipar(self):
         """Test has_multipar criterion."""
@@ -1610,6 +1652,7 @@ class TestExpandMatrix:
         expected = np.array([[0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0], [0, 1, 0, 0]])
         assert np.allclose(expected, res)
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests differentiation in autograd by checking how a specific element of the expanded matrix depends on the
         canonical matrix."""
@@ -1626,10 +1669,11 @@ class TestExpandMatrix:
         expected = np.array([[0.0, 1.0], [0.0, 0.0]])
         assert np.allclose(gradient, expected, atol=tol)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests differentiation in torch by checking how a specific element of the expanded matrix depends on the
         canonical matrix."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         base_matrix = torch.tensor([[0.0, 1.0], [1.0, 0.0]], requires_grad=True)
         res = qml.operation.expand_matrix(base_matrix, wires=[2], wire_order=[0, 2])
@@ -1641,10 +1685,11 @@ class TestExpandMatrix:
         expected = torch.tensor([[0.0, 1.0], [0.0, 0.0]])
         assert np.allclose(gradient, expected, atol=tol)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests differentiation in jax by checking how a specific element of the expanded matrix depends on the
         canonical matrix."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         def func(mat):
@@ -1659,10 +1704,11 @@ class TestExpandMatrix:
         expected = np.array([[0.0, 1.0], [0.0, 0.0]])
         assert np.allclose(gradient, expected, atol=tol)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests differentiation in TensorFlow by checking how a specific element of the expanded matrix depends on the
         canonical matrix."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         base_matrix = tf.Variable([[0.0, 1.0], [1.0, 0.0]])
         with tf.GradientTape() as tape:
@@ -1816,9 +1862,9 @@ class TestExpandMatrix:
                 return base_matrix
 
         op = DummyOp(wires=[0, 2])
-        assert np.allclose(op.get_matrix(), base_matrix, atol=tol)
-        assert np.allclose(op.get_matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
-        assert np.allclose(op.get_matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
+        assert np.allclose(op.matrix(), base_matrix, atol=tol)
+        assert np.allclose(op.matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
+        assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
 
 
 def test_docstring_example_of_operator_class(tol):
@@ -1878,150 +1924,3 @@ def test_docstring_example_of_operator_class(tol):
     res = circuit(a)
     expected = -0.9999987318946099
     assert np.allclose(res, expected, atol=tol)
-
-
-class TestDeprecationWarnings:
-    """Tests for various deprecation warnings"""
-
-    def test_matrix_deprecation(self):
-        """Test that the Operator.matrix property raises a deprecation warning"""
-        op = qml.RX(0.5, wires=0).inv()
-
-        with pytest.warns(UserWarning, match="The 'matrix' property is deprecated"):
-            m1 = op.matrix
-
-        assert np.allclose(m1, op.get_matrix())
-        assert np.allclose(m1, qml.RX.compute_matrix(-0.5))
-
-    def test_matrix_tensor_deprecation(self):
-        """Test that the Tensor.matrix property raises a deprecation warning"""
-        op = qml.PauliZ(0) @ qml.PauliY(1)
-
-        with pytest.warns(UserWarning, match="The 'matrix' property is deprecated"):
-            m1 = op.matrix
-
-        assert np.allclose(m1, op.get_matrix())
-
-    def test_eigvals_deprecation(self):
-        """Test that the Operator.eigvals property raises a deprecation warning"""
-        op = qml.RX(0.5, wires=0)
-
-        with pytest.warns(UserWarning, match="The 'eigvals' property is deprecated"):
-            m1 = op.eigvals
-
-        assert np.allclose(m1, op.get_eigvals())
-
-    def test_eigvals_observable_deprecation(self):
-        """Test that the Observable.eigvals property raises a deprecation warning"""
-        op = qml.PauliX(0)
-
-        with pytest.warns(UserWarning, match="The 'eigvals' property is deprecated"):
-            m1 = op.eigvals
-
-        assert np.allclose(m1, op.get_eigvals())
-
-    def test_eigvals_measurement_deprecation(self):
-        """Test that the MeasurementProcess.eigvals property raises a deprecation warning"""
-        op = qml.expval(qml.PauliX(0))
-
-        with pytest.warns(UserWarning, match="The 'eigvals' property is deprecated"):
-            m1 = op.eigvals
-
-        assert np.allclose(m1, op.get_eigvals())
-
-    def test_eigvals_tensor_deprecation(self):
-        """Test that the Tensor.matrix property raises a deprecation warning"""
-        op = qml.PauliZ(0) @ qml.PauliY(1)
-
-        with pytest.warns(UserWarning, match="The 'eigvals' property is deprecated"):
-            m1 = op.eigvals
-
-        assert np.allclose(m1, op.get_eigvals())
-
-    def test_decomposition_deprecation_no_parameters(self):
-        """Test that old-style staticmethod decompositions for an operation
-        with no parameters raises a warning"""
-        dev = qml.device("default.qubit", wires=1)
-
-        class MyOp(Operation):
-            num_wires = 1
-            num_params = 0
-
-            @staticmethod
-            def decomposition(wires):
-                qml.RY(0.5, wires=wires[0])
-
-        @qml.qnode(dev)
-        def qnode():
-            MyOp(wires=0)
-            return qml.state()
-
-        with pytest.warns(UserWarning, match="is now an instance method"):
-            result1 = qnode()
-
-        # using an instance method will not raise a deprecation warning
-
-        class MyOp(Operation):
-            num_wires = 1
-            num_params = 0
-
-            def decomposition(self):
-                qml.RY(0.5, wires=self.wires[0])
-
-        @qml.qnode(dev)
-        def qnode():
-            MyOp(wires=0)
-            return qml.state()
-
-        with warnings.catch_warnings():
-            # any warnings emitted will be raised as errors
-            warnings.simplefilter("error")
-            result2 = qnode()
-
-        assert np.allclose(result1, result2)
-
-    def test_decomposition_deprecation_parameters(self):
-        """Test that old-style staticmethod decompositions for an operation
-        with parameters raises a warning"""
-        dev = qml.device("default.qubit", wires=1)
-
-        class MyOp(Operation):
-            num_wires = 1
-            num_params = 2
-
-            @staticmethod
-            def decomposition(*params, wires):
-                qml.RY(params[0], wires=wires[0])
-                qml.PauliZ(wires=wires[0])
-                qml.RX(params[1], wires=wires[0])
-
-        @qml.qnode(dev)
-        def qnode(*params):
-            MyOp(*params, wires=0)
-            return qml.state()
-
-        with pytest.warns(UserWarning, match="is now an instance method"):
-            result1 = qnode(0.1, 0.2)
-
-        # using an instance method will not raise a deprecation warning
-
-        class MyOp(Operation):
-            num_wires = 1
-            num_params = 2
-
-            def decomposition(self):
-                qml.RY(self.parameters[0], wires=self.wires[0])
-                qml.PauliZ(wires=self.wires[0])
-                qml.RX(self.parameters[1], wires=self.wires[0])
-
-        @qml.qnode(dev)
-        def qnode(*params):
-            MyOp(*params, wires=0)
-            return qml.state()
-
-        with warnings.catch_warnings():
-            # any warnings emitted will be raised as errors
-            warnings.simplefilter("error")
-            result2 = qnode(0.1, 0.2)
-
-        assert np.allclose(result1, result2)

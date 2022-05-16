@@ -88,15 +88,9 @@ details in the documentation on :doc:`adding operations </development/adding_ope
 * Representation as a matrix
 
   >>> op = qml.PauliRot(0.2, "X", wires=["b"])
-  >>> op.get_matrix()
+  >>> op.matrix()
   [[9.95004177e-01-2.25761781e-18j 2.72169462e-17-9.98334214e-02j]
    [2.72169462e-17-9.98334214e-02j 9.95004177e-01-2.25761781e-18j]]
-
-.. note::
-
-    The ``op.get_matrix()`` method is temporary and will be renamed to ``op.matrix()`` in an
-    upcoming release. Where possible it is recommended to use higher-level functions such as
-    :func:`~.matrix`.
 
 Devices query operators for their properties and representations to
 gain information on how to implement the operator.

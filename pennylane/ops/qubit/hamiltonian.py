@@ -15,7 +15,7 @@
 This submodule contains the discrete-variable quantum operations that perform
 arithmetic operations on their input states.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
 from copy import copy
 from collections.abc import Iterable
@@ -544,6 +544,23 @@ class Hamiltonian(Observable):
 
         raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
 
+    def __rmatmul__(self, H):
+        r"""The tensor product operation (from the right) between a Hamiltonian and
+        a Hamiltonian/Tensor/Observable (ie. Hamiltonian.__rmul__(H) = H @ Hamiltonian).
+        """
+        if isinstance(H, Hamiltonian):  # can't be accessed by '@'
+            return H.__matmul__(self)
+
+        coeffs1 = copy(self.coeffs)
+        ops1 = self.ops.copy()
+
+        if isinstance(H, (Tensor, Observable)):
+            terms = [H @ op for op in ops1]
+
+            return qml.Hamiltonian(coeffs1, terms, simplify=True)
+
+        raise ValueError(f"Cannot tensor product Hamiltonian and {type(H)}")
+
     def __add__(self, H):
         r"""The addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
         ops = self.ops.copy()
@@ -621,8 +638,6 @@ class Hamiltonian(Observable):
             except QueuingError:
                 o.queue(context=context)
                 context.update_info(o, owner=self)
-            except NotImplementedError:
-                pass
 
         context.append(self, owns=tuple(self.ops))
         return self

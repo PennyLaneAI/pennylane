@@ -54,7 +54,8 @@ def layer(template, depth, *args, **kwargs):
 
     See usage details for more information.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Layering Gates**
 

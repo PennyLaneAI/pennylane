@@ -32,7 +32,6 @@ that compute the desired quantity.
     ~transforms.classical_jacobian
     ~batch_params
     ~batch_input
-    ~transforms.get_unitary_matrix
     ~metric_tensor
     ~adjoint_metric_tensor
     ~specs
@@ -206,7 +205,6 @@ from .optimization import (
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
-from .get_unitary_matrix import get_unitary_matrix
 from .commutation_dag import (
     commutation_dag,
     is_commuting,

@@ -210,7 +210,7 @@ class tensor(_np.ndarray):
     def __setstate__(self, reduced_obj) -> None:
         # Called when unpickling the object.
         # Set self.requires_grad with the last element in the tuple returned by __reduce__:
-        # pylint: disable=attribute-defined-outside-init
+        # pylint: disable=attribute-defined-outside-init,no-member
         self.requires_grad = reduced_obj[-1]
         # And call parent's __setstate__ without this element:
         super().__setstate__(reduced_obj[:-1])
