@@ -93,7 +93,7 @@
 
 * Adds tests, adds no-coverage directives, and removes inaccessible logic to improve code coverage.
   [(#2537)](https://github.com/PennyLaneAI/pennylane/pull/2537)
-  
+
 * The base classes `QubitDevice` and `DefaultQubit` now accept data-types for a statevector. This
   enables a derived class (device) in a plugin to choose correct data-types.
   [(#2448)](https://github.com/PennyLaneAI/pennylane/pull/2448)
@@ -136,6 +136,12 @@
 * The centralized [Xanadu Sphinx Theme](https://github.com/XanaduAI/xanadu-sphinx-theme)
   is now used to style the Sphinx documentation.
   [(#2450)](https://github.com/PennyLaneAI/pennylane/pull/2450)
+
+* Added a new section in the [Gradients and Training](https://pennylane.readthedocs.io/en/stable/introduction/interfaces.html)
+  page that summarizes the supported device configurations and provides justification. Also
+  added [code examples](https://pennylane.readthedocs.io/en/stable/introduction/unsupported.html)
+  for some selected configurations.
+  [(#2540)](https://github.com/PennyLaneAI/pennylane/pull/2540)
 
 <h3>Contributors</h3>
 
