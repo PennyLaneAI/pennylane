@@ -39,6 +39,15 @@
 
 <h3>Improvements</h3>
 
+* Operators have new attributes `ndim_params` and `batch_size`, QuantumTapes have the new
+  attribute `batch_size`.
+  [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
+
+  When providing an operator with the `ndim_params` attributed, it will
+  determine whether (and with which `batch_size`) its input parameter(s)
+  is/are batched. A QuantumTape infers from its operations whether it is
+  batched.
+
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
   for many classes.
   [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
@@ -148,4 +157,4 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Christian Gogolin,
-Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld, Jay Soni
+Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld, Jay Soni, David Wierichs
