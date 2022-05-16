@@ -57,6 +57,21 @@ automatically. If any of the checks fail, committing fails too. A failed
 ``black`` check will reformat the required files. Running the pre-commit hook
 mechanisms can be disabled for a commit by specifying ``-n/--no-verify``.
 
+The ``pre-commit`` package can be installed e.g., via ``pip``:
+
+.. code-block:: bash
+
+    pip install pre-commit
+
+Then, it can be installed for a specific repository by running
+
+.. code-block:: bash
+
+    pre-commit install
+
+in the folder where the ``.pre-commit-config.yaml`` file exists (the top-level
+folder for PennyLane).
+
 .. note::
 
     The ``.pre-commit-config.yaml`` file pins ``black`` to a specific version.
