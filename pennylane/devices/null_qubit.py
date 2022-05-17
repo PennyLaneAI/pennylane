@@ -22,10 +22,11 @@ import numpy as np
 from scipy.sparse import coo_matrix
 
 import pennylane as qml
-from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Snapshot
+from pennylane.devices import DefaultQubit
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
 from .._version import __version__
+from collections import defaultdict
 
 # pylint: disable=unused-argument
 class NullQubit(DefaultQubit):
@@ -43,51 +44,55 @@ class NullQubit(DefaultQubit):
     version = __version__
     author = "Xanadu Inc."
 
-    def __init__(self, wires, *args, **kwargs):
-        pass
+    def __init__(self, wires, shots=0, *args, **kwargs):
+        self._gatecalls = defaultdict(int)
+        self._shots = shots
+        self._shot_vector = None
+        self.custom_expand_fn = None
 
     # pylint: disable=arguments-differ
-    def apply(self, operations, rotations=None, **kwargs):
-        pass
+    def apply(self, operations, *args, **kwargs):
+        for op in operations:
+            self._apply_operation(None, op)
 
     def _apply_operation(self, state, operation):
-        pass
+        self._gatecalls[operation.name] += 1
 
     def _apply_x(self, state, axes, **kwargs):
-        pass
+        self._gatecalls["PauliX"] += 1
 
     def _apply_y(self, state, axes, **kwargs):
-        pass
+        self._gatecalls["PauliY"] += 1
 
     def _apply_z(self, state, axes, **kwargs):
-        pass
+        self._gatecalls["PauliZ"] += 1
 
     def _apply_hadamard(self, state, axes, **kwargs):
-        pass
+        self._gatecalls["Hadamard"] += 1
 
     def _apply_s(self, state, axes, inverse=False):
-        return self._apply_phase(state, axes, 1j, inverse)
+        self._gatecalls["S"] += 1
 
     def _apply_t(self, state, axes, inverse=False):
-        return self._apply_phase(state, axes, TPHASE, inverse)
+        self._gatecalls["T"] += 1
 
     def _apply_sx(self, state, axes, inverse=False):
-        pass
+        self._gatecalls["SX"] += 1
 
     def _apply_cnot(self, state, axes, **kwargs):
-        pass
+        self._gatecalls["CNOT"] += 1
 
     def _apply_toffoli(self, state, axes, **kwargs):
-        pass
+        self._gatecalls["Toffoli"] += 1
 
     def _apply_swap(self, state, axes, **kwargs):
-        pass
+        self._gatecalls["SWAP"] += 1
 
     def _apply_cz(self, state, axes, **kwargs):
-        pass
+        self._gatecalls["CZ"] += 1
 
     def _apply_phase(self, state, axes, parameters, inverse=False):
-        pass
+        self._gatecalls["Phase"] += 1
 
     def expval(self, observable, shot_range=None, bin_size=None):
         pass
@@ -134,3 +139,19 @@ class NullQubit(DefaultQubit):
 
     def analytic_probability(self, wires=None):
         pass
+
+    def generate_samples(self):
+        pass
+
+    def gatecalls(self):
+        return self._gatecalls
+
+    def execute(self, circuit, **kwargs):
+        self.apply(circuit.operations)
+        return [[0.0]]
+
+    def batch_execute(self, circuits, **kwargs):
+        res = []
+        for c in circuits:
+            res.append(self.execute(c))
+        return res
