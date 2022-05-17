@@ -37,6 +37,9 @@
   The code that checks for qubit wise commuting (QWC) got a performance boost that is noticable
   when many commuting paulis of the same type are measured.
 
+* A `Sum` arithmetic class is added that allows users to represent the sum of operators
+  [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
+
 <h3>Improvements</h3>
 
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
