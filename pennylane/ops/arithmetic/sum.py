@@ -55,14 +55,29 @@ class Sum(qml.operation.Operator):
     def terms(self):
         return [1.0]*len(self.summands), self.summands
 
-    def get_matrix(self, wire_order=None):
-        return self._sum(m.get_matrix(wire_order=wire_order) for m in self.summands)
+    def matrix(self, wire_order=None):
+        """Matrix representation of the  """
 
-    def _sum(self, *mats):
+        def matrix_gen(summands):
+            """Helper function to construct a generator of matrices"""
+            for op in summands:
+                try:
+                    mat = op.compute_matrix()  # static method to generate matrix rep for op
+                except qml.operation.MatrixUndefinedError:
+                    mat = op.matrix()  # non-static method to get matrix rep for op
+                yield mat
+
+        canonical_matrix = self._sum(matrix_gen(self.summands))
+        if wire_order is None or self.wires == qml.Wires(wire_order):
+            return canonical_matrix
+        return qml.operation.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
+
+    def _sum(self, mats_gen):
         """Super inefficient Sum method just as a proof of concept"""
-        res = qnp.zeros(len(self.wires))
+        res = np.zeros((2**self.num_wires, 2**self.num_wires), dtype="complex128")
+        # res = np.zeros((2**self.num_wires, 2**self.num_wires))  # Doesn't work due to casting error !
 
-        for mat in mats:
+        for mat in mats_gen:
             res += mat
 
         return res
