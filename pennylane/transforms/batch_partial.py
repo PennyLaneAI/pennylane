@@ -14,7 +14,6 @@
 """
 Contains the batch dimension transform.
 """
-import copy
 import functools
 import inspect
 
@@ -36,20 +35,21 @@ def _convert_to_args(func, args, kwargs):
         elif i < len(sig):
             # next check if the argnum is provided
             new_args.append(args[i])
-        else:
-            raise ValueError(f"Argument {param} must be provided")
 
     return tuple(new_args)
 
 
 def batch_partial(qnode, **partial_kwargs):
+    """
+    TODO: docs
+    """
     qnode = qml.batch_params(qnode)
 
     # store whether this decorator is being used as a pure
     # analog of functools.partial, or whether it is used to
     # wrap a QNode in a more complex lambda statement
     is_partial = False
-    if not any([callable(val) for val in partial_kwargs.values()]):
+    if not any(callable(val) for val in partial_kwargs.values()):
         # none of the kwargs passed in are callable
         is_partial = True
 
@@ -92,8 +92,8 @@ def batch_partial(qnode, **partial_kwargs):
 
         if is_partial:
             return qnode(*_convert_to_args(qnode, args, kwargs))
-        else:
-            # don't pass the arguments to the lambda itself into the QNode
-            return qnode(*_convert_to_args(qnode, (), kwargs))
+
+        # don't pass the arguments to the lambda itself into the QNode
+        return qnode(*_convert_to_args(qnode, (), kwargs))
 
     return wrapper

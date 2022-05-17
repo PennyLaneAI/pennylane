@@ -50,6 +50,37 @@ def test_partial_evaluation():
     assert np.allclose(res, indiv_res)
 
 
+def test_partial_evaluation_kwargs():
+    """Test partial evaluation matches individual full evaluations
+    when kwargs are used"""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit(x, y):
+        qml.RX(x, wires=0)
+        qml.RY(y[..., 0], wires=0)
+        qml.RY(y[..., 1], wires=1)
+        return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
+
+    batch_size = 4
+
+    # the partial argument to construct a new circuit with
+    y = np.random.uniform(size=2)
+
+    # the batched argument to the new partial circuit
+    x = np.random.uniform(size=batch_size)
+
+    batched_partial_circuit = qml.batch_partial(circuit, y=y)
+    res = batched_partial_circuit(x=x)
+
+    # check the results against individually executed circuits
+    indiv_res = []
+    for x_indiv in x:
+        indiv_res.append(circuit(x_indiv, y))
+
+    assert np.allclose(res, indiv_res)
+
+
 def test_partial_evaluation_grad():
     """Test gradient of partial evaluation matches gradients of
     individual full evaluations"""
