@@ -730,14 +730,8 @@ class Device(abc.ABC):
                 ) from e
 
         if len(circuit._obs_sharing_wires) > 0 and not hamiltonian_in_obs:
-            # Check for case of non-commuting terms outside of Hamiltonians
-            try:
-                return qml.transforms.split_non_commuting(circuit)
-            
-            except ValueError as e:
-                raise ValueError(
-                    "Can only "
-                )
+            # Check for case of non-commuting terms and that there are no Hamiltonians
+            return qml.transforms.split_non_commuting(circuit)
 
         # otherwise, return an identity transform
         return [circuit], lambda res: res[0]
