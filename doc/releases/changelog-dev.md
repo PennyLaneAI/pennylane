@@ -108,6 +108,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug to make `param_shift_hessian` work with QNodes in which gates marked
+  as trainable do not have any impact on the QNode output.
+  [(#2584)](https://github.com/PennyLaneAI/pennylane/pull/2584)
+
 * Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
   computed for QNodes with parametrized observables (e.g., `qml.Hermitian`).
   [(#2543)](https://github.com/PennyLaneAI/pennylane/pull/2543)
@@ -148,4 +152,4 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Christian Gogolin,
-Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld, Jay Soni
+Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld, Jay Soni, David Wierichs
