@@ -22,8 +22,7 @@ from pennylane import numpy as qnp
 
 
 def sum(*summands):
-    """Top level function computing the sum of the
-    provided summands"""
+    """Compute the sum of the provided terms"""
     return Sum(*summands)
 
 
@@ -42,7 +41,7 @@ class Sum(qml.operation.Operator):
         super().__init__(
             *combined_params, wires=combined_wires, do_queue=do_queue, id=id
         )
-        self._name = "Sum(" + ", ".join([f"{f}" for f in summands]) + ")"
+        self._name = "Sum"
 
     def __repr__(self):
         """Constructor-call-like representation."""
