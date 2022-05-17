@@ -763,7 +763,7 @@ class Device(abc.ABC):
                     circuits.append(new_circuit)
 
                 def reorder_fn(res):
-                    print(res, group_coeffs)
+                    """ re-ordering the output the same way observables where input """
                     return qml.math.concatenate(res)[qml.math.concatenate(group_coeffs)]
 
                 return circuits, reorder_fn
