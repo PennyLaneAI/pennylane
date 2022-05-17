@@ -1500,6 +1500,7 @@ class SISWAP(Operation):
         z_mod4 = z % 4
         return [ISWAP(wires=self.wires)] if z_mod4 == 2 else super().pow(z_mod4)
 
+
 SQISW = SISWAP
 
 

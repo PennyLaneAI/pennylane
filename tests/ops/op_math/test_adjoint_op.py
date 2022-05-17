@@ -17,7 +17,83 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.ops.arithmetic import Adjoint
+from pennylane.ops.op_math import Adjoint
+from pennylane.ops.op_math.adjoint_class import AdjointOperation
+
+
+class TestInheritanceMixins:
+    """Test inheritance structure and mixin addition through dynamic __new__ method."""
+
+    def test_plain_operator(self):
+        """Test when base directly inherits from Operator, Adjoint only inherits
+        from Adjoint and Operator."""
+
+        class Tester(qml.operation.Operator):
+            num_wires = 1
+            num_params = 1
+
+        base = Tester(1.234, wires=0)
+        op = Adjoint(base)
+
+        assert isinstance(op, Adjoint)
+        assert isinstance(op, qml.operation.Operator)
+        assert not isinstance(op, qml.operation.Operation)
+        assert not isinstance(op, qml.operation.Observable)
+        assert not isinstance(op, AdjointOperation)
+
+        assert op.__class__.__bases__ == (Adjoint, qml.operation.Operator)
+
+        # checking we can call `dir` without problems
+        assert "num_params" in dir(op)
+
+    def test_operation(self):
+        """When the operation inherits from `Operation`, the `AdjointOperation` mixin should
+        be added and the Adjoint should now have Operation functionality."""
+
+        class CustomOp(qml.operation.Operation):
+            num_wires = 1
+            num_params = 1
+
+        base = CustomOp(1.234, wires=0)
+        op = Adjoint(base)
+
+        assert isinstance(op, Adjoint)
+        assert isinstance(op, qml.operation.Operator)
+        assert isinstance(op, qml.operation.Operation)
+        assert not isinstance(op, qml.operation.Observable)
+        assert isinstance(op, AdjointOperation)
+
+        assert op.__class__.__bases__ == (Adjoint, AdjointOperation, qml.operation.Operation)
+
+        # check operation-specific properties made it into the mapping
+        assert "grad_recipe" in dir(op)
+        assert "control_wires" in dir(op)
+
+    def test_observable(self):
+        """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
+
+        class CustomObs(qml.operation.Observable):
+            num_wires = 1
+            num_params = 0
+
+        base = CustomObs(wires=0)
+        ob = Adjoint(base)
+
+        assert isinstance(ob, Adjoint)
+        assert isinstance(ob, qml.operation.Operator)
+        assert not isinstance(ob, qml.operation.Operation)
+        assert isinstance(ob, qml.operation.Observable)
+        assert not isinstance(ob, AdjointOperation)
+
+        assert ob.__class__.__bases__ == (Adjoint, qml.operation.Observable)
+
+        # Check some basic observable functionality
+        assert ob.compare(ob)
+        assert isinstance(1.0 * ob @ ob, qml.Hamiltonian)
+
+        # check the dir
+        assert "return_type" in dir(ob)
+        assert "grad_recipe" not in dir(ob)
 
 
 class TestInitialization:
@@ -218,7 +294,7 @@ class TestDiffInfo:
 
         assert op.grad_method is None
 
-    @pytest.mark.parametrize("op", (qml.Hermitian(np.eye(2), wires=0), qml.RX(1.2, wires=0)))
+    @pytest.mark.parametrize("op", (qml.RX(1.2, wires=0),))
     def test_grad_method_not_None(self, op):
         assert Adjoint(op).grad_method == op.grad_method
 

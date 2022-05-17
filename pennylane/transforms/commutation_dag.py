@@ -23,7 +23,7 @@ import networkx as nx
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.wires import Wires
-from pennylane.ops.arithmetic import Adjoint
+from pennylane.ops.op_math import Adjoint
 
 
 def commutation_dag(circuit):

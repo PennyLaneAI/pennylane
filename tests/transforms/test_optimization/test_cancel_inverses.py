@@ -88,7 +88,6 @@ class TestCancelInverses:
 
         assert len(new_tape.operations) == 0
 
-
     def test_one_qubit_no_inverse(self):
         """Test that a one-qubit circuit with a gate in the way does not cancel the inverses."""
 

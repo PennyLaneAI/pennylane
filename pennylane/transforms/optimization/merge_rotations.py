@@ -18,7 +18,7 @@ from pennylane.transforms import qfunc_transform
 from pennylane.math import allclose, stack, cast_like, zeros, is_abstract
 
 from pennylane.ops.qubit.attributes import composable_rotations
-from pennylane.ops.arithmetic import Adjoint
+from pennylane.ops.op_math import Adjoint
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
