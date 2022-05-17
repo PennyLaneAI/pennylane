@@ -270,7 +270,8 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         it may still change based on inputs to the QNode that alter the architecture
         of the circuit.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Above, we selected all input-encoding parameters for the spectrum computation, using
         the ``argnum`` keyword argument. We may also restrict the full analysis to a single

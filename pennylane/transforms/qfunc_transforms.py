@@ -83,7 +83,8 @@ class NonQueuingTape(qml.queuing.AnnotatedQueue):
     itself to the current queuing context."""
 
     def _process_queue(self):
-        super()._process_queue()
+        # accesses the parent of the target class that NonQueingTape is mixed into
+        super()._process_queue()  # pylint:disable=no-member
 
         for obj, info in self._queue.items():
             qml.queuing.QueuingContext.append(obj, **info)
@@ -265,7 +266,8 @@ def qfunc_transform(tape_transform):
     allowing the transform itself to be differentiated and trained. For more details,
     see the Differentiability section under Usage Details.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Inline usage**
 

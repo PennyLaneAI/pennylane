@@ -101,7 +101,8 @@ class kUpCCGSD(Operation):
         init_state (array[int]): Length ``len(wires)`` occupation-number vector representing the
             HF state. ``init_state`` is used to initialize the wires.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         #. The number of wires has to be equal to the number of
            spin-orbitals included in the active space, and should be even.

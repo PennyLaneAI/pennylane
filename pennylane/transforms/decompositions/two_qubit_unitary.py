@@ -14,8 +14,9 @@
 """Contains transforms and helpers functions for decomposing arbitrary two-qubit
 unitary operations into elementary gates.
 """
+import numpy as np
+
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane import math
 
 from .single_qubit_unitary import zyz_decomposition
@@ -387,8 +388,8 @@ def _decomposition_2_cnots(U, wires):
             qml.CNOT(wires=[wires[1], wires[0]]),
         ]
 
-        RZd = qml.RZ(math.cast_like(delta, 1j), wires=0).get_matrix()
-        RXp = qml.RX(phi, wires=0).get_matrix()
+        RZd = qml.RZ(math.cast_like(delta, 1j), wires=0).matrix()
+        RXp = qml.RX(phi, wires=0).matrix()
         inner_matrix = math.kron(RZd, RXp)
 
     # We need the matrix representation of this interior part, V, in order to
@@ -459,9 +460,9 @@ def _decomposition_3_cnots(U, wires):
     # -╭V- = -╭X--RZ(d)--╭C---------╭X--╭SWAP-
     # -╰V- = -╰C--RY(b)--╰X--RY(a)--╰C--╰SWAP-
 
-    RZd = qml.RZ(math.cast_like(delta, 1j), wires=wires[0]).get_matrix()
-    RYb = qml.RY(beta, wires=wires[0]).get_matrix()
-    RYa = qml.RY(alpha, wires=wires[0]).get_matrix()
+    RZd = qml.RZ(math.cast_like(delta, 1j), wires=wires[0]).matrix()
+    RYb = qml.RY(beta, wires=wires[0]).matrix()
+    RYa = qml.RY(alpha, wires=wires[0]).matrix()
 
     V_mats = [CNOT10, math.kron(RZd, RYb), CNOT01, math.kron(math.eye(2), RYa), CNOT10, SWAP]
 

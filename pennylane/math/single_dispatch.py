@@ -46,6 +46,7 @@ ar.register_function("numpy", "unstack", list)
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
 # qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
 ar.register_function("scipy", "to_numpy", lambda x: x)
+ar.register_function("scipy", "shape", np.shape)
 
 
 def _scatter_element_add_numpy(tensor, index, value):
@@ -319,17 +320,6 @@ ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagona
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
-
-try:
-    if semantic_version.match(">=1.10", _i("torch").__version__):
-        # Autoray uses the deprecated torch.symeig as an alias for eigh, however this has
-        # been deprecated in favour of torch.linalg.eigh.
-        # autoray.py:84: UserWarning: torch.symeig is deprecated in favor of torch.linalg.eigh
-        # and will be removed in a future PyTorch release.
-        del ar.autoray._FUNCS["torch", "linalg.eigh"]
-except ImportError:
-    pass
-
 
 ar.register_function(
     "torch",

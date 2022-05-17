@@ -38,6 +38,7 @@ def test_empty_tape():
     assert isinstance(ax, mpl.axes._axes.Axes)
 
     assert fig.axes == [ax]
+    plt.close()
 
 
 with QuantumTape() as tape1:
@@ -52,6 +53,7 @@ def test_fontsize():
     _, ax = tape_mpl(tape1, fontsize=20)
     for t in ax.texts:
         assert t.get_fontsize() == 20
+    plt.close()
 
 
 label_data = [
@@ -492,6 +494,7 @@ class TestGeneralOperations:
         )
 
         assert len(ax.patches) == 1
+        plt.close()
 
 
 measure_data = [
@@ -544,6 +547,7 @@ class TestMeasurements:
         for layer, box in enumerate(ax.patches[::3]):
             assert box.get_x() == 1 - self.width / 2.0
             assert box.get_y() == layer - self.width / 2.0
+        plt.close()
 
 
 class TestLayering:
@@ -573,6 +577,7 @@ class TestLayering:
 
         for t in ax.texts[3:]:
             assert t.get_text() == "X"
+        plt.close()
 
     def test_three_layers_one_wire(self):
         """Tests the positions when multiple gates are all on the same wire."""
@@ -590,6 +595,7 @@ class TestLayering:
 
         for t in ax.texts[1:]:
             assert t.get_text() == "X"
+        plt.close()
 
     def test_blocking_IsingXX(self):
         """Tests the position of layers when a multiwire gate is blocking another gate on its empty wire."""
@@ -616,3 +622,4 @@ class TestLayering:
         assert ax.texts[3].get_text() == "X"
         assert ax.texts[4].get_text() == "IsingXX"
         assert ax.texts[5].get_text() == "X"
+        plt.close()

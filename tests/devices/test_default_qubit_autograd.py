@@ -22,6 +22,7 @@ from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
 from pennylane import DeviceError
 
 
+@pytest.mark.autograd
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -34,6 +35,7 @@ def test_analytic_deprecation():
         qml.device("default.qubit.autograd", wires=1, shots=1, analytic=True)
 
 
+@pytest.mark.autograd
 class TestQNodeIntegration:
     """Integration tests for default.qubit.autograd. This test ensures it integrates
     properly with the PennyLane UI, in particular the new QNode."""
@@ -112,6 +114,7 @@ class TestQNodeIntegration:
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.autograd
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
@@ -162,6 +165,7 @@ class TestDtypePreserved:
         assert res.dtype == c_dtype
 
 
+@pytest.mark.autograd
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
@@ -418,8 +422,24 @@ class TestPassthruIntegration:
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
 
+@pytest.mark.autograd
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
+
+    def test_do_not_split_analytic_autograd(self, mocker):
+        """Tests that the Hamiltonian is not split for shots=None using the autograd device."""
+        dev = qml.device("default.qubit.autograd", wires=2)
+        H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
 
     def test_template_integration(self):
         """Test that a PassthruQNode default.qubit.autograd works with templates."""
@@ -459,6 +479,7 @@ class TestHighLevelIntegration:
         assert grad.shape == weights.shape
 
 
+@pytest.mark.autograd
 class TestOps:
     """Unit tests for operations supported by the default.qubit.autograd device"""
 

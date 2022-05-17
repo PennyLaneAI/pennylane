@@ -35,6 +35,8 @@ qubit_device_and_diff_method = [
     ["default.qubit", "adjoint", "backward", "jax-jit"],
 ]
 
+pytestmark = pytest.mark.jax
+
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
@@ -1334,6 +1336,9 @@ class TestJIT:
         if diff_method == "backprop":
             pytest.skip("Backpropagation is unsupported if shots > 0.")
 
+        if diff_method == "adjoint" and mode == "forward":
+            pytest.skip("Computing the gradient for Hermitian is not supported with adjoint.")
+
         projector = np.array(qml.matrix(qml.PauliZ(0) @ qml.PauliZ(1)))
 
         @jax.jit
@@ -1342,6 +1347,24 @@ class TestJIT:
             return qml.expval(qml.Hermitian(projector, wires=range(2)))
 
         assert jnp.allclose(circ(projector), 1)
+
+    @pytest.mark.filterwarnings(
+        "ignore:Requested adjoint differentiation to be computed with finite shots."
+    )
+    @pytest.mark.parametrize("shots", [10, 1000])
+    def test_probs_obs_none(self, dev_name, diff_method, mode, shots):
+        """Test that the jax device works with qml.probs, a MeasurementProcess
+        that has obs=None even when shots>0."""
+        dev = qml.device(dev_name, wires=2, shots=shots)
+
+        if diff_method == "backprop":
+            pytest.skip("Backpropagation is unsupported if shots > 0.")
+
+        @qml.qnode(dev, interface="jax", diff_method="parameter-shift")
+        def circuit():
+            return qml.probs(wires=0)
+
+        assert jnp.allclose(circuit(), jnp.array([1.0, 0.0]))
 
     @pytest.mark.xfail(
         reason="Non-trainable parameters are not being correctly unwrapped by the interface"

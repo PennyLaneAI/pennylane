@@ -444,6 +444,69 @@ matmul_hamiltonians = [
     ),
 ]
 
+rmatmul_hamiltonians = [
+    (
+        qml.Hamiltonian([0.5, 0.5], [qml.PauliZ(2), qml.PauliZ(3)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.Hamiltonian(
+            [0.5, 0.5, 0.5, 0.5],
+            [
+                qml.PauliX(0) @ qml.PauliZ(2),
+                qml.PauliX(0) @ qml.PauliZ(3),
+                qml.PauliZ(1) @ qml.PauliZ(2),
+                qml.PauliZ(1) @ qml.PauliZ(3),
+            ],
+        ),
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(3) @ qml.PauliZ(2), qml.PauliZ(2)]),
+        qml.Hamiltonian([0.5, 0.25], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)]),
+        qml.Hamiltonian(
+            [0.5, 0.5, 0.25, 0.25],
+            [
+                qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(3) @ qml.PauliZ(2),
+                qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliZ(2),
+                qml.PauliZ(0) @ qml.PauliX(3) @ qml.PauliZ(2),
+                qml.PauliZ(0) @ qml.PauliZ(2),
+            ],
+        ),
+    ),
+    (
+        qml.Hamiltonian([2, 2], [qml.PauliZ(1.2), qml.PauliY("c")]),
+        qml.Hamiltonian([1, 1], [qml.PauliX("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian(
+            [2, 2, 2, 2],
+            [
+                qml.PauliX("b") @ qml.PauliZ(1.2),
+                qml.PauliX("b") @ qml.PauliY("c"),
+                qml.Hermitian(np.array([[1, 0], [0, -1]]), 0) @ qml.PauliZ(1.2),
+                qml.Hermitian(np.array([[1, 0], [0, -1]]), 0) @ qml.PauliY("c"),
+            ],
+        ),
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.PauliX(2),
+        qml.Hamiltonian([1, 1], [qml.PauliX(2) @ qml.PauliX(0), qml.PauliX(2) @ qml.PauliZ(1)]),
+    ),
+    # Case where arguments coeffs and ops to the Hamiltonian are iterables other than lists
+    (
+        qml.Hamiltonian(np.array([0.5, 0.5]), np.array([qml.PauliZ(2), qml.PauliZ(3)])),
+        qml.Hamiltonian((1, 1), (qml.PauliX(0), qml.PauliZ(1))),
+        qml.Hamiltonian(
+            (0.5, 0.5, 0.5, 0.5),
+            np.array(
+                [
+                    qml.PauliX(0) @ qml.PauliZ(2),
+                    qml.PauliX(0) @ qml.PauliZ(3),
+                    qml.PauliZ(1) @ qml.PauliZ(2),
+                    qml.PauliZ(1) @ qml.PauliZ(3),
+                ]
+            ),
+        ),
+    ),
+]
+
 big_hamiltonian_coeffs = np.array(
     [
         -0.04207898,
@@ -673,6 +736,11 @@ class TestHamiltonian:
         """Tests that Hamiltonians are tensored correctly"""
         assert H.compare(H1 @ H2)
 
+    @pytest.mark.parametrize(("H1", "H2", "H"), rmatmul_hamiltonians)
+    def test_hamiltonian_matmul(self, H1, H2, H):
+        """Tests that Hamiltonians are tensored correctly when using __rmatmul__"""
+        assert H.compare(H1.__rmatmul__(H2))
+
     def test_hamiltonian_same_wires(self):
         """Test if a ValueError is raised when multiplication between Hamiltonians acting on the
         same wires is attempted"""
@@ -705,6 +773,8 @@ class TestHamiltonian:
         A = [[1, 0], [0, -1]]
         with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
             H @ A
+        with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
+            H.__rmatmul__(A)
         with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
             H + A
         with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):
@@ -808,9 +878,10 @@ class TestHamiltonianArithmeticTF:
     """Tests creation of Hamiltonians using arithmetic
     operations with TensorFlow tensor coefficients."""
 
+    @pytest.mark.tf
     def test_hamiltonian_equal(self):
         """Tests equality"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         coeffs = tf.Variable([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
@@ -822,9 +893,10 @@ class TestHamiltonianArithmeticTF:
 
         assert H1.compare(H2)
 
+    @pytest.mark.tf
     def test_hamiltonian_add(self):
         """Tests that Hamiltonians are added correctly"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         coeffs = tf.Variable([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
@@ -841,9 +913,10 @@ class TestHamiltonianArithmeticTF:
         H1 += H2
         assert H.compare(H1)
 
+    @pytest.mark.tf
     def test_hamiltonian_sub(self):
         """Tests that Hamiltonians are subtracted correctly"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         coeffs = tf.Variable([1.0, -2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
@@ -860,9 +933,10 @@ class TestHamiltonianArithmeticTF:
         H1 -= H2
         assert H.compare(H1)
 
+    @pytest.mark.tf
     def test_hamiltonian_matmul(self):
         """Tests that Hamiltonians are tensored correctly"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         coeffs = tf.Variable([1.0, 2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
@@ -888,9 +962,10 @@ class TestHamiltonianArithmeticTorch:
     """Tests creation of Hamiltonians using arithmetic
     operations with torch tensor coefficients."""
 
+    @pytest.mark.torch
     def test_hamiltonian_equal(self):
         """Tests equality"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         coeffs = torch.tensor([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
@@ -902,9 +977,10 @@ class TestHamiltonianArithmeticTorch:
 
         assert H1.compare(H2)
 
+    @pytest.mark.torch
     def test_hamiltonian_add(self):
         """Tests that Hamiltonians are added correctly"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         coeffs = torch.tensor([0.5, -1.6])
         obs = [qml.PauliX(0), qml.PauliY(1)]
@@ -921,9 +997,10 @@ class TestHamiltonianArithmeticTorch:
         H1 += H2
         assert H.compare(H1)
 
+    @pytest.mark.torch
     def test_hamiltonian_sub(self):
         """Tests that Hamiltonians are subtracted correctly"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         coeffs = torch.tensor([1.0, -2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
@@ -940,9 +1017,10 @@ class TestHamiltonianArithmeticTorch:
         H1 -= H2
         assert H.compare(H1)
 
+    @pytest.mark.torch
     def test_hamiltonian_matmul(self):
         """Tests that Hamiltonians are tensored correctly"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         coeffs = torch.tensor([1.0, 2.0])
         obs = [qml.PauliX(0), qml.PauliY(1)]
@@ -968,6 +1046,7 @@ class TestHamiltonianArithmeticAutograd:
     """Tests creation of Hamiltonians using arithmetic
     operations with autograd tensor coefficients."""
 
+    @pytest.mark.autograd
     def test_hamiltonian_equal(self):
         """Tests equality"""
         coeffs = pnp.array([0.5, -1.6])
@@ -980,6 +1059,7 @@ class TestHamiltonianArithmeticAutograd:
 
         assert H1.compare(H2)
 
+    @pytest.mark.autograd
     def test_hamiltonian_add(self):
         """Tests that Hamiltonians are added correctly"""
         coeffs = pnp.array([0.5, -1.6])
@@ -997,6 +1077,7 @@ class TestHamiltonianArithmeticAutograd:
         H1 += H2
         assert H.compare(H1)
 
+    @pytest.mark.autograd
     def test_hamiltonian_sub(self):
         """Tests that Hamiltonians are subtracted correctly"""
         coeffs = pnp.array([1.0, -2.0])
@@ -1014,6 +1095,7 @@ class TestHamiltonianArithmeticAutograd:
         H1 -= H2
         assert H.compare(H1)
 
+    @pytest.mark.autograd
     def test_hamiltonian_matmul(self):
         """Tests that Hamiltonians are tensored correctly"""
         coeffs = pnp.array([1.0, 2.0])
@@ -1040,9 +1122,9 @@ class TestHamiltonianArithmeticJax:
     """Tests creation of Hamiltonians using arithmetic
     operations with jax tensor coefficients."""
 
+    @pytest.mark.jax
     def test_hamiltonian_equal(self):
         """Tests equality"""
-        jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
         coeffs = jnp.array([0.5, -1.6])
@@ -1055,9 +1137,9 @@ class TestHamiltonianArithmeticJax:
 
         assert H1.compare(H2)
 
+    @pytest.mark.jax
     def test_hamiltonian_add(self):
         """Tests that Hamiltonians are added correctly"""
-        jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
         coeffs = jnp.array([0.5, -1.6])
@@ -1075,9 +1157,9 @@ class TestHamiltonianArithmeticJax:
         H1 += H2
         assert H.compare(H1)
 
+    @pytest.mark.jax
     def test_hamiltonian_sub(self):
         """Tests that Hamiltonians are subtracted correctly"""
-        jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
         coeffs = jnp.array([1.0, -2.0])
@@ -1095,9 +1177,9 @@ class TestHamiltonianArithmeticJax:
         H1 -= H2
         assert H.compare(H1)
 
+    @pytest.mark.jax
     def test_hamiltonian_matmul(self):
         """Tests that Hamiltonians are tensored correctly"""
-        jax = pytest.importorskip("jax")
         from jax import numpy as jnp
 
         coeffs = jnp.array([1.0, 2.0])
@@ -1342,6 +1424,7 @@ class TestHamiltonianDifferentiation:
 
         assert np.allclose(grad, grad_expected)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("simplify", [True, False])
     @pytest.mark.parametrize("group", [None, "qwc"])
     def test_trainable_coeffs_autograd(self, simplify, group):
@@ -1381,6 +1464,7 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
+    @pytest.mark.autograd
     def test_nontrainable_coeffs_autograd(self):
         """Test the autograd interface if the coefficients are explicitly set non-trainable"""
         coeffs = pnp.array([-0.05, 0.17], requires_grad=False)
@@ -1409,14 +1493,16 @@ class TestHamiltonianDifferentiation:
 
         assert np.allclose(grad, grad_expected)
 
+    @pytest.mark.jax
     @pytest.mark.parametrize("simplify", [True, False])
     @pytest.mark.parametrize("group", [None, "qwc"])
     def test_trainable_coeffs_jax(self, simplify, group):
         """Test the jax interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
 
-        jax = pytest.importorskip("jax")
-        jnp = pytest.importorskip("jax.numpy")
+        import jax
+        import jax.numpy as jnp
+
         coeffs = jnp.array([-0.05, 0.17])
         param = jnp.array(1.7)
 
@@ -1451,11 +1537,13 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
+    @pytest.mark.jax
     def test_nontrainable_coeffs_jax(self):
         """Test the jax interface if the coefficients are explicitly set non-trainable"""
 
-        jax = pytest.importorskip("jax")
-        jnp = pytest.importorskip("jax.numpy")
+        import jax
+        import jax.numpy as jnp
+
         coeffs = np.array([-0.05, 0.17])
         param = jnp.array(1.7)
 
@@ -1482,13 +1570,15 @@ class TestHamiltonianDifferentiation:
 
         assert np.allclose(grad, grad_expected)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("simplify", [True, False])
     @pytest.mark.parametrize("group", [None, "qwc"])
     def test_trainable_coeffs_torch(self, simplify, group):
         """Test the torch interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
 
-        torch = pytest.importorskip("torch")
+        import torch
+
         coeffs = torch.tensor([-0.05, 0.17], requires_grad=True)
         param = torch.tensor(1.7, requires_grad=True)
 
@@ -1530,10 +1620,12 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
+    @pytest.mark.torch
     def test_nontrainable_coeffs_torch(self):
         """Test the torch interface if the coefficients are explicitly set non-trainable"""
 
-        torch = pytest.importorskip("torch")
+        import torch
+
         coeffs = torch.tensor([-0.05, 0.17], requires_grad=False)
         param = torch.tensor(1.7, requires_grad=True)
 
@@ -1571,13 +1663,15 @@ class TestHamiltonianDifferentiation:
         assert coeffs.grad is None
         assert np.allclose(param.grad, param2.grad)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("simplify", [True, False])
     @pytest.mark.parametrize("group", [None, "qwc"])
     def test_trainable_coeffs_tf(self, simplify, group):
         """Test the tf interface by comparing the differentiation of linearly combined subcircuits
         with the differentiation of a Hamiltonian expectation"""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         coeffs = tf.Variable([-0.05, 0.17], dtype=tf.double)
         param = tf.Variable(1.7, dtype=tf.double)
 
@@ -1618,10 +1712,12 @@ class TestHamiltonianDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
+    @pytest.mark.tf
     def test_nontrainable_coeffs_tf(self):
         """Test the tf interface if the coefficients are explicitly set non-trainable"""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         coeffs = tf.constant([-0.05, 0.17], dtype=tf.double)
         param = tf.Variable(1.7, dtype=tf.double)
 

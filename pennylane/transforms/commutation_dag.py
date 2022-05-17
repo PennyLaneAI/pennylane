@@ -393,8 +393,8 @@ def check_commutation_two_non_simplified_crot(operation1, operation2):
     if control_control and target_target:
         return np.all(
             np.allclose(
-                np.matmul(operation1.get_matrix(), operation2.get_matrix()),
-                np.matmul(operation2.get_matrix(), operation1.get_matrix()),
+                np.matmul(operation1.matrix(), operation2.matrix()),
+                np.matmul(operation2.matrix(), operation1.matrix()),
             )
         )
 
@@ -405,12 +405,12 @@ def check_commutation_two_non_simplified_crot(operation1, operation2):
         return np.all(
             np.allclose(
                 np.matmul(
-                    qml.Rot(*operation1.data, wires=operation1.wires[1]).get_matrix(),
-                    qml.Rot(*operation2.data, wires=operation2.wires[1]).get_matrix(),
+                    qml.Rot(*operation1.data, wires=operation1.wires[1]).matrix(),
+                    qml.Rot(*operation2.data, wires=operation2.wires[1]).matrix(),
                 ),
                 np.matmul(
-                    qml.Rot(*operation2.data, wires=operation2.wires[1]).get_matrix(),
-                    qml.Rot(*operation1.data, wires=operation1.wires[1]).get_matrix(),
+                    qml.Rot(*operation2.data, wires=operation2.wires[1]).matrix(),
+                    qml.Rot(*operation1.data, wires=operation1.wires[1]).matrix(),
                 ),
             )
         )
@@ -465,12 +465,12 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
             return np.all(
                 np.allclose(
                     np.matmul(
-                        qml.Rot(*operation1.data, wires=target_wires_1).get_matrix(),
-                        operation2.get_matrix(),
+                        qml.Rot(*operation1.data, wires=target_wires_1).matrix(),
+                        operation2.matrix(),
                     ),
                     np.matmul(
-                        operation2.get_matrix(),
-                        qml.Rot(*operation1.data, wires=target_wires_1).get_matrix(),
+                        operation2.matrix(),
+                        qml.Rot(*operation1.data, wires=target_wires_1).matrix(),
                     ),
                 )
             )
@@ -481,12 +481,12 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
             return np.all(
                 np.allclose(
                     np.matmul(
-                        qml.Rot(*operation2.data, wires=target_wires_2).get_matrix(),
-                        operation1.get_matrix(),
+                        qml.Rot(*operation2.data, wires=target_wires_2).matrix(),
+                        operation1.matrix(),
                     ),
                     np.matmul(
-                        operation1.get_matrix(),
-                        qml.Rot(*operation2.data, wires=target_wires_2).get_matrix(),
+                        operation1.matrix(),
+                        qml.Rot(*operation2.data, wires=target_wires_2).matrix(),
                     ),
                 )
             )
@@ -494,12 +494,12 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
         return np.all(
             np.allclose(
                 np.matmul(
-                    operation1.get_matrix(),
-                    operation2.get_matrix(),
+                    operation1.matrix(),
+                    operation2.matrix(),
                 ),
                 np.matmul(
-                    operation2.get_matrix(),
-                    operation1.get_matrix(),
+                    operation2.matrix(),
+                    operation1.matrix(),
                 ),
             )
         )

@@ -104,6 +104,7 @@ def test_mottonenstate_preparation(mocker):
     assert np.allclose(res, indiv_res)
 
 
+@pytest.mark.autograd
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
 def test_autograd(diff_method, tol):
     """Test derivatives when using autograd"""

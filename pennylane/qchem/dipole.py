@@ -68,7 +68,7 @@ def dipole_integrals(mol, core=None, active=None):
     where :math:`N_\mathrm{core}` is the number of core orbitals.
 
     Args:
-        mol (Molecule): the molecule object
+        mol (~qchem.molecule.Molecule): the molecule object
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
 
@@ -81,7 +81,7 @@ def dipole_integrals(mol, core=None, active=None):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> constants, integrals = dipole_integrals(mol)(*args)
     >>> print(integrals)
@@ -166,13 +166,13 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
 
     .. math::
 
-        \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i \hat{I},
+        \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i,
 
     where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
     nuclear coordinates of the :math:`i`-th atom of the molecule.
 
     Args:
-        mol (Molecule): the molecule object
+        mol (~qchem.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible dipole moment integrals
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
@@ -186,7 +186,7 @@ def fermionic_dipole(mol, cutoff=1.0e-18, core=None, active=None):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> coeffs, ops = fermionic_dipole(mol)(*args)[2]
     >>> ops
@@ -251,7 +251,7 @@ def dipole_moment(mol, cutoff=1.0e-18, core=None, active=None):
 
     .. math::
 
-        \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i \hat{I},
+        \hat{D}_\mathrm{n} = \sum_{i=1}^{N_\mathrm{atoms}} Z_i {\bf R}_i,
 
     where :math:`Z_i` and :math:`{\bf R}_i` denote, respectively, the atomic number and the
     nuclear coordinates of the :math:`i`-th atom of the molecule.
@@ -266,7 +266,7 @@ def dipole_moment(mol, cutoff=1.0e-18, core=None, active=None):
     single-qubit Pauli operators :math:`X, Y, Z, I`.
 
     Args:
-        mol (Molecule): the molecule object
+        mol (~qchem.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible dipole moment integrals
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
@@ -280,7 +280,7 @@ def dipole_moment(mol, cutoff=1.0e-18, core=None, active=None):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> alpha = np.array([[3.42525091, 0.62391373, 0.1688554],
     >>>                   [3.42525091, 0.62391373, 0.1688554]], requires_grad=True)
-    >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
+    >>> mol = qml.qchem.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> dipole_moment(mol)(*args)[2].ops
     [PauliZ(wires=[0]),

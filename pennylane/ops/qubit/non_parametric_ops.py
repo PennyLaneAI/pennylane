@@ -160,6 +160,9 @@ class Hadamard(Observable, Operation):
         # H = RZ(\pi) RY(\pi/2) RZ(0)
         return [np.pi, np.pi / 2, 0.0]
 
+    def pow(self, z):
+        return super().pow(z % 2)
+
 
 class PauliX(Observable, Operation):
     r"""PauliX(wires)
@@ -291,6 +294,12 @@ class PauliX(Observable, Operation):
 
     def adjoint(self):
         return PauliX(wires=self.wires)
+
+    def pow(self, z):
+        z_mod2 = z % 2
+        if abs(z_mod2 - 0.5) < 1e-6:
+            return [SX(wires=self.wires)]
+        return super().pow(z_mod2)
 
     def _controlled(self, wire):
         CNOT(wires=Wires(wire) + self.wires)
@@ -433,6 +442,9 @@ class PauliY(Observable, Operation):
     def adjoint(self):
         return PauliY(wires=self.wires)
 
+    def pow(self, z):
+        return super().pow(z % 2)
+
     def _controlled(self, wire):
         CY(wires=Wires(wire) + self.wires)
 
@@ -562,6 +574,20 @@ class PauliZ(Observable, Operation):
     def adjoint(self):
         return PauliZ(wires=self.wires)
 
+    def pow(self, z):
+        z_mod2 = z % 2
+        if z_mod2 == 0:
+            return []
+        if z_mod2 == 1:
+            return [self.__copy__()]
+
+        if abs(z_mod2 - 0.5) < 1e-6:
+            return [S(wires=self.wires)]
+        if abs(z_mod2 - 0.25) < 1e-6:
+            return [T(wires=self.wires)]
+
+        return [qml.PhaseShift(np.pi * z_mod2, wires=self.wires)]
+
     def _controlled(self, wire):
         CZ(wires=Wires(wire) + self.wires)
 
@@ -666,6 +692,18 @@ class S(Operation):
         op.inverse = not self.inverse
         return op
 
+    def pow(self, z):
+        z_mod4 = z % 4
+        pow_map = {
+            0: lambda op: [],
+            0.5: lambda op: [T(wires=op.wires)],
+            1: lambda op: [op.__copy__()],
+            2: lambda op: [PauliZ(wires=op.wires)],
+        }
+        return pow_map.get(z_mod4, lambda op: [qml.PhaseShift(np.pi * z_mod4 / 2, wires=op.wires)])(
+            self
+        )
+
     def single_qubit_rot_angles(self):
         # S = RZ(\pi/2) RY(0) RZ(0)
         return [np.pi / 2, 0.0, 0.0]
@@ -761,6 +799,18 @@ class T(Operation):
 
         """
         return [qml.PhaseShift(np.pi / 4, wires=wires)]
+
+    def pow(self, z):
+        z_mod8 = z % 8
+        pow_map = {
+            0: lambda op: [],
+            1: lambda op: [op.__copy__()],
+            2: lambda op: [S(wires=op.wires)],
+            4: lambda op: [PauliZ(wires=op.wires)],
+        }
+        return pow_map.get(z_mod8, lambda op: [qml.PhaseShift(np.pi * z_mod8 / 4, wires=op.wires)])(
+            self
+        )
 
     def adjoint(self):
         op = T(wires=self.wires)
@@ -873,6 +923,12 @@ class SX(Operation):
         ]
         return decomp_ops
 
+    def pow(self, z):
+        z_mod4 = z % 4
+        if z_mod4 == 2:
+            return [PauliX(wires=self.wires)]
+        return super().pow(z_mod4)
+
     def adjoint(self):
         op = SX(wires=self.wires)
         op.inverse = not self.inverse
@@ -938,6 +994,9 @@ class CNOT(Operation):
 
     def adjoint(self):
         return CNOT(wires=self.wires)
+
+    def pow(self, z):
+        return super().pow(z % 2)
 
     def _controlled(self, wire):
         Toffoli(wires=Wires(wire) + self.wires)
@@ -1027,6 +1086,9 @@ class CZ(Operation):
 
     def adjoint(self):
         return CZ(wires=self.wires)
+
+    def pow(self, z):
+        return super().pow(z % 2)
 
     @property
     def control_wires(self):
@@ -1120,6 +1182,9 @@ class CY(Operation):
     def adjoint(self):
         return CY(wires=self.wires)
 
+    def pow(self, z):
+        return super().pow(z % 2)
+
     @property
     def control_wires(self):
         return Wires(self.wires[0])
@@ -1197,6 +1262,9 @@ class SWAP(Operation):
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
         return decomp_ops
+
+    def pow(self, z):
+        return super().pow(z % 2)
 
     def adjoint(self):
         return SWAP(wires=self.wires)
@@ -1316,6 +1384,12 @@ class ISWAP(Operation):
         op = ISWAP(wires=self.wires)
         op.inverse = not self.inverse
         return op
+
+    def pow(self, z):
+        z_mod2 = z % 2
+        if abs(z_mod2 - 0.5) < 1e-6:
+            return [SISWAP(wires=self.wires)]
+        return super().pow(z_mod2)
 
 
 class SISWAP(Operation):
@@ -1445,6 +1519,10 @@ class SISWAP(Operation):
         ]
         return decomp_ops
 
+    def pow(self, z):
+        z_mod4 = z % 4
+        return [ISWAP(wires=self.wires)] if z_mod4 == 2 else super().pow(z_mod4)
+
     def adjoint(self):
         op = SISWAP(wires=self.wires)
         op.inverse = not self.inverse
@@ -1551,6 +1629,9 @@ class CSWAP(Operation):
             qml.Toffoli(wires=[wires[0], wires[2], wires[1]]),
         ]
         return decomp_ops
+
+    def pow(self, z):
+        return super().pow(z % 2)
 
     def adjoint(self):
         return CSWAP(wires=self.wires)
@@ -1689,6 +1770,9 @@ class Toffoli(Operation):
 
     def adjoint(self):
         return Toffoli(wires=self.wires)
+
+    def pow(self, z):
+        return super().pow(z % 2)
 
     @property
     def control_wires(self):
@@ -1861,6 +1945,9 @@ class MultiControlledX(Operation):
             wires=self.wires,
             control_values=self.hyperparameters["control_values"],
         )
+
+    def pow(self, z):
+        return super().pow(z % 2)
 
     @staticmethod
     def compute_decomposition(wires=None, work_wires=None, control_values=None, **kwargs):
@@ -2061,8 +2148,11 @@ class Barrier(Operation):
     def _controlled(self, _):
         return Barrier(wires=self.wires)
 
-    def adjoint(self, do_queue=False):
-        return Barrier(wires=self.wires)
+    def adjoint(self, do_queue=True):
+        return Barrier(wires=self.wires, do_queue=do_queue)
+
+    def pow(self, z):
+        return [self.__copy__()]
 
 
 class WireCut(Operation):
@@ -2111,3 +2201,6 @@ class WireCut(Operation):
 
     def adjoint(self):
         return WireCut(wires=self.wires)
+
+    def pow(self, z):
+        return [self.__copy__()]
