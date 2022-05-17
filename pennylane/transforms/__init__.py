@@ -149,6 +149,7 @@ more tapes as well as a classical processing function.
 
     ~transforms.measurement_grouping
     ~transforms.hamiltonian_expand
+    ~transforms.split_non_commuting
 
 Decorators and utility functions
 --------------------------------
@@ -186,6 +187,7 @@ from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
 from .hamiltonian_expand import hamiltonian_expand
+from .split_non_commuting import split_non_commuting
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
 from .adjoint_metric_tensor import adjoint_metric_tensor

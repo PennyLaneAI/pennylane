@@ -731,47 +731,13 @@ class Device(abc.ABC):
 
         if len(circuit._obs_sharing_wires) > 0 and not hamiltonian_in_obs:
             # Check for case of non-commuting terms outside of Hamiltonians
-            measurements = circuit.measurements
-
-            obs_list = []
-            # get the observables from the measurements
-            # TO DO: This loop should become superfluous when the reworked operator classes are implemented
-            for measurement in measurements:
-                if hasattr(measurement.obs, "obs"):
-                    # this loop re-creates multi-qubit observables, e.g. PauliZ(0) @ PauliZ(1)
-                    _list = (
-                        measurement.obs.obs
-                    )  # the list of individual observables before composition
-                    obs = _list[0]
-                    for ob_i in _list[1:]:
-                        obs @= ob_i  # I am sure there must be a better way to do this?
-                else:
-                    obs = measurement.obs
-                obs_list.append(obs)
-
-            # If there is more than one group of commuting observables, split tapes
-            groups, group_coeffs = qml.grouping.group_observables(obs_list, range(len(obs_list)))
-            if len(groups) > 1:
-                # make one tape per commuting group
-                circuits = []
-                for group in groups:
-                    with circuit.__class__() as new_circuit:
-                        [op.queue() for op in circuit.operations]
-                        [qml.expval(o) for o in group]
-
-                    circuits.append(new_circuit)
-
-                def reorder_fn(res):
-                    """re-order the output to the original shape and order"""
-                    res = qml.math.concatenate(res)
-                    new_res = res.copy() # to keep the same format as res
-                    reorder_indxs = qml.math.concatenate(group_coeffs)
-                    for i,out in zip(reorder_indxs, res):
-                        new_res[i] = out
-
-                    return new_res
-
-                return circuits, reorder_fn
+            try:
+                return qml.transforms.split_non_commuting(circuit)
+            
+            except ValueError as e:
+                raise ValueError(
+                    "Can only "
+                )
 
         # otherwise, return an identity transform
         return [circuit], lambda res: res[0]
