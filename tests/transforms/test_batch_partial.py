@@ -81,12 +81,14 @@ def test_partial_evaluation_kwargs():
     assert np.allclose(res, indiv_res)
 
 
-def test_partial_evaluation_grad():
+@pytest.mark.autograd
+@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+def test_partial_evaluation_autograd(diff_method):
     """Test gradient of partial evaluation matches gradients of
-    individual full evaluations"""
+    individual full evaluations using autograd"""
     dev = qml.device("default.qubit", wires=2)
 
-    @qml.qnode(dev)
+    @qml.qnode(dev, diff_method=diff_method)
     def circuit(x, y):
         qml.RX(x, wires=0)
         qml.RY(y[..., 0], wires=0)
@@ -105,12 +107,144 @@ def test_partial_evaluation_grad():
 
     # we could also sum over the batch dimension and use the regular
     # gradient instead of the jacobian, but either works
-    grad = qml.math.diagonal(qml.jacobian(batched_partial_circuit)(x))
+    grad = np.diagonal(qml.jacobian(batched_partial_circuit)(x))
 
     # check the results against individually executed circuits
     indiv_grad = []
     for x_indiv in x:
         indiv_grad.append(qml.grad(circuit, argnum=0)(x_indiv, y))
+
+    assert np.allclose(grad, indiv_grad)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+def test_partial_evaluation_jax(diff_method):
+    """Test gradient of partial evaluation matches gradients of
+    individual full evaluations using jax"""
+    import jax
+    import jax.numpy as jnp
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev, interface="jax", diff_method=diff_method)
+    def circuit(x, y):
+        qml.RX(x, wires=0)
+        qml.RY(y[..., 0], wires=0)
+        qml.RY(y[..., 1], wires=1)
+        return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
+
+    batch_size = 4
+
+    # the partial argument to construct a new circuit with
+    y = jnp.array([0.3, 0.4])
+
+    # the batched argument to the new partial circuit
+    x = jnp.linspace(0.1, 0.5, batch_size)
+
+    batched_partial_circuit = qml.batch_partial(circuit, all_operations=True, y=y)
+
+    # we could also sum over the batch dimension and use the regular
+    # gradient instead of the jacobian, but either works
+    grad = jnp.diagonal(jax.jacrev(batched_partial_circuit)(x))
+
+    # check the results against individually executed circuits
+    indiv_grad = []
+    for x_indiv in x:
+        indiv_grad.append(jax.grad(circuit, argnums=0)(x_indiv, y))
+
+    assert np.allclose(grad, indiv_grad)
+
+
+@pytest.mark.tf
+@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+def test_partial_evaluation_tf(diff_method):
+    """Test gradient of partial evaluation matches gradients of
+    individual full evaluations using TF"""
+    import tensorflow as tf
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev, interface="tf", diff_method=diff_method)
+    def circuit(x, y):
+        qml.RX(x, wires=0)
+        qml.RY(y[..., 0], wires=0)
+        qml.RY(y[..., 1], wires=1)
+        return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
+
+    batch_size = 4
+
+    # the partial argument to construct a new circuit with
+    y = tf.Variable(np.random.uniform(size=2), trainable=True)
+
+    # the batched argument to the new partial circuit
+    x = tf.Variable(np.random.uniform(size=batch_size), trainable=True)
+
+    batched_partial_circuit = qml.batch_partial(circuit, y=y)
+
+    with tf.GradientTape() as tape:
+        out = batched_partial_circuit(x)
+
+    # we could also sum over the batch dimension and use the regular
+    # gradient instead of the jacobian, but either works
+    grad = tf.linalg.tensor_diag_part(tape.jacobian(out, x))
+
+    # check the results against individually executed circuits
+    indiv_grad = []
+    for x_indiv in x:
+        # create a new variable since tensors created by
+        # indexing a trainable variable aren't themselves trainable
+        x_indiv = tf.Variable(x_indiv, trainable=True)
+
+        with tf.GradientTape() as tape:
+            out_indiv = circuit(x_indiv, y)
+        indiv_grad.append(tape.gradient(out_indiv, x_indiv))
+
+    assert np.allclose(grad, indiv_grad)
+
+
+@pytest.mark.torch
+@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+def test_partial_evaluation_torch(diff_method):
+    """Test gradient of partial evaluation matches gradients of
+    individual full evaluations using PyTorch"""
+    import torch
+    import torch.autograd.functional as F
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev, interface="torch", diff_method=diff_method)
+    def circuit(x, y):
+        qml.RX(x, wires=0)
+        qml.RY(y[..., 0], wires=0)
+        qml.RY(y[..., 1], wires=1)
+        return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
+
+    batch_size = 4
+
+    # the partial argument to construct a new circuit with
+    y = torch.tensor(np.random.uniform(size=2), requires_grad=True)
+
+    # the batched argument to the new partial circuit
+    x = torch.tensor(np.random.uniform(size=batch_size), requires_grad=True)
+
+    batched_partial_circuit = qml.batch_partial(circuit, y=y)
+
+    # we could also sum over the batch dimension and use the regular
+    # gradient instead of the jacobian, but either works
+    grad = torch.diagonal(F.jacobian(batched_partial_circuit, x))
+
+    # check the results against individually executed circuits
+    indiv_grad = []
+    for x_indiv in x:
+        # create a new variable since tensors created by
+        # indexing a trainable variable aren't themselves trainable
+        x_indiv = x_indiv.clone().detach().requires_grad_(True)
+
+        out_indiv = circuit(x_indiv, y)
+        out_indiv.backward()
+
+        indiv_grad.append(x_indiv.grad)
 
     assert np.allclose(grad, indiv_grad)
 

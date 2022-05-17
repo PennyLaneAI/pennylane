@@ -39,11 +39,11 @@ def _convert_to_args(func, args, kwargs):
     return tuple(new_args)
 
 
-def batch_partial(qnode, **partial_kwargs):
+def batch_partial(qnode, all_operations=False, **partial_kwargs):
     """
     TODO: docs
     """
-    qnode = qml.batch_params(qnode)
+    qnode = qml.batch_params(qnode, all_operations=all_operations)
 
     # store whether this decorator is being used as a pure
     # analog of functools.partial, or whether it is used to
