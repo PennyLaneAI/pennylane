@@ -77,6 +77,9 @@
   method for a provided device and interface, in human-readable format.
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
 
+* Allow `qml.expval()` to accept lists of non-commuting observables by splitting the tape into commuting groups.
+  [(#2587)](https://github.com/PennyLaneAI/pennylane/pull/2587)
+
 <h3>Breaking changes</h3>
 
 * The module `qml.gradients.param_shift_hessian` has been renamed to
@@ -148,4 +151,4 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Christian Gogolin,
-Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld, Jay Soni
+Soran Jahangiri, Edward Jiang, Korbinian Kottmann, Christina Lee, Chae-Yeun Park, Maria Schuld, Jay Soni
