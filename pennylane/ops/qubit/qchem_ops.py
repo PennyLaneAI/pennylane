@@ -154,6 +154,9 @@ class SingleExcitation(Operation):
         (phi,) = self.parameters
         return SingleExcitation(-phi, wires=self.wires)
 
+    def pow(self, z):
+        return [SingleExcitation(self.data[0] * z, wires=self.wires)]
+
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
 
@@ -514,6 +517,9 @@ class DoubleExcitation(Operation):
             qml.PauliY(w0) @ qml.PauliY(w1) @ qml.PauliY(w2) @ qml.PauliX(w3),
         ]
         return qml.Hamiltonian(coeffs, obs)
+
+    def pow(self, z):
+        return [DoubleExcitation(self.data[0] * z, wires=self.wires)]
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)

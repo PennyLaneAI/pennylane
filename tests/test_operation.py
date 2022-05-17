@@ -1389,6 +1389,21 @@ class TestDefaultRepresentations:
         with pytest.raises(qml.operation.GeneratorUndefinedError):
             gate.generator()
 
+    def test_pow_zero(self):
+        """Test that the default of an operation raised to a zero power is an empty array."""
+        assert len(gate.pow(0)) == 0
+
+    def test_pow_one(self):
+        """Test that the default of an operation raised to the power of one is a copy."""
+        pow_gate = gate.pow(1)
+        assert len(pow_gate) == 1
+        assert pow_gate[0].__class__ is gate.__class__
+
+    def test_pow_undefined(self):
+        """Tests that custom error is raised in the default pow decomposition."""
+        with pytest.raises(qml.operation.PowUndefinedError):
+            gate.pow(1.234)
+
 
 class TestChannel:
     """Unit tests for the Channel class"""

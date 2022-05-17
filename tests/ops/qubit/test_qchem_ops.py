@@ -16,7 +16,7 @@ Unit tests for the available qubit operations for quantum chemistry purposes.
 """
 import pytest
 import numpy as np
-from scipy.linalg import expm
+from scipy.linalg import expm, fractional_matrix_power
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -199,6 +199,21 @@ class TestSingleExcitation:
         exp = SingleExcitation(phi)
         assert np.allclose(res, exp)
 
+    @pytest.mark.parametrize("n", (2, -2, 1.3, -0.6))
+    def test_single_excitatation_pow(self, n):
+
+        op = qml.SingleExcitation(1.234, wires=(0, 1))
+
+        pow_ops = op.pow(n)
+        assert len(pow_ops) == 1
+        assert pow_ops[0].__class__ is qml.SingleExcitation
+
+        mat = qml.matrix(op)
+        pow_mat = qml.matrix(op.pow)(n)
+
+        mat_then_pow = fractional_matrix_power(mat, n)
+        assert qml.math.allclose(pow_mat, mat_then_pow)
+
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_single_excitation_plus_matrix(self, phi):
         """Tests that the SingleExcitationPlus operation calculates the correct matrix"""
@@ -372,6 +387,21 @@ class TestDoubleExcitation:
         exp = DoubleExcitation(phi)
 
         assert np.allclose(res, exp)
+
+    @pytest.mark.parametrize("n", (2, -2, 1.3, -0.6))
+    def test_double_excitatation_pow(self, n):
+        """Test the double excitation pow method."""
+        op = qml.DoubleExcitation(1.234, wires=(0, 1, 2, 3))
+
+        pow_ops = op.pow(n)
+        assert len(pow_ops) == 1
+        assert pow_ops[0].__class__ is qml.DoubleExcitation
+
+        mat = qml.matrix(op)
+        pow_mat = qml.matrix(op.pow)(n)
+
+        mat_then_pow = fractional_matrix_power(mat, n)
+        assert qml.math.allclose(pow_mat, mat_then_pow)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_double_excitation_decomp(self, phi):
