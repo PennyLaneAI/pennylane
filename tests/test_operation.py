@@ -188,6 +188,15 @@ class TestOperatorConstruction:
         with pytest.raises(ValueError, match="Batching was attempted but the batched dimensions"):
             DummyOp([0.3] * 4, [[[0.3, 1.2]]] * 3, wires=0)
 
+    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
+    def test_error_batched_params_not_silenced(self):
+        """Handling tf.function properly requires us to catch a specific
+        error and to silence it. Here we test it does not silence others."""
+
+        x = [qml.math.ones((2, 2)), qml.math.ones((2, 3))]
+        with pytest.raises(ValueError, match="could not broadcast input array"):
+            qml.RX(x, 0)
+
     def test_wires_by_final_argument(self):
         """Test that wires can be passed as the final positional argument."""
 
@@ -281,6 +290,29 @@ class TestOperatorConstruction:
         params = rng.random(shape)
         op = qml.StronglyEntanglingLayers(params, wires=range(2))
         assert not op.has_matrix
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("jit_compile", [True, False])
+    def test_tf_function(self, jit_compile):
+        """Tests using tf.function with an operation works with and without
+        just in time (JIT) compilation."""
+        import tensorflow as tf
+
+        class MyRX(qml.RX):
+            ndim_params = (0,)
+
+        def fun(x):
+            op0 = qml.RX(x, 0)
+            op1 = MyRX(x, 0)
+
+        # No kwargs
+        fun0 = tf.function(fun)
+        fun0(tf.Variable(0.2))
+        fun0(tf.Variable([0.2, 0.5]))
+
+        fun1 = tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))
+        fun1(tf.Variable(0.2))
+        fun1(tf.Variable([0.2, 0.5]))
 
 
 class TestOperationConstruction:
