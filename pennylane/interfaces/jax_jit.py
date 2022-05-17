@@ -115,7 +115,7 @@ def _execute(
 ):  # pylint: disable=dangerous-default-value,unused-argument
     total_params = np.sum([len(p) for p in params])
 
-    # gopy a given tape with operations and set parameters
+    # Copy a given tape with operations and set parameters
     def cp_tape(t, a):
         tc = t.copy(copy_operations=True)
         tc.set_parameters(a)
