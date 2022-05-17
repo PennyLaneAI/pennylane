@@ -736,7 +736,7 @@ class Device(abc.ABC):
             obs_list = []
             # get the observables from the measurements
             # TO DO: This loop should become superfluous when the reworked operator classes are implemented
-            for i, measurement in enumerate(measurements):
+            for measurement in measurements:
                 if hasattr(measurement.obs, "obs"):
                     # this loop re-creates multi-qubit observables, e.g. PauliZ(0) @ PauliZ(1)
                     _list = (
@@ -748,7 +748,6 @@ class Device(abc.ABC):
                 else:
                     obs = measurement.obs
                 obs_list.append(obs)
-            n_obs = len(obs_list)
 
             # If there is more than one group of commuting observables, split tapes
             groups, group_coeffs = qml.grouping.group_observables(obs_list, range(len(obs_list)))
