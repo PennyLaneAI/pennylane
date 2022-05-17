@@ -939,9 +939,11 @@ class TestVectorValuedJIT:
 
     def test_multiple_expvals_grad(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
-        print(execute_kwargs)
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
+        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
+        if fwd_mode:
+            pytest.skip("The forward mode is tested separately as it should raise an error.")
 
         def cost(a, cache):
             with qml.tape.QuantumTape() as tape:
@@ -958,6 +960,31 @@ class TestVectorValuedJIT:
 
         res = jax.grad(cost)(params, cache=None)
         assert res.shape == (3,)
+
+    def test_multiple_expvals_raises_fwd_device_grad(self, execute_kwargs):
+        """Tests computing multiple expectation values in a tape."""
+        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
+        if not fwd_mode:
+            pytest.skip("Forward mode is not turned on.")
+
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        def cost(a, cache):
+            with qml.tape.QuantumTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            res = qml.interfaces.execute(
+                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
+            )
+            return res[0]
+
+        with pytest.raises(InterfaceUnsupportedError):
+            jax.jacobian(cost)(params, cache=None)
 
 
 def test_diff_method_None_jit():

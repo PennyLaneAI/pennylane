@@ -275,7 +275,6 @@ def _execute_with_fwd(
             for shape, dtype in zip(jacobian_shape, jac_dtypes)
         ]
 
-        print(wrapper(params))
         res, jacs = host_callback.call(
             wrapper,
             params,
