@@ -428,6 +428,8 @@ class QuantumTape(AnnotatedQueue):
     # construction methods
     # ========================================================
 
+    # This is a temporary attribute to fix the operator queuing behaviour.
+    # Tapes may be nested and therefore processed into the `_ops` list.
     _queue_category = "_ops"
 
     def _process_queue(self):
@@ -446,51 +448,23 @@ class QuantumTape(AnnotatedQueue):
         self._prep = []
         self._ops = []
         self._measurements = []
-        self._output_dim = 0
+        list_order = {"_prep": 0, "_ops": 1, "_measurements": 2}
+        current_list = "_prep"
 
         for obj, info in self._queue.items():
 
             if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
+                if list_order[obj._queue_category] > list_order[current_list]:
+                    current_list = obj._queue_category
+                elif list_order[obj._queue_category] < list_order[current_list]:
+                    raise ValueError(
+                        f"{obj._queue_category[1:]} operation {obj} must occur prior "
+                        f"to {current_list[1:]}. Please place earlier in the queue."
+                    )
                 getattr(self, obj._queue_category).append(obj)
 
-                obj.inverse = info.get("inverse", getattr(obj, "inverse", False))
-
-            if isinstance(obj, qml.measurements.MeasurementProcess):
-
-                # attempt to infer the output dimension
-                if obj.return_type is qml.measurements.Probability:
-                    self._output_dim += 2 ** len(obj.wires)
-                elif obj.return_type is qml.measurements.State:
-                    continue  # the output_dim is worked out automatically
-                else:
-                    self._ops.append(obj)
-
-            elif isinstance(obj, qml.measurements.MeasurementProcess):
-
-                if obj.return_type == qml.measurements.MidMeasure:
-
-                    # TODO: for now, consider mid-circuit measurements as tape
-                    # operations such that the order of the operators in the
-                    # tape is correct
-                    self._ops.append(obj)
-                else:
-
-                    # measurement process
-                    self._measurements.append(obj)
-
-                    # attempt to infer the output dimension
-                    if obj.return_type is qml.measurements.Probability:
-                        # TODO: what if we had a CV device here? Having the base as
-                        # 2 would have to be swapped to the cutoff value
-                        self._output_dim += 2 ** len(obj.wires)
-                    elif obj.return_type is qml.measurements.State:
-                        continue  # the output_dim is worked out automatically
-                    else:
-                        self._output_dim += 1
-
-                # check if any sampling is occuring
-                if obj.return_type is qml.measurements.Sample:
-                    self.is_sampled = True
+                if hasattr(obj, "inverse"):
+                    obj.inverse = info.get("inverse", obj.inverse)
 
         self._update()
 
@@ -503,7 +477,17 @@ class QuantumTape(AnnotatedQueue):
 
         self.is_sampled = any(m.return_type is Sample for m in self.measurements)
         self.all_sampled = all(m.return_type is Sample for m in self.measurements)
-        self.is_sampled = any(m.return_type is Sample for m in self.measurements)
+
+    def _update_output_dim(self):
+        self._output_dim = 0
+        for m in self.measurements:
+            # attempt to infer the output dimension
+            if m.return_type is qml.measurements.Probability:
+                # TODO: what if we had a CV device here? Having the base as
+                # 2 would have to be swapped to the cutoff value
+                self._output_dim += 2 ** len(m.wires)
+            elif m.return_type is not qml.measurements.State:
+                self._output_dim += 1
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -553,6 +537,7 @@ class QuantumTape(AnnotatedQueue):
         self._update_par_info()
         self._update_trainable_params()
         self._update_observables()
+        self._update_output_dim()
 
     def expand(self, depth=1, stop_at=None, expand_measurements=False):
         """Expand all operations in the processed queue to a specific depth.
@@ -810,7 +795,9 @@ class QuantumTape(AnnotatedQueue):
         p_idx = info["p_idx"]
         return op, p_idx
 
-    def get_parameters(self, trainable_only=True, **kwargs):  # pylint:disable=unused-argument
+    def get_parameters(
+        self, trainable_only=True, operations_only=False, **kwargs
+    ):  # pylint:disable=unused-argument
         """Return the parameters incident on the tape operations.
 
         The returned parameters are provided in order of appearance
@@ -818,6 +805,8 @@ class QuantumTape(AnnotatedQueue):
 
         Args:
             trainable_only (bool): if True, returns only trainable parameters
+            operations_only (bool): if True, returns only the parameters of the
+                operations excluding parameters to observables of measurements
 
         **Example**
 
@@ -853,6 +842,9 @@ class QuantumTape(AnnotatedQueue):
 
         for p_idx in iterator:
             op = self._par_info[p_idx]["op"]
+            if operations_only and hasattr(op, "return_type"):
+                continue
+
             op_idx = self._par_info[p_idx]["p_idx"]
             params.append(op.data[op_idx])
         return params

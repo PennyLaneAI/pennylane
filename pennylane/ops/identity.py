@@ -150,3 +150,6 @@ class Identity(CVObservable, Operation):
 
     def adjoint(self):  # pylint:disable=arguments-differ
         return Identity(wires=self.wires)
+
+    def pow(self, _):
+        return [Identity(wires=self.wires)]

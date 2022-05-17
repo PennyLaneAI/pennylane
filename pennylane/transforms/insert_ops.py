@@ -21,7 +21,6 @@ from typing import Type, Union
 from pennylane import Device, apply
 from pennylane.operation import Operation
 from pennylane.tape import QuantumTape
-from pennylane.ops.qubit.state_preparation import state_prep_ops
 from pennylane.transforms.qfunc_transforms import qfunc_transform
 
 # pylint: disable=too-many-branches
@@ -119,7 +118,8 @@ def insert(
     0: ──RX(0.90)─╭C──RY(0.50)──AmplitudeDamping(0.20)─┤ ╭<Z@Z>
     1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.20)─┤ ╰<Z@Z>
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Specifying the operation as a quantum function:**
 
@@ -221,7 +221,7 @@ def insert(
     if not isinstance(op_args, Sequence):
         op_args = [op_args]
 
-    num_preps = sum(o.base_name in state_prep_ops for o in circuit.operations)
+    num_preps = len(circuit._prep)  # pylint: disable=protected-access
 
     for i in range(num_preps):
         apply(circuit.operations[i])

@@ -61,6 +61,7 @@ class BasisState(Operation):
 
     grad_method = None
 
+    # This is a temporary attribute to fix the operator queuing behaviour
     _queue_category = "_prep"
 
     @staticmethod
@@ -129,6 +130,7 @@ class QubitStateVector(Operation):
 
     grad_method = None
 
+    # This is a temporary attribute to fix the operator queuing behaviour
     _queue_category = "_prep"
 
     @staticmethod
@@ -181,7 +183,8 @@ class QubitDensityMatrix(Operation):
         state (array[complex]): a density matrix of size ``(2**len(wires), 2**len(wires))``
         wires (Sequence[int] or int): the wire(s) the operation acts on
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Example:
 
@@ -212,6 +215,7 @@ class QubitDensityMatrix(Operation):
 
     grad_method = None
 
+    # This is a temporary attribute to fix the operator queuing behaviour
     _queue_category = "_prep"
 
     def adjoint(self):

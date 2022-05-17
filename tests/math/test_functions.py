@@ -25,6 +25,8 @@ from autograd.numpy.numpy_boxes import ArrayBox
 
 import semantic_version
 
+pytestmark = pytest.mark.all_interfaces
+
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
@@ -1412,8 +1414,6 @@ def test_where(interface, t):
         [0, 0, 1, 1, 2, 0, 0, 2, 2],
         [0, 1, 0, 1, 1, 0, 1, 0, 1],
     )
-    if interface == "tf":
-        expected = qml.math.T(expected)
     assert all(fn.allclose(_res, _exp) for _res, _exp in zip(res, expected))
 
 

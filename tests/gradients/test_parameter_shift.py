@@ -17,7 +17,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
-from pennylane.gradients.gradient_transform import gradient_analysis
 from pennylane.gradients.parameter_shift import _get_operation_recipe
 from pennylane.devices import DefaultQubit
 from pennylane.operation import Observable, AnyWires
@@ -38,7 +37,7 @@ class TestGetOperationRecipe:
     )
     def test_custom_recipe_first_order(self, orig_op, frequencies, shifts):
         """Test that a custom recipe is returned correctly for first-order derivatives."""
-        c, s = qml.gradients.generate_shift_rule(frequencies, shifts=shifts)
+        c, s = qml.gradients.generate_shift_rule(frequencies, shifts=shifts).T
         recipe = list(zip(c, np.ones_like(c), s))
 
         class DummyOp(orig_op):
@@ -48,15 +47,15 @@ class TestGetOperationRecipe:
             DummyOp(0.2, wires=list(range(DummyOp.num_wires)))
 
         out_recipe = _get_operation_recipe(tape, 0, shifts=shifts, order=1)
-        assert qml.math.allclose(out_recipe[0], c)
-        assert qml.math.allclose(out_recipe[1], np.ones_like(c))
+        assert qml.math.allclose(out_recipe[:, 0], c)
+        assert qml.math.allclose(out_recipe[:, 1], np.ones_like(c))
 
         if shifts is None:
-            assert qml.math.allclose(out_recipe[2], s)
+            assert qml.math.allclose(out_recipe[:, 2], s)
         else:
             exp_out_shifts = [-s for s in shifts[::-1]] + list(shifts)
             assert qml.math.allclose(np.sort(s), exp_out_shifts)
-            assert qml.math.allclose(np.sort(out_recipe[2]), np.sort(exp_out_shifts))
+            assert qml.math.allclose(np.sort(out_recipe[:, 2]), np.sort(exp_out_shifts))
 
     @pytest.mark.parametrize(
         "orig_op, frequencies, shifts",
@@ -69,7 +68,7 @@ class TestGetOperationRecipe:
     )
     def test_custom_recipe_second_order(self, orig_op, frequencies, shifts):
         """Test that a custom recipe is returned correctly for second-order derivatives."""
-        c, s = qml.gradients.generate_shift_rule(frequencies, shifts=shifts)
+        c, s = qml.gradients.generate_shift_rule(frequencies, shifts=shifts).T
         recipe = list(zip(c, np.ones_like(c), s))
 
         class DummyOp(orig_op):
@@ -79,10 +78,10 @@ class TestGetOperationRecipe:
             DummyOp(0.2, wires=list(range(DummyOp.num_wires)))
 
         out_recipe = _get_operation_recipe(tape, 0, shifts=shifts, order=2)
-        c2, s2 = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=2)
-        assert qml.math.allclose(out_recipe[0], c2)
-        assert qml.math.allclose(out_recipe[1], np.ones_like(c2))
-        assert qml.math.allclose(out_recipe[2], s2)
+        c2, s2 = qml.gradients.generate_shift_rule(frequencies, shifts=shifts, order=2).T
+        assert qml.math.allclose(out_recipe[:, 0], c2)
+        assert qml.math.allclose(out_recipe[:, 1], np.ones_like(c2))
+        assert qml.math.allclose(out_recipe[:, 2], s2)
 
     @pytest.mark.parametrize("order", [0, 3])
     def test_error_wrong_order(self, order):
@@ -95,127 +94,10 @@ class TestGetOperationRecipe:
             _get_operation_recipe(tape, 0, shifts=None, order=order)
 
 
-class TestGradAnalysis:
-    """Tests for parameter gradient methods"""
-
-    def test_non_differentiable(self):
-        """Test that a non-differentiable parameter is correctly marked"""
-        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
-
-        with qml.tape.QuantumTape() as tape:
-            qml.QubitStateVector(psi, wires=[0, 1])
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=[0, 1])
-
-        gradient_analysis(tape)
-
-        assert tape._par_info[0]["grad_method"] is None
-        assert tape._par_info[1]["grad_method"] == "A"
-        assert tape._par_info[2]["grad_method"] == "A"
-
-    def test_analysis_caching(self, mocker):
-        """Test that the gradient analysis is only executed once per tape
-        if grad_fn is set an unchanged."""
-        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
-
-        with qml.tape.QuantumTape() as tape:
-            qml.QubitStateVector(psi, wires=[0, 1])
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=[0, 1])
-
-        spy = mocker.spy(qml.operation, "has_grad_method")
-        gradient_analysis(tape, grad_fn=5)
-        spy.assert_called()
-
-        assert tape._par_info[0]["grad_method"] is None
-        assert tape._par_info[1]["grad_method"] == "A"
-        assert tape._par_info[2]["grad_method"] == "A"
-
-        spy = mocker.spy(qml.operation, "has_grad_method")
-        gradient_analysis(tape, grad_fn=5)
-        spy.assert_not_called()
-
-    def test_independent(self):
-        """Test that an independent variable is properly marked
-        as having a zero gradient"""
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.expval(qml.PauliY(0))
-
-        gradient_analysis(tape)
-
-        assert tape._par_info[0]["grad_method"] == "A"
-        assert tape._par_info[1]["grad_method"] == "0"
-
-    def test_independent_no_graph_mode(self):
-        """In non-graph mode, it is impossible to determine
-        if a parameter is independent or not"""
-
-        with qml.tape.QuantumTape() as tape:
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.expval(qml.PauliY(0))
-
-        gradient_analysis(tape, use_graph=False)
-
-        assert tape._par_info[0]["grad_method"] == "A"
-        assert tape._par_info[1]["grad_method"] == "A"
-
-    def test_finite_diff(self, monkeypatch):
-        """If an op has grad_method=F, this should be respected"""
-        monkeypatch.setattr(qml.RX, "grad_method", "F")
-
-        psi = np.array([1, 0, 1, 0]) / np.sqrt(2)
-
-        with qml.tape.QuantumTape() as tape:
-            qml.QubitStateVector(psi, wires=[0, 1])
-            qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
-            qml.CNOT(wires=[0, 1])
-            qml.probs(wires=[0, 1])
-
-        gradient_analysis(tape)
-
-        assert tape._par_info[0]["grad_method"] is None
-        assert tape._par_info[1]["grad_method"] == "F"
-        assert tape._par_info[2]["grad_method"] == "A"
-
-
 def grad_fn(tape, dev, fn=qml.gradients.param_shift, **kwargs):
     """Utility function to automate execution and processing of gradient tapes"""
     tapes, fn = fn(tape, **kwargs)
     return fn(dev.batch_execute(tapes))
-
-
-class TestShiftedTapes:
-    """Tests for the generation of shifted tapes"""
-
-    def test_behaviour(self):
-        """Test that the function behaves as expected"""
-
-        with qml.tape.QuantumTape() as tape:
-            qml.PauliZ(0)
-            qml.RX(1.0, wires=0)
-            qml.CNOT(wires=[0, 2])
-            qml.Rot(2.0, 3.0, 4.0, wires=0)
-            qml.expval(qml.PauliZ(0))
-
-        tape.trainable_params = {0, 2}
-        gradient_recipes = [[[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], [[1, 1, 1], [2, 2, 2], [3, 3, 3]]]
-        tapes, _ = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
-
-        assert len(tapes) == 5
-        assert tapes[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
-        assert tapes[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]
-        assert tapes[2].get_parameters(trainable_only=False) == [1.0, 2.0, 1 * 3.0 + 1, 4.0]
-        assert tapes[3].get_parameters(trainable_only=False) == [1.0, 2.0, 2 * 3.0 + 2, 4.0]
-        assert tapes[4].get_parameters(trainable_only=False) == [1.0, 2.0, 3 * 3.0 + 3, 4.0]
 
 
 class TestParamShift:
@@ -272,15 +154,67 @@ class TestParamShift:
         # only called for parameter 0
         assert spy.call_args[0][0:2] == (tape, [0])
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
-    def test_no_trainable_params_qnode(self, interface):
+    @pytest.mark.autograd
+    def test_no_trainable_params_qnode_autograd(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
-        if interface != "autograd":
-            pytest.importorskip(interface)
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface=interface)
+        @qml.qnode(dev, interface="autograd")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.torch
+    def test_no_trainable_params_qnode_torch(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.tf
+    def test_no_trainable_params_qnode_tf(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=0)
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        weights = [0.1, 0.2]
+        with pytest.warns(UserWarning, match="gradient of a QNode with no trainable parameters"):
+            res = qml.gradients.param_shift(circuit)(weights)
+
+        assert res == ()
+
+    @pytest.mark.jax
+    def test_no_trainable_params_qnode_jax(self):
+        """Test that the correct ouput and warning is generated in the absence of any trainable
+        parameters"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax")
         def circuit(weights):
             qml.RX(weights[0], wires=0)
             qml.RY(weights[1], wires=0)
@@ -332,7 +266,28 @@ class TestParamShift:
         tapes, _ = qml.gradients.param_shift(circuit.tape)
         assert tapes == []
 
-    def test_y0(self):
+    def test_with_gradient_recipes(self):
+        """Test that the function behaves as expected"""
+
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliZ(0)
+            qml.RX(1.0, wires=0)
+            qml.CNOT(wires=[0, 2])
+            qml.Rot(2.0, 3.0, 4.0, wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        tape.trainable_params = {0, 2}
+        gradient_recipes = ([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], [[1, 1, 1], [2, 2, 2], [3, 3, 3]])
+        tapes, _ = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
+
+        assert len(tapes) == 5
+        assert tapes[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
+        assert tapes[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]
+        assert tapes[2].get_parameters(trainable_only=False) == [1.0, 2.0, 1 * 3.0 + 1, 4.0]
+        assert tapes[3].get_parameters(trainable_only=False) == [1.0, 2.0, 2 * 3.0 + 2, 4.0]
+        assert tapes[4].get_parameters(trainable_only=False) == [1.0, 2.0, 3 * 3.0 + 3, 4.0]
+
+    def test_recycled_unshifted_tape(self):
         """Test that if the gradient recipe has a zero-shift component, then
         the tape is executed only once using the current parameter
         values."""
@@ -343,15 +298,15 @@ class TestParamShift:
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
-        gradient_recipes = [[[-1e7, 1, 0], [1e7, 1, 1e7]], [[-1e7, 1, 0], [1e7, 1, 1e7]]]
+        gradient_recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],) * 2
         tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
 
         # one tape per parameter, plus one global call
         assert len(tapes) == tape.num_params + 1
 
-    def test_y0_provided(self):
+    def test_f0_provided(self):
         """Test that if the original tape output is provided, then
-        the tape is executed only once using the current parameter
+        the tape is not executed additionally at the current parameter
         values."""
         dev = qml.device("default.qubit", wires=2)
 
@@ -360,7 +315,7 @@ class TestParamShift:
             qml.RY(-0.654, wires=[0])
             qml.expval(qml.PauliZ(0))
 
-        gradient_recipes = [[[-1e7, 1, 0], [1e7, 1, 1e7]], [[-1e7, 1, 0], [1e7, 1, 1e7]]]
+        gradient_recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],) * 2
         f0 = dev.execute(tape)
         tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes, f0=f0)
 
@@ -375,13 +330,13 @@ class TestParamShift:
         dev = qml.device("default.qubit", wires=2)
 
         with qml.tape.QuantumTape() as tape1:
-            qml.RX(1, wires=[0])
-            qml.RX(1, wires=[1])
+            qml.RX(1.0, wires=[0])
+            qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(0))
 
         with qml.tape.QuantumTape() as tape2:
-            qml.RX(1, wires=[0])
-            qml.RX(1, wires=[1])
+            qml.RX(1.0, wires=[0])
+            qml.RX(1.0, wires=[1])
             qml.expval(qml.PauliZ(1))
 
         tapes, fn = qml.gradients.param_shift(tape1)
@@ -666,6 +621,7 @@ class TestParameterShiftRule:
         assert np.allclose(grad_A, grad_F1, atol=tol, rtol=0)
         assert np.allclose(grad_A, grad_F2, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_fallback(self, mocker, tol):
         """Test that fallback gradient functions are correctly used"""
         spy = mocker.spy(qml.gradients, "finite_diff")
@@ -706,6 +662,7 @@ class TestParameterShiftRule:
         assert np.allclose(jac[0, 0, 0], -np.cos(x), atol=tol, rtol=0)
         assert np.allclose(jac[1, 1, 1], -2 * np.cos(2 * y), atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_all_fallback(self, mocker, tol):
         """Test that *only* the fallback logic is called if no parameters
         support the parameter-shift rule"""
@@ -1107,7 +1064,14 @@ class TestParameterShiftRule:
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubit.observables.union({"SpecialObservable"})
-            R_DTYPE = SpecialObservable
+
+            @staticmethod
+            def _asarray(arr, dtype=None):
+                return arr
+
+            def init(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.R_DTYPE = SpecialObservable
 
             def expval(self, observable, **kwargs):
                 if self.analytic and isinstance(observable, SpecialObservable):
@@ -1136,6 +1100,7 @@ class TestParameterShiftRule:
 class TestParamShiftGradients:
     """Test that the transform is differentiable"""
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests that the output of the parameter-shift transform
         can be differentiated using autograd, yielding second derivatives."""
@@ -1164,11 +1129,12 @@ class TestParamShiftGradients:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     @pytest.mark.slow
     def test_tf(self, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using TF, yielding second derivatives."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit.tf", wires=2)
         params = tf.Variable([0.543, -0.654], dtype=tf.float64)
@@ -1198,10 +1164,11 @@ class TestParamShiftGradients:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using Torch, yielding second derivatives."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         dev = qml.device("default.qubit.torch", wires=2)
         params = torch.tensor([0.543, -0.654], dtype=torch.float64, requires_grad=True)
@@ -1226,10 +1193,11 @@ class TestParamShiftGradients:
         expected = np.array([2 * np.cos(2 * x) * np.sin(y) ** 2, np.sin(2 * x) * np.sin(2 * y)])
         assert np.allclose(hess.detach().numpy(), expected, atol=0.1, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests that the output of the finite-difference transform
         can be differentiated using JAX, yielding second derivatives."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
         from jax.config import config
 
@@ -1458,6 +1426,7 @@ class TestHamiltonianExpvalGradients:
             [-d * np.sin(x), 0, 0, 0, 0, np.cos(x)],
         ]
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using autograd"""
@@ -1475,11 +1444,12 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(res[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
         assert np.allclose(res[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
+    @pytest.mark.tf
     @pytest.mark.slow
     def test_tf(self, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using tf"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         coeffs1 = tf.Variable([0.1, 0.2, 0.3], dtype=tf.float64)
         coeffs2 = tf.Variable([0.7], dtype=tf.float64)
@@ -1498,10 +1468,11 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(hess[0][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
         assert np.allclose(hess[1][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using torch"""
-        torch = pytest.importorskip("torch")
+        import torch
 
         coeffs1 = torch.tensor([0.1, 0.2, 0.3], dtype=torch.float64, requires_grad=True)
         coeffs2 = torch.tensor([0.7], dtype=torch.float64, requires_grad=True)
@@ -1522,11 +1493,13 @@ class TestHamiltonianExpvalGradients:
         assert np.allclose(hess[1][:, 2:5], np.zeros([2, 3, 3]), atol=tol, rtol=0)
         assert np.allclose(hess[2][:, -1], np.zeros([2, 1, 1]), atol=tol, rtol=0)
 
+    @pytest.mark.jax
     @pytest.mark.slow
     def test_jax(self, tol):
         """Test gradient of multiple trainable Hamiltonian coefficients
         using JAX"""
-        jax = pytest.importorskip("jax")
+        import jax
+
         jnp = jax.numpy
 
         coeffs1 = jnp.array([0.1, 0.2, 0.3])

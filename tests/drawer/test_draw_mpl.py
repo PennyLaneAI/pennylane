@@ -81,6 +81,7 @@ def test_expansion_strategy(strategy, initial_strategy, n_patches):
 
     assert len(ax.patches) == n_patches
     assert circuit.expansion_strategy == initial_strategy
+    plt.close()
 
 
 class TestKwargs:
@@ -92,6 +93,7 @@ class TestKwargs:
         _, ax = qml.draw_mpl(circuit1, fontsize=20)(1.234, 1.234)
         for t in ax.texts:
             assert t.get_fontsize() == 20
+        plt.close()
 
     def test_decimals(self):
         """Test decimals changes operation labelling"""
@@ -133,6 +135,7 @@ class TestKwargs:
         _, ax = qml.draw_mpl(temp_circ, show_all_wires=True, active_wire_notches=notches)()
 
         assert len(ax.patches) == n_patches
+        plt.close()
 
 
 class TestWireBehaviour:
@@ -187,6 +190,7 @@ class TestWireBehaviour:
         assert ax.texts[0].get_text() == "2"
         assert ax.texts[1].get_text() == "a"
         assert ax.texts[2].get_text() == "0"
+        plt.close()
 
     def test_wire_options(self):
         """Test wire options modifies wire styling"""
