@@ -39,6 +39,7 @@ SISWAP = np.array(
 CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])  #: CZ gate
 S = np.array([[1, 0], [0, 1j]])  #: Phase Gate
 T = np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])  #: T Gate
+SX = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])  #: SX Gate
 # Three qubit gates
 CSWAP = np.array(
     [

@@ -18,7 +18,7 @@ computing the sum of operations.
 import warnings
 import numpy as np
 import pennylane as qml
-from pennylane import numpy as qnp
+from pennylane.operation import Operator
 
 
 def sum(*summands):
@@ -26,7 +26,7 @@ def sum(*summands):
     return Sum(*summands)
 
 
-class Sum(qml.operation.Operator):
+class Sum(Operator):
     """Arithmetic operator subclass representing the sum of operators"""
 
     def __init__(self, *summands, do_queue=True, id=None):
@@ -42,6 +42,7 @@ class Sum(qml.operation.Operator):
             *combined_params, wires=combined_wires, do_queue=do_queue, id=id
         )
         self._name = "Sum"
+        self.matrix_cache = None  # reduce overhead by saving matrix representation for a Sum instance
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -55,7 +56,17 @@ class Sum(qml.operation.Operator):
         return [1.0]*len(self.summands), self.summands
 
     def matrix(self, wire_order=None):
-        """Matrix representation of the  """
+        """Representation of the operator as a matrix in the computational basis.
+
+        Args:
+
+        Raises:
+
+        Returns:
+
+        """
+        if self.matrix_cache is not None:
+            return self.matrix_cache
 
         def matrix_gen(summands):
             """Helper function to construct a generator of matrices"""
@@ -68,13 +79,15 @@ class Sum(qml.operation.Operator):
 
         canonical_matrix = self._sum(matrix_gen(self.summands))
         if wire_order is None or self.wires == qml.Wires(wire_order):
-            return canonical_matrix
-        return qml.operation.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
+            self.matrix_cache = canonical_matrix
+        else:
+            self.matrix_cache = qml.operation.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
+
+        return self.matrix_cache
 
     def _sum(self, mats_gen):
         """Super inefficient Sum method just as a proof of concept"""
-        res = np.zeros((2**self.num_wires, 2**self.num_wires), dtype="complex128")
-        # res = np.zeros((2**self.num_wires, 2**self.num_wires))  # Doesn't work due to casting error !
+        res = np.zeros((2**self.num_wires, 2**self.num_wires), dtype="complex128")  # TODO: fix casting errors here !
 
         for mat in mats_gen:
             res += mat
