@@ -893,9 +893,17 @@ class Operator(abc.ABC):
         `Operator.ndim_params` property but subclasses may overwrite it to define fixed
         expected numbers of dimensions, allowing to infer a batch size.
         """
-        ndims = tuple(qml.math.ndim(p) for p in params)
-        self._ndim_params = ndims
         self._batch_size = None
+        try:
+            ndims = tuple(qml.math.ndim(p) for p in params)
+        except ValueError as e:
+            # TODO:[dwierichs] Support batched parameters when input_signature in 
+            # tf.function is used.
+            if any(qml.math.is_abstract(p) for p in params):
+                return
+            raise e
+
+        self._ndim_params = ndims
         if ndims != self.ndim_params:
             ndims_matches = [
                 (ndim == exp_ndim, ndim == exp_ndim + 1)
@@ -906,6 +914,7 @@ class Operator(abc.ABC):
                     f"{self.name}: wrong number(s) of dimensions in parameters. "
                     f"Parameters with ndims {ndims} passed, {self.ndim_params} expected."
                 )
+
             first_dims = [
                 qml.math.shape(p)[0] for (_, batched), p in zip(ndims_matches, params) if batched
             ]
