@@ -729,43 +729,43 @@ class Device(abc.ABC):
                     "Can only return the expectation of a single Hamiltonian observable"
                 ) from e
 
-        # Check for case of non-commuting terms outside of Hamiltonians
-        measurements = circuit.measurements
+        if len(circuit._obs_sharing_wires) > 0 and not hamiltonian_in_obs:
+            # Check for case of non-commuting terms outside of Hamiltonians
+            measurements = circuit.measurements
 
-        obs_list = []
-        # get the observables from the measurements
-        # TO DO: This loop should become superfluous when the reworked operator classes are implemented
-        for i,measurement in enumerate(measurements):
-            if hasattr(measurement.obs, "obs"):
-                # this loop re-creates multi-qubit observables, e.g. PauliZ(0) @ PauliZ(1)
-                _list = measurement.obs.obs # the list of individual observables before composition
-                obs = _list[0]
-                for ob_i in _list[1:]:
-                    obs @= ob_i # I am sure there must be a better way to do this?
-            else:
-                obs = measurement.obs
-            obs_list.append(obs)
-        n_obs = len(obs_list)
+            obs_list = []
+            # get the observables from the measurements
+            # TO DO: This loop should become superfluous when the reworked operator classes are implemented
+            for i, measurement in enumerate(measurements):
+                if hasattr(measurement.obs, "obs"):
+                    # this loop re-creates multi-qubit observables, e.g. PauliZ(0) @ PauliZ(1)
+                    _list = (
+                        measurement.obs.obs
+                    )  # the list of individual observables before composition
+                    obs = _list[0]
+                    for ob_i in _list[1:]:
+                        obs @= ob_i  # I am sure there must be a better way to do this?
+                else:
+                    obs = measurement.obs
+                obs_list.append(obs)
+            n_obs = len(obs_list)
 
-        # If there is more than one group of commuting observables, split tapes
-        groups, group_coeffs = qml.grouping.group_observables(obs_list, range(len(obs_list)))
-        if len(groups) > 1:
-            # make one tape per commuting group
-            circuits = []
-            for group in groups:
-                with circuit.__class__() as new_circuit:
-                    [op.queue() for op in circuit.operations]
-                    [qml.expval(o) for o in group]
+            # If there is more than one group of commuting observables, split tapes
+            groups, group_coeffs = qml.grouping.group_observables(obs_list, range(len(obs_list)))
+            if len(groups) > 1:
+                # make one tape per commuting group
+                circuits = []
+                for group in groups:
+                    with circuit.__class__() as new_circuit:
+                        [op.queue() for op in circuit.operations]
+                        [qml.expval(o) for o in group]
 
-                circuits.append(new_circuit)
+                    circuits.append(new_circuit)
 
-            def reorder_fn(res):
-                # re-ordering the output accordingly to how it was input
-                reorder = np.zeros(n_obs) # numpy array for fancy indexing
-                for i,indxs in enumerate(group_coeffs):
-                    reorder[indxs] = res[i] # using fancy indexing
-                return reorder
-            return circuits, reorder_fn
+                def reorder_fn(res):
+                    return qml.math.concatenate(res)[qml.math.concatenate(group_coeffs)]
+
+                return circuits, reorder_fn
 
         # otherwise, return an identity transform
         return [circuit], lambda res: res[0]
