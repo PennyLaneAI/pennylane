@@ -763,7 +763,13 @@ class Device(abc.ABC):
 
                 def reorder_fn(res):
                     """re-order the output to the original shape and order"""
-                    return qml.math.concatenate(res)[qml.math.concatenate(group_coeffs)]
+                    res = qml.math.concatenate(res)
+                    new_res = res.copy() # to keep the same format as res
+                    reorder_indxs = qml.math.concatenate(group_coeffs)
+                    for i,out in zip(reorder_indxs, res):
+                        new_res[i] = out
+
+                    return new_res
 
                 return circuits, reorder_fn
 

@@ -66,16 +66,19 @@ def test_expval_non_commuting_observables():
 
     @qml.qnode(dev)
     def circuit():
-        qml.CNOT((0,1))
-        qml.CNOT((1,0))
-        qml.CNOT((0,1))
+        qml.Hadamard(1)
+        qml.Hadamard(0)
+        qml.PauliZ(0)
+        qml.Hadamard(3)
         return [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
-        qml.expval(qml.PauliY(0)),
+        qml.expval(qml.PauliX(0)),
         qml.expval(qml.PauliZ(1)),
         qml.expval(qml.PauliX(1) @ qml.PauliX(4)),
         qml.expval(qml.PauliX(3))]
 
-    assert all(np.isclose(circuit(),np.array([1., 0., 0., 1., 0.])))
+    assert all(np.isclose(circuit(),np.array([0., -1., 0., 0., 1.])))
+
+
 
 def test_no_measure(tol):
     """Test that failing to specify a measurement
