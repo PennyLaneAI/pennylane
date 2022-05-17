@@ -206,7 +206,18 @@ def _execute(
                 jacs = gradient_fn(new_tapes, **gradient_kwargs)
             return jacs
 
-        shapes = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
+        # TODO
+        if len(tapes) != len(params):
+            ValueError("")
+
+        # Old:
+        # shapes = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
+
+        # New:
+        shapes = [
+            jax.ShapeDtypeStruct((len(t.measurements), len(p)), dtype)
+            for t, p in zip(tapes, params)
+        ]
         jacs = host_callback.call(jacs_wrapper, params, result_shape=shapes)
         vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(g, jacs)]
         res = [[jnp.array(p) for p in v] for v in vjps]
@@ -264,6 +275,7 @@ def _execute_with_fwd(
             for shape, dtype in zip(jacobian_shape, jac_dtypes)
         ]
 
+        print(wrapper(params))
         res, jacs = host_callback.call(
             wrapper,
             params,

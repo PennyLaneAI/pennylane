@@ -934,6 +934,7 @@ class TestVectorValuedJIT:
 
     def test_multiple_expvals_grad(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
+        print(execute_kwargs)
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
 
