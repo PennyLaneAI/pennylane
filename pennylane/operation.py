@@ -897,7 +897,7 @@ class Operator(abc.ABC):
         try:
             ndims = tuple(qml.math.ndim(p) for p in params)
         except ValueError as e:
-            # TODO:[dwierichs] Support batched parameters when input_signature in 
+            # TODO:[dwierichs] Support batched parameters when input_signature in
             # tf.function is used.
             if any(qml.math.is_abstract(p) for p in params):
                 return
