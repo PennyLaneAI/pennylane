@@ -116,7 +116,7 @@ class QutritHadamard(Operation):
 
 class QutritS(Operation):
     r"""QutritS(wires)
-    The single-qutrit T gate
+    The single-qutrit S gate
 
     .. math:: S = \zeta^{8} \begin{bmatrix}
                 1 & 0 & 0 \\
@@ -124,6 +124,7 @@ class QutritS(Operation):
                 0 & 0 & \omega
             \end{bmatrix}
             \zeta = \omega^{1/3}
+            \omega = \exp{2 * \pi * i / 3}
 
     **Details:**
 
@@ -189,6 +190,78 @@ class QutritS(Operation):
 
     def adjoint(self):
         op = QutritS(wires=self.wires)
+        op.inverse = not self.inverse
+        return op
+
+
+class QutritT(Operation):
+    r"""QutritT(wires)
+    The one-qutrit T gate
+
+    .. math:: T = \begin{bmatrix}
+                1 &   0   & 0         \\
+                0 & \zeta & 0         \\
+                0 &   0   & \zeta^{8}
+            \end{bmatrix}
+            \zeta = \omega^{1/3}
+            \omega = \exp{2 * \pi * i / 3}
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 0
+
+    Args:
+        wires (Sequence[int] or int): the wire the operation acts on
+    """
+    num_wires = 1
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
+
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        Returns:
+            ndarray: matrix
+
+        **Example**
+
+        >>> print(qml.QutritT.compute_matrix())
+        [[1.        +0.j         0.        +0.j         0.        +0.j        ]
+         [0.        +0.j         0.76604444+0.64278761j 0.        +0.j        ]
+         [0.        +0.j         0.        +0.j         0.76604444-0.64278761j]]
+        """
+        return np.diag([1, ZETA, ZETA**8])
+
+    @staticmethod
+    def compute_eigvals():  # pylint: disable=arguments-differ
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        Returns:
+            array: eigenvalues
+
+        **Example**
+
+        >>> print(qml.QutritT.compute_eigvals())
+        [1.        +0.j         0.76604444+0.64278761j 0.76604444-0.64278761j]
+        """
+        return np.array([1, ZETA, ZETA**8])
+
+    def adjoint(self):
+        op = QutritT(wires=self.wires)
         op.inverse = not self.inverse
         return op
 
