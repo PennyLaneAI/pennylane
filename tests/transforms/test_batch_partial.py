@@ -191,7 +191,7 @@ def test_partial_evaluation_tf(diff_method):
 
     # check the results against individually executed circuits
     indiv_grad = []
-    for x_indiv in x:
+    for x_indiv in tf.unstack(x):
         # create a new variable since tensors created by
         # indexing a trainable variable aren't themselves trainable
         x_indiv = tf.Variable(x_indiv, trainable=True)
