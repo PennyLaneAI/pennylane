@@ -897,8 +897,14 @@ class Operator(abc.ABC):
         try:
             ndims = tuple(qml.math.ndim(p) for p in params)
         except ValueError as e:
-            # TODO:[dwierichs] Support batched parameters when input_signature in
-            # tf.function is used.
+            # TODO:[dwierichs] When using tf.function with an input_signature that contains
+            # an unknown-shaped input, ndim() will not be able to determine the number of
+            # dimensions because they are not specified yet. Failing example: Let `fun` be
+            # a single-parameter QNode.
+            # `tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))`
+            # There might be a way to support batching nonetheless, which remains to be 
+            # investigated. For now, the batch_size is left to be `None` when instantiating
+            # and operation with abstract parameters that make `qml.math.ndim` fail.
             if any(qml.math.is_abstract(p) for p in params):
                 return
             raise e
@@ -959,14 +965,15 @@ class Operator(abc.ABC):
 
     @property
     def batch_size(self):
-        """Number of dimensions per trainable parameter of the operator.
+        """Batch size of the operator if it is used with broadcasted parameters.
 
-        By default, this property returns the numbers of dimensions of the parameters used
-        for the operator creation. If the parameter sizes for an operator subclass are fixed,
-        this property can be overwritten to return the fixed value.
+        The ``batch_size`` is determined based on ``ndim_params`` and the provided parameters
+        for the operator. If (some of) the latter have an additional dimension, and this
+        dimension has the same size for all parameters, its size is the batch size of the
+        operator. If no parameter has an additional dimension, the batch size is ``None``.
 
         Returns:
-            tuple: Number of dimensions for each trainable parameter.
+            int or None: Size of the parameter broadcasting dimension if present, else ``None``.
         """
         return self._batch_size
 
