@@ -43,7 +43,7 @@ def split_non_commuting(tape):
             qml.expval(qml.PauliY(0))
         tapes, processing_fn = qml.transforms.split_non_commuting(tape)
 
-    Now ``tapes`` is a list of two tapes, each for one of the non-commuting terms.
+    Now ``tapes`` is a list of two tapes, each for one of the non-commuting terms:
 
     >>> [t.observables for t in tapes]
     [[expval(PauliZ(wires=[0]))], [expval(PauliY(wires=[0]))]]
