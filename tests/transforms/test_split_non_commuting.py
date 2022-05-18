@@ -19,8 +19,7 @@ import pennylane as qml
 from pennylane.transforms import split_non_commuting
 
 
-
-## Unit tests for split_non_commuting
+# Unit tests for split_non_commuting
 
 
 def test_commuting_group_no_split():
@@ -44,7 +43,7 @@ def test_commuting_group_no_split():
     )  # is there a better way to assert that fn is just taking the first element of what ever it is input?
 
 
-# example tape with 3 commuting groups [[0,3],[1,4],[2,5]]
+### example tape with 3 commuting groups [[0,3],[1,4],[2,5]]
 with qml.tape.QuantumTape() as non_commuting_tape3:
     qml.PauliZ(0)
     qml.Hadamard(0)
@@ -56,7 +55,7 @@ with qml.tape.QuantumTape() as non_commuting_tape3:
     qml.expval(qml.PauliX(0))
     qml.expval(qml.PauliY(0))
 
-# example tape with 2 -commuting groups [[0,2],[1,3]]
+### example tape with 2 -commuting groups [[0,2],[1,3]]
 with qml.tape.QuantumTape() as non_commuting_tape2:
     qml.PauliZ(0)
     qml.Hadamard(0)
@@ -84,6 +83,29 @@ def test_non_commuting_group_right_reorder(tape, group_coeffs):
     """Test that the output is of the correct size"""
     split, fn = split_non_commuting(tape)
     assert all(np.array(fn(group_coeffs)) == np.arange(len(split) * 2))
+
+
+### Test for other measurement types
+
+obs_fn = [qml.expval, qml.var, qml.sample]
+
+
+@pytest.mark.parametrize("meas_type", obs_fn)
+def test_different_measurement_types(meas_type):
+    """Test that expval, var and sample are correctly reproduced"""
+    with qml.tape.QuantumTape() as tape:
+        qml.PauliZ(0)
+        qml.Hadamard(0)
+        qml.CNOT((0, 1))
+        meas_type(qml.PauliZ(0) @ qml.PauliZ(1))
+        meas_type(qml.PauliX(0) @ qml.PauliX(1))
+        meas_type(qml.PauliZ(0))
+        meas_type(qml.PauliX(0))
+    the_return_type = tape.measurements[0].return_type
+    split, _ = split_non_commuting(tape)
+    for new_tape in split:
+        for meas in new_tape.measurements:
+            assert meas.return_type == the_return_type
 
 
 ## Testing in context of qnode with groups of non-commuting observables
