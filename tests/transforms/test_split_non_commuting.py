@@ -11,16 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+""" Tests for the transform ``qml.transform.split_non_commuting()`` """
 import pytest
 import numpy as np
 import pennylane as qml
-import pennylane.tape
-from pennylane import numpy as pnp
 
 from pennylane.transforms import split_non_commuting
 
-""" Tests for the transform ``qml.transform.split_non_commuting()`` """
+
 
 ## Unit tests for split_non_commuting
 
