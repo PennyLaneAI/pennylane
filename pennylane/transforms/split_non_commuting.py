@@ -74,7 +74,7 @@ def split_non_commuting(tape):
 
     obs_list = []
     # get the observables from the measurements
-    # TO DO: This loop should become superfluous when the reworked operator classes are implemented
+    # TODO: This loop should become superfluous when the reworked operator classes are implemented
     for measurement in measurements:
         if hasattr(measurement.obs, "obs"):
             # this loop re-creates multi-qubit observables, e.g. PauliZ(0) @ PauliZ(1)
