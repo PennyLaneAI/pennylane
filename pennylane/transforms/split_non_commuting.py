@@ -48,7 +48,7 @@ def split_non_commuting(tape):
     >>> [t.observables for t in tapes]
     [[expval(PauliZ(wires=[0]))], [expval(PauliY(wires=[0]))]]
 
-    The processing function becomes important when creating the commuting groups distorts the orde of the inputs.
+    The processing function becomes important when creating the commuting groups as the order of the inputs has been modified:
 
     .. code-block:: python3
 
