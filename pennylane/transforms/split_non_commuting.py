@@ -72,21 +72,7 @@ def split_non_commuting(tape):
 
     measurements = tape.measurements
 
-    obs_list = []
-    # get the observables from the measurements
-    # TO DO: This loop should become superfluous when the reworked operator classes are implemented
-    for measurement in measurements:
-        if hasattr(measurement.obs, "obs"):
-            # this loop re-creates multi-qubit observables, e.g. PauliZ(0) @ PauliZ(1)
-            _list = (
-                measurement.obs.obs
-            )  # the list of individual observables before composition
-            obs = _list[0]
-            for ob_i in _list[1:]:
-                obs @= ob_i  # I am sure there must be a better way to do this?
-        else:
-            obs = measurement.obs
-        obs_list.append(obs)
+    obs_list = tape.observables
 
     # If there is more than one group of commuting observables, split tapes
     groups, group_coeffs = qml.grouping.group_observables(obs_list, range(len(obs_list)))
