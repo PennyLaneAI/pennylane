@@ -108,7 +108,7 @@ class Device(abc.ABC):
     """
 
     # pylint: disable=too-many-public-methods,too-many-instance-attributes
-    _capabilities = {"model": None}
+    _capabilities = {"model": None, "supports_broadcasting": False}
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
 
@@ -705,11 +705,6 @@ class Device(abc.ABC):
             the sequence of circuits to be executed, and a post-processing function
             to be applied to the list of evaluated circuit results.
         """
-
-        # If the observable contains a Hamiltonian and the device does not
-        # support Hamiltonians, or if the simulation uses finite shots, or
-        # if the Hamiltonian explicitly specifies an observable grouping,
-        # split tape into multiple tapes of diagonalizable known observables.
         supports_hamiltonian = self.supports_observable("Hamiltonian")
         finite_shots = self.shots is not None
         grouping_known = all(
@@ -721,16 +716,48 @@ class Device(abc.ABC):
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
 
         if hamiltonian_in_obs and ((not supports_hamiltonian or finite_shots) or grouping_known):
+            # If the observable contains a Hamiltonian and the device does not
+            # support Hamiltonians, or if the simulation uses finite shots, or
+            # if the Hamiltonian explicitly specifies an observable grouping,
+            # split tape into multiple tapes of diagonalizable known observables.
             try:
-                return qml.transforms.hamiltonian_expand(circuit, group=False)
+                circuits, hamiltonian_fn = qml.transforms.hamiltonian_expand(circuit, group=False)
 
             except ValueError as e:
                 raise ValueError(
                     "Can only return the expectation of a single Hamiltonian observable"
                 ) from e
+        else:
+            # otherwise, return the output of an identity transform
+            circuits, hamiltonian_fn = [circuit], lambda res: res[0]
 
-        # otherwise, return an identity transform
-        return [circuit], lambda res: res[0]
+        # Check whether the circuit was broadcasted (then the Hamiltonian-expanded
+        # ones will be as well) and whether broadcasting is supported
+        batch_size = circuit.batch_size
+        supports_broadcasting = self.capabilities().get("supports_broadcasting")
+
+        if batch_size is None or supports_broadcasting:
+            # If the circuit wasn't broadcasted or broadcasting is supported, no action required
+            return circuits, hamiltonian_fn
+
+        unbroadcasted_circuits = []
+        unbroadcast_fns = []
+        # Expand each of the broadcasted Hamiltonian-expanded circuits
+        for circuit in circuits:
+            c, fn = qml.transforms.unbroadcast_expand(circuit)
+            unbroadcasted_circuits.extend(c)
+            unbroadcast_fns.append(fn)
+
+        # Chain the postprocessing functions of the broadcasted-tape expansions and the Hamiltonian
+        # expansion. Note that the application order is reversed compared to the expansion order
+        def chained_processing(results):
+            intermediate = [
+                fn(results[i * batch_size: (i + 1) * batch_size])
+                for i, fn in enumerate(unbroadcast_fns)
+            ]
+            return hamiltonian_fn(intermediate)
+
+        return unbroadcasted_circuits, chained_processing
 
     @property
     def op_queue(self):

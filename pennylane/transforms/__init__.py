@@ -224,3 +224,4 @@ from .tape_expand import (
 from .transpile import transpile
 from . import qcut
 from .qcut import cut_circuit, cut_circuit_mc
+from .unbroadcast_expand import unbroadcast_expand

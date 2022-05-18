@@ -1155,6 +1155,7 @@ class TestDefaultQubitIntegration:
             "supports_reversible_diff": True,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
+            "supports_broadcasting": False,
             "passthru_devices": {
                 "torch": "default.qubit.torch",
                 "tf": "default.qubit.tf",
