@@ -16,11 +16,15 @@ class AdjointOperation(Operation):
 
     @_inverse.setter
     def _inverse(self, boolean):
-        if boolean:
+        if boolean is True:
             raise NotImplementedError("Class Adjoint does not support in-place inversion.")
 
     def inv(self):
         raise NotImplementedError("Class Adjoint does not support in-place inversion.")
+
+    @property
+    def base_name(self):
+        return self.name
 
     @property
     def basis(self):

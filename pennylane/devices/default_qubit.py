@@ -245,15 +245,13 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        if operation.__class__.__name__ == "Identity":
+        if operation.base_name == "Identity":
             return state
         wires = operation.wires
 
-        if operation.__class__.__name__ in self._apply_ops:
+        if operation.base_name in self._apply_ops:
             axes = self.wires.indices(wires)
-            return self._apply_ops[operation.__class__.__name__](
-                state, axes, inverse=operation.inverse
-            )
+            return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
 
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 
