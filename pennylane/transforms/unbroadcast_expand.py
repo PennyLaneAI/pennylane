@@ -53,6 +53,9 @@ def unbroadcast_expand(tape):
     """
 
     num_tapes = tape.batch_size
+    if num_tapes is None:
+        raise ValueError("The provided tape is not broadcasted")
+
     # Note that these unbatched_params will have shape (#params, num_tapes)
     unbatched_params = []
     for op in tape.operations + tape.observables:

@@ -743,9 +743,9 @@ class Device(abc.ABC):
         unbroadcasted_circuits = []
         unbroadcast_fns = []
         # Expand each of the broadcasted Hamiltonian-expanded circuits
-        for circuit in circuits:
-            c, fn = qml.transforms.unbroadcast_expand(circuit)
-            unbroadcasted_circuits.extend(c)
+        for c in circuits:
+            tapes_batch, fn = qml.transforms.unbroadcast_expand(c)
+            unbroadcasted_circuits.extend(tapes_batch)
             unbroadcast_fns.append(fn)
 
         # Chain the postprocessing functions of the broadcasted-tape expansions and the Hamiltonian
