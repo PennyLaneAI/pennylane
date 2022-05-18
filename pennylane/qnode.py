@@ -406,7 +406,7 @@ class QNode:
         if device.shots is not None:
             raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
 
-        mapped_interface = INTERFACE_MAP[interface]
+        mapped_interface = INTERFACE_MAP.get(interface, interface)
 
         # determine if the device supports backpropagation
         backprop_interface = device.capabilities().get("passthru_interface", None)
