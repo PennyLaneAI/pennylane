@@ -124,10 +124,7 @@ class TestOperatorConstruction:
             r"""Dummy custom operator that declares ndim_params as an instance property"""
             num_wires = 1
             grad_method = "A"
-
-            @property
-            def ndim_params(self):
-                return (0,)
+            ndim_params = (0,)
 
         with pytest.raises(ValueError, match=r"wrong number\(s\) of dimensions in parameters"):
             DummyOp([[[0.5], [0.1]]], wires=0)
@@ -155,38 +152,112 @@ class TestOperatorConstruction:
 
         op3 = DummyOp3(0.5, [[0.6]], wires=0)
 
+        # This operator will never complain about wrongly-shaped arguments at initialization
+        # because it will simply set `ndim_params` to the ndims of the provided arguments
         assert op3.ndim_params == (0, 2)
 
-    def test_batched_params(self):
+        class DummyOp4(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        # Test with mismatching batch dimensions
+        with pytest.raises(ValueError, match="Batching was attempted but the batched dimensions"):
+            DummyOp4([0.3] * 4, [[[0.3, 1.2]]] * 3, wires=0)
+
+    batched_params_test_data = [
+        # Test with no parameter batched
+        ((0.3, [[0.3, 1.2]]), None),
+        # Test with both parameters batched with same dimension
+        (([0.3], [[[0.3, 1.2]]]), 1),
+        (([0.3] * 3, [[[0.3, 1.2]]] * 3), 3),
+        # Test with one parameter batched
+        ((0.3, [[[0.3, 1.2]]]), 1),
+        ((0.3, [[[0.3, 1.2]]] * 3), 3),
+        (([0.3], [[0.3, 1.2]]), 1),
+        (([0.3] * 3, [[0.3, 1.2]]), 3),
+    ]
+
+    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
+    def test_batched_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with batched parameters
+        works and sets the ``batch_size`` correctly."""
+
         class DummyOp(qml.operation.Operator):
             r"""Dummy custom operator that declares ndim_params as a class property"""
             ndim_params = (0, 2)
             num_wires = 1
 
-        # Test with no parameter batched
-        op = DummyOp(0.3, [[0.3, 1.2]], wires=0)
+        op = DummyOp(*params, wires=0)
         assert op.ndim_params == (0, 2)
-        assert op._batch_size == None
+        assert op._batch_size == exp_batch_size
 
-        # Test with both parameters batched with same dimension
-        for size in {1, 3}:
-            op = DummyOp([0.3] * size, [[[0.3, 1.2]]] * size, wires=0)
-            assert op.ndim_params == (0, 2)
-            assert op._batch_size == size
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
+    def test_batched_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with batched parameters
+        works and sets the ``batch_size`` correctly with Autograd parameters."""
 
-        # Test with one parameter batched
-        for size in {1, 3}:
-            op = DummyOp(0.3, [[[0.3, 1.2]]] * size, wires=0)
-            assert op.ndim_params == (0, 2)
-            assert op._batch_size == size
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            ndim_params = (0, 2)
+            num_wires = 1
 
-            op = DummyOp([0.3] * size, [[0.3, 1.2]], wires=0)
-            assert op.ndim_params == (0, 2)
-            assert op._batch_size == size
+        params = tuple(pnp.array(p, requires_grad=True) for p in params)
+        op = DummyOp(*params, wires=0)
+        assert op.ndim_params == (0, 2)
+        assert op._batch_size == exp_batch_size
 
-        # Test with mismatching batch dimensions
-        with pytest.raises(ValueError, match="Batching was attempted but the batched dimensions"):
-            DummyOp([0.3] * 4, [[[0.3, 1.2]]] * 3, wires=0)
+    @pytest.mark.jax
+    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
+    def test_batched_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with batched parameters
+        works and sets the ``batch_size`` correctly with JAX parameters."""
+        import jax
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        params = tuple(jax.numpy.array(p) for p in params)
+        op = DummyOp(*params, wires=0)
+        assert op.ndim_params == (0, 2)
+        assert op._batch_size == exp_batch_size
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
+    def test_batched_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with batched parameters
+        works and sets the ``batch_size`` correctly with TensorFlow parameters."""
+        import tensorflow as tf
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        params = tuple(tf.Variable(p) for p in params)
+        op = DummyOp(*params, wires=0)
+        assert op.ndim_params == (0, 2)
+        assert op._batch_size == exp_batch_size
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
+    def test_batched_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with batched parameters
+        works and sets the ``batch_size`` correctly with Torch parameters."""
+        import torch
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        params = tuple(torch.tensor(p, requires_grad=True) for p in params)
+        op = DummyOp(*params, wires=0)
+        assert op.ndim_params == (0, 2)
+        assert op._batch_size == exp_batch_size
 
     @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
     def test_error_batched_params_not_silenced(self):
@@ -293,7 +364,7 @@ class TestOperatorConstruction:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("jit_compile", [True, False])
-    def test_tf_function(self, jit_compile):
+    def test_with_tf_function(self, jit_compile):
         """Tests using tf.function with an operation works with and without
         just in time (JIT) compilation."""
         import tensorflow as tf
