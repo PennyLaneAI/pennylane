@@ -95,8 +95,11 @@ def split_non_commuting(tape):
         tapes = []
         for group in groups:
             with tape.__class__() as new_tape:
-                [op.queue() for op in tape.operations]
-                [qml.expval(o) for o in group]
+                for op in tape.operations:
+                    qml.apply(op)
+
+                for o in group:
+                    qml.expval(o)
 
             tapes.append(new_tape)
 
