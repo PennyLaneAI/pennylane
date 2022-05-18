@@ -16,6 +16,7 @@ Contains the tape transform that splits non-commuting terms
 """
 # pylint: disable=protected-access
 import pennylane as qml
+import numpy as np
 
 
 def split_non_commuting(tape):
@@ -96,14 +97,15 @@ def split_non_commuting(tape):
 
         def reorder_fn(res):
             """re-order the output to the original shape and order"""
-            res = qml.math.concatenate(res)
-            new_res = res.copy() # to keep the same format as res
+            new_res = qml.math.concatenate(res)
             reorder_indxs = qml.math.concatenate(group_coeffs)
-            for i, out in zip(reorder_indxs, res):
-                new_res[i] = out
 
-            return new_res
+            # in order not to mess with the outputs I am just permuting them with a simple matrix multiplication
+            permutation_matrix = np.zeros((len(new_res), len(new_res)))
+            for column, indx in enumerate(reorder_indxs):
+                permutation_matrix[indx, column] = 1
+            return permutation_matrix @ new_res
 
-        return tapes, reorder_fn
+        return tapes, reorder_fn #lambda res : res 
     # if the group is already commuting, no need to do anything
     return [tape], lambda res: res[0]

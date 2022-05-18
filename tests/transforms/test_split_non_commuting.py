@@ -130,3 +130,9 @@ def test_expval_non_commuting_observables():
         ]
 
     assert all(np.isclose(circuit(), np.array([0.0, -1.0, 0.0, 0.0, 1.0])))
+
+
+
+# Autodiff tests
+
+# @pytest.mark.jax
