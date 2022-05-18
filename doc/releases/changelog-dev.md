@@ -114,6 +114,7 @@
 * `QNode`'s now map variations on interface names to the proper backpropagation device instead of
   reverting to other differentiation methods.
   [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
+
 * Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
   computed for QNodes with parametrized observables (e.g., `qml.Hermitian`).
   [(#2543)](https://github.com/PennyLaneAI/pennylane/pull/2543)
