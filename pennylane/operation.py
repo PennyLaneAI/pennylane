@@ -890,7 +890,7 @@ class Operator(abc.ABC):
             params (tuple): Parameters with which the operator is instantiated
 
         The check always passes and sets the ``_batch_size`` to ``None`` for the default
-        `Operator.ndim_params` property but subclasses may overwrite it to define fixed
+        ``Operator.ndim_params`` property but subclasses may overwrite it to define fixed
         expected numbers of dimensions, allowing to infer a batch size.
         """
         self._batch_size = None
