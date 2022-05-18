@@ -113,7 +113,7 @@ def test_different_measurement_types(meas_type):
 
 def test_expval_non_commuting_observables():
     """Test expval with multiple non-commuting operators"""
-    dev = qml.device("default.qubit", wires=5)
+    dev = qml.device("default.qubit", wires=6)
 
     @qml.qnode(dev)
     def circuit():
@@ -121,15 +121,19 @@ def test_expval_non_commuting_observables():
         qml.Hadamard(0)
         qml.PauliZ(0)
         qml.Hadamard(3)
+        qml.Hadamard(5)
+        qml.T(5)
         return [
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
             qml.expval(qml.PauliX(0)),
             qml.expval(qml.PauliZ(1)),
             qml.expval(qml.PauliX(1) @ qml.PauliX(4)),
             qml.expval(qml.PauliX(3)),
+            qml.expval(qml.PauliY(5))
+            
         ]
 
-    assert all(np.isclose(circuit(), np.array([0.0, -1.0, 0.0, 0.0, 1.0])))
+    assert all(np.isclose(circuit(), np.array([0.0, -1.0, 0.0, 0.0, 1.0, 1/np.sqrt(2)])))
 
 
 # Autodiff tests
