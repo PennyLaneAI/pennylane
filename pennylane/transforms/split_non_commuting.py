@@ -94,7 +94,7 @@ def split_non_commuting(tape):
         # make one tape per commuting group
         tapes = []
         for group in groups:
-            with tape.__class__() as new_tape:
+            with qml.tape.QuantumTape() as new_tape:
                 for op in tape.operations:
                     qml.apply(op)
 
