@@ -172,7 +172,7 @@ class HilbertSchmidt(Operation):
         for i in first_range:
             decomp_ops.append(qml.Hadamard(wires[i]))
         return decomp_ops
-
+ 
 
 class LocalHilbertSchmidt(HilbertSchmidt):
     r"""Create a Local Hilbert-Schmidt template that can be used to compute the  Local Hilbert-Schmidt Test (LHST).
