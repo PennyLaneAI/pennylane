@@ -33,7 +33,7 @@ def split_non_commuting(tape):
 
     **Example**
 
-    We can create a tape with non-commuting observables
+    We can create a tape with non-commuting observables:
 
     .. code-block:: python3
 
