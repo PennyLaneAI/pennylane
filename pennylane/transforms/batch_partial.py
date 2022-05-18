@@ -42,8 +42,7 @@ def _convert_to_args(func, args, kwargs):
 def batch_partial(qnode, all_operations=False, **partial_kwargs):
     """
     Create a wrapper function around the QNode with partially
-    evaluated parameters, which supports an initial batch dimension
-    for other unevaluated parameters.
+    evaluated parameters, which supports an initial batch dimension.
 
     Args:
         qnode (pennylane.QNode): QNode to partially evaluate
@@ -96,6 +95,29 @@ def batch_partial(qnode, all_operations=False, **partial_kwargs):
            [ 0.        , -0.21649144,  0.        ,  0.        ],
            [ 0.        ,  0.        , -0.33566648,  0.        ],
            [ 0.        ,  0.        ,  0.        , -0.44888295]])
+
+    The same ``qml.batch_partial`` decorator can also be used to replace arguments
+    of a QNode with functions, and calling the wrapper would evaluate
+    those functions and pass the results into the QNode. For example,
+
+    >>> x = np.array(0.1)
+    >>> y_fn = lambda y0: y0 * np.array([0.2, 0.3])
+    >>> batched_lambda_circuit = qml.batch_partial(circuit, x=x, y=y_fn)
+
+    The wrapped function ``batched_lambda_circuit`` also expects arguments to
+    have an initial batch dimension:
+
+    >>> batch_size = 4
+    >>> y0 = np.linspace(0.5, 2, batch_size)
+    >>> batched_lambda_circuit(y0)
+    tensor([0.97891628, 0.9316158 , 0.85593241, 0.75638669], requires_grad=True)
+
+    Gradients can be computed in this scenario as well:
+    >>> qml.jacobian(batched_lambda_circuit)(y0)
+    array([[-0.06402847,  0.        ,  0.        ,  0.        ],
+           [ 0.        , -0.12422434,  0.        ,  0.        ],
+           [ 0.        ,  0.        , -0.17699293,  0.        ],
+           [ 0.        ,  0.        ,  0.        , -0.21920062]])
     """
     qnode = qml.batch_params(qnode, all_operations=all_operations)
 
@@ -142,7 +164,8 @@ def batch_partial(qnode, all_operations=False, **partial_kwargs):
 
         for key, val in partial_kwargs.items():
             if callable(val):
-                val = qml.math.stack([val(*a) for a in zip(*args)])
+                unstacked_args = (qml.math.unstack(arg) for arg in args)
+                val = qml.math.stack([val(*a) for a in zip(*unstacked_args)])
                 kwargs[key] = val
             else:
                 kwargs[key] = qml.math.stack([val] * batch_dim)
