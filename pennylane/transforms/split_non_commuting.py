@@ -106,6 +106,6 @@ def split_non_commuting(tape):
                 permutation_matrix[indx, column] = 1
             return permutation_matrix @ new_res
 
-        return tapes, reorder_fn #lambda res : res 
+        return tapes, reorder_fn
     # if the group is already commuting, no need to do anything
     return [tape], lambda res: res[0]
