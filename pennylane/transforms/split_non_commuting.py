@@ -70,9 +70,16 @@ def split_non_commuting(tape):
 
     """
 
-    measurements = tape.measurements
+    obs_fn = {qml.measurements.Expectation: qml.expval,
+    qml.measurements.Variance: qml.var,
+    qml.measurements.Sample: qml.sample,
+    qml.measurements.Probability: qml.probs,
+    qml.measurements.State: qml.state}
+
+
 
     obs_list = tape.observables
+    return_types = [m.return_type for m in obs_list]
 
     # If there is more than one group of commuting observables, split tapes
     groups, group_coeffs = qml.grouping.group_observables(obs_list, range(len(obs_list)))
@@ -84,8 +91,8 @@ def split_non_commuting(tape):
                 for op in tape.operations:
                     qml.apply(op)
 
-                for o in group:
-                    qml.expval(o)
+                for type,o in zip(return_types,group):
+                    obs_fn[type](o)
 
             tapes.append(new_tape)
 
@@ -101,4 +108,4 @@ def split_non_commuting(tape):
 
         return tapes, reorder_fn
     # if the group is already commuting, no need to do anything
-    return [tapes], lambda res: res[0]
+    return [tape], lambda res: res[0]

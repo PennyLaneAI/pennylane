@@ -60,26 +60,6 @@ def test_ObservableReturnTypes(return_type, value):
     assert isinstance(return_type, qml.measurements.ObservableReturnTypes)
     assert repr(return_type) == value
 
-def test_expval_non_commuting_observables():
-    """Test expval with multiple non-commuting operators """
-    dev = qml.device("default.qubit", wires=5)
-
-    @qml.qnode(dev)
-    def circuit():
-        qml.Hadamard(1)
-        qml.Hadamard(0)
-        qml.PauliZ(0)
-        qml.Hadamard(3)
-        return [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
-        qml.expval(qml.PauliX(0)),
-        qml.expval(qml.PauliZ(1)),
-        qml.expval(qml.PauliX(1) @ qml.PauliX(4)),
-        qml.expval(qml.PauliX(3))]
-
-    assert all(np.isclose(circuit(),np.array([0., -1., 0., 0., 1.])))
-
-
-
 def test_no_measure(tol):
     """Test that failing to specify a measurement
     raises an exception"""
