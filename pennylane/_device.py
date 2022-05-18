@@ -752,7 +752,7 @@ class Device(abc.ABC):
         # expansion. Note that the application order is reversed compared to the expansion order
         def chained_processing(results):
             intermediate = [
-                fn(results[i * batch_size: (i + 1) * batch_size])
+                fn(results[i * batch_size : (i + 1) * batch_size])
                 for i, fn in enumerate(unbroadcast_fns)
             ]
             return hamiltonian_fn(intermediate)
