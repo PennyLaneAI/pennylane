@@ -41,7 +41,61 @@ def _convert_to_args(func, args, kwargs):
 
 def batch_partial(qnode, all_operations=False, **partial_kwargs):
     """
-    TODO: docs
+    Create a wrapper function around the QNode with partially
+    evaluated parameters, which supports an initial batch dimension
+    for other unevaluated parameters.
+
+    Args:
+        qnode (pennylane.QNode): QNode to partially evaluate
+        all_operations (bool): If ``True``, a batch dimension will be added to *all* operations
+            in the QNode, rather than just trainable QNode parameters.
+        partial_kwargs (dict): partially-evaluated parameters to pass to the QNode
+
+    Returns:
+        func: Function which accepts the same arguments as the QNode minus the
+        partially evaluated arguments provided, and behaves the same as the QNode
+        called with both the partially evaluated arguments and the extra arguments.
+        However, the first dimension of each argument of the returned function
+        will be treated as a batch dimension. The function output will also contain
+        an initial batch dimension.
+
+    **Example**
+
+    Consider the following circuit:
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y[..., 0], wires=0)
+            qml.RY(y[..., 1], wires=1)
+            return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
+
+    The ``qml.batch_partial`` decorator allows us to create a partially evaluated
+    function that wraps the QNode. For example,
+
+    >>> y = np.array([0.2, 0.3])
+    >>> batched_partial_circuit = qml.batch_partial(circuit, y=y)
+
+    The unevaluated arguments of the resulting function must now have a batch
+    dimension, and the output of the function also has a batch dimension:
+
+    >>> batch_size = 4
+    >>> x = np.linspace(0.1, 0.5, batch_size)
+    >>> batched_partial_circuit(x)
+    tensor([0.9316158 , 0.91092081, 0.87405565, 0.82167473], requires_grad=True)
+
+    Gradients can be computed for the arguments of the wrapper function, but
+    not for any partially evaluated arguments passed to ``qml.batch_partial``:
+
+    >>> qml.jacobian(batched_partial_circuit)(x)
+    array([[-0.09347337,  0.        ,  0.        ,  0.        ],
+           [ 0.        , -0.21649144,  0.        ,  0.        ],
+           [ 0.        ,  0.        , -0.33566648,  0.        ],
+           [ 0.        ,  0.        ,  0.        , -0.44888295]])
     """
     qnode = qml.batch_params(qnode, all_operations=all_operations)
 
@@ -78,10 +132,13 @@ def batch_partial(qnode, all_operations=False, **partial_kwargs):
 
         # get the batch dimension (we don't have to check if all arguments
         # have the same batch dim since that's done in qml.batch_params)
-        if args:
-            batch_dim = qml.math.shape(args[0])[0]
-        else:
-            batch_dim = qml.math.shape(list(kwargs.values())[0])[0]
+        try:
+            if args:
+                batch_dim = qml.math.shape(args[0])[0]
+            else:
+                batch_dim = qml.math.shape(list(kwargs.values())[0])[0]
+        except IndexError:
+            raise ValueError("Batch dimension must be provided") from None
 
         for key, val in partial_kwargs.items():
             if callable(val):
