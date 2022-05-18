@@ -71,10 +71,10 @@ def split_non_commuting(tape):
     """
 
     obs_fn = {qml.measurements.Expectation: qml.expval,
-    qml.measurements.Variance: qml.var,
-    qml.measurements.Sample: qml.sample,
-    qml.measurements.Probability: qml.probs,
-    qml.measurements.State: qml.state}
+              qml.measurements.Variance: qml.var,
+              qml.measurements.Sample: qml.sample,
+              qml.measurements.Probability: qml.probs,
+              qml.measurements.State: qml.state}
 
 
 
@@ -91,7 +91,7 @@ def split_non_commuting(tape):
                 for op in tape.operations:
                     qml.apply(op)
 
-                for type,o in zip(return_types,group):
+                for type, o in zip(return_types, group):
                     obs_fn[type](o)
 
             tapes.append(new_tape)
@@ -101,7 +101,7 @@ def split_non_commuting(tape):
             res = qml.math.concatenate(res)
             new_res = res.copy() # to keep the same format as res
             reorder_indxs = qml.math.concatenate(group_coeffs)
-            for i,out in zip(reorder_indxs, res):
+            for i, out in zip(reorder_indxs, res):
                 new_res[i] = out
 
             return new_res
