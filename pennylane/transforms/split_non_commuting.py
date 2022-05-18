@@ -33,7 +33,7 @@ def split_non_commuting(tape):
 
     **Example**
 
-    We can create a tape with non-commuting observables
+    We can create a tape with non-commuting observables:
 
     .. code-block:: python3
 
@@ -43,12 +43,12 @@ def split_non_commuting(tape):
             qml.expval(qml.PauliY(0))
         tapes, processing_fn = qml.transforms.split_non_commuting(tape)
 
-    Now ``tapes`` is a list of two tapes, each for one of the non-commuting terms.
+    Now ``tapes`` is a list of two tapes, each for one of the non-commuting terms:
 
     >>> [t.observables for t in tapes]
     [[expval(PauliZ(wires=[0]))], [expval(PauliY(wires=[0]))]]
 
-    The processing function becomes important when creating the commuting groups distorts the orde of the inputs.
+    The processing function becomes important when creating the commuting groups as the order of the inputs has been modified:
 
     .. code-block:: python3
 
@@ -80,9 +80,12 @@ def split_non_commuting(tape):
         # make one tape per commuting group
         tapes = []
         for group in groups:
-            with tape.__class__() as new_tape:
-                [op.queue() for op in tape.operations]
-                [qml.expval(o) for o in group]
+            with qml.tape.QuantumTape() as new_tape:
+                for op in tape.operations:
+                    qml.apply(op)
+
+                for o in group:
+                    qml.expval(o)
 
             tapes.append(new_tape)
 
