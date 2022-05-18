@@ -111,8 +111,7 @@
 
 <h3>Bug fixes</h3>
 
-* `QNode`'s now map variations on interface names to the proper backpropagation device instead of
-  reverting to other differentiation methods.
+* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` or `"jax-jit"`, when requesting backpropagation. 
   [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
 
 * Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
