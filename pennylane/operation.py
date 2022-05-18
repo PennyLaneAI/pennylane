@@ -902,7 +902,7 @@ class Operator(abc.ABC):
             # dimensions because they are not specified yet. Failing example: Let `fun` be
             # a single-parameter QNode.
             # `tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))`
-            # There might be a way to support batching nonetheless, which remains to be 
+            # There might be a way to support batching nonetheless, which remains to be
             # investigated. For now, the batch_size is left to be `None` when instantiating
             # and operation with abstract parameters that make `qml.math.ndim` fail.
             if any(qml.math.is_abstract(p) for p in params):
@@ -965,7 +965,7 @@ class Operator(abc.ABC):
 
     @property
     def batch_size(self):
-        """Batch size of the operator if it is used with broadcasted parameters.
+        r"""Batch size of the operator if it is used with broadcasted parameters.
 
         The ``batch_size`` is determined based on ``ndim_params`` and the provided parameters
         for the operator. If (some of) the latter have an additional dimension, and this

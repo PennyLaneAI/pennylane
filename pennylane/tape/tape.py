@@ -1290,7 +1290,7 @@ class QuantumTape(AnnotatedQueue):
 
     @property
     def batch_size(self):
-        """The batch size of the quantum tape inferred from the batch sizes
+        r"""The batch size of the quantum tape inferred from the batch sizes
         of the used operations for parameter broadcasting.
         Also see :attr:`~.Operator.batch_size` for details."""
         return self._batch_size
