@@ -472,6 +472,22 @@ class TestProjector:
         assert np.allclose(res_dynamic, expected, atol=tol)
         assert np.allclose(res_static, expected, atol=tol)
 
+    def test_pow_zero(self):
+        """Assert that the projector raised to zero is an empty list."""
+
+        basis_state = np.array([0, 1])
+        op = qml.Projector(basis_state, wires=(0, 1))
+        assert len(op.pow(0)) == 0
+
+    @pytest.mark.parametrize("n", (1, 3))
+    def test_pow_non_zero_positive_int(self, n):
+        """Test that the projector raised to a positive integer is just a copy."""
+        basis_state = np.array([0, 1])
+        op = qml.Projector(basis_state, wires=(0, 1))
+        pow_op = op.pow(n)[0]
+        assert pow_op.__class__ is qml.Projector
+        assert qml.math.allclose(pow_op.data[0], op.data[0])
+
 
 label_data = [
     (qml.Hermitian(np.eye(2), wires=1), "𝓗"),
