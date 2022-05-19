@@ -59,7 +59,6 @@ class AdjointOperation(Operation):
     def control_wires(self):
         return self.base.control_wires
 
-    @property
     def single_qubit_rot_angles(self):
         omega, theta, phi = self.base.single_qubit_rot_angles()
         return [-phi, -theta, -omega]

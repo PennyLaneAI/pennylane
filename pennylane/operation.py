@@ -1199,7 +1199,6 @@ class Operation(Operator):
         """
         return Wires([])
 
-    @property
     def single_qubit_rot_angles(self):
         r"""The parameters required to implement a single-qubit gate as an
         equivalent ``Rot`` gate, up to a global phase.

@@ -45,7 +45,7 @@ def _single_op_eager_update_queue(op):
 
 # pylint: disable=no-member
 def adjoint(fn, lazy=True):
-    """Create a the adjoint of an Operator or a function that applies the adjoint of the provided function.
+    """Create the adjoint of an Operator or a function that applies the adjoint of the provided function.
 
     Args:
         fn (function, ~.operation.Operator): A single operator or a quantum function that
@@ -63,7 +63,7 @@ def adjoint(fn, lazy=True):
     .. note::
 
         While the adjoint and inverse are identical for Unitary gates, not all possible operators are Unitary.
-        This transform can also act on Channels and Hamiltonians, for which the inverse and adjoint are different.
+        This transform can also act on ``Channel``'s and ``Hamiltonian``'s, for which the inverse and adjoint are different.
 
     .. seealso:: :class:`~.ops.arithmetic.Adjoint` and :meth:`~.operation.Operator.adjoint`
 

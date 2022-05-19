@@ -537,7 +537,7 @@ class TestBarrier:
         """Test if adjoint of a Barrier is decomposes correctly."""
 
         base = qml.Barrier(wires=(0, 1))
-        adj = qml.ops.arithmetic.Adjoint(base)
+        adj = qml.ops.op_math.Adjoint(base)
 
         assert adj.decomposition()[0].name == "Barrier"
 

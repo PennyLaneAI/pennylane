@@ -37,11 +37,15 @@
   The code that checks for qubit wise commuting (QWC) got a performance boost that is noticable
   when many commuting paulis of the same type are measured.
 
-<h3>Improvements</h3>
+**Operator Arithmetic:**
+
+* PennyLane now has a symbolic operator `qml.ops.op_math.Adjoint`
 
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
   for many classes.
   [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
+
+<h3>Improvements</h3>
 
 * Test classes are created in qchem test modules to group the integrals and matrices unittests.
   [(#2545)](https://github.com/PennyLaneAI/pennylane/pull/2545)
