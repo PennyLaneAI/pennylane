@@ -88,7 +88,7 @@ class Sum(Operator):
                 try:
                     res += mat
                 except TypeError:
-                    res += math.cast_like(mat, res)
+                    res += math.cast_like(mat, res)  # Fix here !
 
         if dtype is not None:
             res = math.cast(res, dtype)
