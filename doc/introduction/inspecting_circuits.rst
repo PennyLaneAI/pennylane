@@ -145,12 +145,92 @@ results.
 2: array([0.707+0.j, 0.+0.j, 0.+0.j, 0.707+0.j]),
 'execution_results': array(0.)}
 
-DAG representation
-------------------
+Graph representation
+--------------------
 
-The representation of a quantum circuit as a Directed Acyclic Graph (DAG) can be computed
-using the :func:`~pennylane.commutation_dag` transform. In the DAG, each node represents
-a quantum operation, and edges represent non-commutation
+PennyLane makes use of several ways to represent a quantum circuit as a Directed Acyclic Graph (DAG).
+
+DAG of causal relations between ops
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A DAG can be used to represent which operator in a circuit is causally related to another. There are two
+options to construct such a DAG:
+
+The :class:`~pennylane.CircuitGraph` class takes a list of gates or channels and hermitian observables
+as well as a set of wire labels and constructs a DAG in which the :class:`~.Operator`
+instances are the nodes, and each directed edge corresponds to a wire
+(or a group of wires) on which the "nodes" act subsequently.
+
+For example, thiscan be used to compute the effective depth of a circuit,
+or to check whether two gates causally influence each other.
+
+.. code-block:: python
+
+    import pennylane as qml
+    from pennylane import CircuitGraph
+
+    dev = qml.device('lightning.qubit', wires=(0,1,2,3))
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(0)
+        qml.CNOT([1, 2])
+        qml.CNOT([2, 3])
+        qml.CNOT([3, 1])
+        return qml.expval(qml.PauliZ(0))
+
+
+    circuit()
+    tape = circuit.qtape
+    ops = tape.operations
+    obs = tape.observables
+    g = CircuitGraph(ops, obs, tape.wires)
+
+Internally, the :class:`~pennylane.CircuitGraph` class constructs a ``retworkx`` graph object.
+
+>>> type(g.graph)
+<class 'retworkx.PyDiGraph'>
+
+There is no edge between the ``Hadamard`` and the first ``CNOT``, but between consecutive ``CNOT`` gates:
+
+>>> g.has_path(ops[0], ops[1])
+False
+>>> g.has_path(ops[1], ops[3])
+True
+
+The Hadamard is connected to the observable, while the ``CNOT`` operators are not. The observable
+does not follow the Hadamard.
+
+>>> g.has_path(ops[0], obs[0])
+True
+>>> g.has_path(ops[1], obs[0])
+False
+>>> g.has_path(obs[0], ops[0])
+False
+
+
+Anther way to construct the "causal" DAG of a circuit is to use the
+:func:`~pennylane.transforms.qcut.tape_to_graph` function used by the qcut module. This
+function takes a quantum tape and creates a ``MultiDiGraph`` instance from the ``networkx`` python package.
+
+Using the above example, we get:
+
+>>> g2 = qml.transforms.qcut.tape_to_graph(tape)
+>>> type(g2)
+<class 'networkx.classes.multidigraph.MultiDiGraph'>
+>>> for k, v in g2.adjacency():
+...    print(k, v)
+Hadamard(wires=[0]) {expval(PauliZ(wires=[0])): {0: {'wire': 0}}}
+CNOT(wires=[1, 2]) {CNOT(wires=[2, 3]): {0: {'wire': 2}}, CNOT(wires=[3, 1]): {0: {'wire': 1}}}
+CNOT(wires=[2, 3]) {CNOT(wires=[3, 1]): {0: {'wire': 3}}}
+CNOT(wires=[3, 1]) {}
+expval(PauliZ(wires=[0])) {}
+
+DAG of non-commuting ops
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :func:`~pennylane.commutation_dag` transform can be used to produce an instance of the ``CommutationDAG`` class.
+In a commutation DAG, each node represents a quantum operation, and edges represent non-commutation
 between two operations.
 
 This transform takes into account that not all operations can be moved next to each other by
@@ -186,7 +266,6 @@ CNOT(wires=[1, 2])
 [3, 4, 5, 6]
 >>> second_node.predecessors
 []
-
 
 Fourier representation
 ----------------------
