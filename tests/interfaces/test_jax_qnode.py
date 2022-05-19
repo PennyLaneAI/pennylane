@@ -494,11 +494,6 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
 
-        if interface == "jax-jit":
-            pytest.skip(
-                "Only Variance and Expectation returns are supported for the jittable JAX interface."
-            )
-
         dev = qml.device(dev_name, wires=2)
         x = jnp.array(0.543)
         y = jnp.array(-0.654)
@@ -526,10 +521,10 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support probs")
 
-        if interface == "jax-jit":
-            pytest.skip(
-                "Only Variance and Expectation returns are supported for the jittable JAX interface."
-            )
+        if diff_method in {"finite-diff", "parameter-shift"} and interface == "jax-jit":
+
+            # No jax.jacobian support for call
+            pytest.xfail(reason="batching rules are implemented only for id_tap, not for call.")
 
         dev = qml.device(dev_name, wires=3)
         x = jnp.array(0.543)
@@ -705,11 +700,6 @@ class TestQubitIntegration:
 
         if diff_method == "adjoint":
             pytest.skip("Adjoint warns with finite shots")
-
-        if interface == "jax-jit":
-            pytest.skip(
-                "Only Variance and Expectation returns are supported for the jittable JAX interface."
-            )
 
         dev = qml.device(dev_name, wires=2, shots=10)
 
@@ -987,11 +977,6 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint does not support states")
 
-        if interface == "jax-jit":
-            pytest.skip(
-                "Only Variance and Expectation returns are supported for the jittable JAX interface."
-            )
-
         dev = qml.device(dev_name, wires=2)
 
         x = jnp.array(0.543)
@@ -1242,11 +1227,6 @@ class TestTapeExpansion:
         and the first and second order gradients are correctly evaluated"""
         if diff_method in ("adjoint", "backprop", "finite-diff"):
             pytest.skip("The adjoint and backprop methods do not yet support sampling")
-
-        if interface == "jax-jit":
-            pytest.skip(
-                "Only Variance and Expectation returns are supported for the jittable JAX interface."
-            )
 
         if max_diff > 1:
             pytest.skip("JAX only supports first derivatives")

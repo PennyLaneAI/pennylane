@@ -99,8 +99,6 @@ class MeasurementProcess:
             ``shape=(1,)``, whereas probabilities in the qubit define
             ``shape=(1, 2**num_wires)`` where ``num_wires`` is the number of
             wires the measurement acts on.
-        numeric_type (type): The expected Python numeric type of the result;
-            either ``int``, ``float`` or ``complex``.
     """
 
     # pylint: disable=too-few-public-methods
@@ -114,7 +112,6 @@ class MeasurementProcess:
         eigvals=None,
         id=None,
         shape=None,
-        numeric_type=None,
     ):
         self.return_type = return_type
         self.obs = obs
@@ -137,9 +134,6 @@ class MeasurementProcess:
         shape is not applicable or the shape may depend on device options, in
         such cases ``shape=None``."""
 
-        self.numeric_type = numeric_type
-        """tuple[int]: The Python numeric type of the measurement result."""
-
         # TODO: remove the following lines once devices
         # have been refactored to accept and understand recieving
         # measurement processes rather than specific observables.
@@ -155,6 +149,43 @@ class MeasurementProcess:
 
         # Queue the measurement process
         self.queue()
+
+    @property
+    @functools.lru_cache()
+    def numeric_type(self):
+        """The Python numeric type of the measurement result.
+
+        Returns:
+            tuple: The output numeric type; ``int``, ``float`` or ``complex``.
+
+        Raises:
+            QuantumFunctionError: the return type of the measurement process is
+                unrecognized and cannot deduce the numeric type
+        """
+        if self.return_type in (Expectation, Variance, Probability):
+            return float
+
+        if self.return_type is State:
+            return complex
+
+        if self.return_type is Sample:
+
+            # Note: we only assume an integer numeric type if the observable is a
+            # built-in observable with integer eigenvalues or a tensor product thereof
+            if self.obs is None:
+
+                # Computational basis samples
+                numeric_type = int
+            else:
+                int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
+                tensor_terms = [self.obs] if not hasattr(self.obs, "obs") else self.obs.obs
+                every_term_standard = all(o.__class__ in int_eigval_obs for o in tensor_terms)
+                numeric_type = int if every_term_standard else float
+            return numeric_type
+
+        raise ValueError(
+            f"Cannot deduce the numeric type of unrecognized return_type {self.return_type}."
+        )
 
     @functools.lru_cache()
     def shape(self, device=None):
@@ -473,7 +504,7 @@ def expval(op):
             f"{op.name} is not an observable: cannot be used with expval"
         )
 
-    return MeasurementProcess(Expectation, obs=op, shape=(1,), numeric_type=float)
+    return MeasurementProcess(Expectation, obs=op, shape=(1,))
 
 
 def var(op):
@@ -506,7 +537,7 @@ def var(op):
     if not isinstance(op, qml.operation.Observable):
         raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
 
-    return MeasurementProcess(Variance, obs=op, shape=(1,), numeric_type=float)
+    return MeasurementProcess(Variance, obs=op, shape=(1,))
 
 
 def sample(op=None, wires=None):
@@ -588,20 +619,6 @@ def sample(op=None, wires=None):
             f"{op.name} is not an observable: cannot be used with sample"
         )
 
-    # Note: we only assume an integer numeric type if the observable is a
-    # built-in observable with integer eigenvalues or a tensor product thereof
-    if op is None:
-
-        # Computational basis samples
-        numeric_type = int
-    else:
-        int_eigval_obs = {qml.PauliX, qml.PauliY, qml.PauliZ, qml.Hadamard, qml.Identity}
-        tensor_terms = [op] if not hasattr(op, "obs") else op.obs
-        if not all(o.__class__ in int_eigval_obs for o in tensor_terms):
-            numeric_type = float
-        else:
-            numeric_type = int
-
     if wires is not None:
         if op is not None:
             raise ValueError(
@@ -609,11 +626,9 @@ def sample(op=None, wires=None):
                 "provided. The wires to sample will be determined directly from the observable."
             )
 
-        return MeasurementProcess(
-            Sample, obs=op, wires=qml.wires.Wires(wires), numeric_type=numeric_type
-        )
+        return MeasurementProcess(Sample, obs=op, wires=qml.wires.Wires(wires))
 
-    return MeasurementProcess(Sample, obs=op, numeric_type=numeric_type)
+    return MeasurementProcess(Sample, obs=op)
 
 
 def probs(wires=None, op=None):
@@ -693,18 +708,14 @@ def probs(wires=None, op=None):
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
 
-    numeric_type = float
-
     if wires is not None:
         if op is not None:
             raise qml.QuantumFunctionError(
                 "Cannot specify the wires to probs if an observable is "
                 "provided. The wires for probs will be determined directly from the observable."
             )
-        return MeasurementProcess(
-            Probability, wires=qml.wires.Wires(wires), numeric_type=numeric_type
-        )
-    return MeasurementProcess(Probability, obs=op, numeric_type=numeric_type)
+        return MeasurementProcess(Probability, wires=qml.wires.Wires(wires))
+    return MeasurementProcess(Probability, obs=op)
 
 
 def state():
@@ -761,7 +772,7 @@ def state():
         -0.07471906623679961
     """
     # pylint: disable=protected-access
-    return MeasurementProcess(State, numeric_type=complex)
+    return MeasurementProcess(State)
 
 
 def density_matrix(wires):
@@ -805,7 +816,7 @@ def density_matrix(wires):
     wires = qml.wires.Wires(wires)
     dim = 2 ** len(wires)
     shape = (1, dim, dim)
-    return MeasurementProcess(State, wires=wires, shape=shape, numeric_type=complex)
+    return MeasurementProcess(State, wires=wires, shape=shape)
 
 
 T = TypeVar("T")
