@@ -217,7 +217,7 @@ def _density_matrix_from_matrix(density_matrix, wires, check_state=None):
     # Return the full density matrix if all the wires are given
     consecutive_wires = list(range(0, num_wires))
 
-    if wires == list(consecutive_wires):
+    if tuple(wires) == tuple(consecutive_wires):
         return density_matrix
 
     traced_wires = [x for x in consecutive_wires if x not in wires]
@@ -306,7 +306,9 @@ def partial_trace(density_matrix, wires):
 
         density_matrix = np.einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
 
-    return np.reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
+    reduced_density_matrix = np.reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
+
+    return reduced_density_matrix
 
 
 def _density_matrix_from_state_vector(state, wires, check_state=None):

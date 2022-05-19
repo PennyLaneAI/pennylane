@@ -2399,3 +2399,127 @@ class TestDensityMatrixFromStateVectors:
 
         with pytest.raises(ValueError, match="State vector must be"):
             jitted_dens_matrix_func(state_vector, wires=(0, 1), check_state=True)
+
+
+# fmt: off
+density_matrices = [
+    ([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], ([[1, 0], [0, 0]], [[1, 0], [0, 0]])),
+    ([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], ([[1, 0], [0, 0]], [[0, 0], [0, 1]])),
+    ([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]], ([[0, 0], [0, 1]], [[1, 0], [0, 0]])),
+    ([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]], ([[0, 0], [0, 1]], [[0, 0], [0, 1]])),
+    (onp.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]])),
+    (onp.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]])),
+    (onp.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]])),
+    (onp.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]])),
+    (np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]])),
+    (np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]])),
+    (np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]])),
+    (np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]])),
+    (jnp.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]])),
+    (jnp.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]])),
+    (jnp.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]])),
+    (jnp.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]])),
+    (torch.tensor([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]])),
+    (torch.tensor([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]])),
+    (torch.tensor([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]])),
+    (torch.tensor([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]])),
+    (tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]])),
+    (tf.Variable([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]])),
+    (tf.Variable([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]])),
+    (tf.Variable([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]])),
+    (tf.constant([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]])),
+    (tf.constant([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]])),
+    (tf.constant([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]])),
+    (tf.constant([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]])),
+]
+
+# fmt: on
+
+
+class TestDensityMatrixFromStateVectors:
+    """Tests for the (reeduced) density matrix for matrix."""
+
+    @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    def test_density_matrix_from_matrix_single_wires(
+        self, density_matrix, wires, expected_density_matrix
+    ):
+        """Test the density matrix from matrix for single wires."""
+        density_matrix = fn.quantum._density_matrix_from_matrix(density_matrix, wires=wires)
+        assert np.allclose(density_matrix, expected_density_matrix[wires[0]])
+
+    @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
+    @pytest.mark.parametrize("wires", multiple_wires_list)
+    def test_density_matrix_from_matrix_full_wires(
+        self, density_matrix, wires, expected_density_matrix
+    ):
+        """Test the density matrix from matrix for full wires."""
+        returned_density_matrix = fn.quantum._density_matrix_from_matrix(
+            density_matrix, wires=wires
+        )
+        assert np.allclose(density_matrix, returned_density_matrix)
+
+    @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    def test_density_matrix_from_matrix_single_wires(
+        self, density_matrix, wires, expected_density_matrix
+    ):
+        """Test the density matrix from matrix for single wires."""
+        density_matrix = fn.state_to_density_matrix(density_matrix, wires=wires)
+        assert np.allclose(density_matrix, expected_density_matrix[wires[0]])
+
+    @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
+    @pytest.mark.parametrize("wires", multiple_wires_list)
+    def test_density_matrix_from_matrix_full_wires(
+        self, density_matrix, wires, expected_density_matrix
+    ):
+        """Test the density matrix from matrix for full wires."""
+        returned_density_matrix = fn.state_to_density_matrix(density_matrix, wires=wires)
+        assert np.allclose(density_matrix, returned_density_matrix)
+
+    @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
+    @pytest.mark.parametrize("wires", multiple_wires_list)
+    def test_density_matrix_from_matrix_check(self, density_matrix, wires, expected_density_matrix):
+        """Test the density matrix from matrices for single wires with state checking"""
+        returned_density_matrix = fn.quantum._density_matrix_from_matrix(
+            density_matrix, wires=wires, check_state=True
+        )
+        assert np.allclose(density_matrix, returned_density_matrix)
+
+    def test_matrix_wrong_shape(self):
+        """Test that wrong shaped state vector raises an error with check_state=True"""
+        density_matrix = [[1, 0, 0], [0, 0, 0], [0, 0, 0]]
+
+        with pytest.raises(ValueError, match="Density matrix must be of shape"):
+            fn.quantum._density_matrix_from_matrix(density_matrix, wires=[0], check_state=True)
+
+    def test_state_vector_wrong_trace(self):
+        """Test that state vector with wrong norm raises an error with check_state=True"""
+        density_matrix = [[0.1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
+
+        with pytest.raises(ValueError, match="The trace of the density matrix should be one."):
+            fn.quantum._density_matrix_from_matrix(density_matrix, wires=[0], check_state=True)
+
+    def test_density_matrix_from_state_vector_jax_jit(self):
+        """Test jitting the density matrix from state vector function."""
+        from jax import jit
+        import jax.numpy as jnp
+
+        state_vector = jnp.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+
+        jitted_dens_matrix_func = jit(fn.quantum._density_matrix_from_matrix, static_argnums=[1, 2])
+
+        density_matrix = jitted_dens_matrix_func(state_vector, wires=(0,), check_state=True)
+        assert np.allclose(density_matrix, [[1, 0], [0, 0]])
+
+    def test_wrong_shape_jax_jit(self):
+        """Test jitting the density matrix from state vector with wrong shape."""
+        from jax import jit
+        import jax.numpy as jnp
+
+        state_vector = jnp.array([[1, 0, 0], [0, 0, 0], [0, 0, 0]])
+
+        jitted_dens_matrix_func = jit(fn.quantum._density_matrix_from_matrix, static_argnums=[1, 2])
+
+        with pytest.raises(ValueError, match="Density matrix must be of shape"):
+            jitted_dens_matrix_func(state_vector, wires=(0, 1), check_state=True)
