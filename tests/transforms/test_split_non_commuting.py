@@ -15,8 +15,17 @@
 import pytest
 import numpy as np
 import pennylane as qml
+import pennylane.numpy as pnp
+
+import jax
+import jax.numpy as jnp
+
+import torch
+
+import tensorflow as tf
 
 from pennylane.transforms import split_non_commuting
+from torch.autograd.functional import jacobian
 
 
 # Unit tests for split_non_commuting
@@ -129,13 +138,100 @@ def test_expval_non_commuting_observables():
             qml.expval(qml.PauliZ(1)),
             qml.expval(qml.PauliX(1) @ qml.PauliX(4)),
             qml.expval(qml.PauliX(3)),
-            qml.expval(qml.PauliY(5))
-            
+            qml.expval(qml.PauliY(5)),
         ]
 
-    assert all(np.isclose(circuit(), np.array([0.0, -1.0, 0.0, 0.0, 1.0, 1/np.sqrt(2)])))
+    assert all(np.isclose(circuit(), np.array([0.0, -1.0, 0.0, 0.0, 1.0, 1 / np.sqrt(2)])))
 
 
 # Autodiff tests
+@pytest.mark.autograd
+def test_split_with_autograd():
+    """Test that results after splitting are still differentiable with autograd"""
+    dev = qml.device("default.qubit", wires=3)
 
-# @pytest.mark.jax
+    @qml.qnode(dev, interface="autograd")
+    def circuit(params):
+        qml.RZ(params[0], wires=1)
+        qml.RZ(params[1], wires=2)
+        return (
+            qml.expval(qml.PauliX(0) @ qml.PauliX(1)),
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+            qml.expval(qml.PauliX(0)),
+        )
+
+    params = pnp.array([np.pi, 0.0])
+    res = circuit(params)
+    grad = qml.jacobian(circuit)(params)
+    assert all(np.isclose(res, [0, 1, 0]))
+    assert all(np.isclose(grad, np.zeros((3, 2))).flatten())
+
+
+# TODO: Currently not possible to jit multiple expvals
+@pytest.mark.jax
+def test_split_with_jax():
+    """Test that results after splitting are still differentiable with jax"""
+    dev = qml.device("default.qubit.jax", wires=3)
+
+    @qml.qnode(dev, interface="jax")
+    def circuit(params):
+        qml.RZ(params[0], wires=1)
+        qml.RZ(params[1], wires=2)
+        return (
+            qml.expval(qml.PauliX(0) @ qml.PauliX(1)),
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+            qml.expval(qml.PauliX(0)),
+        )
+
+    params = jnp.array([np.pi, 0.0])
+    res = circuit(params)
+    grad = jax.jacobian(circuit)(params)
+    assert all(np.isclose(res, [0, 1, 0]))
+    assert all(np.isclose(grad, np.zeros((3, 2))).flatten())
+
+
+@pytest.mark.torch
+def test_split_with_torch():
+    """Test that results after splitting are still differentiable with torch"""
+    dev = qml.device("default.qubit.torch", wires=3)
+
+    @qml.qnode(dev, interface="torch")
+    def circuit(params):
+        qml.RZ(params[0], wires=1)
+        qml.RZ(params[1], wires=2)
+        return (
+            qml.expval(qml.PauliX(0) @ qml.PauliX(1)),
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+            qml.expval(qml.PauliX(0)),
+        )
+
+    params = torch.tensor([np.pi, 0], requires_grad=True)
+    res = circuit(params)
+    grad = jacobian(lambda params: circuit(params), (params))
+    assert all(np.isclose(res.detach().numpy(), [0, 1, 0]))
+    assert all(np.isclose(grad.detach().numpy(), np.zeros((3, 2))).flatten())
+
+
+@pytest.mark.tf
+def test_split_with_tf():
+    """Test that results after splitting are still differentiable with tf"""
+    dev = qml.device("default.qubit.tf", wires=3)
+
+    @qml.qnode(dev, interface="tf")
+    def circuit(params):
+        qml.RZ(params[0], wires=1)
+        qml.RZ(params[1], wires=2)
+        return (
+            qml.expval(qml.PauliX(0) @ qml.PauliX(1)),
+            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+            qml.expval(qml.PauliX(0)),
+        )
+
+    params = tf.Variable([np.pi, 0])
+    res = circuit(params)
+    with tf.GradientTape() as tape:
+        loss = circuit(params)
+
+    grad = tape.jacobian(loss, params)
+    assert all(np.isclose(res, [0, 1, 0]))
+    assert all(np.isclose(grad, np.zeros((3, 2))).flatten())

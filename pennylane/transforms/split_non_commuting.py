@@ -104,7 +104,7 @@ def split_non_commuting(tape):
             permutation_matrix = np.zeros((len(new_res), len(new_res)))
             for column, indx in enumerate(reorder_indxs):
                 permutation_matrix[indx, column] = 1
-            return permutation_matrix @ new_res
+            return qml.math.dot(permutation_matrix,new_res)
 
         return tapes, reorder_fn
     # if the group is already commuting, no need to do anything
