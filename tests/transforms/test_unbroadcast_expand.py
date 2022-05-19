@@ -105,6 +105,11 @@ class TestUnbroadcastExpand:
         assert isinstance(result, np.ndarray)
         assert qml.math.allclose(result, exp_fn(*params))
 
+    def test_without_broadcasting(self):
+        tape = make_tape(0.2, 0.1, 0.5, [qml.PauliZ(0)])
+        with pytest.raises(ValueError, match="The provided tape is not broadcasted."):
+            qml.transforms.unbroadcast_expand(tape)
+
     @pytest.mark.autograd
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
     @pytest.mark.parametrize("params, size", parameters_and_size)
