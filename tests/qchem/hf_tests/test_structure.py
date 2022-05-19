@@ -15,10 +15,11 @@
 Unit tests for the functions of the structure module.
 """
 import pytest
-from pennylane import qchem
-import numpy as np
 import pennylane as qml
+from pennylane import qchem
+from pennylane import numpy as np
 from pennylane.templates.subroutines import UCCSD
+
 
 @pytest.mark.parametrize(
     (
@@ -153,7 +154,7 @@ def test_excitations_to_wires_exceptions(singles, doubles, wires, message_match)
         )
     ],
 )
-def test_integration_with_uccsd(weights, singles, doubles, expected, tol):
+def test_integration_with_uccsd(weights, singles, doubles, expected):
     """Test integration with the UCCSD template"""
 
     s_wires, d_wires = qchem.excitations_to_wires(singles, doubles)
@@ -167,4 +168,4 @@ def test_integration_with_uccsd(weights, singles, doubles, expected, tol):
         return [qml.expval(qml.PauliZ(w)) for w in range(N)]
 
     res = circuit(weights)
-    assert np.allclose(res, np.array(expected), **tol)
+    assert np.allclose(res, np.array(expected))
