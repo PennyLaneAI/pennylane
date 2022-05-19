@@ -197,7 +197,7 @@ def test_excitations_to_wires_exceptions(singles, doubles, wires, message_match)
         )
     ],
 )
-def test_integration_with_uccsd(weights, singles, doubles, expected):
+def test_excitation_integration_with_uccsd(weights, singles, doubles, expected):
     """Test integration with the UCCSD template"""
 
     s_wires, d_wires = qchem.excitations_to_wires(singles, doubles)
@@ -244,3 +244,70 @@ def test__hf_state_inconsistent_input(electrons, orbitals, msg_match):
 
     with pytest.raises(ValueError, match=msg_match):
         qchem.hf_state(electrons, orbitals)
+
+
+@pytest.mark.parametrize(
+    (
+        "n_electrons",
+        "n_orbitals",
+        "multiplicity",
+        "act_electrons",
+        "act_orbitals",
+        "core_ref",
+        "active_ref",
+    ),
+    [
+        (4, 6, 1, None, None, [], list(range(6))),
+        (4, 6, 1, 4, None, [], list(range(6))),
+        (4, 6, 1, 2, None, [0], list(range(1, 6))),
+        (4, 6, 1, None, 4, [], list(range(4))),
+        (4, 6, 1, 2, 3, [0], list(range(1, 4))),
+        (5, 6, 2, 3, 4, [0], list(range(1, 5))),
+        (5, 6, 2, 1, 4, [0, 1], list(range(2, 6))),
+    ],
+)
+def test_active_spaces(
+    n_electrons, n_orbitals, multiplicity, act_electrons, act_orbitals, core_ref, active_ref
+):
+    r"""Test the correctness of the generated active spaces"""
+
+    core, active = qchem.active_space(
+        n_electrons,
+        n_orbitals,
+        mult=multiplicity,
+        active_electrons=act_electrons,
+        active_orbitals=act_orbitals,
+    )
+
+    assert core == core_ref
+    assert active == active_ref
+
+
+@pytest.mark.parametrize(
+    ("n_electrons", "n_orbitals", "multiplicity", "act_electrons", "act_orbitals", "message_match"),
+    [
+        (4, 6, 1, 6, 5, "greater than the total number of electrons"),
+        (4, 6, 1, 1, 5, "should be even"),
+        (4, 6, 1, -1, 5, "has to be greater than 0."),
+        (4, 6, 1, 2, 6, "greater than the total number of orbitals"),
+        (4, 6, 1, 2, 1, "there are no virtual orbitals"),
+        (5, 6, 2, 2, 5, "should be odd"),
+        (5, 6, 2, 3, -2, "has to be greater than 0."),
+        (5, 6, 2, 3, 6, "greater than the total number of orbitals"),
+        (5, 6, 2, 3, 2, "there are no virtual orbitals"),
+        (6, 6, 3, 1, 2, "greater than or equal to"),
+    ],
+)
+def test_inconsistent_active_spaces(
+    n_electrons, n_orbitals, multiplicity, act_electrons, act_orbitals, message_match
+):
+    r"""Test that an error is raised if an inconsistent active space is generated"""
+
+    with pytest.raises(ValueError, match=message_match):
+        qchem.active_space(
+            n_electrons,
+            n_orbitals,
+            mult=multiplicity,
+            active_electrons=act_electrons,
+            active_orbitals=act_orbitals,
+        )
