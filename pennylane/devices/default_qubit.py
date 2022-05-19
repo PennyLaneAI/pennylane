@@ -604,7 +604,8 @@ class DefaultQubit(QubitDevice):
             array[complex]: complex tensor of shape ``(2 ** len(wires), 2 ** len(wires))``
             representing the reduced density matrix.
         """
-        return qml.math.density_matrix_from_array(self.state, wires=wires)
+        wires = wires.tolist()
+        return qml.math.state_to_density_matrix(self.state, wires=wires)
 
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.
