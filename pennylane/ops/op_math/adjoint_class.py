@@ -147,7 +147,6 @@ class Adjoint(Operator):
         if isinstance(base, Operation) and AdjointOperation not in class_bases:
             class_bases = (AdjointOperation,) + class_bases
 
-
         # `type` with three parameters accepts
         # 1. name : a class name
         # 2. bases: a tuple of all the base clases, the __bases__ attribute
