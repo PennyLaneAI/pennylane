@@ -235,8 +235,6 @@ def state_to_density_matrix(state, wires, check_state=None):
 
     **Example**
 
-    >>> state_vector = np.array([1, 0, 0, 0])
-    >>> density_matrix = np.array([1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0])
     """
     # State vector
     density_matrix = _density_matrix_from_state_vector(state, wires, check_state)
