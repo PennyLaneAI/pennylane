@@ -197,7 +197,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     # Update circuit info
     new_tape._update_circuit_info()
-    new_tape._update_batch_size()
+    new_tape._batch_size = tape.batch_size
     new_tape._output_dim = tape.output_dim
     new_tape._qfunc_output = tape._qfunc_output
     return new_tape
@@ -481,6 +481,8 @@ class QuantumTape(AnnotatedQueue):
         self.all_sampled = all(m.return_type is Sample for m in self.measurements)
 
     def _update_batch_size(self):
+        """Infer the batch_size from the batch sizes of the tape operations and
+        check the latter for consistency."""
         candidate = None
         for op in self.operations:
             op_batch_size = getattr(op, "batch_size", None)
@@ -505,8 +507,8 @@ class QuantumTape(AnnotatedQueue):
                 self._output_dim += 2 ** len(m.wires)
             elif m.return_type is not qml.measurements.State:
                 self._output_dim += 1
-        if self._batch_size:
-            self._output_dim *= self._batch_size
+        if self.batch_size:
+            self._output_dim *= self.batch_size
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -926,6 +928,7 @@ class QuantumTape(AnnotatedQueue):
             op.data[self._par_info[idx]["p_idx"]] = p
             op._check_batching(op.data)
         self._update_batch_size()
+        self._update_output_dim()
 
     @staticmethod
     def _single_measurement_shape(measurement_process, device):
@@ -1287,7 +1290,9 @@ class QuantumTape(AnnotatedQueue):
 
     @property
     def batch_size(self):
-        """The (inferred) batch size of the quantum tape."""
+        r"""The batch size of the quantum tape inferred from the batch sizes
+        of the used operations for parameter broadcasting.
+        Also see :attr:`~.Operator.batch_size` for details."""
         return self._batch_size
 
     @property
