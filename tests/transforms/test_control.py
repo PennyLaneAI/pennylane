@@ -107,7 +107,7 @@ class TestAdjointOutsideQueuing:
         res_ops = adjoint_of_controlled_op.subtape.operations
         subtape_op = res_ops[0]
 
-        assert isinstance(subtape_op, qml.ops.arithmetic.Adjoint)
+        assert isinstance(subtape_op, qml.ops.op_math.Adjoint)
         assert isinstance(subtape_op.base, qml.StronglyEntanglingLayers)
         assert subtape_op.parameters == [par]
         assert subtape_op.wires == qml.wires.Wires(wires)

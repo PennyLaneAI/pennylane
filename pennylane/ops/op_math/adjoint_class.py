@@ -29,26 +29,26 @@ class AdjointOperation(Operation):
 
     Overriding the dunder method ``__new__`` in ``Adjoint`` allows us to customize the creation of an instance and dynamically
     add in parent classes.
-
-    Note that while this does inherit from ``Operation``, we override the ability to take in-place inversion.
     """
 
     @property
     def _inverse(self):
-        return False
+        return self.base._inverse
 
-    # pylint: disable=no-self-use
     @_inverse.setter
     def _inverse(self, boolean):
-        if boolean is True:
-            raise NotImplementedError("Class Adjoint does not support in-place inversion.")
+        self.base._inverse = boolean
 
     def inv(self):
-        raise NotImplementedError("Class Adjoint does not support in-place inversion.")
+        self.base.inv()
 
     @property
     def base_name(self):
-        return self.name
+        return self._name
+
+    @property
+    def name(self):
+        return self._name
 
     # pylint: disable=missing-function-docstring
     @property
@@ -139,13 +139,14 @@ class Adjoint(Operator):
         # If base is Observable, Channel, etc, these additional parent classes will be added in here.
         class_bases = base.__class__.__bases__
 
+        # And finally, we add in the `Adjoint` class
+        if Adjoint not in class_bases:
+            class_bases = (Adjoint,) + class_bases
+
         # If the base is an Operation, we add in the AdjointOperation Mixin
         if isinstance(base, Operation) and AdjointOperation not in class_bases:
             class_bases = (AdjointOperation,) + class_bases
 
-        # And finally, we add in the `Adjoint` class
-        if Adjoint not in class_bases:
-            class_bases = (Adjoint,) + class_bases
 
         # `type` with three parameters accepts
         # 1. name : a class name
@@ -247,7 +248,6 @@ class Adjoint(Operator):
     # pylint: disable=arguments-differ
     @staticmethod
     def compute_sparse_matrix(*params, base=None):
-
         base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
         return transpose(conj(base_matrix))
 

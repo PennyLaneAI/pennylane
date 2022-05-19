@@ -463,8 +463,8 @@ class QuantumTape(AnnotatedQueue):
                     )
                 getattr(self, obj._queue_category).append(obj)
 
-                if hasattr(obj, "inverse"):
-                    obj.inverse = info.get("inverse", obj.inverse)
+            if hasattr(obj, "inverse"):
+                obj.inverse = info.get("inverse", obj.inverse)
 
         self._update()
 
