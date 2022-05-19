@@ -2581,7 +2581,7 @@ class TestBroadcastingSupport:
 
     @pytest.mark.parametrize("x, y", [(0.2, [0.4]), ([0.1, 5.1], [0.1, -0.3])])
     @pytest.mark.parametrize("shots", [None, 1000000])
-    def test_with_multiple_pars(self, x, y, shots):
+    def test_with_Hamiltonian(self, x, y, shots):
         """Test that broadcasting on a circuit with a
         single parametrized operation works."""
         dev = qml.device("default.qubit", wires=2, shots=shots)
