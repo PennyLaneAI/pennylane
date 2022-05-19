@@ -17,15 +17,9 @@ import numpy as np
 import pennylane as qml
 import pennylane.numpy as pnp
 
-import torch
-
-import tensorflow as tf
-
 from pennylane.transforms import split_non_commuting
-from torch.autograd.functional import jacobian
 
-jax = pytest.importorskip("jax")
-jnp = jax.numpy
+
 
 
 # Unit tests for split_non_commuting
@@ -171,6 +165,10 @@ def test_split_with_autograd():
 @pytest.mark.jax
 def test_split_with_jax():
     """Test that results after splitting are still differentiable with jax"""
+
+    import jax
+    import jax.numpy as jnp
+
     dev = qml.device("default.qubit.jax", wires=3)
 
     @qml.qnode(dev, interface="jax")
@@ -193,6 +191,10 @@ def test_split_with_jax():
 @pytest.mark.torch
 def test_split_with_torch():
     """Test that results after splitting are still differentiable with torch"""
+
+    import torch
+    from torch.autograd.functional import jacobian
+
     dev = qml.device("default.qubit.torch", wires=3)
 
     @qml.qnode(dev, interface="torch")
@@ -215,6 +217,8 @@ def test_split_with_torch():
 @pytest.mark.tf
 def test_split_with_tf():
     """Test that results after splitting are still differentiable with tf"""
+
+    import tensorflow as tf
     dev = qml.device("default.qubit.tf", wires=3)
 
     @qml.qnode(dev, interface="tf")
