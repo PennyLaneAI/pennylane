@@ -18,12 +18,13 @@ computing the sum of operations.
 import warnings
 import numpy as np
 import pennylane as qml
-from pennylane.operation import Operator
+from pennylane import math
+from pennylane.operation import Operator, expand_matrix
 
 
-def sum(*summands):
+def sum(*summands, wire_order=None):
     """Compute the sum of the provided terms"""
-    return Sum(*summands)
+    return Sum(*summands, wire_order=wire_order)  # a wire order is required when combining operators of varying sizes
 
 
 class Sum(Operator):
@@ -55,41 +56,43 @@ class Sum(Operator):
     def terms(self):
         return [1.0]*len(self.summands), self.summands
 
-    def matrix(self, wire_order=None):
+    def matrix(self, wire_order=None, ignore_cache=True):
         """Representation of the operator as a matrix in the computational basis.
 
         Args:
 
-        Raises:
-
         Returns:
 
         """
-        if self.matrix_cache is not None:
+        if self.matrix_cache is not None and not ignore_cache:
             return self.matrix_cache
 
-        def matrix_gen(summands):
+        def matrix_gen(summands, wire_order=None):
             """Helper function to construct a generator of matrices"""
             for op in summands:
-                try:
-                    mat = op.compute_matrix()  # static method to generate matrix rep for op
-                except qml.operation.MatrixUndefinedError:
-                    mat = op.matrix()  # non-static method to get matrix rep for op
-                yield mat
+                yield expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
 
-        canonical_matrix = self._sum(matrix_gen(self.summands))
-        if wire_order is None or self.wires == qml.Wires(wire_order):
-            self.matrix_cache = canonical_matrix
-        else:
-            self.matrix_cache = qml.operation.expand_matrix(canonical_matrix, wires=self.wires, wire_order=wire_order)
+        if wire_order is None:
+            wire_order = self.wires
+        self.matrix_cache = self._sum(matrix_gen(self.summands, wire_order))
 
         return self.matrix_cache
 
-    def _sum(self, mats_gen):
+    def _sum(self, mats_gen, dtype=None, cast_like=None):
         """Super inefficient Sum method just as a proof of concept"""
-        res = np.zeros((2**self.num_wires, 2**self.num_wires), dtype="complex128")  # TODO: fix casting errors here !
+        res = None
+        for i, mat in enumerate(mats_gen):
+            if i == 0:
+                res = mat
+            else:
+                try:
+                    res += mat
+                except TypeError:
+                    res += math.cast_like(mat, res)
 
-        for mat in mats_gen:
-            res += mat
+        if dtype is not None:
+            res = math.cast(res, dtype)
+        if cast_like is not None:
+            res = math.cast_like(res, cast_like)
 
         return res

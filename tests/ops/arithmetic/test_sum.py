@@ -18,7 +18,7 @@ import pytest
 import numpy as np
 import pennylane as qml
 
-from gate_data import *
+from gate_data import *  # a file containing matrix rep of each gate
 
 single_qubit_non_param_ops = (
     (qml.Identity(0), I),
