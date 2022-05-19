@@ -49,8 +49,8 @@ class TestAutogradExecuteUnitTests:
 
         with pytest.raises(
             qml.QuantumFunctionError,
-            match="Autograd not found. Please install the latest version "
-            "of Autograd to enable the 'autograd' interface",
+            match="autograd not found. Please install the latest version "
+            "of autograd to enable the 'autograd' interface",
         ):
             qml.execute([tape], dev, gradient_fn=param_shift, interface="autograd")
 

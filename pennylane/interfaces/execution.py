@@ -20,7 +20,6 @@ devices with autodifferentiation support.
 """
 # pylint: disable=import-outside-toplevel,too-many-arguments,too-many-branches,not-callable
 from functools import wraps
-import itertools
 import warnings
 import inspect
 from contextlib import _GeneratorContextManager
@@ -31,17 +30,25 @@ import pennylane as qml
 from .set_shots import set_shots
 
 
-INTERFACE_NAMES = {
-    "NumPy": (None,),
-    "Autograd": ("autograd", "numpy"),  # for backwards compatibility
-    "JAX": ("jax", "jax-jit", "jax-python", "JAX"),
-    "PyTorch": ("torch", "pytorch"),
-    "TensorFlow": ("tf", "tensorflow", "tensorflow-autograph", "tf-autograph"),
+INTERFACE_MAP = {
+    None: "Numpy",
+    "autograd": "autograd",
+    "numpy": "autograd",
+    "jax": "jax",
+    "jax-jit": "jax",
+    "jax-python": "jax",
+    "JAX": "jax",
+    "torch": "torch",
+    "pytorch": "torch",
+    "tf": "tf",
+    "tensorflow": "tf",
+    "tensorflow-autograph": "tf",
+    "tf-autograph": "tf",
 }
-"""dict[str, str]: maps the name of the interface to allowed interface strings"""
+"""dict[str, str]: maps an allowed interface specification to its canonical name."""
 
 #: list[str]: allowed interface strings
-SUPPORTED_INTERFACES = list(itertools.chain(*INTERFACE_NAMES.values()))
+SUPPORTED_INTERFACES = list(INTERFACE_MAP)
 """list[str]: allowed interface strings"""
 
 
@@ -379,31 +386,29 @@ def execute(
         raise ValueError("Gradient transforms cannot be used with mode='forward'")
 
     try:
-        if interface in INTERFACE_NAMES["Autograd"]:
+        mapped_interface = INTERFACE_MAP[interface]
+    except KeyError as e:
+        raise ValueError(
+            f"Unknown interface {interface}. Supported " f"interfaces are {SUPPORTED_INTERFACES}"
+        ) from e
+    try:
+        if mapped_interface == "autograd":
             from .autograd import execute as _execute
-        elif interface in INTERFACE_NAMES["TensorFlow"]:
+        elif mapped_interface == "tf":
             import tensorflow as tf
 
             if not tf.executing_eagerly() or "autograph" in interface:
                 from .tensorflow_autograph import execute as _execute
             else:
                 from .tensorflow import execute as _execute
-
-        elif interface in INTERFACE_NAMES["PyTorch"]:
+        elif mapped_interface == "torch":
             from .torch import execute as _execute
-        elif interface in INTERFACE_NAMES["JAX"]:
+        else:  # is jax
             _execute = _get_jax_execute_fn(interface, tapes)
-        else:
-            raise ValueError(
-                f"Unknown interface {interface}. Supported "
-                f"interfaces are {SUPPORTED_INTERFACES}"
-            )
     except ImportError as e:
-        interface_name = [k for k, v in INTERFACE_NAMES.items() if interface in v][0]
-
         raise qml.QuantumFunctionError(
-            f"{interface_name} not found. Please install the latest "
-            f"version of {interface_name} to enable the '{interface}' interface."
+            f"{mapped_interface} not found. Please install the latest "
+            f"version of {mapped_interface} to enable the '{mapped_interface}' interface."
         ) from e
 
     res = _execute(

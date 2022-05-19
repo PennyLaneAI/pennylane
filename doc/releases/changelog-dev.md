@@ -79,6 +79,9 @@
 
 <h3>Breaking changes</h3>
 
+* The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
+  [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
+
 * The module `qml.gradients.param_shift_hessian` has been renamed to
   `qml.gradients.parameter_shift_hessian` in order to distinguish it from the identically named
   function. Note that the `param_shift_hessian` function is unaffected by this change and can be
@@ -107,6 +110,9 @@
   ```
 
 <h3>Bug fixes</h3>
+
+* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` or `"jax-jit"`, when requesting backpropagation. 
+  [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
 
 * Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
   computed for QNodes with parametrized observables (e.g., `qml.Hermitian`).
