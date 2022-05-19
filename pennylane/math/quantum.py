@@ -22,7 +22,7 @@ import pennylane as qml
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import diag, dot, scatter_element_add
-from .utils import is_abstract, allclose, cast
+from .utils import is_abstract, allclose, cast, convert_like
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -182,25 +182,42 @@ def _density_matrix_from_matrix(density_matrix, wires, check_state=None):
 
     **Example**
 
-    >>> x = np.array([1, 0, 0, 0])
-    >>> _density_matrix_from_state_vector(x, wires=[0])
+    >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    >>> _density_matrix_from_matrix(x, wires=[0])
     [[1.+0.j 0.+0.j]
-    [0.+0.j 0.+0.j]]
+     [0.+0.j 0.+0.j]]
 
-    >>> x = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-    >>> _density_matrix_from_state_vector(x, wires=[1])
+
+    >>> x = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+    >>> _density_matrix_from_matrix(x, wires=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
+
     """
-    if check_state:
-        print("Test")
-    # Return the full density matrix if all the wires are given
+    density_matrix = cast(density_matrix, dtype="complex128")
     shape = density_matrix.shape[0]
     num_wires = int(np.log2(shape))
+
+    if check_state:
+        # Check format
+        if (
+            len(density_matrix.shape) != 2
+            or density_matrix.shape[0] != density_matrix.shape[1]
+            or np.ceil(np.log2(shape)) != np.floor(np.log2(shape))
+        ):
+            raise ValueError("Density matrix must be of shape (2**N, 2**N).")
+        # Check trace
+        trace = np.trace(density_matrix)
+        if not is_abstract(trace):
+            if not allclose(trace, 1.0, atol=1e-10):
+                raise ValueError("The trace of the density matrix should be one.")
+
+    # Return the full density matrix if all the wires are given
     consecutive_wires = list(range(0, num_wires))
-    if wires == consecutive_wires:
+
+    if wires == list(consecutive_wires):
         return density_matrix
 
     traced_wires = [x for x in consecutive_wires if x not in wires]
@@ -209,24 +226,26 @@ def _density_matrix_from_matrix(density_matrix, wires, check_state=None):
 
 
 def partial_trace(density_matrix, wires):
-    """Compute the density matrix from a state vector.
+    """Compute the partial trace of a density matrix and returns the reduced density matrix on the sub-system.
 
     Args:
-        density_matrix (tensor_like): 1D tensor state vector. This tensor should of size ``(2**N,)`` for some integer value ``N``.
+        density_matrix (tensor_like): 2D density matrix tensor. This tensor should of size ``(2**N, 2**N)`` for some
+            integer value ``N``.
         wires (list(int)): List of wires (int) in the subsystem.
 
     Returns:
-        tensor_like: Density matrix of size ``(2**len(wires), 2**len(wires))``
+        tensor_like: (reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
 
     **Example**
 
-    >>> x = np.array([1, 0, 0, 0])
-    >>> _density_matrix_from_state_vector(x, wires=[0])
+    >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    >>> partial_trace(x, wires=[0])
     [[1.+0.j 0.+0.j]
-    [0.+0.j 0.+0.j]]
+     [0.+0.j 0.+0.j]]
 
-    >>> x = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-    >>> _density_matrix_from_state_vector(x, wires=[1])
+
+    >>> x = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+    >>> partial_trace(x, wires=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
@@ -240,9 +259,12 @@ def partial_trace(density_matrix, wires):
     density_matrix = np.reshape(density_matrix, [2] * 2 * num_wires)
 
     # Kraus operator for partial tracee
-    kraus = qml.math.cast(np.eye(2), dtype="complex128")
+    kraus = cast(np.eye(2), dtype="complex128")
     kraus = np.reshape(kraus, (2, 1, 2))
     kraus_dagger = np.asarray([np.conj(np.transpose(k)) for k in kraus])
+
+    kraus = convert_like(kraus, density_matrix)
+    kraus_dagger = convert_like(kraus_dagger, density_matrix)
 
     # For loop over wires
     for target_wire in wires:
@@ -360,8 +382,16 @@ def state_to_density_matrix(state, wires, check_state=None):
     **Example**
 
     """
-    # State vector
-    density_matrix = _density_matrix_from_state_vector(state, wires, check_state)
-    # Density matrix
     # QNode returning ``qml.state``
+    if isinstance(state, qml.QNode):
+        # TODO: implement for QNode returning state
+        raise NotImplementedError
+    # Cast as a complex128 array
+    state = cast(state, dtype="complex128")
+    # State vector
+    if state.shape == (len(state),):
+        density_matrix = _density_matrix_from_state_vector(state, wires, check_state)
+        return density_matrix
+    # Density matrix
+    density_matrix = _density_matrix_from_matrix(state, wires, check_state)
     return density_matrix
