@@ -73,7 +73,8 @@ def split_non_commuting(tape):
 
     obs_fn = {qml.measurements.Expectation: qml.expval,
               qml.measurements.Variance: qml.var,
-              qml.measurements.Sample: qml.sample}
+              qml.measurements.Sample: qml.sample,
+              qml.measurements.Probability: qml.probs}
 
 
 
