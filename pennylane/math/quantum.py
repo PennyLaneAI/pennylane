@@ -231,7 +231,7 @@ def partial_trace(density_matrix, wires):
     Args:
         density_matrix (tensor_like): 2D density matrix tensor. This tensor should of size ``(2**N, 2**N)`` for some
             integer value ``N``.
-        wires (list(int)): List of wires (int) in the subsystem.
+        wires (list(int)): List of wires (int) to be traced.
 
     Returns:
         tensor_like: (reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
@@ -265,7 +265,7 @@ def partial_trace(density_matrix, wires):
 
     kraus = convert_like(kraus, density_matrix)
     kraus_dagger = convert_like(kraus_dagger, density_matrix)
-
+    print(wires)
     # For loop over wires
     for target_wire in wires:
         # Tensor indices of density matrix
@@ -306,8 +306,10 @@ def partial_trace(density_matrix, wires):
 
         density_matrix = np.einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
 
-    reduced_density_matrix = np.reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
-
+    number_wires_sub = num_wires - len(wires)
+    reduced_density_matrix = np.reshape(
+        density_matrix, (2**number_wires_sub, 2**number_wires_sub)
+    )
     return reduced_density_matrix
 
 

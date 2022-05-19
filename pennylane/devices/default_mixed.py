@@ -163,6 +163,8 @@ class DefaultMixed(QubitDevice):
             array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
             representing the reduced density matrix of the state prior to measurement.
         """
+        wires = wires.tolist()
+        print(wires)
         return qnp.state_to_density_matrix(
             np.reshape(
                 self._state,

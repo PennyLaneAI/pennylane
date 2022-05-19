@@ -271,7 +271,7 @@ class TestSupportedGates:
     def test_supported_gates_can_be_implemented(self, device_kwargs, operation):
         """Test that the device can implement all its supported gates."""
         device_kwargs["wires"] = 4  # maximum size of current gates
-        dev = qml.device(**device_kwargs)
+        dev = qml.device("default.mixed", wires=4)
 
         assert hasattr(dev, "operations")
         if operation in dev.operations:
