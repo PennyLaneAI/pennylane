@@ -60,6 +60,7 @@ def test_ObservableReturnTypes(return_type, value):
     assert isinstance(return_type, qml.measurements.ObservableReturnTypes)
     assert repr(return_type) == value
 
+
 def test_no_measure(tol):
     """Test that failing to specify a measurement
     raises an exception"""
