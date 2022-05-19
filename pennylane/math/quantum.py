@@ -18,8 +18,8 @@ from autoray import numpy as np
 from numpy import float64
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .multi_dispatch import cast, diag, dot, scatter_element_add
-from .utils import is_abstract, allclose
+from .multi_dispatch import diag, dot, scatter_element_add
+from .utils import is_abstract, allclose, cast
 
 
 def cov_matrix(prob, obs, wires=None, diag_approx=False):
@@ -189,6 +189,9 @@ def _density_matrix_from_state_vector(state, wires, check_state=None):
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
     """
+    # Cast as a complex128 array
+    state = cast(state, dtype="complex128")
+
     # Check the format and norm of the state vector
     if check_state:
         # Check format
@@ -204,20 +207,12 @@ def _density_matrix_from_state_vector(state, wires, check_state=None):
             if not allclose(norm, 1.0, atol=1e-10):
                 raise ValueError("Sum of amplitudes-squared does not equal one.")
 
-    # Get dimension of the quantum system
+    # Get dimension of the quantum system and reshape
     num_wires = int(np.log2(len(state)))
-    np.reshape(state, [2] * num_wires)
     consecutive_wires = list(range(num_wires))
-
-    # Reshape
-    state = np.array(state, dtype="complex128")
     state = np.reshape(state, [2] * num_wires)
 
-    if consecutive_wires == wires:
-        density_matrix = np.tensordot(state, np.conj(state), axes=0)
-        density_matrix = np.reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
-        return density_matrix
-
+    # Get the system to be traced
     traced_system = [x for x in consecutive_wires if x not in wires]
 
     # Return the reduced density matrix by using numpy tensor product
