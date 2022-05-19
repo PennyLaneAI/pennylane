@@ -89,7 +89,7 @@ def test_non_commuting_group_right_number(tape, expected):
     [(non_commuting_tape2, [[0, 2], [1, 3]]), (non_commuting_tape3, [[0, 3], [1, 4], [2, 5]])],
 )
 def test_non_commuting_group_right_reorder(tape, group_coeffs):
-    """Test that the output is of the correct size"""
+    """Test that the output is of the correct order"""
     split, fn = split_non_commuting(tape)
     assert all(np.array(fn(group_coeffs)) == np.arange(len(split) * 2))
 
