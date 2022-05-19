@@ -141,11 +141,12 @@ class Adjoint(Operator):
         class_bases = base.__class__.__bases__
 
         # If the base is an Operation, we add in the AdjointOperation Mixin
-        if isinstance(base, Operation):
+        if isinstance(base, Operation) and AdjointOperation not in class_bases:
             class_bases = (AdjointOperation,) + class_bases
 
         # And finally, we add in the `Adjoint` class
-        class_bases = (Adjoint,) + class_bases
+        if Adjoint not in class_bases:
+            class_bases = (Adjoint,) + class_bases
 
         # `type` with three parameters accepts
         # 1. name : a class name
@@ -160,8 +161,11 @@ class Adjoint(Operator):
     # pylint: disable=attribute-defined-outside-init
     def __copy__(self):
         # this method needs to be overwritten becuase the base must be copied too.
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
+        copied_op = object.__new__(type(self))
+        # copied_op must maintain inheritance structure of self
+        # For example, it must keep AdjointOperation if self has it
+        # this way preserves inheritance structure
+
         copied_base = self.base.__copy__()
         copied_op._hyperparameters = {"base": copied_base}
         for attr, value in vars(self).items():

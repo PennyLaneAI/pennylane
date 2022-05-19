@@ -32,10 +32,41 @@ def test_error_adjoint_on_noncallable(obj):
         adjoint(obj)
 
 
+class TestPreconstructedOp:
+    """Test around providing an already initalized operator to the transform."""
+
+    @pytest.mark.parametrize(
+        "base", (qml.IsingXX(1.23, wires=("c", "d")), qml.QFT(wires=(0, 1, 2)))
+    )
+    def test_single_op(self, base):
+        """Test passing a single preconstructed op in a queuing context."""
+        with qml.tape.QuantumTape() as tape:
+            base.queue()
+            out = adjoint(base)
+
+        assert isinstance(out, Adjoint)
+        assert out.base is base
+        assert len(tape) == 1
+        assert len(tape._queue) == 2
+        assert tape._queue[base] == {"owner": out}
+        assert tape._queue[out] == {"owns": base}
+
+    def test_single_observable(self):
+        """Test passing a single preconstructed observable in a queuing context."""
+
+        with qml.tape.QuantumTape() as tape:
+            base = qml.PauliX(0) @ qml.PauliY(1)
+            out = adjoint(base)
+
+        assert len(tape) == 0
+        assert out.base is base
+        assert isinstance(out, Adjoint)
+
+
 class TestDifferentCallableTypes:
     """Test the adjoint transform on a variety of possible inputs."""
 
-    def test_adjoint_single_op(self):
+    def test_adjoint_single_op_function(self):
         """Test the adjoint transform on a single operation."""
 
         with qml.tape.QuantumTape() as tape:
@@ -105,8 +136,39 @@ class TestDifferentCallableTypes:
 class TestNonLazyExecution:
     """Test the lazy=False keyword."""
 
-    def test_single_decomposable_op(self):
+    def test_single_decomposeable_op(self):
         """Test lazy=False for a single op that gets decomposed."""
+
+        x = 1.23
+        with qml.tape.QuantumTape() as tape:
+            base = qml.RX(x, wires="b")
+            out = adjoint(base, lazy=False)
+
+        assert len(tape) == 1
+        assert out is tape[0]
+        assert tape._queue[base] == {"owner": out}
+        assert tape._queue[out] == {"owns": base}
+
+        assert isinstance(out, qml.RX)
+        assert out.data == [-1.23]
+
+    def test_single_nondecomposable_op(self):
+        """Test lazy=false for a single op that can't be decomposed."""
+        with qml.tape.QuantumTape() as tape:
+            base = qml.S(0)
+            out = adjoint(base, lazy=False)
+
+        assert len(tape) == 1
+        assert out is tape[0]
+        assert len(tape._queue) == 2
+        assert tape._queue[base] == {"owner": out}
+        assert tape._queue[out] == {"owns": base}
+
+        assert isinstance(out, Adjoint)
+        assert isinstance(out.base, qml.S)
+
+    def test_single_decomposable_op_function(self):
+        """Test lazy=False for a single op callable that gets decomposed."""
         x = 1.23
         with qml.tape.QuantumTape() as tape:
             out = adjoint(qml.RX, lazy=False)(x, wires="b")
@@ -116,7 +178,7 @@ class TestNonLazyExecution:
         assert isinstance(out, qml.RX)
         assert out.data == [-x]
 
-    def test_single_nondecomposable_op(self):
+    def test_single_nondecomposable_op_function(self):
         """Test lazy=False for a single op that can't be decomposed."""
         with qml.tape.QuantumTape() as tape:
             out = adjoint(qml.S, lazy=False)(0)
@@ -148,7 +210,38 @@ class TestOutsideofQueuing:
     """Test the behaviour of the adjoint transform when not called in a queueing context."""
 
     def test_single_op(self):
-        """Test the transform on a single op outside of a queuing context."""
+        """Test providing a single op outside of a queuing context."""
+
+        x = 1.234
+        out = adjoint(qml.RZ(x, wires=0))
+
+        assert isinstance(out, Adjoint)
+        assert out.base.__class__ is qml.RZ
+        assert out.data == [1.234]
+        assert out.wires == qml.wires.Wires(0)
+
+    def test_single_op_eager(self):
+        """Test a single op that can be decomposed in eager mode outside of a queuing context."""
+
+        x = 1.234
+        base = qml.RX(x, wires=0)
+        out = adjoint(base, lazy=False)
+
+        assert isinstance(out, qml.RX)
+        assert out.data == [-x]
+
+    def test_observable(self):
+        """Test providing a preconstructed Observable outside of a queuing context."""
+
+        base = 1.0 * qml.PauliX(0)
+        obs = adjoint(base)
+
+        assert isinstance(obs, Adjoint)
+        assert isinstance(obs, qml.operation.Observable)
+        assert obs.base is base
+
+    def test_single_op_function(self):
+        """Test the transform on a single op as a callable outside of a queuing context."""
         x = 1.234
         out = adjoint(qml.IsingXX)(x, wires=(0, 1))
 
@@ -171,7 +264,7 @@ class TestOutsideofQueuing:
         assert all(isinstance(op, Adjoint) for op in out)
         assert all(op.wires == qml.wires.Wires(wire) for op in out)
 
-    def test_nonlazy_op(self):
+    def test_nonlazy_op_function(self):
         """Test non-lazy mode on a simplifiable op outside of a queuing context."""
 
         out = adjoint(qml.PauliX, lazy=False)(0)

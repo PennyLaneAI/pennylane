@@ -17,6 +17,7 @@ This submodule applies the symbolic operation that indicates the adjoint of an o
 from functools import wraps
 
 from pennylane.operation import Operator, AdjointUndefinedError
+from pennylane.queuing import QueuingContext, QueuingError
 from pennylane.tape import QuantumTape, stop_recording
 
 from .adjoint_class import Adjoint
@@ -29,14 +30,25 @@ def _single_op_eager(op):
         return Adjoint(op)
 
 
+def _single_op_eager_update_queue(op):
+    try:
+        adj = op.adjoint()
+        try:
+            QueuingContext.update_info(op, owner=adj)
+        except QueuingError:
+            pass
+        QueuingContext.append(adj, owns=op)
+        return adj
+    except AdjointUndefinedError:
+        return Adjoint(op)
+
+
 # pylint: disable=no-member
 def adjoint(fn, lazy=True):
-    """Create a function that applies the adjoint of the provided operation or template.
-
-    This transform can be used to apply the adjoint of an arbitrary sequence of operations.
+    """Create a the adjoint of an Operator or a function that applies the adjoint of the provided function.
 
     Args:
-        fn (function): A single operator or a quantum function that
+        fn (function, ~.operation.Operator): A single operator or a quantum function that
             applies quantum operations.
 
     Keyword Args:
@@ -44,7 +56,9 @@ def adjoint(fn, lazy=True):
             and handled later. If ``lazy=False``, operation-specific adjoint decompositions are first attempted.
 
     Returns:
-        function: A new function that will apply the same operations but adjointed and in reverse order.
+        :class:`~.operation.Operator` or function: If an Operator is provided, returns an Operator that is the adjoint.
+            If a function is provided, returns a function with the same call signature that returns the Adjoint of the
+            provided function.
 
     .. note::
 
@@ -55,20 +69,31 @@ def adjoint(fn, lazy=True):
 
     **Example**
 
-    The adjoint transforms can be used within a QNode to apply the adjoint of
-    any quantum function. Consider the following quantum function, that applies two
-    operations:
+    This transform can also accept a single operator.
+
+    .. code-block:: python3
+
+        @qml.qnode(qml.device('default.qubit', wires=1))
+        def circuit2(y):
+            qml.adjoint(qml.RY(y, wires=0))
+            return qml.expval(qml.PauliZ(0))
+
+    >>> print(qml.draw(circuit2)("y"))
+    0: ──RY(y)†─┤  <Z>
+    >>> print(qml.draw(circuit2, expansion_strategy="device")(0.1))
+    0: ──RY(-0.10)─┤  <Z>
+
+    The adjoint transforms can also be used to apply the adjoint of
+    any quantum function.  In this case, ``adjoint`` accepts a single function and returns
+    a function with the same call signature.
+
+    We can create a QNode that applies the ``my_ops`` function followed by its adjoint:
 
     .. code-block:: python3
 
         def my_ops(a, wire):
             qml.RX(a, wires=wire)
             qml.SX(wire)
-
-    We can create a QNode that applies this quantum function,
-    followed by the adjoint of this function:
-
-    .. code-block:: python3
 
         dev = qml.device('default.qubit', wires=1)
 
@@ -85,54 +110,6 @@ def adjoint(fn, lazy=True):
     0: ──RX(0.20)──SX──SX†──RX(0.20)†─┤  <Z>
 
     .. details::
-        :title: Usage Details
-
-        **Adjoint of a function**
-
-        Here, we apply the ``subroutine`` function, and then apply its adjoint.
-        Notice that in addition to adjointing all of the operations, they are also
-        applied in reverse construction order. Some `Adjoint` gates like those wrapping ``SX``, ``S``, and
-        ``T`` are natively supported by ``default.qubit``. Other gates will be expanded either using a custom
-        adjoint decomposition defined in :meth:`~.operation.Operator.adjoint`.
-
-        .. code-block:: python3
-
-            def subroutine(wire):
-                qml.RX(0.123, wires=wire)
-                qml.RY(0.456, wires=wire)
-
-            dev = qml.device('default.qubit', wires=1)
-            @qml.qnode(dev)
-            def circuit():
-                subroutine(0)
-                qml.adjoint(subroutine)(0)
-                return qml.expval(qml.PauliZ(0))
-
-        This creates the following circuit:
-
-        >>> print(qml.draw(circuit)())
-        0: ──RX(0.12)──S──S†──RX(0.12)†─┤  <Z>
-        >>> print(qml.draw(circuit, expansion_strategy="device")())
-        0: ──RX(0.12)──S──S†──RX(-0.12)─┤  <Z>
-
-        **Single operation**
-
-        You can also easily adjoint a single operation just by wrapping it with ``adjoint``:
-
-        .. code-block:: python3
-
-            dev = qml.device('default.qubit', wires=1)
-            @qml.qnode(dev)
-            def circuit():
-                qml.RX(0.123, wires=0)
-                qml.adjoint(qml.RX)(0.123, wires=0)
-                return qml.expval(qml.PauliZ(0))
-
-        This creates the following circuit:
-
-        >>> print(qml.draw(circuit)())
-        0: ──RX(0.12)──RX(0.12)†─┤  <Z>
-
 
         :title: Developer details
 
@@ -143,7 +120,7 @@ def adjoint(fn, lazy=True):
         an :meth:`.operation.Operator.adjoint` method is the object wrapped with the :class:`~.ops.arithmetic.Adjoint`
         wrapper class.
 
-        >>> qml.adjoint(qml.PauliZ, lazy=False)(0)
+        >>> qml.adjoint(qml.PauliZ(0), lazy=False)
         PauliZ(wires=[0])
         >>> qml.adjoint(qml.RX, lazy=False)(1.0, wires=0)
         RX(-1.0, wires=[0])
@@ -152,7 +129,7 @@ def adjoint(fn, lazy=True):
 
     """
     if isinstance(fn, Operator):
-        return Adjoint(fn) if lazy else _single_op_eager(fn)
+        return Adjoint(fn) if lazy else _single_op_eager_update_queue(fn)
     if not callable(fn):
         raise ValueError(
             f"The object {fn} of type {type(fn)} is not callable. "
