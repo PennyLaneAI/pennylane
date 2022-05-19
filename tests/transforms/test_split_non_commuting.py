@@ -17,15 +17,15 @@ import numpy as np
 import pennylane as qml
 import pennylane.numpy as pnp
 
-import jax
-import jax.numpy as jnp
-
 import torch
 
 import tensorflow as tf
 
 from pennylane.transforms import split_non_commuting
 from torch.autograd.functional import jacobian
+
+jax = pytest.importorskip("jax")
+jnp = jax.numpy
 
 
 # Unit tests for split_non_commuting

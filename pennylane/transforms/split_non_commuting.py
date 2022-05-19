@@ -70,7 +70,8 @@ def split_non_commuting(tape):
        dtype=object, requires_grad=True)
 
     """
-
+    # Even though we are currently not supporting probs and samples, we still provide the option here
+    # as it works in some cases.
     obs_fn = {qml.measurements.Expectation: qml.expval,
               qml.measurements.Variance: qml.var,
               qml.measurements.Sample: qml.sample,
