@@ -23,8 +23,6 @@ from pennylane import numpy as np
 from pennylane import math as fn
 from autograd.numpy.numpy_boxes import ArrayBox
 
-import semantic_version
-
 pytestmark = pytest.mark.all_interfaces
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
@@ -2266,3 +2264,138 @@ class TestSortFunction:
 
 
 ones_functions = [onp.ones, np.ones, jnp.ones, torch.ones, tf.ones]
+
+# fmt: off
+state_vectors = [
+    ([1, 0, 0, 0], ([[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
+    ([0, 1, 0, 0], ([[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
+    ([0, 0, 1, 0], ([[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])),
+    ([0, 0, 0, 1], ([[0, 0], [0, 1]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])),
+    (onp.array([1, 0, 0, 0]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
+    (onp.array([0, 1, 0, 0]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
+    (onp.array([0, 0, 1, 0]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])),
+    (onp.array([0, 0, 0, 1]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])),
+    (np.array([1, 0, 0, 0]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
+    (np.array([0, 1, 0, 0]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
+    (np.array([0, 0, 1, 0]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])),
+    (np.array([0, 0, 0, 1]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])),
+    (jnp.array([1, 0, 0, 0]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
+    (jnp.array([0, 1, 0, 0]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
+    (jnp.array([0, 0, 1, 0]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])),
+    (jnp.array([0, 0, 0, 1]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])),
+    (torch.tensor([1, 0, 0, 0]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
+    (torch.tensor([0, 1, 0, 0]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
+    (torch.tensor([0, 0, 1, 0]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])),
+    (torch.tensor([0, 0, 0, 1]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])),
+    (tf.Variable([1, 0, 0, 0]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
+    (tf.Variable([0, 1, 0, 0]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
+    (tf.Variable([0, 0, 1, 0]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])),
+    (tf.Variable([0, 0, 0, 1]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])),
+    (tf.constant([1, 0, 0, 0]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
+    (tf.constant([0, 1, 0, 0]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
+    (tf.constant([0, 0, 1, 0]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])),
+    (tf.constant([0, 0, 0, 1]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])),
+]
+
+single_wires_list = [
+    ([0]),
+    ([1]),
+]
+
+multiple_wires_list = [
+    ([0, 1])
+]
+# fmt: on
+
+
+class TestDensityMatrixFromStateVectors:
+    """Tests for the density matrix for state vectors functions."""
+
+    @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    def test_density_matrix_from_state_vector_single_wires(
+        self, state_vector, wires, expected_density_matrix
+    ):
+        """Test the density matrix from state vectors for single wires."""
+        density_matrix = fn.quantum._density_matrix_from_state_vector(state_vector, wires=wires)
+        assert np.allclose(density_matrix, expected_density_matrix[wires[0]])
+
+    @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
+    @pytest.mark.parametrize("wires", multiple_wires_list)
+    def test_density_matrix_from_state_vector_full_wires(
+        self, state_vector, wires, expected_density_matrix
+    ):
+        """Test the density matrix from state vectors for full wires."""
+        density_matrix = fn.quantum._density_matrix_from_state_vector(state_vector, wires=wires)
+        assert np.allclose(density_matrix, expected_density_matrix[2])
+
+    @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    def test_density_matrix_from_state_vector_single_wires(
+        self, state_vector, wires, expected_density_matrix
+    ):
+        """Test the density matrix from state vectors for single wires."""
+        density_matrix = fn.state_to_density_matrix(state_vector, wires=wires)
+        assert np.allclose(density_matrix, expected_density_matrix[wires[0]])
+
+    @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
+    @pytest.mark.parametrize("wires", multiple_wires_list)
+    def test_density_matrix_from_state_vector_full_wires(
+        self, state_vector, wires, expected_density_matrix
+    ):
+        """Test the density matrix from state vectors for full wires."""
+        density_matrix = fn.state_to_density_matrix(state_vector, wires=wires)
+        assert np.allclose(density_matrix, expected_density_matrix[2])
+
+    @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
+    @pytest.mark.parametrize("wires", multiple_wires_list)
+    def test_density_matrix_from_state_vector_check_state(
+        self, state_vector, wires, expected_density_matrix
+    ):
+        """Test the density matrix from state vectors for single wires with state checking"""
+        density_matrix = fn.quantum._density_matrix_from_state_vector(
+            state_vector, wires=wires, check_state=True
+        )
+        assert np.allclose(density_matrix, expected_density_matrix[2])
+
+    def test_state_vector_wrong_shape(self):
+        """Test that wrong shaped state vector raises an error with check_state=True"""
+        state_vector = [1, 0, 0]
+
+        with pytest.raises(ValueError, match="State vector must be"):
+            fn.quantum._density_matrix_from_state_vector(state_vector, wires=[0], check_state=True)
+
+    def test_state_vector_wrong_norm(self):
+        """Test that state vector with wrong norm raises an error with check_state=True"""
+        state_vector = [0.1, 0, 0, 0]
+
+        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
+            fn.quantum._density_matrix_from_state_vector(state_vector, wires=[0], check_state=True)
+
+    def test_density_matrix_from_state_vector_jax_jit(self):
+        """Test jitting the density matrix from state vector function."""
+        from jax import jit
+        import jax.numpy as jnp
+
+        state_vector = jnp.array([1, 0, 0, 0])
+
+        jitted_dens_matrix_func = jit(
+            fn.quantum._density_matrix_from_state_vector, static_argnums=[1, 2]
+        )
+
+        density_matrix = jitted_dens_matrix_func(state_vector, wires=(0, 1), check_state=True)
+        assert np.allclose(density_matrix, [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+
+    def test_wrong_shape_jax_jit(self):
+        """Test jitting the density matrix from state vector with wrong shape."""
+        from jax import jit
+        import jax.numpy as jnp
+
+        state_vector = jnp.array([1, 0, 0])
+
+        jitted_dens_matrix_func = jit(
+            fn.quantum._density_matrix_from_state_vector, static_argnums=[1, 2]
+        )
+
+        with pytest.raises(ValueError, match="State vector must be"):
+            jitted_dens_matrix_func(state_vector, wires=(0, 1), check_state=True)
