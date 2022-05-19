@@ -226,12 +226,13 @@ def state_to_density_matrix(state, wires, check_state=None):
     """Compute the reduced density matrix from a state vector, a density matrix or a QNode returning ``qml.state``.
 
     Args:
-        state (tensor_like): 1D tensor state vector. This tensor should of size ``(2**N,)`` for some integer value ``N``.
+        state (tensor_like, QNode): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix or `~.QNode`
+            returning `~.state`.
         wires (list(int)): List of wires (int) in the subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
 
     Returns:
-        tensor_like: Density matrix of size ``(2**len(wires), 2**len(wires))``
+        tensor_like: (Reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
 
     **Example**
 
