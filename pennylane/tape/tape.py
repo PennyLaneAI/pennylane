@@ -1134,7 +1134,6 @@ class QuantumTape(AnnotatedQueue):
 
         if list(measurement_types)[0] == qml.measurements.Sample:
 
-            print(self._measurements)
             for observable in self._measurements:
                 # Note: if one of the sample measurements contains outputs that
                 # are real, then the entire result will be real
