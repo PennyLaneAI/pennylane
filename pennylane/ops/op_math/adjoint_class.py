@@ -1,19 +1,43 @@
-from pennylane.operation import Operator, Operation, AnyWires, AdjointUndefinedError
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This submodule defines the symbolic operation that indicates the adjoint of an operator.
+"""
+
+from pennylane.operation import Operator, Operation, AdjointUndefinedError
 from pennylane.queuing import QueuingContext, QueuingError
 from pennylane.math import transpose, conj
 
 
+# pylint: disable=no-member
 class AdjointOperation(Operation):
-    """This class is added to an ``Adjoint`` instance if the provided base class is an ``Operation``.
+    """This mixin class is dynamically added to an ``Adjoint`` instance if the provided base class is an ``Operation``.
 
-    Overriding the dunder method `__new__` in `Adjoint` allows us to customize the creation of an instance and dynamically
+    .. warning::
+        This mixin class should never be initialized independent of ``Adjoint``.
+
+    Overriding the dunder method ``__new__`` in ``Adjoint`` allows us to customize the creation of an instance and dynamically
     add in parent classes.
+
+    Note that while this does inherit from ``Operation``, we override the ability to take in-place inversion.
     """
 
     @property
     def _inverse(self):
         return False
 
+    # pylint: disable=no-self-use
     @_inverse.setter
     def _inverse(self, boolean):
         if boolean is True:
@@ -26,6 +50,7 @@ class AdjointOperation(Operation):
     def base_name(self):
         return self.name
 
+    # pylint: disable=missing-function-docstring
     @property
     def basis(self):
         return self.base.basis
@@ -34,6 +59,7 @@ class AdjointOperation(Operation):
     def control_wires(self):
         return self.base.control_wires
 
+    @property
     def single_qubit_rot_angles(self):
         omega, theta, phi = self.base.single_qubit_rot_angles()
         return [-phi, -theta, -omega]
@@ -42,6 +68,7 @@ class AdjointOperation(Operation):
     def grad_method(self):
         return self.base.grad_method
 
+    # pylint: disable=missing-function-docstring
     @property
     def grad_recipe(self):
         return self.base.grad_recipe
@@ -67,6 +94,9 @@ class Adjoint(Operator):
 
     .. seealso:: :func:`~.adjoint`, :meth:`~.operation.Operator.adjoint`
 
+    This is a *developer*-facing class, and the :func:`~.adjoint` transform should be used to construct instances
+    this class.
+
     **Example:**
 
     >>> op = Adjoint(qml.S(0))
@@ -80,8 +110,32 @@ class Adjoint(Operator):
     >>> Adjoint(qml.RX(1.234, wires=0)).data
     [1.234]
 
+    **Developer Details:**
+
+    This class mixes in parent classes based on the inheritance tree of the provided ``Operator``.  For example, when
+    provided an ``Operation``, the instance will inherit from ``Operation`` and the ``AdjointOperation`` mixin.
+
+    >>> op = Adjoint(qml.RX(1.234, wires=0))
+    >>> isinstance(op, qml.operation.Operation)
+    True
+    >>> isinstance(op, AdjointOperation)
+    True
+    >>> op.grad_method
+    'A'
+
+    If the base class is an ``Observable`` instead, the ``Adjoint`` will be an ``Observable`` as well.
+
+    >>> op = Adjoint(1.0 * qml.PauliX(0))
+    >>> isinstance(op, qml.operation.Observable)
+    True
+    >>> isinstance(op, qml.operation.Operation)
+    False
+    >>> Adjoint(qml.PauliX(0)) @ qml.PauliY(1)
+    Adjoint(PauliX)(wires=[0]) @ PauliY(wires=[1])
+
     """
 
+    # pylint: disable=unused-argument
     def __new__(cls, base=None, do_queue=True, id=None):
         # If base is Observable, Channel, etc, these additional parent classes will be added in here.
         class_bases = base.__class__.__bases__
@@ -93,13 +147,15 @@ class Adjoint(Operator):
         # And finally, we add in the `Adjoint` class
         class_bases = (Adjoint,) + class_bases
 
-        # __new__ must always return the new instance
         # `type` with three parameters accepts
         # 1. name : a class name
         # 2. bases: a tuple of all the base clases, the __bases__ attribute
         # Note that the order of bases determines the Method Resolution Order
         # 3. dict : the namespace for the class body
-        return object.__new__(type("Adjoint", class_bases, dict(cls.__dict__)))
+        desired_type = type("Adjoint", class_bases, dict(cls.__dict__))
+
+        # __new__ must always return the new instance
+        return object.__new__(desired_type)
 
     # pylint: disable=attribute-defined-outside-init
     def __copy__(self):
@@ -127,6 +183,7 @@ class Adjoint(Operator):
 
     @property
     def base(self):
+        """The operator that is adjointed."""
         return self.hyperparameters["base"]
 
     @property
@@ -192,20 +249,19 @@ class Adjoint(Operator):
         return transpose(conj(base_matrix))
 
     def eigvals(self):
-        # Cannot define ``compute_eigvals`` because Hermitian only defines ``get_eigvals``
-        return [conj(x) for x in self.base.eigvals()]
+        # Cannot define ``compute_eigvals`` because Hermitian only defines ``eigvals``
+        return conj(self.base.eigvals())
 
     # pylint: disable=arguments-differ
     @staticmethod
     def compute_diagonalizing_gates(*params, wires, base=None):
         return base.compute_diagonalizing_gates(*params, wires, **base.hyperparameters)
 
-    # pylint: disable=arguments-renamed
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self):
         return self.base.has_matrix
 
-    # pylint: disable=arguments-differ
     def adjoint(self):
         return self.base
 

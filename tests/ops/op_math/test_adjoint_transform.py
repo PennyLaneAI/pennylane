@@ -16,11 +16,9 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import adjoint
-from pennylane.ops.arithmetic import Adjoint
+from pennylane.ops.op_math import Adjoint
 
 noncallable_objects = [
-    qml.RX(0.2, wires=0),
-    qml.AngleEmbedding(list(range(2)), wires=range(2)),
     [qml.Hadamard(1), qml.RX(-0.2, wires=1)],
     qml.tape.QuantumTape(),
 ]
@@ -44,7 +42,7 @@ class TestDifferentCallableTypes:
             out = adjoint(qml.RX)(1.234, wires="a")
 
         assert out == tape[0]
-        assert out.__class__ is Adjoint
+        assert isinstance(out, Adjoint)
         assert out.base.__class__ is qml.RX
         assert out.data == [1.234]
         assert out.wires == qml.wires.Wires("a")
@@ -57,7 +55,7 @@ class TestDifferentCallableTypes:
 
         assert len(tape) == 1
         assert out == tape[0]
-        assert out.__class__ is Adjoint
+        assert isinstance(out, Adjoint)
         assert out.base.__class__ is qml.QFT
         assert out.wires == qml.wires.Wires((0, 1, 2))
 
@@ -78,7 +76,7 @@ class TestDifferentCallableTypes:
         assert out == tape.circuit
 
         for op in tape:
-            assert op.__class__ is Adjoint
+            assert isinstance(op, Adjoint)
 
         # check order reversed
         assert tape[0].base.__class__ is qml.RZ
@@ -97,8 +95,8 @@ class TestDifferentCallableTypes:
             out = adjoint(adjoint(qml.RX))(x, wires="b")
 
         assert out is tape[0]
-        assert out.__class__ is Adjoint
-        assert out.base.__class__ is Adjoint
+        assert isinstance(out, Adjoint)
+        assert isinstance(out.base, Adjoint)
         assert out.base.base.__class__ is qml.RX
         assert out.data == [x]
         assert out.wires == qml.wires.Wires("b")
@@ -154,7 +152,7 @@ class TestOutsideofQueuing:
         x = 1.234
         out = adjoint(qml.IsingXX)(x, wires=(0, 1))
 
-        assert out.__class__ is Adjoint
+        assert isinstance(out, Adjoint)
         assert out.base.__class__ is qml.IsingXX
         assert out.data == [1.234]
         assert out.wires == qml.wires.Wires((0, 1))
@@ -170,7 +168,7 @@ class TestOutsideofQueuing:
         out = adjoint(func)(wire)
 
         assert len(out) == 2
-        assert all(op.__class__ is Adjoint for op in out)
+        assert all(isinstance(op, Adjoint) for op in out)
         assert all(op.wires == qml.wires.Wires(wire) for op in out)
 
     def test_nonlazy_op(self):

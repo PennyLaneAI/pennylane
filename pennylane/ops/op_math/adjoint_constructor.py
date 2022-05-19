@@ -12,16 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule defines an operation modifier that indicates the adjoint of an operator.
+This submodule applies the symbolic operation that indicates the adjoint of an operator through the `adjoint` transform.
 """
 from functools import wraps
 
-from pennylane.operation import AdjointUndefinedError
+from pennylane.operation import Operator, AdjointUndefinedError
 from pennylane.tape import QuantumTape, stop_recording
 
 from .adjoint_class import Adjoint
 
 
+def _single_op_eager(op):
+    try:
+        return op.adjoint()
+    except AdjointUndefinedError:
+        return Adjoint(op)
+
+
+# pylint: disable=no-member
 def adjoint(fn, lazy=True):
     """Create a function that applies the adjoint of the provided operation or template.
 
@@ -143,6 +151,8 @@ def adjoint(fn, lazy=True):
         Adjoint(S)(wires=[0])
 
     """
+    if isinstance(fn, Operator):
+        return Adjoint(fn) if lazy else _single_op_eager(fn)
     if not callable(fn):
         raise ValueError(
             f"The object {fn} of type {type(fn)} is not callable. "
@@ -158,14 +168,7 @@ def adjoint(fn, lazy=True):
         if lazy:
             adjoint_ops = [Adjoint(op) for op in reversed(tape.operations)]
         else:
-
-            def _op_adjoint(op):
-                try:
-                    return op.adjoint()
-                except AdjointUndefinedError:
-                    return Adjoint(op)
-
-            adjoint_ops = [_op_adjoint(op) for op in reversed(tape.operations)]
+            adjoint_ops = [_single_op_eager(op) for op in reversed(tape.operations)]
 
         return adjoint_ops[0] if len(adjoint_ops) == 1 else adjoint_ops
 

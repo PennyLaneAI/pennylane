@@ -1068,7 +1068,7 @@ class Operator(abc.ABC):
         """
         return "_ops"
 
-    def adjoint(self, do_queue=False):  # pylint:disable=no-self-use
+    def adjoint(self):  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.
 
         Adjointed operations are the conjugated and transposed version of the

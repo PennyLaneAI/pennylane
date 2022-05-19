@@ -14,7 +14,7 @@
 """
 This module contains classes and functions for Operator arithmetic.
 
-.. currentmodule:: pennylane.arithmetic
+.. currentmodule:: pennylane.ops.op_math
 .. autosummary::
     :toctree: api
 

@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -103,11 +103,12 @@ class TestInitialization:
         """Test adjoint initialization for a non parameteric operation."""
         base = qml.PauliX("a")
 
-        op = Adjoint(base)
+        op = Adjoint(base, id="something")
 
         assert op.base is base
         assert op.hyperparameters["base"] is base
         assert op.name == "Adjoint(PauliX)"
+        assert op.id == "something"
 
         assert op.num_params == 0
         assert op.parameters == []
@@ -120,11 +121,12 @@ class TestInitialization:
         params = [1.2345, 2.3456, 3.4567]
         base = qml.Rot(*params, wires="b")
 
-        op = Adjoint(base)
+        op = Adjoint(base, id="id")
 
         assert op.base is base
         assert op.hyperparameters["base"] is base
         assert op.name == "Adjoint(Rot)"
+        assert op.id == "id"
 
         assert op.num_params == 3
         assert qml.math.allclose(params, op.parameters)
@@ -241,7 +243,18 @@ class TestMiscMethods:
         assert qml.math.allclose(diag_gate.data[0], -np.pi / 4)
 
 
-class TestOperationSpecificMethProp:
+class TestAdjointOperation:
+    """Test methods in the AdjointOperation mixin."""
+
+    @pytest.mark.parametrize(
+        "base, adjoint_base_name",
+        ((qml.PauliX(0), "Adjoint(PauliX)"), (qml.RX(1.2, wires=0), "Adjoint(RX)")),
+    )
+    def test_base_name(self, base, adjoint_base_name):
+        """Test the base_name property of AdjointOperation."""
+        op = Adjoint(base)
+        assert op.base_name == adjoint_base_name
+
     def test_generator(self):
         """Assert that the generator of an Adjoint is -1.0 times the base generator."""
         base = qml.RX(1.23, wires=0)
@@ -285,8 +298,22 @@ class TestOperationSpecificMethProp:
         op = Adjoint(qml.CNOT(wires=("a", "b")))
         assert op.control_wires == qml.wires.Wires("a")
 
+    def test_inverse_always_False(self):
+        """Test that Adjoint of an Operation cannot be inverted."""
+        op = Adjoint(qml.CNOT(wires=(0, 1)))
 
-class TestDiffInfo:
+        assert not op.inverse
+
+        with pytest.raises(NotImplementedError, match="Class Adjoint does not support"):
+            op.inv()
+
+        with pytest.raises(NotImplementedError, match="Class Adjoint does not support"):
+            op.inverse = True
+
+
+class TestAdjointOperationDiffInfo:
+    """Test differention related properties and methods of AdjointOperation."""
+
     def test_grad_method_None(self):
         """Test grad_method copies base grad_method when it is None."""
         base = qml.PauliX(0)
@@ -296,12 +323,14 @@ class TestDiffInfo:
 
     @pytest.mark.parametrize("op", (qml.RX(1.2, wires=0),))
     def test_grad_method_not_None(self, op):
+        """Make sure the grad_method property of a Adjoint op is the same as the base op."""
         assert Adjoint(op).grad_method == op.grad_method
 
     @pytest.mark.parametrize(
         "base", (qml.PauliX(0), qml.RX(1.234, wires=0), qml.Rotation(1.234, wires=0))
     )
     def test_grad_recipe(self, base):
+        """Test that the grad_recipe of the Adjoint is the same as the grad_recipe of the base."""
         assert Adjoint(base).grad_recipe == base.grad_recipe
 
     def test_get_parameter_shift(self):
@@ -315,6 +344,7 @@ class TestDiffInfo:
         (qml.RX(1.23, wires=0), qml.Rot(1.23, 2.345, 3.456, wires=0), qml.CRX(1.234, wires=(0, 1))),
     )
     def test_parameter_frequencies(self, base):
+        """Test that the parameter frequencies of an Adjoint are the same as the parameter-frequencies of the base."""
         assert Adjoint(base).parameter_frequencies == base.parameter_frequencies
 
 
@@ -342,6 +372,14 @@ class TestQueueing:
         assert tape._queue[base]["owner"] is op
         assert tape._queue[op]["owns"] is base
         assert tape.operations == [op]
+
+    def test_do_queue_False(self):
+        """Test that when `do_queue` is specified, the operation is not queued."""
+        base = qml.PauliX(0)
+        with qml.tape.QuantumTape() as tape:
+            op = Adjoint(base, do_queue=False)
+
+        assert len(tape) == 0
 
 
 class TestMatrix:
