@@ -61,7 +61,7 @@ def unbroadcast_expand(tape):
     for op in tape.operations + tape.observables:
         for j, p in enumerate(op.data):
             if op.batch_size and qml.math.ndim(p) != op.ndim_params[j]:
-                unbatched_params.append(p)
+                unbatched_params.append(qml.math.unstack(p))
             else:
                 unbatched_params.append([p] * num_tapes)
 
