@@ -18,17 +18,46 @@ import pytest
 import numpy as np
 import pennylane as qml
 
-from gate_data import *  # a file containing matrix rep of each gate
+import gate_data as gd  # a file containing matrix rep of each gate
+
+no_mat_ops = (
+    qml.Barrier,
+    qml.WireCut,
+)
 
 single_qubit_non_param_ops = (
-    (qml.Identity(0), I),
-    (qml.Hadamard(0), H),
-    (qml.PauliX(0), X),
-    (qml.PauliY(0), Y),
-    (qml.PauliZ(0), Z),
-    (qml.S(0), S),
-    (qml.T(0), T),
-    (qml.SX(0), SX),
+    (qml.Identity, gd.I),
+    (qml.Hadamard, gd.H),
+    (qml.PauliX, gd.X),
+    (qml.PauliY, gd.Y),
+    (qml.PauliZ, gd.Z),
+    (qml.S, gd.S),
+    (qml.T, gd.T),
+    (qml.SX, gd.SX),
+)
+
+single_qubit_parametric_ops = (
+    (),
+)
+
+double_qubit_non_param_ops = (
+    (qml.CNOT, gd.CNOT),
+    (qml.CZ, gd.CZ),
+    (qml.CY, gd.CY),
+    (qml.SWAP, gd.SWAP),
+    (qml.ISWAP, gd.ISWAP),
+    (qml.SISWAP, gd.SISWAP),
+)
+
+double_qubit_parametric_ops = (
+    (),
+    (),
+    ()
+)
+
+triple_qubit_non_param_ops = (
+    (qml.CSWAP, gd.CSWAP),
+    (qml.Toffoli, gd.Toffoli),
 )
 
 
@@ -36,12 +65,14 @@ class TestMatrix:
 
     @pytest.mark.parametrize("op_and_mat1", single_qubit_non_param_ops)
     @pytest.mark.parametrize("op_and_mat2", single_qubit_non_param_ops)
-    def test_matrix_non_parametric_ops(self, op_and_mat1, op_and_mat2):
+    def test_single_qubit_matrix_non_parametric_ops(self, op_and_mat1, op_and_mat2):
         op1, mat1 = op_and_mat1
         op2, mat2 = op_and_mat2
-        sum_op = qml.ops.arithmetic.Sum(op1, op2)
+        wires = 0
+        sum_op = qml.ops.arithmetic.Sum(op1(wires), op2(wires))
 
         sum_mat = sum_op.matrix()
+        print(sum_mat.wires, sum_mat.terms)
         true_mat = mat1 + mat2
 
         assert(np.allclose(sum_mat, true_mat))
