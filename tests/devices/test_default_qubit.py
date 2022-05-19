@@ -2529,6 +2529,7 @@ class TestHamiltonianSupport:
         with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
             dev.expval(H)
 
+
 class TestBroadcastingSupport:
     """Tests that the device correctly makes use of ``unbroadcast_expand`` to
     execute broadcasted tapes."""
@@ -2550,7 +2551,7 @@ class TestBroadcastingSupport:
         def circuit(x):
             self.RX_batched(x, wires=0)
             return qml.expval(qml.PauliZ(0))
-            #return qml.expval(qml.Hamiltonian([0.3], [qml.PauliZ(0)]))
+            # return qml.expval(qml.Hamiltonian([0.3], [qml.PauliZ(0)]))
 
         out = circuit(np.array(x))
 
@@ -2577,7 +2578,7 @@ class TestBroadcastingSupport:
         assert circuit.device.num_executions == len(y)
         tol = 1e-10 if shots is None else 1e-2
         assert qml.math.allclose(out, expected, atol=tol, rtol=0)
-        
+
     @pytest.mark.parametrize("x, y", [(0.2, [0.4]), ([0.1, 5.1], [0.1, -0.3])])
     @pytest.mark.parametrize("shots", [None, 1000000])
     def test_with_multiple_pars(self, x, y, shots):
