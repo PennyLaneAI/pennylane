@@ -505,6 +505,11 @@ class TestQubitIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
+        if diff_method in {"finite-diff", "parameter-shift"} and interface == "jax-jit":
+
+            # No jax.jacobian support for call
+            pytest.xfail(reason="batching rules are implemented only for id_tap, not for call.")
+
         res = jax.jacobian(circuit, argnums=[0, 1])(x, y)
 
         expected = np.array(
