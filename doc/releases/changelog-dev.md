@@ -39,6 +39,10 @@
 
 <h3>Improvements</h3>
 
+* The developer-facing `pow` method has been added to `Operator` with concrete implementations
+  for many classes.
+  [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
+
 * Test classes are created in qchem test modules to group the integrals and matrices unittests.
   [(#2545)](https://github.com/PennyLaneAI/pennylane/pull/2545)
 
@@ -75,6 +79,9 @@
 
 <h3>Breaking changes</h3>
 
+* The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
+  [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
+
 * The module `qml.gradients.param_shift_hessian` has been renamed to
   `qml.gradients.parameter_shift_hessian` in order to distinguish it from the identically named
   function. Note that the `param_shift_hessian` function is unaffected by this change and can be
@@ -89,7 +96,7 @@
 
 * Adds tests, adds no-coverage directives, and removes inaccessible logic to improve code coverage.
   [(#2537)](https://github.com/PennyLaneAI/pennylane/pull/2537)
-  
+
 * The base classes `QubitDevice` and `DefaultQubit` now accept data-types for a statevector. This
   enables a derived class (device) in a plugin to choose correct data-types.
   [(#2448)](https://github.com/PennyLaneAI/pennylane/pull/2448)
@@ -103,6 +110,9 @@
   ```
 
 <h3>Bug fixes</h3>
+
+* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` or `"jax-jit"`, when requesting backpropagation. 
+  [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
 
 * Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
   computed for QNodes with parametrized observables (e.g., `qml.Hermitian`).
@@ -118,13 +128,14 @@
 * Fixed a bug enabling PennyLane to work with the latest version of Autoray.
   [(#2549)](https://github.com/PennyLaneAI/pennylane/pull/2549)
 
-<h3>Deprecations</h3>
-
-<h3>Bug fixes</h3>
+* Fixed a bug which caused different behaviour for `Hamiltonian @ Observable` and `Observable @ Hamiltonian`.
+  [(#2570)](https://github.com/PennyLaneAI/pennylane/pull/2570)
 
 * Fixes a bug in `DiagonalQubitUnitary._controlled` where an invalid operation was queued
   instead of the controlled version of the diagonal unitary.
   [(#2525)](https://github.com/PennyLaneAI/pennylane/pull/2525)
+
+<h3>Deprecations</h3>
 
 <h3>Documentation</h3>
 
@@ -132,9 +143,15 @@
   is now used to style the Sphinx documentation.
   [(#2450)](https://github.com/PennyLaneAI/pennylane/pull/2450)
 
+* Added a new section in the [Gradients and Training](https://pennylane.readthedocs.io/en/stable/introduction/interfaces.html)
+  page that summarizes the supported device configurations and provides justification. Also
+  added [code examples](https://pennylane.readthedocs.io/en/stable/introduction/unsupported.html)
+  for some selected configurations.
+  [(#2540)](https://github.com/PennyLaneAI/pennylane/pull/2540)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Christian Gogolin,
-Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld
+Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld, Jay Soni
