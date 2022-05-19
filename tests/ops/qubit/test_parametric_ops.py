@@ -1787,6 +1787,46 @@ class TestLabel:
         assert op3.label(decimals=0) == "Rot\n(x,\ny,\nz)"
 
 
+pow_parametric_ops = (
+    qml.RX(1.234, wires=0),
+    qml.RY(2.345, wires=0),
+    qml.RZ(3.456, wires=0),
+    qml.PhaseShift(6.78, wires=0),
+    qml.ControlledPhaseShift(0.234, wires=(0, 1)),
+    qml.MultiRZ(-0.4432, wires=(0, 1, 2)),
+    qml.PauliRot(0.5, "X", wires=0),
+    qml.CRX(-6.5432, wires=(0, 1)),
+    qml.CRY(-0.543, wires=(0, 1)),
+    qml.CRZ(1.234, wires=(0, 1)),
+    qml.U1(1.23, wires=0),
+    qml.IsingXX(-2.345, wires=(0, 1)),
+    qml.IsingYY(3.1652, wires=(0, 1)),
+    qml.IsingZZ(1.789, wires=("a", "b")),
+)
+
+
+class TestParametricPow:
+    @pytest.mark.parametrize("op", pow_parametric_ops)
+    @pytest.mark.parametrize("n", (2, -1, 0.2631, -0.987))
+    def test_pow_method_parametric_ops(self, op, n):
+        """Assert that a matrix raised to a power is the same as multiplying the data by n for relevant ops."""
+        pow_op = op.pow(n)
+
+        assert len(pow_op) == 1
+        assert pow_op[0].__class__ is op.__class__
+        assert all((d1 == d2 * n for d1, d2 in zip(pow_op[0].data, op.data)))
+
+    @pytest.mark.parametrize("op", pow_parametric_ops)
+    @pytest.mark.parametrize("n", (3, -2))
+    def test_pow_matrix(self, op, n):
+        """Test that the matrix of an op first raised to a power is the same as the
+        matrix raised to the power.  This test only can work for integer powers."""
+        op_mat = qml.matrix(op)
+        pow_mat = qml.matrix(op.pow)(n)
+
+        assert qml.math.allclose(qml.math.linalg.matrix_power(op_mat, n), pow_mat)
+
+
 control_data = [
     (qml.Rot(1, 2, 3, wires=0), Wires([])),
     (qml.RX(1.23, wires=0), Wires([])),

@@ -133,7 +133,7 @@ class AmplitudeEmbedding(Operation):
     def num_params(self):
         return 1
 
-    def adjoint(self):  # pylint: disable=arguments-differ
+    def adjoint(self):
         return qml.adjoint(qml.MottonenStatePreparation)(self.parameters[0], wires=self.wires)
 
     @staticmethod
