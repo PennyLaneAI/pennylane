@@ -39,6 +39,10 @@
 
 <h3>Improvements</h3>
 
+* The developer-facing `pow` method has been added to `Operator` with concrete implementations
+  for many classes.
+  [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
+
 * Test classes are created in qchem test modules to group the integrals and matrices unittests.
   [(#2545)](https://github.com/PennyLaneAI/pennylane/pull/2545)
 
@@ -75,6 +79,9 @@
 
 <h3>Breaking changes</h3>
 
+* The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
+  [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
+
 * The module `qml.gradients.param_shift_hessian` has been renamed to
   `qml.gradients.parameter_shift_hessian` in order to distinguish it from the identically named
   function. Note that the `param_shift_hessian` function is unaffected by this change and can be
@@ -89,7 +96,7 @@
 
 * Adds tests, adds no-coverage directives, and removes inaccessible logic to improve code coverage.
   [(#2537)](https://github.com/PennyLaneAI/pennylane/pull/2537)
-  
+
 * The base classes `QubitDevice` and `DefaultQubit` now accept data-types for a statevector. This
   enables a derived class (device) in a plugin to choose correct data-types.
   [(#2448)](https://github.com/PennyLaneAI/pennylane/pull/2448)
@@ -103,6 +110,9 @@
   ```
 
 <h3>Bug fixes</h3>
+
+* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` or `"jax-jit"`, when requesting backpropagation. 
+  [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
 
 * Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
   computed for QNodes with parametrized observables (e.g., `qml.Hermitian`).
@@ -132,6 +142,12 @@
 * The centralized [Xanadu Sphinx Theme](https://github.com/XanaduAI/xanadu-sphinx-theme)
   is now used to style the Sphinx documentation.
   [(#2450)](https://github.com/PennyLaneAI/pennylane/pull/2450)
+
+* Added a new section in the [Gradients and Training](https://pennylane.readthedocs.io/en/stable/introduction/interfaces.html)
+  page that summarizes the supported device configurations and provides justification. Also
+  added [code examples](https://pennylane.readthedocs.io/en/stable/introduction/unsupported.html)
+  for some selected configurations.
+  [(#2540)](https://github.com/PennyLaneAI/pennylane/pull/2540)
 
 <h3>Contributors</h3>
 
