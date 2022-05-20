@@ -58,6 +58,7 @@ def split_non_commuting(tape):
             qml.expval(qml.PauliX(0) @ qml.PauliX(1))
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliX(0))
+
         tapes, processing_fn = qml.transforms.split_non_commuting(tape)
 
     In this example, the groupings are ``group_coeffs = [[0,2], [1,3]]`` and processing_fn makes sure that the final output is of the same shape and ordering:
