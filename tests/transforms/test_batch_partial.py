@@ -158,7 +158,7 @@ def test_partial_evaluation_jax(diff_method):
 
 
 @pytest.mark.tf
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
 def test_partial_evaluation_tf(diff_method):
     """Test gradient of partial evaluation matches gradients of
     individual full evaluations using TF"""
