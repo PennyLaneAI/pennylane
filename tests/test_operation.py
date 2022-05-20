@@ -588,18 +588,33 @@ class TestInverse:
         assert dummy_op.inv().name == dummy_op_class_name
         assert not dummy_op.inverse
 
-    def test_inverse_of_operation(self):
-        """Test the inverse of an operation"""
+    def test_inv_queuing(self):
+        """Test that inv updates the inverse property in place during queuing."""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom Operation"""
+            num_wires = 1
+
+        with qml.tape.QuantumTape() as tape:
+            op = DummyOp(wires=[0]).inv()
+            assert op.inverse is True
+
+        assert op.inverse is True
+
+    def test_inverse_integration(self):
+        """Test that the inv integrates with qnode execution. An operation followed by the inverse
+        operation should leave the state unchanged.
+        """
 
         dev1 = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev1)
         def circuit():
-            qml.PauliZ(wires=[0])
-            qml.PauliZ(wires=[0]).inv()
-            return qml.expval(qml.PauliZ(0))
+            qml.RX(1.234, wires=0)
+            qml.RX(1.234, wires=0).inv()
+            return qml.state()
 
-        assert circuit() == 1
+        assert qml.math.allclose(circuit()[0], 1)
 
     def test_inverse_operations_not_supported(self):
         """Test that the inverse of operations is not currently
