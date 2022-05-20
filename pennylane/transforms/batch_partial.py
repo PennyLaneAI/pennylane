@@ -161,7 +161,7 @@ def batch_partial(qnode, all_operations=False, **partial_kwargs):
             else:
                 batch_dim = qml.math.shape(list(kwargs.values())[0])[0]
         except IndexError:
-            raise ValueError("Batch dimension must be provided") from None
+            raise ValueError("Parameter with batch dimension must be provided") from None
 
         for key, val in partial_kwargs.items():
             if callable(val):
