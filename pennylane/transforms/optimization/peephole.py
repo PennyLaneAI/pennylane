@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Function finding all maximal sequences of gates acting on a subset of qubits considering pairwise commutation of gates.
+"""Function finding all maximal sequences of gates acting on a subset of qubits considering pairwise
+commutation of gates.
 """
 
 import itertools
@@ -28,14 +29,16 @@ from pennylane.transforms.decompositions import two_qubit_decomposition, zyz_dec
 
 @qfunc_transform
 def peephole_optimization(tape, qubit_subset_sizes, custom_quantum_cost=None):
-    r"""Quantum function transform to optimize a circuit given a list of qubits subset (peephole) size (1, 2). First the
-    algorithm finds all maximal sequences of gates acting on a all subset of qubits of a given size. Then all
-    sequences are optimized by using 1 qubits and 2 qubits optimal decompositions.
+    r"""Quantum function transform to optimize a circuit based on optimal gate sequences which only
+    act on a subset of qubits. The transform takes a list of qubit subset sizes, also referred to as
+    the peephole size, as input. Currently, only subsets of size 1 and 2 are supported.
+    First, the algorithm finds all maximal sequences of gates acting on all qubit subsets of a given
+    size. Then, these sequences are optimized by using 1-qubit and 2-qubit optimal decompositions.
 
     Args:
         qfunc (function): A quantum function to be optimized.
-        n_qubits(list(int)): List of size of subset qubits [1], [2], [1, 2], [2, 1]. The order in the list matters as
-                            it will be optimized sequentially.
+        qubit_subset_sizes(list(int)): List of qubit subset sizes (e.g. [1], [2], [1, 2], [2, 1]).
+            The order in the list matters as it will be optimized sequentially.
         custom_quantum_cost (dict): Optional, custom quantum cost dictionary.
 
     Returns:
@@ -70,7 +73,7 @@ def peephole_optimization(tape, qubit_subset_sizes, custom_quantum_cost=None):
 
     >>> dev = qml.device('default.qubit', wires=3)
     >>> qnode = qml.QNode(circuit, dev)
-    >>> optimized_qfunc = peephole_optimization(n_qubit=[2])(circuit)
+    >>> optimized_qfunc = peephole_optimization(qubit_subset_sizes=[2])(circuit)
     >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
 
     In our case, it is possible to reduce 4 CNOTs to only two CNOTs and therefore
@@ -463,11 +466,8 @@ class ForwardSequence:
                 continue
 
             # Get the label and the node of the first successor to visit
-            label = successors_to_visit[0]
+            label = successors_to_visit.pop(0)
             v = [label, self.circuit_dag.get_node(label)]
-
-            # Update of the successors to visit.
-            successors_to_visit.pop(0)
 
             # Update the sequence_nodes_list with new attribute successor to visit and sort the list.
             self.sequence_nodes_list.append([v_first.node_id, v_first, successors_to_visit])
@@ -575,9 +575,7 @@ class SequenceScenariosList:
             MatchingScenarios: a scenario of match.
         """
         # Pop the first MatchingScenario and returns it
-        first = self.sequence_scenarios_list[0]
-        self.sequence_scenarios_list.pop(0)
-        return first
+        return self.sequence_scenarios_list.pop(0)
 
 
 class BackwardSequence:
