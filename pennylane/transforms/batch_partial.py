@@ -69,14 +69,13 @@ def batch_partial(qnode, all_operations=False, **partial_kwargs):
         @qml.qnode(dev)
         def circuit(x, y):
             qml.RX(x, wires=0)
-            qml.RY(y[..., 0], wires=0)
-            qml.RY(y[..., 1], wires=1)
+            qml.RY(y, wires=1)
             return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
 
     The ``qml.batch_partial`` decorator allows us to create a partially evaluated
     function that wraps the QNode. For example,
 
-    >>> y = np.array([0.2, 0.3])
+    >>> y = np.array(0.2)
     >>> batched_partial_circuit = qml.batch_partial(circuit, y=y)
 
     The unevaluated arguments of the resulting function must now have a batch
@@ -85,23 +84,23 @@ def batch_partial(qnode, all_operations=False, **partial_kwargs):
     >>> batch_size = 4
     >>> x = np.linspace(0.1, 0.5, batch_size)
     >>> batched_partial_circuit(x)
-    tensor([0.9316158 , 0.91092081, 0.87405565, 0.82167473], requires_grad=True)
+    tensor([0.97517033, 0.95350781, 0.91491915, 0.86008934], requires_grad=True)
 
     Jacobians can be computed for the arguments of the wrapper function, but
     not for any partially evaluated arguments passed to ``qml.batch_partial``:
 
     >>> qml.jacobian(batched_partial_circuit)(x)
-    array([[-0.09347337,  0.        ,  0.        ,  0.        ],
-           [ 0.        , -0.21649144,  0.        ,  0.        ],
-           [ 0.        ,  0.        , -0.33566648,  0.        ],
-           [ 0.        ,  0.        ,  0.        , -0.44888295]])
+    array([[-0.0978434 ,  0.        ,  0.        ,  0.        ],
+           [ 0.        , -0.22661276,  0.        ,  0.        ],
+           [ 0.        ,  0.        , -0.35135943,  0.        ],
+           [ 0.        ,  0.        ,  0.        , -0.46986895]])
 
     The same ``qml.batch_partial`` decorator can also be used to replace arguments
     of a QNode with functions, and calling the wrapper would evaluate
     those functions and pass the results into the QNode. For example,
 
     >>> x = np.array(0.1)
-    >>> y_fn = lambda y0: y0 * np.array([0.2, 0.3])
+    >>> y_fn = lambda y0: y0 * 0.2 + 0.3
     >>> batched_lambda_circuit = qml.batch_partial(circuit, x=x, y=y_fn)
 
     The wrapped function ``batched_lambda_circuit`` also expects arguments to
@@ -110,15 +109,15 @@ def batch_partial(qnode, all_operations=False, **partial_kwargs):
     >>> batch_size = 4
     >>> y0 = np.linspace(0.5, 2, batch_size)
     >>> batched_lambda_circuit(y0)
-    tensor([0.97891628, 0.9316158 , 0.85593241, 0.75638669], requires_grad=True)
+    tensor([0.91645953, 0.8731983 , 0.82121237, 0.76102116], requires_grad=True)
 
     Jacobians can be computed in this scenario as well:
 
     >>> qml.jacobian(batched_lambda_circuit)(y0)
-    array([[-0.06402847,  0.        ,  0.        ,  0.        ],
-           [ 0.        , -0.12422434,  0.        ,  0.        ],
-           [ 0.        ,  0.        , -0.17699293,  0.        ],
-           [ 0.        ,  0.        ,  0.        , -0.21920062]])
+    array([[-0.07749457,  0.        ,  0.        ,  0.        ],
+           [ 0.        , -0.09540608,  0.        ,  0.        ],
+           [ 0.        ,  0.        , -0.11236432,  0.        ],
+           [ 0.        ,  0.        ,  0.        , -0.12819986]])
     """
     qnode = qml.batch_params(qnode, all_operations=all_operations)
 
