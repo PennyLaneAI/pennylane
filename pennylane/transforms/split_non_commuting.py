@@ -38,7 +38,6 @@ def split_non_commuting(tape):
 
     .. code-block:: python3
 
-        import pennylane as qml
         with qml.tape.QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(0))
