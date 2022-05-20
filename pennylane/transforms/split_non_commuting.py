@@ -18,8 +18,9 @@ Contains the tape transform that splits non-commuting terms
 import pennylane as qml
 import numpy as np
 
+from .batch_transform import batch_transform
 
-@qml.batch_transform
+#@batch_transform
 def split_non_commuting(tape):
     r"""
     Splits a tape measuring non-commuting observables into groups of commuting observables.

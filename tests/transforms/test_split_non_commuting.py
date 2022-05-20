@@ -139,6 +139,11 @@ def test_expval_non_commuting_observables():
 
 
 # Autodiff tests
+
+exp_res = np.array([ 0.77015115, -0.47942554,  0.87758256])
+exp_grad = np.array([[-4.20735492e-01, -4.20735492e-01], [-8.77582562e-01,  0.], [-4.79425539e-01,  0.]])
+
+
 @pytest.mark.autograd
 def test_split_with_autograd():
     """Test that results after splitting are still differentiable with autograd"""
@@ -146,19 +151,15 @@ def test_split_with_autograd():
 
     @qml.qnode(dev, interface="autograd")
     def circuit(params):
-        qml.RZ(params[0], wires=1)
-        qml.RZ(params[1], wires=2)
-        return (
-            qml.expval(qml.PauliX(0) @ qml.PauliX(1)),
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
-            qml.expval(qml.PauliX(0)),
-        )
+        qml.RX(params[0], wires=0)
+        qml.RY(params[1], wires=1)
+        return qml.expval(qml.PauliZ(0)@qml.PauliZ(1)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
 
-    params = pnp.array([np.pi, 0.0])
+    params = pnp.array([0.5, 0.5])
     res = circuit(params)
     grad = qml.jacobian(circuit)(params)
-    assert all(np.isclose(res, [0, 1, 0]))
-    assert all(np.isclose(grad, np.zeros((3, 2))).flatten())
+    assert all(np.isclose(res, exp_res))
+    assert all(np.isclose(grad, exp_grad).flatten())
 
 
 # TODO: Currently not possible to jit multiple expvals
@@ -173,19 +174,15 @@ def test_split_with_jax():
 
     @qml.qnode(dev, interface="jax")
     def circuit(params):
-        qml.RZ(params[0], wires=1)
-        qml.RZ(params[1], wires=2)
-        return (
-            qml.expval(qml.PauliX(0) @ qml.PauliX(1)),
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
-            qml.expval(qml.PauliX(0)),
-        )
+        qml.RX(params[0], wires=0)
+        qml.RY(params[1], wires=1)
+        return qml.expval(qml.PauliZ(0)@qml.PauliZ(1)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
 
-    params = jnp.array([np.pi, 0.0])
+    params = jnp.array([0.5, 0.5])
     res = circuit(params)
     grad = jax.jacobian(circuit)(params)
-    assert all(np.isclose(res, [0, 1, 0]))
-    assert all(np.isclose(grad, np.zeros((3, 2))).flatten())
+    assert all(np.isclose(res, exp_res))
+    assert all(np.isclose(grad, exp_grad, atol=1e-5).flatten())
 
 
 @pytest.mark.torch
@@ -199,19 +196,15 @@ def test_split_with_torch():
 
     @qml.qnode(dev, interface="torch")
     def circuit(params):
-        qml.RZ(params[0], wires=1)
-        qml.RZ(params[1], wires=2)
-        return (
-            qml.expval(qml.PauliX(0) @ qml.PauliX(1)),
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
-            qml.expval(qml.PauliX(0)),
-        )
+        qml.RX(params[0], wires=0)
+        qml.RY(params[1], wires=1)
+        return qml.expval(qml.PauliZ(0)@qml.PauliZ(1)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
 
-    params = torch.tensor([np.pi, 0], requires_grad=True)
+    params = torch.tensor([0.5, 0.5], requires_grad=True)
     res = circuit(params)
     grad = jacobian(lambda params: circuit(params), (params))
-    assert all(np.isclose(res.detach().numpy(), [0, 1, 0]))
-    assert all(np.isclose(grad.detach().numpy(), np.zeros((3, 2))).flatten())
+    assert all(np.isclose(res.detach().numpy(), exp_res))
+    assert all(np.isclose(grad.detach().numpy(), exp_grad, atol=1e-5).flatten())
 
 
 @pytest.mark.tf
@@ -223,19 +216,15 @@ def test_split_with_tf():
 
     @qml.qnode(dev, interface="tf")
     def circuit(params):
-        qml.RZ(params[0], wires=1)
-        qml.RZ(params[1], wires=2)
-        return (
-            qml.expval(qml.PauliX(0) @ qml.PauliX(1)),
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
-            qml.expval(qml.PauliX(0)),
-        )
+        qml.RX(params[0], wires=0)
+        qml.RY(params[1], wires=1)
+        return qml.expval(qml.PauliZ(0)@qml.PauliZ(1)), qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))
 
-    params = tf.Variable([np.pi, 0])
+    params = tf.Variable([0.5, 0.5])
     res = circuit(params)
     with tf.GradientTape() as tape:
         loss = circuit(params)
 
     grad = tape.jacobian(loss, params)
-    assert all(np.isclose(res, [0, 1, 0]))
-    assert all(np.isclose(grad, np.zeros((3, 2))).flatten())
+    assert all(np.isclose(res, exp_res))
+    assert all(np.isclose(grad, exp_grad, atol=1e-5).flatten())
