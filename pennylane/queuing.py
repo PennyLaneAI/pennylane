@@ -185,9 +185,9 @@ class QueuingContext(abc.ABC):
         if cls.recording():
             cls.active_context()._update_info(obj, **kwargs)  # pylint: disable=protected-access
 
+    @abc.abstractmethod
     def _update_info(self, obj, **kwargs):
         """Updates information of an object in the queue instance."""
-        raise NotImplementedError
 
     @classmethod
     def get_info(cls, obj):
@@ -204,9 +204,9 @@ class QueuingContext(abc.ABC):
 
         return None
 
+    @abc.abstractmethod
     def _get_info(self, obj):
         """Retrieves information of an object in the queue instance."""
-        raise NotImplementedError
 
 
 class AnnotatedQueue(QueuingContext):
