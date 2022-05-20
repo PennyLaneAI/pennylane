@@ -87,7 +87,7 @@ def batch_partial(qnode, all_operations=False, **partial_kwargs):
     >>> batched_partial_circuit(x)
     tensor([0.9316158 , 0.91092081, 0.87405565, 0.82167473], requires_grad=True)
 
-    Gradients can be computed for the arguments of the wrapper function, but
+    Jacobians can be computed for the arguments of the wrapper function, but
     not for any partially evaluated arguments passed to ``qml.batch_partial``:
 
     >>> qml.jacobian(batched_partial_circuit)(x)
