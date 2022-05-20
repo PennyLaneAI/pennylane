@@ -1109,9 +1109,9 @@ class TestTensor:
         t = qml.PauliX(0) @ qml.PauliZ(1)
         s = t.sparse_matrix()
 
-        assert np.allclose(s.row, [0, 1, 2, 3])
-        assert np.allclose(s.col, [2, 3, 0, 1])
         assert np.allclose(s.data, [1, -1, 1, -1])
+        assert np.allclose(s.indices, [2, 3, 0, 1])
+        assert np.allclose(s.indptr, [0, 1, 2, 3, 4])
 
     def test_sparse_matrix_swapped_wires(self):
         """Tests that the correct sparse matrix representation is used
@@ -1120,9 +1120,9 @@ class TestTensor:
         t = qml.PauliX(0) @ qml.PauliZ(1)
         s = t.sparse_matrix(wires=[1, 0])
 
-        assert np.allclose(s.row, [0, 1, 2, 3])
-        assert np.allclose(s.col, [1, 0, 3, 2])
         assert np.allclose(s.data, [1, 1, -1, -1])
+        assert np.allclose(s.indices, [1, 0, 3, 2])
+        assert np.allclose(s.indptr, [0, 1, 2, 3, 4])
 
     def test_sparse_matrix_extra_wire(self):
         """Tests that the correct sparse matrix representation is used
@@ -1132,9 +1132,9 @@ class TestTensor:
         s = t.sparse_matrix(wires=[0, 1, 2])
 
         assert s.shape == (8, 8)
-        assert np.allclose(s.row, [0, 1, 2, 3, 4, 5, 6, 7])
-        assert np.allclose(s.col, [4, 5, 6, 7, 0, 1, 2, 3])
-        assert np.allclose(s.data, [1, 1, -1, -1, 1, 1, -1, -1])
+        assert np.allclose(s.data, [1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0])
+        assert np.allclose(s.indices, [4, 5, 6, 7, 0, 1, 2, 3])
+        assert np.allclose(s.indptr, [0, 1, 2, 3, 4, 5, 6, 7, 8])
 
     def test_sparse_matrix_error(self):
         """Tests that an error is raised if the sparse matrix is computed for
