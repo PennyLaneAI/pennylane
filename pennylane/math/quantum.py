@@ -265,7 +265,7 @@ def partial_trace(density_matrix, wires):
 
     kraus = convert_like(kraus, density_matrix)
     kraus_dagger = convert_like(kraus_dagger, density_matrix)
-    print(wires)
+
     # For loop over wires
     for target_wire in wires:
         # Tensor indices of density matrix
@@ -388,8 +388,26 @@ def state_to_density_matrix(state, wires, check_state=None):
     """
     # QNode returning ``qml.state``
     if isinstance(state, qml.QNode):
-        # TODO: implement for QNode returning state
-        raise NotImplementedError  # pragma: no cover
+
+        def wrapper(*args, **kwargs):
+            state.construct(args, kwargs)
+            return_type = state.tape.observables[0].return_type
+            if len(state.tape.observables) != 1 or not return_type == qml.measurements.State:
+                raise ValueError("The qfunc return type needs to be a state.")
+
+            # TODO: optimize given the wires
+            state_built = state(*args, **kwargs)
+            state_built = cast(state_built, dtype="complex128")
+            # State vector
+            if state_built.shape == (len(state_built),):
+                density_matrix = _density_matrix_from_state_vector(state_built, wires, check_state)
+                return density_matrix
+            # Density matrix
+            density_matrix = _density_matrix_from_matrix(state_built, wires, check_state)
+            return density_matrix
+
+        return wrapper
+
     # Cast as a complex128 array
     state = cast(state, dtype="complex128")
     # State vector

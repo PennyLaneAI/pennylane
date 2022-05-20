@@ -2523,3 +2523,19 @@ class TestDensityMatrixFromMatrix:
 
         with pytest.raises(ValueError, match="Density matrix must be of shape"):
             jitted_dens_matrix_func(state_vector, wires=(0, 1), check_state=True)
+
+
+class TestDensityMatrixQNode:
+    """Tests for the (reduced) density matrix for QNodes returning states."""
+
+    def test_density_matrix_from_matrix_single_wires(self):
+        """Test the density matrix from matrix for single wires."""
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RZ(x, wires=0)
+            return qml.state()
+
+        density_matrix = fn.state_to_density_matrix(circuit, wires=[0])(0)
+        print(density_matrix)
