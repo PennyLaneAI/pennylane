@@ -77,6 +77,10 @@
   method for a provided device and interface, in human-readable format.
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
 
+* Using `Operation.inv()` in a queuing environment no longer updates the queue's metadata, but merely updates
+  the operation in place.
+  [(#2596)](https://github.com/PennyLaneAI/pennylane/pull/2596)
+
 * Sparse Hamiltonians representation has changed from COOrdinate (COO) to Compressed Sparse Row (CSR) format. The CSR representation is more performant for arithmetic operations and matrix vector products. This change decreases the `expval()` calculation time, for `qml.SparseHamiltonian`, specially for large workflows. Also, the CRS format consumes less memory for the `qml.SparseHamiltonian` storage.
 [(#2561)](https://github.com/PennyLaneAI/pennylane/pull/2561)
 
