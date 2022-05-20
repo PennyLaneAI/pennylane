@@ -590,7 +590,7 @@ def test_no_batchdim_error():
 
     batched_partial_circuit = qml.batch_partial(circuit, y=y)
 
-    with pytest.raises(ValueError, match="Batch dimension must be provided"):
+    with pytest.raises(ValueError, match="Parameter with batch dimension must be provided"):
         out = batched_partial_circuit(x=x)
 
 
