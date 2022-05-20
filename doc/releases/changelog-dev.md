@@ -79,6 +79,7 @@
 
 * Using `Operation.inv()` in a queuing environment no longer updates the queue's metadata, but merely updates
   the operation in place.
+  [(#2596)](https://github.com/PennyLaneAI/pennylane/pull/2596)
 
 <h3>Breaking changes</h3>
 
