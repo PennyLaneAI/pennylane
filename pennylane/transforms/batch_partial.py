@@ -95,7 +95,7 @@ def batch_partial(qnode, all_operations=False, **partial_kwargs):
            [ 0.        ,  0.        , -0.35135943,  0.        ],
            [ 0.        ,  0.        ,  0.        , -0.46986895]])
 
-    The same ``qml.batch_partial`` decorator can also be used to replace arguments
+    The same ``qml.batch_partial`` function can also be used to replace arguments
     of a QNode with functions, and calling the wrapper would evaluate
     those functions and pass the results into the QNode. For example,
 
