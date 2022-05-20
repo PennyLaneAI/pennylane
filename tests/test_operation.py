@@ -596,7 +596,7 @@ class TestInverse:
             num_wires = 1
 
         with qml.tape.QuantumTape() as tape:
-            op = DummyOp(wires=[0])
+            op = DummyOp(wires=[0]).inv()
             assert op.inverse is True
 
         assert op.inverse is True
