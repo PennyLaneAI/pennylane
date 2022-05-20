@@ -72,7 +72,7 @@ dependencies, can be done using pip:
 python -m pip install pennylane
 ```
 
-More detailed installation instructions are available on our [Installation page](https://pennylane.readthedocs.io/en/stable/development/guide/installation.html)
+More detailed installation instructions are available on our [installation page](https://pennylane.readthedocs.io/en/stable/development/guide/installation.html).
 
 ## Getting started
 
