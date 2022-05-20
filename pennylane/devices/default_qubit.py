@@ -503,7 +503,7 @@ class DefaultQubit(QubitDevice):
                 # whereas the .coeff attribute will always be the same input dtype that the user provided.
                 for op, coeff in zip(observable.ops, observable.data):
 
-                    # extract a scipy.sparse.csr_matrix representation of this Pauli word
+                    # extract a scipy.sparse.coo_matrix representation of this Pauli word
                     coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires, format="coo")
                     Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
 

@@ -2001,9 +2001,7 @@ class Tensor(Observable):
             idx = wires.index(o.wires)
             list_of_sparse_ops[idx] = coo_matrix(o.matrix())
 
-        return functools.reduce(lambda i, j: kron(i, j, format="coo"), list_of_sparse_ops).asformat(
-            format
-        )
+        return functools.reduce(lambda i, j: kron(i, j, format=format), list_of_sparse_ops)
 
     def prune(self):
         """Returns a pruned tensor product of observables by removing :class:`~.Identity` instances from
