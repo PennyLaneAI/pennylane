@@ -2436,8 +2436,8 @@ density_matrices = [
 # fmt: on
 
 
-class TestDensityMatrixFromStateVectors:
-    """Tests for the (reeduced) density matrix for matrix."""
+class TestDensityMatrixFromMatrix:
+    """Tests for the (reduced) density matrix for matrix."""
 
     @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -2493,7 +2493,7 @@ class TestDensityMatrixFromStateVectors:
         with pytest.raises(ValueError, match="Density matrix must be of shape"):
             fn.quantum._density_matrix_from_matrix(density_matrix, wires=[0], check_state=True)
 
-    def test_state_vector_wrong_trace(self):
+    def test_matrix_wrong_trace(self):
         """Test that state vector with wrong norm raises an error with check_state=True"""
         density_matrix = [[0.1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
 
