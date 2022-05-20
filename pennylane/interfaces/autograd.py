@@ -239,7 +239,6 @@ def vjp(
             # https://github.com/PennyLaneAI/pennylane-sf/issues/89 is determined
             return (return_vjps,)
         return return_vjps
-
     return grad_fn
 
 
