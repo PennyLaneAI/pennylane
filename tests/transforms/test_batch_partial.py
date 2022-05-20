@@ -205,7 +205,7 @@ def test_partial_evaluation_tf(diff_method):
 
 
 @pytest.mark.torch
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
 def test_partial_evaluation_torch(diff_method):
     """Test gradient of partial evaluation matches gradients of
     individual full evaluations using PyTorch"""
