@@ -59,6 +59,7 @@ ops = {
     "SISWAP",
     "SQISW",
     "CSWAP",
+    "ECR",
     "Toffoli",
     "RX",
     "RY",
@@ -94,7 +95,7 @@ ops = {
     "QubitSum",
     "OrbitalRotation",
     "Barrier",
-    "WireCut",
+    "WireCut"
 }
 
 

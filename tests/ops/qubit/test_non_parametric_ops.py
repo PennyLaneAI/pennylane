@@ -39,6 +39,7 @@ from gate_data import (
     T,
     CSWAP,
     Toffoli,
+    ECR
 )
 
 
@@ -54,6 +55,7 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.T, T),
     (qml.CSWAP, CSWAP),
     (qml.Toffoli, Toffoli),
+    (qml.ECR, ECR)
 ]
 
 
@@ -266,6 +268,42 @@ class TestDecompositions:
         decomposed_matrix = np.linalg.multi_dot(mats)
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+    def test_ECR_decomposition(self, tol):
+        """Tests that the decomposition of the ECR gate is correct"""
+        op = qml.ECR(wires=[0, 1])
+        res = op.decomposition()
+
+        assert len(res) == 6
+
+        assert res[0].wires == Wires([0])
+        assert res[1].wires == Wires([1])
+        assert res[2].wires == Wires([0])
+        assert res[3].wires == Wires([0, 1])
+        assert res[4].wires == Wires([1, 0])
+        assert res[5].wires == Wires([1])
+
+        assert res[0].name == "S"
+        assert res[1].name == "S"
+        assert res[2].name == "Hadamard"
+        assert res[3].name == "CNOT"
+        assert res[4].name == "CNOT"
+        assert res[5].name == "Hadamard"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([1]):
+                mats.append(np.kron(np.eye(2), i.matrix()))
+            elif i.wires == Wires([0]):
+                mats.append(np.kron(i.matrix(), np.eye(2)))
+            elif i.wires == Wires([1, 0]) and i.name == "CNOT":
+                mats.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
+            else:
+                mats.append(i.matrix())
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+        print('works')
+
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)        
 
     @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW])
     def test_SISWAP_decomposition(self, siswap_op, tol):
@@ -991,6 +1029,7 @@ period_two_ops = (
     qml.CY(wires=(0, 1)),
     qml.SWAP(wires=(0, 1)),
     qml.ISWAP(wires=(0, 1)),
+    qml.ECR(wires=(0, 1)),
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
@@ -1151,6 +1190,7 @@ label_data = [
     (qml.CY(wires=(0, 1)), "Y", "Y"),
     (qml.SWAP(wires=(0, 1)), "SWAP", "SWAP⁻¹"),
     (qml.ISWAP(wires=(0, 1)), "ISWAP", "ISWAP⁻¹"),
+    (qml.ECR(wires=(0, 1)), "ECR", "ECR⁻¹"),
     (qml.SISWAP(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
     (qml.SQISW(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
@@ -1211,6 +1251,7 @@ all_ops = [
     qml.CY(wires=(0, 1)),
     qml.SWAP(wires=(0, 1)),
     qml.ISWAP(wires=(0, 1)),
+    qml.ECR(wires=(0,1)),
     qml.SISWAP(wires=(0, 1)),
     qml.SQISW(wires=(0, 1)),
     qml.CSWAP(wires=(0, 1, 2)),
@@ -1264,3 +1305,5 @@ def test_adjoint_method(op, tol):
             )  # compare matrix if its defined
         except qml.operation.OperatorPropertyUndefined:
             pass
+test = TestDecompositions()
+print(test)

@@ -186,6 +186,7 @@ def _create_commute_function():
         "IsingXX",
         "IsingYY",
         "IsingZZ",
+        "ECR"
     }
 
     def commutes_inner(op_name1, op_name2):
