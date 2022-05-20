@@ -40,7 +40,7 @@
 * Added new transform `qml.batch_partial` which behaves similarly to `functools.partial` but supports batching in the unevaluated parameters.
   [(#2585)](https://github.com/PennyLaneAI/pennylane/pull/2585)
 
-  This is useful for batching circuit executions with some identical parameters but not others:
+  This is useful for executing a circuit with a batch dimension in some of its parameters:
 
   ```python
   dev = qml.device("default.qubit", wires=1)
