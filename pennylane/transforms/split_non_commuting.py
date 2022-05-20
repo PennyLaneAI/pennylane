@@ -42,6 +42,7 @@ def split_non_commuting(tape):
         with qml.tape.QuantumTape() as tape:
             qml.expval(qml.PauliZ(0))
             qml.expval(qml.PauliY(0))
+
         tapes, processing_fn = qml.transforms.split_non_commuting(tape)
 
     Now ``tapes`` is a list of two tapes, each for one of the non-commuting terms:
