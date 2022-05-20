@@ -206,14 +206,6 @@ def _execute(
                 jacs = gradient_fn(new_tapes, **gradient_kwargs)
             return jacs
 
-        # TODO
-        if len(tapes) != len(params):
-            ValueError("")
-
-        # Old:
-        # shapes = [jax.ShapeDtypeStruct((1, len(p)), dtype) for p in params]
-
-        # New:
         shapes = [
             jax.ShapeDtypeStruct((len(t.measurements), len(p)), dtype)
             for t, p in zip(tapes, params)
