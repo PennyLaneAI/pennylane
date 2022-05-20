@@ -77,6 +77,9 @@
   method for a provided device and interface, in human-readable format.
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
 
+* Using `Operation.inv()` in a queuing environment no longer updates the queue's metadata, but merely updates
+  the operation in place.
+
 <h3>Breaking changes</h3>
 
 * The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.

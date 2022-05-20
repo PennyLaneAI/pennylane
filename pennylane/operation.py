@@ -1318,11 +1318,7 @@ class Operation(Operator):
         Returns:
             :class:`Operator`: operation to be inverted
         """
-        if qml.QueuingContext.recording():
-            current_inv = qml.QueuingContext.get_info(self).get("inverse", False)
-            qml.QueuingContext.update_info(self, inverse=not current_inv)
-        else:
-            self.inverse = not self._inverse
+        self.inverse = not self._inverse
         return self
 
     def matrix(self, wire_order=None):
