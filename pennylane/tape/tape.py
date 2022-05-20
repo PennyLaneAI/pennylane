@@ -27,21 +27,6 @@ from pennylane.measurements import Sample
 
 from .unwrap import UnwrapTape
 
-# CV ops still need to support state preparation operations prior to any
-# other operation for PennyLane-SF tests to pass.
-STATE_PREP_OPS = (
-    qml.BasisState,
-    qml.QubitStateVector,
-    # qml.CatState,
-    # qml.CoherentState,
-    # qml.FockDensityMatrix,
-    # qml.DisplacedSqueezedState,
-    # qml.FockState,
-    # qml.FockStateVector,
-    # qml.ThermalState,
-    # qml.GaussianState,
-)
-
 
 OPENQASM_GATES = {
     "CNOT": "cx",
@@ -80,6 +65,10 @@ Note that QASM has two native gates:
 All other gates are defined in the file stdgates.inc:
 https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 """
+
+
+class TapeError(ValueError):
+    """An error raised with a quantum tape."""
 
 
 def get_active_tape():
@@ -439,6 +428,10 @@ class QuantumTape(AnnotatedQueue):
     # construction methods
     # ========================================================
 
+    # This is a temporary attribute to fix the operator queuing behaviour.
+    # Tapes may be nested and therefore processed into the `_ops` list.
+    _queue_category = "_ops"
+
     def _process_queue(self):
         """Process the annotated queue, creating a list of quantum
         operations and measurement processes.
@@ -455,59 +448,23 @@ class QuantumTape(AnnotatedQueue):
         self._prep = []
         self._ops = []
         self._measurements = []
-        self._output_dim = 0
+        list_order = {"_prep": 0, "_ops": 1, "_measurements": 2}
+        current_list = "_prep"
 
         for obj, info in self._queue.items():
 
-            if isinstance(obj, QuantumTape):
-                self._ops.append(obj)
-
-            elif isinstance(obj, qml.operation.Operation) and not info.get("owner", False):
-                # operation objects with no owners
-
-                if self._measurements:
+            if "owner" not in info and getattr(obj, "_queue_category", None) is not None:
+                if list_order[obj._queue_category] > list_order[current_list]:
+                    current_list = obj._queue_category
+                elif list_order[obj._queue_category] < list_order[current_list]:
                     raise ValueError(
-                        f"Quantum operation {obj} must occur prior to any measurements."
+                        f"{obj._queue_category[1:]} operation {obj} must occur prior "
+                        f"to {current_list[1:]}. Please place earlier in the queue."
                     )
+                getattr(self, obj._queue_category).append(obj)
 
-                # invert the operation if required
-                obj.inverse = info.get("inverse", obj.inverse)
-
-                if isinstance(obj, STATE_PREP_OPS):
-                    if self._ops:
-                        raise ValueError(
-                            f"State preparation operation {obj} must occur prior to any quantum operations."
-                        )
-
-                    self._prep.append(obj)
-                else:
-                    self._ops.append(obj)
-
-            elif isinstance(obj, qml.measurements.MeasurementProcess):
-
-                if obj.return_type == qml.measurements.MidMeasure:
-
-                    # TODO: for now, consider mid-circuit measurements as tape
-                    # operations such that the order of the operators in the
-                    # tape is correct
-                    self._ops.append(obj)
-
-                else:
-
-                    # measurement process
-                    self._measurements.append(obj)
-
-                    # attempt to infer the output dimension
-                    if obj.return_type is qml.measurements.Probability:
-                        self._output_dim += 2 ** len(obj.wires)
-                    elif obj.return_type is qml.measurements.State:
-                        continue  # the output_dim is worked out automatically
-                    else:
-                        self._output_dim += 1
-
-                    # check if any sampling is occuring
-                    if obj.return_type is qml.measurements.Sample:
-                        self.is_sampled = True
+                if hasattr(obj, "inverse"):
+                    obj.inverse = info.get("inverse", obj.inverse)
 
         self._update()
 
@@ -520,7 +477,17 @@ class QuantumTape(AnnotatedQueue):
 
         self.is_sampled = any(m.return_type is Sample for m in self.measurements)
         self.all_sampled = all(m.return_type is Sample for m in self.measurements)
-        self.is_sampled = any(m.return_type is Sample for m in self.measurements)
+
+    def _update_output_dim(self):
+        self._output_dim = 0
+        for m in self.measurements:
+            # attempt to infer the output dimension
+            if m.return_type is qml.measurements.Probability:
+                # TODO: what if we had a CV device here? Having the base as
+                # 2 would have to be swapped to the cutoff value
+                self._output_dim += 2 ** len(m.wires)
+            elif m.return_type is not qml.measurements.State:
+                self._output_dim += 1
 
     def _update_observables(self):
         """Update information about observables, including the wires that are acted upon and
@@ -570,6 +537,7 @@ class QuantumTape(AnnotatedQueue):
         self._update_par_info()
         self._update_trainable_params()
         self._update_observables()
+        self._update_output_dim()
 
     def expand(self, depth=1, stop_at=None, expand_measurements=False):
         """Expand all operations in the processed queue to a specific depth.
@@ -827,7 +795,9 @@ class QuantumTape(AnnotatedQueue):
         p_idx = info["p_idx"]
         return op, p_idx
 
-    def get_parameters(self, trainable_only=True, **kwargs):  # pylint:disable=unused-argument
+    def get_parameters(
+        self, trainable_only=True, operations_only=False, **kwargs
+    ):  # pylint:disable=unused-argument
         """Return the parameters incident on the tape operations.
 
         The returned parameters are provided in order of appearance
@@ -835,6 +805,8 @@ class QuantumTape(AnnotatedQueue):
 
         Args:
             trainable_only (bool): if True, returns only trainable parameters
+            operations_only (bool): if True, returns only the parameters of the
+                operations excluding parameters to observables of measurements
 
         **Example**
 
@@ -870,6 +842,9 @@ class QuantumTape(AnnotatedQueue):
 
         for p_idx in iterator:
             op = self._par_info[p_idx]["op"]
+            if operations_only and hasattr(op, "return_type"):
+                continue
+
             op_idx = self._par_info[p_idx]["p_idx"]
             params.append(op.data[op_idx])
         return params
@@ -929,6 +904,245 @@ class QuantumTape(AnnotatedQueue):
         for idx, p in iterator:
             op = self._par_info[idx]["op"]
             op.data[self._par_info[idx]["p_idx"]] = p
+
+    @staticmethod
+    def _single_measurement_shape(measurement_process, device):
+        """Auxiliary function of shape that determines the output
+        shape of a tape with a single measurement.
+
+        Args:
+            measurement_process (MeasurementProcess): the measurement process
+                associated with the single measurement
+            device (~.Device): a PennyLane device
+
+        Returns:
+            tuple: output shape
+        """
+        return measurement_process.shape(device)
+
+    @staticmethod
+    def _multi_homogenous_measurement_shape(mps, device):
+        """Auxiliary function of shape that determines the output
+        shape of a tape with multiple homogenous measurements.
+
+        .. note::
+
+            Assuming multiple probability measurements where not all
+            probability measurements have the same number of wires specified,
+            the output shape of the tape is a sum of the output shapes produced
+            by each probability measurement.
+
+            Consider the `qml.probs(wires=[0]), qml.probs(wires=[1,2])`
+            multiple probability measurement with an analytic device as an
+            example.
+
+            The output shape will be a one element tuple `(6,)`, where the
+            element `6` is equal to `2 ** 1 + 2 ** 2 = 6`. The base of each
+            term is determined by the number of basis states and the exponent
+            of each term comes from the length of the wires specified for the
+            probability measurements: `1 == len([0]) and 2 == len([1, 2])`.
+        """
+        shape = tuple()
+
+        # We know that there's one type of return_type, gather it from the
+        # first one
+        ret_type = mps[0].return_type
+        if ret_type == qml.measurements.State:
+            raise TapeError(
+                "Getting the output shape of a tape with multiple state measurements is not supported."
+            )
+
+        shot_vector = device._shot_vector
+        if shot_vector is None:
+            if ret_type in (qml.measurements.Expectation, qml.measurements.Variance):
+
+                shape = (len(mps),)
+
+            elif ret_type == qml.measurements.Probability:
+
+                wires_num_set = {len(meas.wires) for meas in mps}
+                same_num_wires = len(wires_num_set) == 1
+                if same_num_wires:
+                    # All probability measurements have the same number of
+                    # wires, gather the length from the first one
+
+                    len_wires = len(mps[0].wires)
+                    dim = mps[0]._get_num_basis_states(len_wires, device)
+                    shape = (len(mps), dim)
+
+                else:
+                    # There are a varying number of wires that the probability
+                    # measurement processes act on
+                    shape = (sum(2 ** len(m.wires) for m in mps),)
+
+            elif ret_type == qml.measurements.Sample:
+
+                shape = (len(mps), device.shots)
+
+            # No other measurement type to check
+
+        else:
+            shape = QuantumTape._shape_shot_vector_multi_homogenous(mps, device)
+
+        return shape
+
+    @staticmethod
+    def _shape_shot_vector_multi_homogenous(mps, device):
+        """Auxiliary function for determining the output shape of the tape for
+        multiple homogenous measurements for a device with a shot vector.
+
+        Note: it is assumed that getting the output shape of a tape with
+        multiple state measurements is not supported.
+        """
+        shape = tuple()
+
+        ret_type = mps[0].return_type
+        shot_vector = device._shot_vector
+
+        # Shot vector was defined
+        if ret_type in (qml.measurements.Expectation, qml.measurements.Variance):
+            num = sum(shottup.copies for shottup in shot_vector)
+            shape = (num, len(mps))
+
+        elif ret_type == qml.measurements.Probability:
+
+            wires_num_set = {len(meas.wires) for meas in mps}
+            same_num_wires = len(wires_num_set) == 1
+            if same_num_wires:
+                # All probability measurements have the same number of
+                # wires, gather the length from the first one
+
+                len_wires = len(mps[0].wires)
+                dim = mps[0]._get_num_basis_states(len_wires, device)
+                shot_copies_sum = sum(s.copies for s in shot_vector)
+                shape = (shot_copies_sum, len(mps), dim)
+
+            else:
+                # There is a varying number of wires that the probability
+                # measurement processes act on
+                # TODO: revisit when issues with this case are resolved
+                raise TapeError(
+                    "Getting the output shape of a tape with multiple probability measurements "
+                    "along with a device that defines a shot vector is not supported."
+                )
+
+        elif ret_type == qml.measurements.Sample:
+            shape = []
+            for shot_val in device.shot_vector:
+                for _ in range(shot_val.copies):
+                    shots = shot_val.shots
+                    if shots != 1:
+                        shape.append(tuple([shots, len(mps)]))
+                    else:
+                        shape.append((len(mps),))
+        return shape
+
+    def shape(self, device):
+        """Produces the output shape of the tape by inspecting its measurements
+        and the device used for execution.
+
+        .. note::
+
+            The computed shape is not stored because the output shape may be
+            dependent on the device used for execution.
+
+        Args:
+            device (.Device): the device that will be used for the tape execution
+
+        Raises:
+            TapeError: raised for unsupported cases for
+                example when the tape contains heterogeneous measurements
+
+        Returns:
+            Union[tuple[int], list[tuple[int]]]: the output shape(s) of the
+            tape result
+
+        **Example:**
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2)
+            a = np.array([0.1, 0.2, 0.3])
+
+            def func(a):
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+
+            with qml.tape.QuantumTape() as tape:
+                func(a)
+                qml.state()
+
+        .. code-block:: pycon
+
+            >>> tape.shape(dev)
+            (1, 4)
+        """
+        output_shape = tuple()
+
+        if len(self._measurements) == 1:
+            output_shape = self._single_measurement_shape(self._measurements[0], device)
+        else:
+            num_measurements = len(set(meas.return_type for meas in self._measurements))
+            if num_measurements == 1:
+                output_shape = self._multi_homogenous_measurement_shape(self._measurements, device)
+            else:
+                raise TapeError(
+                    "Getting the output shape of a tape that contains multiple types of measurements is unsupported."
+                )
+        return output_shape
+
+    @property
+    def numeric_type(self):
+        """Returns the expected numeric type of the tape result by inspecting
+        its measurements.
+
+        Raises:
+            TapeError: raised for unsupported cases for
+                example when the tape contains heterogeneous measurements
+
+        Returns:
+            type: the numeric type corresponding to the result type of the
+            tape
+
+        **Example:**
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2)
+            a = np.array([0.1, 0.2, 0.3])
+
+            def func(a):
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+
+            with qml.tape.QuantumTape() as tape:
+                func(a)
+                qml.state()
+
+        .. code-block:: pycon
+
+            >>> tape.numeric_type
+            complex
+        """
+        measurement_types = set(meas.return_type for meas in self._measurements)
+        if len(measurement_types) > 1:
+            raise TapeError(
+                "Getting the numeric type of a tape that contains multiple types of measurements is unsupported."
+            )
+
+        if list(measurement_types)[0] == qml.measurements.Sample:
+
+            for observable in self._measurements:
+                # Note: if one of the sample measurements contains outputs that
+                # are real, then the entire result will be real
+                if observable.numeric_type == float:
+                    return observable.numeric_type
+
+            return int
+
+        return self._measurements[0].numeric_type
 
     def unwrap(self):
         """A context manager that unwraps a tape with tensor-like parameters
@@ -1232,8 +1446,8 @@ class QuantumTape(AnnotatedQueue):
                 if op.inverse:
                     op.inv()
 
-        # pylint: disable=no-member
         # decompose the queue
+        # pylint: disable=no-member
         operations = tape.expand(depth=2, stop_at=lambda obj: obj.name in OPENQASM_GATES).operations
 
         # create the QASM code representing the operations

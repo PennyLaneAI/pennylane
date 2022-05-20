@@ -38,6 +38,7 @@ from pennylane.measurements import (
     MeasurementProcess,
     MeasurementValue,
     MeasurementValueError,
+    MeasurementShapeError,
 )
 
 
@@ -120,6 +121,35 @@ class TestExpval:
 
         circuit()
 
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_numeric_type(self, obs):
+        """Test that the numeric type is correct."""
+        res = qml.expval(obs)
+        assert res.numeric_type is float
+
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_shape(self, obs):
+        """Test that the shape is correct."""
+        res = qml.expval(obs)
+        assert res.shape() == (1,)
+
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_shape_shot_vector(self, obs):
+        """Test that the shape is correct with the shot vector too."""
+        res = qml.expval(obs)
+        shot_vector = (1, 2, 3)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        assert res.shape(dev) == (len(shot_vector),)
+
 
 class TestVar:
     """Tests for the var function"""
@@ -166,6 +196,74 @@ class TestVar:
             return res
 
         circuit()
+
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_numeric_type(self, obs):
+        """Test that the numeric type is correct."""
+        res = qml.var(obs)
+        assert res.numeric_type is float
+
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_shape(self, obs):
+        """Test that the shape is correct."""
+        res = qml.var(obs)
+        assert res.shape() == (1,)
+
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_shape_shot_vector(self, obs):
+        """Test that the shape is correct with the shot vector too."""
+        res = qml.var(obs)
+        shot_vector = (1, 2, 3)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        assert res.shape(dev) == (len(shot_vector),)
+
+
+class TestProbs:
+    """Tests for the probs function"""
+
+    @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
+    def test_numeric_type(self, wires):
+        """Test that the numeric type is correct."""
+        res = qml.probs(wires=wires)
+        assert res.numeric_type is float
+
+    @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
+    @pytest.mark.parametrize("shots", [None, 10])
+    def test_shape(self, wires, shots):
+        """Test that the shape is correct."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+        res = qml.probs(wires=wires)
+        assert res.shape(dev) == (1, 2 ** len(wires))
+
+    @pytest.mark.parametrize("wires", [[0], [2, 1], ["a", "c", 3]])
+    def test_shape_shot_vector(self, wires):
+        """Test that the shape is correct with the shot vector too."""
+        res = qml.probs(wires=wires)
+        shot_vector = (1, 2, 3)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        assert res.shape(dev) == (len(shot_vector), 2 ** len(wires))
+
+    @pytest.mark.parametrize(
+        "measurement",
+        [qml.probs(wires=[0]), qml.state(), qml.sample(qml.PauliZ(0))],
+    )
+    def test_shape_no_device_error(self, measurement):
+        """Test that an error is raised if a device is not passed when querying
+        the shape of certain measurements."""
+        with pytest.raises(
+            MeasurementShapeError,
+            match="requires the device argument to be passed to obtain the shape",
+        ):
+            measurement.shape()
 
 
 class TestSample:
@@ -332,6 +430,80 @@ class TestSample:
             return res
 
         circuit()
+
+    @pytest.mark.parametrize(
+        "obs,exp",
+        [
+            # Single observables
+            (None, int),  # comp basis samples
+            (qml.PauliX(0), int),
+            (qml.PauliY(0), int),
+            (qml.PauliZ(0), int),
+            (qml.Hadamard(0), int),
+            (qml.Identity(0), int),
+            (qml.Hermitian(np.diag([1, 2]), 0), float),
+            (qml.Hermitian(np.diag([1.0, 2.0]), 0), float),
+            # Tensor product observables
+            (
+                qml.PauliX("c")
+                @ qml.PauliY("a")
+                @ qml.PauliZ(1)
+                @ qml.Hadamard("wire1")
+                @ qml.Identity("b"),
+                int,
+            ),
+            (qml.Projector([0, 1], wires=[0, 1]) @ qml.PauliZ(2), float),
+            (qml.Hermitian(np.array(np.eye(2)), wires=[0]) @ qml.PauliZ(2), float),
+            (
+                qml.Projector([0, 1], wires=[0, 1]) @ qml.Hermitian(np.array(np.eye(2)), wires=[2]),
+                float,
+            ),
+        ],
+    )
+    def test_numeric_type(self, obs, exp):
+        """Test that the numeric type is correct."""
+        res = qml.sample(obs) if obs is not None else qml.sample()
+        assert res.numeric_type is exp
+
+    @pytest.mark.parametrize(
+        "obs",
+        [
+            None,
+            qml.PauliZ(0),
+            qml.Hermitian(np.diag([1, 2]), 0),
+            qml.Hermitian(np.diag([1.0, 2.0]), 0),
+        ],
+    )
+    def test_shape(self, obs):
+        """Test that the shape is correct."""
+        shots = 10
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+        res = qml.sample(obs) if obs is not None else qml.sample()
+        expected = (1, shots) if obs is not None else (1, shots, 3)
+        assert res.shape(dev) == expected
+
+    @pytest.mark.parametrize(
+        "obs",
+        [qml.PauliZ(0), qml.Hermitian(np.diag([1, 2]), 0), qml.Hermitian(np.diag([1.0, 2.0]), 0)],
+    )
+    def test_shape_shot_vector(self, obs):
+        """Test that the shape is correct with the shot vector too."""
+        shot_vector = (1, 2, 3)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        res = qml.sample(obs)
+        expected = ((), (2,), (3,))
+        assert res.shape(dev) == expected
+
+    def test_shape_shot_vector_no_obs(self):
+        """Test that the shape is correct with the shot vector too."""
+        shot_vector = (1, 2, 3)
+        dev = qml.device("default.qubit", wires=3, shots=shot_vector)
+        res = qml.sample()
+        with pytest.raises(
+            qml.measurements.MeasurementShapeError,
+            match="Getting the output shape of a measurement returning samples along with a device with a shot vector is not supported.",
+        ):
+            res.shape(dev)
 
 
 class TestMeasure:
@@ -552,11 +724,11 @@ class TestProperties:
         obs = qml.Hermitian(np.diag([1, 2, 3]), wires=[0, 1, 2])
         m = MeasurementProcess(Expectation, obs=obs)
 
-        assert np.all(m.get_eigvals() == np.array([1, 2, 3]))
+        assert np.all(m.eigvals() == np.array([1, 2, 3]))
 
         # changing the observable data should be reflected
         obs.data = [np.diag([5, 6, 7])]
-        assert np.all(m.get_eigvals() == np.array([5, 6, 7]))
+        assert np.all(m.eigvals() == np.array([5, 6, 7]))
 
     def test_error_obs_and_eigvals(self):
         """Test that providing both eigenvalues and an observable
@@ -579,7 +751,7 @@ class TestProperties:
         the eigvals method to return a NotImplementedError"""
         obs = qml.NumberOperator(wires=0)
         m = MeasurementProcess(Expectation, obs=obs)
-        assert m.get_eigvals() is None
+        assert m.eigvals() is None
 
     def test_repr(self):
         """Test the string representation of a MeasurementProcess."""
@@ -616,7 +788,7 @@ class TestExpansion:
         assert len(tape.measurements) == 1
         assert tape.measurements[0].return_type is Expectation
         assert tape.measurements[0].wires.tolist() == [0, 1]
-        assert np.all(tape.measurements[0].get_eigvals() == np.array([1, -1, -1, 1]))
+        assert np.all(tape.measurements[0].eigvals() == np.array([1, -1, -1, 1]))
 
     def test_expand_hermitian(self, tol):
         """Test the expansion of an hermitian observable"""
@@ -640,7 +812,7 @@ class TestExpansion:
         assert len(tape.measurements) == 1
         assert tape.measurements[0].return_type is Expectation
         assert tape.measurements[0].wires.tolist() == ["a"]
-        assert np.all(tape.measurements[0].get_eigvals() == np.array([0, 5]))
+        assert np.all(tape.measurements[0].eigvals() == np.array([0, 5]))
 
     def test_expand_no_observable(self):
         """Check that an exception is raised if the measurement to
@@ -755,8 +927,8 @@ class TestState:
         state_val = func()
         assert np.allclose(state_val, func.device.state)
 
-    @pytest.mark.usefixtures("skip_if_no_tf_support")
-    def test_interface_tf(self, skip_if_no_tf_support):
+    @pytest.mark.tf
+    def test_interface_tf(self):
         """Test that the state correctly outputs in the tensorflow interface"""
         import tensorflow as tf
 
@@ -776,9 +948,10 @@ class TestState:
         assert np.allclose(state_expected, state_val.numpy())
         assert state_val.shape == (16,)
 
+    @pytest.mark.torch
     def test_interface_torch(self):
         """Test that the state correctly outputs in the torch interface"""
-        torch = pytest.importorskip("torch", minversion="1.6")
+        import torch
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -796,6 +969,7 @@ class TestState:
         assert torch.allclose(state_expected, state_val)
         assert state_val.shape == (16,)
 
+    @pytest.mark.autograd
     def test_jacobian_not_supported(self):
         """Test if an error is raised if the jacobian method is called via qml.grad"""
         dev = qml.device("default.qubit", wires=4)
@@ -842,16 +1016,12 @@ class TestState:
         with pytest.raises(qml.QuantumFunctionError, match="Returning the state is not supported"):
             func()
 
-    @pytest.mark.usefixtures("skip_if_no_tf_support")
-    @pytest.mark.parametrize(
-        "device", ["default.qubit", "default.qubit.tf", "default.qubit.autograd"]
-    )
     @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
-    def test_devices(self, device, diff_method, skip_if_no_tf_support):
+    def test_default_qubit(self, diff_method):
         """Test that the returned state is equal to the expected returned state for all of
         PennyLane's built in statevector devices"""
 
-        dev = qml.device(device, wires=4)
+        dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev, diff_method=diff_method)
         def func():
@@ -865,8 +1035,48 @@ class TestState:
         assert np.allclose(state_val, state_expected)
         assert np.allclose(state_val, dev.state)
 
-    @pytest.mark.usefixtures("skip_if_no_tf_support")
-    def test_gradient_with_passthru_tf(self, skip_if_no_tf_support):
+    @pytest.mark.tf
+    @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
+    def test_default_qubit_tf(self, diff_method):
+        """Test that the returned state is equal to the expected returned state for all of
+        PennyLane's built in statevector devices"""
+
+        dev = qml.device("default.qubit.tf", wires=4)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return state()
+
+        state_val = func()
+        state_expected = 0.25 * np.ones(16)
+
+        assert np.allclose(state_val, state_expected)
+        assert np.allclose(state_val, dev.state)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("diff_method", ["best", "finite-diff", "parameter-shift"])
+    def test_default_qubit_autograd(self, diff_method):
+        """Test that the returned state is equal to the expected returned state for all of
+        PennyLane's built in statevector devices"""
+
+        dev = qml.device("default.qubit.autograd", wires=4)
+
+        @qml.qnode(dev, diff_method=diff_method)
+        def func():
+            for i in range(4):
+                qml.Hadamard(i)
+            return state()
+
+        state_val = func()
+        state_expected = 0.25 * np.ones(16)
+
+        assert np.allclose(state_val, state_expected)
+        assert np.allclose(state_val, dev.state)
+
+    @pytest.mark.tf
+    def test_gradient_with_passthru_tf(self):
         """Test that the gradient of the state is accessible when using default.qubit.tf with the
         backprop diff_method."""
         import tensorflow as tf
@@ -887,6 +1097,7 @@ class TestState:
         expected = tf.stack([-0.5 * tf.sin(x / 2), 0.5 * tf.cos(x / 2)])
         assert np.allclose(grad, expected)
 
+    @pytest.mark.autograd
     def test_gradient_with_passthru_autograd(self):
         """Test that the gradient of the state is accessible when using default.qubit.autograd
         with the backprop diff_method."""
@@ -926,6 +1137,39 @@ class TestState:
 
         with pytest.raises(qml.QuantumFunctionError, match="custom wire labels"):
             func()
+
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_shape(self, shots):
+        """Test that the shape is correct for qml.state."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+        res = qml.state()
+        assert res.shape(dev) == (1, 2**3)
+
+    @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
+    def test_shape_shot_vector(self, s_vec):
+        """Test that the shape is correct for qml.state with the shot vector too."""
+        dev = qml.device("default.qubit", wires=3, shots=s_vec)
+        res = qml.state()
+        assert res.shape(dev) == (3, 2**3)
+
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_shape(self, shots):
+        """Test that the shape is correct for qml.density_matrix."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+        res = qml.density_matrix(wires=[0, 1])
+        assert res.shape(dev) == (1, 2**2, 2**2)
+
+    @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
+    def test_shape_shot_vector(self, s_vec):
+        """Test that the shape is correct for qml.density_matrix with the shot vector too."""
+        dev = qml.device("default.qubit", wires=3, shots=s_vec)
+        res = qml.density_matrix(wires=[0, 1])
+        assert res.shape(dev) == (3, 2**2, 2**2)
+
+    def test_numeric_type(self):
+        """Test that the numeric type of state measurements."""
+        assert qml.state().numeric_type == complex
+        assert qml.density_matrix(wires=[0, 1]).numeric_type == complex
 
 
 class TestDensityMatrix:

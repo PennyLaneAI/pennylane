@@ -58,7 +58,8 @@ class SimplifiedTwoDesign(Operation):
         wires (Iterable): wires that the template acts on
 
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         template - here shown for two layers - is used inside a :class:`QNode <pennylane.QNode>`:
 

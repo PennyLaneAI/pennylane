@@ -49,13 +49,13 @@ def expand_with_control(tape, control_wire):
             else:
                 # Attempt to decompose the operation and apply
                 # controls to each gate in the decomposition.
-                with new_tape.stop_recording():
+                with new_tape.stop_recording():  # pylint:disable=no-member
                     try:
                         tmp_tape = op.expand()
                     except DecompositionUndefinedError:
                         with QuantumTape() as tmp_tape:
                             qml.ControlledQubitUnitary(
-                                op.get_matrix(), control_wires=control_wire, wires=op.wires
+                                op.matrix(), control_wires=control_wire, wires=op.wires
                             )
 
                 tmp_tape = expand_with_control(tmp_tape, control_wire)
@@ -155,7 +155,7 @@ class ControlledOperation(Operation):
             tape = ctrl_tape
         return tape
 
-    def adjoint(self):
+    def adjoint(self, do_queue=True):
         """Returns a new ControlledOperation that is equal to the adjoint of `self`"""
 
         active_tape = get_active_tape()
@@ -171,7 +171,9 @@ class ControlledOperation(Operation):
                 # Execute all ops adjointed.
                 adjoint(requeue_ops_in_tape)(self.subtape)
 
-        return ControlledOperation(new_tape, self.control_wires, control_values=self.control_values)
+        return ControlledOperation(
+            new_tape, self.control_wires, control_values=self.control_values, do_queue=do_queue
+        )
 
     def _controlled(self, wires):
         new_values = [1] * len(Wires(wires))
@@ -188,7 +190,8 @@ def ctrl(fn, control, control_values=None):
     Args:
         fn (function): Any python function that applies pennylane operations.
         control (Wires): The control wire(s).
-        control_values (list[int]): The values the control wire(s) should take.
+        control_values (int or list[int]): The value(s) the control wire(s) should take.
+            Integers other than 0 or 1 will be treated as ``int(bool(x))``.
 
     Returns:
         function: A new function that applies the controlled equivalent of ``fn``. The returned
@@ -240,13 +243,14 @@ def ctrl(fn, control, control_values=None):
 
     .. Note::
 
-        Some devices are able to take advantage of the inherient sparsity of a
+        Some devices are able to take advantage of the inherent sparsity of a
         controlled operation. In those cases, it may be more efficient to use
         this transform rather than adding controls by hand. For devices that don't
         have special control support, the operation is expanded to add control wires
         to each underlying op individually.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Nesting Controls**
 
@@ -255,8 +259,8 @@ def ctrl(fn, control, control_values=None):
         .. code-block:: python3
 
             # These two ops are equivalent.
-            op1 = qml.ctrl(qml.ctrl(my_ops, 1), 2)
-            op2 = qml.ctrl(my_ops, [2, 1])
+            op1 = qml.ctrl(qml.ctrl(ops, 1), 2)
+            op2 = qml.ctrl(ops, [2, 1])
 
         **Control Value Assignment**
 
@@ -264,16 +268,16 @@ def ctrl(fn, control, control_values=None):
 
         .. code-block:: python3
 
-            op = qml.ctrl(qml.ctrl(my_ops, 1), 2, control_values=0)
-            op()
+            op = qml.ctrl(ops, 2, control_values=0)
+            op(params=[0.1, 0.2])
 
         This is equivalent to the following.
 
         .. code-block:: python3
 
             qml.PauliX(wires=2)
-            op = qml.ctrl(qml.ctrl(my_ops, 1), 2)
-            op()
+            op = qml.ctrl(ops, 2)
+            op(params=[0.1, 0.2])
             qml.PauliX(wires=2)
 
     """

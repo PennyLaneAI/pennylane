@@ -62,7 +62,8 @@ class QuantumPhaseEstimation(Operation):
         QuantumFunctionError: if the ``target_wires`` and ``estimation_wires`` share a common
             element
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Consider the matrix corresponding to a rotation from an :class:`~.RX` gate:
 
@@ -74,7 +75,7 @@ class QuantumPhaseEstimation(Operation):
 
             phase = 5
             target_wires = [0]
-            unitary = qml.RX(phase, wires=0).get_matrix()
+            unitary = qml.RX(phase, wires=0).matrix()
 
         The ``phase`` parameter can be estimated using ``QuantumPhaseEstimation``. An example is
         shown below using a register of five phase-estimation qubits:
@@ -170,7 +171,7 @@ class QuantumPhaseEstimation(Operation):
 
         return op_list
 
-    def adjoint(self):  # pylint: disable=arguments-differ
+    def adjoint(self):
         adjoint_op = QuantumPhaseEstimation(
             self.parameters[0],
             target_wires=self.hyperparameters["target_wires"],

@@ -79,10 +79,6 @@ class DefaultQubit(QubitDevice):
         shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to ``None`` if not specified, which means that the device
             returns analytical results.
-        cache (int): Number of device executions to store in a cache to speed up subsequent
-            executions. A value of ``0`` indicates that no caching will take place. Once filled,
-            older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date.
     """
 
     name = "Default qubit PennyLane plugin"
@@ -155,8 +151,10 @@ class DefaultQubit(QubitDevice):
         "Hamiltonian",
     }
 
-    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
-        super().__init__(wires, shots, cache=cache, analytic=analytic)
+    def __init__(
+        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
+    ):
+        super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
 
         # Create the initial state. Internally, we store the
@@ -250,7 +248,7 @@ class DefaultQubit(QubitDevice):
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
 
-        matrix = self._get_unitary_matrix(operation)
+        matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 
         if operation in diagonal_in_z_basis:
             return self._apply_diagonal_unitary(state, matrix, wires)
@@ -315,7 +313,7 @@ class DefaultQubit(QubitDevice):
         """
         state_x = self._apply_x(state, axes)
         state_z = self._apply_z(state, axes)
-        return SQRT2INV * (state_x + state_z)
+        return self._const_mul(SQRT2INV, state_x + state_z)
 
     def _apply_s(self, state, axes, inverse=False):
         return self._apply_phase(state, axes, 1j, inverse)
@@ -462,7 +460,7 @@ class DefaultQubit(QubitDevice):
         sl_1 = _get_slice(1, axes[0], num_wires)
 
         phase = self._conj(parameters) if inverse else parameters
-        return self._stack([state[sl_0], phase * state[sl_1]], axis=axes[0])
+        return self._stack([state[sl_0], self._const_mul(phase, state[sl_1])], axis=axes[0])
 
     def expval(self, observable, shot_range=None, bin_size=None):
         """Returns the expectation value of a Hamiltonian observable. When the observable is a
@@ -555,9 +553,9 @@ class DefaultQubit(QubitDevice):
             a 1D array representing the matrix diagonal.
         """
         if unitary in diagonal_in_z_basis:
-            return unitary.get_eigvals()
+            return unitary.eigvals()
 
-        return unitary.get_matrix()
+        return unitary.matrix()
 
     @classmethod
     def capabilities(cls):

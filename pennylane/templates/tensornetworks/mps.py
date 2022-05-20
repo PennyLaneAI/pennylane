@@ -80,10 +80,11 @@ class MPS(Operation):
 
     .. note::
 
-        The expected number of blocks can be obtained from ``qml.MPS.n_blocks(wires, n_block_wires)``.
+        The expected number of blocks can be obtained from ``qml.MPS.get_n_blocks(wires, n_block_wires)``.
         The length of ``template_weights`` argument should match the number of blocks.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         This example demonstrates the use of ``MPS`` for a simple block.
 

@@ -151,7 +151,12 @@ class QubitUnitary(Operation):
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
 
     def adjoint(self):
-        return QubitUnitary(qml.math.T(qml.math.conj(self.get_matrix())), wires=self.wires)
+        return QubitUnitary(qml.math.T(qml.math.conj(self.matrix())), wires=self.wires)
+
+    def pow(self, z):
+        if isinstance(z, int):
+            return [QubitUnitary(qml.math.linalg.matrix_power(self.matrix(), z), wires=self.wires)]
+        return super().pow(z)
 
     def _controlled(self, wire):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
@@ -317,6 +322,17 @@ class ControlledQubitUnitary(QubitUnitary):
     def control_wires(self):
         return self.hyperparameters["control_wires"]
 
+    def pow(self, z):
+        if isinstance(z, int):
+            return [
+                ControlledQubitUnitary(
+                    qml.math.linalg.matrix_power(self.data[0], z),
+                    control_wires=self.control_wires,
+                    wires=self.hyperparameters["u_wires"],
+                )
+            ]
+        return super().pow(z)
+
     def _controlled(self, wire):
         ctrl_wires = sorted(self.control_wires + wire)
         ControlledQubitUnitary(
@@ -403,7 +419,9 @@ class DiagonalQubitUnitary(Operation):
         """
         D = qml.math.asarray(D)
 
-        if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):
+        if not qml.math.is_abstract(D) and not qml.math.allclose(
+            D * qml.math.conj(D), qml.math.ones_like(D)
+        ):
             raise ValueError("Operator must be unitary.")
 
         return D
@@ -437,9 +455,15 @@ class DiagonalQubitUnitary(Operation):
     def adjoint(self):
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
 
+    def pow(self, z):
+        if isinstance(self.data[0], list):
+            return [DiagonalQubitUnitary([(x + 0.0j) ** z for x in self.data[0]], wires=self.wires)]
+        casted_data = qml.math.cast(self.data[0], np.complex128)
+        return [DiagonalQubitUnitary(casted_data**z, wires=self.wires)]
+
     def _controlled(self, control):
         DiagonalQubitUnitary(
-            qml.math.concatenate([np.array([1, 1]), self.parameters[0]]),
+            qml.math.concatenate([np.ones_like(self.parameters[0]), self.parameters[0]]),
             wires=Wires(control) + self.wires,
         )
 

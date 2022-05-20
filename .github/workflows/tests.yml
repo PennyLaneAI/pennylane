@@ -13,17 +13,28 @@ env:
 
 
 jobs:
-  core-tests:
+  core-and-interface-tests:
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
         config:
-          - {python-version: 3.7, interfaces: ['torch']}
-          - {python-version: 3.7, interfaces: ['tf']}
-          - {python-version: 3.8, interfaces: ['tf', 'torch', 'jax']}
-          - {python-version: 3.9, interfaces: []}
-          - {python-version: '3.10', interfaces: []}
+          - {python-version: 3.7, suite: 'torch'}
+          - {python-version: 3.7, suite: 'tf'}
+          - {python-version: 3.8, suite: 'tf'}
+          - {python-version: 3.8, suite: 'torch'}
+          - {python-version: 3.8, suite: 'jax'}
+          - {python-version: 3.7, suite: 'autograd'}
+          - {python-version: 3.8, suite: 'autograd'}
+          - {python-version: 3.9, suite: 'autograd'}
+          - {python-version: '3.10', suite: 'autograd'}
+          - {python-version: 3.7, suite: 'core'}
+          - {python-version: 3.8, suite: 'core'}
+          - {python-version: 3.9, suite: 'core'}
+          - {python-version: '3.10', suite: 'core'}
+
+    env:
+      SUITE: ${{ matrix.config.suite }}
 
     steps:
       - name: Cancel Previous Runs
@@ -44,24 +55,21 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-ci.txt
-          pip install wheel pytest pytest-cov pytest-mock flaky --upgrade
+          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
 
       - name: Conditionally install PyTorch
-        if: contains(matrix.config.interfaces, 'torch')
+        if: matrix.config.suite == 'torch'
         run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Conditionally install TensorFlow
-        if: contains(matrix.config.interfaces, 'tf')
+        if: matrix.config.suite == 'tf'
         run: pip3 install tensorflow==$TF_VERSION keras==$TF_VERSION
 
       # Jax releases new version very frequently, so we should always build
       # to the latest release. We can always fix a version later if it breaks.
       - name: Conditionally install JAX
-        if: contains(matrix.config.interfaces, 'jax')
+        if: matrix.config.suite == 'jax'
         run: pip3 install jax jaxlib
-
-      - name: Install KaHyPar
-        run: pip3 install kahypar==1.1.7
 
       - name: Install PennyLane
         run: |
@@ -73,16 +81,167 @@ jobs:
         run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
-        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS
+        run: python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m "$SUITE" -n auto
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
 
+  all-interfaces-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci.txt
+          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
+
+      - name: Install PyTorch
+        run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Install TensorFlow
+        run: pip3 install tensorflow==$TF_VERSION keras==$TF_VERSION
+
+      - name: Install JAX
+        run: pip3 install jax jaxlib
+
+      - name: Install PennyLane
+        run: |
+          pip install -r requirements-ci.txt
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m all_interfaces -n auto
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+
+  qcut:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci.txt
+          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
+
+      - name: Install PyTorch
+        run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
+
+      - name: Install TensorFlow
+        run: pip3 install tensorflow==$TF_VERSION keras==$TF_VERSION
+
+      - name: Install JAX
+        run: pip3 install jax jaxlib
+
+      - name: Install KaHyPar
+        run: pip3 install kahypar==1.1.7
+
+      - name: Install PennyLane
+        run: |
+          pip install -r requirements-ci.txt
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m qcut -n auto
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+
+  qchem:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ github.token }}
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          # Based on previous experience, PySCF installation might fail or take
+          # longer time with some python versions
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-ci.txt
+          pip install wheel pytest pytest-cov pytest-mock pytest-xdist flaky --upgrade
+
+      - name: Install openfermionpyscf
+        run: pip3 install openfermionpyscf
+
+      - name: Install PennyLane
+        run: |
+          pip install -r requirements-ci.txt
+          python setup.py bdist_wheel
+          pip install dist/PennyLane*.whl
+
+      - name: Run tests
+        run: |
+          python -m pytest tests --cov=pennylane $COVERAGE_FLAGS -m qchem -n auto
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
 
   device-tests:
     runs-on: ubuntu-latest
@@ -146,56 +305,6 @@ jobs:
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
-
-
-  qchem-tests:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.4.1
-        with:
-          access_token: ${{ github.token }}
-
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 2
-
-      - name: Setup conda
-        uses: s-weigand/setup-conda@v1
-        with:
-          activate-conda: true
-          python-version: 3.7
-          conda-channels: anaconda, conda-forge
-
-      - name: Install dependencies
-        run: |
-          conda install psi4 psi4-rt python=3.7 -c psi4
-          pip uninstall h5py -y
-          pip install pytest pytest-cov pytest-mock flaky h5py==3.2.1
-
-      - name: Install QChem
-        run: |
-          pip install -r requirements-ci.txt
-          python setup.py bdist_wheel
-          pip install dist/PennyLane*.whl
-          cd qchem && python setup.py bdist_wheel && cd ../
-          pip install qchem/dist/PennyLane_Qchem*.whl
-
-      - name: Run tests
-        run: |
-          python -m pytest tests/hf --cov=pennylane $COVERAGE_FLAGS
-          cd qchem && python -m pytest tests --cov=pennylane_qchem $COVERAGE_FLAGS
-
-      - name: Upload HF coverage to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          file: ./coverage.xml
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          file: ./qchem/coverage.xml

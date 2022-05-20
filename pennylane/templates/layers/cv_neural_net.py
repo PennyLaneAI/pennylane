@@ -61,7 +61,8 @@ class CVNeuralNetLayers(Operation):
         k (tensor_like): shape :math:`(L, M)` tensor of kerr parameters for :class:`~pennylane.ops.Kerr` operations
         wires (Iterable): wires that the template acts on
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Parameter shapes**
 
@@ -253,7 +254,7 @@ class CVNeuralNetLayers(Operation):
 
         return shapes
 
-    def adjoint(self):  # pylint: disable=arguments-differ
+    def adjoint(self):
         adjoint_op = CVNeuralNetLayers(*self.parameters, wires=self.wires)
         adjoint_op.inverse = not self.inverse
         return adjoint_op

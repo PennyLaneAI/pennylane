@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the jax interface"""
-import functools
 
 import pytest
+
+pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -472,6 +473,31 @@ class TestJaxExecuteIntegration:
         expected = -2 * np.sin(2 * a)
         assert np.allclose(jac, expected, atol=tol, rtol=0)
 
+    def test_jit_grad_with_backward_mode(self, execute_kwargs, interface):
+        """Test jax jit grad for adjoint diff method in backward mode"""
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+        expected_results = jnp.array([-0.3875172, -0.18884787, -0.38355705])
+
+        def cost(a, cache):
+            with qml.tape.QuantumTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.expval(qml.PauliZ(0))
+
+            res = qml.interfaces.execute(
+                [tape], dev, cache=cache, interface=interface, **execute_kwargs
+            )[0]
+            return res[0]
+
+        if interface == "jax-jit":
+            cost = jax.jit(cost)
+
+        results = jax.grad(cost)(params, cache=None)
+        for r, e in zip(results, expected_results):
+            assert jnp.allclose(r, e, atol=1e-7)
+
     def test_classical_processing_single_tape(self, execute_kwargs, interface, tol):
         """Test classical processing within the quantum tape for a single tape"""
         a = jnp.array(0.1)
@@ -548,7 +574,7 @@ class TestJaxExecuteIntegration:
         """Test that the jax interface works correctly
         with a matrix parameter"""
         a = jnp.array(0.1)
-        U = qml.RY(a, wires=0).get_matrix()
+        U = qml.RY(a, wires=0).matrix()
 
         def cost(U, device):
             with qml.tape.QuantumTape() as tape:

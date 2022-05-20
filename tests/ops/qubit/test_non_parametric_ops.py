@@ -63,18 +63,18 @@ class TestOperations:
         """Tests that copied nonparametrized ops function as expected"""
         op = op_cls(wires=range(op_cls.num_wires))
         copied_op = copy.copy(op)
-        np.testing.assert_allclose(op.get_matrix(), copied_op.get_matrix(), atol=tol)
+        np.testing.assert_allclose(op.matrix(), copied_op.matrix(), atol=tol)
 
         op._inverse = True
         copied_op2 = copy.copy(op)
-        np.testing.assert_allclose(op.get_matrix(), copied_op2.get_matrix(), atol=tol)
+        np.testing.assert_allclose(op.matrix(), copied_op2.matrix(), atol=tol)
 
     @pytest.mark.parametrize("ops, mat", NON_PARAMETRIZED_OPERATIONS)
     def test_matrices(self, ops, mat, tol):
         """Test matrices of non-parametrized operations are correct"""
         op = ops(wires=range(ops.num_wires))
         res_static = op.compute_matrix()
-        res_dynamic = op.get_matrix()
+        res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
 
@@ -100,8 +100,8 @@ class TestDecompositions:
         assert res[2].wires == Wires([0])
         assert res[2].data[0] == np.pi / 2
 
-        decomposed_matrix = np.linalg.multi_dot([i.get_matrix() for i in reversed(res)])
-        assert np.allclose(decomposed_matrix, op.get_matrix(), atol=tol, rtol=0)
+        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_y_decomposition(self, tol):
         """Tests that the decomposition of the PauliY is correct"""
@@ -123,8 +123,8 @@ class TestDecompositions:
         assert res[2].wires == Wires([0])
         assert res[2].data[0] == np.pi / 2
 
-        decomposed_matrix = np.linalg.multi_dot([i.get_matrix() for i in reversed(res)])
-        assert np.allclose(decomposed_matrix, op.get_matrix(), atol=tol, rtol=0)
+        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_z_decomposition(self, tol):
         """Tests that the decomposition of the PauliZ is correct"""
@@ -138,8 +138,8 @@ class TestDecompositions:
         assert res[0].wires == Wires([0])
         assert res[0].data[0] == np.pi
 
-        decomposed_matrix = res[0].get_matrix()
-        assert np.allclose(decomposed_matrix, op.get_matrix(), atol=tol, rtol=0)
+        decomposed_matrix = res[0].matrix()
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_s_decomposition(self, tol):
         """Tests that the decomposition of the S gate is correct"""
@@ -153,8 +153,8 @@ class TestDecompositions:
         assert res[0].wires == Wires([0])
         assert res[0].data[0] == np.pi / 2
 
-        decomposed_matrix = res[0].get_matrix()
-        assert np.allclose(decomposed_matrix, op.get_matrix(), atol=tol, rtol=0)
+        decomposed_matrix = res[0].matrix()
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_t_decomposition(self, tol):
         """Tests that the decomposition of the T gate is correct"""
@@ -168,8 +168,8 @@ class TestDecompositions:
         assert res[0].wires == Wires([0])
         assert res[0].data[0] == np.pi / 4
 
-        decomposed_matrix = res[0].get_matrix()
-        assert np.allclose(decomposed_matrix, op.get_matrix(), atol=tol, rtol=0)
+        decomposed_matrix = res[0].matrix()
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_sx_decomposition(self, tol):
         """Tests that the decomposition of the SX gate is correct"""
@@ -190,8 +190,8 @@ class TestDecompositions:
         assert res[2].data[0] == -np.pi
         assert res[3].data[0] == np.pi / 2
 
-        decomposed_matrix = np.linalg.multi_dot([i.get_matrix() for i in reversed(res)])
-        assert np.allclose(decomposed_matrix, op.get_matrix(), atol=tol, rtol=0)
+        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_hadamard_decomposition(self, tol):
         """Tests that the decomposition of the Hadamard gate is correct"""
@@ -213,8 +213,8 @@ class TestDecompositions:
         assert res[2].wires == Wires([0])
         assert res[0].data[0] == np.pi / 2
 
-        decomposed_matrix = np.linalg.multi_dot([i.get_matrix() for i in reversed(res)])
-        assert np.allclose(decomposed_matrix, op.get_matrix(), atol=tol, rtol=0)
+        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_CY_decomposition(self, tol):
         """Tests that the decomposition of the CY gate is correct"""
@@ -224,12 +224,12 @@ class TestDecompositions:
         mats = []
         for i in reversed(res):
             if len(i.wires) == 1:
-                mats.append(np.kron(i.get_matrix(), np.eye(2)))
+                mats.append(np.kron(i.matrix(), np.eye(2)))
             else:
-                mats.append(i.get_matrix())
+                mats.append(i.matrix())
 
         decomposed_matrix = np.linalg.multi_dot(mats)
-        assert np.allclose(decomposed_matrix, op.get_matrix(), atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_ISWAP_decomposition(self, tol):
         """Tests that the decomposition of the ISWAP gate is correct"""
@@ -255,17 +255,17 @@ class TestDecompositions:
         mats = []
         for i in reversed(res):
             if i.wires == Wires([1]):
-                mats.append(np.kron(np.eye(2), i.get_matrix()))
+                mats.append(np.kron(np.eye(2), i.matrix()))
             elif i.wires == Wires([0]):
-                mats.append(np.kron(i.get_matrix(), np.eye(2)))
+                mats.append(np.kron(i.matrix(), np.eye(2)))
             elif i.wires == Wires([1, 0]) and i.name == "CNOT":
                 mats.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
             else:
-                mats.append(i.get_matrix())
+                mats.append(i.matrix())
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
-        assert np.allclose(decomposed_matrix, op.get_matrix(), atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW])
     def test_SISWAP_decomposition(self, siswap_op, tol):
@@ -304,17 +304,17 @@ class TestDecompositions:
         mats = []
         for i in reversed(res):
             if i.wires == Wires([1]):
-                mats.append(np.kron(np.eye(2), i.get_matrix()))
+                mats.append(np.kron(np.eye(2), i.matrix()))
             elif i.wires == Wires([0]):
-                mats.append(np.kron(i.get_matrix(), np.eye(2)))
+                mats.append(np.kron(i.matrix(), np.eye(2)))
             elif i.wires == Wires([1, 0]) and i.name == "CNOT":
                 mats.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
             else:
-                mats.append(i.get_matrix())
+                mats.append(i.matrix())
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
-        assert np.allclose(decomposed_matrix, op.get_matrix(), atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_toffoli_decomposition(self, tol):
         """Tests that the decomposition of the Toffoli gate is correct"""
@@ -327,15 +327,15 @@ class TestDecompositions:
 
         for i in reversed(res):
             if i.wires == Wires([2]):
-                mats.append(np.kron(np.eye(4), i.get_matrix()))
+                mats.append(np.kron(np.eye(4), i.matrix()))
             elif i.wires == Wires([1]):
-                mats.append(np.kron(np.eye(2), np.kron(i.get_matrix(), np.eye(2))))
+                mats.append(np.kron(np.eye(2), np.kron(i.matrix(), np.eye(2))))
             elif i.wires == Wires([0]):
-                mats.append(np.kron(i.get_matrix(), np.eye(4)))
+                mats.append(np.kron(i.matrix(), np.eye(4)))
             elif i.wires == Wires([0, 1]) and i.name == "CNOT":
-                mats.append(np.kron(i.get_matrix(), np.eye(2)))
+                mats.append(np.kron(i.matrix(), np.eye(2)))
             elif i.wires == Wires([1, 2]) and i.name == "CNOT":
-                mats.append(np.kron(np.eye(2), i.get_matrix()))
+                mats.append(np.kron(np.eye(2), i.matrix()))
             elif i.wires == Wires([0, 2]) and i.name == "CNOT":
                 mats.append(
                     np.array(
@@ -354,7 +354,7 @@ class TestDecompositions:
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
-        assert np.allclose(decomposed_matrix, op.get_matrix(), atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_CSWAP_decomposition(self, tol):
         """Tests that the decomposition of the CSWAP gate is correct"""
@@ -399,7 +399,7 @@ class TestDecompositions:
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
-        assert np.allclose(decomposed_matrix, op.get_matrix(), atol=tol, rtol=0)
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_swap_decomposition(self):
         """Tests the swap operator produces the correct output"""
@@ -415,29 +415,29 @@ class TestDecompositions:
 
         decomposed_matrix = np.linalg.multi_dot(mat)
 
-        assert np.allclose(decomposed_matrix, opr.get_matrix())
+        assert np.allclose(decomposed_matrix, opr.matrix())
 
 
 class TestEigenval:
     def test_iswap_eigenval(self):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
         op = qml.ISWAP(wires=[0, 1])
-        exp = np.linalg.eigvals(op.get_matrix())
-        res = op.get_eigvals()
+        exp = np.linalg.eigvals(op.matrix())
+        res = op.eigvals()
         assert np.allclose(res, exp)
 
     @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW])
     def test_siswap_eigenval(self, siswap_op):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
         op = siswap_op(wires=[0, 1])
-        exp = np.linalg.eigvals(op.get_matrix())
-        res = op.get_eigvals()
+        exp = np.linalg.eigvals(op.matrix())
+        res = op.eigvals()
         assert np.allclose(res, exp)
 
     def test_sx_eigenvals(self):
         """Tests that the SX eigenvalues are correct."""
-        evals = qml.SX(wires=0).get_eigvals()
-        expected = np.linalg.eigvals(qml.SX(wires=0).get_matrix())
+        evals = qml.SX(wires=0).eigvals()
+        expected = np.linalg.eigvals(qml.SX(wires=0).matrix())
         assert np.allclose(evals, expected)
 
 
@@ -660,7 +660,7 @@ class TestMultiControlledX:
         with pytest.raises(ValueError, match=expected_error_message):
             qml.MultiControlledX(
                 control_wires=control_wires, wires=target_wires, control_values=control_values
-            ).get_matrix()
+            ).matrix()
 
     @pytest.mark.parametrize(
         "control_wires,wires,control_values",
@@ -981,6 +981,162 @@ class TestMultiControlledX:
         assert np.allclose(mat1, mat2)
 
 
+period_two_ops = (
+    qml.PauliX(0),
+    qml.PauliY(0),
+    qml.PauliZ(0),
+    qml.Hadamard("a"),
+    qml.CNOT(wires=(0, 1)),
+    qml.CZ(wires=(0, 1)),
+    qml.CY(wires=(0, 1)),
+    qml.SWAP(wires=(0, 1)),
+    qml.ISWAP(wires=(0, 1)),
+    qml.CSWAP(wires=(0, 1, 2)),
+    qml.Toffoli(wires=(0, 1, 2)),
+    qml.MultiControlledX(wires=(0, 1, 2, 3)),
+)
+
+
+class TestPowMethod:
+    @pytest.mark.parametrize("op", period_two_ops)
+    @pytest.mark.parametrize("n", (1, 5, -1, -5))
+    def test_period_two_pow_odd(self, op, n):
+        """Test that ops with a period of 2 raised to an odd power are the same as the original op."""
+        assert op.pow(n)[0].__class__ is op.__class__
+
+    @pytest.mark.parametrize("op", period_two_ops)
+    @pytest.mark.parametrize("n", (2, 6, 0, -2))
+    def test_period_two_pow_even(self, op, n):
+        """Test that ops with a period of 2 raised to an even power are empty lists."""
+        assert len(op.pow(n)) == 0
+
+    @pytest.mark.parametrize("op", period_two_ops)
+    def test_period_two_noninteger_power(self, op):
+        """Test that ops with a period of 2 raised to a non-integer power raise an error."""
+        if op.__class__ is qml.PauliZ:
+            pytest.skip("PauliZ can be raised to any power.")
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(1.234)
+
+    @pytest.mark.parametrize("n", (0.5, 2.5, -1.5))
+    def test_paulix_squareroot(self, n):
+        """Check that the square root of PauliX is SX"""
+        op = qml.PauliX(0)
+
+        pow_ops = op.pow(n)
+        assert len(pow_ops) == 1
+        assert pow_ops[0].__class__ is qml.SX
+
+        sqrt_mat = qml.matrix(op.pow)(n)
+        sqrt_mat_squared = qml.math.linalg.matrix_power(sqrt_mat, 2)
+
+        assert qml.math.allclose(sqrt_mat_squared, qml.matrix(op))
+
+    @pytest.mark.parametrize("n", (0.5, 2.5, -1.5))
+    def test_pauliz_squareroot(self, n):
+        """Check that the square root of PauliZ is S"""
+        assert qml.PauliZ(0).pow(n)[0].__class__ is qml.S
+
+        op = qml.PauliZ(0)
+        sqrt_mat = qml.matrix(op.pow)(n)
+        sqrt_mat_squared = qml.math.linalg.matrix_power(sqrt_mat, 2)
+
+        assert qml.math.allclose(sqrt_mat_squared, qml.matrix(op))
+
+    @pytest.mark.parametrize("n", (0.25, 2.25, -1.75))
+    def test_pauliz_fourthroot(self, n):
+        """Check that the fourth root of PauliZ is T."""
+        assert qml.PauliZ(0).pow(n)[0].__class__ is qml.T
+
+        op = qml.PauliZ(0)
+        quad_mat = qml.matrix(op.pow)(n)
+        quad_mat_pow = qml.math.linalg.matrix_power(quad_mat, 4)
+
+        assert qml.math.allclose(quad_mat_pow, qml.matrix(op))
+
+    @pytest.mark.parametrize("n", (0.12, -3.462, 3.693))
+    def test_pauliz_general_power(self, n):
+        """Check that PauliZ raised to an non-integer power that's not the square root
+        results in a PhaseShift."""
+        op_pow = qml.PauliZ(0).pow(n)
+
+        assert len(op_pow) == 1
+        assert op_pow[0].__class__ is qml.PhaseShift
+        assert qml.math.allclose(op_pow[0].data[0], np.pi * (n % 2))
+
+    @pytest.mark.parametrize("n", (0.5, 2.5, -1.5))
+    def test_ISWAP_sqaure_root(self, n):
+        """Test that SISWAP is the square root of ISWAP."""
+        op = qml.ISWAP(wires=(0, 1))
+
+        assert op.pow(n)[0].__class__ is qml.SISWAP
+
+        sqrt_mat = qml.matrix(op.pow)(n)
+        sqrt_mat_squared = qml.math.linalg.matrix_power(sqrt_mat, 2)
+        assert qml.math.allclose(sqrt_mat_squared, qml.matrix(op))
+
+    @pytest.mark.parametrize("offset", (0, 4, -4))
+    def test_S_pow(self, offset):
+        op = qml.S("a")
+
+        assert len(op.pow(0 + offset)) == 0
+
+        assert op.pow(0.5 + offset)[0].__class__ is qml.T
+        assert op.pow(1 + offset)[0].__class__ is qml.S
+        assert op.pow(2 + offset)[0].__class__ is qml.PauliZ
+
+        n = 1.234
+        op_pow = op.pow(n + offset)
+        assert op_pow[0].__class__ is qml.PhaseShift
+        assert qml.math.allclose(op_pow[0].data[0], np.pi * n / 2)
+
+    @pytest.mark.parametrize("offset", (0, 8, -8))
+    def test_T_pow(self, offset):
+        """Test the powers of the T gate."""
+        op = qml.T("b")
+
+        assert len(op.pow(0 + offset)) == 0
+        assert op.pow(1 + offset)[0].__class__ is qml.T
+        assert op.pow(2 + offset)[0].__class__ is qml.S
+        assert op.pow(4 + offset)[0].__class__ is qml.PauliZ
+
+        n = 1.234
+        op_pow = op.pow(n + offset)
+        assert op_pow[0].__class__ is qml.PhaseShift
+        assert qml.math.allclose(op_pow[0].data[0], np.pi * n / 4)
+
+    @pytest.mark.parametrize("offset", (0, 4, -4))
+    def test_SX_pow(self, offset):
+        op = qml.SX("d")
+
+        assert len(op.pow(0 + offset)) == 0
+
+        assert op.pow(1 + offset)[0].__class__ is qml.SX
+        assert op.pow(2 + offset)[0].__class__ is qml.PauliX
+
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(2.43 + offset)
+
+    @pytest.mark.parametrize("offset", (0, 4, -4))
+    def test_SISWAP_pow(self, offset):
+        """Test powers of the SISWAP operator"""
+        op = qml.SISWAP(wires=("b", "c"))
+
+        assert len(op.pow(0 + offset)) == 0
+        assert op.pow(1 + offset)[0].__class__ is qml.SISWAP
+        assert op.pow(2 + offset)[0].__class__ is qml.ISWAP
+
+        with pytest.raises(qml.operation.PowUndefinedError):
+            op.pow(2.34 + offset)
+
+    @pytest.mark.parametrize("op", (qml.WireCut(0), qml.Barrier(0)))
+    @pytest.mark.parametrize("n", (2, 0.123, -2.3))
+    def test_pow_independent_ops(self, op, n):
+        """Assert that the pow-independent ops WireCut and Barrier can be raised
+        to any power and just return a copy."""
+        assert op.pow(n)[0].__class__ is op.__class__
+
+
 label_data = [
     (qml.Identity(0), "I", "I"),
     (qml.Hadamard(0), "H", "H"),
@@ -999,7 +1155,6 @@ label_data = [
     (qml.SQISW(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
     (qml.Toffoli(wires=(0, 1, 2)), "X", "X"),
-    (qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)), "X", "X"),
     (qml.MultiControlledX(wires=(0, 1, 2, 3)), "X", "X"),
     (qml.Barrier(0), "||", "||"),
     (qml.WireCut(wires=0), "//", "//"),
@@ -1031,7 +1186,6 @@ control_data = [
     (qml.CY(wires=(0, 1)), Wires(0)),
     (qml.CSWAP(wires=(0, 1, 2)), Wires([0])),
     (qml.Toffoli(wires=(0, 1, 2)), Wires([0, 1])),
-    (qml.MultiControlledX(control_wires=[0, 1, 2, 3], wires=4), Wires([0, 1, 2, 3])),
     (qml.MultiControlledX(wires=[0, 1, 2, 3, 4]), Wires([0, 1, 2, 3])),
 ]
 
@@ -1061,7 +1215,7 @@ all_ops = [
     qml.SQISW(wires=(0, 1)),
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
-    qml.MultiControlledX(control_wires=(0, 1, 2), wires=(3)),
+    qml.MultiControlledX(wires=(0, 1, 2, 3)),
     qml.Barrier(0),
     qml.WireCut(wires=0),
 ]
@@ -1106,7 +1260,7 @@ def test_adjoint_method(op, tol):
 
         try:
             np.testing.assert_allclose(
-                adj_op.get_matrix(), expected_adj_op.get_matrix(), atol=tol
+                adj_op.matrix(), expected_adj_op.matrix(), atol=tol
             )  # compare matrix if its defined
         except qml.operation.OperatorPropertyUndefined:
             pass

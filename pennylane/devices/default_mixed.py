@@ -46,10 +46,6 @@ class DefaultMixed(QubitDevice):
         shots (None, int): Number of times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to ``None`` if not specified, which means that
             outputs are computed exactly.
-        cache (int): Number of device executions to store in a cache to speed up subsequent
-            executions. A value of ``0`` indicates that no caching will take place. Once filled,
-            older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date.
     """
 
     name = "Default mixed-state qubit PennyLane plugin"
@@ -113,14 +109,14 @@ class DefaultMixed(QubitDevice):
         "ThermalRelaxationError",
     }
 
-    def __init__(self, wires, *, shots=None, cache=0, analytic=None):
+    def __init__(self, wires, *, shots=None, analytic=None):
         if isinstance(wires, int) and wires > 23:
             raise ValueError(
                 "This device does not currently support computations on more than 23 wires"
             )
 
         # call QubitDevice init
-        super().__init__(wires, shots, cache=cache, analytic=analytic)
+        super().__init__(wires, shots, analytic=analytic)
         self._debugger = None
 
         # Create the initial state.
@@ -217,12 +213,12 @@ class DefaultMixed(QubitDevice):
             unitary, returns a 1D array representing the matrix diagonal.
         """
         if operation in diagonal_in_z_basis:
-            return operation.get_eigvals()
+            return operation.eigvals()
 
         if isinstance(operation, Channel):
             return operation.kraus_matrices()
 
-        return [operation.get_matrix()]
+        return [operation.matrix()]
 
     def _apply_channel(self, kraus, wires):
         r"""Apply a quantum channel specified by a list of Kraus operators to subsystems of the

@@ -76,7 +76,8 @@ class CommutingEvolution(Operation):
         shifts (tuple[int or float]): The parameter shifts to use in obtaining the
             generalized parameter shift rules. If unspecified, equidistant shifts are used.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         The template is used inside a qnode:
 
@@ -117,7 +118,7 @@ class CommutingEvolution(Operation):
 
         trainable_hamiltonian = qml.math.requires_grad(hamiltonian.coeffs)
         if frequencies is not None and not trainable_hamiltonian:
-            c, s = generate_shift_rule(frequencies, shifts)
+            c, s = generate_shift_rule(frequencies, shifts).T
             recipe = qml.math.stack([c, qml.math.ones_like(c), s]).T
             self.grad_recipe = (recipe,) + (None,) * len(hamiltonian.data)
             self.grad_method = "A"
@@ -134,7 +135,7 @@ class CommutingEvolution(Operation):
 
     @staticmethod
     def compute_decomposition(
-        *time_and_coeffs, wires, hamiltonian, **kwargs
+        time, *coeffs, wires, hamiltonian, **kwargs
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators.
 
@@ -156,10 +157,10 @@ class CommutingEvolution(Operation):
             list[.Operator]: decomposition of the operator
         """
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
-        hamiltonian = qml.Hamiltonian(time_and_coeffs[1:], hamiltonian.ops)
-        return qml.templates.ApproxTimeEvolution(hamiltonian, time_and_coeffs[1], 1).decomposition()
+        hamiltonian = qml.Hamiltonian(coeffs, hamiltonian.ops)
+        return qml.ApproxTimeEvolution(hamiltonian, time, 1)
 
-    def adjoint(self):  # pylint: disable=arguments-differ
+    def adjoint(self):
 
         hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hyperparameters["hamiltonian"].ops)
         time = self.parameters[0]
