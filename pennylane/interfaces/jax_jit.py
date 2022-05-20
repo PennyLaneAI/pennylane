@@ -132,8 +132,6 @@ def _execute(
 
         shapes = [t.shape(device) for t in tapes]
         dtypes = [_numeric_type_to_dtype(t.numeric_type) for t in tapes]
-        meas = [t.measurements for t in tapes]
-        print(dtypes, meas)
 
         # Note: for qml.probs we'll first have a [1,dim] shape for the tape
         # which is then reduced by the QNode
