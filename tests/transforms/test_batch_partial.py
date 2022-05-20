@@ -83,7 +83,7 @@ def test_partial_evaluation_kwargs():
 
 
 @pytest.mark.autograd
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
 def test_partial_evaluation_autograd(diff_method):
     """Test gradient of partial evaluation matches gradients of
     individual full evaluations using autograd"""
