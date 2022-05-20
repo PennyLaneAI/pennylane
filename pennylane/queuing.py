@@ -185,6 +185,19 @@ class QueuingContext(abc.ABC):
         if cls.recording():
             cls.active_context()._update_info(obj, **kwargs)  # pylint: disable=protected-access
 
+    @classmethod
+    def safe_update_info(cls, obj, **kwargs):
+        """Updates information of an object in the active queue if it is already in the queue.
+
+        Args:
+            obj: the object with metadata to be updated
+        """
+        if cls.recording():
+            cls.active_context()._safe_update_info(obj, **kwargs)
+
+    def _safe_update_info(self, obj, **kwargs):
+        raise NotImplementedError
+
     def _update_info(self, obj, **kwargs):
         """Updates information of an object in the queue instance."""
         raise NotImplementedError
@@ -240,6 +253,10 @@ class AnnotatedQueue(QueuingContext):
 
     def _remove(self, obj):
         del self._queue[obj]
+
+    def _safe_update_info(self, obj, **kwargs):
+        if obj in self._queue:
+            self._queue[obj].update(kwargs)
 
     def _update_info(self, obj, **kwargs):
         if obj not in self._queue:
