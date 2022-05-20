@@ -389,7 +389,7 @@ def state_to_density_matrix(state, wires, check_state=None):
     # QNode returning ``qml.state``
     if isinstance(state, qml.QNode):
         # TODO: implement for QNode returning state
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
     # Cast as a complex128 array
     state = cast(state, dtype="complex128")
     # State vector
