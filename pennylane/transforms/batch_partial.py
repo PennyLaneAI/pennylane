@@ -112,7 +112,7 @@ def batch_partial(qnode, all_operations=False, **partial_kwargs):
     >>> batched_lambda_circuit(y0)
     tensor([0.97891628, 0.9316158 , 0.85593241, 0.75638669], requires_grad=True)
 
-    Gradients can be computed in this scenario as well:
+    Jacobians can be computed in this scenario as well:
 
     >>> qml.jacobian(batched_lambda_circuit)(y0)
     array([[-0.06402847,  0.        ,  0.        ,  0.        ],
