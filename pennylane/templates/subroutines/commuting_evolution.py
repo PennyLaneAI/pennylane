@@ -160,7 +160,7 @@ class CommutingEvolution(Operation):
         hamiltonian = qml.Hamiltonian(coeffs, hamiltonian.ops)
         return qml.ApproxTimeEvolution(hamiltonian, time, 1)
 
-    def adjoint(self):  # pylint: disable=arguments-differ
+    def adjoint(self):
 
         hamiltonian = qml.Hamiltonian(self.parameters[1:], self.hyperparameters["hamiltonian"].ops)
         time = self.parameters[0]

@@ -1287,7 +1287,7 @@ class Operation(Operator):
         """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
 
-    def adjoint(self, do_queue=False):  # pylint:disable=no-self-use
+    def adjoint(self):  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.
 
         Adjointed operations are the conjugated and transposed version of the
