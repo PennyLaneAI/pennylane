@@ -53,7 +53,7 @@ def test_partial_evaluation():
 
 def test_partial_evaluation_kwargs():
     """Test partial evaluation matches individual full evaluations
-    when kwargs are used"""
+    when the keyword syntax is used to call the partial object"""
     dev = qml.device("default.qubit", wires=2)
 
     @qml.qnode(dev)
