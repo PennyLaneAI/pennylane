@@ -221,7 +221,7 @@ class MeasurementProcess:
                 dim = self._get_num_basis_states(len_wires, device)
                 shape = (1, dim)
 
-            elif self.return_type == State and self._shape is None:
+            elif self.return_type == State and self.wires is None:
 
                 # Note: qml.density_matrix has its shape defined, so we're handling
                 # the qml.state case; acts on all device wires
@@ -238,6 +238,13 @@ class MeasurementProcess:
                 else:
                     # qml.sample() case
                     shape = (1, device.shots, len_wires)
+
+            #        elif self.return_type == State and self.wires:
+            # dim = 2 ** len(wires)
+            # shape = (1, dim, dim)
+            # return MeasurementProcess(State, wires=wires, shape=shape)
+            elif self.return_type in (Expectation, Variance):
+                shape = (1,)
             else:
                 shape = self._shape
 
@@ -504,7 +511,7 @@ def expval(op):
             f"{op.name} is not an observable: cannot be used with expval"
         )
 
-    return MeasurementProcess(Expectation, obs=op, shape=(1,))
+    return MeasurementProcess(Expectation, obs=op)
 
 
 def var(op):
@@ -537,7 +544,7 @@ def var(op):
     if not isinstance(op, qml.operation.Observable):
         raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
 
-    return MeasurementProcess(Variance, obs=op, shape=(1,))
+    return MeasurementProcess(Variance, obs=op)
 
 
 def sample(op=None, wires=None):

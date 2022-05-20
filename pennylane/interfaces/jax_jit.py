@@ -246,6 +246,7 @@ def _execute_with_fwd(
         fwd_shapes = [t.shape(device) for t in tapes]
         fwd_dtypes = [_numeric_type_to_dtype(t.numeric_type) for t in tapes]
 
+        print("Shapes: ", fwd_shapes)
         # Note: for qml.probs we'll first have a [1,dim] shape for the tape
         # which is then reduced by the QNode
         fwd_shapes = [
