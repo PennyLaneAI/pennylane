@@ -844,11 +844,6 @@ class TestVectorValuedJIT:
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
 
-        if execute_kwargs["gradient_fn"] is param_shift:
-            # TODO: explore why we get the error below
-            err_msg = "TypeError: Callback func <function _call.<locals>.<lambda> at 0x7fa2fc132790> should have returned a result with abstract values ShapedArray(float32[3]) but returned ShapedArray(float32[0])"
-            pytest.xfail("Getting a TypeError due to an incorrectly shaped array.")
-
         def cost(a, cache):
             with qml.tape.QuantumTape() as tape:
                 qml.RY(a[0], wires=0)
