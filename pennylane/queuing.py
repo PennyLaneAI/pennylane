@@ -209,25 +209,6 @@ class QueuingContext(abc.ABC):
         raise NotImplementedError
 
 
-class Queue(QueuingContext):
-    """Lightweight class that maintains a basic queue of objects."""
-
-    def __init__(self):
-        self.queue = []
-
-    def _append(self, obj, **kwargs):
-        self.queue.append(obj)
-
-    def _remove(self, obj):
-        self.queue.remove(obj)
-
-    # Overwrite the inherited class methods, so that if queue.append is called,
-    # it is appended to the instantiated queue (rather than being added to the
-    # currently active queuing context, which may be a different queue).
-    append = _append
-    remove = _remove
-
-
 class AnnotatedQueue(QueuingContext):
     """Lightweight class that maintains a basic queue of operations, in addition
     to metadata annotations."""
