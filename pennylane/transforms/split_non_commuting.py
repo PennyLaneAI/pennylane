@@ -61,7 +61,7 @@ def split_non_commuting(tape):
 
         tapes, processing_fn = qml.transforms.split_non_commuting(tape)
 
-    In this example, the groupings are ``group_coeffs = [[0,2], [1,3]]`` and processing_fn makes sure that the final output is of the same shape and ordering:
+    In this example, the groupings are ``group_coeffs = [[0,2], [1,3]]`` and ``processing_fn`` makes sure that the final output is of the same shape and ordering:
 
     >>> processing_fn(tapes)
     tensor([tensor(expval(PauliZ(wires=[0]) @ PauliZ(wires=[1])), dtype=object, requires_grad=True),
