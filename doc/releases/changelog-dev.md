@@ -4,6 +4,13 @@
 
 <h3>New features since last release</h3>
 
+* Support adding `Observable` objects to the integer `0`. [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603)
+
+  This allows us to directly sum a list of observables as follows:
+  ```
+  H = sum([qml.PauliX(i) for i in range(10)])
+  ```
+
 * Boolean mask indexing of the parameter-shift Hessian
   [(#2538)](https://github.com/PennyLaneAI/pennylane/pull/2538)
 
@@ -160,4 +167,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, Edward Jiang, Guillermo Alonso-Linaje, Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad
+Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, Edward Jiang, Guillermo Alonso-Linaje, Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Qi Hu, Soran Jahangiri, Utkarsh Azad
