@@ -41,8 +41,9 @@ def _convert_to_args(func, args, kwargs):
 
 def batch_partial(qnode, all_operations=False, **partial_kwargs):
     """
-    Create a wrapper function around the QNode with partially
-    evaluated parameters, which supports an initial batch dimension.
+    Create a batched partial callable object from the QNode specified.
+    
+    This transform provides functionality akin to `functools.partial` and allows batching the arguments used for calling the batched partial object.
 
     Args:
         qnode (pennylane.QNode): QNode to partially evaluate
