@@ -1199,6 +1199,13 @@ add_obs = [
     ),
 ]
 
+add_zero_obs = [
+    qml.PauliX(0),
+    qml.Identity(1),
+    qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
+    qml.PauliX(0) @ qml.Hadamard(2)
+]
+
 mul_obs = [
     (qml.PauliZ(0), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
     (qml.PauliZ(0) @ qml.Identity(1), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
@@ -1300,6 +1307,12 @@ class TestTensorObservableOperations:
     def test_addition(self, obs1, obs2, obs):
         """Tests addition between Tensors and Observables"""
         assert obs.compare(obs1 + obs2)
+
+    @pytest.mark.parametrize("obs", add_zero_obs)
+    def test_add_zero(self, obs):
+        """Tests adding Tensors and Observables to zero"""
+        assert obs.compare(obs + 0)
+        assert obs.compare(0 + obs)
 
     @pytest.mark.parametrize(("coeff", "obs", "res_obs"), mul_obs)
     def test_scalar_multiplication(self, coeff, obs, res_obs):

@@ -266,6 +266,14 @@ add_hamiltonians = [
     ),
 ]
 
+add_zero_hamiltonians = [
+    qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+    qml.Hamiltonian(
+            [1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
+        )
+]
+
 sub_hamiltonians = [
     (
         qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
@@ -713,6 +721,12 @@ class TestHamiltonian:
     def test_hamiltonian_add(self, H1, H2, H):
         """Tests that Hamiltonians are added correctly"""
         assert H.compare(H1 + H2)
+
+    @pytest.mark.parametrize("H", add_zero_hamiltonians)
+    def test_hamiltonian_add_zero(self, H):
+        """Tests that Hamiltonians can be added to zero"""
+        assert H.compare(H + 0)
+        assert H.compare(0 + H)
 
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
     def test_hamiltonian_mul(self, coeff, H, res):
