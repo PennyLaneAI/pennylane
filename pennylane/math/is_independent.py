@@ -23,10 +23,10 @@ a function is independent of its arguments for the interfaces
 import warnings
 
 import numpy as np
-from pennylane import numpy as pnp
-
 from autograd.tracer import isbox, new_box, trace_stack
 from autograd.core import VJPNode
+
+from pennylane import numpy as pnp
 
 
 def _autograd_is_indep_analytic(func, *args, **kwargs):
@@ -203,7 +203,7 @@ def _get_random_args(args, interface, num, seed, bounds):
         if interface == "autograd":
 
             # Mark the arguments as trainable with Autograd
-            rnd_args = pnp.array(rnd_args, requires_grad=True)
+            rnd_args = [tuple(pnp.array(a, requires_grad=True) for a in arg) for arg in rnd_args]
 
     return rnd_args
 

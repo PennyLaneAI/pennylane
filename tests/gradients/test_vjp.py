@@ -19,6 +19,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
+import numpy as vanilla_numpy
 
 
 class TestComputeVJP:
@@ -50,6 +51,54 @@ class TestComputeVJP:
 
         vjp = qml.gradients.compute_vjp(dy, jac)
         assert np.all(vjp == np.zeros([3]))
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
+    def test_dtype_torch(self, dtype1, dtype2):
+        """Test that using the Torch interface the dtype of the result is
+        determined by the dtype of the dy."""
+        import torch
+
+        dtype1 = getattr(torch, dtype1)
+        dtype2 = getattr(torch, dtype2)
+
+        dy = torch.ones(4, dtype=dtype1)
+        jac = torch.ones((4, 4), dtype=dtype2)
+
+        assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
+    def test_dtype_tf(self, dtype1, dtype2):
+        """Test that using the TensorFlow interface the dtype of the result is
+        determined by the dtype of the dy."""
+        import tensorflow as tf
+
+        dtype1 = getattr(tf, dtype1)
+        dtype2 = getattr(tf, dtype2)
+
+        dy = tf.ones(4, dtype=dtype1)
+        jac = tf.ones((4, 4), dtype=dtype2)
+
+        assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dtype1,dtype2", [("float32", "float64"), ("float64", "float32")])
+    def test_dtype_jax(self, dtype1, dtype2):
+        """Test that using the JAX interface the dtype of the result is
+        determined by the dtype of the dy."""
+        import jax
+        from jax.config import config
+
+        config.update("jax_enable_x64", True)
+
+        dtype1 = getattr(jax.numpy, dtype1)
+        dtype2 = getattr(jax.numpy, dtype2)
+
+        dy = jax.numpy.array([0, 1], dtype=dtype1)
+        jac = jax.numpy.array([[0, 1], [2, 3]], dtype=dtype2)
+
+        assert qml.gradients.compute_vjp(dy, jac).dtype == dtype1
 
 
 class TestVJP:
@@ -93,7 +142,7 @@ class TestVJP:
         x = 0.543
         y = -0.654
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -118,7 +167,7 @@ class TestVJP:
         x = 0.543
         y = -0.654
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -144,7 +193,7 @@ class TestVJP:
         x = 0.543
         y = -0.654
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
@@ -187,6 +236,21 @@ class TestVJP:
 
         assert np.allclose(res, dy @ expected, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("dtype", [np.float32, np.float64])
+    def test_dtype_matches_dy(self, dtype):
+        """Tests that the vjp function matches the dtype of dy when dy is
+        zero-like."""
+        x = np.array([0.1], dtype=np.float64)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.RX(x[0], wires=0)
+            qml.expval(qml.PauliZ(0))
+
+        dy = np.zeros(3, dtype=dtype)
+        _, func = qml.gradients.vjp(tape, dy, qml.gradients.param_shift)
+
+        assert func([]).dtype == dtype
+
 
 def expected(params):
     x, y = 1.0 * params
@@ -211,6 +275,7 @@ def ansatz(x, y):
 class TestVJPGradients:
     """Gradient tests for the vjp function"""
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using autograd."""
@@ -218,7 +283,7 @@ class TestVJPGradients:
         params = np.array([0.543, -0.654], requires_grad=True)
 
         def cost_fn(x, dy):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 ansatz(x[0], x[1])
 
             tape.trainable_params = {0, 1}
@@ -233,17 +298,19 @@ class TestVJPGradients:
         res = qml.jacobian(cost_fn)(params, dy)
         assert np.allclose(res, qml.jacobian(expected)(params), atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using Torch."""
-        torch = pytest.importorskip("torch")
+        import torch
 
         dev = qml.device("default.qubit", wires=2)
 
-        params = torch.tensor([0.543, -0.654], requires_grad=True, dtype=torch.float64)
+        params_np = np.array([0.543, -0.654], requires_grad=True)
+        params = torch.tensor(params_np, requires_grad=True, dtype=torch.float64)
         dy = torch.tensor([-1.0, 0.0, 0.0, 1.0], dtype=torch.float64)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             ansatz(params[0], params[1])
 
         tape.trainable_params = {0, 1}
@@ -255,22 +322,24 @@ class TestVJPGradients:
         cost = vjp[0]
         cost.backward()
 
-        exp = qml.jacobian(lambda x: expected(x)[0])(params.detach().numpy())
+        exp = qml.jacobian(lambda x: expected(x)[0])(params_np)
         assert np.allclose(params.grad, exp, atol=tol, rtol=0)
 
+    @pytest.mark.tf
     @pytest.mark.slow
     def test_tf(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using TF."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         dev = qml.device("default.qubit.tf", wires=2)
 
-        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
+        params_np = np.array([0.543, -0.654], requires_grad=True)
+        params = tf.Variable(params_np, dtype=tf.float64)
         dy = tf.constant([-1.0, 0.0, 0.0, 1.0], dtype=tf.float64)
 
         with tf.GradientTape() as t:
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 ansatz(params[0], params[1])
 
             tape.trainable_params = {0, 1}
@@ -280,21 +349,58 @@ class TestVJPGradients:
         assert np.allclose(vjp, expected(params), atol=tol, rtol=0)
 
         res = t.jacobian(vjp, params)
-        assert np.allclose(res, qml.jacobian(expected)(params.numpy()), atol=tol, rtol=0)
+        assert np.allclose(res, qml.jacobian(expected)(params_np), atol=tol, rtol=0)
 
+    @pytest.mark.tf
+    def test_tf_custom_loss(self):
+        """Tests that the gradient pipeline using the TensorFlow interface with
+        a custom TF loss and lightning.qubit with a custom dtype does not raise
+        any errors."""
+        import tensorflow as tf
+
+        nwires = 5
+        dev = qml.device("lightning.qubit", wires=nwires)
+        dev.C_DTYPE = vanilla_numpy.complex64
+        dev.R_DTYPE = vanilla_numpy.float32
+
+        @qml.qnode(dev, interface="tf", diff_method="adjoint")
+        def circuit(weights, features):
+            for i in range(nwires):
+                qml.RX(features[i], wires=i)
+                qml.RX(weights[i], wires=i)
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))]
+
+        vanilla_numpy.random.seed(42)
+
+        ndata = 100
+        data = [vanilla_numpy.random.randn(nwires).astype("float32") for _ in range(ndata)]
+        label = [vanilla_numpy.random.choice([1, 0]).astype("int") for _ in range(ndata)]
+
+        loss = tf.losses.SparseCategoricalCrossentropy()
+
+        params = tf.Variable(vanilla_numpy.random.randn(nwires).astype("float32"), trainable=True)
+        with tf.GradientTape() as tape:
+            probs = [circuit(params, d) for d in data]
+            loss_value = loss(label, probs)
+
+        grads = tape.gradient(loss_value, [params])
+        assert len(grads) == 1
+
+    @pytest.mark.jax
     @pytest.mark.slow
     def test_jax(self, tol):
         """Tests that the output of the VJP transform
         can be differentiated using JAX."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         dev = qml.device("default.qubit.jax", wires=2)
-        params = jnp.array([0.543, -0.654])
+        params_np = np.array([0.543, -0.654], requires_grad=True)
+        params = jnp.array(params_np)
 
         @partial(jax.jit, static_argnums=1)
         def cost_fn(x, dy):
-            with qml.tape.JacobianTape() as tape:
+            with qml.tape.QuantumTape() as tape:
                 ansatz(x[0], x[1])
 
             tape.trainable_params = {0, 1}
@@ -307,7 +413,7 @@ class TestVJPGradients:
         assert np.allclose(res, expected(params), atol=tol, rtol=0)
 
         res = jax.jacobian(cost_fn, argnums=0)(params, dy)
-        exp = qml.jacobian(expected)(np.array(params))
+        exp = qml.jacobian(expected)(params_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
 
@@ -323,7 +429,7 @@ class TestBatchVJP:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.JacobianTape() as tape2:
+        with qml.tape.QuantumTape() as tape2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -379,7 +485,7 @@ class TestBatchVJP:
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.JacobianTape() as tape2:
+        with qml.tape.QuantumTape() as tape2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -403,12 +509,12 @@ class TestBatchVJP:
         """Test the 'append' reduction strategy"""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape1:
+        with qml.tape.QuantumTape() as tape1:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.JacobianTape() as tape2:
+        with qml.tape.QuantumTape() as tape2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -432,12 +538,12 @@ class TestBatchVJP:
         """Test the 'extend' reduction strategy"""
         dev = qml.device("default.qubit", wires=2)
 
-        with qml.tape.JacobianTape() as tape1:
+        with qml.tape.QuantumTape() as tape1:
             qml.RX(0.4, wires=0)
             qml.CNOT(wires=[0, 1])
             qml.expval(qml.PauliZ(0))
 
-        with qml.tape.JacobianTape() as tape2:
+        with qml.tape.QuantumTape() as tape2:
             qml.RX(0.4, wires=0)
             qml.RX(0.6, wires=0)
             qml.CNOT(wires=[0, 1])

@@ -137,12 +137,12 @@ def test_device(
         import pytest  # pylint: disable=unused-import
         import pytest_mock  # pylint: disable=unused-import
         import flaky  # pylint: disable=unused-import
-    except ImportError:
+    except ImportError as e:
         raise ImportError(
             "The device tests requires the following Python packages:"
             "\npytest pytest_mock flaky"
             "\nThese can be installed using pip."
-        )
+        ) from e
 
     pytest_args = pytest_args or []
     test_dir = get_device_tests()

@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that a device has the right attributes, arguments and methods."""
-# pylint: disable=no-self-use
-import pennylane as qml
+# pylint: disable=no-self-use,too-many-arguments,too-few-public-methods
 import pytest
+import pennylane as qml
 from pennylane import numpy as np
 
 

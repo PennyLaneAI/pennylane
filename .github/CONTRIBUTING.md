@@ -72,9 +72,9 @@ Want to help with the repository itself?  There are several different avenues fo
   [documentation guide](https://pennylane.readthedocs.io/en/stable/development/guide/documentation.html)
   for more specifics.
 
-* **Add a new Template or Operation.** Circuit structures crop up in literature faster than we can
+* **Add a new Operator or Template.** Circuit structures crop up in literature faster than we can
 add them, so we are always looking for help. Take a look at the
-[Contributing templates](https://pennylane.readthedocs.io/en/stable/development/adding_templates.html)
+[Contributing operators](https://pennylane.readthedocs.io/en/stable/development/adding_operators.html)
 page for more information.
 
 * **Develop a PennyLane plugin** - PennyLane is designed to be device and quantum-framework

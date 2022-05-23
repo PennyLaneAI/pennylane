@@ -100,7 +100,8 @@ class Wires(Sequence):
         self._hash = None
 
     def __getitem__(self, idx):
-        """Method to support indexing. Returns a Wires object if index is a slice, or a label if index is an integer."""
+        """Method to support indexing. Returns a Wires object if index is a slice,
+        or a label if index is an integer."""
         if isinstance(idx, slice):
             return Wires(self._labels[idx])
         return self._labels[idx]
@@ -110,6 +111,7 @@ class Wires(Sequence):
         return len(self._labels)
 
     def contains_wires(self, wires):
+        """Method to determine if Wires object contains wires in another Wires object."""
         if isinstance(wires, Wires):
             return set(wires.labels).issubset(set(self._labels))
         return False
@@ -123,7 +125,8 @@ class Wires(Sequence):
         return f"<Wires = {list(self._labels)}>"
 
     def __eq__(self, other):
-        """Method to support the '==' operator. This will also implicitly define the '!=' operator."""
+        """Method to support the '==' operator.
+        This will also implicitly define the '!=' operator."""
         # The order is respected in comparison, so that ``assert Wires([0, 1]) != Wires([1,0])``
         if isinstance(other, Wires):
             return self._labels == other.labels
@@ -213,6 +216,7 @@ class Wires(Sequence):
         Returns:
             int: index of the input
         """
+        # pylint: disable=arguments-differ
 
         if isinstance(wire, Wires):
             if len(wire) != 1:
@@ -373,7 +377,6 @@ class Wires(Sequence):
             if not isinstance(wires, Wires):
                 raise WireError(f"Expected a Wires object; got {wires} of type {type(wires)}.")
 
-        first_wires_obj = list_of_wires[0]
         sets_of_wires = [wire.toset() for wire in list_of_wires]
         # find the intersection of the labels of all wires in O(n) time.
         intersecting_wires = functools.reduce(lambda a, b: a & b, sets_of_wires)
@@ -420,7 +423,7 @@ class Wires(Sequence):
             seen_labels.update(extension)
 
         if sort:
-            if all([isinstance(w, int) for w in combined]):
+            if all(isinstance(w, int) for w in combined):
                 combined = sorted(combined)
             else:
                 combined = sorted(combined, key=str)

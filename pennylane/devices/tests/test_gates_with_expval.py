@@ -22,9 +22,9 @@ from math import sqrt, pi
 
 import pytest
 import numpy as np
-import pennylane as qml
-
 from flaky import flaky
+
+import pennylane as qml
 
 pytestmark = pytest.mark.skip_unsupported
 

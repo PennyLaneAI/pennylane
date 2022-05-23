@@ -31,9 +31,7 @@ that compute the desired quantity.
 
     ~transforms.classical_jacobian
     ~batch_params
-    ~draw
-    ~draw_mpl
-    ~transforms.get_unitary_matrix
+    ~batch_input
     ~metric_tensor
     ~adjoint_metric_tensor
     ~specs
@@ -50,6 +48,8 @@ containing quantum operations) that are used to construct QNodes.
 
     ~adjoint
     ~ctrl
+    ~transforms.cond
+    ~defer_measurements
     ~apply_controlled_Q
     ~quantum_monte_carlo
     ~transforms.insert
@@ -71,6 +71,8 @@ This set of transforms accept quantum functions, and perform basic circuit compi
     ~transforms.merge_amplitude_embedding
     ~transforms.remove_barrier
     ~transforms.undo_swaps
+    ~transforms.pattern_matching_optimization
+    ~transforms.transpile
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -81,6 +83,60 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.zyz_decomposition
     ~transforms.two_qubit_decomposition
     ~transforms.set_decomposition
+    ~transforms.simplify
+    ~transforms.pattern_matching
+
+There are also utility functions that take a circuit and return a DAG.
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.commutation_dag
+    ~transforms.CommutationDAG
+    ~transforms.CommutationDAGNode
+
+Transform for circuit cutting
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :func:`~.cut_circuit` transform accepts a QNode and returns a new function that cuts the original circuit,
+allowing larger circuits to be split into smaller circuits that are compatible with devices that
+have a restricted number of qubits.
+
+.. autosummary::
+    :toctree: api
+
+    ~cut_circuit
+
+The :func:`~.cut_circuit_mc` transform is designed to be used for cutting circuits which contain :func:`~.sample`
+measurements and is implemented using a Monte Carlo method. Similarly to the :func:`~.cut_circuit`
+transform, this transform accepts a QNode and returns a new function that cuts the original circuit.
+This transform can also accept an optional classical processing function to calculate an
+expectation value.
+
+.. autosummary::
+    :toctree: api
+
+    ~cut_circuit_mc
+
+There are also low-level functions that can be used to build up the circuit cutting functionalities:
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.qcut.tape_to_graph
+    ~transforms.qcut.replace_wire_cut_nodes
+    ~transforms.qcut.fragment_graph
+    ~transforms.qcut.graph_to_tape
+    ~transforms.qcut.remap_tape_wires
+    ~transforms.qcut.expand_fragment_tape
+    ~transforms.qcut.expand_fragment_tapes_mc
+    ~transforms.qcut.qcut_processing_fn
+    ~transforms.qcut.qcut_processing_fn_sample
+    ~transforms.qcut.qcut_processing_fn_mc
+    ~transforms.qcut.CutStrategy
+    ~transforms.qcut.kahypar_cut
+    ~transforms.qcut.place_wire_cuts
+    ~transforms.qcut.find_and_place_cuts
 
 Transforms that act on tapes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -106,7 +162,9 @@ to help build custom QNode, quantum function, and tape transforms:
     ~single_tape_transform
     ~batch_transform
     ~qfunc_transform
+    ~op_transform
     ~transforms.make_tape
+    ~transforms.map_batch_transform
     ~transforms.create_expand_fn
     ~transforms.create_decomp_expand_fn
     ~transforms.expand_invalid_trainable
@@ -115,15 +173,18 @@ to help build custom QNode, quantum function, and tape transforms:
     ~transforms.expand_nonunitary_gen
 """
 # Import the decorators first to prevent circular imports when used in other transforms
-from .batch_transform import batch_transform
+from .batch_transform import batch_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
+from .op_transforms import op_transform
 from .adjoint import adjoint
 from .batch_params import batch_params
+from .batch_input import batch_input
 from .classical_jacobian import classical_jacobian
+from .condition import cond, Conditional
 from .compile import compile
 from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
-from .draw import draw, draw_mpl
+from .defer_measurements import defer_measurements
 from .hamiltonian_expand import hamiltonian_expand
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
@@ -138,11 +199,19 @@ from .optimization import (
     merge_amplitude_embedding,
     remove_barrier,
     undo_swaps,
+    pattern_matching,
+    pattern_matching_optimization,
 )
 from .specs import specs
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
-from .get_unitary_matrix import get_unitary_matrix
+from .commutation_dag import (
+    commutation_dag,
+    is_commuting,
+    CommutationDAG,
+    CommutationDAGNode,
+    simplify,
+)
 from .tape_expand import (
     expand_invalid_trainable,
     expand_multipar,
@@ -152,3 +221,6 @@ from .tape_expand import (
     create_decomp_expand_fn,
     set_decomposition,
 )
+from .transpile import transpile
+from . import qcut
+from .qcut import cut_circuit, cut_circuit_mc

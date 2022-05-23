@@ -46,6 +46,7 @@ ar.register_function("numpy", "unstack", list)
 # the following is required to ensure that SciPy sparse Hamiltonians passed to
 # qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
 ar.register_function("scipy", "to_numpy", lambda x: x)
+ar.register_function("scipy", "shape", np.shape)
 
 
 def _scatter_element_add_numpy(tensor, index, value):
@@ -166,6 +167,8 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "kron"] = "tensorflow.experimental.n
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "sinc"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experimental.numpy"
+ar.autoray._SUBMODULE_ALIASES["tensorflow", "ndim"] = "tensorflow.experimental.numpy"
 
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
@@ -190,7 +193,7 @@ ar.register_function(
 def _round_tf(tensor, decimals=0):
     """Implement a TensorFlow version of np.round"""
     tf = _i("tf")
-    tol = 10 ** decimals
+    tol = 10**decimals
     return tf.round(tensor * tol) / tol
 
 
@@ -287,6 +290,14 @@ def _scatter_element_add_tf(tensor, index, value):
 ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_tf)
 
 
+def _transpose_tf(a, axes=None):
+    import tensorflow as tf
+
+    return tf.transpose(a, perm=axes)
+
+
+ar.register_function("tensorflow", "transpose", _transpose_tf)
+
 # -------------------------------- Torch --------------------------------- #
 
 ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
@@ -310,17 +321,6 @@ ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsquee
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
 ar.register_function("torch", "gather", lambda x, indices: x[indices])
 
-try:
-    if semantic_version.match(">=1.10", _i("torch").__version__):
-        # Autoray uses the deprecated torch.symeig as an alias for eigh, however this has
-        # been deprecated in favour of torch.linalg.eigh.
-        # autoray.py:84: UserWarning: torch.symeig is deprecated in favor of torch.linalg.eigh
-        # and will be removed in a future PyTorch release.
-        del ar.autoray._FUNCS["torch", "linalg.eigh"]
-except ImportError:
-    pass
-
-
 ar.register_function(
     "torch",
     "sqrt",
@@ -336,7 +336,7 @@ ar.autoray._FUNC_ALIASES["torch", "arctan2"] = "atan2"
 def _round_torch(tensor, decimals=0):
     """Implement a Torch version of np.round"""
     torch = _i("torch")
-    tol = 10 ** decimals
+    tol = 10**decimals
     return torch.round(tensor * tol) / tol
 
 
@@ -461,6 +461,13 @@ def _tensordot_torch(tensor1, tensor2, axes):
 
 
 ar.register_function("torch", "tensordot", _tensordot_torch)
+
+
+def _ndim_torch(tensor):
+    return tensor.dim()
+
+
+ar.register_function("torch", "ndim", _ndim_torch)
 
 
 # -------------------------------- JAX --------------------------------- #

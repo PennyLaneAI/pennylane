@@ -45,6 +45,7 @@ Gradient transforms
     finite_diff
     param_shift
     param_shift_cv
+    param_shift_hessian
 
 Custom gradients
 ^^^^^^^^^^^^^^^^
@@ -53,6 +54,7 @@ Custom gradients
     :toctree: api
 
     gradient_transform
+    hessian_transform
 
 Utility functions
 ^^^^^^^^^^^^^^^^^
@@ -62,6 +64,7 @@ Utility functions
 
     finite_diff_coeffs
     generate_shifted_tapes
+    generate_multishifted_tapes
     generate_shift_rule
     generate_multi_shift_rule
     eigvals_to_frequencies
@@ -236,12 +239,12 @@ define the gradient:
 
 >>> gradient_tapes, fn = qml.gradients.param_shift(tape)
 >>> gradient_tapes
-[<JacobianTape: wires=[0, 1], params=3>,
- <JacobianTape: wires=[0, 1], params=3>,
- <JacobianTape: wires=[0, 1], params=3>,
- <JacobianTape: wires=[0, 1], params=3>,
- <JacobianTape: wires=[0, 1], params=3>,
- <JacobianTape: wires=[0, 1], params=3>]
+[<QuantumTape: wires=[0, 1], params=3>,
+ <QuantumTape: wires=[0, 1], params=3>,
+ <QuantumTape: wires=[0, 1], params=3>,
+ <QuantumTape: wires=[0, 1], params=3>,
+ <QuantumTape: wires=[0, 1], params=3>,
+ <QuantumTape: wires=[0, 1], params=3>]
 
 This can be useful if the underlying circuits representing the gradient
 computation need to be analyzed.
@@ -280,18 +283,23 @@ documentation.
 """
 import pennylane as qml
 
-from . import finite_difference
 from . import parameter_shift
 from . import parameter_shift_cv
+from . import parameter_shift_hessian
+from . import finite_difference
 
 from .gradient_transform import gradient_transform
-from .finite_difference import finite_diff, finite_diff_coeffs, generate_shifted_tapes
+from .hessian_transform import hessian_transform
+from .finite_difference import finite_diff, finite_diff_coeffs
 from .parameter_shift import param_shift
 from .parameter_shift_cv import param_shift_cv
+from .parameter_shift_hessian import param_shift_hessian
 from .vjp import compute_vjp, batch_vjp, vjp
 from .hamiltonian_grad import hamiltonian_grad
 from .general_shift_rules import (
     eigvals_to_frequencies,
     generate_shift_rule,
     generate_multi_shift_rule,
+    generate_shifted_tapes,
+    generate_multishifted_tapes,
 )

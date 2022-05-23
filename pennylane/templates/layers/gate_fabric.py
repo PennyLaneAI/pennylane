@@ -22,7 +22,7 @@ from pennylane.operation import Operation, AnyWires
 
 class GateFabric(Operation):
     r"""Implements a local, expressive, and quantum-number-preserving ansatz proposed by
-    Anselmetti *et al.* in `arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_.
+    `Anselmetti et al. (2021) <https://doi.org/10.1088/1367-2630/ac2cb3>`_.
 
     This template prepares the :math:`N`-qubit trial state by applying :math:`D` layers of gate-fabric blocks
     :math:`\hat{U}_{GF}(\vec{\theta},\vec{\phi})` to the Hartree-Fock state in the Jordan-Wigner basis
@@ -43,8 +43,8 @@ class GateFabric(Operation):
         :width: 100%
         :target: javascript:void(0);
 
-    The gate element :math:`\hat{Q}(\theta, \phi)` (`arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_) is composed of
-    a four-qubit spin-adapted spatial orbital rotation gate, which is implemented by the :class:`~.OrbitalRotation()`
+    The gate element :math:`\hat{Q}(\theta, \phi)` (`Anselmetti et al. (2021) <https://doi.org/10.1088/1367-2630/ac2cb3>`_)
+    is composed of a four-qubit spin-adapted spatial orbital rotation gate, which is implemented by the :class:`~.OrbitalRotation()`
     operation and a four-qubit diagonal pair-exchange gate, which is equivalent to the :class:`~.DoubleExcitation()`
     operation. In addition to these two gates, the gate element :math:`\hat{Q}(\theta, \phi)` can also include an optional
     constant :math:`\hat{\Pi} \in \{\hat{I}, \text{OrbitalRotation}(\pi)\}` gate.
@@ -57,7 +57,8 @@ class GateFabric(Operation):
     |
 
     The four-qubit :class:`~.DoubleExcitation()` and :class:`~.OrbitalRotation()` gates given here are equivalent to the
-    :math:`\text{QNP}_{PX}(\theta)` and :math:`\text{QNP}_{OR}(\phi)` gates presented in `arXiv:2104.05692 <https://arxiv.org/abs/2104.05695>`_,
+    :math:`\text{QNP}_{PX}(\theta)` and :math:`\text{QNP}_{OR}(\phi)` gates presented in
+    `Anselmetti et al. (2021) <https://doi.org/10.1088/1367-2630/ac2cb3>`_,
     respectively. Moreover, regardless of the choice of :math:`\hat{\Pi}`, this gate fabric will exactly preserve the number of particles
     and total spin of the state.
 
@@ -68,10 +69,11 @@ class GateFabric(Operation):
         wires (Iterable): wires that the template acts on
         init_state (tensor_like): init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
             in the Jordan-Wigner representation.
-        include_pi (boolean): If ``include_pi = True``\, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
+        include_pi (boolean): If True, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
             Default value is :math:`\hat{I}`.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         #. The number of wires :math:`N` has to be equal to the number of
            spin-orbitals included in the active space, and should be even.
@@ -185,22 +187,15 @@ class GateFabric(Operation):
                 f"This template requires an even number of qubits; got {len(wires)} wires"
             )
 
-        self.qwires = [
-            wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4
-        ]
-        if len(wires) > 4:
-            self.qwires += [
-                wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
-            ]
-
         shape = qml.math.shape(weights)
 
         if len(shape) != 3:
             raise ValueError(f"Weights tensor must be 3-dimensional; got shape {shape}")
 
-        if shape[1] != len(self.qwires):
+        len_wire_pattern = int((len(wires) / 2) - 1)
+        if shape[1] != len_wire_pattern:
             raise ValueError(
-                f"Weights tensor must have second dimension of length {len(self.qwires)}; got {shape[1]}"
+                f"Weights tensor must have second dimension of length {len_wire_pattern}; got {shape[1]}"
             )
 
         if shape[2] != 2:
@@ -208,12 +203,10 @@ class GateFabric(Operation):
                 f"Weights tensor must have third dimension of length 2; got {shape[2]}"
             )
 
-        self.n_layers = shape[0]
-        # we can extract the numpy representation here
-        # since init_state can never be differentiable
-        self.init_state = qml.math.toarray(init_state)
-
-        self.include_pi = include_pi
+        self._hyperparameters = {
+            "init_state": qml.math.toarray(init_state),
+            "include_pi": include_pi,
+        }
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
@@ -221,23 +214,61 @@ class GateFabric(Operation):
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(
+        weights, wires, init_state, include_pi
+    ):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        with qml.tape.QuantumTape() as tape:
+        .. math:: O = O_1 O_2 \dots O_n.
 
-            qml.BasisEmbedding(self.init_state, wires=self.wires)
-            weight = self.parameters[0]
 
-            for layer in range(self.n_layers):
-                for idx, wires in enumerate(self.qwires):
 
-                    if self.include_pi:
-                        qml.OrbitalRotation(np.pi, wires=wires)
+        .. seealso:: :meth:`~.GateFabric.decomposition`.
 
-                    qml.DoubleExcitation(weight[layer][idx][0], wires=wires)
-                    qml.OrbitalRotation(weight[layer][idx][1], wires=wires)
+        Args:
+            weights (tensor_like): Array of weights of shape ``(D, L, 2)``,
+                where ``D`` is the number of gate fabric layers and ``L = N/2-1``
+                is the number of :math:`\hat{Q}(\theta, \phi)` gates per layer with N being the total number of qubits.
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            init_state (tensor_like): init_state (tensor_like): iterable of shape ``(len(wires),)``\, representing the input Hartree-Fock state
+                in the Jordan-Wigner representation.
+            include_pi (boolean): If ``True``, the optional constant :math:`\hat{\Pi}` gate  is set to :math:`\text{OrbitalRotation}(\pi)`.
+                Default value is :math:`\hat{I}`.
 
-        return tape
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> weights = torch.tensor([[[0.3, 1.]]])
+        >>> qml.GateFabric.compute_decomposition(weights, wires=["a", "b", "c", "d"], init_state=[0, 1, 0, 1], include_pi=False)
+        [BasisEmbedding(wires=['a', 'b', 'c', 'd']),
+        DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']),
+        OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
+        """
+        op_list = []
+        n_layers = qml.math.shape(weights)[0]
+        wire_pattern = [
+            wires[i : i + 4] for i in range(0, len(wires), 4) if len(wires[i : i + 4]) == 4
+        ]
+        if len(wires) > 4:
+            wire_pattern += [
+                wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
+            ]
+
+        op_list.append(qml.BasisEmbedding(init_state, wires=wires))
+
+        for layer in range(n_layers):
+            for idx, wires_ in enumerate(wire_pattern):
+
+                if include_pi:
+                    op_list.append(qml.OrbitalRotation(np.pi, wires=wires_))
+
+                op_list.append(qml.DoubleExcitation(weights[layer][idx][0], wires=wires_))
+                op_list.append(qml.OrbitalRotation(weights[layer][idx][1], wires=wires_))
+
+        return op_list
 
     @staticmethod
     def shape(n_layers, n_wires):

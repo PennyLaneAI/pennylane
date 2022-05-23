@@ -22,11 +22,12 @@ representation of Pauli words and applications, see:
 """
 from functools import reduce
 
+import numpy as np
+
 import pennylane as qml
 from pennylane import PauliX, PauliY, PauliZ, Identity
 from pennylane.operation import Observable, Tensor
 from pennylane.wires import Wires
-import numpy as np
 
 # To make this quicker later on
 ID_MAT = np.eye(2)
@@ -133,7 +134,7 @@ def are_identical_pauli_words(pauli_1, pauli_2):
     return set(zip(pauli_1.wires, pauli_1.name)) == set(zip(pauli_2.wires, pauli_2.name))
 
 
-def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
+def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None, check_is_pauli_word=True):
     """Converts a Pauli word to the binary vector representation.
 
     This functions follows convention that the first half of binary vector components specify
@@ -144,7 +145,9 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
             converted to binary vector representation
         n_qubits (int): number of qubits to specify dimension of binary vector representation
         wire_map (dict): dictionary containing all wire labels used in the Pauli word as keys, and
-             unique integer labels as their values
+            unique integer labels as their values
+        check_is_pauli_word (bool): If True (default) then a check is run to verify that pauli_word
+            is infact a Pauli word
 
     Returns:
         array: the ``2*n_qubits`` dimensional binary vector representation of the input Pauli word
@@ -213,7 +216,7 @@ def pauli_to_binary(pauli_word, n_qubits=None, wire_map=None):
     array([1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0.])
     """
 
-    if not is_pauli_word(pauli_word):
+    if check_is_pauli_word and not is_pauli_word(pauli_word):
         raise TypeError(f"Expected a Pauli word Observable instance, instead got {pauli_word}.")
 
     if wire_map is None:
@@ -426,7 +429,7 @@ def string_to_pauli_word(pauli_string, wire_map=None):
         raise TypeError(f"Input to string_to_pauli_word must be string, obtained {pauli_string}")
 
     # String can only consist of I, X, Y, Z
-    if any(char not in character_map.keys() for char in pauli_string):
+    if any(char not in character_map for char in pauli_string):
         raise ValueError(
             "Invalid characters encountered in string_to_pauli_word "
             f"string {pauli_string}. Permitted characters are 'I', 'X', 'Y', and 'Z'"
@@ -444,8 +447,8 @@ def string_to_pauli_word(pauli_string, wire_map=None):
 
     # Special case: all-identity Pauli
     if pauli_string == "I" * len(wire_map):
-        first_wire = list(wire_map.keys())[0]
-        return Identity(wire_map[first_wire])
+        first_wire = list(wire_map)[0]
+        return Identity(first_wire)
 
     pauli_word = None
 
@@ -506,7 +509,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
 
     # If there is only a single qubit, we can return the matrix directly
     if n_qubits == 1:
-        return pauli_word.matrix
+        return pauli_word.matrix()
 
     # There may be more than one qubit in the Pauli but still only
     # one of them with anything acting on it, so take that into account
@@ -514,7 +517,7 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
 
     # Special case: the identity Pauli
     if pauli_names == ["Identity"]:
-        return np.eye(2 ** n_qubits)
+        return np.eye(2**n_qubits)
 
     # If there is more than one qubit, we must go through the wire map wire
     # by wire and pick out the relevant matrices
@@ -523,7 +526,8 @@ def pauli_word_to_matrix(pauli_word, wire_map=None):
     for wire_label, wire_idx in wire_map.items():
         if wire_label in pauli_word.wires.labels:
             op_idx = pauli_word.wires.labels.index(wire_label)
-            pauli_mats[wire_idx] = getattr(qml, pauli_names[op_idx]).matrix
+            # compute_matrix() only works because we work with Paulis here
+            pauli_mats[wire_idx] = getattr(qml, pauli_names[op_idx]).compute_matrix()
 
     return reduce(np.kron, pauli_mats)
 

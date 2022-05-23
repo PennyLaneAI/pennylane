@@ -63,21 +63,22 @@ def unitary_to_rot(tape):
 
     >>> dev = qml.device('default.qubit', wires=1)
     >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)())
-     0: ──U0──┤ ⟨Z⟩
-    U0 =
+    >>> print(qml.draw(qnode, show_matrices=True)())
+    0: ──U(M0)─┤  <Z>
+    M0 =
     [[-0.17111489+0.58564875j -0.69352236-0.38309524j]
-     [ 0.25053735+0.75164238j  0.60700543-0.06171855j]]
+    [ 0.25053735+0.75164238j  0.60700543-0.06171855j]]
 
     We can use the transform to decompose the gate:
 
     >>> transformed_qfunc = unitary_to_rot(qfunc)
     >>> transformed_qnode = qml.QNode(transformed_qfunc, dev)
     >>> print(qml.draw(transformed_qnode)())
-     0: ──Rot(-1.35, 1.83, -0.606)──┤ ⟨Z⟩
+    0: ──Rot(-1.35,1.83,-0.61)─┤  <Z>
 
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         This decomposition is not fully differentiable. We **can** differentiate
         with respect to input QNode parameters when they are not used to
@@ -129,7 +130,7 @@ def unitary_to_rot(tape):
                 return qml.expval(qml.PauliX(wires="a"))
     """
 
-    for op in tape.operations + tape.measurements:
+    for op in tape:
         if isinstance(op, qml.QubitUnitary):
             # Single-qubit unitary operations
             if qml.math.shape(op.parameters[0]) == (2, 2):

@@ -56,7 +56,8 @@ def cost_layer(gamma, hamiltonian):
     Raises:
         ValueError: if the terms of the supplied cost Hamiltonian are not exclusively products of diagonal Pauli gates
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         We first define a cost Hamiltonian:
 
@@ -86,8 +87,11 @@ def cost_layer(gamma, hamiltonian):
         which gives us a circuit of the form:
 
         >>> print(qml.draw(circuit)(0.5))
-        0: ──H──RZ(1)──╭RZ(1)──┤ ⟨Z⟩
-        1: ──H─────────╰RZ(1)──┤ ⟨Z⟩
+        0: ──H─╭ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
+        1: ──H─╰ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
+        >>> print(qml.draw(circuit, expansion_strategy="device")(0.5))
+        0: ──H──MultiRZ(1.00)─╭MultiRZ(1.00)─┤  <Z>
+        1: ──H────────────────╰MultiRZ(1.00)─┤  <Z>
 
     """
     if not isinstance(hamiltonian, qml.Hamiltonian):
@@ -114,7 +118,8 @@ def mixer_layer(alpha, hamiltonian):
         alpha (int or float): The variational parameter passed into the mixer layer
         hamiltonian (.Hamiltonian): The mixer Hamiltonian
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         We first define a mixer Hamiltonian:
 
@@ -144,8 +149,12 @@ def mixer_layer(alpha, hamiltonian):
         which gives us a circuit of the form:
 
         >>> print(qml.draw(circuit)(0.5))
-        0: ──H──RZ(1)──H──H──╭RZ(1)──H──┤ ⟨Z⟩
-        1: ──H───────────────╰RZ(1)──H──┤ ⟨Z⟩
+        0: ──H─╭ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
+        1: ──H─╰ApproxTimeEvolution(1.00,1.00,0.50)─┤  <Z>
+        >>> print(qml.draw(circuit, expansion_strategy="device")(0.5))
+        0: ──H──H──MultiRZ(1.00)──H──H─╭MultiRZ(1.00)──H─┤  <Z>
+        1: ──H──H──────────────────────╰MultiRZ(1.00)──H─┤  <Z>
+
 
     """
     if not isinstance(hamiltonian, qml.Hamiltonian):

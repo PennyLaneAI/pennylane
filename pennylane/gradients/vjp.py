@@ -46,6 +46,7 @@ def compute_vjp(dy, jac, num=None):
 
     if not isinstance(dy_row, np.ndarray):
         jac = math.convert_like(jac, dy_row)
+        jac = math.cast(jac, dy_row.dtype)
 
     jac = math.reshape(jac, [num, -1])
 
@@ -54,7 +55,8 @@ def compute_vjp(dy, jac, num=None):
             # If the dy vector is zero, then the
             # corresponding element of the VJP will be zero.
             num_params = jac.shape[1]
-            return math.convert_like(np.zeros([num_params]), dy)
+            res = math.convert_like(np.zeros([num_params]), dy)
+            return math.cast(res, dy.dtype)
     except (AttributeError, TypeError):
         pass
 
@@ -110,17 +112,16 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
 
     **Example**
 
-    Consider the following Torch-compatible quantum tape:
+    Consider the following quantum tape with PyTorch parameters:
 
     .. code-block:: python
 
         import torch
-        from pennylane.interfaces.torch import TorchInterface
 
         x = torch.tensor([[0.1, 0.2, 0.3],
                           [0.4, 0.5, 0.6]], requires_grad=True, dtype=torch.float64)
 
-        with TorchInterface.apply(qml.tape.JacobianTape()) as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(x[0, 0], wires=0)
             qml.RY(x[0, 1], wires=1)
             qml.RZ(x[0, 2], wires=0)
@@ -143,10 +144,10 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     Executing the VJP tapes, and applying the processing function:
 
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> vjp = fn([t.execute(dev) for t in vjp_tapes])
+    >>> vjp = fn(qml.execute(vjp_tapes, dev, gradient_fn=qml.gradients.param_shift, interface="torch"))
     >>> vjp
-    tensor([-0.6069, -0.0451,  0.0451, -0.0139, -0.2809,  0.2809],
-           dtype=torch.float64, grad_fn=<ViewBackward>)
+    tensor([-1.1562e-01, -1.3862e-02, -9.0841e-03, -1.3878e-16, -4.8217e-01,
+             2.1329e-17], dtype=torch.float64, grad_fn=<ViewBackward>)
 
     The output VJP is also differentiable with respect to the tape parameters:
 
@@ -154,7 +155,7 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
     >>> cost.backward()
     >>> x.grad
     tensor([[-1.1025e+00, -2.0554e-01, -1.4917e-01],
-            [-1.9429e-09, -9.1580e-01,  1.3878e-09]], dtype=torch.float64)
+            [-1.2490e-16, -9.1580e-01,  0.0000e+00]], dtype=torch.float64)
     """
     gradient_kwargs = gradient_kwargs or {}
     num_params = len(tape.trainable_params)
@@ -169,7 +170,12 @@ def vjp(tape, dy, gradient_fn, gradient_kwargs=None):
             # If the dy vector is zero, then the
             # corresponding element of the VJP will be zero,
             # and we can avoid a quantum computation.
-            return [], lambda _, num=None: math.convert_like(np.zeros([num_params]), dy)
+
+            def func(_, num=None):  # pylint: disable=unused-argument
+                res = math.convert_like(np.zeros([num_params]), dy)
+                return math.cast(res, dy.dtype)
+
+            return [], func
     except (AttributeError, TypeError):
         pass
 
@@ -252,12 +258,12 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
             qml.RY(x[1, 1], wires=0)
             qml.RZ(x[1, 2], wires=1)
 
-        with TorchInterface.apply(qml.tape.JacobianTape()) as tape1:
+        with qml.tape.QuantumTape() as tape1:
             ansatz(x)
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=1)
 
-        with TorchInterface.apply(qml.tape.JacobianTape()) as tape2:
+        with qml.tape.QuantumTape() as tape2:
             ansatz(x)
             qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
@@ -279,12 +285,12 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
     Executing the VJP tapes, and applying the processing function:
 
     >>> dev = qml.device("default.qubit", wires=2)
-    >>> vjps = fn([t.execute(dev) for t in vjp_tapes])
+    >>> vjps = fn(qml.execute(vjp_tapes, dev, gradient_fn=qml.gradients.param_shift, interface="torch"))
     >>> vjps
-    [tensor([-0.6069, -0.0451,  0.0451, -0.0139, -0.2809,  0.2809],
-       dtype=torch.float64, grad_fn=<ViewBackward>),
-       tensor([ 0.1739, -0.1641, -0.0054, -0.2937, -0.4008,  0.0000],
-       dtype=torch.float64, grad_fn=<ViewBackward>)]
+    [tensor([-1.1562e-01, -1.3862e-02, -9.0841e-03, -1.3878e-16, -4.8217e-01,
+              2.1329e-17], dtype=torch.float64, grad_fn=<ViewBackward>),
+     tensor([ 1.7393e-01, -1.6412e-01, -5.3983e-03, -2.9366e-01, -4.0083e-01,
+              2.1134e-17], dtype=torch.float64, grad_fn=<ViewBackward>)]
 
     We have two VJPs; one per tape. Each one corresponds to the number of parameters
     on the tapes (6).
@@ -294,8 +300,8 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
     >>> cost = torch.sum(vjps[0] + vjps[1])
     >>> cost.backward()
     >>> x.grad
-    tensor([[-4.7924e-01, -9.0857e-01, -2.4198e-01],
-            [-9.2973e-02, -1.0772e+00,  4.7184e-09]], dtype=torch.float64)
+    tensor([[-0.4792, -0.9086, -0.2420],
+            [-0.0930, -1.0772,  0.0000]], dtype=torch.float64)
     """
     gradient_kwargs = gradient_kwargs or {}
     reshape_info = []

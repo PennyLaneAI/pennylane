@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Code for the adjoint transform."""
-
+from collections.abc import Sequence
 from functools import wraps
+import pennylane as qml
 from pennylane.tape import QuantumTape, stop_recording
 
 
@@ -57,14 +58,15 @@ def adjoint(fn):
     function has indeed been applied:
 
     >>> print(qml.draw(circuit)(0.2, 0.5))
-     0: ──RX(0.2)──RY(0.5)──RY(-0.5)──RX(-0.2)──┤ ⟨Z⟩
+    0: ──RX(0.20)──RY(0.50)──RY(-0.50)──RX(-0.20)─┤  <Z>
 
     The adjoint function can also be applied directly to templates and operations:
 
     >>> qml.adjoint(qml.RX)(0.123, wires=0)
     >>> qml.adjoint(qml.templates.StronglyEntanglingLayers)(weights, wires=[0, 1])
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Adjoint of a function**
 
@@ -88,7 +90,7 @@ def adjoint(fn):
         This creates the following circuit:
 
         >>> print(qml.draw(circuit)())
-        0: --RX(0.123)--RY(0.456)--RY(-0.456)--RX(-0.123)--| <Z>
+        0: ──RX(0.12)──RY(0.46)──RY(-0.46)──RX(-0.12)─┤  <Z>
 
         **Single operation**
 
@@ -106,29 +108,39 @@ def adjoint(fn):
         This creates the following circuit:
 
         >>> print(qml.draw(circuit)())
-        0: --RX(0.123)--RX(-0.123)--| <Z>
+        0: ──RX(0.12)──RX(-0.12)─┤  <Z>
     """
+    if not callable(fn):
+        raise ValueError(
+            f"The object {fn} of type {type(fn)} is not callable. "
+            "This error might occur if you apply adjoint to a list "
+            "of operations instead of a function or template."
+        )
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
         with stop_recording(), QuantumTape() as tape:
-            fn(*args, **kwargs)
+            res = fn(*args, **kwargs)
 
-        if not tape.operations:
+        # known issue with pylint recognizing @property members
+        if not tape.operations:  # pylint:disable=no-member
             # we called op.expand(): get the outputted tape
-            tape = fn(*args, **kwargs)
+            tape = res
 
         adjoint_ops = []
         for op in reversed(tape.operations):
             try:
                 new_op = op.adjoint()
                 adjoint_ops.append(new_op)
-            except NotImplementedError:
+            except qml.operation.AdjointUndefinedError:
                 # Expand the operation and adjoint the result.
                 new_ops = adjoint(op.expand)()
 
                 if isinstance(new_ops, QuantumTape):
                     new_ops = new_ops.operations
+
+                if not isinstance(new_ops, Sequence):
+                    new_ops = [new_ops]
 
                 adjoint_ops.extend(new_ops)
 

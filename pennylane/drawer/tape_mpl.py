@@ -31,7 +31,7 @@ from .utils import convert_wire_order
 # create a private method here and add it to the ``special_cases`` dictionary
 # These methods should accept arguments in the order of ``drawer, layer, mapped_wires, op``
 
-# pylint: disable=unused-argument
+# pylint: disable=unused-argument,no-member
 def _add_swap(drawer, layer, mapped_wires, op):
     drawer.SWAP(layer, mapped_wires)
 
@@ -49,7 +49,7 @@ def _add_cx(drawer, layer, mapped_wires, op):
 
 def _add_multicontrolledx(drawer, layer, mapped_wires, op):
     # convert control values
-    control_values = [(i == "1") for i in op.control_values]
+    control_values = [(i == "1") for i in op.hyperparameters["control_values"]]
     drawer.CNOT(layer, mapped_wires, control_values=control_values)
 
 
@@ -66,6 +66,14 @@ def _add_barrier(drawer, layer, mapped_wires, op):
     drawer.ax.vlines(layer + 0.05, ymin=ymin, ymax=ymax)
 
 
+# pylint: disable=unused-argument
+def _add_wirecut(drawer, layer, mapped_wires, op):
+    ymin = min(mapped_wires) - 0.5
+    ymax = max(mapped_wires) + 0.5
+    drawer.ax.vlines(layer - 0.05, ymin=ymin, ymax=ymax)
+    drawer.ax.vlines(layer + 0.05, ymin=ymin, ymax=ymax)
+
+
 special_cases = {
     ops.SWAP: _add_swap,
     ops.CSWAP: _add_cswap,
@@ -74,6 +82,7 @@ special_cases = {
     ops.MultiControlledX: _add_multicontrolledx,
     ops.CZ: _add_cz,
     ops.Barrier: _add_barrier,
+    ops.WireCut: _add_wirecut,
 }
 """Dictionary mapping special case classes to functions for drawing them."""
 
@@ -121,7 +130,8 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
             :width: 60%
             :target: javascript:void(0);
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
     **Decimals:**
 
@@ -248,9 +258,7 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
     active_wire_notches = kwargs.get("active_wire_notches", True)
     fontsize = kwargs.get("fontsize", None)
 
-    wire_map = convert_wire_order(
-        tape.operations + tape.measurements, wire_order=wire_order, show_all_wires=show_all_wires
-    )
+    wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
 
     layers = drawable_layers(tape.operations, wire_map=wire_map)
 

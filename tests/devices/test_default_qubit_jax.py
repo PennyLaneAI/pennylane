@@ -22,6 +22,7 @@ from pennylane.devices.default_qubit_jax import DefaultQubitJax
 from pennylane import DeviceError
 
 
+@pytest.mark.jax
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -34,6 +35,7 @@ def test_analytic_deprecation():
         qml.device("default.qubit.jax", wires=1, shots=1, analytic=True)
 
 
+@pytest.mark.jax
 class TestQNodeIntegration:
     """Integration tests for default.qubit.jax. This test ensures it integrates
     properly with the PennyLane UI, in particular the new QNode."""
@@ -170,10 +172,10 @@ class TestQNodeIntegration:
         dev = qml.device("default.qubit.jax", wires=1, shots=100)
         expected = jnp.array([0.0, 1.0])
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             qml.PauliX(wires=0)
-            return qml.probs()
+            return qml.probs(wires=0)
 
         result = circuit()
         assert jnp.allclose(result, expected, atol=tol)
@@ -184,29 +186,27 @@ class TestQNodeIntegration:
         expected = jnp.array([0.0, 1.0])
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface="jax", diff_method=None)
         def circuit():
             qml.PauliX(wires=0)
-            return qml.probs()
+            return qml.probs(wires=0)
 
         result = circuit()
         assert jnp.allclose(result, expected, atol=tol)
 
-    def test_probs_jax_jit(self, tol):
-        """Test that returning probs works with jax and jit"""
+    def test_custom_shots_probs_jax_jit(self, tol):
+        """Test that returning probs works with jax and jit when using custom shot vector"""
         dev = qml.device("default.qubit.jax", wires=1, shots=(2, 2))
-        expected = jnp.array([0.0, 1.0])
+        expected = jnp.array([[0.0, 1.0], [0.0, 1.0]])
 
         @jax.jit
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, diff_method=None, interface="jax")
         def circuit():
             qml.PauliX(wires=0)
-            return qml.probs()
+            return qml.probs(wires=0)
 
-        with pytest.raises(
-            ValueError, match="doesn't support getting probabilities when using a shot vector"
-        ):
-            result = circuit()
+        result = circuit()
+        assert jnp.allclose(result, expected, atol=tol)
 
     def test_sampling_with_jit(self):
         """Test that sampling works with a jax.jit"""
@@ -374,6 +374,7 @@ class TestQNodeIntegration:
         circuit()  # Just don't crash.
 
 
+@pytest.mark.jax
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
@@ -470,7 +471,7 @@ class TestPassthruIntegration:
         """Tests that the automatic gradient of a arbitrary controlled Euler-angle-parameterized
         gate is correct."""
         dev = qml.device("default.qubit.jax", wires=2)
-        a, b, c = np.array([theta, theta ** 3, np.sqrt(2) * theta])
+        a, b, c = np.array([theta, theta**3, np.sqrt(2) * theta])
 
         @qml.qnode(dev, diff_method="backprop", interface="jax")
         def circuit(a, b, c):
@@ -543,7 +544,23 @@ class TestPassthruIntegration:
 
         assert jnp.allclose(jnp.array(res), jnp.array(expected_grad), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
+    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
+    def test_hessian_at_zero(self, x, shift):
+        """Tests that the Hessian at vanishing state vector amplitudes
+        is correct."""
+        dev = qml.device("default.qubit.jax", wires=1)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit(x):
+            qml.RY(shift, wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert qml.math.isclose(jax.grad(circuit)(x), 0.0)
+        assert qml.math.isclose(jax.jacobian(jax.jacobian(circuit))(x), -1.0)
+        assert qml.math.isclose(jax.grad(jax.grad(circuit))(x), -1.0)
+
+    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.compute_decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop"])
     def test_jax_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
@@ -620,8 +637,27 @@ class TestPassthruIntegration:
         assert jnp.allclose(qnode(), jnp.array([1, 0]))
 
 
+@pytest.mark.jax
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
+
+    def test_do_not_split_analytic_jax(self, mocker):
+        """Tests that the Hamiltonian is not split for shots=None using the jax device."""
+        jax = pytest.importorskip("jax")
+        jnp = pytest.importorskip("jax.numpy")
+
+        dev = qml.device("default.qubit.jax", wires=2)
+        H = qml.Hamiltonian(jnp.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method="backprop", interface="jax")
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
 
     def test_template_integration(self):
         """Test that a PassthruQNode using default.qubit.jax works with templates."""
@@ -660,6 +696,7 @@ class TestHighLevelIntegration:
         assert grad.shape == weights.shape
 
 
+@pytest.mark.jax
 class TestOps:
     """Unit tests for operations supported by the default.qubit.jax device"""
 
@@ -677,7 +714,7 @@ class TestOps:
 
         param = 0.3
         res = jacobian_transform(circuit)(param)
-        assert jnp.allclose(res, jnp.zeros(wires ** 2))
+        assert jnp.allclose(res, jnp.zeros(wires**2))
 
     def test_inverse_operation_jacobian_backprop(self, tol):
         """Test that inverse operations work in backprop

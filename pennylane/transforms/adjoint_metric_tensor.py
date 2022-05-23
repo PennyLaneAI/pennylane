@@ -24,27 +24,6 @@ import pennylane as qml
 from pennylane.transforms.metric_tensor import _contract_metric_tensor_with_cjac
 
 
-def _get_generator(op):
-    """Reads out the generator and prefactor of an operation and converts
-    to matrix if necessary.
-
-    Args:
-        op (:class:`~.Operation`): Operation to obtain the generator of.
-    Returns:
-        array[float]: Generator matrix
-        float: Prefactor of the generator
-    """
-
-    generator, prefactor = op.generator
-    if not isinstance(generator, np.ndarray):
-        generator = generator.matrix
-    if op.inverse:
-        generator = generator.conj().T
-        prefactor *= -1
-
-    return generator, prefactor
-
-
 def _apply_operations(state, op, device, invert=False):
     """Wrapper that allows to apply a variety of operations---or groups
     of operations---to a state or to prepare a new state.
@@ -140,7 +119,7 @@ def adjoint_metric_tensor(circuit, device=None, hybrid=True):
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev, interface="autograd")
         def circuit(weights):
@@ -201,7 +180,7 @@ def _adjoint_metric_tensor_tape(tape, device):
     # of untrainable operations after each trainable one.
     trainable_operations, group_after_trainable_op = _group_operations(tape)
 
-    dim = 2 ** device.num_wires
+    dim = 2**device.num_wires
     # generate and extract initial state
     psi = device._create_basis_state(0)
 
@@ -213,7 +192,8 @@ def _adjoint_metric_tensor_tape(tape, device):
     psi = _apply_operations(psi, group_after_trainable_op[-1], device)
 
     for j, outer_op in enumerate(trainable_operations):
-        generator_1, prefactor_1 = _get_generator(outer_op)
+        generator_1, prefactor_1 = qml.generator(outer_op)
+        generator_1 = qml.matrix(generator_1)
 
         # the state vector phi is missing a factor of 1j * prefactor_1
         phi = device._apply_unitary(
@@ -222,7 +202,7 @@ def _adjoint_metric_tensor_tape(tape, device):
 
         phi_real = qml.math.reshape(qml.math.real(phi), (dim,))
         phi_imag = qml.math.reshape(qml.math.imag(phi), (dim,))
-        diag_value = prefactor_1 ** 2 * (
+        diag_value = prefactor_1**2 * (
             qml.math.dot(phi_real, phi_real) + qml.math.dot(phi_imag, phi_imag)
         )
         L = qml.math.scatter_element_add(L, (j, j), diag_value)
@@ -244,7 +224,8 @@ def _adjoint_metric_tensor_tape(tape, device):
             lam = _apply_operations(lam, group_after_trainable_op[i], device, invert=True)
             inner_op = trainable_operations[i]
             # extract and apply G_i
-            generator_2, prefactor_2 = _get_generator(inner_op)
+            generator_2, prefactor_2 = qml.generator(inner_op)
+            generator_2 = qml.matrix(generator_2)
             # this state vector is missing a factor of 1j * prefactor_2
             mu = device._apply_unitary(lam, qml.math.convert_like(generator_2, lam), inner_op.wires)
             phi_real = qml.math.reshape(qml.math.real(phi), (dim,))
@@ -303,6 +284,6 @@ def _adjoint_metric_tensor_qnode(qnode, device, hybrid):
 
         cjac = cjac_fn(*args, **kwargs)
 
-        return _contract_metric_tensor_with_cjac(mt, cjac, args, qnode.interface)
+        return _contract_metric_tensor_with_cjac(mt, cjac)
 
     return wrapper

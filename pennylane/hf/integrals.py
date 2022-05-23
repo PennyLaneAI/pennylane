@@ -15,6 +15,7 @@
 This module contains the functions needed for computing integrals over basis functions.
 """
 # pylint: disable= unbalanced-tuple-unpacking, too-many-arguments
+import itertools as it
 import autograd.numpy as anp
 import autograd.scipy as asp
 from scipy.special import factorial2 as fac2
@@ -99,7 +100,7 @@ def contracted_norm(l, alpha, a):
     0.39969026908800853
     """
     lx, ly, lz = l
-    c = anp.pi ** 1.5 / 2 ** sum(l) * fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1)
+    c = anp.pi**1.5 / 2 ** sum(l) * fac2(2 * lx - 1) * fac2(2 * ly - 1) * fac2(2 * lz - 1)
     s = (
         (a.reshape(len(a), 1) * a) / ((alpha.reshape(len(alpha), 1) + alpha) ** (sum(l) + 1.5))
     ).sum()
@@ -193,7 +194,7 @@ def expansion(la, lb, ra, rb, alpha, beta, t):
     r = anp.array(ra - rb)
 
     if la == lb == t == 0:
-        return anp.exp(-q * r ** 2)
+        return anp.exp(-q * r**2)
 
     if t < 0 or t > (la + lb):
         return 0.0
@@ -258,8 +259,8 @@ def generate_overlap(basis_a, basis_b):
     r"""Return a function that computes the overlap integral for two contracted Gaussian functions.
 
     Args:
-        basis_a (BasisFunction): first basis function
-        basis_b (BasisFunction): second basis function
+        basis_a (~hf.basis_set.BasisFunction): first basis function
+        basis_b (~hf.basis_set.BasisFunction): second basis function
 
     Returns:
         function: function that computes the overlap integral
@@ -284,9 +285,8 @@ def generate_overlap(basis_a, basis_b):
             array[float]: the overlap integral between two contracted Gaussian orbitals
         """
 
-        args_a = [i[0] for i in args]
-        args_b = [i[1] for i in args]
-
+        args_a = [arg[0] for arg in args]
+        args_b = [arg[1] for arg in args]
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
@@ -335,7 +335,7 @@ def _diff2(i, j, ri, rj, alpha, beta):
 
     d1 = j * (j - 1) * anp.sqrt(anp.pi / p) * expansion(i, j - 2, ri, rj, alpha, beta, 0)
     d2 = -2 * beta * (2 * j + 1) * anp.sqrt(anp.pi / p) * expansion(i, j, ri, rj, alpha, beta, 0)
-    d3 = 4 * beta ** 2 * anp.sqrt(anp.pi / p) * expansion(i, j + 2, ri, rj, alpha, beta, 0)
+    d3 = 4 * beta**2 * anp.sqrt(anp.pi / p) * expansion(i, j + 2, ri, rj, alpha, beta, 0)
 
     return d1 + d2 + d3
 
@@ -414,8 +414,8 @@ def generate_kinetic(basis_a, basis_b):
     r"""Return a function that computes the kinetic integral for two contracted Gaussian functions.
 
     Args:
-        basis_a (BasisFunction): first basis function
-        basis_b (BasisFunction): second basis function
+        basis_a (~hf.basis_set.BasisFunction): first basis function
+        basis_b (~hf.basis_set.BasisFunction): second basis function
 
     Returns:
         function: function that computes the kinetic integral
@@ -441,9 +441,8 @@ def generate_kinetic(basis_a, basis_b):
         Returns:
             array[float]: the kinetic integral between two contracted Gaussian orbitals
         """
-        args_a = [i[0] for i in args]
-        args_b = [i[1] for i in args]
-
+        args_a = [arg[0] for arg in args]
+        args_b = [arg[1] for arg in args]
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
 
@@ -489,15 +488,18 @@ def _boys(n, t):
 
     Args:
         n (float): order of the Boys function
-        t (float): exponent of the Boys function
+        t (array[float]): exponent of the Boys function
 
     Returns:
         float: value of the Boys function
     """
-    if t == 0.0:
-        return 1 / (2 * n + 1)
-
-    return asp.special.gammainc(n + 0.5, t) * asp.special.gamma(n + 0.5) / (2 * t ** (n + 0.5))
+    return anp.where(
+        t == 0,
+        1 / (2 * n + 1),
+        asp.special.gammainc(n + 0.5, t + (t == 0))
+        * asp.special.gamma(n + 0.5)
+        / (2 * (t + (t == 0)) ** (n + 0.5)),
+    )  # (t == 0) is added to avoid divide by zero
 
 
 def _hermite_coulomb(t, u, v, n, p, dr):
@@ -540,14 +542,11 @@ def _hermite_coulomb(t, u, v, n, p, dr):
         array[float]: value of the Hermite integral
     """
     x, y, z = dr[0], dr[1], dr[2]
-    T = p * (dr ** 2).sum(axis=0)
+    T = p * (dr**2).sum(axis=0)
     r = 0
 
     if t == u == v == 0:
-        f = []
-        for term in T.flatten():
-            f.append(_boys(n, term))
-        return ((-2 * p) ** n) * anp.array(f).reshape(T.shape)
+        return ((-2 * p) ** n) * _boys(n, T)
 
     if t == u == 0:
         if v > 1:
@@ -604,14 +603,10 @@ def nuclear_attraction(la, lb, ra, rb, alpha, beta, r):
     dr = rgp - anp.array(r)[:, anp.newaxis, anp.newaxis]
 
     a = 0.0
-    for t in range(l1 + l2 + 1):
-        for u in range(m1 + m2 + 1):
-            for v in range(n1 + n2 + 1):
-                a = a + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * expansion(
-                    m1, m2, ra[1], rb[1], alpha, beta, u
-                ) * expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * _hermite_coulomb(
-                    t, u, v, 0, p, dr
-                )
+    for t, u, v in it.product(*[range(l) for l in [l1 + l2 + 1, m1 + m2 + 1, n1 + n2 + 1]]):
+        a = a + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * expansion(
+            m1, m2, ra[1], rb[1], alpha, beta, u
+        ) * expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * _hermite_coulomb(t, u, v, 0, p, dr)
     a = a * 2 * anp.pi / p
     return a
 
@@ -622,8 +617,8 @@ def generate_attraction(r, basis_a, basis_b):
 
     Args:
         r (array[float]): position vector of nucleus
-        basis_a (BasisFunction): first basis function
-        basis_b (BasisFunction): second basis function
+        basis_a (~hf.basis_set.BasisFunction): first basis function
+        basis_b (~hf.basis_set.BasisFunction): second basis function
 
     Returns:
         function: function that computes the electron-nuclear attraction integral
@@ -653,12 +648,12 @@ def generate_attraction(r, basis_a, basis_b):
         """
         if r.requires_grad:
             coor = args[0]
-            args_a = [i[0] for i in args[1:]]
-            args_b = [i[1] for i in args[1:]]
+            args_a = [arg[0] for arg in args[1:]]
+            args_b = [arg[1] for arg in args[1:]]
         else:
             coor = r
-            args_a = [i[0] for i in args]
-            args_b = [i[1] for i in args]
+            args_a = [arg[0] for arg in args]
+            args_b = [arg[1] for arg in args]
 
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)
@@ -738,28 +733,21 @@ def electron_repulsion(la, lb, lc, ld, ra, rb, rc, rd, alpha, beta, gamma, delta
         + delta * rd[:, anp.newaxis, anp.newaxis, anp.newaxis, anp.newaxis]
     ) / (gamma + delta)
 
-    g = 0.0
-    for t in range(l1 + l2 + 1):
-        for u in range(m1 + m2 + 1):
-            for v in range(n1 + n2 + 1):
-                for r in range(l3 + l4 + 1):
-                    for s in range(m3 + m4 + 1):
-                        for w in range(n3 + n4 + 1):
-                            g = g + expansion(l1, l2, ra[0], rb[0], alpha, beta, t) * expansion(
-                                m1, m2, ra[1], rb[1], alpha, beta, u
-                            ) * expansion(n1, n2, ra[2], rb[2], alpha, beta, v) * expansion(
-                                l3, l4, rc[0], rd[0], gamma, delta, r
-                            ) * expansion(
-                                m3, m4, rc[1], rd[1], gamma, delta, s
-                            ) * expansion(
-                                n3, n4, rc[2], rd[2], gamma, delta, w
-                            ) * (
-                                (-1) ** (r + s + w)
-                            ) * _hermite_coulomb(
-                                t + r, u + s, v + w, 0, (p * q) / (p + q), p_ab - p_cd
-                            )
+    g_t = [expansion(l1, l2, ra[0], rb[0], alpha, beta, t) for t in range(l1 + l2 + 1)]
+    g_u = [expansion(m1, m2, ra[1], rb[1], alpha, beta, u) for u in range(m1 + m2 + 1)]
+    g_v = [expansion(n1, n2, ra[2], rb[2], alpha, beta, v) for v in range(n1 + n2 + 1)]
+    g_r = [expansion(l3, l4, rc[0], rd[0], gamma, delta, r) for r in range(l3 + l4 + 1)]
+    g_s = [expansion(m3, m4, rc[1], rd[1], gamma, delta, s) for s in range(m3 + m4 + 1)]
+    g_w = [expansion(n3, n4, rc[2], rd[2], gamma, delta, w) for w in range(n3 + n4 + 1)]
 
-    g = g * 2 * (anp.pi ** 2.5) / (p * q * anp.sqrt(p + q))
+    g = 0.0
+    lengths = [l1 + l2 + 1, m1 + m2 + 1, n1 + n2 + 1, l3 + l4 + 1, m3 + m4 + 1, n3 + n4 + 1]
+    for t, u, v, r, s, w in it.product(*[range(length) for length in lengths]):
+        g = g + g_t[t] * g_u[u] * g_v[v] * g_r[r] * g_s[s] * g_w[w] * (
+            (-1) ** (r + s + w)
+        ) * _hermite_coulomb(t + r, u + s, v + w, 0, (p * q) / (p + q), p_ab - p_cd)
+
+    g = g * 2 * (anp.pi**2.5) / (p * q * anp.sqrt(p + q))
 
     return g
 
@@ -769,10 +757,10 @@ def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
     Gaussian functions.
 
     Args:
-        basis_a (BasisFunction): first basis function
-        basis_b (BasisFunction): second basis function
-        basis_c (BasisFunction): third basis function
-        basis_d (BasisFunction): fourth basis function
+        basis_a (~hf.basis_set.BasisFunction): first basis function
+        basis_b (~hf.basis_set.BasisFunction): second basis function
+        basis_c (~hf.basis_set.BasisFunction): third basis function
+        basis_d (~hf.basis_set.BasisFunction): fourth basis function
     Returns:
         function: function that computes the electron repulsion integral
 
@@ -801,10 +789,10 @@ def generate_repulsion(basis_a, basis_b, basis_c, basis_d):
         Returns:
             array[float]: the electron repulsion integral between four contracted Gaussian functions
         """
-        args_a = [i[0] for i in args]
-        args_b = [i[1] for i in args]
-        args_c = [i[2] for i in args]
-        args_d = [i[3] for i in args]
+        args_a = [arg[0] for arg in args]
+        args_b = [arg[1] for arg in args]
+        args_c = [arg[2] for arg in args]
+        args_d = [arg[3] for arg in args]
 
         alpha, ca, ra = _generate_params(basis_a.params, args_a)
         beta, cb, rb = _generate_params(basis_b.params, args_b)

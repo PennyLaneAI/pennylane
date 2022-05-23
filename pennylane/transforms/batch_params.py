@@ -110,6 +110,11 @@ def batch_params(tape, all_operations=False):
     -0.30262974103192636
     """
     params = tape.get_parameters(trainable_only=not all_operations)
+    if not params:
+        raise ValueError(
+            "There are no operations to transform. Either add trainable parameters, "
+            "or specify `all_operations=True`."
+        )
     output_tapes = []
 
     try:

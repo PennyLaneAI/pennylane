@@ -74,23 +74,23 @@ class TestNesterovMomentumOptimizer:
         stepsize, gamma = 0.1, 0.5
         nesmom_opt = NesterovMomentumOptimizer(stepsize, momentum=gamma)
 
-        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x ** 2]
+        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
         grad_uni_fns = [
-            lambda x: (np.cos(x),),
-            lambda x: (np.exp(x / 10.0) / 10.0,),
-            lambda x: (2 * x,),
+            lambda x: np.cos(x),
+            lambda x: np.exp(x / 10.0) / 10.0,
+            lambda x: 2 * x,
         ]
 
         for gradf, f in zip(grad_uni_fns, univariate_funcs):
             nesmom_opt.reset()
 
             x_onestep = nesmom_opt.step(f, x_start)
-            x_onestep_target = x_start - gradf(x_start)[0] * stepsize
+            x_onestep_target = x_start - gradf(x_start) * stepsize
             assert np.allclose(x_onestep, x_onestep_target, atol=tol)
 
             x_twosteps = nesmom_opt.step(f, x_onestep)
-            momentum_term = gamma * gradf(x_start)[0]
-            shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)[0]
+            momentum_term = gamma * gradf(x_start)
+            shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)
             x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
             assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)
 
@@ -103,7 +103,7 @@ class TestNesterovMomentumOptimizer:
         multivariate_funcs = [
             lambda x: np.sin(x[0]) + np.cos(x[1]),
             lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-            lambda x: np.sum([x_ ** 2 for x_ in x]),
+            lambda x: np.sum([x_**2 for x_ in x]),
         ]
         grad_multi_funcs = [
             lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),),
@@ -142,22 +142,22 @@ class TestNesterovMomentumOptimizer:
         stepsize, gamma = 0.1, 0.5
         nesmom_opt = NesterovMomentumOptimizer(stepsize, momentum=gamma)
 
-        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x ** 2]
+        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
         grad_uni_fns = [
-            lambda x: (np.cos(x),),
-            lambda x: (np.exp(x / 10.0) / 10.0,),
-            lambda x: (2 * x,),
+            lambda x: np.cos(x),
+            lambda x: np.exp(x / 10.0) / 10.0,
+            lambda x: 2 * x,
         ]
 
         for gradf, f in zip(grad_uni_fns[::-1], univariate_funcs):
             nesmom_opt.reset()
 
             x_onestep = nesmom_opt.step(f, x_start, grad_fn=gradf)
-            x_onestep_target = x_start - gradf(x_start)[0] * stepsize
+            x_onestep_target = x_start - gradf(x_start) * stepsize
             assert np.allclose(x_onestep, x_onestep_target, atol=tol)
 
             x_twosteps = nesmom_opt.step(f, x_onestep, grad_fn=gradf)
-            momentum_term = gamma * gradf(x_start)[0]
-            shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)[0]
+            momentum_term = gamma * gradf(x_start)
+            shifted_grad_term = gradf(x_onestep - stepsize * momentum_term)
             x_twosteps_target = x_onestep - (shifted_grad_term + momentum_term) * stepsize
             assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)

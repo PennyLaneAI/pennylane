@@ -14,8 +14,9 @@
 """Contains transforms and helpers functions for decomposing arbitrary two-qubit
 unitary operations into elementary gates.
 """
+import numpy as np
+
 import pennylane as qml
-from pennylane import numpy as np
 from pennylane import math
 
 from .single_qubit_unitary import zyz_decomposition
@@ -85,7 +86,7 @@ q_one_cnot = (1 / np.sqrt(2)) * np.array(
 
 
 def _convert_to_su4(U):
-    r"""Check unitarity of a 4x4 matrix and convert it to :math:`SU(4)` if the determinant is not 1.
+    r"""Convert a 4x4 matrix to :math:`SU(4)`.
 
     Args:
         U (array[complex]): A matrix, presumed to be :math:`4 \times 4` and unitary.
@@ -94,19 +95,11 @@ def _convert_to_su4(U):
         array[complex]: A :math:`4 \times 4` matrix in :math:`SU(4)` that is
         equivalent to U up to a global phase.
     """
-    # Check unitarity
-    if not math.allclose(math.dot(U, math.T(math.conj(U))), math.eye(4), atol=1e-7):
-        raise ValueError("Operator must be unitary.")
-
     # Compute the determinant
     det = math.linalg.det(U)
 
-    # Convert to SU(4) if it's not close to 1
-    if not math.allclose(det, 1.0):
-        exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 4
-        U = math.cast_like(U, det) * math.exp(exp_angle)
-
-    return U
+    exp_angle = -1j * math.cast_like(math.angle(det), 1j) / 4
+    return math.cast_like(U, det) * math.exp(exp_angle)
 
 
 def _compute_num_cnots(U):
@@ -283,7 +276,7 @@ def _decomposition_1_cnot(U, wires):
         G (Edag V E) H = (Edag U E)
 
     where V depends on the central CNOT gate, and both U, V are in SU(4). This
-    is done following the methods in https://arxiv.org/pdf/quant-ph/0308045.pdf.
+    is done following the methods in https://arxiv.org/abs/quant-ph/0308045.
 
     Once we find G and H, we can use the fact that E SO(4) Edag gives us
     something in SU(2) x SU(2) to give A, B, C, D.
@@ -395,8 +388,8 @@ def _decomposition_2_cnots(U, wires):
             qml.CNOT(wires=[wires[1], wires[0]]),
         ]
 
-        RZd = qml.RZ(math.cast_like(delta, 1j), wires=0).matrix
-        RXp = qml.RX(phi, wires=0).matrix
+        RZd = qml.RZ(math.cast_like(delta, 1j), wires=0).matrix()
+        RXp = qml.RX(phi, wires=0).matrix()
         inner_matrix = math.kron(RZd, RXp)
 
     # We need the matrix representation of this interior part, V, in order to
@@ -467,9 +460,9 @@ def _decomposition_3_cnots(U, wires):
     # -╭V- = -╭X--RZ(d)--╭C---------╭X--╭SWAP-
     # -╰V- = -╰C--RY(b)--╰X--RY(a)--╰C--╰SWAP-
 
-    RZd = qml.RZ(math.cast_like(delta, 1j), wires=wires[0]).matrix
-    RYb = qml.RY(beta, wires=wires[0]).matrix
-    RYa = qml.RY(alpha, wires=wires[0]).matrix
+    RZd = qml.RZ(math.cast_like(delta, 1j), wires=wires[0]).matrix()
+    RYb = qml.RY(beta, wires=wires[0]).matrix()
+    RYa = qml.RY(alpha, wires=wires[0]).matrix()
 
     V_mats = [CNOT10, math.kron(RZd, RYb), CNOT01, math.kron(math.eye(2), RYa), CNOT10, SWAP]
 

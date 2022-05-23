@@ -512,7 +512,7 @@ def photon_number(cov, mu, params, hbar=2.0):
     """
     # pylint: disable=unused-argument
     ex = (np.trace(cov) + mu.T @ mu) / (2 * hbar) - 1 / 2
-    var = (np.trace(cov @ cov) + 2 * mu.T @ cov @ mu) / (2 * hbar ** 2) - 1 / 4
+    var = (np.trace(cov @ cov) + 2 * mu.T @ cov @ mu) / (2 * hbar**2) - 1 / 4
     return ex, var
 
 
@@ -572,7 +572,7 @@ def poly_quad_expectations(cov, mu, wires, device_wires, params, hbar=2.0):
 
     # HACK, we need access to the Poly instance in order to expand the matrix!
     # TODO: maybe we should make heisenberg_obs a class method or a static method to avoid this being a 'hack'?
-    op = qml.ops.PolyXP(Q, wires=wires)
+    op = qml.PolyXP(Q, wires=wires)
     Q = op.heisenberg_obs(device_wires)
 
     if Q.ndim == 1:
@@ -619,7 +619,7 @@ def fock_expectation(cov, mu, params, hbar=2.0):
     ex = fock_prob(cov, mu, params[0], hbar=hbar)
 
     # var[|n><n|] = E[|n><n|^2] -  E[|n><n|]^2 = E[|n><n|] -  E[|n><n|]^2
-    var = ex - ex ** 2
+    var = ex - ex**2
     return ex, var
 
 
@@ -657,6 +657,7 @@ class DefaultGaussian(Device):
 
     _operation_map = {
         "Identity": Identity.identity_op,
+        "Snapshot": None,
         "Beamsplitter": beamsplitter,
         "ControlledAddition": controlled_addition,
         "ControlledPhase": controlled_phase,
@@ -689,6 +690,7 @@ class DefaultGaussian(Device):
         super().__init__(wires, shots, analytic=analytic)
         self.eng = None
         self.hbar = hbar
+        self._debugger = None
 
         self.reset()
 
@@ -726,6 +728,12 @@ class DefaultGaussian(Device):
                     "the incorrect size for the number of subsystems."
                 )
             self._state = self._operation_map[operation](*par, hbar=self.hbar)
+            return  # we are done here
+
+        if operation == "Snapshot":
+            if self._debugger and self._debugger.active:
+                gaussian = {"cov_matrix": self._state[0].copy(), "means": self._state[1].copy()}
+                self._debugger.snapshots[len(self._debugger.snapshots)] = gaussian
             return  # we are done here
 
         if "State" in operation:

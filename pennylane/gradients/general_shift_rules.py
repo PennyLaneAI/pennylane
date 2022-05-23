@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function for generating generalized parameter shift rules."""
+"""Contains a function for generating generalized parameter shift rules and
+helper methods for processing shift rules as well as for creating tapes with
+shifted parameters."""
 import functools
 import itertools
 import warnings
@@ -20,53 +22,58 @@ import numpy as np
 import pennylane as qml
 
 
-def _process_shifts(rule, tol=1e-10):
+def process_shifts(rule, tol=1e-10, batch_duplicates=True):
     """Utility function to process gradient rules.
 
     Args:
-        rule (array): a ``(N, M)`` array corresponding to ``M`` terms
-            with ``N-1`` simultaneous function shifts. The first row of
-            the array corresponds to the linear combination coefficients;
-            subsequent rows correspond to parameter shifts for these coefficients.
+        rule (array): a ``(M, N)`` array corresponding to ``M`` terms
+            with parameter shifts. ``N`` has to be either ``2`` or ``3``.
+            The first column corresponds to the linear combination coefficients;
+            the last column contains the shift values.
+            If ``N=3``, the middle column contains the multipliers.
         tol (float): floating point tolerance used when comparing shifts/coefficients
+            Terms with coefficients below ``tol`` will be removed.
+        batch_duplicates (bool): whether to check the input ``rule`` for duplicate
+            shift values in its second column.
 
-    This utility function accepts coefficients and shift values, and performs the following
-    processing:
+    Returns:
+        array: The processed shift rule with small entries rounded to 0, sorted
+        with respect to the absolute value of the shifts, and groups of shift
+        terms with identical (multiplier and) shift fused into one term each,
+        if ``batch_duplicates=True``.
 
-    - Removes all small (within absolute tolerance ``tol``) coefficients and shifts
+    This utility function accepts coefficients and shift values as well as optionally
+    multipliers, and performs the following processing:
 
-    - Removes terms with the coefficients are 0
+    - Set all small (within absolute tolerance ``tol``) coefficients and shifts to 0
 
-    - Terms with the same shift value are combined into a single term.
+    - Remove terms where the coefficients are 0 (including the ones set to 0 in the previous step)
+
+    - Terms with the same shift value (and multiplier) are combined into a single term.
 
     - Finally, the terms are sorted according to the absolute value of ``shift``,
-      ensuring that, if there is a zero-shift term, this is returned first.
+      This ensures that a zero-shift term, if it exists, is returned first.
     """
-    # remove all small coefficients and shifts
+    # set all small coefficients, multipliers if present, and shifts to zero.
     rule[np.abs(rule) < tol] = 0
 
     # remove columns where the coefficients are 0
-    rule = rule[:, ~(rule[0] == 0)]
+    rule = rule[~(rule[:, 0] == 0)]
+
+    if batch_duplicates:
+        round_decimals = int(-np.log10(tol))
+        rounded_rule = np.round(rule[:, 1:], round_decimals)
+        # determine unique shifts or (multiplier, shift) combinations
+        unique_mods = np.unique(rounded_rule, axis=0)
+
+        if rule.shape[0] != unique_mods.shape[0]:
+            matches = np.all(rounded_rule[:, np.newaxis] == unique_mods[np.newaxis, :], axis=-1)
+            # TODO: The following line probably can be done in numpy
+            coeffs = [np.sum(rule[slc, 0]) for slc in matches.T]
+            rule = np.hstack([np.stack(coeffs)[:, np.newaxis], unique_mods])
 
     # sort columns according to abs(shift)
-    rule = rule[:, np.argsort(np.abs(rule)[-1])]
-
-    # determine unique shifts
-    round_decimals = int(-np.log10(tol))
-    rounded_rule = np.round(rule[-1], round_decimals)
-    unique_shifts = np.unique(rounded_rule)
-
-    if rule.shape[-1] != len(unique_shifts):
-        # sum columns that have the same shift value
-        coeffs = [
-            np.sum(rule[:, np.nonzero(rounded_rule == s)[0]], axis=1)[0] for s in unique_shifts
-        ]
-        rule = np.stack([np.stack(coeffs), unique_shifts])
-
-        # sort columns according to abs(shift)
-        rule = rule[:, np.argsort(np.abs(rule)[-1])]
-
-    return rule
+    return rule[np.argsort(np.abs(rule[:, -1]))]
 
 
 @functools.lru_cache(maxsize=None)
@@ -117,7 +124,7 @@ def frequencies_to_period(frequencies, decimals=5):
 
     except TypeError:
         # np.gcd only support integer frequencies
-        exponent = 10 ** decimals
+        exponent = 10**decimals
         frequencies = np.round(frequencies, decimals) * exponent
         gcd = np.gcd.reduce(np.int64(frequencies)) / exponent
 
@@ -149,7 +156,7 @@ def _get_shift_rule(frequencies, shifts=None):
         if len(set(shifts)) != n_freqs:
             raise ValueError(f"Shift values must be unique, instead got {shifts}")
 
-        equ_shifts = all(np.isclose(shifts, (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min)))
+        equ_shifts = np.allclose(shifts, (2 * mu - 1) * np.pi / (2 * n_freqs * freq_min))
 
     if len(set(np.round(np.diff(frequencies), 10))) <= 1 and equ_shifts:  # equidistant case
         coeffs = (
@@ -159,19 +166,72 @@ def _get_shift_rule(frequencies, shifts=None):
         )
 
     else:  # non-equidistant case
-        sin_matr = -4 * np.sin(np.outer(shifts, frequencies))
-        det_sin_matr = np.linalg.det(sin_matr)
-        if abs(det_sin_matr) < 1e-6:
+        sin_matrix = -4 * np.sin(np.outer(shifts, frequencies))
+        det_sin_matrix = np.linalg.det(sin_matrix)
+        if abs(det_sin_matrix) < 1e-6:
             warnings.warn(
-                f"Solving linear problem with near zero determinant ({det_sin_matr}) "
+                f"Solving linear problem with near zero determinant ({det_sin_matrix}) "
                 "may give unstable results for the parameter shift rules."
             )
 
-        coeffs = -2 * np.linalg.solve(sin_matr.T, frequencies)
+        coeffs = -2 * np.linalg.solve(sin_matrix.T, frequencies)
 
     coeffs = np.concatenate((coeffs, -coeffs))
-    shifts = np.concatenate((shifts, -shifts))
-    return np.stack([coeffs, shifts])
+    shifts = np.concatenate((shifts, -shifts))  # pylint: disable=invalid-unary-operand-type
+    return np.stack([coeffs, shifts]).T
+
+
+def _iterate_shift_rule_with_multipliers(rule, order, period):
+    r"""Helper method to repeat a shift rule that includes multipliers multiple
+    times along the same parameter axis for higher-order derivatives."""
+    combined_rules = []
+
+    for partial_rules in itertools.product(rule, repeat=order):
+        c, m, s = np.stack(partial_rules).T
+        cumul_shift = 0.0
+        for _m, _s in zip(m, s):
+            cumul_shift *= _m
+            cumul_shift += _s
+        if period is not None:
+            cumul_shift = np.mod(cumul_shift + 0.5 * period, period) - 0.5 * period
+        combined_rules.append(np.stack([np.prod(c), np.prod(m), cumul_shift]))
+
+    # combine all terms in the linear combination into a single
+    # array, with column order (coefficients, multipliers, shifts)
+    return qml.math.stack(combined_rules)
+
+
+def _iterate_shift_rule(rule, order, period=None):
+    r"""Helper method to repeat a shift rule multiple times along the same
+    parameter axis for higher-order derivatives."""
+    if len(rule[0]) == 3:
+        return _iterate_shift_rule_with_multipliers(rule, order, period)
+
+    # TODO: optimization: Without multipliers, the order of shifts does not matter,
+    # so that we can only iterate over the symmetric part of the combined_rules tensor.
+    # This requires the corresponding multinomial prefactors to be included in the coeffs.
+    combined_rules = np.array(list(itertools.product(rule, repeat=order)))
+    # multiply the coefficients of each rule
+    coeffs = np.prod(combined_rules[..., 0], axis=1)
+    # sum the shifts of each rule
+    shifts = np.sum(combined_rules[..., 1], axis=1)
+    if period is not None:
+        # if a period is provided, make sure the shift value is within [-period/2, period/2)
+        shifts = np.mod(shifts + 0.5 * period, period) - 0.5 * period
+    return qml.math.stack([coeffs, shifts]).T
+
+
+def _combine_shift_rules(rules):
+    r"""Helper method to combine shift rules for multiple parameters into
+    simultaneous multivariate shift rules."""
+    combined_rules = []
+
+    for partial_rules in itertools.product(*rules):
+        c, *m, s = np.stack(partial_rules).T
+        combined = np.concatenate([[np.prod(c)], *m, s])
+        combined_rules.append(np.stack(combined))
+
+    return np.stack(combined_rules)
 
 
 @functools.lru_cache()
@@ -183,7 +243,8 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
     cost function first derivatives with respect to the variational parameters can be cast into
     linear combinations of expectation values at shifted parameter values. The coefficients and
     shifts defining the linear combination can be obtained from the unitary generator's eigenvalue
-    frequency spectrum. Details can be found in https://arxiv.org/abs/2107.12390.
+    frequency spectrum. Details can be found in
+    `Wierichs et al. (2022) <https://doi.org/10.22331/q-2022-03-30-677>`__.
 
     Args:
         frequencies (tuple[int or float]): The tuple of eigenvalue frequencies. Eigenvalue
@@ -216,46 +277,44 @@ def generate_shift_rule(frequencies, shifts=None, order=1):
     >>> eigvals = (-0.5, 0, 0, 0.5)
     >>> frequencies = eigvals_to_frequencies(eigvals)
     >>> generate_shift_rule(frequencies)
-    [[ 0.4267767  -0.4267767  -0.0732233   0.0732233 ]
-     [ 1.57079633 -1.57079633  4.71238898 -4.71238898]]
+    array([[ 0.4267767 ,  1.57079633],
+           [-0.4267767 , -1.57079633],
+           [-0.0732233 ,  4.71238898],
+           [ 0.0732233 , -4.71238898]])
 
     An example with explicitly specified shift values:
 
     >>> frequencies = (1, 2, 4)
     >>> shifts = (np.pi / 3, 2 * np.pi / 3, np.pi / 4)
     >>> generate_shift_rule(frequencies, shifts)
-    [[ 3.        , -3.        , -2.09077028,  2.09077028, 0.2186308, -0.2186308 ],
-     [ 0.78539816, -0.78539816,  1.04719755, -1.04719755, 2.0943951, -2.0943951 ]]
+    array([[ 3.        ,  0.78539816],
+           [-3.        , -0.78539816],
+           [-2.09077028,  1.04719755],
+           [ 2.09077028, -1.04719755],
+           [ 0.2186308 ,  2.0943951 ],
+           [-0.2186308 , -2.0943951 ]])
 
     Higher order shift rules (corresponding to the :math:`n`-th derivative of the parameter) can be
     requested via the ``order`` argument. For example, to extract the second order shift rule for a
     gate with generator :math:`X/2`:
 
-    >>> eigvals = (0.5, -0.5) frequencies = eigvals_to_frequencies(eigvals)
+    >>> eigvals = (0.5, -0.5)
+    >>> frequencies = eigvals_to_frequencies(eigvals)
     >>> generate_shift_rule(frequencies, order=2)
-    [[-0.5       ,   0.5       ],
-     [ 0.        ,  -3.14159265]]
+    array([[-0.5       ,  0.        ],
+           [ 0.5       , -3.14159265]])
 
-    This corresponds to :math:`\frac{\partial^2 f}{\partial phi^2} = \frac{1}{2} \left[f(\phi) -
-    f(\phi-\pi)\right]`.
+    This corresponds to the shift rule
+    :math:`\frac{\partial^2 f}{\partial phi^2} = \frac{1}{2} \left[f(\phi) - f(\phi-\pi)\right]`.
     """
     frequencies = tuple(f for f in frequencies if f > 0)
     rule = _get_shift_rule(frequencies, shifts=shifts)
 
     if order > 1:
-        combined_rules = []
         T = frequencies_to_period(frequencies)
+        rule = _iterate_shift_rule(rule, order, period=T)
 
-        for partial_rule in itertools.product(rule.T, repeat=order):
-            c, s = np.stack(partial_rule).T
-            new_shift = np.mod(sum(s) + 0.5 * T, T) - 0.5 * T
-            combined_rules.append(np.stack([np.prod(c), new_shift]))
-
-        # combine all terms in the linear combination into a single
-        # array, with coefficients on the first row and shifts on the second row.
-        rule = qml.math.stack(combined_rules).T
-
-    return _process_shifts(rule, tol=1e-10)
+    return process_shifts(rule, tol=1e-10)
 
 
 def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
@@ -295,9 +354,10 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
     **Example**
 
     >>> generate_multi_shift_rule([(1,), (1,)])
-    [[ 0.25      , -0.25      , -0.25      ,  0.25      ],
-     [ 1.57079633,  1.57079633, -1.57079633, -1.57079633],
-     [ 1.57079633, -1.57079633,  1.57079633, -1.57079633]])
+    array([[ 0.25      ,  1.57079633,  1.57079633],
+           [-0.25      ,  1.57079633, -1.57079633],
+           [-0.25      , -1.57079633,  1.57079633],
+           [ 0.25      , -1.57079633, -1.57079633]])
 
     This corresponds to the gradient rule
 
@@ -313,13 +373,86 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
 
     for f, s, o in zip(frequencies, shifts, orders):
         rule = generate_shift_rule(f, shifts=s, order=o)
-        rules.append(_process_shifts(rule).T)
+        rules.append(process_shifts(rule))
 
-    combined_rules = []
+    return _combine_shift_rules(rules)
 
-    for partial_rules in itertools.product(*rules):
-        c, s = np.stack(partial_rules).T
-        combined = np.concatenate([[np.prod(c)], s])
-        combined_rules.append(np.stack(combined))
 
-    return np.stack(combined_rules).T
+def generate_shifted_tapes(tape, index, shifts, multipliers=None):
+    r"""Generate a list of tapes where one marked trainable parameter has
+    been shifted by the provided shift values.
+
+    Args:
+        tape (.QuantumTape): input quantum tape
+        index (int): index of the trainable parameter to shift
+        shifts (Sequence[float or int]): sequence of shift values.
+            The length determines how many parameter-shifted tapes are created.
+        multipliers (Sequence[float or int]): sequence of multiplier values.
+            The length should match the one of ``shifts``. Each multiplier scales the
+            corresponding gate parameter before the shift is applied. If not provided, the
+            parameters will not be scaled.
+
+    Returns:
+        list[QuantumTape]: List of quantum tapes. In each tape the parameter indicated
+            by ``index`` has been shifted by the values in ``shifts``. The number of tapes
+            matches the lenth of ``shifts`` and ``multipliers`` (if provided).
+    """
+    params = list(tape.get_parameters())
+    if multipliers is None:
+        multipliers = np.ones_like(shifts)
+
+    tapes = []
+
+    for shift, multiplier in zip(shifts, multipliers):
+        new_params = params.copy()
+        shifted_tape = tape.copy(copy_operations=True)
+        new_params[index] = new_params[index] * qml.math.convert_like(multiplier, new_params[index])
+        new_params[index] = new_params[index] + qml.math.convert_like(shift, new_params[index])
+
+        shifted_tape.set_parameters(new_params)
+        tapes.append(shifted_tape)
+
+    return tapes
+
+
+def generate_multishifted_tapes(tape, indices, shifts, multipliers=None):
+    r"""Generate a list of tapes where multiple marked trainable
+    parameters have been shifted by the provided shift values.
+
+    Args:
+        tape (.QuantumTape): input quantum tape
+        indices (Sequence[int]): indices of the trainable parameters to shift
+        shifts (Sequence[Sequence[float or int]]): Nested sequence of shift values.
+            The length of the outer Sequence determines how many parameter-shifted
+            tapes are created. The lengths of the inner sequences should match and
+            have the same length as ``indices``.
+        multipliers (Sequence[Sequence[float or int]]): Nested sequence
+            of multiplier values of the same format as `shifts``. Each multiplier
+            scales the corresponding gate parameter before the shift is applied.
+            If not provided, the parameters will not be scaled.
+
+    Returns:
+        list[QuantumTape]: List of quantum tapes. Each tape has the marked parameters
+            indicated by ``indices`` shifted by the values of ``shifts``. The number
+            of tapes will match the summed lengths of all inner sequences in ``shifts``
+            and ``multipliers`` (if provided).
+    """
+    params = list(tape.get_parameters())
+    if multipliers is None:
+        multipliers = np.ones_like(shifts)
+
+    tapes = []
+
+    for _shifts, _multipliers in zip(shifts, multipliers):
+        new_params = params.copy()
+        shifted_tape = tape.copy(copy_operations=True)
+        for idx, shift, multiplier in zip(indices, _shifts, _multipliers):
+            dtype = getattr(new_params[idx], "dtype", float)
+            new_params[idx] = new_params[idx] * qml.math.convert_like(multiplier, new_params[idx])
+            new_params[idx] = new_params[idx] + qml.math.convert_like(shift, new_params[idx])
+            new_params[idx] = qml.math.cast(new_params[idx], dtype)
+
+        shifted_tape.set_parameters(new_params)
+        tapes.append(shifted_tape)
+
+    return tapes

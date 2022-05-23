@@ -26,9 +26,9 @@ class TestRMSPropOptimizer:
     @pytest.mark.parametrize(
         "grad,args",
         [
-            ([40, -4, 12, -17, 400], [0, 30, 6, -7, 800]),
+            ([40.0, -4, 12, -17, 400], [0.0, 30, 6, -7, 800]),
             ([0.00033, 0.45e-5, 0.0], [1.3, -0.5, 8e3]),
-            ([43], [0.8]),
+            ([43.0], [0.8]),
         ],
     )
     def test_apply_grad(self, grad, args, tol):
@@ -40,7 +40,7 @@ class TestRMSPropOptimizer:
         sgd_opt = RMSPropOptimizer(stepsize, decay=gamma, eps=eps)
         grad, args = np.array(grad), np.array(args, requires_grad=True)
 
-        a1 = (1 - gamma) * grad ** 2
+        a1 = (1 - gamma) * grad**2
         expected = args - stepsize / np.sqrt(a1 + eps) * grad
         res = sgd_opt.apply_grad(grad, args)
         assert np.allclose(res, expected, atol=tol)
@@ -49,7 +49,7 @@ class TestRMSPropOptimizer:
         grad = grad + args
         args = expected
 
-        a2 = gamma * a1 + (1 - gamma) * grad ** 2
+        a2 = gamma * a1 + (1 - gamma) * grad**2
         expected = args - stepsize / np.sqrt(a2 + eps) * grad
         res = sgd_opt.apply_grad(grad, args)
         assert np.allclose(res, expected, atol=tol)
@@ -61,28 +61,28 @@ class TestRMSPropOptimizer:
         stepsize, gamma = 0.1, 0.5
         rms_opt = RMSPropOptimizer(stepsize, decay=gamma)
 
-        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x ** 2]
+        univariate_funcs = [np.sin, lambda x: np.exp(x / 10.0), lambda x: x**2]
         grad_uni_fns = [
-            lambda x: (np.cos(x),),
-            lambda x: (np.exp(x / 10.0) / 10.0,),
-            lambda x: (2 * x,),
+            lambda x: np.cos(x),
+            lambda x: np.exp(x / 10.0) / 10.0,
+            lambda x: 2 * x,
         ]
 
         for gradf, f in zip(grad_uni_fns, univariate_funcs):
             rms_opt.reset()
 
             x_onestep = rms_opt.step(f, x_start)
-            past_grads = (1 - gamma) * gradf(x_start)[0] * gradf(x_start)[0]
+            past_grads = (1 - gamma) * gradf(x_start) * gradf(x_start)
             adapt_stepsize = stepsize / np.sqrt(past_grads + 1e-8)
-            x_onestep_target = x_start - gradf(x_start)[0] * adapt_stepsize
+            x_onestep_target = x_start - gradf(x_start) * adapt_stepsize
             assert np.allclose(x_onestep, x_onestep_target, atol=tol)
 
             x_twosteps = rms_opt.step(f, x_onestep)
-            past_grads = (1 - gamma) * gamma * gradf(x_start)[0] * gradf(x_start)[0] + (
+            past_grads = (1 - gamma) * gamma * gradf(x_start) * gradf(x_start) + (
                 1 - gamma
-            ) * gradf(x_onestep)[0] * gradf(x_onestep)[0]
+            ) * gradf(x_onestep) * gradf(x_onestep)
             adapt_stepsize = stepsize / np.sqrt(past_grads + 1e-8)
-            x_twosteps_target = x_onestep - gradf(x_onestep)[0] * adapt_stepsize
+            x_twosteps_target = x_onestep - gradf(x_onestep) * adapt_stepsize
             assert np.allclose(x_twosteps, x_twosteps_target, atol=tol)
 
     def test_rmsprop_optimizer_multivar(self, tol):
@@ -94,7 +94,7 @@ class TestRMSPropOptimizer:
         multivariate_funcs = [
             lambda x: np.sin(x[0]) + np.cos(x[1]),
             lambda x: np.exp(x[0] / 3) * np.tanh(x[1]),
-            lambda x: np.sum([x_ ** 2 for x_ in x]),
+            lambda x: np.sum([x_**2 for x_ in x]),
         ]
         grad_multi_funcs = [
             lambda x: (np.array([np.cos(x[0]), -np.sin(x[1])]),),

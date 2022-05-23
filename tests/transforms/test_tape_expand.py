@@ -25,7 +25,7 @@ class TestCreateExpandFn:
 
     crit_0 = (~qml.operation.is_trainable) | (qml.operation.has_gen & qml.operation.is_trainable)
     doc_0 = "Test docstring."
-    with qml.tape.JacobianTape() as tape:
+    with qml.tape.QuantumTape() as tape:
         qml.RX(0.2, wires=0)
         qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
         qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
@@ -63,7 +63,7 @@ class TestCreateExpandFn:
         dev = qml.device("default.qubit", wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10, stop_at=self.crit_0)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.U1(0.2, wires=0)
             qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
 
@@ -80,7 +80,7 @@ class TestCreateExpandFn:
         dev = qml.device("default.qubit", wires=1)
         expand_fn = qml.transforms.create_expand_fn(device=dev, depth=10)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.U1(0.2, wires=0)
             qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
 
@@ -96,7 +96,7 @@ class TestCreateExpandFn:
         """Test that passing a depth simply expands to that depth"""
         dev = qml.device("default.qubit", wires=0)
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.2, wires=0)
             qml.RY(qml.numpy.array(2.1, requires_grad=True), wires=1)
             qml.Rot(*qml.numpy.array([0.5, 0.2, -0.1], requires_grad=True), wires=0)
@@ -147,7 +147,8 @@ class TestExpandMultipar:
         dev = qml.device("default.qubit", wires=3)
 
         class _CRX(qml.CRX):
-            generator = [None, 1]
+            def generator(self):
+                raise qml.operations.GeneratorUndefinedError()
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(1.5, wires=0)
@@ -168,7 +169,7 @@ class TestExpandNonunitaryGen:
     def test_do_not_expand(self):
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.2, wires=0)
             qml.Hadamard(0)
             qml.PauliRot(0.9, "XY", wires=[0, 1])
@@ -181,7 +182,7 @@ class TestExpandNonunitaryGen:
     def test_expand_multi_par(self):
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.2, wires=0)
             qml.Hadamard(0)
             qml.Rot(0.9, 1.2, -0.6, wires=0)
@@ -205,9 +206,10 @@ class TestExpandNonunitaryGen:
         unitary generators and non-parametric operations is not touched."""
 
         class _PhaseShift(qml.PhaseShift):
-            generator = [None, 1]
+            def generator(self):
+                return None
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.2, wires=0)
             qml.Hadamard(0)
             _PhaseShift(2.1, wires=1)
@@ -223,7 +225,7 @@ class TestExpandNonunitaryGen:
         """Test that a tape with single-parameter operations with
         unitary generators and non-parametric operations is not touched."""
 
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.2, wires=0)
             qml.Hadamard(0)
             qml.PhaseShift(2.1, wires=1)
@@ -361,9 +363,9 @@ def custom_rot(phi, theta, omega, wires):
 
 
 # Decompose a template into another template
-def custom_basic_entangler_layers(weights, wires):
+def custom_basic_entangler_layers(weights, wires, **kwargs):
     return [
-        qml.AngleEmbedding(weights, wires=wires),
+        qml.AngleEmbedding(weights[0], wires=wires),
         qml.broadcast(qml.CNOT, pattern="ring", wires=wires),
     ]
 
@@ -493,7 +495,6 @@ class TestCreateCustomDecompExpandFn:
         assert np.allclose(original_grad, decomp_grad)
 
         expected_ops = ["Hadamard", "RZ", "PauliX", "RY", "PauliX", "RZ", "Hadamard"]
-        print(decomp_qnode.qtape.operations)
         assert all(
             [op.name == name for op, name in zip(decomp_qnode.qtape.operations, expected_ops)]
         )
@@ -622,12 +623,12 @@ class TestCreateCustomDecompExpandFn:
             return qml.expval(qml.PauliZ(0))
 
         # BasicEntanglerLayers custom decomposition involves AngleEmbedding. If
-        # expansion depth is 1, the AngleEmbedding will still be decomposed into
+        # expansion depth is 2, the AngleEmbedding will still be decomposed into
         # RX (since it's not a supported operation on the device), but the RX will
         # not be further decomposed even though the custom decomposition is specified.
         custom_decomps = {"BasicEntanglerLayers": custom_basic_entangler_layers, "RX": custom_rx}
         decomp_dev = qml.device(
-            "default.qubit", wires=2, custom_decomps=custom_decomps, decomp_depth=1
+            "default.qubit", wires=2, custom_decomps=custom_decomps, decomp_depth=2
         )
         decomp_qnode = qml.QNode(circuit, decomp_dev, expansion_strategy="device")
         _ = decomp_qnode()
@@ -729,3 +730,24 @@ class TestCreateCustomDecompExpandFn:
         assert len(circuit.qtape.operations) == 1
         assert circuit.qtape.operations[0].name == "CNOT"
         assert dev.custom_expand_fn is None
+
+    def test_custom_decomp_used_twice(self):
+        """Test that creating a custom decomposition includes overwriting the
+        correct method under the hood and produces expected results."""
+        res = []
+        for i in range(2):
+
+            custom_decomps = {"MultiRZ": qml.MultiRZ.compute_decomposition}
+            dev = qml.device("lightning.qubit", wires=2, custom_decomps=custom_decomps)
+
+            @qml.qnode(dev, diff_method="adjoint")
+            def cost(theta):
+                qml.Hadamard(wires=0)
+                qml.Hadamard(wires=1)
+                qml.MultiRZ(theta, wires=[1, 0])
+                return qml.expval(qml.PauliX(1))
+
+            x = np.array(0.5)
+            res.append(cost(x))
+
+        assert res[0] == res[1]

@@ -189,7 +189,8 @@ Most functions or methods should have the following structure:
 
         Minimal example with 1 or 2 code blocks (required).
 
-        .. UsageDetails::
+        .. details::
+            :title: Usage Details
 
             More complicated use cases, options, and larger code blocks (optional).
 
@@ -273,7 +274,8 @@ The class docstring is placed directly below the class definition:
 
         Minimal example with 1 or 2 code blocks (required).
 
-        .. UsageDetails::
+        .. details::
+            :title: Usage Details
 
             More complicated use cases, options, and larger code blocks (optional).
 
@@ -434,10 +436,10 @@ In addition, specific additions to the code base must also be reflected in the
 introductory quickstarts:
 
 * **Operations**: new operations should be added to the :doc:`/introduction/operations` quickstart
-  located at ``doc/introduction/operations.rst``.
+  located at ``doc/introduction/operations.rst``. For more details, see :doc:`../adding_operators`.
 
 * **Templates**: new templates should be added to the :doc:`/introduction/templates` quickstart,
-  located at ``doc/introduction/templates.rst``. For more details, see :doc:`../adding_templates`.
+  located at ``doc/introduction/templates.rst``. For more details, see :doc:`../adding_operators`.
 
 * **Optimizers**: new optimizers should be added to the :doc:`/introduction/optimizers` quickstart,
   located at ``doc/introduction/optimizers.rst``.
@@ -509,8 +511,7 @@ the following additional packages are required:
 In addition, some pages in the documentation have additional dependencies:
 
 * The latest version of PyTorch and TensorFlow are required to build the interface documentation,
-* The latest version of TensorNetwork is required to build the ``default.tensor`` documentation, and
-* PennyLane-QChem must be installed to build the quantum chemistry documentation.
+* The latest version of TensorNetwork is required to build the ``default.tensor`` documentation.
 
 These can all be installed via ``pip``:
 

@@ -18,7 +18,6 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 from pennylane.transforms.optimization import commute_controlled
-from pennylane.transforms.get_unitary_matrix import get_unitary_matrix
 from utils import (
     compare_operation_lists,
     check_matrix_equivalence,
@@ -53,7 +52,6 @@ class TestCommuteControlled:
         transformed_qfunc = commute_controlled(direction=direction)(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
-        print(ops)
 
         names_expected = ["PauliX", "ControlledQubitUnitary", "PauliX"]
         wires_expected = [Wires(2), Wires([0, 2]), Wires(2)]
@@ -71,7 +69,6 @@ class TestCommuteControlled:
         transformed_qfunc = commute_controlled(direction=direction)(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
-        print(ops)
 
         names_expected = ["PauliZ", "CNOT", "PauliY"]
         wires_expected = [Wires("b"), Wires([2, "b"]), Wires("b")]
@@ -296,10 +293,10 @@ class TestCommuteControlled:
         assert len(original_ops) == len(transformed_ops)
 
         # Compare matrices
-        compute_matrix = get_unitary_matrix(qfunc, [0, 1])
+        compute_matrix = qml.matrix(qfunc, [0, 1])
         matrix_expected = compute_matrix()
 
-        compute_transformed_matrix = get_unitary_matrix(transformed_qfunc, [0, 1])
+        compute_transformed_matrix = qml.matrix(transformed_qfunc, [0, 1])
         matrix_obtained = compute_transformed_matrix()
 
         assert check_matrix_equivalence(matrix_expected, matrix_obtained)
@@ -339,6 +336,7 @@ expected_wires_list = [
 class TestCommuteControlledInterfaces:
     """Test that single-qubit gates can be pushed through controlled gates in all interfaces."""
 
+    @pytest.mark.autograd
     def test_commute_controlled_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
@@ -359,9 +357,10 @@ class TestCommuteControlledInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.torch
     def test_commute_controlled_torch(self):
         """Test QNode and gradient in torch interface."""
-        torch = pytest.importorskip("torch", minversion="1.8")
+        import torch
 
         original_qnode = qml.QNode(qfunc, dev, interface="torch")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
@@ -385,9 +384,10 @@ class TestCommuteControlledInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.tf
     def test_commute_controlled_tf(self):
         """Test QNode and gradient in tensorflow interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         original_qnode = qml.QNode(qfunc, dev, interface="tf")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
@@ -416,9 +416,10 @@ class TestCommuteControlledInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.jax
     def test_commute_controlled_jax(self):
         """Test QNode and gradient in JAX interface."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
 
         from jax.config import config

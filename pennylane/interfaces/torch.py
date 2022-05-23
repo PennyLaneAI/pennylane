@@ -12,303 +12,231 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the mixin interface class for creating differentiable quantum tapes with
-PyTorch.
+This module contains functions for adding the PyTorch interface
+to a PennyLane Device class.
 """
-# pylint: disable=protected-access, attribute-defined-outside-init, arguments-differ, no-member, import-self, too-many-statements
+# pylint: disable=too-many-arguments,protected-access,abstract-method
 import numpy as np
-import semantic_version
 import torch
 
 import pennylane as qml
-from pennylane.queuing import AnnotatedQueue
-
-COMPLEX_SUPPORT = semantic_version.match(">=1.8.0", torch.__version__)
 
 
-def args_to_numpy(args):
-    """Converts all Torch tensors in a list to NumPy arrays
+def _compute_vjp(dy, jacs, device=None):
+    vjps = []
 
-    Args:
-        args (list): list containing QNode arguments, including Torch tensors
+    for d, jac in zip(dy, jacs):
+        if isinstance(jac, np.ndarray):
+            jac = torch.from_numpy(jac)
 
-    Returns:
-        list: returns the same list, with all Torch tensors converted to NumPy arrays
+        jac = torch.as_tensor(jac, device=device)
+        vjp = qml.gradients.compute_vjp(d, jac)
+        vjps.extend(vjp)
+
+    return vjps
+
+
+class ExecuteTapes(torch.autograd.Function):
+    """The signature of this ``torch.autograd.Function`` is designed to
+    work around Torch restrictions.
+
+    In particular, ``torch.autograd.Function``:
+
+    - Cannot accept keyword arguments. As a result, we pass a dictionary
+      as the first argument ``kwargs``. This dictionary **must** contain:
+
+      * ``"tapes"``: the quantum tapes to batch evaluate
+      * ``"device"``: the quantum device to use to evaluate the tapes
+      * ``"execute_fn"``: the execution function to use on forward passes
+      * ``"gradient_fn"``: the gradient transform function to use
+        for backward passes
+      * ``"gradient_kwargs"``: gradient keyword arguments to pass to the
+        gradient function
+      * ``"max_diff``: the maximum order of derivatives to support
+
+    Further, note that the ``parameters`` argument is dependent on the
+    ``tapes``; this function should always be called
+    with the parameters extracted directly from the tapes as follows:
+
+    >>> parameters = []
+    >>> [parameters.extend(t.get_parameters()) for t in tapes]
+    >>> kwargs = {"tapes": tapes, "device": device, "gradient_fn": gradient_fn, ...}
+    >>> ExecuteTapes.apply(kwargs, *parameters)
+
+    The private argument ``_n`` is used to track nesting of derivatives, for example
+    if the nth-order derivative is requested. Do not set this argument unless you
+    understand the consequences!
     """
-    res = []
 
-    for i in args:
-        if isinstance(i, torch.Tensor):
-            if i.is_cuda:  # pragma: no cover
-                res.append(i.cpu().detach().numpy())
-            else:
-                res.append(i.detach().numpy())
-        else:
-            res.append(i)
-
-    # if NumPy array is scalar, convert to a Python float
-    res = [i.tolist() if (isinstance(i, np.ndarray) and not i.shape) else i for i in res]
-
-    return res
-
-
-class _TorchInterface(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, input_kwargs, *input_):
-        """Implements the forward pass QNode evaluation"""
-        # detach all input tensors, convert to NumPy array
-        ctx.args = args_to_numpy(input_)
-        ctx.kwargs = input_kwargs
-        ctx.save_for_backward(*input_)
+    def forward(ctx, kwargs, *parameters):  # pylint: disable=arguments-differ
+        """Implements the forward pass batch tape evaluation."""
+        ctx.tapes = kwargs["tapes"]
+        ctx.device = kwargs["device"]
 
-        tape = ctx.kwargs["tape"]
-        device = ctx.kwargs["device"]
+        ctx.execute_fn = kwargs["execute_fn"]
+        ctx.gradient_fn = kwargs["gradient_fn"]
 
-        # unwrap constant parameters
-        ctx.all_params = tape.get_parameters(trainable_only=False)
-        ctx.all_params_unwrapped = args_to_numpy(ctx.all_params)
+        ctx.gradient_kwargs = kwargs["gradient_kwargs"]
+        ctx.max_diff = kwargs["max_diff"]
+        ctx._n = kwargs.get("_n", 1)
 
-        # evaluate the tape
-        tape.set_parameters(ctx.all_params_unwrapped, trainable_only=False)
-        res = tape.execute_device(ctx.args, device)
-        tape.set_parameters(ctx.all_params, trainable_only=False)
-
-        if hasattr(res, "numpy"):
-            res = qml.math.to_numpy(res)
-
-        use_adjoint_cached_state = False
-        # tape might not be a jacobian tape
-        jac_options = getattr(tape, "jacobian_options", {})
-        # cache state for adjoint jacobian computation
-        if jac_options.get("jacobian_method", None) == "adjoint_jacobian":
-            if jac_options.get("adjoint_cache", True):
-                use_adjoint_cached_state = True
-                state = device._pre_rotated_state
-
-        ctx.saved_grad_matrices = {}
-
-        def _evaluate_grad_matrix(grad_matrix_fn):
-            """Convenience function for generating gradient matrices
-            for the given parameter values.
-
-            This function serves two purposes:
-
-            * Avoids duplicating logic surrounding parameter unwrapping/wrapping
-
-            * Takes advantage of closure, to cache computed gradient matrices via
-              the ctx.saved_grad_matrices attribute, to avoid gradient matrices being
-              computed multiple redundant times.
-
-              This is particularly useful when differentiating vector-valued QNodes.
-              Because PyTorch requests the vector-GradMatrix product,
-              and *not* the full GradMatrix, differentiating vector-valued
-              functions will result in multiple backward passes.
-
-            Args:
-                grad_matrix_fn (str): Name of the gradient matrix function. Should correspond to an existing
-                    tape method. Currently allowed values include ``"jacobian"`` and ``"hessian"``.
-
-                Returns:
-                    array[float]: the gradient matrix
-            """
-            if grad_matrix_fn in ctx.saved_grad_matrices:
-                return ctx.saved_grad_matrices[grad_matrix_fn]
-
-            if use_adjoint_cached_state:
-                tape.jacobian_options["device_pd_options"] = {"starting_state": state}
-
-            tape.set_parameters(ctx.all_params_unwrapped, trainable_only=False)
-            grad_matrix = getattr(tape, grad_matrix_fn)(
-                device, params=ctx.args, **tape.jacobian_options
-            )
-            tape.set_parameters(ctx.all_params, trainable_only=False)
-
-            grad_matrix = torch.as_tensor(torch.from_numpy(grad_matrix), dtype=tape.dtype)
-            ctx.saved_grad_matrices[grad_matrix_fn] = grad_matrix
-
-            return grad_matrix
-
-        class _Jacobian(torch.autograd.Function):
-            @staticmethod
-            def forward(ctx_, parent_ctx, *input_):
-                """Implements the forward pass QNode Jacobian evaluation"""
-                ctx_.dy = parent_ctx.dy
-                ctx_.save_for_backward(*input_)
-                jacobian = _evaluate_grad_matrix("jacobian")
-                return jacobian
-
-            @staticmethod
-            def backward(ctx_, ddy):  # pragma: no cover
-                """Implements the backward pass QNode vector-Hessian product"""
-                hessian = _evaluate_grad_matrix("hessian")
-
-                if torch.squeeze(ddy).ndim > 1:
-                    vhp = ctx_.dy.view(1, -1) @ ddy @ hessian @ ctx_.dy.view(-1, 1)
-                    vhp = vhp / torch.linalg.norm(ctx_.dy) ** 2
-                else:
-                    vhp = ddy @ hessian
-
-                vhp = torch.unbind(vhp.view(-1))
-
-                grad_input = []
-
-                # match the type and device of the input tensors
-                for i, j in zip(vhp, ctx_.saved_tensors):
-                    res = torch.as_tensor(i, dtype=tape.dtype)
-                    if j.is_cuda:  # pragma: no cover
-                        cuda_device = j.get_device()
-                        res = torch.as_tensor(res, device=cuda_device)
-                    grad_input.append(res)
-
-                return (None,) + tuple(grad_input)
-
-        ctx.jacobian = _Jacobian
+        with qml.tape.Unwrap(*ctx.tapes):
+            res, ctx.jacs = ctx.execute_fn(ctx.tapes, **ctx.gradient_kwargs)
 
         # if any input tensor uses the GPU, the output should as well
-        for i in input_:
-            if isinstance(i, torch.Tensor):
-                if i.is_cuda:  # pragma: no cover
-                    cuda_device = i.get_device()
-                    return torch.as_tensor(
-                        torch.from_numpy(res), device=cuda_device, dtype=tape.dtype
-                    )
+        ctx.torch_device = None
 
-        if tape.is_sampled and not tape.all_sampled:
-            return tuple([torch.as_tensor(t, dtype=tape.dtype) for t in res])
+        for p in parameters:
+            if isinstance(p, torch.Tensor) and p.is_cuda:  # pragma: no cover
+                ctx.torch_device = p.get_device()
+                break
 
-        if res.dtype == np.dtype("object"):
-            res = np.hstack(res)
+        for i, r in enumerate(res):
+            if isinstance(r, np.ndarray) and r.dtype is np.dtype("object"):
+                # For backwards compatibility, we flatten ragged tape outputs
+                r = np.hstack(r)
 
-        return torch.as_tensor(torch.from_numpy(res), dtype=tape.dtype)
+            if isinstance(r, (list, tuple)):
+                res[i] = [torch.as_tensor(t) for t in r]
+
+                if isinstance(r, tuple):
+                    res[i] = tuple(res[i])
+            else:
+                res[i] = torch.as_tensor(r, device=ctx.torch_device)
+
+            if ctx.jacs:
+                ctx.jacs[i] = torch.as_tensor(ctx.jacs[i], device=ctx.torch_device)
+
+        return tuple(res)
 
     @staticmethod
-    def backward(ctx, dy):  # pragma: no cover
-        """Implements the backwards pass QNode vector-Jacobian product"""
-        ctx.dy = dy
+    def backward(ctx, *dy):
+        """Returns the vector-Jacobian product with given
+        parameter values p and output gradient dy"""
 
-        dyv = dy.view(1, -1)
-        jac_res = ctx.jacobian.apply(ctx, *ctx.saved_tensors)
+        if ctx.jacs:
+            # Jacobians were computed on the forward pass (mode="forward")
+            # No additional quantum evaluations needed; simply compute the VJPs directly.
+            vjps = _compute_vjp(dy, ctx.jacs)
 
-        # When using CUDA, dyv seems to remain on the GPU, while the result
-        # of jac_res is returned on CPU, even though the saved_tensors arguments are
-        # themselves on the GPU. Check whether this has happened, and move things
-        # back to the GPU if required.
-        if dyv.is_cuda or jac_res.is_cuda:
-            if not dyv.is_cuda:
-                dyv = torch.as_tensor(dyv, device=jac_res.get_device())
-            if not jac_res.is_cuda:
-                jac_res = torch.as_tensor(jac_res, device=dyv.get_device())
+        else:
+            # Need to compute the Jacobians on the backward pass (accumulation="backward")
 
-        vjp = dyv @ jac_res
-        vjp = torch.unbind(vjp.view(-1))
-        return (None,) + tuple(vjp)
+            if isinstance(ctx.gradient_fn, qml.gradients.gradient_transform):
+                # Gradient function is a gradient transform.
+
+                # Generate and execute the required gradient tapes
+                if ctx._n < ctx.max_diff:
+                    # The derivative order is less than the max derivative order.
+                    # Compute the VJP recursively by using the gradient transform
+                    # and calling ``execute`` to compute the results.
+                    # This will allow higher-order derivatives to be computed
+                    # if requested.
+
+                    vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                        ctx.tapes,
+                        dy,
+                        ctx.gradient_fn,
+                        reduction="extend",
+                        gradient_kwargs=ctx.gradient_kwargs,
+                    )
+
+                    # This is where the magic happens. Note that we call ``execute``.
+                    # This recursion, coupled with the fact that the gradient transforms
+                    # are differentiable, allows for arbitrary order differentiation.
+                    vjps = processing_fn(
+                        execute(
+                            vjp_tapes,
+                            ctx.device,
+                            ctx.execute_fn,
+                            ctx.gradient_fn,
+                            ctx.gradient_kwargs,
+                            _n=ctx._n + 1,
+                            max_diff=ctx.max_diff,
+                        )
+                    )
+                else:
+                    # The derivative order is at the maximum. Compute the VJP
+                    # in a non-differentiable manner to reduce overhead.
+
+                    with qml.tape.Unwrap(*ctx.tapes):
+                        vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                            ctx.tapes,
+                            dy,
+                            ctx.gradient_fn,
+                            reduction="extend",
+                            gradient_kwargs=ctx.gradient_kwargs,
+                        )
+
+                        vjps = processing_fn(ctx.execute_fn(vjp_tapes)[0])
+
+            else:
+                # Gradient function is not a gradient transform
+                # (e.g., it might be a device method).
+                # Note that unlike the previous branch:
+                #
+                # - there is no recursion here
+                # - gradient_fn is not differentiable
+                #
+                # so we cannot support higher-order derivatives.
+
+                with qml.tape.Unwrap(*ctx.tapes):
+                    jacs = ctx.gradient_fn(ctx.tapes, **ctx.gradient_kwargs)
+
+                vjps = _compute_vjp(dy, jacs, device=ctx.torch_device)
+
+        # The output of backward must match the input of forward.
+        # Therefore, we return `None` for the gradient of `kwargs`.
+        return (None,) + tuple(vjps)
 
 
-class TorchInterface(AnnotatedQueue):
-    """Mixin class for applying an Torch interface to a :class:`~.JacobianTape`.
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
+    """Execute a batch of tapes with Torch parameters on a device.
 
-    Torch-compatible quantum tape classes can be created via subclassing:
+    This function may be called recursively, if ``gradient_fn`` is a differentiable
+    transform, and ``_n < max_diff``.
 
-    .. code-block:: python
+    Args:
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        device (.Device): Device to use to execute the batch of tapes.
+            If the device does not provide a ``batch_execute`` method,
+            by default the tapes will be executed in serial.
+        execute_fn (callable): The execution function used to execute the tapes
+            during the forward pass. This function must return a tuple ``(results, jacobians)``.
+            If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
+            compute the gradients during the backwards pass.
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
+        gradient_fn (callable): the gradient function to use to compute quantum gradients
+        _n (int): a positive integer used to track nesting of derivatives, for example
+            if the nth-order derivative is requested.
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum order of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
+        mode (str): Whether the gradients should be computed on the forward
+            pass (``forward``) or the backward pass (``backward``).
 
-        class MyTorchQuantumTape(TorchInterface, JacobianTape):
-
-    Alternatively, the Torch interface can be dynamically applied to existing
-    quantum tapes via the :meth:`~.apply` class method. This modifies the
-    tape **in place**.
-
-    Once created, the Torch interface can be used to perform quantum-classical
-    differentiable programming.
-
-    **Example**
-
-    Once a Torch quantum tape has been created, it can be evaluated and differentiated:
-
-    .. code-block:: python
-
-        dev = qml.device("default.qubit", wires=1)
-        p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
-
-        with TorchInterface.apply(JacobianTape()) as qtape:
-            qml.Rot(p[0], p[1] ** 2 + p[0] * p[2], p[1] * torch.sin(p[2]), wires=0)
-            expval(qml.PauliX(0))
-
-        result = qtape.execute(dev)
-
-    >>> print(result)
-    tensor([0.0698], dtype=torch.float64, grad_fn=<_TorchInterfaceBackward>)
-    >>> result.backward()
-    >>> print(p.grad)
-    tensor([0.2987, 0.3971, 0.0988])
-
-    The Torch interface defaults to ``torch.float64`` output. This can be modified by
-    providing the ``dtype`` argument when applying the interface:
-
-    >>> p = torch.tensor([0.1, 0.2, 0.3], requires_grad=True)
-    >>> with TorchInterface.apply(JacobianTape(), dtype=torch.float32) as qtape:
-    ...     qml.Rot(p[0], p[1] ** 2 + p[0] * p[2], p[1] * torch.sin(p[2]), wires=0)
-    ...     expval(qml.PauliX(0))
-    >>> result = qtape.execute(dev)
-    >>> print(result)
-    tensor([0.0698], grad_fn=<_TorchInterfaceBackward>)
-    >>> print(result.dtype)
-    torch.float32
-    >>> result.backward()
-    >>> print(p.grad)
-    tensor([0.2987, 0.3971, 0.0988])
-    >>> print(p.grad.dtype)
-    torch.float32
+    Returns:
+        list[list[torch.Tensor]]: A nested list of tape results. Each element in
+        the returned list corresponds in order to the provided tapes.
     """
+    # pylint: disable=unused-argument
+    parameters = []
+    for tape in tapes:
+        # set the trainable parameters
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
+        parameters.extend(tape.get_parameters())
 
-    dtype = torch.float64
-
-    @property
-    def interface(self):  # pylint: disable=missing-function-docstring
-        return "torch"
-
-    def _update_trainable_params(self):
-        params = self.get_parameters(trainable_only=False)
-
-        trainable_params = set()
-
-        for idx, p in enumerate(params):
-            if getattr(p, "requires_grad", False):
-                trainable_params.add(idx)
-
-        self.trainable_params = trainable_params
-        return params
-
-    def _execute(self, params, **kwargs):
-        kwargs["tape"] = self
-        res = _TorchInterface.apply(kwargs, *params)
-        return res
-
-    @classmethod
-    def apply(cls, tape, dtype=torch.float64):
-        """Apply the Torch interface to an existing tape in-place.
-
-        Args:
-            tape (.JacobianTape): a quantum tape to apply the Torch interface to
-            dtype (torch.dtype): the dtype that the returned quantum tape should
-                output
-
-        **Example**
-
-        >>> with JacobianTape() as tape:
-        ...     qml.RX(0.5, wires=0)
-        ...     expval(qml.PauliZ(0))
-        >>> TorchInterface.apply(tape)
-        >>> tape
-        <TorchQuantumTape: wires=<Wires = [0]>, params=1>
-        """
-        if (dtype is torch.complex64 or dtype is torch.complex128) and not COMPLEX_SUPPORT:
-            raise qml.QuantumFunctionError(
-                "Version 1.8.0 or above of PyTorch must be installed for complex support, "
-                "which is required for quantum functions that return the state."
-            )
-
-        tape_class = getattr(tape, "__bare__", tape.__class__)
-        tape.__bare__ = tape_class
-        tape.__class__ = type("TorchQuantumTape", (cls, tape_class), {"dtype": dtype})
-        tape._update_trainable_params()
-        return tape
+    kwargs = dict(
+        tapes=tapes,
+        device=device,
+        execute_fn=execute_fn,
+        gradient_fn=gradient_fn,
+        gradient_kwargs=gradient_kwargs,
+        _n=_n,
+        max_diff=max_diff,
+    )
+    return ExecuteTapes.apply(kwargs, *parameters)

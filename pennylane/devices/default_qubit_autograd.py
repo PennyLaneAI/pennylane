@@ -79,8 +79,6 @@ class DefaultQubitAutograd(DefaultQubit):
     name = "Default qubit (Autograd) PennyLane plugin"
     short_name = "default.qubit.autograd"
 
-    C_DTYPE = np.complex128
-    R_DTYPE = np.float64
     _dot = staticmethod(np.dot)
     _abs = staticmethod(np.abs)
     _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
@@ -92,6 +90,7 @@ class DefaultQubitAutograd(DefaultQubit):
     _transpose = staticmethod(np.transpose)
     _tensordot = staticmethod(np.tensordot)
     _conj = staticmethod(np.conj)
+    _real = staticmethod(np.real)
     _imag = staticmethod(np.imag)
     _roll = staticmethod(np.roll)
     _stack = staticmethod(np.stack)
@@ -105,8 +104,14 @@ class DefaultQubitAutograd(DefaultQubit):
 
         return res
 
+    @staticmethod
+    def _const_mul(constant, array):
+        return constant * array
+
     def __init__(self, wires, *, shots=None, analytic=None):
-        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
+        r_dtype = np.float64
+        c_dtype = np.complex128
+        super().__init__(wires, shots=shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
 
         # prevent using special apply methods for these gates due to slowdown in Autograd
         # implementation

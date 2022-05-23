@@ -170,6 +170,7 @@ class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
 
+    @pytest.mark.autograd
     def test_autograd(self):
         """Tests the autograd interface."""
 
@@ -187,10 +188,11 @@ class TestInterfaces:
         # without error
         grad_fn(weight)
 
+    @pytest.mark.jax
     def test_jax(self):
         """Tests the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         weight = jnp.array(0.5)
@@ -204,10 +206,11 @@ class TestInterfaces:
         # check that the gradient is computed without error
         grad_fn(weight)
 
+    @pytest.mark.tf
     def test_tf(self):
         """Tests the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         weight = tf.Variable(0.5)
         dev = qml.device("default.qubit", wires=4)
@@ -222,10 +225,11 @@ class TestInterfaces:
         # check that the gradient is computed without error
         tape.gradient(res, [weight])
 
+    @pytest.mark.torch
     def test_torch(self):
         """Tests the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         weight = torch.tensor(0.5, requires_grad=True)
 

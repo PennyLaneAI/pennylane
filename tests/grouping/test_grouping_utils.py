@@ -99,6 +99,13 @@ class TestGroupingUtils:
         n_qubits = 3
         assert pytest.raises(ValueError, pauli_to_binary, pauli_word, n_qubits, wire_map)
 
+    @pytest.mark.parametrize("pauli_word,binary_pauli", ops_to_vecs_explicit_wires)
+    def test_pauli_to_binary_no_check(self, pauli_word, binary_pauli):
+        """Tests that pauli_to_binary runs well when pauli words are provided and
+        check_is_pauli_word is False."""
+
+        assert (pauli_to_binary(pauli_word, check_is_pauli_word=False) == binary_pauli).all()
+
     @pytest.mark.parametrize("vec,op", vecs_to_ops_explicit_wires)
     def test_binary_to_pauli_no_wire_map(self, vec, op):
         """Test conversion of Pauli in binary vector representation to operator form when no
@@ -360,7 +367,7 @@ class TestGroupingUtils:
     @pytest.mark.parametrize(
         "pauli_word,wire_map,expected_matrix",
         [
-            (PauliX(0), {0: 0}, PauliX.matrix),
+            (PauliX(0), {0: 0}, PauliX(0).matrix()),
             (Identity(0), {0: 0}, np.eye(2)),
             (
                 PauliZ(0) @ PauliY(1),
@@ -378,7 +385,7 @@ class TestGroupingUtils:
                 np.array([[0, 0, -1j, 0], [0, 0, 0, 1j], [1j, 0, 0, 0], [0, -1j, 0, 0]]),
             ),
             (Identity(0), {0: 0, 1: 1}, np.eye(4)),
-            (PauliX(2), None, PauliX.matrix),
+            (PauliX(2), None, PauliX(2).matrix()),
             (
                 PauliX(2),
                 {0: 0, 1: 1, 2: 2},

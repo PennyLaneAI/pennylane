@@ -59,14 +59,13 @@ def get_RX_circuit(scales):
     return circuit
 
 
-def fun_close(fun1, fun2, zero=None, tol=1e-5, samples=100):
+def fun_close(fun1, fun2, zero=None, tol=1e-5, samples=10):
     X = np.linspace(-np.pi, np.pi, samples)
     if zero is not None:
         X = qml.math.convert_like(X, zero)
 
     for x in X:
         if not np.isclose(fun1(x), fun2(x), atol=tol, rtol=0):
-            print(f"{fun1(x)} != {fun2(x)} at {x}")
             return False
     return True
 
@@ -121,7 +120,7 @@ class TestReconstructEqu:
         lambda x: 0.1 * qml.math.cos(-2.1 * x) + 2.9 * qml.math.sin(4.2 * x - 1.2),
         lambda x: qml.math.ones_like(x) * 4.01,
         lambda x: qml.math.sum(
-            [i ** 2 * 0.1 * qml.math.sin(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]
+            [i**2 * 0.1 * qml.math.sin(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]
         ),
     ]
 
@@ -134,7 +133,7 @@ class TestReconstructEqu:
         + 4.2 * 2.9 * qml.math.cos(4.2 * x - 1.2),
         lambda x: 0.0,
         lambda x: qml.math.sum(
-            [i * 3.921 * i ** 2 * 0.1 * qml.math.cos(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]
+            [i * 3.921 * i**2 * 0.1 * qml.math.cos(i * 3.921 * x - 2.7 / i) for i in range(1, 10)]
         ),
     ]
 
@@ -165,6 +164,7 @@ class TestReconstructEqu:
         assert spy.call_count == num_frequency * 2
         assert fun_close(fun, rec)
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize(
         "fun, num_frequency, base_f, expected_grad",
         zip(c_funs, nums_frequency, base_frequencies, expected_grads),
@@ -183,6 +183,7 @@ class TestReconstructEqu:
         assert fun_close(fun, rec, zero=pnp.array(0.0, requires_grad=True))
         assert fun_close(expected_grad, grad, zero=pnp.array(0.0, requires_grad=True))
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "fun, num_frequency, base_f, expected_grad",
         zip(c_funs, nums_frequency, base_frequencies, expected_grads),
@@ -190,7 +191,7 @@ class TestReconstructEqu:
     def test_differentiability_jax(self, fun, num_frequency, base_f, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for JAX input variables."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax.config import config
 
         config.update("jax_enable_x64", True)
@@ -204,6 +205,7 @@ class TestReconstructEqu:
         assert fun_close(fun, rec, zero=jax.numpy.array(0.0))
         assert fun_close(expected_grad, grad, zero=jax.numpy.array(0.0))
 
+    @pytest.mark.tf
     @pytest.mark.parametrize(
         "fun, num_frequency, base_f, expected_grad",
         zip(c_funs, nums_frequency, base_frequencies, expected_grads),
@@ -211,7 +213,8 @@ class TestReconstructEqu:
     def test_differentiability_tensorflow(self, fun, num_frequency, base_f, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for TensorFlow input variables."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         # Convert fun to have integer frequencies
         base_f = tf.constant(base_f, dtype=tf.float64)
         _fun = lambda x: fun(x / base_f)
@@ -229,6 +232,7 @@ class TestReconstructEqu:
         assert fun_close(fun, rec, zero=tf.Variable(0.0, dtype=tf.float64))
         assert fun_close(expected_grad, grad, zero=tf.Variable(0.0, dtype=tf.float64))
 
+    @pytest.mark.torch
     @pytest.mark.parametrize(
         "fun, num_frequency, base_f, expected_grad",
         zip(c_funs, nums_frequency, base_frequencies, expected_grads),
@@ -236,7 +240,8 @@ class TestReconstructEqu:
     def test_differentiability_torch(self, fun, num_frequency, base_f, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for Torch input variables."""
-        torch = pytest.importorskip("torch")
+        import torch
+
         # Convert fun to have integer frequencies
         _fun = lambda x: fun(x / base_f)
         _rec = _reconstruct_equ(_fun, num_frequency, interface="torch")
@@ -324,7 +329,7 @@ class TestReconstructGen:
         lambda x: 0.1 * np.cos(-0.1 * x) + 2.9 * np.sin(0.3 * x - 1.2),
         lambda x: np.sum([np.sin(i * x) for i in range(1, 10)]),
         lambda x: np.sum(
-            [i ** 0.9 * 0.2 * np.sin(i ** 1.2 * 3.921 * x - 5.1 / i) for i in np.arange(1, 10)]
+            [i**0.9 * 0.2 * np.sin(i**1.2 * 3.921 * x - 5.1 / i) for i in np.arange(1, 10)]
         ),
     ]
 
@@ -333,7 +338,7 @@ class TestReconstructGen:
         [3.2],
         [-0.3, -0.1, 0.0, 0.1, 0.3],
         list(np.arange(1, 10)),
-        [3.921 * i ** 1.2 for i in np.arange(1, 10)],
+        [3.921 * i**1.2 for i in np.arange(1, 10)],
     ]
 
     expected_grads = [
@@ -342,7 +347,7 @@ class TestReconstructGen:
         lambda x: (-0.1) ** 2 * np.sin(-0.1 * x) + 0.3 * 2.9 * np.cos(0.3 * x - 1.2),
         lambda x: np.sum([i * np.cos(i * x) for i in range(1, 10)]),
         lambda x: np.sum(
-            [i ** 2.1 * 3.921 * 0.2 * np.cos(i ** 1.2 * 3.921 * x - 5.1 / i) for i in range(1, 10)]
+            [i**2.1 * 3.921 * 0.2 * np.cos(i**1.2 * 3.921 * x - 5.1 / i) for i in range(1, 10)]
         ),
     ]
 
@@ -408,6 +413,7 @@ class TestReconstructGen:
         assert fun_close(fun, rec, zero=pnp.array(0.0, requires_grad=True))
         assert fun_close(expected_grad, grad, zero=pnp.array(0.0, requires_grad=True))
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "fun, spectrum, expected_grad",
         zip(c_funs, spectra, expected_grads),
@@ -415,7 +421,7 @@ class TestReconstructGen:
     def test_differentiability_jax(self, fun, spectrum, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for JAX input variables."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax.config import config
 
         config.update("jax_enable_x64", True)
@@ -425,6 +431,7 @@ class TestReconstructGen:
         assert fun_close(fun, rec, zero=jax.numpy.array(0.0))
         assert fun_close(expected_grad, grad, zero=jax.numpy.array(0.0))
 
+    @pytest.mark.tf
     @pytest.mark.parametrize(
         "fun, spectrum, expected_grad",
         zip(c_funs, spectra, expected_grads),
@@ -432,7 +439,8 @@ class TestReconstructGen:
     def test_differentiability_tensorflow(self, fun, spectrum, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for TensorFlow input variables."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         spectrum = tf.constant(spectrum, dtype=tf.float64)
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(fun, spectrum, interface="tensorflow")
@@ -446,6 +454,7 @@ class TestReconstructGen:
         assert fun_close(fun, rec, zero=tf.Variable(0.0))
         assert fun_close(expected_grad, grad, zero=tf.Variable(0.0))
 
+    @pytest.mark.torch
     @pytest.mark.parametrize(
         "fun, spectrum, expected_grad",
         zip(c_funs, spectra, expected_grads),
@@ -453,7 +462,8 @@ class TestReconstructGen:
     def test_differentiability_torch(self, fun, spectrum, expected_grad):
         """Test that the reconstruction of equidistant-frequency classical
         functions are differentiable for Torch input variables."""
-        torch = pytest.importorskip("torch")
+        import torch
+
         spectrum = torch.tensor(spectrum, dtype=torch.float64)
         # Convert fun to have integer frequencies
         rec = _reconstruct_gen(fun, spectrum, interface="torch")
@@ -731,7 +741,7 @@ def qnode_2(X, y):
 
 
 def qnode_3(X, Y):
-    for i in range(5):
+    for i in range(3):
         qml.RX(X[i], wires=0)
         qml.RY(Y[i], wires=0)
         qml.RX(X[i], wires=0)
@@ -754,8 +764,8 @@ def qnode_5(Z, y):
 x = 0.1
 y = 2.3
 
-X = pnp.array([i ** 1.2 - 2.0 / i for i in range(1, 6)])
-Y = pnp.array([i ** 0.9 - 1.0 / i for i in range(1, 6)])
+X = pnp.array([i**1.2 - 2.0 / i for i in range(1, 6)])
+Y = pnp.array([i**0.9 - 1.0 / i for i in range(1, 6)])
 Z = pnp.array(
     [
         [0.3, 9.1, -0.2, 0.6, 1.2],
@@ -890,10 +900,17 @@ class TestReconstruct:
                 if nums_frequency is None:
                     # Gradient evaluation at reconstruction point not supported for
                     # Dirichlet reconstruction
-                    assert np.isclose(grad(x0), exp_qnode_grad(*params)[inner_key])
-                assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
-                assert fun_close(grad, exp_grad, 10)
+                    assert np.isclose(
+                        grad(pnp.array(x0, requires_grad=True)),
+                        exp_qnode_grad(*pnp.array(params, requires_grad=True))[inner_key],
+                    )
+                assert np.isclose(
+                    grad(pnp.array(x0 + 0.1, requires_grad=True)),
+                    exp_grad(pnp.array(x0 + 0.1, requires_grad=True)),
+                )
+                assert fun_close(grad, exp_grad, pnp.array(10, requires_grad=True))
 
+    @pytest.mark.jax
     @pytest.mark.parametrize(
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
         test_cases_qnodes,
@@ -902,7 +919,7 @@ class TestReconstruct:
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
     ):
         """Tests the reconstruction and differentiability with JAX."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax.config import config
 
         config.update("jax_enable_x64", True)
@@ -936,8 +953,9 @@ class TestReconstruct:
                 grad = jax.grad(rec)
                 assert np.isclose(grad(x0), exp_qnode_grad(*params)[inner_key])
                 assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
-                assert fun_close(grad, exp_grad, 10)
+                assert fun_close(grad, exp_grad, samples=3)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize(
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
         test_cases_qnodes,
@@ -948,7 +966,8 @@ class TestReconstruct:
         """Tests the reconstruction and differentiability with TensorFlow."""
         if qnode == qnode_4:
             pytest.skip("Gradients are empty in TensorFlow for independent functions.")
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         qnode = qml.QNode(qnode, dev_1, interface="tf")
         params = tuple(tf.Variable(par, dtype=tf.float64) for par in params)
         if spectra is not None:
@@ -1015,6 +1034,7 @@ class TestReconstruct:
                 assert np.isclose(grad(x0 + 0.1), exp_grad(x0 + 0.1))
                 assert fun_close(grad, exp_grad, 10)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize(
         "qnode, params, ids, nums_frequency, spectra, shifts, exp_calls",
         test_cases_qnodes,
@@ -1023,7 +1043,8 @@ class TestReconstruct:
         self, qnode, params, ids, nums_frequency, spectra, shifts, exp_calls, mocker
     ):
         """Tests the reconstruction and differentiability with Torch."""
-        torch = pytest.importorskip("torch")
+        import torch
+
         qnode = qml.QNode(qnode, dev_1, interface="torch")
         params = tuple(torch.tensor(par, requires_grad=True, dtype=torch.float64) for par in params)
         if spectra is not None:

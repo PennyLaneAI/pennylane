@@ -18,6 +18,7 @@ import pytest
 
 import numpy as np
 import pennylane as qml
+from pennylane import numpy as pnp
 
 
 # make the test deterministic
@@ -30,7 +31,7 @@ def init_state(scope="session"):
 
     def _init_state(n):
         """An initial state over n wires"""
-        state = np.random.random([2 ** n]) + np.random.random([2 ** n]) * 1j
+        state = np.random.random([2**n]) + np.random.random([2**n]) * 1j
         state /= np.linalg.norm(state)
         return state
 
@@ -123,6 +124,7 @@ def test_integration_analytic_false(tol):
     assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.autograd
 def test_numerical_analytic_diff_agree(init_state, tol):
     """Test that the finite difference and parameter shift rule
     provide the same Jacobian."""
@@ -142,7 +144,7 @@ def test_numerical_analytic_diff_agree(init_state, tol):
 
         return qml.probs(wires=[1, 3])
 
-    params = [0.543, -0.765, -0.3]
+    params = pnp.array([0.543, -0.765, -0.3], requires_grad=True)
 
     circuit_F = qml.QNode(circuit, dev, diff_method="finite-diff")
     circuit_A = qml.QNode(circuit, dev, diff_method="parameter-shift")
@@ -150,11 +152,13 @@ def test_numerical_analytic_diff_agree(init_state, tol):
     res_A = qml.jacobian(circuit_A)(*params)
 
     # Both jacobians should be of shape (2**prob.wires, num_params)
-    assert res_F.shape == (2 ** 2, 3)
-    assert res_F.shape == (2 ** 2, 3)
+    assert isinstance(res_F, tuple) and len(res_F) == 3
+    assert all(_r.shape == (2**2,) for _r in res_F)
+    assert isinstance(res_A, tuple) and len(res_A) == 3
+    assert all(_r.shape == (2**2,) for _r in res_A)
 
     # Check that they agree up to numeric tolerance
-    assert np.allclose(res_F, res_A, atol=tol, rtol=0)
+    assert all(np.allclose(_rF, _rA, atol=tol, rtol=0) for _rF, _rA in zip(res_F, res_A))
 
 
 @pytest.mark.parametrize("hermitian", [1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])])
@@ -174,7 +178,7 @@ def test_prob_generalize_param_one_qubit(hermitian, init_state, tol):
         qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
     state = np.array([1, 0])
-    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)(0.56)
+    matrix = qml.matrix(circuit_rotated)(0.56)
     state = np.dot(matrix, state)
     expected = np.reshape(np.abs(state) ** 2, [2] * 1)
     expected = expected.flatten()
@@ -205,7 +209,7 @@ def test_prob_generalize_param(hermitian, init_state, tol):
         qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
     state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
-    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)(0.56, 0.1)
+    matrix = qml.matrix(circuit_rotated)(0.56, 0.1)
     state = np.dot(matrix, state)
     expected = np.reshape(np.abs(state) ** 2, [2] * 3)
     expected = np.einsum("ijk->i", expected).flatten()
@@ -240,7 +244,7 @@ def test_prob_generalize_param_multiple(hermitian, init_state, tol):
         qml.Hermitian(hermitian, wires=0).diagonalizing_gates()
 
     state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
-    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)(0.56, 0.1)
+    matrix = qml.matrix(circuit_rotated)(0.56, 0.1)
     state = np.dot(matrix, state)
 
     expected = np.reshape(np.abs(state) ** 2, [2] * 3)
@@ -278,7 +282,7 @@ def test_prob_generalize_initial_state(hermitian, wire, init_state, tol):
         qml.PauliX(wires=3)
         qml.Hermitian(hermitian, wires=wire).diagonalizing_gates()
 
-    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)()
+    matrix = qml.matrix(circuit_rotated)()
     state = np.dot(matrix, state)
     expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
@@ -319,7 +323,7 @@ def test_operation_prob(operation, wire, init_state, tol):
         qml.PauliZ(wires=3)
         operation(wires=wire).diagonalizing_gates()
 
-    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)()
+    matrix = qml.matrix(circuit_rotated)()
     state = np.dot(matrix, state)
     expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
@@ -360,7 +364,7 @@ def test_operation_prob(operation, wire, init_state, tol):
         qml.PauliZ(wires=3)
         operation(wires=wire).diagonalizing_gates()
 
-    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)()
+    matrix = qml.matrix(circuit_rotated)()
     state = np.dot(matrix, state)
     expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
@@ -401,7 +405,7 @@ def test_observable_tensor_prob(observable, init_state, tol):
         observable[0](wires=0).diagonalizing_gates()
         observable[1](wires=1).diagonalizing_gates()
 
-    matrix = qml.transforms.get_unitary_matrix(circuit_rotated)()
+    matrix = qml.matrix(circuit_rotated)()
     state = np.dot(matrix, state)
     expected = np.reshape(np.abs(state) ** 2, [2] * 4)
 
@@ -434,11 +438,31 @@ def test_hamiltonian_error(coeffs, obs, init_state, tol):
         circuit()
 
 
+def test_probs_no_wires_obs_raises():
+    """Test that an informative error is raised when no wires or observables
+    are passed to qml.probs."""
+    num_wires = 1
+
+    dev = qml.device("default.qubit", wires=num_wires, shots=None)
+
+    @qml.qnode(dev)
+    def circuit_probs():
+        qml.RY(0.34, wires=0)
+        return qml.probs()
+
+    with pytest.raises(
+        qml.QuantumFunctionError,
+        match="qml.probs requires either the wires or the observable to be passed.",
+    ):
+        circuit_probs()
+
+
 @pytest.mark.parametrize(
     "operation", [qml.SingleExcitation, qml.SingleExcitationPlus, qml.SingleExcitationMinus]
 )
 def test_generalize_prob_not_hermitian(operation):
-    """Test that the Operation or Observables has a diagonalizing_gates attribute."""
+    """Test that Operators that do not have a diagonalizing_gates representation cannot
+    be used in probability measurements."""
 
     dev = qml.device("default.qubit", wires=2)
 
@@ -450,7 +474,7 @@ def test_generalize_prob_not_hermitian(operation):
 
     with pytest.raises(
         qml.QuantumFunctionError,
-        match="has not diagonalizing_gates attribute: cannot be used to rotate the probability",
+        match="does not define diagonalizing gates : cannot be used to rotate the probability",
     ):
         circuit()
 

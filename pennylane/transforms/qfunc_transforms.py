@@ -16,6 +16,8 @@
 from copy import deepcopy
 import functools
 import inspect
+import os
+import warnings
 
 import pennylane as qml
 
@@ -81,7 +83,8 @@ class NonQueuingTape(qml.queuing.AnnotatedQueue):
     itself to the current queuing context."""
 
     def _process_queue(self):
-        super()._process_queue()
+        # accesses the parent of the target class that NonQueingTape is mixed into
+        super()._process_queue()  # pylint:disable=no-member
 
         for obj, info in self._queue.items():
             qml.queuing.QueuingContext.append(obj, **info)
@@ -120,7 +123,7 @@ class single_tape_transform:
         @qml.single_tape_transform
         def my_transform(tape, x, y):
             # loop through all operations on the input tape
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "CRX":
                     wires = op.wires
                     param = op.parameters[0]
@@ -137,13 +140,14 @@ class single_tape_transform:
 
     We can apply this transform to a quantum tape:
 
-    >>> with qml.tape.JacobianTape() as tape:
+    >>> with qml.tape.QuantumTape() as tape:
     ...     qml.Hadamard(wires=0)
     ...     qml.CRX(-0.5, wires=[0, 1])
     >>> new_tape = my_transform(tape, 1., 2.)
-    >>> print(new_tape.draw())
-     0: ──H───────────────╭Z──┤
-     1: ──RX(0.5)──RY(1)──╰C──┤
+    >>> print(qml.drawer.tape_text(new_tape, decimals=1))
+    0: ──H────────────────╭Z─┤
+    1: ──RX(0.5)──RY(1.0)─╰C─┤
+
     """
 
     def __init__(self, transform_fn):
@@ -237,7 +241,7 @@ def qfunc_transform(tape_transform):
 
         @qml.qfunc_transform
         def my_transform(tape, x, y):
-            for op in tape.operations + tape.measurements:
+            for op in tape:
                 if op.name == "CRX":
                     wires = op.wires
                     param = op.parameters[0]
@@ -255,14 +259,15 @@ def qfunc_transform(tape_transform):
     >>> dev = qml.device("default.qubit", wires=2)
     >>> qnode = qml.QNode(qfunc, dev)
     >>> print(qml.draw(qnode)(2.5))
-     0: ──H───────────────────╭Z──┤
-     1: ──RX(1.5)──RY(0.158)──╰C──┤
+    0: ──H──────────────────╭Z─┤
+    1: ──RX(1.50)──RY(0.16)─╰C─┤
 
     The transform weights provided to a qfunc transform are fully differentiable,
     allowing the transform itself to be differentiated and trained. For more details,
     see the Differentiability section under Usage Details.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Inline usage**
 
@@ -331,8 +336,8 @@ def qfunc_transform(tape_transform):
         >>> x = np.array(0.5, requires_grad=True)
         >>> y = np.array([0.1, 0.2], requires_grad=True)
         >>> print(qml.draw(circuit)(x, y))
-         0: ──RX(0.1)───H──────────╭Z──┤
-         1: ──RX(0.05)──RY(0.141)──╰C──┤ ⟨Z⟩
+        0: ──RX(0.10)──H────────╭Z─┤
+        1: ──RX(0.05)──RY(0.14)─╰C─┤  <Z>
 
         Evaluating the QNode, as well as the derivative, with respect to the gate
         parameter *and* the transform weights:
@@ -373,6 +378,21 @@ def qfunc_transform(tape_transform):
         the queueing logic required under steps (1) and (3), so that it does not need to be
         repeated and tested for every new qfunc transform.
     """
+    if os.environ.get("SPHINX_BUILD") == "1":
+        # If called during a Sphinx documentation build,
+        # simply return the original function rather than
+        # instantiating the object. This allows the signature to
+        # be correctly displayed in the documentation.
+
+        warnings.warn(
+            "qfunc transformations have been disabled, as a Sphinx "
+            "build has been detected via SPHINX_BUILD='1'. If this is not the "
+            "case, please set the environment variable SPHINX_BUILD='0'.",
+            UserWarning,
+        )
+
+        return tape_transform
+
     if not callable(tape_transform):
         raise ValueError(
             "The qfunc_transform decorator can only be applied "

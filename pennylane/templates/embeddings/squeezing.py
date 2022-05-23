@@ -36,7 +36,7 @@ class SqueezingEmbedding(Operation):
 
     Args:
         features (tensor_like): tensor of features
-        wires (Iterable): wires that the template acts on
+        wires (Any or Iterable[Any]): wires that the template acts on
         method (str): ``'phase'`` encodes the input into the phase of single-mode squeezing, while
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all squeezing gates if ``execution='amplitude'``, or the
@@ -69,9 +69,9 @@ class SqueezingEmbedding(Operation):
         And, the resulting circuit is:
 
         >>> print(qml.draw(circuit)(X))
-            0: ──S(1, 0.1)──────────┤
-            1: ──S(2, 0.1)──P(0.1)──┤ ⟨n⟩
-            2: ──S(3, 0.1)──────────┤
+        0: ─╭SqueezingEmbedding(M0)──────────┤
+        1: ─├SqueezingEmbedding(M0)──P(0.10)─┤  <n>
+        2: ─╰SqueezingEmbedding(M0)──────────┤
 
         Using different parameters:
 
@@ -93,9 +93,10 @@ class SqueezingEmbedding(Operation):
         And, the resulting circuit is:
 
         >>> print(qml.draw(circuit)(X))
-            0: ──S(0.5, 1)──────────┤
-            1: ──S(0.5, 2)──P(0.1)──┤ ⟨n⟩
-            2: ──S(0.5, 3)──────────┤
+        0: ─╭SqueezingEmbedding(M0)──────────┤
+        1: ─├SqueezingEmbedding(M0)──P(0.10)─┤  <n>
+        2: ─╰SqueezingEmbedding(M0)──────────┤
+
     """
 
     num_wires = AnyWires
@@ -129,13 +130,30 @@ class SqueezingEmbedding(Operation):
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(pars, wires):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        pars = self.parameters[0]
+        .. math:: O = O_1 O_2 \dots O_n.
 
-        with qml.tape.QuantumTape() as tape:
 
-            for i in range(len(self.wires)):
-                qml.Squeezing(pars[i, 0], pars[i, 1], wires=self.wires[i : i + 1])
 
-        return tape
+        .. seealso:: :meth:`~.SqueezingEmbedding.decomposition`.
+
+        Args:
+            pars (tensor_like): parameters extracted from features and constant
+            wires (Any or Iterable[Any]): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> pars = torch.tensor([[1., 0.], [2., 0.]])
+        >>> qml.SqueezingEmbedding.compute_decomposition(pars, wires=["a", "b"])
+        [Squeezing(tensor(1.), tensor(0.), wires=['a']),
+        Squeezing(tensor(2.), tensor(0.), wires=['b'])]
+        """
+        return [
+            qml.Squeezing(pars[i, 0], pars[i, 1], wires=wires[i : i + 1]) for i in range(len(wires))
+        ]

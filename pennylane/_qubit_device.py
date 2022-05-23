@@ -17,28 +17,23 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, arguments-renamed
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
 import abc
-from collections import OrderedDict
 import itertools
 import warnings
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import (
-    Sample,
-    Variance,
-    Expectation,
-    Probability,
-    State,
-    operation_derivative,
-)
+from pennylane import DeviceError
+from pennylane.operation import operation_derivative
+from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane import Device
 from pennylane.math import sum as qmlsum
+from pennylane.math import multiply as qmlmul
 from pennylane.wires import Wires
 
-from pennylane.measure import MeasurementProcess
+from pennylane.measurements import MeasurementProcess
 
 
 class QubitDevice(Device):
@@ -77,15 +72,12 @@ class QubitDevice(Device):
             expectation values of observables. If ``None``, the device calculates probability, expectation values,
             and variances analytically. If an integer, it specifies the number of samples to estimate these quantities.
             If a list of integers is passed, the circuit evaluations are batched over the list of shots.
-        cache (int): Number of device executions to store in a cache to speed up subsequent
-            executions. A value of ``0`` indicates that no caching will take place. Once filled,
-            older elements of the cache are removed and replaced with the most recent device
-            executions to keep the cache up to date.
+        r_dtype: Real floating point precision type.
+        c_dtype: Complex floating point precision type.
     """
 
     # pylint: disable=too-many-public-methods
-    C_DTYPE = np.complex128
-    R_DTYPE = np.float64
+
     _asarray = staticmethod(np.asarray)
     _dot = staticmethod(np.dot)
     _abs = staticmethod(np.abs)
@@ -111,6 +103,73 @@ class QubitDevice(Device):
         new_array[indices] = array
         return new_array
 
+    @staticmethod
+    def _const_mul(constant, array):
+        """Data type preserving multiply operation"""
+        return qmlmul(constant, array, dtype=array.dtype)
+
+    def _permute_wires(self, observable):
+        r"""Given an observable which acts on multiple wires, permute the wires to
+          be consistent with the device wire order.
+
+          Suppose we are given an observable :math:`\hat{O} = \Identity \otimes \Identity \otimes \hat{Z}`.
+          This observable can be represented in many ways:
+
+        .. code-block:: python
+
+              O_1 = qml.Identity(wires=0) @ qml.Identity(wires=1) @ qml.PauliZ(wires=2)
+              O_2 = qml.PauliZ(wires=2) @ qml.Identity(wires=0) @ qml.Identity(wires=1)
+
+          Notice that while the explicit tensor product matrix representation of :code:`O_1` and :code:`O_2` is
+          different, the underlying operator is identical due to the wire labelling (assuming the labels in
+          ascending order are {0,1,2}). If we wish to compute the expectation value of such an observable, we must
+          ensure it is identical in both cases. To facilitate this, we permute the wires in our state vector such
+          that they are consistent with this swapping of order in the tensor observable.
+
+        .. code-block:: python
+
+              >>> print(0_1.wires)
+              <Wires = [0, 1, 2]>
+              >>> print(O_2.wires)
+              <Wires = [2, 0, 1]>
+
+          We might naively think that we must permute our state vector to match the wire order of our tensor observable.
+          We must be careful and realize that the wire order of the terms in the tensor observable DOES NOT match the
+          permutation of the terms themselves. As an example we directly compare :code:`O_1` and :code:`O_2`:
+
+          The first term in :code:`O_1` (:code:`qml.Identity(wires=0)`) became the second term in :code:`O_2`.
+          By similar comparison we see that each term in the tensor product was shifted one position forward
+          (i.e 0 --> 1, 1 --> 2, 2 --> 0). The wires in our permuted quantum state should follow their respective
+          terms in the tensor product observable.
+
+          Thus, the correct wire ordering should be :code:`permuted_wires = <Wires = [1, 2, 0]>`. But if we had
+          taken the naive approach we would have permuted our state according to
+          :code:`permuted_wires = <Wires = [2, 0, 1]>` which is NOT correct.
+
+          This function uses the observable wires and the global device wire ordering in order to determine the
+          permutation of the wires in the observable required such that if our quantum state vector is
+          permuted accordingly then the amplitudes of the state will match the matrix representation of the observable.
+
+          Args:
+              observable (Observable): the observable whose wires are to be permuted.
+
+          Returns:
+              permuted_wires (Wires): permuted wires object
+        """
+        ordered_obs_wire_lst = self.order_wires(
+            observable.wires
+        ).tolist()  # order according to device wire order
+
+        mapped_wires = self.map_wires(observable.wires)
+        if isinstance(mapped_wires, Wires):
+            # by default this should be a Wires obj, but it is overwritten to list object in default.qubit
+            mapped_wires = mapped_wires.tolist()
+
+        permutation = np.argsort(mapped_wires)  # extract permutation via argsort
+
+        permuted_wires = Wires([ordered_obs_wire_lst[index] for index in permutation])
+        return permuted_wires
+
     observables = {
         "PauliX",
         "PauliY",
@@ -121,20 +180,22 @@ class QubitDevice(Device):
         "Projector",
     }
 
-    def __init__(self, wires=1, shots=None, cache=0, analytic=None):
+    def __init__(
+        self, wires=1, shots=None, *, r_dtype=np.float64, c_dtype=np.complex128, analytic=None
+    ):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
+
+        if "float" not in str(r_dtype):
+            raise DeviceError("Real datatype must be a floating point type.")
+        if "complex" not in str(c_dtype):
+            raise DeviceError("Complex datatype must be a complex floating point type.")
+
+        self.C_DTYPE = c_dtype
+        self.R_DTYPE = r_dtype
 
         self._samples = None
         """None or array[int]: stores the samples generated by the device
         *after* rotation to diagonalize the observables."""
-
-        self._cache = cache
-        """int: Number of device executions to store in a cache to speed up subsequent
-        executions. If set to zero, no caching occurs."""
-
-        self._cache_execute = OrderedDict()
-        """OrderedDict[int: Any]: Mapping from hashes of the circuit to results of executing the
-        device."""
 
     @classmethod
     def capabilities(cls):
@@ -183,11 +244,6 @@ class QubitDevice(Device):
             array[float]: measured value(s)
         """
 
-        if self._cache:
-            circuit_hash = circuit.graph.hash
-            if circuit_hash in self._cache_execute:
-                return self._cache_execute[circuit_hash]
-
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
@@ -210,7 +266,11 @@ class QubitDevice(Device):
                 r = self.statistics(
                     circuit.observables, shot_range=[s1, s2], bin_size=shot_tuple.shots
                 )
-                r = qml.math.squeeze(r)
+
+                if qml.math._multi_dispatch(r) == "jax":  # pylint: disable=protected-access
+                    r = r[0]
+                else:
+                    r = qml.math.squeeze(r)
 
                 if shot_tuple.copies > 1:
                     results.extend(r.T)
@@ -226,15 +286,32 @@ class QubitDevice(Device):
         else:
             results = self.statistics(circuit.observables)
 
-        if (circuit.all_sampled or not circuit.is_sampled) and not multiple_sampled_jobs:
+        if not circuit.is_sampled:
+
+            ret_types = [m.return_type for m in circuit.measurements]
+
+            if len(circuit.measurements) == 1:
+                if circuit.measurements[0].return_type is qml.measurements.State:
+                    # State: assumed to only be allowed if it's the only measurement
+                    results = self._asarray(results, dtype=self.C_DTYPE)
+                else:
+                    # Measurements with expval, var or probs
+                    results = self._asarray(results, dtype=self.R_DTYPE)
+
+            elif all(
+                ret in (qml.measurements.Expectation, qml.measurements.Variance)
+                for ret in ret_types
+            ):
+                # Measurements with expval or var
+                results = self._asarray(results, dtype=self.R_DTYPE)
+            else:
+                results = self._asarray(results)
+
+        elif circuit.all_sampled and not self._has_partitioned_shots():
+
             results = self._asarray(results)
         else:
             results = tuple(self._asarray(r) for r in results)
-
-        if self._cache and circuit_hash not in self._cache_execute:
-            self._cache_execute[circuit_hash] = results
-            if len(self._cache_execute) > self._cache:
-                self._cache_execute.popitem(last=False)
 
         # increment counter for number of executions of qubit device
         self._num_executions += 1
@@ -244,12 +321,6 @@ class QubitDevice(Device):
             self.tracker.record()
 
         return results
-
-    @property
-    def cache(self):
-        """int: Number of device executions to store in a cache to speed up subsequent
-        executions. If set to zero, no caching occurs."""
-        return self._cache
 
     def batch_execute(self, circuits):
         """Execute a batch of quantum circuits on the device.
@@ -361,7 +432,8 @@ class QubitDevice(Device):
         Returns:
             Union[float, List[float]]: the corresponding statistics
 
-        .. UsageDetails::
+        .. details::
+            :title: Usage Details
 
             The ``shot_range`` and ``bin_size`` arguments allow for the statistics
             to be performed on only a subset of device samples. This finer level
@@ -468,7 +540,7 @@ class QubitDevice(Device):
         Returns:
              array[complex]: array of samples in the shape ``(dev.shots, dev.num_wires)``
         """
-        number_of_states = 2 ** self.num_wires
+        number_of_states = 2**self.num_wires
 
         rotated_prob = self.analytic_probability()
 
@@ -528,7 +600,7 @@ class QubitDevice(Device):
             array[int]: the sampled basis states
         """
         if 2 < num_wires < 32:
-            states_base_ten = np.arange(2 ** num_wires, dtype=dtype)
+            states_base_ten = np.arange(2**num_wires, dtype=dtype)
             return QubitDevice.states_to_binary(states_base_ten, num_wires, dtype=dtype)
 
         # A slower, but less memory intensive method
@@ -762,13 +834,16 @@ class QubitDevice(Device):
         # exact expectation value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
-            except NotImplementedError as e:
-                raise ValueError(
+                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
+            except qml.operation.EigvalsUndefinedError as e:
+                raise qml.operation.EigvalsUndefinedError(
                     f"Cannot compute analytic expectations of {observable.name}."
                 ) from e
 
-            prob = self.probability(wires=observable.wires)
+            # the probability vector must be permuted to account for the permuted wire order of the observable
+            permuted_wires = self._permute_wires(observable)
+
+            prob = self.probability(wires=permuted_wires)
             return self._dot(eigvals, prob)
 
         # estimate the ev
@@ -788,12 +863,18 @@ class QubitDevice(Device):
         # exact variance value
         if self.shots is None:
             try:
-                eigvals = self._asarray(observable.eigvals, dtype=self.R_DTYPE)
-            except NotImplementedError as e:
+                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
+            except qml.operation.EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
-                raise ValueError(f"Cannot compute analytic variance of {observable.name}.") from e
-            prob = self.probability(wires=observable.wires)
-            return self._dot((eigvals ** 2), prob) - self._dot(eigvals, prob) ** 2
+                raise qml.operation.EigvalsUndefinedError(
+                    f"Cannot compute analytic variance of {observable.name}."
+                ) from e
+
+            # the probability vector must be permuted to account for the permuted wire order of the observable
+            permuted_wires = self._permute_wires(observable)
+
+            prob = self.probability(wires=permuted_wires)
+            return self._dot((eigvals**2), prob) - self._dot(eigvals, prob) ** 2
 
         # estimate the variance
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
@@ -829,11 +910,14 @@ class QubitDevice(Device):
             ]  # Add np.array here for Jax support.
             powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
+            indices = np.array(indices)  # Add np.array here for Jax support.
             try:
-                samples = observable.eigvals[indices]
-            except NotImplementedError as e:
+                samples = observable.eigvals()[indices]
+            except qml.operation.EigvalsUndefinedError as e:
                 # if observable has no info on eigenvalues, we cannot return this measurement
-                raise ValueError(f"Cannot compute samples of {observable.name}.") from e
+                raise qml.operation.EigvalsUndefinedError(
+                    f"Cannot compute samples of {observable.name}."
+                ) from e
 
         if bin_size is None:
             return samples
@@ -845,8 +929,7 @@ class QubitDevice(Device):
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
         After a forward pass, the circuit is reversed by iteratively applying inverse (adjoint)
-        gates to scan backwards through the circuit. This method is similar to the reversible
-        method, but has a lower time overhead and a similar memory overhead.
+        gates to scan backwards through the circuit.
 
         .. note::
             The adjoint differentiation method has the following restrictions:
@@ -856,7 +939,8 @@ class QubitDevice(Device):
 
             * Only expectation values are supported as measurements.
 
-            * Does not work for Hamiltonian observables.
+            * Does not work for parametrized observables like
+              :class:`~.Hamiltonian` or :class:`~.Hermitian`.
 
         Args:
             tape (.QuantumTape): circuit that the function takes the gradient of
@@ -881,7 +965,7 @@ class QubitDevice(Device):
         dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:
-            if m.return_type is not qml.operation.Expectation:
+            if m.return_type is not Expectation:
                 raise qml.QuantumFunctionError(
                     "Adjoint differentiation method does not support"
                     f" measurement {m.return_type.value}"
@@ -920,7 +1004,7 @@ class QubitDevice(Device):
         for op in reversed(tape.operations):
             if op.num_params > 1:
                 if isinstance(op, qml.Rot) and not op.inverse:
-                    ops = op.decompose()
+                    ops = op.decomposition()
                     expanded_ops.extend(reversed(ops))
                 else:
                     raise qml.QuantumFunctionError(
@@ -928,16 +1012,32 @@ class QubitDevice(Device):
                         'the "adjoint" differentiation method'
                     )
             else:
-                if op.name not in ("QubitStateVector", "BasisState"):
+                if op.name not in ("QubitStateVector", "BasisState", "Snapshot"):
                     expanded_ops.append(op)
 
-        jac = np.zeros((len(tape.observables), len(tape.trainable_params)))
+        trainable_params = []
+        for k in tape.trainable_params:
+            # pylint: disable=protected-access
+            if hasattr(tape._par_info[k]["op"], "return_type"):
+                warnings.warn(
+                    "Differentiating with respect to the input parameters of "
+                    f"{tape._par_info[k]['op'].name} is not supported with the "
+                    "adjoint differentiation method. Gradients are computed "
+                    "only with regards to the trainable parameters of the circuit.\n\n Mark "
+                    "the parameters of the measured observables as non-trainable "
+                    "to silence this warning.",
+                    UserWarning,
+                )
+            else:
+                trainable_params.append(k)
 
-        param_number = len(tape._par_info) - 1  # pylint: disable=protected-access
-        trainable_param_number = len(tape.trainable_params) - 1
+        jac = np.zeros((len(tape.observables), len(trainable_params)))
+
+        param_number = len(tape.get_parameters(trainable_only=False, operations_only=True)) - 1
+        trainable_param_number = len(trainable_params) - 1
         for op in expanded_ops:
 
-            if (op.grad_method is not None) and (param_number in tape.trainable_params):
+            if (op.grad_method is not None) and (param_number in trainable_params):
                 d_op_matrix = operation_derivative(op)
 
             op.inv()
@@ -946,7 +1046,7 @@ class QubitDevice(Device):
             ket = self._apply_operation(ket, op)
 
             if op.grad_method is not None:
-                if param_number in tape.trainable_params:
+                if param_number in trainable_params:
 
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 

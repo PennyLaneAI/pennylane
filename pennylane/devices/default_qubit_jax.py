@@ -14,11 +14,11 @@
 """This module contains an jax implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
+import numpy as np
+
 import pennylane as qml
 from pennylane.devices import DefaultQubit
 from pennylane.wires import Wires
-
-import numpy as np
 
 try:
     import jax.numpy as jnp
@@ -71,7 +71,8 @@ class DefaultQubitJax(DefaultQubit):
     * You must use the ``"jax"`` interface for classical backpropagation, as JAX is
       used as the device backend.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         JAX does randomness in a special way when compared to NumPy, in that all randomness needs to
         be seeded. While we handle this for you automatically in op-by-op mode, when using ``jax.jit``,
@@ -148,18 +149,20 @@ class DefaultQubitJax(DefaultQubit):
         )
     )
     _conj = staticmethod(jnp.conj)
+    _real = staticmethod(jnp.real)
     _imag = staticmethod(jnp.imag)
     _roll = staticmethod(jnp.roll)
     _stack = staticmethod(jnp.stack)
+    _const_mul = staticmethod(jnp.multiply)
 
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
         if jax_config.read("jax_enable_x64"):
-            self.C_DTYPE = jnp.complex128
-            self.R_DTYPE = jnp.float64
+            c_dtype = jnp.complex128
+            r_dtype = jnp.float64
         else:
-            self.C_DTYPE = jnp.complex64
-            self.R_DTYPE = jnp.float32
-        super().__init__(wires, shots=shots, cache=0, analytic=analytic)
+            c_dtype = jnp.complex64
+            r_dtype = jnp.float32
+        super().__init__(wires, r_dtype=r_dtype, c_dtype=c_dtype, shots=shots, analytic=analytic)
 
         # prevent using special apply methods for these gates due to slowdown in jax
         # implementation
@@ -206,7 +209,7 @@ class DefaultQubitJax(DefaultQubit):
 
         if self._prng_key is None:
             # Assuming op-by-op, so we'll just make one.
-            key = jax.random.PRNGKey(np.random.randint(0, 2 ** 31))
+            key = jax.random.PRNGKey(np.random.randint(0, 2**31))
         else:
             key = self._prng_key
         return jax.random.choice(key, number_of_states, shape=(shots,), p=state_probability)
@@ -263,18 +266,40 @@ class DefaultQubitJax(DefaultQubit):
         indices = samples @ powers_of_two
 
         if bin_size is not None:
-            raise ValueError(
-                "The default.qubit.jax device doesn't support getting probabilities when using a shot vector."
+            bins = len(samples) // bin_size
+
+            indices = indices.reshape((bins, -1))
+            prob = np.zeros(
+                [2**num_wires + 1, bins], dtype=jnp.float64
+            )  # extend it to store 'filled values'
+            prob = qml.math.convert_like(prob, indices)
+
+            # count the basis state occurrences, and construct the probability vector
+            for b, idx in enumerate(indices):
+                idx = qml.math.convert_like(idx, indices)
+                basis_states, counts = qml.math.unique(
+                    idx, return_counts=True, size=2**num_wires, fill_value=-1
+                )
+
+                for state, count in zip(basis_states, counts):
+                    prob = prob.at[state, b].set(count / bin_size)
+
+            prob = jnp.resize(
+                prob, (2**num_wires, bins)
+            )  # resize prob which discards the 'filled values'
+
+        else:
+            basis_states, counts = qml.math.unique(
+                indices, return_counts=True, size=2**num_wires, fill_value=-1
             )
+            prob = np.zeros([2**num_wires + 1], dtype=jnp.float64)
+            prob = qml.math.convert_like(prob, indices)
 
-        basis_states, counts = qml.math.unique(
-            indices, return_counts=True, size=2 ** num_wires, fill_value=-1
-        )
-        prob = np.zeros([2 ** num_wires + 1], dtype=np.float64)
-        prob = qml.math.convert_like(prob, indices)
+            for state, count in zip(basis_states, counts):
+                prob = prob.at[state].set(count / len(samples))
 
-        for state, count in zip(basis_states, counts):
-            prob = prob.at[state].set(count / len(samples))
+            prob = jnp.resize(
+                prob, 2**num_wires
+            )  # resize prob which discards the 'filled values'
 
-        prob = jnp.resize(prob, 2 ** num_wires)  # resize prob which discards the 'filled values'
         return self._asarray(prob, dtype=self.R_DTYPE)

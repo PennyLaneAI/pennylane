@@ -148,7 +148,7 @@ def init_state(scope="session"):
     def _init_state(n, torch_device):
         """random initial state"""
         torch.manual_seed(42)
-        state = torch.rand([2 ** n], dtype=torch.complex128) + torch.rand([2 ** n]) * 1j
+        state = torch.rand([2**n], dtype=torch.complex128) + torch.rand([2**n]) * 1j
         state /= torch.linalg.norm(state)
         return state.to(torch_device)
 
@@ -172,6 +172,7 @@ def device(scope="function"):
 #####################################################
 
 
+@pytest.mark.torch
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -186,6 +187,7 @@ def test_analytic_deprecation():
 #####################################################
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
 class TestApply:
     """Test application of PennyLane operations."""
@@ -199,7 +201,7 @@ class TestApply:
         dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
 
         res = dev.state
-        expected = torch.zeros([2 ** 4], dtype=torch.complex128, device=torch_device)
+        expected = torch.zeros([2**4], dtype=torch.complex128, device=torch_device)
         expected[2] = 1
 
         assert isinstance(res, torch.Tensor)
@@ -536,6 +538,7 @@ PHI = torch.linspace(0.32, 1, 3, dtype=torch.float64)
 VARPHI = torch.linspace(0.02, 1, 3, dtype=torch.float64)
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestExpval:
@@ -630,6 +633,26 @@ class TestExpval:
         expected = torch.tensor([ev1, ev2], dtype=torch.float64, device=torch_device)
 
         assert torch.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_do_not_split_analytic_torch(
+        self, device, torch_device, theta, phi, varphi, tol, mocker
+    ):
+        """Tests that the Hamiltonian is not split for shots=None using the Torch device."""
+
+        dev = device(wires=2, torch_device=torch_device)
+        H = qml.Hamiltonian(
+            torch.tensor([0.1, 0.2], requires_grad=True), [qml.PauliX(0), qml.PauliZ(1)]
+        )
+
+        @qml.qnode(dev, diff_method="backprop", interface="torch")
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
 
     def test_multi_mode_hermitian_expectation(self, device, torch_device, theta, phi, varphi, tol):
         """Test that arbitrary multi-mode Hermitian expectation values are correct"""
@@ -890,6 +913,7 @@ class TestExpval:
         assert torch.allclose(res, torch.real(expected), atol=tol, rtol=0)
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestVar:
@@ -1086,6 +1110,7 @@ class TestVar:
 #####################################################
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
 class TestQNodeIntegration:
     """Integration tests for default.qubit.torch. This test ensures it integrates
@@ -1254,6 +1279,7 @@ class TestQNodeIntegration:
         assert torch.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
@@ -1425,7 +1451,27 @@ class TestPassthruIntegration:
         assert torch.allclose(a.grad, -0.5 * torch.sin(a) * (torch.cos(b) + 1), atol=tol, rtol=0)
         assert torch.allclose(b.grad, 0.5 * torch.sin(b) * (1 - torch.cos(a)))
 
-    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
+    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
+    def test_hessian_at_zero(self, torch_device, x, shift):
+        """Tests that the Hessian at vanishing state vector amplitudes
+        is correct."""
+        dev = qml.device("default.qubit.torch", wires=1, torch_device=torch_device)
+
+        x = torch.tensor(x, requires_grad=True)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit(x):
+            qml.RY(shift, wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        grad = torch.autograd.functional.jacobian(circuit, x)
+        hess = torch.autograd.functional.hessian(circuit, x)
+
+        assert qml.math.isclose(grad, torch.tensor(0.0))
+        assert qml.math.isclose(hess, torch.tensor(-1.0))
+
+    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.compute_decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
     def test_torch_interface_gradient(self, torch_device, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
@@ -1520,10 +1566,11 @@ class TestPassthruIntegration:
             assert qml.qnode(dev, diff_method="autograd", interface=interface)(circuit)
         assert (
             str(e.value)
-            == "Differentiation method autograd not recognized. Allowed options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'reversible', 'adjoint')."
+            == "Differentiation method autograd not recognized. Allowed options are ('best', 'parameter-shift', 'backprop', 'finite-diff', 'device', 'adjoint')."
         )
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
 class TestSamples:
     """Tests for sampling outputs"""
@@ -1604,6 +1651,7 @@ class TestSamples:
         # assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.torch
 @pytest.mark.parametrize("torch_device", torch_devices)
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""

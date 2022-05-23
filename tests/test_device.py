@@ -166,6 +166,25 @@ def mock_device(monkeypatch):
         yield get_device
 
 
+@pytest.fixture(scope="function")
+def mock_device_arbitrary_wires(monkeypatch, wires):
+    with monkeypatch.context() as m:
+        m.setattr(Device, "__abstractmethods__", frozenset())
+        m.setattr(Device, "_capabilities", mock_device_capabilities)
+        m.setattr(Device, "operations", ["PauliY", "RX", "Rot"])
+        m.setattr(Device, "observables", ["PauliZ"])
+        m.setattr(Device, "short_name", "MockDevice")
+        m.setattr(Device, "expval", lambda self, x, y, z: 0)
+        m.setattr(Device, "var", lambda self, x, y, z: 0)
+        m.setattr(Device, "sample", lambda self, x, y, z: 0)
+        m.setattr(Device, "apply", lambda self, x, y, z: None)
+
+        def get_device(wires):
+            return Device(wires=wires)
+
+        yield get_device
+
+
 class TestShotVectors:
     """Tests passing shot vectors, their validation, and processing."""
 
@@ -324,7 +343,7 @@ class TestInternalFunctions:
         # Raises an error if queue or observables are invalid
         dev.check_validity(queue, observables)
 
-    def test_check_validity_with_not_supported_operation_inverse(
+    def test_check_validity_with_unsupported_operation_inverse(
         self, mock_device_supporting_paulis_and_inverse
     ):
         """Tests the function Device.check_validity with an valid queue
@@ -526,6 +545,64 @@ class TestInternalFunctions:
 
         # The number of hits increased
         assert dev.map_wires.cache_info().hits > original_hits
+
+    def test_mcm_unsupported_error(self, monkeypatch, mock_device_with_paulis_and_methods):
+        """Test that an error is raised if mid-circuit measurements are not
+        supported natively"""
+        dev = mock_device_with_paulis_and_methods(wires=2)
+
+        # mid-circuit measurements are part of the queue (for now)
+        with qml.tape.QuantumTape() as tape:
+            qml.measure(1)
+            qml.PauliZ(0)
+
+        # Raises an error for device that doesn't support mid-circuit measurements natively
+        with pytest.raises(DeviceError, match="Mid-circuit measurements are not natively"):
+            dev.check_validity(tape.operations, tape.observables)
+
+    def test_conditional_ops_unsupported_error(
+        self, monkeypatch, mock_device_with_paulis_and_methods
+    ):
+        """Test that an error is raised for conditional operations if
+        mid-circuit measurements are not supported natively"""
+        dev = mock_device_with_paulis_and_methods(wires=2)
+
+        with qml.tape.QuantumTape() as tape:
+            qml.cond(0, qml.RY)(0.3, wires=0)
+            qml.PauliZ(0)
+
+        # Raises an error for device that doesn't support conditional
+        # operations natively
+        with pytest.raises(DeviceError, match="Gate Conditional not supported on device"):
+            dev.check_validity(tape.operations, tape.observables)
+
+    @pytest.mark.parametrize(
+        "wires, subset, expected_subset",
+        [
+            (Wires(["a", "b", "c"]), Wires(["c", "b"]), Wires(["b", "c"])),
+            (Wires([0, 1, 2]), Wires([1, 0, 2]), Wires([0, 1, 2])),
+            (Wires([3, "beta", "a"]), Wires(["a", "beta", 3]), Wires([3, "beta", "a"])),
+            (Wires([0]), Wires([0]), Wires([0])),
+        ],
+    )
+    def test_order_wires(self, wires, subset, expected_subset, mock_device_arbitrary_wires):
+        dev = mock_device_arbitrary_wires(wires=wires)
+        ordered_subset = dev.order_wires(subset_wires=subset)
+        assert ordered_subset == expected_subset
+
+    @pytest.mark.parametrize(
+        "wires, subset",
+        [
+            (Wires(["a", "b", "c"]), Wires(["c", "d"])),
+            (Wires([0, 1, 2]), Wires([3, 4, 5])),
+            (Wires([3, "beta", "a"]), Wires(["alpha", "beta", "gamma"])),
+            (Wires([0]), Wires([2])),
+        ],
+    )
+    def test_order_wires_raises_value_error(self, wires, subset, mock_device_arbitrary_wires):
+        dev = mock_device_arbitrary_wires(wires=wires)
+        with pytest.raises(ValueError, match="Could not find some or all subset wires"):
+            _ = dev.order_wires(subset_wires=subset)
 
 
 class TestClassmethods:
@@ -888,7 +965,7 @@ class TestBatchExecution:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-    with qml.tape.JacobianTape() as tape2:
+    with qml.tape.QuantumTape() as tape2:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0))
 

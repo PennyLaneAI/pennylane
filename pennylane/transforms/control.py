@@ -18,7 +18,7 @@ from functools import wraps
 
 import pennylane as qml
 from pennylane.tape import QuantumTape, get_active_tape
-from pennylane.operation import Operation, AnyWires
+from pennylane.operation import DecompositionUndefinedError, Operation, AnyWires
 from pennylane.wires import Wires
 from pennylane.transforms.adjoint import adjoint
 
@@ -49,17 +49,13 @@ def expand_with_control(tape, control_wire):
             else:
                 # Attempt to decompose the operation and apply
                 # controls to each gate in the decomposition.
-                with new_tape.stop_recording():
+                with new_tape.stop_recording():  # pylint:disable=no-member
                     try:
                         tmp_tape = op.expand()
-
-                    except NotImplementedError:
-                        # No decomposition is defined. Create a
-                        # ControlledQubitUnitary gate using the operation
-                        # matrix representation.
+                    except DecompositionUndefinedError:
                         with QuantumTape() as tmp_tape:
                             qml.ControlledQubitUnitary(
-                                op.matrix, control_wires=control_wire, wires=op.wires
+                                op.matrix(), control_wires=control_wire, wires=op.wires
                             )
 
                 tmp_tape = expand_with_control(tmp_tape, control_wire)
@@ -85,17 +81,39 @@ class ControlledOperation(Operation):
         tape: A QuantumTape. This tape defines the unitary that should be applied relative
             to the control wires.
         control_wires: A wire or set of wires.
+        control_values: An int or list of ints indicating the values each control wire should
+            take.
     """
 
+    grad_method = None
     num_wires = AnyWires
 
-    def __init__(self, tape, control_wires, do_queue=True):
+    def __init__(self, tape, control_wires, do_queue=True, control_values=None):
         self.subtape = tape
         """QuantumTape: The tape that defines the underlying operation."""
+
+        if len(self.subtape.operations) == 1:
+            self.control_base = self.subtape.operations[0].name
+        else:
+            self.control_base = "MultipleTargets"
 
         self._control_wires = Wires(control_wires)
         """Wires: The control wires."""
 
+        if control_values is not None:
+            self._control_values = (
+                [control_values] if isinstance(control_values, int) else control_values
+            )
+
+            len_ctrl_wires = len(self.control_wires)
+            len_ctrl_values = len(self.control_values)
+
+            assert (
+                len_ctrl_wires == len_ctrl_values
+            ), f"ControlledOperation: length of control values and wires must match, \
+                but are {len_ctrl_values} and {len_ctrl_wires}"
+        else:
+            self._control_values = [1] * len(self.control_wires)
         wires = self.control_wires + tape.wires
         super().__init__(*tape.get_parameters(), wires=wires, do_queue=do_queue)
 
@@ -107,13 +125,37 @@ class ControlledOperation(Operation):
     def control_wires(self):
         return self._control_wires
 
+    @property
+    def control_values(self):
+        r"""Values the control wires should take.
+        For operations that have control wires which are all ``1``,
+        this can be set to None.
+        Returns:
+            list[int]: The values each control wire should take.
+        """
+        return self._control_values
+
     def expand(self):
         tape = self.subtape
+        tape.set_parameters(self.data)
+
         for wire in self.control_wires:
             tape = expand_with_control(tape, wire)
+
+        if self.control_values is not None:
+            with QuantumTape(do_queue=False) as ctrl_tape:
+                for i, val in enumerate(self.control_values):
+                    if not bool(val):
+                        qml.PauliX(self.control_wires[i])
+                requeue_ops_in_tape(tape)
+                for i, val in enumerate(self.control_values):
+                    if not bool(val):
+                        qml.PauliX(self.control_wires[i])
+
+            tape = ctrl_tape
         return tape
 
-    def adjoint(self):
+    def adjoint(self, do_queue=True):
         """Returns a new ControlledOperation that is equal to the adjoint of `self`"""
 
         active_tape = get_active_tape()
@@ -129,18 +171,27 @@ class ControlledOperation(Operation):
                 # Execute all ops adjointed.
                 adjoint(requeue_ops_in_tape)(self.subtape)
 
-        return ControlledOperation(new_tape, self.control_wires)
+        return ControlledOperation(
+            new_tape, self.control_wires, control_values=self.control_values, do_queue=do_queue
+        )
 
     def _controlled(self, wires):
-        ControlledOperation(tape=self.subtape, control_wires=Wires(wires) + self.control_wires)
+        new_values = [1] * len(Wires(wires))
+        ControlledOperation(
+            tape=self.subtape,
+            control_wires=Wires(wires) + self.control_wires,
+            control_values=new_values + self.control_values,
+        )
 
 
-def ctrl(fn, control):
+def ctrl(fn, control, control_values=None):
     """Create a method that applies a controlled version of the provided method.
 
     Args:
         fn (function): Any python function that applies pennylane operations.
         control (Wires): The control wire(s).
+        control_values (int or list[int]): The value(s) the control wire(s) should take.
+            Integers other than 0 or 1 will be treated as ``int(bool(x))``.
 
     Returns:
         function: A new function that applies the controlled equivalent of ``fn``. The returned
@@ -192,13 +243,14 @@ def ctrl(fn, control):
 
     .. Note::
 
-        Some devices are able to take advantage of the inherient sparsity of a
+        Some devices are able to take advantage of the inherent sparsity of a
         controlled operation. In those cases, it may be more efficient to use
         this transform rather than adding controls by hand. For devices that don't
         have special control support, the operation is expanded to add control wires
         to each underlying op individually.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Nesting Controls**
 
@@ -207,14 +259,33 @@ def ctrl(fn, control):
         .. code-block:: python3
 
             # These two ops are equivalent.
-            op1 = qml.ctrl(qml.ctrl(my_ops, 1), 2)
-            op2 = qml.ctrl(my_ops, [2, 1])
+            op1 = qml.ctrl(qml.ctrl(ops, 1), 2)
+            op2 = qml.ctrl(ops, [2, 1])
+
+        **Control Value Assignment**
+
+        Control values can be assigned as follows.
+
+        .. code-block:: python3
+
+            op = qml.ctrl(ops, 2, control_values=0)
+            op(params=[0.1, 0.2])
+
+        This is equivalent to the following.
+
+        .. code-block:: python3
+
+            qml.PauliX(wires=2)
+            op = qml.ctrl(ops, 2)
+            op(params=[0.1, 0.2])
+            qml.PauliX(wires=2)
+
     """
 
     @wraps(fn)
     def wrapper(*args, **kwargs):
         with QuantumTape(do_queue=False) as tape:
             fn(*args, **kwargs)
-        return ControlledOperation(tape, control)
+        return ControlledOperation(tape, control, control_values=control_values)
 
     return wrapper

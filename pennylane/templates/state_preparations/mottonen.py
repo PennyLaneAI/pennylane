@@ -49,7 +49,7 @@ def gray_code(rank):
 def _matrix_M_entry(row, col):
     """Returns one entry for the matrix that maps alpha to theta.
 
-    See Eq. (3) in `Möttönen et al. (2004) <https://arxiv.org/pdf/quant-ph/0407010.pdf>`_.
+    See Eq. (3) in `Möttönen et al. (2004) <https://arxiv.org/abs/quant-ph/0407010>`_.
 
     Args:
         row (int): one-based row number
@@ -70,7 +70,7 @@ def _matrix_M_entry(row, col):
     return (-1) ** sum_of_ones
 
 
-def _compute_theta(alpha):
+def compute_theta(alpha):
     """Maps the angles alpha of the multi-controlled rotations decomposition of a uniformly controlled rotation
      to the rotation angles used in the Gray code implementation.
 
@@ -90,10 +90,10 @@ def _compute_theta(alpha):
 
     theta = qml.math.dot(M_trans, alpha.T).T
 
-    return theta / 2 ** k
+    return theta / 2**k
 
 
-def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
+def _apply_uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     r"""Applies a uniformly-controlled rotation to the target qubit.
 
     A uniformly-controlled rotation is a sequence of multi-controlled
@@ -106,23 +106,26 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
     a decomposition based on Gray codes is used. For this purpose, the multi-controlled rotation
     angles alpha have to be converted into a set of non-controlled rotation angles theta.
 
-    For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/pdf/quant-ph/0504100.pdf>`_.
+    For more details, see `Möttönen and Vartiainen (2005), Fig 7a<https://arxiv.org/abs/quant-ph/0504100>`_.
 
     Args:
         gate (.Operation): gate to be applied, needs to have exactly one parameter
         alpha (tensor_like): angles to decompose the uniformly-controlled rotation into multi-controlled rotations
         control_wires (array[int]): wires that act as control
         target_wire (int): wire that acts as target
-    """
 
-    theta = _compute_theta(alpha)
+    Returns:
+          list[.Operator]: sequence of operators defined by this function
+    """
+    op_list = []
+    theta = compute_theta(alpha)
 
     gray_code_rank = len(control_wires)
 
     if gray_code_rank == 0:
         if qml.math.all(theta[..., 0] != 0.0):
-            gate(theta[..., 0], wires=[target_wire])
-        return
+            op_list.append(gate(theta[..., 0], wires=[target_wire]))
+        return op_list
 
     code = gray_code(gray_code_rank)
     num_selections = len(code)
@@ -134,8 +137,9 @@ def _uniform_rotation_dagger(gate, alpha, control_wires, target_wire):
 
     for i, control_index in enumerate(control_indices):
         if qml.math.all(theta[..., i] != 0.0):
-            gate(theta[..., i], wires=[target_wire])
-        qml.CNOT(wires=[control_wires[control_index], target_wire])
+            op_list.append(gate(theta[..., i], wires=[target_wire]))
+        op_list.append(qml.CNOT(wires=[control_wires[control_index], target_wire]))
+    return op_list
 
 
 def _get_alpha_z(omega, n, k):
@@ -193,7 +197,7 @@ def _get_alpha_y(a, n, k):
     numerator = qml.math.take(a, indices=indices_numerator, axis=-1)
     numerator = qml.math.sum(qml.math.abs(numerator) ** 2, axis=-1)
 
-    indices_denominator = [[j * 2 ** k + l for l in range(2 ** k)] for j in range(2 ** (n - k))]
+    indices_denominator = [[j * 2**k + l for l in range(2**k)] for j in range(2 ** (n - k))]
     denominator = qml.math.take(a, indices=indices_denominator, axis=-1)
     denominator = qml.math.sum(qml.math.abs(denominator) ** 2, axis=-1)
 
@@ -215,7 +219,7 @@ def _get_alpha_y(a, n, k):
 class MottonenStatePreparation(Operation):
     r"""
     Prepares an arbitrary state on the given wires using a decomposition into gates developed
-    by `Möttönen et al. (2004) <https://arxiv.org/pdf/quant-ph/0407010.pdf>`_.
+    by `Möttönen et al. (2004) <https://arxiv.org/abs/quant-ph/0407010>`_.
 
     The state is prepared via a sequence
     of uniformly controlled rotations. A uniformly controlled rotation on a target qubit is
@@ -259,12 +263,17 @@ class MottonenStatePreparation(Operation):
             state = np.array([1, 2j, 3, 4j, 5, 6j, 7, 8j])
             state = state / np.linalg.norm(state)
 
-        The resulting circuit is:
+            print(qml.draw(circuit, expansion_strategy="device", max_length=80)(state))
 
-        >>> print(qml.draw(circuit)(state))
-            0: ──RY(2.35)──╭C─────────────╭C─────────────────╭C─────────────────────────────╭C──╭C─────────╭C──────╭C──────╭C──╭┤ State
-            1: ──RY(2.09)──╰X──RY(0.213)──╰X──╭C─────────────│───────────────╭C─────────────│───╰X─────────╰X──╭C──│───╭C──│───├┤ State
-            2: ──RY(1.88)─────────────────────╰X──RY(0.102)──╰X──RY(0.0779)──╰X──RY(0.153)──╰X───RZ(1.57)──────╰X──╰X──╰X──╰X──╰┤ State
+        .. code-block::
+
+            0: ──RY(2.35)─╭C───────────╭C──────────────╭C────────────────────────╭C
+            1: ──RY(2.09)─╰X──RY(0.21)─╰X─╭C───────────│────────────╭C───────────│─
+            2: ──RY(1.88)─────────────────╰X──RY(0.10)─╰X──RY(0.08)─╰X──RY(0.15)─╰X
+
+            ──╭C────────╭C────╭C────╭C─┤  State
+            ──╰X────────╰X─╭C─│──╭C─│──┤  State
+            ───RZ(1.57)────╰X─╰X─╰X─╰X─┤  State
 
         The state preparation can be checked by running:
 
@@ -312,31 +321,57 @@ class MottonenStatePreparation(Operation):
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        a = qml.math.abs(self.parameters[0])
-        omega = qml.math.angle(self.parameters[0])
+        .. math:: O = O_1 O_2 \dots O_n.
 
+
+
+        .. seealso:: :meth:`~.MottonenStatePreparation.decomposition`.
+
+        Args:
+            state_vector (tensor_like): Normalized state vector of shape ``(2^len(wires),)``
+            wires (Any or Iterable[Any]): wires that the operator acts on
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> state_vector = torch.tensor([0.5, 0.5, 0.5, 0.5])
+        >>> qml.MottonenStatePreparation.compute_decomposition(state_vector, wires=["a", "b"])
+        [RY(array(1.57079633), wires=['a']),
+        RY(array(1.57079633), wires=['b']),
+        CNOT(wires=['a', 'b']),
+        CNOT(wires=['a', 'b'])]
+        """
+
+        a = qml.math.abs(state_vector)
+        omega = qml.math.angle(state_vector)
         # change ordering of wires, since original code
         # was written for IBM machines
-        wires_reverse = self.wires[::-1]
+        wires_reverse = wires[::-1]
 
-        with qml.tape.QuantumTape() as tape:
+        op_list = []
 
-            # Apply inverse y rotation cascade to prepare correct absolute values of amplitudes
+        # Apply inverse y rotation cascade to prepare correct absolute values of amplitudes
+        for k in range(len(wires_reverse), 0, -1):
+            alpha_y_k = _get_alpha_y(a, len(wires_reverse), k)
+            control = wires_reverse[k:]
+            target = wires_reverse[k - 1]
+            op_list.extend(_apply_uniform_rotation_dagger(qml.RY, alpha_y_k, control, target))
+
+        # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes
+        if not qml.math.allclose(omega, 0):
             for k in range(len(wires_reverse), 0, -1):
-                alpha_y_k = _get_alpha_y(a, len(wires_reverse), k)
+                alpha_z_k = _get_alpha_z(omega, len(wires_reverse), k)
                 control = wires_reverse[k:]
                 target = wires_reverse[k - 1]
-                _uniform_rotation_dagger(qml.RY, alpha_y_k, control, target)
+                if len(alpha_z_k) > 0:
+                    op_list.extend(
+                        _apply_uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target)
+                    )
 
-            # If necessary, apply inverse z rotation cascade to prepare correct phases of amplitudes
-            if not qml.math.allclose(omega, 0):
-                for k in range(len(wires_reverse), 0, -1):
-                    alpha_z_k = _get_alpha_z(omega, len(wires_reverse), k)
-                    control = wires_reverse[k:]
-                    target = wires_reverse[k - 1]
-                    if len(alpha_z_k) > 0:
-                        _uniform_rotation_dagger(qml.RZ, alpha_z_k, control, target)
-
-        return tape
+        return op_list

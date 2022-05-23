@@ -24,25 +24,6 @@ from pennylane.circuit_graph import LayerData
 
 from .batch_transform import batch_transform
 
-# This dictionary maps generators to their controlled gate equivalent.
-# It is equivalent to using ``controlled`` on the generators, but this
-# approach via registering specific generators allows us to guarantee
-# unitary circuits for ``allow_nonunitary=False``
-_GEN_TO_CGEN = {
-    qml.PauliX: qml.CNOT,
-    qml.PauliY: qml.CY,
-    qml.PauliZ: qml.CZ,
-}
-
-# In contrast to the above, this dictionary maps *operators* to controlled
-# generator gates, skipping over the step of retrieving the generator from
-# the original operation and identifying it as a gate. It replaces matrix
-# arithmetics that otherwise would be required at this point.
-_OP_TO_CGEN = {
-    # PhaseShift is the same as RZ up to a global phase
-    qml.PhaseShift: qml.CZ,
-}
-
 
 def expand_fn(tape, approx=None, allow_nonunitary=True, aux_wire=None, device_wires=None):
     """Set the metric tensor based on whether non-unitary gates are allowed."""
@@ -188,7 +169,8 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
     >>> grad_fn(weights)
     array([-0.0282246 ,  0.01340413,  0.        ,  0.        ])
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         This transform can also be applied to low-level
         :class:`~.QuantumTape` objects. This will result in no implicit quantum
@@ -233,7 +215,7 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
             \mathfrak{Re}\left\{\langle \partial_i\psi|\partial_j\psi\rangle\right\}
 
         and can be computed using an augmented circuit with an additional qubit.
-        See for example `the appendix of McArdle et al. <https://arxiv.org/pdf/1804.03023.pdf>`__
+        See for example the appendix of `McArdle et al. (2019) <https://doi.org/10.1038/s41534-019-0187-2>`__
         for details.
         The block-diagonal of the tensor is computed using the covariance matrix approach.
 
@@ -244,6 +226,14 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
         This means that in total only the tapes for the first terms of the off block-diagonal
         are required in addition to the circuits for the block diagonal.
     """
+    if not tape.trainable_params:
+        warnings.warn(
+            "Attempted to compute the metric tensor of a tape with no trainable parameters. "
+            "If this is unintended, please mark trainable parameters in accordance with the "
+            "chosen auto differentiation framework, or via the 'tape.trainable_params' property."
+        )
+        return [], lambda _: ()
+
     # pylint: disable=too-many-arguments
     if approx in {"diag", "block-diag"}:
         # Only require covariance matrix based transform
@@ -259,7 +249,7 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
     )
 
 
-def _contract_metric_tensor_with_cjac(mt, cjac, args, interface):
+def _contract_metric_tensor_with_cjac(mt, cjac):
     """Execute the contraction of pre-computed classical Jacobian(s)
     and the metric tensor of a tape in order to obtain the hybrid
     metric tensor of a QNode.
@@ -267,14 +257,12 @@ def _contract_metric_tensor_with_cjac(mt, cjac, args, interface):
     Args:
         mt (array): Metric tensor of a tape (2-dimensional)
         cjac (array or tuple[array]): The classical Jacobian of a QNode
-        args (tuple): QNode arguments
-        interface (str): QNode interface
 
     Returns:
         array or tuple[array]: Hybrid metric tensor(s) of the QNode.
         The number of metric tensors depends on the number of QNode arguments
-        for which the classical Jacobian was computed, their shape on the
-        shape of these QNode arguments.
+        for which the classical Jacobian was computed, the tensor shape(s)
+        depend on the shape of these QNode arguments.
     """
     if isinstance(cjac, tuple):
         # Classical processing of multiple arguments is present. Return cjac.T @ mt @ cjac
@@ -296,36 +284,7 @@ def _contract_metric_tensor_with_cjac(mt, cjac, args, interface):
         # is present inside the QNode.
         return mt
 
-    # TODO: Remove the following behaviour once the stacking behaviour in `qml.jacobian`
-    # has been removed. The additional arguments `args` and `interface` can be removed
-    # accordingly.
-
-    # Get number of gate arguments that were considered trainable
-    num_gate_args = qml.math.shape(mt)[0]
-    # Get trainable args
-    # pylint: disable=protected-access
-    trainable_args_idx = qml.gradients.gradient_transform._jacobian_trainable_args(args, interface)
-    # Since all arguments have the same shape, obtain shape from the first trainable arg
-    qnode_arg_shape = qml.math.shape(args[trainable_args_idx[0]])
-    num_qnode_args = len(trainable_args_idx)
-
-    if qml.math.shape(cjac) == (num_gate_args, *qnode_arg_shape):
-        # single QNode argument
-        cjac_axis = [0]
-    elif qml.math.shape(cjac) == (*qnode_arg_shape[::-1], num_gate_args, num_qnode_args):
-        # multiple QNode arguments with stacking
-        cjac_axis = [-2]
-    else:  # pragma: no cover
-        warnings.warn(
-            "Unexpected classical Jacobian encoutered, could not compute the hybrid "
-            "metric tensor of the QNode. You can still attempt to obtain the quantum "
-            "metric tensor with the `hybrid=False` parameter.",
-            UserWarning,
-        )
-        return ()
-
-    mt = qml.math.tensordot(mt, cjac, [[-1], cjac_axis])
-    mt = qml.math.tensordot(cjac, mt, [cjac_axis, [0]])
+    mt = qml.math.tensordot(cjac, qml.math.tensordot(mt, cjac, axes=[[-1], [0]]), axes=[[0], [0]])
 
     return mt
 
@@ -354,6 +313,14 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
     cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=_expand_fn)
 
     def wrapper(*args, **kwargs):
+        if not qml.math.get_trainable_indices(args):
+            warnings.warn(
+                "Attempted to compute the metric tensor of a QNode with no trainable parameters. "
+                "If this is unintended, please add trainable parameters in accordance with the "
+                "chosen auto differentiation framework."
+            )
+            return ()
+
         try:
             mt = mt_fn(*args, **kwargs)
         except qml.wires.WireError as e:
@@ -382,7 +349,7 @@ def qnode_execution_wrapper(self, qnode, targs, tkwargs):
         kwargs.pop("shots", False)
         cjac = cjac_fn(*args, **kwargs)
 
-        return _contract_metric_tensor_with_cjac(mt, cjac, args, qnode.interface)
+        return _contract_metric_tensor_with_cjac(mt, cjac)
 
     return wrapper
 
@@ -424,26 +391,9 @@ def _metric_tensor_cov_matrix(tape, diag_approx):
 
         # for each operation in the layer, get the generator
         for op in curr_ops:
-            gen, s = op.generator
-            if op.inverse:
-                s = -s
-            w = op.wires
+            obs, s = qml.generator(op)
+            obs_list[-1].append(obs)
             coeffs_list[-1].append(s)
-
-            # get the observable corresponding to the generator of the current operation
-            if isinstance(gen, np.ndarray):
-                # generator is a Hermitian matrix
-                obs_list[-1].append(qml.Hermitian(gen, w))
-
-            elif issubclass(gen, qml.operation.Observable):
-                # generator is an existing PennyLane operation
-                obs_list[-1].append(gen(w))
-
-            else:
-                raise qml.QuantumFunctionError(
-                    f"Can't generate metric tensor, generator {gen}"
-                    "has no corresponding observable"
-                )
 
         # Create a quantum tape with all operations
         # prior to the parametrized layer, and the rotations
@@ -498,21 +448,22 @@ def _get_gen_op(op, allow_nonunitary, aux_wire):
     generator but ``allow_nonunitary=False``, the operation ``op`` should have been decomposed
     before, leading to a ``ValueError``.
     """
-    gen, _ = op.generator
+    op_to_cgen = {
+        qml.RX: qml.CNOT,
+        qml.RY: qml.CY,
+        qml.RZ: qml.CZ,
+        qml.PhaseShift: qml.CZ,  # PhaseShift is the same as RZ up to a global phase
+    }
+
     try:
-        if isinstance(gen, np.ndarray):
-            cgen = _OP_TO_CGEN[op.__class__]
-        else:
-            cgen = _GEN_TO_CGEN.get(gen, None)
-            if cgen is None:
-                cgen = _OP_TO_CGEN[op.__class__]
+        cgen = op_to_cgen[op.__class__]
         return cgen(wires=[aux_wire, *op.wires])
 
     except KeyError as e:
         if allow_nonunitary:
-            if (not isinstance(gen, np.ndarray)) and issubclass(gen, qml.operation.Observable):
-                gen = gen.matrix
-            return qml.ControlledQubitUnitary(gen, control_wires=aux_wire, wires=op.wires)
+            mat = qml.matrix(qml.generator(op, format="observable"))
+            return qml.ControlledQubitUnitary(mat, control_wires=aux_wire, wires=op.wires)
+
         raise ValueError(
             f"Generator for operation {op} not known and non-unitary operations "
             "deactivated via allow_nonunitary=False."
@@ -666,7 +617,7 @@ def _metric_tensor_hadamard(tape, allow_nonunitary, aux_wire, device_wires):
         idx = 0
         for prob, obs in zip(diag_res, obs_list):
             for o in obs:
-                l = qml.math.cast(o.eigvals, dtype=np.float64)
+                l = qml.math.cast(o.eigvals(), dtype=np.float64)
                 w = tape.wires.indices(o.wires)
                 p = qml.math.marginal_prob(prob, w)
                 expvals = qml.math.scatter_element_add(expvals, (idx,), qml.math.dot(l, p))
@@ -708,6 +659,7 @@ def _get_aux_wire(aux_wire, tape, device_wires):
     if aux_wire is not None:
         if device_wires is None or aux_wire in device_wires:
             return aux_wire
+        raise qml.wires.WireError("The requested aux_wire does not exist on the used device.")
 
     if device_wires is not None:
         unused_wires = qml.wires.Wires(device_wires.toset().difference(tape.wires.toset()))

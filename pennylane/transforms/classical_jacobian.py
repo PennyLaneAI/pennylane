@@ -88,15 +88,15 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
     The output and its format depend on the backend:
 
     .. list-table:: Output format of ``classical_jacobian``
-       :widths: 25 25 25 25
+       :widths: 15 25 25 35
        :header-rows: 1
 
        * - Interface
          - ``argnum=None``
          - ``type(argnum)=int``
-         - ``argnum=Sequence[int]``
+         - ``type(argnum) = Sequence[int]``
        * - ``'autograd'``
-         - ``tuple(arrays)`` [1]
+         - ``tuple(array)`` [1]
          - ``array``
          - ``tuple(array)``
        * - ``'jax'``
@@ -104,17 +104,16 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
          - ``array``
          - ``tuple(array)``
        * - ``'tf'``
-         - ``tuple(arrays)``
+         - ``tuple(array)``
          - ``array``
          - ``tuple(array)``
        * - ``'torch'``
-         - ``tuple(arrays)``
+         - ``tuple(array)``
          - ``array``
          - ``tuple(array)``
 
-    [1] If all QNode arguments are of the same shape, the tuple is unpacked and the
-    Jacobian arrays are stacked into one ``array``. If there only is one QNode argument,
-    the tuple is unpacked as well. Both is based on the behaviour of ``qml.jacobian``.
+    [1] If there only is one trainable QNode argument, the tuple is unpacked to a
+    single ``array``, as is the case for :func:`.jacobian`.
 
     [2] For JAX, ``argnum=None`` defaults to ``argnum=0`` in contrast to all other
     interfaces. This means that only the classical Jacobian with respect to the first
@@ -136,7 +135,6 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
     Only the Jacobians with respect to the arguments ``x`` and ``y`` were computed, and
     returned as a tuple of ``arrays``.
-
     """
 
     def classical_preprocessing(*args, **kwargs):
@@ -152,21 +150,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
     if qnode.interface == "autograd":
 
-        def _jacobian(*args, **kwargs):
-            if argnum is None:
-                jac = qml.jacobian(classical_preprocessing)(*args, **kwargs)
-            elif np.isscalar(argnum):
-                jac = qml.jacobian(classical_preprocessing, argnum=argnum)(*args, **kwargs)
-            else:
-                jac = tuple(
-                    (
-                        qml.jacobian(classical_preprocessing, argnum=i)(*args, **kwargs)
-                        for i in argnum
-                    )
-                )
-            return jac
-
-        return _jacobian
+        return qml.jacobian(classical_preprocessing, argnum=argnum)
 
     if qnode.interface == "torch":
         import torch

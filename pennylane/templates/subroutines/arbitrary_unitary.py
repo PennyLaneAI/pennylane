@@ -45,7 +45,7 @@ def _n_k_gray_code(n, k, start=0):
         start (int, optional): Optional start of the Gray code. The generated code
             will be shorter as the code does not wrap. Defaults to 0.
     """
-    for i in range(start, n ** k):
+    for i in range(start, n**k):
         codeword = [0] * k
 
         base_repesentation = []
@@ -108,16 +108,31 @@ class ArbitraryUnitary(Operation):
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(weights, wires):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        weights = self.parameters[0]
+        .. math:: O = O_1 O_2 \dots O_n.
 
-        with qml.tape.QuantumTape() as tape:
 
-            for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(self.wires))):
-                PauliRot(weights[i], pauli_word, wires=self.wires)
 
-        return tape
+        .. seealso:: :meth:`~.ArbitraryUnitary.decomposition`.
+
+        Args:
+            weights (tensor_like): The angles of the Pauli word rotations, needs to have length :math:`4^n - 1`
+                    where :math:`n` is the number of wires the template acts upon.
+            wires (Any or Iterable[Any]): wires that the operator acts on
+
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+        """
+        op_list = []
+
+        for i, pauli_word in enumerate(_all_pauli_words_but_identity(len(wires))):
+            op_list.append(PauliRot(weights[i], pauli_word, wires=wires))
+
+        return op_list
 
     @staticmethod
     def shape(n_wires):
@@ -126,4 +141,4 @@ class ArbitraryUnitary(Operation):
         Args:
             n_wires (int): number of wires that template acts on
         """
-        return (4 ** n_wires - 1,)
+        return (4**n_wires - 1,)

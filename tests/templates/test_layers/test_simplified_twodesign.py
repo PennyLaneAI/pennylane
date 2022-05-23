@@ -105,7 +105,7 @@ class TestDecomposition:
             )
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_wires)]
 
-        expectations = circuit(initial_layer_weights, weights)
+        expectations = circuit(np.array(initial_layer_weights), np.array(weights))
         for exp, target_exp in zip(expectations, target):
             assert np.allclose(exp, target_exp, atol=tol, rtol=0)
 
@@ -212,27 +212,7 @@ class TestInterfaces:
     """Tests that the template is compatible with all interfaces, including the computation
     of gradients."""
 
-    def test_list_and_tuples(self, tol):
-        """Tests common iterables as inputs."""
-
-        weights = [[[0.1, -1.1], [0.2, 0.1]]]
-        initial_weights = [0.1, 0.2, 0.3]
-
-        dev = qml.device("default.qubit", wires=3)
-
-        circuit = qml.QNode(circuit_template, dev)
-        circuit2 = qml.QNode(circuit_decomposed, dev)
-
-        res = circuit(initial_weights, weights)
-        res2 = circuit2(initial_weights, weights)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
-        weights_tuple = [[tuple(weights[0][0]), tuple(weights[0][1])]]
-        init_weights_tuple = tuple(initial_weights)
-        res = circuit(init_weights_tuple, weights_tuple)
-        res2 = circuit2(init_weights_tuple, weights_tuple)
-        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
-
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Tests the autograd interface."""
 
@@ -259,10 +239,11 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
         assert np.allclose(grads[1], grads2[1], atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Tests the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(1, 2, 2)))
@@ -286,10 +267,11 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
         assert np.allclose(grads[1], grads2[1], atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         weights = tf.Variable(np.random.random(size=(1, 2, 2)))
         initial_weights = tf.Variable(np.random.random(size=(3,)))
@@ -314,10 +296,11 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
         assert np.allclose(grads[1], grads2[1], atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Tests the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         weights = torch.tensor(np.random.random(size=(1, 2, 2)), requires_grad=True)
         initial_weights = torch.tensor(np.random.random(size=(3,)), requires_grad=True)

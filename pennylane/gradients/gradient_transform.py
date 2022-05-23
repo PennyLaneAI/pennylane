@@ -20,6 +20,145 @@ import pennylane as qml
 from pennylane.transforms.tape_expand import expand_invalid_trainable
 
 
+def gradient_analysis(tape, use_graph=True, grad_fn=None):
+    """Update the parameter information dictionary of the tape with
+    gradient information of each parameter.
+
+    Parameter gradient methods include:
+
+    * ``None``: the parameter does not support differentiation.
+
+    * ``"0"``: the variational circuit output does not depend on this
+      parameter (the partial derivative is zero).
+
+    In addition, the operator might define its own grad method
+    via :attr:`.Operator.grad_method`.
+
+    Note that this function modifies the input tape in-place.
+
+    Args:
+        tape (.QuantumTape): the quantum tape to analyze
+        use_graph (bool): whether to use a directed-acyclic graph to determine
+            if the parameter has a gradient of 0
+        grad_fn (None or callable): The gradient transform performing the analysis.
+            This is an optional argument; if provided, and the tape has already
+            been analyzed for the gradient information by the same gradient transform,
+            the cached gradient analysis will be used.
+    """
+    # pylint:disable=protected-access
+    if grad_fn is not None and getattr(tape, "_gradient_fn", None) is grad_fn:
+        # gradient analysis has already been performed on this tape
+        return
+
+    if grad_fn is not None:
+        tape._gradient_fn = grad_fn
+
+    for idx, info in tape._par_info.items():
+
+        if idx not in tape.trainable_params:
+            # non-trainable parameters do not require a grad_method
+            info["grad_method"] = None
+        else:
+            op = tape._par_info[idx]["op"]
+
+            if not qml.operation.has_grad_method(op):
+                # no differentiation method is registered for this operation
+                info["grad_method"] = None
+
+            elif (tape._graph is not None) or use_graph:
+                if not any(tape.graph.has_path(op, ob) for ob in tape.observables):
+                    # there is no influence of this operation on any of the observables
+                    info["grad_method"] = "0"
+                    continue
+
+            info["grad_method"] = op.grad_method
+
+
+def grad_method_validation(method, tape):
+    """Validates if the gradient method requested is supported by the trainable
+    parameters of a tape, and returns the allowed parameter gradient methods.
+
+    This method will generate parameter gradient information for the given tape if it
+    has not already been generated, and then proceed to validate the gradient method.
+    In particular:
+
+    * An exception will be raised if there exist non-differentiable trainable
+      parameters on the tape.
+
+    * An exception will be raised if the Jacobian method is ``"analytic"`` but there
+      exist some trainable parameters on the tape that only support numeric differentiation.
+
+    If all validations pass, this method will return a tuple containing the allowed parameter
+    gradient methods for each trainable parameter.
+
+    Args:
+        method (str): the overall Jacobian differentiation method
+        tape (.QuantumTape): the tape with associated parameter information
+
+    Returns:
+        tuple[str, None]: the allowed parameter gradient methods for each trainable parameter
+    """
+
+    diff_methods = {
+        idx: info["grad_method"]
+        for idx, info in tape._par_info.items()  # pylint: disable=protected-access
+        if idx in tape.trainable_params
+    }
+
+    # check and raise an error if any parameters are non-differentiable
+    nondiff_params = {idx for idx, g in diff_methods.items() if g is None}
+
+    if nondiff_params:
+        raise ValueError(f"Cannot differentiate with respect to parameter(s) {nondiff_params}")
+
+    numeric_params = {idx for idx, g in diff_methods.items() if g == "F"}
+
+    # If explicitly using analytic mode, ensure that all parameters
+    # support analytic differentiation.
+    if method == "analytic" and numeric_params:
+        raise ValueError(
+            f"The analytic gradient method cannot be used with the parameter(s) {numeric_params}."
+        )
+
+    return tuple(diff_methods.values())
+
+
+def choose_grad_methods(diff_methods, argnum):
+    """Chooses the trainable parameters to use for computing the Jacobian
+    by returning a map of their indices and differentiation methods.
+
+    When there are fewer parameters specified than the total number of
+    trainable parameters, the Jacobian is estimated by using the parameters
+    specified using the ``argnum`` keyword argument.
+
+    Args:
+        diff_methods (list): the ordered list of differentiation methods
+            for each parameter
+        argnum (int, list(int), None): Indices for argument(s) with respect
+            to which to compute the Jacobian.
+
+    Returns:
+        dict: map of the trainable parameter indices and
+        differentiation methods
+    """
+    if argnum is None:
+        return dict(enumerate(diff_methods))
+
+    if isinstance(argnum, int):
+        argnum = [argnum]
+
+    num_params = len(argnum)
+
+    if num_params == 0:
+        warnings.warn(
+            "No trainable parameters were specified for computing the Jacobian.",
+            UserWarning,
+        )
+        return {}
+
+    return {idx: diff_methods[idx] for idx in argnum}
+
+
 class gradient_transform(qml.batch_transform):
     """Decorator for defining quantum gradient transforms.
 
@@ -110,27 +249,6 @@ class gradient_transform(qml.batch_transform):
         self.hybrid = hybrid
         super().__init__(transform_fn, expand_fn=expand_fn, differentiable=differentiable)
 
-    @staticmethod
-    def _jacobian_trainable_args(args, interface):
-        """Return the indices of QNode arguments for which a Jacobian was
-        computed by `qml.transforms.classical_jacobian` with argnum=None.
-        """
-        trainable_args = []
-
-        if interface == "autograd":
-            for idx, arg in enumerate(args):
-                # TODO: make default False once this change is done in qml.jacobian
-                if getattr(arg, "requires_grad", True):
-                    trainable_args.append(idx)
-
-        elif interface == "jax":
-            trainable_args = [0]
-
-        # Torch and Tensorflow interfaces are not considered since `classical_jacobian`
-        # always returns a tuple for them, thus not invoking this function.
-
-        return trainable_args
-
     def default_qnode_wrapper(self, qnode, targs, tkwargs):
         # Here, we overwrite the QNode execution wrapper in order
         # to take into account that classical processing may be present
@@ -140,10 +258,15 @@ class gradient_transform(qml.batch_transform):
         cjac_fn = qml.transforms.classical_jacobian(qnode, expand_fn=expand_invalid_trainable)
 
         def jacobian_wrapper(*args, **kwargs):
-            qjac = _wrapper(*args, **kwargs)
+            if not qml.math.get_trainable_indices(args):
+                warnings.warn(
+                    "Attempted to compute the gradient of a QNode with no trainable parameters. "
+                    "If this is unintended, please add trainable parameters in accordance with "
+                    "the chosen auto differentiation framework."
+                )
+                return ()
 
-            if any(m.return_type is qml.operation.Probability for m in qnode.qtape.measurements):
-                qjac = qml.math.squeeze(qjac)
+            qjac = _wrapper(*args, **kwargs)
 
             if not hybrid:
                 return qjac
@@ -153,56 +276,18 @@ class gradient_transform(qml.batch_transform):
 
             if isinstance(cjac, tuple):
                 # Classical processing of multiple arguments is present. Return qjac @ cjac.
-                jacs = [
-                    qml.math.squeeze(qml.math.tensordot(c, qjac, [[0], [-1]]))
-                    for c in cjac
-                    if c is not None
-                ]
+                jacs = tuple(
+                    qml.math.tensordot(qjac, c, [[-1], [0]]) for c in cjac if c is not None
+                )
                 return jacs
 
-            is_square = cjac.shape == (1,) or (cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1])
+            is_square = cjac.ndim == 2 and cjac.shape[0] == cjac.shape[1]
 
             if is_square and qml.math.allclose(cjac, qml.numpy.eye(cjac.shape[0])):
                 # Classical Jacobian is the identity. No classical processing
                 # is present inside the QNode.
                 return qjac
 
-            # Classical processing present of either:
-            #   a) a single argument or
-            #   b) multiple arguments of the same shape
-            # The shape of the classical jacobian returned by qml.jacobian (invoked by
-            # classical_jacobian with autograd) depends on the scenario:
-            #   a) (# gate args, qnode arg shape)
-            #   b) (reverse qnode arg shape, # gate args, # qnode args)
-            # It then needs to be contracted with the quantum jacobian of shape:
-            #      (qnode output shape, # gate args)
-            # The result should have shape:
-            #   a) (qnode ouput shape, qnode arg shape)
-            #   b) (reverse qnode arg shape, qnode output shape, # qnode args)
-            num_gate_args = qml.math.shape(qjac)[-1]
-            # Consider only QNode arguments regarded as trainable by the interfaces.
-            trainable_args_idx = self._jacobian_trainable_args(args, qnode.interface)
-            # Since all arguments have the same shape, obtain shape from the first trainable arg
-            qnode_arg_shape = qml.math.shape(args[trainable_args_idx[0]])
-            num_qnode_args = len(trainable_args_idx)
-
-            if qml.math.shape(cjac) == (num_gate_args, *qnode_arg_shape):
-                # single QNode argument
-                jac = qml.math.tensordot(qjac, cjac, [[-1], [0]])
-            elif qml.math.shape(cjac) == (*qnode_arg_shape[::-1], num_gate_args, num_qnode_args):
-                # multiple QNode arguments with stacking
-                cjac = qml.math.swapaxes(cjac, -1, -2)
-                jac = qml.math.tensordot(cjac, qjac, [[-1], [-1]])
-                jac = qml.math.moveaxis(jac, -1, len(qnode_arg_shape))
-            else:  # pragma: no cover
-                jac = ()
-                warnings.warn(
-                    "Unexpected classical Jacobian encoutered, could not compute the hybrid "
-                    "Jacobian of the QNode. You can still attempt to obtain the quantum Jacobian "
-                    "with the `hybrid=False` parameter.",
-                    UserWarning,
-                )
-
-            return qml.math.squeeze(jac)
+            return qml.math.tensordot(qjac, cjac, [[-1], [0]])
 
         return jacobian_wrapper

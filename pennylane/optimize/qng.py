@@ -70,7 +70,8 @@ class QNGOptimizer(GradientDescentOptimizer):
     For more details, see:
 
         James Stokes, Josh Izaac, Nathan Killoran, Giuseppe Carleo.
-        "Quantum Natural Gradient." `arXiv:1909.02108 <https://arxiv.org/abs/1909.02108>`_, 2019.
+        "Quantum Natural Gradient."
+        `Quantum 4, 269 <https://doi.org/10.22331/q-2020-05-25-269>`_, 2020.
 
     .. note::
 
@@ -220,10 +221,25 @@ class QNGOptimizer(GradientDescentOptimizer):
         if forward is None:
             forward = qnode(*args, **kwargs)
 
-        # unwrap from list if one argument, cleaner return
-        if len(new_args) == 1:
-            return new_args[0], forward
-        return new_args, forward
+        # Note: for now, we only have single element lists as the new
+        # arguments, but this might change, see TODO below.
+        # Once the other approach is implemented, we need to unwrap from list
+        # if one argument for a cleaner return.
+        # if len(new_args) == 1:
+        return new_args[0], forward
+
+        # TODO: The scenario of the following return statement is not implemented
+        # yet, as currently only a single metric tensor can be processed.
+        # An optimizer refactor is needed to accomodate for this (similar to other
+        # optimizers for which `apply_grad` will have to be patched to allow for
+        # tuple-valued gradients to be processed)
+        #
+        # For multiple QNode arguments, `qml.jacobian` and `qml.metric_tensor`
+        # return a tuple of arrays. Each of the gradient arrays has to be processed
+        # together with the corresponding array in the metric tensor tuple.
+        # This requires modifications of the `GradientDescentOptimizer` base class
+        # as none of the optimizers accomodate for this use case.
+        # return new_args, forward
 
     # pylint: disable=arguments-differ
     def step(

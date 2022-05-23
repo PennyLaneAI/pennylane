@@ -103,9 +103,7 @@ class TestMergeRotations:
             (0.3, -0.3, 0.7, -0.1, [qml.RY(0.6, wires=1)]),
         ],
     )
-    def test_two_qubits_rotation_no_merge(
-        self, theta_11, theta_12, theta_21, theta_22, expected_ops
-    ):
+    def test_two_qubits_merge(self, theta_11, theta_12, theta_21, theta_22, expected_ops):
         """Test that a two-qubit circuit with rotations on different qubits get merged."""
 
         def qfunc():
@@ -162,13 +160,14 @@ class TestMergeRotations:
             qml.RY(0.5, wires=["a"])
             qml.RX(-0.5, wires=[2])
             qml.RX(0.2, wires=[2])
+            qml.RZ(0.2, wires=[2])
 
         transformed_qfunc = merge_rotations(include_gates=["RX", "CRX"])(qfunc)
 
         ops = qml.transforms.make_tape(transformed_qfunc)().operations
 
-        names_expected = ["CRX", "RY", "RY", "RX"]
-        wires_expected = [Wires([0, 1]), Wires("a"), Wires("a"), Wires(2)]
+        names_expected = ["CRX", "RY", "RY", "RX", "RZ"]
+        wires_expected = [Wires([0, 1]), Wires("a"), Wires("a"), Wires(2), Wires(2)]
         compare_operation_lists(ops, names_expected, wires_expected)
 
         assert qml.math.isclose(ops[0].parameters[0], 0.3)
@@ -295,6 +294,7 @@ expected_wires_list = [
 class TestMergeRotationsInterfaces:
     """Test that rotation merging works in all interfaces."""
 
+    @pytest.mark.autograd
     def test_merge_rotations_autograd(self):
         """Test QNode and gradient in autograd interface."""
 
@@ -315,9 +315,10 @@ class TestMergeRotationsInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.torch
     def test_merge_rotations_torch(self):
         """Test QNode and gradient in torch interface."""
-        torch = pytest.importorskip("torch", minversion="1.8")
+        import torch
 
         original_qnode = qml.QNode(qfunc, dev, interface="torch")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="torch")
@@ -341,9 +342,10 @@ class TestMergeRotationsInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.tf
     def test_merge_rotations_tf(self):
         """Test QNode and gradient in tensorflow interface."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         original_qnode = qml.QNode(qfunc, dev, interface="tf")
         transformed_qnode = qml.QNode(transformed_qfunc, dev, interface="tf")
@@ -372,11 +374,11 @@ class TestMergeRotationsInterfaces:
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
+    @pytest.mark.jax
     def test_merge_rotations_jax(self):
         """Test QNode and gradient in JAX interface."""
-        jax = pytest.importorskip("jax")
+        import jax
         from jax import numpy as jnp
-
         from jax.config import config
 
         remember = config.read("jax_enable_x64")
@@ -398,3 +400,34 @@ class TestMergeRotationsInterfaces:
         # Check operation list
         ops = transformed_qnode.qtape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
+
+    @pytest.mark.jax
+    def test_merge_rotations_jax_jit(self):
+        """Test that when using jax.jit, the conditional statement that checks for
+        0 rotation angles does not break things."""
+
+        import jax
+
+        # Enable float64 support
+        from jax.config import config
+
+        remember = config.read("jax_enable_x64")
+        config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=["w1", "w2"])
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        @merge_rotations()
+        def qfunc():
+            qml.Rot(jax.numpy.array(0.1), jax.numpy.array(0.2), jax.numpy.array(0.3), wires=["w1"])
+            qml.Rot(
+                jax.numpy.array(-0.1), jax.numpy.array(-0.2), jax.numpy.array(-0.3), wires=["w1"]
+            )
+            qml.CRX(jax.numpy.array(0.2), wires=["w1", "w2"])
+            qml.CRX(jax.numpy.array(-0.2), wires=["w1", "w2"])
+            return qml.expval(qml.PauliZ("w1"))
+
+        res = qfunc()
+
+        assert qml.math.allclose(res, [1.0])

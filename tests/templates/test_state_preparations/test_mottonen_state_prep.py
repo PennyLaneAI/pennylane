@@ -17,8 +17,7 @@ Unit tests for the ArbitraryStatePreparation template.
 import pytest
 import numpy as np
 import pennylane as qml
-
-torch = pytest.importorskip("torch", minversion="1.3")
+from pennylane import numpy as pnp
 from pennylane.templates.state_preparations.mottonen import gray_code, _get_alpha_y
 
 
@@ -242,7 +241,7 @@ class TestDecomposition:
     def test_RZ_skipped(self, mocker, state_vector, n_wires):
         """Tests that the cascade of RZ gates is skipped for real-valued states."""
 
-        n_CNOT = 2 ** n_wires - 2
+        n_CNOT = 2**n_wires - 2
 
         dev = qml.device("default.qubit", wires=n_wires)
 
@@ -339,7 +338,11 @@ class TestGradient:
     # Make the template fully differentiable and test it.
 
     @pytest.mark.parametrize(
-        "state_vector", [np.array([0.70710678, 0.70710678]), np.array([0.70710678, 0.70710678j])]
+        "state_vector",
+        [
+            pnp.array([0.70710678, 0.70710678], requires_grad=True),
+            pnp.array([0.70710678, 0.70710678j], requires_grad=True),
+        ],
     )
     def test_gradient_evaluated(self, state_vector):
         """Test that the gradient is successfully calculated for a simple example. This test only
@@ -358,18 +361,22 @@ class TestCasting:
     """Test that the Mottonen state preparation ensures the compatibility with
     interfaces by using casting'"""
 
+    @pytest.mark.torch
     @pytest.mark.parametrize(
         "inputs, expected",
         [
             (
-                torch.tensor([0.0, 0.7, 0.7, 0.0], requires_grad=True),
+                [0.0, 0.7, 0.7, 0.0],
                 [0.0, 0.5, 0.5, 0.0],
             ),
-            (torch.tensor([0.1, 0.0, 0.0, 0.1], requires_grad=True), [0.5, 0.0, 0.0, 0.5]),
+            ([0.1, 0.0, 0.0, 0.1], [0.5, 0.0, 0.0, 0.5]),
         ],
     )
     def test_scalar_torch(self, inputs, expected):
         """Test that MottonenStatePreparation can be correctly used with the Torch interface."""
+        import torch
+
+        inputs = torch.tensor(inputs, requires_grad=True)
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="torch")

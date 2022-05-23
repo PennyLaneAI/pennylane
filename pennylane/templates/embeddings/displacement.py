@@ -35,7 +35,7 @@ class DisplacementEmbedding(Operation):
 
     Args:
         features (tensor_like): tensor of features
-        wires (Iterable): wires that the template acts on
+        wires (Any or Iterable[Any]): wires that the template acts on
         method (str): ``'phase'`` encodes the input into the phase of single-mode displacement, while
             ``'amplitude'`` uses the amplitude
         c (float): value of the phase of all displacement gates if ``execution='amplitude'``, or
@@ -68,9 +68,9 @@ class DisplacementEmbedding(Operation):
         And, the resulting circuit is:
 
         >>> print(qml.draw(circuit)(X))
-            0: ──D(1, 0.1)──────────┤
-            1: ──D(2, 0.1)──P(0.1)──┤ ⟨n⟩
-            2: ──D(3, 0.1)──────────┤
+        0: ─╭DisplacementEmbedding(M0)──────────┤
+        1: ─├DisplacementEmbedding(M0)──P(0.10)─┤  <n>
+        2: ─╰DisplacementEmbedding(M0)──────────┤
 
         Using different parameters:
 
@@ -92,9 +92,9 @@ class DisplacementEmbedding(Operation):
         And, the resulting circuit is:
 
         >>> print(qml.draw(circuit)(X))
-            0: ──D(0.5, 1)──────────┤
-            1: ──D(0.5, 2)──P(0.1)──┤ ⟨n⟩
-            2: ──D(0.5, 3)──────────┤
+        0: ─╭DisplacementEmbedding(M0)──────────┤
+        1: ─├DisplacementEmbedding(M0)──P(0.10)─┤  <n>
+        2: ─╰DisplacementEmbedding(M0)──────────┤
     """
 
     num_wires = AnyWires
@@ -128,13 +128,31 @@ class DisplacementEmbedding(Operation):
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(pars, wires):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        pars = self.parameters[0]
+        .. math:: O = O_1 O_2 \dots O_n.
 
-        with qml.tape.QuantumTape() as tape:
 
-            for i in range(len(self.wires)):
-                qml.Displacement(pars[i, 0], pars[i, 1], wires=self.wires[i : i + 1])
 
-        return tape
+        .. seealso:: :meth:`~.DisplacementEmbedding.decomposition`.
+
+        Args:
+            pars (tensor_like): parameters extracted from features and constant
+            wires (Any or Iterable[Any]): wires that the template acts on
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> pars = torch.tensor([[1., 0.], [2., 0.]])
+        >>> qml.DisplacementEmbedding.compute_decomposition(pars, wires=[0, 1])
+        [Displacement(tensor(1.), tensor(0.), wires=[0]),
+         Displacement(tensor(2.), tensor(0.), wires=[1])]
+        """
+        return [
+            qml.Displacement(pars[i, 0], pars[i, 1], wires=wires[i : i + 1])
+            for i in range(len(wires))
+        ]

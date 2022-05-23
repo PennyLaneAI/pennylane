@@ -26,7 +26,6 @@ from pennylane.optimize import (
     AdagradOptimizer,
     RMSPropOptimizer,
     AdamOptimizer,
-    RotosolveOptimizer,
 )
 
 
@@ -34,29 +33,19 @@ from pennylane.optimize import (
 def opt(opt_name):
     stepsize, gamma, delta = 0.1, 0.5, 0.8
 
-    if opt_name == "gd":
-        return GradientDescentOptimizer(stepsize)
+    map = {
+        "gd": GradientDescentOptimizer(stepsize),
+        "nest": NesterovMomentumOptimizer(stepsize, momentum=gamma),
+        "moment": MomentumOptimizer(stepsize, momentum=gamma),
+        "ada": AdagradOptimizer(stepsize),
+        "rms": RMSPropOptimizer(stepsize, decay=gamma),
+        "adam": AdamOptimizer(stepsize, beta1=gamma, beta2=delta),
+    }
 
-    if opt_name == "nest":
-        return NesterovMomentumOptimizer(stepsize, momentum=gamma)
-
-    if opt_name == "moment":
-        return MomentumOptimizer(stepsize, momentum=gamma)
-
-    if opt_name == "ada":
-        return AdagradOptimizer(stepsize)
-
-    if opt_name == "rms":
-        return RMSPropOptimizer(stepsize, decay=gamma)
-
-    if opt_name == "adam":
-        return AdamOptimizer(stepsize, beta1=gamma, beta2=delta)
-
-    if opt_name == "roto":
-        return RotosolveOptimizer()
+    return map[opt_name]
 
 
-@pytest.mark.parametrize("opt_name", ["gd", "moment", "nest", "ada", "rms", "adam", "roto"])
+@pytest.mark.parametrize("opt_name", ["gd", "moment", "nest", "ada", "rms", "adam"])
 class TestOverOpts:
     """Tests keywords, multiple arguements, and non-training arguments in relevant optimizers"""
 
@@ -83,12 +72,8 @@ class TestOverOpts:
 
         args3, kwargs3 = spy.call_args_list[-1]
 
-        if opt_name != "roto":
-            assert args2 == (x,)
-            assert args3 == (x,)
-        else:
-            assert not np.allclose(x_new_two, x, atol=tol)
-            assert not np.allclose(x_new_three_wc, x, atol=tol)
+        assert args2 == (x,)
+        assert args3 == (x,)
 
         assert kwargs2 == {"c": 2.0}
         assert kwargs3 == {"c": 3.0}
@@ -118,38 +103,31 @@ class TestOverOpts:
         self.reset(opt)
         args_called2, kwargs2 = spy.call_args_list[-1]  # just take last call
 
-        if opt_name != "roto":
-            assert args_called1 == (x, y, z)
-            assert args_called2 == (x_new, y_new, z_new)
-        else:
-            assert not np.allclose(x_new, x, atol=tol)
-            assert not np.allclose(y_new, y, atol=tol)
-            assert not np.allclose(z_new, z, atol=tol)
+        assert args_called1 == (x, y, z)
+        assert args_called2 == (x_new, y_new, z_new)
 
         assert kwargs1 == {}
         assert kwargs2 == {}
 
         assert np.allclose(cost, wrapper.func(x, y, z), atol=tol)
 
-    def test_nontrainable_data(self, opt, tol):
+    def test_nontrainable_data(self, opt):
         """Check non-trainable argument does not get updated"""
 
-        def func(x, data):
-            return x[0] * data[0]
+        def func(a, b, c, d):
+            assert qml.math.allclose(b, 1.0)
+            return a * b * c * d
 
-        x = np.array([1.0])
-        data = np.array([1.0], requires_grad=False)
+        a = np.array(0.1, requires_grad=True)
+        b = np.array(1.0, requires_grad=False)
+        c = 1.0
+        d = np.array(0.2, requires_grad=True)
 
-        args_new = opt.step(func, x, data)
-        self.reset(opt)
-        args_new_wc, cost = opt.step_and_cost(func, *args_new)
-        self.reset(opt)
+        args1 = opt.step(func, a, b, c, d)
+        args2 = opt.step(func, *args1)
 
-        assert np.allclose(len(args_new), 2, atol=tol)
-        assert not np.allclose(args_new[0], x, atol=tol)
-        assert np.allclose(args_new[1], data, atol=tol)
-
-        assert np.allclose(cost, func(*args_new), atol=tol)
+        assert args2[1] is b
+        assert args2[2] == 1.0
 
     def test_steps_the_same(self, opt, tol):
         """Tests whether separating the args into different inputs affects their

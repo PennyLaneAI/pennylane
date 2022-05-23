@@ -90,8 +90,8 @@ def algebra_commutator(tape, observables, lie_algebra_basis_names, nqubits):
     for obs in observables:
         for o in obs:
             # create a list of tapes for the plus and minus shifted circuits
-            tapes_plus = [qml.tape.JacobianTape(p + "_p") for p in lie_algebra_basis_names]
-            tapes_min = [qml.tape.JacobianTape(p + "_m") for p in lie_algebra_basis_names]
+            tapes_plus = [qml.tape.QuantumTape(p + "_p") for p in lie_algebra_basis_names]
+            tapes_min = [qml.tape.QuantumTape(p + "_m") for p in lie_algebra_basis_names]
 
             # loop through all operations on the input tape
             for op in tape.operations:
@@ -166,7 +166,7 @@ class LieAlgebraOptimizer:
     For more information on Riemannian gradient flows on Lie groups see
     `T. Schulte-Herbrueggen et. al. (2008) <https://arxiv.org/abs/0802.4195>`_
     and the application to quantum circuits
-    `Wiersema and Killoran (2021) <https://arxiv.org/abs/>`_.
+    `Wiersema and Killoran (2022) <https://arxiv.org/abs/2202.06976>`_.
 
     Args:
         circuit (.QNode): a user defined circuit that does not take any arguments and returns
@@ -251,7 +251,7 @@ class LieAlgebraOptimizer:
         ) = self.get_su_n_operators(restriction)
         self.exact = exact
         self.trottersteps = trottersteps
-        self.coeffs, self.observables = self.hamiltonian.terms
+        self.coeffs, self.observables = self.hamiltonian.terms()
         self.stepsize = stepsize
 
     def step(self):
@@ -358,6 +358,6 @@ class LieAlgebraOptimizer:
         )
 
         # For each observable O_i in the Hamiltonian, we have to calculate all Lie coefficients
-        omegas = 0.5 * (circuits_plus - circuits_min)
+        omegas = circuits_plus - circuits_min
 
         return np.dot(self.coeffs, omegas)

@@ -12,291 +12,236 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the mixin interface class for creating differentiable quantum tapes with
-Autograd.
+This module contains functions for adding the Autograd interface
+to a PennyLane Device class.
 """
-# pylint: disable=protected-access
-import autograd.extend
-import autograd.builtins
+# pylint: disable=too-many-arguments
+import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
+import pennylane as qml
 from pennylane import numpy as np
-from pennylane.queuing import AnnotatedQueue
 
 
-class AutogradInterface(AnnotatedQueue):
-    """Mixin class for applying an autograd interface to a :class:`~.JacobianTape`.
+def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_diff=2, mode=None):
+    """Execute a batch of tapes with Autograd parameters on a device.
 
-    Autograd-compatible quantum tape classes can be created via subclassing:
+    Args:
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        device (.Device): Device to use to execute the batch of tapes.
+            If the device does not provide a ``batch_execute`` method,
+            by default the tapes will be executed in serial.
+        execute_fn (callable): The execution function used to execute the tapes
+            during the forward pass. This function must return a tuple ``(results, jacobians)``.
+            If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
+            compute the gradients during the backwards pass.
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
+        gradient_fn (callable): the gradient function to use to compute quantum gradients
+        _n (int): a positive integer used to track nesting of derivatives, for example
+            if the nth-order derivative is requested.
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum order of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
+        mode (str): Whether the gradients should be computed on the forward
+            pass (``forward``) or the backward pass (``backward``).
 
-    .. code-block:: python
+    Returns:
+        list[list[float]]: A nested list of tape results. Each element in
+        the returned list corresponds in order to the provided tapes.
+    """
+    # pylint: disable=unused-argument
+    for tape in tapes:
+        # set the trainable parameters
+        params = tape.get_parameters(trainable_only=False)
+        tape.trainable_params = qml.math.get_trainable_indices(params)
 
-        class MyAutogradQuantumTape(AutogradInterface, JacobianTape):
+    # pylint misidentifies autograd.builtins as a dict
+    # pylint:disable=no-member
+    parameters = autograd.builtins.tuple(
+        [autograd.builtins.list(t.get_parameters()) for t in tapes]
+    )
 
-    Alternatively, the autograd interface can be dynamically applied to existing
-    quantum tapes via the :meth:`~.apply` class method. This modifies the
-    tape **in place**.
+    return _execute(
+        parameters,
+        tapes=tapes,
+        device=device,
+        execute_fn=execute_fn,
+        gradient_fn=gradient_fn,
+        gradient_kwargs=gradient_kwargs,
+        _n=_n,
+        max_diff=max_diff,
+    )[0]
 
-    Once created, the autograd interface can be used to perform quantum-classical
-    differentiable programming.
 
-    .. note::
+@autograd.extend.primitive
+def _execute(
+    parameters,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_fn=None,
+    gradient_kwargs=None,
+    _n=1,
+    max_diff=2,
+):  # pylint: disable=dangerous-default-value,unused-argument
+    """Autodifferentiable wrapper around ``Device.batch_execute``.
 
-        If using a device that supports native autograd computation and backpropagation, such as
-        :class:`~.DefaultQubitAutograd`, the Autograd interface **does not need to be applied**. It
-        is only applied to tapes executed on non-Autograd compatible devices.
+    The signature of this function is designed to work around Autograd restrictions.
+    Note that the ``parameters`` argument is dependent on the ``tapes`` argument;
+    this function should always be called as follows:
 
-    **Example**
+    >>> parameters = [autograd.builtins.list(t.get_parameters()) for t in tapes])
+    >>> parameters = autograd.builtins.tuple(parameters)
+    >>> _execute(parameters, tapes=tapes, device=device)
 
-    Once an autograd quantum tape has been created, it can be differentiated using autograd:
+    In particular:
 
-    .. code-block:: python
+    - ``parameters`` is dependent on the provided tapes: always extract them as above
+    - ``tapes`` is a *required* argument
+    - ``device`` is a *required* argument
 
-        tape = AutogradInterface.apply(JacobianTape())
+    The private argument ``_n`` is used to track nesting of derivatives, for example
+    if the nth-order derivative is requested. Do not set this argument unless you
+    understand the consequences!
+    """
+    with qml.tape.Unwrap(*tapes):
+        res, jacs = execute_fn(tapes, **gradient_kwargs)
 
-        with tape:
-            qml.Rot(0, 0, 0, wires=0)
-            expval(qml.PauliX(0))
+    for i, r in enumerate(res):
 
-        def cost_fn(x, y, z, device):
-            tape.set_parameters([x, y ** 2, y * np.sin(z)], trainable_only=False)
-            return tape.execute(device=device)
+        if isinstance(res[i], np.ndarray):
+            # For backwards compatibility, we flatten ragged tape outputs
+            # when there is no sampling
+            r = np.hstack(res[i]) if res[i].dtype == np.dtype("object") else res[i]
+            res[i] = np.tensor(r)
 
-    >>> x = np.array(0.1, requires_grad=False)
-    >>> y = np.array(0.2, requires_grad=True)
-    >>> z = np.array(0.3, requires_grad=True)
-    >>> dev = qml.device("default.qubit", wires=2)
-    >>> cost_fn(x, y, z, device=dev)
-    [0.03991951]
-    >>> jac_fn = qml.jacobian(cost_fn)
-    >>> jac_fn(x, y, z, device=dev)
-    [[ 0.39828408, -0.00045133]]
+        elif isinstance(res[i], tuple):
+            res[i] = tuple(np.tensor(r) for r in res[i])
+
+        else:
+            res[i] = qml.math.toarray(res[i])
+
+    return res, jacs
+
+
+def vjp(
+    ans,
+    parameters,
+    tapes=None,
+    device=None,
+    execute_fn=None,
+    gradient_fn=None,
+    gradient_kwargs=None,
+    _n=1,
+    max_diff=2,
+):  # pylint: disable=dangerous-default-value,unused-argument
+    """Returns the vector-Jacobian product operator for a batch of quantum tapes.
+
+    Args:
+        ans (array): the result of the batch tape execution
+        parameters (list[list[Any]]): Nested list of the quantum tape parameters.
+            This argument should be generated from the provided list of tapes.
+        tapes (Sequence[.QuantumTape]): batch of tapes to execute
+        device (.Device): Device to use to execute the batch of tapes.
+            If the device does not provide a ``batch_execute`` method,
+            by default the tapes will be executed in serial.
+        execute_fn (callable): The execution function used to execute the tapes
+            during the forward pass. This function must return a tuple ``(results, jacobians)``.
+            If ``jacobians`` is an empty list, then ``gradient_fn`` is used to
+            compute the gradients during the backwards pass.
+        gradient_fn (callable): the gradient function to use to compute quantum gradients
+        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+            determining the gradients of tapes
+        _n (int): a positive integer used to track nesting of derivatives, for example
+            if the nth-order derivative is requested.
+        max_diff (int): If ``gradient_fn`` is a gradient transform, this option specifies
+            the maximum number of derivatives to support. Increasing this value allows
+            for higher order derivatives to be extracted, at the cost of additional
+            (classical) computational overhead during the backwards pass.
+
+    Returns:
+        function: this function accepts the backpropagation
+        gradient output vector, and computes the vector-Jacobian product
     """
 
-    # pylint: disable=attribute-defined-outside-init
-    dtype = np.float64
+    def grad_fn(dy):
+        """Returns the vector-Jacobian product with given
+        parameter values and output gradient dy"""
 
-    @property
-    def interface(self):  # pylint: disable=missing-function-docstring
-        return "autograd"
+        dy = [qml.math.T(d) for d in dy[0]]
+        jacs = ans[1]
 
-    def _update_trainable_params(self):
-        """Set the trainable parameters.
+        if jacs:
+            # Jacobians were computed on the forward pass (mode="forward")
+            # No additional quantum evaluations needed; simply compute the VJPs directly.
+            vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
 
-        Unlike in :class:`~.JacobianTape`, we also set the private attribute
-        ``self._all_parameter_values``.
-        """
-        params = self.get_parameters(trainable_only=False, return_arraybox=True)
-        trainable_params = set()
+        else:
+            # Need to compute the Jacobians on the backward pass (accumulation="backward")
 
-        for idx, p in enumerate(params):
-            if getattr(p, "requires_grad", False) or isinstance(p, ArrayBox):
-                trainable_params.add(idx)
+            if isinstance(gradient_fn, qml.gradients.gradient_transform):
+                # Gradient function is a gradient transform.
 
-        self.trainable_params = trainable_params
-        self._all_parameter_values = params
+                # Generate and execute the required gradient tapes
+                if _n == max_diff:
+                    with qml.tape.Unwrap(*tapes):
+                        vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                            tapes,
+                            dy,
+                            gradient_fn,
+                            reduction="append",
+                            gradient_kwargs=gradient_kwargs,
+                        )
 
-    def get_parameters(self, trainable_only=True, return_arraybox=False):
-        """Return the parameters incident on the tape operations.
+                        vjps = processing_fn(execute_fn(vjp_tapes)[0])
 
-        The returned parameters are provided in order of appearance
-        on the tape. By default, the returned parameters are wrapped in
-        an ``autograd.builtins.list`` container.
+                else:
+                    vjp_tapes, processing_fn = qml.gradients.batch_vjp(
+                        tapes, dy, gradient_fn, reduction="append", gradient_kwargs=gradient_kwargs
+                    )
 
-        Args:
-            trainable_only (bool): if True, returns only trainable parameters
-            return_arraybox (bool): if True, the returned parameters are not
-                wrapped in an ``autograd.builtins.list`` container
-        Returns:
-            autograd.builtins.list or list: the corresponding parameter values
+                    # This is where the magic happens. Note that we call ``execute``.
+                    # This recursion, coupled with the fact that the gradient transforms
+                    # are differentiable, allows for arbitrary order differentiation.
+                    vjps = processing_fn(
+                        execute(
+                            vjp_tapes,
+                            device,
+                            execute_fn,
+                            gradient_fn,
+                            gradient_kwargs,
+                            _n=_n + 1,
+                            max_diff=max_diff,
+                        )
+                    )
 
-        **Example**
+            else:
+                # Gradient function is not a gradient transform
+                # (e.g., it might be a device method).
+                # Note that unlike the previous branch:
+                #
+                # - there is no recursion here
+                # - gradient_fn is not differentiable
+                #
+                # so we cannot support higher-order derivatives.
+                with qml.tape.Unwrap(*tapes):
+                    jacs = gradient_fn(tapes, **gradient_kwargs)
 
-        .. code-block:: python
+                vjps = [qml.gradients.compute_vjp(d, jac) for d, jac in zip(dy, jacs)]
 
-            with JacobianTape() as tape:
-                qml.RX(0.432, wires=0)
-                qml.RY(0.543, wires=0)
-                qml.CNOT(wires=[0, 'a'])
-                qml.RX(0.133, wires='a')
-                qml.expval(qml.PauliZ(wires=[0]))
-
-        By default, all parameters are trainable and will be returned:
-
-        >>> tape.get_parameters()
-        [0.432, 0.543, 0.133]
-
-        Setting the trainable parameter indices will result in only the specified
-        parameters being returned:
-
-        >>> tape.trainable_params = {1} # set the second parameter as free
-        >>> tape.get_parameters()
-        [0.543]
-
-        The ``trainable_only`` argument can be set to ``False`` to instead return
-        all parameters:
-
-        >>> tape.get_parameters(trainable_only=False)
-        [0.432, 0.543, 0.133]
-        """
-        params = []
-        iterator = self.trainable_params if trainable_only else self._par_info
-
-        for p_idx in iterator:
-            op = self._par_info[p_idx]["op"]
-            op_idx = self._par_info[p_idx]["p_idx"]
-            params.append(op.data[op_idx])
-
-        return params if return_arraybox else autograd.builtins.list(params)
-
-    @autograd.extend.primitive
-    def _execute(self, params, device):
-        # unwrap all NumPy scalar arrays to Python literals
-        params = [p.item() if p.shape == tuple() else p for p in params]
-        params = autograd.builtins.tuple(params)
-
-        # unwrap constant parameters
-        self._all_params_unwrapped = [
-            p.numpy() if isinstance(p, np.tensor) else p for p in self._all_parameter_values
+        return_vjps = [
+            qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
         ]
+        if device.capabilities().get("provides_jacobian", False):
+            # in the case where the device provides the jacobian,
+            # the output of grad_fn must be wrapped in a tuple in
+            # order to match the input parameters to _execute.
+            return (return_vjps,)
+        return return_vjps
 
-        # evaluate the tape
-        self.set_parameters(self._all_params_unwrapped, trainable_only=False)
-        res = self.execute_device(params, device=device)
-        self.set_parameters(self._all_parameter_values, trainable_only=False)
-
-        if self.is_sampled:
-            return res
-
-        if res.dtype == np.dtype("object"):
-            return np.hstack(res)
-
-        requires_grad = False
-
-        if self.trainable_params:
-            requires_grad = True
-
-        return np.array(res, requires_grad=requires_grad)
-
-    @staticmethod
-    def vjp(ans, self, params, device):  # pylint: disable=unused-argument
-        """Returns the vector-Jacobian product operator for the quantum tape.
-        The returned function takes the arguments as :meth:`~.JacobianTape.execute`.
-
-        Args:
-            ans (array): the result of the tape execution
-            self (.AutogradQuantumTape): the tape instance
-            params (list[Any]): the quantum tape operation parameters
-            device (.Device): a PennyLane device that can execute quantum
-                operations and return measurement statistics
-
-        Returns:
-            function: this function accepts the backpropagation
-            gradient output vector, and computes the vector-Jacobian product
-        """
-
-        # The following dictionary caches the Jacobian and Hessian matrices,
-        # so that they can be re-used for different vjp/vhp computations
-        # within the same backpropagation call.
-        # This dictionary will exist in memory when autograd.grad is called,
-        # via closure. Once autograd.grad has returned, this dictionary
-        # will no longer be in scope and the memory will be freed.
-        saved_grad_matrices = {}
-
-        def _evaluate_grad_matrix(p, grad_matrix_fn):
-            """Convenience function for generating gradient matrices
-            for the given parameter values.
-
-            This function serves two purposes:
-
-            * Avoids duplicating logic surrounding parameter unwrapping/wrapping.
-
-            * Takes advantage of closure, to cache computed gradient matrices via
-              the ``saved_grad_matrices`` attribute, to avoid gradient matrices being
-              computed multiple redundant times.
-
-              This is particularly useful when differentiating vector-valued QNodes.
-              Because Autograd requests the vector-grad matrix product,
-              and *not* the full grad matrix, differentiating vector-valued
-              functions will result in multiple backward passes.
-
-            Args:
-                p (Sequence): quantum tape parameter values use to evaluate the gradient matrix
-                grad_matrix_fn (str): Name of the gradient matrix function. Should correspond to an existing
-                    tape method. Currently allowed values include ``"jacobian"`` and ``"hessian"``.
-
-                Returns:
-                    array[float]: the gradient matrix
-            """
-            if grad_matrix_fn in saved_grad_matrices:
-                return saved_grad_matrices[grad_matrix_fn]
-
-            self.set_parameters(self._all_params_unwrapped, trainable_only=False)
-            grad_matrix = getattr(self, grad_matrix_fn)(device, params=p, **self.jacobian_options)
-            self.set_parameters(self._all_parameter_values, trainable_only=False)
-
-            saved_grad_matrices[grad_matrix_fn] = grad_matrix
-            return grad_matrix
-
-        def gradient_product(dy):
-            """Returns the vector-Jacobian product with given
-            parameter values p and output gradient dy"""
-
-            if all(np.ndim(p) == 0 for p in params):
-                # only flatten dy if all parameters are single values
-                dy = dy.flatten()
-
-            @autograd.extend.primitive
-            def jacobian(p):
-                """Returns the Jacobian for parameters p"""
-                return _evaluate_grad_matrix(p, "jacobian")
-
-            def vhp(ans, p):
-                def hessian_product(ddy):
-                    """Returns the vector-Hessian product with given
-                    parameter values p, output gradient dy, and output
-                    second-order gradient ddy"""
-                    hessian = _evaluate_grad_matrix(p, "hessian")
-
-                    if dy.size > 1:
-                        vhp = dy @ ddy @ hessian @ dy.T / np.linalg.norm(dy) ** 2
-                    else:
-                        vhp = ddy @ hessian
-                        vhp = vhp.flatten()
-
-                    return vhp
-
-                return hessian_product
-
-            # register vhp as the backward method of the jacobian function
-            autograd.extend.defvjp(jacobian, vhp, argnums=[0])
-
-            vjp = dy @ jacobian(params)
-            return vjp
-
-        return gradient_product
-
-    @classmethod
-    def apply(cls, tape):
-        """Apply the autograd interface to an existing tape in-place.
-
-        Args:
-            tape (.JacobianTape): a quantum tape to apply the Autograd interface to
-
-        **Example**
-
-        >>> with JacobianTape() as tape:
-        ...     qml.RX(0.5, wires=0)
-        ...     expval(qml.PauliZ(0))
-        >>> AutogradInterface.apply(tape)
-        >>> tape
-        <AutogradQuantumTape: wires=<Wires = [0]>, params=1>
-        """
-        tape_class = getattr(tape, "__bare__", tape.__class__)
-        tape.__bare__ = tape_class
-        tape.__class__ = type("AutogradQuantumTape", (cls, tape_class), {})
-        tape._update_trainable_params()
-        return tape
+    return grad_fn
 
 
-autograd.extend.defvjp(AutogradInterface._execute, AutogradInterface.vjp, argnums=[1])
+autograd.extend.defvjp(_execute, vjp, argnums=[0])

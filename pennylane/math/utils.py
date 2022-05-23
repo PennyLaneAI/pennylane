@@ -59,7 +59,7 @@ def allclose(a, b, rtol=1e-05, atol=1e-08, **kwargs):
         # Some frameworks may provide their own allclose implementation.
         # Try and use it if available.
         res = np.allclose(a, b, rtol=rtol, atol=atol, **kwargs)
-    except (TypeError, AttributeError):
+    except (TypeError, AttributeError, ImportError):
         # Otherwise, convert the input to NumPy arrays.
         #
         # TODO: replace this with a bespoke, framework agnostic
@@ -111,7 +111,7 @@ def cast(tensor, dtype):
     if not isinstance(dtype, str):
         try:
             dtype = np.dtype(dtype).name
-        except (AttributeError, TypeError):
+        except (AttributeError, TypeError, ImportError):
             dtype = getattr(dtype, "name", dtype)
 
     return ar.astype(tensor, ar.to_backend_dtype(dtype, like=ar.infer_backend(tensor)))

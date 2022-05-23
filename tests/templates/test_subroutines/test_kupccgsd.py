@@ -335,7 +335,10 @@ class TestDecomposition:
         ref_state = qml.math.array([1, 1, 0, 0])
 
         op = qml.kUpCCGSD(weights, wires=wires, k=1, delta_sz=delta_sz, init_state=ref_state)
-        gen_singles_wires, gen_doubles_wires = op.s_wires, op.d_wires
+        gen_singles_wires, gen_doubles_wires = (
+            op.hyperparameters["s_wires"],
+            op.hyperparameters["d_wires"],
+        )
 
         assert gen_singles_wires == generalized_singles_wires
         assert gen_doubles_wires == generalized_pair_doubles_wires
@@ -519,10 +522,11 @@ class TestInterfaces:
         res2 = circuit2(weights_tuple)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
     def test_autograd(self, tol):
         """Test the autograd interface."""
 
-        weights = qml.math.array(np.random.random(size=(1, 6)))
+        weights = qml.numpy.random.random(size=(1, 6), requires_grad=True)
 
         dev = qml.device("default.qubit", wires=4)
 
@@ -541,10 +545,11 @@ class TestInterfaces:
 
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
+    @pytest.mark.jax
     def test_jax(self, tol):
         """Test the jax interface."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         import jax.numpy as jnp
 
         weights = jnp.array(np.random.random(size=(1, 6)))
@@ -566,10 +571,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.tf
     def test_tf(self, tol):
         """Test the tf interface."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         weights = tf.Variable(np.random.random(size=(1, 6)))
 
@@ -592,10 +598,11 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.torch
     def test_torch(self, tol):
         """Test the torch interface."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         weights = torch.tensor(np.random.random(size=(1, 6)), requires_grad=True)
 

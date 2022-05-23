@@ -29,7 +29,7 @@ class TestQFT:
     def test_QFT(self, inverse):
         """Test if the QFT matrix is equal to a manually-calculated version for 3 qubits"""
         op = qml.QFT(wires=range(3)).inv() if inverse else qml.QFT(wires=range(3))
-        res = op.matrix
+        res = op.matrix()
         exp = QFT.conj().T if inverse else QFT
         assert np.allclose(res, exp)
 
@@ -41,7 +41,7 @@ class TestQFT:
         for _ in range(num_inversions):
             op = op.adjoint()
 
-        res = op.matrix
+        res = op.matrix()
         inverse = num_inversions % 2 == 1
         exp = QFT.conj().T if inverse else QFT
         assert np.allclose(res, exp)
@@ -51,19 +51,19 @@ class TestQFT:
     def test_QFT_decomposition(self, n_qubits):
         """Test if the QFT operation is correctly decomposed"""
         op = qml.QFT(wires=range(n_qubits))
-        decomp = op.decompose()
+        decomp = op.decomposition()
 
         dev = qml.device("default.qubit", wires=n_qubits)
 
         out_states = []
-        for state in np.eye(2 ** n_qubits):
+        for state in np.eye(2**n_qubits):
             dev.reset()
             ops = [qml.QubitStateVector(state, wires=range(n_qubits))] + decomp
             dev.apply(ops)
             out_states.append(dev.state)
 
         reconstructed_unitary = np.array(out_states).T
-        expected_unitary = qml.QFT(wires=range(n_qubits)).matrix
+        expected_unitary = qml.QFT(wires=range(n_qubits)).matrix()
 
         assert np.allclose(reconstructed_unitary, expected_unitary)
 
@@ -104,3 +104,30 @@ class TestQFT:
             assert op[j].name == expected_op[j].name
             assert op[j].wires == expected_op[j].wires
             assert op[j].parameters == expected_op[j].parameters
+
+    def test_matrix(self, tol):
+        """Test that the matrix representation is correct."""
+
+        res_static = qml.QFT.compute_matrix(2)
+        res_dynamic = qml.QFT(wires=[0, 1]).matrix()
+        res_reordered = qml.QFT(wires=[0, 1]).matrix([1, 0])
+
+        expected = np.array(
+            [
+                [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j],
+                [0.5 + 0.0j, 0.0 + 0.5j, -0.5 + 0.0j, -0.0 - 0.5j],
+                [0.5 + 0.0j, -0.5 + 0.0j, 0.5 - 0.0j, -0.5 + 0.0j],
+                [0.5 + 0.0j, -0.0 - 0.5j, -0.5 + 0.0j, 0.0 + 0.5j],
+            ]
+        )
+
+        assert np.allclose(res_static, expected, atol=tol, rtol=0)
+        assert np.allclose(res_dynamic, expected, atol=tol, rtol=0)
+
+        expected_permuted = [
+            [0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j, 0.5 + 0.0j],
+            [0.5 + 0.0j, 0.5 - 0.0j, -0.5 + 0.0j, -0.5 + 0.0j],
+            [0.5 + 0.0j, -0.5 + 0.0j, 0.0 + 0.5j, -0.0 - 0.5j],
+            [0.5 + 0.0j, -0.5 + 0.0j, -0.0 - 0.5j, 0.0 + 0.5j],
+        ]
+        assert np.allclose(res_reordered, expected_permuted, atol=tol, rtol=0)

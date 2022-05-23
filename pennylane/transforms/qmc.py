@@ -46,8 +46,7 @@ def _apply_controlled_z(wires, control_wire, work_wires):
     control_values = "0" * (len(wires) - 1) + "1"
     control_wires = wires[1:] + control_wire
     MultiControlledX(
-        control_wires=control_wires,
-        wires=target_wire,
+        wires=[*control_wires, target_wire],
         control_values=control_values,
         work_wires=work_wires,
     )
@@ -161,7 +160,8 @@ def quantum_monte_carlo(fn, wires, target_wire, estimation_wires):
     Raises:
         ValueError: if ``wires`` and ``estimation_wires`` share a common wire
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Consider an input quantum circuit ``fn`` that performs the unitary
 

@@ -22,7 +22,6 @@ import pytest
 import numpy as np
 
 import pennylane as qml
-import pennylane.queuing
 import pennylane.utils as pu
 import scipy.sparse
 
@@ -132,7 +131,7 @@ class TestDecomposition:
         linear combination of Pauli matrices"""
         decomposed_coeff, decomposed_obs = pu.decompose_hamiltonian(hamiltonian)
 
-        linear_comb = sum([decomposed_coeff[i] * o.matrix for i, o in enumerate(decomposed_obs)])
+        linear_comb = sum([decomposed_coeff[i] * o.matrix() for i, o in enumerate(decomposed_obs)])
         assert np.allclose(hamiltonian, linear_comb)
 
 
@@ -272,7 +271,7 @@ class TestSparse:
         assert np.allclose(sparse_matrix.toarray(), ref_matrix)
 
     def test_sparse_format(self):
-        """Tests that sparse_hamiltonian returns a scipy.sparse.coo_matrix object"""
+        """Tests that sparse_hamiltonian returns a scipy.sparse.csr_matrix object"""
 
         coeffs = [-0.25, 0.75]
         obs = [
@@ -283,7 +282,7 @@ class TestSparse:
 
         sparse_matrix = qml.utils.sparse_hamiltonian(H)
 
-        assert isinstance(sparse_matrix, scipy.sparse.coo_matrix)
+        assert isinstance(sparse_matrix, scipy.sparse.csr_matrix)
 
     def test_sparse_typeerror(self):
         """Tests that sparse_hamiltonian raises an error if the given Hamiltonian is not of type
@@ -341,6 +340,15 @@ class TestFlatten:
         with pytest.raises(ValueError, match="Flattened iterable has more elements than the model"):
             pu.unflatten(np.concatenate([flat_dummy_array, flat_dummy_array]), reshaped)
 
+    def test_flatten_wires(self):
+        """Tests flattening a Wires object."""
+        wires = qml.wires.Wires([3, 4])
+        wires_int = [3, 4]
+
+        wires = qml.utils._flatten(wires)
+        for i, wire in enumerate(wires):
+            assert wires_int[i] == wire
+
 
 class TestPauliEigs:
     """Tests for the auxiliary function to return the eigenvalues for Paulis"""
@@ -380,7 +388,7 @@ class TestPauliEigs:
         """Test that the right number of cachings have been executed after clearing the cache"""
         pu.pauli_eigs.cache_clear()
         pu.pauli_eigs(depth)
-        total_runs = sum([2 ** x for x in range(depth)])
+        total_runs = sum([2**x for x in range(depth)])
         assert functools._CacheInfo(depth - 1, depth, 128, depth) == pu.pauli_eigs.cache_info()
 
 
@@ -602,6 +610,7 @@ class TestExpand:
             ([5, 9], [0, 5, 9], np.kron(ONES, VECTOR2)),
             ([0, 9], [0, 5, 9], np.array([1, 2, 1, 2, 3, 4, 3, 4])),
             ([9, 0], [0, 5, 9], np.array([1, 3, 1, 3, 2, 4, 2, 4])),
+            ([0, 1], [0, 1], VECTOR2),
         ],
     )
     def test_expand_vector_two_wires(self, original_wires, expanded_wires, expected, tol):

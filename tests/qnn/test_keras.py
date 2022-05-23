@@ -91,6 +91,7 @@ def indices_up_to_dm(n_max):
     return zip(*[a + 1], zip(*[2 ** (b + 1), 2 ** (b + 1)]))
 
 
+@pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])  # required for the get_circuit fixture
 @pytest.mark.usefixtures("get_circuit")
 class TestKerasLayer:
@@ -479,7 +480,7 @@ class TestKerasLayer:
         with tf.GradientTape() as tape:
             out = tf.reduce_sum(qlayer(inputs))
 
-        spy = mocker.spy(qml.tape.QubitParamShiftTape, "jacobian")
+        spy = mocker.spy(qml.gradients, "param_shift")
 
         grad = tape.gradient(out, qlayer.trainable_weights)
         assert grad is not None
@@ -498,11 +499,11 @@ class TestKerasLayer:
         assert output_shape.as_list() == [None, 1]
 
 
+@pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", ["autograd", "torch", "tf"])
 @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
 @pytest.mark.usefixtures("get_circuit")
-@pytest.mark.usefixtures("skip_if_no_torch_support")
-def test_interface_conversion(get_circuit, output_dim, skip_if_no_torch_support):
+def test_interface_conversion(get_circuit, output_dim):
     """Test if input QNodes with all types of interface are converted internally to the TensorFlow
     interface"""
     c, w = get_circuit
@@ -510,6 +511,7 @@ def test_interface_conversion(get_circuit, output_dim, skip_if_no_torch_support)
     assert layer.qnode.interface == "tf"
 
 
+@pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])
 @pytest.mark.usefixtures("get_circuit", "model")
 class TestKerasLayerIntegration:
@@ -560,6 +562,7 @@ class TestKerasLayerIntegration:
             assert np.allclose(w, weights_loaded[i])
 
 
+@pytest.mark.tf
 @pytest.mark.parametrize("interface", ["tf"])
 @pytest.mark.usefixtures("get_circuit_dm", "model_dm")
 class TestKerasLayerIntegrationDM:
@@ -611,7 +614,27 @@ class TestKerasLayerIntegrationDM:
             assert np.allclose(w, weights_loaded[i])
 
 
+@pytest.mark.tf
 def test_no_attribute():
     """Test that the qnn module raises an AttributeError if accessing an unavailable attribute"""
     with pytest.raises(AttributeError, match="module 'pennylane.qnn' has no attribute 'random'"):
         qml.qnn.random
+
+
+@pytest.mark.tf
+def test_batch_input():
+    """Test input batching in keras"""
+    dev = qml.device("default.qubit.tf", wires=4)
+
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit(x, weights):
+        qml.AngleEmbedding(x, wires=range(4), rotation="Y")
+        qml.RY(weights[0], wires=0)
+        qml.RY(weights[1], wires=1)
+        return qml.probs(op=qml.PauliZ(1))
+
+    KerasLayer.set_input_argument("x")
+    layer = KerasLayer(circuit, weight_shapes={"weights": (2,)}, output_dim=(2,), batch_idx=0)
+    conf = layer.get_config()
+    layer.build((None, 2))
+    assert layer(np.random.uniform(0, 1, (10, 4))).shape == (10, 2)

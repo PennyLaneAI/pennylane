@@ -72,11 +72,11 @@ class StronglyEntanglingLayers(Operation):
 
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit)(weights))
-            0: ──Rot(0.106, 0.0913, 0.483)──╭C───────────────────────────────────────────────────────────╭X──Rot(0.0691, 0.841, 0.624)──────╭C──────╭X──┤ ⟨Z⟩
-            1: ──Rot(0.0911, 0.249, 0.181)──╰X──╭C───Rot(0.311, 0.692, 0.141)────────────────────────────│──────────────────────────────╭C──│───╭X──│───┤
-            2: ──Rot(0.0597, 0.982, 0.594)──────╰X──╭C─────────────────────────Rot(0.547, 0.349, 0.276)──│──────────────────────────────│───╰X──│───╰C──┤
-            3: ──Rot(0.765, 0.81, 0.99)─────────────╰X───────────────────────────────────────────────────╰C──Rot(0.627, 0.348, 0.476)───╰X──────╰C──────┤
+        >>> print(qml.draw(circuit, expansion_strategy="device")(weights))
+        0: ──Rot(0.73,0.60,0.16)─╭C───────╭X──Rot(0.18,0.18,0.30)─╭C────╭X────┤  <Z>
+        1: ──Rot(0.16,0.06,0.87)─╰X─╭C────│───Rot(0.52,0.43,0.29)─│──╭C─│──╭X─┤
+        2: ──Rot(0.60,0.71,0.02)────╰X─╭C─│───Rot(0.61,0.14,0.29)─╰X─│──╰C─│──┤
+        3: ──Rot(0.97,0.83,0.21)───────╰X─╰C──Rot(0.37,0.46,0.79)────╰X────╰C─┤
 
         The default two-qubit gate used is :class:`~pennylane.ops.CNOT`. This can be changed by using the ``imprimitive`` argument.
 
@@ -108,13 +108,14 @@ class StronglyEntanglingLayers(Operation):
 
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit)(weights))
-            0: ──Rot(0.629, 0.345, 0.566)───────╭C──────╭Z──Rot(0.874, 0.0388, 0.922)──╭C──╭Z──────────┤ ⟨Z⟩
-            1: ──Rot(0.0596, 0.927, 0.807)──╭C──│───╭Z──│───Rot(0.311, 0.644, 0.297)───│───╰C──╭Z──────┤
-            2: ──Rot(0.161, 0.29, 0.498)────│───╰Z──│───╰C──Rot(0.96, 0.79, 0.819)─────│───────╰C──╭Z──┤
-            3: ──Rot(0.589, 0.103, 0.108)───╰Z──────╰C──────Rot(0.869, 0.69, 0.0183)───╰Z──────────╰C──┤
+        >>> print(qml.draw(circuit, expansion_strategy="device")(weights))
+        0: ──Rot(0.20,0.51,0.59)─╭C────╭Z──Rot(0.68,0.44,0.12)──────────────────────╭C─╭Z───────┤  <Z>
+        1: ──Rot(0.05,0.61,0.17)─│──╭C─│──╭Z────────────────────Rot(0.50,0.03,0.91)─│──╰C─╭Z────┤
+        2: ──Rot(0.07,0.95,0.97)─╰Z─│──╰C─│─────────────────────Rot(0.26,0.66,0.31)─│─────╰C─╭Z─┤
+        3: ──Rot(0.81,0.30,0.10)────╰Z────╰C────────────────────Rot(0.52,0.55,0.18)─╰Z───────╰C─┤
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Parameter shape**
 
@@ -134,7 +135,6 @@ class StronglyEntanglingLayers(Operation):
     def __init__(self, weights, wires, ranges=None, imprimitive=None, do_queue=True, id=None):
 
         shape = qml.math.shape(weights)[-3:]
-        self.n_layers = shape[0]
 
         if shape[1] != len(wires):
             raise ValueError(
@@ -149,22 +149,19 @@ class StronglyEntanglingLayers(Operation):
         if ranges is None:
             if len(wires) > 1:
                 # tile ranges with iterations of range(1, n_wires)
-                self.ranges = [(l % (len(wires) - 1)) + 1 for l in range(self.n_layers)]
+                ranges = [(l % (len(wires) - 1)) + 1 for l in range(shape[0])]
             else:
-                self.ranges = [0] * self.n_layers
+                ranges = [0] * shape[0]
         else:
-            if len(ranges) != self.n_layers:
-                raise ValueError(
-                    f"Range sequence must be of length {self.n_layers}; got {len(ranges)}"
-                )
+            if len(ranges) != shape[0]:
+                raise ValueError(f"Range sequence must be of length {shape[0]}; got {len(ranges)}")
             for r in ranges:
                 if r % len(wires) == 0:
                     raise ValueError(
                         f"Ranges must not be zero nor divisible by the number of wires; got {r}"
                     )
-            self.ranges = ranges
 
-        self.imprimitive = imprimitive or qml.CNOT
+        self._hyperparameters = {"ranges": ranges, "imprimitive": imprimitive or qml.CNOT}
 
         super().__init__(weights, wires=wires, do_queue=do_queue, id=id)
 
@@ -172,26 +169,58 @@ class StronglyEntanglingLayers(Operation):
     def num_params(self):
         return 1
 
-    def expand(self):
+    @staticmethod
+    def compute_decomposition(
+        weights, wires, ranges, imprimitive
+    ):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a product of other operators.
 
-        with qml.tape.QuantumTape() as tape:
+        .. math:: O = O_1 O_2 \dots O_n.
 
-            for l in range(self.n_layers):
 
-                for i in range(len(self.wires)):
+
+        .. seealso:: :meth:`~.StronglyEntanglingLayers.decomposition`.
+
+        Args:
+            weights (tensor_like): weight tensor
+            wires (Any or Iterable[Any]): wires that the operator acts on
+            ranges (Sequence[int]): sequence determining the range hyperparameter for each subsequent layer
+            imprimitive (pennylane.ops.Operation): two-qubit gate to use
+
+        Returns:
+            list[.Operator]: decomposition of the operator
+
+        **Example**
+
+        >>> weights = torch.tensor([[-0.2, 0.1, -0.4], [1.2, -2., -0.4]])
+        >>> qml.StronglyEntanglingLayers.compute_decomposition(weights, wires=["a", "b"], ranges=[2], imprimitive=qml.CNOT)
+        [Rot(tensor(-0.2000), tensor(0.1000), tensor(-0.4000), wires=['a']),
+        Rot(tensor(1.2000), tensor(-2.), tensor(-0.4000), wires=['b']),
+        CNOT(wires=['a', 'a']),
+        CNOT(wires=['b', 'b'])]
+        """
+        n_layers = qml.math.shape(weights)[0]
+        wires = qml.wires.Wires(wires)
+        op_list = []
+
+        for l in range(n_layers):
+
+            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
+                op_list.append(
                     qml.Rot(
-                        self.parameters[0][..., l, i, 0],
-                        self.parameters[0][..., l, i, 1],
-                        self.parameters[0][..., l, i, 2],
-                        wires=self.wires[i],
+                        weights[..., l, i, 0],
+                        weights[..., l, i, 1],
+                        weights[..., l, i, 2],
+                        wires=wires[i],
                     )
+                )
 
-                if len(self.wires) > 1:
-                    for i in range(len(self.wires)):
-                        act_on = self.wires.subset([i, i + self.ranges[l]], periodic_boundary=True)
-                        self.imprimitive(wires=act_on)
+            if len(wires) > 1:
+                for i in range(len(wires)):
+                    act_on = wires.subset([i, i + ranges[l]], periodic_boundary=True)
+                    op_list.append(imprimitive(wires=act_on))
 
-        return tape
+        return op_list
 
     @staticmethod
     def shape(n_layers, n_wires):

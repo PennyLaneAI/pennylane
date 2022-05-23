@@ -84,6 +84,7 @@ def polarity(
     >>> qml.kernels.polarity(X, Y, kernel)
     tensor(0.04361349, requires_grad=True)
     """
+    # pylint: disable=too-many-arguments
     K = square_kernel_matrix(X, kernel, assume_normalized_kernel=assume_normalized_kernel)
 
     if rescale_class_labels:

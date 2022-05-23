@@ -147,6 +147,7 @@ class TestApplyOperationsDifferentiability:
 
     x = 0.5
 
+    @pytest.mark.autograd
     def test_simple_operation_autograd(self, invert):
         """Test differentiability for a simple operation with Autograd."""
         device = qml.device("default.qubit.autograd", wires=2)
@@ -164,9 +165,11 @@ class TestApplyOperationsDifferentiability:
         )
         assert np.allclose(out, exp)
 
+    @pytest.mark.jax
     def test_simple_operation_jax(self, invert):
         """Test differentiability for a simple operation with JAX."""
-        jax = pytest.importorskip("jax")
+        import jax
+
         device = qml.device("default.qubit.jax", wires=2)
         x = jax.numpy.array(self.x)
         r_fn = lambda x: qml.math.real(
@@ -182,9 +185,11 @@ class TestApplyOperationsDifferentiability:
         )
         assert np.allclose(out, exp)
 
+    @pytest.mark.tf
     def test_simple_operation_tf(self, invert):
         """Test differentiability for a simple operation with TensorFlow."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         device = qml.device("default.qubit.tf", wires=2)
         x = tf.Variable(self.x, dtype=tf.float64)
         r_fn = lambda x: qml.math.real(
@@ -203,9 +208,11 @@ class TestApplyOperationsDifferentiability:
         )
         assert np.allclose(out, exp)
 
+    @pytest.mark.torch
     def test_simple_operation_torch(self, invert):
         """Test differentiability for a simple operation with Torch."""
-        torch = pytest.importorskip("torch")
+        import torch
+
         jac_fn = torch.autograd.functional.jacobian
         device = qml.device("default.qubit.torch", wires=2)
         x = torch.tensor(self.x, requires_grad=True)
@@ -403,7 +410,7 @@ fubini_params = [
 ]
 
 
-def autodiff_metric_tensor(ansatz, num_wires, mimic_autograd=False):
+def autodiff_metric_tensor(ansatz, num_wires):
     """Compute the metric tensor by full state vector
     differentiation via autograd."""
     dev = qml.device("default.qubit", wires=num_wires)
@@ -420,13 +427,6 @@ def autodiff_metric_tensor(ansatz, num_wires, mimic_autograd=False):
         rjac = qml.jacobian(rqnode)(*params)
         ijac = qml.jacobian(iqnode)(*params)
 
-        if not mimic_autograd:
-            if len(params) > 1 and all(
-                qml.math.shape(p) == qml.math.shape(params[0]) for p in params[1:]
-            ):
-                rjac = tuple(qml.math.transpose(rjac))
-                ijac = tuple(qml.math.transpose(ijac))
-
         if isinstance(rjac, tuple):
             out = []
             for rc, ic in zip(rjac, ijac):
@@ -440,18 +440,10 @@ def autodiff_metric_tensor(ansatz, num_wires, mimic_autograd=False):
                 )
             return tuple(out)
 
-        if (
-            mimic_autograd
-            and len(params) > 1
-            and all(qml.math.shape(p) == qml.math.shape(params[0]) for p in params[1:])
-        ):
-            jac_contract = [-2]
-        else:
-            jac_contract = [0]
         jac = rjac + 1j * ijac
-        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], jac_contract))
+        psidpsi = np.tensordot(np.conj(state), jac, axes=([0], [0]))
         return np.real(
-            np.tensordot(np.conj(jac), jac, axes=(jac_contract, jac_contract))
+            np.tensordot(np.conj(jac), jac, axes=([0], [0]))
             - np.tensordot(np.conj(psidpsi), psidpsi, axes=0)
         )
 
@@ -466,10 +458,11 @@ class TestAdjointMetricTensorTape:
 
     num_wires = 3
 
+    @pytest.mark.autograd
     def test_correct_output_tape_autograd(self, ansatz, params):
         """Test that the output is correct when using Autograd and
         calling the adjoint metric tensor directly on a tape."""
-        expected = autodiff_metric_tensor(ansatz, self.num_wires, True)(*params)
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device("default.qubit.autograd", wires=self.num_wires)
 
         @qml.qnode(dev, interface="autograd")
@@ -486,12 +479,13 @@ class TestAdjointMetricTensorTape:
         mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*params)
         assert qml.math.allclose(mt, expected)
 
+    @pytest.mark.jax
     @pytest.mark.skip("JAX does not support forward pass executiong of the metric tensor.")
     def test_correct_output_tape_jax(self, ansatz, params):
         """Test that the output is correct when using JAX and
         calling the adjoint metric tensor directly on a tape."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         from jax.config import config
 
         config.update("jax_enable_x64", True)
@@ -514,11 +508,12 @@ class TestAdjointMetricTensorTape:
         mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*j_params)
         assert qml.math.allclose(mt, expected)
 
+    @pytest.mark.torch
     def test_correct_output_tape_torch(self, ansatz, params):
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor directly on a tape."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         t_params = tuple(torch.tensor(p, requires_grad=True) for p in params)
@@ -538,11 +533,12 @@ class TestAdjointMetricTensorTape:
         mt = qml.adjoint_metric_tensor(circuit, hybrid=False)(*t_params)
         assert qml.math.allclose(mt, expected)
 
+    @pytest.mark.tf
     def test_correct_output_tape_tf(self, ansatz, params):
         """Test that the output is correct when using TensorFlow and
         calling the adjoint metric tensor directly on a tape."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         t_params = tuple(tf.Variable(p) for p in params)
@@ -573,11 +569,12 @@ class TestAdjointMetricTensorQNode:
 
     num_wires = 3
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     def test_correct_output_qnode_autograd(self, ansatz, params):
         """Test that the output is correct when using Autograd and
         calling the adjoint metric tensor on a QNode."""
-        expected = autodiff_metric_tensor(ansatz, self.num_wires, True)(*params)
+        expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         dev = qml.device("default.qubit", wires=self.num_wires)
 
         @qml.qnode(dev, interface="autograd")
@@ -588,20 +585,19 @@ class TestAdjointMetricTensorQNode:
 
         mt = qml.adjoint_metric_tensor(circuit)(*params)
 
-        print(mt)
-        print(expected)
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
         else:
             assert qml.math.allclose(mt, expected)
 
+    @pytest.mark.jax
     @pytest.mark.skip("JAX does not support forward pass executiong of the metric tensor.")
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     def test_correct_output_qnode_jax(self, ansatz, params):
         """Test that the output is correct when using JAX and
         calling the adjoint metric tensor on a QNode."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         from jax.config import config
 
         config.update("jax_enable_x64", True)
@@ -623,12 +619,13 @@ class TestAdjointMetricTensorQNode:
         else:
             assert qml.math.allclose(mt, expected)
 
+    @pytest.mark.torch
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     def test_correct_output_qnode_torch(self, ansatz, params):
         """Test that the output is correct when using Torch and
         calling the adjoint metric tensor on a QNode."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         t_params = tuple(torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params)
@@ -642,19 +639,18 @@ class TestAdjointMetricTensorQNode:
 
         mt = qml.adjoint_metric_tensor(circuit)(*t_params)
 
-        print(mt)
-        print(expected)
         if isinstance(mt, tuple):
             assert all(qml.math.allclose(_mt, _exp) for _mt, _exp in zip(mt, expected))
         else:
             assert qml.math.allclose(mt, expected)
 
+    @pytest.mark.tf
     @pytest.mark.parametrize("ansatz, params", list(zip(fubini_ansatze, fubini_params)))
     def test_correct_output_qnode_tf(self, ansatz, params):
         """Test that the output is correct when using TensorFlow and
         calling the adjoint metric tensor on a QNode."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         expected = autodiff_metric_tensor(ansatz, self.num_wires)(*params)
         t_params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
@@ -674,12 +670,13 @@ class TestAdjointMetricTensorQNode:
         else:
             assert qml.math.allclose(mt, expected)
 
+    @pytest.mark.autograd
     def test_autograd_with_other_device(self):
         """Test passing an extra device to the QNode wrapper."""
         ansatz = fubini_ansatz2
         params = fubini_params[2]
 
-        exp_fn = autodiff_metric_tensor(ansatz, self.num_wires, True)
+        exp_fn = autodiff_metric_tensor(ansatz, self.num_wires)
         expected = qml.jacobian(exp_fn)(*params)
         dev = qml.device("default.qubit", wires=self.num_wires)
         dev2 = qml.device("default.qubit.autograd", wires=self.num_wires)
@@ -719,10 +716,11 @@ class TestAdjointMetricTensorDifferentiability:
 
     num_wires = 3
 
+    @pytest.mark.autograd
     def test_autograd(self, ansatz, params):
         """Test that the derivative is correct when using Autograd and
         calling the adjoint metric tensor on a QNode."""
-        exp_fn = autodiff_metric_tensor(ansatz, self.num_wires, True)
+        exp_fn = autodiff_metric_tensor(ansatz, self.num_wires)
         expected = qml.jacobian(exp_fn)(*params)
         dev = qml.device("default.qubit", wires=self.num_wires)
 
@@ -739,11 +737,12 @@ class TestAdjointMetricTensorDifferentiability:
         else:
             assert qml.math.allclose(mt_jac, expected)
 
+    @pytest.mark.jax
     def test_correct_output_qnode_jax(self, ansatz, params):
         """Test that the derivative is correct when using JAX and
         calling the adjoint metric tensor on a QNode."""
 
-        jax = pytest.importorskip("jax")
+        import jax
         from jax.config import config
 
         config.update("jax_enable_x64", True)
@@ -769,11 +768,12 @@ class TestAdjointMetricTensorDifferentiability:
         else:
             assert qml.math.allclose(mt_jac, expected)
 
+    @pytest.mark.torch
     def test_correct_output_qnode_torch(self, ansatz, params):
         """Test that the derivative is correct when using Torch and
         calling the adjoint metric tensor on a QNode."""
 
-        torch = pytest.importorskip("torch")
+        import torch
 
         expected = qml.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*params)
         t_params = tuple(torch.tensor(p, requires_grad=True, dtype=torch.float64) for p in params)
@@ -793,11 +793,12 @@ class TestAdjointMetricTensorDifferentiability:
         else:
             assert qml.math.allclose(mt_jac, expected)
 
+    @pytest.mark.tf
     def test_correct_output_qnode_tf(self, ansatz, params):
         """Test that the derivative is correct when using TensorFlow and
         calling the adjoint metric tensor on a QNode."""
 
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         expected = qml.jacobian(autodiff_metric_tensor(ansatz, self.num_wires))(*params)
         t_params = tuple(tf.Variable(p, dtype=tf.float64) for p in params)
@@ -838,7 +839,7 @@ class TestErrors:
 
     def test_error_finite_shots(self):
         """Test that an error is raised if the device has a finite number of shots set."""
-        with qml.tape.JacobianTape() as tape:
+        with qml.tape.QuantumTape() as tape:
             qml.RX(0.2, wires=0)
             qml.RY(1.9, wires=1)
         dev = qml.device("default.qubit", wires=2, shots=1)

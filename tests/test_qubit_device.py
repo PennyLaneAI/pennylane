@@ -19,12 +19,13 @@ import numpy as np
 from random import random
 
 import pennylane as qml
+from pennylane import numpy as pnp
 from pennylane import QubitDevice, DeviceError, QuantumFunctionError
-from pennylane.operation import Sample, Variance, Expectation, Probability, State
+from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
 from pennylane.tape import QuantumTape
-from pennylane.measure import state
+from pennylane.measurements import state
 
 mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
@@ -267,7 +268,7 @@ class TestObservables:
 
         with qml.tape.QuantumTape() as tape:
             qml.PauliX(wires=0)
-            qml.measure.MeasurementProcess(
+            qml.measurements.MeasurementProcess(
                 return_type="SomeUnsupportedReturnType", obs=qml.PauliZ(0)
             )
 
@@ -364,7 +365,7 @@ class TestGenerateSamples:
         """Tests that the generate_samples method calls on its auxiliary methods correctly"""
 
         dev = mock_qubit_device()
-        number_of_states = 2 ** dev.num_wires
+        number_of_states = 2**dev.num_wires
 
         with monkeypatch.context() as m:
             # Mock the auxiliary methods such that they return the expected values
@@ -422,7 +423,7 @@ class TestStatesToBinary:
         wires = 4
         shots = 10
 
-        number_of_states = 2 ** wires
+        number_of_states = 2**wires
         basis_states = np.arange(number_of_states)
         samples = np.random.choice(basis_states, shots)
 
@@ -474,7 +475,7 @@ class TestExpval:
             m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
             res = dev.expval(obs)
 
-        assert res == (obs.eigvals @ probs).real
+        assert res == (obs.eigvals() @ probs).real
 
     def test_non_analytic_expval(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that expval method when the analytic attribute is False
@@ -498,10 +499,23 @@ class TestExpval:
         assert res == obs
 
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
-        """Tests that an error is thrown if expval is called with an observable that does not have eigenvalues defined."""
+        """Tests that an error is thrown if expval is called with an observable that does
+        not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
-        with pytest.raises(ValueError, match="Cannot compute analytic expectations"):
-            dev.expval(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+
+        # observable with no eigenvalue representation defined
+        class MyObs(qml.operation.Observable):
+            num_wires = 1
+
+            def eigvals(self):
+                raise qml.operation.EigvalsUndefinedError
+
+        obs = MyObs(wires=0)
+
+        with pytest.raises(
+            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic expectations"
+        ):
+            dev.expval(obs)
 
 
 class TestVar:
@@ -525,7 +539,7 @@ class TestVar:
             m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
             res = dev.var(obs)
 
-        assert res == (obs.eigvals ** 2) @ probs - (obs.eigvals @ probs).real ** 2
+        assert res == (obs.eigvals() ** 2) @ probs - (obs.eigvals() @ probs).real ** 2
 
     def test_non_analytic_var(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that var method when the analytic attribute is False
@@ -551,8 +565,20 @@ class TestVar:
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
         """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
-        with pytest.raises(ValueError, match="Cannot compute analytic variance"):
-            dev.var(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+
+        # observable with no eigenvalue representation defined
+        class MyObs(qml.operation.Observable):
+            num_wires = 1
+
+            def eigvals(self):
+                raise qml.operation.EigvalsUndefinedError
+
+        obs = MyObs(wires=0)
+
+        with pytest.raises(
+            qml.operation.EigvalsUndefinedError, match="Cannot compute analytic variance"
+        ):
+            dev.var(obs)
 
 
 class TestSample:
@@ -569,7 +595,7 @@ class TestSample:
         with monkeypatch.context() as m:
             res = dev.sample(obs)
 
-        assert np.allclose(res ** 2, 1, atol=tol, rtol=0)
+        assert np.allclose(res**2, 1, atol=tol, rtol=0)
 
     def test_correct_custom_eigenvalues(
         self, mock_qubit_device_with_original_statistics, monkeypatch, tol
@@ -589,7 +615,7 @@ class TestSample:
     ):
         """Test that when we sample a device without providing an observable or wires then it
         will return the raw samples"""
-        obs = qml.measure.sample(op=None, wires=None)
+        obs = qml.measurements.sample(op=None, wires=None)
         dev = mock_qubit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 0], [1, 1]])
         dev._samples = generated_samples
@@ -602,7 +628,7 @@ class TestSample:
     ):
         """Test that when we sample a device without providing an observable but we specify
         wires then it returns the generated samples for only those wires"""
-        obs = qml.measure.sample(op=None, wires=[1])
+        obs = qml.measurements.sample(op=None, wires=[1])
         dev = mock_qubit_device_with_original_statistics(wires=2)
         generated_samples = np.array([[1, 0], [1, 1]])
         dev._samples = generated_samples
@@ -616,7 +642,7 @@ class TestSample:
         """Tests that an error is thrown if sample is called with an observable that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[1, 0], [0, 0]])
-        with pytest.raises(ValueError, match="Cannot compute samples"):
+        with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
             dev.sample(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
 
 
@@ -665,7 +691,7 @@ class TestMarginalProb:
         """Test that the correct arguments are passed to the marginal_prob method"""
 
         # Generate probabilities
-        probs = np.array([random() for i in range(2 ** 3)])
+        probs = np.array([random() for i in range(2**3)])
         probs /= sum(probs)
 
         spy = mocker.spy(np, "sum")
@@ -806,7 +832,7 @@ class TestBatchExecution:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-    with qml.tape.JacobianTape() as tape2:
+    with qml.tape.QuantumTape() as tape2:
         qml.PauliX(wires=0)
         qml.expval(qml.PauliZ(wires=0))
 
@@ -835,10 +861,12 @@ class TestBatchExecution:
 
         assert spy.call_count == n_tapes
 
-    def test_result(self, mock_qubit_device_with_paulis_and_methods, tol):
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_result(self, mock_qubit_device_with_paulis_and_methods, r_dtype, tol):
         """Tests that the result has the correct shape and entry types."""
 
         dev = mock_qubit_device_with_paulis_and_methods(wires=2)
+        dev.R_DTYPE = r_dtype
 
         tapes = [self.tape1, self.tape2]
         res = dev.batch_execute(tapes)
@@ -846,6 +874,8 @@ class TestBatchExecution:
         assert len(res) == 2
         assert np.allclose(res[0], dev.execute(self.tape1), rtol=tol, atol=0)
         assert np.allclose(res[1], dev.execute(self.tape2), rtol=tol, atol=0)
+        assert res[0].dtype == r_dtype
+        assert res[1].dtype == r_dtype
 
     def test_result_empty_tape(self, mock_qubit_device_with_paulis_and_methods, tol):
         """Tests that the result has the correct shape and entry types for empty tapes."""
@@ -904,6 +934,7 @@ class TestShotList:
         [[(10, 3)], [(10, 3)], (3, 2), 30],
     ]
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_multiple_expval(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test multiple expectation values"""
@@ -923,8 +954,10 @@ class TestShotList:
         assert circuit.device.shots == total_shots
 
         # test gradient works
-        res = qml.jacobian(circuit)(0.5, 0.1)
-        assert res.shape == (2,) + expected_shape
+        res = qml.jacobian(circuit)(*pnp.array([0.5, 0.1], requires_grad=True))
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == expected_shape
+        assert res[1].shape == expected_shape
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 4), 16],
@@ -938,6 +971,7 @@ class TestShotList:
         [[(10, 3)], [(10, 3)], (3, 4), 30],
     ]
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_probs(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test a probability return"""
@@ -957,7 +991,7 @@ class TestShotList:
         assert circuit.device.shots == total_shots
 
         # test gradient works
-        res = qml.jacobian(circuit)(0.5, 0.1)
+        res = qml.jacobian(circuit, argnum=[0, 1])(0.5, 0.1)
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 2, 2), 16],
@@ -971,6 +1005,7 @@ class TestShotList:
         [[(10, 3)], [(10, 3)], (3, 2, 2), 30],
     ]
 
+    @pytest.mark.autograd
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
     def test_multiple_probs(self, shot_list, shot_vector, expected_shape, total_shots):
         """Test multiple probability returns"""
@@ -990,7 +1025,7 @@ class TestShotList:
         assert circuit.device.shots == total_shots
 
         # test gradient works
-        res = qml.jacobian(circuit)(0.5, 0.1)
+        res = qml.jacobian(circuit, argnum=[0, 1])(0.5, 0.1)
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], [(), (2,), (3,), (10,)], 16],

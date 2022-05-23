@@ -29,11 +29,11 @@ def test_work_wires():
 
     op = qml.GroverOperator(wires=wires, work_wires=work_wire)
 
-    assert op.work_wires == work_wire
+    assert op.hyperparameters["work_wires"] == work_wire
 
     ops = op.expand().operations
 
-    assert ops[2]._work_wires == work_wire
+    assert ops[2].hyperparameters["work_wires"] == work_wire
 
 
 @pytest.mark.parametrize("bad_wires", [0, (0,), tuple()])
@@ -91,7 +91,7 @@ def test_grover_diffusion_matrix(n_wires):
     wires = list(range(n_wires))
 
     # Test-oracle
-    oracle = np.identity(2 ** n_wires)
+    oracle = np.identity(2**n_wires)
     oracle[0, 0] = -1
 
     # s1 = H|0>, Hadamard on a single qubit in the ground state
@@ -100,28 +100,27 @@ def test_grover_diffusion_matrix(n_wires):
     # uniform superposition state
     s = functools.reduce(np.kron, list(itertools.repeat(s1, n_wires)))
     # Grover matrix
-    G_matrix = qml.GroverOperator(wires=wires).matrix
+    G_matrix = qml.GroverOperator(wires=wires).matrix()
 
     amplitudes = G_matrix @ oracle @ s
-    probs = amplitudes ** 2
+    probs = amplitudes**2
 
     # Create Grover diffusion matrix G in alternative way
-    oplist = list(itertools.repeat(Hadamard.matrix, n_wires - 1))
-    oplist.append(PauliZ.matrix)
+    oplist = list(itertools.repeat(Hadamard.compute_matrix(), n_wires - 1))
+    oplist.append(PauliZ.compute_matrix())
 
     ctrl_str = "0" * (n_wires - 1)
     CX = MultiControlledX(
         control_values=ctrl_str,
-        control_wires=wires[:-1],
-        wires=wires[-1],
+        wires=wires,
         work_wires=None,
-    ).matrix
+    ).matrix()
 
     M = functools.reduce(np.kron, oplist)
     G = M @ CX @ M
 
     amplitudes2 = G @ oracle @ s
-    probs2 = amplitudes2 ** 2
+    probs2 = amplitudes2**2
 
     assert np.allclose(probs, probs2)
 
@@ -152,9 +151,9 @@ def test_grover_diffusion_matrix_results():
     probs_example = GroverSearch(num_iterations=1)
 
     # Grover diffusion matrix
-    G_matrix = qml.GroverOperator(wires=wires).matrix
+    G_matrix = qml.GroverOperator(wires=wires).matrix()
 
-    oracle_matrix = np.identity(2 ** n_wires)
+    oracle_matrix = np.identity(2**n_wires)
     oracle_matrix[-1, -1] = -1
 
     # s1 = H|0>, Hadamard on a single qubit in the ground state
@@ -165,7 +164,7 @@ def test_grover_diffusion_matrix_results():
 
     amplitudes = G_matrix @ oracle_matrix @ s
     # Check that the probabilities are the same
-    probs_matrix = amplitudes ** 2
+    probs_matrix = amplitudes**2
 
     assert np.allclose(probs_example, probs_matrix)
 
@@ -186,7 +185,7 @@ def test_expand(wires):
 
 def test_findstate():
     """Asserts can find state marked by oracle."""
-    wires = range(6)
+    wires = list(range(6))
 
     dev = qml.device("default.qubit", wires=wires)
 
@@ -197,7 +196,7 @@ def test_findstate():
 
         for _ in range(5):
             qml.Hadamard(wires[0])
-            qml.MultiControlledX(wires=wires[0], control_wires=wires[1:])
+            qml.MultiControlledX(wires=wires[1:] + wires[0:1])
             qml.Hadamard(wires[0])
             qml.GroverOperator(wires=wires)
 
@@ -206,3 +205,20 @@ def test_findstate():
     probs = circ()
 
     assert np.argmax(probs) == len(probs) - 1
+
+
+def test_matrix(tol):
+    """Test that the matrix representation is correct."""
+
+    res_static = qml.GroverOperator.compute_matrix(2, work_wires=None)
+    res_dynamic = qml.GroverOperator(wires=[0, 1]).matrix()
+    res_reordered = qml.GroverOperator(wires=[0, 1]).matrix([1, 0])
+
+    expected = np.array(
+        [[-0.5, 0.5, 0.5, 0.5], [0.5, -0.5, 0.5, 0.5], [0.5, 0.5, -0.5, 0.5], [0.5, 0.5, 0.5, -0.5]]
+    )
+
+    assert np.allclose(res_static, expected, atol=tol, rtol=0)
+    assert np.allclose(res_dynamic, expected, atol=tol, rtol=0)
+    # reordering should not affect this particular matrix
+    assert np.allclose(res_reordered, expected, atol=tol, rtol=0)

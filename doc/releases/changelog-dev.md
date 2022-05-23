@@ -1,154 +1,163 @@
 :orphan:
 
-# Release 0.21.0-dev (development release)
+# Release 0.24.0-dev (development release)
 
 <h3>New features since last release</h3>
 
-* A tensor network template has been added. Quantum circuits with the shape of a matrix product state tensor network can now be easily implemented. Motivation and theory can be found in [arXiv:1803.11537](https://arxiv.org/abs/1803.11537). [(#1871)](https://github.com/PennyLaneAI/pennylane/pull/1871)
+* Boolean mask indexing of the parameter-shift Hessian
+  [(#2538)](https://github.com/PennyLaneAI/pennylane/pull/2538)
 
-  An example circuit that uses the `MPS` template is:
-  ```python
-  import pennylane as qml
-  import numpy as np
-
-  def block(weights, wires):
-      qml.CNOT(wires=[wires[0],wires[1]])
-      qml.RY(weights[0], wires=wires[0])
-      qml.RY(weights[1], wires=wires[1])
-
-  n_wires = 4
-  n_block_wires = 2
-  n_params_block = 2
-  template_weights = [[0.1,-0.3],[0.4,0.2],[-0.15,0.5]]
-
-  dev= qml.device('default.qubit',wires=range(n_wires))
-  @qml.qnode(dev)
-  def circuit(weights):
-      qml.MPS(range(n_wires),n_block_wires,block, n_params_block, weights)
-      return qml.expval(qml.PauliZ(wires=n_wires-1))
-  ```
-
-  The resulting circuit is:
-  ```pycon
-  >>> print(qml.draw(circuit,expansion_strategy='device')(template_weights))
-  0: ──╭C──RY(0.1)───────────────────────────────┤
-  1: ──╰X──RY(-0.3)──╭C──RY(0.4)─────────────────┤
-  2: ────────────────╰X──RY(0.2)──╭C──RY(-0.15)──┤
-  3: ─────────────────────────────╰X──RY(0.5)────┤ ⟨Z⟩
-  ```
-  
-* Functions for tapering qubits based on molecular symmetries is added.
-  [(#1966)](https://github.com/PennyLaneAI/pennylane/pull/1966)
-* [(#1974)](https://github.com/PennyLaneAI/pennylane/pull/1974)
-
-  With this functionality, a molecular Hamiltonian can be transformed to a new Hamiltonian that acts
-  on a reduced number of qubits.
+  The `argnum` keyword argument for `param_shift_hessian` 
+  is now allowed to be a twodimensional Boolean `array_like`.
+  Only the indicated entries of the Hessian will then be computed.
+  A particularly useful example is the computation of the diagonal
+  of the Hessian:
 
   ```python
-  symbols = ["H", "H"]
-  geometry = np.array([[0.0, 0.0, -0.69440367], [0.0, 0.0, 0.69440367]])
-  mol = qml.hf.Molecule(symbols, geometry)
-  H = qml.hf.generate_hamiltonian(mol)(geometry)
-  generators, paulix_ops = qml.hf.generate_symmetries(H, len(H.wires))
-  paulix_sector = [1, -1, -1]
-  H_tapered = qml.hf.transform_hamiltonian(H, generators, paulix_ops, paulix_sector)
-  ```
+  dev = qml.device("default.qubit", wires=1)
+  with qml.tape.QuantumTape() as tape:
+      qml.RX(0.2, wires=0)
+      qml.RY(-0.9, wires=0)
+      qml.RX(1.1, wires=0)
+      qml.expval(qml.PauliZ(0))
 
+  argnum = qml.math.eye(3, dtype=bool)
+  ```
   ```pycon
-  >>> print(H_tapered)
-    ((-0.321034397355719+0j)) [I0]
-  + ((0.1809270275619743+0j)) [X0]
-  + ((0.7959678503870796+0j)) [Z0]
+  >>> tapes, fn = qml.gradients.param_shift_hessian(tape, argnum=argnum)
+  >>> fn(qml.execute(tapes, dev, None))
+  array([[[-0.09928388,  0.        ,  0.        ],
+        [ 0.        , -0.27633945,  0.        ],
+        [ 0.        ,  0.        , -0.09928388]]])
   ```
 
-* Added the adjoint method for the metric tensor.
-  [(#1992)](https://github.com/PennyLaneAI/pennylane/pull/1992)
+* Speed up measuring of commuting Pauli operators
+  [(#2425)](https://github.com/PennyLaneAI/pennylane/pull/2425)
 
-  This method, detailed in [Jones 2020](https://arxiv.org/abs/2011.02991),
-  computes the metric tensor using four copies of the state vector and
-  a number of operations that scales quadratically in the number of trainable
-  parameters (see below for details).
-  
-  Note that as it makes use of state cloning, it is inherently classical
-  and can only be used with statevector simulators and `shots=None`.
-
-  It is particular useful for larger circuits for which backpropagation requires
-  inconvenient or even unfeasible amounts of storage, but is slower.
-  Furthermore, the adjoint method is only available for analytic computation, not
-  for measurements simulation with `shots!=None`.
-
-  ```python
-  dev = qml.device("default.qubit", wires=3)
-  
-  @qml.qnode(dev)
-  def circuit(x, y):
-      qml.Rot(*x[0], wires=0)
-      qml.Rot(*x[1], wires=1)
-      qml.Rot(*x[2], wires=2)
-      qml.CNOT(wires=[0, 1])
-      qml.CNOT(wires=[1, 2])
-      qml.CNOT(wires=[2, 0])
-      qml.RY(y[0], wires=0)
-      qml.RY(y[1], wires=1)
-      qml.RY(y[0], wires=2)
-
-  x = np.array([[0.2, 0.4, -0.1], [-2.1, 0.5, -0.2], [0.1, 0.7, -0.6]], requires_grad=False)
-  y = np.array([1.3, 0.2], requires_grad=True)
-  ```
-
-  ```pycon
-  >>> qml.adjoint_metric_tensor(circuit)(x, y)
-  tensor([[ 0.25495723, -0.07086695],
-          [-0.07086695,  0.24945606]], requires_grad=True)
-  ```
-
-  Computational cost
-
-  The adjoint method uses :math:`2P^2+4P+1` gates and state cloning operations if the circuit
-  is composed only of trainable gates, where :math:`P` is the number of trainable operations.
-  If non-trainable gates are included, each of them is applied about :math:`n^2-n` times, where
-  :math:`n` is the number of trainable operations that follow after the respective 
-  non-trainable operation in the circuit. This means that non-trainable gates later in the 
-  circuit are executed less often, making the adjoint method a bit cheaper if such gates
-  appear later.
-  The adjoint method requires memory for 4 independent state vectors, which corresponds roughly
-  to storing a state vector of a system with 2 additional qubits.
+  The code that checks for qubit wise commuting (QWC) got a performance boost that is noticable
+  when many commuting paulis of the same type are measured.
 
 <h3>Improvements</h3>
 
-* Insert transform now supports adding operation after or before certain specific gates.
-  [(#1980)](https://github.com/PennyLaneAI/pennylane/pull/1980)
+* The developer-facing `pow` method has been added to `Operator` with concrete implementations
+  for many classes.
+  [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
 
-* Interferometer is now a class with `shape` method.
-  [(#1946)](https://github.com/PennyLaneAI/pennylane/pull/1946)
+* Test classes are created in qchem test modules to group the integrals and matrices unittests.
+  [(#2545)](https://github.com/PennyLaneAI/pennylane/pull/2545)
+
+* Introduced an `operations_only` argument to the `tape.get_parameters` method.
+  [(#2543)](https://github.com/PennyLaneAI/pennylane/pull/2543)
+
+* The `gradients` module now uses faster subroutines and uniform
+  formats of gradient rules.
+  [(#2452)](https://github.com/XanaduAI/pennylane/pull/2452)
+
+* Wires can be passed as the final argument to an `Operator`, instead of requiring
+  the wires to be explicitly specified with keyword `wires`. This functionality already
+  existed for `Observable`'s, but now extends to all `Operator`'s.
+  [(#2432)](https://github.com/PennyLaneAI/pennylane/pull/2432)
+
+  ```pycon
+  >>> qml.S(0)
+  S(wires=[0])
+  >>> qml.CNOT((0,1))
+  CNOT(wires=[0, 1])
+  ```
+
+* Instead of checking types, objects are processed in `QuantumTape`'s based on a new `_queue_category` property.
+  This is a temporary fix that will disappear in the future.
+  [(#2408)](https://github.com/PennyLaneAI/pennylane/pull/2408)
+
+* The `qml.taper` function can now be used to consistently taper any additional observables such as dipole moment,
+  particle number, and spin operators using the symmetries obtained from the Hamiltonian.
+  [(#2510)](https://github.com/PennyLaneAI/pennylane/pull/2510)
+
+* The `QNode` class now contains a new method `best_method_str` that returns the best differentiation
+  method for a provided device and interface, in human-readable format.
+  [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
+
+* Using `Operation.inv()` in a queuing environment no longer updates the queue's metadata, but merely updates
+  the operation in place.
+  [(#2596)](https://github.com/PennyLaneAI/pennylane/pull/2596)
+
+* Sparse Hamiltonians representation has changed from COOrdinate (COO) to Compressed Sparse Row (CSR) format. The CSR representation is more performant for arithmetic operations and matrix vector products. This change decreases the `expval()` calculation time, for `qml.SparseHamiltonian`, specially for large workflows. Also, the CRS format consumes less memory for the `qml.SparseHamiltonian` storage.
+[(#2561)](https://github.com/PennyLaneAI/pennylane/pull/2561)
 
 <h3>Breaking changes</h3>
 
+* The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
+  [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
+
+* The module `qml.gradients.param_shift_hessian` has been renamed to
+  `qml.gradients.parameter_shift_hessian` in order to distinguish it from the identically named
+  function. Note that the `param_shift_hessian` function is unaffected by this change and can be
+  invoked in the same manner as before via the `qml.gradients` module.
+  [(#2528)](https://github.com/PennyLaneAI/pennylane/pull/2528)
+* The properties `eigval` and `matrix` from the `Operator` class were replaced with the
+  methods `eigval()` and `matrix(wire_order=None)`.
+  [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
+
+* `Operator.decomposition()` is now an instance method, and no longer accepts parameters.
+  [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
+
+* Adds tests, adds no-coverage directives, and removes inaccessible logic to improve code coverage.
+  [(#2537)](https://github.com/PennyLaneAI/pennylane/pull/2537)
+
+* The base classes `QubitDevice` and `DefaultQubit` now accept data-types for a statevector. This
+  enables a derived class (device) in a plugin to choose correct data-types.
+  [(#2448)](https://github.com/PennyLaneAI/pennylane/pull/2448)
+
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=4, r_dtype=np.float32, c_dtype=np.complex64)
+  >>> dev.R_DTYPE
+  <class 'numpy.float32'>
+  >>> dev.C_DTYPE
+  <class 'numpy.complex64'>
+  ```
+
 <h3>Bug fixes</h3>
 
-* Fixes a bug where PennyLane didn't require v0.20.0 of PennyLane-Lightning,
-  but raised an error with versions of Lightning earlier than v0.20.0 due to
-  the new batch execution pipeline.
-  [(#2033)](https://github.com/PennyLaneAI/pennylane/pull/2033)
+* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` or `"jax-jit"`, when requesting backpropagation. 
+  [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
 
-* Fixes a bug in `classical_jacobian` when used with Torch, where the
-  Jacobian of the preprocessing was also computed for non-trainable
-  parameters.
-  [(#2020)](https://github.com/PennyLaneAI/pennylane/pull/2020)
+* Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
+  computed for QNodes with parametrized observables (e.g., `qml.Hermitian`).
+  [(#2543)](https://github.com/PennyLaneAI/pennylane/pull/2543)
 
-* Fixes a bug in queueing of the `two_qubit_decomposition` method that
-  originally led to circuits with >3 two-qubit unitaries failing when passed
-  through the `unitary_to_rot` optimization transform.
-  [(#2015)](https://github.com/PennyLaneAI/pennylane/pull/2015)
+* Fixed a bug where `QNGOptimizer` did not work with operators
+  whose generator was a Hamiltonian.
+  [(#2524)](https://github.com/PennyLaneAI/pennylane/pull/2524)
+
+* Fixes a bug with the decomposition of `qml.CommutingEvolution`.
+  [(#2542)](https://github.com/PennyLaneAI/pennylane/pull/2542)
+
+* Fixed a bug enabling PennyLane to work with the latest version of Autoray.
+  [(#2549)](https://github.com/PennyLaneAI/pennylane/pull/2549)
+
+* Fixed a bug which caused different behaviour for `Hamiltonian @ Observable` and `Observable @ Hamiltonian`.
+  [(#2570)](https://github.com/PennyLaneAI/pennylane/pull/2570)
+
+* Fixes a bug in `DiagonalQubitUnitary._controlled` where an invalid operation was queued
+  instead of the controlled version of the diagonal unitary.
+  [(#2525)](https://github.com/PennyLaneAI/pennylane/pull/2525)
+
+<h3>Deprecations</h3>
 
 <h3>Documentation</h3>
 
-* Extended the interfaces description page to explicitly mention device
-  compatibility.
-  [(#2031)](https://github.com/PennyLaneAI/pennylane/pull/2031)
+* The centralized [Xanadu Sphinx Theme](https://github.com/XanaduAI/xanadu-sphinx-theme)
+  is now used to style the Sphinx documentation.
+  [(#2450)](https://github.com/PennyLaneAI/pennylane/pull/2450)
+
+* Added a new section in the [Gradients and Training](https://pennylane.readthedocs.io/en/stable/introduction/interfaces.html)
+  page that summarizes the supported device configurations and provides justification. Also
+  added [code examples](https://pennylane.readthedocs.io/en/stable/introduction/unsupported.html)
+  for some selected configurations.
+  [(#2540)](https://github.com/PennyLaneAI/pennylane/pull/2540)
 
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Juan Miguel Arrazola, Esther Cruz, Olivia Di Matteo, Diego Guala, Ankit Khandelwal, Antal Száva, David Wierichs, Shaoming Zhang
+Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, Edward Jiang, Guillermo Alonso-Linaje, Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad

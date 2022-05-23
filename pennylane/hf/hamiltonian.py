@@ -69,7 +69,7 @@ def generate_electron_integrals(mol, core=None, active=None):
     orbital expansion coefficient matrix.
 
     Args:
-        mol (Molecule): the molecule object
+        mol (~hf.molecule.Molecule): the molecule object
         core (list[int]): indices of the core orbitals
         active (list[int]): indices of the active orbitals
 
@@ -145,7 +145,7 @@ def generate_fermionic_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the fermionic hamiltonian.
 
     Args:
-        mol (Molecule): the molecule object
+        mol (~hf.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible electronic integrals
 
     Returns:
@@ -208,7 +208,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     r"""Return a function that computes the qubit hamiltonian.
 
     Args:
-        mol (Molecule): the molecule object
+        mol (~hf.molecule.Molecule): the molecule object
         cutoff (float): cutoff value for discarding the negligible electronic integrals
 
     Returns:
@@ -223,7 +223,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
     >>> mol = qml.hf.Molecule(symbols, geometry, alpha=alpha)
     >>> args = [alpha]
     >>> h = generate_hamiltonian(mol)(*args)
-    >>> h.terms[0]
+    >>> h.coeffs
     tensor([ 0.29817879+0.j,  0.20813365+0.j,  0.20813365+0.j,
              0.17860977+0.j,  0.04256036+0.j, -0.04256036+0.j,
             -0.04256036+0.j,  0.04256036+0.j, -0.34724873+0.j,
@@ -247,7 +247,8 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
         for n, t in enumerate(h_ferm[1]):
 
             if len(t) == 0:
-                coeffs = np.array([h_ferm[0][n]])
+                coeffs = anp.array([0.0])
+                coeffs = coeffs + np.array([h_ferm[0][n]])
                 ops = ops + [qml.Identity(0)]
 
             elif len(t) == 2:
@@ -282,7 +283,7 @@ def generate_hamiltonian(mol, cutoff=1.0e-12, core=None, active=None):
                     coeffs = np.concatenate([coeffs, np.array(op[0]) * h_ferm[0][n]])
                     ops = ops + op[1]
 
-        h = qml.Hamiltonian(coeffs, ops, simplify=True)
+        h = simplify(qml.Hamiltonian(coeffs, ops), cutoff=cutoff)
 
         return h
 
@@ -308,6 +309,9 @@ def _generate_qubit_operator(op):
     >>> q
     ([(0.5+0j), (-0.5+0j)], [[], [(0, 'Z')]]) # corresponds to :math:`\frac{1}{2}(I_0 - Z_0)`
     """
+    if len(op) == 1:
+        op = [((op[0], 1),)]
+
     if len(op) == 2:
         op = [((op[0], 1), (op[1], 0))]
 
@@ -352,6 +356,54 @@ def _generate_qubit_operator(op):
     return c, o
 
 
+def simplify(h, cutoff=1.0e-12):
+    r"""Add together identical terms in the Hamiltonian.
+
+    The Hamiltonian terms with identical Pauli words are added together and eliminated if the
+    overall coefficient is smaller than a cutoff value.
+
+    Args:
+        h (Hamiltonian): PennyLane Hamiltonian
+        cutoff (float): cutoff value for discarding the negligible terms
+
+    Returns:
+        Hamiltonian: Simplified PennyLane Hamiltonian
+
+    **Example**
+
+    >>> c = np.array([0.5, 0.5])
+    >>> h = qml.Hamiltonian(c, [qml.PauliX(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliY(1)])
+    >>> print(simplify(h))
+    (1.0) [X0 Y1]
+    """
+    wiremap = dict(zip(h.wires, range(len(h.wires) + 1)))
+
+    c = []
+    o = []
+    for i, op in enumerate(h.ops):
+        op = qml.operation.Tensor(op).prune()
+        op = qml.grouping.pauli_word_to_string(op, wire_map=wiremap)
+        if op not in o:
+            c.append(h.coeffs[i])
+            o.append(op)
+        else:
+            c[o.index(op)] += h.coeffs[i]
+
+    coeffs = []
+    ops = []
+    nonzero_ind = np.argwhere(abs(np.array(c)) > cutoff).flatten()
+    for i in nonzero_ind:
+        coeffs.append(c[i])
+        ops.append(qml.grouping.string_to_pauli_word(o[i], wire_map=wiremap))
+
+    try:
+        coeffs = qml.math.stack(coeffs)
+    except ValueError:
+        pass
+
+    return qml.Hamiltonian(coeffs, ops)
+
+
 def _pauli_mult(p1, p2):
     r"""Return the result of multiplication between two tensor products of Pauli operators.
 
@@ -367,8 +419,8 @@ def _pauli_mult(p1, p2):
 
     **Example**
 
-    >>> p1 = [(0, "X"), (1, "Y")],  # X_0 @ Y_1
-    >>> p2 = [(0, "X"), (2, "Y")],  # X_0 @ Y_2
+    >>> p1 = [(0, "X"), (1, "Y")]  # X_0 @ Y_1
+    >>> p2 = [(0, "X"), (2, "Y")]  # X_0 @ Y_2
     >>> _pauli_mult(p1, p2)
     ([(2, "Y"), (1, "Y")], 1.0) # p1 @ p2 = X_0 @ Y_1 @ X_0 @ Y_2
     """

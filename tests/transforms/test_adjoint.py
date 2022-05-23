@@ -59,10 +59,45 @@ def test_barrier_adjoint():
 
     @qml.qnode(dev)
     def my_circuit():
-        qml.adjoint(qml.Barrier)(wires=0)
+        adjoint(qml.Barrier)(wires=0)
         return qml.state()
 
     assert my_circuit()[0] == 1.0
+
+
+def test_wirecut_adjoint():
+    """Check that the adjoint for the WireCut is working"""
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def my_circuit():
+        adjoint(qml.WireCut)(wires=0)
+        return qml.state()
+
+    assert np.isclose(my_circuit()[0], 1.0)
+
+
+def test_identity_adjoint():
+    """Check that the adjoint for Identity is working"""
+    dev = qml.device("default.qubit", wires=2, shots=100)
+
+    @qml.qnode(dev)
+    def circuit():
+        identity()
+        qml.adjoint(identity)()
+        return qml.state()
+
+    def identity():
+        qml.PauliX(wires=0)
+        qml.Identity(0)
+        qml.CNOT(wires=[0, 1])
+
+    assert circuit()[0] == 1.0
+
+    queue = circuit.tape.queue
+
+    assert queue[1].name == "Identity"
+    assert queue[4].name == "Identity"
 
 
 def test_nested_adjoint():
@@ -99,6 +134,26 @@ def test_nested_adjoint_on_function():
     )
 
 
+with qml.tape.QuantumTape() as tape:
+    qml.PauliX(0)
+    qml.Hadamard(1)
+
+noncallable_objects = [
+    qml.RX(0.2, wires=0),
+    qml.AngleEmbedding(list(range(2)), wires=range(2)),
+    [qml.Hadamard(1), qml.RX(-0.2, wires=1)],
+    tape,
+]
+
+
+@pytest.mark.parametrize("obj", noncallable_objects)
+def test_error_adjoint_on_noncallable(obj):
+    """Test that an error is raised if qml.adjoint is applied to an object that
+    is not callable, as it silently does not have any effect on those."""
+    with pytest.raises(ValueError, match=f"{type(obj)} is not callable."):
+        adjoint(obj)
+
+
 class TestOutsideOfQueuing:
     """Test that operations and templates work with the adjoint transform when
     created outside of a queuing context"""
@@ -109,7 +164,7 @@ class TestOutsideOfQueuing:
     def test_single_op_non_param_adjoint(self, op, wires):
         """Test that the adjoint correctly inverts non-parametrized
         operations"""
-        op_adjoint = qml.adjoint(op)(wires=wires)
+        op_adjoint = adjoint(op)(wires=wires)
         expected = op(wires=wires).adjoint()
 
         assert type(op_adjoint) == type(expected)
@@ -121,7 +176,7 @@ class TestOutsideOfQueuing:
     def test_single_op_param_adjoint(self, op, par, wires):
         """Test that the adjoint correctly inverts operations with a single
         parameter"""
-        param_op_adjoint = qml.adjoint(op)(*par, wires=wires)
+        param_op_adjoint = adjoint(op)(*par, wires=wires)
         expected = op(*par, wires=wires).adjoint()
 
         assert type(param_op_adjoint) == type(expected)
@@ -136,7 +191,7 @@ class TestOutsideOfQueuing:
     @pytest.mark.parametrize("template, par, wires", template_ops)
     def test_templates_adjoint(self, template, par, wires):
         """Test that the adjoint correctly inverts templates"""
-        res = qml.adjoint(template)(*par, wires=wires)
+        res = adjoint(template)(*par, wires=wires)
         result = res if hasattr(res, "__iter__") else [res]  # handle single operation case
         expected_ops = template(*par, wires=wires)
 
@@ -150,7 +205,7 @@ class TestOutsideOfQueuing:
     def test_cv_template_adjoint(self):
         """Test that the adjoint correctly inverts CV templates"""
         template, par, wires = qml.templates.Interferometer, [[1], [0.3], [0.2, 0.3]], [2, 3]
-        result = qml.adjoint(template)(*par, wires=wires).expand().operations
+        result = adjoint(template)(*par, wires=wires).expand().operations
         expected_ops = template(*par, wires=wires).expand().operations
 
         for o1, o2 in zip(result, reversed(expected_ops)):
@@ -209,7 +264,7 @@ class TestTemplateIntegration:
 
         weights = np.array([1, 0, 1])
         res = circuit(weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
         assert np.allclose(res, expected)
 
@@ -258,7 +313,7 @@ class TestTemplateIntegration:
         weights = np.random.random(template.shape(2, 3))
 
         res = circuit(features, weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -276,7 +331,7 @@ class TestTemplateIntegration:
 
         features = np.array([1.0, 2.0, 3.0])
         res = circuit(features)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -301,7 +356,7 @@ class TestTemplateIntegration:
 
         weights = np.random.random(template.shape(2, 3))
         res = circuit(weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -326,7 +381,7 @@ class TestTemplateIntegration:
 
         weights = np.random.random(template.shape(2, 3))
         res = circuit(weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -344,7 +399,7 @@ class TestTemplateIntegration:
 
         weights = [np.random.random(s) for s in template.shape(2, 3)]
         res = circuit(weights[0], *weights[1:])
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -365,7 +420,7 @@ class TestTemplateIntegration:
             return qml.state()
 
         res = circuit(0.5)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
         assert np.allclose(res, expected)
 
@@ -382,7 +437,7 @@ class TestTemplateIntegration:
 
         weights = np.random.random(template.shape(3))
         res = circuit(weights)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -399,7 +454,7 @@ class TestTemplateIntegration:
             return qml.state()
 
         res = circuit(0.6)
-        expected = np.zeros([2 ** 3])
+        expected = np.zeros([2**3])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -416,7 +471,7 @@ class TestTemplateIntegration:
             return qml.state()
 
         res = circuit(0.6)
-        expected = np.zeros([2 ** 4])
+        expected = np.zeros([2**4])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
@@ -456,7 +511,36 @@ class TestTemplateIntegration:
             return qml.state()
 
         res = circuit([[[0.6, 0.8]]])
-        expected = np.zeros([2 ** 4])
+        expected = np.zeros([2**4])
         expected[0] = 1.0
 
         assert np.allclose(res, expected)
+
+
+def test_op_that_overwrites_expand():
+    """Tests the adjoint method applied on an operation that overwrites the expand method.
+
+    .. note::
+        This is a discontinued practice, since all operators should define their decomposition
+        in decomposition() or compute_decomposition(). Once the new standard is established
+        everywhere, we can remove the "if isinstance(new_ops, QuantumTape)" check in
+        the adjoint method.
+    """
+    dev = qml.device("default.qubit", wires=3)
+
+    class MyOp(qml.operation.Operation):
+        num_wires = 1
+
+        def expand(self):
+            with qml.tape.QuantumTape() as tape:
+                qml.RX(0.1, wires=self.wires)
+            return tape
+
+    @qml.qnode(dev)
+    def circuit():
+        MyOp(wires=[0])
+        qml.adjoint(MyOp)(wires=[0])
+        return qml.state()
+
+    res = circuit()
+    assert len(np.nonzero(res)) == 1

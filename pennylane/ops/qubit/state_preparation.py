@@ -15,8 +15,7 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access
-
+# pylint:disable=abstract-method,arguments-differ,protected-access,no-member
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.templates.state_preparations import BasisStatePreparation, MottonenStatePreparation
@@ -55,15 +54,38 @@ class BasisState(Operation):
     [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
     num_wires = AnyWires
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = None
 
-    @property
-    def num_params(self):
-        return 1
+    # This is a temporary attribute to fix the operator queuing behaviour
+    _queue_category = "_prep"
 
     @staticmethod
-    def decomposition(n, wires):
-        return BasisStatePreparation(n, wires)
+    def compute_decomposition(n, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.BasisState.decomposition`.
+
+        Args:
+            n (array): prepares the basis state :math:`\ket{n}`, where ``n`` is an
+                array of integers from the set :math:`\{0, 1\}`
+            wires (Iterable, Wires): the wire(s) the operation acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.BasisState.compute_decomposition([1,0], wires=(0,1))
+        [BasisStatePreparation([1, 0], wires=[0, 1])]
+
+        """
+        return [BasisStatePreparation(n, wires)]
 
     def adjoint(self):
         raise qml.ops.AdjointError("No adjoint exists for BasisState operations.")
@@ -101,15 +123,37 @@ class QubitStateVector(Operation):
     [1.+0.j 0.+0.j 0.+0.j 0.+0.j]
     """
     num_wires = AnyWires
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = None
 
-    @property
-    def num_params(self):
-        return 1
+    # This is a temporary attribute to fix the operator queuing behaviour
+    _queue_category = "_prep"
 
     @staticmethod
-    def decomposition(state, wires):
-        return MottonenStatePreparation(state, wires)
+    def compute_decomposition(state, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.QubitStateVector.decomposition`.
+
+        Args:
+            state (array[complex]): a state vector of size 2**len(wires)
+            wires (Iterable, Wires): the wire(s) the operation acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.QubitStateVector.compute_decomposition(np.array([1, 0, 0, 0]), wires=range(2))
+        [MottonenStatePreparation(tensor([1, 0, 0, 0], requires_grad=True), wires=[0, 1])]
+
+        """
+        return [MottonenStatePreparation(state, wires)]
 
     def adjoint(self):
         raise qml.ops.AdjointError("No adjoint exists for QubitStateVector operations.")
@@ -137,7 +181,8 @@ class QubitDensityMatrix(Operation):
         state (array[complex]): a density matrix of size ``(2**len(wires), 2**len(wires))``
         wires (Sequence[int] or int): the wire(s) the operation acts on
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         Example:
 
@@ -163,11 +208,13 @@ class QubitDensityMatrix(Operation):
          [0.+0.j 0.+0.j 0.+0.j 0.+0.j]]
     """
     num_wires = AnyWires
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
     grad_method = None
 
-    @property
-    def num_params(self):
-        return 1
+    # This is a temporary attribute to fix the operator queuing behaviour
+    _queue_category = "_prep"
 
     def adjoint(self):
         raise qml.ops.AdjointError("No adjoint exists for QubitDensityMatrix operations.")

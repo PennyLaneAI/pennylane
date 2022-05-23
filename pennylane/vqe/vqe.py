@@ -90,7 +90,8 @@ class ExpvalCost:
     The cost function can then be minimized using any gradient descent-based
     :doc:`optimizer </introduction/optimizers>`.
 
-    .. UsageDetails::
+    .. details::
+        :title: Usage Details
 
         **Optimizing observables:**
 
@@ -138,7 +139,7 @@ class ExpvalCost:
         if kwargs.get("measure", "expval") != "expval":
             raise ValueError("ExpvalCost can only be used to construct sums of expectation values.")
 
-        coeffs, observables = hamiltonian.terms
+        coeffs, observables = hamiltonian.terms()
 
         self.hamiltonian = hamiltonian
         """Hamiltonian: the input Hamiltonian."""

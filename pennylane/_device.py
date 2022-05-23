@@ -28,13 +28,9 @@ import pennylane as qml
 from pennylane.operation import (
     Operation,
     Observable,
-    Sample,
-    State,
-    Variance,
-    Expectation,
-    Probability,
     Tensor,
 )
+from pennylane.measurements import Sample, State, Variance, Expectation, Probability, MidMeasure
 from pennylane.wires import Wires, WireError
 
 
@@ -111,7 +107,7 @@ class Device(abc.ABC):
             expectation values of observables. Defaults to 1000 if not specified.
     """
 
-    # pylint: disable=too-many-public-methods
+    # pylint: disable=too-many-public-methods,too-many-instance-attributes
     _capabilities = {"model": None}
     """The capabilities dictionary stores the properties of a device. Devices can add their
     own custom properties and overwrite existing ones by overriding the ``capabilities()`` method."""
@@ -251,6 +247,7 @@ class Device(abc.ABC):
             # device is in analytic mode
             self._shots = shots
             self._shot_vector = None
+            self._raw_shot_sequence = None
 
         elif isinstance(shots, int):
             # device is in sampling mode (unbatched)
@@ -265,6 +262,7 @@ class Device(abc.ABC):
         elif isinstance(shots, Sequence) and not isinstance(shots, str):
             # device is in batched sampling mode
             self._shots, self._shot_vector = _process_shot_sequence(shots)
+            self._raw_shot_sequence = shots
 
         else:
             raise DeviceError(
@@ -333,6 +331,30 @@ class Device(abc.ABC):
         wire_map = zip(wires, consecutive_wires)
         return OrderedDict(wire_map)
 
+    def order_wires(self, subset_wires):
+        """Given some subset of device wires return a Wires object with the same wires;
+        sorted according to the device wire map.
+
+        Args:
+            subset_wires (Wires): The subset of device wires (in any order).
+
+        Raise:
+            ValueError: Could not find some or all subset wires subset_wires in device wires device_wires.
+
+        Return:
+            ordered_wires (Wires): a new Wires object containing the re-ordered wires set
+        """
+        subset_lst = subset_wires.tolist()
+
+        try:
+            ordered_subset_lst = sorted(subset_lst, key=lambda label: self.wire_map[label])
+        except KeyError as e:
+            raise ValueError(
+                f"Could not find some or all subset wires {subset_wires} in device wires {self.wires}"
+            ) from e
+
+        return Wires(ordered_subset_lst)
+
     @lru_cache()
     def map_wires(self, wires):
         """Map the wire labels of wires using this device's wire map.
@@ -374,8 +396,8 @@ class Device(abc.ABC):
         """
         return cls._capabilities
 
-    # pylint: disable=too-many-branches
-    def execute(self, queue, observables, parameters={}, **kwargs):
+    # pylint: disable=too-many-branches,unused-argument
+    def execute(self, queue, observables, parameters=None, **kwargs):
         """Execute a queue of quantum operations on the device and then measure the given observables.
 
         For plugin developers: Instead of overwriting this, consider implementing a suitable subset of
@@ -402,7 +424,8 @@ class Device(abc.ABC):
         self._op_queue = queue
         self._obs_queue = observables
         self._parameters = {}
-        self._parameters.update(parameters)
+        if parameters is not None:
+            self._parameters.update(parameters)
 
         results = []
         if self._shot_vector is not None:
@@ -620,9 +643,11 @@ class Device(abc.ABC):
             .QuantumTape: The expanded/decomposed circuit, such that the device
             will natively support all operations.
         """
-        obs_on_same_wire = len(
-            circuit._obs_sharing_wires  # pylint: disable=protected-access
-        ) > 0 and not self.supports_observable("Hamiltonian")
+        # pylint: disable=protected-access
+        obs_on_same_wire = len(circuit._obs_sharing_wires) > 0
+        obs_on_same_wire &= not any(
+            isinstance(o, qml.Hamiltonian) for o in circuit._obs_sharing_wires
+        )
 
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
@@ -815,8 +840,8 @@ class Device(abc.ABC):
             return operation.__name__ in self.operations
         if isinstance(operation, str):
 
-            if operation.endswith(Operation.string_for_inverse):
-                in_ops = operation[: -len(Operation.string_for_inverse)] in self.operations
+            if operation.endswith(".inv"):
+                in_ops = operation[:-4] in self.operations
                 # TODO: update when all capabilities keys changed to "supports_inverse_operations"
                 supports_inv = self.capabilities().get(
                     "supports_inverse_operations", False
@@ -847,8 +872,8 @@ class Device(abc.ABC):
         if isinstance(observable, str):
 
             # This check regards observables that are also operations
-            if observable.endswith(Operation.string_for_inverse):
-                return self.supports_operation(observable[: -len(Operation.string_for_inverse)])
+            if observable.endswith(".inv"):
+                return self.supports_operation(observable[:-4])
 
             return observable in self.observables
 
@@ -875,6 +900,15 @@ class Device(abc.ABC):
 
             operation_name = o.name
 
+            if getattr(o, "return_type", None) == MidMeasure and not self.capabilities().get(
+                "supports_mid_measure", False
+            ):
+                raise DeviceError(
+                    f"Mid-circuit measurements are not natively supported on device {self.short_name}. "
+                    "Apply the @qml.defer_measurements decorator to your quantum function to "
+                    "simulate the application of mid-circuit measurements on this device."
+                )
+
             if o.inverse:
                 # TODO: update when all capabilities keys changed to "supports_inverse_operations"
                 supports_inv = self.capabilities().get(
@@ -892,7 +926,7 @@ class Device(abc.ABC):
                 )
 
         for o in observables:
-            if isinstance(o, qml.measure.MeasurementProcess) and o.obs is not None:
+            if isinstance(o, qml.measurements.MeasurementProcess) and o.obs is not None:
                 o = o.obs
 
             if isinstance(o, Tensor):

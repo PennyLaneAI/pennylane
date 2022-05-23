@@ -22,15 +22,16 @@ import pytest
 import pennylane as qml
 
 
+@pytest.mark.tf
 class TestTensorFlow:
     """Test that tensorflow integrates with is_abstract"""
 
     def test_eager(self):
         """Test that no tensors are abstract when in eager mode"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         def cost(x, w):
-            y = x ** 2
+            y = x**2
             z = tf.ones([2, 2])
 
             assert tf.executing_eagerly()
@@ -59,11 +60,11 @@ class TestTensorFlow:
     @pytest.mark.parametrize("jit_compile", [True, False])
     def test_jit(self, jit_compile):
         """Test that all tensors are abstract when in autograd mode"""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
 
         @tf.function(jit_compile=jit_compile)
         def cost(x, w):
-            y = x ** 2
+            y = x**2
             z = tf.ones([2, 2])
 
             assert not tf.executing_eagerly()
@@ -90,16 +91,17 @@ class TestTensorFlow:
         assert np.allclose(grad, 2 * x)
 
 
+@pytest.mark.jax
 class TestJAX:
     """Test that JAX integrates with is_abstract"""
 
     def test_eager(self):
         """Test that no tensors are abstract when in eager mode"""
-        jax = pytest.importorskip("jax")
-        jnp = jax.numpy
+        import jax
+        import jax.numpy as jnp
 
         def cost(x, w):
-            y = x ** 2
+            y = x**2
             z = jnp.ones([2, 2])
 
             assert not qml.math.is_abstract(w)
@@ -125,12 +127,12 @@ class TestJAX:
         """Test that all tensors are abstract when in JIT mode.
         Note that `jax.grad` has slightly different behaviour, and will
         avoid making abstract tensors for non-differentiable arguments."""
-        jax = pytest.importorskip("jax")
-        jnp = jax.numpy
+        import jax
+        import jax.numpy as jnp
 
         @functools.partial(jax.jit, static_argnums=[2])
         def cost(x, w, w_is_abstract=True):
-            y = x ** 2
+            y = x**2
             z = jnp.ones([2, 2])
 
             assert qml.math.is_abstract(w) == w_is_abstract
@@ -150,9 +152,13 @@ class TestJAX:
         res = cost(x, w)
         assert res == 0.26
 
-        # since we only specify argnums=0, w will not be abstract
-        grad = jax.grad(cost, argnums=0)(x, w, w_is_abstract=False)
-        assert np.allclose(grad, 2 * x)
+        # NOTE: As of JAX 0.3.1, JAX will trace non-differentiated arguments.
+        # As a result, it is no longer possible to assume that non-differentiated
+        # arguments will not be abstract.
+
+        # # since we only specify argnums=0, w will not be abstract
+        # grad = jax.grad(cost, argnums=0)(x, w, w_is_abstract=False)
+        # assert np.allclose(grad, 2 * x)
 
         # Otherwise, w will be abstract
         grad = jax.grad(cost, argnums=[0, 1])(x, w, w_is_abstract=True)

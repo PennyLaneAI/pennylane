@@ -23,10 +23,10 @@ from math import cos, sin, sqrt
 
 import pytest
 import numpy as np
-import pennylane as qml
-
 from scipy.linalg import block_diag
 from flaky import flaky
+
+import pennylane as qml
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -38,6 +38,7 @@ np.random.seed(42)
 # gates for which device support is tested
 ops = {
     "Identity": qml.Identity(wires=[0]),
+    "Snapshot": qml.Snapshot("label"),
     "BasisState": qml.BasisState(np.array([0]), wires=[0]),
     "CNOT": qml.CNOT(wires=[0, 1]),
     "CRX": qml.CRX(0, wires=[0, 1]),
@@ -70,6 +71,7 @@ ops = {
     "T": qml.T(wires=[0]),
     "SX": qml.SX(wires=[0]),
     "Barrier": qml.Barrier(wires=[0, 1, 2]),
+    "WireCut": qml.WireCut(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
     "QFT": qml.templates.QFT(wires=[0, 1, 2]),
     "IsingXX": qml.IsingXX(0, wires=[0, 1]),
@@ -94,7 +96,8 @@ ops = {
 all_ops = ops.keys()
 
 # All qubit operations should be available to test in the device test suite
-all_available_ops = qml.ops._qubit__ops__.copy()  # pylint: disable=protected-access
+# Linting check disabled as static analysis can misidentify qml.ops as the set instance qml.ops.qubit.ops
+all_available_ops = qml.ops._qubit__ops__.copy()  # pylint: disable=protected-access,no-member
 all_available_ops.remove("CPhase")  # CPhase is an alias of ControlledPhaseShift
 all_available_ops.remove("SQISW")  # SQISW is an alias of SISWAP
 all_available_ops.add("QFT")  # QFT was recently moved to being a template, but let's keep it here
@@ -330,7 +333,7 @@ class TestGatesQubit:
 
         res = circuit()
 
-        expected = np.zeros([2 ** n_wires])
+        expected = np.zeros([2**n_wires])
         expected[np.ravel_multi_index(basis_state, [2] * n_wires)] = 1
         assert np.allclose(res, expected, atol=tol(dev.shots))
 

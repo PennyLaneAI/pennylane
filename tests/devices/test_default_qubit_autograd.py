@@ -22,6 +22,7 @@ from pennylane.devices.default_qubit_autograd import DefaultQubitAutograd
 from pennylane import DeviceError
 
 
+@pytest.mark.autograd
 def test_analytic_deprecation():
     """Tests if the kwarg `analytic` is used and displays error message."""
     msg = "The analytic argument has been replaced by shots=None. "
@@ -34,6 +35,7 @@ def test_analytic_deprecation():
         qml.device("default.qubit.autograd", wires=1, shots=1, analytic=True)
 
 
+@pytest.mark.autograd
 class TestQNodeIntegration:
     """Integration tests for default.qubit.autograd. This test ensures it integrates
     properly with the PennyLane UI, in particular the new QNode."""
@@ -112,6 +114,58 @@ class TestQNodeIntegration:
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
 
+@pytest.mark.autograd
+class TestDtypePreserved:
+    """Test that the user-defined dtype of the device is preserved for QNode
+    evaluation"""
+
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    @pytest.mark.parametrize(
+        "measurement",
+        [
+            qml.expval(qml.PauliY(0)),
+            qml.var(qml.PauliY(0)),
+            qml.probs(wires=[1]),
+            qml.probs(wires=[2, 0]),
+        ],
+    )
+    def test_real_dtype(self, r_dtype, measurement, tol):
+        """Test that the default qubit plugin provides correct result for a simple circuit"""
+        p = 0.543
+
+        dev = qml.device("default.qubit.autograd", wires=3)
+        dev.R_DTYPE = r_dtype
+
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.apply(measurement)
+
+        res = circuit(p)
+        assert res.dtype == r_dtype
+
+    @pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
+    @pytest.mark.parametrize(
+        "measurement",
+        [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
+    )
+    def test_complex_dtype(self, c_dtype, measurement, tol):
+        """Test that the default qubit plugin provides correct result for a simple circuit"""
+        p = 0.543
+
+        dev = qml.device("default.qubit.autograd", wires=3)
+        dev.C_DTYPE = c_dtype
+
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.apply(measurement)
+
+        res = circuit(p)
+        assert res.dtype == c_dtype
+
+
+@pytest.mark.autograd
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
@@ -280,7 +334,26 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.decomposition])
+    @pytest.mark.parametrize(
+        "x, shift",
+        [np.array((0.0, 0.0), requires_grad=True), np.array((0.5, -0.5), requires_grad=True)],
+    )
+    def test_hessian_at_zero(self, x, shift):
+        """Tests that the Hessian at vanishing state vector amplitudes
+        is correct."""
+        dev = qml.device("default.qubit.autograd", wires=1)
+
+        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        def circuit(x):
+            qml.RY(shift, wires=0)
+            qml.RY(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        assert qml.math.isclose(qml.jacobian(circuit)(x), 0.0)
+        assert qml.math.isclose(qml.jacobian(qml.jacobian(circuit))(x), -1.0)
+        assert qml.math.isclose(qml.grad(qml.grad(circuit))(x), -1.0)
+
+    @pytest.mark.parametrize("operation", [qml.U3, qml.U3.compute_decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
     def test_autograd_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
@@ -349,8 +422,24 @@ class TestPassthruIntegration:
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
 
+@pytest.mark.autograd
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
+
+    def test_do_not_split_analytic_autograd(self, mocker):
+        """Tests that the Hamiltonian is not split for shots=None using the autograd device."""
+        dev = qml.device("default.qubit.autograd", wires=2)
+        H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        def circuit():
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
 
     def test_template_integration(self):
         """Test that a PassthruQNode default.qubit.autograd works with templates."""
@@ -390,6 +479,7 @@ class TestHighLevelIntegration:
         assert grad.shape == weights.shape
 
 
+@pytest.mark.autograd
 class TestOps:
     """Unit tests for operations supported by the default.qubit.autograd device"""
 
@@ -406,7 +496,7 @@ class TestOps:
 
         param = np.array(0.3, requires_grad=True)
         res = qml.jacobian(circuit)(param)
-        assert np.allclose(res, np.zeros(wires ** 2))
+        assert np.allclose(res, np.zeros(wires**2))
 
     def test_inverse_operation_jacobian_backprop(self, tol):
         """Test that inverse operations work in backprop
