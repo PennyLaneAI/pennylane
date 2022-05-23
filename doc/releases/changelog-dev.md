@@ -29,6 +29,26 @@
   array([[[-0.09928388,  0.        ,  0.        ],
         [ 0.        , -0.27633945,  0.        ],
         [ 0.        ,  0.        , -0.09928388]]])
+* Many parametrized operations now allow arguments with a batch dimension
+  [(#2535)](https://github.com/PennyLaneAI/pennylane/pull/2535)
+
+  This feature is not usable as a stand-alone but a technical requirement
+  for future performance improvements.
+  Previously unsupported batched parameters are allowed for example in 
+  standard rotation gates. The batch dimension is the last dimension
+  of operator matrices, eigenvalues etc. Note that the batched parameter
+  has to be passed as an `array` but not as a python `list` or `tuple`.
+
+  ```pycon
+  >>> op = qml.RX(np.array([0.1, 0.2, 0.3], requires_grad=True), 0)
+  >>> np.round(op.matrix(), 4)
+  tensor([[[0.9988+0.j    , 0.995 +0.j    , 0.9888+0.j    ],
+             [0.    -0.05j  , 0.    -0.0998j, 0.    -0.1494j]],
+
+            [[0.    -0.05j  , 0.    -0.0998j, 0.    -0.1494j],
+             [0.9988+0.j    , 0.995 +0.j    , 0.9888+0.j    ]]], requires_grad=True)
+  >>> op.matrix().shape
+  (2, 2, 3)
   ```
 
 * Speed up measuring of commuting Pauli operators

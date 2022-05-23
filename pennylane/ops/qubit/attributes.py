@@ -199,3 +199,28 @@ The reason is that if this method is missing, eigenvalues are computed from the 
 representation using ``np.linalg.eigvals``, which fails for some tensor types that the matrix
 may be cast in on backpropagation devices.
 """
+
+supports_tensorbatching = Attribute(
+    [
+        "QubitUnitary",
+        "DiagonalQubitUnitary",
+        "RX",
+        "RY",
+        "RZ",
+        "PhaseShift",
+        "ControlledPhaseShift",
+        "Rot",
+        "MultiRZ",
+        "PauliRot",
+        "CRX",
+        "CRY",
+        "CRZ",
+        "CRot",
+        "U1",
+        "U2",
+        "U3",
+        "IsingXX",
+        "IsingYY",
+        "IsingZZ",
+    ]
+)
