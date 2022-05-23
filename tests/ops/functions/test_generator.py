@@ -87,7 +87,7 @@ class HermitianOp(CustomOp):
 class SparseOp(CustomOp):
     """Returns the generator as a SparseHamiltonian observable"""
 
-    H = sparse.coo_matrix(np.array([[1.0, 2.0], [2.0, 3.0]]))
+    H = sparse.csr_matrix(np.array([[1.0, 2.0], [2.0, 3.0]]))
 
     def generator(self):
         return qml.SparseHamiltonian(self.H, wires=self.wires[0])

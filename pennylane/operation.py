@@ -195,16 +195,16 @@ def expand_matrix(base_matrix, wires, wire_order):
     # operator's wire positions relative to wire ordering
     op_wire_pos = wire_order.indices(wires)
 
-    I = qml.math.reshape(
+    identity = qml.math.reshape(
         qml.math.eye(2 ** len(wire_order), like=interface), [2] * len(wire_order) * 2
     )
     axes = (list(range(n, 2 * n)), op_wire_pos)
 
     # reshape op.matrix()
-    op_matrix_interface = qml.math.convert_like(base_matrix, I)
+    op_matrix_interface = qml.math.convert_like(base_matrix, identity)
     mat_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * n * 2)
     mat_tensordot = qml.math.tensordot(
-        mat_op_reshaped, qml.math.cast_like(I, mat_op_reshaped), axes
+        mat_op_reshaped, qml.math.cast_like(identity, mat_op_reshaped), axes
     )
 
     unused_idxs = [idx for idx in range(len(wire_order)) if idx not in op_wire_pos]
@@ -364,7 +364,7 @@ class Operator(abc.ABC):
       global wire order that tells us where the wires are found on a register.
 
     * Representation as a **sparse matrix** (:meth:`.Operator.sparse_matrix`). Currently, this
-      is a SciPy COO matrix format.
+      is a SciPy CSR matrix format.
 
     * Representation via the **eigenvalue decomposition** specified by eigenvalues
       (:meth:`.Operator.eigvals`) and diagonalizing gates (:meth:`.Operator.diagonalizing_gates`).
@@ -601,7 +601,7 @@ class Operator(abc.ABC):
                 attribute
 
         Returns:
-            scipy.sparse.coo.coo_matrix: matrix representation
+            scipy.sparse._csr.csr_matrix: sparse matrix representation
         """
         raise SparseMatrixUndefinedError
 
@@ -623,7 +623,7 @@ class Operator(abc.ABC):
             wire_order (Iterable): global wire order, must contain all wire labels from the operator's wires
 
         Returns:
-            scipy.sparse.coo.coo_matrix: matrix representation
+            scipy.sparse._csr.csr_matrix: sparse matrix representation
 
         """
         if wire_order is not None:
@@ -1366,7 +1366,7 @@ class Operation(Operator):
         """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
 
-    def adjoint(self, do_queue=False):  # pylint:disable=no-self-use
+    def adjoint(self):  # pylint:disable=no-self-use
         """Create an operation that is the adjoint of this one.
 
         Adjointed operations are the conjugated and transposed version of the
@@ -1397,11 +1397,7 @@ class Operation(Operator):
         Returns:
             :class:`Operator`: operation to be inverted
         """
-        if qml.QueuingContext.recording():
-            current_inv = qml.QueuingContext.get_info(self).get("inverse", False)
-            qml.QueuingContext.update_info(self, inverse=not current_inv)
-        else:
-            self.inverse = not self._inverse
+        self.inverse = not self._inverse
         return self
 
     def matrix(self, wire_order=None):
@@ -2018,8 +2014,8 @@ class Tensor(Observable):
                 return 1
         return 0
 
-    def sparse_matrix(self, wires=None):  # pylint:disable=arguments-renamed
-        r"""Computes a `scipy.sparse.coo_matrix` representation of this Tensor.
+    def sparse_matrix(self, wires=None, format="csr"):  # pylint:disable=arguments-renamed
+        r"""Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
 
         This is useful for larger qubit numbers, where the dense matrix becomes very large, while
         consisting mostly of zero entries.
@@ -2027,9 +2023,10 @@ class Tensor(Observable):
         Args:
             wires (Iterable): Wire labels that indicate the order of wires according to which the matrix
                 is constructed. If not provided, ``self.wires`` is used.
+            format: the output format for the sparse representation. All scipy sparse formats are accepted.
 
         Returns:
-            :class:`scipy.sparse.coo_matrix`: sparse matrix representation
+            :class:`scipy.sparse._csr.csr_matrix`: sparse matrix representation
 
         **Example**
 
@@ -2054,7 +2051,7 @@ class Tensor(Observable):
         (3, 2)	-1
 
         We can also enforce implicit identities by passing wire labels that
-        are not present in the consituent operations:
+        are not present in the constituent operations:
 
         >>> res = t.sparse_matrix(wires=[0, 1, 2])
         >>> print(res.shape)
@@ -2079,7 +2076,7 @@ class Tensor(Observable):
             idx = wires.index(o.wires)
             list_of_sparse_ops[idx] = coo_matrix(o.matrix())
 
-        return functools.reduce(lambda i, j: kron(i, j, format="coo"), list_of_sparse_ops)
+        return functools.reduce(lambda i, j: kron(i, j, format=format), list_of_sparse_ops)
 
     def prune(self):
         """Returns a pruned tensor product of observables by removing :class:`~.Identity` instances from
