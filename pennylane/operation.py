@@ -195,16 +195,16 @@ def expand_matrix(base_matrix, wires, wire_order):
     # operator's wire positions relative to wire ordering
     op_wire_pos = wire_order.indices(wires)
 
-    I = qml.math.reshape(
+    identity = qml.math.reshape(
         qml.math.eye(2 ** len(wire_order), like=interface), [2] * len(wire_order) * 2
     )
     axes = (list(range(n, 2 * n)), op_wire_pos)
 
     # reshape op.matrix()
-    op_matrix_interface = qml.math.convert_like(base_matrix, I)
+    op_matrix_interface = qml.math.convert_like(base_matrix, identity)
     mat_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * n * 2)
     mat_tensordot = qml.math.tensordot(
-        mat_op_reshaped, qml.math.cast_like(I, mat_op_reshaped), axes
+        mat_op_reshaped, qml.math.cast_like(identity, mat_op_reshaped), axes
     )
 
     unused_idxs = [idx for idx in range(len(wire_order)) if idx not in op_wire_pos]
