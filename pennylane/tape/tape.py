@@ -463,9 +463,6 @@ class QuantumTape(AnnotatedQueue):
                     )
                 getattr(self, obj._queue_category).append(obj)
 
-                if hasattr(obj, "inverse"):
-                    obj.inverse = info.get("inverse", obj.inverse)
-
         self._update()
 
     def _update_circuit_info(self):
@@ -1442,9 +1439,6 @@ class QuantumTape(AnnotatedQueue):
         with QuantumTape() as tape:
             for op in operations:
                 op.queue()
-
-                if op.inverse:
-                    op.inv()
 
         # decompose the queue
         # pylint: disable=no-member

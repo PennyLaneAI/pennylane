@@ -17,7 +17,7 @@ from quantum chemistry applications.
 """
 # pylint:disable=abstract-method,arguments-differ,protected-access
 import numpy as np
-from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -153,6 +153,9 @@ class SingleExcitation(Operation):
     def adjoint(self):
         (phi,) = self.parameters
         return SingleExcitation(-phi, wires=self.wires)
+
+    def pow(self, z):
+        return [SingleExcitation(self.data[0] * z, wires=self.wires)]
 
     def label(self, decimals=None, base_label=None, cache=None):
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
@@ -515,6 +518,9 @@ class DoubleExcitation(Operation):
         ]
         return qml.Hamiltonian(coeffs, obs)
 
+    def pow(self, z):
+        return [DoubleExcitation(self.data[0] * z, wires=self.wires)]
+
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
 
@@ -683,7 +689,7 @@ class DoubleExcitationPlus(Operation):
         G[3, 3] = G[12, 12] = 0
         G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
         G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
-        H = coo_matrix(-0.5 * G)
+        H = csr_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
@@ -780,7 +786,7 @@ class DoubleExcitationMinus(Operation):
         G[12, 12] = 0
         G[3, 12] = -1j  # 3 (dec) = 0011 (bin)
         G[12, 3] = 1j  # 12 (dec) = 1100 (bin)
-        H = coo_matrix(-0.5 * G)
+        H = csr_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
     @staticmethod
