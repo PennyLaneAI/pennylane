@@ -118,7 +118,7 @@ def sparse_hamiltonian(H, wires=None):
          is constructed. If not profided, ``H.wires`` is used.
 
     Returns:
-        coo_matrix: a sparse matrix in scipy coordinate list (COO) format with dimension
+        csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
         :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
 
     **Example:**
@@ -175,7 +175,7 @@ def sparse_hamiltonian(H, wires=None):
 
         matrix += functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
 
-    return matrix.tocoo()
+    return matrix.tocsr()
 
 
 def _flatten(x):
