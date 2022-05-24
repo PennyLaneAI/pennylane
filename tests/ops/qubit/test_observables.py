@@ -141,9 +141,9 @@ class TestSimpleObservables:
         assert np.allclose(res, mat, atol=tol, rtol=0)
 
 
-@pytest.mark.xdist_group(
-    name="hermitian_cache_group"
-)  # run all tests in this class in the same thread
+# run all tests in this class in the same thread.
+# Prevents multiple threads from updating Hermitian._eigs at the same time
+@pytest.mark.xdist_group(name="hermitian_cache_group")
 @pytest.mark.usefixtures("tear_down_hermitian")
 class TestHermitian:
     """Test the Hermitian observable"""
