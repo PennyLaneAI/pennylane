@@ -454,8 +454,9 @@ def to_density_matrix(state, wires, check_state=False):
             # TODO: optimize given the wires
             state_built = state(*args, **kwargs)
             state_built = cast(state_built, dtype="complex128")
+            len_state = state_built.shape[0]
             # State vector
-            if state_built.shape == (len(state_built),):
+            if state_built.shape == (len_state,):
                 density_matrix = _density_matrix_from_state_vector(state_built, wires, check_state)
                 return density_matrix
             # Density matrix

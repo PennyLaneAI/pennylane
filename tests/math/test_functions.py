@@ -2615,3 +2615,34 @@ class TestDensityMatrixQNode:
                 ]
 
         assert np.allclose(expected_density_matrix(angle, wires), density_matrix, atol=tol, rtol=0)
+
+    def test_qnode_not_returning_state(self):
+        """Test that the QNode of to_density_matrix function must return state."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RZ(0, wires=[0])
+            return qml.expval(qml.PauliX(wires=0))
+
+        with pytest.raises(ValueError, match="The qfunc return type needs to be a state"):
+            fn.to_density_matrix(circuit, wires=[0])()
+
+    def test_density_matrix_qnode_jax_jit(self, tol):
+        """Test to_density_matrix jitting for QNode."""
+        from jax import jit
+        import jax.numpy as jnp
+
+        angle = jnp.array(0.1)
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax-jit")
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
+
+        density_matrix = jit(fn.to_density_matrix(circuit, wires=[0]))(angle)
+        expected_density_matrix = [[np.cos(angle / 2) ** 2, 0], [0, np.sin(angle / 2) ** 2]]
+
+        assert np.allclose(density_matrix, expected_density_matrix, atol=tol, rtol=0)
