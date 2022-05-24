@@ -95,11 +95,11 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     # diagonal variances
     for i, o in enumerate(obs):
-        l = cast(o.eigvals(), dtype=float64)
+        eigvals = cast(o.eigvals(), dtype=float64)
         w = o.wires.labels if wires is None else wires.indices(o.wires)
         p = marginal_prob(prob, w)
 
-        res = dot(l**2, p) - (dot(l, p)) ** 2
+        res = dot(eigvals**2, p) - (dot(eigvals, p)) ** 2
         variances.append(res)
 
     cov = diag(variances)
@@ -313,7 +313,7 @@ def partial_trace(density_matrix, wires):
     return reduced_density_matrix
 
 
-def _density_matrix_from_state_vector(state, wires, check_state=None):
+def _density_matrix_from_state_vector(state, wires, check_state=False):
     """Compute the density matrix from a state vector.
 
     Args:
@@ -331,8 +331,17 @@ def _density_matrix_from_state_vector(state, wires, check_state=None):
     [[1.+0.j 0.+0.j]
     [0.+0.j 0.+0.j]]
 
-    >>> x = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-    >>> _density_matrix_from_state_vector(x, wires=[1])
+    >>> y = [1, 0, 1, 0] / np.sqrt(2)
+    >>> _density_matrix_from_state_vector(y, wires=[0])
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
+
+    >>> _density_matrix_from_state_vector(y, wires=[1])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
+
+    >>> z = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
+    >>> _density_matrix_from_state_vector(z, wires=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
@@ -371,12 +380,12 @@ def _density_matrix_from_state_vector(state, wires, check_state=None):
     return density_matrix
 
 
-def state_to_density_matrix(state, wires, check_state=None):
+def to_density_matrix(state, wires, check_state=False):
     """Compute the reduced density matrix from a state vector, a density matrix or a QNode returning ``qml.state``.
 
     Args:
         state (tensor_like, QNode): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix or a
-            `~.QNode` returning `~.state`.
+            :class:`~.QNode` returning :func:`~.state`.
         wires (list(int)): List of wires (int) in the subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
 
@@ -384,6 +393,15 @@ def state_to_density_matrix(state, wires, check_state=None):
         tensor_like: (Reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
 
     **Example**
+
+    >>> x = [1, 0, 1, 0] / np.sqrt(2)
+    >>> to_density_matrix(x, wires=[0]))
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
+
+    >>> to_density_matrix(x, wires=[1]))
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
 
     """
     # QNode returning ``qml.state``
@@ -396,6 +414,6 @@ def state_to_density_matrix(state, wires, check_state=None):
     if state.shape == (len(state),):
         density_matrix = _density_matrix_from_state_vector(state, wires, check_state)
         return density_matrix
-    # Density matrix
+
     density_matrix = _density_matrix_from_matrix(state, wires, check_state)
     return density_matrix

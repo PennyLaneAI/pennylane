@@ -16,7 +16,7 @@ from collections import defaultdict
 import pytest
 import warnings
 import numpy as np
-from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as pnp
@@ -443,7 +443,7 @@ class TestValidation:
         @qnode(dev, diff_method="backprop")
         def circuit(param):
             qml.RX(param, wires=0)
-            return qml.expval(qml.SparseHamiltonian(coo_matrix(np.eye(4)), [0, 1]))
+            return qml.expval(qml.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
             qml.QuantumFunctionError,
