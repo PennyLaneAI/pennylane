@@ -191,7 +191,7 @@ def expand_matrix(base_matrix, wires, wire_order):
     wire_order = Wires(wire_order)
     n = len(wires)
     shape = qml.math.shape(base_matrix)
-    batch_dim = shape[-1] if len(shape) == 3 else None
+    batch_dim = shape[0] if len(shape) == 3 else None
     interface = qml.math.get_interface(base_matrix)  # pylint: disable=protected-access
 
     # operator's wire positions relative to wire ordering
@@ -200,28 +200,27 @@ def expand_matrix(base_matrix, wires, wire_order):
     identity = qml.math.reshape(
         qml.math.eye(2 ** len(wire_order), like=interface), [2] * (len(wire_order) * 2)
     )
-    axes = (list(range(n, 2 * n)), op_wire_pos)
+    # The first axis entries are range(n, 2n) for batch_dim=None and range(n+1, 2n+1) else
+    axes = (list(range(-n, 0)), op_wire_pos)
 
     # reshape op.matrix()
     op_matrix_interface = qml.math.convert_like(base_matrix, identity)
-    shape = [2] * (n * 2) + [batch_dim] if batch_dim else [2] * (n * 2)
+    shape = [batch_dim] + [2] * (n * 2) if batch_dim else [2] * (n * 2)
     mat_op_reshaped = qml.math.reshape(op_matrix_interface, shape)
     mat_tensordot = qml.math.tensordot(
         mat_op_reshaped, qml.math.cast_like(identity, mat_op_reshaped), axes
     )
-    if batch_dim:
-        mat_tensordot = qml.math.moveaxis(mat_tensordot, n, -1)
 
     unused_idxs = [idx for idx in range(len(wire_order)) if idx not in op_wire_pos]
     # permute matrix axes to match wire ordering
     perm = op_wire_pos + unused_idxs
     sources = wire_order.indices(wire_order)
     if batch_dim:
-        perm = perm + [-1]
-        sources = sources + [-1]
+        perm = [p + 1 for p in perm]
+        sources = [s + 1 for s in sources]
 
     mat = qml.math.moveaxis(mat_tensordot, sources, perm)
-    shape = [2 ** len(wire_order)] * 2 + [batch_dim] if batch_dim else [2 ** len(wire_order)] * 2
+    shape = [batch_dim] + [2 ** len(wire_order)] * 2 if batch_dim else [2 ** len(wire_order)] * 2
     mat = qml.math.reshape(mat, shape)
 
     return mat
@@ -698,14 +697,7 @@ class Operator(abc.ABC):
             # By default, compute the eigenvalues from the matrix representation.
             # This will raise a NotImplementedError if the matrix is undefined.
             try:
-                mat = self.get_matrix()
-                if len(qml.math.shape(mat)) == 3:
-                    # linalg.eigvals expects the last two dimensions to be the square dimension
-                    # so that we have to transpose before and after the calculation.
-                    return qml.math.transpose(
-                        qml.math.linalg.eigvals(qml.math.transpose(mat, (2, 0, 1))), (1, 0)
-                    )
-                return qml.math.linalg.eigvals(mat)
+                return qml.math.linalg.eigvals(self.matrix())
             except MatrixUndefinedError as e:
                 raise EigvalsUndefinedError from e
 
@@ -1423,7 +1415,7 @@ class Operation(Operator):
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
         if self.inverse:
-            canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, 0, 1))
+            canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, -2, -1))
 
         if wire_order is None or self.wires == Wires(wire_order):
             return canonical_matrix

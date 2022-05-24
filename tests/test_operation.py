@@ -32,9 +32,9 @@ from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
 
-Toffoli_batched = np.tensordot(Toffoli, [0.1, -4.2j], axes=0)
-CNOT_batched = np.tensordot(CNOT, [1.4], axes=0)
-I_batched = I[:, :, pnp.newaxis]
+Toffoli_batched = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
+CNOT_batched = np.tensordot([1.4], CNOT, axes=0)
+I_batched = I[pnp.newaxis]
 
 
 @pytest.mark.parametrize(
@@ -1597,12 +1597,13 @@ class TestDefaultRepresentations:
         with pytest.raises(qml.operation.PowUndefinedError):
             gate.pow(1.234)
 
+
 class MyOpWithMat(Operator):
     num_wires = 1
 
     @staticmethod
     def compute_matrix(theta):
-        return np.tensordot(np.array([[0.4, 1.2], [1.2, 0.4]]), theta, axes=0)
+        return np.tensordot(theta, np.array([[0.4, 1.2], [1.2, 0.4]]), axes=0)
 
 
 class TestInheritedRepresentations:
@@ -1621,7 +1622,7 @@ class TestInheritedRepresentations:
         theta = np.array([0.3, 0.9, 1.2])
         op = MyOpWithMat(theta, wires=1)
         eigvals = op.eigvals()
-        assert np.allclose(eigvals, [1.6 * theta, -0.8 * theta])
+        assert np.allclose(eigvals, np.array([1.6 * theta, -0.8 * theta]).T)
 
 
 class TestChannel:
@@ -1862,9 +1863,9 @@ class TestExpandMatrix:
     """Tests for the expand_matrix helper function."""
 
     base_matrix_1 = np.arange(1, 5).reshape((2, 2))
-    base_matrix_1_batched = np.arange(1, 13).reshape((2, 2, 3))
+    base_matrix_1_batched = np.arange(1, 13).reshape((3, 2, 2))
     base_matrix_2 = np.arange(1, 17).reshape((4, 4))
-    base_matrix_2_batched = np.arange(1, 49).reshape((4, 4, 3))
+    base_matrix_2_batched = np.arange(1, 49).reshape((3, 4, 4))
 
     def test_no_expansion(self):
         """Tests the case where the original matrix is not changed"""
@@ -1892,7 +1893,7 @@ class TestExpandMatrix:
         )
 
         perm = [0, 2, 1, 3]
-        expected = self.base_matrix_2_batched[perm][:, perm]
+        expected = self.base_matrix_2_batched[:, perm][:, :, perm]
         assert np.allclose(expected, res)
 
     def test_expansion(self):
@@ -1908,13 +1909,26 @@ class TestExpandMatrix:
     def test_expansion_batched(self):
         """Tests the case where the batched original matrix is expanded"""
         res = qml.operation.expand_matrix(self.base_matrix_1_batched, wires=[2], wire_order=[0, 2])
-        z = [0, 0, 0]
         expected = np.array(
             [
-                [[1, 2, 3], [4, 5, 6], z, z],
-                [[7, 8, 9], [10, 11, 12], z, z],
-                [z, z, [1, 2, 3], [4, 5, 6]],
-                [z, z, [7, 8, 9], [10, 11, 12]],
+                [
+                    [1, 2, 0, 0],
+                    [3, 4, 0, 0],
+                    [0, 0, 1, 2],
+                    [0, 0, 3, 4],
+                ],
+                [
+                    [5, 6, 0, 0],
+                    [7, 8, 0, 0],
+                    [0, 0, 5, 6],
+                    [0, 0, 7, 8],
+                ],
+                [
+                    [9, 10, 0, 0],
+                    [11, 12, 0, 0],
+                    [0, 0, 9, 10],
+                    [0, 0, 11, 12],
+                ],
             ]
         )
         assert np.allclose(expected, res)
@@ -1922,10 +1936,24 @@ class TestExpandMatrix:
         res = qml.operation.expand_matrix(self.base_matrix_1_batched, wires=[2], wire_order=[2, 0])
         expected = np.array(
             [
-                [[1, 2, 3], z, [4, 5, 6], z],
-                [z, [1, 2, 3], z, [4, 5, 6]],
-                [[7, 8, 9], z, [10, 11, 12], z],
-                [z, [7, 8, 9], z, [10, 11, 12]],
+                [
+                    [1, 0, 2, 0],
+                    [0, 1, 0, 2],
+                    [3, 0, 4, 0],
+                    [0, 3, 0, 4],
+                ],
+                [
+                    [5, 0, 6, 0],
+                    [0, 5, 0, 6],
+                    [7, 0, 8, 0],
+                    [0, 7, 0, 8],
+                ],
+                [
+                    [9, 0, 10, 0],
+                    [0, 9, 0, 10],
+                    [11, 0, 12, 0],
+                    [0, 11, 0, 12],
+                ],
             ]
         )
         assert np.allclose(expected, res)
@@ -1959,10 +1987,10 @@ class TestExpandMatrix:
         expected_autodiff_nobatch[ind] = 1.0
 
     # When using tensor-batching, the expected Jacobian
-    # of func_for_autodiff is diagonal in the dimensions 2 and 5
-    expected_autodiff_batched = np.zeros((4, 4, 3, 2, 2, 3), dtype=float)
+    # of func_for_autodiff is diagonal in the dimensions 0 and 3
+    expected_autodiff_batched = np.zeros((3, 4, 4, 3, 2, 2), dtype=float)
     for ind in indices:
-        expected_autodiff_batched[ind[0], ind[1], :, ind[2], ind[3], :] = np.eye(3)
+        expected_autodiff_batched[:, ind[0], ind[1], :, ind[2], ind[3]] = np.eye(3)
 
     expected_autodiff = [expected_autodiff_nobatch, expected_autodiff_batched]
 
@@ -1971,7 +1999,7 @@ class TestExpandMatrix:
         "i, base_matrix",
         [
             (0, [[0.2, 1.1], [-1.3, 1.9]]),
-            (1, [[[0.2, 0.5, 1.2], [1.1, -0.3, -0.2]], [[-1.3, 1.9, 0.2], [0.1, 0.2, 0.7]]]),
+            (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
         ],
     )
     def test_autograd(self, i, base_matrix, tol):
@@ -1989,7 +2017,7 @@ class TestExpandMatrix:
         "i, base_matrix",
         [
             (0, [[0.2, 1.1], [-1.3, 1.9]]),
-            (1, [[[0.2, 0.5, 1.2], [1.1, -0.3, -0.2]], [[-1.3, 1.9, 0.2], [0.1, 0.2, 0.7]]]),
+            (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
         ],
     )
     def test_torch(self, i, base_matrix, tol):
@@ -2007,7 +2035,7 @@ class TestExpandMatrix:
         "i, base_matrix",
         [
             (0, [[0.2, 1.1], [-1.3, 1.9]]),
-            (1, [[[0.2, 0.5, 1.2], [1.1, -0.3, -0.2]], [[-1.3, 1.9, 0.2], [0.1, 0.2, 0.7]]]),
+            (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
         ],
     )
     def test_jax(self, i, base_matrix, tol):
@@ -2026,7 +2054,7 @@ class TestExpandMatrix:
         "i, base_matrix",
         [
             (0, [[0.2, 1.1], [-1.3, 1.9]]),
-            (1, [[[0.2, 0.5, 1.2], [1.1, -0.3, -0.2]], [[-1.3, 1.9, 0.2], [0.1, 0.2, 0.7]]]),
+            (1, [[[0.2, 0.5], [1.2, 1.1]], [[-0.3, -0.2], [-1.3, 1.9]], [[0.2, 0.1], [0.2, 0.7]]]),
         ],
     )
     def test_tf(self, i, base_matrix, tol):
@@ -2073,7 +2101,7 @@ class TestExpandMatrix:
             ]
         )
         # outer product with batch vector
-        U = np.tensordot(U, [0.14, -0.23, 1.3j], axes=0)
+        U = np.tensordot([0.14, -0.23, 1.3j], U, axes=0)
         # test applied to wire 0
         res = qml.operation.expand_matrix(U, [0], [0, 4, 9])
         expected = np.kron(np.kron(U, I_batched), I_batched)
@@ -2113,7 +2141,7 @@ class TestExpandMatrix:
         """Test that a batched 2 qubit gate on consecutive wires correctly
         expands to 4 qubits."""
         U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
-        U2 = np.tensordot(U2, [2.31, 1.53, 0.7 - 1.9j], axes=0)
+        U2 = np.tensordot([2.31, 1.53, 0.7 - 1.9j], U2, axes=0)
 
         # test applied to wire 0+1
         res = qml.operation.expand_matrix(U2, [0, 1], [0, 1, 2, 3])
@@ -2145,7 +2173,7 @@ class TestExpandMatrix:
         # CNOT with target on wire 1 and a batch dimension of size 1
         res = qml.operation.expand_matrix(CNOT_batched, [1, 0], [0, 1, 2, 3])
         rows = [0, 2, 1, 3]
-        expected = np.kron(np.kron(CNOT_batched[:, rows][rows], I_batched), I_batched)
+        expected = np.kron(np.kron(CNOT_batched[:, :, rows][:, rows], I_batched), I_batched)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_three_consecutive_wires(self, tol):
@@ -2191,32 +2219,31 @@ class TestExpandMatrix:
         """Test that a batched 3 qubit gate on non-consecutive but ascending
         wires correctly expands to 4 qubits."""
         # test applied to wire 0,2,3
-        res = qml.operation.expand_matrix(Toffoli_batched[:, :, :1], [0, 2, 3], [0, 1, 2, 3])
+        res = qml.operation.expand_matrix(Toffoli_batched[:1], [0, 2, 3], [0, 1, 2, 3])
         expected = np.tensordot(
             np.tensordot(
                 np.kron(SWAP, II),
-                np.kron(I_batched, Toffoli_batched[:, :, :1]),
-                axes=[[1], [0]],
+                np.kron(I_batched, Toffoli_batched[:1]),
+                axes=[[1], [1]],
             ),
             np.kron(SWAP, II),
-            axes=[[1], [0]],
+            axes=[[2], [0]],
         )
-        expected = np.moveaxis(expected, 1, -1)
+        expected = np.moveaxis(expected, 0, -2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 0,1,3
         res = qml.operation.expand_matrix(Toffoli_batched, [0, 1, 3], [0, 1, 2, 3])
-        _res = qml.operation.expand_matrix(Toffoli, [0, 1, 3], [0, 1, 2, 3])
         expected = np.tensordot(
             np.tensordot(
                 np.kron(II, SWAP),
                 np.kron(Toffoli_batched, I_batched),
-                axes=[[1], [0]],
+                axes=[[1], [1]],
             ),
             np.kron(II, SWAP),
-            axes=[[1], [0]],
+            axes=[[2], [0]],
         )
-        expected = np.moveaxis(expected, 1, -1)
+        expected = np.moveaxis(expected, 0, -2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_three_nonconsecutive_nonascending_wires(self, tol):
@@ -2243,7 +2270,7 @@ class TestExpandMatrix:
         res = qml.operation.expand_matrix(Toffoli_batched, [3, 1, 2], [0, 1, 2, 3])
         # change the control qubit on the Toffoli gate
         rows = [0, 4, 1, 5, 2, 6, 3, 7]
-        Toffoli_batched_perm = Toffoli_batched[:, rows][rows]
+        Toffoli_batched_perm = Toffoli_batched[:, :, rows][:, rows]
         expected = np.kron(I_batched, Toffoli_batched_perm)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -2254,12 +2281,12 @@ class TestExpandMatrix:
             np.tensordot(
                 np.kron(SWAP, II),
                 np.kron(I_batched, Toffoli_batched_perm),
-                axes=[[1], [0]],
+                axes=[[1], [1]],
             ),
             np.kron(SWAP, II),
-            axes=[[1], [0]],
+            axes=[[2], [0]],
         )
-        expected = np.moveaxis(expected, 1, -1)
+        expected = np.moveaxis(expected, 0, -2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_matrix_usage_in_operator_class(self, tol):
@@ -2298,18 +2325,18 @@ class TestExpandMatrix:
         a dummy operator and checking the permutation/expansion."""
 
         perm = [0, 2, 1, 3]
-        permuted_matrix = self.base_matrix_2_batched[perm][:, perm]
+        permuted_matrix = self.base_matrix_2_batched[:, perm][:, :, perm]
 
         expanded_matrix = np.tensordot(
             np.tensordot(
                 np.kron(SWAP, I),
                 np.kron(I_batched, self.base_matrix_2_batched),
-                axes=[[1], [0]],
+                axes=[[1], [1]],
             ),
             np.kron(SWAP, I),
-            axes=[[1], [0]],
+            axes=[[2], [0]],
         )
-        expanded_matrix = np.moveaxis(expanded_matrix, 1, -1)
+        expanded_matrix = np.moveaxis(expanded_matrix, 0, -2)
 
         class DummyOp(qml.operation.Operator):
             num_wires = 2

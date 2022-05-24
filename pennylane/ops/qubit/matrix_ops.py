@@ -69,7 +69,7 @@ class QubitUnitary(Operation):
 
             dim = 2 ** len(wires)
 
-            if not (len(U_shape) in {2, 3} and U_shape[:2] == (dim, dim)):
+            if not (len(U_shape) in {2, 3} and U_shape[-2:] == (dim, dim)):
                 raise ValueError(
                     f"Input unitary must be of shape {(dim, dim)} or ({dim, dim}, batch_dim) "
                     f"to act on {len(wires)} wires."
@@ -159,15 +159,14 @@ class QubitUnitary(Operation):
         # TODO[dwierichs]: Implement decomposition of tensor-batched unitary
         if len(shape) == 3:
             raise DecompositionUndefinedError(
-                "The decomposition of QubitUnitary does not support tensor-batching."
+                "The decomposition of QubitUnitary does not support broadcasting."
             )
 
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
 
     def adjoint(self):
-        U = self.get_matrix()
-        axis = (1, 0) if len(qml.math.shape(U)) == 2 else (1, 0, 2)
-        return QubitUnitary(qml.math.transpose(qml.math.conj(U), axis), wires=self.wires)
+        U = self.matrix()
+        return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
 
     def pow(self, z):
         if isinstance(z, int):
@@ -255,7 +254,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
         # TODO[dwierichs]: Implement tensor-batching
         if len(qml.math.shape(params[0])) == 3:
-            raise NotImplementedError("ControlledQubitUnitary does not support tensor-batching.")
+            raise NotImplementedError("ControlledQubitUnitary does not support broadcasting.")
 
         self._hyperparameters = {
             "u_wires": wires,
@@ -409,10 +408,9 @@ class DiagonalQubitUnitary(Operation):
         if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):
             raise ValueError("Operator must be unitary.")
 
+        # The diagonal is supposed to have one-dimension. If it is broadcasted, it has two
         if len(qml.math.shape(D)) == 2:
-            return qml.math.transpose(
-                qml.math.stack([qml.math.diag(_D) for _D in qml.math.T(D)]), (1, 2, 0)
-            )
+            return qml.math.stack([qml.math.diag(_D) for _D in D])
 
         return qml.math.diag(D)
 
@@ -489,7 +487,7 @@ class DiagonalQubitUnitary(Operation):
 
     def _controlled(self, control):
         DiagonalQubitUnitary(
-            qml.math.concatenate([np.ones_like(self.parameters[0]), self.parameters[0]]),
+            qml.math.hstack([np.ones_like(self.parameters[0]), self.parameters[0]]),
             wires=Wires(control) + self.wires,
         )
 
