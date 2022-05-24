@@ -173,7 +173,8 @@ def _density_matrix_from_matrix(density_matrix, wires, check_state=None):
     """Compute the density matrix from a state vector.
 
     Args:
-        density_matrix (tensor_like): 1D tensor state vector. This tensor should of size ``(2**N,)`` for some integer value ``N``.
+        density_matrix (tensor_like): 1D tensor state vector. This tensor should be of size ``(2**N,)`` for some
+            integer number of wires``N``.
         wires (list(int)): List of wires (int) in the subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
 
@@ -237,8 +238,8 @@ def partial_trace(density_matrix, wires):
     """Compute the partial trace of a density matrix and returns the reduced density matrix on the sub-system.
 
     Args:
-        density_matrix (tensor_like): 2D density matrix tensor. This tensor should of size ``(2**N, 2**N)`` for some
-            integer value ``N``.
+        density_matrix (tensor_like): 2D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` for some
+            integer number of wires ``N``.
         wires (list(int)): List of wires (int) to be traced.
 
     Returns:
@@ -401,7 +402,7 @@ def to_density_matrix(state, wires, check_state=False):
     """Compute the reduced density matrix from a state vector, a density matrix or a QNode returning ``qml.state``.
 
     Args:
-        state (tensor_like, QNode): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix or a
+        state (tensor_like, QNode): ``(2**N)`` state vector tensor or ``(2**N, 2**N)`` density matrix tensor or a
             :class:`~.QNode` returning :func:`~.state`.
         wires (list(int)): List of wires (int) in the subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
@@ -447,8 +448,9 @@ def to_density_matrix(state, wires, check_state=False):
         raise NotImplementedError  # pragma: no cover
     # Cast as a complex128 array
     state = cast(state, dtype="complex128")
+    len_state = state.shape[0]
     # State vector
-    if state.shape == (len(state),):
+    if state.shape == (len_state,):
         density_matrix = _density_matrix_from_state_vector(state, wires, check_state)
         return density_matrix
 
