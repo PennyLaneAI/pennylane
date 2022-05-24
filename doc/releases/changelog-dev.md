@@ -101,6 +101,9 @@
 
 <h3>Breaking changes</h3>
 
+* The `qml.queuing.Queue` class is now removed.
+  [(#2599)](https://github.com/PennyLaneAI/pennylane/pull/2599)
+
 * The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
   [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
 
