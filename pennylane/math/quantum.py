@@ -187,8 +187,16 @@ def _density_matrix_from_matrix(density_matrix, wires, check_state=None):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
+    >>> y = [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
+    >>> _density_matrix_from_matrix(y, wires=[0])
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
 
-    >>> x = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+    >>> _density_matrix_from_matrix(y, wires=[1])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
+
+    >>> z = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
     >>> _density_matrix_from_matrix(x, wires=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
@@ -250,6 +258,14 @@ def partial_trace(density_matrix, wires):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
+    >>> y = [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
+    >>> partial_trace(y, wires=[1])
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
+
+    >>> partial_trace(y, wires=[0])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
     """
     # Dimension and reshape
     shape = density_matrix.shape[0]
@@ -403,6 +419,26 @@ def to_density_matrix(state, wires, check_state=False):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
+    >>> y = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
+    >>> to_density_matrix(z, wires=[1])
+    tf.Tensor(
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+
+    >>> z = [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
+    >>> to_density_matrix(z, wires=[0])
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
+
+    >>> to_density_matrix(z, wires=[1])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
+
+    >>> y = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0]], dtype=tf.complex128)
+    >>> to_density_matrix(z, wires=[1])
+    tf.Tensor(
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
     """
     # QNode returning ``qml.state``
     if isinstance(state, qml.QNode):
