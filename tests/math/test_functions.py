@@ -2309,7 +2309,7 @@ multiple_wires_list = [
 
 
 class TestDensityMatrixFromStateVectors:
-    """Tests for the density matrix for state vectors functions."""
+    """Tests for creating a density matrix from state vectors."""
 
     @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
     @pytest.mark.parametrize("wires", single_wires_list)

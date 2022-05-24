@@ -164,7 +164,7 @@ def marginal_prob(prob, axis):
     return np.flatten(prob)
 
 
-def _density_matrix_from_state_vector(state, wires, check_state=None):
+def _density_matrix_from_state_vector(state, wires, check_state=False):
     """Compute the density matrix from a state vector.
 
     Args:
@@ -222,12 +222,12 @@ def _density_matrix_from_state_vector(state, wires, check_state=None):
     return density_matrix
 
 
-def state_to_density_matrix(state, wires, check_state=None):
+def state_to_density_matrix(state, wires, check_state=False):
     """Compute the reduced density matrix from a state vector, a density matrix or a QNode returning ``qml.state``.
 
     Args:
         state (tensor_like, QNode): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix or a
-            `~.QNode` returning `~.state`.
+            :class:`~.QNode` returning :func:`~.state`.
         wires (list(int)): List of wires (int) in the subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
 
@@ -239,6 +239,7 @@ def state_to_density_matrix(state, wires, check_state=None):
     """
     # State vector
     density_matrix = _density_matrix_from_state_vector(state, wires, check_state)
+    # TODO
     # Density matrix
     # QNode returning ``qml.state``
     return density_matrix
