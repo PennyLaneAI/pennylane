@@ -179,6 +179,38 @@ def test_partial_evaluation_nonnumeric2():
     assert np.allclose(res, indiv_res)
 
 
+def test_partial_evaluation_nonnumeric3():
+    """Test partial evaluation matches individual full evaluations
+    for non-numeric pre-supplied arguments"""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit(x, y, op):
+        qml.apply(op(x, wires=0))
+        qml.RY(y[..., 0], wires=0)
+        qml.RY(y[..., 1], wires=1)
+        return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
+
+    batch_size = 4
+
+    # the partial arguments to construct a new circuit with
+    y = np.random.uniform(size=2)
+    op = qml.RX
+
+    # the batched argument to the new partial circuit
+    x = np.random.uniform(size=batch_size)
+
+    batched_partial_circuit = qml.batch_partial(circuit, y=y, op=op)
+    res = batched_partial_circuit(x)
+
+    # check the results against individually executed circuits
+    indiv_res = []
+    for x_indiv in x:
+        indiv_res.append(circuit(x_indiv, y, op))
+
+    assert np.allclose(res, indiv_res)
+
+
 @pytest.mark.autograd
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
 def test_partial_evaluation_autograd(diff_method):
