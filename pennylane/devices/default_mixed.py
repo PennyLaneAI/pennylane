@@ -173,7 +173,7 @@ class DefaultMixed(QubitDevice):
                 ),
             ),
         )
-        return qnp.state_to_density_matrix(state, wires)
+        return qnp.to_density_matrix(state, wires)
 
     def reset(self):
         """Resets the device"""
