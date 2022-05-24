@@ -604,7 +604,8 @@ class DefaultQubit(QubitDevice):
             representing the reduced density matrix.
         """
         wires = wires.tolist()
-        return qml.math.to_density_matrix(self.state, wires=wires)
+        state = self._flatten(self._pre_rotated_state)
+        return qml.math.to_density_matrix(state, wires=wires)
 
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.
