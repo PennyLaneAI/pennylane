@@ -24,6 +24,7 @@ def unbroadcast_expand(tape):
 
     Args:
         tape (.QuantumTape): Broadcasted tape to be expanded
+
     Returns:
         list[.QuantumTape]: Unbroadcasted tapes that produce one of the
         results of the broadcasted tape each

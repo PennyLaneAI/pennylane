@@ -742,6 +742,7 @@ class Device(abc.ABC):
 
         unbroadcasted_circuits = []
         unbroadcast_fns = []
+
         # Expand each of the broadcasted Hamiltonian-expanded circuits
         for c in circuits:
             tapes_batch, fn = qml.transforms.unbroadcast_expand(c)
