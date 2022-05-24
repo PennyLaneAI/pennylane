@@ -32,6 +32,7 @@ class QubitUnitary(Operation):
 
     * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
+    * Number of dimensions per parameter: (2,)
     * Gradient recipe: None
 
     Args:
@@ -54,6 +55,9 @@ class QubitUnitary(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (2,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = None
     """Gradient computation method."""
@@ -194,6 +198,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
     * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
+    * Number of dimensions per parameter: (2,)
     * Gradient recipe: None
 
     Args:
@@ -229,6 +234,9 @@ class ControlledQubitUnitary(QubitUnitary):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (2,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = None
     """Gradient computation method."""
@@ -367,6 +375,7 @@ class DiagonalQubitUnitary(Operation):
 
     * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
+    * Number of dimensions per parameter: (1,)
     * Gradient recipe: None
 
     Args:
@@ -378,6 +387,9 @@ class DiagonalQubitUnitary(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (1,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = None
     """Gradient computation method."""
