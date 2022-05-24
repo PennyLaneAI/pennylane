@@ -4,6 +4,21 @@
 
 <h3>New features since last release</h3>
 
+* Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
+  attribute `batch_size`.
+  - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
+  - `Operator.batch_size` contains the size of an additional parameter broadcasting axis, if present,
+  - `QuantumTape.batch_size` contains the `batch_size` of its operations (see below).
+  [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
+
+  When providing an operator with the `ndim_params` attribute, it will
+  determine whether (and with which `batch_size`) its input parameter(s)
+  is/are broadcasted.
+  A `QuantumTape` can then infer from its operations whether it is batched.
+  For this, all `Operators` in the tape must have the same `batch_size` or `batch_size=None`.
+  That is, mixing broadcasted and unbroadcasted `Operators` is allowed, but mixing broadcasted
+  `Operators` with differing `batch_size` is not, similar to NumPy broadcasting.
+
 * Boolean mask indexing of the parameter-shift Hessian
   [(#2538)](https://github.com/PennyLaneAI/pennylane/pull/2538)
 
@@ -81,7 +96,17 @@
   method for a provided device and interface, in human-readable format.
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
 
+* Using `Operation.inv()` in a queuing environment no longer updates the queue's metadata, but merely updates
+  the operation in place.
+  [(#2596)](https://github.com/PennyLaneAI/pennylane/pull/2596)
+
+* Sparse Hamiltonians representation has changed from COOrdinate (COO) to Compressed Sparse Row (CSR) format. The CSR representation is more performant for arithmetic operations and matrix vector products. This change decreases the `expval()` calculation time, for `qml.SparseHamiltonian`, specially for large workflows. Also, the CRS format consumes less memory for the `qml.SparseHamiltonian` storage.
+[(#2561)](https://github.com/PennyLaneAI/pennylane/pull/2561)
+
 <h3>Breaking changes</h3>
+
+* The `qml.queuing.Queue` class is now removed.
+  [(#2599)](https://github.com/PennyLaneAI/pennylane/pull/2599)
 
 * The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
   [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
@@ -157,5 +182,5 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Christian Gogolin,
-Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld, Jay Soni
+Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
+Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad
