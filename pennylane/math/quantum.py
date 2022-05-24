@@ -265,7 +265,7 @@ def partial_trace(density_matrix, wires):
 
     kraus = convert_like(kraus, density_matrix)
     kraus_dagger = convert_like(kraus_dagger, density_matrix)
-    print(wires)
+
     # For loop over wires
     for target_wire in wires:
         # Tensor indices of density matrix
