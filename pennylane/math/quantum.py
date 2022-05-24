@@ -90,11 +90,11 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     # diagonal variances
     for i, o in enumerate(obs):
-        l = cast(o.eigvals(), dtype=float64)
+        eigvals = cast(o.eigvals(), dtype=float64)
         w = o.wires.labels if wires is None else wires.indices(o.wires)
         p = marginal_prob(prob, w)
 
-        res = dot(l**2, p) - (dot(l, p)) ** 2
+        res = dot(eigvals**2, p) - (dot(eigvals, p)) ** 2
         variances.append(res)
 
     cov = diag(variances)
