@@ -200,14 +200,15 @@ def _density_matrix_from_state_vector(state, wires, check_state=False):
     """
     # Cast as a complex128 array
     state = cast(state, dtype="complex128")
+    len_state = np.shape(state)[0]
 
     # Check the format and norm of the state vector
     if check_state:
         # Check format
         if (
             len(np.shape(state)) != 1
-            or state.shape != (len(state),)
-            or np.ceil(np.log2(len(state))) != np.floor(np.log2(len(state)))
+            or state.shape != (len_state,)
+            or np.ceil(np.log2(len_state)) != np.floor(np.log2(len_state))
         ):
             raise ValueError("State vector must be of length 2**wires.")
         # Check norm
@@ -217,7 +218,7 @@ def _density_matrix_from_state_vector(state, wires, check_state=False):
                 raise ValueError("Sum of amplitudes-squared does not equal one.")
 
     # Get dimension of the quantum system and reshape
-    num_wires = int(np.log2(len(state)))
+    num_wires = int(np.log2(len_state))
     consecutive_wires = list(range(num_wires))
     state = np.reshape(state, [2] * num_wires)
 
