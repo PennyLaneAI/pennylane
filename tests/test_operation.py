@@ -713,6 +713,19 @@ class TestTensor:
         assert tape._queue[op2] == {"owner": T}
         assert tape._queue[T] == {"owns": (op1, op2)}
 
+    def test_queuing_matmul(self):
+        """Test queuing when tensor constructed with matmul."""
+
+        with qml.tape.QuantumTape() as tape:
+            op1 = qml.PauliX(0)
+            op2 = qml.PauliY(1)
+            t = op1 @ op2
+
+        assert len(tape.queue) == 3
+        assert tape._queue[op1] == {"owner": t}
+        assert tape._queue[op2] == {"owner": t}
+        assert tape._queue[t] == {"owns": (op1, op2)}
+
     def test_name(self):
         """Test that the names of the observables are
         returned as expected"""
