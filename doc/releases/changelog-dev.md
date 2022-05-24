@@ -4,6 +4,15 @@
 
 <h3>New features since last release</h3>
 
+* Devices have a new capability flag `capabilities()["supports_broadcasting"]`
+  and are now able to handle broadcasting of tapes.  In addition, the tape transform
+  `broadcast_expand` was added, which allows a tape that uses broadcasting 
+  (`tape.batch_size!=None`) to be expanded into multiple tapes without a broadcast dimension.
+  [(#2590)](https://github.com/PennyLaneAI/pennylane/pull/2590)
+
+  If the mentioned flag is set to `False` (the default), the new transform `broadcast_expand`
+  is used internally to enable execution of broadcasted tapes on all devices.
+
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
   attribute `batch_size`.
   - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
