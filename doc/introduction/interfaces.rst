@@ -36,7 +36,13 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
 This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays, Torch Tensors,
 or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
 the gradients of the quantum circuit accessible to the classical library, enabling the
-optimization of arbitrary hybrid circuits.
+optimization of arbitrary hybrid circuits by making use of the libraries' native optimizers.
+
+.. note::
+
+    PennyLane provides some optimizers that are specific to quantum computing workflows,
+    such as the :class:`~.QNGOptimizer`, :class:`~.LieAlgebraOptimizer`,
+    :class:`~.RotosolveOptimizer`, :class:`~.RotoselectOptimizer`, and :class:`~.ShotAdaptiveOptimizer`.
 
 When specifying an interface, the objects of the chosen framework are converted
 into NumPy objects and are passed to a device in most cases. Exceptions include

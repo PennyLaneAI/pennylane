@@ -156,9 +156,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/measurements
    introduction/templates
    introduction/inspecting_circuits
-   introduction/optimizers
    introduction/chemistry
-   introduction/configuration
 
 .. toctree::
    :maxdepth: 1
