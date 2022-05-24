@@ -164,15 +164,7 @@ class DefaultMixed(QubitDevice):
             representing the reduced density matrix of the state prior to measurement.
         """
         wires = wires.tolist()
-        state = (
-            np.reshape(
-                self._pre_rotated_state,
-                (
-                    2**self.num_wires,
-                    2**self.num_wires,
-                ),
-            ),
-        )
+        state = np.reshape(self._pre_rotated_state, (2**self.num_wires, 2**self.num_wires))
         return qnp.to_density_matrix(state, wires)
 
     def reset(self):
