@@ -2265,51 +2265,93 @@ class TestSortFunction:
 
 ones_functions = [onp.ones, np.ones, jnp.ones, torch.ones, tf.ones]
 
+state_00 = [1, 0, 0, 0]
+state_01 = [0, 1, 0, 0]
+state_10 = [0, 0, 1, 0]
+state_11 = [0, 0, 0, 1]
+
+state_00_10 = [1, 0, 1, 0] / onp.sqrt(2)
+state_01_11 = [0, 1, 0, 1] / onp.sqrt(2)
+
+mat_00 = onp.zeros((4, 4))
+mat_00[0, 0] = 1
+
+mat_01 = onp.zeros((4, 4))
+mat_01[1, 1] = 1
+
+mat_10 = onp.zeros((4, 4))
+mat_10[2, 2] = 1
+
+mat_11 = onp.zeros((4, 4))
+mat_11[3, 3] = 1
+
+mat_0 = onp.zeros((2, 2))
+mat_0[0, 0] = 1
+
+mat_1 = onp.zeros((2, 2))
+mat_1[1, 1] = 1
+
+mat_00_10 = onp.zeros((4, 4))
+mat_00_10[0, 0] = 0.5
+mat_00_10[2, 2] = 0.5
+mat_00_10[0, 2] = 0.5
+mat_00_10[2, 0] = 0.5
+
+mat_01_11 = onp.zeros((4, 4))
+mat_01_11[1, 1] = 0.5
+mat_01_11[3, 3] = 0.5
+mat_01_11[1, 3] = 0.5
+mat_01_11[3, 1] = 0.5
+
+mat_0_1 = [[0.5, 0.5], [0.5, 0.5]]
+
 # fmt: off
 state_vectors = [
-    ([1, 0, 0, 0], ([[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
-    ([0, 1, 0, 0], ([[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
-    ([0, 0, 1, 0], ([[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])),
-    ([0, 0, 0, 1], ([[0, 0], [0, 1]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])),
-    (onp.array([1, 0, 0, 0]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
-    (onp.array([0, 1, 0, 0]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
-    (onp.array([0, 0, 1, 0]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])),
-    (onp.array([0, 0, 0, 1]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])),
-    (np.array([1, 0, 0, 0]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
-    (np.array([0, 1, 0, 0]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
-    (np.array([0, 0, 1, 0]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])),
-    (np.array([0, 0, 0, 1]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])),
-    (jnp.array([1, 0, 0, 0]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
-    (jnp.array([0, 1, 0, 0]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
-    (jnp.array([0, 0, 1, 0]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])),
-    (jnp.array([0, 0, 0, 1]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])),
-    (torch.tensor([1, 0, 0, 0]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
-    (torch.tensor([0, 1, 0, 0]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
-    (torch.tensor([0, 0, 1, 0]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])),
-    (torch.tensor([0, 0, 0, 1]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])),
-    (tf.Variable([1, 0, 0, 0]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
-    (tf.Variable([0, 1, 0, 0]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
-    (tf.Variable([0, 0, 1, 0]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])),
-    (tf.Variable([0, 0, 0, 1]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])),
-    (tf.constant([1, 0, 0, 0]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]], [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
-    (tf.constant([0, 1, 0, 0]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])),
-    (tf.constant([0, 0, 1, 0]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])),
-    (tf.constant([0, 0, 0, 1]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]], [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])),
+    (state_00, (mat_0, mat_0, mat_00)),
+    (state_01, (mat_0, mat_1, mat_01)),
+    (state_10, (mat_1, mat_0, mat_10)),
+    (state_11, (mat_1, mat_1, mat_11)),
+    (onp.array(state_00), (mat_0, mat_0, mat_00)),
+    (onp.array(state_01), (mat_0, mat_1, mat_01)),
+    (onp.array(state_10), (mat_1, mat_0, mat_10)),
+    (onp.array(state_11), (mat_1, mat_1, mat_11)),
+    (np.array(state_00), (mat_0, mat_0, mat_00)),
+    (np.array(state_01), (mat_0, mat_1, mat_01)),
+    (np.array(state_10), (mat_1, mat_0, mat_10)),
+    (np.array(state_11), (mat_1, mat_1, mat_11)),
+    (jnp.array(state_00), (mat_0, mat_0, mat_00)),
+    (jnp.array(state_01), (mat_0, mat_1, mat_01)),
+    (jnp.array(state_10), (mat_1, mat_0, mat_10)),
+    (jnp.array(state_11), (mat_1, mat_1, mat_11)),
+    (torch.tensor(state_00), (mat_0, mat_0, mat_00)),
+    (torch.tensor(state_01), (mat_0, mat_1, mat_01)),
+    (torch.tensor(state_10), (mat_1, mat_0, mat_10)),
+    (torch.tensor(state_11), (mat_1, mat_1, mat_11)),
+    (tf.Variable(state_00), (mat_0, mat_0, mat_00)),
+    (tf.Variable(state_01), (mat_0, mat_1, mat_01)),
+    (tf.Variable(state_10), (mat_1, mat_0, mat_10)),
+    (tf.Variable(state_11), (mat_1, mat_1, mat_11)),
+    (tf.constant(state_00), (mat_0, mat_0, mat_00)),
+    (tf.constant(state_01), (mat_0, mat_1, mat_01)),
+    (tf.constant(state_10), (mat_1, mat_0, mat_10)),
+    (tf.constant(state_11), (mat_1, mat_1, mat_11)),
+    (state_00_10, (mat_0_1, mat_0, mat_00_10)),
+    (state_01_11, (mat_0_1, mat_1, mat_01_11)),
 ]
 
 single_wires_list = [
-    ([0]),
-    ([1]),
+    [0],
+    [1],
 ]
 
 multiple_wires_list = [
-    ([0, 1])
+    [0, 1]
 ]
 # fmt: on
 
 
 class TestDensityMatrixFromStateVectors:
-    """Tests for the density matrix for state vectors functions."""
+    """Tests for creating a density matrix from state vectors."""
 
     @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -2335,7 +2377,7 @@ class TestDensityMatrixFromStateVectors:
         self, state_vector, wires, expected_density_matrix
     ):
         """Test the density matrix from state vectors for single wires."""
-        density_matrix = fn.state_to_density_matrix(state_vector, wires=wires)
+        density_matrix = fn.to_density_matrix(state_vector, wires=wires)
         assert np.allclose(density_matrix, expected_density_matrix[wires[0]])
 
     @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
@@ -2344,7 +2386,7 @@ class TestDensityMatrixFromStateVectors:
         self, state_vector, wires, expected_density_matrix
     ):
         """Test the density matrix from state vectors for full wires."""
-        density_matrix = fn.state_to_density_matrix(state_vector, wires=wires)
+        density_matrix = fn.to_density_matrix(state_vector, wires=wires)
         assert np.allclose(density_matrix, expected_density_matrix[2])
 
     @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
@@ -2403,34 +2445,36 @@ class TestDensityMatrixFromStateVectors:
 
 # fmt: off
 density_matrices = [
-    ([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], ([[1, 0], [0, 0]], [[1, 0], [0, 0]])),
-    ([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], ([[1, 0], [0, 0]], [[0, 0], [0, 1]])),
-    ([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]], ([[0, 0], [0, 1]], [[1, 0], [0, 0]])),
-    ([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]], ([[0, 0], [0, 1]], [[0, 0], [0, 1]])),
-    (onp.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]])),
-    (onp.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]])),
-    (onp.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]])),
-    (onp.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]])),
-    (np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]])),
-    (np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]])),
-    (np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]])),
-    (np.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]])),
-    (jnp.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]])),
-    (jnp.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]])),
-    (jnp.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]])),
-    (jnp.array([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]])),
-    (torch.tensor([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]])),
-    (torch.tensor([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]])),
-    (torch.tensor([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]])),
-    (torch.tensor([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]])),
-    (tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]])),
-    (tf.Variable([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]])),
-    (tf.Variable([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]])),
-    (tf.Variable([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]])),
-    (tf.constant([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[1, 0], [0, 0]])),
-    (tf.constant([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]), ([[1, 0], [0, 0]], [[0, 0], [0, 1]])),
-    (tf.constant([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]]), ([[0, 0], [0, 1]], [[1, 0], [0, 0]])),
-    (tf.constant([[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]]), ([[0, 0], [0, 1]], [[0, 0], [0, 1]])),
+    (mat_00, (mat_0, mat_0)),
+    (mat_01, (mat_0, mat_1)),
+    (mat_10, (mat_1, mat_0)),
+    (mat_11, (mat_1, mat_1)),
+    (onp.array(mat_00), (mat_0, mat_0)),
+    (onp.array(mat_01), (mat_0, mat_1)),
+    (onp.array(mat_10), (mat_1, mat_0)),
+    (onp.array(mat_11), (mat_1, mat_1)),
+    (np.array(mat_00), (mat_0, mat_0)),
+    (np.array(mat_01), (mat_0, mat_1)),
+    (np.array(mat_10), (mat_1, mat_0)),
+    (np.array(mat_11), (mat_1, mat_1)),
+    (jnp.array(mat_00), (mat_0, mat_0)),
+    (jnp.array(mat_01), (mat_0, mat_1)),
+    (jnp.array(mat_10), (mat_1, mat_0)),
+    (jnp.array(mat_11), (mat_1, mat_1)),
+    (torch.tensor(mat_00), (mat_0, mat_0)),
+    (torch.tensor(mat_01), (mat_0, mat_1)),
+    (torch.tensor(mat_10), (mat_1, mat_0)),
+    (torch.tensor(mat_11), (mat_1, mat_1)),
+    (tf.Variable(mat_00), (mat_0, mat_0)),
+    (tf.Variable(mat_01), (mat_0, mat_1)),
+    (tf.Variable(mat_10), (mat_1, mat_0)),
+    (tf.Variable(mat_11), (mat_1, mat_1)),
+    (tf.constant(mat_00), (mat_0, mat_0)),
+    (tf.constant(mat_01), (mat_0, mat_1)),
+    (tf.constant(mat_10), (mat_1, mat_0)),
+    (tf.constant(mat_11), (mat_1, mat_1)),
+    (mat_00_10, (mat_0_1, mat_0)),
+    (mat_01_11, (mat_0_1, mat_1)),
 ]
 
 # fmt: on
@@ -2465,7 +2509,7 @@ class TestDensityMatrixFromMatrix:
         self, density_matrix, wires, expected_density_matrix
     ):
         """Test the density matrix from matrix for single wires."""
-        density_matrix = fn.state_to_density_matrix(density_matrix, wires=wires)
+        density_matrix = fn.to_density_matrix(density_matrix, wires=wires)
         assert np.allclose(density_matrix, expected_density_matrix[wires[0]])
 
     @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
@@ -2474,7 +2518,7 @@ class TestDensityMatrixFromMatrix:
         self, density_matrix, wires, expected_density_matrix
     ):
         """Test the density matrix from matrix for full wires."""
-        returned_density_matrix = fn.state_to_density_matrix(density_matrix, wires=wires)
+        returned_density_matrix = fn.to_density_matrix(density_matrix, wires=wires)
         assert np.allclose(density_matrix, returned_density_matrix)
 
     @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)

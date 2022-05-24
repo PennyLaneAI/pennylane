@@ -164,17 +164,9 @@ class DefaultMixed(QubitDevice):
             representing the reduced density matrix of the state prior to measurement.
         """
         wires = wires.tolist()
-        print(wires)
-        return qnp.state_to_density_matrix(
-            np.reshape(
-                self._state,
-                (
-                    2**self.num_wires,
-                    2**self.num_wires,
-                ),
-            ),
-            wires,
-        )
+
+        state = np.reshape(self._pre_rotated_state, (2**self.num_wires, 2**self.num_wires))
+        return qnp.to_density_matrix(state, wires)
 
     def reset(self):
         """Resets the device"""
@@ -401,6 +393,7 @@ class DefaultMixed(QubitDevice):
         ):
             # Initialize the entire wires with the state
             self._state = self._reshape(state, [2] * 2 * self.num_wires)
+            self._pre_rotated_state = self._state
 
         else:
             # Initialize tr_in(ρ) ⊗ ρ_in with transposed wires where ρ is the density matrix before this operation.
@@ -431,6 +424,7 @@ class DefaultMixed(QubitDevice):
                 atol=tolerance,
             )
             self._state = self._asarray(rho, dtype=self.C_DTYPE)
+            self._pre_rotated_state = self._state
 
     def _apply_operation(self, operation):
         """Applies operations to the internal device state.

@@ -95,11 +95,11 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     # diagonal variances
     for i, o in enumerate(obs):
-        l = cast(o.eigvals(), dtype=float64)
+        eigvals = cast(o.eigvals(), dtype=float64)
         w = o.wires.labels if wires is None else wires.indices(o.wires)
         p = marginal_prob(prob, w)
 
-        res = dot(l**2, p) - (dot(l, p)) ** 2
+        res = dot(eigvals**2, p) - (dot(eigvals, p)) ** 2
         variances.append(res)
 
     cov = diag(variances)
@@ -173,7 +173,8 @@ def _density_matrix_from_matrix(density_matrix, wires, check_state=None):
     """Compute the density matrix from a state vector.
 
     Args:
-        density_matrix (tensor_like): 1D tensor state vector. This tensor should of size ``(2**N,)`` for some integer value ``N``.
+        density_matrix (tensor_like): 1D tensor state vector. This tensor should be of size ``(2**N,)`` for some
+            integer number of wires``N``.
         wires (list(int)): List of wires (int) in the subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
 
@@ -187,8 +188,16 @@ def _density_matrix_from_matrix(density_matrix, wires, check_state=None):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
+    >>> y = [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
+    >>> _density_matrix_from_matrix(y, wires=[0])
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
 
-    >>> x = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+    >>> _density_matrix_from_matrix(y, wires=[1])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
+
+    >>> z = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
     >>> _density_matrix_from_matrix(x, wires=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
@@ -229,8 +238,8 @@ def partial_trace(density_matrix, wires):
     """Compute the partial trace of a density matrix and returns the reduced density matrix on the sub-system.
 
     Args:
-        density_matrix (tensor_like): 2D density matrix tensor. This tensor should of size ``(2**N, 2**N)`` for some
-            integer value ``N``.
+        density_matrix (tensor_like): 2D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` for some
+            integer number of wires ``N``.
         wires (list(int)): List of wires (int) to be traced.
 
     Returns:
@@ -250,6 +259,14 @@ def partial_trace(density_matrix, wires):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
+    >>> y = [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
+    >>> partial_trace(y, wires=[1])
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
+
+    >>> partial_trace(y, wires=[0])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
     """
     # Dimension and reshape
     shape = density_matrix.shape[0]
@@ -313,7 +330,7 @@ def partial_trace(density_matrix, wires):
     return reduced_density_matrix
 
 
-def _density_matrix_from_state_vector(state, wires, check_state=None):
+def _density_matrix_from_state_vector(state, wires, check_state=False):
     """Compute the density matrix from a state vector.
 
     Args:
@@ -331,8 +348,17 @@ def _density_matrix_from_state_vector(state, wires, check_state=None):
     [[1.+0.j 0.+0.j]
     [0.+0.j 0.+0.j]]
 
-    >>> x = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-    >>> _density_matrix_from_state_vector(x, wires=[1])
+    >>> y = [1, 0, 1, 0] / np.sqrt(2)
+    >>> _density_matrix_from_state_vector(y, wires=[0])
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
+
+    >>> _density_matrix_from_state_vector(y, wires=[1])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
+
+    >>> z = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
+    >>> _density_matrix_from_state_vector(z, wires=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
@@ -340,14 +366,15 @@ def _density_matrix_from_state_vector(state, wires, check_state=None):
     """
     # Cast as a complex128 array
     state = cast(state, dtype="complex128")
+    len_state = np.shape(state)[0]
 
     # Check the format and norm of the state vector
     if check_state:
         # Check format
         if (
             len(np.shape(state)) != 1
-            or state.shape != (len(state),)
-            or np.ceil(np.log2(len(state))) != np.floor(np.log2(len(state)))
+            or state.shape != (len_state,)
+            or np.ceil(np.log2(len_state)) != np.floor(np.log2(len_state))
         ):
             raise ValueError("State vector must be of length 2**wires.")
         # Check norm
@@ -357,7 +384,7 @@ def _density_matrix_from_state_vector(state, wires, check_state=None):
                 raise ValueError("Sum of amplitudes-squared does not equal one.")
 
     # Get dimension of the quantum system and reshape
-    num_wires = int(np.log2(len(state)))
+    num_wires = int(np.log2(len_state))
     consecutive_wires = list(range(num_wires))
     state = np.reshape(state, [2] * num_wires)
 
@@ -371,12 +398,12 @@ def _density_matrix_from_state_vector(state, wires, check_state=None):
     return density_matrix
 
 
-def state_to_density_matrix(state, wires, check_state=None):
+def to_density_matrix(state, wires, check_state=False):
     """Compute the reduced density matrix from a state vector, a density matrix or a QNode returning ``qml.state``.
 
     Args:
-        state (tensor_like, QNode): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix or a
-            `~.QNode` returning `~.state`.
+        state (tensor_like, QNode): ``(2**N)`` state vector tensor or ``(2**N, 2**N)`` density matrix tensor or a
+            :class:`~.QNode` returning :func:`~.state`.
         wires (list(int)): List of wires (int) in the subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
 
@@ -385,6 +412,35 @@ def state_to_density_matrix(state, wires, check_state=None):
 
     **Example**
 
+    >>> x = [1, 0, 1, 0] / np.sqrt(2)
+    >>> to_density_matrix(x, wires=[0]))
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
+
+    >>> to_density_matrix(x, wires=[1]))
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
+
+    >>> y = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
+    >>> to_density_matrix(z, wires=[1])
+    tf.Tensor(
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+
+    >>> z = [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
+    >>> to_density_matrix(z, wires=[0])
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
+
+    >>> to_density_matrix(z, wires=[1])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
+
+    >>> y = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0]], dtype=tf.complex128)
+    >>> to_density_matrix(z, wires=[1])
+    tf.Tensor(
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
     """
     # QNode returning ``qml.state``
     if isinstance(state, qml.QNode):
@@ -410,10 +466,11 @@ def state_to_density_matrix(state, wires, check_state=None):
 
     # Cast as a complex128 array
     state = cast(state, dtype="complex128")
+    len_state = state.shape[0]
     # State vector
-    if state.shape == (len(state),):
+    if state.shape == (len_state,):
         density_matrix = _density_matrix_from_state_vector(state, wires, check_state)
         return density_matrix
-    # Density matrix
+
     density_matrix = _density_matrix_from_matrix(state, wires, check_state)
     return density_matrix
