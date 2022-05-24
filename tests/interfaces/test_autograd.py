@@ -1141,3 +1141,29 @@ class TestCustomJacobian:
 
         d_out = d_circuit(params)
         assert np.allclose(d_out, np.array([1.0, 2.0, 3.0, 4.0]))
+
+    def test_custom_jacobians_2(self):
+
+        class MyQubit(DefaultQubit):
+            @classmethod
+            def capabilities(cls):
+                capabilities = super().capabilities().copy()
+                capabilities.update(
+                    provides_jacobian=True,  # with this commented out everything works
+                )
+                return capabilities
+
+            def jacobian(self, *args, **kwargs):
+                raise NotImplementedError()
+
+        dev = MyQubit(wires=2)
+
+        @qml.qnode(dev, diff_method='parameter-shift', mode="backward")
+        def qnode(params):
+            qml.RY(params[0], wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        params = np.array([0.2])
+
+        assert np.isclose(qnode(params), 0.9800665778412417)
+        assert np.isclose(qml.jacobian(qnode)(params), -0.19866933)
