@@ -81,7 +81,7 @@ class TestOperatorConstruction:
         """Test that an exception is raised if called with wrong number of parameters"""
 
         class DummyOp(qml.operation.Operator):
-            r"""Dummy custom operator that declares num_params as a instance property"""
+            r"""Dummy custom operator that declares num_params as an instance property"""
             num_wires = 1
             grad_method = "A"
 
@@ -96,7 +96,7 @@ class TestOperatorConstruction:
         assert op.num_params == 1
 
         class DummyOp2(qml.operation.Operator):
-            r"""Dummy custom operator that declared num_params as a class property"""
+            r"""Dummy custom operator that declares num_params as a class property"""
             num_params = 4
             num_wires = 1
             grad_method = "A"
@@ -116,6 +116,157 @@ class TestOperatorConstruction:
         op3 = DummyOp3(0.5, 0.6, wires=0)
 
         assert op3.num_params == 2
+
+    def test_incorrect_ndim_params(self):
+        """Test that an exception is raised if called with wrongly-shaped parameters"""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as an instance property"""
+            num_wires = 1
+            grad_method = "A"
+            ndim_params = (0,)
+
+        with pytest.raises(ValueError, match=r"wrong number\(s\) of dimensions in parameters"):
+            DummyOp([[[0.5], [0.1]]], wires=0)
+
+        op = DummyOp(0.5, wires=0)
+        assert op.ndim_params == (0,)
+
+        class DummyOp2(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            ndim_params = (1, 2)
+            num_wires = 1
+            grad_method = "A"
+
+        with pytest.raises(ValueError, match=r"wrong number\(s\) of dimensions in parameters"):
+            DummyOp2([0.5], 0.6, wires=0)
+
+        op2 = DummyOp2([0.1], [[0.4, 0.1], [0.2, 1.2]], wires=0)
+        assert op2.ndim_params == (1, 2)
+        assert DummyOp2.ndim_params == (1, 2)
+
+        class DummyOp3(qml.operation.Operator):
+            r"""Dummy custom operator that does not declare ndim_params at all"""
+            num_wires = 1
+            grad_method = "A"
+
+        op3 = DummyOp3(0.5, [[0.6]], wires=0)
+
+        # This operator will never complain about wrongly-shaped arguments at initialization
+        # because it will simply set `ndim_params` to the ndims of the provided arguments
+        assert op3.ndim_params == (0, 2)
+
+        class DummyOp4(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        # Test with mismatching batch dimensions
+        with pytest.raises(ValueError, match="Batching was attempted but the batched dimensions"):
+            DummyOp4([0.3] * 4, [[[0.3, 1.2]]] * 3, wires=0)
+
+    batched_params_test_data = [
+        # Test with no parameter batched
+        ((0.3, [[0.3, 1.2]]), None),
+        # Test with both parameters batched with same dimension
+        (([0.3], [[[0.3, 1.2]]]), 1),
+        (([0.3] * 3, [[[0.3, 1.2]]] * 3), 3),
+        # Test with one parameter batched
+        ((0.3, [[[0.3, 1.2]]]), 1),
+        ((0.3, [[[0.3, 1.2]]] * 3), 3),
+        (([0.3], [[0.3, 1.2]]), 1),
+        (([0.3] * 3, [[0.3, 1.2]]), 3),
+    ]
+
+    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
+    def test_batched_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with batched parameters
+        works and sets the ``batch_size`` correctly."""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        op = DummyOp(*params, wires=0)
+        assert op.ndim_params == (0, 2)
+        assert op._batch_size == exp_batch_size
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
+    def test_batched_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with batched parameters
+        works and sets the ``batch_size`` correctly with Autograd parameters."""
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        params = tuple(pnp.array(p, requires_grad=True) for p in params)
+        op = DummyOp(*params, wires=0)
+        assert op.ndim_params == (0, 2)
+        assert op._batch_size == exp_batch_size
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
+    def test_batched_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with batched parameters
+        works and sets the ``batch_size`` correctly with JAX parameters."""
+        import jax
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        params = tuple(jax.numpy.array(p) for p in params)
+        op = DummyOp(*params, wires=0)
+        assert op.ndim_params == (0, 2)
+        assert op._batch_size == exp_batch_size
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
+    def test_batched_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with batched parameters
+        works and sets the ``batch_size`` correctly with TensorFlow parameters."""
+        import tensorflow as tf
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        params = tuple(tf.Variable(p) for p in params)
+        op = DummyOp(*params, wires=0)
+        assert op.ndim_params == (0, 2)
+        assert op._batch_size == exp_batch_size
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
+    def test_batched_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with batched parameters
+        works and sets the ``batch_size`` correctly with Torch parameters."""
+        import torch
+
+        class DummyOp(qml.operation.Operator):
+            r"""Dummy custom operator that declares ndim_params as a class property"""
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        params = tuple(torch.tensor(p, requires_grad=True) for p in params)
+        op = DummyOp(*params, wires=0)
+        assert op.ndim_params == (0, 2)
+        assert op._batch_size == exp_batch_size
+
+    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
+    def test_error_batched_params_not_silenced(self):
+        """Handling tf.function properly requires us to catch a specific
+        error and to silence it. Here we test it does not silence others."""
+
+        x = [qml.math.ones((2, 2)), qml.math.ones((2, 3))]
+        with pytest.raises(ValueError, match="could not broadcast input array"):
+            qml.RX(x, 0)
 
     def test_wires_by_final_argument(self):
         """Test that wires can be passed as the final positional argument."""
@@ -210,6 +361,29 @@ class TestOperatorConstruction:
         params = rng.random(shape)
         op = qml.StronglyEntanglingLayers(params, wires=range(2))
         assert not op.has_matrix
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("jit_compile", [True, False])
+    def test_with_tf_function(self, jit_compile):
+        """Tests using tf.function with an operation works with and without
+        just in time (JIT) compilation."""
+        import tensorflow as tf
+
+        class MyRX(qml.RX):
+            ndim_params = (0,)
+
+        def fun(x):
+            op0 = qml.RX(x, 0)
+            op1 = MyRX(x, 0)
+
+        # No kwargs
+        fun0 = tf.function(fun)
+        fun0(tf.Variable(0.2))
+        fun0(tf.Variable([0.2, 0.5]))
+
+        fun1 = tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))
+        fun1(tf.Variable(0.2))
+        fun1(tf.Variable([0.2, 0.5]))
 
 
 class TestOperationConstruction:
@@ -1914,10 +2088,6 @@ def test_docstring_example_of_operator_class(tol):
             if do_flip and wire_flip is None:
                 raise ValueError("Expected a wire to flip; got None.")
 
-            shape = qml.math.shape(angle)
-            if len(shape) > 1:
-                raise ValueError(f"Expected a scalar angle; got angle of shape {shape}.")
-
             self._hyperparameters = {"do_flip": do_flip}
 
             all_wires = qml.wires.Wires(wire_rot) + qml.wires.Wires(wire_flip)
@@ -1926,6 +2096,10 @@ def test_docstring_example_of_operator_class(tol):
         @property
         def num_params(self):
             return 1
+
+        @property
+        def ndim_params(self):
+            return (0,)
 
         @staticmethod
         def compute_decomposition(angle, wires, do_flip):  # pylint: disable=arguments-differ
