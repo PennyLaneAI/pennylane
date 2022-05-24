@@ -904,7 +904,7 @@ class Operator(abc.ABC):
             # `tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))`
             # There might be a way to support batching nonetheless, which remains to be
             # investigated. For now, the batch_size is left to be `None` when instantiating
-            # and operation with abstract parameters that make `qml.math.ndim` fail.
+            # an operation with abstract parameters that make `qml.math.ndim` fail.
             if any(qml.math.is_abstract(p) for p in params):
                 return
             raise e
