@@ -36,7 +36,7 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
 This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays, Torch Tensors,
 or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
 the gradients of the quantum circuit accessible to the classical library, enabling the
-optimization of arbitrary hybrid circuits by making use of the libraries' native optimizers.
+optimization of arbitrary hybrid circuits by making use of the library's native optimizers.
 
 .. note::
 

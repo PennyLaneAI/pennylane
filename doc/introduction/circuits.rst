@@ -344,11 +344,11 @@ and then used multiple times on the ``forest.qpu`` device provided by PennyLane-
 
     result = circuit_with_hadamards()
 
-Storing configurations
-----------------------
+Storing device configurations
+-----------------------------
 
 Some important default settings for a device, such as your user credentials for quantum hardware
-access, the number of shots, or the cutoff dimension for continuous-variable simulators, are
+access, the number of shots, or the cutoff dimension for continuous-variable simulators, can be
 defined in a configuration file called ``config.toml``.
 
 Behaviour
