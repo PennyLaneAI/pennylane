@@ -2569,17 +2569,51 @@ class TestDensityMatrixFromMatrix:
             jitted_dens_matrix_func(state_vector, wires=(0, 1), check_state=True)
 
 
+angle_values = [0, np.pi / 4, np.pi / 2, 3 * np.pi / 4, np.pi]
+devices = [
+    "default.qubit",
+    "default.mixed",
+]
+interfaces = [
+    "autograd",
+    "torch",
+    "tf",
+    "jax",
+]
+wires_list = [[0], [1], [0, 1]]
+check_state = [False, True]
+
+
 class TestDensityMatrixQNode:
     """Tests for the (reduced) density matrix for QNodes returning states."""
 
-    def test_density_matrix_from_matrix_single_wires(self):
+    @pytest.mark.parametrize("check", check_state)
+    @pytest.mark.parametrize("device", devices)
+    @pytest.mark.parametrize("interface", interfaces)
+    @pytest.mark.parametrize("angle", angle_values)
+    @pytest.mark.parametrize("wires", wires_list)
+    def test_density_matrix_from_qnode(self, device, wires, angle, interface, check, tol):
         """Test the density matrix from matrix for single wires."""
-        dev = qml.device("default.mixed", wires=2)
+        dev = qml.device(device, wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, interface=interface)
         def circuit(x):
-            qml.RZ(x, wires=0)
+            qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        density_matrix = fn.state_to_density_matrix(circuit, wires=[0])(0)
+        print(circuit(angle))
+        density_matrix = fn.to_density_matrix(circuit, wires=wires, check_state=check)(angle)
         print(density_matrix)
+
+        def expected_density_matrix(x, wires):
+            if wires == [0] or wires == [1]:
+                return [[np.cos(x / 2) ** 2, 0], [0, np.sin(x / 2) ** 2]]
+            elif wires == [0, 1]:
+                return [
+                    [np.cos(x / 2) ** 2, 0, 0, 0.0 + np.cos(x / 2) * np.sin(x / 2) * 1j],
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 0],
+                    [0.0 - np.cos(x / 2) * np.sin(x / 2) * 1j, 0, 0, np.sin(x / 2) ** 2],
+                ]
+
+        assert np.allclose(expected_density_matrix(angle, wires), density_matrix, atol=tol, rtol=0)
