@@ -12,50 +12,50 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the batch dimension transform.
+Contains the batch dimension transform for partial use of QNodes.
 """
 import functools
 import inspect
 
 import pennylane as qml
+from pennylane import numpy as np
 
 
-def _convert_to_args(func, args, kwargs):
+def _convert_to_args(sig, args, kwargs):
     """
-    Given a function, convert the positional and
+    Given the signature of a function, convert the positional and
     keyword arguments to purely positional arguments.
     """
-    sig = inspect.signature(func).parameters
-
     new_args = []
     for i, param in enumerate(sig):
         if param in kwargs:
-            # first check if the name is provided in kwargs
+            # first check if the name is provided in the keyword arguments
             new_args.append(kwargs[param])
-        elif i < len(sig):
-            # next check if the argnum is provided
+        else:
+            # if not, then the argument must be positional
             new_args.append(args[i])
 
     return tuple(new_args)
 
 
-def batch_partial(qnode, all_operations=False, **partial_kwargs):
+def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs):
     """
     Create a batched partial callable object from the QNode specified.
-    
-    This transform provides functionality akin to `functools.partial` and allows batching the arguments used for calling the batched partial object.
+
+    This transform provides functionality akin to `functools.partial` and
+    allows batching the arguments used for calling the batched partial object.
 
     Args:
-        qnode (pennylane.QNode): QNode to partially evaluate
+        qnode (pennylane.QNode): QNode to pre-supply arguments to
         all_operations (bool): If ``True``, a batch dimension will be added to *all* operations
             in the QNode, rather than just trainable QNode parameters.
-        partial_kwargs (dict): partially-evaluated parameters to pass to the QNode
+        partial_kwargs (dict): pre-supplied arguments to pass to the QNode.
 
     Returns:
-        func: Function which accepts the same arguments as the QNode minus the
-        partially evaluated arguments provided, and behaves the same as the QNode
-        called with both the partially evaluated arguments and the extra arguments.
-        However, the first dimension of each argument of the returned function
+        func: Function which wraps the QNode and accepts the same arguments minus the
+        pre-supplied arguments provided, and behaves the same as the QNode called with
+        both the pre-supplied arguments and the other arguments passed to this wrapper
+        function. However, the first dimension of each argument of the wrapper function
         will be treated as a batch dimension. The function output will also contain
         an initial batch dimension.
 
@@ -122,13 +122,23 @@ def batch_partial(qnode, all_operations=False, **partial_kwargs):
     """
     qnode = qml.batch_params(qnode, all_operations=all_operations)
 
+    preprocess = {} if preprocess is None else preprocess
+
     # store whether this decorator is being used as a pure
     # analog of functools.partial, or whether it is used to
     # wrap a QNode in a more complex lambda statement
-    is_partial = False
-    if not any(callable(val) for val in partial_kwargs.values()):
-        # none of the kwargs passed in are callable
-        is_partial = True
+    is_partial = preprocess == {}
+
+    # determine which arguments need to be stacked along the batch dimension
+    to_stack = []
+    for key, val in partial_kwargs.items():
+        try:
+            # check if the value is a tensor
+            if qml.math.asarray(val).dtype != object:
+                to_stack.append(key)
+        except ImportError:
+            # autoray can't find a backend for val, so it cannot be stacked
+            pass
 
     sig = inspect.signature(qnode).parameters
     if is_partial:
@@ -139,7 +149,7 @@ def batch_partial(qnode, all_operations=False, **partial_kwargs):
     else:
         # if used to wrap a QNode in a lambda statement, then check that
         # all arguments are provided
-        if len(sig) > len(partial_kwargs):
+        if len(sig) > len(partial_kwargs) + len(preprocess):
             raise ValueError("Callable argument requires all other arguments to QNode be provided")
 
     @functools.wraps(qnode)
@@ -163,18 +173,21 @@ def batch_partial(qnode, all_operations=False, **partial_kwargs):
         except IndexError:
             raise ValueError("Parameter with batch dimension must be provided") from None
 
+        for key, val in preprocess.items():
+            unstacked_args = (qml.math.unstack(arg) for arg in args)
+            val = qml.math.stack([val(*a) for a in zip(*unstacked_args)])
+            kwargs[key] = val
+
         for key, val in partial_kwargs.items():
-            if callable(val):
-                unstacked_args = (qml.math.unstack(arg) for arg in args)
-                val = qml.math.stack([val(*a) for a in zip(*unstacked_args)])
-                kwargs[key] = val
-            else:
+            if key in to_stack:
                 kwargs[key] = qml.math.stack([val] * batch_dim)
+            else:
+                kwargs[key] = val
 
         if is_partial:
-            return qnode(*_convert_to_args(qnode, args, kwargs))
+            return qnode(*_convert_to_args(sig, args, kwargs))
 
         # don't pass the arguments to the lambda itself into the QNode
-        return qnode(*_convert_to_args(qnode, (), kwargs))
+        return qnode(*_convert_to_args(sig, (), kwargs))
 
     return wrapper

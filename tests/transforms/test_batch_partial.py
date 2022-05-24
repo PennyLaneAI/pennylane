@@ -82,6 +82,103 @@ def test_partial_evaluation_kwargs():
     assert np.allclose(res, indiv_res)
 
 
+def test_partial_evaluation_multi_args():
+    """Test partial evaluation matches individual full evaluations
+    for multiple pre-supplied arguments"""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit(x, y, z):
+        qml.RX(x, wires=0)
+        qml.RY(y[..., 0], wires=0)
+        qml.RY(y[..., 1], wires=1)
+        qml.RX(z, wires=1)
+        return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
+
+    batch_size = 4
+
+    # the partial arguments to construct a new circuit with
+    y = np.random.uniform(size=2)
+    z = np.random.uniform(size=())
+
+    # the batched argument to the new partial circuit
+    x = np.random.uniform(size=batch_size)
+
+    batched_partial_circuit = qml.batch_partial(circuit, y=y, z=z)
+    res = batched_partial_circuit(x)
+
+    # check the results against individually executed circuits
+    indiv_res = []
+    for x_indiv in x:
+        indiv_res.append(circuit(x_indiv, y, z))
+
+    assert np.allclose(res, indiv_res)
+
+
+def test_partial_evaluation_nonnumeric1():
+    """Test partial evaluation matches individual full evaluations
+    for non-numeric pre-supplied arguments"""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit(x, y, measurement):
+        qml.RX(x, wires=0)
+        qml.RY(y[..., 0], wires=0)
+        qml.RY(y[..., 1], wires=1)
+        return qml.apply(measurement)
+
+    batch_size = 4
+
+    # the partial arguments to construct a new circuit with
+    y = np.random.uniform(size=2)
+    measurement = qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
+
+    # the batched argument to the new partial circuit
+    x = np.random.uniform(size=batch_size)
+
+    batched_partial_circuit = qml.batch_partial(circuit, y=y, measurement=measurement)
+    res = batched_partial_circuit(x)
+
+    # check the results against individually executed circuits
+    indiv_res = []
+    for x_indiv in x:
+        indiv_res.append(circuit(x_indiv, y, measurement))
+
+    assert np.allclose(res, indiv_res)
+
+
+def test_partial_evaluation_nonnumeric2():
+    """Test partial evaluation matches individual full evaluations
+    for non-numeric pre-supplied arguments"""
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev)
+    def circuit(x, y, func):
+        qml.RX(func(x), wires=0)
+        qml.RY(y[..., 0], wires=0)
+        qml.RY(y[..., 1], wires=1)
+        return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
+
+    batch_size = 4
+
+    # the partial arguments to construct a new circuit with
+    y = np.random.uniform(size=2)
+    func = np.cos
+
+    # the batched argument to the new partial circuit
+    x = np.random.uniform(size=batch_size)
+
+    batched_partial_circuit = qml.batch_partial(circuit, y=y, func=func)
+    res = batched_partial_circuit(x)
+
+    # check the results against individually executed circuits
+    indiv_res = []
+    for x_indiv in x:
+        indiv_res.append(circuit(x_indiv, y, func))
+
+    assert np.allclose(res, indiv_res)
+
+
 @pytest.mark.autograd
 @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
 def test_partial_evaluation_autograd(diff_method):
@@ -275,7 +372,7 @@ def test_lambda_evaluation():
     # values for the second argument
     y0 = np.random.uniform(size=batch_size)
 
-    batched_partial_circuit = qml.batch_partial(circuit, x=x, y=fn)
+    batched_partial_circuit = qml.batch_partial(circuit, x=x, preprocess={"y": fn})
     res = batched_partial_circuit(y0)
 
     # check the results against individually executed circuits
@@ -287,7 +384,7 @@ def test_lambda_evaluation():
 
 
 @pytest.mark.autograd
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
 def test_lambda_evaluation_autograd(diff_method):
     """Test gradient of lambda argument replacement matches
     gradients of individual full evaluations using autograd"""
@@ -314,7 +411,7 @@ def test_lambda_evaluation_autograd(diff_method):
     # values for the second argument
     y0 = np.random.uniform(size=batch_size, requires_grad=True)
 
-    batched_partial_circuit = qml.batch_partial(circuit, x=x, y=fn)
+    batched_partial_circuit = qml.batch_partial(circuit, x=x, preprocess={"y": fn})
 
     # we could also sum over the batch dimension and use the regular
     # gradient instead of the jacobian, but either works
@@ -331,7 +428,7 @@ def test_lambda_evaluation_autograd(diff_method):
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
 def test_lambda_evaluation_jax(diff_method):
     """Test gradient of lambda argument replacement matches
     gradients of individual full evaluations using JAX"""
@@ -361,7 +458,9 @@ def test_lambda_evaluation_jax(diff_method):
     # values for the second argument
     y0 = jnp.asarray(np.random.uniform(size=batch_size))
 
-    batched_partial_circuit = qml.batch_partial(circuit, all_operations=True, x=x, y=fn)
+    batched_partial_circuit = qml.batch_partial(
+        circuit, all_operations=True, x=x, preprocess={"y": fn}
+    )
 
     # we could also sum over the batch dimension and use the regular
     # gradient instead of the jacobian, but either works
@@ -378,7 +477,7 @@ def test_lambda_evaluation_jax(diff_method):
 
 
 @pytest.mark.tf
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
 def test_lambda_evaluation_tf(diff_method):
     """Test gradient of lambda argument replacement matches
     gradients of individual full evaluations using TF"""
@@ -407,7 +506,7 @@ def test_lambda_evaluation_tf(diff_method):
     # values for the second argument
     y0 = tf.Variable(np.random.uniform(size=batch_size), trainable=True)
 
-    batched_partial_circuit = qml.batch_partial(circuit, x=x, y=fn)
+    batched_partial_circuit = qml.batch_partial(circuit, x=x, preprocess={"y": fn})
 
     with tf.GradientTape() as tape:
         out = batched_partial_circuit(y0)
@@ -432,7 +531,7 @@ def test_lambda_evaluation_tf(diff_method):
 
 
 @pytest.mark.torch
-@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
+@pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift", "finite-diff"])
 def test_lambda_evaluation_torch(diff_method):
     """Test gradient of lambda argument replacement matches
     gradients of individual full evaluations using PyTorch"""
@@ -462,7 +561,7 @@ def test_lambda_evaluation_torch(diff_method):
     # values for the second argument
     y0 = torch.tensor(np.random.uniform(size=batch_size), requires_grad=True)
 
-    batched_partial_circuit = qml.batch_partial(circuit, x=x, y=fn)
+    batched_partial_circuit = qml.batch_partial(circuit, x=x, preprocess={"y": fn})
 
     # we could also sum over the batch dimension and use the regular
     # gradient instead of the jacobian, but either works
@@ -531,7 +630,7 @@ def test_incomplete_evaluation_error():
     with pytest.raises(
         ValueError, match="Callable argument requires all other arguments to QNode be provided"
     ):
-        batched_partial_circuit = qml.batch_partial(circuit, y=fn)
+        batched_partial_circuit = qml.batch_partial(circuit, preprocess={"y": fn})
 
 
 def test_kwargs_callable_error():
@@ -555,7 +654,7 @@ def test_kwargs_callable_error():
     fn = lambda y0: y + y0 * np.ones(2)
     y0 = np.random.uniform(size=batch_size)
 
-    batched_partial_circuit = qml.batch_partial(circuit, x=x, y=fn)
+    batched_partial_circuit = qml.batch_partial(circuit, x=x, preprocess={"y": fn})
 
     with pytest.raises(
         ValueError,
