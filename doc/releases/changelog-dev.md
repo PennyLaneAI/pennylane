@@ -135,6 +135,9 @@
   instead of the controlled version of the diagonal unitary.
   [(#2525)](https://github.com/PennyLaneAI/pennylane/pull/2525)
 
+* Reverted device defined gradients fix [(#2485)](https://github.com/PennyLaneAI/pennylane/pull/2485), since
+  code change was breaking some devices. [(#2595)](https://github.com/PennyLaneAI/pennylane/pull/2595)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
@@ -149,9 +152,10 @@
   for some selected configurations.
   [(#2540)](https://github.com/PennyLaneAI/pennylane/pull/2540)
 
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Christian Gogolin,
+Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Samuel Banning, Christian Gogolin,
 Soran Jahangiri, Edward Jiang, Christina Lee, Chae-Yeun Park, Maria Schuld, Jay Soni
