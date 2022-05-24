@@ -182,8 +182,17 @@ def _density_matrix_from_state_vector(state, wires, check_state=False):
     [[1.+0.j 0.+0.j]
     [0.+0.j 0.+0.j]]
 
-    >>> x = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-    >>> _density_matrix_from_state_vector(x, wires=[1])
+    >>> y = [1, 0, 1, 0] / np.sqrt(2)
+    >>> _density_matrix_from_state_vector(y, wires=[0])
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
+
+    >>> _density_matrix_from_state_vector(y, wires=[1])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
+
+    >>> z = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
+    >>> _density_matrix_from_state_vector(z, wires=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
@@ -222,7 +231,7 @@ def _density_matrix_from_state_vector(state, wires, check_state=False):
     return density_matrix
 
 
-def state_to_density_matrix(state, wires, check_state=False):
+def to_density_matrix(state, wires, check_state=False):
     """Compute the reduced density matrix from a state vector, a density matrix or a QNode returning ``qml.state``.
 
     Args:
@@ -235,6 +244,15 @@ def state_to_density_matrix(state, wires, check_state=False):
         tensor_like: (Reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
 
     **Example**
+
+    >>> x = [1, 0, 1, 0] / np.sqrt(2)
+    >>> to_density_matrix(x, wires=[0]))
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
+
+    >>> to_density_matrix(x, wires=[1]))
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
 
     """
     # State vector
