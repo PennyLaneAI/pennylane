@@ -441,6 +441,19 @@ def to_density_matrix(state, wires, check_state=False):
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x, weights):
+            qml.RZ(x, wires=0)
+            return qml.state()
+
+    >>> to_density_matrix(circuit, wires=0)(0)
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
     """
     # QNode returning ``qml.state``
     if isinstance(state, qml.QNode):
