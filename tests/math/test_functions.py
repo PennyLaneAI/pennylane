@@ -2507,7 +2507,7 @@ class TestDensityMatrixFromMatrix:
         self, density_matrix, wires, expected_density_matrix
     ):
         """Test the density matrix from matrix for single wires."""
-        density_matrix = fn.state_to_density_matrix(density_matrix, wires=wires)
+        density_matrix = fn.to_density_matrix(density_matrix, wires=wires)
         assert np.allclose(density_matrix, expected_density_matrix[wires[0]])
 
     @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
@@ -2516,7 +2516,7 @@ class TestDensityMatrixFromMatrix:
         self, density_matrix, wires, expected_density_matrix
     ):
         """Test the density matrix from matrix for full wires."""
-        returned_density_matrix = fn.state_to_density_matrix(density_matrix, wires=wires)
+        returned_density_matrix = fn.to_density_matrix(density_matrix, wires=wires)
         assert np.allclose(density_matrix, returned_density_matrix)
 
     @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
