@@ -444,6 +444,69 @@ matmul_hamiltonians = [
     ),
 ]
 
+rmatmul_hamiltonians = [
+    (
+        qml.Hamiltonian([0.5, 0.5], [qml.PauliZ(2), qml.PauliZ(3)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.Hamiltonian(
+            [0.5, 0.5, 0.5, 0.5],
+            [
+                qml.PauliX(0) @ qml.PauliZ(2),
+                qml.PauliX(0) @ qml.PauliZ(3),
+                qml.PauliZ(1) @ qml.PauliZ(2),
+                qml.PauliZ(1) @ qml.PauliZ(3),
+            ],
+        ),
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(3) @ qml.PauliZ(2), qml.PauliZ(2)]),
+        qml.Hamiltonian([0.5, 0.25], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(0)]),
+        qml.Hamiltonian(
+            [0.5, 0.5, 0.25, 0.25],
+            [
+                qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(3) @ qml.PauliZ(2),
+                qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliZ(2),
+                qml.PauliZ(0) @ qml.PauliX(3) @ qml.PauliZ(2),
+                qml.PauliZ(0) @ qml.PauliZ(2),
+            ],
+        ),
+    ),
+    (
+        qml.Hamiltonian([2, 2], [qml.PauliZ(1.2), qml.PauliY("c")]),
+        qml.Hamiltonian([1, 1], [qml.PauliX("b"), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian(
+            [2, 2, 2, 2],
+            [
+                qml.PauliX("b") @ qml.PauliZ(1.2),
+                qml.PauliX("b") @ qml.PauliY("c"),
+                qml.Hermitian(np.array([[1, 0], [0, -1]]), 0) @ qml.PauliZ(1.2),
+                qml.Hermitian(np.array([[1, 0], [0, -1]]), 0) @ qml.PauliY("c"),
+            ],
+        ),
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliZ(1)]),
+        qml.PauliX(2),
+        qml.Hamiltonian([1, 1], [qml.PauliX(2) @ qml.PauliX(0), qml.PauliX(2) @ qml.PauliZ(1)]),
+    ),
+    # Case where arguments coeffs and ops to the Hamiltonian are iterables other than lists
+    (
+        qml.Hamiltonian(np.array([0.5, 0.5]), np.array([qml.PauliZ(2), qml.PauliZ(3)])),
+        qml.Hamiltonian((1, 1), (qml.PauliX(0), qml.PauliZ(1))),
+        qml.Hamiltonian(
+            (0.5, 0.5, 0.5, 0.5),
+            np.array(
+                [
+                    qml.PauliX(0) @ qml.PauliZ(2),
+                    qml.PauliX(0) @ qml.PauliZ(3),
+                    qml.PauliZ(1) @ qml.PauliZ(2),
+                    qml.PauliZ(1) @ qml.PauliZ(3),
+                ]
+            ),
+        ),
+    ),
+]
+
 big_hamiltonian_coeffs = np.array(
     [
         -0.04207898,
@@ -673,6 +736,11 @@ class TestHamiltonian:
         """Tests that Hamiltonians are tensored correctly"""
         assert H.compare(H1 @ H2)
 
+    @pytest.mark.parametrize(("H1", "H2", "H"), rmatmul_hamiltonians)
+    def test_hamiltonian_matmul(self, H1, H2, H):
+        """Tests that Hamiltonians are tensored correctly when using __rmatmul__"""
+        assert H.compare(H1.__rmatmul__(H2))
+
     def test_hamiltonian_same_wires(self):
         """Test if a ValueError is raised when multiplication between Hamiltonians acting on the
         same wires is attempted"""
@@ -705,6 +773,8 @@ class TestHamiltonian:
         A = [[1, 0], [0, -1]]
         with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
             H @ A
+        with pytest.raises(ValueError, match="Cannot tensor product Hamiltonian"):
+            H.__rmatmul__(A)
         with pytest.raises(ValueError, match="Cannot add Hamiltonian"):
             H + A
         with pytest.raises(ValueError, match="Cannot multiply Hamiltonian"):

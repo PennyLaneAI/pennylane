@@ -288,7 +288,7 @@ class Interferometer(CVOperation):
 
         return shapes
 
-    def adjoint(self):  # pylint: disable=arguments-differ
+    def adjoint(self):
         adjoint_op = Interferometer(
             theta=self.parameters[0],
             phi=self.parameters[1],

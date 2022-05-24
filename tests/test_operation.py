@@ -588,18 +588,33 @@ class TestInverse:
         assert dummy_op.inv().name == dummy_op_class_name
         assert not dummy_op.inverse
 
-    def test_inverse_of_operation(self):
-        """Test the inverse of an operation"""
+    def test_inv_queuing(self):
+        """Test that inv updates the inverse property in place during queuing."""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom Operation"""
+            num_wires = 1
+
+        with qml.tape.QuantumTape() as tape:
+            op = DummyOp(wires=[0]).inv()
+            assert op.inverse is True
+
+        assert op.inverse is True
+
+    def test_inverse_integration(self):
+        """Test that the inv integrates with qnode execution. An operation followed by the inverse
+        operation should leave the state unchanged.
+        """
 
         dev1 = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev1)
         def circuit():
-            qml.PauliZ(wires=[0])
-            qml.PauliZ(wires=[0]).inv()
-            return qml.expval(qml.PauliZ(0))
+            qml.RX(1.234, wires=0)
+            qml.RX(1.234, wires=0).inv()
+            return qml.state()
 
-        assert circuit() == 1
+        assert qml.math.allclose(circuit()[0], 1)
 
     def test_inverse_operations_not_supported(self):
         """Test that the inverse of operations is not currently
@@ -1109,9 +1124,9 @@ class TestTensor:
         t = qml.PauliX(0) @ qml.PauliZ(1)
         s = t.sparse_matrix()
 
-        assert np.allclose(s.row, [0, 1, 2, 3])
-        assert np.allclose(s.col, [2, 3, 0, 1])
         assert np.allclose(s.data, [1, -1, 1, -1])
+        assert np.allclose(s.indices, [2, 3, 0, 1])
+        assert np.allclose(s.indptr, [0, 1, 2, 3, 4])
 
     def test_sparse_matrix_swapped_wires(self):
         """Tests that the correct sparse matrix representation is used
@@ -1120,9 +1135,9 @@ class TestTensor:
         t = qml.PauliX(0) @ qml.PauliZ(1)
         s = t.sparse_matrix(wires=[1, 0])
 
-        assert np.allclose(s.row, [0, 1, 2, 3])
-        assert np.allclose(s.col, [1, 0, 3, 2])
         assert np.allclose(s.data, [1, 1, -1, -1])
+        assert np.allclose(s.indices, [1, 0, 3, 2])
+        assert np.allclose(s.indptr, [0, 1, 2, 3, 4])
 
     def test_sparse_matrix_extra_wire(self):
         """Tests that the correct sparse matrix representation is used
@@ -1132,9 +1147,9 @@ class TestTensor:
         s = t.sparse_matrix(wires=[0, 1, 2])
 
         assert s.shape == (8, 8)
-        assert np.allclose(s.row, [0, 1, 2, 3, 4, 5, 6, 7])
-        assert np.allclose(s.col, [4, 5, 6, 7, 0, 1, 2, 3])
-        assert np.allclose(s.data, [1, 1, -1, -1, 1, 1, -1, -1])
+        assert np.allclose(s.data, [1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0])
+        assert np.allclose(s.indices, [4, 5, 6, 7, 0, 1, 2, 3])
+        assert np.allclose(s.indptr, [0, 1, 2, 3, 4, 5, 6, 7, 8])
 
     def test_sparse_matrix_error(self):
         """Tests that an error is raised if the sparse matrix is computed for
@@ -1193,6 +1208,20 @@ mul_obs = [
         3,
         qml.Hamiltonian([3], [qml.Hermitian(np.array([[1, 0], [0, -1]]), "c")]),
     ),
+]
+
+matmul_obs = [
+    (qml.PauliX(0), qml.PauliZ(1), Tensor(qml.PauliX(0), qml.PauliZ(1))),  # obs @ obs
+    (
+        qml.PauliX(0),
+        qml.PauliZ(1) @ qml.PauliY(2),
+        Tensor(qml.PauliX(0), qml.PauliZ(1), qml.PauliY(2)),
+    ),  # obs @ tensor
+    (
+        qml.PauliX(0),
+        qml.Hamiltonian([1.0], [qml.PauliY(1)]),
+        qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliY(1)]),
+    ),  # obs @ hamiltonian
 ]
 
 sub_obs = [
@@ -1283,6 +1312,11 @@ class TestTensorObservableOperations:
         """Tests subtraction between Tensors and Observables"""
         assert obs.compare(obs1 - obs2)
 
+    @pytest.mark.parametrize(("obs1", "obs2", "res"), matmul_obs)
+    def test_tensor_product(self, obs1, obs2, res):
+        """Tests the tensor product between Observables"""
+        assert res.compare(obs1 @ obs2)
+
     def test_arithmetic_errors(self):
         """Tests that the arithmetic operations throw the correct errors"""
         obs = qml.PauliZ(0)
@@ -1369,6 +1403,21 @@ class TestDefaultRepresentations:
         """Tests that custom error is raised in the default generator representation."""
         with pytest.raises(qml.operation.GeneratorUndefinedError):
             gate.generator()
+
+    def test_pow_zero(self):
+        """Test that the default of an operation raised to a zero power is an empty array."""
+        assert len(gate.pow(0)) == 0
+
+    def test_pow_one(self):
+        """Test that the default of an operation raised to the power of one is a copy."""
+        pow_gate = gate.pow(1)
+        assert len(pow_gate) == 1
+        assert pow_gate[0].__class__ is gate.__class__
+
+    def test_pow_undefined(self):
+        """Tests that custom error is raised in the default pow decomposition."""
+        with pytest.raises(qml.operation.PowUndefinedError):
+            gate.pow(1.234)
 
 
 class TestChannel:
