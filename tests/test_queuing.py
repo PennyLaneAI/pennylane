@@ -20,7 +20,7 @@ import pytest
 import pennylane as qml
 import numpy as np
 
-from pennylane.queuing import AnnotatedQueue, AnnotatedQueue, Queue, QueuingContext, QueuingError
+from pennylane.queuing import AnnotatedQueue, AnnotatedQueue, QueuingContext, QueuingError
 from pennylane.tape import OperationRecorder
 
 
@@ -112,88 +112,6 @@ class TestQueuingContext:
     def test_no_active_context(self, mock_queuing_context):
         """Test that if there are no active contexts, active_context() returns None"""
         assert mock_queuing_context.active_context() is None
-
-
-class TestQueue:
-    """Test the Queue class."""
-
-    def test_arbitrary_obj(self):
-        """Tests that arbitrary objects can be appended to and removed from the queue."""
-
-        objs = [5, "hi", 1.2, np.einsum, lambda x: x + 1]
-        with Queue() as q:
-            for obj in objs:
-                q.append(obj)
-        assert q.queue == objs
-
-        with q:
-            for _ in range(len(objs)):
-                obj = objs.pop()
-                q.remove(obj)
-                assert q.queue == objs
-
-    def test_remove_not_in_queue(self):
-        """Test that remove fails when the object to be removed is not in the queue."""
-
-        with Queue() as q1:
-            op1 = qml.PauliZ(0)
-            op2 = qml.PauliZ(1)
-            q1.append(op1)
-            q1.append(op2)
-
-        with Queue() as q2:
-            q2.append(op1)
-
-            with pytest.raises(ValueError, match="not in list"):
-                q2.remove(op2)
-
-    def test_append_qubit_gates(self):
-        """Test that gates are successfully appended to the queue."""
-        with Queue() as q:
-            ops = [
-                qml.RX(0.5, wires=0),
-                qml.RY(-10.1, wires=1),
-                qml.CNOT(wires=[0, 1]),
-                qml.PhaseShift(-1.1, wires=18),
-                qml.T(wires=99),
-            ]
-        assert q.queue == ops
-
-    def test_append_qubit_observables(self):
-        """Test that ops that are also observables are successfully
-        appended to the queue."""
-        with Queue() as q:
-            # wire repetition is deliberate, Queue contains no checks/logic
-            # for circuits
-            ops = [
-                qml.Hadamard(wires=0),
-                qml.PauliX(wires=1),
-                qml.PauliY(wires=1),
-                qml.Hermitian(np.ones([2, 2]), wires=7),
-            ]
-        assert q.queue == ops
-
-    def test_append_tensor_ops(self):
-        """Test that ops which are used as inputs to `Tensor`
-        are successfully added to the queue, as well as the `Tensor` object."""
-
-        with Queue() as q:
-            A = qml.PauliZ(0)
-            B = qml.PauliY(1)
-            tensor_op = qml.operation.Tensor(A, B)
-        assert q.queue == [A, B, tensor_op]
-        assert tensor_op.obs == [A, B]
-
-    def test_append_tensor_ops_overloaded(self):
-        """Test that Tensor ops created using `@`
-        are successfully added to the queue, as well as the `Tensor` object."""
-
-        with Queue() as q:
-            A = qml.PauliZ(0)
-            B = qml.PauliY(1)
-            tensor_op = A @ B
-        assert q.queue == [A, B, tensor_op]
-        assert tensor_op.obs == [A, B]
 
 
 class TestAnnotatedQueue:

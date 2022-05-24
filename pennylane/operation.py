@@ -1751,8 +1751,6 @@ class Tensor(Observable):
             except qml.queuing.QueuingError:
                 o.queue(context=context)
                 context.update_info(o, owner=self)
-            except NotImplementedError:
-                pass
 
         context.append(self, owns=tuple(constituents))
         return self
@@ -2019,7 +2017,9 @@ class Tensor(Observable):
                 return 1
         return 0
 
-    def sparse_matrix(self, wires=None, format="csr"):  # pylint:disable=arguments-renamed
+    def sparse_matrix(
+        self, wires=None, format="csr"
+    ):  # pylint:disable=arguments-renamed, arguments-differ
         r"""Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
 
         This is useful for larger qubit numbers, where the dense matrix becomes very large, while
