@@ -588,18 +588,33 @@ class TestInverse:
         assert dummy_op.inv().name == dummy_op_class_name
         assert not dummy_op.inverse
 
-    def test_inverse_of_operation(self):
-        """Test the inverse of an operation"""
+    def test_inv_queuing(self):
+        """Test that inv updates the inverse property in place during queuing."""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom Operation"""
+            num_wires = 1
+
+        with qml.tape.QuantumTape() as tape:
+            op = DummyOp(wires=[0]).inv()
+            assert op.inverse is True
+
+        assert op.inverse is True
+
+    def test_inverse_integration(self):
+        """Test that the inv integrates with qnode execution. An operation followed by the inverse
+        operation should leave the state unchanged.
+        """
 
         dev1 = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev1)
         def circuit():
-            qml.PauliZ(wires=[0])
-            qml.PauliZ(wires=[0]).inv()
-            return qml.expval(qml.PauliZ(0))
+            qml.RX(1.234, wires=0)
+            qml.RX(1.234, wires=0).inv()
+            return qml.state()
 
-        assert circuit() == 1
+        assert qml.math.allclose(circuit()[0], 1)
 
     def test_inverse_operations_not_supported(self):
         """Test that the inverse of operations is not currently
@@ -1109,9 +1124,9 @@ class TestTensor:
         t = qml.PauliX(0) @ qml.PauliZ(1)
         s = t.sparse_matrix()
 
-        assert np.allclose(s.row, [0, 1, 2, 3])
-        assert np.allclose(s.col, [2, 3, 0, 1])
         assert np.allclose(s.data, [1, -1, 1, -1])
+        assert np.allclose(s.indices, [2, 3, 0, 1])
+        assert np.allclose(s.indptr, [0, 1, 2, 3, 4])
 
     def test_sparse_matrix_swapped_wires(self):
         """Tests that the correct sparse matrix representation is used
@@ -1120,9 +1135,9 @@ class TestTensor:
         t = qml.PauliX(0) @ qml.PauliZ(1)
         s = t.sparse_matrix(wires=[1, 0])
 
-        assert np.allclose(s.row, [0, 1, 2, 3])
-        assert np.allclose(s.col, [1, 0, 3, 2])
         assert np.allclose(s.data, [1, 1, -1, -1])
+        assert np.allclose(s.indices, [1, 0, 3, 2])
+        assert np.allclose(s.indptr, [0, 1, 2, 3, 4])
 
     def test_sparse_matrix_extra_wire(self):
         """Tests that the correct sparse matrix representation is used
@@ -1132,9 +1147,9 @@ class TestTensor:
         s = t.sparse_matrix(wires=[0, 1, 2])
 
         assert s.shape == (8, 8)
-        assert np.allclose(s.row, [0, 1, 2, 3, 4, 5, 6, 7])
-        assert np.allclose(s.col, [4, 5, 6, 7, 0, 1, 2, 3])
-        assert np.allclose(s.data, [1, 1, -1, -1, 1, 1, -1, -1])
+        assert np.allclose(s.data, [1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, -1.0])
+        assert np.allclose(s.indices, [4, 5, 6, 7, 0, 1, 2, 3])
+        assert np.allclose(s.indptr, [0, 1, 2, 3, 4, 5, 6, 7, 8])
 
     def test_sparse_matrix_error(self):
         """Tests that an error is raised if the sparse matrix is computed for
