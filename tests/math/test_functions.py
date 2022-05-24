@@ -2601,9 +2601,7 @@ class TestDensityMatrixQNode:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        print(circuit(angle))
         density_matrix = fn.to_density_matrix(circuit, wires=wires, check_state=check)(angle)
-        print(density_matrix)
 
         def expected_density_matrix(x, wires):
             if wires == [0] or wires == [1]:
