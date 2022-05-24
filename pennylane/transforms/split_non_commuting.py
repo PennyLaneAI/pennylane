@@ -18,9 +18,9 @@ Contains the tape transform that splits non-commuting terms
 import pennylane as qml
 import numpy as np
 
-from .batch_transform import batch_transform
+# from .batch_transform import batch_transform
 
-#@batch_transform
+# @batch_transform
 def split_non_commuting(tape):
     r"""
     Splits a tape measuring non-commuting observables into groups of commuting observables.
@@ -72,45 +72,50 @@ def split_non_commuting(tape):
         tensor(expval(PauliX(wires=[0])), dtype=object, requires_grad=True)],
        dtype=object, requires_grad=True)
 
+    .. details::
+        :title: Usage Details
+
+        This transform also works with tapes. We can create a tape with non-commuting observables:
+
     """
-    # Even though we are currently not supporting probs and samples, we still provide the option here
-    # as it works in some cases.
-    obs_fn = {qml.measurements.Expectation: qml.expval,
-              qml.measurements.Variance: qml.var,
-              qml.measurements.Sample: qml.sample,
-              qml.measurements.Probability: qml.probs}
-
-
+    # TODO: allow for samples and probs
+    obs_fn = {qml.measurements.Expectation: qml.expval, qml.measurements.Variance: qml.var}
 
     obs_list = tape.observables
     return_types = [m.return_type for m in obs_list]
 
-    # If there is more than one group of commuting observables, split tapes
-    groups, group_coeffs = qml.grouping.group_observables(obs_list, range(len(obs_list)))
-    if len(groups) > 1:
-        # make one tape per commuting group
-        tapes = []
-        for group in groups:
-            with qml.tape.QuantumTape() as new_tape:
-                for op in tape.operations:
-                    qml.apply(op)
+    try:
+        # If there is more than one group of commuting observables, split tapes
+        groups, group_coeffs = qml.grouping.group_observables(obs_list, range(len(obs_list)))
+        if len(groups) > 1:
+            # make one tape per commuting group
+            tapes = []
+            for group in groups:
+                with qml.tape.QuantumTape() as new_tape:
+                    for op in tape.operations:
+                        qml.apply(op)
 
-                for type, o in zip(return_types, group):
-                    obs_fn[type](o)
+                    for type, o in zip(return_types, group):
+                        obs_fn[type](o)
 
-            tapes.append(new_tape)
+                tapes.append(new_tape)
 
-        def reorder_fn(res):
-            """re-order the output to the original shape and order"""
-            new_res = qml.math.concatenate(res)
-            reorder_indxs = qml.math.concatenate(group_coeffs)
+            def reorder_fn(res):
+                """re-order the output to the original shape and order"""
+                new_res = qml.math.concatenate(res)
+                reorder_indxs = qml.math.concatenate(group_coeffs)
 
-            # in order not to mess with the outputs I am just permuting them with a simple matrix multiplication
-            permutation_matrix = np.zeros((len(new_res), len(new_res)))
-            for column, indx in enumerate(reorder_indxs):
-                permutation_matrix[indx, column] = 1
-            return qml.math.dot(permutation_matrix,new_res)
+                # in order not to mess with the outputs I am just permuting them with a simple matrix multiplication
+                permutation_matrix = np.zeros((len(new_res), len(new_res)))
+                for column, indx in enumerate(reorder_indxs):
+                    permutation_matrix[indx, column] = 1
+                return qml.math.dot(permutation_matrix, new_res)
 
-        return tapes, reorder_fn
+            return tapes, reorder_fn
+    except:
+        if qml.measurements.Sample or qml.measurements.Probability in return_types:
+            raise NotImplementedError(
+                "When non-commuting observables are used, only `qml.expval` and `qml.var` are supported."
+            )
     # if the group is already commuting, no need to do anything
     return [tape], lambda res: res[0]

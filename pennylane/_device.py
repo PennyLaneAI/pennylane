@@ -731,6 +731,7 @@ class Device(abc.ABC):
 
         if len(circuit._obs_sharing_wires) > 0 and not hamiltonian_in_obs:
             # Check for case of non-commuting terms and that there are no Hamiltonians
+            # TODO: allow for Hamiltonians in list of observables as well.
             return qml.transforms.split_non_commuting(circuit)
 
         # otherwise, return an identity transform
