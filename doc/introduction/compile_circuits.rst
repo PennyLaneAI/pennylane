@@ -9,15 +9,14 @@ Compiling circuits
 PennyLane offers a lot of functionality to "compile" circuits. We use the term "compilation"
 here in a loose sense as the process of transforming one circuit (or a sequence of operators)
 into one or more differing circuits (or sequences of operators). For example, such a transformation could
-replace a gate type with another, fuse gates, exploit mathematical relations that simplify a Hamiltonian
-to use fewer Pauli operators, or replace a circuit by a number of smaller circuits to fit on limited
-quantum devices.
+replace a gate type with another, fuse gates, exploit mathematical relations that simplify an observable,
+or replace a large circuit by a number of smaller circuits.
 
-This functionality is mostly designed as **transforms**, which are also mentioned in the
+The functionality is mostly designed as **transforms**, which are also mentioned in the
 section on :doc:`inspecting circuits </introduction/inspecting_circuits>`).
 
-Compilation transforms
-----------------------
+Compilation transforms for circuit optimization
+-----------------------------------------------
 
 PennyLane offers a number of transforms that take quantum functions and alter them to represent
 quantum functions of optimized circuits:
@@ -43,7 +42,7 @@ quantum functions of optimized circuits:
 
 .. note::
 
-    Most compilation transforms support just-in-time compilation with jax.jit.
+    Most compilation transforms support just-in-time compilation with ``jax.jit``.
 
 The :func:`~pennylane.transforms.compile` transform allows you to chain together
 sequences of quantum function transforms into custom circuit optimization pipelines.
@@ -128,39 +127,180 @@ For more details on :func:`:func:`~pennylane.transforms.compile` and the availab
 Grouping Pauli words
 --------------------
 
-Grouping Pauli words can be used for the optimizing the measurement of qubit
-Hamiltonians. Along with groups of observables, post-measurement rotations can
-also be obtained using :func:`~.optimize_measurements`:
+Mutually commuting Pauli words can be measured simultaneously on a quantum computer.
+When given an observable that is a linear combination of Pauli words, it can therefore
+be useful to find such groups in order to optimize the number of individual expectations
+to estimate.
 
-.. code-block:: python
+This can be done with the :func:`~pennylane.group_observables` function:
 
-    >>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
-    >>> coeffs = [1.43, 4.21, 0.97]
-    >>> post_rotations, diagonalized_groupings, grouped_coeffs = optimize_measurements(obs, coeffs)
-    >>> post_rotations
-    [[RY(-1.5707963267948966, wires=[0]), RY(-1.5707963267948966, wires=[1])],
-     [RX(1.5707963267948966, wires=[0])]]
-
-The post-measurement rotations can be used to diagonalize the partitions of
-observables found.
+>>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+>>> coeffs = [1.43, 4.21, 0.97]
+>>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'anticommuting', 'lf')
+>>> obs_groupings
+[[PauliZ(wires=[1]), PauliX(wires=[0]) @ PauliX(wires=[1])],
+ [PauliY(wires=[0])]]
+>>> coeffs_groupings
+[[0.97, 4.21], [1.43]]
 
 For further details on measurement optimization, grouping observables through
-solving the minimum clique cover problem, and auxiliary functions, refer to the
+solving the minimum clique cover problem, and other Pauli operator logic, refer to the
 :doc:`/code/qml_grouping` subpackage.
 
-Simplify Hamiltonians
----------------------
+.. note::
+
+    PennyLane offers other methods to optimize measurements. See for example qubit tapering
+    functionality in the :mod:`~pennylane.hf.tapering` module,
+    which exploits molecular symmetries of Hamiltonians.
+
+
 
 Use custom decompositions for unknown gates
 -------------------------------------------
 
+PennyLane decomposes gates unknown to a particular device into other,
+"lower-level" gates. As a user you may want to fine-tune this mechanism,
+for example if you want your circuit to only use a certain gate set.
+
+For example, suppose we would like to implement the following QNode:
+
+.. code-block:: python
+
+    def circuit(weights):
+        qml.BasicEntanglerLayers(weights, wires=[0, 1, 2])
+        return qml.expval(qml.PauliZ(0))
+
+    original_dev = qml.device("default.qubit", wires=3)
+    original_qnode = qml.QNode(circuit, original_dev)
+
+>>> weights = np.array([[0.4, 0.5, 0.6]])
+>>> print(qml.draw(original_qnode, expansion_strategy="device")(weights))
+0: ──RX(0.4)──╭C──────╭X──┤ ⟨Z⟩
+1: ──RX(0.5)──╰X──╭C──│───┤
+2: ──RX(0.6)──────╰X──╰C──┤
+
+
+Now, let's swap out the decomposition of the ``CNOT`` gate into ``CZ``
+and ``Hadamard``, and furthermore the decomposition of ``Hadamard`` into
+``RZ`` and ``RY`` rather than the decomposition already available in PennyLane.
+We define the two decompositions like so, and pass them to a device:
+
+.. code-block:: python
+
+    def custom_cnot(wires):
+        return [
+            qml.Hadamard(wires=wires[1]),
+            qml.CZ(wires=[wires[0], wires[1]]),
+            qml.Hadamard(wires=wires[1])
+        ]
+
+    def custom_hadamard(wires):
+        return [
+            qml.RZ(np.pi, wires=wires),
+            qml.RY(np.pi / 2, wires=wires)
+        ]
+
+    # Can pass the operation itself, or a string
+    custom_decomps = {qml.CNOT : custom_cnot, "Hadamard" : custom_hadamard}
+
+    decomp_dev = qml.device("default.qubit", wires=3, custom_decomps=custom_decomps)
+    decomp_qnode = qml.QNode(circuit, decomp_dev)
+
+Now when we draw or run a QNode on this device, the gates will be expanded
+according to our specifications:
+
+>>> print(qml.draw(decomp_qnode, expansion_strategy="device")(weights))
+0: ──RX(0.4)──────────────────────╭C──RZ(3.14)──RY(1.57)──────────────────────────╭Z──RZ(3.14)──RY(1.57)──┤ ⟨Z⟩
+1: ──RX(0.5)──RZ(3.14)──RY(1.57)──╰Z──RZ(3.14)──RY(1.57)──╭C──────────────────────│───────────────────────┤
+2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
+`
+If the custom decomposition is only supposed to be used in a specific code context,
+a separate context manager :func:`~pennylane.set_decomposition` can be used:
+
+
+>>> with qml.transforms.set_decomposition(custom_decomps, original_dev):
+...     print(qml.draw(original_qnode, expansion_strategy="device")(weights))
+0: ──RX(0.4)──────────────────────╭C──RZ(3.14)──RY(1.57)──────────────────────────╭Z──RZ(3.14)──RY(1.57)──┤ ⟨Z⟩
+1: ──RX(0.5)──RZ(3.14)──RY(1.57)──╰Z──RZ(3.14)──RY(1.57)──╭C──────────────────────│───────────────────────┤
+2: ──RX(0.6)──RZ(3.14)──RY(1.57)──────────────────────────╰Z──RZ(3.14)──RY(1.57)──╰C──────────────────────┤
+
 Circuit cutting
 ---------------
 
+Circuit cutting allows you to replace a circuit with ``N`` wires by a set of circuits with less than
+``N`` wires (see also `Peng et. al <https://arxiv.org/abs/1904.00102>`_). Of course this comes with a cost: The smaller circuits
+require a greater number of device executions to be evaluated.
 
+In PennyLane, circuit cutting can be
+activated by positioning :class:`~pennylane.WireCut` operators at the desired cut locations, and
+by decorating the QNode with the :func:`~pennylane.transforms.cut_circuit` transform.
 
-general manipulation (insert, merge amplitude gates, )
+The example below shows how a three-wire circuit can be run on a two-wire device:
 
-decompositions (expansion etc.)
+.. code-block:: python
 
+    dev = qml.device("default.qubit", wires=2)
 
+    @qml.cut_circuit
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        qml.RY(0.9, wires=1)
+        qml.RX(0.3, wires=2)
+
+        qml.CZ(wires=[0, 1])
+        qml.RY(-0.4, wires=0)
+
+        qml.WireCut(wires=1)
+
+        qml.CZ(wires=[1, 2])
+
+        return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
+
+Instead of executing the circuit directly, it will be partitioned into
+smaller fragments according to the :class:`~pennylane.WireCut` locations,
+and each fragment executed multiple times. PennyLane automatically combines the results
+of the fragment executions to recover the expected output of the original uncut circuit.
+
+>>> x = np.array(0.531, requires_grad=True)
+>>> circuit(0.531)
+0.47165198882111165
+
+Circuit cutting support is also differentiable:
+
+>>> qml.grad(circuit)(x)
+-0.276982865449393
+
+Quantum circuits that produce samples can be simulated using t
+he :func:`~pennylane.transforms.cut_circuit_mc`
+transform based on the Monte Carlo method:
+
+.. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2, shots=1000)
+
+    @qml.cut_circuit_mc
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(0.89, wires=0)
+        qml.RY(0.5, wires=1)
+        qml.RX(1.3, wires=2)
+
+        qml.CNOT(wires=[0, 1])
+        qml.WireCut(wires=1)
+        qml.CNOT(wires=[1, 2])
+
+        qml.RX(x, wires=0)
+        qml.RY(0.7, wires=1)
+        qml.RX(2.3, wires=2)
+        return qml.sample(wires=[0, 2])
+
+>>> x = 0.3
+>>> circuit(x)
+tensor([[1, 1],
+        [0, 1],
+        [0, 1],
+        ...,
+        [0, 1],
+        [0, 1],
+        [0, 1]], requires_grad=True)
