@@ -908,7 +908,7 @@ class Device(abc.ABC):
                     "Apply the @qml.defer_measurements decorator to your quantum function to "
                     "simulate the application of mid-circuit measurements on this device."
                 )
-
+            # print(o, getattr(o, "inverse", "None"))
             if o.inverse:
                 # TODO: update when all capabilities keys changed to "supports_inverse_operations"
                 supports_inv = self.capabilities().get(

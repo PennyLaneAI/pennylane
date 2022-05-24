@@ -15,7 +15,7 @@
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
 
-from pennylane.operation import Operator, Operation, AdjointUndefinedError
+from pennylane.operation import Operator, Operation, AdjointUndefinedError, Observable
 from pennylane.queuing import QueuingContext, QueuingError
 from pennylane.math import transpose, conj
 
@@ -33,11 +33,11 @@ class AdjointOperation(Operation):
 
     @property
     def _inverse(self):
-        return self.base._inverse
+        return self.base._inverse  # pylint: disable=protected-access
 
     @_inverse.setter
     def _inverse(self, boolean):
-        self.base._inverse = boolean
+        self.base._inverse = boolean  # pylint: disable=protected-access
 
     def inv(self):
         self.base.inv()
@@ -134,28 +134,50 @@ class Adjoint(Operator):
 
     """
 
+    _operation_type = None  # type if base inherits from operation and not observable
+    _operation_observable_type = None  # type if base inherits from both operation and observable
+    _observable_type = None  # type if base inherits from observable and not oepration
+
     # pylint: disable=unused-argument
     def __new__(cls, base=None, do_queue=True, id=None):
-        # If base is Observable, Channel, etc, these additional parent classes will be added in here.
-        class_bases = base.__class__.__bases__
+        """Mixes in parents based on inheritance structure of base.
 
-        # And finally, we add in the `Adjoint` class
-        if Adjoint not in class_bases:
-            class_bases = (Adjoint,) + class_bases
+        Though all the types will be named "Adjoint", their *identity* and location in memory will be different
+        based on ``base``'s inheritance.  We cache the different types in private class variables so that:
 
-        # If the base is an Operation, we add in the AdjointOperation Mixin
-        if isinstance(base, Operation) and AdjointOperation not in class_bases:
-            class_bases = (AdjointOperation,) + class_bases
+        >>> Adjoint(op).__class__ is Adjoint(op).__class__
+        True
+        >>> type(Adjoint(op)) == type(Adjoint(op))
+        True
+        >>> Adjoint(qml.RX(1.2, wires=0)).__class__ is Adjoint._operation_type
+        True
+        >>> Adjoint(qml.PauliX(0)).__class__ is Adjoint._operation_observable_type
+        True
 
-        # `type` with three parameters accepts
-        # 1. name : a class name
-        # 2. bases: a tuple of all the base clases, the __bases__ attribute
-        # Note that the order of bases determines the Method Resolution Order
-        # 3. dict : the namespace for the class body
-        desired_type = type("Adjoint", class_bases, dict(cls.__dict__))
+        """
 
-        # __new__ must always return the new instance
-        return object.__new__(desired_type)
+        if isinstance(base, Operation):
+            if isinstance(base, Observable):
+                if cls._operation_observable_type is None:
+                    class_bases = (AdjointOperation, Adjoint, Observable, Operation)
+                    cls._operation_observable_type = type(
+                        "Adjoint", class_bases, dict(cls.__dict__)
+                    )
+                return object.__new__(cls._operation_observable_type)
+
+            # not an observable
+            if cls._operation_type is None:
+                class_bases = (AdjointOperation, Adjoint, Operation)
+                cls._operation_type = type("Adjoint", class_bases, dict(cls.__dict__))
+            return object.__new__(cls._operation_type)
+
+        if isinstance(base, Observable):
+            if cls._observable_type is None:
+                class_bases = (Adjoint, Observable)
+                cls._observable_type = type("Adjoint", class_bases, dict(cls.__dict__))
+            return object.__new__(cls._observable_type)
+
+        return object.__new__(Adjoint)
 
     # pylint: disable=attribute-defined-outside-init
     def __copy__(self):
@@ -171,6 +193,17 @@ class Adjoint(Operator):
             if attr not in {"data", "base", "_hyperparameters"}:
                 setattr(copied_op, attr, value)
 
+        return copied_op
+
+    def __deepcopy__(self, memo):
+        copied_op = object.__new__(type(self))
+        # The memo dict maps object ID to object, and is required by
+        # the deepcopy function to keep track of objects it has already
+        # deep copied.
+        memo[id(self)] = copied_op
+
+        for attribute, value in self.__dict__.items():
+            setattr(copied_op, attribute, value.__deepcopy__(memo))
         return copied_op
 
     # pylint: disable=super-init-not-called
@@ -248,7 +281,7 @@ class Adjoint(Operator):
     @staticmethod
     def compute_sparse_matrix(*params, base=None):
         base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
-        return transpose(conj(base_matrix))
+        return transpose(conj(base_matrix)).tocsr()
 
     def eigvals(self):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``eigvals``

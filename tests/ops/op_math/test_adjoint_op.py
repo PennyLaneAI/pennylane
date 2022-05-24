@@ -429,10 +429,10 @@ class TestMatrix:
 
 def test_sparse_matrix():
     """Test that the spare_matrix method returns the adjoint of the base sparse matrix."""
-    from scipy.sparse import coo_matrix
+    from scipy.sparse import csr_matrix
 
     H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
-    H = coo_matrix(H)
+    H = csr_matrix(H)
     base = qml.SparseHamiltonian(H, wires=0)
 
     op = Adjoint(base)
@@ -441,7 +441,7 @@ def test_sparse_matrix():
     base_conj_T = qml.numpy.conj(qml.numpy.transpose(base_sparse_mat))
     op_sparse_mat = op.sparse_matrix()
 
-    assert isinstance(op_sparse_mat, coo_matrix)
+    assert isinstance(op_sparse_mat, csr_matrix)
 
     assert qml.math.allclose(base_conj_T.toarray(), op_sparse_mat.toarray())
 
