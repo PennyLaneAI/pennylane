@@ -168,7 +168,7 @@ Hardware-compatible differentiation
 The following methods support both quantum hardware and simulators, and are examples of `forward
 accumulation <https://en.wikipedia.org/wiki/Automatic_differentiation#Forward_accumulation>`__.
 However, when using a simulator, you may notice that the time required to compute the gradients
-:doc:`scales quadratically <demos/tutorial_backprop>` with the number of trainable circuit
+with these methods :doc:`scales linearly <demos/tutorial_backprop>` with the number of trainable circuit
 parameters.
 
 * ``"parameter-shift"``: Use the analytic :doc:`parameter-shift rule
