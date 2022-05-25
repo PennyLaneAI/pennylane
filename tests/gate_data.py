@@ -7,7 +7,7 @@ import numpy as np
 #  fixed gates
 # ========================================================
 
-I = np.eye(2)
+Identity = np.eye(2)
 
 # Pauli matrices
 X = np.array([[0, 1], [1, 0]])  #: Pauli-X matrix
