@@ -38,7 +38,7 @@ from pennylane import DeviceError
 from pennylane.wires import Wires
 from pennylane.devices.default_qubit_torch import DefaultQubitTorch
 from gate_data import (
-    I,
+    Identity,
     X,
     Y,
     Z,

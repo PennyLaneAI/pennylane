@@ -15,7 +15,7 @@
 
 import pennylane as qml
 from pennylane import numpy as np
-from gate_data import I, SWAP
+from gate_data import Identity, SWAP
 
 
 def check_matrix_equivalence(matrix_expected, matrix_obtained, atol=1e-8):

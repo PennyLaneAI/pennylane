@@ -31,11 +31,11 @@ from pennylane.transforms.decompositions.two_qubit_unitary import (
 )
 
 from test_optimization.utils import check_matrix_equivalence
-from gate_data import I, Z, S, T, H, X, CNOT, SWAP
+from gate_data import Identity, Z, S, T, H, X, CNOT, SWAP
 
 single_qubit_decomps = [
     # First set of gates are diagonal and converted to RZ
-    (I, qml.RZ, [0.0]),
+    (Identity, qml.RZ, [0.0]),
     (Z, qml.RZ, [np.pi]),
     (S, qml.RZ, [np.pi / 2]),
     (T, qml.RZ, [np.pi / 4]),

@@ -18,7 +18,7 @@ import pennylane as qml
 import numpy as np
 
 from gate_data import (
-    I,
+    Identity,
     X,
     Y,
     Z,
@@ -31,7 +31,7 @@ OBSERVABLES = [
     (qml.PauliY, Y, [1, -1]),
     (qml.PauliZ, Z, [1, -1]),
     (qml.Hadamard, H, [1, -1]),
-    (qml.Identity, I, [1, 1]),
+    (qml.Identity, Identity, [1, 1]),
 ]
 
 # Hermitian matrices, their corresponding eigenvalues and eigenvectors.
@@ -57,7 +57,7 @@ EIGVALS_TEST_DATA = [
     ),
 ]
 
-EIGVALS_TEST_DATA_MULTI_WIRES = [functools.reduce(np.kron, [Y, I, Z])]
+EIGVALS_TEST_DATA_MULTI_WIRES = [functools.reduce(np.kron, [Y, Identity, Z])]
 
 # Testing Projector observable with the basis states.
 PROJECTOR_EIGVALS_TEST_DATA = [

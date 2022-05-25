@@ -20,7 +20,7 @@ import pytest
 import scipy
 
 import pennylane as qml
-from gate_data import CNOT, H, I
+from gate_data import CNOT, H, Identity
 from gate_data import Roty as RY
 from gate_data import S, X, Y, Z
 from pennylane import numpy as np
@@ -120,7 +120,9 @@ class TestSingleOperation:
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             res = qml.eigvals(H)
 
-        expected = np.linalg.eigvalsh(reduce(np.kron, [Z, Y]) - 0.5 * reduce(np.kron, [I, X]))
+        expected = np.linalg.eigvalsh(
+            reduce(np.kron, [Z, Y]) - 0.5 * reduce(np.kron, [Identity, X])
+        )
         assert np.allclose(res, expected)
 
     @pytest.mark.xfail(
@@ -137,7 +139,9 @@ class TestSingleOperation:
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             res = qml.eigvals(ansatz)(x)
 
-        expected = np.linalg.eigvalsh(reduce(np.kron, [Z, Y]) - 0.5 * reduce(np.kron, [I, X]))
+        expected = np.linalg.eigvalsh(
+            reduce(np.kron, [Z, Y]) - 0.5 * reduce(np.kron, [Identity, X])
+        )
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize(
@@ -249,7 +253,7 @@ class TestMultipleOperations:
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             res = qml.eigvals(tape)
 
-        expected = np.linalg.eigvals(np.kron(I, CNOT) @ np.kron(X, np.kron(S, H)))
+        expected = np.linalg.eigvals(np.kron(Identity, CNOT) @ np.kron(X, np.kron(S, H)))
         assert np.allclose(res, expected)
 
     def test_multiple_operations_qfunc(self):
@@ -264,7 +268,7 @@ class TestMultipleOperations:
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             res = qml.eigvals(testcircuit)()
 
-        expected = np.linalg.eigvals(np.kron(I, CNOT) @ np.kron(X, np.kron(S, H)))
+        expected = np.linalg.eigvals(np.kron(Identity, CNOT) @ np.kron(X, np.kron(S, H)))
         assert np.allclose(res, expected)
 
     def test_multiple_operations_qnode(self):
@@ -282,7 +286,9 @@ class TestMultipleOperations:
         with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
             res = qml.eigvals(testcircuit)()
 
-        expected = np.linalg.eigvals(np.kron(I, CNOT) @ np.kron(X, np.kron(np.linalg.inv(S), H)))
+        expected = np.linalg.eigvals(
+            np.kron(Identity, CNOT) @ np.kron(X, np.kron(np.linalg.inv(S), H))
+        )
         assert np.allclose(res, expected)
 
 

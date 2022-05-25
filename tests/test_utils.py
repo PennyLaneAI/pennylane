@@ -43,7 +43,7 @@ test_shapes = [
 ]
 
 # global variables and functions
-I = np.identity(2)
+Identity_2 = np.identity(2)
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
 Z = np.array([[1, 0], [0, -1]])
@@ -447,17 +447,17 @@ class TestExpand:
         """Test that a 1 qubit gate correctly expands to 3 qubits."""
         # test applied to wire 0
         res = pu.expand(U, [0], 3)
-        expected = np.kron(np.kron(U, I), I)
+        expected = np.kron(np.kron(U, Identity_2), Identity_2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 1
         res = pu.expand(U, [1], 3)
-        expected = np.kron(np.kron(I, U), I)
+        expected = np.kron(np.kron(Identity_2, U), Identity_2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 2
         res = pu.expand(U, [2], 3)
-        expected = np.kron(np.kron(I, I), U)
+        expected = np.kron(np.kron(Identity_2, Identity_2), U)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_one_wires_list(self, tol):

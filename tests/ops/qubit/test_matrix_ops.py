@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 from gate_data import (
-    I,
+    Identity,
     X,
     Z,
     H,
@@ -194,7 +194,7 @@ class TestQubitUnitary:
     @pytest.mark.parametrize(
         "U,expected_gate,expected_params",
         [
-            (I, qml.RZ, [0.0]),
+            (Identity, qml.RZ, [0.0]),
             (Z, qml.RZ, [np.pi]),
             (S, qml.RZ, [np.pi / 2]),
             (T, qml.RZ, [np.pi / 4]),

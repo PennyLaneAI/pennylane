@@ -22,7 +22,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.transforms.op_transforms import OperationTransformError
 
-from gate_data import I, X, Y, Z, H, S, CNOT, Roty as RY
+from gate_data import Identity, X, Y, Z, H, S, CNOT, Roty as RY
 
 one_qubit_no_parameter = [
     qml.PauliX,
@@ -122,14 +122,16 @@ class TestSingleOperation:
         perm = np.swapaxes(
             np.swapaxes(np.arange(2**5).reshape([2] * 5), 0, 1), 0, target_wire
         ).flatten()
-        expected = reduce(np.kron, [CNOT, I, I, I])[:, perm][perm]
+        expected = reduce(np.kron, [CNOT, Identity, Identity, Identity])[:, perm][perm]
         assert np.allclose(res, expected)
 
     def test_hamiltonian(self):
         """Test that the matrix of a Hamiltonian is correctly returned"""
         H = qml.PauliZ(0) @ qml.PauliY(1) - 0.5 * qml.PauliX(1)
         mat = qml.matrix(H, wire_order=[1, 0, 2])
-        expected = reduce(np.kron, [Y, Z, I]) - 0.5 * reduce(np.kron, [X, I, I])
+        expected = reduce(np.kron, [Y, Z, Identity]) - 0.5 * reduce(
+            np.kron, [X, Identity, Identity]
+        )
 
     @pytest.mark.xfail(
         reason="This test will fail because Hamiltonians are not queued to tapes yet!"
@@ -142,7 +144,7 @@ class TestSingleOperation:
 
         x = 0.5
         mat = qml.matrix(ansatz, wire_order=[1, 0, 2])(x)
-        expected = reduce(np.kron, [Y, Z, I]) - x * reduce(np.kron, [X, I, I])
+        expected = reduce(np.kron, [Y, Z, Identity]) - x * reduce(np.kron, [X, Identity, Identity])
 
 
 class TestMultipleOperations:
@@ -157,7 +159,7 @@ class TestMultipleOperations:
             qml.CNOT(wires=["b", "c"])
 
         matrix = qml.matrix(tape, wire_order)
-        expected_matrix = np.kron(I, CNOT) @ np.kron(X, np.kron(S, H))
+        expected_matrix = np.kron(Identity, CNOT) @ np.kron(X, np.kron(S, H))
         assert np.allclose(matrix, expected_matrix)
 
     def test_multiple_operations_qfunc(self):
@@ -171,7 +173,7 @@ class TestMultipleOperations:
             qml.CNOT(wires=["b", "c"])
 
         matrix = qml.matrix(testcircuit, wire_order)()
-        expected_matrix = np.kron(I, CNOT) @ np.kron(X, np.kron(S, H))
+        expected_matrix = np.kron(Identity, CNOT) @ np.kron(X, np.kron(S, H))
         assert np.allclose(matrix, expected_matrix)
 
     def test_multiple_operations_qnode(self):
@@ -187,7 +189,7 @@ class TestMultipleOperations:
             return qml.expval(qml.PauliZ("a"))
 
         matrix = qml.matrix(testcircuit)()
-        expected_matrix = np.kron(I, CNOT) @ np.kron(X, np.kron(np.linalg.inv(S), H))
+        expected_matrix = np.kron(Identity, CNOT) @ np.kron(X, np.kron(np.linalg.inv(S), H))
         assert np.allclose(matrix, expected_matrix)
 
 
@@ -196,7 +198,7 @@ class TestCustomWireOrdering:
         """Test wire order of a tensor product"""
         H = qml.PauliZ(0) @ qml.PauliX(1)
         res = qml.matrix(H, wire_order=[0, 2, 1])
-        expected = np.kron(Z, np.kron(I, X))
+        expected = np.kron(Z, np.kron(Identity, X))
         assert np.allclose(res, expected)
 
     def test_tape_wireorder(self):
@@ -246,7 +248,7 @@ class TestCustomWireOrdering:
         x = 0.5
 
         # default wire ordering will come from the device
-        expected_matrix = np.kron(RY(x), np.kron(X, np.kron(Z, I)))
+        expected_matrix = np.kron(RY(x), np.kron(X, np.kron(Z, Identity)))
         assert np.allclose(testcircuit(x), expected_matrix)
 
         @qml.matrix(wire_order=[1, 0, 2])
@@ -403,9 +405,9 @@ class TestInterfaces:
         theta_np = theta.numpy()
         matrix1 = np.kron(
             qml.RZ(beta, wires=0).matrix(),
-            np.kron(qml.RZ(theta_np[0], wires=1).matrix(), I),
+            np.kron(qml.RZ(theta_np[0], wires=1).matrix(), Identity),
         )
-        matrix2 = np.kron(I, qml.CRY(theta_np[1], wires=[1, 2]).matrix())
+        matrix2 = np.kron(Identity, qml.CRY(theta_np[1], wires=[1, 2]).matrix())
         expected_matrix = matrix2 @ matrix1
 
         assert np.allclose(matrix, expected_matrix)
@@ -433,9 +435,9 @@ class TestInterfaces:
         # expected matrix
         matrix1 = np.kron(
             qml.RZ(theta[0], wires=0).matrix(),
-            np.kron(qml.RZ(theta[1], wires=1).matrix(), I),
+            np.kron(qml.RZ(theta[1], wires=1).matrix(), Identity),
         )
-        matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix())
+        matrix2 = np.kron(Identity, qml.CRY(theta[2], wires=[1, 2]).matrix())
         expected_matrix = matrix2 @ matrix1
 
         assert np.allclose(matrix, expected_matrix)
@@ -457,9 +459,9 @@ class TestInterfaces:
         # expected matrix
         matrix1 = np.kron(
             qml.RZ(theta[0], wires=0).matrix(),
-            np.kron(qml.RZ(theta[1], wires=1).matrix(), I),
+            np.kron(qml.RZ(theta[1], wires=1).matrix(), Identity),
         )
-        matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix())
+        matrix2 = np.kron(Identity, qml.CRY(theta[2], wires=[1, 2]).matrix())
         expected_matrix = matrix2 @ matrix1
 
         assert np.allclose(matrix, expected_matrix)
@@ -488,9 +490,9 @@ class TestInterfaces:
         # expected matrix
         matrix1 = np.kron(
             qml.RZ(theta[0], wires=0).matrix(),
-            np.kron(qml.RZ(theta[1], wires=1).matrix(), I),
+            np.kron(qml.RZ(theta[1], wires=1).matrix(), Identity),
         )
-        matrix2 = np.kron(I, qml.CRY(theta[2], wires=[1, 2]).matrix())
+        matrix2 = np.kron(Identity, qml.CRY(theta[2], wires=[1, 2]).matrix())
         expected_matrix = matrix2 @ matrix1
 
         assert np.allclose(matrix, expected_matrix)

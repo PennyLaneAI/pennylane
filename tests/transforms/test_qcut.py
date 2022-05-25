@@ -34,7 +34,7 @@ from pennylane.wires import Wires
 
 pytestmark = pytest.mark.qcut
 
-I, X, Y, Z = (
+Identity, X, Y, Z = (
     np.eye(2),
     qml.PauliX.compute_matrix(),
     qml.PauliY.compute_matrix(),
@@ -2936,7 +2936,7 @@ class TestQCutProcessingFn:
         U = unitary_group.rvs(2**n, random_state=1967)
 
         # First, create target process tensor
-        basis = np.array([I, X, Y, Z]) / np.sqrt(2)
+        basis = np.array([Identity, X, Y, Z]) / np.sqrt(2)
         prod_inp = itertools.product(range(4), repeat=n)
         prod_out = itertools.product(range(4), repeat=n)
 
@@ -3002,7 +3002,7 @@ class TestQCutProcessingFn:
 
         ### Find the result using qcut_processing_fn
 
-        meas_basis = [I, Z, X, Y]
+        meas_basis = [Identity, Z, X, Y]
         states = [np.outer(s, s.conj()) for s in states_pure]
         zero_proj = states[0]
 

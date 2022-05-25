@@ -27,7 +27,7 @@ from pennylane import DeviceError
 from pennylane.wires import Wires
 from pennylane.devices.default_qubit_tf import DefaultQubitTF
 from gate_data import (
-    I,
+    Identity,
     X,
     Y,
     Z,
@@ -204,9 +204,11 @@ class TestTFMatrix:
         reg_mat = op(param, wires=wires).matrix()
 
         if len(wires) == 1:
-            expected_mat = qml.math.kron(I, qml.math.kron(reg_mat, qml.math.kron(I, I)))
+            expected_mat = qml.math.kron(
+                Identity, qml.math.kron(reg_mat, qml.math.kron(Identity, Identity))
+            )
         else:
-            expected_mat = qml.math.kron(I, qml.math.kron(reg_mat, I))
+            expected_mat = qml.math.kron(Identity, qml.math.kron(reg_mat, Identity))
 
         tf_mat = op(tf.Variable(param), wires=wires).matrix()
         obtained_mat = qml.utils.expand(tf_mat, wires, list(range(4)))

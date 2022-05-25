@@ -106,7 +106,7 @@ def fock_prob(cov, mu, event, hbar=2.0):
     """
     # number of modes
     N = len(mu) // 2
-    I = np.identity(N)
+    id = np.identity(N)
 
     # mean displacement of each mode
     alpha = (mu[:N] + 1j * mu[N:]) / math.sqrt(2 * hbar)
@@ -117,7 +117,7 @@ def fock_prob(cov, mu, event, hbar=2.0):
     xp = cov[:N, N:] * 2 / hbar
     p = cov[N:, N:] * 2 / hbar
     # the (Hermitian) matrix elements <a_i^\dagger a_j>
-    aidaj = (x + p + 1j * (xp - xp.T) - 2 * I) / 4
+    aidaj = (x + p + 1j * (xp - xp.T) - 2 * id) / 4
     # the (symmetric) matrix elements <a_i a_j>
     aiaj = (x - p + 1j * (xp + xp.T)) / 4
 
@@ -137,8 +137,8 @@ def fock_prob(cov, mu, event, hbar=2.0):
         return (prefactor * sqrt_Qdet).real / np.prod(fac(event))
 
     # the matrix X_n = [[0, I_n], [I_n, 0]]
-    O = np.zeros_like(I)
-    X = np.block([[O, I], [I, O]])
+    O = np.zeros_like(id)
+    X = np.block([[O, id], [id, O]])
 
     gamma = X @ Qinv.conj() @ beta
 

@@ -110,7 +110,7 @@ if not set(all_ops) == all_available_ops:
     )
 
 # non-parametrized qubit gates
-I = np.identity(2)
+Identity_2 = np.identity(2)
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
 Z = np.array([[1, 0], [0, -1]])
@@ -125,13 +125,13 @@ CZ = np.diag([1, 1, 1, -1])
 CY = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
 toffoli = np.diag([1 for i in range(8)])
 toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
-CSWAP = block_diag(I, I, SWAP)
+CSWAP = block_diag(Identity_2, Identity_2, SWAP)
 
 # parametrized qubit gates
 phase_shift = lambda phi: np.array([[1, 0], [0, np.exp(1j * phi)]])
-rx = lambda theta: cos(theta / 2) * I + 1j * sin(-theta / 2) * X
-ry = lambda theta: cos(theta / 2) * I + 1j * sin(-theta / 2) * Y
-rz = lambda theta: cos(theta / 2) * I + 1j * sin(-theta / 2) * Z
+rx = lambda theta: cos(theta / 2) * Identity_2 + 1j * sin(-theta / 2) * X
+ry = lambda theta: cos(theta / 2) * Identity_2 + 1j * sin(-theta / 2) * Y
+rz = lambda theta: cos(theta / 2) * Identity_2 + 1j * sin(-theta / 2) * Z
 rot = lambda a, b, c: rz(c) @ (ry(b) @ rz(a))
 crz = lambda theta: np.array(
     [
