@@ -464,17 +464,17 @@ class TestExpand:
         """Test that a 1 qubit gate correctly expands to 3 qubits."""
         # test applied to wire 0
         res = pu.expand(U, [0], [0, 4, 9])
-        expected = np.kron(np.kron(U, I), I)
+        expected = np.kron(np.kron(U, Identity_2), Identity_2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 4
         res = pu.expand(U, [4], [0, 4, 9])
-        expected = np.kron(np.kron(I, U), I)
+        expected = np.kron(np.kron(Identity_2, U), Identity_2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 9
         res = pu.expand(U, [9], [0, 4, 9])
-        expected = np.kron(np.kron(I, I), U)
+        expected = np.kron(np.kron(Identity_2, Identity_2), U)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_two_consecutive_wires(self, tol):
@@ -483,17 +483,17 @@ class TestExpand:
 
         # test applied to wire 0+1
         res = pu.expand(U2, [0, 1], 4)
-        expected = np.kron(np.kron(U2, I), I)
+        expected = np.kron(np.kron(U2, Identity_2), Identity_2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 1+2
         res = pu.expand(U2, [1, 2], 4)
-        expected = np.kron(np.kron(I, U2), I)
+        expected = np.kron(np.kron(Identity_2, U2), Identity_2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 2+3
         res = pu.expand(U2, [2, 3], 4)
-        expected = np.kron(np.kron(I, I), U2)
+        expected = np.kron(np.kron(Identity_2, Identity_2), U2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_two_reversed_wires(self, tol):
@@ -503,7 +503,7 @@ class TestExpand:
         # CNOT with target on wire 1
         res = pu.expand(CNOT, [1, 0], 4)
         rows = np.array([0, 2, 1, 3])
-        expected = np.kron(np.kron(CNOT[:, rows][rows], I), I)
+        expected = np.kron(np.kron(CNOT[:, rows][rows], Identity_2), Identity_2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_invalid_wires(self):
@@ -525,12 +525,12 @@ class TestExpand:
 
         # test applied to wire 0,1,2
         res = pu.expand(U_toffoli, [0, 1, 2], 4)
-        expected = np.kron(U_toffoli, I)
+        expected = np.kron(U_toffoli, Identity_2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 1,2,3
         res = pu.expand(U_toffoli, [1, 2, 3], 4)
-        expected = np.kron(I, U_toffoli)
+        expected = np.kron(Identity_2, U_toffoli)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_three_nonconsecutive_ascending_wires(self, tol):
@@ -540,14 +540,18 @@ class TestExpand:
         # test applied to wire 0,2,3
         res = pu.expand(U_toffoli, [0, 2, 3], 4)
         expected = (
-            np.kron(SWAP, np.kron(I, I)) @ np.kron(I, U_toffoli) @ np.kron(SWAP, np.kron(I, I))
+            np.kron(SWAP, np.kron(Identity_2, Identity_2))
+            @ np.kron(Identity_2, U_toffoli)
+            @ np.kron(SWAP, np.kron(Identity_2, Identity_2))
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 0,1,3
         res = pu.expand(U_toffoli, [0, 1, 3], 4)
         expected = (
-            np.kron(np.kron(I, I), SWAP) @ np.kron(U_toffoli, I) @ np.kron(np.kron(I, I), SWAP)
+            np.kron(np.kron(Identity_2, Identity_2), SWAP)
+            @ np.kron(U_toffoli, Identity_2)
+            @ np.kron(np.kron(Identity_2, Identity_2), SWAP)
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -559,7 +563,7 @@ class TestExpand:
         res = pu.expand(U_toffoli, [3, 1, 2], 4)
         # change the control qubit on the Toffoli gate
         rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
-        expected = np.kron(I, U_toffoli[:, rows][rows])
+        expected = np.kron(Identity_2, U_toffoli[:, rows][rows])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 3, 0, 2
@@ -567,9 +571,9 @@ class TestExpand:
         # change the control qubit on the Toffoli gate
         rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
         expected = (
-            np.kron(SWAP, np.kron(I, I))
-            @ np.kron(I, U_toffoli[:, rows][rows])
-            @ np.kron(SWAP, np.kron(I, I))
+            np.kron(SWAP, np.kron(Identity_2, Identity_2))
+            @ np.kron(Identity_2, U_toffoli[:, rows][rows])
+            @ np.kron(SWAP, np.kron(Identity_2, Identity_2))
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
