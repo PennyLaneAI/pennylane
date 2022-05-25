@@ -14,16 +14,106 @@
 """
 This submodule defines the symbolic operation that indicates the power of an operator.
 """
-from pennylane.operation import Operator, PowUndefinedError
+from scipy.linalg import fractional_matrix_power
+
+from pennylane.operation import Operator, Operation, Observable, PowUndefinedError
 from pennylane.queuing import QueuingContext, QueuingError
+
+from pennylane import math as qmlmath
+
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
 
+# pylint: disable=no-member
+class PowOperation(Operation):
+    """Operation-specific methods and properties for the ``Pow`` class.
+
+    Dynamically mixed in based on the provided base matrix.
+
+
+    """
+
+    def inv(self):
+        self.z *= -1
+        self._name = f"{self.base.name}**{self.z}"
+        return self
+
+    @property
+    def base_name(self):
+        return self._name
+
+    @property
+    def name(self):
+        return self._name
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def basis(self):
+        return self.base.basis
+
+    @property
+    def control_wires(self):
+        return self.base.control_wires
+
+
 class Pow(Operator):
+    """Symbolic operator denoting an operator raised to a power.
+
+    Args:
+        base (~.operation.Operator): the operator to be raised to a power
+        z=0 (float): the exponent
+
+    **Example**
+
+    >>> sqrt_x = Pow(qml.PauliX(0), 0.5)
+    >>> sqrt_x.decomposition()
+    [SX(wires=[0])]
+    >>> qml.matrix(sqrt_x)
+    array([[0.5+0.5j, 0.5-0.5j],
+       [0.5-0.5j, 0.5+0.5j]])
+    >>> qml.matrix(qml.SX(0))
+    array([[0.5+0.5j, 0.5-0.5j],
+       [0.5-0.5j, 0.5+0.5j]])
+    >>> qml.matrix(Pow(qml.T(0), 1.234))
+    array([[1.        +0.j        , 0.        +0.j        ],
+       [0.        +0.j        , 0.56597465+0.82442265j]])
+
     """
-    docstring
-    """
+
+    _operation_type = None  # type if base inherits from operation and not observable
+    _operation_observable_type = None  # type if base inherits from both operation and observable
+    _observable_type = None  # type if base inherits from observable and not oepration
+
+    # pylint: disable=unused-argument
+    def __new__(cls, base=None, do_queue=True, id=None):
+        """Mixes in parents based on inheritance structure of base.
+
+        Though all the types will be named "Pow", their *identity* and location in memory will be different
+        based on ``base``'s inheritance.  We cache the different types in private class variables so that:
+
+        """
+
+        if isinstance(base, Operation):
+            if isinstance(base, Observable):
+                if cls._operation_observable_type is None:
+                    class_bases = (PowOperation, Pow, Observable, Operation)
+                    cls._operation_observable_type = type("Pow", class_bases, dict(cls.__dict__))
+                return object.__new__(cls._operation_observable_type)
+
+            # not an observable
+            if cls._operation_type is None:
+                class_bases = (PowOperation, Pow, Operation)
+                cls._operation_type = type("Pow", class_bases, dict(cls.__dict__))
+            return object.__new__(cls._operation_type)
+
+        if isinstance(base, Observable):
+            if cls._observable_type is None:
+                class_bases = (Pow, Observable)
+                cls._observable_type = type("Pow", class_bases, dict(cls.__dict__))
+            return object.__new__(cls._observable_type)
+
+        return object.__new__(Pow)
 
     # pylint: disable=attribute-defined-outside-init
     def __copy__(self):
@@ -42,7 +132,11 @@ class Pow(Operator):
         return copied_op
 
     # pylint: disable=super-init-not-called
-    def __init__(self, base=None, z=None, do_queue=True, id=None):
+    def __init__(self, base=None, z=0, do_queue=True, id=None):
+        if getattr(base, "inverse", False):
+            base.inverse = False
+            z *= -1
+
         self.hyperparameters["base"] = base
         self.hyperparameters["z"] = z
         self._id = id
@@ -104,6 +198,31 @@ class Pow(Operator):
         z_string = format(self.z).translate(_superscript)
         return self.base.label(decimals, base_label, cache=cache) + z_string
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self):
+        return self.base.has_matrix
+
+    # pylint: disable=arguments-differ
+    @staticmethod
+    def compute_matrix(*params, base=None, z=0):
+        base_matrix = base.compute_matrix(*params, **base.hyperparameters)
+
+        if isinstance(z, int):
+            return qmlmath.linalg.matrix_power(base_matrix, z)
+
+        return fractional_matrix_power(base_matrix, z)
+
+    # pylint: disable=arguments-differ
+    @staticmethod
+    def compute_sparse_matrix(*params, base=None, z=0):
+        base_matrix = base.compute_matrix(*params, **base.hyperparameters)
+
+        if isinstance(z, int):
+            return qmlmath.linalg.matrix_power(base_matrix, z)
+
+        return fractional_matrix_power(base_matrix, z)
+
     # pylint: disable=raise-missing-from
     def decomposition(self):
         try:
@@ -112,3 +231,17 @@ class Pow(Operator):
             if isinstance(self.z, int) and self.z > 0:
                 return [self.base.__copy__() for _ in range(self.z)]
             raise NotImplementedError
+
+    def generator(self):
+        return self.z * self.base.generator()
+
+    @property
+    def _queue_category(self):
+        """Used for sorting objects into their respective lists in `QuantumTape` objects.
+
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
+
+        Returns ``_queue_cateogory`` for base operator.
+        """
+        return self.base._queue_category  # pylint: disable=protected-access
