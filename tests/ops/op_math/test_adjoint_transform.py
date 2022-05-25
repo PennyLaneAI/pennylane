@@ -59,7 +59,7 @@ class TestPreconstructedOp:
             out = adjoint(base, lazy=False)
 
         assert isinstance(out, qml.RX)
-        assert out.data == [1.2]
+        assert out.data == [-1.2]
         assert len(tape) == 1
         assert tape[0] is out
 

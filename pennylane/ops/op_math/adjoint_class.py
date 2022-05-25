@@ -14,8 +14,6 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
-from copy import deepcopy
-
 from pennylane.operation import Operator, Operation, AdjointUndefinedError, Observable
 from pennylane.queuing import QueuingContext, QueuingError
 from pennylane.math import transpose, conj
@@ -30,7 +28,7 @@ class AdjointOperation(Operation):
 
     Overriding the dunder method ``__new__`` in ``Adjoint`` allows us to customize the creation of an instance and dynamically
     add in parent classes.
-    
+
     .. note:: Once the ``Operation`` class does not contain any unique logic any more, this mixin class can be removed.
     """
 
@@ -203,17 +201,6 @@ class Adjoint(Operator):
             if attr not in {"data", "base", "_hyperparameters"}:
                 setattr(copied_op, attr, value)
 
-        return copied_op
-
-    def __deepcopy__(self, memo):
-        copied_op = object.__new__(type(self))
-        # The memo dict maps object ID to object, and is required by
-        # the deepcopy function to keep track of objects it has already
-        # deep copied.
-        memo[id(self)] = copied_op
-
-        for attribute, value in self.__dict__.items():
-            setattr(copied_op, attribute, deepcopy(value, memo))
         return copied_op
 
     # pylint: disable=super-init-not-called
