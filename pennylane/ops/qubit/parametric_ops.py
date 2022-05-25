@@ -2606,6 +2606,7 @@ class IsingXY(Operation):
 
         """
         return [
+            qml.Hadamard(wires=[wires[0]]),
             qml.CY(wires=wires),
             qml.RY(phi / 2, wires=[wires[0]]),
             qml.RX(-phi / 2, wires=[wires[1]]),
