@@ -234,6 +234,40 @@ class TestAnnotatedQueue:
         with pytest.raises(QueuingError, match="not in the queue"):
             q._update_info(B, inv=True)
 
+    def test_safe_update_info_queued(self):
+
+        op = qml.RX(0.5, wires=1)
+
+        with AnnotatedQueue() as q:
+            q.append(op, key="value1")
+            assert q.get_info(op) == {"key": "value1"}
+            qml.QueuingContext.safe_update_info(op, key="value2")
+
+        qml.QueuingContext.safe_update_info(op, key="no changes here")
+        assert q.get_info(op) == {"key": "value2"}
+
+        q.safe_update_info(op, key="value3")
+        assert q.get_info(op) == {"key": "value3"}
+
+        q._safe_update_info(op, key="value4")
+        assert q.get_info(op) == {"key": "value4"}
+
+    def test_safe_update_info_not_queued(self):
+
+        op = qml.RX(0.5, wires=1)
+
+        with AnnotatedQueue() as q:
+            qml.QueuingContext.safe_update_info(op, key="value2")
+        qml.QueuingContext.safe_update_info(op, key="no changes here")
+
+        assert len(q.queue) == 0
+
+        q.safe_update_info(op, key="value3")
+        assert len(q.queue) == 0
+
+        q._safe_update_info(op, key="value4")
+        assert len(q.queue) == 0
+
     def test_append_annotating_object(self):
         """Test appending an object that writes annotations when queuing itself"""
 

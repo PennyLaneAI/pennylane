@@ -861,13 +861,9 @@ class TestTensor:
         with qml.tape.QuantumTape() as tape:
             T.queue()
 
-        assert len(tape.queue) == 3
-        assert tape.queue[0] is op1
-        assert tape.queue[1] is op2
-        assert tape.queue[2] is T
+        assert len(tape.queue) == 1
+        assert tape.queue[0] is T
 
-        assert tape._queue[op1] == {"owner": T}
-        assert tape._queue[op2] == {"owner": T}
         assert tape._queue[T] == {"owns": (op1, op2)}
 
     def test_queuing(self):
