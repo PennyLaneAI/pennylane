@@ -109,7 +109,9 @@ class DefaultMixed(QubitDevice):
         "ThermalRelaxationError",
     }
 
-    def __init__(self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None):
+    def __init__(
+        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
+    ):
         if isinstance(wires, int) and wires > 23:
             raise ValueError(
                 "This device does not currently support computations on more than 23 wires"
@@ -142,10 +144,7 @@ class DefaultMixed(QubitDevice):
     def capabilities(cls):
         capabilities = super().capabilities().copy()
         capabilities.update(
-            returns_state=True,
-            passthru_devices={
-                "autograd": "default.mixed.autograd"
-            }
+            returns_state=True, passthru_devices={"autograd": "default.mixed.autograd"}
         )
         return capabilities
 
