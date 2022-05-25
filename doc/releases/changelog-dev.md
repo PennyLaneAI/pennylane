@@ -4,7 +4,8 @@
 
 <h3>New features since last release</h3>
 
-* Support adding `Observable` objects to the integer `0`. [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603)
+* Support adding `Observable` objects to the integer `0`.
+  [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603)
 
   This allows us to directly sum a list of observables as follows:
   ```
