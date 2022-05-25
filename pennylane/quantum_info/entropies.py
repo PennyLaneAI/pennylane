@@ -55,7 +55,7 @@ def _compute_vn_entropy(density_matrix, base=None):
         div_base = 1
 
     # Get eigenvalues
-    evs = qml.math.cast(qml.math.linalg.eigvals(density_matrix), "float64")
+    evs = qml.math.linalg.eigvalsh(density_matrix)
 
     # Change the base if provided, default is log in base 2
     interface = get_interface(evs)
@@ -75,6 +75,7 @@ def _compute_vn_entropy(density_matrix, base=None):
     elif interface == "tensorflow":
         import tensorflow as tf
 
+        evs = tf.math.real(evs)
         evs = tf.Variable([ev for ev in evs if ev >= 0])
         entropy = -tf.math.reduce_sum(evs * tf.math.log(evs) / div_base)
 
