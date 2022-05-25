@@ -137,8 +137,8 @@ def fock_prob(cov, mu, event, hbar=2.0):
         return (prefactor * sqrt_Qdet).real / np.prod(fac(event))
 
     # the matrix X_n = [[0, I_n], [I_n, 0]]
-    O = np.zeros_like(id)
-    X = np.block([[O, id], [id, O]])
+    zeros = np.zeros_like(id)
+    X = np.block([[zeros, id], [id, zeros]])
 
     gamma = X @ Qinv.conj() @ beta
 
