@@ -243,8 +243,8 @@ class TestDecompositions:
         assert res[0].wires == Wires([0])
         assert res[1].wires == Wires([1])
         assert res[2].wires == Wires([0])
-        assert res[3].wires == Wires([0, 1])
-        assert res[4].wires == Wires([1, 0])
+        assert res[3].wires == Wires([0,1])
+        assert res[4].wires == Wires([1,0])
         assert res[5].wires == Wires([1])
 
         assert res[0].name == "S"
@@ -253,7 +253,6 @@ class TestDecompositions:
         assert res[3].name == "CNOT"
         assert res[4].name == "CNOT"
         assert res[5].name == "Hadamard"
-
         mats = []
         for i in reversed(res):
             if i.wires == Wires([1]):
@@ -276,18 +275,19 @@ class TestDecompositions:
         assert len(res) == 6
 
         assert res[0].wires == Wires([0])
-        assert res[1].wires == Wires([1])
-        assert res[2].wires == Wires([0])
-        assert res[3].wires == Wires([0, 1])
-        assert res[4].wires == Wires([1, 0])
-        assert res[5].wires == Wires([1])
-
-        assert res[0].name == "S"
-        assert res[1].name == "S"
-        assert res[2].name == "Hadamard"
-        assert res[3].name == "CNOT"
-        assert res[4].name == "CNOT"
-        assert res[5].name == "Hadamard"
+        assert res[1].wires == Wires([0,1])
+        assert res[2].wires == Wires([1])
+        assert res[3].wires == Wires([0])
+        assert res[4].wires == Wires([0])
+        assert res[5].wires == Wires([0])
+        
+        
+        assert res[0].name == "PauliZ"
+        assert res[1].name == "CNOT"
+        assert res[2].name == "SX"
+        assert res[3].name == "RX"
+        assert res[4].name == "RY"
+        assert res[5].name == "RX"
 
         mats = []
         for i in reversed(res):
@@ -301,7 +301,6 @@ class TestDecompositions:
                 mats.append(i.matrix())
 
         decomposed_matrix = np.linalg.multi_dot(mats)
-        print('works')
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)        
 
@@ -463,7 +462,13 @@ class TestEigenval:
         exp = np.linalg.eigvals(op.matrix())
         res = op.eigvals()
         assert np.allclose(res, exp)
-
+    def test_ECR_eigenval(self):
+        """Tests that the ECR eigenvalue matches the numpy eigenvalues of the ECR matrix"""
+        op = qml.ECR(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix())
+        res = op.eigvals()
+        assert np.allclose(res, exp)
+        
     @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW])
     def test_siswap_eigenval(self, siswap_op):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
@@ -477,7 +482,6 @@ class TestEigenval:
         evals = qml.SX(wires=0).eigvals()
         expected = np.linalg.eigvals(qml.SX(wires=0).matrix())
         assert np.allclose(evals, expected)
-
 
 class TestBarrier:
     """Tests that the Barrier gate is correct"""
@@ -1221,6 +1225,7 @@ control_data = [
     (qml.SWAP(wires=(0, 1)), Wires([])),
     (qml.ISWAP(wires=(0, 1)), Wires([])),
     (qml.SISWAP(wires=(0, 1)), Wires([])),
+    (qml.ISWAP(wires=(0, 1)), Wires([])),
     (qml.CNOT(wires=(0, 1)), Wires(0)),
     (qml.CZ(wires=(0, 1)), Wires(0)),
     (qml.CY(wires=(0, 1)), Wires(0)),
@@ -1305,5 +1310,4 @@ def test_adjoint_method(op, tol):
             )  # compare matrix if its defined
         except qml.operation.OperatorPropertyUndefined:
             pass
-test = TestDecompositions()
-print(test)
+

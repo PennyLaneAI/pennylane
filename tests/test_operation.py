@@ -26,7 +26,7 @@ from numpy.linalg import multi_dot
 import pennylane as qml
 from pennylane.operation import Tensor, operation_derivative, Operator, Operation
 
-from gate_data import I, X, CNOT
+from gate_data import I, X, CNOT, ECR
 from pennylane.wires import Wires
 
 
@@ -1939,3 +1939,8 @@ def test_docstring_example_of_operator_class(tol):
     res = circuit(a)
     expected = -0.9999987318946099
     assert np.allclose(res, expected, atol=tol)
+    
+
+
+
+

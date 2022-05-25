@@ -1266,25 +1266,30 @@ class SWAP(Operation):
         
 class ECR(Operation): 
     
-    r""" ADD STUFF HERE
-    .. math:: ECR = 1/sqrt(2) \begin{bmatrix}
-          0 & 0  & 1 & i \\ 
-          0 & 0  & i & 1 \\ 
-          1 & -i & 0 & 0 \\
-         -i & 1  & 0 & 0 \\    
-    \end{bmatrix}. 
-    
-    **Details:** 
-    
-    * Number of wires: 2 
-    * Number of parameters: 0 
-    
-    Args: 
-        wires (int): the subsystem the gate acts on 
-        do_queue (bool): Indicated whether the operator should be immediately pushed into the operator queue (optional) 
-        id (str or None): String representing the operation (optional) 
-        
+    r""" ECR(wires)
+
+    An echoed RZX(pi/2) gate.
+
+    .. math:: \mathtt{ECR} = {1/\sqrt{2}} \begin{bmatrix}
+            0 & 0 & 1 & i \\
+            0 & 0 & i & 1 \\
+            1 & -i & 0 & 0 \\
+            -i & 1 & 0 & 0
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 0
+
+    Args:
+        wires (int): the subsystem the gate acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
     """
+    
+    
     num_wires = 2 
     num_params = 0 
     def __init__(self, wires, do_queue=True, id=None):
@@ -1311,7 +1316,7 @@ class ECR(Operation):
          [1/sqrt(2)+0.j 0.-1.j/sqrt(2) 0.+0.j 0.+0.j]
          [0.-1/sqrt(2)j 1/sqrt(2)+0.j 0.+0.j 0.+0.j]]
 """
-        return (INV_SQRT2*np.array([[0, 0, 1, 1j], [0, 0, 1j, 1], [1, -1j, 0, 0], [-1j, 1, 0, 0]]))
+        return (np.array([[0, 0, INV_SQRT2, INV_SQRT2*1j], [0, 0, INV_SQRT2*1j, INV_SQRT2], [INV_SQRT2, -INV_SQRT2*1j, 0, 0], [-INV_SQRT2*1j, INV_SQRT2, 0, 0]]))
     @staticmethod 
     def compute_eigvals():
         r"""Eigenvalues of the operator in the computational basis (static method).
@@ -1325,7 +1330,7 @@ class ECR(Operation):
 
         Otherwise, no particular order for the eigenvalues is guaranteed.
 
-        .. seealso:: :meth:`~.ISWAP.eigvals`
+        .. seealso:: :meth:`~.ECR.eigvals`
 
 
         Returns:
@@ -1337,8 +1342,7 @@ class ECR(Operation):
         [-1, -1, 1, 1] 
         
         """
-        #This is complete 
-        return np.array([-1,-1,1,1])
+        return np.array([ 1, -1, 1, -1])
     @staticmethod
     def compute_decomposition(wires):
         r"""Representation of the operator as a product of other operators (static method).
@@ -1357,31 +1361,31 @@ class ECR(Operation):
         **Example:**
 
         >>> print(qml.ECR.compute_decomposition((0,1)))
-        [S(wires=[0]),
-        S(wires=[1]),
-        Hadamard(wires=[0]),
-        CNOT(wires=[0, 1]),
-        CNOT(wires=[1, 0]),
-        Hadamard(wires=[1])] 
-        !!!!review this docstring and calculation idk what is happening 
+        
+        [   PauliZ(wires=[wires[0]]),
+            CNOT(wires=[wires[0], wires[1]]),
+            SX(wires=[wires[1]]),
+            qml.RX(pi / 2, wires=[wires[0]]),
+            qml.RY(pi / 2, wires=[wires[0]]),
+            qml.RX(pi / 2, wires=[wires[0]]),]
 
         """   
         pi = np.pi
         return [
-            qml.PauliZ(wires=[wires[0]]),
-            qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.SX(wires=[wires[1]]),
+            PauliZ(wires=[wires[0]]),
+            CNOT(wires=[wires[0], wires[1]]),
+            SX(wires=[wires[1]]),
             qml.RX(pi / 2, wires=[wires[0]]),
             qml.RY(pi / 2, wires=[wires[0]]),
             qml.RX(pi / 2, wires=[wires[0]]),
         ]
         
-    def adjoint(self): #this looks right to me 
+    def adjoint(self):  
         op = ECR(wires=self.wires)
         op.inverse = not self.inverse
         return op
 
-    def pow(self, z): # note any changes due to 1/sqrt(2) I think this looks good too 
+    def pow(self, z): 
         z_mod2 = z % 2
         if abs(z_mod2 - 0.5) < 1e-6:
             return [ECR(wires=self.wires)]
