@@ -18,16 +18,16 @@ Contains the tape transform that splits non-commuting terms
 import pennylane as qml
 import numpy as np
 
-# from .batch_transform import batch_transform
+from .batch_transform import batch_transform
 
-# @batch_transform
+
+@batch_transform
 def split_non_commuting(tape):
     r"""
-    Splits a tape measuring non-commuting observables into groups of commuting observables.
+    Splits a qnode measuring non-commuting observables into groups of commuting observables.
 
     Args:
-        tape (.QuantumTape): the tape used when calculating the expectation value
-            of the Hamiltonian
+        qnode (pennylane.QNode or .QuantumTape): quantum tape of QNode that contains a list of non-commuting observables to measure.
 
     Returns:
         tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
@@ -36,46 +36,105 @@ def split_non_commuting(tape):
 
     **Example**
 
-    We can create a tape with non-commuting observables:
+    When defining a QNode that has non-commuting observables, we can use ``split_non_commuting()`` as a decorator to allow its execution:
 
     .. code-block:: python3
 
-        with qml.tape.QuantumTape() as tape:
-            qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliY(0))
+        dev = qml.device("default.qubit", wires=1)
 
-        tapes, processing_fn = qml.transforms.split_non_commuting(tape)
+        @qml.transforms.split_non_commuting
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x,wires=0)
+            return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
 
-    Now ``tapes`` is a list of two tapes, each for one of the non-commuting terms:
-
-    >>> [t.observables for t in tapes]
-    [[expval(PauliZ(wires=[0]))], [expval(PauliY(wires=[0]))]]
-
-    The processing function becomes important when creating the commuting groups as the order of the inputs has been modified:
+    Instead of decorating the QNode, we can also create a new function that yields the same result in the following way:
 
     .. code-block:: python3
 
-        with qml.tape.QuantumTape() as tape:
-            qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
-            qml.expval(qml.PauliX(0) @ qml.PauliX(1))
-            qml.expval(qml.PauliZ(0))
-            qml.expval(qml.PauliX(0))
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x,wires=0)
+            return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
 
-        tapes, processing_fn = qml.transforms.split_non_commuting(tape)
+        circuit = qml.transforms.split_non_commuting(circuit)
 
-    In this example, the groupings are ``group_coeffs = [[0,2], [1,3]]`` and ``processing_fn`` makes sure that the final output is of the same shape and ordering:
+    Internally, the QNode is split into groups of commuting observables when executed:
 
-    >>> processing_fn(tapes)
-    tensor([tensor(expval(PauliZ(wires=[0]) @ PauliZ(wires=[1])), dtype=object, requires_grad=True),
-        tensor(expval(PauliX(wires=[0]) @ PauliX(wires=[1])), dtype=object, requires_grad=True),
-        tensor(expval(PauliZ(wires=[0])), dtype=object, requires_grad=True),
-        tensor(expval(PauliX(wires=[0])), dtype=object, requires_grad=True)],
-       dtype=object, requires_grad=True)
+    >>> print(qml.draw(circuit)(0.5))
+    0: ──RX(0.50)─┤  <X>
+    0: ──RX(0.50)─┤  <Z>
+
+    Note that while internally multiple QNodes are created, the end result has the same ordering as the user provides in the return statement.
+    Here is a more involved example:
+
+    .. code-block:: python3
+
+        @qml.transforms.split_non_commuting
+        @qml.qnode(dev)
+        def circuit0(x):
+            qml.RY(x[0], wires=0)
+            qml.RX(x[1], wires=0)
+            return [qml.expval(qml.PauliX(0)),
+                    qml.expval(qml.PauliZ(0)),
+                    qml.expval(qml.PauliY(1)),
+                    qml.expval(qml.PauliZ(0) @ qml.PauliZ(1)),
+                    ]
+
+    Drawing this QNode unveils the separate executions in the background
+
+    >>> print(qml.draw(circuit0)([np.pi/4, np.pi/4]))
+    0: ──RY(0.79)──RX(0.79)─┤  <X>
+    1: ─────────────────────┤  <Y>
+    \
+    0: ──RY(0.79)──RX(0.79)─┤  <Z> ╭<Z@Z>
+    1: ─────────────────────┤      ╰<Z@Z>
+
+    Yet, executing it returns the original ordering of the expectation values. The outputs correspond to
+    :math:`(\langle \sigma_x^0 \rangle, \langle \sigma_z^0 \rangle, \langle \sigma_y^1 \rangle, \langle \sigma_z^0\sigma_z^1 \rangle)`.
+
+    >>> circuit0([np.pi/4, np.pi/4])
+    tensor([0.70710678, 0.5       , 0.        , 0.5       ], requires_grad=True)
+
 
     .. details::
         :title: Usage Details
 
-        This transform also works with tapes. We can create a tape with non-commuting observables:
+        Internally, this function works with tapes. We can create a tape with non-commuting observables:
+
+        .. code-block:: python3
+
+            with qml.tape.QuantumTape() as tape:
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliY(0))
+
+            tapes, processing_fn = qml.transforms.split_non_commuting(tape)
+
+        Now ``tapes`` is a list of two tapes, each for one of the non-commuting terms:
+
+        >>> [t.observables for t in tapes]
+        [[expval(PauliZ(wires=[0]))], [expval(PauliY(wires=[0]))]]
+
+        The processing function becomes important when creating the commuting groups as the order of the inputs has been modified:
+
+        .. code-block:: python3
+
+            with qml.tape.QuantumTape() as tape:
+                qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+                qml.expval(qml.PauliX(0) @ qml.PauliX(1))
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliX(0))
+
+            tapes, processing_fn = qml.transforms.split_non_commuting(tape)
+
+        In this example, the groupings are ``group_coeffs = [[0,2], [1,3]]`` and ``processing_fn`` makes sure that the final output is of the same shape and ordering:
+
+        >>> processing_fn(tapes)
+        tensor([tensor(expval(PauliZ(wires=[0]) @ PauliZ(wires=[1])), dtype=object, requires_grad=True),
+            tensor(expval(PauliX(wires=[0]) @ PauliX(wires=[1])), dtype=object, requires_grad=True),
+            tensor(expval(PauliZ(wires=[0])), dtype=object, requires_grad=True),
+            tensor(expval(PauliX(wires=[0])), dtype=object, requires_grad=True)],
+        dtype=object, requires_grad=True)
 
     """
     # TODO: allow for samples and probs
@@ -84,38 +143,38 @@ def split_non_commuting(tape):
     obs_list = tape.observables
     return_types = [m.return_type for m in obs_list]
 
-    try:
-        # If there is more than one group of commuting observables, split tapes
-        groups, group_coeffs = qml.grouping.group_observables(obs_list, range(len(obs_list)))
-        if len(groups) > 1:
-            # make one tape per commuting group
-            tapes = []
-            for group in groups:
-                with qml.tape.QuantumTape() as new_tape:
-                    for op in tape.operations:
-                        qml.apply(op)
+    if qml.measurements.Sample in return_types or qml.measurements.Probability in return_types:
+        raise NotImplementedError(
+            "When non-commuting observables are used, only `qml.expval` and `qml.var` are supported."
+        )
 
-                    for type, o in zip(return_types, group):
-                        obs_fn[type](o)
+    # If there is more than one group of commuting observables, split tapes
+    groups, group_coeffs = qml.grouping.group_observables(obs_list, range(len(obs_list)))
+    if len(groups) > 1:
+        # make one tape per commuting group
+        tapes = []
+        for group in groups:
+            with qml.tape.QuantumTape() as new_tape:
+                for op in tape.operations:
+                    qml.apply(op)
 
-                tapes.append(new_tape)
+                for type, o in zip(return_types, group):
+                    obs_fn[type](o)
 
-            def reorder_fn(res):
-                """re-order the output to the original shape and order"""
-                new_res = qml.math.concatenate(res)
-                reorder_indxs = qml.math.concatenate(group_coeffs)
+            tapes.append(new_tape)
 
-                # in order not to mess with the outputs I am just permuting them with a simple matrix multiplication
-                permutation_matrix = np.zeros((len(new_res), len(new_res)))
-                for column, indx in enumerate(reorder_indxs):
-                    permutation_matrix[indx, column] = 1
-                return qml.math.dot(permutation_matrix, new_res)
+        def reorder_fn(res):
+            """re-order the output to the original shape and order"""
+            new_res = qml.math.concatenate(res)
+            reorder_indxs = qml.math.concatenate(group_coeffs)
 
-            return tapes, reorder_fn
-    except:
-        if qml.measurements.Sample or qml.measurements.Probability in return_types:
-            raise NotImplementedError(
-                "When non-commuting observables are used, only `qml.expval` and `qml.var` are supported."
-            )
+            # in order not to mess with the outputs I am just permuting them with a simple matrix multiplication
+            permutation_matrix = np.zeros((len(new_res), len(new_res)))
+            for column, indx in enumerate(reorder_indxs):
+                permutation_matrix[indx, column] = 1
+            return qml.math.dot(permutation_matrix, new_res)
+
+        return tapes, reorder_fn
+
     # if the group is already commuting, no need to do anything
     return [tape], lambda res: res[0]
