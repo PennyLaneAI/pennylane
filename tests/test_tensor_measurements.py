@@ -21,7 +21,7 @@ import itertools
 import functools
 import pennylane as qml
 from pennylane import expval, var, sample
-from gate_data import I, X, Y, Z, S, Rotx, Roty, H, CNOT
+from gate_data import Identity, X, Y, Z, S, Rotx, Roty, H, CNOT
 
 
 Z = np.array([[1, 0], [0, -1]])
@@ -390,17 +390,17 @@ class TestTensorSample:
         zero_state = np.zeros(2**3)
         zero_state[0] = 1
         psi = zero_state
-        psi = tensor_product([Rotx(theta), I, I]) @ zero_state
-        psi = tensor_product([I, Rotx(phi), I]) @ psi
-        psi = tensor_product([I, I, Rotx(varphi)]) @ psi
-        psi = tensor_product([CNOT, I]) @ psi
-        psi = tensor_product([I, CNOT]) @ psi
+        psi = tensor_product([Rotx(theta), Identity, Identity]) @ zero_state
+        psi = tensor_product([Identity, Rotx(phi), Identity]) @ psi
+        psi = tensor_product([Identity, Identity, Rotx(varphi)]) @ psi
+        psi = tensor_product([CNOT, Identity]) @ psi
+        psi = tensor_product([Identity, CNOT]) @ psi
 
         # Diagonalize according to the observable
-        psi = tensor_product([H, I, I]) @ psi
-        psi = tensor_product([I, I, Z]) @ psi
-        psi = tensor_product([I, I, S]) @ psi
-        psi = tensor_product([I, I, H]) @ psi
+        psi = tensor_product([H, Identity, Identity]) @ psi
+        psi = tensor_product([Identity, Identity, Z]) @ psi
+        psi = tensor_product([Identity, Identity, S]) @ psi
+        psi = tensor_product([Identity, Identity, H]) @ psi
 
         expected_probabilities = np.abs(psi) ** 2
 
@@ -420,17 +420,17 @@ class TestTensorSample:
         zero_state = np.zeros(2**3)
         zero_state[0] = 1
         psi = zero_state
-        psi = tensor_product([Rotx(theta), I, I]) @ zero_state
-        psi = tensor_product([I, Rotx(phi), I]) @ psi
-        psi = tensor_product([I, I, Rotx(varphi)]) @ psi
-        psi = tensor_product([CNOT, I]) @ psi
-        psi = tensor_product([I, CNOT]) @ psi
+        psi = tensor_product([Rotx(theta), Identity, Identity]) @ zero_state
+        psi = tensor_product([Identity, Rotx(phi), Identity]) @ psi
+        psi = tensor_product([Identity, Identity, Rotx(varphi)]) @ psi
+        psi = tensor_product([CNOT, Identity]) @ psi
+        psi = tensor_product([Identity, CNOT]) @ psi
 
         # Diagonalize according to the observable
-        psi = tensor_product([I, Roty(-np.pi / 4), I]) @ psi
-        psi = tensor_product([I, I, Z]) @ psi
-        psi = tensor_product([I, I, S]) @ psi
-        psi = tensor_product([I, I, H]) @ psi
+        psi = tensor_product([Identity, Roty(-np.pi / 4), Identity]) @ psi
+        psi = tensor_product([Identity, Identity, Z]) @ psi
+        psi = tensor_product([Identity, Identity, S]) @ psi
+        psi = tensor_product([Identity, Identity, H]) @ psi
 
         expected_probabilities = np.abs(psi) ** 2
 
@@ -467,15 +467,15 @@ class TestTensorSample:
 
         zero_state = np.zeros(2**3)
         zero_state[0] = 1
-        psi = tensor_product([Rotx(theta), I, I]) @ zero_state
-        psi = tensor_product([I, Rotx(phi), I]) @ psi
-        psi = tensor_product([I, I, Rotx(varphi)]) @ psi
-        psi = tensor_product([CNOT, I]) @ psi
-        psi = tensor_product([I, CNOT]) @ psi
+        psi = tensor_product([Rotx(theta), Identity, Identity]) @ zero_state
+        psi = tensor_product([Identity, Rotx(phi), Identity]) @ psi
+        psi = tensor_product([Identity, Identity, Rotx(varphi)]) @ psi
+        psi = tensor_product([CNOT, Identity]) @ psi
+        psi = tensor_product([Identity, CNOT]) @ psi
 
         # Diagonalize according to the observable
         eigvals, eigvecs = np.linalg.eigh(A)
-        psi = tensor_product([I, eigvecs.conj().T]) @ psi
+        psi = tensor_product([Identity, eigvecs.conj().T]) @ psi
 
         expected_probabilities = np.abs(psi) ** 2
 

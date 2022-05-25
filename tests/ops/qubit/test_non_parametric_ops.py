@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.wires import Wires
 
 from gate_data import (
-    I,
+    Identity,
     X,
     Y,
     Z,
@@ -44,7 +44,7 @@ from gate_data import (
 
 # Non-parametrized operations and their matrix representation
 NON_PARAMETRIZED_OPERATIONS = [
-    (qml.Identity, I),
+    (qml.Identity, Identity),
     (qml.CNOT, CNOT),
     (qml.SWAP, SWAP),
     (qml.ISWAP, ISWAP),

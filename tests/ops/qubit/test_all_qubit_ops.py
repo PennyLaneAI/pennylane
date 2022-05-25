@@ -18,7 +18,7 @@ types of operations should exist in this file. Type-specific tests should go in 
 import pytest
 import pennylane as qml
 
-from gate_data import I
+from gate_data import Identity
 
 
 class TestOperations:
@@ -51,4 +51,4 @@ class TestOperations:
         mat_product = qml.math.dot(op.matrix(), qml.math.conj(obtained_mat.T))
         mat_product /= mat_product[0, 0]
 
-        assert qml.math.allclose(mat_product, I)
+        assert qml.math.allclose(mat_product, Identity)

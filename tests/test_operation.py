@@ -26,7 +26,7 @@ from numpy.linalg import multi_dot
 import pennylane as qml
 from pennylane.operation import Tensor, operation_derivative, Operator, Operation
 
-from gate_data import I, X, CNOT
+from gate_data import Identity, X, CNOT
 from pennylane.wires import Wires
 
 
@@ -1657,7 +1657,7 @@ class TestChannel:
             @staticmethod
             def compute_kraus_matrices(p):
                 K1 = np.sqrt(p) * X
-                K2 = np.sqrt(1 - p) * I
+                K2 = np.sqrt(1 - p) * Identity
                 return [K1, K2]
 
         expected = np.array([[0, np.sqrt(0.1)], [np.sqrt(0.1), 0]])
@@ -1984,17 +1984,17 @@ class TestExpandMatrix:
         )
         # test applied to wire 0
         res = qml.operation.expand_matrix(U, [0], [0, 4, 9])
-        expected = np.kron(np.kron(U, I), I)
+        expected = np.kron(np.kron(U, Identity), Identity)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 4
         res = qml.operation.expand_matrix(U, [4], [0, 4, 9])
-        expected = np.kron(np.kron(I, U), I)
+        expected = np.kron(np.kron(Identity, U), Identity)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 9
         res = qml.operation.expand_matrix(U, [9], [0, 4, 9])
-        expected = np.kron(np.kron(I, I), U)
+        expected = np.kron(np.kron(Identity, Identity), U)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_two_consecutive_wires(self, tol):
@@ -2004,17 +2004,17 @@ class TestExpandMatrix:
 
         # test applied to wire 0+1
         res = qml.operation.expand_matrix(U2, [0, 1], [0, 1, 2, 3])
-        expected = np.kron(np.kron(U2, I), I)
+        expected = np.kron(np.kron(U2, Identity), Identity)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 1+2
         res = qml.operation.expand_matrix(U2, [1, 2], [0, 1, 2, 3])
-        expected = np.kron(np.kron(I, U2), I)
+        expected = np.kron(np.kron(Identity, U2), Identity)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 2+3
         res = qml.operation.expand_matrix(U2, [2, 3], [0, 1, 2, 3])
-        expected = np.kron(np.kron(I, I), U2)
+        expected = np.kron(np.kron(Identity, Identity), U2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_two_reversed_wires(self, tol):
@@ -2023,7 +2023,7 @@ class TestExpandMatrix:
         # CNOT with target on wire 1
         res = qml.operation.expand_matrix(CNOT, [1, 0], [0, 1, 2, 3])
         rows = np.array([0, 2, 1, 3])
-        expected = np.kron(np.kron(CNOT[:, rows][rows], I), I)
+        expected = np.kron(np.kron(CNOT[:, rows][rows], Identity), Identity)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_three_consecutive_wires(self, tol):
@@ -2033,12 +2033,12 @@ class TestExpandMatrix:
         U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
         # test applied to wire 0,1,2
         res = qml.operation.expand_matrix(U_toffoli, [0, 1, 2], [0, 1, 2, 3])
-        expected = np.kron(U_toffoli, I)
+        expected = np.kron(U_toffoli, Identity)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 1,2,3
         res = qml.operation.expand_matrix(U_toffoli, [1, 2, 3], [0, 1, 2, 3])
-        expected = np.kron(I, U_toffoli)
+        expected = np.kron(Identity, U_toffoli)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_three_nonconsecutive_ascending_wires(self, tol):
@@ -2049,18 +2049,18 @@ class TestExpandMatrix:
         # test applied to wire 0,2,3
         res = qml.operation.expand_matrix(U_toffoli, [0, 2, 3], [0, 1, 2, 3])
         expected = (
-            np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
-            @ np.kron(I, U_toffoli)
-            @ np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
+            np.kron(qml.SWAP.compute_matrix(), np.kron(Identity, Identity))
+            @ np.kron(Identity, U_toffoli)
+            @ np.kron(qml.SWAP.compute_matrix(), np.kron(Identity, Identity))
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 0,1,3
         res = qml.operation.expand_matrix(U_toffoli, [0, 1, 3], [0, 1, 2, 3])
         expected = (
-            np.kron(np.kron(I, I), qml.SWAP.compute_matrix())
-            @ np.kron(U_toffoli, I)
-            @ np.kron(np.kron(I, I), qml.SWAP.compute_matrix())
+            np.kron(np.kron(Identity, Identity), qml.SWAP.compute_matrix())
+            @ np.kron(U_toffoli, Identity)
+            @ np.kron(np.kron(Identity, Identity), qml.SWAP.compute_matrix())
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
@@ -2073,7 +2073,7 @@ class TestExpandMatrix:
         res = qml.operation.expand_matrix(U_toffoli, [3, 1, 2], [0, 1, 2, 3])
         # change the control qubit on the Toffoli gate
         rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
-        expected = np.kron(I, U_toffoli[:, rows][rows])
+        expected = np.kron(Identity, U_toffoli[:, rows][rows])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 3, 0, 2
@@ -2081,9 +2081,9 @@ class TestExpandMatrix:
         # change the control qubit on the Toffoli gate
         rows = np.array([0, 4, 1, 5, 2, 6, 3, 7])
         expected = (
-            np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
-            @ np.kron(I, U_toffoli[:, rows][rows])
-            @ np.kron(qml.SWAP.compute_matrix(), np.kron(I, I))
+            np.kron(qml.SWAP.compute_matrix(), np.kron(Identity, Identity))
+            @ np.kron(Identity, U_toffoli[:, rows][rows])
+            @ np.kron(qml.SWAP.compute_matrix(), np.kron(Identity, Identity))
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
