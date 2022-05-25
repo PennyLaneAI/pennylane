@@ -91,14 +91,6 @@ class MeasurementProcess:
             This can only be specified if an observable was not provided.
         eigvals (array): A flat array representing the eigenvalues of the measurement.
             This can only be specified if an observable was not provided.
-        shape (tuple[int] or None): The output shape of the measurement proccess. For
-            some measurement processes a shape is not applicable or the shape
-            may depend on device options, in such cases ``shape=None``. The
-            shape is determined by the return type. For example, assuming a
-            device with ``shots=None``, expectation values and variances define
-            ``shape=(1,)``, whereas probabilities in the qubit define
-            ``shape=(1, 2**num_wires)`` where ``num_wires`` is the number of
-            wires the measurement acts on.
     """
 
     # pylint: disable=too-few-public-methods
@@ -111,7 +103,6 @@ class MeasurementProcess:
         wires=None,
         eigvals=None,
         id=None,
-        shape=None,
     ):
         self.return_type = return_type
         self.obs = obs
@@ -128,11 +119,6 @@ class MeasurementProcess:
                 raise ValueError("Cannot set the eigenvalues if an observable is provided.")
 
             self._eigvals = np.array(eigvals)
-
-        self._shape = shape
-        """tuple[int] or None: The output shape of the measurement proccess. For some a
-        shape is not applicable or the shape may depend on device options, in
-        such cases ``shape=None``."""
 
         # TODO: remove the following lines once devices
         # have been refactored to accept and understand recieving
@@ -197,6 +183,11 @@ class MeasurementProcess:
           ``Sample``;
         * The shot vector was defined in the device.
 
+        For example, assuming a device with ``shots=None``, expectation values
+        and variances define ``shape=(1,)``, whereas probabilities in the qubit
+        model define ``shape=(1, 2**num_wires)`` where ``num_wires`` is the
+        number of wires the measurement acts on.
+
         Args:
             device (.Device): a PennyLane device to use for determining the
                 shape
@@ -228,6 +219,7 @@ class MeasurementProcess:
                 dim = 2 ** len(device.wires)
                 shape = (1, dim)
 
+
             elif self.return_type == Sample:
                 len_wires = len(device.wires)
 
@@ -239,10 +231,12 @@ class MeasurementProcess:
                     # qml.sample() case
                     shape = (1, device.shots, len_wires)
 
-            #        elif self.return_type == State and self.wires:
-            # dim = 2 ** len(wires)
-            # shape = (1, dim, dim)
-            # return MeasurementProcess(State, wires=wires, shape=shape)
+            elif self.return_type == State:
+                if self.wires:
+                    dim = 2 ** len(wires)
+                    shape = (1, dim, dim)
+                else:
+
             elif self.return_type in (Expectation, Variance):
                 shape = (1,)
             else:
@@ -821,9 +815,7 @@ def density_matrix(wires):
     """
     # pylint: disable=protected-access
     wires = qml.wires.Wires(wires)
-    dim = 2 ** len(wires)
-    shape = (1, dim, dim)
-    return MeasurementProcess(State, wires=wires, shape=shape)
+    return MeasurementProcess(State, wires=wires)
 
 
 T = TypeVar("T")
