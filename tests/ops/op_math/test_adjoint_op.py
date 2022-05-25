@@ -335,6 +335,17 @@ class TestInverse:
             assert op1.data == op2.data
             assert op1.wires == op2.wires
 
+    def test_inverse_setter(self):
+        """Test the inverse getting updated by property setter."""
+        base = qml.T(0)
+        op = Adjoint(base)
+
+        assert base.inverse == op.inverse == False
+        op.inverse = True
+
+        assert base.inverse == op.inverse == True
+        assert op.name == "Adjoint(T.inv)"
+
 
 class TestAdjointOperationDiffInfo:
     """Test differention related properties and methods of AdjointOperation."""

@@ -51,6 +51,21 @@ class TestPreconstructedOp:
         assert tape._queue[base] == {"owner": out}
         assert tape._queue[out] == {"owns": base}
 
+    def test_single_op_defined_outside_queue_eager(self):
+        """Test if base is defined outside context and the function eagerly simplifies
+        the adjoint, the base is not added to queue."""
+        base = qml.RX(1.2, wires=0)
+        with qml.tape.QuantumTape() as tape:
+            out = adjoint(base, lazy=False)
+
+        assert isinstance(out, qml.RX)
+        assert out.data == [1.2]
+        assert len(tape) == 1
+        assert tape[0] is out
+
+        assert len(tape._queue) == 1
+        assert tape._queue[out] == {"owns": base}
+
     def test_single_observable(self):
         """Test passing a single preconstructed observable in a queuing context."""
 

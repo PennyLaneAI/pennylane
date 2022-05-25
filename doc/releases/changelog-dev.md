@@ -58,21 +58,25 @@
   a quantum function. It returns an entity of the same type/ call signature as what it was provided:
   [(#2222)](https://github.com/PennyLaneAI/pennylane/pull/2222)
 
+  ```pycon
   >>> qml.adjoint(qml.PauliX(0))
   Adjoint(PauliX)(wires=[0])
   >>> qml.adjoint(lambda x: qml.RX(x, wires=0))(1.23)
   Adjoint(RX)(1.23, wires=[0])
+  ```
 
   The adjoint now wraps operators in a symbolic operator class `qml.ops.op_math.Adjoint`. This class
   should not be constructed directly; the `adjoint` constructor should always be used instead.  The
   class behaves just like any other Operator:
 
+  ```pycon
   >>> op = qml.adjoint(qml.S(0))
   >>> qml.matrix(op)
   array([[1.-0.j, 0.-0.j],
         [0.-0.j, 0.-1.j]])
   >>> qml.eigvals(op)
   array([1.-0.j, 0.-1.j])
+  ```
 
 * The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
   [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
