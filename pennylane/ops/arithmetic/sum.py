@@ -43,7 +43,6 @@ class Sum(Operator):
             *combined_params, wires=combined_wires, do_queue=do_queue, id=id
         )
         self._name = "Sum"
-        self.matrix_cache = None  # reduce overhead by saving matrix representation for a Sum instance
 
     def __repr__(self):
         """Constructor-call-like representation."""
@@ -56,16 +55,8 @@ class Sum(Operator):
     def terms(self):
         return [1.0]*len(self.summands), self.summands
 
-    def matrix(self, wire_order=None, ignore_cache=True):
-        """Representation of the operator as a matrix in the computational basis.
-
-        Args:
-
-        Returns:
-
-        """
-        if self.matrix_cache is not None and not ignore_cache:
-            return self.matrix_cache
+    def matrix(self, wire_order=None):
+        """Representation of the operator as a matrix in the computational basis."""
 
         def matrix_gen(summands, wire_order=None):
             """Helper function to construct a generator of matrices"""
@@ -74,23 +65,16 @@ class Sum(Operator):
 
         if wire_order is None:
             wire_order = self.wires
-        self.matrix_cache = self._sum(matrix_gen(self.summands, wire_order))
 
-        return self.matrix_cache
+        return self._sum(matrix_gen(self.summands, wire_order))
 
     def _sum(self, mats_gen, dtype=None, cast_like=None):
         """Super inefficient Sum method just as a proof of concept"""
         res = None
         for i, mat in enumerate(mats_gen):
-            if i == 0:
-                res = mat
-            else:
-                try:
-                    res += mat
-                except TypeError:
-                    res += math.cast_like(mat, res)  # Fix here !
+            res = mat if i == 0 else math.add(res, mat)
 
-        if dtype is not None:
+        if dtype is not None:                     # additional casting logic
             res = math.cast(res, dtype)
         if cast_like is not None:
             res = math.cast_like(res, cast_like)

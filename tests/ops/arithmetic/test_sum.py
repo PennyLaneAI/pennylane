@@ -37,7 +37,14 @@ single_qubit_non_param_ops = (
 )
 
 single_qubit_parametric_ops = (
-    (),
+    (qml.RX, gd.Rotx),
+    (qml.RY, gd.Roty),
+    (qml.RZ, gd.Rotz),
+    (qml.PhaseShift, gd.Rphi),
+    (qml.Rot, gd.Rot3),
+    (qml.U1, gd.U1),
+    (qml.U2, gd.U2),
+    (qml.U3, gd.U3),
 )
 
 double_qubit_non_param_ops = (
@@ -50,9 +57,11 @@ double_qubit_non_param_ops = (
 )
 
 double_qubit_parametric_ops = (
+    (qml.CRX, gd.CRotx),
+    (qml.CRY, gd.CRoty),
+    (qml.CRZ, gd.CRotz),
+    (qml.CRot, gd.CRot3),
     (),
-    (),
-    ()
 )
 
 triple_qubit_non_param_ops = (
@@ -72,7 +81,7 @@ class TestMatrix:
         sum_op = qml.ops.arithmetic.Sum(op1(wires), op2(wires))
 
         sum_mat = sum_op.matrix()
-        print(sum_mat.wires, sum_mat.terms)
         true_mat = mat1 + mat2
 
         assert(np.allclose(sum_mat, true_mat))
+

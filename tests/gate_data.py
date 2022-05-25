@@ -132,6 +132,35 @@ def Rot3(a, b, c):
     return Rotz(c) @ (Roty(b) @ Rotz(a))
 
 
+def U1(phi):
+    r""" Return the matrix representation of the U1 gate.
+
+    .. math:: U_1(\phi) = e^{i\phi/2}R_z(\phi) = \begin{bmatrix}
+            1 & 0 \\
+            0 & e^{i\phi}
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    """
+    return math.array([[1.0, 0.0], [0.0, math.exp(phi*1j)]])
+
+
+def U2(phi, delta):
+    r""" Return the matrix representation of the U2 gate.
+
+    .. math::
+
+        U_2(\phi, \delta) = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & -\exp(i \delta)
+        \\ \exp(i \phi) & \exp(i (\phi + \delta)) \end{bmatrix}
+
+    Args:dd
+        phi (float): azimuthal angle :math:`\phi`
+        delta (float): quantum phase :math:`\delta`
+    """
+    return 1/math.sqrt(2) * math.array([[1.0, -math.exp(delta*1j)], [math.exp(phi*1j), math.exp((phi + delta)*1j)]])
+
+
 def CRotx(theta):
     r"""Two-qubit controlled rotation about the x axis.
 
