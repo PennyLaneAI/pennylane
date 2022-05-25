@@ -540,6 +540,31 @@ class TestMatrix:
             qml.IsingXX(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
 
+    def test_isingxy(self, tol):
+        """Test that the IsingXY operation is correct"""
+        assert np.allclose(qml.IsingXY.compute_matrix(0), np.identity(4), atol=tol, rtol=0)
+        assert np.allclose(qml.IsingXY(0, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
+
+        def get_expected(theta):
+            expected = np.eye(4, dtype=np.complex128)
+            expected[1][1] = np.cos(theta / 2)
+            expected[2][2] = np.cos(theta / 2)
+            expected[1][2] = 1j * np.sin(theta / 2)
+            expected[2][1] = 1j * np.sin(theta / 2)
+            return expected
+
+        param = np.pi / 2
+        assert np.allclose(qml.IsingXY.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingXY(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
+        )
+
+        param = np.pi
+        assert np.allclose(qml.IsingXY.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingXY(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
+        )
+
     def test_isingzz(self, tol):
         """Test that the IsingZZ operation is correct"""
         assert np.allclose(qml.IsingZZ.compute_matrix(0), np.identity(4), atol=tol, rtol=0)
