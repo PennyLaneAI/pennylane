@@ -26,7 +26,7 @@ from numpy.linalg import multi_dot
 import pennylane as qml
 from pennylane.operation import Tensor, operation_derivative, Operator, Operation
 
-from gate_data import I, X, CNOT, ECR
+from gate_data import I, X, CNOT
 from pennylane.wires import Wires
 
 
