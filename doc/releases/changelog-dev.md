@@ -37,6 +37,9 @@
   The code that checks for qubit wise commuting (QWC) got a performance boost that is noticable
   when many commuting paulis of the same type are measured.
 
+* Implemented the ECR operation for Pennylane-Braket plugin
+[(#2613)(https://github.com/PennyLaneAI/pennylane/pull/2613)]
+
 <h3>Improvements</h3>
 
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
@@ -76,6 +79,7 @@
 * The `QNode` class now contains a new method `best_method_str` that returns the best differentiation
   method for a provided device and interface, in human-readable format.
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
+   
 
 <h3>Breaking changes</h3>
 
