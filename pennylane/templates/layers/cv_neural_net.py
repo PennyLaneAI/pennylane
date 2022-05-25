@@ -200,34 +200,34 @@ class CVNeuralNetLayers(Operation):
         """
         op_list = []
         n_layers = qml.math.shape(theta_1)[0]
-        for l in range(n_layers):
+        for j in range(n_layers):
 
             op_list.append(
                 qml.Interferometer(
-                    theta=theta_1[l],
-                    phi=phi_1[l],
-                    varphi=varphi_1[l],
+                    theta=theta_1[j],
+                    phi=phi_1[j],
+                    varphi=varphi_1[j],
                     wires=wires,
                 )
             )
 
             for i in range(len(wires)):  # pylint:disable=consider-using-enumerate
-                op_list.append(qml.Squeezing(r[l, i], phi_r[l, i], wires=wires[i]))
+                op_list.append(qml.Squeezing(r[j, i], phi_r[j, i], wires=wires[i]))
 
             op_list.append(
                 qml.Interferometer(
-                    theta=theta_2[l],
-                    phi=phi_2[l],
-                    varphi=varphi_2[l],
+                    theta=theta_2[j],
+                    phi=phi_2[j],
+                    varphi=varphi_2[j],
                     wires=wires,
                 )
             )
 
             for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
-                op_list.append(qml.Displacement(a[l, i], phi_a[l, i], wires=wires[i]))
+                op_list.append(qml.Displacement(a[j, i], phi_a[j, i], wires=wires[i]))
 
             for i in range(len(wires)):  # pylint:disable=consider-using-enumerate
-                op_list.append(qml.Kerr(k[l, i], wires=wires[i]))
+                op_list.append(qml.Kerr(k[j, i], wires=wires[i]))
 
         return op_list
 
