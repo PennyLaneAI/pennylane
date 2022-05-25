@@ -1864,6 +1864,7 @@ pow_parametric_ops = (
     qml.U1(1.23, wires=0),
     qml.IsingXX(-2.345, wires=(0, 1)),
     qml.IsingYY(3.1652, wires=(0, 1)),
+    qml.IsingXY(-1.234, wires=(0, 1)),
     qml.IsingZZ(1.789, wires=("a", "b")),
 )
 
@@ -1902,6 +1903,7 @@ control_data = [
     (qml.U3(1.234, 2.345, 3.456, wires=0), Wires([])),
     (qml.IsingXX(1.234, wires=(0, 1)), Wires([])),
     (qml.IsingYY(1.234, wires=(0, 1)), Wires([])),
+    (qml.IsingXY(1.234, wires=(0, 1)), Wires([])),
     (qml.IsingZZ(1.234, wires=(0, 1)), Wires([])),
     ### Controlled Ops
     (qml.ControlledPhaseShift(1.234, wires=(0, 1)), Wires(0)),
