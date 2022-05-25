@@ -94,7 +94,7 @@ def Rotx(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
     """
-    return math.cos(theta / 2) * I + 1j * math.sin(-theta / 2) * X
+    return math.cos(theta / 2) * Identity + 1j * math.sin(-theta / 2) * X
 
 
 def Roty(theta):
@@ -105,7 +105,7 @@ def Roty(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
     """
-    return math.cos(theta / 2) * I + 1j * math.sin(-theta / 2) * Y
+    return math.cos(theta / 2) * Identity + 1j * math.sin(-theta / 2) * Y
 
 
 def Rotz(theta):
@@ -116,7 +116,7 @@ def Rotz(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`
     """
-    return math.cos(theta / 2) * I + 1j * math.sin(-theta / 2) * Z
+    return math.cos(theta / 2) * Identity + 1j * math.sin(-theta / 2) * Z
 
 
 def Rot3(a, b, c):
