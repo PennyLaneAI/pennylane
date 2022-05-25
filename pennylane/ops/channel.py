@@ -700,6 +700,11 @@ class QubitChannel(Channel):
         if not np.allclose(Kraus_sum, np.eye(K_list[0].shape[0])):
             raise ValueError("Only trace preserving channels can be applied.")
 
+    def _check_batching(self, params):
+        """Treat the Kraus matrices as independent parameters when checking for a
+        batch dimension."""
+        super()._check_batching(*params)
+
     @staticmethod
     def compute_kraus_matrices(K_list):  # pylint:disable=arguments-differ
         """Kraus matrices representing the QubitChannel channel.
