@@ -21,3 +21,4 @@
  """
 
 from .sum import sum, Sum
+from .sprod import s_prod, SProd
