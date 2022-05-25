@@ -183,7 +183,6 @@ class QueuingContext(abc.ABC):
             obj: the object with metadata to be updated
         """
         if cls.recording():
-            print("In update_info: ", cls.active_context().name)
             cls.active_context()._update_info(obj, **kwargs)  # pylint: disable=protected-access
 
     # pylint: disable=protected-access
