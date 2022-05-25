@@ -30,7 +30,9 @@ def split_non_commuting(tape):
         qnode (pennylane.QNode or .QuantumTape): quantum tape of QNode that contains a list of non-commuting observables to measure.
 
     Returns:
-        tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
+        qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: If a QNode is passed,
+        it returns a QNode capable of handling non-commuting groups.
+        If a tape is passed, returns a tuple containing a list of
         quantum tapes to be evaluated, and a function to be applied to these
         tape executions to restore the ordering of the inputs.
 
