@@ -36,6 +36,7 @@ that compute the desired quantity.
     ~adjoint_metric_tensor
     ~specs
     ~transforms.mitigate_with_zne
+    ~transforms.split_non_commuting
 
 Transforms that act on quantum functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -149,7 +150,6 @@ more tapes as well as a classical processing function.
 
     ~transforms.measurement_grouping
     ~transforms.hamiltonian_expand
-    ~transforms.split_non_commuting
 
 Decorators and utility functions
 --------------------------------

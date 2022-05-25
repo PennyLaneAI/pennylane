@@ -38,7 +38,9 @@ def split_non_commuting(tape):
 
     **Example**
 
-    When defining a QNode that has non-commuting observables, we can use ``split_non_commuting()`` as a decorator to allow its execution:
+    This transform allows us to transform a QNode that measures
+    non-commuting observables to *multiple* circuit executions
+    with qubit-wise commuting groups:
 
     .. code-block:: python3
 
@@ -65,10 +67,11 @@ def split_non_commuting(tape):
 
     >>> print(qml.draw(circuit)(0.5))
     0: ──RX(0.50)─┤  <X>
+    \
     0: ──RX(0.50)─┤  <Z>
 
     Note that while internally multiple QNodes are created, the end result has the same ordering as the user provides in the return statement.
-    Here is a more involved example:
+    Here is a more involved example where we can see the different ordering at the execution level but restoring the original ordering in the output:
 
     .. code-block:: python3
 
