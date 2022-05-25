@@ -54,7 +54,7 @@ class TestQNodeIntegration:
             "supports_reversible_diff": False,
             "passthru_interface": "autograd",
             "passthru_devices": {
-                "autograd": "default.mixed.autograd",
+                "autograd": "default.mixed",
             },
         }
 

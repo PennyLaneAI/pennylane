@@ -507,6 +507,11 @@ def stack(values, axis=0, like=None):
     return np.stack(values, axis=axis, like=like)
 
 
+def einsum(indices, *operands):
+    interface = _multi_dispatch(operands)
+    return np.einsum(indices, *operands, like=interface)
+
+
 def where(condition, x=None, y=None):
     """Returns elements chosen from x or y depending on a boolean tensor condition,
     or the indices of entries satisfying the condition.
