@@ -1384,13 +1384,6 @@ class ECR(Operation):
         op = ECR(wires=self.wires)
         op.inverse = not self.inverse
         return op
-
-    def pow(self, z): 
-        z_mod2 = z % 2
-        if abs(z_mod2 - 0.5) < 1e-6:
-            return [ECR(wires=self.wires)]
-        return super().pow(z_mod2)
-
         
 class ISWAP(Operation):
     r"""ISWAP(wires)
