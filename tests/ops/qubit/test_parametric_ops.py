@@ -32,6 +32,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.IsingXX(0.123, wires=[0, 1]),
     qml.IsingYY(0.123, wires=[0, 1]),
     qml.IsingZZ(0.123, wires=[0, 1]),
+    qml.IsingXY(0.123, wires=[0, 1]),
     qml.Rot(0.123, 0.456, 0.789, wires=0),
     qml.PhaseShift(2.133, wires=0),
     qml.ControlledPhaseShift(1.777, wires=[0, 2]),
@@ -297,6 +298,43 @@ class TestDecompositions:
             if i.wires == Wires([3]):
                 # RX gate
                 mats.append(np.kron(i.matrix(), np.eye(2)))
+            else:
+                mats.append(i.matrix())
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
+    def test_isingxy_decomposition(self, tol):
+        """Tests that the decomposition of the IsingXY gate is correct"""
+        param = 0.1234
+        op = qml.IsingXY(param, wires=[3, 2])
+        res = op.decomposition()
+
+        assert len(res) == 6
+
+        assert res[0].wires == Wires([3])
+        assert res[1].wires == Wires([3, 2])
+        assert res[2].wires == Wires([3])
+        assert res[3].wires == Wires([2])
+        assert res[4].wires == Wires([3, 2])
+        assert res[5].wires == Wires([3])
+
+        assert res[0].name == "Hadamard"
+        assert res[1].name == "CY"
+        assert res[2].name == "RY"
+        assert res[3].name == "RX"
+        assert res[4].name == "CY"
+        assert res[5].name == "Hadamard"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([3]):
+                # RY and Hadamard gate
+                mats.append(np.kron(i.matrix(), np.eye(2)))
+            elif i.wires == Wires([2]):
+                # RX gate
+                mats.append(np.kron(np.eye(2), i.matrix()))
             else:
                 mats.append(i.matrix())
 
