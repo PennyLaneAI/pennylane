@@ -501,8 +501,7 @@ class Operator(abc.ABC):
         return copied_op
 
     def __deepcopy__(self, memo):
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
+        copied_op = object.__new__(type(self))
 
         # The memo dict maps object ID to object, and is required by
         # the deepcopy function to keep track of objects it has already

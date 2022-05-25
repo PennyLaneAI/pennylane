@@ -54,7 +54,28 @@
 
 **Operator Arithmetic:**
 
-* PennyLane now has a symbolic operator `qml.ops.op_math.Adjoint`
+* The adjoint transform `adjoint` can now accept either a single instantiated operator or
+  a quantum function. It returns an entity of the same type/ call signature as what it was provided:
+  [(#2222)](https://github.com/PennyLaneAI/pennylane/pull/2222)
+
+  >>> qml.adjoint(qml.PauliX(0))
+  Adjoint(PauliX)(wires=[0])
+  >>> qml.adjoint(lambda x: qml.RX(x, wires=0))(1.23)
+  Adjoint(RX)(1.23, wires=[0])
+
+  The adjoint now wraps operators in a symbolic operator class `qml.ops.op_math.Adjoint`. This class
+  should not be constructed directly; the `adjoint` constructor should always be used instead.  The
+  class behaves just like any other Operator:
+
+  >>> op = qml.adjoint(qml.S(0))
+  >>> qml.matrix(op)
+  array([[1.-0.j, 0.-0.j],
+        [0.-0.j, 0.-1.j]])
+  >>> qml.eigvals(op)
+  array([1.-0.j, 0.-1.j])
+
+* The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
+  [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
 
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
   for many classes.
@@ -107,9 +128,6 @@
 
 * The `qml.queuing.Queue` class is now removed.
   [(#2599)](https://github.com/PennyLaneAI/pennylane/pull/2599)
-
-* The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
-  [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
 
 * The module `qml.gradients.param_shift_hessian` has been renamed to
   `qml.gradients.parameter_shift_hessian` in order to distinguish it from the identically named

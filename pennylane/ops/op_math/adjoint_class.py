@@ -14,6 +14,7 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
+from copy import deepcopy
 
 from pennylane.operation import Operator, Operation, AdjointUndefinedError, Observable
 from pennylane.queuing import QueuingContext, QueuingError
@@ -31,6 +32,8 @@ class AdjointOperation(Operation):
     add in parent classes.
     """
 
+    # This inverse behavior only needs to temporarily patch behavior until in-place inversion is removed.
+
     @property
     def _inverse(self):
         return self.base._inverse  # pylint: disable=protected-access
@@ -41,6 +44,9 @@ class AdjointOperation(Operation):
 
     def inv(self):
         self.base.inv()
+        # refresh name as base_name got updated.
+        self._name = f"Adjoint({self.base.name})"
+        return self
 
     @property
     def base_name(self):
@@ -203,7 +209,7 @@ class Adjoint(Operator):
         memo[id(self)] = copied_op
 
         for attribute, value in self.__dict__.items():
-            setattr(copied_op, attribute, value.__deepcopy__(memo))
+            setattr(copied_op, attribute, deepcopy(value, memo))
         return copied_op
 
     # pylint: disable=super-init-not-called
@@ -268,13 +274,11 @@ class Adjoint(Operator):
         base_matrix = base.compute_matrix(*params, **base.hyperparameters)
         return transpose(conj(base_matrix))
 
-    # pylint: disable=arguments-differ
-    @staticmethod
-    def compute_decomposition(*params, wires, base=None):
+    def decomposition(self):
         try:
-            return [base.adjoint()]
+            return [self.base.adjoint()]
         except AdjointUndefinedError:
-            base_decomp = base.compute_decomposition(*params, wires, **base.hyperparameters)
+            base_decomp = self.base.decomposition()
             return [Adjoint(op) for op in reversed(base_decomp)]
 
     # pylint: disable=arguments-differ
@@ -287,10 +291,8 @@ class Adjoint(Operator):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``eigvals``
         return conj(self.base.eigvals())
 
-    # pylint: disable=arguments-differ
-    @staticmethod
-    def compute_diagonalizing_gates(*params, wires, base=None):
-        return base.compute_diagonalizing_gates(*params, wires, **base.hyperparameters)
+    def diagonalizing_gates(self):
+        return self.base.diagonalizing_gates()
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

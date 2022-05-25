@@ -41,8 +41,6 @@ class TestInheritanceMixins:
         assert not isinstance(op, qml.operation.Observable)
         assert not isinstance(op, AdjointOperation)
 
-        assert op.__class__.__bases__ == (Adjoint, qml.operation.Operator)
-
         # checking we can call `dir` without problems
         assert "num_params" in dir(op)
 
@@ -63,8 +61,6 @@ class TestInheritanceMixins:
         assert not isinstance(op, qml.operation.Observable)
         assert isinstance(op, AdjointOperation)
 
-        assert op.__class__.__bases__ == (Adjoint, AdjointOperation, qml.operation.Operation)
-
         # check operation-specific properties made it into the mapping
         assert "grad_recipe" in dir(op)
         assert "control_wires" in dir(op)
@@ -84,8 +80,6 @@ class TestInheritanceMixins:
         assert not isinstance(ob, qml.operation.Operation)
         assert isinstance(ob, qml.operation.Observable)
         assert not isinstance(ob, AdjointOperation)
-
-        assert ob.__class__.__bases__ == (Adjoint, qml.operation.Observable)
 
         # Check some basic observable functionality
         assert ob.compare(ob)
@@ -298,17 +292,48 @@ class TestAdjointOperation:
         op = Adjoint(qml.CNOT(wires=("a", "b")))
         assert op.control_wires == qml.wires.Wires("a")
 
-    def test_inverse_always_False(self):
-        """Test that Adjoint of an Operation cannot be inverted."""
-        op = Adjoint(qml.CNOT(wires=(0, 1)))
 
-        assert not op.inverse
+class TestInverse:
+    """Tests involving the inverse attribute."""
 
-        with pytest.raises(NotImplementedError, match="Class Adjoint does not support"):
-            op.inv()
+    def test_base_inverted(self):
+        """Test when base is already inverted."""
+        base = qml.S(0).inv()
+        op = Adjoint(base)
 
-        with pytest.raises(NotImplementedError, match="Class Adjoint does not support"):
-            op.inverse = True
+        assert op.inverse is True
+        assert base.inverse is True
+        assert op.name == "Adjoint(S.inv)"
+
+        assert qml.math.allclose(qml.matrix(op), qml.matrix(qml.S(0)))
+
+        decomp_adj_inv = op.expand().circuit
+        decomp = qml.S(0).expand().circuit
+
+        for op1, op2 in zip(decomp, decomp_adj_inv):
+            assert type(op1) == type(op2)
+            assert op1.data == op2.data
+            assert op1.wires == op2.wires
+
+    def test_inv_method(self):
+        """Test that calling inv on an Adjoint op defers to base op."""
+
+        base = qml.T(0)
+        op = Adjoint(base)
+        op.inv()
+
+        assert base.inverse is True
+        assert op.inverse is True
+        assert op.name == "Adjoint(T.inv)"
+
+        assert qml.math.allclose(qml.matrix(op), qml.matrix(qml.T(0)))
+        decomp_adj_inv = op.expand().circuit
+        decomp = qml.T(0).expand().circuit
+
+        for op1, op2 in zip(decomp, decomp_adj_inv):
+            assert type(op1) == type(op2)
+            assert op1.data == op2.data
+            assert op1.wires == op2.wires
 
 
 class TestAdjointOperationDiffInfo:
