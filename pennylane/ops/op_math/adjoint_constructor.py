@@ -48,17 +48,17 @@ def adjoint(fn, lazy=True):
     """Create the adjoint of an Operator or a function that applies the adjoint of the provided function.
 
     Args:
-        fn (function, ~.operation.Operator): A single operator or a quantum function that
+        fn (function or :class:`~.operation.Operator`): A single operator or a quantum function that
             applies quantum operations.
 
     Keyword Args:
-        lazy=True (bool): If the transform is behaving lazily, all operations are wrapped in a `Adjoint` class
+        lazy=True (bool): If the transform is behaving lazily, all operations are wrapped in a ``Adjoint`` class
             and handled later. If ``lazy=False``, operation-specific adjoint decompositions are first attempted.
 
     Returns:
-        :class:`~.operation.Operator` or function: If an Operator is provided, returns an Operator that is the adjoint.
-            If a function is provided, returns a function with the same call signature that returns the Adjoint of the
-            provided function.
+        (function or :class:`~.operation.Operator`): If an Operator is provided, returns an Operator that is the adjoint.
+        If a function is provided, returns a function with the same call signature that returns the Adjoint of the
+        provided function.
 
     .. note::
 
@@ -71,13 +71,10 @@ def adjoint(fn, lazy=True):
 
     This transform can also accept a single operator.
 
-    .. code-block:: python3
-
-        @qml.qnode(qml.device('default.qubit', wires=1))
-        def circuit2(y):
-            qml.adjoint(qml.RY(y, wires=0))
-            return qml.expval(qml.PauliZ(0))
-
+    >>> @qml.qnode(qml.device('default.qubit', wires=1))
+    ... def circuit2(y):
+    ...     qml.adjoint(qml.RY(y, wires=0))
+    ...     return qml.expval(qml.PauliZ(0))
     >>> print(qml.draw(circuit2)("y"))
     0: ──RY(y)†─┤  <Z>
     >>> print(qml.draw(circuit2, expansion_strategy="device")(0.1))
@@ -110,10 +107,7 @@ def adjoint(fn, lazy=True):
     0: ──RX(0.20)──SX──SX†──RX(0.20)†─┤  <Z>
 
     .. details::
-
-        :title: Developer details
-
-        **Lazy Evaluation**
+        :title: Lazy Evaluation
 
         When ``lazy=False``, the function first attempts operation-specific decomposition of the
         adjoint via the :meth:`.operation.Operator.adjoint` method. Only if an Operator doesn't have
