@@ -2651,3 +2651,6 @@ class IsingXY(Operation):
     def adjoint(self):
         (phi,) = self.parameters
         return IsingXY(-phi, wires=self.wires)
+
+    def pow(self, z):
+        return [IsingXY(self.data[0] * z, wires=self.wires)
