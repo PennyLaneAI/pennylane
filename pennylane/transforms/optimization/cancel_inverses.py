@@ -56,11 +56,11 @@ def _are_inverses(op1, op2):
     if {shortest_name, shortest_name + ".inv"} == name_set:
         return True
 
-    # op1 is an `Adjoint` class and it's base is equal to op2
+    # op1 is an `Adjoint` class and its base is equal to op2
     if isinstance(op1, Adjoint) and _ops_equal(op1.base, op2):
         return True
 
-    # op2 is an `Adjoint` class and it's base is equal to op1
+    # op2 is an `Adjoint` class and its base is equal to op1
     if isinstance(op2, Adjoint) and _ops_equal(op2.base, op1):
         return True
 

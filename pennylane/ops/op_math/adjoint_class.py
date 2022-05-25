@@ -30,6 +30,8 @@ class AdjointOperation(Operation):
 
     Overriding the dunder method ``__new__`` in ``Adjoint`` allows us to customize the creation of an instance and dynamically
     add in parent classes.
+    
+    .. note:: Once the ``Operation`` class does not contain any unique logic any more, this mixin class can be removed.
     """
 
     # This inverse behavior only needs to temporarily patch behavior until in-place inversion is removed.
@@ -102,7 +104,7 @@ class Adjoint(Operator):
     .. seealso:: :func:`~.adjoint`, :meth:`~.operation.Operator.adjoint`
 
     This is a *developer*-facing class, and the :func:`~.adjoint` transform should be used to construct instances
-    this class.
+    of this class.
 
     **Example:**
 
