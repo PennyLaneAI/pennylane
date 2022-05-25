@@ -16,7 +16,7 @@ sphinx==3.5.3
 sphinx-automodapi==0.13
 sphinx-copybutton
 sphinxcontrib-bibtex==0.4.2
-tensorflow==2.5.3
+tensorflow==2.6.4
 tensornetwork==0.3
 toml
 torch==1.9.0+cpu
