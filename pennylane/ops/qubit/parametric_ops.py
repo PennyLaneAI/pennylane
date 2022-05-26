@@ -2649,6 +2649,41 @@ class IsingXY(Operation):
 
         return qml.math.diag([1, c, c, 1]) + 1j * s * Y
 
+    @staticmethod
+    def compute_eigvals(phi):  # pylint: disable=arguments-differ
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.IsingXY.eigvals`
+
+
+        Args:
+            phi (tensor_like or float): phase angle
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.IsingXY.compute_eigvals(0.5)
+        array([1.        +0.j        , 1.        +0.j        ,       0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        """
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        pos_phase = qml.math.exp(1.0j * phi / 2)
+        neg_phase = qml.math.exp(-1.0j * phi / 2)
+
+        return qml.math.stack([1, 1, neg_phase, pos_phase])
+
     def adjoint(self):
         (phi,) = self.parameters
         return IsingXY(-phi, wires=self.wires)
