@@ -896,16 +896,19 @@ class QubitDevice(Device):
         # estimate the variance
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
         axis = -1 if bin_size is None else -2
-        return np.squeeze(np.mean(samples, axis=axis))
+        return np.squeeze(np.var(samples, axis=axis))
 
     def sample(self, observable, shot_range=None, bin_size=None):
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
         name = observable.name
-        sample_slice = (Ellipsis,) if shot_range is None else (Ellipsis, slice(*shot_range))
-        # First slice samples with respect to sample_slice and later for specific observables
-        sub_samples = self._samples[sample_slice]
+        # Select the samples from self._samples that correspond to ``shot_range`` if provided
+        if shot_range is None:
+            sub_samples = self._samples
+        else:
+            # Indexing corresponds to: (potential broadcasting, shots, wires)
+            sub_samples = self._samples[..., slice(*shot_range), :]
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}

@@ -461,7 +461,6 @@ class TestExpval:
         """Tests that expval method when the analytic attribute is True
 
         Additional QubitDevice methods that are mocked:
-        -rotate_basis
         -probability
         """
         obs = qml.PauliX(0)
@@ -481,7 +480,6 @@ class TestExpval:
         """Tests that expval method when the analytic attribute is False
 
         Additional QubitDevice methods that are mocked:
-        -rotate_basis
         -sample
         -numpy.mean
         """
@@ -525,7 +523,6 @@ class TestVar:
         """Tests that var method when the analytic attribute is True
 
         Additional QubitDevice methods that are mocked:
-        -rotate_basis
         -probability
         """
         obs = qml.PauliX(0)
@@ -545,7 +542,6 @@ class TestVar:
         """Tests that var method when the analytic attribute is False
 
         Additional QubitDevice methods that are mocked:
-        -rotate_basis
         -sample
         -numpy.var
         """
