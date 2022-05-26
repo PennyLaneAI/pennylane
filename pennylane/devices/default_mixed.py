@@ -25,6 +25,7 @@ from string import ascii_letters as ABC
 
 import pennylane.numpy as np
 import pennylane.math as qnp
+import pennylane.quantum_info as pqi
 from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, QubitDensityMatrix
 from pennylane import Snapshot
 from pennylane.operation import Channel
@@ -167,6 +168,19 @@ class DefaultMixed(QubitDevice):
 
         state = np.reshape(self._pre_rotated_state, (2**self.num_wires, 2**self.num_wires))
         return qnp.to_density_matrix(state, wires)
+
+    def vn_entropy(self, wires):
+        """Returns the Von Neumann entropy prior to measurement.
+
+        Args:
+            wires (Wires): wires of the reduced system.
+
+        Returns:
+            array[float]:
+        """
+        wires = wires.tolist()
+        state = np.reshape(self._pre_rotated_state, (2**self.num_wires, 2**self.num_wires))
+        return pqi.to_vn_entropy(state, wires=wires)
 
     def reset(self):
         """Resets the device"""

@@ -43,6 +43,7 @@ class ObservableReturnTypes(Enum):
     Probability = "probs"
     State = "state"
     MidMeasure = "measure"
+    VnEntropy = "vnentropy"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -70,6 +71,9 @@ State = ObservableReturnTypes.State
 MidMeasure = ObservableReturnTypes.MidMeasure
 """Enum: An enumeration which represents returning sampling the computational
 basis in the middle of the circuit."""
+
+VnEntropy = ObservableReturnTypes.VnEntropy
+"""Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
 
 
 class MeasurementShapeError(ValueError):
@@ -806,6 +810,13 @@ def density_matrix(wires):
     dim = 2 ** len(wires)
     shape = (1, dim, dim)
     return MeasurementProcess(State, wires=wires, shape=shape, numeric_type=complex)
+
+
+def vn_entropy(wires):
+    r"""Von Neumann entropy"""
+    # pylint: disable=protected-access
+    wires = qml.wires.Wires(wires)
+    return MeasurementProcess(VnEntropy, wires=wires, numeric_type=float)
 
 
 T = TypeVar("T")
