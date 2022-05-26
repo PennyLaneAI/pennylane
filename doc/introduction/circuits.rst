@@ -97,6 +97,11 @@ the available options that can be passed to the device loader.
     For example, check out the ``'lightning.qubit'`` `plugin <https://github.com/PennyLaneAI/pennylane-lightning>`_,
     which is a fast state-vector simulator supporting GPUs.
 
+.. note::
+
+    For details on saving device configurations, please visit the
+    :doc:`configurations page</introduction/configuration>`.
+
 Device options
 ^^^^^^^^^^^^^^
 
