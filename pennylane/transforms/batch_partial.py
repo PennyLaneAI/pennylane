@@ -73,8 +73,8 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
             qml.RY(y, wires=1)
             return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
 
-    The ``qml.batch_partial`` decorator allows us to create a partially evaluated
-    function that wraps the QNode. For example,
+    The ``qml.batch_partial`` decorator allows us to create a partial callable
+    object that wraps the QNode. For example,
 
     >>> y = np.array(0.2)
     >>> batched_partial_circuit = qml.batch_partial(circuit, y=y)
@@ -88,7 +88,7 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
     tensor([0.97517033, 0.95350781, 0.91491915, 0.86008934], requires_grad=True)
 
     Jacobians can be computed for the arguments of the wrapper function, but
-    not for any partially evaluated arguments passed to ``qml.batch_partial``:
+    not for any pre-supplied argument passed to ``qml.batch_partial``:
 
     >>> qml.jacobian(batched_partial_circuit)(x)
     array([[-0.0978434 ,  0.        ,  0.        ,  0.        ],
@@ -142,7 +142,7 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
 
     sig = inspect.signature(qnode).parameters
     if is_partial:
-        # the partially evaluated function must have at least one more
+        # the batched partial function must have at least one more
         # parameter, otherwise batching doesn't make sense
         if len(sig) <= len(partial_kwargs):
             raise ValueError("Partial evaluation must leave at least one unevaluated parameter")
