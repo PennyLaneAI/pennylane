@@ -509,7 +509,7 @@ class QNode:
 
     @property
     def tape(self):
-        """The quantum tape"""
+        """The quantum tape."""
         return self._tape
 
     qtape = tape  # for backwards compatibility
