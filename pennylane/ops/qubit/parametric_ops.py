@@ -725,11 +725,8 @@ class Rot(Operation):
         # So we need to make sure the matrix comes out having the right type
         interface = qml.math._multi_dispatch([phi, theta, omega])
 
-        # The following variable is used to assert the all terms to be stacked have same shape
-        one = qml.math.asarray(qml.math.ones_like(phi), like=interface)
-        one = one * qml.math.asarray(qml.math.ones_like(omega), like=interface)
-        c = qml.math.cos(theta / 2) * one
-        s = qml.math.sin(theta / 2) * one
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
 
         # If anything is not tensorflow, it has to be casted and then
         if interface == "tensorflow":
@@ -737,6 +734,11 @@ class Rot(Operation):
             omega = qml.math.cast_like(qml.math.asarray(omega, like=interface), 1j)
             c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
             s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
+
+        # The following variable is used to assert the all terms to be stacked have same shape
+        one = qml.math.ones_like(phi) * qml.math.ones_like(omega)
+        c = c * one
+        s = s * one
 
         mat = [
             [
@@ -1841,11 +1843,8 @@ class CRot(Operation):
         # So we need to make sure the matrix comes out having the right type
         interface = qml.math._multi_dispatch([phi, theta, omega])
 
-        # The following variable is used to assert the all terms to be stacked have same shape
-        one = qml.math.asarray(qml.math.ones_like(phi), like=interface)
-        one = one * qml.math.asarray(qml.math.ones_like(omega), like=interface)
-        c = qml.math.cos(theta / 2) * one
-        s = qml.math.sin(theta / 2) * one
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
 
         # If anything is not tensorflow, it has to be casted
         if interface == "tensorflow":
@@ -1853,6 +1852,11 @@ class CRot(Operation):
             omega = qml.math.cast_like(qml.math.asarray(omega, like=interface), 1j)
             c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
             s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
+
+        # The following variable is used to assert the all terms to be stacked have same shape
+        one = qml.math.ones_like(phi) * qml.math.ones_like(omega)
+        c = c * one
+        s = s * one
 
         o = qml.math.ones_like(c)
         z = qml.math.zeros_like(c)
@@ -2237,11 +2241,8 @@ class U3(Operation):
         # So we need to make sure the matrix comes out having the right type
         interface = qml.math._multi_dispatch([theta, phi, delta])
 
-        # The following variable is used to assert the all terms to be stacked have same shape
-        one = qml.math.asarray(qml.math.ones_like(phi), like=interface)
-        one = one * qml.math.asarray(qml.math.ones_like(delta), like=interface)
-        c = qml.math.cos(theta / 2) * one
-        s = qml.math.sin(theta / 2) * one
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
 
         # If anything is not tensorflow, it has to be casted and then
         if interface == "tensorflow":
@@ -2249,6 +2250,11 @@ class U3(Operation):
             delta = qml.math.cast_like(qml.math.asarray(delta, like=interface), 1j)
             c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
             s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
+
+        # The following variable is used to assert the all terms to be stacked have same shape
+        one = qml.math.ones_like(phi) * qml.math.ones_like(delta)
+        c = c * one
+        s = s * one
 
         mat = [
             [c, -s * qml.math.exp(1j * delta)],
