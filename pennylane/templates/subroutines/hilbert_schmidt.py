@@ -173,7 +173,7 @@ class HilbertSchmidt(Operation):
             decomp_ops.append(qml.Hadamard(wires[i]))
         return decomp_ops
 
-    def adjoint(self):  # pylint: disable=arguments-differ
+    def adjoint(self):
         adjoint_op = HilbertSchmidt(
             *self.parameters,
             u_tape=self.hyperparameters["u_tape"],
@@ -290,7 +290,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         return decomp_ops
 
-    def adjoint(self):  # pylint: disable=arguments-differ
+    def adjoint(self):
         adjoint_op = LocalHilbertSchmidt(
             *self.parameters,
             u_tape=self.hyperparameters["u_tape"],
