@@ -162,7 +162,7 @@ class HilbertSchmidt(Operation):
 
         # Unitary V conjugate
         for op_v in v_tape.operations:
-            decomp_ops.append(qml.adjoint(qml.apply, lazy=False)(op_v))
+            decomp_ops.append(qml.adjoint(op_v, lazy=False))
 
         # CNOT second layer
         for i, j in zip(reversed(first_range), reversed(second_range)):
