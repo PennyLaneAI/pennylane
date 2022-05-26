@@ -30,9 +30,13 @@ class SProd(Operator):
     operator with the given scalar."""
 
     def __init__(self, scalar, operator, do_queue=True, id=None):
+        # Add validation checks for size / shape / type of scalar and operator
 
-        self.op = operator  # Add validation checks for size / shape / type of scalar and operator
-        self.scalar = scalar
+        if isinstance(operator, self.__class__):  # SProd(0.5, SProd(3, PauliX)) = SProd(1.5, PauliX)
+            self.op = operator.op
+            self.scalar = scalar * operator.scalar
+        else:
+            self.op = operator, self.scalar = scalar
 
         super().__init__(
             operator.parameters, wires=operator.wires, do_queue=do_queue, id=id
