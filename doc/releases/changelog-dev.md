@@ -177,11 +177,9 @@
   for some selected configurations.
   [(#2540)](https://github.com/PennyLaneAI/pennylane/pull/2540)
 
-
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
 Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Samuel Banning Soran Jahangiri, Utkarsh Azad
-
