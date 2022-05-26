@@ -54,6 +54,11 @@
 
 <h3>Improvements</h3>
 
+* The qchem openfermion-dependent tests are localized and collected in `tests.qchem.of_tests`. The
+  new module `test_structure` is created to collect the tests of the `qchem.structure` module in
+  one place and remove their dependency to openfermion.
+  [(#2593)](https://github.com/PennyLaneAI/pennylane/pull/2593)
+
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
   for many classes.
   [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
