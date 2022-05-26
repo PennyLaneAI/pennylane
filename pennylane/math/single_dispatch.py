@@ -128,7 +128,7 @@ def _to_numpy_autograd(x, max_depth=None, _n=0):
 ar.register_function("autograd", "to_numpy", _to_numpy_autograd)
 
 
-def _scatter_autograd(tensor, index, value):
+def _scatter_autograd(indices, array, shape):
     _np = _i("qml").numpy
     new_array = _np.zeros(shape, dtype=array.dtype.type)
     new_array[indices] = array

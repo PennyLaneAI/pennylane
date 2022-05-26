@@ -109,6 +109,19 @@ class DefaultMixed(QubitDevice):
         "ThermalRelaxationError",
     }
 
+    @staticmethod
+    def _reduce_sum(array, axes):
+        return qnp.sum(array, axis=tuple(axes))
+
+    @staticmethod
+    def _asarray(array, dtype=None):
+        res = qnp.asarray(qnp.stack(array), dtype=dtype)
+
+        if res.dtype is np.dtype("O"):
+            return qnp.hstack(array).flatten().astype(dtype)
+
+        return res
+
     def __init__(
         self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
     ):
@@ -230,7 +243,6 @@ class DefaultMixed(QubitDevice):
             kraus (list[array]): Kraus operators
             wires (Wires): target wires
         """
-
         channel_wires = self.map_wires(wires)
         rho_dim = 2 * self.num_wires
         num_ch_wires = len(channel_wires)
