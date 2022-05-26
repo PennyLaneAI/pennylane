@@ -40,6 +40,10 @@ class PowOperation(Operation):
         return self
 
     @property
+    def inverse(self):
+        return False
+
+    @property
     def base_name(self):
         return self._name
 
@@ -231,6 +235,11 @@ class Pow(Operator):
             if isinstance(self.z, int) and self.z > 0:
                 return [self.base.__copy__() for _ in range(self.z)]
             raise NotImplementedError
+
+    def diagonalizing_gates(self):
+        if isinstance(self.z, int):
+            return self.base.diagonalizing_gates()
+        return super().diagonalizing_gates()
 
     def generator(self):
         return self.z * self.base.generator()
