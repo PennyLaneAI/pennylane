@@ -226,7 +226,7 @@ def test_mol_hamiltonian_with_read_structure(tmpdir):
     with open(filename, "w") as f:
         f.write(file_content)
 
-    symbols, coordinates = qchem.read_structure(str(filename))
+    symbols, coordinates = qchem.read_structure(str(filename), outpath=tmpdir)
     H, num_qubits = qchem.molecular_hamiltonian(symbols, coordinates)
     assert len(H.terms()) == 2
     assert num_qubits == 4
