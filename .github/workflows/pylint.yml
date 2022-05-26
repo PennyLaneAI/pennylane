@@ -15,15 +15,11 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.8
-
       - name: Run pylint
-        uses: ricardochaves/python-lint@v1.4.0
+      - uses: actions/setup-python@v2
+      - uses: ricardochaves/python-lint@v1.4.0
         with:
-          python-root-list: "pennylane/"
+          python-root-list: "pennylane"
           use-pylint: True
           use-pycodestyle: false
           use-flake8: false
