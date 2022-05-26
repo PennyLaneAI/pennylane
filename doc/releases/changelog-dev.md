@@ -54,6 +54,11 @@
 
 <h3>Improvements</h3>
 
+* The qchem openfermion-dependent tests are localized and collected in `tests.qchem.of_tests`. The
+  new module `test_structure` is created to collect the tests of the `qchem.structure` module in
+  one place and remove their dependency to openfermion.
+  [(#2593)](https://github.com/PennyLaneAI/pennylane/pull/2593)
+
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
   for many classes.
   [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
@@ -102,6 +107,9 @@
 * A new method `safe_update_info` is added to `qml.QueuingContext`. This method is substituted
   for `qml.QueuingContext.update_info` in a variety of places.
   [(#2612)](https://github.com/PennyLaneAI/pennylane/pull/2612)
+
+* `BasisEmbedding` can accept an int as argument instead of a list of bits (optionally). Example: `qml.BasisEmbedding(4, wires = range(4))` is now equivalent to `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because 4=0b100). 
+  [(#2601)](https://github.com/PennyLaneAI/pennylane/pull/2601)
 
 <h3>Breaking changes</h3>
 
