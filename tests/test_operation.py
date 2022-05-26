@@ -19,6 +19,8 @@ from functools import reduce
 import warnings
 
 import pytest
+from scipy.sparse import csr_matrix
+
 import numpy as np
 from pennylane import numpy as pnp
 from numpy.linalg import multi_dot
@@ -27,6 +29,7 @@ import pennylane as qml
 from pennylane.operation import Tensor, operation_derivative, Operator, Operation
 
 from gate_data import I, X, CNOT
+from pennylane.ops import cv
 from pennylane.wires import Wires
 
 
@@ -1424,9 +1427,19 @@ add_obs = [
 
 add_zero_obs = [
     qml.PauliX(0),
-    qml.Identity(1),
     qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
-    qml.PauliX(0) @ qml.Hadamard(2)
+    qml.PauliX(0) @ qml.Hadamard(2),
+    qml.Projector(np.array([1, 1]), wires=np.array([0, 1])),
+    qml.SparseHamiltonian(csr_matrix(np.array([[1, 0], [-1.5, 0]])), 1),
+    # CVObservables
+    qml.Identity(1),
+    cv.NumberOperator(wires=[1]),
+    cv.TensorN(wires=[1]),
+    cv.X(wires=[1]),
+    cv.P(wires=[1]),
+    cv.QuadOperator(1.234, wires=0),
+    cv.FockStateProjector(np.array([1, 2, 3]), wires=[0, 1, 2]),
+    cv.PolyXP(np.array([1.0, 2.0, 3.0]), wires=[0]),
 ]
 
 mul_obs = [

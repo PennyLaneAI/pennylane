@@ -274,6 +274,26 @@ add_zero_hamiltonians = [
         )
 ]
 
+iadd_zero_hamiltonians = [
+    # identical hamiltonians
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+    ),
+    (
+        qml.Hamiltonian(
+            [1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
+        ),
+        qml.Hamiltonian(
+            [1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
+        ),
+    ),
+]
+
 sub_hamiltonians = [
     (
         qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
@@ -768,6 +788,12 @@ class TestHamiltonian:
         """Tests that Hamiltonians are added inline correctly"""
         H1 += H2
         assert H.compare(H1)
+
+    @pytest.mark.parametrize(("H1", "H2"), iadd_zero_hamiltonians)
+    def test_hamiltonian_iadd_zero(self, H1, H2):
+        """Tests in-place addition between Hamiltonians and zero"""
+        H1 += 0
+        assert H1.compare(H2)
 
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
     def test_hamiltonian_imul(self, coeff, H, res):

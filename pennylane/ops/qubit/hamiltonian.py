@@ -605,6 +605,9 @@ class Hamiltonian(Observable):
 
     def __iadd__(self, H):
         r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        if isinstance(H, numbers.Number) and H == 0:
+            return self
+
         if isinstance(H, Hamiltonian):
             self._coeffs = qml.math.concatenate([self._coeffs, H.coeffs], axis=0)
             self._ops.extend(H.ops.copy())
