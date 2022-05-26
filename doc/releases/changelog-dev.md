@@ -99,6 +99,10 @@
 * Sparse Hamiltonians representation has changed from COOrdinate (COO) to Compressed Sparse Row (CSR) format. The CSR representation is more performant for arithmetic operations and matrix vector products. This change decreases the `expval()` calculation time, for `qml.SparseHamiltonian`, specially for large workflows. Also, the CRS format consumes less memory for the `qml.SparseHamiltonian` storage.
 [(#2561)](https://github.com/PennyLaneAI/pennylane/pull/2561)
 
+* A new method `safe_update_info` is added to `qml.QueuingContext`. This method is substituted
+  for `qml.QueuingContext.update_info` in a variety of places.
+  [(#2612)](https://github.com/PennyLaneAI/pennylane/pull/2612)
+
 <h3>Breaking changes</h3>
 
 * The `qml.queuing.Queue` class is now removed.

@@ -217,10 +217,15 @@ class TestAnnotatedQueue:
             q.append(A, inv=True)
             assert QueuingContext.get_info(A) == {"inv": True}
 
-        assert q._get_info(A) == {"inv": True}
+            qml.QueuingContext.update_info(A, key="value1")
+
+        # should pass silently because no longer recording
+        qml.QueuingContext.update_info(A, key="value2")
+
+        assert q._get_info(A) == {"inv": True, "key": "value1"}
 
         q._update_info(A, inv=False, owner=None)
-        assert q._get_info(A) == {"inv": False, "owner": None}
+        assert q._get_info(A) == {"inv": False, "owner": None, "key": "value1"}
 
     def test_update_error(self):
         """Test that an exception is raised if get_info is called
@@ -235,7 +240,7 @@ class TestAnnotatedQueue:
             q._update_info(B, inv=True)
 
     def test_safe_update_info_queued(self):
-
+        """Test the `safe_update_info` method if the object is already queued."""
         op = qml.RX(0.5, wires=1)
 
         with AnnotatedQueue() as q:
@@ -253,7 +258,8 @@ class TestAnnotatedQueue:
         assert q.get_info(op) == {"key": "value4"}
 
     def test_safe_update_info_not_queued(self):
-
+        """Tests the safe_update_info method passes silently if the object is
+        not already queued."""
         op = qml.RX(0.5, wires=1)
 
         with AnnotatedQueue() as q:
