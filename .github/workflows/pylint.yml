@@ -28,7 +28,7 @@ jobs:
           use-black: false
           use-mypy: false
           use-isort: false
-          extra-pylint-options: "--rcfile"
+          extra-pylint-options: "--rcfile .pylintrc"
           extra-pycodestyle-options: ""
           extra-flake8-options: ""
           extra-black-options: ""
