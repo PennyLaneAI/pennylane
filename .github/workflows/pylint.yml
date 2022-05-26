@@ -1,4 +1,4 @@
-name: Formatting check
+name: Pylint
 on:
   push:
     branches:
