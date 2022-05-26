@@ -706,8 +706,16 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
-        axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires)
+        if qml.math.ndim(mat) > 2:
+            batch_size = self._size(mat) // 4**len(device_wires)
+        else:
+            batch_size = None
+
+        shape = [2] * (len(device_wires) * 2)
+        if batch_size:
+            shape.insert(0, batch_size)
+        mat = self._cast(self._reshape(mat, shape), dtype=self.C_DTYPE)
+        axes = (np.arange(-len(device_wires), 0), device_wires)
         tdot = self._tensordot(mat, state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
@@ -716,6 +724,10 @@ class DefaultQubit(QubitDevice):
         # We'll need to invert this permutation to put the indices in the correct place
         unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires]
         perm = list(device_wires) + unused_idxs
+        if batch_size:
+            perm = [idx + 1 for idx in perm]
+            perm.insert(0, 0)
+
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         return self._transpose(tdot, inv_perm)
 
@@ -736,7 +748,15 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        mat = self._cast(self._reshape(mat, [2] * len(device_wires) * 2), dtype=self.C_DTYPE)
+        if qml.math.ndim(mat) > 2:
+            batch_size = self._size(mat) // 4**len(device_wires)
+        else:
+            batch_size = None
+
+        shape = [2] * (len(device_wires) * 2)
+        if batch_size:
+            shape.insert(0, batch_size)
+        mat = self._cast(self._reshape(mat, shape), dtype=self.C_DTYPE)
 
         # Tensor indices of the quantum state
         state_indices = ABC[: self.num_wires]
@@ -756,7 +776,7 @@ class DefaultQubit(QubitDevice):
         )
 
         # We now put together the indices in the notation numpy's einsum requires
-        einsum_indices = f"{new_indices}{affected_indices},{state_indices}->{new_state_indices}"
+        einsum_indices = f"...{new_indices}{affected_indices},...{state_indices}->...{new_state_indices}"
 
         return self._einsum(einsum_indices, mat, state)
 
@@ -776,13 +796,21 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
+        if qml.math.ndim(phases) > 1:
+            batch_size = self._size(phases) // 2**len(device_wires)
+        else:
+            batch_size = None
+
         # reshape vectors
-        phases = self._cast(self._reshape(phases, [2] * len(device_wires)), dtype=self.C_DTYPE)
+        shape = [2] * len(device_wires)
+        if batch_size:
+            shape.insert(0, batch_size)
+        phases = self._cast(self._reshape(phases, shape), dtype=self.C_DTYPE)
 
         state_indices = ABC[: self.num_wires]
         affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
 
-        einsum_indices = f"{affected_indices},{state_indices}->{state_indices}"
+        einsum_indices = f"...{affected_indices},...{state_indices}->...{state_indices}"
         return self._einsum(einsum_indices, phases, state)
 
     def reset(self):

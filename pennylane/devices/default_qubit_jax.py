@@ -154,6 +154,7 @@ class DefaultQubitJax(DefaultQubit):
     _roll = staticmethod(jnp.roll)
     _stack = staticmethod(jnp.stack)
     _const_mul = staticmethod(jnp.multiply)
+    _size = staticmethod(jnp.size)
 
     def __init__(self, wires, *, shots=None, prng_key=None, analytic=None):
         if jax_config.read("jax_enable_x64"):

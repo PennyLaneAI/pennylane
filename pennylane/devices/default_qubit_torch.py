@@ -152,6 +152,7 @@ class DefaultQubitTorch(DefaultQubit):
     _norm = staticmethod(torch.norm)
     _flatten = staticmethod(torch.flatten)
     _const_mul = staticmethod(torch.mul)
+    _size = staticmethod(torch.numel)
 
     def __init__(self, wires, *, shots=None, analytic=None, torch_device=None):
 

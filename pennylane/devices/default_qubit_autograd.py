@@ -94,6 +94,7 @@ class DefaultQubitAutograd(DefaultQubit):
     _imag = staticmethod(np.imag)
     _roll = staticmethod(np.roll)
     _stack = staticmethod(np.stack)
+    _size = staticmethod(np.size)
 
     @staticmethod
     def _asarray(array, dtype=None):

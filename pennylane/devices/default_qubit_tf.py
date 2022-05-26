@@ -142,6 +142,7 @@ class DefaultQubitTF(DefaultQubit):
     _imag = staticmethod(tf.math.imag)
     _roll = staticmethod(tf.roll)
     _stack = staticmethod(tf.stack)
+    _size = staticmethod(tf.size)
 
     @staticmethod
     def _const_mul(constant, array):

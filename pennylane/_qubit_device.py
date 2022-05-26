@@ -96,6 +96,7 @@ class QubitDevice(Device):
     _outer = staticmethod(np.outer)
     _diag = staticmethod(np.diag)
     _real = staticmethod(np.real)
+    _size = staticmethod(np.size)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
@@ -570,6 +571,10 @@ class QubitDevice(Device):
         shots = self.shots
 
         basis_states = np.arange(number_of_states)
+        if qml.math.ndim(state_probability) == 2:
+            return np.array(
+                [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
+            )
         return np.random.choice(basis_states, shots, p=state_probability)
 
     @staticmethod
@@ -626,7 +631,7 @@ class QubitDevice(Device):
             array[int]: basis states in binary representation
         """
         powers_of_two = 1 << np.arange(num_wires, dtype=dtype)
-        states_sampled_base_ten = samples[:, None] & powers_of_two
+        states_sampled_base_ten = samples[..., None] & powers_of_two
         return (states_sampled_base_ten > 0).astype(dtype)[:, ::-1]
 
     @property
@@ -786,10 +791,16 @@ class QubitDevice(Device):
         Returns:
             array[float]: array of the resulting marginal probabilities.
         """
+        dim = 2**self.num_wires
+        if qml.math.ndim(prob) > 1:
+            batch_size = qml.math.prod(qml.math.shape(prob)) // dim
+        else:
+            batch_size = None
 
         if wires is None:
+            out = self._reshape(prob, [batch_size, dim]) if batch_size else prob
             # no need to marginalize
-            return prob
+            return out
 
         wires = Wires(wires)
         # determine which subsystems are to be summed over
@@ -800,15 +811,20 @@ class QubitDevice(Device):
         inactive_device_wires = self.map_wires(inactive_wires)
 
         # reshape the probability so that each axis corresponds to a wire
-        prob = self._reshape(prob, [2] * self.num_wires)
+        shape = [2] * self.num_wires
+        if batch_size:
+            shape.insert(0, batch_size)
+        prob = self._reshape(prob, shape)
 
         # sum over all inactive wires
         # hotfix to catch when default.qubit uses this method
         # since then device_wires is a list
         if isinstance(inactive_device_wires, Wires):
-            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
-        else:
-            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires))
+            inactive_device_wires = inactive_device_wires.labels
+
+        prob = self._reduce_sum(prob, inactive_device_wires)
+        flat_shape = [batch_size, -1] if batch_size else [-1]
+        prob = self._reshape(prob, flat_shape)
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
@@ -848,7 +864,8 @@ class QubitDevice(Device):
 
         # estimate the ev
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
-        return np.squeeze(np.mean(samples, axis=0))
+        axis = -1 if bin_size is None else -2
+        return np.squeeze(np.mean(samples, axis=axis))
 
     def var(self, observable, shot_range=None, bin_size=None):
 
@@ -878,36 +895,35 @@ class QubitDevice(Device):
 
         # estimate the variance
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
-        return np.squeeze(np.var(samples, axis=0))
+        axis = -1 if bin_size is None else -2
+        return np.squeeze(np.mean(samples, axis=axis))
 
     def sample(self, observable, shot_range=None, bin_size=None):
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
         name = observable.name
-        sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
+        sample_slice = (Ellipsis,) if shot_range is None else (Ellipsis, slice(*shot_range))
+        # First slice samples with respect to sample_slice and later for specific observables
+        sub_samples = self._samples[sample_slice]
 
         if isinstance(name, str) and name in {"PauliX", "PauliY", "PauliZ", "Hadamard"}:
             # Process samples for observables with eigenvalues {1, -1}
-            samples = 1 - 2 * self._samples[sample_slice, device_wires[0]]
+            samples = 1 - 2 * sub_samples[..., device_wires[0]]
 
-        elif isinstance(
-            observable, MeasurementProcess
-        ):  # if no observable was provided then return the raw samples
-            if (
-                len(observable.wires) != 0
-            ):  # if wires are provided, then we only return samples from those wires
-                samples = self._samples[sample_slice, np.array(device_wires)]
+        elif isinstance(observable, MeasurementProcess):
+            # if no observable was provided then return the raw samples
+            if len(observable.wires) != 0:
+                # if wires are provided, then we only return samples from those wires
+                samples = sub_samples[..., np.array(device_wires)]
             else:
-                samples = self._samples[sample_slice]
+                samples = sub_samples
 
         else:
 
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
-            samples = self._samples[
-                sample_slice, np.array(device_wires)
-            ]  # Add np.array here for Jax support.
+            samples = sub_samples[..., np.array(device_wires)]  # Add np.array here for Jax support.
             powers_of_two = 2 ** np.arange(samples.shape[-1])[::-1]
             indices = samples @ powers_of_two
             indices = np.array(indices)  # Add np.array here for Jax support.
