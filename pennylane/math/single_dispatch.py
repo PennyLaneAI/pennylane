@@ -168,7 +168,6 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experiment
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "sinc"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experimental.numpy"
-ar.autoray._SUBMODULE_ALIASES["tensorflow", "ndim"] = "tensorflow.experimental.numpy"
 
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
@@ -198,6 +197,16 @@ def _round_tf(tensor, decimals=0):
 
 
 ar.register_function("tensorflow", "round", _round_tf)
+
+
+def _ndim_tf(tensor):
+    try:
+        return _i("tf").experimental.numpy.ndim(tensor)
+    except AttributeError:
+        return len(tensor.shape)
+
+
+ar.register_function("tensorflow", "ndim", _ndim_tf)
 
 
 def _take_tf(tensor, indices, axis=None):
