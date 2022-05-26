@@ -507,9 +507,10 @@ def stack(values, axis=0, like=None):
     return np.stack(values, axis=axis, like=like)
 
 
-def einsum(indices, *operands):
-    interface = _multi_dispatch(operands)
-    return np.einsum(indices, *operands, like=interface)
+def einsum(indices, *operands, like=None):
+    if like is None:
+        like = _multi_dispatch(operands)
+    return np.einsum(indices, *operands, like=like)
 
 
 def where(condition, x=None, y=None):
