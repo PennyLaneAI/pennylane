@@ -326,16 +326,10 @@ class TestConstruction:
         """Test that the batch size is correctly inferred from all operation's
         batch_size, when creating and when using `set_parameters`."""
 
-        class RXWithNdim(qml.RX):
-            ndim_params = (0,)
-
-        class RotWithNdim(qml.Rot):
-            ndim_params = (0, 0, 0)
-
         # Test with tape construction
         with qml.tape.QuantumTape() as tape:
-            RXWithNdim(x, wires=0)
-            RotWithNdim(*rot, wires=1)
+            qml.RX(x, wires=0)
+            qml.Rot(*rot, wires=1)
             qml.apply(qml.expval(qml.PauliZ(0)))
             qml.apply(qml.expval(qml.PauliX(1)))
 
@@ -343,8 +337,8 @@ class TestConstruction:
 
         # Test with set_parameters
         with qml.tape.QuantumTape() as tape:
-            RXWithNdim(0.2, wires=0)
-            RotWithNdim(1.0, 0.2, -0.3, wires=1)
+            qml.RX(0.2, wires=0)
+            qml.Rot(1.0, 0.2, -0.3, wires=1)
             qml.apply(qml.expval(qml.PauliZ(0)))
             qml.apply(qml.expval(qml.PauliX(1)))
 
@@ -364,23 +358,17 @@ class TestConstruction:
         """Test that the batch size is correctly inferred from all operation's
         batch_size, when creating and when using `set_parameters`."""
 
-        class RXWithNdim(qml.RX):
-            ndim_params = (0,)
-
-        class RotWithNdim(qml.Rot):
-            ndim_params = (0, 0, 0)
-
         with pytest.raises(ValueError, match="batch sizes of the tape operations do not match."):
             with qml.tape.QuantumTape() as tape:
-                RXWithNdim(x, wires=0)
-                RotWithNdim(*rot, wires=1)
-                RXWithNdim(y, wires=1)
+                qml.RX(x, wires=0)
+                qml.Rot(*rot, wires=1)
+                qml.RX(y, wires=1)
                 qml.apply(qml.expval(qml.PauliZ(0)))
 
         with qml.tape.QuantumTape() as tape:
-            RXWithNdim(0.2, wires=0)
-            RotWithNdim(1.0, 0.2, -0.3, wires=1)
-            RXWithNdim(0.2, wires=1)
+            qml.RX(0.2, wires=0)
+            qml.Rot(1.0, 0.2, -0.3, wires=1)
+            qml.RX(0.2, wires=1)
             qml.apply(qml.expval(qml.PauliZ(0)))
         with pytest.raises(ValueError, match="batch sizes of the tape operations do not match."):
             tape.set_parameters([x] + rot + [y])

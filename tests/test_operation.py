@@ -374,7 +374,9 @@ class TestOperatorConstruction:
         import tensorflow as tf
 
         class MyRX(qml.RX):
-            ndim_params = (0,)
+            @property
+            def ndim_params(self):
+                return self._ndim_params
 
         def fun(x):
             op0 = qml.RX(x, 0)
@@ -385,7 +387,9 @@ class TestOperatorConstruction:
         fun0(tf.Variable(0.2))
         fun0(tf.Variable([0.2, 0.5]))
 
-        fun1 = tf.function(fun, input_signature=(tf.TensorSpec(shape=None, dtype=tf.float32),))
+        # With kwargs
+        signature = (tf.TensorSpec(shape=None, dtype=tf.float32),)
+        fun1 = tf.function(fun, jit_compile=jit_compile, input_signature=signature)
         fun1(tf.Variable(0.2))
         fun1(tf.Variable([0.2, 0.5]))
 

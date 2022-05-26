@@ -2531,14 +2531,8 @@ class TestHamiltonianSupport:
 
 
 class TestBroadcastingSupport:
-    """Tests that the device correctly makes use of ``unbroadcast_expand`` to
+    """Tests that the device correctly makes use of ``broadcast_expand`` to
     execute broadcasted tapes."""
-
-    class RX_batched(qml.RX):
-        """A version of qml.RX that detects batching."""
-
-        ndim_params = (0,)
-        compute_decomposition = staticmethod(lambda theta, wires=None: qml.RX(theta, wires=wires))
 
     @pytest.mark.parametrize("x", [0.2, [0.1, 0.6, 0.3], [0.1]])
     @pytest.mark.parametrize("shots", [None, 100000])
@@ -2549,7 +2543,7 @@ class TestBroadcastingSupport:
 
         @qml.qnode(dev)
         def circuit(x):
-            self.RX_batched(x, wires=0)
+            qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
             # return qml.expval(qml.Hamiltonian([0.3], [qml.PauliZ(0)]))
 
@@ -2568,8 +2562,8 @@ class TestBroadcastingSupport:
 
         @qml.qnode(dev)
         def circuit(x, y):
-            self.RX_batched(x, wires=0)
-            self.RX_batched(y, wires=1)
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=1)
             return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
 
         out = circuit(x, y)
@@ -2591,8 +2585,8 @@ class TestBroadcastingSupport:
 
         @qml.qnode(dev)
         def circuit(x, y):
-            self.RX_batched(x, wires=0)
-            self.RX_batched(y, wires=1)
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=1)
             return qml.expval(H)
 
         out = circuit(x, y)
