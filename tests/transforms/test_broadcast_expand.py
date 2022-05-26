@@ -87,8 +87,8 @@ observables_and_exp_fns = [
 ]
 
 
-class TestUnbroadcastExpand:
-    """Tests for the unbroadcast_expand transform"""
+class TestBroadcastExpand:
+    """Tests for the broadcast_expand transform"""
 
     @pytest.mark.parametrize("params, size", parameters_and_size)
     @pytest.mark.parametrize("obs, exp_fn", observables_and_exp_fns)
@@ -97,7 +97,7 @@ class TestUnbroadcastExpand:
         tape = make_tape(*params, obs)
         assert tape.batch_size == size
 
-        tapes, fn = qml.transforms.unbroadcast_expand(tape)
+        tapes, fn = qml.transforms.broadcast_expand(tape)
         assert len(tapes) == size
         assert all(_tape.batch_size is None for _tape in tapes)
 
@@ -108,7 +108,7 @@ class TestUnbroadcastExpand:
     def test_without_broadcasting(self):
         tape = make_tape(0.2, 0.1, 0.5, [qml.PauliZ(0)])
         with pytest.raises(ValueError, match="The provided tape is not broadcasted."):
-            qml.transforms.unbroadcast_expand(tape)
+            qml.transforms.broadcast_expand(tape)
 
     @pytest.mark.autograd
     @pytest.mark.filterwarnings("ignore:Output seems independent of input")
@@ -120,7 +120,7 @@ class TestUnbroadcastExpand:
 
         def cost(*params):
             tape = make_tape(*params, obs)
-            tapes, fn = qml.transforms.unbroadcast_expand(tape)
+            tapes, fn = qml.transforms.broadcast_expand(tape)
             return fn(qml.execute(tapes, dev, qml.gradients.param_shift))
 
         assert qml.math.allclose(cost(*params), exp_fn(*params))
@@ -141,7 +141,7 @@ class TestUnbroadcastExpand:
 
         def cost(*params):
             tape = make_tape(*params, obs)
-            tapes, fn = qml.transforms.unbroadcast_expand(tape)
+            tapes, fn = qml.transforms.broadcast_expand(tape)
             return fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="jax"))
 
         assert qml.math.allclose(cost(*params), exp_fn(*params))
@@ -162,7 +162,7 @@ class TestUnbroadcastExpand:
 
         def cost(*params):
             tape = make_tape(*params, obs)
-            tapes, fn = qml.transforms.unbroadcast_expand(tape)
+            tapes, fn = qml.transforms.broadcast_expand(tape)
             return fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="tf"))
 
         with tf.GradientTape(persistent=True) as t:
@@ -192,7 +192,7 @@ class TestUnbroadcastExpand:
 
         def cost(*params):
             tape = make_tape(*params, obs)
-            tapes, fn = qml.transforms.unbroadcast_expand(tape)
+            tapes, fn = qml.transforms.broadcast_expand(tape)
             return fn(qml.execute(tapes, dev, qml.gradients.param_shift, interface="torch"))
 
         assert qml.math.allclose(cost(*torch_params), exp_fn(*params))

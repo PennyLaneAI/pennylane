@@ -733,31 +733,22 @@ class Device(abc.ABC):
 
         # Check whether the circuit was broadcasted (then the Hamiltonian-expanded
         # ones will be as well) and whether broadcasting is supported
-        batch_size = circuit.batch_size
-        supports_broadcasting = self.capabilities().get("supports_broadcasting")
-
-        if batch_size is None or supports_broadcasting:
+        if circuit.batch_size is None or self.capabilities().get("supports_broadcasting"):
             # If the circuit wasn't broadcasted or broadcasting is supported, no action required
             return circuits, hamiltonian_fn
 
-        unbroadcasted_circuits = []
-        unbroadcast_fns = []
         # Expand each of the broadcasted Hamiltonian-expanded circuits
-        for c in circuits:
-            tapes_batch, fn = qml.transforms.unbroadcast_expand(c)
-            unbroadcasted_circuits.extend(tapes_batch)
-            unbroadcast_fns.append(fn)
+        expanded_tapes, expanded_fn = qml.transforms.map_batch_transform(
+            qml.transforms.broadcast_expand, circuits
+        )
 
         # Chain the postprocessing functions of the broadcasted-tape expansions and the Hamiltonian
-        # expansion. Note that the application order is reversed compared to the expansion order
-        def chained_processing(results):
-            intermediate = [
-                fn(results[i * batch_size : (i + 1) * batch_size])
-                for i, fn in enumerate(unbroadcast_fns)
-            ]
-            return hamiltonian_fn(intermediate)
+        # expansion. Note that the application order is reversed compared to the expansion order,
+        # i.e. while we first applied `hamiltonian_expand` to the tape, we need to process the
+        # results from the broadcast expansion first.
+        total_processing = lambda results: hamiltonian_fn(expanded_fn(results))
 
-        return unbroadcasted_circuits, chained_processing
+        return expanded_tapes, total_processing
 
     @property
     def op_queue(self):

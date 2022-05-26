@@ -4,6 +4,30 @@
 
 <h3>New features since last release</h3>
 
+* Devices have a new capability flag `capabilities()["supports_broadcasting"]`
+  and are now able to handle broadcasting of tapes.  In addition, the tape transform
+  `broadcast_expand` was added, which allows a tape that uses broadcasting 
+  (`tape.batch_size!=None`) to be expanded into multiple tapes without a broadcast dimension.
+  [(#2590)](https://github.com/PennyLaneAI/pennylane/pull/2590)
+
+  If the mentioned flag is set to `False` (the default), the new transform `broadcast_expand`
+  is used internally to enable execution of broadcasted tapes on all devices.
+
+* Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
+  attribute `batch_size`.
+  - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
+  - `Operator.batch_size` contains the size of an additional parameter broadcasting axis, if present,
+  - `QuantumTape.batch_size` contains the `batch_size` of its operations (see below).
+  [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
+
+  When providing an operator with the `ndim_params` attribute, it will
+  determine whether (and with which `batch_size`) its input parameter(s)
+  is/are broadcasted.
+  A `QuantumTape` can then infer from its operations whether it is batched.
+  For this, all `Operators` in the tape must have the same `batch_size` or `batch_size=None`.
+  That is, mixing broadcasted and unbroadcasted `Operators` is allowed, but mixing broadcasted
+  `Operators` with differing `batch_size` is not, similar to NumPy broadcasting.
+
 * Boolean mask indexing of the parameter-shift Hessian
   [(#2538)](https://github.com/PennyLaneAI/pennylane/pull/2538)
 
@@ -59,15 +83,6 @@
 
 <h3>Improvements</h3>
 
-* Operators have new attributes `ndim_params` and `batch_size`, QuantumTapes have the new
-  attribute `batch_size`.
-  [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
-
-  When providing an operator with the `ndim_params` attributed, it will
-  determine whether (and with which `batch_size`) its input parameter(s)
-  is/are batched. A QuantumTape infers from its operations whether it is
-  batched.
-
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
   for many classes.
   [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
@@ -114,6 +129,9 @@
 [(#2561)](https://github.com/PennyLaneAI/pennylane/pull/2561)
 
 <h3>Breaking changes</h3>
+
+* The `qml.queuing.Queue` class is now removed.
+  [(#2599)](https://github.com/PennyLaneAI/pennylane/pull/2599)
 
 * The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
   [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)

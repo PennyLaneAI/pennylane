@@ -11,30 +11,31 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module contains the tape expansion function for unbroadcasting a
+"""This module contains the tape expansion function for expanding a
 broadcasted tape into multiple tapes."""
 import pennylane as qml
-from pennylane.transforms.batch_transform import batch_transform
+from .batch_transform import batch_transform
 
 
 @batch_transform
-def unbroadcast_expand(tape):
-    r"""Expand a broadcasted tape into multiple unbroadcasted tapes
+def broadcast_expand(tape):
+    r"""Expand a broadcasted tape into multiple tapes
     and a function that stacks and squeezes the results.
 
     Args:
         tape (.QuantumTape): Broadcasted tape to be expanded
+
     Returns:
-        list[.QuantumTape]: Unbroadcasted tapes that produce one of the
-        results of the broadcasted tape each
-        callable: Function that stacks the results
+        tuple[list[.QuantumTape], function]: Returns a tuple containing a list of
+        quantum tapes that produce one of the results of the broadcasted tape each,
+        and a function that stacks and squeezes the tape execution results.
 
     This expansion function is used internally whenever a device does not
     support broadcasting.
 
     **Example**
 
-    We may use ``unbroadcast_expand`` manually on a tape to separate it
+    We may use ``broadcast_expand`` manually on a tape to separate it
     into multiple calculations. For this we will provide ``qml.RX`` with
     the ``ndim_params`` attribute that allows the operation to detect
     broadcasting.
@@ -43,7 +44,7 @@ def unbroadcast_expand(tape):
     >>> with qml.tape.QuantumTape() as tape:
     >>>     qml.RX(np.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)
     >>>     qml.expval(qml.PauliZ(0))
-    >>> tapes, fn = qml.transforms.unbroadcast_expand(tape)
+    >>> tapes, fn = qml.transforms.broadcast_expand(tape)
     >>> tapes
     [<QuantumTape: wires=[0], params=1>,
      <QuantumTape: wires=[0], params=1>,
