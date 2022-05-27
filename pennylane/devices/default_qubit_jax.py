@@ -139,7 +139,6 @@ class DefaultQubitJax(DefaultQubit):
     _reduce_sum = staticmethod(lambda array, axes: jnp.sum(array, axis=tuple(axes)))
     _reshape = staticmethod(jnp.reshape)
     _flatten = staticmethod(lambda array: array.ravel())
-    _gather = staticmethod(lambda array, indices: array[indices])
     _einsum = staticmethod(jnp.einsum)
     _cast = staticmethod(jnp.array)
     _transpose = staticmethod(jnp.transpose)

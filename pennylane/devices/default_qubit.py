@@ -706,10 +706,8 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        if qml.math.ndim(mat) > 2:
-            batch_size = self._size(mat) // 4**len(device_wires)
-        else:
-            batch_size = None
+        dim = 2**len(device_wires)
+        batch_size = self._get_batch_size(mat, (dim, dim))
 
         shape = [2] * (len(device_wires) * 2)
         if batch_size:
@@ -748,10 +746,8 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        if qml.math.ndim(mat) > 2:
-            batch_size = self._size(mat) // 4**len(device_wires)
-        else:
-            batch_size = None
+        dim = 2**len(device_wires)
+        batch_size = self._get_batch_size(mat, (dim, dim))
 
         shape = [2] * (len(device_wires) * 2)
         if batch_size:
@@ -795,11 +791,7 @@ class DefaultQubit(QubitDevice):
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
-
-        if qml.math.ndim(phases) > 1:
-            batch_size = self._size(phases) // 2**len(device_wires)
-        else:
-            batch_size = None
+        batch_size = self._get_batch_size(phases, (2**len(device_wires),))
 
         # reshape vectors
         shape = [2] * len(device_wires)

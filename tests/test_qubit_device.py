@@ -583,7 +583,7 @@ class TestSample:
     def test_only_ones_minus_ones(
         self, mock_qubit_device_with_original_statistics, monkeypatch, tol
     ):
-        """Test that pauli_eigvals_as_samples method only produces -1 and 1 samples"""
+        """Test that sample for a single Pauli observable only produces -1 and 1 samples"""
         obs = qml.PauliX(0)
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[1, 0], [0, 0]])
@@ -591,12 +591,13 @@ class TestSample:
         with monkeypatch.context() as m:
             res = dev.sample(obs)
 
+        assert np.shape(res) == (2,)
         assert np.allclose(res**2, 1, atol=tol, rtol=0)
 
     def test_correct_custom_eigenvalues(
         self, mock_qubit_device_with_original_statistics, monkeypatch, tol
     ):
-        """Test that pauli_eigvals_as_samples method only produces samples of eigenvalues"""
+        """Test that sample for a product of Pauli observables produces samples of eigenvalues"""
         obs = qml.PauliX(0) @ qml.PauliZ(1)
         dev = mock_qubit_device_with_original_statistics(wires=2)
         dev._samples = np.array([[1, 0], [0, 0]])
@@ -635,9 +636,79 @@ class TestSample:
         assert np.array_equal(res, wire_samples)
 
     def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
-        """Tests that an error is thrown if sample is called with an observable that does not have eigenvalues defined."""
+        """Tests that an error is thrown if sample is called with an observable
+        that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
         dev._samples = np.array([[1, 0], [0, 0]])
+        with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
+            dev.sample(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
+
+
+class TestSampleWithBroadcasting:
+    """Test the sample method when broadcasting is used"""
+
+    def test_only_ones_minus_ones(
+        self, mock_qubit_device_with_original_statistics, monkeypatch, tol
+    ):
+        """Test that sample for a single Pauli observable only produces -1 and 1 samples
+        when using broadcasting"""
+        obs = qml.PauliX(0)
+        dev = mock_qubit_device_with_original_statistics()
+        dev._samples = np.array([[[0, 0], [0, 0]], [[1, 0], [1, 0]], [[0, 0], [1, 0]]])
+
+        with monkeypatch.context() as m:
+            res = dev.sample(obs)
+
+        assert np.allclose(res, [[1, 1], [-1, -1], [1, -1]], atol=tol, rtol=0)
+
+    def test_correct_custom_eigenvalues(
+        self, mock_qubit_device_with_original_statistics, monkeypatch, tol
+    ):
+        """Test that sample for a product of Pauli observables produces samples
+        of eigenvalues when using broadcasting"""
+        obs = qml.PauliX(0) @ qml.PauliZ(1)
+        dev = mock_qubit_device_with_original_statistics(wires=2)
+        dev._samples = np.array([[1, 0], [0, 0]])
+        dev._samples = np.array([[[1, 0], [0, 0]], [[0, 1], [1, 1]], [[1, 0], [0, 1]]])
+
+        with monkeypatch.context() as m:
+            res = dev.sample(obs)
+
+        assert np.array_equal(res, np.array([[-1, 1], [-1, 1], [-1, -1]]))
+
+    def test_sample_with_no_observable_and_no_wires(
+        self, mock_qubit_device_with_original_statistics, tol
+    ):
+        """Test that when we sample a device without providing an observable or wires then it
+        will return the raw samples when using broadcasting"""
+        obs = qml.measurements.sample(op=None, wires=None)
+        dev = mock_qubit_device_with_original_statistics(wires=2)
+        generated_samples = np.array([[[1, 0], [1, 1]], [[1, 1], [0, 0]], [[0, 1], [1, 0]]])
+        dev._samples = generated_samples
+
+        res = dev.sample(obs)
+        assert np.array_equal(res, generated_samples)
+
+    def test_sample_with_no_observable_and_with_wires(
+        self, mock_qubit_device_with_original_statistics, tol
+    ):
+        """Test that when we sample a device without providing an observable but we specify wires
+        then it returns the generated samples for only those wires when using broadcasting"""
+        obs = qml.measurements.sample(op=None, wires=[1])
+        dev = mock_qubit_device_with_original_statistics(wires=2)
+        generated_samples = np.array([[[1, 0], [1, 1]], [[1, 1], [0, 0]], [[0, 1], [1, 0]]])
+        dev._samples = generated_samples
+
+        wire_samples = np.array([[[0], [1]], [[1], [0]], [[1], [0]]])
+        res = dev.sample(obs)
+
+        assert np.array_equal(res, wire_samples)
+
+    def test_no_eigval_error(self, mock_qubit_device_with_original_statistics):
+        """Tests that an error is thrown if sample is called with an observable
+        that does not have eigenvalues defined when using broadcasting."""
+        dev = mock_qubit_device_with_original_statistics()
+        dev._samples = np.array([[[1, 0], [1, 1]], [[1, 1], [0, 0]], [[0, 1], [1, 0]]])
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
             dev.sample(qml.Hamiltonian([1.0], [qml.PauliX(0)]))
 
@@ -741,6 +812,63 @@ class TestMarginalProb:
 
         res = dev.marginal_prob(probs, wires=None)
         assert np.allclose(res, probs, atol=tol, rtol=0)
+
+    # Note that the broadcasted probs enter `marginal_probs` as a flattened array
+    broadcasted_marginal_test_data = [
+        (
+            np.array([0.1, 0.2, 0.3, 0.4, 0.8, 0.02, 0.05, 0.13, 0.6, 0.3, 0.02, 0.08]),
+            np.array([[0.4, 0.6], [0.85, 0.15], [0.62, 0.38]]),
+            [1],
+            2,
+        ),
+        (
+            np.array(
+                [
+                    0.17,
+                    0.06,
+                    0.21,
+                    0.04,
+                    0.19,
+                    0.19,
+                    0.08,
+                    0.06,
+                    0.07,
+                    0.04,
+                    0.11,
+                    0.04,
+                    0.29,
+                    0.04,
+                    0.18,
+                    0.23,
+                ]
+            ),
+            np.array([[0.38, 0.27, 0.1, 0.25], [0.18, 0.47, 0.08, 0.27]]),
+            [2, 0],
+            3,
+        ),
+    ]
+
+    @pytest.mark.parametrize("probs, marginals, wires, num_wires", broadcasted_marginal_test_data)
+    def test_correct_broadcasted_marginals_returned(
+        self, mock_qubit_device_with_original_statistics, probs, marginals, wires, num_wires, tol
+    ):
+        """Test that the correct marginals are returned by the marginal_prob method when
+        broadcasting is used"""
+        dev = mock_qubit_device_with_original_statistics(num_wires)
+
+        res = dev.marginal_prob(probs, wires=wires)
+        assert np.allclose(res, marginals, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("probs, marginals, wires, num_wires", broadcasted_marginal_test_data)
+    def test_correct_broadcasted_marginals_returned_wires_none(
+        self, mock_qubit_device_with_original_statistics, probs, marginals, wires, num_wires, tol
+    ):
+        """Test that the correct marginals are returned by the marginal_prob method when
+        broadcasting is used"""
+        dev = mock_qubit_device_with_original_statistics(num_wires)
+
+        res = dev.marginal_prob(probs, wires=None)
+        assert np.allclose(res, probs.reshape((-1, 2**num_wires)), atol=tol, rtol=0)
 
 
 class TestActiveWires:
@@ -1095,3 +1223,49 @@ class TestShotList:
 
         with pytest.raises(ValueError, match="Unknown shot sequence"):
             qml.device("default.qubit", wires=2, shots=["a", "b", "c"])
+
+
+class TestGetBatchSize:
+    """Tests for the helper method ``_get_batch_size`` of ``QubitDevice``."""
+
+    @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
+    def test_batch_size_None(self, mock_qubit_device, shape):
+        """Test that a ``batch_size=None`` is reported correctly."""
+        dev = mock_qubit_device()
+        tensor0 = np.ones(shape, dtype=complex)
+        assert dev._get_batch_size(tensor0, shape) is None
+        tensor1 = np.arange(np.prod(shape)).reshape(shape)
+        assert dev._get_batch_size(tensor1, shape) is None
+
+    @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
+    @pytest.mark.parametrize("batch_size", [1, 3])
+    def test_batch_size_int(self, mock_qubit_device, shape, batch_size):
+        """Test that an integral ``batch_size`` is reported correctly."""
+        dev = mock_qubit_device()
+        full_shape = (batch_size,) + shape
+        tensor0 = np.ones(full_shape, dtype=complex)
+        assert dev._get_batch_size(tensor0, shape) == batch_size
+        tensor1 = np.arange(np.prod(full_shape)).reshape(full_shape)
+        assert dev._get_batch_size(tensor1, shape) == batch_size
+
+    def test_invalid_tensor(self, mock_qubit_device):
+        """Test that an error is raised if a tensor is provided that does not
+        have a proper shape/ndim."""
+        dev = mock_qubit_device()
+        with pytest.raises(ValueError, match="could not broadcast"):
+            dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2))
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("jit_compile", [True, False])
+    def test_no_error_abstract_tensor(self, mock_qubit_device, jit_compile):
+        """Test that no error is raised if an abstract tensor is provided"""
+        import tensorflow as tf
+
+        dev = mock_qubit_device()
+        signature = (tf.TensorSpec(shape=None, dtype=tf.float32),)
+
+        @tf.function(jit_compile=jit_compile, input_signature=signature)
+        def get_batch_size(tensor):
+            return dev._get_batch_size(tensor, (2,))
+
+        assert get_batch_size(tf.Variable(0.2)) is None

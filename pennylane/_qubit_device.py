@@ -84,7 +84,9 @@ class QubitDevice(Device):
     _reduce_sum = staticmethod(lambda array, axes: np.sum(array, axis=tuple(axes)))
     _reshape = staticmethod(np.reshape)
     _flatten = staticmethod(lambda array: array.flatten())
-    _gather = staticmethod(lambda array, indices: array[indices])
+    _gather = staticmethod(
+        lambda array, indices, axis=0: array[:, indices] if axis == 1 else array[indices]
+    )
     _einsum = staticmethod(np.einsum)
     _cast = staticmethod(np.asarray)
     _transpose = staticmethod(np.transpose)
@@ -757,6 +759,25 @@ class QubitDevice(Device):
 
         return self.estimate_probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
 
+    def _get_batch_size(self, tensor, expected_shape):
+        """Determine whether a tensor has an additional batch dimension for broadcasting,
+        compared to an expected_shape."""
+        try:
+            ndim = qml.math.ndim(tensor)
+        except ValueError as e:
+            # Todo[dwierichs]: Implement broadcasting for tf.function with unknown shaped arguments
+            # if possible. `shape=None` will prevent `qml.math.ndim(tensor)` from determining the
+            # number of dimensions, so that our only option is to assume `batch_size=None`
+            if qml.math.is_abstract(tensor):
+                return None
+            raise e
+
+        exp_size = qml.math.prod(expected_shape)
+        if ndim > len(expected_shape) or self._size(tensor) > exp_size:
+            return self._size(tensor) // exp_size
+
+        return None
+
     def marginal_prob(self, prob, wires=None):
         r"""Return the marginal probability of the computational basis
         states by summing the probabiliites on the non-specified wires.
@@ -792,10 +813,7 @@ class QubitDevice(Device):
             array[float]: array of the resulting marginal probabilities.
         """
         dim = 2**self.num_wires
-        if qml.math.ndim(prob) > 1:
-            batch_size = qml.math.prod(qml.math.shape(prob)) // dim
-        else:
-            batch_size = None
+        batch_size = self._get_batch_size(prob, (dim,))
 
         if wires is None:
             out = self._reshape(prob, [batch_size, dim]) if batch_size else prob
@@ -822,6 +840,8 @@ class QubitDevice(Device):
         if isinstance(inactive_device_wires, Wires):
             inactive_device_wires = inactive_device_wires.labels
 
+        if batch_size:
+            inactive_device_wires = [idx + 1 for idx in inactive_device_wires]
         prob = self._reduce_sum(prob, inactive_device_wires)
         flat_shape = [batch_size, -1] if batch_size else [-1]
         prob = self._reshape(prob, flat_shape)
@@ -835,7 +855,9 @@ class QubitDevice(Device):
 
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
         perm = basis_states @ powers_of_two
-        return self._gather(prob, perm)
+        # The permutation happens on the last axis both with and without broadcasting
+        out = self._gather(prob, perm, axis=1 if batch_size else 0)
+        return out
 
     def expval(self, observable, shot_range=None, bin_size=None):
 
@@ -941,7 +963,7 @@ class QubitDevice(Device):
         if bin_size is None:
             return samples
 
-        return samples.reshape((bin_size, -1))
+        return samples.reshape((bin_size, -1))  # TODO: Check with broadcasting
 
     def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
         """Implements the adjoint method outlined in
