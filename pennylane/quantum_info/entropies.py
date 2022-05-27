@@ -63,24 +63,57 @@ def _compute_vn_entropy(density_matrix, base=None):
     if interface == "jax":
         import jax
 
-        evs = jax.numpy.array([ev for ev in evs if ev >= 0])
+        evs = jax.numpy.array([ev for ev in evs if ev > 0])
         entropy = jax.numpy.sum(jax.scipy.special.entr(evs) / div_base)
 
     elif interface == "torch":
         import torch
 
-        evs = torch.tensor([ev for ev in evs if ev >= 0])
+        evs = torch.tensor([ev for ev in evs if ev > 0])
         entropy = torch.sum(torch.special.entr(evs) / div_base)
 
     elif interface == "tensorflow":
         import tensorflow as tf
 
         evs = tf.math.real(evs)
-        evs = tf.Variable([ev for ev in evs if ev >= 0])
+        evs = tf.Variable([ev for ev in evs if ev > 0])
         entropy = -tf.math.reduce_sum(evs * tf.math.log(evs) / div_base)
 
     else:
-        evs = qml.math.array([ev for ev in evs if ev >= 0])
+        evs = qml.math.array([ev for ev in evs if ev > 0])
         entropy = -qml.math.sum(evs * qml.math.log(evs) / div_base)
 
     return entropy
+
+
+def to_mutual_info(state, wires0, wires1, base=2, check_state=False):
+    """Get the mutual information between the subsystems"""
+
+    # the subsystems cannot overlap
+    if len([wire for wire in wires0 if wire in wires1]) > 0:
+        raise ValueError("Subsystems for computing mutual information must not overlap")
+
+    if isinstance(state, qml.QNode):
+        def wrapper(*args, **kwargs):
+            density_matrix = qml.math.to_density_matrix(state, state.device.wires.tolist())(*args, **kwargs)
+            entropy = _compute_mutual_info(density_matrix, wires0, wires1, base=base, check_state=check_state)
+            return entropy
+
+        return wrapper
+
+    # Cast as a complex128 array
+    state = qml.math.cast(state, dtype="complex128")
+
+    len_state = state.shape[0]
+    if state.shape in [(len_state,), (len_state, len_state)]:
+        return _compute_mutual_info(state, wires0, wires1, base=base, check_state=check_state)
+
+    raise ValueError("The state is not a QNode, a state vector or a density matrix.")
+
+
+def _compute_mutual_info(state, wires0, wires1, base=2, check_state=False):
+    all_wires = sorted([*wires0, *wires1])
+    vn_entropy_1 = to_vn_entropy(state, wires=wires0, base=base, check_state=check_state)
+    vn_entropy_2 = to_vn_entropy(state, wires=wires1, base=base, check_state=check_state)
+    vn_entropy_12 = to_vn_entropy(state, wires=all_wires, base=base, check_state=check_state)
+    return vn_entropy_1 + vn_entropy_2 - vn_entropy_12

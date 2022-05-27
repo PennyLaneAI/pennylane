@@ -13,4 +13,4 @@
 # limitations under the License.
 """Differentiable quantum information module"""
 
-from .entropies import to_vn_entropy
+from .entropies import to_vn_entropy, to_mutual_info

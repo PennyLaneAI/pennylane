@@ -621,6 +621,13 @@ class DefaultQubit(QubitDevice):
         state = self._flatten(self._pre_rotated_state)
         return pqi.to_vn_entropy(state, wires=wires)
 
+    def mutual_info(self, wires0, wires1):
+        """Returns the mutual information between the two subsystems"""
+        wires0 = wires0.tolist()
+        wires1 = wires1.tolist()
+        state = self._flatten(self._pre_rotated_state)
+        return pqi.to_mutual_info(state, wires0=wires0, wires1=wires1)
+
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.
 

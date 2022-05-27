@@ -182,6 +182,13 @@ class DefaultMixed(QubitDevice):
         state = np.reshape(self._pre_rotated_state, (2**self.num_wires, 2**self.num_wires))
         return pqi.to_vn_entropy(state, wires=wires)
 
+    def mutual_info(self, wires0, wires1):
+        """Returns the mutual information between the two subsystems"""
+        wires0 = wires0.tolist()
+        wires1 = wires1.tolist()
+        state = np.reshape(self._pre_rotated_state, (2**self.num_wires, 2**self.num_wires))
+        return pqi.to_mutual_info(state, wires0=wires0, wires1=wires1)
+
     def reset(self):
         """Resets the device"""
         super().reset()
