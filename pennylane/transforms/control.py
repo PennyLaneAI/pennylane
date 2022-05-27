@@ -155,7 +155,7 @@ class ControlledOperation(Operation):
             tape = ctrl_tape
         return tape
 
-    def adjoint(self, do_queue=True):
+    def adjoint(self, do_queue=True):  # pylint: disable=arguments-differ
         """Returns a new ControlledOperation that is equal to the adjoint of `self`"""
 
         active_tape = get_active_tape()
