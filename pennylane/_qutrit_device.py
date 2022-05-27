@@ -114,11 +114,7 @@ class QutritDevice(Device):
         permuted_wires = Wires([ordered_obs_wire_lst[index] for index in permutation])
         return permuted_wires
 
-    #########################################################################
-    #########################################################################
-    #################### TODO: Add list of observables ######################
-    #########################################################################
-    #########################################################################
+    # TODO: Add list of observables
     observables = {}
 
     def __init__(
