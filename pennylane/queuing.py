@@ -185,9 +185,9 @@ class QueuingContext(abc.ABC):
         if cls.recording():
             cls.active_context()._update_info(obj, **kwargs)  # pylint: disable=protected-access
 
+    @abc.abstractmethod
     def _update_info(self, obj, **kwargs):
         """Updates information of an object in the queue instance."""
-        raise NotImplementedError
 
     @classmethod
     def get_info(cls, obj):
@@ -204,28 +204,9 @@ class QueuingContext(abc.ABC):
 
         return None
 
+    @abc.abstractmethod
     def _get_info(self, obj):
         """Retrieves information of an object in the queue instance."""
-        raise NotImplementedError
-
-
-class Queue(QueuingContext):
-    """Lightweight class that maintains a basic queue of objects."""
-
-    def __init__(self):
-        self.queue = []
-
-    def _append(self, obj, **kwargs):
-        self.queue.append(obj)
-
-    def _remove(self, obj):
-        self.queue.remove(obj)
-
-    # Overwrite the inherited class methods, so that if queue.append is called,
-    # it is appended to the instantiated queue (rather than being added to the
-    # currently active queuing context, which may be a different queue).
-    append = _append
-    remove = _remove
 
 
 class AnnotatedQueue(QueuingContext):

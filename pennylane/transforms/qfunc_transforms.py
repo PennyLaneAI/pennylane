@@ -181,7 +181,7 @@ def _create_qfunc_internal_wrapper(fn, tape_transform, transform_args, transform
         new_dev = deepcopy(fn)
 
         @new_dev.custom_expand
-        def new_expand_fn(self, tape, *args, **kwargs):
+        def new_expand_fn(self, tape, *args, **kwargs):  # pylint: disable=unused-variable
             tape = tape_transform(tape, *transform_args, **transform_kwargs)
             return self.default_expand_fn(tape, *args, **kwargs)
 
