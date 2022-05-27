@@ -16,11 +16,16 @@ This submodule defines the symbolic operation that indicates the power of an ope
 """
 from scipy.linalg import fractional_matrix_power
 
-from pennylane.operation import Operator, Operation, Observable, PowUndefinedError
-from pennylane.queuing import QueuingContext, QueuingError
+from pennylane.operation import (
+    DecompositionUndefinedError,
+    Operator,
+    Operation,
+    Observable,
+    PowUndefinedError,
+)
+from pennylane.queuing import QueuingContext, QueuingError, apply
 
 from pennylane import math as qmlmath
-
 
 _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺⁻")
 
@@ -35,13 +40,18 @@ class PowOperation(Operation):
     """
 
     def inv(self):
-        self.z *= -1
+        self.hyperparameters["z"] *= -1
         self._name = f"{self.base.name}**{self.z}"
         return self
 
     @property
     def inverse(self):
         return False
+
+    @inverse.setter
+    def inverse(self, boolean):
+        if boolean is True:
+            raise NotImplementedError("The inverse can not be set for a power operator")
 
     @property
     def base_name(self):
@@ -90,7 +100,7 @@ class Pow(Operator):
     _observable_type = None  # type if base inherits from observable and not oepration
 
     # pylint: disable=unused-argument
-    def __new__(cls, base=None, do_queue=True, id=None):
+    def __new__(cls, base=None, z=0, do_queue=True, id=None):
         """Mixes in parents based on inheritance structure of base.
 
         Though all the types will be named "Pow", their *identity* and location in memory will be different
@@ -231,15 +241,23 @@ class Pow(Operator):
     def decomposition(self):
         try:
             return self.base.pow(self.z)
-        except PowUndefinedError:
+        except PowUndefinedError as e:
             if isinstance(self.z, int) and self.z > 0:
+                if QueuingContext.recording():
+                    return [apply(self.base) for _ in range(self.z)]
                 return [self.base.__copy__() for _ in range(self.z)]
-            raise NotImplementedError
+            # what if z is an int and less than 0?
+            # do we want Pow(base, -1) to be a "more fundamental" op
+            raise DecompositionUndefinedError from e
 
     def diagonalizing_gates(self):
         if isinstance(self.z, int):
             return self.base.diagonalizing_gates()
         return super().diagonalizing_gates()
+
+    def eigvals(self):
+        base_eigvals = self.base.eigvals()
+        return [value**self.z for value in base_eigvals]
 
     def generator(self):
         return self.z * self.base.generator()

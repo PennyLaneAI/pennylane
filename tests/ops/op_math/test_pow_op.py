@@ -16,6 +16,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math.pow_class import Pow, PowOperation
 
 
@@ -37,7 +38,7 @@ class TestInheritanceMixins:
         assert isinstance(op, qml.operation.Operator)
         assert not isinstance(op, qml.operation.Operation)
         assert not isinstance(op, qml.operation.Observable)
-        assert not isinstance(op, Pow)
+        assert not isinstance(op, PowOperation)
 
         # checking we can call `dir` without problems
         assert "num_params" in dir(op)
@@ -129,6 +130,7 @@ class TestInitialization:
         assert qml.math.allclose(params, op.data)
 
         assert op.wires == qml.wires.Wires("b")
+        assert op.num_wires == 1
 
     def test_template_base(self):
         """Test adjoint initialization for a template."""
@@ -150,6 +152,7 @@ class TestInitialization:
         assert qml.math.allclose(params, op.data[0])
 
         assert op.wires == qml.wires.Wires((0, 1))
+        assert op.num_wires == 2
 
     def test_hamiltonian_base(self):
         """Test adjoint initialization for a hamiltonian."""
@@ -168,6 +171,7 @@ class TestInitialization:
         assert qml.math.allclose(op.data, [2.0, 1.0])
 
         assert op.wires == qml.wires.Wires([0, "b"])
+        assert op.num_wires == 2
 
 
 class TestProperties:
@@ -230,7 +234,7 @@ def test_label():
 def test_label_matrix_param():
 
     base = qml.QubitUnitary(np.eye(2), wires=0)
-    op = Pow(base, 6.7)
+    op = Pow(base, -1.2)
 
     cache = {"matrices": []}
     assert op.label(decimals=2, cache=cache) == "U(M0)⁻¹⋅²"
@@ -269,6 +273,16 @@ class TestDiagonalizingGates:
             op.diagonalizing_gates()
 
 
+def test_eigvals():
+    """Test that the eigenvalues are correct."""
+    base = qml.RZ(2.34, wires=0)
+    op = Pow(base, 2.5)
+
+    mat_eigvals = qml.math.linalg.eigvals(op.matrix())
+
+    assert qml.math.allclose(mat_eigvals, op.eigvals)
+
+
 class TestQueueing:
     """Test that Pow operators queue and update base metadata"""
 
@@ -301,3 +315,132 @@ class TestQueueing:
             op = Pow(base, 4.5, do_queue=False)
 
         assert len(tape) == 0
+
+
+class TestMatrix:
+    def check_matrix(self, param, z):
+
+        base = qml.IsingZZ(param, wires=(0, 1))
+        op = Pow(base, z)
+
+        mat = qml.matrix(op)
+        shortcut = base.pow(z)[0]
+        shortcut_mat = qml.matrix(shortcut)
+
+        return qml.math.allclose(mat, shortcut_mat)
+
+    @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
+    def test_matrix_against_shortcut(self, z):
+
+        assert self.check_matrix(2.34, z)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
+    def test_matrix_against_shortcut_jax(self, z):
+
+        from jax import numpy as jnp
+
+        param = jnp.array(2.34)
+
+        assert self.check_matrix(param, z)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
+    def test_matrix_against_shortcut_jax(self, z):
+
+        import torch
+
+        param = torch.tensor(2.34)
+
+        assert self.check_matrix(param, z)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
+    def test_matrix_against_shortcut_jax(self, z):
+
+        import tensorflow as tf
+
+        param = tf.Variable(2.34)
+
+        assert self.check_matrix(param, z)
+
+
+class TestDecompositionExpand:
+    def test_shortcut_exists(self):
+
+        base = qml.PauliX(0)
+        op = Pow(base, 0.5)
+        decomp = op.decomposition()
+
+        assert len(decomp) == 1
+        assert isinstance(decomp[0], qml.SX)
+        assert decomp[0].wires == qml.wires.Wires(0)
+
+    def test_shortcut_exists_expand(self):
+
+        base = qml.PauliX(0)
+        op = Pow(base, 0.5)
+        expansion_tape = op.expand()
+
+        assert len(expansion_tape) == 1
+        assert isinstance(expansion_tape[0], qml.SX)
+
+    def test_positive_integer_power(self):
+
+        base = qml.SX(0)
+        op = Pow(base, 3)
+        decomp = op.decomposition()
+
+        assert len(decomp) == 3
+
+        for op in decomp:
+            assert isinstance(op, qml.SX)
+            assert op.wires == qml.wires.Wires(0)
+
+    def test_positive_integer_power_expand(self):
+
+        base = qml.SX(0)
+        op = Pow(base, 3)
+        expansion_tape = op.expand()
+
+        assert len(expansion_tape) == 3
+
+        for op in expansion_tape:
+            assert isinstance(op, qml.SX)
+            assert op.wires == qml.wires.Wires(0)
+
+    def test_negative_float_power(self):
+
+        base = qml.PauliX(0)
+        op = Pow(base, -0.11)
+
+        with pytest.raises(DecompositionUndefinedError):
+            op.decomposition()
+
+
+class TestInverse:
+    def test_base_already_inverted(self):
+
+        base = qml.S(0).inv()
+        op = Pow(base, 2)
+
+        assert base.inverse is False
+
+        assert op.z == -2
+        assert op.name == "S**-2"
+        assert op.base_name == "S**-2"
+        assert op.inverse is False
+
+    def test_invert_pow_op(self):
+
+        base = qml.S(0)
+        op = Pow(base, 2)
+
+        op.inv()
+
+        assert base.inverse is False
+
+        assert op.z == -2
+        assert op.name == "S**-2"
+        assert op.base_name == "S**-2"
+        assert op.inverse is False
