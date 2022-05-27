@@ -44,7 +44,6 @@ single_qubit_parametric_ops = (
     (qml.Rot, gd.Rot3),
     (qml.U1, gd.U1),
     (qml.U2, gd.U2),
-    (qml.U3, gd.U3),
 )
 
 double_qubit_non_param_ops = (

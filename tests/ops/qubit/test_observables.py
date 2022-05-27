@@ -141,6 +141,9 @@ class TestSimpleObservables:
         assert np.allclose(res, mat, atol=tol, rtol=0)
 
 
+# run all tests in this class in the same thread.
+# Prevents multiple threads from updating Hermitian._eigs at the same time
+@pytest.mark.xdist_group(name="hermitian_cache_group")
 @pytest.mark.usefixtures("tear_down_hermitian")
 class TestHermitian:
     """Test the Hermitian observable"""
@@ -251,7 +254,6 @@ class TestHermitian:
         expected = eigvecs.conj().T
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("obs1", EIGVALS_TEST_DATA)
     @pytest.mark.parametrize("obs2", EIGVALS_TEST_DATA)
     def test_hermitian_diagonalizing_gates_two_different_observables(self, obs1, obs2, tol):
