@@ -584,7 +584,7 @@ def sample(op=None, wires=None):
         observable ``obs``.
     """
     if (
-        not op.is_hermitian and op is not None
+        op is not None and not op.is_hermitian
         # not isinstance(op, qml.operation.Observable) and op is not None
     ):  # None type is also allowed for op
         raise qml.QuantumFunctionError(
