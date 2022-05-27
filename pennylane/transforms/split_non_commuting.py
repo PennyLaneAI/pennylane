@@ -15,8 +15,8 @@
 Contains the tape transform that splits non-commuting terms
 """
 # pylint: disable=protected-access
-import pennylane as qml
 import numpy as np
+import pennylane as qml
 
 from .batch_transform import batch_transform
 
