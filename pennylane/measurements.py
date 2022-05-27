@@ -468,7 +468,8 @@ def expval(op):
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
-    if not isinstance(op, (qml.operation.Observable, qml.Hamiltonian)):
+    if not op.is_hermitian:
+    # if not isinstance(op, (qml.operation.Observable, qml.Hamiltonian)):
         raise qml.QuantumFunctionError(
             f"{op.name} is not an observable: cannot be used with expval"
         )
@@ -503,7 +504,8 @@ def var(op):
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
-    if not isinstance(op, qml.operation.Observable):
+    if not op.is_hermitian:
+    # if not isinstance(op, qml.operation.Observable):
         raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
 
     return MeasurementProcess(Variance, obs=op, shape=(1,), numeric_type=float)
@@ -582,7 +584,8 @@ def sample(op=None, wires=None):
         observable ``obs``.
     """
     if (
-        not isinstance(op, qml.operation.Observable) and op is not None
+        not op.is_hermitian and op is not None
+        # not isinstance(op, qml.operation.Observable) and op is not None
     ):  # None type is also allowed for op
         raise qml.QuantumFunctionError(
             f"{op.name} is not an observable: cannot be used with sample"
