@@ -17,6 +17,8 @@ reference plugin.
 import numpy as np
 import semantic_version
 
+import pennylane as qml
+
 try:
     import tensorflow as tf
 
@@ -195,3 +197,20 @@ class DefaultQubitTF(DefaultQubit):
     def _scatter(indices, array, new_dimensions):
         indices = np.expand_dims(indices, 1)
         return tf.scatter_nd(indices, array, new_dimensions)
+
+    def _get_batch_size(self, tensor, expected_shape):
+        """Determine whether a tensor has an additional batch dimension for broadcasting,
+        compared to an expected_shape. Differs from QubitDevice implementation by the
+        exception made for abstract tensors."""
+        exp_size = qml.math.prod(expected_shape)
+        size = self._size(tensor)
+        try:
+            ndim = qml.math.ndim(tensor)
+            if ndim > len(expected_shape) or size > exp_size:
+                return size // exp_size
+
+        except ValueError as e:
+            if not qml.math.is_abstract(tensor):
+                raise e
+
+        return None

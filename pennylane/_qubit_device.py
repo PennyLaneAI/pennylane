@@ -762,19 +762,11 @@ class QubitDevice(Device):
     def _get_batch_size(self, tensor, expected_shape):
         """Determine whether a tensor has an additional batch dimension for broadcasting,
         compared to an expected_shape."""
-        try:
-            ndim = qml.math.ndim(tensor)
-        except ValueError as e:
-            # Todo[dwierichs]: Implement broadcasting for tf.function with unknown shaped arguments
-            # if possible. `shape=None` will prevent `qml.math.ndim(tensor)` from determining the
-            # number of dimensions, so that our only option is to assume `batch_size=None`
-            if qml.math.is_abstract(tensor):
-                return None
-            raise e
-
+        ndim = qml.math.ndim(tensor)
+        size = self._size(tensor)
         exp_size = qml.math.prod(expected_shape)
-        if ndim > len(expected_shape) or self._size(tensor) > exp_size:
-            return self._size(tensor) // exp_size
+        if ndim > len(expected_shape) or size > exp_size:
+            return size // exp_size
 
         return None
 
