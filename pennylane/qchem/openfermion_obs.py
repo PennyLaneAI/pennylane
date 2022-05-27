@@ -707,7 +707,7 @@ def meanfield(
 
     package = package.strip().lower()
 
-    if package not in ("pyscf"):
+    if package not in "pyscf":
         error_message = (
             f"Integration with quantum chemistry package '{package}' is not available. \n Please set"
             f" 'package' to 'pyscf'."
