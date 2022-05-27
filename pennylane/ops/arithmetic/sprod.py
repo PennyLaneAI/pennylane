@@ -36,7 +36,8 @@ class SProd(Operator):
             self.op = operator.op
             self.scalar = scalar * operator.scalar
         else:
-            self.op = operator, self.scalar = scalar
+            self.op = operator
+            self.scalar = scalar
 
         super().__init__(
             operator.parameters, wires=operator.wires, do_queue=do_queue, id=id
