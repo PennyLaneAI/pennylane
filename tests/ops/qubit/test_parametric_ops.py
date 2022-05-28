@@ -2017,3 +2017,13 @@ control_data = [
 def test_control_wires(op, control_wires):
     """Test the ``control_wires`` attribute for parametrized operations."""
     assert op.control_wires == control_wires
+
+
+class TestEigvalCalculation:
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_isingxy_eigvals(self, phi, tol):
+        evs = qml.IsingXY.compute_eigvals(phi)
+        evs_np = np.linalg.eigvals(qml.IsingXY(phi, [0, 1]).matrix())
+
+        from collections import Counter
+        assert Counter(evs_np.round(8)) == Counter(evs.round(8))
