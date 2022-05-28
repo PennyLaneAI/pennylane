@@ -14,7 +14,7 @@
 """
 This module contains the :class:`Device` abstract base class.
 """
-# pylint: disable=too-many-format-args, use-maxsplit-arg
+# pylint: disable=too-many-format-args, use-maxsplit-arg, protected-access
 import abc
 import types
 import warnings
@@ -715,6 +715,8 @@ class Device(abc.ABC):
 
         hamiltonian_in_obs = "Hamiltonian" in [obs.name for obs in circuit.observables]
 
+        return_types = [m.return_type for m in circuit.observables]
+
         if hamiltonian_in_obs and ((not supports_hamiltonian or finite_shots) or grouping_known):
             # If the observable contains a Hamiltonian and the device does not
             # support Hamiltonians, or if the simulation uses finite shots, or
@@ -727,6 +729,16 @@ class Device(abc.ABC):
                 raise ValueError(
                     "Can only return the expectation of a single Hamiltonian observable"
                 ) from e
+        elif (
+            len(circuit._obs_sharing_wires) > 0
+            and not hamiltonian_in_obs
+            and not qml.measurements.Sample in return_types
+            and not qml.measurements.Probability in return_types
+        ):
+            # Check for case of non-commuting terms and that there are no Hamiltonians
+            # TODO: allow for Hamiltonians in list of observables as well.
+            circuits, hamiltonian_fn = qml.transforms.split_non_commuting(circuit)
+
         else:
             # otherwise, return the output of an identity transform
             circuits, hamiltonian_fn = [circuit], lambda res: res[0]
