@@ -75,20 +75,21 @@ class QubitUnitary(Operation):
 
             if not (len(U_shape) in {2, 3} and U_shape[-2:] == (dim, dim)):
                 raise ValueError(
-                    f"Input unitary must be of shape {(dim, dim)} or ({dim, dim}, batch_dim) "
+                    f"Input unitary must be of shape {(dim, dim)} or ({dim, dim}, batch_size) "
                     f"to act on {len(wires)} wires."
                 )
 
             # Check for unitarity; due to variable precision across the different ML frameworks,
             # here we issue a warning to check the operation, instead of raising an error outright.
-            # TODO[dwierichs]: Implement unitarity check also for tensor-batched arguments U
             if not (
                 qml.math.is_abstract(U)
-                or len(U_shape) == 3
-                or qml.math.allclose(
-                    qml.math.dot(U, qml.math.T(qml.math.conj(U))),
-                    qml.math.eye(dim),
-                    atol=1e-6,
+                or all(
+                    qml.math.allclose(
+                        qml.math.dot(_U, qml.math.T(qml.math.conj(_U))),
+                        qml.math.eye(dim),
+                        atol=1e-6,
+                    )
+                    for _U in (U if len(U_shape) == 3 else [U])
                 )
             ):
                 warnings.warn(
@@ -160,7 +161,7 @@ class QubitUnitary(Operation):
         if shape == (4, 4):
             return qml.transforms.two_qubit_decomposition(U, Wires(wires))
 
-        # TODO[dwierichs]: Implement decomposition of tensor-batched unitary
+        # TODO[dwierichs]: Implement decomposition of broadcasted unitary
         if len(shape) == 3:
             raise DecompositionUndefinedError(
                 "The decomposition of QubitUnitary does not support broadcasting."
@@ -260,10 +261,6 @@ class ControlledQubitUnitary(QubitUnitary):
                 "The control wires must be different from the wires specified to apply the unitary on."
             )
 
-        # TODO[dwierichs]: Implement tensor-batching
-        if len(qml.math.shape(params[0])) == 3:
-            raise NotImplementedError("ControlledQubitUnitary does not support broadcasting.")
-
         self._hyperparameters = {
             "u_wires": wires,
             "control_wires": control_wires,
@@ -308,8 +305,9 @@ class ControlledQubitUnitary(QubitUnitary):
          [ 0.        +0.j  0.        +0.j -0.31594146+0.j  0.94877869+0.j]]
         """
         target_dim = 2 ** len(u_wires)
-        if len(U) != target_dim:
-            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
+        shape = qml.math.shape(U)
+        if not (len(shape) in {2, 3} and shape[-2:] == (target_dim, target_dim)):
+            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)} or ({target_dim}, {target_dim}, batch_size).")
 
         # A multi-controlled operation is a block-diagonal matrix partitioned into
         # blocks where the operation being applied sits in the block positioned at
@@ -330,19 +328,21 @@ class ControlledQubitUnitary(QubitUnitary):
                 raise ValueError("Length of control bit string must equal number of control wires.")
 
             # Make sure all values are either 0 or 1
-            if any(x not in ["0", "1"] for x in control_values):
+            if not set(control_values).issubset({"0", "1"}):
                 raise ValueError("String of control values can contain only '0' or '1'.")
 
             control_int = int(control_values, 2)
         else:
             raise ValueError("Alternative control values must be passed as a binary string.")
 
-        padding_left = control_int * len(U)
-        padding_right = 2 ** len(total_wires) - len(U) - padding_left
+        padding_left = control_int * target_dim
+        padding_right = 2 ** len(total_wires) - target_dim - padding_left
 
         interface = qml.math.get_interface(U)
         left_pad = qml.math.cast_like(qml.math.eye(padding_left, like=interface), 1j)
         right_pad = qml.math.cast_like(qml.math.eye(padding_right, like=interface), 1j)
+        if len(qml.math.shape(U)) == 3:
+            return qml.math.stack([qml.math.block_diag([left_pad, _U, right_pad]) for _U in U])
         return qml.math.block_diag([left_pad, U, right_pad])
 
     @property
@@ -493,7 +493,12 @@ class DiagonalQubitUnitary(Operation):
 
     def pow(self, z):
         if isinstance(self.data[0], list):
-            return [DiagonalQubitUnitary([(x + 0.0j) ** z for x in self.data[0]], wires=self.wires)]
+            if isinstance(self.data[0][0], list):
+                # Support broadcasted list
+                new_data = [[(el + 0j) ** z for el in x] for x in self.data[0]]
+            else:
+                new_data = [(x + 0.0j) ** z for x in self.data[0]]
+            return [DiagonalQubitUnitary(new_data, wires=self.wires)]
         casted_data = qml.math.cast(self.data[0], np.complex128)
         return [DiagonalQubitUnitary(casted_data**z, wires=self.wires)]
 
