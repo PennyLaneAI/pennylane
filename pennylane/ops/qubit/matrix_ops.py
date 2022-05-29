@@ -84,14 +84,12 @@ class QubitUnitary(Operation):
             if not (
                 qml.math.is_abstract(U)
                 or all(
-                    [
-                        qml.math.allclose(
-                            qml.math.dot(_U, qml.math.T(qml.math.conj(_U))),
-                            qml.math.eye(dim),
-                            atol=1e-6,
-                        )
-                        for _U in (U if len(U_shape) == 3 else [U])
-                    ]
+                    qml.math.allclose(
+                        qml.math.dot(_U, qml.math.T(qml.math.conj(_U))),
+                        qml.math.eye(dim),
+                        atol=1e-6,
+                    )
+                    for _U in (U if len(U_shape) == 3 else [U])
                 )
             ):
                 warnings.warn(
