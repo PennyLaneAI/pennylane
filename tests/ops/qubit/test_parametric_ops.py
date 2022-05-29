@@ -2129,6 +2129,21 @@ pow_parametric_ops = (
     qml.IsingXX(-2.345, wires=(0, 1)),
     qml.IsingYY(3.1652, wires=(0, 1)),
     qml.IsingZZ(1.789, wires=("a", "b")),
+    # broadcasted ops
+    qml.RX(np.array([1.234, 4.129]), wires=0),
+    qml.RY(np.array([2.345, 6,789]), wires=0),
+    qml.RZ(np.array([3.456]), wires=0),
+    qml.PhaseShift(np.array([6., 7., 8.]), wires=0),
+    qml.ControlledPhaseShift(np.array([0.234]), wires=(0, 1)),
+    qml.MultiRZ(np.array([-0.4432, -0.231, 0.251]), wires=(0, 1, 2)),
+    qml.PauliRot(np.array([0.5, 0.9]), "X", wires=0),
+    qml.CRX(np.array([-6.5432, 0.7653]), wires=(0, 1)),
+    qml.CRY(np.array([-0.543, 0.21]), wires=(0, 1)),
+    qml.CRZ(np.array([1.234, 5.678]), wires=(0, 1)),
+    qml.U1(np.array([1.23, 0.241]), wires=0),
+    qml.IsingXX(np.array([9.32, -2.345]), wires=(0, 1)),
+    qml.IsingYY(np.array([3.1652]), wires=(0, 1)),
+    qml.IsingZZ(np.array([1.789, 2.52, 0.211]), wires=("a", "b")),
 )
 
 
@@ -2136,12 +2151,13 @@ class TestParametricPow:
     @pytest.mark.parametrize("op", pow_parametric_ops)
     @pytest.mark.parametrize("n", (2, -1, 0.2631, -0.987))
     def test_pow_method_parametric_ops(self, op, n):
-        """Assert that a matrix raised to a power is the same as multiplying the data by n for relevant ops."""
+        """Assert that a matrix raised to a power is the same as
+        multiplying the data by n for relevant ops."""
         pow_op = op.pow(n)
 
         assert len(pow_op) == 1
         assert pow_op[0].__class__ is op.__class__
-        assert all((d1 == d2 * n for d1, d2 in zip(pow_op[0].data, op.data)))
+        assert all((qml.math.allclose(d1, d2 * n) for d1, d2 in zip(pow_op[0].data, op.data)))
 
     @pytest.mark.parametrize("op", pow_parametric_ops)
     @pytest.mark.parametrize("n", (3, -2))
