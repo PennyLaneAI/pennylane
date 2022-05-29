@@ -1254,18 +1254,3 @@ class TestGetBatchSize:
         dev = mock_qubit_device()
         with pytest.raises(ValueError, match="could not broadcast"):
             dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("jit_compile", [True, False])
-    def test_no_error_abstract_tensor(self, mock_qubit_device, jit_compile):
-        """Test that no error is raised if an abstract tensor is provided"""
-        import tensorflow as tf
-
-        dev = mock_qubit_device()
-        signature = (tf.TensorSpec(shape=None, dtype=tf.float32),)
-
-        @tf.function(jit_compile=jit_compile, input_signature=signature)
-        def get_batch_size(tensor):
-            return dev._get_batch_size(tensor, (2,))
-
-        assert get_batch_size(tf.Variable(0.2)) is None

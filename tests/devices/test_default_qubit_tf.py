@@ -1593,3 +1593,48 @@ def test_asarray_ragged_dtype_conversion(monkeypatch):
     monkeypatch.setattr(tf, "convert_to_tensor", mock_func)
     res = dev._asarray(np.array([1]), tf.float32)
     assert res.dtype == tf.float32
+
+@pytest.mark.tf
+class TestGetBatchSize:
+    """Tests for the updated helper method ``_get_batch_size`` of ``DefaultQubitTF``."""
+
+    @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
+    def test_batch_size_None(self, shape):
+        """Test that a ``batch_size=None`` is reported correctly."""
+        dev = qml.device("default.qubit.tf", wires=2)
+        tensor0 = np.ones(shape, dtype=complex)
+        assert dev._get_batch_size(tensor0, shape) is None
+        tensor1 = np.arange(np.prod(shape)).reshape(shape)
+        assert dev._get_batch_size(tensor1, shape) is None
+
+    @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
+    @pytest.mark.parametrize("batch_size", [1, 3])
+    def test_batch_size_int(self, shape, batch_size):
+        """Test that an integral ``batch_size`` is reported correctly."""
+        dev = qml.device("default.qubit.tf", wires=2)
+        full_shape = (batch_size,) + shape
+        tensor0 = np.ones(full_shape, dtype=complex)
+        assert dev._get_batch_size(tensor0, shape) == batch_size
+        tensor1 = np.arange(np.prod(full_shape)).reshape(full_shape)
+        assert dev._get_batch_size(tensor1, shape) == batch_size
+
+    def test_invalid_tensor(self):
+        """Test that an error is raised if a tensor is provided that does not
+        have a proper shape/ndim."""
+        dev = qml.device("default.qubit.tf", wires=2)
+        with pytest.raises(ValueError, match="Can't convert non-rectangular Python"):
+            dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2))
+
+    @pytest.mark.parametrize("jit_compile", [True, False])
+    def test_no_error_abstract_tensor(self, jit_compile):
+        """Test that no error is raised if an abstract tensor is provided"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit.tf", wires=2)
+        signature = (tf.TensorSpec(shape=None, dtype=tf.float32),)
+
+        @tf.function(jit_compile=jit_compile, input_signature=signature)
+        def get_batch_size(tensor):
+            return dev._get_batch_size(tensor, (2,))
+
+        assert get_batch_size(tf.Variable(0.2)) is None

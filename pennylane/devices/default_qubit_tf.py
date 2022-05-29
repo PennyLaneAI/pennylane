@@ -209,7 +209,7 @@ class DefaultQubitTF(DefaultQubit):
             if ndim > len(expected_shape) or size > exp_size:
                 return size // exp_size
 
-        except ValueError as e:
+        except (ValueError, tf.errors.OperatorNotAllowedInGraphError) as e:
             if not qml.math.is_abstract(tensor):
                 raise e
 
