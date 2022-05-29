@@ -95,6 +95,7 @@ class TestSupportsBroadcasting:
         par = (np.array([0.25, 2.1, -0.42]), np.array([0.932, 0.32, 1.2]), np.array([-2.141, 0.21, -3.12]))[:cls.num_params]
         wires = list(range(cls.num_wires))
         kwargs = {}
+        mat_kwargs = {}
         if name == "DiagonalQubitUnitary":
             par = (np.array([[1j, 1, 1, -1j], [-1j, 1j, 1, -1], [1j, -1j, 1., -1]]),)
             wires = ["a", 5]
@@ -102,28 +103,30 @@ class TestSupportsBroadcasting:
             par = (np.array([unitary_group.rvs(4, random_state=state) for state in [91, 1, 4]]),)
             wires = [0, "9"]
             if name.startswith("Controlled"):
-                kwargs["control_wires"] = [1, "10"]
+                kwargs["control_wires"] = mat_kwargs["control_wires"] = [1, "10"]
+                mat_kwargs["u_wires"] = wires
         elif name == "MultiRZ":
             wires = [3, "9", 9]
+            mat_kwargs["num_wires"] = 3
         elif cls.ndim_params == (0,) * cls.num_params:
             if name=="PauliRot":
-                kwargs["pauli_word"] = "XYZ"
+                kwargs["pauli_word"] = mat_kwargs["pauli_word"] = "XYZ"
                 wires = [6, 1, "aux"]
 
-        return par, wires, kwargs
+        return par, wires, kwargs, mat_kwargs
 
     @pytest.mark.parametrize("name", qml.ops.qubit.attributes.supports_tensorbatching)
     def test_broadcast_init(self, name):
-        par, wires, kwargs = self.get_args_and_kwargs(name)
+        par, wires, kwargs, _ = self.get_args_and_kwargs(name)
         op = getattr(qml, name)(*par, wires=wires, **kwargs)
 
     @pytest.mark.parametrize("name", qml.ops.qubit.attributes.supports_tensorbatching)
     def test_broadcasted_matrix(self, name):
-        par, wires, kwargs = self.get_args_and_kwargs(name)
+        par, wires, kwargs, mat_kwargs = self.get_args_and_kwargs(name)
         cls = getattr(qml, name)
         op = cls(*par, wires=wires, **kwargs)
         mat1 = op.matrix()
-        mat2 = cls.compute_matrix(*par, **kwargs)
+        mat2 = cls.compute_matrix(*par, **mat_kwargs)
         single_pars = [tuple(p[i] for p in par) for i in range(3)]
         single_mats = [cls(*_par, wires=wires, **kwargs).matrix() for _par in single_pars]
 
