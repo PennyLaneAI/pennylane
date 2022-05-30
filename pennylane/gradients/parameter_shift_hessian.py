@@ -486,7 +486,10 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
     method = "analytic" if argnum is None else "best"
     diff_methods = grad_method_validation(method, tape)
 
-    if all(g == "0" for g in diff_methods):
+    for i, g in enumerate(diff_methods):
+        if g == "0":
+            bool_argnum[i] = bool_argnum[:, i] = False
+    if qml.math.all(~bool_argnum): # pylint: disable=invalid-unary-operand-type
         par_dim = len(tape.trainable_params)
         return [], lambda _: qml.math.zeros([tape.output_dim, par_dim, par_dim])
 
