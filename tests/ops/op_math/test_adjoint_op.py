@@ -30,7 +30,6 @@ class TestInheritanceMixins:
 
         class Tester(qml.operation.Operator):
             num_wires = 1
-            num_params = 1
 
         base = Tester(1.234, wires=0)
         op = Adjoint(base)
@@ -45,8 +44,8 @@ class TestInheritanceMixins:
         assert "num_params" in dir(op)
 
     def test_operation(self):
-        """When the operation inherits from `Operation`, the `AdjointOperation` mixin should
-        be added and the Adjoint should now have Operation functionality."""
+        """When the operation inherits from `Operation`, the `AdjointOperation` mixin is
+        added and the Adjoint has Operation functionality."""
 
         class CustomOp(qml.operation.Operation):
             num_wires = 1
@@ -380,7 +379,7 @@ class TestAdjointOperationDiffInfo:
         (qml.RX(1.23, wires=0), qml.Rot(1.23, 2.345, 3.456, wires=0), qml.CRX(1.234, wires=(0, 1))),
     )
     def test_parameter_frequencies(self, base):
-        """Test that the parameter frequencies of an Adjoint are the same as the parameter-frequencies of the base."""
+        """Test that the parameter frequencies of an Adjoint are the same as those of the base."""
         assert Adjoint(base).parameter_frequencies == base.parameter_frequencies
 
 

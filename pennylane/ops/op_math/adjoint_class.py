@@ -104,7 +104,7 @@ class Adjoint(Operator):
     This is a *developer*-facing class, and the :func:`~.adjoint` transform should be used to construct instances
     of this class.
 
-    **Example:**
+    **Example**
 
     >>> op = Adjoint(qml.S(0))
     >>> op.name
@@ -117,7 +117,8 @@ class Adjoint(Operator):
     >>> Adjoint(qml.RX(1.234, wires=0)).data
     [1.234]
 
-    **Developer Details:**
+    .. details::
+        :title: Developer Details
 
     This class mixes in parent classes based on the inheritance tree of the provided ``Operator``.  For example, when
     provided an ``Operation``, the instance will inherit from ``Operation`` and the ``AdjointOperation`` mixin.

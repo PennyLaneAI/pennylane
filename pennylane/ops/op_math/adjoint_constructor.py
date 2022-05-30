@@ -53,14 +53,13 @@ def adjoint(fn, lazy=True):
 
     .. note::
 
-        While the adjoint and inverse are identical for Unitary gates, not all possible operators are Unitary.
-        This transform can also act on ``Channel``'s and ``Hamiltonian``'s, for which the inverse and adjoint are different.
+        The adjoint and inverse are identical for unitary gates, but not in general. For example, quantum channels and observables may have different adjoint and inverse operators.
 
     .. seealso:: :class:`~.ops.arithmetic.Adjoint` and :meth:`~.operation.Operator.adjoint`
 
     **Example**
 
-    This transform can also accept a single operator.
+    The adjoint transform can accept a single operator.
 
     >>> @qml.qnode(qml.device('default.qubit', wires=1))
     ... def circuit2(y):
