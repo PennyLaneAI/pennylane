@@ -103,6 +103,7 @@ class RX(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
+        # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         js = -1j * s
         return qml.math.stack([stack_last([c, js]), stack_last([js, c])], axis=-2)
@@ -191,6 +192,7 @@ class RY(Operation):
         if qml.math.get_interface(theta) == "tensorflow":
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
+        # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         s = (1 + 0j) * s
         return qml.math.stack([stack_last([c, -s]), stack_last([s, c])], axis=-2)
@@ -1356,6 +1358,7 @@ class CRX(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
+        # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         js = -1j * s
         ones = qml.math.ones_like(js)
@@ -1512,6 +1515,7 @@ class CRY(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
+        # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         s = (1 + 0j) * s
         ones = qml.math.ones_like(s)
@@ -2372,6 +2376,7 @@ class IsingXX(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
+        # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         js = -1j * s
         z = qml.math.zeros_like(js)
@@ -2522,6 +2527,7 @@ class IsingYY(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
+        # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         js = 1j * s
         z = qml.math.zeros_like(js)

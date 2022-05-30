@@ -83,53 +83,241 @@ class TestAttribute:
         assert not qml.PauliX(wires=0) @ qml.PauliZ(wires=1) in new_attribute
 
 
+
+single_scalar_single_wire_ops = [
+    "RX",
+    "RY",
+    "RZ",
+    "PhaseShift",
+    "U1",
+]
+
+single_scalar_multi_wire_ops = [
+    "ControlledPhaseShift",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "IsingXX",
+    "IsingYY",
+    "IsingZZ",
+]
+
+two_scalar_single_wire_ops = [
+    "U2",
+]
+
+three_scalar_single_wire_ops = [
+    "Rot",
+    "U3",
+]
+
+three_scalar_multi_wire_ops = [
+    "CRot",
+]
+
+separately_tested_ops = [
+    "QubitUnitary",
+    "ControlledQubitUnitary",
+    "DiagonalQubitUnitary",
+    "PauliRot",
+    "MultiRZ",
+]
+
 class TestSupportsBroadcasting:
     """Test that all operations in the ``supports_broadcasting`` attribute
     actually support broadcasting."""
 
-    def get_args_and_kwargs(self, name):
-        """Generate broadcasted parameters, wires and potential keyword arguments
-        for operations that support broadcasting; Batch size always is 3."""
+    def test_all_marked_operations_are_tested(self):
+        """Test that the subsets of the ``supports_broadcasting`` attribute
+        defined above cover the entire attribute."""
+        tested_ops = set(sum(
+            [
+                single_scalar_single_wire_ops,
+                single_scalar_multi_wire_ops,
+                two_scalar_single_wire_ops,
+                three_scalar_single_wire_ops,
+                three_scalar_multi_wire_ops,
+                separately_tested_ops,
+            ],
+            start=[],
+        ))
+
+        assert tested_ops == qml.ops.qubit.attributes.supports_broadcasting
+
+    @pytest.mark.parametrize("name", single_scalar_single_wire_ops)
+    def test_single_scalar_single_wire_ops(self, name):
+        """Test that single-scalar-parameter operations on a single wire marked
+        as supporting parameter broadcasting actually do support broadcasting."""
+        par = np.array([0.25, 2.1, -0.42])
+        wires = ["wire0"]
+
         cls = getattr(qml, name)
-        # Default parameters and wires
-        par = (np.array([0.25, 2.1, -0.42]), np.array([0.932, 0.32, 1.2]), np.array([-2.141, 0.21, -3.12]))[:cls.num_params]
-        wires = list(range(cls.num_wires))
-        kwargs = {}
-        mat_kwargs = {}
-        if name == "DiagonalQubitUnitary":
-            par = (np.array([[1j, 1, 1, -1j], [-1j, 1j, 1, -1], [1j, -1j, 1., -1]]),)
-            wires = ["a", 5]
-        elif name in ("QubitUnitary", "ControlledQubitUnitary"):
-            par = (np.array([unitary_group.rvs(4, random_state=state) for state in [91, 1, 4]]),)
-            wires = [0, "9"]
-            if name.startswith("Controlled"):
-                kwargs["control_wires"] = mat_kwargs["control_wires"] = [1, "10"]
-                mat_kwargs["u_wires"] = wires
-        elif name == "MultiRZ":
-            wires = [3, "9", 9]
-            mat_kwargs["num_wires"] = 3
-        elif cls.ndim_params == (0,) * cls.num_params:
-            if name=="PauliRot":
-                kwargs["pauli_word"] = mat_kwargs["pauli_word"] = "XYZ"
-                wires = [6, 1, "aux"]
+        op = cls(par, wires=wires)
 
-        return par, wires, kwargs, mat_kwargs
-
-    @pytest.mark.parametrize("name", qml.ops.qubit.attributes.supports_tensorbatching)
-    def test_broadcast_init(self, name):
-        par, wires, kwargs, _ = self.get_args_and_kwargs(name)
-        op = getattr(qml, name)(*par, wires=wires, **kwargs)
-
-    @pytest.mark.parametrize("name", qml.ops.qubit.attributes.supports_tensorbatching)
-    def test_broadcasted_matrix(self, name):
-        par, wires, kwargs, mat_kwargs = self.get_args_and_kwargs(name)
-        cls = getattr(qml, name)
-        op = cls(*par, wires=wires, **kwargs)
         mat1 = op.matrix()
-        mat2 = cls.compute_matrix(*par, **mat_kwargs)
-        single_pars = [tuple(p[i] for p in par) for i in range(3)]
-        single_mats = [cls(*_par, wires=wires, **kwargs).matrix() for _par in single_pars]
+        mat2 = cls.compute_matrix(par)
+        single_mats = [cls(p, wires=wires).matrix() for p in par]
 
         assert qml.math.allclose(mat1, single_mats)
         assert qml.math.allclose(mat2, single_mats)
 
+    @pytest.mark.parametrize("name", single_scalar_multi_wire_ops)
+    def test_single_scalar_multi_wire_ops(self, name):
+        """Test that single-scalar-parameter operations on multiple wires marked
+        as supporting parameter broadcasting actually do support broadcasting."""
+        par = np.array([0.25, 2.1, -0.42])
+        wires = ["wire0", 5]
+
+        cls = getattr(qml, name)
+        op = cls(par, wires=wires)
+
+        mat1 = op.matrix()
+        mat2 = cls.compute_matrix(par)
+        single_mats = [cls(p, wires=wires).matrix() for p in par]
+
+        assert qml.math.allclose(mat1, single_mats)
+        assert qml.math.allclose(mat2, single_mats)
+
+    @pytest.mark.parametrize("name", two_scalar_single_wire_ops)
+    def test_two_scalar_single_wire_ops(self, name):
+        """Test that two-scalar-parameter operations on a single wire marked
+        as supporting parameter broadcasting actually do support broadcasting."""
+        par = (np.array([0.25, 2.1, -0.42]), np.array([-6.2, 0.12, 0.421]))
+        wires = ["wire0"]
+
+        cls = getattr(qml, name)
+        op = cls(*par, wires=wires)
+
+        mat1 = op.matrix()
+        mat2 = cls.compute_matrix(*par)
+        single_pars = [tuple(p[i] for p in par) for i in range(3)]
+        single_mats = [cls(*p, wires=wires).matrix() for p in single_pars]
+
+        assert qml.math.allclose(mat1, single_mats)
+        assert qml.math.allclose(mat2, single_mats)
+
+    @pytest.mark.parametrize("name", three_scalar_single_wire_ops)
+    def test_three_scalar_single_wire_ops(self, name):
+        """Test that three-scalar-parameter operations on a single wire marked
+        as supporting parameter broadcasting actually do support broadcasting."""
+        par = (
+            np.array([0.25, 2.1, -0.42]),
+            np.array([-6.2, 0.12, 0.421]),
+            np.array([0.2, 1.1, -5.2]),
+        )
+        wires = ["wire0"]
+
+        cls = getattr(qml, name)
+        op = cls(*par, wires=wires)
+
+        mat1 = op.matrix()
+        mat2 = cls.compute_matrix(*par)
+        single_pars = [tuple(p[i] for p in par) for i in range(3)]
+        single_mats = [cls(*p, wires=wires).matrix() for p in single_pars]
+
+        assert qml.math.allclose(mat1, single_mats)
+        assert qml.math.allclose(mat2, single_mats)
+
+    @pytest.mark.parametrize("name", three_scalar_multi_wire_ops)
+    def test_three_scalar_multi_wire_ops(self, name):
+        """Test that three-scalar-parameter operations on multiple wires marked
+        as supporting parameter broadcasting actually do support broadcasting."""
+        par = (
+            np.array([0.25, 2.1, -0.42]),
+            np.array([-6.2, 0.12, 0.421]),
+            np.array([0.2, 1.1, -5.2]),
+        )
+        wires = ["wire0", 214]
+
+        cls = getattr(qml, name)
+        op = cls(*par, wires=wires)
+
+        mat1 = op.matrix()
+        mat2 = cls.compute_matrix(*par)
+        single_pars = [tuple(p[i] for p in par) for i in range(3)]
+        single_mats = [cls(*p, wires=wires).matrix() for p in single_pars]
+
+        assert qml.math.allclose(mat1, single_mats)
+        assert qml.math.allclose(mat2, single_mats)
+
+    def test_qubit_unitary(self):
+        """Test that QubitUnitary, which is marked as supporting parameter broadcasting,
+        actually does support broadcasting."""
+
+        U = np.array([unitary_group.rvs(4, random_state=state) for state in [91, 1, 4]])
+        wires = [0, "9"]
+
+        op = qml.QubitUnitary(U, wires=wires)
+
+        mat1 = op.matrix()
+        mat2 = qml.QubitUnitary.compute_matrix(U)
+        single_mats = [qml.QubitUnitary(_U, wires=wires).matrix() for _U in U]
+
+        assert qml.math.allclose(mat1, single_mats)
+        assert qml.math.allclose(mat2, single_mats)
+
+    def test_controlled_qubit_unitary(self):
+        """Test that ControlledQubitUnitary, which is marked as supporting parameter broadcasting,
+        actually does support broadcasting."""
+
+        U = np.array([unitary_group.rvs(4, random_state=state) for state in [91, 1, 4]])
+        wires = [0, "9"]
+
+        op = qml.ControlledQubitUnitary(U, wires=wires, control_wires=[1, "10"])
+
+        mat1 = op.matrix()
+        mat2 = qml.ControlledQubitUnitary.compute_matrix(U, u_wires=wires, control_wires=[1, "10"])
+        single_mats = [
+            qml.ControlledQubitUnitary(_U, wires=wires, control_wires=[1, "10"]).matrix()
+            for _U in U
+        ]
+
+        assert qml.math.allclose(mat1, single_mats)
+        assert qml.math.allclose(mat2, single_mats)
+
+    def test_diagonal_qubit_unitary(self):
+        """Test that DiagonalQubitUnitary, which is marked as supporting parameter broadcasting,
+        actually does support broadcasting."""
+        diag = np.array([[1j, 1, 1, -1j], [-1j, 1j, 1, -1], [1j, -1j, 1., -1]])
+        wires = ["a", 5]
+
+        op = qml.DiagonalQubitUnitary(diag, wires=wires)
+
+        mat1 = op.matrix()
+        mat2 = qml.DiagonalQubitUnitary.compute_matrix(diag)
+        single_mats = [qml.DiagonalQubitUnitary(d, wires=wires).matrix() for d in diag]
+
+        assert qml.math.allclose(mat1, single_mats)
+        assert qml.math.allclose(mat2, single_mats)
+
+    @pytest.mark.parametrize(
+        "pauli_word, wires", [("XYZ", [0, "4", 1]), ("II", [1, 5]), ("X", [7])]
+    )
+    def test_pauli_rot(self, pauli_word, wires):
+        """Test that PauliRot, which is marked as supporting parameter broadcasting,
+        actually does support broadcasting."""
+        par = np.array([0.25, 2.1, -0.42])
+
+        op = qml.PauliRot(par, pauli_word, wires=wires)
+
+        mat1 = op.matrix()
+        mat2 = qml.PauliRot.compute_matrix(par, pauli_word=pauli_word)
+        single_mats = [qml.PauliRot(p, pauli_word, wires=wires).matrix() for p in par]
+
+        assert qml.math.allclose(mat1, single_mats)
+        assert qml.math.allclose(mat2, single_mats)
+
+    @pytest.mark.parametrize("wires", [[0, "4", 1], [1, 5], [7]])
+    def test_pauli_rot(self, wires):
+        """Test that MultiRZ, which is marked as supporting parameter broadcasting,
+        actually does support broadcasting."""
+        par = np.array([0.25, 2.1, -0.42])
+
+        op = qml.MultiRZ(par, wires=wires)
+
+        mat1 = op.matrix()
+        mat2 = qml.MultiRZ.compute_matrix(par, num_wires=len(wires))
+        single_mats = [qml.MultiRZ(p, wires=wires).matrix() for p in par]
+
+        assert qml.math.allclose(mat1, single_mats)
+        assert qml.math.allclose(mat2, single_mats)
