@@ -69,6 +69,7 @@ def _compute_vn_entropy(density_matrix, base=None):
     if interface == "jax":
         import jax
 
+        evs = jax.numpy.maximum(evs, jax.numpy.array(0))
         entropy = jax.numpy.sum(jax.scipy.special.entr(evs) / div_base)
 
     elif interface == "torch":
