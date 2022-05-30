@@ -17,7 +17,7 @@ This submodule applies the symbolic operation that indicates the adjoint of an o
 from functools import wraps
 
 from pennylane.operation import Operator, AdjointUndefinedError
-from pennylane.queuing import QueuingContext, QueuingError
+from pennylane.queuing import QueuingContext
 from pennylane.tape import QuantumTape, stop_recording
 
 from .adjoint_class import Adjoint
@@ -33,10 +33,7 @@ def _single_op_eager(op):
 def _single_op_eager_update_queue(op):
     try:
         adj = op.adjoint()
-        try:
-            QueuingContext.update_info(op, owner=adj)
-        except QueuingError:
-            pass
+        QueuingContext.safe_update_info(op, owner=adj)
         QueuingContext.append(adj, owns=op)
         return adj
     except AdjointUndefinedError:

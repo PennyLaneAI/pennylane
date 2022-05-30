@@ -405,7 +405,7 @@ class TestQueueing:
         with qml.tape.QuantumTape() as tape:
             op = Adjoint(base)
 
-        assert tape._queue[base]["owner"] is op
+        assert len(tape._queue) == 1
         assert tape._queue[op]["owns"] is base
         assert tape.operations == [op]
 

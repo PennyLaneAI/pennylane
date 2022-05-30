@@ -257,7 +257,7 @@ def pattern_matching_optimization(tape, pattern_tapes, custom_quantum_cost=None)
                 tape = tape_inside
 
     for op in tape.operations:
-        if isinstance(op, qml.ops.op_math.Adjoint):
+        if isinstance(op, qml.ops.op_math.Adjoint):  # pylint: disable=no-member
             op.base._wires = Wires([inverse_wires_map[wire] for wire in op.wires.tolist()])
         else:
             op._wires = Wires([inverse_wires_map[wire] for wire in op.wires.tolist()])

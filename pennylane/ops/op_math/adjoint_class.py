@@ -15,7 +15,7 @@
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
 from pennylane.operation import Operator, Operation, AdjointUndefinedError, Observable
-from pennylane.queuing import QueuingContext, QueuingError
+from pennylane.queuing import QueuingContext
 from pennylane.math import transpose, conj
 
 
@@ -246,12 +246,7 @@ class Adjoint(Operator):
         return self.base.num_wires
 
     def queue(self, context=QueuingContext):
-        try:
-            context.update_info(self.base, owner=self)
-        except QueuingError:
-            self.base.queue(context=context)
-            context.update_info(self.base, owner=self)
-
+        context.safe_update_info(self.base, owner=self)
         context.append(self, owns=self.base)
 
         return self
