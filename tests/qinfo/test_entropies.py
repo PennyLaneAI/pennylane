@@ -22,6 +22,9 @@ from pennylane import numpy as np
 from pennylane import quantum_info as qinfo
 
 
+pytestmark = pytest.mark.all_interfaces
+
+
 class TestMutualInformation:
     """Tests for the mutual information functions"""
 
