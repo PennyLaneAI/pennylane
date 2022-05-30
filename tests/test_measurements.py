@@ -656,7 +656,7 @@ class TestStatisticsQueuing:
     )
     def test_queueing_tensor_observable(self, op1, op2, stat_func, return_type):
         """Test that if the constituent components of a tensor operation are not
-        found in the queue for annotation, that they are queued first and then annotated."""
+        found in the queue for annotation, they are not queued or annotated."""
         A = op1(0)
         B = op2(1)
 
@@ -664,13 +664,13 @@ class TestStatisticsQueuing:
             tensor_op = A @ B
             stat_func(tensor_op)
 
-        assert q.queue[:-1] == [A, B, tensor_op]
+        assert len(q._queue) == 2
+
+        assert q.queue[0] is tensor_op
         meas_proc = q.queue[-1]
         assert isinstance(meas_proc, MeasurementProcess)
         assert meas_proc.return_type == return_type
 
-        assert q._get_info(A) == {"owner": tensor_op}
-        assert q._get_info(B) == {"owner": tensor_op}
         assert q._get_info(tensor_op) == {"owns": (A, B), "owner": meas_proc}
 
 
