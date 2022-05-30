@@ -4,18 +4,58 @@
 
 <h3>New features since last release</h3>
 
-* Many parametrized operations now have the attribute `ndim_params` and
-  allow arguments with a broadcasting dimension. Also see entries for #2590
-  and #2575 below for details.
+* Parameter broadcasting within operations and tapes was introduced.
+
+  [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
+  [(#2590)](https://github.com/PennyLaneAI/pennylane/pull/2590)
   [(#2609)](https://github.com/PennyLaneAI/pennylane/pull/2609)
 
-  Previously unsupported broadcasted parameters are allowed for example in standard
-  rotation gates and matrix operations. The broadcasted dimension is the first dimension
-  in numerical operator representations. Note that the broadcasted parameter
-  has to be passed as an `array` but not as a python `list` or `tuple` for most operations.
+  Parameter broadcasting refers to passing parameters with a (single) leading additional
+  dimension (compared to the expected parameter shape) to `Operator`s.
+  Introducing this concept includes multiple changes:
+
+  1. New class attributes
+    - `Operator.ndim_params` contains the expected number of dimensions for each parameter
+      of an operator.
+    - `Operator.batch_size` contains the size of an additional parameter-broadcasting axis,
+      if present.
+    - `QuantumTape.batch_size` contains the `batch_size` of its operations (see logic below).
+    - `Device.capabilities()["supports_broadcasting"]` is a Boolean flag indicating whether a
+      device natively is able to apply broadcasted operators.
+  2. New functionalities
+    - `Operator`s use their new `ndim_params` attribute to set their new attribute `batch_size`
+      at instantiation. `batch_size=None` corresponds to unbroadcasted operators.
+    - `QuantumTape`s automatically determine their new `batch_size` attribute from the
+      `batch_size`s of their operations. For this, all `Operators` in the tape must have the same
+      `batch_size` or `batch_size=None`. That is, mixing broadcasted and unbroadcasted `Operators`
+      is allowed, but mixing broadcasted `Operators` with differing `batch_size` is not,
+      similar to NumPy broadcasting.
+    - A new tape `batch_transform` called `broadcast_expand` was added. It transforms a single
+      tape with `batch_size!=None` (broadcasted) into multiple tapes with `batch_size=None`
+      (unbroadcasted) each.
+    - `Device`s natively can handle broadcasted `QuantumTape`s by using `broadcast_expand` if
+      the new flag `capabilities()["supports_broadcasting"]` is set to `False` (the default).
+  3. Feature support
+    - Many parametrized operations now have the attribute `ndim_params` and
+      allow arguments with a broadcasting dimension in their numerical representations.
+      This includes all gates in `ops/qubit/parametric_ops` and `ops/qubit/matrix_ops`.
+      The broadcasted dimension is the first dimension in representations.
+      Note that the broadcasted parameter has to be passed as an `array` but not as a python
+      `list` or `tuple` for most operations.
+
+  **Example**
+
+  Instantiating a rotation gate with a one-dimensional array leads to a broadcasted `Operation`:
 
   ```pycon
   >>> op = qml.RX(np.array([0.1, 0.2, 0.3], requires_grad=True), 0)
+  >>> op.batch_size
+  3
+  ```
+
+  It's matrix correspondingly is augmented by a leading dimension of size `batch_size`:
+
+  ```pycon
   >>> np.round(op.matrix(), 4)
   tensor([[[0.9988+0.j    , 0.    -0.05j  ],
          [0.    -0.05j  , 0.9988+0.j    ]],
@@ -27,34 +67,62 @@
   (3, 2, 2)
   ```
 
-* Devices have a new capability flag `capabilities()["supports_broadcasting"]`
-  and are now able to handle broadcasting of tapes.  In addition, the tape transform
-  `broadcast_expand` was added, which allows a tape that uses broadcasting 
-  (`tape.batch_size!=None`) to be expanded into multiple tapes without a broadcast dimension.
-  [(#2590)](https://github.com/PennyLaneAI/pennylane/pull/2590)
+  A tape with such an operation will detect the `batch_size` and inherit it:
 
-  If the mentioned flag is set to `False` (the default), the new transform `broadcast_expand`
-  is used internally to enable execution of broadcasted tapes on all devices.
+  ```pycon
+  >>> with qml.tape.QuantumTape() as tape:
+  >>>     qml.apply(op)
+  >>> tape.batch_size
+  3
+  ```
 
-* Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
-  attribute `batch_size`.
-  - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
-  - `Operator.batch_size` contains the size of an additional parameter broadcasting axis, if present,
-  - `QuantumTape.batch_size` contains the `batch_size` of its operations (see below).
-  [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
+  A tape may contain broadcasted and unbroadcasted `Operation`s
 
-  When providing an operator with the `ndim_params` attribute, it will
-  determine whether (and with which `batch_size`) its input parameter(s)
-  is/are broadcasted.
-  A `QuantumTape` can then infer from its operations whether it is batched.
-  For this, all `Operators` in the tape must have the same `batch_size` or `batch_size=None`.
-  That is, mixing broadcasted and unbroadcasted `Operators` is allowed, but mixing broadcasted
-  `Operators` with differing `batch_size` is not, similar to NumPy broadcasting.
+  ```pycon
+  >>> with qml.tape.QuantumTape() as tape:
+  >>>     qml.apply(op)
+  >>>     qml.RY(1.9, 0)
+  >>> tape.batch_size
+  3
+  ```
+  
+  but not `Operation`s with differing (non-`None`) `batch_size`s:
+
+  ```pycon
+  >>> with qml.tape.QuantumTape() as tape:
+  >>>     qml.apply(op)
+  >>>     qml.RY(np.array([1.9, 2.4]), 0)
+  ValueError: The batch sizes of the tape operations do not match, they include 3 and 2.
+  ```
+
+  When creating a valid broadcasted tape, we can expand it into unbroadcasted tapes with
+  the new `broadcast_expand` transform, and execute the three tapes independently.
+
+  ```pycon
+  >>> with qml.tape.QuantumTape() as tape:
+  >>>     qml.apply(op)
+  >>>     qml.RY(1.9, 0)
+  >>>     qml.apply(op)
+  >>>     qml.expval(qml.PauliZ(0))
+  >>> tapes, fn = qml.transforms.broadcast_expand(tape)
+  >>> len(tapes)
+  3
+  >>> dev = qml.device("default.qubit", wires=1)
+  >>> fn(qml.execute(tapes, dev, None))
+  array([-0.33003414, -0.34999899, -0.38238817])
+  ```
+
+  However, devices will handle this automatically under the hood:
+
+  ```pycon
+  >>> qml.execute([tape], dev, None)[0]
+  array([-0.33003414, -0.34999899, -0.38238817])
+  ```
 
 * Boolean mask indexing of the parameter-shift Hessian
   [(#2538)](https://github.com/PennyLaneAI/pennylane/pull/2538)
 
-  The `argnum` keyword argument for `param_shift_hessian` 
+  The `argnum` keyword argument for `param_shift_hessian`
   is now allowed to be a twodimensional Boolean `array_like`.
   Only the indicated entries of the Hessian will then be computed.
   A particularly useful example is the computation of the diagonal
@@ -136,7 +204,7 @@
 * Sparse Hamiltonians representation has changed from COOrdinate (COO) to Compressed Sparse Row (CSR) format. The CSR representation is more performant for arithmetic operations and matrix vector products. This change decreases the `expval()` calculation time, for `qml.SparseHamiltonian`, specially for large workflows. Also, the CRS format consumes less memory for the `qml.SparseHamiltonian` storage.
 [(#2561)](https://github.com/PennyLaneAI/pennylane/pull/2561)
 
-* `BasisEmbedding` can accept an int as argument instead of a list of bits (optionally). Example: `qml.BasisEmbedding(4, wires = range(4))` is now equivalent to `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because 4=0b100). 
+* `BasisEmbedding` can accept an int as argument instead of a list of bits (optionally). Example: `qml.BasisEmbedding(4, wires = range(4))` is now equivalent to `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because 4=0b100).
   [(#2601)](https://github.com/PennyLaneAI/pennylane/pull/2601)
 
 <h3>Breaking changes</h3>
@@ -176,7 +244,7 @@
 
 <h3>Bug fixes</h3>
 
-* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` or `"jax-jit"`, when requesting backpropagation. 
+* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` or `"jax-jit"`, when requesting backpropagation.
   [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
 
 * Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
