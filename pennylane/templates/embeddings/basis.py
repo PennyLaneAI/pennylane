@@ -23,8 +23,8 @@ from pennylane.wires import Wires
 class BasisEmbedding(Operation):
     r"""Encodes :math:`n` binary features into a basis state of :math:`n` qubits.
 
-    For example, for ``features=np.array([0, 1, 0])``, the quantum system will be
-    prepared in state :math:`|010 \rangle`.
+    For example, for ``features=np.array([0, 1, 0])`` or ``features=2`` (binary 10), the
+    quantum system will be prepared in state :math:`|010 \rangle`.
 
     .. warning::
 
@@ -72,6 +72,10 @@ class BasisEmbedding(Operation):
 
     def __init__(self, features, wires, do_queue=True, id=None):
 
+        if isinstance(features, int):
+            bin_string = f"{features:b}".zfill(len(wires))
+            features = [1 if d == "1" else 0 for d in bin_string]
+
         wires = Wires(wires)
         shape = qml.math.shape(features)
 
@@ -80,7 +84,9 @@ class BasisEmbedding(Operation):
 
         n_features = shape[0]
         if n_features != len(wires):
-            raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
+            raise ValueError(
+                f"Features must be of length {len(wires)}; got length {n_features} (features={features})."
+            )
 
         features = list(qml.math.toarray(features))
 
