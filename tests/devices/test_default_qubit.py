@@ -346,7 +346,6 @@ class TestApply:
         assert np.allclose(
             qubit_device_3_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
-        print(qubit_device_3_wires.C_DTYPE)
         assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_three_wires_no_parameters)
