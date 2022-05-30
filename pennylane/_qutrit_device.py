@@ -37,7 +37,7 @@ class QutritDevice(Device):
     * :meth:`~.analytic_probability`: returns the probability or marginal probability from the
       device after circuit execution. :meth:`~.marginal_prob` may be used here.
 
-    This device contains common utility methods for qubit-based devices. These
+    This device contains common utility methods for qutrit-based devices. These
     do not need to be overwritten. Utility methods include:
 
     * :meth:`~.expval`, :meth:`~.var`, :meth:`~.sample`: return expectation values,
@@ -349,9 +349,90 @@ class QutritDevice(Device):
 
         return Wires.all_wires(list_of_wires)
 
-    # TODO: Implement function
     def statistics(self, observables, shot_range=None, bin_size=None):
-        pass
+        """Process measurement results from circuit execution and return statistics.
+
+        This includes returning expectation values, variance, samples, probabilities, states, and
+        density matrices.
+
+        Args:
+            observables (List[.Observable]): the observables to be measured
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+
+        Raises:
+            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+
+        Returns:
+            Union[float, List[float]]: the corresponding statistics
+
+        .. details::
+            :title: Usage Details
+
+            The ``shot_range`` and ``bin_size`` arguments allow for the statistics
+            to be performed on only a subset of device samples. This finer level
+            of control is accessible from the main UI by instantiating a device
+            with a batch of shots.
+
+            For example, consider the following device:
+
+            >>> dev = qml.device("my_device", shots=[5, (10, 3), 100])
+
+            This device will execute QNodes using 135 shots, however
+            measurement statistics will be **course grained** across these 135
+            shots:
+
+            * All measurement statistics will first be computed using the
+              first 5 shots --- that is, ``shots_range=[0, 5]``, ``bin_size=5``.
+
+            * Next, the tuple ``(10, 3)`` indicates 10 shots, repeated 3 times. We will want to use
+              ``shot_range=[5, 35]``, performing the expectation value in bins of size 10
+              (``bin_size=10``).
+
+            * Finally, we repeat the measurement statistics for the final 100 shots,
+              ``shot_range=[35, 135]``, ``bin_size=100``.
+        """
+        results = []
+
+        for obs in observables:
+            # Pass instances directly
+            if obs.return_type is Expectation:
+                results.append(self.expval(obs, shot_range=shot_range, bin_size=bin_size))
+
+            elif obs.return_type is Variance:
+                results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
+
+            elif obs.return_type is Sample:
+                results.append(self.sample(obs, shot_range=shot_range, bin_size=bin_size))
+
+            elif obs.return_type is Probability:
+                results.append(
+                    self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
+                )
+
+            elif obs.return_type is State:
+                if len(observables) > 1:
+                    raise qml.QuantumFunctionError(
+                        "The state or density matrix cannot be returned in combination"
+                        " with other return types"
+                    )
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the state is not supported when using custom wire labels"
+                    )
+                # Check if the state is accessible and decide to return the state or the density
+                # matrix.
+                results.append(self.access_state(wires=obs.wires))
+
+            elif obs.return_type is not None:
+                raise qml.QuantumFunctionError(
+                    f"Unsupported return type specified for observable {obs.name}"
+                )
+
+        return results
 
     def access_state(self, wires=None):
         """Check that the device has access to an internal state and return it if available.
@@ -428,15 +509,52 @@ class QutritDevice(Device):
         basis_states = np.arange(number_of_states)
         return np.random.choice(basis_states, shots, p=state_probability)
 
-    # TODO: Implement function
     @staticmethod
     def generate_basis_states(num_wires, dtype=np.uint32):
-        pass
+        """
+        Generates basis states in ternary representation according to the number
+        of wires specified.
 
-    # TODO: Implement function
+        Args:
+            num_wires (int): the number wires
+            dtype=np.uint32 (type): the data type of the arrays to use
+
+        Returns:
+            array[int]: the sampled basis states
+        """
+        # A slower, but less memory intensive method
+        basis_states_generator = itertools.product((0, 1, 2), repeat=num_wires)
+        return np.fromiter(itertools.chain(*basis_states_generator), dtype=dtype).reshape(
+            -1, num_wires
+        )
+
     @staticmethod
     def states_to_ternary(samples, num_wires, dtype=np.int64):
-        pass
+        """Convert basis states from base 10 to ternary representation.
+
+        This is an auxiliary method to the generate_samples method.
+
+        Args:
+            samples (array[int]): samples of basis states in base 10 representation
+            num_wires (int): the number of qutrits
+            dtype (type): Type of the internal integer array to be used. Can be
+                important to specify for large systems for memory allocation
+                purposes.
+
+        Returns:
+            array[int]: basis states in ternary representation
+        """
+        ternary_arr = []
+        for sample in samples:
+            num = []
+            for _ in range(num_wires):
+                sample, r = divmod(sample, 3)
+                num.append(r)
+
+            ternary_arr.append(num[::-1])
+
+        return np.array(ternary_arr, dtype=dtype)
+
 
     @property
     def circuit_hash(self):
@@ -492,9 +610,54 @@ class QutritDevice(Device):
         """
         raise NotImplementedError
 
-    # TODO: Implement function
     def estimate_probability(self, wires=None, shot_range=None, bin_size=None):
-        pass
+        """Return the estimated probability of each computational basis state
+        using the generated samples.
+
+        Args:
+            wires (Iterable[Number, str], Number, str, Wires): wires to calculate
+                marginal probabilities for. Wires not provided are traced out of the system.
+            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+                to use. If not specified, all samples are used.
+            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+                returns the measurement statistic separately over each bin. If not
+                provided, the entire shot range is treated as a single bin.
+
+        Returns:
+            array[float]: list of the probabilities
+        """
+
+        wires = wires or self.wires
+        # convert to a wires object
+        wires = Wires(wires)
+        # translate to wire labels used by device
+        device_wires = self.map_wires(wires)
+
+        sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
+        samples = self._samples[sample_slice, device_wires]
+
+        # convert samples from a list of 0, 1 integers, to base 10 representation
+        powers_of_three = 3 ** np.arange(len(device_wires))[::-1]
+        indices = samples @ powers_of_three
+
+        # count the basis state occurrences, and construct the probability vector
+        if bin_size is not None:
+            bins = len(samples) // bin_size
+
+            indices = indices.reshape((bins, -1))
+            prob = np.zeros([3 ** len(device_wires), bins], dtype=np.float64)
+
+            # count the basis state occurrences, and construct the probability vector
+            for b, idx in enumerate(indices):
+                basis_states, counts = np.unique(idx, return_counts=True)
+                prob[basis_states, b] = counts / bin_size
+
+        else:
+            basis_states, counts = np.unique(indices, return_counts=True)
+            prob = np.zeros([3 ** len(device_wires)], dtype=np.float64)
+            prob[basis_states] = counts / len(samples)
+
+        return self._asarray(prob, dtype=self.R_DTYPE)
 
     def probability(self, wires=None, shot_range=None, bin_size=None):
         """Return either the analytic probability or estimated probability of
@@ -520,17 +683,80 @@ class QutritDevice(Device):
     def marginal_prob(self, prob, wires=None):
         pass
 
-    # TODO: Implement function
     def expval(self, observable, shot_range=None, bin_size=None):
-        pass
 
-    # TODO: Implement function
+        # TODO: Add Projector case
+        # exact expectation value
+        if self.shots is None:
+            try:
+                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
+            except qml.operation.EigvalsUndefinedError as e:
+                raise qml.operation.EigvalsUndefinedError(
+                    f"Cannot compute analytic expectations of {observable.name}."
+                ) from e
+
+            # the probability vector must be permuted to account for the permuted wire order of the observable
+            permuted_wires = self._permute_wires(observable)
+
+            prob = self.probability(wires=permuted_wires)
+            return self._dot(eigvals, prob)
+
+        # estimate the ev
+        samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+        return np.squeeze(np.mean(samples, axis=0))
+
     def var(self, observable, shot_range=None, bin_size=None):
-        pass
 
-    # TODO: Implement function
+        # TODO: Add Projector case
+        # exact variance value
+        if self.shots is None:
+            try:
+                eigvals = self._asarray(observable.eigvals(), dtype=self.R_DTYPE)
+            except qml.operation.EigvalsUndefinedError as e:
+                # if observable has no info on eigenvalues, we cannot return this measurement
+                raise qml.operation.EigvalsUndefinedError(
+                    f"Cannot compute analytic variance of {observable.name}."
+                ) from e
+
+            # the probability vector must be permuted to account for the permuted wire order of the observable
+            permuted_wires = self._permute_wires(observable)
+
+            prob = self.probability(wires=permuted_wires)
+            return self._dot((eigvals**2), prob) - self._dot(eigvals, prob) ** 2
+
+        # estimate the variance
+        samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
+        return np.squeeze(np.var(samples, axis=0))
+
     def sample(self, observable, shot_range=None, bin_size=None):
-        pass
+
+        # TODO: Add special cases for any particular observables
+
+        # translate to wire labels used by device
+        device_wires = self.map_wires(observable.wires)
+        name = observable.name
+        sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
+
+        # Replace the basis state in the computational basis with the correct eigenvalue.
+        # Extract only the columns of the basis samples required based on ``wires``.
+        samples = self._samples[
+            sample_slice, np.array(device_wires)
+        ]  # Add np.array here for Jax support.
+        powers_of_three = 3 ** np.arange(samples.shape[-1])[::-1]
+        indices = samples @ powers_of_three
+        indices = np.array(indices)  # Add np.array here for Jax support.
+        try:
+            samples = observable.eigvals()[indices]
+        except qml.operation.EigvalsUndefinedError as e:
+            # if observable has no info on eigenvalues, we cannot return this measurement
+            raise qml.operation.EigvalsUndefinedError(
+                f"Cannot compute samples of {observable.name}."
+            ) from e
+
+        if bin_size is None:
+            return samples
+
+        return samples.reshape((bin_size, -1))
 
     # TODO: Implement function
     def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
