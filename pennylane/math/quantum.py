@@ -164,12 +164,12 @@ def marginal_prob(prob, axis):
     return np.flatten(prob)
 
 
-def _density_matrix_from_state_vector(state, wires, check_state=False):
+def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype="complex64"):
     """Compute the density matrix from a state vector.
 
     Args:
         state (tensor_like): 1D tensor state vector. This tensor should of size ``(2**N,)`` for some integer value ``N``.
-        wires (list(int)): List of wires (int) in the subsystem.
+        indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
 
     Returns:
@@ -178,38 +178,34 @@ def _density_matrix_from_state_vector(state, wires, check_state=False):
     **Example**
 
     >>> x = np.array([1, 0, 0, 0])
-    >>> _density_matrix_from_state_vector(x, wires=[0])
+    >>> _density_matrix_from_state_vector(x, indices=[0])
     [[1.+0.j 0.+0.j]
     [0.+0.j 0.+0.j]]
 
     >>> y = [1, 0, 1, 0] / np.sqrt(2)
-    >>> _density_matrix_from_state_vector(y, wires=[0])
+    >>> _density_matrix_from_state_vector(y, indices=[0])
     [[0.5+0.j 0.5+0.j]
      [0.5+0.j 0.5+0.j]]
 
-    >>> _density_matrix_from_state_vector(y, wires=[1])
+    >>> _density_matrix_from_state_vector(y, indices=[1])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
     >>> z = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-    >>> _density_matrix_from_state_vector(z, wires=[1])
+    >>> _density_matrix_from_state_vector(z, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
     """
     # Cast as a complex128 array
-    state = cast(state, dtype="complex128")
+    state = cast(state, dtype=c_dtype)
     len_state = np.shape(state)[0]
 
     # Check the format and norm of the state vector
     if check_state:
         # Check format
-        if (
-            len(np.shape(state)) != 1
-            or state.shape != (len_state,)
-            or np.ceil(np.log2(len_state)) != np.floor(np.log2(len_state))
-        ):
+        if len(np.shape(state)) != 1 or not np.log2(len_state).is_integer():
             raise ValueError("State vector must be of length 2**wires.")
         # Check norm
         norm = np.linalg.norm(state, ord=2)
@@ -218,27 +214,26 @@ def _density_matrix_from_state_vector(state, wires, check_state=False):
                 raise ValueError("Sum of amplitudes-squared does not equal one.")
 
     # Get dimension of the quantum system and reshape
-    num_wires = int(np.log2(len_state))
-    consecutive_wires = list(range(num_wires))
-    state = np.reshape(state, [2] * num_wires)
+    num_indices = int(np.log2(len_state))
+    consecutive_wires = list(range(num_indices))
+    state = np.reshape(state, [2] * num_indices)
 
     # Get the system to be traced
-    traced_system = [x for x in consecutive_wires if x not in wires]
+    traced_system = [x for x in consecutive_wires if x not in indices]
 
     # Return the reduced density matrix by using numpy tensor product
     density_matrix = np.tensordot(state, np.conj(state), axes=(traced_system, traced_system))
-    density_matrix = np.reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
+    density_matrix = np.reshape(density_matrix, (2 ** len(indices), 2 ** len(indices)))
 
     return density_matrix
 
 
-def to_density_matrix(state, wires, check_state=False):
+def to_density_matrix(state, indices, check_state=False):
     """Compute the reduced density matrix from a state vector, a density matrix or a QNode returning ``qml.state``.
 
     Args:
-        state (tensor_like, QNode): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix or a
-            :class:`~.QNode` returning :func:`~.state`.
-        wires (list(int)): List of wires (int) in the subsystem.
+        state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
+        indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
 
     Returns:
@@ -247,17 +242,17 @@ def to_density_matrix(state, wires, check_state=False):
     **Example**
 
     >>> x = [1, 0, 1, 0] / np.sqrt(2)
-    >>> to_density_matrix(x, wires=[0]))
+    >>> to_density_matrix(x, indices=[0])
     [[0.5+0.j 0.5+0.j]
      [0.5+0.j 0.5+0.j]]
 
-    >>> to_density_matrix(x, wires=[1]))
+    >>> to_density_matrix(x, indices=[1])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
     """
     # State vector
-    density_matrix = _density_matrix_from_state_vector(state, wires, check_state)
+    density_matrix = _density_matrix_from_state_vector(state, indices, check_state)
     # TODO
     # Density matrix
     # QNode returning ``qml.state``
