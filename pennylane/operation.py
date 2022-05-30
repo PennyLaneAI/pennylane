@@ -1853,6 +1853,7 @@ class Tensor(Observable):
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
             self.obs[:0] = [other]
+            qml.QueuingContext.safe_update_info(self, owns=tuple(self.obs))
             qml.QueuingContext.safe_update_info(other, owner=self)
             return self
 
