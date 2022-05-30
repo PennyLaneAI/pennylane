@@ -74,6 +74,7 @@ def _compute_vn_entropy(density_matrix, base=None):
     elif interface == "torch":
         import torch
 
+        evs = torch.maximum(evs, torch.tensor(0))
         entropy = torch.sum(torch.special.entr(evs) / div_base)
 
     elif interface == "tensorflow":
@@ -81,6 +82,8 @@ def _compute_vn_entropy(density_matrix, base=None):
 
         evs = tf.math.real(evs)
         log_evs = tf.math.log(evs)
+
+        log_evs = tf.where(tf.math.is_nan(log_evs), tf.zeros_like(log_evs), log_evs)
         log_evs = tf.where(tf.math.is_inf(log_evs), tf.zeros_like(log_evs), log_evs)
         entropy = -tf.math.reduce_sum(evs * log_evs / div_base)
 
