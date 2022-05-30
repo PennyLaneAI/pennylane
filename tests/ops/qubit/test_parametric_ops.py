@@ -141,7 +141,6 @@ class TestOperations:
 
     @pytest.mark.parametrize("op", BATCHED_OPERATIONS)
     def test_adjoint_unitaries_batched(self, op, tol):
-        print(op.__class__)
         op_d = op.adjoint()
         res1 = dot_batched(op.matrix(), op_d.matrix())
         res2 = dot_batched(op_d.matrix(), op.matrix())

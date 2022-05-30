@@ -1839,7 +1839,7 @@ class CRot(Operation):
                 [ 0.0+0.0j,  0.0+0.0j,  0.0993+0.0100j,  0.9752+0.1977j]])
         """
         # It might be that they are in different interfaces, e.g.,
-        # CRot(0.2, 0.3, tf.Variable(0.5), wires=0)
+        # CRot(0.2, 0.3, tf.Variable(0.5), wires=[0, 1])
         # So we need to make sure the matrix comes out having the right type
         interface = qml.math._multi_dispatch([phi, theta, omega])
 
