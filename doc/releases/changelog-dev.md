@@ -144,6 +144,10 @@
 
 <h3>Bug fixes</h3>
 
+* Fixed a bug to make `param_shift_hessian` work with QNodes in which gates marked
+  as trainable do not have any impact on the QNode output.
+  [(#2584)](https://github.com/PennyLaneAI/pennylane/pull/2584)
+
 * `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` or `"jax-jit"`, when requesting backpropagation. 
   [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
 
@@ -188,3 +192,4 @@ This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
 Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad
+
