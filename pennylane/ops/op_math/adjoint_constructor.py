@@ -23,18 +23,12 @@ from pennylane.tape import QuantumTape, stop_recording
 from .adjoint_class import Adjoint
 
 
-def _single_op_eager(op):
-    try:
-        return op.adjoint()
-    except AdjointUndefinedError:
-        return Adjoint(op)
-
-
-def _single_op_eager_update_queue(op):
+def _single_op_eager(op, update_queue=False):
     try:
         adj = op.adjoint()
-        QueuingContext.safe_update_info(op, owner=adj)
-        QueuingContext.append(adj, owns=op)
+        if update_queue:
+            QueuingContext.safe_update_info(op, owner=adj)
+            QueuingContext.append(adj, owns=op)
         return adj
     except AdjointUndefinedError:
         return Adjoint(op)
@@ -120,7 +114,7 @@ def adjoint(fn, lazy=True):
 
     """
     if isinstance(fn, Operator):
-        return Adjoint(fn) if lazy else _single_op_eager_update_queue(fn)
+        return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if not callable(fn):
         raise ValueError(
             f"The object {fn} of type {type(fn)} is not callable. "

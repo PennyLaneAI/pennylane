@@ -23,7 +23,6 @@ import networkx as nx
 import pennylane as qml
 import pennylane.numpy as np
 from pennylane.wires import Wires
-from pennylane.ops.op_math import Adjoint
 
 
 def commutation_dag(circuit):
@@ -137,9 +136,7 @@ def _create_commute_function():
         "PauliZ",
         "ctrl",
         "S",
-        "Adjoint(S)",
         "T",
-        "Adjoint(T)",
         "RZ",
         "PhaseShift",
         "MultiRZ",
@@ -149,8 +146,8 @@ def _create_commute_function():
         "S.inv",
         "T.inv",
     }
-    swap_group = {"SWAP", "ISWAP", "SISWAP", "Identity", "Adjoint(ISWAP)", "Adjoint(SISWAP)"}
-    paulix_group = {"PauliX", "SX", "RX", "Identity", "IsingXX", "SX.inv", "Adjoint(SX)"}
+    swap_group = {"SWAP", "ISWAP", "SISWAP", "Identity"}
+    paulix_group = {"PauliX", "SX", "RX", "Identity", "IsingXX", "SX.inv"}
     pauliy_group = {"PauliY", "RY", "Identity", "IsingYY"}
 
     commutation_map = {}
@@ -158,17 +155,38 @@ def _create_commute_function():
         for op in group:
             commutation_map[op] = group
 
-    identity_only = {"Hadamard", "U2", "U3", "Rot"}
-    for op in identity_only:
+    for op in ("Hadamard", "U2", "U3", "Rot"):
         commutation_map[op] = {"Identity", op}
 
-    no_commutation = {"Barrier", "WireCut", "QubitStateVector", "BasisState"}
-    for op in no_commutation:
+    for op in ("Barrier", "WireCut", "QubitStateVector", "BasisState"):
         commutation_map[op] = {}
 
-    commutation_map["Identity"] = pauliz_group.union(
-        swap_group, paulix_group, pauliy_group, identity_only
-    )
+    commutation_map["Identity"] = {
+        "Hadamard",
+        "PauliX",
+        "PauliY",
+        "PauliZ",
+        "SWAP",
+        "ctrl",
+        "S",
+        "T",
+        "SX",
+        "ISWAP",
+        "SISWAP",
+        "RX",
+        "RY",
+        "RZ",
+        "PhaseShift",
+        "Rot",
+        "MultiRZ",
+        "Identity",
+        "U1",
+        "U2",
+        "U3",
+        "IsingXX",
+        "IsingYY",
+        "IsingZZ",
+    }
 
     def commutes_inner(op_name1, op_name2):
         """Determine whether or not two operations commute.
@@ -863,12 +881,7 @@ class CommutationDAG:
         wires_map = OrderedDict(zip(tape.wires, consecutive_wires))
 
         for operation in tape.operations:
-            if isinstance(operation, Adjoint):
-                operation.base._wires = Wires(
-                    [wires_map[wire] for wire in operation.wires.tolist()]
-                )
-            else:
-                operation._wires = Wires([wires_map[wire] for wire in operation.wires.tolist()])
+            operation._wires = Wires([wires_map[wire] for wire in operation.wires.tolist()])
             self.add_node(operation)
 
         self._add_successors()
