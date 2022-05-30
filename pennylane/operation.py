@@ -1741,11 +1741,7 @@ class Tensor(Observable):
                 else:
                     raise ValueError("Can only perform tensor products between observables.")
 
-            try:
-                context.update_info(o, owner=self)
-            except qml.queuing.QueuingError:
-                o.queue(context=context)
-                context.update_info(o, owner=self)
+            context.safe_update_info(o, owner=self)
 
         context.append(self, owns=tuple(constituents))
         return self
@@ -1849,16 +1845,16 @@ class Tensor(Observable):
             owning_info = qml.QueuingContext.get_info(self)["owns"] + (other,)
 
             # update the annotated queue information
-            qml.QueuingContext.update_info(self, owns=owning_info)
-            qml.QueuingContext.update_info(other, owner=self)
+            qml.QueuingContext.safe_update_info(self, owns=owning_info)
+            qml.QueuingContext.safe_update_info(other, owner=self)
 
         return self
 
     def __rmatmul__(self, other):
         if isinstance(other, Observable):
             self.obs[:0] = [other]
-            if qml.QueuingContext.recording():
-                qml.QueuingContext.update_info(other, owner=self)
+            qml.QueuingContext.safe_update_info(self, owns=tuple(self.obs))
+            qml.QueuingContext.safe_update_info(other, owner=self)
             return self
 
         raise ValueError("Can only perform tensor products between observables.")
