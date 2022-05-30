@@ -27,7 +27,15 @@ import numpy as np
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane.operation import operation_derivative
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State, VnEntropy, MutualInfo
+from pennylane.measurements import (
+    Sample,
+    Variance,
+    Expectation,
+    Probability,
+    State,
+    VnEntropy,
+    MutualInfo,
+)
 from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.math import multiply as qmlmul
@@ -505,7 +513,8 @@ class QubitDevice(Device):
                 results.append(self.vn_entropy(wires=obs.wires))
 
             elif obs.return_type is MutualInfo:
-                results.append(self.mutual_info(wires0=obs._wires[0], wires1=obs._wires[1]))
+                wires0, wires1 = obs.raw_wires
+                results.append(self.mutual_info(wires0=wires0, wires1=wires1))
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(

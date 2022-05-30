@@ -331,10 +331,16 @@ class MeasurementProcess:
         r"""The wires the measurement process acts on."""
         if self.obs is not None:
             return self.obs.wires
-        elif not isinstance(self._wires, list):
+
+        if not isinstance(self._wires, list):
             return self._wires
-        else:
-            return Wires.all_wires(self._wires)
+
+        return Wires.all_wires(self._wires)
+
+    @property
+    def raw_wires(self):
+        r"""The raw wires passed to the constructor of the class"""
+        return self._wires
 
     def eigvals(self):
         r"""Eigenvalues associated with the measurement process.
