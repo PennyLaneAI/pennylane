@@ -589,8 +589,6 @@ class TestMatrix:
             return exp
 
         param = np.pi / 2
-        print(qml.IsingYY.compute_matrix(param))
-        print(get_expected(param))
         assert np.allclose(qml.IsingYY.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
         assert np.allclose(
             qml.IsingYY(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
@@ -1490,13 +1488,21 @@ class TestPauliRot:
 
         assert len(decomp_ops) == 0
 
-    def test_error_PauliRot_all_Identity_batched(self):
-        """Test handling that tensor-batching is correctly reported as unsupported
-        with the all-identity Pauli."""
-        with pytest.raises(NotImplementedError, match="does not support broadcasting"):
-            qml.PauliRot(np.ones(2), "II", wires=[0, 1]).matrix()
-        with pytest.raises(NotImplementedError, match="does not support broadcasting"):
-            qml.PauliRot(np.ones(2), "II", wires=[0, 1]).eigvals()
+
+    def test_PauliRot_all_Identity_batched(self):
+        """Test handling of the broadcasted all-identity Pauli."""
+
+        theta = np.array([0.4, 0.9, 1.2])
+        op = qml.PauliRot(theta, "II", wires=[0, 1])
+        decomp_ops = op.decomposition()
+
+        phases = np.exp(-1j * theta / 2)
+        assert np.allclose(op.eigvals(), np.outer(phases, np.ones(4)))
+        mat = op.matrix()
+        for phase, sub_mat in zip(phases, mat):
+            assert np.allclose(sub_mat, phase * np.eye(4))
+
+        assert len(decomp_ops) == 0
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_ZZ(self, theta):
@@ -1587,8 +1593,6 @@ class TestPauliRot:
             0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol
         )
 
-    # TODO[dwierichs]: Include this test using tensor-batching once devices support it
-    @pytest.mark.skip("QNodes/Devices do not support tensor-batching yet.")
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
     def test_differentiability_batched(self, pauli_word, tol):
         """Test that differentiation of PauliRot works with batched parameters."""
@@ -1837,8 +1841,6 @@ class TestMultiRZ:
             0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol
         )
 
-    # TODO[dwierichs]: Include this test using tensor-batching once devices support it
-    @pytest.mark.skip("QNodes/Devices do not support tensor-batching yet.")
     def test_differentiability_batched(self, tol):
         """Test that differentiation of MultiRZ works."""
 
@@ -1857,7 +1859,7 @@ class TestMultiRZ:
         jac = qml.jacobian(circuit)(angle)
 
         assert np.allclose(
-            jac, 0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol
+            jac, 0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), atol=tol
         )
 
     @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))

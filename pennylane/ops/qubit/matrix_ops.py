@@ -75,7 +75,7 @@ class QubitUnitary(Operation):
 
             if not (len(U_shape) in {2, 3} and U_shape[-2:] == (dim, dim)):
                 raise ValueError(
-                    f"Input unitary must be of shape {(dim, dim)} or ({dim, dim}, batch_size) "
+                    f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
                     f"to act on {len(wires)} wires."
                 )
 
@@ -307,7 +307,10 @@ class ControlledQubitUnitary(QubitUnitary):
         target_dim = 2 ** len(u_wires)
         shape = qml.math.shape(U)
         if not (len(shape) in {2, 3} and shape[-2:] == (target_dim, target_dim)):
-            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)} or ({target_dim}, {target_dim}, batch_size).")
+            raise ValueError(
+                f"Input unitary must be of shape {(target_dim, target_dim)} or "
+                f"(batch_size, {target_dim}, {target_dim})."
+            )
 
         # A multi-controlled operation is a block-diagonal matrix partitioned into
         # blocks where the operation being applied sits in the block positioned at

@@ -549,8 +549,8 @@ class ControlledPhaseShift(Operation):
             phi = qml.math.cast_like(phi, 1j)
 
         exp_part = qml.math.exp(1j * phi)
-        shape = qml.math.shape(phi)
-        if len(shape) > 0:
+
+        if qml.math.ndim(phi) > 0:
             ones = qml.math.ones_like(exp_part)
             zeros = qml.math.zeros_like(exp_part)
             matrix = [
@@ -868,9 +868,7 @@ class MultiRZ(Operation):
             theta = qml.math.cast_like(theta, 1j)
             eigs = qml.math.cast_like(eigs, 1j)
 
-        shape = qml.math.shape(theta)
-        # TODO[dwierichs]: How to properly recycle _check_batching here?
-        if len(shape) > 0:
+        if qml.math.ndim(theta) > 0:
             eigvals = [qml.math.exp(-0.5j * t * eigs) for t in theta]
             return qml.math.stack([qml.math.diag(eig) for eig in eigvals])
 
@@ -915,7 +913,7 @@ class MultiRZ(Operation):
             theta = qml.math.cast_like(theta, 1j)
             eigs = qml.math.cast_like(eigs, 1j)
 
-        if len(qml.math.shape(theta)) > 0:
+        if qml.math.ndim(theta) > 0:
             return qml.math.exp(qml.math.tensordot(-0.5j * theta, eigs, axes=0))
 
         return qml.math.exp(-0.5j * theta * eigs)
@@ -1030,7 +1028,8 @@ class PauliRot(Operation):
 
         if not len(pauli_word) == num_wires:
             raise ValueError(
-                f"The given Pauli word has length {len(pauli_word)}, length {num_wires} was expected for wires {wires}"
+                f"The given Pauli word has length {len(pauli_word)}, length "
+                f"{num_wires} was expected for wires {wires}"
             )
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -1063,7 +1062,7 @@ class PauliRot(Operation):
         if self.inverse:
             op_label += "⁻¹"
 
-        # TODO[dwierichs]: Implement a proper label for tensor-batched operators
+        # TODO[dwierichs]: Implement a proper label for parameter-broadcasted operators
         if decimals is not None and self.batch_size is None:
             param_string = f"\n({qml.math.asarray(self.parameters[0]):.{decimals}f})"
             op_label += param_string
@@ -1119,20 +1118,17 @@ class PauliRot(Operation):
         # Simplest case is if the Pauli is the identity matrix
         if set(pauli_word) == {"I"}:
 
-            # TODO[dwierichs]: how to recycle _check_batching properly here? Implement broadcasting
-            if len(qml.math.shape(theta)) > 0:
-                raise NotImplementedError(
-                    "PauliRot with the identity matrix does not support broadcasting."
-                )
             exp = qml.math.exp(-0.5j * theta)
-            iden = qml.math.eye(2 ** len(pauli_word))
+            iden = qml.math.eye(2 ** len(pauli_word), like=theta)
             if interface == "torch":
                 # Use convert_like to ensure that the tensor is put on the correct
                 # Torch device
                 iden = qml.math.convert_like(iden, theta)
+
+            if qml.math.ndim(theta) == 0:
                 return exp * iden
 
-            return qml.math.array(exp * iden, like=interface)
+            return qml.math.stack([e * iden for e in exp])
 
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
@@ -1195,12 +1191,14 @@ class PauliRot(Operation):
 
         # Identity must be treated specially because its eigenvalues are all the same
         if set(pauli_word) == {"I"}:
-            # TODO[dwierichs]: how to recycle _check_batching properly here? Implement broadcasting
-            if len(qml.math.shape(theta)) > 0:
-                raise NotImplementedError(
-                    "PauliRot with the identity matrix does not support broadcasting."
-                )
-            return qml.math.exp(-0.5j * theta) * qml.math.ones(2 ** len(pauli_word))
+            if qml.math.ndim(theta) == 0:
+                return qml.math.exp(-0.5j * theta) * qml.math.ones(2 ** len(pauli_word))
+
+            return qml.math.tensordot(
+                qml.math.exp(-0.5j * theta),
+                qml.math.ones(2 ** len(pauli_word)),
+                axes=0,
+            )
 
         return MultiRZ.compute_eigvals(theta, len(pauli_word))
 
@@ -1235,7 +1233,7 @@ class PauliRot(Operation):
             wires = [wires]
 
         # Check for identity and do nothing
-        if pauli_word == "I" * len(wires):
+        if set(pauli_word) == {"I"}:
             return []
 
         active_wires, active_gates = zip(
@@ -1701,8 +1699,6 @@ class CRZ(Operation):
         >>> qml.CRZ.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.9689-0.2474j, 0.9689+0.2474j])
         """
-        # theta = qml.math.flatten(qml.math.stack([theta]))[0]
-
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 

@@ -444,7 +444,6 @@ class TestDiagonalQubitUnitary:
         with pytest.raises(ValueError, match="Operator must be unitary"):
             qml.DiagonalQubitUnitary(np.array(D), wires=0).eigvals()
 
-    # TODO[dwierichs]: Add a JIT test using tensor-batching once devices support it
     @pytest.mark.jax
     def test_jax_jit(self):
         """Test that the diagonal matrix unitary operation works
@@ -467,6 +466,29 @@ class TestDiagonalQubitUnitary:
         grad = jax.grad(circuit)(x)
         expected = -jnp.sin(x)
         assert np.allclose(grad, expected)
+
+    @pytest.mark.jax
+    def test_jax_jit_batched(self):
+        """Test that the diagonal matrix unitary operation works
+        within a QNode that uses the JAX JIT"""
+        import jax
+
+        jnp = jax.numpy
+
+        dev = qml.device("default.qubit", wires=1, shots=None)
+
+        @jax.jit
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            diag = jnp.exp(1j * jnp.outer(x, jnp.array([1, -1])) / 2)
+            qml.Hadamard(wires=0)
+            qml.DiagonalQubitUnitary(diag, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        x = jnp.array([0.654, 0.321])
+        jac = jax.jacobian(circuit)(x)
+        expected = jnp.diag(-jnp.sin(x))
+        assert np.allclose(jac, expected)
 
     @pytest.mark.tf
     @pytest.mark.slow  # test takes 12 seconds due to tf.function
