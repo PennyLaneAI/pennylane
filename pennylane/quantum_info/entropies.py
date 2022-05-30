@@ -54,33 +54,45 @@ def _compute_vn_entropy(density_matrix, base=None):
     else:
         div_base = 1
 
-    # Get eigenvalues
-    evs = qml.math.linalg.eigvalsh(density_matrix)
+    interface = get_interface(density_matrix)
 
-    # Change the base if provided, default is log in base 2
-    interface = get_interface(evs)
+    if interface == "autograd":
+        # Get eigenvalues
+        evs = qml.math.linalg.eigh(density_matrix)[0]
+        new_evs = []
+        for ev in evs:
+            if ev > 0:
+                new_evs.append(ev)
+    else:
+        evs = qml.math.linalg.eigvalsh(density_matrix)
 
     if interface == "jax":
         import jax
 
-        evs = jax.numpy.array([ev for ev in evs if ev >= 0])
         entropy = jax.numpy.sum(jax.scipy.special.entr(evs) / div_base)
 
     elif interface == "torch":
         import torch
 
-        evs = torch.tensor([ev for ev in evs if ev >= 0])
         entropy = torch.sum(torch.special.entr(evs) / div_base)
 
     elif interface == "tensorflow":
         import tensorflow as tf
 
         evs = tf.math.real(evs)
-        evs = tf.Variable([ev for ev in evs if ev >= 0])
-        entropy = -tf.math.reduce_sum(evs * tf.math.log(evs) / div_base)
+        log_evs = tf.math.log(evs)
+        log_evs = tf.where(tf.math.is_inf(log_evs), tf.zeros_like(log_evs), log_evs)
+        entropy = -tf.math.reduce_sum(evs * log_evs / div_base)
+
+    elif interface == "autograd":
+        import autograd
+
+        entropy = 0
+        for elem in new_evs:
+            entropy = entropy - autograd.numpy.log(elem) * elem
 
     else:
-        evs = qml.math.array([ev for ev in evs if ev >= 0])
+        evs = qml.math.array([ev for ev in evs if ev > 0])
         entropy = -qml.math.sum(evs * qml.math.log(evs) / div_base)
 
     return entropy
