@@ -747,6 +747,10 @@ class TestHamiltonian:
         """Tests that Hamiltonians can be added to zero"""
         assert H.compare(H + 0)
         assert H.compare(0 + H)
+        assert H.compare(H + 0.0)
+        assert H.compare(0.0 + H)
+        assert H.compare(H + 0e1)
+        assert H.compare(0e1 + H)
 
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
     def test_hamiltonian_mul(self, coeff, H, res):
@@ -793,6 +797,10 @@ class TestHamiltonian:
     def test_hamiltonian_iadd_zero(self, H1, H2):
         """Tests in-place addition between Hamiltonians and zero"""
         H1 += 0
+        assert H1.compare(H2)
+        H1 += 0.0
+        assert H1.compare(H2)
+        H1 += 0e1
         assert H1.compare(H2)
 
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
