@@ -107,6 +107,9 @@
 * `BasisEmbedding` can accept an int as argument instead of a list of bits (optionally). Example: `qml.BasisEmbedding(4, wires = range(4))` is now equivalent to `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because 4=0b100). 
   [(#2601)](https://github.com/PennyLaneAI/pennylane/pull/2601)
 
+* Added seperate requirements_dev.txt for seperation of concerns for code development and just using PennyLane.
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/2635)
+
 <h3>Breaking changes</h3>
 
 * The `qml.queuing.Queue` class is now removed.
@@ -187,4 +190,4 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad
+Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad, WingCode
