@@ -24,7 +24,6 @@ import pennylane as qml
 from pennylane import numpy as np
 
 from pennylane.operation import Observable, Tensor
-from pennylane.queuing import QueuingError
 from pennylane.wires import Wires
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
