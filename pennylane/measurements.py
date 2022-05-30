@@ -43,6 +43,8 @@ class ObservableReturnTypes(Enum):
     Probability = "probs"
     State = "state"
     MidMeasure = "measure"
+    VnEntropy = "vnentropy"
+    MutualInfo = "mutualinfo"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -70,6 +72,12 @@ State = ObservableReturnTypes.State
 MidMeasure = ObservableReturnTypes.MidMeasure
 """Enum: An enumeration which represents returning sampling the computational
 basis in the middle of the circuit."""
+
+VnEntropy = ObservableReturnTypes.VnEntropy
+"""Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
+
+MutualInfo = ObservableReturnTypes.MutualInfo
+"""Enum: An enumeration which represents returning the mutual information before measurements."""
 
 
 class MeasurementShapeError(ValueError):
@@ -323,7 +331,10 @@ class MeasurementProcess:
         r"""The wires the measurement process acts on."""
         if self.obs is not None:
             return self.obs.wires
-        return self._wires
+        elif not isinstance(self._wires, list):
+            return self._wires
+        else:
+            return Wires.all_wires(self._wires)
 
     def eigvals(self):
         r"""Eigenvalues associated with the measurement process.
@@ -423,17 +434,20 @@ class MeasurementProcess:
     @property
     def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
+        wires_list = [self.wires] if not isinstance(self.wires, list) else self.wires
+        wires_list = [wire for wires in wires_list for wire in wires.tolist()]
+
         if self.obs is None:
             fingerprint = (
                 str(self.name),
-                tuple(self.wires.tolist()),
+                tuple(wires_list),
                 str(self.data),
                 self.return_type,
             )
         else:
             fingerprint = (
                 str(self.obs.name),
-                tuple(self.wires.tolist()),
+                tuple(wires_list),
                 str(self.obs.data),
                 self.return_type,
             )
@@ -806,6 +820,20 @@ def density_matrix(wires):
     dim = 2 ** len(wires)
     shape = (1, dim, dim)
     return MeasurementProcess(State, wires=wires, shape=shape, numeric_type=complex)
+
+
+def vn_entropy(wires):
+    r"""Von Neumann entropy"""
+    # pylint: disable=protected-access
+    wires = qml.wires.Wires(wires)
+    return MeasurementProcess(VnEntropy, wires=wires, shape=(1,), numeric_type=float)
+
+
+def mutual_info(wires0, wires1):
+    r"""Mutual information"""
+    wires0 = qml.wires.Wires(wires0)
+    wires1 = qml.wires.Wires(wires1)
+    return MeasurementProcess(MutualInfo, wires=[wires0, wires1], shape=(1,), numeric_type=float)
 
 
 T = TypeVar("T")

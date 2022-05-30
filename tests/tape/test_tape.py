@@ -77,10 +77,12 @@ class TestConstruction:
         assert tape.operations == ops
         assert tape.observables == obs
         assert tape.output_dim == 5
+        assert tape.batch_size is None
         assert tape.interface is None
 
         assert tape.wires == qml.wires.Wires([0, "a", 4])
         assert tape._output_dim == len(obs[0].wires) + 2 ** len(obs[1].wires)
+        assert tape._batch_size is None
 
     def test_observable_processing(self, make_tape):
         """Test that observables are processed correctly"""
@@ -193,6 +195,7 @@ class TestConstruction:
         assert tape.measurements == [D]
         assert tape.observables == [C]
         assert tape.output_dim == 1
+        assert tape.batch_size is None
 
     def test_multiple_contexts(self):
         """Test multiple contexts with a single tape."""
@@ -215,6 +218,7 @@ class TestConstruction:
         assert tape.operations == ops
         assert tape.observables == obs
         assert tape.output_dim == 5
+        assert tape.batch_size is None
 
         assert a not in tape.operations
         assert b not in tape.operations
@@ -308,6 +312,78 @@ class TestConstruction:
         assert tape.circuit[3].then_op.wires == target_wire
 
         assert tape.circuit[4] is terminal_measurement
+
+    @pytest.mark.parametrize(
+        "x, rot, exp_batch_size",
+        [
+            (0.2, [0.1, -0.9, 2.1], None),
+            ([0.2], [0.1, -0.9, 2.1], 1),
+            ([0.2], [[0.1], [-0.9], 2.1], 1),
+            ([0.2] * 3, [0.1, [-0.9] * 3, 2.1], 3),
+        ],
+    )
+    def test_update_batch_size(self, x, rot, exp_batch_size):
+        """Test that the batch size is correctly inferred from all operation's
+        batch_size, when creating and when using `set_parameters`."""
+
+        class RXWithNdim(qml.RX):
+            ndim_params = (0,)
+
+        class RotWithNdim(qml.Rot):
+            ndim_params = (0, 0, 0)
+
+        # Test with tape construction
+        with qml.tape.QuantumTape() as tape:
+            RXWithNdim(x, wires=0)
+            RotWithNdim(*rot, wires=1)
+            qml.apply(qml.expval(qml.PauliZ(0)))
+            qml.apply(qml.expval(qml.PauliX(1)))
+
+        assert tape.batch_size == exp_batch_size
+
+        # Test with set_parameters
+        with qml.tape.QuantumTape() as tape:
+            RXWithNdim(0.2, wires=0)
+            RotWithNdim(1.0, 0.2, -0.3, wires=1)
+            qml.apply(qml.expval(qml.PauliZ(0)))
+            qml.apply(qml.expval(qml.PauliX(1)))
+
+        assert tape.batch_size is None
+
+        tape.set_parameters([x] + rot)
+        assert tape.batch_size == exp_batch_size
+
+    @pytest.mark.parametrize(
+        "x, rot, y",
+        [
+            (0.2, [[0.1], -0.9, 2.1], [0.1, 0.9]),
+            ([0.2], [0.1, [-0.9] * 2, 2.1], 0.1),
+        ],
+    )
+    def test_error_inconsistent_batch_sizes(self, x, rot, y):
+        """Test that the batch size is correctly inferred from all operation's
+        batch_size, when creating and when using `set_parameters`."""
+
+        class RXWithNdim(qml.RX):
+            ndim_params = (0,)
+
+        class RotWithNdim(qml.Rot):
+            ndim_params = (0, 0, 0)
+
+        with pytest.raises(ValueError, match="batch sizes of the tape operations do not match."):
+            with qml.tape.QuantumTape() as tape:
+                RXWithNdim(x, wires=0)
+                RotWithNdim(*rot, wires=1)
+                RXWithNdim(y, wires=1)
+                qml.apply(qml.expval(qml.PauliZ(0)))
+
+        with qml.tape.QuantumTape() as tape:
+            RXWithNdim(0.2, wires=0)
+            RotWithNdim(1.0, 0.2, -0.3, wires=1)
+            RXWithNdim(0.2, wires=1)
+            qml.apply(qml.expval(qml.PauliZ(0)))
+        with pytest.raises(ValueError, match="batch sizes of the tape operations do not match."):
+            tape.set_parameters([x] + rot + [y])
 
 
 class TestIteration:
@@ -1114,6 +1190,7 @@ class TestExecution:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         assert tape.output_dim == 1
+        assert tape.batch_size is None
 
         # test execution with no parameters
         res1 = dev.execute(tape)

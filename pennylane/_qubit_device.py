@@ -27,7 +27,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane.operation import operation_derivative
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State
+from pennylane.measurements import Sample, Variance, Expectation, Probability, State, VnEntropy, MutualInfo
 from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.math import multiply as qmlmul
@@ -490,6 +490,23 @@ class QubitDevice(Device):
                 # matrix.
                 results.append(self.access_state(wires=obs.wires))
 
+            elif obs.return_type is VnEntropy:
+                if len(observables) > 1:
+                    raise qml.QuantumFunctionError(
+                        "The Von Neumann entropy cannot be returned in combination"
+                        " with other return types"
+                    )
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the state is not supported when using custom wire labels"
+                    )
+                # Check if the state is accessible and decide to return the state or the density
+                # matrix.
+                results.append(self.vn_entropy(wires=obs.wires))
+
+            elif obs.return_type is MutualInfo:
+                results.append(self.mutual_info(wires0=obs._wires[0], wires1=obs._wires[1]))
+
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
@@ -656,6 +673,20 @@ class QubitDevice(Device):
             Only state vector simulators support this property. Please see the
             plugin documentation for more details.
         """
+        raise NotImplementedError
+
+    def vn_entropy(self, wires):
+        """Returns the Von Neumann entropy prior to measurement.
+
+        .. note::
+
+            Only state vector simulators support this property. Please see the
+            plugin documentation for more details.
+        """
+        raise NotImplementedError
+
+    def mutual_info(self, wires0, wires1):
+        """Returns the mutual information between the two subsystems"""
         raise NotImplementedError
 
     def analytic_probability(self, wires=None):
