@@ -28,7 +28,7 @@ pytestmark = pytest.mark.all_interfaces
 class TestMutualInformation:
     """Tests for the mutual information functions"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize(
         "state, expected",
         [
@@ -44,7 +44,7 @@ class TestMutualInformation:
         actual = qinfo.to_mutual_info(state, wires0=[0], wires1=[1])
         assert np.allclose(actual, expected)
 
-    @pytest.mark.parametrize("interface", ["autograd", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize(
         "state, expected",
         [
@@ -61,7 +61,7 @@ class TestMutualInformation:
         assert np.allclose(actual, expected)
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
-    @pytest.mark.parametrize("interface", ["autograd", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     @pytest.mark.parametrize(
         "params", [np.array([0, 0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
     )
@@ -85,7 +85,7 @@ class TestMutualInformation:
         assert np.allclose(actual, expected)
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
-    @pytest.mark.parametrize("interface", ["autograd", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
     @pytest.mark.parametrize(
         "params", [np.array([0, 0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
     )
