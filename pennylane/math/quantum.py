@@ -419,22 +419,22 @@ def to_density_matrix(state, indices, check_state=False, c_dtype="complex64"):
      [0.+0.j 0.+0.j]]
 
     >>> y = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-    >>> to_density_matrix(z, wires=[1])
+    >>> to_density_matrix(z, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
     >>> z = [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
-    >>> to_density_matrix(z, wires=[0])
+    >>> to_density_matrix(z, indices=[0])
     [[0.5+0.j 0.5+0.j]
      [0.5+0.j 0.5+0.j]]
 
-    >>> to_density_matrix(z, wires=[1])
+    >>> to_density_matrix(z, indices=[1])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
     >>> y = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0]], dtype=tf.complex128)
-    >>> to_density_matrix(z, wires=[1])
+    >>> to_density_matrix(z, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
