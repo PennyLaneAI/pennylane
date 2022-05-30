@@ -171,6 +171,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
         state (tensor_like): 1D tensor state vector. This tensor should of size ``(2**N,)`` for some integer value ``N``.
         indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex dtype to be used in the computation of the density matrix.
 
     Returns:
         tensor_like: Density matrix of size ``(2**len(wires), 2**len(wires))``
@@ -198,7 +199,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
     """
-    # Cast as a complex128 array
+    # Cast as a complex array
     state = cast(state, dtype=c_dtype)
     len_state = np.shape(state)[0]
 
@@ -228,13 +229,14 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
     return density_matrix
 
 
-def to_density_matrix(state, indices, check_state=False):
+def to_density_matrix(state, indices, check_state=False, c_dtype="complex64"):
     """Compute the reduced density matrix from a state vector, a density matrix or a QNode returning ``qml.state``.
 
     Args:
         state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
         indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex dtype to be used in the computation of the density matrix.
 
     Returns:
         tensor_like: (Reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
@@ -252,8 +254,7 @@ def to_density_matrix(state, indices, check_state=False):
 
     """
     # State vector
-    density_matrix = _density_matrix_from_state_vector(state, indices, check_state)
+    density_matrix = _density_matrix_from_state_vector(state, indices, check_state, c_dtype)
     # TODO
     # Density matrix
-    # QNode returning ``qml.state``
     return density_matrix
