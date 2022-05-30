@@ -171,7 +171,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
         state (tensor_like): 1D tensor state vector. This tensor should of size ``(2**N,)`` for some integer value ``N``.
         indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
-        c_dtype (str): Complex dtype to be used in the computation of the density matrix.
+        c_dtype (str): Complex floating point precision type.
 
     Returns:
         tensor_like: Density matrix of size ``(2**len(wires), 2**len(wires))``
@@ -236,7 +236,7 @@ def to_density_matrix(state, indices, check_state=False, c_dtype="complex64"):
         state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
         indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
-        c_dtype (str): Complex dtype to be used in the computation of the density matrix.
+        c_dtype (str): Complex floating point precision type.
 
     Returns:
         tensor_like: (Reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
