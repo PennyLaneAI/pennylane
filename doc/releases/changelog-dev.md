@@ -55,7 +55,7 @@
 **Operator Arithmetic:**
 
 * The adjoint transform `adjoint` can now accept either a single instantiated operator or
-  a quantum function. It returns an entity of the same type/ call signature as what it was provided:
+  a quantum function. It returns an entity of the same type/ call signature as what it was given:
   [(#2222)](https://github.com/PennyLaneAI/pennylane/pull/2222)
 
   ```pycon
