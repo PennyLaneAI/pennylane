@@ -86,7 +86,7 @@ def _compute_vn_entropy(density_matrix, base=None):
     return entropy
 
 
-def to_mutual_info(state, wires0, wires1, base=2, check_state=False):
+def to_mutual_info(state, wires0, wires1, base=None, check_state=False):
     """Get the mutual information between the subsystems"""
 
     # the subsystems cannot overlap
@@ -94,9 +94,14 @@ def to_mutual_info(state, wires0, wires1, base=2, check_state=False):
         raise ValueError("Subsystems for computing mutual information must not overlap")
 
     if isinstance(state, qml.QNode):
+
         def wrapper(*args, **kwargs):
-            density_matrix = qml.math.to_density_matrix(state, state.device.wires.tolist())(*args, **kwargs)
-            entropy = _compute_mutual_info(density_matrix, wires0, wires1, base=base, check_state=check_state)
+            density_matrix = qml.math.to_density_matrix(state, state.device.wires.tolist())(
+                *args, **kwargs
+            )
+            entropy = _compute_mutual_info(
+                density_matrix, wires0, wires1, base=base, check_state=check_state
+            )
             return entropy
 
         return wrapper
@@ -104,14 +109,16 @@ def to_mutual_info(state, wires0, wires1, base=2, check_state=False):
     # Cast as a complex128 array
     state = qml.math.cast(state, dtype="complex128")
 
-    len_state = state.shape[0]
-    if state.shape in [(len_state,), (len_state, len_state)]:
-        return _compute_mutual_info(state, wires0, wires1, base=base, check_state=check_state)
+    state_shape = state.shape
+    if len(state_shape) > 0:
+        len_state = state_shape[0]
+        if state_shape in [(len_state,), (len_state, len_state)]:
+            return _compute_mutual_info(state, wires0, wires1, base=base, check_state=check_state)
 
     raise ValueError("The state is not a QNode, a state vector or a density matrix.")
 
 
-def _compute_mutual_info(state, wires0, wires1, base=2, check_state=False):
+def _compute_mutual_info(state, wires0, wires1, base=None, check_state=False):
     all_wires = sorted([*wires0, *wires1])
     vn_entropy_1 = to_vn_entropy(state, wires=wires0, base=base, check_state=check_state)
     vn_entropy_2 = to_vn_entropy(state, wires=wires1, base=base, check_state=check_state)
