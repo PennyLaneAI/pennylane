@@ -9,7 +9,7 @@ import functools
 import numpy as np
 
 import pennylane as qml
-from pennylane import Device, DeviceError
+from pennylane import QutritDevice, DeviceError
 from pennylane.wires import Wires, WireError
 from .._version import __version__
 from default_qubit import _get_slice
@@ -20,7 +20,7 @@ from pennylane.measurements import MeasurementProcess
 tolerance = 1e-10
 
 
-class DefaultQutrit(Device):
+class DefaultQutrit(QutritDevice):
     """Default qutrit device for PennyLane
 
     Args:
@@ -46,7 +46,7 @@ class DefaultQutrit(Device):
     def __init__(
         self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None,
     ):
-        super().__init__(wires, shots, analytic)
+        super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
 
         # Create the initial state. Internally, we store the
@@ -55,8 +55,6 @@ class DefaultQutrit(Device):
         self._pre_rotated_state = self._state
 
         # TODO: Add operations
-
-
         self._apply_ops = {}
 
     @functools.lru_cache()
@@ -82,18 +80,92 @@ class DefaultQutrit(Device):
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 
+        # apply the circuit operations
+        for i, operation in enumerate(operations):
+
+            # if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
+            #     raise DeviceError(
+            #         f"Operation {operation.name} cannot be used after other Operations have already been applied "
+            #         f"on a {self.short_name} device."
+            #     )
+
+            # if isinstance(operation, QubitStateVector):
+            #     self._apply_state_vector(operation.parameters[0], operation.wires)
+            # elif isinstance(operation, BasisState):
+            #     self._apply_basis_state(operation.parameters[0], operation.wires)
+            # elif isinstance(operation, Snapshot):
+            #     if self._debugger and self._debugger.active:
+            #         state_vector = np.array(self._flatten(self._state))
+            #         if operation.tag:
+            #             self._debugger.snapshots[operation.tag] = state_vector
+            #         else:
+            #             self._debugger.snapshots[len(self._debugger.snapshots)] = state_vector
+            if False:
+                # DO NOTHING
+                continue
+            else:
+                self._state = self._apply_operation(self._state, operation)
+
+        # store the pre-rotated state
+        self._pre_rotated_state = self._state
+
+        # apply the circuit rotations
+        for operation in rotations:
+            self._state = self._apply_operation(self._state, operation)
+
     def _apply_operation(self, state, operation):
-        pass
+        """Applies operations to the input state.
+
+        Args:
+            state (array[complex]): input state
+            operation (~.Operation): operation to apply on the device
+
+        Returns:
+            array[complex]: output state
+        """
+        if operation.base_name == "Identity":
+            return state
+        wires = operation.wires
+
+        if operation.base_name in self._apply_ops:
+            axes = self.wires.indices(wires)
+            return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
+
+        matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
+
+        if len(wires) <= 2:
+            # Einsum is faster for small gates
+            return self._apply_unitary_einsum(state, matrix, wires)
+
+        return self._apply_unitary(state, matrix, wires)
 
     def expval(self, observable, shot_range=None, bin_size=None):
-        pass
+        # TODO: Update later
+        return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
     def _get_unitary_matrix(self, unitary):
-        pass
+        """Return the matrix representing a unitary operation.
+
+        Args:
+            unitary (~.Operation): a PennyLane unitary operation
+
+        Returns:
+            array[complex]: Returns a 2D matrix representation of
+            the unitary in the computational basis
+        """
+        return unitary.matrix()
 
     @classmethod
     def capabilities(cls):
-        pass
+        capabilities = super().capabilities().copy()
+        capabilities.update(
+            model="qutrit",
+            supports_reversible_diff=True,
+            supports_inverse_operations=True,
+            supports_analytic_computation=True,
+            returns_state=True
+        )
+        return capabilities
 
     def _create_basis_state(self, index):
         """Return a computational basis state over all wires.
@@ -115,6 +187,49 @@ class DefaultQutrit(Device):
         return self._flatten(self._pre_rotated_state)
 
     def density_matrix(self, wires):
+        """Returns the reduced density matrix of a given set of wires.
+
+        Args:
+            wires (Wires): wires of the reduced system.
+
+        Returns:
+            array[complex]: complex tensor of shape ``(3 ** len(wires), 3 ** len(wires))``
+            representing the reduced density matrix.
+        """
+        dim = self.num_wires
+        state = self._pre_rotated_state
+
+        # Return the full density matrix by using numpy tensor product
+        if wires == self.wires:
+            density_matrix = self._tensordot(state, self._conj(state), axes=0)
+            density_matrix = self._reshape(density_matrix, (3 ** len(wires), 3 ** len(wires)))
+            return density_matrix
+
+        complete_system = list(range(0, dim))
+        traced_system = [x for x in complete_system if x not in wires.labels]
+
+        # Return the reduced density matrix by using numpy tensor product
+        density_matrix = self._tensordot(
+            state, self._conj(state), axes=(traced_system, traced_system)
+        )
+        density_matrix = self._reshape(density_matrix, (3 ** len(wires), 3 ** len(wires)))
+
+        return density_matrix
+
+    # TODO: Implement function
+    def _apply_state_vector(self, state, device_wires):
+        pass
+
+    # TODO: Implement function
+    def _apply_basis_state(self, state, wires):
+        pass
+
+    # TODO: Implement function
+    def _apply_unitary(self, state, mat, wires):
+        pass
+
+    # TODO: Implement function
+    def _apply_unitary_einsum(self, state, mat, wires):
         pass
 
     def reset(self):
@@ -133,6 +248,6 @@ class DefaultQutrit(Device):
         flat_state = self._flatten(self._state)
         real_state = self._real(flat_state)
         imag_state = self._imag(flat_state)
-        # prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
-        # return prob
+        prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
+        return prob
 
