@@ -468,11 +468,25 @@ class ResetError(Channel):
         if not 0.0 <= p_0 + p_1 <= 1.0:
             raise ValueError("p_0 + p_1 must be in the interval [0,1]")
 
-        K0 = np.sqrt(1 - p_0 - p_1) * np.eye(2)
-        K1 = np.sqrt(p_0) * np.array([[1, 0], [0, 0]])
-        K2 = np.sqrt(p_0) * np.array([[0, 1], [0, 0]])
-        K3 = np.sqrt(p_1) * np.array([[0, 0], [1, 0]])
-        K4 = np.sqrt(p_1) * np.array([[0, 0], [0, 1]])
+        if p_0 + p_1 == 1:
+            K0 = np.zeros(2)
+        else:
+            K0 = np.sqrt(1 - p_0 - p_1) * np.eye(2)
+
+        if p_0 == 0:
+            K1 = np.zeros((2, 2))
+            K2 = np.zeros((2, 2))
+        else:
+            K1 = np.sqrt(p_0) * np.array([[1, 0], [0, 0]])
+            K2 = np.sqrt(p_0) * np.array([[0, 1], [0, 0]])
+
+        if p_1 == 0:
+            K3 = np.zeros((2, 2))
+            K4 = np.zeros((2, 2))
+        else:
+            K3 = np.sqrt(p_1) * np.array([[0, 0], [1, 0]])
+            K4 = np.sqrt(p_1) * np.array([[0, 0], [0, 1]])
+
         return [K0, K1, K2, K3, K4]
 
 
