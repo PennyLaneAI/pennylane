@@ -188,9 +188,7 @@ def vjp(
         if gradient_fn.__name__ == "param_shift":
             jacs = _get_jac()
         else:
-            jacs = ans[
-                1
-            ]  # param_shift_cv interface differs from above, hence throws due to lack of device arg
+            jacs = ans[1]
 
         if jacs:
             # Jacobians were computed on the forward pass (mode="forward")
