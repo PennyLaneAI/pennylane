@@ -40,7 +40,7 @@ def CFIM(qnode):
 def _compute_cfim(p, dp, interface):
     """Computes the (num_params, num_params) classical fisher information matrix from the probabilities and its derivatives"""
     # Assumes
-    # dp shape: (n_params, n_probs)
+    # dp shape: (n_probs, n_params)
     # p  shape: (n_probs)
     # outputs : (n_params, n_params)
     # by computing dp / p (n_params, n_probs)
