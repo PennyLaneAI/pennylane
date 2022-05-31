@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.devices.default_mixed_autograd import DefaultMixedAutograd
+from pennylane.devices.default_mixed import DefaultMixed
 from pennylane import DeviceError
 
 
@@ -519,7 +519,7 @@ class TestOps:
 
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
-        dev = DefaultMixedAutograd(wires=["a", "b", "c"])
+        dev = DefaultMixed(wires=["a", "b", "c"])
         state = np.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
@@ -532,7 +532,7 @@ class TestOps:
     def test_partial_subsystem(self, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
 
-        dev = DefaultMixedAutograd(wires=["a", "b", "c"])
+        dev = DefaultMixed(wires=["a", "b", "c"])
         state = np.array([1, 0, 1, 0]) / np.sqrt(2.0)
         state_wires = qml.wires.Wires(["a", "c"])
 
