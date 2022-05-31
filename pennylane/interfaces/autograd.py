@@ -185,7 +185,7 @@ def vjp(
         parameter values and output gradient dy"""
 
         dy = [qml.math.T(d) for d in dy[0]]
-        if gradient_fn.__name__ == "param_shift":
+        if gradient_fn and gradient_fn.__name__ == "param_shift":
             jacs = _get_jac()
         else:
             jacs = ans[1]
