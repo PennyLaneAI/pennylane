@@ -16,8 +16,16 @@
 import pennylane as qml
 
 
-def density_matrix_transform(qnode, wires):
-    """
+def density_matrix_transform(qnode, indices):
+    """Compute the reduced density matrix from a QNode.
+
+    Args:
+        qnode (QNode): A :class:`~.QNode` returning :func:`~.state`.
+        indices (list(int)): List of indices in the considered subsystem.
+
+    Returns:
+        tensor_like: (Reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
+
     **Example**
 
     .. code-block:: python
@@ -41,7 +49,7 @@ def density_matrix_transform(qnode, wires):
 
         # TODO: optimize given the wires
         state_built = qnode(*args, **kwargs)
-        density_matrix = qml.math.to_density_matrix(state_built, indices=wires)
+        density_matrix = qml.math.to_density_matrix(state_built, indices=indices)
         return density_matrix
 
     return wrapper
