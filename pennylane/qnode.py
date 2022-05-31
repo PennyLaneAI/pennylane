@@ -438,6 +438,8 @@ class QNode:
                     backprop_devices[mapped_interface],
                     wires=device.wires,
                     shots=device.shots,
+                    r_dtype=device.R_DTYPE,
+                    c_dtype=device.C_DTYPE
                 )
                 device.expand_fn = expand_fn
                 device.batch_transform = batch_transform
