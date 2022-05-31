@@ -237,7 +237,7 @@ def vjp(
         if device.short_name == "strawberryfields.gbs":  # pragma: no cover
             # TODO: remove this exceptional case once the source of this issue
             # https://github.com/PennyLaneAI/pennylane-sf/issues/89 is determined
-            return (return_vjps,)
+            return (return_vjps,)  # pragma: no cover
         return return_vjps
 
     return grad_fn
