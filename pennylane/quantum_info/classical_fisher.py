@@ -12,18 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Differentiable classical fisher information"""
-# pylint: disable=protected-access
 
 import pennylane as qml
+import pennylane.numpy as pnp
 
 
 def CFIM(qnode):
-    """Computing the classical fisher information matrix (CFIM) using the jacobian of the output probabilities"""
+    """Computing the classical fisher information matrix (CFIM) using the jacobian of the output probabilities
+    as described in eq. (15) in https://arxiv.org/abs/2103.15191
+    """
     new_qnode = qml.transforms._make_probs(qnode)
     jac = qml.jacobian(new_qnode)
 
     def wrapper(*args, **kwargs):
-        j = qml.math.squeeze(jac(*args, **kwargs))
+        j = jac(*args, **kwargs)
         p = qnode(*args, **kwargs)
 
         if hasattr(j, "interface"):
@@ -33,6 +35,20 @@ def CFIM(qnode):
 
         cfim = _compute_cfim(p, j, interface)
         return cfim
+
+    return wrapper
+
+def CFIM_alt(qnode):
+    """Computing the classical fisher information matrix (CFIM) by computing the hessian of log(p)
+    as described in eq. (14) in https://arxiv.org/abs/2103.15191
+    """
+    new_qnode = qml.transforms._make_probs(qnode, post_processing_fn=lambda x: qml.math.squeeze(qml.math.log(qml.math.stack(x))))
+    hessian = qml.jacobian(qml.jacobian(new_qnode)) # this is very slow, can be sped up with other interfaces
+
+    def wrapper(*args, **kwargs):
+        h = hessian(*args, **kwargs)                                # (2**n_wires, num_params, num_params)
+        p = qnode(*args, **kwargs)[:, pnp.newaxis, pnp.newaxis]     # (2**n_wires, 1, 1)
+        return -qml.math.sum(h*p, axis=0)                           # TODO: dont understand why I need the minus sign, most likely some autograd peculiarity in the hessian
 
     return wrapper
 

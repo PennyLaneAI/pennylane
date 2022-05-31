@@ -14,4 +14,4 @@
 """Differentiable quantum information module"""
 
 from .entropies import to_vn_entropy, to_mutual_info
-from .classical_fisher import CFIM, _compute_cfim
+from .classical_fisher import CFIM, CFIM_alt, _compute_cfim
