@@ -75,6 +75,11 @@
 
 <h3>Improvements</h3>
 
+* The qchem openfermion-dependent tests are localized and collected in `tests.qchem.of_tests`. The
+  new module `test_structure` is created to collect the tests of the `qchem.structure` module in
+  one place and remove their dependency to openfermion.
+  [(#2593)](https://github.com/PennyLaneAI/pennylane/pull/2593)
+
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
   for many classes.
   [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
@@ -120,6 +125,15 @@
 * Sparse Hamiltonians representation has changed from COOrdinate (COO) to Compressed Sparse Row (CSR) format. The CSR representation is more performant for arithmetic operations and matrix vector products. This change decreases the `expval()` calculation time, for `qml.SparseHamiltonian`, specially for large workflows. Also, the CRS format consumes less memory for the `qml.SparseHamiltonian` storage.
 [(#2561)](https://github.com/PennyLaneAI/pennylane/pull/2561)
 
+* A new method `safe_update_info` is added to `qml.QueuingContext`. This method is substituted
+  for `qml.QueuingContext.update_info` in a variety of places.
+  [(#2612)](https://github.com/PennyLaneAI/pennylane/pull/2612)
+
+* `BasisEmbedding` can accept an int as argument instead of a list of bits (optionally). Example: `qml.BasisEmbedding(4, wires = range(4))` is now equivalent to `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because 4=0b100). 
+  [(#2601)](https://github.com/PennyLaneAI/pennylane/pull/2601)
+
+* Introduced a new `is_hermitian` property to determine if an operator can be used in a measurement process.
+  [(#2629)](https://github.com/PennyLaneAI/pennylane/pull/2629)
 <h3>Breaking changes</h3>
 
 * The `qml.queuing.Queue` class is now removed.
@@ -157,7 +171,11 @@
 
 <h3>Bug fixes</h3>
 
-* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` or `"jax-jit"`, when requesting backpropagation.
+* Fixed a bug to make `param_shift_hessian` work with QNodes in which gates marked
+  as trainable do not have any impact on the QNode output.
+  [(#2584)](https://github.com/PennyLaneAI/pennylane/pull/2584)
+
+* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` or `"jax-jit"`, when requesting backpropagation. 
   [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
 
 * Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
@@ -201,3 +219,4 @@ This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
 Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad
+

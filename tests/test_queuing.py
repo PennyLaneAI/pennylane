@@ -217,10 +217,15 @@ class TestAnnotatedQueue:
             q.append(A, inv=True)
             assert QueuingContext.get_info(A) == {"inv": True}
 
-        assert q._get_info(A) == {"inv": True}
+            qml.QueuingContext.update_info(A, key="value1")
+
+        # should pass silently because no longer recording
+        qml.QueuingContext.update_info(A, key="value2")
+
+        assert q._get_info(A) == {"inv": True, "key": "value1"}
 
         q._update_info(A, inv=False, owner=None)
-        assert q._get_info(A) == {"inv": False, "owner": None}
+        assert q._get_info(A) == {"inv": False, "owner": None, "key": "value1"}
 
     def test_update_error(self):
         """Test that an exception is raised if get_info is called
@@ -233,6 +238,41 @@ class TestAnnotatedQueue:
 
         with pytest.raises(QueuingError, match="not in the queue"):
             q._update_info(B, inv=True)
+
+    def test_safe_update_info_queued(self):
+        """Test the `safe_update_info` method if the object is already queued."""
+        op = qml.RX(0.5, wires=1)
+
+        with AnnotatedQueue() as q:
+            q.append(op, key="value1")
+            assert q.get_info(op) == {"key": "value1"}
+            qml.QueuingContext.safe_update_info(op, key="value2")
+
+        qml.QueuingContext.safe_update_info(op, key="no changes here")
+        assert q.get_info(op) == {"key": "value2"}
+
+        q.safe_update_info(op, key="value3")
+        assert q.get_info(op) == {"key": "value3"}
+
+        q._safe_update_info(op, key="value4")
+        assert q.get_info(op) == {"key": "value4"}
+
+    def test_safe_update_info_not_queued(self):
+        """Tests the safe_update_info method passes silently if the object is
+        not already queued."""
+        op = qml.RX(0.5, wires=1)
+
+        with AnnotatedQueue() as q:
+            qml.QueuingContext.safe_update_info(op, key="value2")
+        qml.QueuingContext.safe_update_info(op, key="no changes here")
+
+        assert len(q.queue) == 0
+
+        q.safe_update_info(op, key="value3")
+        assert len(q.queue) == 0
+
+        q._safe_update_info(op, key="value4")
+        assert len(q.queue) == 0
 
     def test_append_annotating_object(self):
         """Test appending an object that writes annotations when queuing itself"""
