@@ -241,7 +241,7 @@ class DefaultQubitTorch(DefaultQubit):
                 res = torch.from_numpy(res)
                 res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
             elif len(a) == 1:
-                res = a[0]
+                res = torch.cat(a, dim=0)
             else:
                 res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
                 res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
