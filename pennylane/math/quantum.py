@@ -222,10 +222,10 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dt
         if not is_abstract(trace):
             if not allclose(trace, 1.0, atol=1e-10):
                 raise ValueError("The trace of the density matrix should be one.")
-        # Check if the matrix is hermitian
-        conj_trans = np.transpose(np.conjugate(density_matrix))
-        if not np.allclose(density_matrix, conj_trans):
-            raise ValueError("The matrix is not hermitian.")
+            # Check if the matrix is hermitian
+            conj_trans = np.transpose(np.conj(density_matrix))
+            if not allclose(density_matrix, conj_trans):
+                raise ValueError("The matrix is not hermitian.")
 
     consecutive_indices = list(range(0, num_indices))
 
