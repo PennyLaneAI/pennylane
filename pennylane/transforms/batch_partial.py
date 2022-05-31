@@ -18,7 +18,6 @@ import functools
 import inspect
 
 import pennylane as qml
-from pennylane import numpy as np
 
 
 def _convert_to_args(sig, args, kwargs):
