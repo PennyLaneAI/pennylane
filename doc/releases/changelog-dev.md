@@ -170,6 +170,8 @@
   ```
 
 <h3>Bug fixes</h3>
+* Fixed a bug where returning `qml.density_matrix` would return a density matrix with wrong shape.
+  [(#2643)](https://github.com/PennyLaneAI/pennylane/pull/2643)
 
 * Fixed a bug to make `param_shift_hessian` work with QNodes in which gates marked
   as trainable do not have any impact on the QNode output.
@@ -218,5 +220,5 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad
+Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Soran Jahangiri, Utkarsh Azad
 
