@@ -25,7 +25,6 @@ from string import ascii_letters as ABC
 
 import pennylane.numpy as np
 import pennylane.math as qnp
-import pennylane.quantum_info as pqi
 from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, QubitDensityMatrix
 from pennylane import Snapshot
 from pennylane.operation import Channel
@@ -164,7 +163,6 @@ class DefaultMixed(QubitDevice):
             array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
             representing the reduced density matrix of the state prior to measurement.
         """
-        wires = wires.tolist()
 
         state = np.reshape(self._pre_rotated_state, (2**self.num_wires, 2**self.num_wires))
         return qnp.to_density_matrix(state, wires)
@@ -180,7 +178,7 @@ class DefaultMixed(QubitDevice):
         """
         wires = wires.tolist()
         state = np.reshape(self._pre_rotated_state, (2**self.num_wires, 2**self.num_wires))
-        return pqi.to_vn_entropy(state, wires=wires)
+        return qnp.to_vn_entropy(state, wires=wires)
 
     def mutual_info(self, wires0, wires1):
         """Returns the mutual information between the two subsystems"""

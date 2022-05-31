@@ -11,6 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Differentiable quantum information module"""
+"""Differentiable quantum entropies"""
 
-from .entropies import to_vn_entropy, to_mutual_info
+import pennylane as qml
+
+
+def vn_entropy_transform(state, wires=None, base=None):
+    """Get Von Neumann entropies from a state."""
+
+    def wrapper(*args, **kwargs):
+        # Check for the QNode return type
+        density_matrix = qml.qinfo.density_matrix_transform(state, wires)(*args, **kwargs)
+        entropy = qml.math.compute_vn_entropy(density_matrix, base)
+        return entropy
+
+    return wrapper
