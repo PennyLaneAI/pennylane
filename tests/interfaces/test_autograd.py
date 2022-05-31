@@ -1160,12 +1160,18 @@ class TestCustomJacobian:
 
         dev = MyQubit(wires=2)
 
-        @qml.qnode(dev, diff_method='parameter-shift', mode="backward")
-        def qnode(params):
-            qml.RY(params[0], wires=[0])
-            return qml.expval(qml.PauliZ(0))
+        @qml.qnode(dev, diff_method="parameter-shift", mode="backward")
+        def qnode(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
 
-        params = np.array([0.2])
+        a = np.array(0.1, requires_grad=True)
+        b = np.array(0.2, requires_grad=True)
 
-        assert np.isclose(qnode(params), 0.9800665778412417)
-        assert np.isclose(qml.jacobian(qnode)(params), -0.19866933)
+        res = qml.jacobian(qnode)(a, b)
+        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+
+        assert np.allclose(res[0], expected[0])
+        assert np.allclose(res[1], expected[1])
