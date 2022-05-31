@@ -291,10 +291,17 @@ class TestDensityMatrixFromMatrix:
             fn.quantum._density_matrix_from_matrix(density_matrix, indices=[0], check_state=True)
 
     def test_matrix_wrong_trace(self):
-        """Test that state vector with wrong norm raises an error with check_state=True"""
+        """Test that density matrix with wrong trace raises an error with check_state=True"""
         density_matrix = [[0.1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
 
         with pytest.raises(ValueError, match="The trace of the density matrix should be one."):
+            fn.quantum._density_matrix_from_matrix(density_matrix, indices=[0], check_state=True)
+
+    def test_matrix_not_hermitian(self):
+        """Test that non hermitian matrix raises an error with check_state=True"""
+        density_matrix = [[0.1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0.5, 0.9]]
+
+        with pytest.raises(ValueError, match="The matrix is not hermitian."):
             fn.quantum._density_matrix_from_matrix(density_matrix, indices=[0], check_state=True)
 
     def test_density_matrix_from_state_vector_jax_jit(self):

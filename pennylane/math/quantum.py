@@ -168,14 +168,15 @@ def marginal_prob(prob, axis):
     return np.flatten(prob)
 
 
-def _density_matrix_from_matrix(density_matrix, indices, check_state=None, c_dtype="complex64"):
+def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dtype="complex64"):
     """Compute the density matrix from a state vector.
 
     Args:
-        density_matrix (tensor_like): 1D tensor state vector. This tensor should be of size ``(2**N,)`` for some
+        density_matrix (tensor_like): 2D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` for some
             integer number of wires``N``.
         indices (list(int)): List of indices in the subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
 
     Returns:
         tensor_like: Density matrix of size ``(2**len(wires), 2**len(wires))``
@@ -183,21 +184,21 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=None, c_dty
     **Example**
 
     >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
-    >>> _density_matrix_from_matrix(x, wires=[0])
+    >>> _density_matrix_from_matrix(x, indices=[0])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
     >>> y = [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
-    >>> _density_matrix_from_matrix(y, wires=[0])
+    >>> _density_matrix_from_matrix(y, indices=[0])
     [[0.5+0.j 0.5+0.j]
      [0.5+0.j 0.5+0.j]]
 
-    >>> _density_matrix_from_matrix(y, wires=[1])
+    >>> _density_matrix_from_matrix(y, indices=[1])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
     >>> z = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
-    >>> _density_matrix_from_matrix(x, wires=[1])
+    >>> _density_matrix_from_matrix(x, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
@@ -213,7 +214,7 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=None, c_dty
         if (
             len(density_matrix.shape) != 2
             or density_matrix.shape[0] != density_matrix.shape[1]
-            or np.ceil(np.log2(shape)) != np.floor(np.log2(shape))
+            or not np.log2(shape).is_integer()
         ):
             raise ValueError("Density matrix must be of shape (2**N, 2**N).")
         # Check trace
@@ -221,10 +222,14 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=None, c_dty
         if not is_abstract(trace):
             if not allclose(trace, 1.0, atol=1e-10):
                 raise ValueError("The trace of the density matrix should be one.")
+        # Check if the matrix is hermitian
+        conj_trans = np.transpose(np.conjugate(density_matrix))
+        if not np.allclose(density_matrix, conj_trans):
+            raise ValueError("The matrix is not hermitian.")
 
-    # Return the full density matrix if all the wires are given
     consecutive_indices = list(range(0, num_indices))
 
+    # Return the full density matrix if all the wires are given
     if tuple(indices) == tuple(consecutive_indices):
         return density_matrix
 
@@ -234,7 +239,7 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=None, c_dty
 
 
 def partial_trace(density_matrix, indices, c_dtype="complex64"):
-    """Compute the partial trace of a density matrix and returns the reduced density matrix on the sub-system.
+    """Compute the reduced density matrix by tracing out the provided indices.
 
     Args:
         density_matrix (tensor_like): 2D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` for some
@@ -396,7 +401,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
 
 
 def to_density_matrix(state, indices, check_state=False, c_dtype="complex64"):
-    """Compute the reduced density matrix from a state vector, a density matrix or a QNode returning ``qml.state``.
+    """Compute the reduced density matrix from a state vector, a density matrix.
 
     Args:
         state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
