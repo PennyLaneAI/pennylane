@@ -14,7 +14,6 @@
 """Unit tests for the TensorBox functional API in pennylane.fn.fn
 """
 
-import numpy as onp
 import pytest
 
 import pennylane as qml
@@ -41,14 +40,14 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     def test_state_vector_entropy(self, state_vector, wires, base, check_state, pure):
         """Test entropy for different state vectors."""
-        entropy = qml.quantum_info.entropies.to_vn_entropy(state_vector, wires, base, check_state)
+        entropy = qml.qinfo.entropies.to_vn_entropy(state_vector, wires, base, check_state)
 
         if pure:
             expected_entropy = 0
         else:
             expected_entropy = np.log(2) / np.log(base)
 
-        assert np.allclose(entropy, expected_entropy)
+        assert qml.math.allclose(entropy, expected_entropy)
 
     density_matrices = [
         ([[1 / 2, 0, 0, 1 / 2], [0, 0, 0, 0], [0, 0, 0, 0], [1 / 2, 0, 0, 1 / 2]], False),
@@ -61,14 +60,14 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     def test_density_matrices_entropy(self, density_matrix, wires, base, check_state, pure):
         """Test entropy for different density matrices."""
-        entropy = qml.quantum_info.entropies.to_vn_entropy(density_matrix, wires, base, check_state)
+        entropy = qml.qinfo.entropies.to_vn_entropy(density_matrix, wires, base, check_state)
 
         if pure:
             expected_entropy = 0
         else:
             expected_entropy = np.log(2) / np.log(base)
 
-        assert np.allclose(entropy, expected_entropy)
+        assert qml.math.allclose(entropy, expected_entropy)
 
     parameters = np.linspace(0, 2 * np.pi, 50)
     devices = ["default.qubit", "default.mixed"]
@@ -96,7 +95,7 @@ class TestVonNeumannEntropy:
         expected_entropy = -np.sum(expected_entropy)
 
         entropy = circuit_entropy(param)
-        assert np.allclose(entropy, expected_entropy)
+        assert qml.math.allclose(entropy, expected_entropy)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -123,7 +122,7 @@ class TestVonNeumannEntropy:
         expected_entropy = -np.sum(expected_entropy)
 
         entropy = circuit_entropy(torch.tensor(param))
-        assert np.allclose(entropy, expected_entropy)
+        assert qml.math.allclose(entropy, expected_entropy)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -150,7 +149,7 @@ class TestVonNeumannEntropy:
         expected_entropy = -np.sum(expected_entropy)
 
         entropy = circuit_entropy(tf.Variable(param))
-        assert np.allclose(entropy, expected_entropy)
+        assert qml.math.allclose(entropy, expected_entropy)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -177,4 +176,4 @@ class TestVonNeumannEntropy:
         expected_entropy = -np.sum(expected_entropy)
 
         entropy = circuit_entropy(jnp.array(param))
-        assert np.allclose(entropy, expected_entropy)
+        assert qml.math.allclose(entropy, expected_entropy)
