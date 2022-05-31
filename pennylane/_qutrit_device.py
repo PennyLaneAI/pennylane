@@ -681,7 +681,73 @@ class QutritDevice(Device):
 
     # TODO: Implement function
     def marginal_prob(self, prob, wires=None):
-        pass
+        r"""Return the marginal probability of the computational basis
+        states by summing the probabiliites on the non-specified wires.
+
+        If no wires are specified, then all the basis states representable by
+        the device are considered and no marginalization takes place.
+
+        .. note::
+
+            If the provided wires are not in the order as they appear on the device,
+            the returned marginal probabilities take this permutation into account.
+
+            For example, if the addressable wires on this device are ``Wires([0, 1, 2])`` and
+            this function gets passed ``wires=[2, 0]``, then the returned marginal
+            probability vector will take this 'reversal' of the two wires
+            into account:
+
+            .. math::
+
+                \mathbb{P}^{(2, 0)}
+                            = \left[
+                               |00\rangle, |10\rangle, |01\rangle, |11\rangle
+                              \right]
+
+        Args:
+            prob: The probabilities to return the marginal probabilities
+                for
+            wires (Iterable[Number, str], Number, str, Wires): wires to return
+                marginal probabilities for. Wires not provided
+                are traced out of the system.
+
+        Returns:
+            array[float]: array of the resulting marginal probabilities.
+        """
+
+        if wires is None:
+            # no need to marginalize
+            return prob
+
+        wires = Wires(wires)
+        # determine which subsystems are to be summed over
+        inactive_wires = Wires.unique_wires([self.wires, wires])
+
+        # translate to wire labels used by device
+        device_wires = self.map_wires(wires)
+        inactive_device_wires = self.map_wires(inactive_wires)
+
+        # reshape the probability so that each axis corresponds to a wire
+        prob = self._reshape(prob, [3] * self.num_wires)
+
+        # sum over all inactive wires
+        # hotfix to catch when default.qubit uses this method
+        # since then device_wires is a list
+        if isinstance(inactive_device_wires, Wires):
+            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
+        else:
+            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires))
+
+        # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
+        # If this is the case, we must permute the marginalized probability so that
+        # it corresponds to the orders of the wires passed.
+        num_wires = len(device_wires)
+        basis_states = self.generate_basis_states(num_wires)
+        basis_states = basis_states[:, np.argsort(np.argsort(device_wires))]
+
+        powers_of_three = 3 ** np.arange(len(device_wires))[::-1]
+        perm = basis_states @ powers_of_three
+        return self._gather(prob, perm)
 
     def expval(self, observable, shot_range=None, bin_size=None):
 

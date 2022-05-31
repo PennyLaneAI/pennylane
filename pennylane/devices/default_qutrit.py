@@ -5,14 +5,14 @@ It implements the :class:`~pennylane._device.Device` methods as well as some bui
 :mod:`qutrit operations <pennylane.ops.qutrit>`, and provides a simple pure state
 simulation of qutrit-based quantum circuit architecture
 """
-import functools
+import functools, itertools
 import numpy as np
 
 import pennylane as qml
 from pennylane import QutritDevice, DeviceError
 from pennylane.wires import Wires, WireError
 from .._version import __version__
-from default_qubit import _get_slice
+from .default_qubit import _get_slice
 
 from pennylane.measurements import MeasurementProcess
 
@@ -36,12 +36,17 @@ class DefaultQutrit(QutritDevice):
     short_name = "default.qutrit"
     pennylane_requires = __version__
     version = __version__
-    # TODO: Add author
+    author = "Mudit Pandey"
 
     # TODO: Add list of operations and observables
-    operations = {}
+    operations = {
+        "QutritUnitary",
+        "ControlledQutritUnitary"
+    }
 
-    observables = {}
+    observables = {
+        "QutritUnitary"
+    }
 
     def __init__(
         self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None,
@@ -133,9 +138,9 @@ class DefaultQutrit(QutritDevice):
 
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 
-        if len(wires) <= 2:
-            # Einsum is faster for small gates
-            return self._apply_unitary_einsum(state, matrix, wires)
+        # if len(wires) <= 2:
+        #     # Einsum is faster for small gates
+        #     return self._apply_unitary_einsum(state, matrix, wires)
 
         return self._apply_unitary(state, matrix, wires)
 
@@ -216,21 +221,105 @@ class DefaultQutrit(QutritDevice):
 
         return density_matrix
 
-    # TODO: Implement function
     def _apply_state_vector(self, state, device_wires):
-        pass
+        """Initialize the internal state vector in a specified state.
 
-    # TODO: Implement function
+        Args:
+            state (array[complex]): normalized input state of length
+                ``3**len(wires)``
+            device_wires (Wires): wires that get initialized in the state
+        """
+
+        # translate to wire labels used by device
+        device_wires = self.map_wires(device_wires)
+
+        state = self._asarray(state, dtype=self.C_DTYPE)
+        n_state_vector = state.shape[0]
+
+        if len(qml.math.shape(state)) != 1 or n_state_vector != 3 ** len(device_wires):
+            raise ValueError("State vector must be of length 3**wires.")
+
+        norm = qml.math.linalg.norm(state, ord=2)
+        if not qml.math.is_abstract(norm):
+            if not qml.math.allclose(norm, 1.0, atol=tolerance):
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
+
+        if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
+            # Initialize the entire wires with the state
+            self._state = self._reshape(state, [3] * self.num_wires)
+            return
+
+        # generate basis states on subset of qubits via the cartesian product
+        basis_states = np.array(list(itertools.product([0, 1, 2], repeat=len(device_wires))))
+
+        # get basis states to alter on full set of qubits
+        unravelled_indices = np.zeros((3 ** len(device_wires), self.num_wires), dtype=int)
+        unravelled_indices[:, device_wires] = basis_states
+
+        # get indices for which the state is changed to input state vector elements
+        ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [3] * self.num_wires)
+
+        state = self._scatter(ravelled_indices, state, [3**self.num_wires])
+        state = self._reshape(state, [3] * self.num_wires)
+        self._state = self._asarray(state, dtype=self.C_DTYPE)
+
     def _apply_basis_state(self, state, wires):
-        pass
+        """Initialize the state vector in a specified computational basis state.
 
-    # TODO: Implement function
+        Args:
+            state (array[int]): computational basis state of shape ``(wires,)``
+                consisting of 0s, 1s and 2s.
+            wires (Wires): wires that the provided computational state should be initialized on
+        """
+        # translate to wire labels used by device
+        device_wires = self.map_wires(wires)
+
+        # length of basis state parameter
+        n_basis_state = len(state)
+
+        if not set(state.tolist()).issubset({0, 1, 2}):
+            raise ValueError("BasisState parameter must consist of 0, 1, or 2 integers.")
+
+        if n_basis_state != len(device_wires):
+            raise ValueError("BasisState parameter and wires must be of equal length.")
+
+        # get computational basis state number
+        basis_states = 3 ** (self.num_wires - 1 - np.array(device_wires))
+        basis_states = qml.math.convert_like(basis_states, state)
+        num = int(qml.math.dot(state, basis_states))
+
+        self._state = self._create_basis_state(num)
+
     def _apply_unitary(self, state, mat, wires):
-        pass
+        r"""Apply multiplication of a matrix to subsystems of the quantum state.
+
+        Args:
+            state (array[complex]): input state
+            mat (array): matrix to multiply
+            wires (Wires): target wires
+
+        Returns:
+            array[complex]: output state
+        """
+        # translate to wire labels used by device
+        device_wires = self.map_wires(wires)
+
+        mat = self._cast(self._reshape(mat, [3] * len(device_wires) * 2), dtype=self.C_DTYPE)
+        axes = (np.arange(len(device_wires), 3 * len(device_wires)), device_wires)
+        tdot = self._tensordot(mat, state, axes=axes)
+
+        # tensordot causes the axes given in `wires` to end up in the first positions
+        # of the resulting tensor. This corresponds to a (partial) transpose of
+        # the correct output state
+        # We'll need to invert this permutation to put the indices in the correct place
+        unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires]
+        perm = list(device_wires) + unused_idxs
+        inv_perm = np.argsort(perm)  # argsort gives inverse permutation
+        return self._transpose(tdot, inv_perm)
 
     # TODO: Implement function
-    def _apply_unitary_einsum(self, state, mat, wires):
-        pass
+    # def _apply_unitary_einsum(self, state, mat, wires):
+    #     pass
 
     def reset(self):
         """Reset the device"""
