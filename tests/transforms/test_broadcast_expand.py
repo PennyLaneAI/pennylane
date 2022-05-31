@@ -18,14 +18,14 @@ import pennylane as qml
 from pennylane import numpy as pnp
 
 
-class RX_batched(qml.RX):
+class RX_broadcasted(qml.RX):
     """A version of qml.RX that detects batching."""
 
     ndim_params = (0,)
     compute_decomposition = staticmethod(lambda theta, wires=None: qml.RX(theta, wires=wires))
 
 
-class RZ_batched(qml.RZ):
+class RZ_broadcasted(qml.RZ):
     """A version of qml.RZ that detects batching."""
 
     ndim_params = (0,)
@@ -40,10 +40,10 @@ def make_tape(x, y, z, obs):
     """Construct a tape with three parametrized, two unparametrized
     operations and expvals of provided observables."""
     with qml.tape.QuantumTape() as tape:
-        RX_batched(x, wires=0)
+        RX_broadcasted(x, wires=0)
         qml.PauliY(0)
-        RX_batched(y, wires=1)
-        RZ_batched(z, wires=1)
+        RX_broadcasted(y, wires=1)
+        RZ_broadcasted(z, wires=1)
         qml.Hadamard(1)
         for ob in obs:
             qml.expval(ob)

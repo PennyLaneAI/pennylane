@@ -32,9 +32,9 @@ from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, no-member, protected-access, pointless-statement
 
-Toffoli_batched = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
-CNOT_batched = np.tensordot([1.4], CNOT, axes=0)
-I_batched = I[pnp.newaxis]
+Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
+CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
+I_broadcasted = I[pnp.newaxis]
 
 
 @pytest.mark.parametrize(
@@ -166,25 +166,25 @@ class TestOperatorConstruction:
             num_wires = 1
 
         # Test with mismatching batch dimensions
-        with pytest.raises(ValueError, match="Batching was attempted but the batched dimensions"):
+        with pytest.raises(ValueError, match="Broadcasting was attempted but the broadcasted"):
             DummyOp4([0.3] * 4, [[[0.3, 1.2]]] * 3, wires=0)
 
-    batched_params_test_data = [
-        # Test with no parameter batched
+    broadcasted_params_test_data = [
+        # Test with no parameter broadcasted
         ((0.3, [[0.3, 1.2]]), None),
-        # Test with both parameters batched with same dimension
+        # Test with both parameters broadcasted with same dimension
         (([0.3], [[[0.3, 1.2]]]), 1),
         (([0.3] * 3, [[[0.3, 1.2]]] * 3), 3),
-        # Test with one parameter batched
+        # Test with one parameter broadcasted
         ((0.3, [[[0.3, 1.2]]]), 1),
         ((0.3, [[[0.3, 1.2]]] * 3), 3),
         (([0.3], [[0.3, 1.2]]), 1),
         (([0.3] * 3, [[0.3, 1.2]]), 3),
     ]
 
-    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
-    def test_batched_params(self, params, exp_batch_size):
-        r"""Test that initialization of an operator with batched parameters
+    @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
+    def test_broadcasted_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with broadcasted parameters
         works and sets the ``batch_size`` correctly."""
 
         class DummyOp(qml.operation.Operator):
@@ -197,9 +197,9 @@ class TestOperatorConstruction:
         assert op._batch_size == exp_batch_size
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
-    def test_batched_params(self, params, exp_batch_size):
-        r"""Test that initialization of an operator with batched parameters
+    @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
+    def test_broadcasted_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with broadcasted parameters
         works and sets the ``batch_size`` correctly with Autograd parameters."""
 
         class DummyOp(qml.operation.Operator):
@@ -213,9 +213,9 @@ class TestOperatorConstruction:
         assert op._batch_size == exp_batch_size
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
-    def test_batched_params(self, params, exp_batch_size):
-        r"""Test that initialization of an operator with batched parameters
+    @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
+    def test_broadcasted_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with broadcasted parameters
         works and sets the ``batch_size`` correctly with JAX parameters."""
         import jax
 
@@ -230,9 +230,9 @@ class TestOperatorConstruction:
         assert op._batch_size == exp_batch_size
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
-    def test_batched_params(self, params, exp_batch_size):
-        r"""Test that initialization of an operator with batched parameters
+    @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
+    def test_broadcasted_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with broadcasted parameters
         works and sets the ``batch_size`` correctly with TensorFlow parameters."""
         import tensorflow as tf
 
@@ -247,9 +247,9 @@ class TestOperatorConstruction:
         assert op._batch_size == exp_batch_size
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("params, exp_batch_size", batched_params_test_data)
-    def test_batched_params(self, params, exp_batch_size):
-        r"""Test that initialization of an operator with batched parameters
+    @pytest.mark.parametrize("params, exp_batch_size", broadcasted_params_test_data)
+    def test_broadcasted_params(self, params, exp_batch_size):
+        r"""Test that initialization of an operator with broadcasted parameters
         works and sets the ``batch_size`` correctly with Torch parameters."""
         import torch
 
@@ -264,7 +264,7 @@ class TestOperatorConstruction:
         assert op._batch_size == exp_batch_size
 
     @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
-    def test_error_batched_params_not_silenced(self):
+    def test_error_broadcasted_params_not_silenced(self):
         """Handling tf.function properly requires us to catch a specific
         error and to silence it. Here we test it does not silence others."""
 
@@ -608,6 +608,17 @@ class TestOperationConstruction:
         op = DummyOp(1.0, wires=0, id="test")
         assert op.control_wires == qml.wires.Wires([])
 
+    def test_is_hermitian(self):
+        """Test that is_hermitian defaults to False for an Operator"""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            grad_method = None
+
+        op = DummyOp(wires=0)
+        assert op.is_hermitian is False
+
 
 class TestObservableConstruction:
     """Test custom observables construction."""
@@ -718,6 +729,17 @@ class TestObservableConstruction:
 
         with pytest.raises(Exception, match="Must specify the wires *"):
             DummyObservable()
+
+    def test_is_hermitian(self):
+        """Test that the id attribute of an observable can be set."""
+
+        class DummyObserv(qml.operation.Observable):
+            r"""Dummy custom observable"""
+            num_wires = 1
+            grad_method = None
+
+        op = DummyObserv(wires=0)
+        assert op.is_hermitian is True
 
 
 class TestOperatorIntegration:
@@ -869,13 +891,9 @@ class TestTensor:
         with qml.tape.QuantumTape() as tape:
             T.queue()
 
-        assert len(tape.queue) == 3
-        assert tape.queue[0] is op1
-        assert tape.queue[1] is op2
-        assert tape.queue[2] is T
+        assert len(tape.queue) == 1
+        assert tape.queue[0] is T
 
-        assert tape._queue[op1] == {"owner": T}
-        assert tape._queue[op2] == {"owner": T}
         assert tape._queue[T] == {"owns": (op1, op2)}
 
     def test_queuing(self):
@@ -895,7 +913,7 @@ class TestTensor:
         assert tape._queue[op2] == {"owner": T}
         assert tape._queue[T] == {"owns": (op1, op2)}
 
-    def test_queuing_matmul(self):
+    def test_queuing_observable_matmul(self):
         """Test queuing when tensor constructed with matmul."""
 
         with qml.tape.QuantumTape() as tape:
@@ -907,6 +925,36 @@ class TestTensor:
         assert tape._queue[op1] == {"owner": t}
         assert tape._queue[op2] == {"owner": t}
         assert tape._queue[t] == {"owns": (op1, op2)}
+
+    def test_queuing_tensor_matmul(self):
+        """Tests the tensor-specific matmul method updates queuing metadata."""
+
+        with qml.tape.QuantumTape() as tape:
+            op1 = qml.PauliX(0)
+            op2 = qml.PauliY(1)
+            t = Tensor(op1, op2)
+
+            op3 = qml.PauliZ(2)
+            t2 = t @ op3
+
+        assert tape._queue[t2] == {"owns": (op1, op2, op3)}
+        assert tape._queue[op3] == {"owner": t2}
+
+    def test_queuing_tensor_rmatmul(self):
+        """Tests tensor-specific rmatmul updates queuing metatadata."""
+
+        with qml.tape.QuantumTape() as tape:
+            op1 = qml.PauliX(0)
+            op2 = qml.PauliY(1)
+
+            t1 = op1 @ op2
+
+            op3 = qml.PauliZ(3)
+
+            t2 = op3 @ t1
+
+        assert tape._queue[op3] == {"owner": t2}
+        assert tape._queue[t2] == {"owns": (op3, op1, op2)}
 
     def test_name(self):
         """Test that the names of the observables are
@@ -1671,7 +1719,7 @@ class TestInheritedRepresentations:
         eigvals = op.eigvals()
         assert np.allclose(eigvals, [1.6 * theta, -0.8 * theta])
 
-        # Test with batched parameter
+        # Test with broadcasted parameter
         theta = np.array([0.3, 0.9, 1.2])
         op = MyOpWithMat(theta, wires=1)
         eigvals = op.eigvals()
@@ -1916,21 +1964,21 @@ class TestExpandMatrix:
     """Tests for the expand_matrix helper function."""
 
     base_matrix_1 = np.arange(1, 5).reshape((2, 2))
-    base_matrix_1_batched = np.arange(1, 13).reshape((3, 2, 2))
+    base_matrix_1_broadcasted = np.arange(1, 13).reshape((3, 2, 2))
     base_matrix_2 = np.arange(1, 17).reshape((4, 4))
-    base_matrix_2_batched = np.arange(1, 49).reshape((3, 4, 4))
+    base_matrix_2_broadcasted = np.arange(1, 49).reshape((3, 4, 4))
 
     def test_no_expansion(self):
         """Tests the case where the original matrix is not changed"""
         res = qml.operation.expand_matrix(self.base_matrix_2, wires=[0, 2], wire_order=[0, 2])
         assert np.allclose(self.base_matrix_2, res)
 
-    def test_no_expansion_batched(self):
-        """Tests the case where the batched original matrix is not changed"""
+    def test_no_expansion_broadcasted(self):
+        """Tests the case where the broadcasted original matrix is not changed"""
         res = qml.operation.expand_matrix(
-            self.base_matrix_2_batched, wires=[0, 2], wire_order=[0, 2]
+            self.base_matrix_2_broadcasted, wires=[0, 2], wire_order=[0, 2]
         )
-        assert np.allclose(self.base_matrix_2_batched, res)
+        assert np.allclose(self.base_matrix_2_broadcasted, res)
 
     def test_permutation(self):
         """Tests the case where the original matrix is permuted"""
@@ -1939,14 +1987,14 @@ class TestExpandMatrix:
         expected = np.array([[1, 3, 2, 4], [9, 11, 10, 12], [5, 7, 6, 8], [13, 15, 14, 16]])
         assert np.allclose(expected, res)
 
-    def test_permutation_batched(self):
-        """Tests the case where the batched original matrix is permuted"""
+    def test_permutation_broadcasted(self):
+        """Tests the case where the broadcasted original matrix is permuted"""
         res = qml.operation.expand_matrix(
-            self.base_matrix_2_batched, wires=[0, 2], wire_order=[2, 0]
+            self.base_matrix_2_broadcasted, wires=[0, 2], wire_order=[2, 0]
         )
 
         perm = [0, 2, 1, 3]
-        expected = self.base_matrix_2_batched[:, perm][:, :, perm]
+        expected = self.base_matrix_2_broadcasted[:, perm][:, :, perm]
         assert np.allclose(expected, res)
 
     def test_expansion(self):
@@ -1959,9 +2007,9 @@ class TestExpandMatrix:
         expected = np.array([[1, 0, 2, 0], [0, 1, 0, 2], [3, 0, 4, 0], [0, 3, 0, 4]])
         assert np.allclose(expected, res)
 
-    def test_expansion_batched(self):
-        """Tests the case where the batched original matrix is expanded"""
-        res = qml.operation.expand_matrix(self.base_matrix_1_batched, wires=[2], wire_order=[0, 2])
+    def test_expansion_broadcasted(self):
+        """Tests the case where the broadcasted original matrix is expanded"""
+        res = qml.operation.expand_matrix(self.base_matrix_1_broadcasted, wires=[2], wire_order=[0, 2])
         expected = np.array(
             [
                 [
@@ -1986,7 +2034,7 @@ class TestExpandMatrix:
         )
         assert np.allclose(expected, res)
 
-        res = qml.operation.expand_matrix(self.base_matrix_1_batched, wires=[2], wire_order=[2, 0])
+        res = qml.operation.expand_matrix(self.base_matrix_1_broadcasted, wires=[2], wire_order=[2, 0])
         expected = np.array(
             [
                 [
@@ -2039,13 +2087,13 @@ class TestExpandMatrix:
     for ind in indices:
         expected_autodiff_nobatch[ind] = 1.0
 
-    # When using tensor-batching, the expected Jacobian
+    # When using broadcasting, the expected Jacobian
     # of func_for_autodiff is diagonal in the dimensions 0 and 3
-    expected_autodiff_batched = np.zeros((3, 4, 4, 3, 2, 2), dtype=float)
+    expected_autodiff_broadcasted = np.zeros((3, 4, 4, 3, 2, 2), dtype=float)
     for ind in indices:
-        expected_autodiff_batched[:, ind[0], ind[1], :, ind[2], ind[3]] = np.eye(3)
+        expected_autodiff_broadcasted[:, ind[0], ind[1], :, ind[2], ind[3]] = np.eye(3)
 
-    expected_autodiff = [expected_autodiff_nobatch, expected_autodiff_batched]
+    expected_autodiff = [expected_autodiff_nobatch, expected_autodiff_broadcasted]
 
     @pytest.mark.autograd
     @pytest.mark.parametrize(
@@ -2145,8 +2193,8 @@ class TestExpandMatrix:
         expected = np.kron(np.kron(I, I), U)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_one_batched(self, tol):
-        """Test that a batched 1 qubit gate correctly expands to 3 qubits."""
+    def test_expand_one_broadcasted(self, tol):
+        """Test that a broadcasted 1 qubit gate correctly expands to 3 qubits."""
         U = np.array(
             [
                 [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
@@ -2157,17 +2205,17 @@ class TestExpandMatrix:
         U = np.tensordot([0.14, -0.23, 1.3j], U, axes=0)
         # test applied to wire 0
         res = qml.operation.expand_matrix(U, [0], [0, 4, 9])
-        expected = np.kron(np.kron(U, I_batched), I_batched)
+        expected = np.kron(np.kron(U, I_broadcasted), I_broadcasted)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 4
         res = qml.operation.expand_matrix(U, [4], [0, 4, 9])
-        expected = np.kron(np.kron(I_batched, U), I_batched)
+        expected = np.kron(np.kron(I_broadcasted, U), I_broadcasted)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 9
         res = qml.operation.expand_matrix(U, [9], [0, 4, 9])
-        expected = np.kron(np.kron(I_batched, I_batched), U)
+        expected = np.kron(np.kron(I_broadcasted, I_broadcasted), U)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_two_consecutive_wires(self, tol):
@@ -2190,25 +2238,25 @@ class TestExpandMatrix:
         expected = np.kron(np.kron(I, I), U2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_two_consecutive_wires_batched(self, tol):
-        """Test that a batched 2 qubit gate on consecutive wires correctly
+    def test_expand_two_consecutive_wires_broadcasted(self, tol):
+        """Test that a broadcasted 2 qubit gate on consecutive wires correctly
         expands to 4 qubits."""
         U2 = np.array([[0, 1, 1, 1], [1, 0, 1, -1], [1, -1, 0, 1], [1, 1, -1, 0]]) / np.sqrt(3)
         U2 = np.tensordot([2.31, 1.53, 0.7 - 1.9j], U2, axes=0)
 
         # test applied to wire 0+1
         res = qml.operation.expand_matrix(U2, [0, 1], [0, 1, 2, 3])
-        expected = np.kron(np.kron(U2, I_batched), I_batched)
+        expected = np.kron(np.kron(U2, I_broadcasted), I_broadcasted)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 1+2
         res = qml.operation.expand_matrix(U2, [1, 2], [0, 1, 2, 3])
-        expected = np.kron(np.kron(I_batched, U2), I_batched)
+        expected = np.kron(np.kron(I_broadcasted, U2), I_broadcasted)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 2+3
         res = qml.operation.expand_matrix(U2, [2, 3], [0, 1, 2, 3])
-        expected = np.kron(np.kron(I_batched, I_batched), U2)
+        expected = np.kron(np.kron(I_broadcasted, I_broadcasted), U2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_two_reversed_wires(self, tol):
@@ -2220,13 +2268,13 @@ class TestExpandMatrix:
         expected = np.kron(np.kron(CNOT[:, rows][rows], I), I)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_two_reversed_wires_batched(self, tol):
-        """Test that a batched 2 qubit gate on reversed consecutive wires correctly
+    def test_expand_two_reversed_wires_broadcasted(self, tol):
+        """Test that a broadcasted 2 qubit gate on reversed consecutive wires correctly
         expands to 4 qubits."""
         # CNOT with target on wire 1 and a batch dimension of size 1
-        res = qml.operation.expand_matrix(CNOT_batched, [1, 0], [0, 1, 2, 3])
+        res = qml.operation.expand_matrix(CNOT_broadcasted, [1, 0], [0, 1, 2, 3])
         rows = [0, 2, 1, 3]
-        expected = np.kron(np.kron(CNOT_batched[:, :, rows][:, rows], I_batched), I_batched)
+        expected = np.kron(np.kron(CNOT_broadcasted[:, :, rows][:, rows], I_broadcasted), I_broadcasted)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_three_consecutive_wires(self, tol):
@@ -2242,17 +2290,17 @@ class TestExpandMatrix:
         expected = np.kron(I, Toffoli)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_three_consecutive_wires_batched(self, tol):
-        """Test that a batched 3 qubit gate on consecutive
+    def test_expand_three_consecutive_wires_broadcasted(self, tol):
+        """Test that a broadcasted 3 qubit gate on consecutive
         wires correctly expands to 4 qubits."""
         # test applied to wire 0,1,2
-        res = qml.operation.expand_matrix(Toffoli_batched, [0, 1, 2], [0, 1, 2, 3])
-        expected = np.kron(Toffoli_batched, I_batched)
+        res = qml.operation.expand_matrix(Toffoli_broadcasted, [0, 1, 2], [0, 1, 2, 3])
+        expected = np.kron(Toffoli_broadcasted, I_broadcasted)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 1,2,3
-        res = qml.operation.expand_matrix(Toffoli_batched, [1, 2, 3], [0, 1, 2, 3])
-        expected = np.kron(I_batched, Toffoli_batched)
+        res = qml.operation.expand_matrix(Toffoli_broadcasted, [1, 2, 3], [0, 1, 2, 3])
+        expected = np.kron(I_broadcasted, Toffoli_broadcasted)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_three_nonconsecutive_ascending_wires(self, tol):
@@ -2268,15 +2316,15 @@ class TestExpandMatrix:
         expected = np.kron(II, SWAP) @ np.kron(Toffoli, I) @ np.kron(II, SWAP)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_three_nonconsecutive_ascending_wires_batched(self, tol):
-        """Test that a batched 3 qubit gate on non-consecutive but ascending
+    def test_expand_three_nonconsecutive_ascending_wires_broadcasted(self, tol):
+        """Test that a broadcasted 3 qubit gate on non-consecutive but ascending
         wires correctly expands to 4 qubits."""
         # test applied to wire 0,2,3
-        res = qml.operation.expand_matrix(Toffoli_batched[:1], [0, 2, 3], [0, 1, 2, 3])
+        res = qml.operation.expand_matrix(Toffoli_broadcasted[:1], [0, 2, 3], [0, 1, 2, 3])
         expected = np.tensordot(
             np.tensordot(
                 np.kron(SWAP, II),
-                np.kron(I_batched, Toffoli_batched[:1]),
+                np.kron(I_broadcasted, Toffoli_broadcasted[:1]),
                 axes=[[1], [1]],
             ),
             np.kron(SWAP, II),
@@ -2286,11 +2334,11 @@ class TestExpandMatrix:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 0,1,3
-        res = qml.operation.expand_matrix(Toffoli_batched, [0, 1, 3], [0, 1, 2, 3])
+        res = qml.operation.expand_matrix(Toffoli_broadcasted, [0, 1, 3], [0, 1, 2, 3])
         expected = np.tensordot(
             np.tensordot(
                 np.kron(II, SWAP),
-                np.kron(Toffoli_batched, I_batched),
+                np.kron(Toffoli_broadcasted, I_broadcasted),
                 axes=[[1], [1]],
             ),
             np.kron(II, SWAP),
@@ -2316,24 +2364,24 @@ class TestExpandMatrix:
         expected = np.kron(SWAP, II) @ np.kron(I, Toffoli_perm) @ np.kron(SWAP, II)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_expand_three_nonconsecutive_nonascending_wires_batched(self, tol):
-        """Test that a batched 3 qubit gate on non-consecutive non-ascending
+    def test_expand_three_nonconsecutive_nonascending_wires_broadcasted(self, tol):
+        """Test that a broadcasted 3 qubit gate on non-consecutive non-ascending
         wires correctly expands to 4 qubits"""
         # test applied to wire 3, 1, 2
-        res = qml.operation.expand_matrix(Toffoli_batched, [3, 1, 2], [0, 1, 2, 3])
+        res = qml.operation.expand_matrix(Toffoli_broadcasted, [3, 1, 2], [0, 1, 2, 3])
         # change the control qubit on the Toffoli gate
         rows = [0, 4, 1, 5, 2, 6, 3, 7]
-        Toffoli_batched_perm = Toffoli_batched[:, :, rows][:, rows]
-        expected = np.kron(I_batched, Toffoli_batched_perm)
+        Toffoli_broadcasted_perm = Toffoli_broadcasted[:, :, rows][:, rows]
+        expected = np.kron(I_broadcasted, Toffoli_broadcasted_perm)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         # test applied to wire 3, 0, 2
-        res = qml.operation.expand_matrix(Toffoli_batched, [3, 0, 2], [0, 1, 2, 3])
+        res = qml.operation.expand_matrix(Toffoli_broadcasted, [3, 0, 2], [0, 1, 2, 3])
         # change the control qubit on the Toffoli gate
         expected = np.tensordot(
             np.tensordot(
                 np.kron(SWAP, II),
-                np.kron(I_batched, Toffoli_batched_perm),
+                np.kron(I_broadcasted, Toffoli_broadcasted_perm),
                 axes=[[1], [1]],
             ),
             np.kron(SWAP, II),
@@ -2373,17 +2421,17 @@ class TestExpandMatrix:
         assert np.allclose(op.matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
         assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
 
-    def test_expand_matrix_usage_in_operator_class_batched(self, tol):
-        """Tests that the method is used correctly with a batched matrix by defining
+    def test_expand_matrix_usage_in_operator_class_broadcasted(self, tol):
+        """Tests that the method is used correctly with a broadcasted matrix by defining
         a dummy operator and checking the permutation/expansion."""
 
         perm = [0, 2, 1, 3]
-        permuted_matrix = self.base_matrix_2_batched[:, perm][:, :, perm]
+        permuted_matrix = self.base_matrix_2_broadcasted[:, perm][:, :, perm]
 
         expanded_matrix = np.tensordot(
             np.tensordot(
                 np.kron(SWAP, I),
-                np.kron(I_batched, self.base_matrix_2_batched),
+                np.kron(I_broadcasted, self.base_matrix_2_broadcasted),
                 axes=[[1], [1]],
             ),
             np.kron(SWAP, I),
@@ -2395,10 +2443,10 @@ class TestExpandMatrix:
             num_wires = 2
 
             def compute_matrix(*params, **hyperparams):
-                return self.base_matrix_2_batched
+                return self.base_matrix_2_broadcasted
 
         op = DummyOp(wires=[0, 2])
-        assert np.allclose(op.matrix(), self.base_matrix_2_batched, atol=tol)
+        assert np.allclose(op.matrix(), self.base_matrix_2_broadcasted, atol=tol)
         assert np.allclose(op.matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
         assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
 

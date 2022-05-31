@@ -200,7 +200,7 @@ representation using ``np.linalg.eigvals``, which fails for some tensor types th
 may be cast in on backpropagation devices.
 """
 
-supports_tensorbatching = Attribute(
+supports_broadcasting = Attribute(
     [
         "QubitUnitary",
         "ControlledQubitUnitary",
@@ -225,3 +225,9 @@ supports_tensorbatching = Attribute(
         "IsingZZ",
     ]
 )
+"""Attribute: Operations that support parameter broadcasting.
+
+For such operations, the input parameters are allowed to have a single leading additional
+broadcasting dimension, creating the operation with a ``batch_size`` and leading to
+broadcasted tapes when used in a ``QuantumTape``.
+"""

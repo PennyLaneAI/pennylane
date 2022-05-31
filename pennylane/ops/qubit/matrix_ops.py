@@ -75,7 +75,7 @@ class QubitUnitary(Operation):
 
             if not (len(U_shape) in {2, 3} and U_shape[-2:] == (dim, dim)):
                 raise ValueError(
-                    f"Input unitary must be of shape {(dim, dim)} or ({dim, dim}, batch_size) "
+                    f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
                     f"to act on {len(wires)} wires."
                 )
 
@@ -83,13 +83,10 @@ class QubitUnitary(Operation):
             # here we issue a warning to check the operation, instead of raising an error outright.
             if not (
                 qml.math.is_abstract(U)
-                or all(
-                    qml.math.allclose(
-                        qml.math.dot(_U, qml.math.T(qml.math.conj(_U))),
-                        qml.math.eye(dim),
-                        atol=1e-6,
-                    )
-                    for _U in (U if len(U_shape) == 3 else [U])
+                or qml.math.allclose(
+                    qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
+                    qml.math.eye(dim),
+                    atol=1e-6,
                 )
             ):
                 warnings.warn(
@@ -307,7 +304,10 @@ class ControlledQubitUnitary(QubitUnitary):
         target_dim = 2 ** len(u_wires)
         shape = qml.math.shape(U)
         if not (len(shape) in {2, 3} and shape[-2:] == (target_dim, target_dim)):
-            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)} or ({target_dim}, {target_dim}, batch_size).")
+            raise ValueError(
+                f"Input unitary must be of shape {(target_dim, target_dim)} or "
+                f"(batch_size, {target_dim}, {target_dim})."
+            )
 
         # A multi-controlled operation is a block-diagonal matrix partitioned into
         # blocks where the operation being applied sits in the block positioned at
@@ -421,7 +421,7 @@ class DiagonalQubitUnitary(Operation):
             raise ValueError("Operator must be unitary.")
 
         # The diagonal is supposed to have one-dimension. If it is broadcasted, it has two
-        if len(qml.math.shape(D)) == 2:
+        if qml.math.ndim(D) == 2:
             return qml.math.stack([qml.math.diag(_D) for _D in D])
 
         return qml.math.diag(D)
