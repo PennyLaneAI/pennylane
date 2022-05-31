@@ -194,7 +194,7 @@ class TestNonLazyExecution:
         assert out.data == [-x]
 
     def test_single_nondecomposable_op_function(self):
-        """Test lazy=False for a single op that can't be decomposed."""
+        """Test lazy=False for a single op function that can't be decomposed."""
         with qml.tape.QuantumTape() as tape:
             out = adjoint(qml.S, lazy=False)(0)
 
