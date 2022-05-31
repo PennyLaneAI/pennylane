@@ -296,7 +296,7 @@ class QubitDevice(Device):
                     if len(results) == 1:
                         results = self._asarray(results[0], dtype=self.C_DTYPE)
                     else:
-                        results = self._asarray(results[0], dtype=self.C_DTYPE)
+                        results = self._asarray(results, dtype=self.C_DTYPE)
                 else:
                     # Measurements with expval, var or probs
                     if len(results) == 1:
