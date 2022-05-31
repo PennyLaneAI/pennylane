@@ -179,7 +179,7 @@
   [(#2525)](https://github.com/PennyLaneAI/pennylane/pull/2525)
 
 * Updated the gradients fix [(#2485)](https://github.com/PennyLaneAI/pennylane/pull/2485) to only apply to the `strawberryfields.gbs` device, since
-  code change was breaking some devices. [(#2595)](https://github.com/PennyLaneAI/pennylane/pull/2595)
+  the original logic was breaking some devices. [(#2595)](https://github.com/PennyLaneAI/pennylane/pull/2595)
 
 <h3>Deprecations</h3>
 
