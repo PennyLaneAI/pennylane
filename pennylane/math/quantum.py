@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Differentiable quantum functions"""
+# pylint: disable=import-outside-toplevel
 import itertools
 import functools
 
@@ -21,7 +22,7 @@ from numpy import float64
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import diag, dot, scatter_element_add
-from .utils import is_abstract, allclose, cast, convert_like
+from .utils import is_abstract, allclose, cast, convert_like, get_interface
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -455,3 +456,76 @@ def to_density_matrix(state, indices, check_state=False, c_dtype="complex64"):
     density_matrix = _density_matrix_from_matrix(state, indices, check_state)
 
     return density_matrix
+
+
+def to_vn_entropy(state, wires=None, base=None, check_state=False):
+    """Get Von Neumann entropies from a state."""
+    # Cast as a complex128 array
+    state = cast(state, dtype="complex128")
+    len_state = state.shape[0]
+    if state.shape == (len_state,):
+        density_matrix = to_density_matrix(state, wires, check_state)
+        entropy = compute_vn_entropy(density_matrix, base)
+
+    elif state.shape == (len_state, len_state):
+        density_matrix = to_density_matrix(state, wires, check_state)
+        entropy = compute_vn_entropy(density_matrix, base)
+
+    else:
+        raise ValueError("The state is not a QNode, a state vector or a density matrix.")
+
+    return entropy
+
+
+def compute_vn_entropy(density_matrix, base=None):
+    """Compute Vn entropy"""
+    # Change basis if necessary
+    if base:
+        div_base = np.log(base)
+    else:
+        div_base = 1
+
+    interface = get_interface(density_matrix)
+
+    if interface == "autograd":
+        # Get eigenvalues
+        evs = np.linalg.eigh(density_matrix)[0]
+        new_evs = []
+        for ev in evs:
+            if ev > 0:
+                new_evs.append(ev)
+    else:
+        evs = np.linalg.eigvalsh(density_matrix)
+
+    if interface == "jax":
+        import jax
+
+        evs = jax.numpy.maximum(evs, jax.numpy.array(0))
+        entropy = jax.numpy.sum(jax.scipy.special.entr(evs) / div_base)
+
+    elif interface == "torch":
+        import torch
+
+        evs = torch.maximum(evs, torch.tensor(0))
+        entropy = torch.sum(torch.special.entr(evs) / div_base)
+
+    elif interface == "tensorflow":
+        import tensorflow as tf
+
+        evs = tf.math.real(evs)
+        log_evs = tf.math.log(evs)
+        log_evs = tf.where(tf.math.is_inf(log_evs), tf.zeros_like(log_evs), log_evs)
+        entropy = -tf.math.reduce_sum(evs * log_evs / div_base)
+
+    elif interface == "autograd":
+        import autograd
+
+        entropy = 0
+        for elem in new_evs:
+            entropy = entropy - autograd.numpy.log(elem) * elem
+
+    else:
+        evs = np.array([ev for ev in evs if ev > 0])
+        entropy = -np.sum(evs * np.log(evs) / div_base)
+
+    return entropy

@@ -14,4 +14,4 @@
 """Differentiable quantum information module"""
 
 from .utils import density_matrix_transform
-from .entropies import to_vn_entropy
+from .entropies import vn_entropy_transform

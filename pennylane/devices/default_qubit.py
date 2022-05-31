@@ -26,7 +26,6 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-import pennylane.qinfo as pqi
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Snapshot
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.wires import WireError
@@ -619,7 +618,7 @@ class DefaultQubit(QubitDevice):
         """
         wires = wires.tolist()
         state = self._flatten(self._pre_rotated_state)
-        return pqi.to_vn_entropy(state, wires=wires)
+        return qml.math.to_vn_entropy(state, wires=wires)
 
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.
