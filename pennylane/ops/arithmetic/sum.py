@@ -22,9 +22,9 @@ from pennylane import math
 from pennylane.operation import Operator, expand_matrix
 
 
-def sum(*summands, wire_order=None):
+def sum(*summands):
     """Compute the sum of the provided terms"""
-    return Sum(*summands, wire_order=wire_order)  # a wire order is required when combining operators of varying sizes
+    return Sum(*summands)  # a wire order is required when combining operators of varying sizes
 
 
 class Sum(Operator):
@@ -52,6 +52,11 @@ class Sum(Operator):
     def num_wires(self):
         return len(self.wires)
 
+    @property
+    def is_hermitian(self):
+        """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
+        return all([s.is_hermitian for s in self.summands])
+
     def terms(self):
         return [1.0]*len(self.summands), self.summands
 
@@ -67,6 +72,13 @@ class Sum(Operator):
             wire_order = self.wires
 
         return self._sum(matrix_gen(self.summands, wire_order))
+
+    def eigvals(self, wire_order=None):
+        """Get eigvals of the the Sum of operators"""
+        if not self.is_hermitian:
+            raise qml.operation.EigvalsUndefinedError  # eigvals for non-hermitian obs can be imaginar
+        else:
+            return super().eigvals()
 
     def _sum(self, mats_gen, dtype=None, cast_like=None):
         """Super inefficient Sum method just as a proof of concept"""
