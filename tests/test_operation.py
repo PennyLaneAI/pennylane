@@ -600,6 +600,17 @@ class TestOperationConstruction:
         op = DummyOp(1.0, wires=0, id="test")
         assert op.control_wires == qml.wires.Wires([])
 
+    def test_is_hermitian(self):
+        """Test that is_hermitian defaults to False for an Operator"""
+
+        class DummyOp(qml.operation.Operation):
+            r"""Dummy custom operation"""
+            num_wires = 1
+            grad_method = None
+
+        op = DummyOp(wires=0)
+        assert op.is_hermitian is False
+
 
 class TestObservableConstruction:
     """Test custom observables construction."""
@@ -710,6 +721,17 @@ class TestObservableConstruction:
 
         with pytest.raises(Exception, match="Must specify the wires *"):
             DummyObservable()
+
+    def test_is_hermitian(self):
+        """Test that the id attribute of an observable can be set."""
+
+        class DummyObserv(qml.operation.Observable):
+            r"""Dummy custom observable"""
+            num_wires = 1
+            grad_method = None
+
+        op = DummyObserv(wires=0)
+        assert op.is_hermitian is True
 
 
 class TestOperatorIntegration:
