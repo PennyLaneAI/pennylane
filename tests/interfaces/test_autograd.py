@@ -1143,13 +1143,14 @@ class TestCustomJacobian:
         assert np.allclose(d_out, np.array([1.0, 2.0, 3.0, 4.0]))
 
     def test_custom_jacobians_2(self):
+        """Test computing the gradient using the parameter-shift rule with a device that provides a jacobian"""
 
         class MyQubit(DefaultQubit):
             @classmethod
             def capabilities(cls):
                 capabilities = super().capabilities().copy()
                 capabilities.update(
-                    provides_jacobian=True,  # with this commented out everything works
+                    provides_jacobian=True,
                 )
                 return capabilities
 

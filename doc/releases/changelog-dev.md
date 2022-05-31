@@ -178,7 +178,7 @@
   instead of the controlled version of the diagonal unitary.
   [(#2525)](https://github.com/PennyLaneAI/pennylane/pull/2525)
 
-* Reverted device defined gradients fix [(#2485)](https://github.com/PennyLaneAI/pennylane/pull/2485), since
+* Updated the gradients fix [(#2485)](https://github.com/PennyLaneAI/pennylane/pull/2485) to only apply to the `strawberryfields.gbs` device, since
   code change was breaking some devices. [(#2595)](https://github.com/PennyLaneAI/pennylane/pull/2595)
 
 <h3>Deprecations</h3>
