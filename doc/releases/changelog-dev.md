@@ -170,7 +170,7 @@
   ```
 
 <h3>Bug fixes</h3>
-* Fixed a bug where returning `qml.density_matrix` would return a density matrix with wrong shape.
+* Fixed a bug where returning `qml.density_matrix` using the PyTorch interface would return a density matrix with wrong shape.
   [(#2643)](https://github.com/PennyLaneAI/pennylane/pull/2643)
 
 * Fixed a bug to make `param_shift_hessian` work with QNodes in which gates marked
