@@ -414,6 +414,33 @@ class TestSampleBasisStates:
         ):
             dev.sample_basis_states(number_of_states, state_probs)
 
+    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested")
+    def test_sampling_with_broadcasting(self, mock_qubit_device, monkeypatch):
+        """Tests that the sample_basis_states method samples with the correct arguments
+        when using broadcasted probabilities"""
+
+        shots = 1000
+
+        number_of_states = 4
+        dev = mock_qubit_device()
+        dev.shots = shots
+        state_probs = [[0.1, 0.2, 0.3, 0.4], [0.5, 0.2, 0.1, 0.2]]
+        # First run the sampling to see that it is using numpy.random.choice correctly
+        res = dev.sample_basis_states(number_of_states, state_probs)
+        assert qml.math.shape(res) == (2, shots)
+        assert set(res.flat).issubset({0, 1, 2, 3})
+
+        with monkeypatch.context() as m:
+            # Mock the numpy.random.choice method such that it returns the expected values
+            m.setattr("numpy.random.choice", lambda x, y, p: (x, y, p))
+            res = dev.sample_basis_states(number_of_states, state_probs)
+
+        assert len(res) == 2
+        for _res, prob in zip(res, state_probs):
+            assert np.array_equal(_res[0], np.array([0, 1, 2, 3]))
+            assert _res[1] == 1000
+            assert _res[2] == prob
+
 
 class TestStatesToBinary:
     """Test the states_to_binary method"""
@@ -453,6 +480,39 @@ class TestStatesToBinary:
         res = dev.states_to_binary(samples, wires)
         assert np.allclose(res, binary_states, atol=tol, rtol=0)
 
+    test_binary_conversion_data_broadcasted = [
+        (
+            np.array([[2, 3, 2, 0, 0], [3, 0, 0, 1, 1], [2, 2, 0, 1, 3]]),
+            np.array(
+                [
+                    [[1, 0], [1, 1], [1, 0], [0, 0], [0, 0]],
+                    [[1, 1], [0, 0], [0, 0], [0, 1], [0, 1]],
+                    [[1, 0], [1, 0], [0, 0], [0, 1], [1, 1]],
+                ]
+            ),
+        ),
+        (
+            np.array([[7, 7, 1, 5, 2], [3, 3, 2, 4, 6], [0, 0, 7, 2, 1]]),
+            np.array(
+                [
+                    [[1, 1, 1], [1, 1, 1], [0, 0, 1], [1, 0, 1], [0, 1, 0]],
+                    [[0, 1, 1], [0, 1, 1], [0, 1, 0], [1, 0, 0], [1, 1, 0]],
+                    [[0, 0, 0], [0, 0, 0], [1, 1, 1], [0, 1, 0], [0, 0, 1]],
+                ]
+            ),
+        ),
+    ]
+
+    @pytest.mark.parametrize("samples, binary_states", test_binary_conversion_data_broadcasted)
+    def test_correct_conversion_broadcasted(self, mock_qubit_device, samples, binary_states, tol):
+        """Tests that the states_to_binary method converts broadcasted
+        samples to binary correctly"""
+        dev = mock_qubit_device()
+        dev.shots = 5
+        wires = binary_states.shape[-1]
+        res = dev.states_to_binary(samples, wires)
+        assert np.allclose(res, binary_states, atol=tol, rtol=0)
+
 
 class TestExpval:
     """Test the expval method"""
@@ -475,6 +535,27 @@ class TestExpval:
             res = dev.expval(obs)
 
         assert res == (obs.eigvals() @ probs).real
+
+    def test_analytic_expval_broadcasted(
+        self, mock_qubit_device_with_original_statistics, monkeypatch
+    ):
+        """Tests expval method when the analytic attribute is True and using broadcasting
+
+        Additional QubitDevice methods that are mocked:
+        -probability
+        """
+        obs = qml.PauliX(0)
+        probs = np.array([[0.5, 0.5], [0.2, 0.8], [0.1, 0.9]])
+        dev = mock_qubit_device_with_original_statistics()
+
+        assert dev.shots is None
+
+        call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
+            res = dev.expval(obs)
+
+        assert np.allclose(res, (probs @ obs.eigvals()).real)
 
     def test_non_analytic_expval(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that expval method when the analytic attribute is False
@@ -537,6 +618,27 @@ class TestVar:
             res = dev.var(obs)
 
         assert res == (obs.eigvals() ** 2) @ probs - (obs.eigvals() @ probs).real ** 2
+
+    def test_analytic_var_broadcasted(
+        self, mock_qubit_device_with_original_statistics, monkeypatch
+    ):
+        """Tests var method when the analytic attribute is True and using broadcasting
+
+        Additional QubitDevice methods that are mocked:
+        -probability
+        """
+        obs = qml.PauliX(0)
+        probs = [0.5, 0.5]
+        dev = mock_qubit_device_with_original_statistics()
+
+        assert dev.shots is None
+
+        call_history = []
+        with monkeypatch.context() as m:
+            m.setattr(QubitDevice, "probability", lambda self, wires=None: probs)
+            res = dev.var(obs)
+
+        assert np.allclose(res, probs @ (obs.eigvals() ** 2) - (probs @ obs.eigvals()).real ** 2)
 
     def test_non_analytic_var(self, mock_qubit_device_with_original_statistics, monkeypatch):
         """Tests that var method when the analytic attribute is False
@@ -722,16 +824,132 @@ class TestEstimateProb:
     def test_estimate_probability(
         self, wires, expected, mock_qubit_device_with_original_statistics, monkeypatch
     ):
-        """Tests probability method when the analytic attribute is True."""
+        """Tests the estimate_probability method"""
         dev = mock_qubit_device_with_original_statistics(wires=2)
         samples = np.array([[0, 0], [1, 1], [1, 1], [0, 0]])
 
         with monkeypatch.context() as m:
             m.setattr(dev, "_samples", samples)
-            m.setattr(dev, "shots", 4)
             res = dev.estimate_probability(wires=wires)
 
         assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            ([0], [[0.0, 0.5], [1.0, 0.5]]),
+            (None, [[0.0, 0.5], [0, 0], [0, 0.5], [1.0, 0]]),
+            ([0, 1], [[0.0, 0.5], [0, 0], [0, 0.5], [1.0, 0]]),
+        ],
+    )
+    def test_estimate_probability_with_binsize(
+        self, wires, expected, mock_qubit_device_with_original_statistics, monkeypatch
+    ):
+        """Tests the estimate_probability method with a bin size"""
+        dev = mock_qubit_device_with_original_statistics(wires=2)
+        samples = np.array([[1, 1], [1, 1], [1, 0], [0, 0]])
+        bin_size = 2
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_samples", samples)
+            res = dev.estimate_probability(wires=wires, bin_size=bin_size)
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            ([0], [[0.0, 1.0], [0.5, 0.5], [0.25, 0.75]]),
+            (None, [[0, 0, 0.25, 0.75], [0.5, 0, 0, 0.5], [0.25, 0, 0.25, 0.5]]),
+            ([0, 1], [[0, 0, 0.25, 0.75], [0.5, 0, 0, 0.5], [0.25, 0, 0.25, 0.5]]),
+        ],
+    )
+    def test_estimate_probability_with_broadcasting(
+        self, wires, expected, mock_qubit_device_with_original_statistics, monkeypatch
+    ):
+        """Tests the estimate_probability method with parameter broadcasting"""
+        dev = mock_qubit_device_with_original_statistics(wires=2)
+        samples = np.array(
+            [
+                [[1, 0], [1, 1], [1, 1], [1, 1]],
+                [[0, 0], [1, 1], [1, 1], [0, 0]],
+                [[1, 0], [1, 1], [1, 1], [0, 0]],
+            ]
+        )
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_samples", samples)
+            res = dev.estimate_probability(wires=wires)
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            (
+                [0],
+                [
+                    [[0, 0, 0.5], [1, 1, 0.5]],
+                    [[0.5, 0.5, 0], [0.5, 0.5, 1]],
+                    [[0, 0.5, 1], [1, 0.5, 0]],
+                ],
+            ),
+            (
+                None,
+                [
+                    [[0, 0, 0], [0, 0, 0.5], [0.5, 0, 0], [0.5, 1, 0.5]],
+                    [[0.5, 0.5, 0], [0, 0, 0], [0, 0, 0], [0.5, 0.5, 1]],
+                    [[0, 0.5, 0.5], [0, 0, 0.5], [0.5, 0, 0], [0.5, 0.5, 0]],
+                ],
+            ),
+            (
+                [0, 1],
+                [
+                    [[0, 0, 0], [0, 0, 0.5], [0.5, 0, 0], [0.5, 1, 0.5]],
+                    [[0.5, 0.5, 0], [0, 0, 0], [0, 0, 0], [0.5, 0.5, 1]],
+                    [[0, 0.5, 0.5], [0, 0, 0.5], [0.5, 0, 0], [0.5, 0.5, 0]],
+                ],
+            ),
+        ],
+    )
+    def test_estimate_probability_with_binsize_with_broadcasting(
+        self, wires, expected, mock_qubit_device_with_original_statistics, monkeypatch
+    ):
+        """Tests the estimate_probability method with a bin size and parameter broadcasting"""
+        dev = mock_qubit_device_with_original_statistics(wires=2)
+        bin_size = 2
+        samples = np.array(
+            [
+                [[1, 0], [1, 1], [1, 1], [1, 1], [1, 1], [0, 1]],
+                [[0, 0], [1, 1], [1, 1], [0, 0], [1, 1], [1, 1]],
+                [[1, 0], [1, 1], [1, 1], [0, 0], [0, 1], [0, 0]],
+            ]
+        )
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_samples", samples)
+            res = dev.estimate_probability(wires=wires, bin_size=bin_size)
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize("bin_size", [None, 2])
+    def test_estimate_probability_with_invalid_samples(
+        self, bin_size, mock_qubit_device_with_original_statistics, monkeypatch
+    ):
+        """Tests probability method when the analytic attribute is True."""
+        dev = mock_qubit_device_with_original_statistics(wires=2)
+        samples = np.array(
+            [
+                [[[1, 0], [1, 1], [1, 1], [1, 1]]],
+                [[[0, 0], [1, 1], [1, 1], [0, 0]]],
+                [[[1, 0], [1, 1], [1, 1], [0, 0]]],
+            ]
+        )
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_samples", samples)
+            with pytest.raises(ValueError, match="Unexpected shape of stored samples"):
+                dev.estimate_probability(wires=dev.wires, bin_size=bin_size)
 
 
 class TestMarginalProb:
@@ -894,11 +1112,12 @@ class TestCapabilities:
             "supports_finite_shots": True,
             "supports_tensor_observables": True,
             "returns_probs": True,
-            "supports_broadcasting": False,
+            "supports_broadcasting": True,
         }
         assert capabilities == QubitDevice.capabilities()
 
 
+# Todo :broadcasted execution tests
 class TestExecution:
     """Tests for the execute method"""
 
@@ -950,6 +1169,7 @@ class TestExecution:
         assert dev_1.num_executions == num_evals_1 + num_evals_3
 
 
+# Todo :broadcasted execution tests
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
@@ -1015,6 +1235,7 @@ class TestBatchExecution:
         assert np.allclose(res[0], dev.execute(empty_tape), rtol=tol, atol=0)
 
 
+# Todo :broadcasted execution tests
 class TestShotList:
     """Tests for passing shots as a list"""
 
@@ -1248,6 +1469,7 @@ class TestGetBatchSize:
         tensor1 = np.arange(np.prod(full_shape)).reshape(full_shape)
         assert dev._get_batch_size(tensor1, shape) == batch_size
 
+    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested")
     def test_invalid_tensor(self, mock_qubit_device):
         """Test that an error is raised if a tensor is provided that does not
         have a proper shape/ndim."""

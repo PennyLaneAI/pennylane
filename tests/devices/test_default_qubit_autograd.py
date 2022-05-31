@@ -55,7 +55,7 @@ class TestQNodeIntegration:
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
             "passthru_interface": "autograd",
-            "supports_broadcasting": False,
+            "supports_broadcasting": True,
             "passthru_devices": {
                 "torch": "default.qubit.torch",
                 "tf": "default.qubit.tf",

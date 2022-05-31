@@ -1154,7 +1154,7 @@ class TestDefaultQubitIntegration:
             "supports_reversible_diff": True,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
-            "supports_broadcasting": False,
+            "supports_broadcasting": True,
             "passthru_devices": {
                 "torch": "default.qubit.torch",
                 "tf": "default.qubit.tf",
@@ -2528,36 +2528,55 @@ class TestHamiltonianSupport:
         with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
             dev.expval(H)
 
+original_capabilities = qml.devices.DefaultQubit.capabilities()
 
+@pytest.fixture(scope="function")
+def mock_default_qubit(monkeypatch):
+    """A function to create a mock device that mocks the broadcasting support flag"""
+
+    def overwrite_support(*cls):
+        capabilities = original_capabilities.copy()
+        capabilities.update(supports_broadcasting=False)
+        return capabilities
+
+    with monkeypatch.context() as m:
+        m.setattr(qml.devices.DefaultQubit, "capabilities", overwrite_support)
+
+        def get_default_qubit(wires=1, shots=None):
+            dev = qml.devices.DefaultQubit(wires=wires, shots=shots)
+            return dev
+
+        yield get_default_qubit
+
+@pytest.mark.parametrize("shots", [None, 100000])
 class TestBroadcastingSupport:
     """Tests that the device correctly makes use of ``broadcast_expand`` to
-    execute broadcasted tapes."""
+    execute broadcasted tapes if its capability to execute broadcasted tapes
+    is artificially deactivated."""
 
-    @pytest.mark.parametrize("x", [0.2, [0.1, 0.6, 0.3], [0.1]])
-    @pytest.mark.parametrize("shots", [None, 100000])
-    def test_with_single_broadcasted_par(self, x, shots):
+    @pytest.mark.parametrize("x", [0.2, np.array([0.1, 0.6, 0.3]), np.array([0.1])])
+    def test_with_single_broadcasted_par(self, x, shots, mock_default_qubit):
         """Test that broadcasting on a circuit with a
         single parametrized operation works."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = mock_default_qubit(wires=2, shots=shots)
 
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
-            # return qml.expval(qml.Hamiltonian([0.3], [qml.PauliZ(0)]))
 
+        circuit.construct((np.array(x),), {})
         out = circuit(np.array(x))
 
         assert circuit.device.num_executions == (1 if isinstance(x, float) else len(x))
         tol = 1e-10 if shots is None else 1e-2
         assert qml.math.allclose(out, qml.math.cos(x), atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("x, y", [(0.2, [0.4]), ([0.1, 5.1], [0.1, -0.3])])
-    @pytest.mark.parametrize("shots", [None, 1000000])
-    def test_with_multiple_pars(self, x, y, shots):
+    @pytest.mark.parametrize("x, y", [(0.2, np.array([0.4])), (np.array([0.1, 5.1]), np.array([0.1, -0.3]))])
+    def test_with_multiple_pars(self, x, y, shots, mock_default_qubit):
         """Test that broadcasting on a circuit with a
         single parametrized operation works."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = mock_default_qubit(wires=2, shots=shots)
 
         @qml.qnode(dev)
         def circuit(x, y):
@@ -2572,12 +2591,11 @@ class TestBroadcastingSupport:
         tol = 1e-10 if shots is None else 1e-2
         assert qml.math.allclose(out, expected, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("x, y", [(0.2, [0.4]), ([0.1, 5.1], [0.1, -0.3])])
-    @pytest.mark.parametrize("shots", [None, 1000000])
-    def test_with_Hamiltonian(self, x, y, shots):
+    @pytest.mark.parametrize("x, y", [(0.2, np.array([0.4])), (np.array([0.1, 5.1]), np.array([0.1, -0.3]))])
+    def test_with_Hamiltonian(self, x, y, shots, mock_default_qubit):
         """Test that broadcasting on a circuit with a
         single parametrized operation works."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = mock_default_qubit(wires=2, shots=shots)
 
         H = qml.Hamiltonian([0.3, 0.9], [qml.PauliZ(0), qml.PauliY(1)])
         H.compute_grouping()

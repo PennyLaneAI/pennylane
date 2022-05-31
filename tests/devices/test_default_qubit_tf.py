@@ -1018,7 +1018,7 @@ class TestQNodeIntegration:
             "supports_reversible_diff": False,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
-            "supports_broadcasting": False,
+            "supports_broadcasting": True,
             "passthru_interface": "tf",
             "passthru_devices": {
                 "torch": "default.qubit.torch",
