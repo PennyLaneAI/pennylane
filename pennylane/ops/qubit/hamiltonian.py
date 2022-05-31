@@ -24,7 +24,6 @@ import pennylane as qml
 from pennylane import numpy as np
 
 from pennylane.operation import Observable, Tensor
-from pennylane.queuing import QueuingError
 from pennylane.wires import Wires
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
@@ -633,11 +632,6 @@ class Hamiltonian(Observable):
     def queue(self, context=qml.QueuingContext):
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:
-            try:
-                context.update_info(o, owner=self)
-            except QueuingError:
-                o.queue(context=context)
-                context.update_info(o, owner=self)
-
+            context.safe_update_info(o, owner=self)
         context.append(self, owns=tuple(self.ops))
         return self

@@ -13,4 +13,5 @@
 # limitations under the License.
 """Differentiable quantum information module"""
 
+from .utils import density_matrix_transform
 from .entropies import to_vn_entropy

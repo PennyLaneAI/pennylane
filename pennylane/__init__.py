@@ -28,12 +28,12 @@ from pennylane.queuing import apply, QueuingContext
 import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
+import pennylane.qinfo
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
 import pennylane.hf
 import pennylane.qchem
-import pennylane.quantum_info
 from pennylane.qchem import taper, symmetry_generators, paulix_ops, import_operator
 from pennylane._device import Device, DeviceError
 from pennylane._grad import grad, jacobian
