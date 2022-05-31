@@ -1122,10 +1122,8 @@ class PauliRot(Operation):
 
             exp = qml.math.exp(-0.5j * theta)
             iden = qml.math.eye(2 ** len(pauli_word), like=theta)
-            if interface == "torch":
-                # Use convert_like to ensure that the tensor is put on the correct
-                # Torch device
-                iden = qml.math.convert_like(iden, theta)
+            if qml.math.get_interface(theta) == "tensorflow":
+                iden = qml.math.cast_like(iden, 1j)
 
             if qml.math.ndim(theta) == 0:
                 return exp * iden
@@ -1193,14 +1191,15 @@ class PauliRot(Operation):
 
         # Identity must be treated specially because its eigenvalues are all the same
         if set(pauli_word) == {"I"}:
-            if qml.math.ndim(theta) == 0:
-                return qml.math.exp(-0.5j * theta) * qml.math.ones(2 ** len(pauli_word))
+            exp = qml.math.exp(-0.5j * theta)
+            ones = qml.math.ones(2 ** len(pauli_word), like=theta)
+            if qml.math.get_interface(theta) == "tensorflow":
+                ones = qml.math.cast_like(ones, 1j)
 
-            return qml.math.tensordot(
-                qml.math.exp(-0.5j * theta),
-                qml.math.ones(2 ** len(pauli_word)),
-                axes=0,
-            )
+            if qml.math.ndim(theta) == 0:
+                return exp * ones
+
+            return qml.math.tensordot(exp, ones, axes=0)
 
         return MultiRZ.compute_eigvals(theta, len(pauli_word))
 
