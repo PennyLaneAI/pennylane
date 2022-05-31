@@ -165,13 +165,32 @@ def vjp(
         function: this function accepts the backpropagation
         gradient output vector, and computes the vector-Jacobian product
     """
+    intermed_jac = {}
+
+    def _get_jac():
+        if ans[1]:
+            return ans[1]
+        elif "jacobian" in intermed_jac:
+            return intermed_jac["jacobian"]
+        else:
+            jacs = []
+            for t in tapes:
+                g_tapes, fn = gradient_fn(t)
+                jacs.append(fn(qml.execute(g_tapes, device, None)))
+            intermed_jac["jacobian"] = jacs
+            return jacs
 
     def grad_fn(dy):
         """Returns the vector-Jacobian product with given
         parameter values and output gradient dy"""
 
         dy = [qml.math.T(d) for d in dy[0]]
-        jacs = ans[1]
+        if gradient_fn.__name__ == "param_shift":
+            jacs = _get_jac()
+        else:
+            jacs = ans[
+                1
+            ]  # param_shift_cv interface differs from above, hence throws due to lack of device arg
 
         if jacs:
             # Jacobians were computed on the forward pass (mode="forward")
@@ -180,10 +199,8 @@ def vjp(
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
-
             if isinstance(gradient_fn, qml.gradients.gradient_transform):
                 # Gradient function is a gradient transform.
-
                 # Generate and execute the required gradient tapes
                 if _n == max_diff:
                     with qml.tape.Unwrap(*tapes):
@@ -194,7 +211,6 @@ def vjp(
                             reduction="append",
                             gradient_kwargs=gradient_kwargs,
                         )
-
                         vjps = processing_fn(execute_fn(vjp_tapes)[0])
 
                 else:
@@ -226,6 +242,7 @@ def vjp(
                 # - gradient_fn is not differentiable
                 #
                 # so we cannot support higher-order derivatives.
+
                 with qml.tape.Unwrap(*tapes):
                     jacs = gradient_fn(tapes, **gradient_kwargs)
 
@@ -234,11 +251,14 @@ def vjp(
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
         ]
+
         if device.capabilities().get("provides_jacobian", False):
             # in the case where the device provides the jacobian,
             # the output of grad_fn must be wrapped in a tuple in
             # order to match the input parameters to _execute.
+
             return (return_vjps,)
+
         return return_vjps
 
     return grad_fn
