@@ -339,14 +339,14 @@ class TestDiagonalQubitUnitary:
         """Test that the broadcasted DiagonalQubitUnitary falls back to QubitUnitary."""
         D = np.outer([1.0, -1.0], [1.0, -1.0, 1j, 1.0])
 
-        decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, [0, 1, 2])
-        decomp2 = qml.DiagonalQubitUnitary(D, wires=[0, 1, 2]).decomposition()
+        decomp = qml.DiagonalQubitUnitary.compute_decomposition(D, [0, 1])
+        decomp2 = qml.DiagonalQubitUnitary(D, wires=[0, 1]).decomposition()
 
         assert len(decomp) == 1 == len(decomp2)
         assert decomp[0].name == "QubitUnitary" == decomp2[0].name
-        assert decomp[0].wires == Wires([0, 1, 2]) == decomp2[0].wires
+        assert decomp[0].wires == Wires([0, 1]) == decomp2[0].wires
 
-        expected = np.array([np.diag([1.0, -1.0, 1j, 1.0], np.diag([-1.0, 1.0, -1j, -1.0])])
+        expected = np.array([np.diag([1.0, -1.0, 1j, 1.0]), np.diag([-1.0, 1.0, -1j, -1.0])])
         assert np.allclose(decomp[0].data[0], expected)
         assert np.allclose(decomp2[0].data[0], expected)
 

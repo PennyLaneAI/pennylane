@@ -424,7 +424,7 @@ class DiagonalQubitUnitary(Operation):
             raise ValueError("Operator must be unitary.")
 
         # The diagonal is supposed to have one-dimension. If it is broadcasted, it has two
-        if len(qml.math.shape(D)) == 2:
+        if qml.math.ndim(D) == 2:
             return qml.math.stack([qml.math.diag(_D) for _D in D])
 
         return qml.math.diag(D)
