@@ -1226,6 +1226,42 @@ class TestDensityMatrix:
             np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]]), density_mat
         )
 
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    def test_correct_density_matrix_torch(self, dev_name):
+        """Test that the correct density matrix is returned using torch interface."""
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qml.qnode(dev, interface="jax")
+        def func():
+            qml.Hadamard(wires=0)
+            return qml.density_matrix(wires=0)
+
+        density_mat = func()
+
+        assert np.allclose(
+            np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]]), density_mat
+        )
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    def test_correct_density_matrix_torch(self, dev_name):
+        """Test that the correct density matrix is returned using torch interface."""
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def func():
+            qml.Hadamard(wires=0)
+            return qml.density_matrix(wires=0)
+
+        density_mat = func()
+
+        assert np.allclose(
+            np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]]), density_mat
+        )
+
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     def test_correct_density_matrix_product_state_first(self, dev_name):
         """Test that the correct density matrix is returned when
