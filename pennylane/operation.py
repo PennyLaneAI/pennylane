@@ -1000,6 +1000,11 @@ class Operator(abc.ABC):
         self._hyperparameters = {}
         return self._hyperparameters
 
+    @property
+    def is_hermitian(self):
+        """This property determines if an operator is hermitian."""
+        return False
+
     def decomposition(self):
         r"""Representation of the operator as a product of other operators.
 
@@ -1551,6 +1556,11 @@ class Observable(Operator):
         The Pauli observables double as Operations, and should therefore be processed into `_ops` if unowned.
         """
         return "_ops" if isinstance(self, Operation) else None
+
+    @property
+    def is_hermitian(self):
+        """All observables must be hermitian"""
+        return True
 
     # pylint: disable=abstract-method
     return_type = None

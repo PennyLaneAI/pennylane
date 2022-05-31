@@ -111,6 +111,8 @@
 * `BasisEmbedding` can accept an int as argument instead of a list of bits (optionally). Example: `qml.BasisEmbedding(4, wires = range(4))` is now equivalent to `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because 4=0b100). 
   [(#2601)](https://github.com/PennyLaneAI/pennylane/pull/2601)
 
+* Introduced a new `is_hermitian` property to determine if an operator can be used in a measurement process.
+  [(#2629)](https://github.com/PennyLaneAI/pennylane/pull/2629)
 <h3>Breaking changes</h3>
 
 * The `qml.queuing.Queue` class is now removed.
