@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for the Adjoint operator wrapper."""
 
+from email.mime import base
 import pytest
 
 import pennylane as qml
@@ -209,6 +210,18 @@ class TestProperties:
         """Test that the queue category `None` for some observables carries over."""
         op = Adjoint(qml.PauliX(0) @ qml.PauliY(1))
         assert op._queue_category is None
+
+    def test_private_wires(self):
+        """Test that we can get and set the wires via the private property `_wires`."""
+        wire0 = qml.wires.Wires("a")
+        base = qml.PauliZ(wire0)
+        op = Adjoint(base)
+
+        assert op._wires == base._wires == wire0
+
+        wire1 = qml.wires.Wires(0)
+        op._wires = wire1
+        assert op._wires == base._wires == wire1
 
 
 class TestMiscMethods:
