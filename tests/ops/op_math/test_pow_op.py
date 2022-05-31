@@ -110,6 +110,7 @@ class TestInitialization:
         assert op.data == []
 
         assert op.wires == qml.wires.Wires("a")
+        assert op.num_wirse == 1
 
     def test_parametric_ops(self):
         """Test pow initialization for a standard parametric operation."""
@@ -197,6 +198,18 @@ class TestProperties:
         base.data = [x_new2]
         assert op.data == [x_new2]
 
+    def test_private_wires_getter_setter(self):
+        """Test that we can get and set the private _wires."""
+        wires0 = qml.wires.Wires("a")
+        base = qml.PauliZ(wires0)
+        op = Pow(base, -2.1)
+
+        assert op._wires == base._wires == wires0
+
+        wires1 = qml.wires.Wires(1)
+        op._wires = wires1
+        assert op._wires == base._wires == wires1
+
     def test_has_matrix_true(self):
         """Test `has_matrix` property carries over when base op defines matrix."""
         base = qml.PauliX(0)
@@ -223,7 +236,7 @@ class TestProperties:
 
 
 def test_label():
-
+    """Test that the label draws the exponent as superscript."""
     base = qml.RX(1.2, wires=0)
     op = Pow(base, -1.23456789)
 
@@ -232,7 +245,7 @@ def test_label():
 
 
 def test_label_matrix_param():
-
+    """Test that when passed a matrix op, the matrix is cached into passed dictionary."""
     base = qml.QubitUnitary(np.eye(2), wires=0)
     op = Pow(base, -1.2)
 
@@ -242,7 +255,11 @@ def test_label_matrix_param():
 
 
 class TestDiagonalizingGates:
+    """Test Pow operators diagonalizing_gates method."""
+
     def test_diagonalizing_gates_int_exist(self):
+        """Test the diagonalizing gates method when the operator defines them and the exponent
+        is an int."""
 
         base = qml.PauliX(0)
         op = Pow(base, 2)
@@ -257,7 +274,7 @@ class TestDiagonalizingGates:
             assert op1.wires == op2.wires
 
     def test_diagonalizing_gates_float(self):
-
+        """Test the diagonalizing gates method when the exponent is a float. They should be undefined."""
         base = qml.PauliX(0)
         op = Pow(base, 0.5)
 
@@ -265,7 +282,8 @@ class TestDiagonalizingGates:
             op.diagonalizing_gates()
 
     def test_base_doesnt_define(self):
-
+        """Test that when the base gate does not define the diagonalizing gates and raises an error,
+        that the power operator does as well."""
         base = qml.RX(1.2, wires=0)
         op = Pow(base, 2)
 
@@ -281,6 +299,19 @@ def test_eigvals():
     mat_eigvals = qml.math.linalg.eigvals(op.matrix())
 
     assert qml.math.allclose(mat_eigvals, op.eigvals)
+
+
+def test_generator():
+    """Test that the generator is the base's generator multiplied by the power."""
+    z = 2.5
+    base = qml.RX(2.34, wires=0)
+    op = Pow(base, z)
+
+    base_gen = qml.generator(base, format="prefactor")
+    op_gen = qml.generator(op, format="prefactor")
+
+    assert qml.math.allclose(base_gen[1] * z, op_gen[1])
+    assert base_gen[0].__class__ is op_gen[0].__class__
 
 
 class TestQueueing:
@@ -304,7 +335,7 @@ class TestQueueing:
         with qml.tape.QuantumTape() as tape:
             op = Pow(base, 3.4)
 
-        assert tape._queue[base]["owner"] is op
+        assert len(tape.queue) == 1
         assert tape._queue[op]["owns"] is base
         assert tape.operations == [op]
 
@@ -318,8 +349,11 @@ class TestQueueing:
 
 
 class TestMatrix:
-    def check_matrix(self, param, z):
+    """Test the matrix method for the power operator."""
 
+    def check_matrix(self, param, z):
+        """Interface-independent helper function that checks that the matrix of a power op
+        of an IsingZZ is the same as the matrix for its decomposition."""
         base = qml.IsingZZ(param, wires=(0, 1))
         op = Pow(base, z)
 
@@ -331,43 +365,91 @@ class TestMatrix:
 
     @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
     def test_matrix_against_shortcut(self, z):
-
+        """Test the matrix method for different exponents and a float parameter."""
         assert self.check_matrix(2.34, z)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
+    def test_matrix_against_shortcut_autograd(self, z):
+        """Test the matrix using a pennylane numpy array/ autograd numpy."""
+        param = qml.numpy.array(2.34)
+        assert self.check_matrix(param, z)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
     def test_matrix_against_shortcut_jax(self, z):
-
+        """Test the matrix using a jax parameter."""
         from jax import numpy as jnp
 
         param = jnp.array(2.34)
-
         assert self.check_matrix(param, z)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
-    def test_matrix_against_shortcut_jax(self, z):
-
+    def test_matrix_against_shortcut_torch(self, z):
+        """Tests the matrix using a torch tensor parameter."""
         import torch
 
         param = torch.tensor(2.34)
-
         assert self.check_matrix(param, z)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
     def test_matrix_against_shortcut_jax(self, z):
-
+        """Test the matrix using a tf variable parameter."""
         import tensorflow as tf
 
         param = tf.Variable(2.34)
-
         assert self.check_matrix(param, z)
 
 
-class TestDecompositionExpand:
-    def test_shortcut_exists(self):
+class TestSparseMatrix:
+    def test_sparse_matrix_exists_int_exponent(self):
 
+        from scipy.sparse import csr_matrix
+
+        H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
+        H = csr_matrix(H)
+        base = qml.SparseHamiltonian(H, wires=0)
+
+        op = Pow(base, 3)
+
+        H_cubed = H**3
+        sparse_mat = op.sparse_matrix()
+        assert isinstance(sparse_mat, csr_matrix)
+        sparse_mat_array = sparse_mat.toarray()
+
+        assert qml.math.allclose(sparse_mat_array, H_cubed.toarray())
+        assert qml.math.allclose(sparse_mat_array, qml.matrix(op))
+
+    def test_sparse_matrix_float_exponent(self):
+        """Test that even a sparse-matrix defining op raised to a float power
+        raises a sparsematrixundefined error."""
+        from scipy.sparse import csr_matrix
+
+        H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
+        H = csr_matrix(H)
+        base = qml.SparseHamiltonian(H, wires=0)
+
+        op = Pow(base, 0.5)
+
+        with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+            op.sparse_matrix()
+
+    def test_base_no_sparse_matrix(self):
+        """Test that if the base doesn't define a sparse matrix, then the power wont either."""
+        base = qml.PauliX(0)
+        op = Pow(base, 2)
+
+        with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+            op.sparse_matrix()
+
+
+class TestDecompositionExpand:
+    """Test the Pow Operator decomposition and expand methods."""
+
+    def test_shortcut_exists(self):
+        """Test the decomposition method uses a shortcut if it defined for that exponent and base."""
         base = qml.PauliX(0)
         op = Pow(base, 0.5)
         decomp = op.decomposition()
@@ -377,7 +459,7 @@ class TestDecompositionExpand:
         assert decomp[0].wires == qml.wires.Wires(0)
 
     def test_shortcut_exists_expand(self):
-
+        """Test that the expand method uses a shortcut if it is defined for that exponent and base."""
         base = qml.PauliX(0)
         op = Pow(base, 0.5)
         expansion_tape = op.expand()
@@ -385,8 +467,9 @@ class TestDecompositionExpand:
         assert len(expansion_tape) == 1
         assert isinstance(expansion_tape[0], qml.SX)
 
-    def test_positive_integer_power(self):
-
+    def test_positive_integer_exponent(self):
+        """Test that decomposition repeats base operator z times if z is an positive integer
+        and a shortcut is not defined by op.pow."""
         base = qml.SX(0)
         op = Pow(base, 3)
         decomp = op.decomposition()
@@ -397,7 +480,9 @@ class TestDecompositionExpand:
             assert isinstance(op, qml.SX)
             assert op.wires == qml.wires.Wires(0)
 
-    def test_positive_integer_power_expand(self):
+    def test_positive_integer_exponent_expand(self):
+        """Test that expansion repeats base operator z times if z is an positive integer
+        and a shortcut is not defined by op.pow."""
 
         base = qml.SX(0)
         op = Pow(base, 3)
@@ -409,18 +494,21 @@ class TestDecompositionExpand:
             assert isinstance(op, qml.SX)
             assert op.wires == qml.wires.Wires(0)
 
-    def test_negative_float_power(self):
-
+    def test_decomposition_float_power(self):
+        """Test that the decomposition raises an error if no shortcut exists and the exponent is a float."""
         base = qml.PauliX(0)
-        op = Pow(base, -0.11)
+        op = Pow(base, 0.11)
 
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
 
 
 class TestInverse:
-    def test_base_already_inverted(self):
+    """Test the interaction between in-place inversion and the power operator."""
 
+    def test_base_already_inverted(self):
+        """Test that if the base is already inverted, then initialization un-inverts
+        it and applies a negative sign to the exponent."""
         base = qml.S(0).inv()
         op = Pow(base, 2)
 
@@ -432,7 +520,8 @@ class TestInverse:
         assert op.inverse is False
 
     def test_invert_pow_op(self):
-
+        """Test that in-place inversion of a power operator only changes the sign
+        of the power and does not change the `inverse` property."""
         base = qml.S(0)
         op = Pow(base, 2)
 
@@ -444,3 +533,37 @@ class TestInverse:
         assert op.name == "S**-2"
         assert op.base_name == "S**-2"
         assert op.inverse is False
+
+
+class TestIntegration:
+    """Test the execution of power gates in a QNode."""
+
+    @pytest.mark.parametrize(
+        "diff_method", ("parameter-shift", "finite-diff", "adjoint", "backprop")
+    )
+    @pytest.mark.parametrize("z", (2, -2, 0.5))
+    def test_gradient_pow_rx(self, diff_method, z):
+        @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
+        def circuit(x, z):
+            Pow(qml.RX(x, wires=0), z)
+            return qml.expval(qml.PauliY(0))
+
+        x = qml.numpy.array(1.234, requires_grad=True)
+
+        expected = -np.sin(x * z)
+        assert qml.math.allclose(circuit(x, z), expected)
+
+        grad = qml.grad(circuit)(x, z)
+        expected_grad = -z * np.cos(x * z)
+        assert qml.math.allclose(grad, expected_grad)
+
+    @pytest.mark.xfail
+    def test_non_decomposable_power(self):
+        """This test will fail until we improve device support for power operators."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def circ():
+            Pow(qml.SX(0), -1)
+            return qml.state()
+
+        circ()

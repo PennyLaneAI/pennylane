@@ -18,12 +18,13 @@ from scipy.linalg import fractional_matrix_power
 
 from pennylane.operation import (
     DecompositionUndefinedError,
+    SparseMatrixUndefinedError,
+    PowUndefinedError,
     Operator,
     Operation,
     Observable,
-    PowUndefinedError,
 )
-from pennylane.queuing import QueuingContext, QueuingError, apply
+from pennylane.queuing import QueuingContext, apply
 
 from pennylane import math as qmlmath
 
@@ -36,8 +37,10 @@ class PowOperation(Operation):
 
     Dynamically mixed in based on the provided base matrix.
 
-
     """
+
+    # until we add gradient support
+    grad_method = None
 
     def inv(self):
         self.hyperparameters["z"] *= -1
@@ -137,16 +140,16 @@ class Pow(Operator):
         # For example, it must keep AdjointOperation if self has it
         # this way preserves inheritance structure
 
-        copied_base = self.base.__copy__()
-        copied_op._hyperparameters = {"base": copied_base}
         for attr, value in vars(self).items():
-            if attr not in {"data", "base", "_hyperparameters"}:
-                setattr(copied_op, attr, value)
+            setattr(copied_op, attr, value)
+        copied_op._hyperparameters["base"] = self.base.__copy__()
 
         return copied_op
 
     # pylint: disable=super-init-not-called
     def __init__(self, base=None, z=0, do_queue=True, id=None):
+
+        # incorporate base inverse attribute into the exponent
         if getattr(base, "inverse", False):
             base.inverse = False
             z *= -1
@@ -193,17 +196,24 @@ class Pow(Operator):
     def wires(self):
         return self.base.wires
 
+    # pylint: disable=protected-access
+    @property
+    def _wires(self):
+        return self.base._wires
+
+    # pylint: disable=protected-access
+    @_wires.setter
+    def _wires(self, new_wires):
+        # used in a couple places that want to update the wires of an operator
+        # we should create a better way to set new wires in the future
+        self.base._wires = new_wires
+
     @property
     def num_wires(self):
         return self.base.num_wires
 
     def queue(self, context=QueuingContext):
-        try:
-            context.update_info(self.base, owner=self)
-        except QueuingError:
-            self.base.queue(context=context)
-            context.update_info(self.base, owner=self)
-
+        context.safe_update_info(self.base, owner=self)
         context.append(self, owns=self.base)
 
         return self
@@ -230,14 +240,11 @@ class Pow(Operator):
     # pylint: disable=arguments-differ
     @staticmethod
     def compute_sparse_matrix(*params, base=None, z=0):
-        base_matrix = base.compute_matrix(*params, **base.hyperparameters)
-
         if isinstance(z, int):
-            return qmlmath.linalg.matrix_power(base_matrix, z)
+            base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
+            return base_matrix**z
+        raise SparseMatrixUndefinedError
 
-        return fractional_matrix_power(base_matrix, z)
-
-    # pylint: disable=raise-missing-from
     def decomposition(self):
         try:
             return self.base.pow(self.z)
@@ -253,6 +260,7 @@ class Pow(Operator):
     def diagonalizing_gates(self):
         if isinstance(self.z, int):
             return self.base.diagonalizing_gates()
+        # does this hold for non-integer z?
         return super().diagonalizing_gates()
 
     def eigvals(self):
