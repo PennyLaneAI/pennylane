@@ -293,10 +293,16 @@ class QubitDevice(Device):
             if len(circuit.measurements) == 1:
                 if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
-                    results = self._asarray(results[0], dtype=self.C_DTYPE)
+                    if len(results) == 1:
+                        results = self._asarray(results[0], dtype=self.C_DTYPE)
+                    else:
+                        results = self._asarray(results[0], dtype=self.C_DTYPE)
                 else:
                     # Measurements with expval, var or probs
-                    results = self._asarray(results[0], dtype=self.R_DTYPE)
+                    if len(results) == 1:
+                        results = self._asarray(results[0], dtype=self.C_DTYPE)
+                    else:
+                        results = self._asarray(results, dtype=self.R_DTYPE)
 
             elif all(
                 ret in (qml.measurements.Expectation, qml.measurements.Variance)
@@ -561,7 +567,6 @@ class QubitDevice(Device):
             array[int]: the sampled basis states
         """
         if self.shots is None:
-
             raise qml.QuantumFunctionError(
                 "The number of shots has to be explicitly set on the device "
                 "when using sample-based measurements."
@@ -1047,7 +1052,6 @@ class QubitDevice(Device):
 
             if op.grad_method is not None:
                 if param_number in trainable_params:
-
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
                     jac[:, trainable_param_number] = 2 * dot_product_real(bras, ket_temp)
