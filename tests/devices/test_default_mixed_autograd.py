@@ -52,9 +52,7 @@ class TestQNodeIntegration:
             "supports_tensor_observables": True,
             "returns_probs": True,
             "returns_state": True,
-            "passthru_devices": {
-                "autograd": "default.mixed",
-            },
+            "passthru_interface": "autograd",
         }
 
         assert cap == capabilities
@@ -65,7 +63,7 @@ class TestQNodeIntegration:
         assert dev.num_wires == 2
         assert dev.shots == None
         assert dev.short_name == "default.mixed"
-        assert dev.capabilities()["passthru_devices"] == {"autograd": "default.mixed"}
+        assert dev.capabilities()["passthru_interface"] == "autograd"
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct
@@ -414,12 +412,9 @@ class TestPassthruIntegration:
             qml.RZ(x, wires=w)
             return qml.expval(qml.PauliX(w))
 
-        msg = "Device default.mixed only supports diff_method='backprop' when using the ['autograd'] interfaces."
+        msg = "Device default.mixed only supports diff_method='backprop' when using the autograd interface"
         msg = re.escape(msg)
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match=msg
-        ):
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
 

@@ -156,9 +156,7 @@ class DefaultMixed(QubitDevice):
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(
-            returns_state=True, passthru_devices={"autograd": "default.mixed"}
-        )
+        capabilities.update(returns_state=True, passthru_interface="autograd")
         return capabilities
 
     @property
@@ -388,7 +386,9 @@ class DefaultMixed(QubitDevice):
 
         else:
             # generate basis states on subset of qubits via the cartesian product
-            basis_states = qnp.asarray(list(itertools.product([0, 1], repeat=len(device_wires))), dtype=self.C_DTYPE)
+            basis_states = qnp.asarray(
+                list(itertools.product([0, 1], repeat=len(device_wires))), dtype=self.C_DTYPE
+            )
 
             # get basis states to alter on full set of qubits
             unravelled_indices = qnp.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
