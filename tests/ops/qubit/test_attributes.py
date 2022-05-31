@@ -14,6 +14,7 @@
 """
 Unit tests for the available qubit state preparation operations.
 """
+import itertools as it
 import pytest
 import numpy as np
 from scipy.stats import unitary_group
@@ -130,7 +131,7 @@ class TestSupportsBroadcasting:
     def test_all_marked_operations_are_tested(self):
         """Test that the subsets of the ``supports_broadcasting`` attribute
         defined above cover the entire attribute."""
-        tested_ops = set(sum(
+        tested_ops = set(it.chain.from_iterable(
             [
                 single_scalar_single_wire_ops,
                 single_scalar_multi_wire_ops,
@@ -138,8 +139,7 @@ class TestSupportsBroadcasting:
                 three_scalar_single_wire_ops,
                 three_scalar_multi_wire_ops,
                 separately_tested_ops,
-            ],
-            start=[],
+            ]
         ))
 
         assert tested_ops == qml.ops.qubit.attributes.supports_broadcasting
