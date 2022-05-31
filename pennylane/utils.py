@@ -174,7 +174,7 @@ def sparse_hamiltonian(H, wires=None):
                     mat.append(scipy.sparse.eye(2**i_count, format="coo"))
                 i_count = 0
                 idx = op.wires.index(wire)
-                mat.append(obs[idx])
+                mat.append(scipy.sparse.coo_matrix(obs[idx]))
             else:
                 i_count += 1
 
