@@ -56,7 +56,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
 ]
 
-BATCHED_OPERATIONS = [
+BROADCASTED_OPERATIONS = [
     qml.RX(np.array([0.142, -0.61, 2.3]), wires=0),
     qml.RY(np.array([1.291, -0.10, 5.2]), wires=0),
     qml.RZ(np.array([4.239, -3.21, 1.1]), wires=0),
@@ -114,12 +114,12 @@ NON_PARAMETRIZED_OPERATIONS = [
 
 ALL_OPERATIONS = NON_PARAMETRIZED_OPERATIONS + PARAMETRIZED_OPERATIONS
 
-dot_batched = lambda a, b: np.einsum("...ij,...jk->...ik", a, b)
-multi_dot_batched = lambda matrices: reduce(dot_batched, matrices)
+dot_broadcasted = lambda a, b: np.einsum("...ij,...jk->...ik", a, b)
+multi_dot_broadcasted = lambda matrices: reduce(dot_broadcasted, matrices)
 
 
 class TestOperations:
-    @pytest.mark.parametrize("op", ALL_OPERATIONS + BATCHED_OPERATIONS)
+    @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
     def test_parametrized_op_copy(self, op, tol):
         """Tests that copied parametrized ops function as expected"""
         copied_op = copy.copy(op)
@@ -139,11 +139,11 @@ class TestOperations:
         np.testing.assert_allclose(res2, np.eye(2 ** len(op.wires)), atol=tol)
         assert op.wires == op_d.wires
 
-    @pytest.mark.parametrize("op", BATCHED_OPERATIONS)
-    def test_adjoint_unitaries_batched(self, op, tol):
+    @pytest.mark.parametrize("op", BROADCASTED_OPERATIONS)
+    def test_adjoint_unitaries_broadcasted(self, op, tol):
         op_d = op.adjoint()
-        res1 = dot_batched(op.matrix(), op_d.matrix())
-        res2 = dot_batched(op_d.matrix(), op.matrix())
+        res1 = dot_broadcasted(op.matrix(), op_d.matrix())
+        res2 = dot_broadcasted(op_d.matrix(), op.matrix())
         I = [np.eye(2 ** len(op.wires))] * op.batch_size
         np.testing.assert_allclose(res1, I, atol=tol)
         np.testing.assert_allclose(res2, I, atol=tol)
@@ -211,7 +211,7 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, global_phase * op.matrix(), atol=tol, rtol=0)
 
-    def test_phase_decomposition_batched(self, tol):
+    def test_phase_decomposition_broadcasted(self, tol):
         """Tests that the decomposition of the broadcasted Phase gate is correct"""
         phi = np.array([0.3, 2.1, 0.2])
         op = qml.PhaseShift(phi, wires=0)
@@ -248,7 +248,7 @@ class TestDecompositions:
                 assert isinstance(op, c)
                 assert op.parameters == p
 
-    def test_Rot_decomposition_batched(self):
+    def test_Rot_decomposition_broadcasted(self):
         """Test the decomposition of broadcasted Rot."""
         phi = np.array([0.1, 2.1])
         theta = np.array([0.4, -0.2])
@@ -284,7 +284,7 @@ class TestDecompositions:
                 assert op.parameters == p
                 assert op.wires == w
 
-    def test_CRX_decomposition_batched(self):
+    def test_CRX_decomposition_broadcasted(self):
         """Test the decomposition for broadcasted CRX."""
         phi = np.array([0.1, 2.1])
 
@@ -318,7 +318,7 @@ class TestDecompositions:
                 assert np.allclose(op.parameters, p)
                 assert op.wires == w
 
-    def test_CRY_decomposition_batched(self):
+    def test_CRY_decomposition_broadcasted(self):
         """Test the decomposition for broadcastedCRY."""
         phi = np.array([2.1, 0.2])
 
@@ -352,7 +352,7 @@ class TestDecompositions:
                 assert np.allclose(op.parameters, p)
                 assert op.wires == w
 
-    def test_CRZ_decomposition_batched(self):
+    def test_CRZ_decomposition_broadcasted(self):
         """Test the decomposition for broadcasted CRZ."""
         phi = np.array([0.6, 2.1])
 
@@ -393,7 +393,7 @@ class TestDecompositions:
             [np.array([0.1, 0.2, 0.9]), -0.4, np.array([0.7, 0.0, -0.7])],
         ],
     )
-    def test_CRot_decomposition_batched(self, tol, phi, theta, omega):
+    def test_CRot_decomposition_broadcasted(self, tol, phi, theta, omega):
         """Tests that the decomposition of the broadcasted CRot gate is correct"""
         op = qml.CRot(phi, theta, omega, wires=[0, 1])
         res = op.decomposition()
@@ -407,7 +407,7 @@ class TestDecompositions:
             else:
                 mats.append(mat)
 
-        decomposed_matrix = multi_dot_batched(mats)
+        decomposed_matrix = multi_dot_broadcasted(mats)
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
@@ -421,7 +421,7 @@ class TestDecompositions:
         assert res[0].name == res2[0].name == "PhaseShift"
         assert res[0].parameters == res2[0].parameters == [phi]
 
-    def test_U1_decomposition_batched(self):
+    def test_U1_decomposition_broadcasted(self):
         """Test the decomposition for broadcasted U1."""
         phi = np.array([0.6, 1.2, 9.5])
         res = qml.U1(phi, wires=0).decomposition()
@@ -448,7 +448,7 @@ class TestDecompositions:
                 assert isinstance(op, c)
                 assert op.parameters == p
 
-    def test_U2_decomposition_batched(self):
+    def test_U2_decomposition_broadcasted(self):
         """Test the decomposition for broadcasted U2."""
         phi = np.array([0.1, 2.1])
         lam = np.array([1.2, 4.9])
@@ -481,7 +481,7 @@ class TestDecompositions:
                 assert isinstance(op, c)
                 assert op.parameters == p
 
-    def test_U3_decomposition_batched(self):
+    def test_U3_decomposition_broadcasted(self):
         """Test the decomposition for broadcasted U3."""
         theta = np.array([0.1, 2.1])
         phi = np.array([1.2, 4.9])
@@ -526,7 +526,7 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-    def test_isingxx_decomposition_batched(self, tol):
+    def test_isingxx_decomposition_broadcasted(self, tol):
         """Tests that the decomposition of the broadcasted IsingXX gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
         op = qml.IsingXX(param, wires=[3, 2])
@@ -552,7 +552,7 @@ class TestDecompositions:
             else:
                 mats.append(mat)
 
-        decomposed_matrix = multi_dot_batched(mats)
+        decomposed_matrix = multi_dot_broadcasted(mats)
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
@@ -584,7 +584,7 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-    def test_isingyy_decomposition_batched(self, tol):
+    def test_isingyy_decomposition_broadcasted(self, tol):
         """Tests that the decomposition of the broadcasted IsingYY gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
         op = qml.IsingYY(param, wires=[3, 2])
@@ -610,7 +610,7 @@ class TestDecompositions:
             else:
                 mats.append(mat)
 
-        decomposed_matrix = multi_dot_batched(mats)
+        decomposed_matrix = multi_dot_broadcasted(mats)
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
@@ -642,7 +642,7 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-    def test_isingzz_decomposition_batched(self, tol):
+    def test_isingzz_decomposition_broadcasted(self, tol):
         """Tests that the decomposition of the broadcasted IsingZZ gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
         op = qml.IsingZZ(param, wires=[3, 2])
@@ -668,7 +668,7 @@ class TestDecompositions:
             else:
                 mats.append(mat)
 
-        decomposed_matrix = multi_dot_batched(mats)
+        decomposed_matrix = multi_dot_broadcasted(mats)
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
@@ -759,7 +759,7 @@ class TestDecompositions:
                     )
                 )
 
-        decomposed_matrix = multi_dot_batched(mats)
+        decomposed_matrix = multi_dot_broadcasted(mats)
         lam = np.exp(1j * phi)
         exp = np.array([np.diag([1, 1, 1, 1, 1, el, 1, el]) for el in lam])
 
@@ -881,7 +881,7 @@ class TestMatrix:
             qml.IsingXX(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
 
-    def test_isingxx_batched(self, tol):
+    def test_isingxx_broadcasted(self, tol):
         """Test that the broadcasted IsingXX operation is correct"""
         z = np.zeros(3)
         assert np.allclose(qml.IsingXX.compute_matrix(z), np.identity(4), atol=tol, rtol=0)
@@ -934,7 +934,7 @@ class TestMatrix:
             qml.IsingYY(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
 
-    def test_isingyy_batched(self, tol):
+    def test_isingyy_broadcasted(self, tol):
         """Test that the broadcasted IsingYY operation is correct"""
         z = np.zeros(3)
         assert np.allclose(qml.IsingYY.compute_matrix(z), np.identity(4), atol=tol, rtol=0)
@@ -995,7 +995,7 @@ class TestMatrix:
             qml.IsingZZ.compute_eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
         )
 
-    def test_isingzz_batched(self, tol):
+    def test_isingzz_broadcasted(self, tol):
         """Test that the broadcasted IsingZZ operation is correct"""
         z = np.zeros(3)
         assert np.allclose(qml.IsingZZ.compute_matrix(z), np.identity(4), atol=tol, rtol=0)
@@ -1050,7 +1050,7 @@ class TestMatrix:
         assert np.allclose(qml.IsingZZ.compute_matrix(param), get_expected(np.pi), atol=tol, rtol=0)
 
     @pytest.mark.tf
-    def test_isingzz_matrix_tf_batched(self, tol):
+    def test_isingzz_matrix_tf_broadcasted(self, tol):
         """Tests the matrix representation for broadcasted IsingZZ for tensorflow,
         since the method contains different logic for this framework"""
         import tensorflow as tf
@@ -1094,7 +1094,7 @@ class TestMatrix:
             qml.Rot(a, b, c, wires=0).matrix(), arbitrary_rotation(a, b, c), atol=tol, rtol=0
         )
 
-    def test_Rot_batched(self, tol):
+    def test_Rot_broadcasted(self, tol):
         """Test broadcasted arbitrary single qubit rotation is correct"""
 
         # test identity for phi,theta,omega=0
@@ -1261,7 +1261,7 @@ class TestMatrix:
             rtol=0,
         )
 
-    def test_CRot_batched(self, tol):
+    def test_CRot_broadcasted(self, tol):
         """Test broadcasted controlled arbitrary rotation is correct"""
 
         # test identity for phi,theta,omega=0
@@ -1316,7 +1316,7 @@ class TestMatrix:
         assert np.allclose(qml.U2.compute_matrix(phi, lam), expected, atol=tol, rtol=0)
         assert np.allclose(qml.U2(phi, lam, wires=[0]).matrix(), expected, atol=tol, rtol=0)
 
-    def test_U2_gate_batched(self, tol):
+    def test_U2_gate_broadcasted(self, tol):
         """Test U2 gate matrix matches the documentation"""
         def get_expected(phi, lam):
             one = np.ones_like(phi) * np.ones_like(lam)
@@ -1365,7 +1365,7 @@ class TestMatrix:
     @pytest.mark.parametrize("theta", [0.432, np.array([0.1, 2.1, -0.6])])
     @pytest.mark.parametrize("phi", [0.654, np.array([1.2, 4.9, 0.7])])
     @pytest.mark.parametrize("lam", [0.218, np.array([-1.7, 3.2, 1.9])])
-    def test_U3_gate_batched(self, tol, theta, phi, lam):
+    def test_U3_gate_broadcasted(self, tol, theta, phi, lam):
         """Test broadcasted U3 gate matrix matches the documentation"""
         if np.ndim(theta)==np.ndim(phi)==np.ndim(lam)==0:
             pytest.skip("The scalars-only case is covered in a separate test.")
@@ -1397,9 +1397,9 @@ class TestMatrix:
         assert np.allclose(res, np.diag(exp))
 
     @pytest.mark.parametrize("cphase_op", [qml.ControlledPhaseShift, qml.CPhase])
-    def test_controlled_phase_shift_matrix_and_eigvals_batched(self, cphase_op):
+    def test_controlled_phase_shift_matrix_and_eigvals_broadcasted(self, cphase_op):
         """Tests that the ControlledPhaseShift and CPhase operation calculate the
-        correct matrix and eigenvalues for batched parameters"""
+        correct matrix and eigenvalues for broadcasted parameters"""
         phi = np.array([0.2, np.pi / 2, -0.1])
         op = cphase_op(phi, wires=[0, 1])
         res = op.matrix()
@@ -1975,7 +1975,7 @@ class TestPauliRot:
         assert len(decomp_ops) == 0
 
 
-    def test_PauliRot_all_Identity_batched(self):
+    def test_PauliRot_all_Identity_broadcasted(self):
         """Test handling of the broadcasted all-identity Pauli."""
 
         theta = np.array([0.4, 0.9, 1.2])
@@ -2080,8 +2080,8 @@ class TestPauliRot:
         )
 
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
-    def test_differentiability_batched(self, pauli_word, tol):
-        """Test that differentiation of PauliRot works with batched parameters."""
+    def test_differentiability_broadcasted(self, pauli_word, tol):
+        """Test that differentiation of PauliRot works with broadcasted parameters."""
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -2253,8 +2253,8 @@ class TestMultiRZ:
         assert np.allclose(res_dynamic, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("num_wires", [1, 2, 3])
-    def test_MultiRZ_matrix_batched(self, num_wires, tol):
-        """Test that the MultiRZ matrix is correct for batched parameters."""
+    def test_MultiRZ_matrix_broadcasted(self, num_wires, tol):
+        """Test that the MultiRZ matrix is correct for broadcasted parameters."""
 
         theta = np.linspace(0, 2 * np.pi, 7)[:3]
         res_static = qml.MultiRZ.compute_matrix(theta, num_wires)
@@ -2327,7 +2327,7 @@ class TestMultiRZ:
             0.5 * (circuit(angle + np.pi / 2) - circuit(angle - np.pi / 2)), abs=tol
         )
 
-    def test_differentiability_batched(self, tol):
+    def test_differentiability_broadcasted(self, tol):
         """Test that differentiation of MultiRZ works."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -2486,8 +2486,8 @@ label_data = [
     ),
 ]
 
-# labels with batched parameters are not implemented properly yet, the parameters are truncated
-label_data_batched = [
+# labels with broadcasted parameters are not implemented properly yet, the parameters are truncated
+label_data_broadcasted = [
     (qml.RX(np.array([1.23, 4.56]), wires=0), "RX", "RX", "RX", "RX⁻¹"),
     (qml.PauliRot(np.array([1.23, 4.5]), "XYZ", wires=(0, 1, 2)), "RXYZ", "RXYZ", "RXYZ", "RXYZ⁻¹"),
     (
@@ -2515,8 +2515,8 @@ class TestLabel:
         assert op.label(decimals=0) == label4
         op.inv()
 
-    @pytest.mark.parametrize("op, label1, label2, label3, label4", label_data_batched)
-    def test_label_method_batched(self, op, label1, label2, label3, label4):
+    @pytest.mark.parametrize("op, label1, label2, label3, label4", label_data_broadcasted)
+    def test_label_method_broadcasted(self, op, label1, label2, label3, label4):
         """Test label method with plain scalers."""
 
         assert op.label() == label1
@@ -2582,7 +2582,7 @@ class TestLabel:
         op3 = qml.Rot("x", "y", "z", wires=0)
         assert op3.label(decimals=0) == "Rot\n(x,\ny,\nz)"
 
-    def test_string_parameter_batched(self):
+    def test_string_parameter_broadcasted(self):
         """Test labelling works (i.e. does not raise an Error) if variable is a
         string instead of a float."""
 

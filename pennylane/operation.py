@@ -813,9 +813,9 @@ class Operator(abc.ABC):
 
         if len(qml.math.shape(params[0])) != 0:
             # assume that if the first parameter is matrix-valued, there is only a single parameter
-            # this holds true for all current operations and templates unless tensor-batching
+            # this holds true for all current operations and templates unless parameter broadcasting
             # is used
-            # TODO[dwierichs]: Implement a proper label for tensor-batched operators
+            # TODO[dwierichs]: Implement a proper label for broadcasted operators
             if (
                 cache is None
                 or not isinstance(cache.get("matrices", None), list)
@@ -937,7 +937,8 @@ class Operator(abc.ABC):
             ]
             if not qml.math.allclose(first_dims, first_dims[0]):
                 raise ValueError(
-                    f"Batching was attempted but the batched dimensions do not match: {first_dims}."
+                    "Broadcasting was attempted but the broadcasted dimensions "
+                    f"do not match: {first_dims}."
                 )
             self._batch_size = first_dims[0]
 

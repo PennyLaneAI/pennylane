@@ -2535,7 +2535,7 @@ class TestBroadcastingSupport:
 
     @pytest.mark.parametrize("x", [0.2, [0.1, 0.6, 0.3], [0.1]])
     @pytest.mark.parametrize("shots", [None, 100000])
-    def test_with_single_batched_par(self, x, shots):
+    def test_with_single_broadcasted_par(self, x, shots):
         """Test that broadcasting on a circuit with a
         single parametrized operation works."""
         dev = qml.device("default.qubit", wires=2, shots=shots)
