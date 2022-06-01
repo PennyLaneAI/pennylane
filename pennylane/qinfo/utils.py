@@ -29,9 +29,10 @@ def density_matrix_transform(qnode, indices):
     **Example**
 
     .. code-block:: python
+
         dev = qml.device("default.qubit", wires=2)
         @qml.qnode(dev)
-        def circuit(x, weights):
+        def circuit(x):
             qml.RZ(x, wires=0)
             return qml.state()
 
