@@ -168,7 +168,7 @@ def marginal_prob(prob, axis):
     return np.flatten(prob)
 
 
-def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dtype="complex64"):
+def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dtype="complex128"):
     """Compute the density matrix from a state represented with a density matrix.
 
     Args:
@@ -335,7 +335,7 @@ def partial_trace(density_matrix, indices, c_dtype="complex64"):
     return reduced_density_matrix
 
 
-def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype="complex64"):
+def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype="complex128"):
     """Compute the density matrix from a state vector.
 
     Args:
@@ -345,7 +345,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
         c_dtype (str): Complex floating point precision type.
 
     Returns:
-        tensor_like: Density matrix of size ``(2**len(wires), 2**len(wires))``
+        tensor_like: Density matrix of size ``(2**len(indices), 2**len(indices))``
 
     **Example**
 
@@ -400,8 +400,8 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
     return density_matrix
 
 
-def to_density_matrix(state, indices, check_state=False, c_dtype="complex64"):
-    """Compute the reduced density matrix from a state vector, a density matrix.
+def to_density_matrix(state, indices, check_state=False, c_dtype="complex128"):
+    """Compute the reduced density matrix from a state vector, a density matrix or a QNode returning ``qml.state``.
 
     Args:
         state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
@@ -410,7 +410,8 @@ def to_density_matrix(state, indices, check_state=False, c_dtype="complex64"):
         c_dtype (str): Complex floating point precision type.
 
     Returns:
-        tensor_like: (Reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
+        tensor_like: (Reduced) Density matrix of size ``(2**len(indices), 2**len(indices))``
+
 
     **Example**
 
