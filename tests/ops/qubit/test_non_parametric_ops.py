@@ -267,6 +267,7 @@ class TestDecompositions:
         decomposed_matrix = np.linalg.multi_dot(mats)
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
     def test_ECR_decomposition(self, tol):
         """Tests that the decomposition of the ECR gate is correct"""
         op = qml.ECR(wires=[0, 1])
