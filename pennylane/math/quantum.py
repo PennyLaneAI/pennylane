@@ -169,13 +169,13 @@ def marginal_prob(prob, axis):
     return np.flatten(prob)
 
 
-def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dtype="complex64"):
-    """Compute the density matrix from a state vector.
+def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dtype="complex128"):
+    """Compute the density matrix from a state represented with a density matrix.
 
     Args:
         density_matrix (tensor_like): 2D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` for some
             integer number of wires``N``.
-        indices (list(int)): List of indices in the subsystem.
+        indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 
@@ -235,11 +235,11 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dt
         return density_matrix
 
     traced_wires = [x for x in consecutive_indices if x not in indices]
-    density_matrix = partial_trace(density_matrix, traced_wires)
+    density_matrix = partial_trace(density_matrix, traced_wires, c_dtype=c_dtype)
     return density_matrix
 
 
-def partial_trace(density_matrix, indices, c_dtype="complex64"):
+def partial_trace(density_matrix, indices, c_dtype="complex128"):
     """Compute the reduced density matrix by tracing out the provided indices.
 
     Args:
@@ -281,7 +281,7 @@ def partial_trace(density_matrix, indices, c_dtype="complex64"):
 
     density_matrix = np.reshape(density_matrix, [2] * 2 * num_indices)
 
-    # Kraus operator for partial tracee
+    # Kraus operator for partial trace
     kraus = cast(np.eye(2), dtype=c_dtype)
     kraus = np.reshape(kraus, (2, 1, 2))
     kraus_dagger = np.asarray([np.conj(np.transpose(k)) for k in kraus])
@@ -336,7 +336,7 @@ def partial_trace(density_matrix, indices, c_dtype="complex64"):
     return reduced_density_matrix
 
 
-def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype="complex64"):
+def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype="complex128"):
     """Compute the density matrix from a state vector.
 
     Args:
@@ -346,7 +346,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
         c_dtype (str): Complex floating point precision type.
 
     Returns:
-        tensor_like: Density matrix of size ``(2**len(wires), 2**len(wires))``
+        tensor_like: Density matrix of size ``(2**len(indices), 2**len(indices))``
 
     **Example**
 
@@ -401,8 +401,8 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
     return density_matrix
 
 
-def to_density_matrix(state, indices, check_state=False, c_dtype="complex64"):
-    """Compute the reduced density matrix from a state vector, a density matrix.
+def to_density_matrix(state, indices, check_state=False, c_dtype="complex128"):
+    """Compute the reduced density matrix from a state vector, a density matrix or a QNode returning ``qml.state``.
 
     Args:
         state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
@@ -411,7 +411,8 @@ def to_density_matrix(state, indices, check_state=False, c_dtype="complex64"):
         c_dtype (str): Complex floating point precision type.
 
     Returns:
-        tensor_like: (Reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
+        tensor_like: (Reduced) Density matrix of size ``(2**len(indices), 2**len(indices))``
+
 
     **Example**
 
@@ -430,17 +431,17 @@ def to_density_matrix(state, indices, check_state=False, c_dtype="complex64"):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
-    >>> z = [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
+    >>> z = [[0.5, 0, 0.0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]
     >>> to_density_matrix(z, indices=[0])
-    [[0.5+0.j 0.5+0.j]
-     [0.5+0.j 0.5+0.j]]
+    [[0.5+0.j 0.0+0.j]
+     [0.0+0.j 0.5+0.j]]
 
     >>> to_density_matrix(z, indices=[1])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
-    >>> y = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0]], dtype=tf.complex128)
-    >>> to_density_matrix(z, indices=[1])
+    >>> y_mat_tf = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+    >>> to_density_matrix(y_mat_tf, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
