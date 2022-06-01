@@ -35,12 +35,6 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as np
 
-pytestmark = pytest.mark.all_interfaces
-
-tf = pytest.importorskip("tensorflow", minversion="2.1")
-torch = pytest.importorskip("torch")
-jax = pytest.importorskip("jax")
-
 
 class TestVonNeumannEntropy:
     """Tests for creating a density matrix from state vectors."""
@@ -94,6 +88,18 @@ class TestVonNeumannEntropy:
     parameters = np.linspace(0, 2 * np.pi, 50)
     devices = ["default.qubit", "default.mixed"]
 
+    single_wires_list = [
+        [0],
+        [1],
+    ]
+
+    base = [2, np.exp(1), 10]
+
+    check_state = [True, False]
+
+    parameters = np.linspace(0, 2 * np.pi, 50)
+    devices = ["default.qubit", "default.mixed"]
+
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("device", devices)
@@ -107,6 +113,8 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires)
 
+        entropy = circuit_entropy(param)
+
         eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
         eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
         eigs = [eig_1, eig_2]
@@ -115,9 +123,46 @@ class TestVonNeumannEntropy:
         expected_entropy = eigs * np.log(eigs)
 
         expected_entropy = -np.sum(expected_entropy)
-
-        entropy = circuit_entropy(param)
         assert qml.math.allclose(entropy, expected_entropy)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    def test_IsingXX_qnode_transform_entropy_grad(self, param, wires):
+        """Test entropy for a QNode gradient with autograd."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires)
+
+        grad_entropy = qml.grad(circuit_entropy)(param)
+
+        eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+        eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+        eigs = [eig_1, eig_2]
+        eigs = np.maximum(eigs, 1e-08)
+
+        grad_expected_entropy = -(
+            (np.log(eigs[0]) + 1)
+            * (
+                np.sin(param / 2) ** 3 * np.cos(param / 2)
+                - np.sin(param / 2) * np.cos(param / 2) ** 3
+            )
+            / np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)
+        ) - (
+            (np.log(eigs[1]) + 1)
+            * (
+                np.sin(param / 2)
+                * np.cos(param / 2)
+                * (np.cos(param / 2) ** 2 - np.sin(param / 2) ** 2)
+            )
+            / np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)
+        )
+
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -134,6 +179,8 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires)
 
+        entropy = circuit_entropy(torch.tensor(param))
+
         eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
         eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
         eigs = [eig_1, eig_2]
@@ -143,8 +190,50 @@ class TestVonNeumannEntropy:
 
         expected_entropy = -np.sum(expected_entropy)
 
-        entropy = circuit_entropy(torch.tensor(param))
         assert qml.math.allclose(entropy, expected_entropy)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    def test_IsingXX_qnode_entropy_grad_torch(self, param, wires):
+        """Test entropy for a QNode gradient with torch."""
+        import torch
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires)
+
+        eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+        eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+        eigs = [eig_1, eig_2]
+        eigs = np.maximum(eigs, 1e-08)
+
+        grad_expected_entropy = -(
+            (np.log(eigs[0]) + 1)
+            * (
+                np.sin(param / 2) ** 3 * np.cos(param / 2)
+                - np.sin(param / 2) * np.cos(param / 2) ** 3
+            )
+            / np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)
+        ) - (
+            (np.log(eigs[1]) + 1)
+            * (
+                np.sin(param / 2)
+                * np.cos(param / 2)
+                * (np.cos(param / 2) ** 2 - np.sin(param / 2) ** 2)
+            )
+            / np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)
+        )
+
+        param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
+        entropy = circuit_entropy(param)
+        entropy.backward()
+        grad_entropy = param.grad
+
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -161,6 +250,8 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires)
 
+        entropy = circuit_entropy(tf.Variable(param))
+
         eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
         eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
         eigs = [eig_1, eig_2]
@@ -170,8 +261,51 @@ class TestVonNeumannEntropy:
 
         expected_entropy = -np.sum(expected_entropy)
 
-        entropy = circuit_entropy(tf.Variable(param))
         assert qml.math.allclose(entropy, expected_entropy)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    def test_IsingXX_qnode_entropy_grad_tf(self, param, wires):
+        """Test entropy for a QNode gradient with tf."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires)
+
+        param = tf.Variable(param)
+        with tf.GradientTape() as tape:
+            entropy = circuit_entropy(param)
+
+        grad_entropy = tape.gradient(entropy, param)
+
+        eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+        eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+        eigs = [eig_1, eig_2]
+        eigs = np.maximum(eigs, 1e-08)
+
+        grad_expected_entropy = -(
+            (np.log(eigs[0]) + 1)
+            * (
+                np.sin(param / 2) ** 3 * np.cos(param / 2)
+                - np.sin(param / 2) * np.cos(param / 2) ** 3
+            )
+            / np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)
+        ) - (
+            (np.log(eigs[1]) + 1)
+            * (
+                np.sin(param / 2)
+                * np.cos(param / 2)
+                * (np.cos(param / 2) ** 2 - np.sin(param / 2) ** 2)
+            )
+            / np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)
+        )
+
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -188,6 +322,8 @@ class TestVonNeumannEntropy:
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires)
 
+        entropy = circuit_entropy(jnp.array(param))
+
         eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
         eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
         eigs = [eig_1, eig_2]
@@ -197,5 +333,112 @@ class TestVonNeumannEntropy:
 
         expected_entropy = -np.sum(expected_entropy)
 
-        entropy = circuit_entropy(jnp.array(param))
         assert qml.math.allclose(entropy, expected_entropy)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    def test_IsingXX_qnode_entropy_grad_jax(self, param, wires):
+        """Test entropy for a QNode gradient with Jax."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires)
+
+        grad_entropy = jax.grad(circuit_entropy)(jax.numpy.array(param))
+
+        eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+        eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+        eigs = [eig_1, eig_2]
+        eigs = np.maximum(eigs, 1e-08)
+
+        grad_expected_entropy = -(
+            (np.log(eigs[0]) + 1)
+            * (
+                np.sin(param / 2) ** 3 * np.cos(param / 2)
+                - np.sin(param / 2) * np.cos(param / 2) ** 3
+            )
+            / np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)
+        ) - (
+            (np.log(eigs[1]) + 1)
+            * (
+                np.sin(param / 2)
+                * np.cos(param / 2)
+                * (np.cos(param / 2) ** 2 - np.sin(param / 2) ** 2)
+            )
+            / np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)
+        )
+
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    def test_IsingXX_qnode_jax_jit_entropy(self, param, wires):
+        """Test entropy for a QNode with jax-jit interface."""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax-jit")
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires)
+
+        entropy = jax.jit(circuit_entropy)(jnp.array(param))
+
+        eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+        eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+        eigs = [eig_1, eig_2]
+        eigs = [eig for eig in eigs if eig > 0]
+
+        expected_entropy = eigs * np.log(eigs)
+
+        expected_entropy = -np.sum(expected_entropy)
+
+        assert qml.math.allclose(entropy, expected_entropy)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("param", parameters)
+    def test_IsingXX_qnode_entropy_grad_jax_jit(self, param, wires):
+        """Test entropy for a QNode gradient with Jax-jit."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="jax-jit", diff_method="backprop")
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=wires)
+
+        grad_entropy = jax.jit(jax.grad(circuit_entropy))(jax.numpy.array(param))
+
+        eig_1 = (1 + np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+        eig_2 = (1 - np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)) / 2
+        eigs = [eig_1, eig_2]
+        eigs = np.maximum(eigs, 1e-08)
+
+        grad_expected_entropy = -(
+            (np.log(eigs[0]) + 1)
+            * (
+                np.sin(param / 2) ** 3 * np.cos(param / 2)
+                - np.sin(param / 2) * np.cos(param / 2) ** 3
+            )
+            / np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)
+        ) - (
+            (np.log(eigs[1]) + 1)
+            * (
+                np.sin(param / 2)
+                * np.cos(param / 2)
+                * (np.cos(param / 2) ** 2 - np.sin(param / 2) ** 2)
+            )
+            / np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)
+        )
+
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)

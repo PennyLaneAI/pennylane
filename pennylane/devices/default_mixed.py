@@ -171,10 +171,10 @@ class DefaultMixed(QubitDevice):
         """Returns the Von Neumann entropy prior to measurement.
 
         Args:
-            wires (Wires): wires of the reduced system.
+            wires (Wires): wires of the considered subsystem.
 
         Returns:
-            array[float]:
+            float: returns the Von Neumann entropy
         """
         wires = wires.tolist()
         state = np.reshape(self._pre_rotated_state, (2**self.num_wires, 2**self.num_wires))

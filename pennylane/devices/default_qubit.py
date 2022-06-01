@@ -611,10 +611,10 @@ class DefaultQubit(QubitDevice):
         """Returns the Von Neumann entropy prior to measurement.
 
         Args:
-            wires (Wires): wires of the reduced system.
+            wires (Wires): wires of the considered subsystem.
 
         Returns:
-            array[float]:
+            float: returns the Von Neumann entropy
         """
         wires = wires.tolist()
         state = self._flatten(self._pre_rotated_state)
