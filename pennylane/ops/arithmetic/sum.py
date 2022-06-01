@@ -48,6 +48,18 @@ class Sum(Operator):
         """Constructor-call-like representation."""
         return " + ".join([f"{f}" for f in self.summands])
 
+    def __copy__(self):
+        cls = self.__class__
+        copied_op = cls.__new__(cls)
+        copied_op.data = self.data.copy()  # copies the combined parameters
+        copied_op.summands = tuple(s.__copy__() for s in self.summands)
+
+        for attr, value in vars(self).items():
+            if attr not in {"data", "summands"}:
+                setattr(copied_op, attr, value)
+
+        return copied_op
+
     @property
     def num_wires(self):
         return len(self.wires)
@@ -59,6 +71,22 @@ class Sum(Operator):
 
     def terms(self):
         return [1.0]*len(self.summands), self.summands
+
+    def diagonalizing_gates(self):
+        """Compute diagonalizing_gates (only if op is hermitian)"""
+        if not self.is_hermitian:
+            raise qml.operation.DiagGatesUndefinedError
+
+        Hmat = self.matrix()
+        Hmat = qml.math.to_numpy(Hmat)
+        Hkey = tuple(Hmat.flatten().tolist())
+        eigs = {}
+        if Hkey not in eigs:
+            w, U = np.linalg.eigh(Hmat)
+            eigs[Hkey] = {"eigvec": U, "eigval": w}
+
+        eigenvectors = eigs[Hkey]["eigvec"]
+        return [qml.QubitUnitary(eigenvectors.conj().T, wires=self.wires)]
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
@@ -76,7 +104,7 @@ class Sum(Operator):
     def eigvals(self, wire_order=None):
         """Get eigvals of the the Sum of operators"""
         if not self.is_hermitian:
-            raise qml.operation.EigvalsUndefinedError  # eigvals for non-hermitian obs can be imaginar
+            raise qml.operation.EigvalsUndefinedError  # eigvals for non-hermitian obs can be imaginary
         else:
             return super().eigvals()
 
@@ -92,3 +120,25 @@ class Sum(Operator):
             res = math.cast_like(res, cast_like)
 
         return res
+
+    @staticmethod
+    def is_commuting(terms, wires):
+        """Checks if a sequence of terms all commute with each other"""
+        num_terms = len(terms)
+        for i in range(num_terms):
+            for j in range(i+1, num_terms):
+                term_i = terms[i]
+                term_j = terms[j]
+
+                if term_i.wires.toset() == term_j.wires.toset():  # same wires no need to expand matrix
+                    mat_i = term_i.matrix(wire_order=term_i.wires)
+                    mat_j = term_j.matrix(wire_order=term_i.wires)
+
+                else:
+                    mat_i = expand_matrix(term_i.matrix(), term_i.wires, wires)
+                    mat_j = expand_matrix(term_j.matrix(), term_j.wires, wires)
+
+                if not math.allequal(mat_i @ mat_j, mat_j @ mat_i):
+                    return False
+
+        return True
