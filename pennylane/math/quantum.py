@@ -174,7 +174,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
         c_dtype (str): Complex floating point precision type.
 
     Returns:
-        tensor_like: Density matrix of size ``(2**len(wires), 2**len(wires))``
+        tensor_like: Density matrix of size ``(2**len(indices), 2**len(indices))``
 
     **Example**
 
@@ -239,7 +239,8 @@ def to_density_matrix(state, indices, check_state=False, c_dtype="complex64"):
         c_dtype (str): Complex floating point precision type.
 
     Returns:
-        tensor_like: (Reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
+        tensor_like: (Reduced) Density matrix of size ``(2**len(indices), 2**len(indices))``
+
 
     **Example**
 
