@@ -1310,7 +1310,6 @@ class ECR(Operation):
         **Example**
 
         >>> print(qml.ECR.compute_matrix())
-        
          [[0+0.j 0.+0.j 1/sqrt(2)+0.j 0.+1j/sqrt(2)]
          [0.+0.j 0.+0.j 0.+1.j/sqrt(2) 1/sqrt(2)+0.j]
          [1/sqrt(2)+0.j 0.-1.j/sqrt(2) 0.+0.j 0.+0.j]
