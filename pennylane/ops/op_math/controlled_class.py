@@ -25,6 +25,19 @@ from pennylane.operation import Operation, MatrixUndefinedError
 from pennylane.queuing import QueuingContext, QueuingError
 from pennylane.wires import Wires
 
+def _name_map(base, num_control_wires):
+    if isinstance(base, qml.PauliX):
+        if num_control_wires == 1:
+            return "CNOT"
+        if num_control_wires == 2:
+            return "Toffoli"
+        return "MultiControlledX"
+    if num_control_wires == 1:
+        if isinstance(base, qml.PauliY):
+            return "CY"
+        if isinstance(base, qml.PauliZ):
+            return "CZ"
+    return f"C{base.name}"
 
 class Controlled(Operation):
 
@@ -54,15 +67,16 @@ class Controlled(Operation):
             )
             control_values = [(x == "1") for x in control_values]
 
-        if Wires.shared_wires([base.wires, Wires(control_wires)]):
+        control_wires = Wires(control_wires)
+        if Wires.shared_wires([base.wires, control_wires]):
             raise ValueError("The control wires must be different from the base operation wires.")
 
         self.hyperparameters["base"] = base
-        self.hyperparameters["control_wires"] = Wires(control_wires)
+        self.hyperparameters["control_wires"] = control_wires
         self.hyperparameters["control_values"] = control_values
         self.hyperparameters["work_wires"] = Wires([]) if work_wires is None else Wires(work_wires)
 
-        self._name = f"C{self.base.name}"
+        self._name = _name_map(base, len(control_wires))
 
         self._id = id
         self.queue_idx = None
@@ -110,6 +124,29 @@ class Controlled(Operation):
     @property
     def wires(self):
         return self.control_wires + self.base.wires + self.work_wires
+
+    @property
+    def _wires(self):
+        return self.wires
+
+    @_wires.setter
+    def _wires(self, new_wires):
+        num_control = len(self.control_wires)
+        num_base = len(self.base.wires)
+        num_control_and_base = num_control + num_base
+
+        if len(new_wires) < num_control_and_base:
+            raise ValueError(f"{self} needs at least {num_control_and_base} wires."
+                f"{len(new_wires)} provided.")
+
+        self.hyperparameters['control_wires'] = new_wires[0:num_control]
+
+        self.base._wires = new_wires[num_control:num_control_and_base]
+
+        if len(new_wires) > num_control_and_base:
+            self.hyperparameters['work_wires'] = new_wires[num_control_and_base:]
+        else:
+            self.hyperparameters['work_wires'] = Wires([])
 
     @property
     def num_wires(self):
@@ -173,7 +210,7 @@ class Controlled(Operation):
 
     def pow(self, z):
         base_pow = self.base.pow(z)
-        return Controlled(base_pow, self.control_wires, self.control_values, self.work_wires)
+        return [Controlled(op, self.control_wires, self.control_values, self.work_wires) for op in base_pow]
 
     @property
     def grad_method(self):

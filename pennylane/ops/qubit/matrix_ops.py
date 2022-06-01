@@ -22,7 +22,6 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation, DecompositionUndefinedError
 from pennylane.wires import Wires
-from pennylane.ops.op_math import Controlled
 
 
 class QubitUnitary(Operation):
@@ -59,32 +58,35 @@ class QubitUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, U, wires, do_queue=True, id=None):
+    def __init__(self, *params, wires, do_queue=True):
         wires = Wires(wires)
 
-        # check that the number
+        # For pure QubitUnitary operations (not controlled), check that the number
         # of wires fits the dimensions of the matrix
-        dim = 2 ** len(wires)
+        if not isinstance(self, ControlledQubitUnitary):
+            U = params[0]
 
-        if qml.math.shape(U) != (dim, dim):
-            raise ValueError(
-                f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
-            )
+            dim = 2 ** len(wires)
 
-        # Check for unitarity; due to variable precision across the different ML frameworks,
-        # here we issue a warning to check the operation, instead of raising an error outright.
-        if not qml.math.is_abstract(U) and not qml.math.allclose(
-            qml.math.dot(U, qml.math.T(qml.math.conj(U))),
-            qml.math.eye(qml.math.shape(U)[0]),
-            atol=1e-6,
-        ):
-            warnings.warn(
-                f"Operator {U}\n may not be unitary."
-                "Verify unitarity of operation, or use a datatype with increased precision.",
-                UserWarning,
-            )
+            if qml.math.shape(U) != (dim, dim):
+                raise ValueError(
+                    f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
+                )
 
-        super().__init__(U, wires=wires, do_queue=do_queue, id=id)
+            # Check for unitarity; due to variable precision across the different ML frameworks,
+            # here we issue a warning to check the operation, instead of raising an error outright.
+            if not qml.math.is_abstract(U) and not qml.math.allclose(
+                qml.math.dot(U, qml.math.T(qml.math.conj(U))),
+                qml.math.eye(qml.math.shape(U)[0]),
+                atol=1e-6,
+            ):
+                warnings.warn(
+                    f"Operator {U}\n may not be unitary."
+                    "Verify unitarity of operation, or use a datatype with increased precision.",
+                    UserWarning,
+                )
+
+        super().__init__(*params, wires=wires, do_queue=do_queue)
 
     @staticmethod
     def compute_matrix(U):  # pylint: disable=arguments-differ
@@ -163,7 +165,7 @@ class QubitUnitary(Operation):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
 
-class ControlledQubitUnitary(Controlled):
+class ControlledQubitUnitary(QubitUnitary):
     r"""ControlledQubitUnitary(U, control_wires, wires, control_values)
     Apply an arbitrary fixed unitary to ``wires`` with control from the ``control_wires``.
 
@@ -207,19 +209,50 @@ class ControlledQubitUnitary(Controlled):
     >>> qml.ControlledQubitUnitary(U, control_wires=[0, 1, 2], wires=3, control_values='011')
 
     """
+    num_wires = AnyWires
+    """int: Number of wires that the operator acts on."""
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    grad_method = None
+    """Gradient computation method."""
 
     def __init__(
-        self, U, control_wires=None, wires=None, control_values=None, do_queue=True, id=None
+        self,
+        *params,
+        control_wires=None,
+        wires=None,
+        control_values=None,
+        do_queue=True,
     ):
-        base = QubitUnitary(U, wires, do_queue=do_queue, id=id)
-        super().__init__(
-            base, control_wires, control_values=control_values, do_queue=do_queue, id=id
-        )
-        self._name = "ControlledQubitUnitary"
+        if control_wires is None:
+            raise ValueError("Must specify control wires")
+
+        wires = Wires(wires)
+        control_wires = Wires(control_wires)
+
+        if Wires.shared_wires([wires, control_wires]):
+            raise ValueError(
+                "The control wires must be different from the wires specified to apply the unitary on."
+            )
+
+        self._hyperparameters = {
+            "u_wires": wires,
+            "control_wires": control_wires,
+            "control_values": control_values,
+        }
+
+        total_wires = control_wires + wires
+        super().__init__(*params, wires=total_wires, do_queue=do_queue)
+
+    @staticmethod
+    def compute_decomposition(*params, wires=None, **hyperparameters):
+        raise DecompositionUndefinedError
 
     @staticmethod
     def compute_matrix(
-        U, base=None, control_wires=None, control_values=None, work_wires=None
+        U, control_wires, u_wires, control_values=None
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -247,7 +280,7 @@ class ControlledQubitUnitary(Controlled):
          [ 0.        +0.j  0.        +0.j  0.94877869+0.j  0.31594146+0.j]
          [ 0.        +0.j  0.        +0.j -0.31594146+0.j  0.94877869+0.j]]
         """
-        target_dim = 2 ** len(base.wires)
+        target_dim = 2 ** len(u_wires)
         if len(U) != target_dim:
             raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
 
@@ -259,16 +292,23 @@ class ControlledQubitUnitary(Controlled):
         # etc. The positioning of the block is controlled by padding the block diagonal
         # to the left and right with the correct amount of identity blocks.
 
-        total_wires = qml.wires.Wires(control_wires) + qml.wires.Wires(base.wires)
+        total_wires = qml.wires.Wires(control_wires) + qml.wires.Wires(u_wires)
 
         # if control values unspecified, we control on the all-ones string
         if not control_values:
-            control_values = [True] * len(control_wires)
+            control_values = "1" * len(control_wires)
 
-        if len(control_values) != len(control_wires):
-            raise ValueError("Length of control_values must equal number of control wires.")
+        if isinstance(control_values, str):
+            if len(control_values) != len(control_wires):
+                raise ValueError("Length of control bit string must equal number of control wires.")
 
-        control_int = sum(2**i * v for i, v in enumerate(reversed(control_values)))
+            # Make sure all values are either 0 or 1
+            if any(x not in ["0", "1"] for x in control_values):
+                raise ValueError("String of control values can contain only '0' or '1'.")
+
+            control_int = int(control_values, 2)
+        else:
+            raise ValueError("Alternative control values must be passed as a binary string.")
 
         padding_left = control_int * len(U)
         padding_right = 2 ** len(total_wires) - len(U) - padding_left
@@ -277,6 +317,21 @@ class ControlledQubitUnitary(Controlled):
         left_pad = qml.math.cast_like(qml.math.eye(padding_left, like=interface), 1j)
         right_pad = qml.math.cast_like(qml.math.eye(padding_right, like=interface), 1j)
         return qml.math.block_diag([left_pad, U, right_pad])
+
+    @property
+    def control_wires(self):
+        return self.hyperparameters["control_wires"]
+
+    def pow(self, z):
+        if isinstance(z, int):
+            return [
+                ControlledQubitUnitary(
+                    qml.math.linalg.matrix_power(self.data[0], z),
+                    control_wires=self.control_wires,
+                    wires=self.hyperparameters["u_wires"],
+                )
+            ]
+        return super().pow(z)
 
     def _controlled(self, wire):
         ctrl_wires = sorted(self.control_wires + wire)

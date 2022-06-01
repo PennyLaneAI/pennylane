@@ -28,7 +28,6 @@ from pennylane.operation import AnyWires, Operation
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
 from pennylane.utils import expand, pauli_eigs
 from pennylane.wires import Wires
-from pennylane.ops.op_math import Controlled
 
 INV_SQRT2 = 1 / math.sqrt(2)
 
@@ -454,7 +453,7 @@ class PhaseShift(Operation):
         return [self.data[0], 0.0, 0.0]
 
 
-class ControlledPhaseShift(Controlled):
+class ControlledPhaseShift(Operation):
     r"""
     A qubit controlled phase shift.
 
@@ -481,19 +480,86 @@ class ControlledPhaseShift(Controlled):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_wires = 2
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
 
+    basis = "Z"
+    grad_method = "A"
     parameter_frequencies = [(1,)]
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        if len(wires) != 2:
-            raise ValueError(
-                "ControlledPhaseShift: wrong number of wires. "
-                f"{len(wires)} wires given, 2 wires expected."
-            )
+    def generator(self):
+        return qml.Projector(np.array([1, 1]), wires=self.wires)
 
-        base = qml.PhaseShift(phi, wires[-1], do_queue=do_queue, id=id)
-        super().__init__(base, wires[0], do_queue=do_queue, id=id)
-        self._name = "ControlledPhaseShift"
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rϕ", cache=cache)
+
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.PhaseShift.matrix`
+
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.PhaseShift.compute_matrix(torch.tensor(0.5))
+            tensor([[1.0+0.0j, 0.0+0.0j, 0.0+0.0j, 0.0000+0.0000j],
+                    [0.0+0.0j, 1.0+0.0j, 0.0+0.0j, 0.0000+0.0000j],
+                    [0.0+0.0j, 0.0+0.0j, 1.0+0.0j, 0.0000+0.0000j],
+                    [0.0+0.0j, 0.0+0.0j, 0.0+0.0j, 0.8776+0.4794j]])
+        """
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        exp_part = qml.math.exp(1j * phi)
+
+        return qml.math.diag([1, 1, 1, exp_part])
+
+    @staticmethod
+    def compute_eigvals(phi):  # pylint: disable=arguments-differ
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.ControlledPhaseShift.eigvals`
+
+
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.ControlledPhaseShift.compute_eigvals(torch.tensor(0.5))
+        tensor([1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j])
+        """
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        exp_part = qml.math.exp(1j * phi)
+
+        return qml.math.stack([1, 1, 1, exp_part])
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -530,6 +596,16 @@ class ControlledPhaseShift(Controlled):
             qml.PhaseShift(phi / 2, wires=wires[1]),
         ]
         return decomp_ops
+
+    def adjoint(self):
+        return ControlledPhaseShift(-self.data[0], wires=self.wires)
+
+    def pow(self, z):
+        return [ControlledPhaseShift(self.data[0] * z, wires=self.wires)]
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 CPhase = ControlledPhaseShift
@@ -1111,7 +1187,7 @@ class PauliRot(Operation):
         return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
 
 
-class CRX(Controlled):
+class CRX(Operation):
     r"""
     The controlled-RX operator
 
@@ -1151,17 +1227,69 @@ class CRX(Controlled):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_wires = 2
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    basis = "X"
+    grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        if len(wires) != 2:
-            raise ValueError(
-                "CRX: wrong number of wires. " f"{len(wires)} wires given, 2 wires expected."
-            )
+    def generator(self):
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliX(self.wires[1])
 
-        base = qml.RX(phi, wires[-1], do_queue=do_queue, id=id)
-        super().__init__(base, wires[0], do_queue=do_queue, id=id)
-        self._name = "CRX"
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "RX", cache=cache)
+
+    @staticmethod
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CRX.matrix`
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.CRX.compute_matrix(torch.tensor(0.5))
+        tensor([[1.0+0.0j, 0.0+0.0j,    0.0+0.0j,    0.0+0.0j],
+                [0.0+0.0j, 1.0+0.0j,    0.0+0.0j,    0.0+0.0j],
+                [0.0+0.0j, 0.0+0.0j, 0.9689+0.0j, 0.0-0.2474j],
+                [0.0+0.0j, 0.0+0.0j, 0.0-0.2474j, 0.9689+0.0j]])
+        """
+        interface = qml.math.get_interface(theta)
+
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        if interface == "torch":
+            # Use convert_like to ensure that the tensor is put on the correct
+            # Torch device
+            z = qml.math.convert_like(qml.math.zeros([4]), theta)
+        else:
+            z = qml.math.zeros([4], like=interface)
+
+        if interface == "tensorflow":
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+            z = qml.math.cast_like(z, 1j)
+
+        js = -1j * s
+
+        mat = qml.math.diag([1, 1, c, c])
+        return mat + qml.math.stack(
+            [z, z, qml.math.stack([0, 0, 0, js]), qml.math.stack([0, 0, js, 0])]
+        )
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -1200,8 +1328,18 @@ class CRX(Controlled):
         ]
         return decomp_ops
 
+    def adjoint(self):
+        return CRX(-self.data[0], wires=self.wires)
 
-class CRY(Controlled):
+    def pow(self, z):
+        return [CRX(self.data[0] * z, wires=self.wires)]
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
+
+
+class CRY(Operation):
     r"""
     The controlled-RY operator
 
@@ -1236,25 +1374,71 @@ class CRY(Controlled):
 
     Args:
         phi (float): rotation angle :math:`\phi`
-        wires (Sequence[Any]): the wire the operation acts on
+        wires (Sequence[int]): the wire the operation acts on
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_wires = 2
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    basis = "Y"
+    grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        if len(wires) != 2:
-            raise ValueError(
-                "CRY: wrong number of wires. " f"{len(wires)} wires given, 2 wires expected."
-            )
+    def generator(self):
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliY(self.wires[1])
 
-        base = qml.RY(phi, wires[-1], do_queue=do_queue, id=id)
-        super().__init__(base, wires[0], do_queue=do_queue, id=id)
-        self._name = "CRY"
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "RY", cache=cache)
 
     @staticmethod
-    def compute_decomposition(phi, wires, **kwargs):
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CRY.matrix`
+
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.CRY.compute_matrix(torch.tensor(0.5))
+        tensor([[ 1.0000,  0.0000,  0.0000,  0.0000],
+                [ 0.0000,  1.0000,  0.0000,  0.0000],
+                [ 0.0000,  0.0000,  0.9689, -0.2474],
+                [ 0.0000,  0.0000,  0.2474,  0.9689]], dtype=torch.float64)
+        """
+        interface = qml.math.get_interface(theta)
+
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        if interface == "torch":
+            # Use convert_like to ensure that the tensor is put on the correct
+            # Torch device
+            z = qml.math.convert_like(qml.math.zeros([4]), theta)
+        else:
+            z = qml.math.zeros([4], like=interface)
+
+        mat = qml.math.diag([1, 1, c, c])
+        return mat + qml.math.stack(
+            [z, z, qml.math.stack([0, 0, 0, -s]), qml.math.stack([0, 0, s, 0])]
+        )
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1286,8 +1470,18 @@ class CRY(Controlled):
         ]
         return decomp_ops
 
+    def adjoint(self):
+        return CRY(-self.data[0], wires=self.wires)
 
-class CRZ(Controlled):
+    def pow(self, z):
+        return [CRY(self.data[0] * z, wires=self.wires)]
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
+
+
+class CRZ(Operation):
     r"""
     The controlled-RZ operator
 
@@ -1330,18 +1524,88 @@ class CRZ(Controlled):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_wires = 2
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
 
+    basis = "Z"
+    grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
-    def __init__(self, phi, wires, do_queue=True, id=None):
-        if len(wires) != 2:
-            raise ValueError(
-                "CRZ: wrong number of wires. " f"{len(wires)} wires given, 2 wires expected."
-            )
+    def generator(self):
+        return -0.5 * qml.Projector(np.array([1]), wires=self.wires[0]) @ qml.PauliZ(self.wires[1])
 
-        base = qml.RZ(phi, wires[-1])
-        super().__init__(base, wires[0], do_queue=do_queue, id=id)
-        self._name = "CRZ"
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "RZ", cache=cache)
+
+    @staticmethod
+    def compute_matrix(theta):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CRZ.matrix`
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.CRZ.compute_matrix(torch.tensor(0.5))
+        tensor([[1.0+0.0j, 0.0+0.0j,       0.0+0.0j,       0.0+0.0j],
+                [0.0+0.0j, 1.0+0.0j,       0.0+0.0j,       0.0+0.0j],
+                [0.0+0.0j, 0.0+0.0j, 0.9689-0.2474j,       0.0+0.0j],
+                [0.0+0.0j, 0.0+0.0j,       0.0+0.0j, 0.9689+0.2474j]])
+        """
+        if qml.math.get_interface(theta) == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+
+        exp_part = qml.math.exp(-0.5j * theta)
+
+        return qml.math.diag([1, 1, exp_part, qml.math.conj(exp_part)])
+
+    @staticmethod
+    def compute_eigvals(theta):  # pylint: disable=arguments-differ
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.CRZ.eigvals`
+
+
+        Args:
+            theta (tensor_like or float): rotation angle
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.CRZ.compute_eigvals(torch.tensor(0.5))
+        tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.9689-0.2474j, 0.9689+0.2474j])
+        """
+        theta = qml.math.flatten(qml.math.stack([theta]))[0]
+
+        if qml.math.get_interface(theta) == "tensorflow":
+            theta = qml.math.cast_like(theta, 1j)
+
+        exp_part = qml.math.exp(-0.5j * theta)
+
+        return qml.math.stack([1, 1, exp_part, qml.math.conj(exp_part)])
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -1376,8 +1640,18 @@ class CRZ(Controlled):
         ]
         return decomp_ops
 
+    def adjoint(self):
+        return CRZ(-self.data[0], wires=self.wires)
 
-class CRot(Controlled):
+    def pow(self, z):
+        return [CRZ(self.data[0] * z, wires=self.wires)]
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
+
+
+class CRot(Operation):
     r"""
     The controlled-Rot operator
 
@@ -1417,17 +1691,78 @@ class CRot(Controlled):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
+    num_wires = 2
+    num_params = 3
+    """int: Number of trainable parameters that the operator depends on."""
+
+    grad_method = "A"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
     def __init__(self, phi, theta, omega, wires, do_queue=True, id=None):
-        if len(wires) != 2:
-            raise ValueError(
-                "CRot: wrong number of wires. " f"{len(wires)} wires given, 2 wires expected."
-            )
+        super().__init__(phi, theta, omega, wires=wires, do_queue=do_queue, id=id)
 
-        base = Rot(phi, theta, omega, wires[-1], id=id, do_queue=do_queue)
-        super().__init__(base, wires[0], do_queue=do_queue, id=id)
-        self._name = "CRot"
+    def label(self, decimals=None, base_label=None, cache=None):
+        return super().label(decimals=decimals, base_label=base_label or "Rot", cache=cache)
+
+    @staticmethod
+    def compute_matrix(phi, theta, omega):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.CRot.matrix`
+
+
+        Args:
+            phi(tensor_like or float): first rotation angle
+            theta (tensor_like or float): second rotation angle
+            omega (tensor_like or float): third rotation angle
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+         >>> qml.CRot.compute_matrix(torch.tensor(0.1), torch.tensor(0.2), torch.tensor(0.3))
+         tensor([[ 1.0+0.0j,  0.0+0.0j,        0.0+0.0j,        0.0+0.0j],
+                [ 0.0+0.0j,  1.0+0.0j,        0.0+0.0j,        0.0+0.0j],
+                [ 0.0+0.0j,  0.0+0.0j,  0.9752-0.1977j, -0.0993+0.0100j],
+                [ 0.0+0.0j,  0.0+0.0j,  0.0993+0.0100j,  0.9752+0.1977j]])
+        """
+        # It might be that they are in different interfaces, e.g.,
+        # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
+        # So we need to make sure the matrix comes out having the right type
+        interface = qml.math._multi_dispatch([phi, theta, omega])
+
+        c = qml.math.cos(theta / 2)
+        s = qml.math.sin(theta / 2)
+
+        # If anything is not tensorflow, it has to be casted
+        if interface == "tensorflow":
+            phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
+            omega = qml.math.cast_like(qml.math.asarray(omega, like=interface), 1j)
+            c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
+            s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
+
+        mat = [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [
+                0,
+                0,
+                qml.math.exp(-0.5j * (phi + omega)) * c,
+                -qml.math.exp(0.5j * (phi - omega)) * s,
+            ],
+            [
+                0,
+                0,
+                qml.math.exp(-0.5j * (phi - omega)) * s,
+                qml.math.exp(0.5j * (phi + omega)) * c,
+            ],
+        ]
+
+        return qml.math.stack([qml.math.stack(row) for row in mat])
 
     @staticmethod
     def compute_decomposition(phi, theta, omega, wires):
@@ -1469,6 +1804,14 @@ class CRot(Controlled):
             RZ(omega, wires=wires[1]),
         ]
         return decomp_ops
+
+    def adjoint(self):
+        phi, theta, omega = self.parameters
+        return CRot(-omega, -theta, -phi, wires=self.wires)
+
+    @property
+    def control_wires(self):
+        return Wires(self.wires[0])
 
 
 class U1(Operation):
