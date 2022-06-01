@@ -170,7 +170,7 @@ class MeasurementProcess:
             return numeric_type
 
         raise ValueError(
-            f"Cannot deduce the numeric type of unrecognized return_type {self.return_type}."
+            f"Cannot deduce the numeric type of the measurement process with unrecognized return_type {self.return_type}."
         )
 
     @functools.lru_cache()
@@ -194,75 +194,80 @@ class MeasurementProcess:
 
         Returns:
             tuple: the output shape
+
+        Raises:
+            QuantumFunctionError: the return type of the measurement process is
+                unrecognized and cannot deduce the numeric type
         """
-        if device is None:
-            if self._shape is not None:
-                return self._shape
+        shape = None
 
-            if self.return_type in (Probability, State, Sample):
-                raise MeasurementShapeError(
-                    f"Return type {self.return_type} requires the device argument to be passed to obtain the shape."
-                )
+        # First: prepare the shape for return types that do not require a
+        # device
+        if self.return_type in (Expectation, Variance):
+            shape = (1,)
 
-        if device._shot_vector is None:
+        density_matrix_return = self.return_type == State and self.wires
 
-            # Device dependent shapes
-            if self.return_type == Probability:
-                len_wires = len(self.wires)
-                dim = self._get_num_basis_states(len_wires, device)
-                shape = (1, dim)
+        if density_matrix_return:
+            dim = 2 ** len(self.wires)
+            shape = (1, dim, dim)
 
-            elif self.return_type == State and self.wires is None:
+        # Determine shape if device with shot vector
+        if device is not None and device._shot_vector is not None:
+            shape = self._shot_vector_shape(device, main_shape=shape)
 
-                # Note: qml.density_matrix has its shape defined, so we're handling
-                # the qml.state case; acts on all device wires
-                dim = 2 ** len(device.wires)
-                shape = (1, dim)
-
-
-            elif self.return_type == Sample:
-                len_wires = len(device.wires)
-
-                if self.obs is not None:
-                    # qml.sample(some_observable) case
-                    shape = (1, device.shots)
-
-                else:
-                    # qml.sample() case
-                    shape = (1, device.shots, len_wires)
-
-            elif self.return_type == State:
-                if self.wires:
-                    dim = 2 ** len(wires)
-                    shape = (1, dim, dim)
-                else:
-
-            elif self.return_type in (Expectation, Variance):
-                shape = (1,)
-            else:
-                shape = self._shape
-
-            # The other return types should have their shapes pre-defined
+        # If we have a shape, return it here
+        if shape is not None:
             return shape
 
-        return self._shot_vector_shape(device)
+        # Then: handle return types that require a device; no shot vector
+        if device is None and self.return_type in (Probability, State, Sample):
+            raise MeasurementShapeError(
+                f"The device argument is required to obtain the shape of the measurement process; got return type {self.return_type}."
+            )
+
+        if self.return_type == Probability:
+            len_wires = len(self.wires)
+            dim = self._get_num_basis_states(len_wires, device)
+            return (1, dim)
+
+        if self.return_type == State:
+
+            # Note: qml.density_matrix has its shape defined, so we're handling
+            # the qml.state case; acts on all device wires
+            dim = 2 ** len(device.wires)
+            return (1, dim)
+
+        if self.return_type == Sample:
+            len_wires = len(device.wires)
+
+            if self.obs is not None:
+                # qml.sample(some_observable) case
+                return (1, device.shots)
+
+            # qml.sample() case
+            return (1, device.shots, len_wires)
+
+        raise ValueError(
+            f"Cannot deduce the shape of the measurement process with unrecognized return_type {self.return_type}."
+        )
 
     @functools.lru_cache()
-    def _shot_vector_shape(self, device):
+    def _shot_vector_shape(self, device, main_shape=None):
         """Auxiliary function for getting the output shape when the device has
         the shot vector defined.
 
-        The shape is device dependent even if the return type has a shape
+        The shape is device dependent even if the return type has a main shape
         pre-defined (e.g., expectation values, states, etc.).
         """
         shot_vector = device._shot_vector
         num_shot_elements = sum([s.copies for s in shot_vector])
         shape = ()
 
-        if self._shape is not None:
+        if main_shape is not None:
 
             # Expval, var and density_matrix case
-            shape = list(self._shape)
+            shape = list(main_shape)
             shape[0] *= num_shot_elements
             shape = tuple(shape)
 
