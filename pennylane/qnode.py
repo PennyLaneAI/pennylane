@@ -24,7 +24,7 @@ import autograd
 
 import pennylane as qml
 from pennylane import Device
-from pennylane.interfaces import set_shots, SUPPORTED_INTERFACES
+from pennylane.interfaces import set_shots, SUPPORTED_INTERFACES, INTERFACE_MAP
 
 
 class QNode:
@@ -41,7 +41,8 @@ class QNode:
         func (callable): a quantum function
         device (~.Device): a PennyLane-compatible device
         interface (str): The interface that will be used for classical backpropagation.
-            This affects the types of objects that can be passed to/returned from the QNode:
+            This affects the types of objects that can be passed to/returned from the QNode. See
+            ``qml.interfaces.SUPPORTED_INTERFACES`` for a list of all accepted strings.
 
             * ``"autograd"``: Allows autograd to backpropagate
               through the QNode. The QNode accepts default Python types
@@ -402,19 +403,18 @@ class QNode:
 
     @staticmethod
     def _validate_backprop_method(device, interface):
-        # determine if the device supports backpropagation
-        backprop_interface = device.capabilities().get("passthru_interface", None)
-
-        # determine if the device has any child devices that support backpropagation
-        backprop_devices = device.capabilities().get("passthru_devices", None)
-
         if device.shots is not None:
             raise qml.QuantumFunctionError("Backpropagation is only supported when shots=None.")
+
+        mapped_interface = INTERFACE_MAP.get(interface, interface)
+
+        # determine if the device supports backpropagation
+        backprop_interface = device.capabilities().get("passthru_interface", None)
 
         if backprop_interface is not None:
             # device supports backpropagation natively
 
-            if interface == backprop_interface:
+            if mapped_interface == backprop_interface:
                 return "backprop", {}, device
 
             raise qml.QuantumFunctionError(
@@ -422,17 +422,20 @@ class QNode:
                 f"{backprop_interface} interface."
             )
 
+        # determine if the device has any child devices that support backpropagation
+        backprop_devices = device.capabilities().get("passthru_devices", None)
+
         if backprop_devices is not None:
             # device is analytic and has child devices that support backpropagation natively
 
-            if interface in backprop_devices:
+            if mapped_interface in backprop_devices:
                 # TODO: need a better way of passing existing device init options
                 # to a new device?
                 expand_fn = device.expand_fn
                 batch_transform = device.batch_transform
 
                 device = qml.device(
-                    backprop_devices[interface],
+                    backprop_devices[mapped_interface],
                     wires=device.wires,
                     shots=device.shots,
                 )

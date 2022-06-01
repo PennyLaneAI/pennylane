@@ -146,7 +146,7 @@ class Identity(CVObservable, Operation):
         """Alias for matrix representation of the identity operator."""
         return Identity.compute_matrix(*params)
 
-    def adjoint(self):  # pylint:disable=arguments-differ
+    def adjoint(self):
         return Identity(wires=self.wires)
 
     def pow(self, _):

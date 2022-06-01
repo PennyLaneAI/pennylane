@@ -32,10 +32,12 @@ that compute the desired quantity.
     ~transforms.classical_jacobian
     ~batch_params
     ~batch_input
+    ~batch_partial
     ~metric_tensor
     ~adjoint_metric_tensor
     ~specs
     ~transforms.mitigate_with_zne
+    ~transforms.split_non_commuting
 
 Transforms that act on quantum functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -179,6 +181,7 @@ from .op_transforms import op_transform
 from .adjoint import adjoint
 from .batch_params import batch_params
 from .batch_input import batch_input
+from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
 from .condition import cond, Conditional
 from .compile import compile
@@ -186,6 +189,7 @@ from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
 from .hamiltonian_expand import hamiltonian_expand
+from .split_non_commuting import split_non_commuting
 from .measurement_grouping import measurement_grouping
 from .metric_tensor import metric_tensor
 from .adjoint_metric_tensor import adjoint_metric_tensor
