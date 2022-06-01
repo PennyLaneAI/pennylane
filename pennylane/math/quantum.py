@@ -169,7 +169,7 @@ def marginal_prob(prob, axis):
     return np.flatten(prob)
 
 
-def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dtype="complex64"):
+def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dtype="complex128"):
     """Compute the density matrix from a state vector.
 
     Args:
@@ -239,7 +239,7 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dt
     return density_matrix
 
 
-def partial_trace(density_matrix, indices, c_dtype="complex64"):
+def partial_trace(density_matrix, indices, c_dtype="complex128"):
     """Compute the reduced density matrix by tracing out the provided indices.
 
     Args:
@@ -336,7 +336,7 @@ def partial_trace(density_matrix, indices, c_dtype="complex64"):
     return reduced_density_matrix
 
 
-def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype="complex64"):
+def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype="complex128"):
     """Compute the density matrix from a state vector.
 
     Args:
@@ -401,7 +401,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
     return density_matrix
 
 
-def to_density_matrix(state, indices, check_state=False, c_dtype="complex64"):
+def to_density_matrix(state, indices, check_state=False, c_dtype="complex128"):
     """Compute the reduced density matrix from a state vector, a density matrix.
 
     Args:
@@ -578,11 +578,11 @@ def compute_vn_entropy(density_matrix, base=None):
     return entropy
 
 
-def to_mutual_info(state, wires0, wires1, base=None, check_state=False):
+def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"):
     """Get the mutual information between the subsystems"""
 
     # the subsystems cannot overlap
-    if len([wire for wire in wires0 if wire in wires1]) > 0:
+    if len([index for index in indices0 if index in indices1]) > 0:
         raise ValueError("Subsystems for computing mutual information must not overlap")
 
     # Cast as a complex128 array
@@ -592,14 +592,27 @@ def to_mutual_info(state, wires0, wires1, base=None, check_state=False):
     if len(state_shape) > 0:
         len_state = state_shape[0]
         if state_shape in [(len_state,), (len_state, len_state)]:
-            return _compute_mutual_info(state, wires0, wires1, base=base, check_state=check_state)
+            return _compute_mutual_info(
+                state, indices0, indices1, base=base, check_state=check_state, c_dtype=c_dtype
+            )
 
     raise ValueError("The state is not a state vector or a density matrix.")
 
 
-def _compute_mutual_info(state, wires0, wires1, base=None, check_state=False):
-    all_wires = sorted([*wires0, *wires1])
-    vn_entropy_1 = to_vn_entropy(state, wires=wires0, base=base, check_state=check_state)
-    vn_entropy_2 = to_vn_entropy(state, wires=wires1, base=base, check_state=check_state)
-    vn_entropy_12 = to_vn_entropy(state, wires=all_wires, base=base, check_state=check_state)
+def _compute_mutual_info(
+    state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
+):
+    all_indices = sorted([*indices0, *indices1])
+    vn_entropy_1 = to_vn_entropy(
+        state, indices=indices0, base=base, check_state=check_state, c_dtype=c_dtype
+    )
+    vn_entropy_2 = to_vn_entropy(
+        state, indices=indices1, base=base, check_state=check_state, c_dtype=c_dtype
+    )
+    vn_entropy_12 = to_vn_entropy(
+        state, indices=all_indices, base=base, check_state=check_state, c_dtype=c_dtype
+    )
+
+    print("three entropies:", vn_entropy_1, vn_entropy_2, vn_entropy_12)
+
     return vn_entropy_1 + vn_entropy_2 - vn_entropy_12

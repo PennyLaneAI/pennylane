@@ -625,7 +625,7 @@ class DefaultQubit(QubitDevice):
         wires0 = wires0.tolist()
         wires1 = wires1.tolist()
         state = self._flatten(self._pre_rotated_state)
-        return qml.math.to_mutual_info(state, wires0=wires0, wires1=wires1)
+        return qml.math.to_mutual_info(state, indices0=wires0, indices1=wires1)
 
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.

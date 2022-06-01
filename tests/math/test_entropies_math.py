@@ -202,7 +202,7 @@ class TestMutualInformation:
     def test_state(self, interface, state, expected):
         """Test that mutual information works for states"""
         state = qml.math.asarray(state, like=interface)
-        actual = qml.math.to_mutual_info(state, wires0=[0], wires1=[1])
+        actual = qml.math.to_mutual_info(state, indices0=[0], indices1=[1])
         assert np.allclose(actual, expected)
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
@@ -218,7 +218,7 @@ class TestMutualInformation:
     def test_density_matrix(self, interface, state, expected):
         """Test that mutual information works for density matrices"""
         state = qml.math.asarray(state, like=interface)
-        actual = qml.math.to_mutual_info(state, wires0=[0], wires1=[1])
+        actual = qml.math.to_mutual_info(state, indices0=[0], indices1=[1])
         assert np.allclose(actual, expected)
 
     def test_grad_state(self):
@@ -241,7 +241,7 @@ class TestMutualInformation:
         with pytest.raises(
             ValueError, match="Subsystems for computing mutual information must not overlap"
         ):
-            qml.math.to_mutual_info(state, wires0=wires0, wires1=wires1)
+            qml.math.to_mutual_info(state, indices0=wires0, indices1=wires1)
 
     @pytest.mark.parametrize("state", [np.array(5), np.ones((3, 4)), np.ones((2, 2, 2))])
     def test_invalid_type(self, state):
@@ -249,4 +249,4 @@ class TestMutualInformation:
         with pytest.raises(
             ValueError, match="The state is not a state vector or a density matrix."
         ):
-            qml.math.to_mutual_info(state, wires0=[0], wires1=[1])
+            qml.math.to_mutual_info(state, indices0=[0], indices1=[1])

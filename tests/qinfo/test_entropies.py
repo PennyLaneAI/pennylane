@@ -339,11 +339,11 @@ class TestMutualInformation:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        actual = qml.qinfo.mutual_info_transform(circuit, wires0=[0], wires1=[1])(params)
+        actual = qml.qinfo.mutual_info_transform(circuit, indices0=[0], indices1=[1])(params)
 
         # compare QNode results with the results of computing directly from the state
         state = circuit(params)
-        expected = qml.math.to_mutual_info(state, wires0=[0], wires1=[1])
+        expected = qml.math.to_mutual_info(state, indices0=[0], indices1=[1])
 
         assert np.allclose(actual, expected)
 
@@ -374,7 +374,7 @@ class TestMutualInformation:
 
         # compare QNode results with the results of computing directly from the state
         state = circuit_state(params)
-        expected = qml.math.to_mutual_info(state, wires0=[0], wires1=[1])
+        expected = qml.math.to_mutual_info(state, indices0=[0], indices1=[1])
 
         assert np.allclose(actual, expected)
 

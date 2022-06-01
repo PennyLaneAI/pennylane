@@ -185,7 +185,7 @@ class DefaultMixed(QubitDevice):
         wires0 = wires0.tolist()
         wires1 = wires1.tolist()
         state = np.reshape(self._pre_rotated_state, (2**self.num_wires, 2**self.num_wires))
-        return qnp.to_mutual_info(state, wires0=wires0, wires1=wires1)
+        return qnp.to_mutual_info(state, indices0=wires0, indices1=wires1)
 
     def reset(self):
         """Resets the device"""
