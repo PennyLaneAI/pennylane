@@ -32,29 +32,32 @@ class QutritUnitary(Operation):
     def __init__(self, *params, wires, do_queue=True):
         wires = Wires(wires)
 
-        U = params[0]
+        # For pure QutritUnitary operations (not controlled), check that the number
+        # of wires fits the dimensions of the matrix
+        if not isinstance(self, ControlledQutritUnitary):
+            U = params[0]
 
-        dim = 3 ** len(wires)
+            dim = 3 ** len(wires)
 
-        if qml.math.shape(U) != (dim, dim):
-            raise ValueError(
-                f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
-            )
+            if qml.math.shape(U) != (dim, dim):
+                raise ValueError(
+                    f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
+                )
 
-        # Check for unitarity; due to variable precision across the different ML frameworks,
-        # here we issue a warning to check the operation, instead of raising an error outright.
-        if not qml.math.is_abstract(U) and not qml.math.allclose(
-            qml.math.dot(U, qml.math.T(qml.math.conj(U))),
-            qml.math.eye(qml.math.shape(U)[0]),
-            atol=1e-6,
-        ):
-            warnings.warn(
-                f"Operator {U}\n may not be unitary."
-                "Verify unitarity of operation, or use a datatype with increased precision.",
-                UserWarning,
-            )
+            # Check for unitarity; due to variable precision across the different ML frameworks,
+            # here we issue a warning to check the operation, instead of raising an error outright.
+            if not qml.math.is_abstract(U) and not qml.math.allclose(
+                qml.math.dot(U, qml.math.T(qml.math.conj(U))),
+                qml.math.eye(qml.math.shape(U)[0]),
+                atol=1e-6,
+            ):
+                warnings.warn(
+                    f"Operator {U}\n may not be unitary."
+                    "Verify unitarity of operation, or use a datatype with increased precision.",
+                    UserWarning,
+                )
 
-        super.__init__(*params, wires=wires, do_queue=do_queue)
+        super().__init__(*params, wires=wires, do_queue=do_queue)
 
     @staticmethod
     def compute_matrix(U):
