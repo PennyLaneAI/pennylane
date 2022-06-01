@@ -1316,6 +1316,7 @@ class ECR(Operation):
          [0.-1/sqrt(2)j 1/sqrt(2)+0.j 0.+0.j 0.+0.j]]
 """
         return (np.array([[0, 0, INV_SQRT2, INV_SQRT2*1j], [0, 0, INV_SQRT2*1j, INV_SQRT2], [INV_SQRT2, -INV_SQRT2*1j, 0, 0], [-INV_SQRT2*1j, INV_SQRT2, 0, 0]]))
+
     @staticmethod 
     def compute_eigvals():
         r"""Eigenvalues of the operator in the computational basis (static method).
