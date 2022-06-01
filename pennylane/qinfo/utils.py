@@ -24,7 +24,8 @@ def density_matrix_transform(qnode, indices):
          indices (list(int)): List of indices in the considered subsystem.
 
      Returns:
-         tensor_like: (Reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
+         func: Function which wraps the QNode and accepts the same arguments. When called, this
+        function will return the density matrix.
 
      **Example**
 
