@@ -463,6 +463,7 @@ class TestEigenval:
         exp = np.linalg.eigvals(op.matrix())
         res = op.eigvals()
         assert np.allclose(res, exp)
+
     def test_ECR_eigenval(self):
         """Tests that the ECR eigenvalue matches the numpy eigenvalues of the ECR matrix"""
         op = qml.ECR(wires=[0, 1])
