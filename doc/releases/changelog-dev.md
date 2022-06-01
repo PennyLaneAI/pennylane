@@ -4,9 +4,9 @@
 
 <h3>New features since last release</h3>
 
-* Quantum information module including: reduced density matrix function `to_density_matrix` for state vectors and 
-  density matrices,
-  
+* A new quantum information module is added. It includes a function for computing the reduced density matrix functions 
+  for state vectors and density matrices.
+
   [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
   [(#2569)](https://github.com/PennyLaneAI/pennylane/pull/2569)
   [(#2598)](https://github.com/PennyLaneAI/pennylane/pull/2598)
@@ -121,6 +121,10 @@
   ```
 
 <h3>Improvements</h3>
+
+* IPython displays the `str` representation of a `Hamiltonian`, rather than the `repr`. This displays
+  more information about the object.
+  [(#2648)](https://github.com/PennyLaneAI/pennylane/pull/2648)
 
 * The qchem openfermion-dependent tests are localized and collected in `tests.qchem.of_tests`. The
   new module `test_structure` is created to collect the tests of the `qchem.structure` module in

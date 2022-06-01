@@ -77,12 +77,12 @@ class TestInputs:
     """Test inputs and pre-processing."""
 
     @pytest.mark.parametrize(
-        ("feat","wires","expected"),
+        ("feat", "wires", "expected"),
         [(7, range(3), [1, 1, 1]), (2, range(4), [0, 0, 1, 0]), (8, range(5), [0, 1, 0, 0, 0])],
     )
     def test_features_as_int_conversion(self, feat, wires, expected):
         """checks conversion from features as int to a list of binary digits
-           with length = len(wires)"""
+        with length = len(wires)"""
 
         assert (
             qml.BasisEmbedding(features=feat, wires=wires).hyperparameters["basis_state"]
