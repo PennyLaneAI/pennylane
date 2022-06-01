@@ -822,7 +822,33 @@ def density_matrix(wires):
 
 
 def vn_entropy(wires):
-    r"""Von Neumann entropy"""
+    r"""Von Neumann entropy of the system prior to measurement.
+
+    Args:
+        wires (Sequence[int] or int): the wires of the subsystem
+
+        **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=[0])
+
+    Executing this QNode:
+
+    >>> circuit_entropy(np.pi/2)
+    0.6931472
+
+    .. note::
+
+        Calculating the derivative of :func:`~.vn_entropy` is currently only supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device.
+    """
     # pylint: disable=protected-access
     wires = qml.wires.Wires(wires)
     return MeasurementProcess(VnEntropy, wires=wires, shape=(1,), numeric_type=float)
