@@ -1360,7 +1360,6 @@ class ECR(Operation):
         **Example:**
 
         >>> print(qml.ECR.compute_decomposition((0,1)))
-        
         [   PauliZ(wires=[wires[0]]),
             CNOT(wires=[wires[0], wires[1]]),
             SX(wires=[wires[1]]),
