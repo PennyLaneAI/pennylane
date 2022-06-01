@@ -25,6 +25,7 @@ from pennylane.operation import Operation, MatrixUndefinedError
 from pennylane.queuing import QueuingContext, QueuingError
 from pennylane.wires import Wires
 
+
 def _name_map(base, num_control_wires):
     if isinstance(base, qml.PauliX):
         if num_control_wires == 1:
@@ -38,6 +39,7 @@ def _name_map(base, num_control_wires):
         if isinstance(base, qml.PauliZ):
             return "CZ"
     return f"C{base.name}"
+
 
 class Controlled(Operation):
 
@@ -136,17 +138,18 @@ class Controlled(Operation):
         num_control_and_base = num_control + num_base
 
         if len(new_wires) < num_control_and_base:
-            raise ValueError(f"{self} needs at least {num_control_and_base} wires."
-                f"{len(new_wires)} provided.")
+            raise ValueError(
+                f"{self} needs at least {num_control_and_base} wires." f"{len(new_wires)} provided."
+            )
 
-        self.hyperparameters['control_wires'] = new_wires[0:num_control]
+        self.hyperparameters["control_wires"] = new_wires[0:num_control]
 
         self.base._wires = new_wires[num_control:num_control_and_base]
 
         if len(new_wires) > num_control_and_base:
-            self.hyperparameters['work_wires'] = new_wires[num_control_and_base:]
+            self.hyperparameters["work_wires"] = new_wires[num_control_and_base:]
         else:
-            self.hyperparameters['work_wires'] = Wires([])
+            self.hyperparameters["work_wires"] = Wires([])
 
     @property
     def num_wires(self):
@@ -210,7 +213,10 @@ class Controlled(Operation):
 
     def pow(self, z):
         base_pow = self.base.pow(z)
-        return [Controlled(op, self.control_wires, self.control_values, self.work_wires) for op in base_pow]
+        return [
+            Controlled(op, self.control_wires, self.control_values, self.work_wires)
+            for op in base_pow
+        ]
 
     @property
     def grad_method(self):
