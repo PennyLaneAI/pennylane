@@ -383,7 +383,8 @@ class TestVonNeumannEntropy:
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
-    def test_IsingXX_qnode_jax_jit_entropy(self, param, wires):
+    @pytest.mark.parametrize("base", base)
+    def test_IsingXX_qnode_jax_jit_entropy(self, param, wires, base):
         """Test entropy for a QNode with jax-jit interface."""
         import jax
         import jax.numpy as jnp
@@ -393,7 +394,7 @@ class TestVonNeumannEntropy:
         @qml.qnode(dev, interface="jax-jit")
         def circuit_entropy(x):
             qml.IsingXX(x, wires=[0, 1])
-            return qml.vn_entropy(wires=wires)
+            return qml.vn_entropy(wires=wires, log_base=base)
 
         entropy = jax.jit(circuit_entropy)(jnp.array(param))
 
@@ -404,7 +405,7 @@ class TestVonNeumannEntropy:
 
         expected_entropy = eigs * np.log(eigs)
 
-        expected_entropy = -np.sum(expected_entropy)
+        expected_entropy = -np.sum(expected_entropy) / np.log(base)
 
         assert qml.math.allclose(entropy, expected_entropy)
 
