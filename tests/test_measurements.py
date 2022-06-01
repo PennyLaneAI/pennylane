@@ -75,6 +75,22 @@ def test_no_measure(tol):
         res = circuit(0.65)
 
 
+def test_numeric_type_unrecognized_error(tol):
+    """Test that querying the numeric type of a measurement process with an
+    unrecognized return type raises an error."""
+    mp = MeasurementProcess("NotValidReturnType")
+    with pytest.raises(qml.QuantumFunctionError, match="Cannot deduce the numeric type"):
+        mp.numeric_type()
+
+
+def test_shape_unrecognized_error(tol):
+    """Test that querying the shape of a measurement process with an
+    unrecognized return type raises an error."""
+    mp = MeasurementProcess("NotValidReturnType")
+    with pytest.raises(qml.QuantumFunctionError, match="Cannot deduce the shape"):
+        mp.shape()
+
+
 class TestExpval:
     """Tests for the expval function"""
 

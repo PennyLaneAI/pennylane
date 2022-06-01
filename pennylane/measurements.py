@@ -169,7 +169,7 @@ class MeasurementProcess:
                 numeric_type = int if every_term_standard else float
             return numeric_type
 
-        raise ValueError(
+        raise qml.QuantumFunctionError(
             f"Cannot deduce the numeric type of the measurement process with unrecognized return_type {self.return_type}."
         )
 
@@ -248,7 +248,7 @@ class MeasurementProcess:
             # qml.sample() case
             return (1, device.shots, len_wires)
 
-        raise ValueError(
+        raise qml.QuantumFunctionError(
             f"Cannot deduce the shape of the measurement process with unrecognized return_type {self.return_type}."
         )
 
