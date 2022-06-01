@@ -24,23 +24,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane.wires import Wires
 
-from gate_data import (
-    I,
-    X,
-    Y,
-    Z,
-    H,
-    CNOT,
-    SWAP,
-    ISWAP,
-    SISWAP,
-    CZ,
-    S,
-    T,
-    CSWAP,
-    Toffoli,
-    ECR
-)
+from gate_data import I, X, Y, Z, H, CNOT, SWAP, ISWAP, SISWAP, CZ, S, T, CSWAP, Toffoli, ECR
 
 
 # Non-parametrized operations and their matrix representation
@@ -55,7 +39,7 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.T, T),
     (qml.CSWAP, CSWAP),
     (qml.Toffoli, Toffoli),
-    (qml.ECR, ECR)
+    (qml.ECR, ECR),
 ]
 
 
@@ -243,8 +227,8 @@ class TestDecompositions:
         assert res[0].wires == Wires([0])
         assert res[1].wires == Wires([1])
         assert res[2].wires == Wires([0])
-        assert res[3].wires == Wires([0,1])
-        assert res[4].wires == Wires([1,0])
+        assert res[3].wires == Wires([0, 1])
+        assert res[4].wires == Wires([1, 0])
         assert res[5].wires == Wires([1])
 
         assert res[0].name == "S"
@@ -267,6 +251,7 @@ class TestDecompositions:
         decomposed_matrix = np.linalg.multi_dot(mats)
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
     def test_ECR_decomposition(self, tol):
         """Tests that the decomposition of the ECR gate is correct"""
         op = qml.ECR(wires=[0, 1])
@@ -275,13 +260,12 @@ class TestDecompositions:
         assert len(res) == 6
 
         assert res[0].wires == Wires([0])
-        assert res[1].wires == Wires([0,1])
+        assert res[1].wires == Wires([0, 1])
         assert res[2].wires == Wires([1])
         assert res[3].wires == Wires([0])
         assert res[4].wires == Wires([0])
         assert res[5].wires == Wires([0])
-        
-        
+
         assert res[0].name == "PauliZ"
         assert res[1].name == "CNOT"
         assert res[2].name == "SX"
@@ -302,7 +286,7 @@ class TestDecompositions:
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
-        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)        
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW])
     def test_SISWAP_decomposition(self, siswap_op, tol):
@@ -462,13 +446,15 @@ class TestEigenval:
         exp = np.linalg.eigvals(op.matrix())
         res = op.eigvals()
         assert np.allclose(res, exp)
+
     def test_ECR_eigenval(self):
         """Tests that the ECR eigenvalue matches the numpy eigenvalues of the ECR matrix"""
         op = qml.ECR(wires=[0, 1])
         exp = np.linalg.eigvals(op.matrix())
         res = op.eigvals()
+        print(exp)
         assert np.allclose(res, exp)
-        
+
     @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW])
     def test_siswap_eigenval(self, siswap_op):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
@@ -482,6 +468,7 @@ class TestEigenval:
         evals = qml.SX(wires=0).eigvals()
         expected = np.linalg.eigvals(qml.SX(wires=0).matrix())
         assert np.allclose(evals, expected)
+
 
 class TestBarrier:
     """Tests that the Barrier gate is correct"""
@@ -1256,7 +1243,7 @@ all_ops = [
     qml.CY(wires=(0, 1)),
     qml.SWAP(wires=(0, 1)),
     qml.ISWAP(wires=(0, 1)),
-    qml.ECR(wires=(0,1)),
+    qml.ECR(wires=(0, 1)),
     qml.SISWAP(wires=(0, 1)),
     qml.SQISW(wires=(0, 1)),
     qml.CSWAP(wires=(0, 1, 2)),
@@ -1310,4 +1297,3 @@ def test_adjoint_method(op, tol):
             )  # compare matrix if its defined
         except qml.operation.OperatorPropertyUndefined:
             pass
-

@@ -1263,9 +1263,10 @@ class SWAP(Operation):
 
     def _controlled(self, wire):
         CSWAP(wires=wire + self.wires)
-        
-class ECR(Operation): 
-    
+
+
+class ECR(Operation):
+
     r""" ECR(wires)
 
     An echoed RZX(pi/2) gate.
@@ -1288,36 +1289,40 @@ class ECR(Operation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
-    
-    
-    num_wires = 2 
-    num_params = 0 
-    def __init__(self, wires, do_queue=True, id=None):
-        super().__init__(wires=wires, do_queue=do_queue, id=id)
-        
-    @staticmethod 
-    def compute_matrix(): # pylint: disable=arguments-differ
+
+    num_wires = 2
+    num_params = 0
+
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-        
-        The canonical matrix is the textbook matrix representation that does not consider wires. 
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
 
         Returns: matrix representation
 
         Return type: tensor_like
-        
+
         **Example**
 
         >>> print(qml.ECR.compute_matrix())
-        
+
          [[0+0.j 0.+0.j 1/sqrt(2)+0.j 0.+1j/sqrt(2)]
          [0.+0.j 0.+0.j 0.+1.j/sqrt(2) 1/sqrt(2)+0.j]
          [1/sqrt(2)+0.j 0.-1.j/sqrt(2) 0.+0.j 0.+0.j]
-         [0.-1/sqrt(2)j 1/sqrt(2)+0.j 0.+0.j 0.+0.j]]
-"""
-        return (np.array([[0, 0, INV_SQRT2, INV_SQRT2*1j], [0, 0, INV_SQRT2*1j, INV_SQRT2], [INV_SQRT2, -INV_SQRT2*1j, 0, 0], [-INV_SQRT2*1j, INV_SQRT2, 0, 0]]))
-    @staticmethod 
+         [0.-1/sqrt(2)j 1/sqrt(2)+0.j 0.+0.j 0.+0.j]]"""
+        return np.array(
+            [
+                [0, 0, INV_SQRT2, INV_SQRT2 * 1j],
+                [0, 0, INV_SQRT2 * 1j, INV_SQRT2],
+                [INV_SQRT2, -INV_SQRT2 * 1j, 0, 0],
+                [-INV_SQRT2 * 1j, INV_SQRT2, 0, 0],
+            ]
+        )
+
+    @staticmethod
     def compute_eigvals():
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -1339,10 +1344,11 @@ class ECR(Operation):
         **Example**
 
         >>> print(qml.ECR.compute_eigvals())
-        [-1, -1, 1, 1] 
-        
+        [1, -1, 1, -1]
+
         """
-        return np.array([ 1, -1, 1, -1])
+        return np.array([1, -1, 1, -1])
+
     @staticmethod
     def compute_decomposition(wires):
         r"""Representation of the operator as a product of other operators (static method).
@@ -1361,15 +1367,15 @@ class ECR(Operation):
         **Example:**
 
         >>> print(qml.ECR.compute_decomposition((0,1)))
-        
-        [   PauliZ(wires=[wires[0]]),
-            CNOT(wires=[wires[0], wires[1]]),
-            SX(wires=[wires[1]]),
-            qml.RX(pi / 2, wires=[wires[0]]),
-            qml.RY(pi / 2, wires=[wires[0]]),
-            qml.RX(pi / 2, wires=[wires[0]]),]
 
-        """   
+        [PauliZ(wires=[0]),
+         CNOT(wires=[0, 1]),
+         SX(wires=[1]),
+         RX(1.5707963267948966, wires=[0]),
+         RY(1.5707963267948966, wires=[0]),
+         RX(1.5707963267948966, wires=[0])]
+
+        """
         pi = np.pi
         return [
             PauliZ(wires=[wires[0]]),
@@ -1379,12 +1385,16 @@ class ECR(Operation):
             qml.RY(pi / 2, wires=[wires[0]]),
             qml.RX(pi / 2, wires=[wires[0]]),
         ]
-        
-    def adjoint(self):  
+
+    def adjoint(self):
         op = ECR(wires=self.wires)
         op.inverse = not self.inverse
         return op
-        
+
+    def pow(self, z):
+        return super().pow(z % 2)
+
+
 class ISWAP(Operation):
     r"""ISWAP(wires)
     The i-swap operator

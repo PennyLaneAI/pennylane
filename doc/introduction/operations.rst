@@ -117,6 +117,7 @@ Non-parametrized gates
     ~pennylane.CY
     ~pennylane.SWAP
     ~pennylane.ISWAP
+    ~pennylane.ECR
     ~pennylane.SISWAP
     ~pennylane.SQISW
     ~pennylane.CSWAP
