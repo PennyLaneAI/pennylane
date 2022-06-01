@@ -4,8 +4,9 @@
 
 <h3>New features since last release</h3>
 
-* Quantum information module including: reduced density matrix functions for state vectors.
+* Quantum information module including: reduced density matrix functions for state vectors and density matrices.
   [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
+  [(#2569)](https://github.com/PennyLaneAI/pennylane/pull/2569)
   
   A `to_density_matrix` that can handle both state vectors and density matrix, to return a reduced density matrix:
   ```pycon
@@ -17,6 +18,18 @@
   >>> to_density_matrix(x, indices=[1])
   [[1.+0.j 0.+0.j]
    [0.+0.j 0.+0.j]]
+  
+  >>> y = [[0.5, 0, 0.0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]
+  >>> to_density_matrix(y, indices=[0])
+  [[0.5+0.j 0.0+0.j]
+   [0.0+0.j 0.5+0.j]]
+  
+  >>> import tensorflow as tf
+  >>> z = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+  >>> to_density_matrix(z, indices=[1])
+  tf.Tensor(
+  [[1.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
   ```
 
 
