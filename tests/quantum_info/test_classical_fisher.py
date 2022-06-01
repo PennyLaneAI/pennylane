@@ -61,12 +61,12 @@ class TestComputeCFIMfn:
 
 
 class TestIntegration:
-    """Integration tests for CFIM"""
+    """Integration tests for the classical fisher information matrix CFIM"""
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("n_wires", np.arange(1, 5))
-    def test_cfim_autograd(self, n_wires):
-
+    def test_cfim_allnonzero_autograd(self, n_wires):
+        """Integration test of CFIM() for examples where all probabilities are all nonzero"""
         n_params = 2
         dev = qml.device("default.qubit", wires=n_wires)
 
