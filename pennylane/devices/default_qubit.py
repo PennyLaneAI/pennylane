@@ -597,8 +597,9 @@ class DefaultQubit(QubitDevice):
 
     @property
     def state(self):
-        batch_size = self._get_batch_size(self._pre_rotated_state, (2,) * self.num_wires)
-        shape = [batch_size, 2**self.num_wires] if batch_size else [2**self.num_wires]
+        dim = 2**self.num_wires
+        batch_size = self._get_batch_size(self._pre_rotated_state, (2,) * self.num_wires, dim)
+        shape = (batch_size, dim) if batch_size else (dim,)
         return self._reshape(self._pre_rotated_state, shape)
 
     def density_matrix(self, wires):
@@ -715,8 +716,8 @@ class DefaultQubit(QubitDevice):
         device_wires = self.map_wires(wires)
 
         dim = 2**len(device_wires)
-        mat_batch_size = self._get_batch_size(mat, (dim, dim))
-        state_batch_size = self._get_batch_size(state, (2,) * self.num_wires)
+        mat_batch_size = self._get_batch_size(mat, (dim, dim), dim**2)
+        state_batch_size = self._get_batch_size(state, (2,) * self.num_wires, dim)
 
         shape = [2] * (len(device_wires) * 2)
         state_axes = device_wires
@@ -764,7 +765,7 @@ class DefaultQubit(QubitDevice):
         device_wires = self.map_wires(wires)
 
         dim = 2**len(device_wires)
-        batch_size = self._get_batch_size(mat, (dim, dim))
+        batch_size = self._get_batch_size(mat, (dim, dim), dim**2)
 
         shape = [2] * (len(device_wires) * 2)
         if batch_size:
@@ -808,7 +809,8 @@ class DefaultQubit(QubitDevice):
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
-        batch_size = self._get_batch_size(phases, (2**len(device_wires),))
+        dim = 2**len(device_wires)
+        batch_size = self._get_batch_size(phases, (dim,), dim)
 
         # reshape vectors
         shape = [2] * len(device_wires)

@@ -1454,9 +1454,9 @@ class TestGetBatchSize:
         """Test that a ``batch_size=None`` is reported correctly."""
         dev = mock_qubit_device()
         tensor0 = np.ones(shape, dtype=complex)
-        assert dev._get_batch_size(tensor0, shape) is None
+        assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) is None
         tensor1 = np.arange(np.prod(shape)).reshape(shape)
-        assert dev._get_batch_size(tensor1, shape) is None
+        assert dev._get_batch_size(tensor1, shape, qml.math.prod(shape)) is None
 
     @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
     @pytest.mark.parametrize("batch_size", [1, 3])
@@ -1465,9 +1465,9 @@ class TestGetBatchSize:
         dev = mock_qubit_device()
         full_shape = (batch_size,) + shape
         tensor0 = np.ones(full_shape, dtype=complex)
-        assert dev._get_batch_size(tensor0, shape) == batch_size
+        assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) == batch_size
         tensor1 = np.arange(np.prod(full_shape)).reshape(full_shape)
-        assert dev._get_batch_size(tensor1, shape) == batch_size
+        assert dev._get_batch_size(tensor1, shape, qml.math.prod(shape)) == batch_size
 
     @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested")
     def test_invalid_tensor(self, mock_qubit_device):
@@ -1475,4 +1475,4 @@ class TestGetBatchSize:
         have a proper shape/ndim."""
         dev = mock_qubit_device()
         with pytest.raises(ValueError, match="could not broadcast"):
-            dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2))
+            dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2), 8)

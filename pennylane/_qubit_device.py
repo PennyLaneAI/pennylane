@@ -791,14 +791,12 @@ class QubitDevice(Device):
 
         return self.estimate_probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
 
-    def _get_batch_size(self, tensor, expected_shape):
+    def _get_batch_size(self, tensor, expected_shape, expected_size):
         """Determine whether a tensor has an additional batch dimension for broadcasting,
         compared to an expected_shape."""
-        ndim = self._ndim(tensor)
         size = self._size(tensor)
-        exp_size = qml.math.prod(expected_shape)
-        if ndim > len(expected_shape) or size > exp_size:
-            return size // exp_size
+        if self._ndim(tensor) > len(expected_shape) or size > expected_size:
+            return size // expected_size
 
         return None
 
@@ -837,7 +835,7 @@ class QubitDevice(Device):
             array[float]: array of the resulting marginal probabilities.
         """
         dim = 2**self.num_wires
-        batch_size = self._get_batch_size(prob, (dim,))
+        batch_size = self._get_batch_size(prob, (dim,), dim)
 
         if wires is None:
             # no need to marginalize
