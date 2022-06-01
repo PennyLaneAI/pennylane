@@ -66,7 +66,8 @@ def factorize(two, tol):
 
            V_{ijkl} = \sum_r L_{ij}^{(r)} L_{kl}^{(r) T}.
 
-    and the rank $r \in \mathcal{O}(n)$.
+    and the rank $r \in \mathcal{O}(n)$. The matrices $L$ can be further diagonalized and truncated
+    in a second level of factorization.
 
     The algorithm has the following steps.
 
@@ -76,7 +77,10 @@ def factorize(two, tol):
     2. Diagonalize the resulting matrix and keep the $r$ eigenvectors which their corresponding
     eigenvalues are larger than a threshold.
 
-    3. Reshape the selected eigenvectors to $n \times n$ matrices and return them.
+    3. Reshape the selected eigenvectors to $n \times n$ matrices.
+
+    4. Diagonalize the $n \times n$ matrices and keep those that the norm of their eigenvalues is
+    larger than a threshold.
 
     Args:
         two (array[array[float]]): the two-electron repulsion tensor in the molecular orbital basis
@@ -84,6 +88,8 @@ def factorize(two, tol):
 
     Returns:
         array[array[float]]: array of $r$ symmetric matrices approximating the two-electron tensor
+        array[array[float]]: eigenvalues of the generated factors
+        array[array[float]]: eigenvectors of the generated factors
 
     **Example**
 
@@ -92,7 +98,8 @@ def factorize(two, tol):
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
     >>> two = np.swapaxes(two, 1, 3) # convert to chemist's notation
-    >>> factorize_first(two, 1e-5)
+    >>> l, w, v = factorize_first(two, 1e-5)
+    >>> print(l)
     tensor([[[ 1.06723431e-01,  3.14003079e-15],
              [ 4.22991573e-15, -1.04898524e-01]],
 
@@ -107,14 +114,14 @@ def factorize(two, tol):
 
     eigvals, eigvecs = np.linalg.eigh(two)
     eigvals = np.array([val for val in eigvals if abs(val) > tol])
-    eigvecs = eigvecs[:, -len(eigvals):]
+    eigvecs = eigvecs[:, -len(eigvals) :]
 
-    l = eigvecs @ np.diag(np.sqrt(abs(eigvals)))
+    vectors = eigvecs @ np.diag(np.sqrt(abs(eigvals)))
 
-    factors = np.array([l.reshape(n, n, len(eigvals))[:, :, r] for r in range(len(eigvals))])
+    factors = np.array([vectors.reshape(n, n, len(eigvals))[:, :, r] for r in range(len(eigvals))])
 
     eigvals, eigvecs = np.linalg.eigh(factors)
     eigvals = np.array([val for val in eigvals if np.sum(abs(eigvals)) > tol])
-    eigvals = eigvals[:, -len(eigvals):]
+    eigvals = eigvals[:, -len(eigvals) :]
 
     return factors, eigvals, eigvals
