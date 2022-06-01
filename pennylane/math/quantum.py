@@ -164,7 +164,7 @@ def marginal_prob(prob, axis):
     return np.flatten(prob)
 
 
-def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype="complex64"):
+def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype="complex128"):
     """Compute the density matrix from a state vector.
 
     Args:
@@ -229,7 +229,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
     return density_matrix
 
 
-def to_density_matrix(state, indices, check_state=False, c_dtype="complex64"):
+def to_density_matrix(state, indices, check_state=False, c_dtype="complex128"):
     """Compute the reduced density matrix from a state vector, a density matrix or a QNode returning ``qml.state``.
 
     Args:
