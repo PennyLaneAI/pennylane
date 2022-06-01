@@ -174,7 +174,7 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dt
     Args:
         density_matrix (tensor_like): 2D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` for some
             integer number of wires``N``.
-        indices (list(int)): List of indices in the subsystem.
+        indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 
@@ -430,17 +430,17 @@ def to_density_matrix(state, indices, check_state=False, c_dtype="complex128"):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
-    >>> z = [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
+    >>> z = [[0.5, 0, 0.0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]
     >>> to_density_matrix(z, indices=[0])
-    [[0.5+0.j 0.5+0.j]
-     [0.5+0.j 0.5+0.j]]
+    [[0.5+0.j 0.0+0.j]
+     [0.0+0.j 0.5+0.j]]
 
     >>> to_density_matrix(z, indices=[1])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
-    >>> y = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [1, 0, 0, 0]], dtype=tf.complex128)
-    >>> to_density_matrix(z, indices=[1])
+    >>> y_mat_tf = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+    >>> to_density_matrix(y_mat_tf, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
