@@ -788,19 +788,12 @@ class TestHamiltonian:
         with pytest.raises(ValueError, match="Cannot subtract"):
             H -= A
 
-    def test_hamiltonian_queue(self):
-        """Tests that Hamiltonian are queued correctly"""
-
-        # Outside of tape
+    def test_hamiltonian_queue_outside(self):
+        """Tests that Hamiltonian are queued correctly when components are defined outside the recording context."""
 
         queue = [
             qml.Hadamard(wires=1),
             qml.PauliX(wires=0),
-            qml.PauliZ(0),
-            qml.PauliZ(2),
-            qml.PauliZ(0) @ qml.PauliZ(2),
-            qml.PauliX(1),
-            qml.PauliZ(1),
             qml.Hamiltonian(
                 [1, 3, 1], [qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(2), qml.PauliZ(1)]
             ),
@@ -813,9 +806,14 @@ class TestHamiltonian:
             qml.PauliX(wires=0)
             qml.expval(H)
 
-        assert np.all([q1.compare(q2) for q1, q2 in zip(tape.queue, queue)])
+        assert len(tape.queue) == 3
+        assert isinstance(tape.queue[0], qml.Hadamard)
+        assert isinstance(tape.queue[1], qml.PauliX)
+        assert isinstance(tape.queue[2], qml.measurements.MeasurementProcess)
+        assert H.compare(tape.queue[2].obs)
 
-        # Inside of tape
+    def test_hamiltonian_queue_inside(self):
+        """Tests that Hamiltonian are queued correctly when components are instantiated inside the recording context."""
 
         queue = [
             qml.Hadamard(wires=1),
@@ -1278,7 +1276,7 @@ class TestGrouping:
         with qml.tape.QuantumTape() as tape:
             H = qml.Hamiltonian(coeffs, obs, grouping_type="qwc")
 
-        assert tape.queue == [a, b, c, H]
+        assert tape.queue == [H]
 
     def test_grouping_method_can_be_set(self):
         r"""Tests that the grouping method can be controlled by kwargs.
