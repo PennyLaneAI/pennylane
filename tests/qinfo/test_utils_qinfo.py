@@ -103,3 +103,22 @@ class TestDensityMatrixQNode:
         expected_density_matrix = [[np.cos(angle / 2) ** 2, 0], [0, np.sin(angle / 2) ** 2]]
 
         assert np.allclose(density_matrix, expected_density_matrix, atol=tol, rtol=0)
+
+    def test_density_matrix_qnode_tf_jit(self):
+        """Test jitting the density matrix from state vector function with Tf."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
+
+        density_matrix = tf.function(
+            qml.qinfo.density_matrix_transform(circuit, indices=[0, 1]),
+            jit_compile=True,
+            input_signature=(tf.TensorSpec(shape=(), dtype=tf.float32),),
+        )
+        density_matrix = density_matrix(tf.Variable(0.0, dtype=tf.float32))
+        assert np.allclose(density_matrix, [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
