@@ -73,7 +73,8 @@ def _compute_cfim(p, dp, interface):
     """Computes the (num_params, num_params) classical fisher information matrix from the probabilities and its derivatives
     I.e. it computes :math:`CFIM_{ij} = \sum_\ell (\partial_i p_\ell) (\partial_i p_\ell) / p_\ell`
     """
-    # Check if any value in p is zero, and assign zeros for 1/p accordingly
+
+    # Compute 1/p for p!=0, else 0
     if any(qml.math.isclose(p, qml.math.zeros_like(p))) and not interface == "tf":
         mask = p != 0
         one_over_p = qml.math.zeros_like(p)
@@ -85,43 +86,46 @@ def _compute_cfim(p, dp, interface):
         one_over_p = tf.math.divide_no_nan(qml.math.ones_like(p), p)
     else:
         one_over_p = 1 / p
+    
+    # Multiply dp and p
     dp_over_p = dp.T * one_over_p  # creates (n_params, n_probs) array
-    # (n_params, n_probs) @ (n_probs, n_params) = (n_params, n_params)
+    
+    # create final matrix cfim_ij = \sum_l (d_i p_l) (d_j p_l) / p_l
     if interface == "torch":
         return dp_over_p @ qml.math.cast(dp, dtype=p.dtype)
     else:
-        return dp_over_p @ dp
+        return dp_over_p @ dp # (n_params, n_probs) @ (n_probs, n_params) = (n_params, n_params)
 
 
-def CFIM_alt(qnode):
-    """Computing the classical fisher information matrix (CFIM) by computing the hessian of log(p)
-    as described in eq. (14) in https://arxiv.org/abs/2103.15191
-    """
-    new_qnode = qml.transforms._make_probs(
-        qnode, post_processing_fn=lambda x: qml.math.squeeze(qml.math.log(qml.math.stack(x)))
-    )
-    hessian = qml.jacobian(
-        qml.jacobian(new_qnode)
-    )  # this is very slow, can be sped up with other interfaces
+# def CFIM_alt(qnode):
+#     """Computing the classical fisher information matrix (CFIM) by computing the hessian of log(p)
+#     as described in eq. (14) in https://arxiv.org/abs/2103.15191
+#     """
+#     new_qnode = qml.transforms._make_probs(
+#         qnode, post_processing_fn=lambda x: qml.math.squeeze(qml.math.log(qml.math.stack(x)))
+#     )
+#     hessian = qml.jacobian(
+#         qml.jacobian(new_qnode)
+#     )  # this is very slow, can be sped up with other interfaces
 
-    def wrapper(*args, **kwargs):
-        h = hessian(*args, **kwargs)  # (2**n_wires, num_params, num_params)
-        p = qnode(*args, **kwargs)[:, pnp.newaxis, pnp.newaxis]  # (2**n_wires, 1, 1)
-        return -qml.math.sum(
-            h * p, axis=0
-        )  # TODO: dont understand why I need the minus sign, most likely some autograd peculiarity in the hessian
+#     def wrapper(*args, **kwargs):
+#         h = hessian(*args, **kwargs)  # (2**n_wires, num_params, num_params)
+#         p = qnode(*args, **kwargs)[:, pnp.newaxis, pnp.newaxis]  # (2**n_wires, 1, 1)
+#         return -qml.math.sum(
+#             h * p, axis=0
+#         )  # TODO: dont understand why I need the minus sign, most likely some autograd peculiarity in the hessian
 
-    return wrapper
+#     return wrapper
 
 
-def _compute_cfim_alt(p, d_sqrt_p, interface=None):
-    """Computes :math:`CFIM_{ij} = \sum_\ell (\partial_i \sqrt{p_\ell}) (\partial_i \sqrt{p_\ell})`"""
-    if any(qml.math.isclose(p, 0)):
-        mask = qml.math.where(qml.math.isclose(p, 0))
-        n_zeros = len(mask[0])
-        n_params = d_sqrt_p.shape[-1]
-        d_sqrt_p[mask] = qml.math.zeros((n_zeros, n_params))
-    return qml.math.tensordot(d_sqrt_p, d_sqrt_p, axes=[[0], [0]])
+# def _compute_cfim_alt(p, d_sqrt_p, interface=None):
+#     """Computes :math:`CFIM_{ij} = \sum_\ell (\partial_i \sqrt{p_\ell}) (\partial_i \sqrt{p_\ell})`"""
+#     if any(qml.math.isclose(p, 0)):
+#         mask = qml.math.where(qml.math.isclose(p, 0))
+#         n_zeros = len(mask[0])
+#         n_params = d_sqrt_p.shape[-1]
+#         d_sqrt_p[mask] = qml.math.zeros((n_zeros, n_params))
+#     return qml.math.tensordot(d_sqrt_p, d_sqrt_p, axes=[[0], [0]])
 
     # if interface == "jax":
     #     dp_over_p = dp.T / p

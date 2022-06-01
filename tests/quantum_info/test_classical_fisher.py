@@ -61,6 +61,32 @@ class TestComputeCFIMfn:
 
 
 class TestIntegration:
+    """Integration test of classical fisher information matrix CFIM"""
+    
+    @pytest.mark.parametrize("n_wires", np.arange(1,5))
+    @pytest.mark.parametrize("n_params", np.arange(1,5))
+    def test_different_sizes(n_wires, n_params):
+        """Testing that for any number of wires and parameters, the correct size and values are computed"""
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev, interface="autograd")
+        def circ(params):
+            for i in range(n_wires):
+                qml.Hadamard(wires=i)
+
+            for x in params:
+                for j in range(n_wires):
+                    qml.RX(x, wires=j)
+                    qml.RY(x, wires=j)
+                    qml.RZ(x, wires=j)
+
+            return qml.probs(wires=range(n_wires))
+        params = pnp.zeros(n_params, requires_grad=True)
+        res = qml.quantum_info.CFIM(circ)(params)
+        assert np.allclose(res, n_wires * np.ones((n_params, n_params)))
+
+
+class TestInterfaces:
     """Integration tests for the classical fisher information matrix CFIM"""
 
     @pytest.mark.autograd
