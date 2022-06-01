@@ -72,7 +72,6 @@ class TestIntegration:
 
         @qml.qnode(dev, interface="autograd")
         def circ(params):
-
             for i in range(n_wires):
                 qml.RX(params[0], wires=i)
             for i in range(n_wires):
