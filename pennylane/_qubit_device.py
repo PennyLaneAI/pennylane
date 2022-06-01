@@ -99,6 +99,7 @@ class QubitDevice(Device):
     _diag = staticmethod(np.diag)
     _real = staticmethod(np.real)
     _size = staticmethod(np.size)
+    _ndim = staticmethod(np.ndim)
 
     @staticmethod
     def _scatter(indices, array, new_dimensions):
@@ -285,7 +286,7 @@ class QubitDevice(Device):
 
             if not multiple_sampled_jobs:
                 # Can only stack single element outputs
-                results = qml.math.stack(results)
+                results = self._stack(results)
 
         else:
             results = self.statistics(circuit.observables)
@@ -574,7 +575,7 @@ class QubitDevice(Device):
         shots = self.shots
 
         basis_states = np.arange(number_of_states)
-        if qml.math.ndim(state_probability) == 2:
+        if self._ndim(state_probability) == 2:
             return np.array(
                 [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
             )
@@ -793,7 +794,7 @@ class QubitDevice(Device):
     def _get_batch_size(self, tensor, expected_shape):
         """Determine whether a tensor has an additional batch dimension for broadcasting,
         compared to an expected_shape."""
-        ndim = qml.math.ndim(tensor)
+        ndim = self._ndim(tensor)
         size = self._size(tensor)
         exp_size = qml.math.prod(expected_shape)
         if ndim > len(expected_shape) or size > exp_size:

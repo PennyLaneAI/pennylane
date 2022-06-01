@@ -245,7 +245,9 @@ class DefaultQubit(QubitDevice):
         wires = operation.wires
 
         if operation.base_name in self._apply_ops:
-            axes = self.wires.indices(wires)
+            axes = [
+                ax + int(self._ndim(state) > self.num_wires) for ax in self.wires.indices(wires)
+            ]
             return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
 
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
@@ -351,8 +353,9 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        sl_0 = _get_slice(0, axes[0], self.num_wires)
-        sl_1 = _get_slice(1, axes[0], self.num_wires)
+        ndim = self._ndim(state)
+        sl_0 = _get_slice(0, axes[0], ndim)
+        sl_1 = _get_slice(1, axes[0], ndim)
 
         # We will be slicing into the state according to state[sl_1], giving us all of the
         # amplitudes with a |1> for the control qubit. The resulting array has lost an axis
@@ -386,10 +389,11 @@ class DefaultQubit(QubitDevice):
         """
         cntrl_max = np.argmax(axes[:2])
         cntrl_min = cntrl_max ^ 1
-        sl_a0 = _get_slice(0, axes[cntrl_max], self.num_wires)
-        sl_a1 = _get_slice(1, axes[cntrl_max], self.num_wires)
-        sl_b0 = _get_slice(0, axes[cntrl_min], self.num_wires - 1)
-        sl_b1 = _get_slice(1, axes[cntrl_min], self.num_wires - 1)
+        ndim = self._ndim(state)
+        sl_a0 = _get_slice(0, axes[cntrl_max], ndim)
+        sl_a1 = _get_slice(1, axes[cntrl_max], ndim)
+        sl_b0 = _get_slice(0, axes[cntrl_min], ndim - 1)
+        sl_b1 = _get_slice(1, axes[cntrl_min], ndim - 1)
 
         # If both controls are smaller than the target, shift the target axis down by two. If one
         # control is greater and one control is smaller than the target, shift the target axis
@@ -432,8 +436,9 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        sl_0 = _get_slice(0, axes[0], self.num_wires)
-        sl_1 = _get_slice(1, axes[0], self.num_wires)
+        ndim = self._ndim(state)
+        sl_0 = _get_slice(0, axes[0], ndim)
+        sl_1 = _get_slice(1, axes[0], ndim)
 
         if axes[1] > axes[0]:
             target_axes = [axes[1] - 1]
@@ -455,9 +460,9 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: output state
         """
-        num_wires = len(state.shape)
-        sl_0 = _get_slice(0, axes[0], num_wires)
-        sl_1 = _get_slice(1, axes[0], num_wires)
+        ndim = self._ndim(state)
+        sl_0 = _get_slice(0, axes[0], ndim)
+        sl_1 = _get_slice(1, axes[0], ndim)
 
         phase = self._conj(parameters) if inverse else parameters
         return self._stack([state[sl_0], self._const_mul(phase, state[sl_1])], axis=axes[0])
@@ -711,7 +716,7 @@ class DefaultQubit(QubitDevice):
 
         dim = 2**len(device_wires)
         mat_batch_size = self._get_batch_size(mat, (dim, dim))
-        state_batch_size = self._get_batch_size(state, (2,)*self.num_wires)
+        state_batch_size = self._get_batch_size(state, (2,) * self.num_wires)
 
         shape = [2] * (len(device_wires) * 2)
         state_axes = device_wires

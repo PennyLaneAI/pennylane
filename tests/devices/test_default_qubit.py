@@ -2147,6 +2147,7 @@ class TestApplyOps:
     gates in DefaultQubit."""
 
     state = np.arange(2**4, dtype=np.complex128).reshape((2, 2, 2, 2))
+    broadcasted_state = np.arange(2**4 * 3, dtype=np.complex128).reshape((3, 2, 2, 2, 2))
     dev = qml.device("default.qubit", wires=4)
 
     single_qubit_ops = [
@@ -2176,6 +2177,16 @@ class TestApplyOps:
         state_out_einsum = np.einsum("ab,ibjk->iajk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
+    @pytest.mark.parametrize("op, method", single_qubit_ops)
+    def test_apply_single_qubit_op_broadcasted_state(self, op, method, inverse):
+        """Test if the application of single qubit operations to a
+        broadcasted state is correct."""
+        state_out = method(self.broadcasted_state, axes=[2], inverse=inverse)
+        op = op(wires=[1])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        state_out_einsum = np.einsum("ab,mibjk->miajk", matrix, self.broadcasted_state)
+        assert np.allclose(state_out, state_out_einsum)
+
     @pytest.mark.parametrize("op, method", two_qubit_ops)
     def test_apply_two_qubit_op(self, op, method, inverse):
         """Test if the application of two qubit operations is correct."""
@@ -2187,6 +2198,17 @@ class TestApplyOps:
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", two_qubit_ops)
+    def test_apply_two_qubit_op_broadcasted_state(self, op, method, inverse):
+        """Test if the application of two qubit operations to a
+        broadcasted state is correct."""
+        state_out = method(self.broadcasted_state, axes=[1, 2])
+        op = op(wires=[0, 1])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = matrix.reshape((2, 2, 2, 2))
+        state_out_einsum = np.einsum("abcd,mcdjk->mabjk", matrix, self.broadcasted_state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", two_qubit_ops)
     def test_apply_two_qubit_op_reverse(self, op, method, inverse):
         """Test if the application of two qubit operations is correct when the applied wires are
         reversed."""
@@ -2195,6 +2217,17 @@ class TestApplyOps:
         matrix = op.inv().matrix() if inverse else op.matrix()
         matrix = matrix.reshape((2, 2, 2, 2))
         state_out_einsum = np.einsum("abcd,idck->ibak", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", two_qubit_ops)
+    def test_apply_two_qubit_op_reverse_broadcasted_state(self, op, method, inverse):
+        """Test if the application of two qubit operations to a
+        broadcasted state is correct when the applied wires are reversed."""
+        state_out = method(self.broadcasted_state, axes=[3, 2])
+        op = op(wires=[2, 1])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = matrix.reshape((2, 2, 2, 2))
+        state_out_einsum = np.einsum("abcd,midck->mibak", matrix, self.broadcasted_state)
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", three_qubit_ops)
@@ -2209,6 +2242,17 @@ class TestApplyOps:
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", three_qubit_ops)
+    def test_apply_three_qubit_op_controls_smaller_broadcasted_state(self, op, method, inverse):
+        """Test if the application of three qubit operations to a broadcasted
+        state is correct when both control wires are smaller than the target wire."""
+        state_out = method(self.broadcasted_state, axes=[1, 3, 4])
+        op = op(wires=[0, 2, 3])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = matrix.reshape((2, 2) * 3)
+        state_out_einsum = np.einsum("abcdef,mdkef->makbc", matrix, self.broadcasted_state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", three_qubit_ops)
     def test_apply_three_qubit_op_controls_greater(self, op, method, inverse):
         """Test if the application of three qubit operations is correct when both control wires are
         greater than the target wire."""
@@ -2220,6 +2264,17 @@ class TestApplyOps:
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", three_qubit_ops)
+    def test_apply_three_qubit_op_controls_greater_broadcasted_state(self, op, method, inverse):
+        """Test if the application of three qubit operations to a broadcasted
+        state is correct when both control wires are greater than the target wire."""
+        state_out = method(self.broadcasted_state, axes=[3, 2, 1])
+        op = op(wires=[2, 1, 0])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = matrix.reshape((2, 2) * 3)
+        state_out_einsum = np.einsum("abcdef,mfedk->mcbak", matrix, self.broadcasted_state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", three_qubit_ops)
     def test_apply_three_qubit_op_controls_split(self, op, method, inverse):
         """Test if the application of three qubit operations is correct when one control wire is smaller
         and one control wire is greater than the target wire."""
@@ -2228,6 +2283,17 @@ class TestApplyOps:
         matrix = op.inv().matrix() if inverse else op.matrix()
         matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,kdfe->kacb", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", three_qubit_ops)
+    def test_apply_three_qubit_op_controls_split_broadcasted_state(self, op, method, inverse):
+        """Test if the application of three qubit operations to a broadcasted state is correct
+        when one control wire is smaller and one control wire is greater than the target wire."""
+        state_out = method(self.broadcasted_state, axes=[4, 2, 3])
+        op = op(wires=[3, 1, 2])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = matrix.reshape((2, 2) * 3)
+        state_out_einsum = np.einsum("abcdef,mkdfe->mkacb", matrix, self.broadcasted_state)
         assert np.allclose(state_out, state_out_einsum)
 
 
