@@ -833,7 +833,6 @@ def vn_entropy(wires):
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device.
     """
-    # pylint: disable=protected-access
     wires = qml.wires.Wires(wires)
     return MeasurementProcess(VnEntropy, wires=wires, numeric_type=float)
 
