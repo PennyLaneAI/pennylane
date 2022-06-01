@@ -166,7 +166,7 @@ class Pow(Operator):
 
     @property
     def base(self):
-        """The operator that is adjointed."""
+        """The operator that is raised to a power."""
         return self.hyperparameters["base"]
 
     @property
