@@ -280,7 +280,7 @@ def partial_trace(density_matrix, indices, c_dtype="complex64"):
 
     density_matrix = np.reshape(density_matrix, [2] * 2 * num_indices)
 
-    # Kraus operator for partial tracee
+    # Kraus operator for partial trace
     kraus = cast(np.eye(2), dtype=c_dtype)
     kraus = np.reshape(kraus, (2, 1, 2))
     kraus_dagger = np.asarray([np.conj(np.transpose(k)) for k in kraus])
