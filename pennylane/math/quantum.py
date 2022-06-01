@@ -169,7 +169,7 @@ def marginal_prob(prob, axis):
 
 
 def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dtype="complex64"):
-    """Compute the density matrix from a state vector.
+    """Compute the density matrix from a state represented with a density matrix.
 
     Args:
         density_matrix (tensor_like): 2D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` for some
