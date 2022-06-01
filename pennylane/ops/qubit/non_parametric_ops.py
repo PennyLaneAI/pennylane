@@ -1339,7 +1339,7 @@ class ECR(Operation):
         **Example**
 
         >>> print(qml.ECR.compute_eigvals())
-        [-1, -1, 1, 1] 
+        [ 1 -1  1 -1]
         """
         return np.array([ 1, -1, 1, -1])
     @staticmethod
