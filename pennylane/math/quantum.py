@@ -458,27 +458,68 @@ def to_density_matrix(state, indices, check_state=False, c_dtype="complex64"):
     return density_matrix
 
 
-def to_vn_entropy(state, wires=None, base=None, check_state=False):
-    """Get Von Neumann entropies from a state."""
-    # Cast as a complex128 array
-    state = cast(state, dtype="complex128")
+def to_vn_entropy(state, indices=None, base=None, check_state=False, c_dtype="complex128"):
+    """Compute the Von Neumann entropy from a state vector, a density matrix given a subsystem.
+
+    Args:
+        state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
+        indices (list(int)): List of indices in the considered subsystem.
+        base (float, int): Base for the logarithm.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: Von Neumann entropy of the considered subsystem.
+
+    **Example**
+
+    >>> x = [1, 0, 0, 1] / np.sqrt(2)
+    >>> to_vn_entropy(x, indices=[0])
+    0.6931472
+
+    >>> to_vn_entropy(x, indices=[0], base=2)
+    1.0
+
+    >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
+    >>> to_vn_entropy(x, indices=[0])
+    0.6931472
+
+    """
+    state = cast(state, dtype=c_dtype)
     len_state = state.shape[0]
+
     if state.shape == (len_state,):
-        density_matrix = to_density_matrix(state, wires, check_state)
+        density_matrix = to_density_matrix(state, indices, check_state)
         entropy = compute_vn_entropy(density_matrix, base)
+        return entropy
 
-    elif state.shape == (len_state, len_state):
-        density_matrix = to_density_matrix(state, wires, check_state)
-        entropy = compute_vn_entropy(density_matrix, base)
-
-    else:
-        raise ValueError("The state is not a QNode, a state vector or a density matrix.")
+    density_matrix = to_density_matrix(state, indices, check_state)
+    entropy = compute_vn_entropy(density_matrix, base)
 
     return entropy
 
 
 def compute_vn_entropy(density_matrix, base=None):
-    """Compute Vn entropy"""
+    """Compute the Von Neumann entropy from a density matrix
+
+    Args:
+        density_matrix (tensor_like): ``(2**N, 2**N)`` tensor density matrix for an integer `N`.
+        base (float, int): Base for the logarithm.
+
+    Returns:
+        float: Von Neumann entropy of the density matrix.
+
+    **Example**
+
+    >>> x = [[1/2, 0], [0, 1/2]]
+    >>> compute_vn_entropy(x, indices=[0])
+    0.6931472
+
+    >>> x = [[1/2, 0], [0, 1/2]]
+    >>> compute_vn_entropy(x, indices=[0], base=2)
+    1.0
+
+    """
     # Change basis if necessary
     if base:
         div_base = np.log(base)
@@ -507,15 +548,20 @@ def compute_vn_entropy(density_matrix, base=None):
         import torch
 
         evs = torch.maximum(evs, torch.tensor(0))
+        non_zeros = torch.nonzero(evs)
+        evs = evs[non_zeros]
         entropy = torch.sum(torch.special.entr(evs) / div_base)
 
     elif interface == "tensorflow":
         import tensorflow as tf
 
         evs = tf.math.real(evs)
+        evs = tf.math.maximum(evs, 0)
+
+        boolean_mask = tf.cast(evs, dtype=tf.bool)
+        evs = tf.boolean_mask(evs, boolean_mask, axis=0)
+
         log_evs = tf.math.log(evs)
-        log_evs = tf.where(tf.math.is_nan(log_evs), tf.zeros_like(log_evs), log_evs)
-        log_evs = tf.where(tf.math.is_inf(log_evs), tf.zeros_like(log_evs), log_evs)
         entropy = -tf.math.reduce_sum(evs * log_evs / div_base)
 
     elif interface == "autograd":

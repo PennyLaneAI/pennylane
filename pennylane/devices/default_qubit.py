@@ -618,7 +618,7 @@ class DefaultQubit(QubitDevice):
         """
         wires = wires.tolist()
         state = self._flatten(self._pre_rotated_state)
-        return qml.math.to_vn_entropy(state, wires=wires)
+        return qml.math.to_vn_entropy(state, indices=wires)
 
     def mutual_info(self, wires0, wires1):
         """Returns the mutual information between the two subsystems"""
