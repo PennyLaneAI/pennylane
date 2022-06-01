@@ -10,6 +10,7 @@
   [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
   [(#2569)](https://github.com/PennyLaneAI/pennylane/pull/2569)
   [(#2598)](https://github.com/PennyLaneAI/pennylane/pull/2598)
+  [(#2617)](https://github.com/PennyLaneAI/pennylane/pull/2617)
   
   A `to_density_matrix` function that can handle both state vectors and density matrix, to return a reduced 
   density matrix:
@@ -49,6 +50,7 @@
   [[0.5+0.j 0.+0.j]
    [0.+0.j 0.5+0.j]]
   ```
+  
 
 
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new

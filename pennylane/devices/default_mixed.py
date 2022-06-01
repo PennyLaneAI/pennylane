@@ -167,7 +167,7 @@ class DefaultMixed(QubitDevice):
         state = np.reshape(self._pre_rotated_state, (2**self.num_wires, 2**self.num_wires))
         return qnp.to_density_matrix(state, indices=wires, c_dtype=self.C_DTYPE)
 
-    def vn_entropy(self, wires):
+    def vn_entropy(self, wires, log_base):
         """Returns the Von Neumann entropy prior to measurement.
 
         Args:
@@ -178,7 +178,7 @@ class DefaultMixed(QubitDevice):
         """
         wires = wires.tolist()
         state = np.reshape(self._pre_rotated_state, (2**self.num_wires, 2**self.num_wires))
-        return qnp.to_vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE)
+        return qnp.to_vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
 
     def reset(self):
         """Resets the device"""

@@ -243,7 +243,6 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
-
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
@@ -495,7 +494,7 @@ class QubitDevice(Device):
                     raise qml.QuantumFunctionError(
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
-                results.append(self.vn_entropy(wires=obs.wires))
+                results.append(self.vn_entropy(wires=obs.wires, log_base=obs.log_base))
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
@@ -665,7 +664,7 @@ class QubitDevice(Device):
         """
         raise NotImplementedError
 
-    def vn_entropy(self, wires):
+    def vn_entropy(self, wires, log_base):  # pragma: no cover
         """Returns the Von Neumann entropy prior to measurement.
 
         .. note::
