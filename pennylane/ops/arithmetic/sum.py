@@ -30,6 +30,8 @@ def sum(*summands):
 class Sum(Operator):
     """Arithmetic operator subclass representing the sum of operators"""
 
+    _eigs = {}  # cache eigen vectors and values like in qml.Hermitian
+
     def __init__(self, *summands, do_queue=True, id=None):
 
         if len(summands) < 2:
@@ -72,21 +74,43 @@ class Sum(Operator):
     def terms(self):
         return [1.0]*len(self.summands), self.summands
 
-    def diagonalizing_gates(self):
-        """Compute diagonalizing_gates (only if op is hermitian)"""
-        if not self.is_hermitian:
-            raise qml.operation.DiagGatesUndefinedError
+    @property
+    def eigendecomposition(self):
+        """Return the eigendecomposition of the matrix specified by the Hermitian observable.
 
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        It transforms the input operator according to the wires specified.
+
+        Returns:
+            dict[str, array]: dictionary containing the eigenvalues and the eigenvectors of the operator
+        """
         Hmat = self.matrix()
         Hmat = qml.math.to_numpy(Hmat)
         Hkey = tuple(Hmat.flatten().tolist())
-        eigs = {}
-        if Hkey not in eigs:
+        if Hkey not in self._eigs:
             w, U = np.linalg.eigh(Hmat)
-            eigs[Hkey] = {"eigvec": U, "eigval": w}
+            self._eigs[Hkey] = {"eigvec": U, "eigval": w}
 
-        eigenvectors = eigs[Hkey]["eigvec"]
-        return [qml.QubitUnitary(eigenvectors.conj().T, wires=self.wires)]
+        return self._eigs[Hkey]
+
+    def diagonalizing_gates(self):
+        """Compute diagonalizing_gates (only if op is hermitian)"""
+
+        eigen_vectors = self.eigendecomposition["eigvec"]
+        return [qml.QubitUnitary(eigen_vectors.conj().T, wires=self.wires)]
+
+    def eigvals(self):
+        """Return the eigenvalues of the specified Hermitian observable.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            array: array containing the eigenvalues of the Hermitian observable
+        """
+        return self.eigendecomposition["eigval"]
 
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
@@ -100,13 +124,6 @@ class Sum(Operator):
             wire_order = self.wires
 
         return self._sum(matrix_gen(self.summands, wire_order))
-
-    def eigvals(self, wire_order=None):
-        """Get eigvals of the the Sum of operators"""
-        if not self.is_hermitian:
-            raise qml.operation.EigvalsUndefinedError  # eigvals for non-hermitian obs can be imaginary
-        else:
-            return super().eigvals()
 
     def _sum(self, mats_gen, dtype=None, cast_like=None):
         """Super inefficient Sum method just as a proof of concept"""
@@ -142,3 +159,13 @@ class Sum(Operator):
                     return False
 
         return True
+
+    @property
+    def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
+        """Used for sorting objects into their respective lists in `QuantumTape` objects.
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
+
+        Returns: None
+        """
+        return None
