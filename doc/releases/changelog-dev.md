@@ -4,11 +4,15 @@
 
 <h3>New features since last release</h3>
 
-* Quantum information module including: reduced density matrix functions for state vectors and density matrices.
+* Quantum information module including: reduced density matrix function `to_density_matrix` for state vectors and 
+  density matrices,
+  
   [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
   [(#2569)](https://github.com/PennyLaneAI/pennylane/pull/2569)
+  [(#2598)](https://github.com/PennyLaneAI/pennylane/pull/2598)
   
-  A `to_density_matrix` that can handle both state vectors and density matrix, to return a reduced density matrix:
+  A `to_density_matrix` function that can handle both state vectors and density matrix, to return a reduced 
+  density matrix:
   ```pycon
   >>> x = [1, 0, 1, 0] / np.sqrt(2)
   >>> to_density_matrix(x, indices=[0])
@@ -30,6 +34,20 @@
   tf.Tensor(
   [[1.+0.j 0.+0.j]
    [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+  ```
+  It also contains a `QNode` transform `density_matrix_transform`, that returns the density matrix from a `QNode` 
+  returning `qml.state`:
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.IsingXX(x, wires=[0,1])
+      return qml.state()
+  ```
+  ```pycon
+  >>> density_matrix_transform(circuit, wires=[0])(np.pi/2)
+  [[0.5+0.j 0.+0.j]
+   [0.+0.j 0.5+0.j]]
   ```
 
 

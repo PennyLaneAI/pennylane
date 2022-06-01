@@ -115,9 +115,9 @@ class TestDensityMatrixQNode:
             return qml.state()
 
         density_matrix = tf.function(
-            qml.qinfo.density_matrix_transform(circuit, indices=[0, 1]),
+            qml.qinfo.density_matrix_transform(circuit, indices=[0]),
             jit_compile=True,
             input_signature=(tf.TensorSpec(shape=(), dtype=tf.float32),),
         )
         density_matrix = density_matrix(tf.Variable(0.0, dtype=tf.float32))
-        assert np.allclose(density_matrix, [[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+        assert np.allclose(density_matrix, [[1, 0], [0, 0]])
