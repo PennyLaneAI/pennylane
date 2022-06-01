@@ -235,23 +235,44 @@ class TestProperties:
         assert op._queue_category is None
 
 
-def test_label():
-    """Test that the label draws the exponent as superscript."""
-    base = qml.RX(1.2, wires=0)
-    op = Pow(base, -1.23456789)
+class TestMiscMethods:
+    def test_label(self):
+        """Test that the label draws the exponent as superscript."""
+        base = qml.RX(1.2, wires=0)
+        op = Pow(base, -1.23456789)
 
-    assert op.label() == "RX⁻¹⋅²³⁴⁵⁶⁷⁸⁹"
-    assert op.label(decimals=2) == "RX\n(1.20)⁻¹⋅²³⁴⁵⁶⁷⁸⁹"
+        assert op.label() == "RX⁻¹⋅²³⁴⁵⁶⁷⁸⁹"
+        assert op.label(decimals=2) == "RX\n(1.20)⁻¹⋅²³⁴⁵⁶⁷⁸⁹"
 
+    def test_label_matrix_param(self):
+        """Test that when passed a matrix op, the matrix is cached into passed dictionary."""
+        base = qml.QubitUnitary(np.eye(2), wires=0)
+        op = Pow(base, -1.2)
 
-def test_label_matrix_param():
-    """Test that when passed a matrix op, the matrix is cached into passed dictionary."""
-    base = qml.QubitUnitary(np.eye(2), wires=0)
-    op = Pow(base, -1.2)
+        cache = {"matrices": []}
+        assert op.label(decimals=2, cache=cache) == "U(M0)⁻¹⋅²"
+        assert len(cache["matrices"]) == 1
 
-    cache = {"matrices": []}
-    assert op.label(decimals=2, cache=cache) == "U(M0)⁻¹⋅²"
-    assert len(cache["matrices"]) == 1
+    def test_eigvals(self):
+        """Test that the eigenvalues are correct."""
+        base = qml.RZ(2.34, wires=0)
+        op = Pow(base, 2.5)
+
+        mat_eigvals = qml.math.linalg.eigvals(op.matrix())
+
+        assert qml.math.allclose(mat_eigvals, op.eigvals())
+
+    def test_generator(self):
+        """Test that the generator is the base's generator multiplied by the power."""
+        z = 2.5
+        base = qml.RX(2.34, wires=0)
+        op = Pow(base, z)
+
+        base_gen = qml.generator(base, format="prefactor")
+        op_gen = qml.generator(op, format="prefactor")
+
+        assert qml.math.allclose(base_gen[1] * z, op_gen[1])
+        assert base_gen[0].__class__ is op_gen[0].__class__
 
 
 class TestDiagonalizingGates:
@@ -289,29 +310,6 @@ class TestDiagonalizingGates:
 
         with pytest.raises(qml.operation.DiagGatesUndefinedError):
             op.diagonalizing_gates()
-
-
-def test_eigvals():
-    """Test that the eigenvalues are correct."""
-    base = qml.RZ(2.34, wires=0)
-    op = Pow(base, 2.5)
-
-    mat_eigvals = qml.math.linalg.eigvals(op.matrix())
-
-    assert qml.math.allclose(mat_eigvals, op.eigvals())
-
-
-def test_generator():
-    """Test that the generator is the base's generator multiplied by the power."""
-    z = 2.5
-    base = qml.RX(2.34, wires=0)
-    op = Pow(base, z)
-
-    base_gen = qml.generator(base, format="prefactor")
-    op_gen = qml.generator(op, format="prefactor")
-
-    assert qml.math.allclose(base_gen[1] * z, op_gen[1])
-    assert base_gen[0].__class__ is op_gen[0].__class__
 
 
 class TestQueueing:
@@ -536,6 +534,32 @@ class TestInverse:
         assert op.name == "S**-2"
         assert op.base_name == "S**-2"
         assert op.inverse is False
+
+    def test_inverse_setter(self):
+        """Assert that the inverse can be set to False, but trying to set it to True raises a
+        NotImplementedError."""
+        op = Pow(qml.S(0), 2.1)
+
+        op.inverse = False
+
+        with pytest.raises(NotImplementedError):
+            op.inverse = True
+
+
+class TestOperationProperties:
+    def test_basis(self):
+
+        base = qml.RX(1.2, wires=0)
+        op = Pow(base, 2.1)
+
+        assert base.basis == op.basis
+
+    def test_control_wires(self):
+
+        base = qml.Toffoli(wires=(0, 1, 2))
+        op = Pow(base, 3.5)
+
+        assert base.control_wires == op.control_wires
 
 
 class TestIntegration:
