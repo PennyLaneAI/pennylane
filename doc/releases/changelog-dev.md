@@ -4,7 +4,8 @@
 
 <h3>New features since last release</h3>
 
-* A new quantum information module is added. It includes a function for computing the reduced density matrix functions for state vectors and density matrices.
+* A new quantum information module is added. It includes a function for computing the reduced density matrix functions 
+  for state vectors and density matrices.
   [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
   [(#2569)](https://github.com/PennyLaneAI/pennylane/pull/2569)
   
