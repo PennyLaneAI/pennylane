@@ -4,6 +4,22 @@
 
 <h3>New features since last release</h3>
 
+* Quantum information module including: reduced density matrix functions for state vectors.
+  [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
+  
+  A `to_density_matrix` that can handle both state vectors and density matrix, to return a reduced density matrix:
+  ```pycon
+  >>> x = [1, 0, 1, 0] / np.sqrt(2)
+  >>> to_density_matrix(x, indices=[0])
+  [[0.5+0.j 0.5+0.j]
+   [0.5+0.j 0.5+0.j]]
+
+  >>> to_density_matrix(x, indices=[1])
+  [[1.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j]]
+  ```
+
+
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
   attribute `batch_size`.
   - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
@@ -22,7 +38,7 @@
 * Boolean mask indexing of the parameter-shift Hessian
   [(#2538)](https://github.com/PennyLaneAI/pennylane/pull/2538)
 
-  The `argnum` keyword argument for `param_shift_hessian` 
+  The `argnum` keyword argument for `param_shift_hessian`
   is now allowed to be a twodimensional Boolean `array_like`.
   Only the indicated entries of the Hessian will then be computed.
   A particularly useful example is the computation of the diagonal
@@ -51,6 +67,27 @@
 
   The code that checks for qubit wise commuting (QWC) got a performance boost that is noticable
   when many commuting paulis of the same type are measured.
+
+* Added new transform `qml.batch_partial` which behaves similarly to `functools.partial` but supports batching in the unevaluated parameters.
+  [(#2585)](https://github.com/PennyLaneAI/pennylane/pull/2585)
+
+  This is useful for executing a circuit with a batch dimension in some of its parameters:
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+     qml.RX(x, wires=0)
+     qml.RY(y, wires=0)
+     return qml.expval(qml.PauliZ(wires=0))
+  ```
+  ```pycon
+  >>> batched_partial_circuit = qml.batch_partial(circuit, x=np.array(np.pi / 2))
+  >>> y = np.array([0.2, 0.3, 0.4])
+  >>> batched_partial_circuit(y=y)
+  tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
+  ```
 
 <h3>Improvements</h3>
 
@@ -197,5 +234,5 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad
+Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Soran Jahangiri, Utkarsh Azad
 
