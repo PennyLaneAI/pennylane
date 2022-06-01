@@ -275,7 +275,7 @@ class TestApply:
         dev = device(wires=2, torch_device=torch_device)
         state = torch.tensor([0, 1])
 
-        with pytest.raises(ValueError, match=r"State vector must be of length 2\*\*wires"):
+        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)"):
             dev.apply([qml.QubitStateVector(state, wires=[0, 1])])
 
     @pytest.mark.parametrize(

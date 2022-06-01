@@ -482,6 +482,10 @@ class DefaultQubit(QubitDevice):
 
         Returns:
             float: returns the expectation value of the observable
+
+        .. warning::
+
+            This function does not support broadcasted states or observables yet.
         """
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
@@ -566,10 +570,10 @@ class DefaultQubit(QubitDevice):
         capabilities = super().capabilities().copy()
         capabilities.update(
             model="qubit",
-            supports_broadcasting=True,
             supports_reversible_diff=True,
             supports_inverse_operations=True,
             supports_analytic_computation=True,
+            supports_broadcasting=True,
             returns_state=True,
             passthru_devices={
                 "tf": "default.qubit.tf",
@@ -589,6 +593,8 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: complex array of shape ``[2]*self.num_wires``
             representing the statevector of the basis state
+
+        Note: This function does not support broadcasted inputs yet.
         """
         state = np.zeros(2**self.num_wires, dtype=np.complex128)
         state[index] = 1
@@ -611,8 +617,11 @@ class DefaultQubit(QubitDevice):
         Returns:
             array[complex]: complex tensor of shape ``(2 ** len(wires), 2 ** len(wires))``
             representing the reduced density matrix.
+
+        .. warning::
+
+            This function does not support broadcasted states yet.
         """
-        dim = self.num_wires
         state = self._pre_rotated_state
 
         # Return the full density matrix by using numpy tensor product
@@ -621,7 +630,7 @@ class DefaultQubit(QubitDevice):
             density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
             return density_matrix
 
-        complete_system = list(range(0, dim))
+        complete_system = list(range(0, self.num_wires))
         traced_system = [x for x in complete_system if x not in wires.labels]
 
         # Return the reduced density matrix by using numpy tensor product
@@ -636,28 +645,32 @@ class DefaultQubit(QubitDevice):
         """Initialize the internal state vector in a specified state.
 
         Args:
-            state (array[complex]): normalized input state of length
-                ``2**len(wires)``
+            state (array[complex]): normalized input state of length ``2**len(wires)``
+                or broadcasted state of shape ``(batch_size, 2**len(wires))``
             device_wires (Wires): wires that get initialized in the state
         """
 
         # translate to wire labels used by device
         device_wires = self.map_wires(device_wires)
+        dim = 2**len(device_wires)
 
         state = self._asarray(state, dtype=self.C_DTYPE)
-        n_state_vector = state.shape[0]
+        batch_size = self._get_batch_size(state, (dim,), dim)
+        output_shape = [2] * self.num_wires
+        if batch_size:
+            output_shape.insert(0, batch_size)
 
-        if len(qml.math.shape(state)) != 1 or n_state_vector != 2 ** len(device_wires):
-            raise ValueError("State vector must be of length 2**wires.")
+        if not (state.shape == (dim,) or state.shape == (batch_size, dim)):
+            raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
 
-        norm = qml.math.linalg.norm(state, ord=2)
-        if not qml.math.is_abstract(norm):
+        if not qml.math.is_abstract(state):
+            norm = qml.math.linalg.norm(state, axis=-1, ord=2)
             if not qml.math.allclose(norm, 1.0, atol=tolerance):
                 raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
-            # Initialize the entire wires with the state
-            self._state = self._reshape(state, [2] * self.num_wires)
+            # Initialize the entire device state with the input state
+            self._state = self._reshape(state, output_shape)
             return
 
         # generate basis states on subset of qubits via the cartesian product
@@ -670,8 +683,11 @@ class DefaultQubit(QubitDevice):
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
-        state = self._scatter(ravelled_indices, state, [2**self.num_wires])
-        state = self._reshape(state, [2] * self.num_wires)
+        if batch_size:
+            state = self._scatter((slice(None), ravelled_indices), state, [batch_size, 2**self.num_wires])
+        else:
+            state = self._scatter(ravelled_indices, state, [2**self.num_wires])
+        state = self._reshape(state, output_shape)
         self._state = self._asarray(state, dtype=self.C_DTYPE)
 
     def _apply_basis_state(self, state, wires):
@@ -681,6 +697,8 @@ class DefaultQubit(QubitDevice):
             state (array[int]): computational basis state of shape ``(wires,)``
                 consisting of 0s and 1s.
             wires (Wires): wires that the provided computational state should be initialized on
+
+        Note: This function does not support broadcasted inputs yet.
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
@@ -711,6 +729,8 @@ class DefaultQubit(QubitDevice):
 
         Returns:
             array[complex]: output state
+
+        Note: This function does not support simultaneously broadcasted states and matrices yet.
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
@@ -840,5 +860,4 @@ class DefaultQubit(QubitDevice):
         flat_state = self._flatten(self._state)
         real_state = self._real(flat_state)
         imag_state = self._imag(flat_state)
-        prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
-        return prob
+        return self.marginal_prob(real_state**2 + imag_state**2, wires)

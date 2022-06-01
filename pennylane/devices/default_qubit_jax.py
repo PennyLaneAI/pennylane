@@ -213,6 +213,15 @@ class DefaultQubitJax(DefaultQubit):
             key = jax.random.PRNGKey(np.random.randint(0, 2**31))
         else:
             key = self._prng_key
+        if jnp.ndim(state_probability) == 2:
+            # TODO [dwierichs]: Check whether the following introduces strong correlations between
+            # different samples along the broadcasted axis
+            return jnp.array(
+                [
+                    jax.random.choice(key, number_of_states, shape=(shots,), p=prob)
+                    for prob in state_probability
+                ]
+            )
         return jax.random.choice(key, number_of_states, shape=(shots,), p=state_probability)
 
     @staticmethod
@@ -232,8 +241,8 @@ class DefaultQubitJax(DefaultQubit):
             List[int]: basis states in binary representation
         """
         powers_of_two = 1 << jnp.arange(num_wires, dtype=dtype)
-        states_sampled_base_ten = samples[:, None] & powers_of_two
-        return (states_sampled_base_ten > 0).astype(dtype)[:, ::-1]
+        states_sampled_base_ten = samples[..., None] & powers_of_two
+        return (states_sampled_base_ten > 0).astype(dtype)[..., ::-1]
 
     def estimate_probability(self, wires=None, shot_range=None, bin_size=None):
         """Return the estimated probability of each computational basis state
@@ -251,6 +260,7 @@ class DefaultQubitJax(DefaultQubit):
         Returns:
             array[float]: list of the probabilities
         """
+        # todo: adapt to broadcasting (where does this function differ from `QubitDevice`'s?
 
         wires = wires or self.wires
         # convert to a wires object

@@ -301,7 +301,7 @@ class TestApply:
         dev = DefaultQubitTF(wires=2)
         state = np.array([0, 1])
 
-        with pytest.raises(ValueError, match=r"State vector must be of length 2\*\*wires"):
+        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)"):
             dev.apply([qml.QubitStateVector(state, wires=[0, 1])])
 
     def test_invalid_qubit_state_vector_norm(self):
