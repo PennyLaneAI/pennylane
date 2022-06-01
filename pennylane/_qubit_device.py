@@ -491,11 +491,6 @@ class QubitDevice(Device):
                 results.append(self.access_state(wires=obs.wires))
 
             elif obs.return_type is VnEntropy:
-                if len(observables) > 1:
-                    raise qml.QuantumFunctionError(
-                        "The Von Neumann entropy cannot be returned in combination"
-                        " with other return types"
-                    )
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
@@ -983,6 +978,7 @@ class QubitDevice(Device):
         """
         # broadcasted inner product not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
+        # pylint: disable=unnecessary-lambda-assignment)
         dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:

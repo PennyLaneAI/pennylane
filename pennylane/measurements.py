@@ -228,6 +228,7 @@ class MeasurementProcess:
         pre-defined (e.g., expectation values, states, etc.).
         """
         shot_vector = device._shot_vector
+        # pylint: disable=consider-using-generator
         num_shot_elements = sum([s.copies for s in shot_vector])
         shape = ()
 
@@ -834,7 +835,7 @@ def vn_entropy(wires):
         with a compatible device.
     """
     wires = qml.wires.Wires(wires)
-    return MeasurementProcess(VnEntropy, wires=wires, numeric_type=float)
+    return MeasurementProcess(VnEntropy, wires=wires, shape=(1,), numeric_type=float)
 
 
 T = TypeVar("T")

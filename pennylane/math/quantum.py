@@ -459,7 +459,7 @@ def to_density_matrix(state, indices, check_state=False, c_dtype="complex128"):
     return density_matrix
 
 
-def to_vn_entropy(state, indices=None, base=None, check_state=False, c_dtype="complex128"):
+def to_vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
     """Compute the Von Neumann entropy from a state vector, a density matrix given a subsystem.
 
     Args:
@@ -487,12 +487,6 @@ def to_vn_entropy(state, indices=None, base=None, check_state=False, c_dtype="co
 
     """
     state = cast(state, dtype=c_dtype)
-    len_state = state.shape[0]
-
-    if state.shape == (len_state,):
-        density_matrix = to_density_matrix(state, indices, check_state)
-        entropy = compute_vn_entropy(density_matrix, base)
-        return entropy
 
     density_matrix = to_density_matrix(state, indices, check_state)
     entropy = compute_vn_entropy(density_matrix, base)

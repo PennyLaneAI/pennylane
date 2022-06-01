@@ -443,24 +443,6 @@ class TestVonNeumannEntropy:
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
 
-    @pytest.mark.parametrize("wires", single_wires_list)
-    @pytest.mark.parametrize("device", devices)
-    def test_qnode_entropy_more_obs(self, wires, device):
-        """Test that entropy cannot be returned with multiple observables."""
-
-        dev = qml.device(device, wires=2)
-
-        @qml.qnode(dev)
-        def circuit_entropy(x):
-            qml.IsingXX(x, wires=[0, 1])
-            return qml.vn_entropy(wires=wires), qml.expval(qml.PauliZ(wires=0))
-
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="The Von Neumann entropy cannot be returned in combination",
-        ):
-            circuit_entropy(0.1)
-
     @pytest.mark.parametrize("device", devices)
     def test_qnode_entropy_no_custom_wires(self, device):
         """Test that entropy cannot be returned with custom wires."""

@@ -16,7 +16,7 @@
 import pennylane as qml
 
 
-def vn_entropy_transform(qnode, indices=None, base=None):
+def vn_entropy_transform(qnode, indices, base=None):
     """Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~.state`.
 
     Args:
@@ -42,8 +42,10 @@ def vn_entropy_transform(qnode, indices=None, base=None):
 
     """
 
+    density_matrix_qnode = qml.qinfo.density_matrix_transform(qnode, indices)
+
     def wrapper(*args, **kwargs):
-        density_matrix = qml.qinfo.density_matrix_transform(qnode, indices)(*args, **kwargs)
+        density_matrix = density_matrix_qnode(*args, **kwargs)
         entropy = qml.math.compute_vn_entropy(density_matrix, base)
         return entropy
 
