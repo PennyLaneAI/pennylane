@@ -106,13 +106,15 @@ def factorize(two, tol):
     two = two.reshape(n * n, n * n)
 
     eigvals, eigvecs = np.linalg.eigh(two)
-
     eigvals = np.array([val for val in eigvals if abs(val) > tol])
-    rank = len(eigvals)
-    eigvecs = eigvecs[:, -rank:]
+    eigvecs = eigvecs[:, -len(eigvals):]
 
-    vecs = eigvecs @ np.diag(np.sqrt(abs(eigvals)))
+    l = eigvecs @ np.diag(np.sqrt(abs(eigvals)))
 
-    factors = np.array([vecs.reshape(n, n, rank)[:, :, r] for r in range(rank)])
+    factors = np.array([l.reshape(n, n, len(eigvals))[:, :, r] for r in range(len(eigvals))])
 
-    return factors
+    eigvals, eigvecs = np.linalg.eigh(factors)
+    eigvals = np.array([val for val in eigvals if np.sum(abs(eigvals)) > tol])
+    eigvals = eigvals[:, -len(eigvals):]
+
+    return factors, eigvals, eigvals
