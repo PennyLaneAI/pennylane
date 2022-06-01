@@ -41,10 +41,12 @@ class DefaultQutrit(QutritDevice):
     # TODO: Add list of operations and observables
     operations = {
         "QutritUnitary",
-        "ControlledQutritUnitary"
+        "ControlledQutritUnitary",
+        "Identity"
     }
 
     observables = {
+        "Identity",
         "QutritUnitary"
     }
 
@@ -309,9 +311,7 @@ class DefaultQutrit(QutritDevice):
         device_wires = self.map_wires(wires)
 
         mat = self._cast(self._reshape(mat, [3] * len(device_wires) * 2), dtype=self.C_DTYPE)
-        print(mat)
         axes = (np.arange(stop=len(device_wires), step=3 * len(device_wires)), device_wires)
-        print(axes)
         tdot = self._tensordot(mat, state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
