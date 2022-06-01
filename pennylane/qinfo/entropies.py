@@ -51,7 +51,36 @@ def vn_entropy_transform(qnode, indices=None, base=None):
 
 
 def mutual_info_transform(qnode, indices0, indices1, base=None):
-    """Get the mutual information between subsystems from a QNode"""
+    """
+    Compute the mutual information from a :class:`.QNode` returning a :func:`~.state`.
+
+    Args:
+        qnode (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        indices (list[int]): List of indices in the first subsystem.
+        indices (list[int]): List of indices in the second subsystem.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
+
+    Returns:
+        func: A function with the same arguments as the QNode that returns
+        the mutual information from its output state.
+
+    **Example**
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2)
+
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.IsingXX(x, wires=[0, 1])
+                return qml.state()
+
+    >>> mutual_info_circuit = qinfo.mutual_info_transform(circuit, indices0=[0], indices1=[1])
+    >>> mutual_info_circuit(np.pi/2)
+    1.3862943611198906
+    >>> mutual_info_circuit(0.4)
+    0.3325090393262875
+    """
 
     def wrapper(*args, **kwargs):
         density_matrix = qml.qinfo.density_matrix_transform(qnode, qnode.device.wires.tolist())(

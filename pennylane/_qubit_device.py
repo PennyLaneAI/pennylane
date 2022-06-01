@@ -692,7 +692,12 @@ class QubitDevice(Device):
         raise NotImplementedError
 
     def mutual_info(self, wires0, wires1):
-        """Returns the mutual information between the two subsystems"""
+        """Returns the mutual information prior to measurement.
+
+        .. note::
+
+            Only simulators support this property.
+        """
         raise NotImplementedError
 
     def analytic_probability(self, wires=None):

@@ -855,7 +855,34 @@ def vn_entropy(wires):
 
 
 def mutual_info(wires0, wires1):
-    r"""Mutual information"""
+    r"""Mutual information between the subsystems prior to measurement.
+
+    Args:
+        wires0 (Sequence[int] or int): the wires of the first subsystem
+        wires1 (Sequence[int] or int): the wires of the second subsystem
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+    Executing this QNode:
+
+    >>> circuit(np.pi / 2)
+    1.3862943611198906
+
+    .. note::
+
+        Calculating the derivative of :func:`~.mutual_info` is currently only supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device.
+    """
     wires0 = qml.wires.Wires(wires0)
     wires1 = qml.wires.Wires(wires1)
     return MeasurementProcess(MutualInfo, wires=[wires0, wires1], shape=(1,), numeric_type=float)

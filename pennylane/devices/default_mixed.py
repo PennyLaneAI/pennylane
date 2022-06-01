@@ -181,7 +181,15 @@ class DefaultMixed(QubitDevice):
         return qnp.to_vn_entropy(state, indices=wires)
 
     def mutual_info(self, wires0, wires1):
-        """Returns the mutual information between the two subsystems"""
+        """Returns the mutual information between the subsystems.
+
+        Args:
+            wires0 (Wires): wires of the first subsystem.
+            wires1 (Wires): wires of the second subsystem
+
+        Returns:
+            float: the mutual information
+        """
         wires0 = wires0.tolist()
         wires1 = wires1.tolist()
         state = np.reshape(self._pre_rotated_state, (2**self.num_wires, 2**self.num_wires))

@@ -578,8 +578,37 @@ def compute_vn_entropy(density_matrix, base=None):
     return entropy
 
 
+# pylint: disable=too-many-arguments
 def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"):
-    """Get the mutual information between the subsystems"""
+    """Compute the mutual information between two subsystems given a state.
+
+    The state can be given as a state vector in the computational basis, or
+    as a density matrix.
+
+    Args:
+        state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
+        indices0 (list[int]): List of indices in the first subsystem.
+        indices0 (list[int]): List of indices in the second subsystem.
+        base (float): Base for the logarithm.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: Mutual information between the subsystems
+
+    **Examples**
+
+    >>> x = np.array([1, 0, 0, 1]) / np.sqrt(2)
+    >>> qml.math.to_mutual_info(x, indices0=[0], indices1=[1])
+    1.3862943611198906
+
+    >>> qml.math.to_mutual_info(x, indices0=[0], indices1=[1], base=2)
+    2.0
+
+    >>> y = np.array([[1/2, 1/2, 0, 1/2], [1/2, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]])
+    >>> qml.math.to_mutual_info(y, indices0=[0], indices1=[1])
+    0.4682351577408206
+    """
 
     # the subsystems cannot overlap
     if len([index for index in indices0 if index in indices1]) > 0:
@@ -599,9 +628,11 @@ def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dt
     raise ValueError("The state is not a state vector or a density matrix.")
 
 
+# pylint: disable=too-many-arguments
 def _compute_mutual_info(
     state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
 ):
+    """Compute the mutual information between the subsystems"""
     all_indices = sorted([*indices0, *indices1])
     vn_entropy_1 = to_vn_entropy(
         state, indices=indices0, base=base, check_state=check_state, c_dtype=c_dtype
@@ -612,7 +643,5 @@ def _compute_mutual_info(
     vn_entropy_12 = to_vn_entropy(
         state, indices=all_indices, base=base, check_state=check_state, c_dtype=c_dtype
     )
-
-    print("three entropies:", vn_entropy_1, vn_entropy_2, vn_entropy_12)
 
     return vn_entropy_1 + vn_entropy_2 - vn_entropy_12
