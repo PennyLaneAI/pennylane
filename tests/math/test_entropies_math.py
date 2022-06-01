@@ -18,10 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane import quantum_info as qinfo
 
-
-pytestmark = pytest.mark.all_interfaces
 
 pytestmark = pytest.mark.all_interfaces
 
@@ -205,7 +202,7 @@ class TestMutualInformation:
     def test_state(self, interface, state, expected):
         """Test that mutual information works for states"""
         state = qml.math.asarray(state, like=interface)
-        actual = qinfo.to_mutual_info(state, wires0=[0], wires1=[1])
+        actual = qml.math.to_mutual_info(state, wires0=[0], wires1=[1])
         assert np.allclose(actual, expected)
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
@@ -221,62 +218,7 @@ class TestMutualInformation:
     def test_density_matrix(self, interface, state, expected):
         """Test that mutual information works for density matrices"""
         state = qml.math.asarray(state, like=interface)
-        actual = qinfo.to_mutual_info(state, wires0=[0], wires1=[1])
-        assert np.allclose(actual, expected)
-
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize(
-        "params", [np.array([0, 0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
-    )
-    def test_qnode_state(self, device, interface, params):
-        """Test that mutual information works for QNodes that return the state"""
-        dev = qml.device(device, wires=2)
-
-        @qml.qnode(dev, interface=interface)
-        def circuit(params):
-            qml.RY(params[0], wires=0)
-            qml.RY(params[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        actual = qinfo.to_mutual_info(circuit, wires0=[0], wires1=[1])(params)
-
-        # compare QNode results with the results of computing directly from the state
-        state = circuit(params)
-        expected = qinfo.to_mutual_info(state, wires0=[0], wires1=[1])
-
-        assert np.allclose(actual, expected)
-
-    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
-    @pytest.mark.parametrize(
-        "params", [np.array([0, 0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
-    )
-    def test_qnode_mutual_info(self, device, interface, params):
-        """Test that mutual information works for QNodes that directly return it"""
-        dev = qml.device(device, wires=2)
-
-        @qml.qnode(dev, interface=interface)
-        def circuit_mutual_info(params):
-            qml.RY(params[0], wires=0)
-            qml.RY(params[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.mutual_info(wires0=[0], wires1=[1])
-
-        @qml.qnode(dev, interface=interface)
-        def circuit_state(params):
-            qml.RY(params[0], wires=0)
-            qml.RY(params[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.state()
-
-        actual = circuit_mutual_info(params)
-
-        # compare QNode results with the results of computing directly from the state
-        state = circuit_state(params)
-        expected = qinfo.to_mutual_info(state, wires0=[0], wires1=[1])
-
+        actual = qml.math.to_mutual_info(state, wires0=[0], wires1=[1])
         assert np.allclose(actual, expected)
 
     def test_grad_state(self):
@@ -284,9 +226,6 @@ class TestMutualInformation:
 
     def test_grad_density_matrix(self):
         """Test that the gradient of mutual information works for density matrices"""
-
-    def test_grad_qnode(self):
-        """Test that the gradient of mutual information works for QNodes"""
 
     @pytest.mark.parametrize(
         "state, wires0, wires1",
@@ -302,12 +241,12 @@ class TestMutualInformation:
         with pytest.raises(
             ValueError, match="Subsystems for computing mutual information must not overlap"
         ):
-            qinfo.to_mutual_info(state, wires0=wires0, wires1=wires1)
+            qml.math.to_mutual_info(state, wires0=wires0, wires1=wires1)
 
     @pytest.mark.parametrize("state", [np.array(5), np.ones((3, 4)), np.ones((2, 2, 2))])
     def test_invalid_type(self, state):
         """Test that an error is raised when an unsupported type is passed"""
         with pytest.raises(
-            ValueError, match="The state is not a QNode, a state vector or a density matrix."
+            ValueError, match="The state is not a state vector or a density matrix."
         ):
-            qinfo.to_mutual_info(state, wires0=[0], wires1=[1])
+            qml.math.to_mutual_info(state, wires0=[0], wires1=[1])

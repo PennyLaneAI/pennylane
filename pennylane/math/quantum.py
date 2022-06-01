@@ -514,6 +514,7 @@ def compute_vn_entropy(density_matrix, base=None):
 
         evs = tf.math.real(evs)
         log_evs = tf.math.log(evs)
+        log_evs = tf.where(tf.math.is_nan(log_evs), tf.zeros_like(log_evs), log_evs)
         log_evs = tf.where(tf.math.is_inf(log_evs), tf.zeros_like(log_evs), log_evs)
         entropy = -tf.math.reduce_sum(evs * log_evs / div_base)
 
@@ -529,3 +530,30 @@ def compute_vn_entropy(density_matrix, base=None):
         entropy = -np.sum(evs * np.log(evs) / div_base)
 
     return entropy
+
+
+def to_mutual_info(state, wires0, wires1, base=None, check_state=False):
+    """Get the mutual information between the subsystems"""
+
+    # the subsystems cannot overlap
+    if len([wire for wire in wires0 if wire in wires1]) > 0:
+        raise ValueError("Subsystems for computing mutual information must not overlap")
+
+    # Cast as a complex128 array
+    state = cast(state, dtype="complex128")
+
+    state_shape = state.shape
+    if len(state_shape) > 0:
+        len_state = state_shape[0]
+        if state_shape in [(len_state,), (len_state, len_state)]:
+            return _compute_mutual_info(state, wires0, wires1, base=base, check_state=check_state)
+
+    raise ValueError("The state is not a state vector or a density matrix.")
+
+
+def _compute_mutual_info(state, wires0, wires1, base=None, check_state=False):
+    all_wires = sorted([*wires0, *wires1])
+    vn_entropy_1 = to_vn_entropy(state, wires=wires0, base=base, check_state=check_state)
+    vn_entropy_2 = to_vn_entropy(state, wires=wires1, base=base, check_state=check_state)
+    vn_entropy_12 = to_vn_entropy(state, wires=all_wires, base=base, check_state=check_state)
+    return vn_entropy_1 + vn_entropy_2 - vn_entropy_12

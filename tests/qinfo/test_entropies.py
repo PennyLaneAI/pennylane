@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -149,3 +149,65 @@ class TestVonNeumannEntropy:
         expected_entropy = -np.sum(expected_entropy)
 
         assert qml.math.allclose(entropy, expected_entropy)
+
+
+class TestMutualInformation:
+    """Tests for the mutual information functions"""
+
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize(
+        "params", [np.array([0, 0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
+    )
+    def test_qnode_state(self, device, interface, params):
+        """Test that mutual information works for QNodes that return the state"""
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(params):
+            qml.RY(params[0], wires=0)
+            qml.RY(params[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        actual = qml.qinfo.mutual_info_transform(circuit, wires0=[0], wires1=[1])(params)
+
+        # compare QNode results with the results of computing directly from the state
+        state = circuit(params)
+        expected = qml.math.to_mutual_info(state, wires0=[0], wires1=[1])
+
+        assert np.allclose(actual, expected)
+
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize(
+        "params", [np.array([0, 0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
+    )
+    def test_qnode_mutual_info(self, device, interface, params):
+        """Test that mutual information works for QNodes that directly return it"""
+        dev = qml.device(device, wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit_mutual_info(params):
+            qml.RY(params[0], wires=0)
+            qml.RY(params[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+        @qml.qnode(dev, interface=interface)
+        def circuit_state(params):
+            qml.RY(params[0], wires=0)
+            qml.RY(params[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.state()
+
+        actual = circuit_mutual_info(params)
+
+        # compare QNode results with the results of computing directly from the state
+        state = circuit_state(params)
+        expected = qml.math.to_mutual_info(state, wires0=[0], wires1=[1])
+
+        assert np.allclose(actual, expected)
+
+    def test_grad_qnode(self):
+        """Test that the gradient of mutual information works for QNodes"""

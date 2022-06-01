@@ -26,3 +26,16 @@ def vn_entropy_transform(state, wires=None, base=None):
         return entropy
 
     return wrapper
+
+
+def mutual_info_transform(qnode, wires0, wires1, base=None):
+    """Get the mutual information between subsystems from a QNode"""
+
+    def wrapper(*args, **kwargs):
+        density_matrix = qml.qinfo.density_matrix_transform(qnode, qnode.device.wires.tolist())(
+            *args, **kwargs
+        )
+        entropy = qml.math.to_mutual_info(density_matrix, wires0, wires1, base=base)
+        return entropy
+
+    return wrapper
