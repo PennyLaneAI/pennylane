@@ -83,7 +83,7 @@ class TestIntegration:
         assert np.allclose(cfim, (n_wires / 3.0) * np.ones((2, 2)))
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("n_wires", np.arange(2,5))
+    @pytest.mark.parametrize("n_wires", np.arange(2, 5))
     def test_cfim_contains_zeros_autograd(self, n_wires):
         """Integration test of CFIM() with autograd for examples that have 0s in the probabilities and non-zero gradient"""
         dev = qml.device("default.qubit", wires=n_wires)
@@ -95,10 +95,9 @@ class TestIntegration:
             qml.RX(params[0], wires=1)
             return qml.probs(wires=range(n_wires))
 
-        params = np.pi/4 * pnp.ones(2, requires_grad=True)
+        params = np.pi / 4 * pnp.ones(2, requires_grad=True)
         cfim = CFIM(circ)(params)
-        assert np.allclose(cfim, np.ones((2,2)))
-
+        assert np.allclose(cfim, np.ones((2, 2)))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("n_wires", np.arange(1, 5))
@@ -122,7 +121,7 @@ class TestIntegration:
         assert np.allclose(cfim, (n_wires / 3.0) * np.ones((2, 2)))
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("n_wires", np.arange(2,5))
+    @pytest.mark.parametrize("n_wires", np.arange(2, 5))
     def test_cfim_contains_zeros_jax(self, n_wires):
         """Integration test of CFIM() with jax for examples that have 0s in the probabilities and non-zero gradient"""
         import jax
@@ -137,10 +136,9 @@ class TestIntegration:
             qml.RX(params[0], wires=1)
             return qml.probs(wires=range(n_wires))
 
-        params = np.pi/4 * jnp.ones(2)
+        params = np.pi / 4 * jnp.ones(2)
         cfim = CFIM(circ)(params)
-        assert np.allclose(cfim, np.ones((2,2)))
-
+        assert np.allclose(cfim, np.ones((2, 2)))
 
     @pytest.mark.torch
     @pytest.mark.parametrize("n_wires", np.arange(1, 5))
@@ -158,12 +156,12 @@ class TestIntegration:
                 qml.RY(params[1], wires=i)
             return qml.probs(wires=range(n_wires))
 
-        params = np.pi / 4 * torch.tensor([1., 1.], requires_grad=True)
+        params = np.pi / 4 * torch.tensor([1.0, 1.0], requires_grad=True)
         cfim = CFIM(circ)(params)
         assert np.allclose(cfim.detach().numpy(), (n_wires / 3.0) * np.ones((2, 2)))
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("n_wires", np.arange(2,5))
+    @pytest.mark.parametrize("n_wires", np.arange(2, 5))
     def test_cfim_contains_zeros_torch(self, n_wires):
         """Integration test of CFIM() with torch for examples that have 0s in the probabilities and non-zero gradient"""
         import torch
@@ -177,10 +175,9 @@ class TestIntegration:
             qml.RX(params[0], wires=1)
             return qml.probs(wires=range(n_wires))
 
-        params = np.pi/4 * torch.tensor([1., 1.], requires_grad=True)
+        params = np.pi / 4 * torch.tensor([1.0, 1.0], requires_grad=True)
         cfim = CFIM(circ)(params)
-        assert np.allclose(cfim.detach().numpy(), np.ones((2,2)))
-
+        assert np.allclose(cfim.detach().numpy(), np.ones((2, 2)))
 
     @pytest.mark.tf
     @pytest.mark.parametrize("n_wires", np.arange(1, 5))
@@ -203,7 +200,7 @@ class TestIntegration:
         assert np.allclose(cfim, (n_wires / 3.0) * np.ones((2, 2)))
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("n_wires", np.arange(2,5))
+    @pytest.mark.parametrize("n_wires", np.arange(2, 5))
     def test_cfim_contains_zeros_tf(self, n_wires):
         """Integration test of CFIM() with tf for examples that have 0s in the probabilities and non-zero gradient"""
         import tensorflow as tf
@@ -219,4 +216,4 @@ class TestIntegration:
 
         params = tf.Variable([np.pi / 4, np.pi / 4])
         cfim = CFIM(circ)(params)
-        assert np.allclose(cfim, np.ones((2,2)))
+        assert np.allclose(cfim, np.ones((2, 2)))

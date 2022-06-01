@@ -25,13 +25,16 @@ import tensorflow.python.ops.numpy_ops.np_config as np_config
 def torch_jac(circ):
     def wrapper(params):
         return torch.autograd.functional.jacobian(circ, (params))
+
     return wrapper
+
 
 def tf_jac(circ):
     def wrapper(params):
         with tf.GradientTape() as tape:
             loss = circ(params)
         return tape.jacobian(loss, params)
+
     return wrapper
 
 
@@ -53,7 +56,7 @@ def CFIM(qnode):
         jac = qml.jacobian(new_qnode)
     if interface == "tf":
         jac = tf_jac(new_qnode)
-        np_config.enable_numpy_behavior() # this allows for the manipulations in _compute_cfim with tensors
+        np_config.enable_numpy_behavior()  # this allows for the manipulations in _compute_cfim with tensors
 
     def wrapper(*args, **kwargs):
 
@@ -72,23 +75,22 @@ def _compute_cfim(p, dp, interface):
     """
     # Check if any value in p is zero, and assign zeros for 1/p accordingly
     if any(qml.math.isclose(p, qml.math.zeros_like(p))) and not interface == "tf":
-        mask = p!=0
+        mask = p != 0
         one_over_p = qml.math.zeros_like(p)
         if interface == "jax":
-            one_over_p = one_over_p.at[mask].set(1/p[mask])
+            one_over_p = one_over_p.at[mask].set(1 / p[mask])
         else:
-            one_over_p[mask] = 1/p[mask]
+            one_over_p[mask] = 1 / p[mask]
     elif interface == "tf":
         one_over_p = tf.math.divide_no_nan(qml.math.ones_like(p), p)
     else:
-        one_over_p = 1/p
-    dp_over_p = dp.T * one_over_p # creates (n_params, n_probs) array
+        one_over_p = 1 / p
+    dp_over_p = dp.T * one_over_p  # creates (n_params, n_probs) array
     # (n_params, n_probs) @ (n_probs, n_params) = (n_params, n_params)
     if interface == "torch":
         return dp_over_p @ qml.math.cast(dp, dtype=p.dtype)
     else:
         return dp_over_p @ dp
-
 
 
 def CFIM_alt(qnode):
@@ -110,6 +112,7 @@ def CFIM_alt(qnode):
         )  # TODO: dont understand why I need the minus sign, most likely some autograd peculiarity in the hessian
 
     return wrapper
+
 
 def _compute_cfim_alt(p, d_sqrt_p, interface=None):
     """Computes :math:`CFIM_{ij} = \sum_\ell (\partial_i \sqrt{p_\ell}) (\partial_i \sqrt{p_\ell})`"""
