@@ -717,7 +717,7 @@ class DefaultQubit(QubitDevice):
 
         dim = 2**len(device_wires)
         mat_batch_size = self._get_batch_size(mat, (dim, dim), dim**2)
-        state_batch_size = self._get_batch_size(state, (2,) * self.num_wires, dim)
+        state_batch_size = self._get_batch_size(state, (2,) * self.num_wires, 2**self.num_wires)
 
         shape = [2] * (len(device_wires) * 2)
         state_axes = device_wires

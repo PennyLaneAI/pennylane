@@ -575,7 +575,7 @@ class QubitDevice(Device):
         shots = self.shots
 
         basis_states = np.arange(number_of_states)
-        if self._ndim(state_probability) == 2:
+        if qml.math.ndim(state_probability) == 2:
             return np.array(
                 [np.random.choice(basis_states, shots, p=prob) for prob in state_probability]
             )
