@@ -33,14 +33,15 @@ def factorize(two, tol):
 
     .. math::
 
-        h_{pq} = \int \phi_p(r)^* \left ( -\frac{\nabla_r^2}{2} - \sum_i \frac{Z_i}{|r-R_i|} \right )  \phi_q(r) dr,
+        h_{pq} = \int \phi_p(r)^* \left ( -\frac{\nabla_r^2}{2} - \sum_i \frac{Z_i}{|r-R_i|} \right)
+        \phi_q(r) dr,
 
     and
 
     .. math::
 
-        h_{pqrs} = \int \frac{\phi_p(r_1)^* \phi_q(r_2)^* \phi_r(r_2) \phi_s(r_1)}{|r_1 - r_2|} dr_1 dr_2.
-
+        h_{pqrs} = \int \frac{\phi_p(r_1)^* \phi_q(r_2)^* \phi_r(r_2) \phi_s(r_1)}{|r_1 - r_2|}
+        dr_1 dr_2.
 
     Rearranging the integrals in the chemist notation gives
 
@@ -50,22 +51,32 @@ def factorize(two, tol):
         a_{q, \alpha} + \frac{1}{2} \sum_{\alpha, \beta \in \{\uparrow, \downarrow \} } \sum_{pqrs}
         V_{pqrs} a_{p, \alpha}^{\dagger} a_{q, \alpha} a_{r, \beta}^{\dagger} a_{s, \beta}.
 
+    with
 
-    The objective of the factorization is to find a set of symmetric matrices such that
+    .. math::
+
+        T_{pq} = h_{ij} - \frac{1}{2} \sum_s h_{pssq}.
+
+
+    and $V$ is the two-electron tensor in chemist notation.
+
+    The objective of the factorization is to find a set of symmetric matrices, $L$, such that
 
     .. math::
 
            V_{ijkl} = \sum_r L_{ij}^{(r)} L_{kl}^{(r) T}.
 
-    The symmetric nature of $V$ allows keeping the number of $L^{(r)}$ functions to a small value.
+    and the rank $r \in \mathcal{O}(n)$.
 
-    The algorith has the following steps.
+    The algorithm has the following steps.
 
     1. Matricize the $n \times n \times n \times n$ two-electron tensor to a $n^2 \times n^2$ matrix
     where n is the number of orbitals.
 
-    2.
+    2. Diagonalize the resulting matrix and keep the $r$ eigenvectors which their corresponding
+    eigenvalues are larger than a threshold.
 
+    3. Reshape the selected eigenvectors to $n \times n$ matrices and return them.
 
     Args:
         two (array[array[float]]): the two-electron repulsion tensor in the molecular orbital basis
@@ -101,10 +112,6 @@ def factorize(two, tol):
     eigvecs = eigvecs[:, -rank:]
 
     vecs = eigvecs @ np.diag(np.sqrt(abs(eigvals)))
-    vecs_trans = (np.diag(np.sqrt(abs(eigvals))) @ eigvecs.T).T
-
-    diff = np.max(abs(vecs - vecs_trans))
-    print('diff', diff)
 
     factors = np.array([vecs.reshape(n, n, rank)[:, :, r] for r in range(rank)])
 
