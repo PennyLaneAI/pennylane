@@ -426,7 +426,7 @@ class Hamiltonian(Observable):
         # Constructor-call-like representation
         return f"<Hamiltonian: terms={qml.math.shape(self.coeffs)[0]}, wires={self.wires.tolist()}>"
 
-    def _ipython_display_(self):
+    def _ipython_display_(self): # pragma: no-cover
         # See https://ipython.readthedocs.io/en/stable/config/integrating.html
         # Displays __str__ in ipython instead of __repr__
         print(self.__str__())
