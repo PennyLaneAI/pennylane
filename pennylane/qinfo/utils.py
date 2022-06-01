@@ -24,8 +24,8 @@ def density_matrix_transform(qnode, indices):
          indices (list(int)): List of indices in the considered subsystem.
 
      Returns:
-         func: Function which wraps the QNode and accepts the same arguments. When called, this
-        function will return the density matrix.
+         func: Function which wraps the QNode and accepts the same arguments. When called, this function will
+            return the density matrix.
 
      **Example**
 
