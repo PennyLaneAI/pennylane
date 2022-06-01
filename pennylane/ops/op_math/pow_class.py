@@ -210,7 +210,7 @@ class Pow(Operator):
 
     @property
     def num_wires(self):
-        return self.base.num_wires
+        return len(self.wires)
 
     def queue(self, context=QueuingContext):
         context.safe_update_info(self.base, owner=self)

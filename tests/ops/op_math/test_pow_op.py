@@ -110,7 +110,7 @@ class TestInitialization:
         assert op.data == []
 
         assert op.wires == qml.wires.Wires("a")
-        assert op.num_wirse == 1
+        assert op.num_wires == 1
 
     def test_parametric_ops(self):
         """Test pow initialization for a standard parametric operation."""
@@ -298,7 +298,7 @@ def test_eigvals():
 
     mat_eigvals = qml.math.linalg.eigvals(op.matrix())
 
-    assert qml.math.allclose(mat_eigvals, op.eigvals)
+    assert qml.math.allclose(mat_eigvals, op.eigvals())
 
 
 def test_generator():
@@ -404,8 +404,11 @@ class TestMatrix:
 
 
 class TestSparseMatrix:
-    def test_sparse_matrix_exists_int_exponent(self):
+    """Tests involving the sparse matrix method."""
 
+    def test_sparse_matrix_exists_int_exponent(self):
+        """Test the sparse matrix is correct when the base defines a
+        sparse matrix and the exponennt is an int."""
         from scipy.sparse import csr_matrix
 
         H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
