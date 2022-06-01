@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+from copy import copy
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -236,6 +237,21 @@ class TestProperties:
 
 
 class TestMiscMethods:
+    def test_copy(self):
+
+        param1 = 1.2345
+        z = 2.3
+        base = qml.RX(param1, wires=0)
+        op = Pow(base, z)
+        copied_op = copy(op)
+
+        assert copied_op.__class__ is op.__class__
+        assert copied_op.z == op.z
+        assert copied_op.data == [param1]
+
+        copied_op.data = [6.54]
+        assert op.data == [param1]
+
     def test_label(self):
         """Test that the label draws the exponent as superscript."""
         base = qml.RX(1.2, wires=0)

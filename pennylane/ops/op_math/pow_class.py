@@ -14,6 +14,7 @@
 """
 This submodule defines the symbolic operation that indicates the power of an operator.
 """
+from copy import copy
 from scipy.linalg import fractional_matrix_power
 
 from pennylane.operation import (
@@ -141,8 +142,10 @@ class Pow(Operator):
         # this way preserves inheritance structure
 
         for attr, value in vars(self).items():
-            setattr(copied_op, attr, value)
-        copied_op._hyperparameters["base"] = self.base.__copy__()
+            if attr != "_hyperparameters":
+                setattr(copied_op, attr, value)
+        copied_op._hyperparameters = copy(self._hyperparameters)
+        copied_op._hyperparameters["base"] = copy(self.base)
 
         return copied_op
 
