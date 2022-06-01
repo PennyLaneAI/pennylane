@@ -1304,9 +1304,8 @@ class ECR(Operation):
         .. seealso:: :meth:`~.ECR.matrix`
 
 
-        Returns: matrix representation
-
-        Return type: tensor_like
+        Returns:
+            ndarray: matrix
         
         **Example**
 
