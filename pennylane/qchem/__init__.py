@@ -66,3 +66,4 @@ from .tapering import (
     taper,
     taper_hf,
 )
+from .factorization import factorize

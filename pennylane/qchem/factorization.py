@@ -122,6 +122,6 @@ def factorize(two, tol):
 
     eigvals, eigvecs = np.linalg.eigh(factors)
     eigvals = np.array([val for val in eigvals if np.sum(abs(eigvals)) > tol])
-    eigvals = eigvals[:, -len(eigvals) :]
+    eigvecs = eigvecs[:, -len(eigvals) :]
 
-    return factors, eigvals, eigvals
+    return factors, eigvals, eigvecs
