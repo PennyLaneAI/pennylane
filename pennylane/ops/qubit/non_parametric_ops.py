@@ -1293,7 +1293,10 @@ class ECR(Operation):
     num_params = 0 
     def __init__(self, wires, do_queue=True, id=None):
         super().__init__(wires=wires, do_queue=do_queue, id=id)
-        
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return base_label or "ECR"
+
     @staticmethod 
     def compute_matrix(): # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
