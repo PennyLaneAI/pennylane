@@ -592,7 +592,9 @@ class DefaultQubit(QubitDevice):
 
     @property
     def state(self):
-        return self._flatten(self._pre_rotated_state)
+        batch_size = self._get_batch_size(self._pre_rotated_state, (2,) * self.num_wires)
+        shape = [batch_size, 2**self.num_wires] if batch_size else [2**self.num_wires]
+        return self._reshape(self._pre_rotated_state, shape)
 
     def density_matrix(self, wires):
         """Returns the reduced density matrix of a given set of wires.
@@ -708,13 +710,17 @@ class DefaultQubit(QubitDevice):
         device_wires = self.map_wires(wires)
 
         dim = 2**len(device_wires)
-        batch_size = self._get_batch_size(mat, (dim, dim))
+        mat_batch_size = self._get_batch_size(mat, (dim, dim))
+        state_batch_size = self._get_batch_size(state, (2,)*self.num_wires)
 
         shape = [2] * (len(device_wires) * 2)
-        if batch_size:
-            shape.insert(0, batch_size)
+        state_axes = device_wires
+        if mat_batch_size:
+            shape.insert(0, mat_batch_size)
+        if state_batch_size:
+            state_axes = [ax + 1 for ax in state_axes]
         mat = self._cast(self._reshape(mat, shape), dtype=self.C_DTYPE)
-        axes = (np.arange(-len(device_wires), 0), device_wires)
+        axes = (np.arange(-len(device_wires), 0), state_axes)
         tdot = self._tensordot(mat, state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
@@ -723,9 +729,14 @@ class DefaultQubit(QubitDevice):
         # We'll need to invert this permutation to put the indices in the correct place
         unused_idxs = [idx for idx in range(self.num_wires) if idx not in device_wires]
         perm = list(device_wires) + unused_idxs
-        if batch_size:
+        if mat_batch_size:
             perm = [idx + 1 for idx in perm]
             perm.insert(0, 0)
+        if state_batch_size:
+            # As the state batch dimension always is the first in the state, it always
+            # ends up in position `len(device_wires)` after the tensordot. The -1 causes it
+            # being permuted to the leading dimension after transposition
+            perm.insert(len(device_wires), -1)
 
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         return self._transpose(tdot, inv_perm)

@@ -591,7 +591,9 @@ class TestControlledQubitUnitary:
         state_2 = f2()
 
         assert np.shape(state_1) == (3, 8)
-        assert np.allclose(state_1, state_1[0]) # Check that all broadcasted results are equal
+        # Check that all broadcasted results are equal...
+        assert np.allclose(state_1, state_1[0])
+        # ...and match the state created using the Toffoli gate
         assert np.allclose(state_1, state_2)
 
     def test_arbitrary_multiqubit(self):

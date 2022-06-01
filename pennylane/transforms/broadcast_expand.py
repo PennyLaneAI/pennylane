@@ -36,11 +36,8 @@ def broadcast_expand(tape):
     **Example**
 
     We may use ``broadcast_expand`` manually on a tape to separate it
-    into multiple calculations. For this we will provide ``qml.RX`` with
-    the ``ndim_params`` attribute that allows the operation to detect
-    broadcasting.
+    into multiple calculations.
 
-    >>> qml.RX.ndim_params = (0,)
     >>> with qml.tape.QuantumTape() as tape:
     >>>     qml.RX(np.array([0.2, 0.6, 1.0], requires_grad=True), wires=0)
     >>>     qml.expval(qml.PauliZ(0))
