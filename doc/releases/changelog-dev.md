@@ -4,6 +4,22 @@
 
 <h3>New features since last release</h3>
 
+* Quantum information module including: reduced density matrix functions for state vectors.
+  [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
+  
+  A `to_density_matrix` that can handle both state vectors and density matrix, to return a reduced density matrix:
+  ```pycon
+  >>> x = [1, 0, 1, 0] / np.sqrt(2)
+  >>> to_density_matrix(x, indices=[0])
+  [[0.5+0.j 0.5+0.j]
+   [0.5+0.j 0.5+0.j]]
+
+  >>> to_density_matrix(x, indices=[1])
+  [[1.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j]]
+  ```
+
+
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
   attribute `batch_size`.
   - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
@@ -197,5 +213,5 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad
+Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Soran Jahangiri, Utkarsh Azad
 
