@@ -576,9 +576,7 @@ def sample(op=None, wires=None):
         case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
         observable ``obs``.
     """
-    if (
-        op is not None and not op.is_hermitian
-    ):  # None type is also allowed for op
+    if op is not None and not op.is_hermitian:  # None type is also allowed for op
         raise qml.QuantumFunctionError(
             f"{op.name} is not an observable: cannot be used with sample"
         )

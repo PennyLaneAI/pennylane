@@ -52,8 +52,8 @@
   The code that checks for qubit wise commuting (QWC) got a performance boost that is noticable
   when many commuting paulis of the same type are measured.
 
-* Implemented the ECR operation for Pennylane-Braket plugin
-[(#2613)(https://github.com/PennyLaneAI/pennylane/pull/2613)]
+* Added the `qml.ECR` operation to represent the echoed RZX(pi/2) gate.
+  [(#2613)(https://github.com/PennyLaneAI/pennylane/pull/2613)]
 
 * Added new transform `qml.batch_partial` which behaves similarly to `functools.partial` but supports batching in the unevaluated parameters.
   [(#2585)](https://github.com/PennyLaneAI/pennylane/pull/2585)
@@ -77,6 +77,10 @@
   ```
 
 <h3>Improvements</h3>
+
+* IPython displays the `str` representation of a `Hamiltonian`, rather than the `repr`. This displays
+  more information about the object.
+  [(#2648)](https://github.com/PennyLaneAI/pennylane/pull/2648)
 
 * The qchem openfermion-dependent tests are localized and collected in `tests.qchem.of_tests`. The
   new module `test_structure` is created to collect the tests of the `qchem.structure` module in
