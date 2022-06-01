@@ -66,8 +66,8 @@ class TestIntegration:
     @pytest.mark.autograd
     @pytest.mark.parametrize("n_wires", np.arange(1, 5))
     def test_cfim_allnonzero_autograd(self, n_wires):
-        """Integration test of CFIM() for examples where all probabilities are all nonzero"""
-        n_params = 2
+        """Integration test of CFIM() with autograd for examples where all probabilities are all nonzero"""
+
         dev = qml.device("default.qubit", wires=n_wires)
 
         @qml.qnode(dev, interface="autograd")
@@ -79,6 +79,144 @@ class TestIntegration:
             return qml.probs(wires=range(n_wires))
 
         params = np.pi / 4 * pnp.ones(2, requires_grad=True)
-
         cfim = CFIM(circ)(params)
-        assert np.allclose(cfim, (n_wires / 12.0) * np.ones((n_params, n_params)))
+        assert np.allclose(cfim, (n_wires / 3.0) * np.ones((2, 2)))
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("n_wires", np.arange(2,5))
+    def test_cfim_contains_zeros_autograd(self, n_wires):
+        """Integration test of CFIM() with autograd for examples that have 0s in the probabilities and non-zero gradient"""
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev, interface="autograd")
+        def circ(params):
+            qml.RZ(params[0], wires=0)
+            qml.RX(params[1], wires=1)
+            qml.RX(params[0], wires=1)
+            return qml.probs(wires=range(n_wires))
+
+        params = np.pi/4 * pnp.ones(2, requires_grad=True)
+        cfim = CFIM(circ)(params)
+        assert np.allclose(cfim, np.ones((2,2)))
+
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("n_wires", np.arange(1, 5))
+    def test_cfim_allnonzero_jax(self, n_wires):
+        """Integration test of CFIM() with jax for examples where all probabilities are all nonzero"""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev, interface="jax")
+        def circ(params):
+            for i in range(n_wires):
+                qml.RX(params[0], wires=i)
+            for i in range(n_wires):
+                qml.RY(params[1], wires=i)
+            return qml.probs(wires=range(n_wires))
+
+        params = np.pi / 4 * jnp.ones(2)
+        cfim = CFIM(circ)(params)
+        assert np.allclose(cfim, (n_wires / 3.0) * np.ones((2, 2)))
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("n_wires", np.arange(2,5))
+    def test_cfim_contains_zeros_jax(self, n_wires):
+        """Integration test of CFIM() with jax for examples that have 0s in the probabilities and non-zero gradient"""
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev, interface="jax")
+        def circ(params):
+            qml.RZ(params[0], wires=0)
+            qml.RX(params[1], wires=1)
+            qml.RX(params[0], wires=1)
+            return qml.probs(wires=range(n_wires))
+
+        params = np.pi/4 * jnp.ones(2)
+        cfim = CFIM(circ)(params)
+        assert np.allclose(cfim, np.ones((2,2)))
+
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("n_wires", np.arange(1, 5))
+    def test_cfim_allnonzero_torch(self, n_wires):
+        """Integration test of CFIM() with torch for examples where all probabilities are all nonzero"""
+        import torch
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev, interface="torch")
+        def circ(params):
+            for i in range(n_wires):
+                qml.RX(params[0], wires=i)
+            for i in range(n_wires):
+                qml.RY(params[1], wires=i)
+            return qml.probs(wires=range(n_wires))
+
+        params = np.pi / 4 * torch.tensor([1., 1.], requires_grad=True)
+        cfim = CFIM(circ)(params)
+        assert np.allclose(cfim.detach().numpy(), (n_wires / 3.0) * np.ones((2, 2)))
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("n_wires", np.arange(2,5))
+    def test_cfim_contains_zeros_torch(self, n_wires):
+        """Integration test of CFIM() with torch for examples that have 0s in the probabilities and non-zero gradient"""
+        import torch
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev, interface="torch")
+        def circ(params):
+            qml.RZ(params[0], wires=0)
+            qml.RX(params[1], wires=1)
+            qml.RX(params[0], wires=1)
+            return qml.probs(wires=range(n_wires))
+
+        params = np.pi/4 * torch.tensor([1., 1.], requires_grad=True)
+        cfim = CFIM(circ)(params)
+        assert np.allclose(cfim.detach().numpy(), np.ones((2,2)))
+
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("n_wires", np.arange(1, 5))
+    def test_cfim_allnonzero_tf(self, n_wires):
+        """Integration test of CFIM() with tf for examples where all probabilities are all nonzero"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev, interface="tf")
+        def circ(params):
+            for i in range(n_wires):
+                qml.RX(params[0], wires=i)
+            for i in range(n_wires):
+                qml.RY(params[1], wires=i)
+            return qml.probs(wires=range(n_wires))
+
+        params = tf.Variable([np.pi / 4, np.pi / 4])
+        cfim = CFIM(circ)(params)
+        assert np.allclose(cfim, (n_wires / 3.0) * np.ones((2, 2)))
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("n_wires", np.arange(2,5))
+    def test_cfim_contains_zeros_tf(self, n_wires):
+        """Integration test of CFIM() with tf for examples that have 0s in the probabilities and non-zero gradient"""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev, interface="tf")
+        def circ(params):
+            qml.RZ(params[0], wires=0)
+            qml.RX(params[1], wires=1)
+            qml.RX(params[0], wires=1)
+            return qml.probs(wires=range(n_wires))
+
+        params = tf.Variable([np.pi / 4, np.pi / 4])
+        cfim = CFIM(circ)(params)
+        assert np.allclose(cfim, np.ones((2,2)))
