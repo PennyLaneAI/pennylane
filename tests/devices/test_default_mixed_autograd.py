@@ -417,6 +417,47 @@ class TestPassthruIntegration:
         with pytest.raises(qml.QuantumFunctionError, match=msg):
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
+    @pytest.mark.parametrize(
+        "dev_name,diff_method,mode",
+        [
+            ["default.mixed", "finite-diff", "backward"],
+            ["default.mixed", "parameter-shift", "backward"],
+            ["default.mixed", "backprop", "forward"],
+        ],
+    )
+    def test_ragged_differentiation(self, dev_name, diff_method, mode, tol):
+        """Tests correct output shape and evaluation for a tape
+        with prob and expval outputs"""
+        dev = qml.device(dev_name, wires=2)
+        x = np.array(0.543, requires_grad=True)
+        y = np.array(-0.654, requires_grad=True)
+
+        @qml.qnode(dev, diff_method=diff_method, interface="autograd", mode=mode)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
+
+        res = circuit(x, y)
+
+        expected = np.array(
+            [np.cos(x), (1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]
+        )
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = qml.jacobian(circuit)(x, y)
+        assert isinstance(res, tuple) and len(res) == 2
+        assert res[0].shape == (3,)
+        assert res[1].shape == (3,)
+
+        expected = (
+            np.array([-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
+            np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
+        )
+        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
+        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+
 
 @pytest.mark.autograd
 class TestHighLevelIntegration:

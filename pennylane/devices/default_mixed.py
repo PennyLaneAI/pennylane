@@ -115,12 +115,17 @@ class DefaultMixed(QubitDevice):
 
     @staticmethod
     def _asarray(array, dtype=None):
-        res = qnp.asarray(qnp.stack(array), dtype=dtype)
+        is_ragged = False
 
-        if res.dtype is np.dtype("O"):
+        try:
+            res = qnp.asarray(array, dtype=dtype)
+        except ValueError:
+            is_ragged = True
+
+        if is_ragged or res.dtype is np.dtype("O"):
             return qnp.hstack(array).flatten().astype(dtype)
 
-        return res
+        return qnp.asarray(qnp.stack(array), dtype=dtype)
 
     def __init__(
         self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
