@@ -330,6 +330,9 @@
   <class 'numpy.complex64'>
   ```
 
+* Performance improvements to building sparse Hamiltonians.
+  [(#2630)](https://github.com/PennyLaneAI/pennylane/pull/2630)
+
 <h3>Bug fixes</h3>
 
 * Fixed a bug where returning `qml.density_matrix` using the PyTorch interface would return a density matrix with wrong shape.
@@ -390,5 +393,5 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Korbinian, Kottmann, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, 
-Utkarsh Azad, WingCode
+Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian, Kottmann, Maria Schuld, Mikhail Andrenkov, Romain Moyard,
+Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, WingCode
