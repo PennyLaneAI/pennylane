@@ -234,11 +234,11 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dt
         return density_matrix
 
     traced_wires = [x for x in consecutive_indices if x not in indices]
-    density_matrix = partial_trace(density_matrix, traced_wires)
+    density_matrix = partial_trace(density_matrix, traced_wires, c_dtype=c_dtype)
     return density_matrix
 
 
-def partial_trace(density_matrix, indices, c_dtype="complex64"):
+def partial_trace(density_matrix, indices, c_dtype="complex128"):
     """Compute the reduced density matrix by tracing out the provided indices.
 
     Args:
