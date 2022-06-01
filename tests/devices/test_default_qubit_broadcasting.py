@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device.
+Unit tests for the :mod:`pennylane.plugin.DefaultQubit` device when using broadcasting.
 """
 import cmath
 
@@ -85,78 +85,50 @@ THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
-
-def test_analytic_deprecation():
-    """Tests if the kwarg `analytic` is used and displays error message."""
-    msg = "The analytic argument has been replaced by shots=None. "
-    msg += "Please use shots=None instead of analytic=True."
-
-    with pytest.raises(
-        DeviceError,
-        match=msg,
-    ):
-        qml.device("default.qubit", wires=1, shots=1, analytic=True)
+INVSQRT2 = 1 / math.sqrt(2)
+T_PHASE = np.exp(1j * np.pi / 4)
 
 
-def test_dtype_errors():
-    """Test that if an incorrect dtype is provided to the device then an error is raised."""
-    with pytest.raises(DeviceError, match="Real datatype must be a floating point type."):
-        qml.device("default.qubit", wires=1, r_dtype=np.complex128)
-    with pytest.raises(
-        DeviceError, match="Complex datatype must be a complex floating point type."
-    ):
-        qml.device("default.qubit", wires=1, c_dtype=np.float64)
-
-
-class TestApply:
-    """Tests that operations and inverses of certain operations are applied correctly or that the proper
-    errors are raised.
+class TestApplyBroadcasted:
+    """Tests that operations and inverses of certain operations are applied to a broadcasted
+    state correctly or that the proper errors are raised.
     """
 
+    triple_state = [[1, 0], [INVSQRT2, INVSQRT2], [0, 1]]
     test_data_no_parameters = [
-        (qml.PauliX, [1, 0], np.array([0, 1])),
-        (qml.PauliX, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
-        (qml.PauliY, [1, 0], [0, 1j]),
-        (qml.PauliY, [1 / math.sqrt(2), 1 / math.sqrt(2)], [-1j / math.sqrt(2), 1j / math.sqrt(2)]),
-        (qml.PauliZ, [1, 0], [1, 0]),
-        (qml.PauliZ, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), -1 / math.sqrt(2)]),
-        (qml.S, [1, 0], [1, 0]),
-        (qml.S, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1j / math.sqrt(2)]),
-        (qml.T, [1, 0], [1, 0]),
+        (qml.PauliX, triple_state, np.array([[0, 1], [INVSQRT2, INVSQRT2], [1, 0]])),
+        (qml.PauliY, triple_state, np.array([[0, 1j], [-1j * INVSQRT2, 1j * INVSQRT2], [-1j, 0]])),
+        (qml.PauliZ, triple_state, np.array([[1, 0], [INVSQRT2, -1 * INVSQRT2], [0, -1]])),
+        (qml.S, triple_state, np.array([[1, 0], [INVSQRT2, 1j * INVSQRT2], [0, 1j]])),
+        (qml.T, triple_state, np.array([[1, 0], [INVSQRT2, T_PHASE * INVSQRT2], [0, T_PHASE]])),
         (
-            qml.T,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), np.exp(1j * np.pi / 4) / math.sqrt(2)],
+            qml.Hadamard, 
+            triple_state,
+            np.array([[INVSQRT2, INVSQRT2], [1, 0], [INVSQRT2, -1 * INVSQRT2]]),
         ),
-        (qml.Hadamard, [1, 0], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
-        (qml.Hadamard, [1 / math.sqrt(2), -1 / math.sqrt(2)], [0, 1]),
-        (qml.Identity, [1, 0], [1, 0]),
-        (qml.Identity, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
+        (qml.Identity, triple_state, triple_state),
     ]
 
     test_data_no_parameters_inverses = [
-        (qml.PauliX, [1, 0], np.array([0, 1])),
-        (qml.PauliX, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
-        (qml.PauliY, [1, 0], [0, 1j]),
-        (qml.PauliY, [1 / math.sqrt(2), 1 / math.sqrt(2)], [-1j / math.sqrt(2), 1j / math.sqrt(2)]),
-        (qml.PauliZ, [1, 0], [1, 0]),
-        (qml.PauliZ, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), -1 / math.sqrt(2)]),
-        (qml.S, [1, 0], [1, 0]),
-        (qml.S, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), -1j / math.sqrt(2)]),
-        (qml.T, [1, 0], [1, 0]),
+        (qml.PauliX, triple_state, np.array([[0, 1], [INVSQRT2, INVSQRT2], [1, 0]])),
+        (qml.PauliY, triple_state, np.array([[0, 1j], [-1j * INVSQRT2, 1j * INVSQRT2], [-1j, 0]])),
+        (qml.PauliZ, triple_state, np.array([[1, 0], [INVSQRT2, -1 * INVSQRT2], [0, -1]])),
+        (qml.S, triple_state, np.array([[1, 0], [INVSQRT2, -1j * INVSQRT2], [0, -1j]])),
         (
             qml.T,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), np.exp(-1j * np.pi / 4) / math.sqrt(2)],
+            triple_state,
+            np.array([[1, 0], [INVSQRT2, np.conj(T_PHASE) * INVSQRT2], [0, np.conj(T_PHASE)]]),
         ),
-        (qml.Hadamard, [1, 0], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
-        (qml.Hadamard, [1 / math.sqrt(2), -1 / math.sqrt(2)], [0, 1]),
-        (qml.Identity, [1, 0], [1, 0]),
-        (qml.Identity, [1 / math.sqrt(2), 1 / math.sqrt(2)], [1 / math.sqrt(2), 1 / math.sqrt(2)]),
+        (
+            qml.Hadamard, 
+            triple_state,
+            np.array([[INVSQRT2, INVSQRT2], [1, 0], [INVSQRT2, -1 * INVSQRT2]]),
+        ),
+        (qml.Identity, triple_state, triple_state),
     ]
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_no_parameters)
-    def test_apply_operation_single_wire_no_parameters(
+    def test_apply_operation_single_wire_no_parameters_broadcasted(
         self, qubit_device_1_wire, tol, operation, input, expected_output
     ):
         """Tests that applying an operation yields the expected output state for single wire
@@ -169,7 +141,7 @@ class TestApply:
         assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_no_parameters_inverses)
-    def test_apply_operation_single_wire_no_parameters_inverse(
+    def test_apply_operation_single_wire_no_parameters_inverse_broadcasted(
         self, qubit_device_1_wire, tol, operation, input, expected_output
     ):
         """Tests that applying an operation yields the expected output state for single wire
@@ -182,94 +154,77 @@ class TestApply:
         assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
 
     test_data_two_wires_no_parameters = [
-        (qml.CNOT, [1, 0, 0, 0], [1, 0, 0, 0]),
-        (qml.CNOT, [0, 0, 1, 0], [0, 0, 0, 1]),
+        (qml.CNOT, [[0, 0.6, 0, 0.8]], [[0, 0.6, 0.8, 0]]),
         (
             qml.CNOT,
-            [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0],
+            [[1, 0, 0, 0], [0, 0, INVSQRT2, -INVSQRT2], [0, 0.6, 0, 0.8]],
+            [[1, 0, 0, 0], [0, 0, -INVSQRT2, INVSQRT2], [0, 0.6, 0.8, 0]],
         ),
-        (qml.SWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
-        (qml.SWAP, [0, 0, 1, 0], [0, 1, 0, 0]),
+        (qml.SWAP, [[0, 0.6, 0, 0.8]], [[0, 0, 0.6, 0.8]]),
         (
             qml.SWAP,
-            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), -1 / math.sqrt(2), 0, 0],
+            [[1, 0, 0, 0], [0, 0, INVSQRT2, -INVSQRT2], [0, 0.6, 0, 0.8]],
+            [[1, 0, 0, 0], [0, INVSQRT2, 0, -INVSQRT2], [0, 0, 0.6, 0.8]],
         ),
-        (qml.CZ, [1, 0, 0, 0], [1, 0, 0, 0]),
-        (qml.CZ, [0, 0, 0, 1], [0, 0, 0, -1]),
+        (qml.CZ, [[0, 0.6, 0, 0.8]], [[0, 0.6, 0, -0.8]]),
         (
             qml.CZ,
-            [1 / math.sqrt(2), 0, 0, -1 / math.sqrt(2)],
-            [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)],
+            [[1, 0, 0, 0], [0, 0, INVSQRT2, -INVSQRT2], [0, 0.6, 0, 0.8]],
+            [[1, 0, 0, 0], [0, 0, INVSQRT2, INVSQRT2], [0, 0.6, 0, -0.8]],
         ),
     ]
 
     test_data_iswap = [
-        (qml.ISWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
-        (qml.ISWAP, [0, 0, 1, 0], [0, 1j, 0, 0]),
+        (qml.ISWAP, [[0, 0.6, 0, 0.8]], [[0, 0, 0.6j, 0.8]]),
         (
             qml.ISWAP,
-            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), -1j / math.sqrt(2), 0, 0],
+            [[1, 0, 0, 0], [0, 0, INVSQRT2, -INVSQRT2], [0, 0.6, 0, 0.8]],
+            [[1, 0, 0, 0], [0, 1j * INVSQRT2, 0, -INVSQRT2], [0, 0, 0.6j, 0.8]],
         ),
     ]
 
     test_data_iswap_inv = [
-        (qml.ISWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
-        (qml.ISWAP, [0, 0, 1, 0], [0, -1j, 0, 0]),
+        (qml.ISWAP, [[0, 0.6, 0, 0.8]], [[0, 0, -0.6j, 0.8]]),
         (
             qml.ISWAP,
-            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), 1j / math.sqrt(2), 0, 0],
+            [[1, 0, 0, 0], [0, 0, INVSQRT2, -INVSQRT2], [0, 0.6, 0, 0.8]],
+            [[1, 0, 0, 0], [0, -1j * INVSQRT2, 0, -INVSQRT2], [0, 0, -0.6j, 0.8]],
         ),
     ]
 
     test_data_siswap = [
-        (qml.SISWAP, [1, 0, 0, 0], [1, 0, 0, 0]),
-        (qml.SISWAP, [0, 1, 0, 0], [0, 1 / math.sqrt(2), 1 / math.sqrt(2) * 1j, 0]),
+        (qml.SISWAP, [[0, 0.6, 0, 0.8]], [[0, 0.6 * INVSQRT2, 0.6j * INVSQRT2, 0.8]]),
         (
             qml.SISWAP,
-            [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
-            [1 / math.sqrt(2), 0.5, 0.5 * 1j, 0],
+            [[1, 0, 0, 0], [0, 0, INVSQRT2, -INVSQRT2], [0, 0.6, 0, 0.8]],
+            [[1, 0, 0, 0], [0, 0.5j, 0.5, -INVSQRT2], [0, 0.6 * INVSQRT2, 0.6j * INVSQRT2, 0.8]],
         ),
     ]
 
     test_data_sqisw = [
-        (qml.SQISW, [1, 0, 0, 0], [1, 0, 0, 0]),
-        (qml.SQISW, [0, 1, 0, 0], [0, 1 / math.sqrt(2), 1 / math.sqrt(2) * 1j, 0]),
+        (qml.SQISW, [[0, 0.6, 0, 0.8]], [[0, 0.6 * INVSQRT2, 0.6j * INVSQRT2, 0.8]]),
         (
             qml.SQISW,
-            [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
-            [1 / math.sqrt(2), 0.5, 0.5 * 1j, 0],
+            [[1, 0, 0, 0], [0, 0, INVSQRT2, -INVSQRT2], [0, 0.6, 0, 0.8]],
+            [[1, 0, 0, 0], [0, 0.5j, 0.5, -INVSQRT2], [0, 0.6 * INVSQRT2, 0.6j * INVSQRT2, 0.8]],
         ),
     ]
 
     test_data_siswap_inv = [
+        (qml.SISWAP, [[0, 0.6, 0, 0.8]], [[0, 0.6 * INVSQRT2, -0.6j * INVSQRT2, 0.8]]),
         (
             qml.SISWAP,
-            [1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), -0.5 * 1j, 0.5, 0],
-        ),
-        (qml.SISWAP, [0, 0, 1, 0], [0, -1 / math.sqrt(2) * 1j, 1 / math.sqrt(2), 0]),
-        (
-            qml.SISWAP,
-            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), 0.5 * 1j, -0.5, 0],
+            [[1, 0, 0, 0], [0, 0, INVSQRT2, -INVSQRT2], [0, 0.6, 0, 0.8]],
+            [[1, 0, 0, 0], [0, -0.5j, 0.5, -INVSQRT2], [0, 0.6 * INVSQRT2, -0.6j * INVSQRT2, 0.8]],
         ),
     ]
 
     test_data_sqisw_inv = [
+        (qml.SQISW, [[0, 0.6, 0, 0.8]], [[0, 0.6 * INVSQRT2, -0.6j * INVSQRT2, 0.8]]),
         (
             qml.SQISW,
-            [1 / math.sqrt(2), 0, 1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), -0.5 * 1j, 0.5, 0],
-        ),
-        (qml.SQISW, [0, 0, 1, 0], [0, -1 / math.sqrt(2) * 1j, 1 / math.sqrt(2), 0]),
-        (
-            qml.SQISW,
-            [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
-            [1 / math.sqrt(2), 0.5 * 1j, -0.5, 0],
+            [[1, 0, 0, 0], [0, 0, INVSQRT2, -INVSQRT2], [0, 0.6, 0, 0.8]],
+            [[1, 0, 0, 0], [0, -0.5j, 0.5, -INVSQRT2], [0, 0.6 * INVSQRT2, -0.6j * INVSQRT2, 0.8]],
         ),
     ]
 
@@ -278,19 +233,22 @@ class TestApply:
     )
 
     @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters)
-    def test_apply_operation_two_wires_no_parameters(
+    def test_apply_operation_two_wires_no_parameters_broadcasted(
         self, qubit_device_2_wires, tol, operation, input, expected_output
     ):
         """Tests that applying an operation yields the expected output state for two wire
         operations that have no parameters."""
 
         qubit_device_2_wires._state = np.array(input, dtype=qubit_device_2_wires.C_DTYPE).reshape(
-            (2, 2)
+            (-1, 2, 2)
         )
         qubit_device_2_wires.apply([operation(wires=[0, 1])])
 
         assert np.allclose(
-            qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+            qubit_device_2_wires._state.reshape((-1, 4)),
+            np.array(expected_output),
+            atol=tol,
+            rtol=0,
         )
         assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
@@ -302,19 +260,19 @@ class TestApply:
     )
 
     @pytest.mark.parametrize("operation,input,expected_output", all_two_wires_no_parameters_inv)
-    def test_apply_operation_two_wires_no_parameters_inverse(
+    def test_apply_operation_two_wires_no_parameters_inverse_broadcasted(
         self, qubit_device_2_wires, tol, operation, input, expected_output
     ):
         """Tests that applying an operation yields the expected output state for two wire
         operations that have no parameters."""
 
         qubit_device_2_wires._state = np.array(input, dtype=qubit_device_2_wires.C_DTYPE).reshape(
-            (2, 2)
+            (-1, 2, 2)
         )
         qubit_device_2_wires.apply([operation(wires=[0, 1]).inv()])
 
         assert np.allclose(
-            qubit_device_2_wires._state.flatten(),
+            qubit_device_2_wires._state.reshape((-1, 4)),
             np.array(expected_output),
             atol=tol,
             rtol=0,
@@ -322,67 +280,90 @@ class TestApply:
         assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
     test_data_three_wires_no_parameters = [
-        (qml.CSWAP, [1, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0, 0]),
-        (qml.CSWAP, [0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 1, 0]),
-        (qml.CSWAP, [0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 1, 0, 0]),
+        (
+            qml.CSWAP,
+            [
+                [0.6, 0, 0, 0, 0, 0, 0.8, 0],
+                [-INVSQRT2, INVSQRT2, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0.5, 0.5, 0.5, -0.5, 0, 0],
+                [0, 0, 0.5, 0, 0.5, -0.5, 0, 0.5],
+            ],
+            [
+                [0.6, 0, 0, 0, 0, 0.8, 0, 0],
+                [-INVSQRT2, INVSQRT2, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0.5, 0.5, 0.5, 0, -0.5, 0],
+                [0, 0, 0.5, 0, 0.5, 0, -0.5, 0.5],
+            ],
+        ),
     ]
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_three_wires_no_parameters)
-    def test_apply_operation_three_wires_no_parameters(
+    def test_apply_operation_three_wires_no_parameters_broadcasted(
         self, qubit_device_3_wires, tol, operation, input, expected_output
     ):
         """Tests that applying an operation yields the expected output state for three wire
         operations that have no parameters."""
 
         qubit_device_3_wires._state = np.array(input, dtype=qubit_device_3_wires.C_DTYPE).reshape(
-            (2, 2, 2)
+            (-1, 2, 2, 2)
         )
         qubit_device_3_wires.apply([operation(wires=[0, 1, 2])])
 
+        print(
+            qubit_device_3_wires._state.reshape((-1, 8)),
+        )
+        print(
+            np.array(expected_output),
+        )
         assert np.allclose(
-            qubit_device_3_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+            qubit_device_3_wires._state.reshape((-1, 8)),
+            np.array(expected_output),
+            atol=tol,
+            rtol=0,
         )
         assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_three_wires_no_parameters)
-    def test_apply_operation_three_wires_no_parameters_inverse(
+    def test_apply_operation_three_wires_no_parameters_inverse_broadcasted(
         self, qubit_device_3_wires, tol, operation, input, expected_output
     ):
         """Tests that applying the inverse of an operation yields the expected output state for three wire
         operations that have no parameters."""
 
         qubit_device_3_wires._state = np.array(input, dtype=qubit_device_3_wires.C_DTYPE).reshape(
-            (2, 2, 2)
+            (-1, 2, 2, 2)
         )
         qubit_device_3_wires.apply([operation(wires=[0, 1, 2]).inv()])
 
         assert np.allclose(
-            qubit_device_3_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+            qubit_device_3_wires._state.reshape((-1, 8)),
+            np.array(expected_output),
+            atol=tol,
+            rtol=0,
         )
         assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
 
+    # TODO[dwierichs]: add tests with qml.BaisState once `_apply_basis_state` supports broadcasting
     @pytest.mark.parametrize(
         "operation,expected_output,par",
         [
-            (qml.BasisState, [0, 0, 1, 0], [1, 0]),
-            (qml.BasisState, [0, 0, 1, 0], [1, 0]),
-            (qml.BasisState, [0, 0, 0, 1], [1, 1]),
-            (qml.QubitStateVector, [0, 0, 1, 0], [0, 0, 1, 0]),
-            (qml.QubitStateVector, [0, 0, 1, 0], [0, 0, 1, 0]),
-            (qml.QubitStateVector, [0, 0, 0, 1], [0, 0, 0, 1]),
+            (qml.QubitStateVector, [[0, 0, 1, 0]], [[0, 0, 1, 0]]),
             (
                 qml.QubitStateVector,
-                [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
-                [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
-            ),
-            (
-                qml.QubitStateVector,
-                [1 / math.sqrt(3), 0, -1 / math.sqrt(3), 1 / math.sqrt(3)],
-                [1 / math.sqrt(3), 0, -1 / math.sqrt(3), 1 / math.sqrt(3)],
+                [
+                    [0, 0, 1, 0],
+                    [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
+                    [0.5, -0.5, 0.5j, -0.5j],
+                ],
+                [
+                    [0, 0, 1, 0],
+                    [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
+                    [0.5, -0.5, 0.5j, -0.5j],
+                ],
             ),
         ],
     )
-    def test_apply_operation_state_preparation(
+    def test_apply_operation_state_preparation_broadcasted(
         self, qubit_device_2_wires, tol, operation, expected_output, par
     ):
         """Tests that applying an operation yields the expected output state for single wire
@@ -393,25 +374,52 @@ class TestApply:
         qubit_device_2_wires.apply([operation(par, wires=[0, 1])])
 
         assert np.allclose(
-            qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+            qubit_device_2_wires._state.reshape((-1, 4)),
+            np.array(expected_output),
+            atol=tol,
+            rtol=0,
         )
 
     test_data_single_wire_with_parameters = [
-        (qml.PhaseShift, [1, 0], [1, 0], [math.pi / 2]),
-        (qml.PhaseShift, [0, 1], [0, 1j], [math.pi / 2]),
-        (
+        ( # broadcasted parameters
             qml.PhaseShift,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), 1 / 2 + 1j / 2],
-            [math.pi / 4],
+            [INVSQRT2, INVSQRT2],
+            [[INVSQRT2, np.exp(1j * np.pi / 2 * i) * INVSQRT2] for i in range(4)],
+            [[np.pi / 2 * i for i in range(4)]],
         ),
-        (qml.RX, [1, 0], [1 / math.sqrt(2), -1j * 1 / math.sqrt(2)], [math.pi / 2]),
-        (qml.RX, [1, 0], [0, -1j], [math.pi]),
-        (
+        ( # broadcasted state
+            qml.PhaseShift,
+            [[INVSQRT2, INVSQRT2], [1, 0], [0, 1]],
+            [[INVSQRT2, 1j * INVSQRT2], [1, 0], [0, 1j]],
+            [np.pi / 2],
+        ),
+        ( # broadcasted state and parameters
+            qml.PhaseShift,
+            [[INVSQRT2, INVSQRT2], [0.6, 0.8], [0, 1]],
+            [[INVSQRT2, 1j * INVSQRT2], [0.6, -0.8], [0, -1j]],
+            [[np.pi / 2 * i for i in range(1, 4)]],
+        ),
+        ( # broadcasted parameters
             qml.RX,
-            [1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [1 / 2 - 1j / 2, 1 / 2 - 1j / 2],
-            [math.pi / 2],
+            [1, 0],
+            [[1, 0], [INVSQRT2, -1j * INVSQRT2], [0, -1j], [-INVSQRT2, -1j * INVSQRT2]],
+            [[np.pi / 2 * i for i in range(4)]],
+        ),
+        ( # broadcasted state
+            qml.RX,
+            [[INVSQRT2, INVSQRT2], [1, 0], [0, 1]],
+            [
+                [T_PHASE * INVSQRT2, T_PHASE * INVSQRT2],
+                [INVSQRT2, 1j * INVSQRT2],
+                [1j * INVSQRT2, INVSQRT2],
+            ],
+            [-np.pi / 2],
+        ),
+        ( # broadcasted state and parameters
+            qml.RX,
+            [[INVSQRT2, -INVSQRT2], [0.6, 0.8], [0, 1]],
+            [[T_PHASE * INVSQRT2, -T_PHASE * INVSQRT2], [-0.8j, -0.6j], [-1j * INVSQRT2, -INVSQRT2]],
+            [[np.pi / 2 * i for i in range(1, 4)]],
         ),
         (qml.RY, [1, 0], [1 / math.sqrt(2), 1 / math.sqrt(2)], [math.pi / 2]),
         (qml.RY, [1, 0], [0, 1], [math.pi]),
@@ -568,8 +576,10 @@ class TestApply:
 
         qubit_device_1_wire._state = np.array(input, dtype=qubit_device_1_wire.C_DTYPE)
 
+        par = tuple(np.array(p) for p in par)
         qubit_device_1_wire.apply([operation(*par, wires=[0])])
 
+        print(qubit_device_1_wire._state, np.array(expected_output), sep="\n")
         assert np.allclose(qubit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
         assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
 
@@ -2143,6 +2153,7 @@ class TestApplyOps:
     gates in DefaultQubit."""
 
     state = np.arange(2**4, dtype=np.complex128).reshape((2, 2, 2, 2))
+    broadcasted_state = np.arange(2**4 * 3, dtype=np.complex128).reshape((3, 2, 2, 2, 2))
     dev = qml.device("default.qubit", wires=4)
 
     single_qubit_ops = [
@@ -2172,6 +2183,16 @@ class TestApplyOps:
         state_out_einsum = np.einsum("ab,ibjk->iajk", matrix, self.state)
         assert np.allclose(state_out, state_out_einsum)
 
+    @pytest.mark.parametrize("op, method", single_qubit_ops)
+    def test_apply_single_qubit_op_broadcasted_state(self, op, method, inverse):
+        """Test if the application of single qubit operations to a
+        broadcasted state is correct."""
+        state_out = method(self.broadcasted_state, axes=[2], inverse=inverse)
+        op = op(wires=[1])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        state_out_einsum = np.einsum("ab,mibjk->miajk", matrix, self.broadcasted_state)
+        assert np.allclose(state_out, state_out_einsum)
+
     @pytest.mark.parametrize("op, method", two_qubit_ops)
     def test_apply_two_qubit_op(self, op, method, inverse):
         """Test if the application of two qubit operations is correct."""
@@ -2183,6 +2204,17 @@ class TestApplyOps:
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", two_qubit_ops)
+    def test_apply_two_qubit_op_broadcasted_state(self, op, method, inverse):
+        """Test if the application of two qubit operations to a
+        broadcasted state is correct."""
+        state_out = method(self.broadcasted_state, axes=[1, 2])
+        op = op(wires=[0, 1])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = matrix.reshape((2, 2, 2, 2))
+        state_out_einsum = np.einsum("abcd,mcdjk->mabjk", matrix, self.broadcasted_state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", two_qubit_ops)
     def test_apply_two_qubit_op_reverse(self, op, method, inverse):
         """Test if the application of two qubit operations is correct when the applied wires are
         reversed."""
@@ -2191,6 +2223,17 @@ class TestApplyOps:
         matrix = op.inv().matrix() if inverse else op.matrix()
         matrix = matrix.reshape((2, 2, 2, 2))
         state_out_einsum = np.einsum("abcd,idck->ibak", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", two_qubit_ops)
+    def test_apply_two_qubit_op_reverse_broadcasted_state(self, op, method, inverse):
+        """Test if the application of two qubit operations to a
+        broadcasted state is correct when the applied wires are reversed."""
+        state_out = method(self.broadcasted_state, axes=[3, 2])
+        op = op(wires=[2, 1])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = matrix.reshape((2, 2, 2, 2))
+        state_out_einsum = np.einsum("abcd,midck->mibak", matrix, self.broadcasted_state)
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", three_qubit_ops)
@@ -2205,6 +2248,17 @@ class TestApplyOps:
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", three_qubit_ops)
+    def test_apply_three_qubit_op_controls_smaller_broadcasted_state(self, op, method, inverse):
+        """Test if the application of three qubit operations to a broadcasted
+        state is correct when both control wires are smaller than the target wire."""
+        state_out = method(self.broadcasted_state, axes=[1, 3, 4])
+        op = op(wires=[0, 2, 3])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = matrix.reshape((2, 2) * 3)
+        state_out_einsum = np.einsum("abcdef,mdkef->makbc", matrix, self.broadcasted_state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", three_qubit_ops)
     def test_apply_three_qubit_op_controls_greater(self, op, method, inverse):
         """Test if the application of three qubit operations is correct when both control wires are
         greater than the target wire."""
@@ -2216,6 +2270,17 @@ class TestApplyOps:
         assert np.allclose(state_out, state_out_einsum)
 
     @pytest.mark.parametrize("op, method", three_qubit_ops)
+    def test_apply_three_qubit_op_controls_greater_broadcasted_state(self, op, method, inverse):
+        """Test if the application of three qubit operations to a broadcasted
+        state is correct when both control wires are greater than the target wire."""
+        state_out = method(self.broadcasted_state, axes=[3, 2, 1])
+        op = op(wires=[2, 1, 0])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = matrix.reshape((2, 2) * 3)
+        state_out_einsum = np.einsum("abcdef,mfedk->mcbak", matrix, self.broadcasted_state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", three_qubit_ops)
     def test_apply_three_qubit_op_controls_split(self, op, method, inverse):
         """Test if the application of three qubit operations is correct when one control wire is smaller
         and one control wire is greater than the target wire."""
@@ -2224,6 +2289,17 @@ class TestApplyOps:
         matrix = op.inv().matrix() if inverse else op.matrix()
         matrix = matrix.reshape((2, 2) * 3)
         state_out_einsum = np.einsum("abcdef,kdfe->kacb", matrix, self.state)
+        assert np.allclose(state_out, state_out_einsum)
+
+    @pytest.mark.parametrize("op, method", three_qubit_ops)
+    def test_apply_three_qubit_op_controls_split_broadcasted_state(self, op, method, inverse):
+        """Test if the application of three qubit operations to a broadcasted state is correct
+        when one control wire is smaller and one control wire is greater than the target wire."""
+        state_out = method(self.broadcasted_state, axes=[4, 2, 3])
+        op = op(wires=[3, 1, 2])
+        matrix = op.inv().matrix() if inverse else op.matrix()
+        matrix = matrix.reshape((2, 2) * 3)
+        state_out_einsum = np.einsum("abcdef,mkdfe->mkacb", matrix, self.broadcasted_state)
         assert np.allclose(state_out, state_out_einsum)
 
 
@@ -2523,3 +2599,88 @@ class TestHamiltonianSupport:
 
         with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
             dev.expval(H)
+
+original_capabilities = qml.devices.DefaultQubit.capabilities()
+
+@pytest.fixture(scope="function")
+def mock_default_qubit(monkeypatch):
+    """A function to create a mock device that mocks the broadcasting support flag"""
+
+    def overwrite_support(*cls):
+        capabilities = original_capabilities.copy()
+        capabilities.update(supports_broadcasting=False)
+        return capabilities
+
+    with monkeypatch.context() as m:
+        m.setattr(qml.devices.DefaultQubit, "capabilities", overwrite_support)
+
+        def get_default_qubit(wires=1, shots=None):
+            dev = qml.devices.DefaultQubit(wires=wires, shots=shots)
+            return dev
+
+        yield get_default_qubit
+
+@pytest.mark.parametrize("shots", [None, 100000])
+class TestBroadcastingSupport:
+    """Tests that the device correctly makes use of ``broadcast_expand`` to
+    execute broadcasted tapes if its capability to execute broadcasted tapes
+    is artificially deactivated."""
+
+    @pytest.mark.parametrize("x", [0.2, np.array([0.1, 0.6, 0.3]), np.array([0.1])])
+    def test_with_single_broadcasted_par(self, x, shots, mock_default_qubit):
+        """Test that broadcasting on a circuit with a
+        single parametrized operation works."""
+        dev = mock_default_qubit(wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        circuit.construct((np.array(x),), {})
+        out = circuit(np.array(x))
+
+        assert circuit.device.num_executions == (1 if isinstance(x, float) else len(x))
+        tol = 1e-10 if shots is None else 1e-2
+        assert qml.math.allclose(out, qml.math.cos(x), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("x, y", [(0.2, np.array([0.4])), (np.array([0.1, 5.1]), np.array([0.1, -0.3]))])
+    def test_with_multiple_pars(self, x, y, shots, mock_default_qubit):
+        """Test that broadcasting on a circuit with a
+        single parametrized operation works."""
+        dev = mock_default_qubit(wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=1)
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
+
+        out = circuit(x, y)
+        expected = qml.math.stack([qml.math.cos(x) * qml.math.ones_like(y), -qml.math.sin(y)]).T
+
+        assert circuit.device.num_executions == len(y)
+        tol = 1e-10 if shots is None else 1e-2
+        assert qml.math.allclose(out, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("x, y", [(0.2, np.array([0.4])), (np.array([0.1, 5.1]), np.array([0.1, -0.3]))])
+    def test_with_Hamiltonian(self, x, y, shots, mock_default_qubit):
+        """Test that broadcasting on a circuit with a
+        single parametrized operation works."""
+        dev = mock_default_qubit(wires=2, shots=shots)
+
+        H = qml.Hamiltonian([0.3, 0.9], [qml.PauliZ(0), qml.PauliY(1)])
+        H.compute_grouping()
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=1)
+            return qml.expval(H)
+
+        out = circuit(x, y)
+        expected = 0.3 * qml.math.cos(x) * qml.math.ones_like(y) - 0.9 * qml.math.sin(y)
+
+        assert circuit.device.num_executions == len(y)
+        tol = 1e-10 if shots is None else 1e-2
+        assert qml.math.allclose(out, expected, atol=tol, rtol=0)

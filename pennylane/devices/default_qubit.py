@@ -485,7 +485,10 @@ class DefaultQubit(QubitDevice):
 
         .. warning::
 
-            This function does not support broadcasted states or observables yet.
+            While the QubitDevice function supports broadcasted states already,
+            this function does not support broadcasted states or observables yet,
+            i.e. it supports broadcasting depending on whether the logic below is
+            activated or the execution is passed to ``QubitDevice.expval``.
         """
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
