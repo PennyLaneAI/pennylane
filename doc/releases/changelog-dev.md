@@ -22,7 +22,7 @@
 * Boolean mask indexing of the parameter-shift Hessian
   [(#2538)](https://github.com/PennyLaneAI/pennylane/pull/2538)
 
-  The `argnum` keyword argument for `param_shift_hessian` 
+  The `argnum` keyword argument for `param_shift_hessian`
   is now allowed to be a twodimensional Boolean `array_like`.
   Only the indicated entries of the Hessian will then be computed.
   A particularly useful example is the computation of the diagonal
@@ -52,7 +52,33 @@
   The code that checks for qubit wise commuting (QWC) got a performance boost that is noticable
   when many commuting paulis of the same type are measured.
 
+* Added new transform `qml.batch_partial` which behaves similarly to `functools.partial` but supports batching in the unevaluated parameters.
+  [(#2585)](https://github.com/PennyLaneAI/pennylane/pull/2585)
+
+  This is useful for executing a circuit with a batch dimension in some of its parameters:
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+     qml.RX(x, wires=0)
+     qml.RY(y, wires=0)
+     return qml.expval(qml.PauliZ(wires=0))
+  ```
+  ```pycon
+  >>> batched_partial_circuit = qml.batch_partial(circuit, x=np.array(np.pi / 2))
+  >>> y = np.array([0.2, 0.3, 0.4])
+  >>> batched_partial_circuit(y=y)
+  tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
+  ```
+
 <h3>Improvements</h3>
+
+* The qchem openfermion-dependent tests are localized and collected in `tests.qchem.of_tests`. The
+  new module `test_structure` is created to collect the tests of the `qchem.structure` module in
+  one place and remove their dependency to openfermion.
+  [(#2593)](https://github.com/PennyLaneAI/pennylane/pull/2593)
 
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
   for many classes.
@@ -99,6 +125,15 @@
 * Sparse Hamiltonians representation has changed from COOrdinate (COO) to Compressed Sparse Row (CSR) format. The CSR representation is more performant for arithmetic operations and matrix vector products. This change decreases the `expval()` calculation time, for `qml.SparseHamiltonian`, specially for large workflows. Also, the CRS format consumes less memory for the `qml.SparseHamiltonian` storage.
 [(#2561)](https://github.com/PennyLaneAI/pennylane/pull/2561)
 
+* A new method `safe_update_info` is added to `qml.QueuingContext`. This method is substituted
+  for `qml.QueuingContext.update_info` in a variety of places.
+  [(#2612)](https://github.com/PennyLaneAI/pennylane/pull/2612)
+
+* `BasisEmbedding` can accept an int as argument instead of a list of bits (optionally). Example: `qml.BasisEmbedding(4, wires = range(4))` is now equivalent to `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because 4=0b100). 
+  [(#2601)](https://github.com/PennyLaneAI/pennylane/pull/2601)
+
+* Introduced a new `is_hermitian` property to determine if an operator can be used in a measurement process.
+  [(#2629)](https://github.com/PennyLaneAI/pennylane/pull/2629)
 <h3>Breaking changes</h3>
 
 * The `qml.queuing.Queue` class is now removed.
@@ -135,6 +170,10 @@
   ```
 
 <h3>Bug fixes</h3>
+
+* Fixed a bug to make `param_shift_hessian` work with QNodes in which gates marked
+  as trainable do not have any impact on the QNode output.
+  [(#2584)](https://github.com/PennyLaneAI/pennylane/pull/2584)
 
 * `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` or `"jax-jit"`, when requesting backpropagation. 
   [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
@@ -180,3 +219,4 @@ This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
 Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad
+
