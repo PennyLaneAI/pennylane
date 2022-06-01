@@ -168,7 +168,7 @@ def sparse_hamiltonian(H, wires=None):
 
         mat = []
         i_count = 0
-        for (wire, wire_lab) in enumerate(wires):
+        for wire_lab in wires:
             if wire_lab in op.wires:
                 if i_count > 0:
                     mat.append(scipy.sparse.eye(2**i_count, format="coo"))
