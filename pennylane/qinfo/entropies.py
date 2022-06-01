@@ -16,12 +16,34 @@
 import pennylane as qml
 
 
-def vn_entropy_transform(state, wires=None, base=None):
-    """Get Von Neumann entropies from a state."""
+def vn_entropy_transform(qnode, indices=None, base=None):
+    """Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~.state`.
+
+    Args:
+        qnode (tensor_like): A :class:`.QNode` returning a :func:`~.state`.
+        indices (list(int)): List of indices in the considered subsystem.
+        base (float, int): Base for the logarithm.
+
+    Returns:
+        float: Von Neumann entropy of the considered subsystem.
+
+    **Example**
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2)
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.IsingXX(x, wires=[0, 1])
+                return qml.state()
+
+    >>> vn_entropy_transform(circuit, indices=[0])(np.pi/2)
+    0.6931472
+
+    """
 
     def wrapper(*args, **kwargs):
-        # Check for the QNode return type
-        density_matrix = qml.qinfo.density_matrix_transform(state, wires)(*args, **kwargs)
+        density_matrix = qml.qinfo.density_matrix_transform(qnode, indices)(*args, **kwargs)
         entropy = qml.math.compute_vn_entropy(density_matrix, base)
         return entropy
 
