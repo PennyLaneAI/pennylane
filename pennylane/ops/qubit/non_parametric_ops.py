@@ -1265,7 +1265,6 @@ class SWAP(Operation):
         CSWAP(wires=wire + self.wires)
         
 class ECR(Operation): 
-    
     r""" ECR(wires)
 
     An echoed RZX(pi/2) gate.
