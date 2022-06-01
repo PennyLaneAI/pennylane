@@ -691,7 +691,7 @@ class QubitDevice(Device):
         """
         raise NotImplementedError
 
-    def mutual_info(self, wires0, wires1):
+    def mutual_info(self, wires0, wires1):  # pragma: no cover
         """Returns the mutual information prior to measurement.
 
         .. note::
