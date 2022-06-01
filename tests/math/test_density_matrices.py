@@ -194,3 +194,19 @@ class TestDensityMatrixFromStateVectors:
 
         with pytest.raises(ValueError, match="State vector must be"):
             jitted_dens_matrix_func(state_vector, indices=(0, 1), check_state=True)
+
+    def test_density_matrix_tf_jit(self):
+        """Test jitting the density matrix from state vector function with Tf."""
+        import tensorflow as tf
+        from functools import partial
+
+        state_vector = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
+        density_matrix = partial(fn.to_density_matrix, indices=[0])
+
+        density_matrix = tf.function(
+            density_matrix,
+            jit_compile=True,
+            input_signature=(tf.TensorSpec(shape=(4,), dtype=tf.complex128),),
+        )
+        density_matrix = density_matrix(state_vector)
+        assert np.allclose(density_matrix, [[1, 0], [0, 0]])
