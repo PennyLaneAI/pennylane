@@ -816,6 +816,7 @@ def vn_entropy(wires, log_base=None):
 
     Args:
         wires (Sequence[int] or int): the wires of the subsystem
+        log_base (int, float): base to use in the logarithm.
 
     **Example:**
 

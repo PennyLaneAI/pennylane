@@ -172,6 +172,7 @@ class DefaultMixed(QubitDevice):
 
         Args:
             wires (Wires): wires of the considered subsystem.
+            log_base (int, float): base to use in the logarithm.
 
         Returns:
             float: returns the Von Neumann entropy
