@@ -48,6 +48,7 @@ ar.register_function("builtins", "unstack", list)
 # qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
 ar.register_function("scipy", "to_numpy", lambda x: x)
 ar.register_function("scipy", "shape", np.shape)
+ar.register_function("scipy", "ndim", np.ndim)
 
 
 def _scatter_element_add_numpy(tensor, index, value):
