@@ -16,10 +16,9 @@ import functools
 import pennylane as qml
 import pennylane.numpy as pnp
 
-import jax
-import torch
-import tensorflow as tf
-import tensorflow.python.ops.numpy_ops.np_config as np_config
+
+
+
 
 
 def _torch_jac(circ):
@@ -41,7 +40,7 @@ def _tf_jac(circ):
     return wrapper
 
 
-def CFIM(qnode, argnum=0):
+def CFIM(qnode, argnums=0):
     """Computing the classical fisher information matrix (CFIM) using the jacobian of the output probabilities
     as described in eq. (15) in https://arxiv.org/abs/2103.15191
     """
@@ -52,12 +51,22 @@ def CFIM(qnode, argnum=0):
     interface = qnode.interface
 
     if interface == "jax":
-        jac = jax.jacobian(new_qnode)
+        import jax
+        jac = jax.jacobian(new_qnode, argnums=argnums)
+
+
     if interface == "torch":
+        import torch
         jac = _torch_jac(new_qnode)
+
+
     if interface == "autograd":
         jac = qml.jacobian(new_qnode)
+
+        
     if interface == "tf":
+        import tensorflow as tf
+        import tensorflow.python.ops.numpy_ops.np_config as np_config
         jac = _tf_jac(new_qnode)
         np_config.enable_numpy_behavior()  # this allows for the manipulations in _compute_cfim with tensors
 
