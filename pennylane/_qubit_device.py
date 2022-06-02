@@ -506,10 +506,8 @@ class QubitDevice(Device):
                     )
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
-                        "Returning the state is not supported when using custom wire labels"
+                        "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
-                # Check if the state is accessible and decide to return the state or the density
-                # matrix.
                 results.append(self.vn_entropy(wires=obs.wires))
 
             elif obs.return_type is MutualInfo:
@@ -689,13 +687,17 @@ class QubitDevice(Device):
 
         .. note::
 
-            Only state vector simulators support this property. Please see the
-            plugin documentation for more details.
+            Only simulators support this property.
         """
         raise NotImplementedError
 
-    def mutual_info(self, wires0, wires1):
-        """Returns the mutual information between the two subsystems"""
+    def mutual_info(self, wires0, wires1):  # pragma: no cover
+        """Returns the mutual information prior to measurement.
+
+        .. note::
+
+            Only simulators support this property.
+        """
         raise NotImplementedError
 
     def analytic_probability(self, wires=None):

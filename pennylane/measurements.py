@@ -415,12 +415,7 @@ class MeasurementProcess:
     def queue(self, context=qml.QueuingContext):
         """Append the measurement process to an annotated queue."""
         if self.obs is not None:
-            try:
-                context.update_info(self.obs, owner=self)
-            except qml.queuing.QueuingError:
-                self.obs.queue(context=context)
-                context.update_info(self.obs, owner=self)
-
+            context.safe_update_info(self.obs, owner=self)
             context.append(self, owns=self.obs)
         else:
             context.append(self)
@@ -488,7 +483,7 @@ def expval(op):
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
-    if not isinstance(op, (qml.operation.Observable, qml.Hamiltonian)):
+    if not op.is_hermitian:
         raise qml.QuantumFunctionError(
             f"{op.name} is not an observable: cannot be used with expval"
         )
@@ -523,7 +518,7 @@ def var(op):
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
     """
-    if not isinstance(op, qml.operation.Observable):
+    if not op.is_hermitian:
         raise qml.QuantumFunctionError(f"{op.name} is not an observable: cannot be used with var")
 
     return MeasurementProcess(Variance, obs=op, shape=(1,), numeric_type=float)
@@ -601,9 +596,7 @@ def sample(op=None, wires=None):
         case ``qml.sample(obs)`` is interpreted as a single-shot expectation value of the
         observable ``obs``.
     """
-    if (
-        not isinstance(op, qml.operation.Observable) and op is not None
-    ):  # None type is also allowed for op
+    if op is not None and not op.is_hermitian:  # None type is also allowed for op
         raise qml.QuantumFunctionError(
             f"{op.name} is not an observable: cannot be used with sample"
         )
@@ -829,14 +822,67 @@ def density_matrix(wires):
 
 
 def vn_entropy(wires):
-    r"""Von Neumann entropy"""
+    r"""Von Neumann entropy of the system prior to measurement.
+
+    Args:
+        wires (Sequence[int] or int): the wires of the subsystem
+
+        **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=[0])
+
+    Executing this QNode:
+
+    >>> circuit_entropy(np.pi/2)
+    0.6931472
+
+    .. note::
+
+        Calculating the derivative of :func:`~.vn_entropy` is currently only supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device.
+    """
     # pylint: disable=protected-access
     wires = qml.wires.Wires(wires)
     return MeasurementProcess(VnEntropy, wires=wires, shape=(1,), numeric_type=float)
 
 
 def mutual_info(wires0, wires1):
-    r"""Mutual information"""
+    r"""Mutual information between the subsystems prior to measurement.
+
+    Args:
+        wires0 (Sequence[int] or int): the wires of the first subsystem
+        wires1 (Sequence[int] or int): the wires of the second subsystem
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+    Executing this QNode:
+
+    >>> circuit(np.pi / 2)
+    1.3862943611198906
+
+    .. note::
+
+        Calculating the derivative of :func:`~.mutual_info` is currently only supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device.
+    """
     wires0 = qml.wires.Wires(wires0)
     wires1 = qml.wires.Wires(wires1)
     return MeasurementProcess(MutualInfo, wires=[wires0, wires1], shape=(1,), numeric_type=float)
