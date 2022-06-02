@@ -24,7 +24,6 @@ import pennylane as qml
 from pennylane import numpy as np
 
 from pennylane.operation import Observable, Tensor
-from pennylane.queuing import QueuingError
 from pennylane.wires import Wires
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
@@ -427,6 +426,12 @@ class Hamiltonian(Observable):
         # Constructor-call-like representation
         return f"<Hamiltonian: terms={qml.math.shape(self.coeffs)[0]}, wires={self.wires.tolist()}>"
 
+    def _ipython_display_(self):  # pragma: no-cover
+        """Displays __str__ in ipython instead of __repr__
+        See https://ipython.readthedocs.io/en/stable/config/integrating.html
+        """
+        print(self.__str__())
+
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
 
@@ -633,11 +638,6 @@ class Hamiltonian(Observable):
     def queue(self, context=qml.QueuingContext):
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:
-            try:
-                context.update_info(o, owner=self)
-            except QueuingError:
-                o.queue(context=context)
-                context.update_info(o, owner=self)
-
+            context.safe_update_info(o, owner=self)
         context.append(self, owns=tuple(self.ops))
         return self
