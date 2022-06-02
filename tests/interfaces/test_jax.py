@@ -838,6 +838,40 @@ class TestVectorValued:
 class TestVectorValuedJIT:
     """Test vector-valued returns for the JAX jit Python interface."""
 
+    @pytest.mark.parametrize(
+        "ret_type, shape",
+        [
+            ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], (2,)),
+            ([qml.probs(wires=[0, 1])], (1, 4)),
+        ],
+    )
+    def test_shapes(self, execute_kwargs, ret_type, shape):
+        """Test the shape of the result of vector-valued QNodes."""
+        adjoint = execute_kwargs.get("gradient_kwargs", {}).get("method", "") == "adjoint_jacobian"
+        if adjoint:
+            pytest.skip("The adjoint diff method doesn't support probabilities.")
+
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        idx = 0
+
+        def cost(a, cache):
+            with qml.tape.QuantumTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                for r in ret_type:
+                    qml.apply(r)
+
+            res = qml.interfaces.execute(
+                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
+            )
+            return res[0]
+
+        res = cost(params, cache=None)
+        assert res.shape == shape
+
     def test_independent_expval(self, execute_kwargs):
         """Tests computing an expectation value that is independent trainable
         parameters."""
