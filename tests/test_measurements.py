@@ -1229,7 +1229,7 @@ class TestDensityMatrix:
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     def test_correct_density_matrix_jax(self, dev_name):
-        """Test that the correct density matrix is returned using torch interface."""
+        """Test that the correct density matrix is returned using JAX interface."""
 
         dev = qml.device(dev_name, wires=2)
 
@@ -1247,7 +1247,7 @@ class TestDensityMatrix:
     @pytest.mark.tf
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     def test_correct_density_matrix_tf(self, dev_name):
-        """Test that the correct density matrix is returned using torch interface."""
+        """Test that the correct density matrix is returned using the TensorFlow interface."""
 
         dev = qml.device(dev_name, wires=2)
 
