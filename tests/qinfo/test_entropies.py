@@ -414,13 +414,15 @@ class TestMutualInformation:
     """Tests for the mutual information functions"""
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize(
-        "params", [np.array([0, 0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
+        "params", [np.array([0.0, 0.0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
     )
     def test_qnode_state(self, device, interface, params):
         """Test that mutual information works for QNodes that return the state"""
         dev = qml.device(device, wires=2)
+
+        params = qml.math.asarray(params, like=interface)
 
         @qml.qnode(dev, interface=interface)
         def circuit(params):
@@ -438,13 +440,15 @@ class TestMutualInformation:
         assert np.allclose(actual, expected)
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize(
-        "params", [np.array([0, 0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
+        "params", [np.array([0.0, 0.0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
     )
     def test_qnode_mutual_info(self, device, interface, params):
         """Test that mutual information works for QNodes that directly return it"""
         dev = qml.device(device, wires=2)
+
+        params = qml.math.asarray(params, like=interface)
 
         @qml.qnode(dev, interface=interface)
         def circuit_mutual_info(params):

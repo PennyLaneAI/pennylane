@@ -501,12 +501,6 @@ class TestMutualInformation:
         actual = qml.math.to_mutual_info(state, indices0=[0], indices1=[1])
         assert np.allclose(actual, expected)
 
-    def test_grad_state(self):
-        """Test that the gradient of mutual information works for states"""
-
-    def test_grad_density_matrix(self):
-        """Test that the gradient of mutual information works for density matrices"""
-
     @pytest.mark.parametrize(
         "state, wires0, wires1",
         [
