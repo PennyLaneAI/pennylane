@@ -1397,3 +1397,35 @@ class TestJIT:
 
         expected_g = [-np.sin(a) * np.cos(b), -np.cos(a) * np.sin(b)]
         assert np.allclose(g, expected_g, atol=tol, rtol=0)
+
+    def test_gradient_scalar_cost_vector_valued_qnode(self, dev_name, diff_method, mode, tol):
+        """Test derivative calculation of a scalar valued cost function that
+        uses the output of a vector-valued QNode"""
+        dev = qml.device(dev_name, wires=2)
+
+        if diff_method == "adjoint":
+            pytest.xfail(reason="The adjoint method is not using host-callback currently")
+
+        @jax.jit
+        @qnode(dev, diff_method=diff_method, interface="jax", mode=mode)
+        def circuit(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[1])
+
+        def cost(x, y):
+            res = circuit(x, y)
+            return res[0]
+
+        x = jnp.array(1.0)
+        y = jnp.array(2.0)
+        g0 = jax.grad(cost, argnums=0)(x, y)
+        g1 = jax.grad(cost, argnums=1)(x, y)
+
+        expected_g = (
+            np.array([-np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2]),
+            np.array([-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
+        )
+        assert np.allclose(g0, expected_g[0][0], atol=tol, rtol=0)
+        assert np.allclose(g1, expected_g[1][0], atol=tol, rtol=0)
