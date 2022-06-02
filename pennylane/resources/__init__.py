@@ -14,3 +14,5 @@
 """
 This subpackage provides the functionality for algorithm resource estimation.
 """
+
+from .factorization import factorize

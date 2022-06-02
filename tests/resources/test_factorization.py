@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for functions needed for for two-electron tensor factorization.
+Unit tests for functions needed for two-electron tensor factorization.
 """
 
 import pytest
@@ -56,7 +56,7 @@ from pennylane import numpy as np
 )
 def test_factorize(two_tensor, factors_ref):
     r"""Test that electron_integrals returns the correct values."""
-    factors, eigvals, eigvecs = qml.qchem.factorize(two_tensor, 1e-5)
+    factors, eigvals, eigvecs = qml.resources.factorize(two_tensor, 1e-5)
 
     eigvals_ref, eigvecs_ref = np.linalg.eigh(factors_ref)
 
