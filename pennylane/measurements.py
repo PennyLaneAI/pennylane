@@ -817,7 +817,7 @@ def vn_entropy(wires, log_base=None):
     Args:
         wires (Sequence[int] or int): the wires of the subsystem
 
-        **Example:**
+    **Example:**
 
     .. code-block:: python3
 
