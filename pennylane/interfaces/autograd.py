@@ -197,8 +197,10 @@ def vjp(
 
         else:
             # Need to compute the Jacobians on the backward pass (accumulation="backward")
+
             if isinstance(gradient_fn, qml.gradients.gradient_transform):
                 # Gradient function is a gradient transform.
+
                 # Generate and execute the required gradient tapes
                 if _n == max_diff:
                     with qml.tape.Unwrap(*tapes):
@@ -209,6 +211,7 @@ def vjp(
                             reduction="append",
                             gradient_kwargs=gradient_kwargs,
                         )
+
                         vjps = processing_fn(execute_fn(vjp_tapes)[0])
 
                 else:
@@ -240,7 +243,6 @@ def vjp(
                 # - gradient_fn is not differentiable
                 #
                 # so we cannot support higher-order derivatives.
-
                 with qml.tape.Unwrap(*tapes):
                     jacs = gradient_fn(tapes, **gradient_kwargs)
 
@@ -249,14 +251,11 @@ def vjp(
         return_vjps = [
             qml.math.to_numpy(v, max_depth=_n) if isinstance(v, ArrayBox) else v for v in vjps
         ]
-
         if device.capabilities().get("provides_jacobian", False):
             # in the case where the device provides the jacobian,
             # the output of grad_fn must be wrapped in a tuple in
             # order to match the input parameters to _execute.
-
             return (return_vjps,)
-
         return return_vjps
 
     return grad_fn
