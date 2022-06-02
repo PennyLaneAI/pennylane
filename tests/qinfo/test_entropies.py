@@ -343,6 +343,7 @@ class TestVonNeumannEntropy:
     def test_IsingXX_qnode_transform_jax_jit_entropy(self, param, wires, base):
         """Test entropy for a QNode with jax-jit interface."""
         import jax
+        import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=2)
 
