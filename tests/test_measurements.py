@@ -1210,8 +1210,11 @@ class TestDensityMatrix:
 
     @pytest.mark.torch
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
-    def test_correct_density_matrix_torch(self, dev_name):
+    @pytest.mark.parametrize("diff_method", [None, "backprop"])
+    def test_correct_density_matrix_torch(self, dev_name, diff_method):
         """Test that the correct density matrix is returned using torch interface."""
+        if dev_name == "default.mixed" and diff_method == "backprop":
+            pytest.skip("Mixed device does not support backprop.")
 
         dev = qml.device(dev_name, wires=2)
 
@@ -1228,12 +1231,15 @@ class TestDensityMatrix:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
-    def test_correct_density_matrix_jax(self, dev_name):
+    @pytest.mark.parametrize("diff_method", [None, "backprop"])
+    def test_correct_density_matrix_jax(self, dev_name, diff_method):
         """Test that the correct density matrix is returned using JAX interface."""
+        if dev_name == "default.mixed" and diff_method == "backprop":
+            pytest.skip("Mixed device does not support backprop.")
 
         dev = qml.device(dev_name, wires=2)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface="jax", diff_method=diff_method)
         def func():
             qml.Hadamard(wires=0)
             return qml.density_matrix(wires=0)
@@ -1246,8 +1252,11 @@ class TestDensityMatrix:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
-    def test_correct_density_matrix_tf(self, dev_name):
+    @pytest.mark.parametrize("diff_method", [None, "backprop"])
+    def test_correct_density_matrix_tf(self, dev_name, diff_method):
         """Test that the correct density matrix is returned using the TensorFlow interface."""
+        if dev_name == "default.mixed" and diff_method == "backprop":
+            pytest.skip("Mixed device does not support backprop.")
 
         dev = qml.device(dev_name, wires=2)
 
