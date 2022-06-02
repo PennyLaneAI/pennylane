@@ -102,6 +102,10 @@
 * The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
   [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
 
+* The developer-facing `pow` method has been added to `Operator` with concrete implementations
+  for many classes.
+  [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
+
 <h3>Improvements</h3>
 
 * IPython displays the `str` representation of a `Hamiltonian`, rather than the `repr`. This displays
@@ -112,12 +116,6 @@
   new module `test_structure` is created to collect the tests of the `qchem.structure` module in
   one place and remove their dependency to openfermion.
   [(#2593)](https://github.com/PennyLaneAI/pennylane/pull/2593)
-
-* The developer-facing `pow` method has been added to `Operator` with concrete implementations
-  for many classes.
-  [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
-
-<h3>Improvements</h3>
 
 * Test classes are created in qchem test modules to group the integrals and matrices unittests.
   [(#2545)](https://github.com/PennyLaneAI/pennylane/pull/2545)

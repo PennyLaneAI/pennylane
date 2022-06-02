@@ -55,9 +55,32 @@ PARAMETRIZED_OPERATIONS = [
     qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
 ]
 
+NON_PARAMETRIZED_OPERATIONS = [
+    qml.S(wires=0),
+    qml.SX(wires=0),
+    qml.T(wires=0),
+    qml.CNOT(wires=[0, 1]),
+    qml.CZ(wires=[0, 1]),
+    qml.CY(wires=[0, 1]),
+    qml.SWAP(wires=[0, 1]),
+    qml.ISWAP(wires=[0, 1]),
+    qml.SISWAP(wires=[0, 1]),
+    qml.SQISW(wires=[0, 1]),
+    qml.CSWAP(wires=[0, 1, 2]),
+    qml.Toffoli(wires=[0, 1, 2]),
+    qml.Hadamard(wires=0),
+    qml.PauliX(wires=0),
+    qml.PauliZ(wires=0),
+    qml.PauliY(wires=0),
+    qml.MultiControlledX(wires=[0, 1, 2], control_values="01"),
+    qml.QubitSum(wires=[0, 1, 2]),
+]
+
+ALL_OPERATIONS = NON_PARAMETRIZED_OPERATIONS + PARAMETRIZED_OPERATIONS
+
 
 class TestOperations:
-    @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
+    @pytest.mark.parametrize("op", ALL_OPERATIONS)
     def test_parametrized_op_copy(self, op, tol):
         """Tests that copied parametrized ops function as expected"""
         copied_op = copy.copy(op)
@@ -68,7 +91,7 @@ class TestOperations:
         np.testing.assert_allclose(op.matrix(), copied_op2.matrix(), atol=tol)
         op.inv()
 
-    @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
+    @pytest.mark.parametrize("op", ALL_OPERATIONS)
     def test_adjoint_unitaries(self, op, tol):
         op_d = op.adjoint()
         res1 = np.dot(op.matrix(), op_d.matrix())

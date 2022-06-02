@@ -444,23 +444,30 @@ class TestMatrix:
         assert qml.math.allclose(expected, mat)
         assert qml.math.get_interface(mat) == interface
 
+    @pytest.mark.autograd
     def test_matrix_autograd(self):
         """Test the matrix of an Adjoint operator with an autograd parameter."""
         self.check_matrix(np.array(1.2345), "autograd")
 
+    @pytest.mark.jax
     def test_matrix_jax(self):
         """Test the matrix of an adjoint operator with a jax parameter."""
-        jnp = pytest.importorskip("jax.numpy")
+        import jax.numpy as jnp
+
         self.check_matrix(jnp.array(1.2345), "jax")
 
+    @pytest.mark.torch
     def test_matrix_torch(self):
         """Test the matrix of an adjoint oeprator with a torch parameter."""
-        torch = pytest.importorskip("torch")
+        import torch
+
         self.check_matrix(torch.tensor(1.2345), "torch")
 
+    @pytest.mark.tf
     def test_matrix_tf(self):
         """Test the matrix of an adjoint opreator with a tensorflow parameter."""
-        tf = pytest.importorskip("tensorflow")
+        import tensorflow as tf
+
         self.check_matrix(tf.Variable(1.2345), "tensorflow")
 
     def test_no_matrix_defined(self):
