@@ -31,7 +31,7 @@
 * Boolean mask indexing of the parameter-shift Hessian
   [(#2538)](https://github.com/PennyLaneAI/pennylane/pull/2538)
 
-  The `argnum` keyword argument for `param_shift_hessian` 
+  The `argnum` keyword argument for `param_shift_hessian`
   is now allowed to be a twodimensional Boolean `array_like`.
   Only the indicated entries of the Hessian will then be computed.
   A particularly useful example is the computation of the diagonal
@@ -61,7 +61,32 @@
   The code that checks for qubit wise commuting (QWC) got a performance boost that is noticable
   when many commuting paulis of the same type are measured.
 
+* Added new transform `qml.batch_partial` which behaves similarly to `functools.partial` but supports batching in the unevaluated parameters.
+  [(#2585)](https://github.com/PennyLaneAI/pennylane/pull/2585)
+
+  This is useful for executing a circuit with a batch dimension in some of its parameters:
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+     qml.RX(x, wires=0)
+     qml.RY(y, wires=0)
+     return qml.expval(qml.PauliZ(wires=0))
+  ```
+  ```pycon
+  >>> batched_partial_circuit = qml.batch_partial(circuit, x=np.array(np.pi / 2))
+  >>> y = np.array([0.2, 0.3, 0.4])
+  >>> batched_partial_circuit(y=y)
+  tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
+  ```
+
 <h3>Improvements</h3>
+
+* IPython displays the `str` representation of a `Hamiltonian`, rather than the `repr`. This displays
+  more information about the object.
+  [(#2648)](https://github.com/PennyLaneAI/pennylane/pull/2648)
 
 * The qchem openfermion-dependent tests are localized and collected in `tests.qchem.of_tests`. The
   new module `test_structure` is created to collect the tests of the `qchem.structure` module in
