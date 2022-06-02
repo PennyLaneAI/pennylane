@@ -11,15 +11,15 @@
   [(#2609)](https://github.com/PennyLaneAI/pennylane/pull/2609)
 
   Parameter broadcasting refers to passing parameters with a (single) leading additional
-  dimension (compared to the expected parameter shape) to `Operator`s.
-  Introducing this concept includes multiple changes:
+  dimension (compared to the expected parameter shape) to `Operator`'s.
+  Introducing this concept involves multiple changes:
 
   1. New class attributes
-    - `Operator.ndim_params` contains the expected number of dimensions for each parameter
+    - `Operator.ndim_params` can be specified by developers to provide the expected number of dimensions for each parameter
       of an operator.
-    - `Operator.batch_size` contains the size of an additional parameter-broadcasting axis,
+    - `Operator.batch_size` returns the size of an additional parameter-broadcasting axis,
       if present.
-    - `QuantumTape.batch_size` contains the `batch_size` of its operations (see logic below).
+    - `QuantumTape.batch_size` returns the `batch_size` of its operations (see logic below).
     - `Device.capabilities()["supports_broadcasting"]` is a Boolean flag indicating whether a
       device natively is able to apply broadcasted operators.
   2. New functionalities
@@ -40,7 +40,7 @@
       allow arguments with a broadcasting dimension in their numerical representations.
       This includes all gates in `ops/qubit/parametric_ops` and `ops/qubit/matrix_ops`.
       The broadcasted dimension is the first dimension in representations.
-      Note that the broadcasted parameter has to be passed as an `array` but not as a python
+      Note that the broadcasted parameter has to be passed as an `tensor` but not as a python
       `list` or `tuple` for most operations.
 
   **Example**
