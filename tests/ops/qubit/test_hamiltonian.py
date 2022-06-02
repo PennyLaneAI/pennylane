@@ -17,6 +17,8 @@ Tests for the Hamiltonian class.
 import numpy as np
 import pytest
 
+from unittest.mock import patch
+
 import pennylane as qml
 from pennylane import numpy as pnp
 
@@ -641,6 +643,13 @@ class TestHamiltonian:
         """Tests that the __str__ function for printing is correct"""
         H = qml.Hamiltonian(*terms)
         assert H.__str__() == string
+
+    @patch("builtins.print")
+    def test_hamiltonian_ipython_display(self, mock_print):
+        """Test that the ipython_dipslay method prints __str__."""
+        H = 1.0 * qml.PauliX(0)
+        H._ipython_display_()
+        mock_print.assert_called_with(str(H))
 
     @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_repr))
     def test_hamiltonian_repr(self, terms, string):
