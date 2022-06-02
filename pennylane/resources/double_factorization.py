@@ -19,15 +19,40 @@ from pennylane import numpy as np
 
 
 def norm(one, two, eigvals):
-    r"""Return the 1-norm of a molecular Hamiltonian from the one- and two-electron and factorized
-    two-electron integrals.
+    r"""Return the 1-norm of a molecular Hamiltonian from the one- and two-electron integrals and
+    eigenvalues of the factorized two-electron integral tensor.
+
+    The 1-norm of a double-factorized molecular Hamiltonian is computed as
+    [`arXiv:2007.14460 <https://arxiv.org/abs/2007.14460>`_]
+
+    .. math::
+
+        \lambda = ||T|| + \frac{1}{4} \sum_r ||L^{(r)}||^2,
+
+    where the Schatten norm, :math:`||L||`, is defined as
+
+    .. math::
+
+        ||L|| = \sum_k |\text{eigvals}[L]_k|.
+
+    The matrices :math:`L^{(r)}` are obtained from a rank-r factorizing the two-electron integral
+    tensor :math:`h`, arranged in the chemist notation, such that
+
+    .. math::
+
+        h_{ijkl} = \sum_r L_{ij}^{(r)} L_{kl}^{(r) T}.
+
+    The matrix :math:`T` is constructed from the one-and two electron integrals as
+
+    .. math::
+
+        T = h_{ij} - \frac{1}{2} \sum_l h_{illj} + \sum_l h_{llij}.
 
      Args:
          one (array[array[float]]): one-electron integrals
          two (array[array[float]]): two-electron integrals
          eigvals (array[float]): eigenvalues of the matrices obtained from factorizing the
              two-electron integral tensor
-
 
      Returns:
          array[float]: 1-norm of the Hamiltonian
@@ -47,9 +72,9 @@ def norm(one, two, eigvals):
      """
     lambda_one = 0.25 * np.sum([np.sum(abs(val)) ** 2 for val in eigvals])
 
-    l_inv = one - 0.5 * np.einsum('illj', two) + np.einsum('llij', two)
+    t_mat = one - 0.5 * np.einsum('illj', two) + np.einsum('llij', two)
 
-    val, vec = np.linalg.eigh(l_inv)
+    val, vec = np.linalg.eigh(t_mat)
 
     lambda_two = np.sum(abs(val))
 
