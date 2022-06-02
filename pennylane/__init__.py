@@ -28,7 +28,7 @@ from pennylane.queuing import apply, QueuingContext
 import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
-import pennylane.qinfo
+
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
@@ -100,6 +100,7 @@ from pennylane.debugging import snapshots
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
+import pennylane.qinfo  # pylint:disable=wrong-import-order
 import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order

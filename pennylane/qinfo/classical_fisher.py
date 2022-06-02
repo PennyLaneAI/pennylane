@@ -16,24 +16,30 @@ import functools
 import pennylane as qml
 import pennylane.numpy as pnp
 
-from .batch_transform import batch_transform
-
+from pennylane.transforms import batch_transform
 
 def _torch_jac(circ):
     """Torch jacobian as a callable function"""
+    import torch
+
     def wrapper(*args, **kwargs):
         loss = functools.partial(circ, **kwargs)
-        return torch.autograd.functional.jacobian(loss, *args)
+        if len(args)>1:
+            return torch.autograd.functional.jacobian(loss, (args))
+        else:
+            return torch.autograd.functional.jacobian(loss, *args)
 
     return wrapper
 
 
 def _tf_jac(circ):
     """TF jacobian as a callable function"""
+    import tensorflow as tf
+
     def wrapper(*args, **kwargs):
         with tf.GradientTape() as tape:
             loss = circ(*args, **kwargs)
-        return tape.jacobian(loss, *args)
+        return tape.jacobian(loss, (args))
 
     return wrapper
 
@@ -54,7 +60,6 @@ def CFIM(qnode, argnums=0):
 
 
     if interface == "torch":
-        import torch
         jac = _torch_jac(new_qnode)
 
 
@@ -63,18 +68,18 @@ def CFIM(qnode, argnums=0):
 
 
     if interface == "tf":
-        import tensorflow as tf
-        import tensorflow.python.ops.numpy_ops.np_config as np_config
         jac = _tf_jac(new_qnode)
-        np_config.enable_numpy_behavior()  # this allows for the manipulations in _compute_cfim with tensors
 
     def wrapper(*args, **kwargs):
-
-        j = jac(*args, **kwargs)
         p = qnode(*args, **kwargs)
+        j = jac(*args, **kwargs)
 
-        cfim = _compute_cfim(p, j, interface)
-        return cfim
+        # In case multiple variables are used
+        if isinstance(j, tuple):
+            return [_compute_cfim(p, j_i, interface) for j_i in j]
+
+        else:
+            return _compute_cfim(p, j, interface)
 
     return wrapper
 
@@ -93,19 +98,21 @@ def _compute_cfim(p, dp, interface):
         else:
             one_over_p[mask] = 1 / p[mask]
     elif interface == "tf":
+        import tensorflow as tf
+        import tensorflow.python.ops.numpy_ops.np_config as np_config
+        np_config.enable_numpy_behavior()  # this allows for the manipulations in _compute_cfim with tensors
         one_over_p = tf.math.divide_no_nan(qml.math.ones_like(p), p)
     else:
         one_over_p = 1 / p
     
     # Multiply dp and p
-    dp_over_p = dp.T * one_over_p  # creates (n_params, n_probs) array
+    dp_over_p = qml.math.transpose(dp) * one_over_p  # creates (n_params, n_probs) array
     
     # create final matrix cfim_ij = \sum_l (d_i p_l) (d_j p_l) / p_l
     if interface == "torch":
         return dp_over_p @ qml.math.cast(dp, dtype=p.dtype)
     else:
         return dp_over_p @ dp # (n_params, n_probs) @ (n_probs, n_params) = (n_params, n_params)
-
 
 @batch_transform
 def _make_probs(tape, wires=None, post_processing_fn=None):
