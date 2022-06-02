@@ -5,7 +5,6 @@
 <h3>New features since last release</h3>
 
 * Parameter broadcasting within operations and tapes was introduced.
-
   [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
   [(#2590)](https://github.com/PennyLaneAI/pennylane/pull/2590)
   [(#2609)](https://github.com/PennyLaneAI/pennylane/pull/2609)
