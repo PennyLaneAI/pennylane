@@ -161,7 +161,9 @@ class DefaultMixed(QubitDevice):
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(returns_state=True, passthru_interface="autograd")
+        capabilities.update(
+            returns_state=True, supports_inverse_operations=True, passthru_interface="autograd"
+        )
         return capabilities
 
     @property
