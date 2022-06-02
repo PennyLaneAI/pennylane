@@ -74,7 +74,7 @@ jobs:
       - name: Install PennyLane
         run: |
           pip install -r requirements-ci.txt
-          python setup.py bdist_wheel
+          python -m build --wheel . 
           pip install dist/PennyLane*.whl
 
       - name: Install Lightning-master
@@ -127,7 +127,7 @@ jobs:
       - name: Install PennyLane
         run: |
           pip install -r requirements-ci.txt
-          python setup.py bdist_wheel
+          python -m build --wheel . 
           pip install dist/PennyLane*.whl
 
       - name: Run tests
@@ -181,7 +181,7 @@ jobs:
       - name: Install PennyLane
         run: |
           pip install -r requirements-ci.txt
-          python setup.py bdist_wheel
+          python -m build --wheel . 
           pip install dist/PennyLane*.whl
 
       - name: Run tests
@@ -228,7 +228,7 @@ jobs:
       - name: Install PennyLane
         run: |
           pip install -r requirements-ci.txt
-          python setup.py bdist_wheel
+          python -m build --wheel . 
           pip install dist/PennyLane*.whl
 
       - name: Run tests
@@ -291,7 +291,7 @@ jobs:
       - name: Install PennyLane
         run: |
           pip install -r requirements-ci.txt
-          python setup.py bdist_wheel
+          python -m build --wheel . 
           pip install dist/PennyLane*.whl
 
       - name: Run tests

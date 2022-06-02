@@ -1,6 +1,7 @@
 PYTHON3 := $(shell which python3 2>/dev/null)
 
 PYTHON := python3
+PYTHONBUILD := $(PYTHON) -m build 
 COVERAGE := --cov=pennylane --cov-report term-missing --cov-report=html:coverage_html_report
 TESTRUNNER := -m pytest tests --tb=native --no-flaky-report
 PLUGIN_TESTRUNNER := -m pytest pennylane/devices/tests --tb=native --no-flaky-report
@@ -23,19 +24,19 @@ install:
 ifndef PYTHON3
 	@echo "To install PennyLane you need to have Python 3 installed"
 endif
-# $(PYTHON) setup.py install
-	$(PYTHON) -m build . 
+	$(PYTHON) -m pip install .
 
 .PHONY: wheel
 wheel:
-	$(PYTHON) setup.py bdist_wheel
+	$(PYTHONBUILD) --wheel . 
 
 .PHONY: dist
 dist:
-	$(PYTHON) setup.py sdist
-
+	$(PYTHONBUILD) --sdist . 
+	
 .PHONY : clean
 clean:
+	$(PYTHON) -m pip uninstall PennyLane -y
 	rm -rf pennylane/__pycache__
 	rm -rf pennylane/optimize/__pycache__
 	rm -rf pennylane/expectation/__pycache__
@@ -43,6 +44,7 @@ clean:
 	rm -rf pennylane/devices/__pycache__
 	rm -rf tests/__pycache__
 	rm -rf tests/new_qnode/__pycache__
+	rm -rf PennyLane.egg-info
 	rm -rf dist
 	rm -rf build
 	rm -rf .coverage coverage_html_report/

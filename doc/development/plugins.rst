@@ -432,19 +432,17 @@ should have the form ``pluginname.devicename``, using periods for delimitation.
 
 PennyLane uses a setuptools ``entry_points`` approach to plugin discovery/integration.
 In order to make the devices of your plugin accessible to PennyLane, simply provide the
-following keyword argument to the ``setup()`` function in your ``setup.py`` file:
+following keyword argument to the ``[options.entry_points]`` section in your ``setup.cfg`` file:
 
 .. code-block:: python
-
-    devices_list = [
+    [options.entry_points]
+    pennylane.plugins =
             'example.mydevice1 = MyModule.MySubModule:MyDevice1'
             'example.mydevice2 = MyModule.MySubModule:MyDevice2'
-        ],
-    setup(entry_points={'pennylane.plugins': devices_list})
 
 where
 
-* ``devices_list`` is a list of devices you would like to register,
+* ``pennylane.plugins`` is a list of devices you would like to register,
 
 * ``example.mydevice1`` is the short name of the device, and
 
