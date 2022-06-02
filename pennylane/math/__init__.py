@@ -51,8 +51,7 @@ from .multi_dispatch import (
 )
 
 from .quantum import cov_matrix, marginal_prob
-from .quantum import to_density_matrix, to_vn_entropy, compute_vn_entropy, \
-    to_mutual_info
+from .quantum import to_density_matrix, to_vn_entropy, compute_vn_entropy, to_mutual_info
 
 from .utils import (
     allclose,

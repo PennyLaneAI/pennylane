@@ -54,7 +54,7 @@ from pennylane.measurements import (
     state,
     var,
     vn_entropy,
-    mutual_info
+    mutual_info,
 )
 from pennylane.ops import *
 from pennylane.templates import broadcast, layer
@@ -71,6 +71,7 @@ from pennylane.transforms import (
     batch_params,
     batch_input,
     batch_transform,
+    batch_partial,
     cut_circuit,
     cut_circuit_mc,
     ControlledOperation,

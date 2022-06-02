@@ -13,7 +13,7 @@
 # limitations under the License.
 """Differentiable quantum information module"""
 
-from .utils import density_matrix_transform
-from .entropies import vn_entropy_transform, mutual_info_transform
-from .classical_fisher import CFIM, _compute_cfim
 
+from .utils import *
+from .entropies import *
+from .classical_fisher import CFIM, _compute_cfim

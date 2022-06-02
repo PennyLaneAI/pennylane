@@ -32,6 +32,7 @@ that compute the desired quantity.
     ~transforms.classical_jacobian
     ~batch_params
     ~batch_input
+    ~batch_partial
     ~metric_tensor
     ~adjoint_metric_tensor
     ~specs
@@ -180,6 +181,7 @@ from .op_transforms import op_transform
 from .adjoint import adjoint
 from .batch_params import batch_params
 from .batch_input import batch_input
+from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
 from .condition import cond, Conditional
 from .compile import compile

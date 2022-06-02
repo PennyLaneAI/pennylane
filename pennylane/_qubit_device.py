@@ -251,7 +251,6 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
-
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
@@ -499,20 +498,21 @@ class QubitDevice(Device):
                 results.append(self.access_state(wires=obs.wires))
 
             elif obs.return_type is VnEntropy:
-                if len(observables) > 1:
-                    raise qml.QuantumFunctionError(
-                        "The Von Neumann entropy cannot be returned in combination"
-                        " with other return types"
-                    )
                 if self.wires.labels != tuple(range(self.num_wires)):
                     raise qml.QuantumFunctionError(
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
-                results.append(self.vn_entropy(wires=obs.wires))
+                results.append(self.vn_entropy(wires=obs.wires, log_base=obs.log_base))
 
             elif obs.return_type is MutualInfo:
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the mutual information is not supported when using custom wire labels"
+                    )
                 wires0, wires1 = obs.raw_wires
-                results.append(self.mutual_info(wires0=wires0, wires1=wires1))
+                results.append(
+                    self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
+                )
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
@@ -682,7 +682,7 @@ class QubitDevice(Device):
         """
         raise NotImplementedError
 
-    def vn_entropy(self, wires):
+    def vn_entropy(self, wires, log_base):  # pragma: no cover
         """Returns the Von Neumann entropy prior to measurement.
 
         .. note::
@@ -691,7 +691,7 @@ class QubitDevice(Device):
         """
         raise NotImplementedError
 
-    def mutual_info(self, wires0, wires1):  # pragma: no cover
+    def mutual_info(self, wires0, wires1, log_base):  # pragma: no cover
         """Returns the mutual information prior to measurement.
 
         .. note::
@@ -1004,6 +1004,7 @@ class QubitDevice(Device):
         """
         # broadcasted inner product not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
+        # pylint: disable=unnecessary-lambda-assignment)
         dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:
