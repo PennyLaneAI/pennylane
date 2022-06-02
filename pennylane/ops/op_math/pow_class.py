@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule defines the symbolic operation that indicates the power of an operator.
+This submodule defines the symbolic operation that stands for the power of an operator.
 """
 from copy import copy
 from scipy.linalg import fractional_matrix_power
@@ -37,7 +37,6 @@ class PowOperation(Operation):
     """Operation-specific methods and properties for the ``Pow`` class.
 
     Dynamically mixed in based on the provided base matrix.
-
     """
 
     # until we add gradient support
@@ -89,7 +88,7 @@ class Pow(Operator):
     [SX(wires=[0])]
     >>> qml.matrix(sqrt_x)
     array([[0.5+0.5j, 0.5-0.5j],
-       [0.5-0.5j, 0.5+0.5j]])
+                [0.5-0.5j, 0.5+0.5j]])
     >>> qml.matrix(qml.SX(0))
     array([[0.5+0.5j, 0.5-0.5j],
        [0.5-0.5j, 0.5+0.5j]])
@@ -256,7 +255,7 @@ class Pow(Operator):
                 if QueuingContext.recording():
                     return [apply(self.base) for _ in range(self.z)]
                 return [self.base.__copy__() for _ in range(self.z)]
-            # what if z is an int and less than 0?
+            # TODO: consider: what if z is an int and less than 0?
             # do we want Pow(base, -1) to be a "more fundamental" op
             raise DecompositionUndefinedError from e
 

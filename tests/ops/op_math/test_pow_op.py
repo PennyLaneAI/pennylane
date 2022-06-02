@@ -22,11 +22,10 @@ from pennylane.ops.op_math.pow_class import Pow, PowOperation
 
 
 class TestInheritanceMixins:
-    """Test inheritance structure and mixin addition through dynamic __new__ method."""
+    """Test the inheritance structure and mixin addition through dynamic __new__ method."""
 
     def test_plain_operator(self):
-        """Test when base directly inherits from Operator, Adjoint only inherits
-        from Adjoint and Operator."""
+        """Test when base directly inherits from Operator only inherits from Operator."""
 
         class Tester(qml.operation.Operator):
             num_wires = 1
@@ -45,8 +44,8 @@ class TestInheritanceMixins:
         assert "num_params" in dir(op)
 
     def test_operation(self):
-        """When the operation inherits from `Operation`, the `AdjointOperation` mixin should
-        be added and the Adjoint should now have Operation functionality."""
+        """When the operation inherits from `Operation`, the `PowOperation` mixin should
+        be added and the Pow should now have Operation functionality."""
 
         class CustomOp(qml.operation.Operation):
             num_wires = 1
@@ -135,7 +134,7 @@ class TestInitialization:
         assert op.num_wires == 1
 
     def test_template_base(self):
-        """Test adjoint initialization for a template."""
+        """Test pow initialization for a template."""
         rng = np.random.default_rng(seed=42)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)
@@ -157,7 +156,7 @@ class TestInitialization:
         assert op.num_wires == 2
 
     def test_hamiltonian_base(self):
-        """Test adjoint initialization for a hamiltonian."""
+        """Test pow initialization for a hamiltonian."""
         base = 2.0 * qml.PauliX(0) @ qml.PauliY(0) + qml.PauliZ("b")
 
         op = Pow(base, 3.4)
@@ -441,7 +440,7 @@ class TestSparseMatrix:
 
     def test_sparse_matrix_float_exponent(self):
         """Test that even a sparse-matrix defining op raised to a float power
-        raises a sparsematrixundefined error."""
+        raises a SparseMatrixUndefinedError error."""
         from scipy.sparse import csr_matrix
 
         H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
@@ -454,7 +453,7 @@ class TestSparseMatrix:
             op.sparse_matrix()
 
     def test_base_no_sparse_matrix(self):
-        """Test that if the base doesn't define a sparse matrix, then the power wont either."""
+        """Test that if the base doesn't define a sparse matrix, then the power won't either."""
         base = qml.PauliX(0)
         op = Pow(base, 2)
 
@@ -466,7 +465,7 @@ class TestDecompositionExpand:
     """Test the Pow Operator decomposition and expand methods."""
 
     def test_shortcut_exists(self):
-        """Test the decomposition method uses a shortcut if it defined for that exponent and base."""
+        """Test the decomposition method uses a shortcut if it is defined for that exponent and base."""
         base = qml.PauliX(0)
         op = Pow(base, 0.5)
         decomp = op.decomposition()
@@ -485,7 +484,7 @@ class TestDecompositionExpand:
         assert isinstance(expansion_tape[0], qml.SX)
 
     def test_positive_integer_exponent(self):
-        """Test that decomposition repeats base operator z times if z is an positive integer
+        """Test that decomposition repeats base operator z times if z is a positive integer
         and a shortcut is not defined by op.pow."""
         base = qml.SX(0)
         op = Pow(base, 3)
@@ -498,7 +497,7 @@ class TestDecompositionExpand:
             assert op.wires == qml.wires.Wires(0)
 
     def test_positive_integer_exponent_expand(self):
-        """Test that expansion repeats base operator z times if z is an positive integer
+        """Test that expansion repeats base operator z times if z is a positive integer
         and a shortcut is not defined by op.pow."""
 
         base = qml.SX(0)
