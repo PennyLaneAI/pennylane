@@ -138,11 +138,8 @@
 
 * Introduced a new `is_hermitian` property to determine if an operator can be used in a measurement process.
   [(#2629)](https://github.com/PennyLaneAI/pennylane/pull/2629)
-
-* Add `IsingXY` gate.
-  [(#2616)](https://github.com/PennyLaneAI/pennylane/pull/2616)
-
 <h3>Breaking changes</h3>
+
 * The `qml.queuing.Queue` class is now removed.
   [(#2599)](https://github.com/PennyLaneAI/pennylane/pull/2599)
 
@@ -224,5 +221,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Amintor Dusko, Ankit Khandelwal, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang,
-Guillermo Alonso-Linaje, Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad
+Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
+Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad
+
