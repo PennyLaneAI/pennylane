@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Differentiable classical fisher information"""
-
+import functools
 import pennylane as qml
 import pennylane.numpy as pnp
 
@@ -24,23 +24,24 @@ import tensorflow.python.ops.numpy_ops.np_config as np_config
 
 def _torch_jac(circ):
     """Torch jacobian as a callable function"""
-    def wrapper(params):
-        return torch.autograd.functional.jacobian(circ, (params))
+    def wrapper(*args, **kwargs):
+        loss = functools.partial(circ, **kwargs)
+        return torch.autograd.functional.jacobian(loss, *args)
 
     return wrapper
 
 
 def _tf_jac(circ):
-    """Tensorflow jacobian as a callable function"""
-    def wrapper(params):
+    """TF jacobian as a callable function"""
+    def wrapper(*args, **kwargs):
         with tf.GradientTape() as tape:
-            loss = circ(params)
-        return tape.jacobian(loss, params)
+            loss = circ(*args, **kwargs)
+        return tape.jacobian(loss, *args)
 
     return wrapper
 
 
-def CFIM(qnode):
+def CFIM(qnode, argnum=0):
     """Computing the classical fisher information matrix (CFIM) using the jacobian of the output probabilities
     as described in eq. (15) in https://arxiv.org/abs/2103.15191
     """
