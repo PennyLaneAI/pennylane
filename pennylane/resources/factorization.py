@@ -18,10 +18,11 @@ from pennylane import numpy as np
 
 
 def factorize(two, tol):
-    r"""Return a rank-$r$ factorization of a two-electron tensor.
+    r"""Return double-factorized form of a two-electron tensor.
 
     The second quantized electronic Hamiltonian is constructed in terms of fermionic creation,
     $a^{\dagger}$ , and annihilation, $a$, operators as
+    [`arXiv:1902.02134 <https://arxiv.org/pdf/1902.02134.pdf>`_]
 
     .. math::
 
@@ -69,7 +70,8 @@ def factorize(two, tol):
     and the rank $r \in \mathcal{O}(n)$. The matrices $L$ can be further diagonalized and truncated
     in a second level of factorization.
 
-    The algorithm has the following steps.
+    The algorithm has the following steps
+    [`arXiv:1902.02134 <https://arxiv.org/pdf/1902.02134.pdf>`_].
 
     1. Matricize the $n \times n \times n \times n$ two-electron tensor to a $n^2 \times n^2$ matrix
     where n is the number of orbitals.
@@ -94,20 +96,20 @@ def factorize(two, tol):
     **Example**
 
     >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]]) / 0.5291772
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.5291772
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
     >>> two = np.swapaxes(two, 1, 3) # convert to chemist's notation
-    >>> l, w, v = factorize_first(two, 1e-5)
+    >>> l, w, v = factorize(two, 1e-5)
     >>> print(l)
-    tensor([[[ 1.06723431e-01,  3.14003079e-15],
-             [ 4.22991573e-15, -1.04898524e-01]],
+    [[[ 1.06723440e-01  9.73575768e-15]
+      [ 8.36288956e-15 -1.04898533e-01]]
 
-            [[-8.86414958e-14, -4.25688240e-01],
-             [-4.25688240e-01, -1.20077117e-13]],
+     [[-2.20945401e-13 -4.25688222e-01]
+      [-4.25688222e-01 -2.98228790e-13]]
 
-            [[-8.14472824e-01,  2.01622177e-13],
-             [ 2.01733446e-13, -8.28642110e-01]]], requires_grad=True)
+     [[-8.14472856e-01  5.01669019e-13]
+      [ 5.01689072e-13 -8.28642140e-01]]]
     """
     n = two.shape[0]
     two = two.reshape(n * n, n * n)

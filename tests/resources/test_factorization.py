@@ -55,7 +55,7 @@ from pennylane import numpy as np
     ],
 )
 def test_factorize(two_tensor, factors_ref):
-    r"""Test that electron_integrals returns the correct values."""
+    r"""Test that factorize function returns the correct values."""
     factors, eigvals, eigvecs = qml.resources.factorize(two_tensor, 1e-5)
 
     eigvals_ref, eigvecs_ref = np.linalg.eigh(factors_ref)
@@ -63,3 +63,36 @@ def test_factorize(two_tensor, factors_ref):
     assert np.allclose(factors, factors_ref)
     assert np.allclose(eigvals, eigvals_ref)
     assert np.allclose(eigvecs, eigvecs_ref)
+
+
+@pytest.mark.parametrize(
+    ("two_tensor"),
+    [
+        # two-electron tensor computed as
+        # symbols  = ['H', 'H']
+        # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
+        # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+        # core, one, two = qml.qchem.electron_integrals(mol)()
+        # two = np.swapaxes(two, 1, 3) # convert to chemist notation
+        np.array(
+            [
+                [
+                    [[6.74755872e-01, -2.85826918e-13], [-2.85799162e-13, 6.63711349e-01]],
+                    [[-2.85965696e-13, 1.81210478e-01], [1.81210478e-01, -2.63900013e-13]],
+                ],
+                [
+                    [[-2.85854673e-13, 1.81210478e-01], [1.81210478e-01, -2.63900013e-13]],
+                    [[6.63711349e-01, -2.63677968e-13], [-2.63788991e-13, 6.97651447e-01]],
+                ],
+            ]
+        ),
+    ],
+)
+def test_factorize_reproduce(two_tensor):
+    r"""Test that factors returned by the factorize function reproduce the two-electron integral."""
+    factors, _, _ = qml.resources.factorize(two_tensor, 1e-5)
+    two_computed = np.zeros(two_tensor.shape)
+    for mat in factors:
+        two_computed += np.einsum("ij, lk", mat, mat)
+
+    assert np.allclose(two_computed, two_tensor)
