@@ -1355,35 +1355,28 @@ class ECR(Operation):
     def compute_decomposition(wires):
         r"""Representation of the operator as a product of other operators (static method).
 
-                .. math:: O = O_1 O_2 \dots O_n.
+           .. math:: O = O_1 O_2 \dots O_n.
 
 
-                .. seealso:: :meth:`~.ECR.decomposition`.
+           .. seealso:: :meth:`~.ECR.decomposition`.
 
-                Args:
-                    wires (Iterable, Wires): wires that the operator acts on
+           Args:
+               wires (Iterable, Wires): wires that the operator acts on
 
-                Returns:
-                    list[Operator]: decomposition into lower level operations
+           Returns:
+               list[Operator]: decomposition into lower level operations
 
-                **Example:**
+           **Example:**
 
-                >>> print(qml.ECR.compute_decomposition((0,1)))
-        <<<<<<< HEAD
-        =======
-                [   PauliZ(wires=[wires[0]]),
-                    CNOT(wires=[wires[0], wires[1]]),
-                    SX(wires=[wires[1]]),
-                    qml.RX(pi / 2, wires=[wires[0]]),
-                    qml.RY(pi / 2, wires=[wires[0]]),
-                    qml.RX(pi / 2, wires=[wires[0]]),]
+           >>> print(qml.ECR.compute_decomposition((0,1)))
 
-                [PauliZ(wires=[0]),
-                 CNOT(wires=[0, 1]),
-                 SX(wires=[1]),
-                 RX(1.5707963267948966, wires=[0]),
-                 RY(1.5707963267948966, wires=[0]),
-                 RX(1.5707963267948966, wires=[0])]
+
+        [PauliZ(wires=[0]),
+         CNOT(wires=[0, 1]),
+         SX(wires=[1]),
+         RX(1.5707963267948966, wires=[0]),
+         RY(1.5707963267948966, wires=[0]),
+         RX(1.5707963267948966, wires=[0])]
 
         """
         pi = np.pi
