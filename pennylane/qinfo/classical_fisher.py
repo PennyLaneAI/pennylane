@@ -16,9 +16,7 @@ import functools
 import pennylane as qml
 import pennylane.numpy as pnp
 
-
-
-
+from .batch_transform import batch_transform
 
 
 def _torch_jac(circ):
@@ -44,7 +42,7 @@ def CFIM(qnode, argnums=0):
     """Computing the classical fisher information matrix (CFIM) using the jacobian of the output probabilities
     as described in eq. (15) in https://arxiv.org/abs/2103.15191
     """
-    new_qnode = qml.transforms._make_probs(
+    new_qnode = _make_probs(
         qnode, post_processing_fn=lambda x: qml.math.squeeze(qml.math.stack(x))
     )
 
@@ -63,7 +61,7 @@ def CFIM(qnode, argnums=0):
     if interface == "autograd":
         jac = qml.jacobian(new_qnode)
 
-        
+
     if interface == "tf":
         import tensorflow as tf
         import tensorflow.python.ops.numpy_ops.np_config as np_config
@@ -108,6 +106,22 @@ def _compute_cfim(p, dp, interface):
     else:
         return dp_over_p @ dp # (n_params, n_probs) @ (n_probs, n_params) = (n_params, n_params)
 
+
+@batch_transform
+def _make_probs(tape, wires=None, post_processing_fn=None):
+    """Ignores the return types of any qnode and creates a new one that outputs probabilities"""
+    if wires == None:
+        wires = tape.wires
+
+    with qml.tape.QuantumTape() as new_tape:
+        for op in tape.operations:
+            qml.apply(op)
+        qml.probs(wires=wires)
+
+    if post_processing_fn == None:
+        post_processing_fn = lambda x: qml.math.squeeze(qml.math.stack(x))
+
+    return [new_tape], post_processing_fn
 
 # def CFIM_alt(qnode):
 #     """Computing the classical fisher information matrix (CFIM) by computing the hessian of log(p)
