@@ -282,7 +282,7 @@ class TestQubitUnitary:
         U = np.array(
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
-        U = np.tensordot([1j, -1., (1+1j)/np.sqrt(2)], U, axes=0)
+        U = np.tensordot([1j, -1.0, (1 + 1j) / np.sqrt(2)], U, axes=0)
         with pytest.raises(DecompositionUndefinedError, match="QubitUnitary does not support"):
             qml.QubitUnitary.compute_decomposition(U, wires=0)
         with pytest.raises(DecompositionUndefinedError, match="QubitUnitary does not support"):
@@ -311,7 +311,7 @@ class TestQubitUnitary:
         U = np.array(
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
-        U = np.tensordot([1j, -1., (1+1j)/np.sqrt(2)], U, axes=0)
+        U = np.tensordot([1j, -1.0, (1 + 1j) / np.sqrt(2)], U, axes=0)
         res_static = qml.QubitUnitary.compute_matrix(U)
         res_dynamic = qml.QubitUnitary(U, wires=0).matrix()
         expected = U
@@ -506,7 +506,7 @@ class TestDiagonalQubitUnitary:
 
 
 X = np.array([[0, 1], [1, 0]])
-X_broadcasted = np.array([X]*3)
+X_broadcasted = np.array([X] * 3)
 
 
 class TestControlledQubitUnitary:
@@ -576,7 +576,9 @@ class TestControlledQubitUnitary:
         @qml.qnode(dev)
         def f1():
             qml.QubitUnitary(U1, wires=range(3))
-            qml.ControlledQubitUnitary(X_broadcasted, control_wires=control_wires, wires=target_wire)
+            qml.ControlledQubitUnitary(
+                X_broadcasted, control_wires=control_wires, wires=target_wire
+            )
             qml.QubitUnitary(U2, wires=range(3))
             return qml.state()
 
@@ -591,7 +593,7 @@ class TestControlledQubitUnitary:
         state_2 = f2()
 
         assert np.shape(state_1) == (3, 8)
-        assert np.allclose(state_1, state_1[0]) # Check that all broadcasted results are equal
+        assert np.allclose(state_1, state_1[0])  # Check that all broadcasted results are equal
         assert np.allclose(state_1, state_2)
 
     def test_arbitrary_multiqubit(self):
@@ -826,7 +828,7 @@ class TestControlledQubitUnitary:
         """Tests the metadata and unitary for a broadcasted
         ControlledQubitUnitary raised to a power."""
         U1 = np.tensordot(
-            np.array([1j, -1., 1j]),
+            np.array([1j, -1.0, 1j]),
             np.array(
                 [
                     [0.73708696 + 0.61324932j, 0.27034258 + 0.08685028j],
@@ -867,13 +869,15 @@ class TestControlledQubitUnitary:
             [
                 [0.73708696 + 0.61324932j, 0.27034258 + 0.08685028j],
                 [-0.24979544 - 0.1350197j, 0.95278437 + 0.1075819j],
-            ] * 3
+            ]
+            * 3
         )
 
         op = qml.ControlledQubitUnitary(U1, control_wires=("b", "c"), wires="a")
 
         with pytest.raises(qml.operation.PowUndefinedError):
             op.pow(0.12)
+
 
 label_data = [
     (X, qml.QubitUnitary(X, wires=0)),

@@ -84,7 +84,6 @@ class TestAttribute:
         assert not qml.PauliX(wires=0) @ qml.PauliZ(wires=1) in new_attribute
 
 
-
 single_scalar_single_wire_ops = [
     "RX",
     "RY",
@@ -124,6 +123,7 @@ separately_tested_ops = [
     "MultiRZ",
 ]
 
+
 class TestSupportsBroadcasting:
     """Test that all operations in the ``supports_broadcasting`` attribute
     actually support broadcasting."""
@@ -131,16 +131,18 @@ class TestSupportsBroadcasting:
     def test_all_marked_operations_are_tested(self):
         """Test that the subsets of the ``supports_broadcasting`` attribute
         defined above cover the entire attribute."""
-        tested_ops = set(it.chain.from_iterable(
-            [
-                single_scalar_single_wire_ops,
-                single_scalar_multi_wire_ops,
-                two_scalar_single_wire_ops,
-                three_scalar_single_wire_ops,
-                three_scalar_multi_wire_ops,
-                separately_tested_ops,
-            ]
-        ))
+        tested_ops = set(
+            it.chain.from_iterable(
+                [
+                    single_scalar_single_wire_ops,
+                    single_scalar_multi_wire_ops,
+                    two_scalar_single_wire_ops,
+                    three_scalar_single_wire_ops,
+                    three_scalar_multi_wire_ops,
+                    separately_tested_ops,
+                ]
+            )
+        )
 
         assert tested_ops == qml.ops.qubit.attributes.supports_broadcasting
 
@@ -278,7 +280,7 @@ class TestSupportsBroadcasting:
     def test_diagonal_qubit_unitary(self):
         """Test that DiagonalQubitUnitary, which is marked as supporting parameter broadcasting,
         actually does support broadcasting."""
-        diag = np.array([[1j, 1, 1, -1j], [-1j, 1j, 1, -1], [1j, -1j, 1., -1]])
+        diag = np.array([[1j, 1, 1, -1j], [-1j, 1j, 1, -1], [1j, -1j, 1.0, -1]])
         wires = ["a", 5]
 
         op = qml.DiagonalQubitUnitary(diag, wires=wires)

@@ -34,6 +34,7 @@ INV_SQRT2 = 1 / math.sqrt(2)
 
 stack_last = functools.partial(qml.math.stack, axis=-1)
 
+
 class RX(Operation):
     r"""
     The single qubit X rotation

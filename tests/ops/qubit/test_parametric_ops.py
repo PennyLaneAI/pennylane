@@ -734,7 +734,7 @@ class TestDecompositions:
         mats = []
         for i in reversed(decomp):
             mat = i.matrix()
-            eye = np.eye(2)[np.newaxis] if np.ndim(mat)==3 else np.eye(2)
+            eye = np.eye(2)[np.newaxis] if np.ndim(mat) == 3 else np.eye(2)
             if i.wires.tolist() == [0]:
                 mats.append(np.kron(mat, np.kron(eye, eye)))
             elif i.wires.tolist() == [1]:
@@ -783,7 +783,7 @@ class TestMatrix:
 
         # test arbitrary broadcasted phase shift
         phi = np.array([0.5, 0.4, 0.3])
-        expected = np.array([[[1, 0], [0, np.exp(1j*p)]] for p in phi])
+        expected = np.array([[[1, 0], [0, np.exp(1j * p)]] for p in phi])
         assert np.allclose(qml.PhaseShift.compute_matrix(phi), expected, atol=tol, rtol=0)
         assert np.allclose(qml.U1.compute_matrix(phi), expected, atol=tol, rtol=0)
 
@@ -1007,9 +1007,7 @@ class TestMatrix:
         def get_expected(theta):
             neg_imag = np.exp(-1j * theta / 2)
             plus_imag = np.exp(1j * theta / 2)
-            expected = np.array(
-                [np.diag([n, p, p, n]) for n, p in zip(neg_imag, plus_imag)]
-            )
+            expected = np.array([np.diag([n, p, p, n]) for n, p in zip(neg_imag, plus_imag)])
             return expected
 
         param = np.array([np.pi / 2, np.pi])
@@ -1018,19 +1016,15 @@ class TestMatrix:
             qml.IsingZZ(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
         expected_eigvals = np.array([np.diag(m) for m in get_expected(param)])
-        assert np.allclose(
-            qml.IsingZZ.compute_eigvals(param), expected_eigvals, atol=tol, rtol=0
-        )
+        assert np.allclose(qml.IsingZZ.compute_eigvals(param), expected_eigvals, atol=tol, rtol=0)
 
-        param = np.array([0.5, 1.2, np.pi/8])
+        param = np.array([0.5, 1.2, np.pi / 8])
         assert np.allclose(qml.IsingZZ.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
         assert np.allclose(
             qml.IsingZZ(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
         expected_eigvals = np.array([np.diag(m) for m in get_expected(param)])
-        assert np.allclose(
-            qml.IsingZZ.compute_eigvals(param), expected_eigvals, atol=tol, rtol=0
-        )
+        assert np.allclose(qml.IsingZZ.compute_eigvals(param), expected_eigvals, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_isingzz_matrix_tf(self, tol):
@@ -1058,9 +1052,7 @@ class TestMatrix:
         def get_expected(theta):
             neg_imag = np.exp(-1j * theta / 2)
             plus_imag = np.exp(1j * theta / 2)
-            expected = np.array(
-                [np.diag([n, p, p, n]) for n, p in zip(neg_imag, plus_imag)]
-            )
+            expected = np.array([np.diag([n, p, p, n]) for n, p in zip(neg_imag, plus_imag)])
             return expected
 
         param = np.array([np.pi, 0.1242])
@@ -1108,7 +1100,7 @@ class TestMatrix:
             c = np.cos(y / 2)
             s = np.sin(y / 2)
             return np.array(
-                [ 
+                [
                     [
                         [np.exp(-0.5j * (_x + _z)) * _c, -np.exp(0.5j * (_x - _z)) * _s],
                         [np.exp(-0.5j * (_x - _z)) * _s, np.exp(0.5j * (_x + _z)) * _c],
@@ -1275,9 +1267,7 @@ class TestMatrix:
         expected = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1], [0, 0, 1, 0]])
         pi = np.ones(3) * np.pi
         assert np.allclose(qml.CRot.compute_matrix(pi, pi, pi), expected, atol=tol, rtol=0)
-        assert np.allclose(
-            qml.CRot(pi, pi, pi, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0
-        )
+        assert np.allclose(qml.CRot(pi, pi, pi, wires=[0, 1]).matrix(), expected, atol=tol, rtol=0)
 
         def arbitrary_Crotation(x, y, z):
             """controlled arbitrary single qubit rotation"""
@@ -1318,6 +1308,7 @@ class TestMatrix:
 
     def test_U2_gate_broadcasted(self, tol):
         """Test U2 gate matrix matches the documentation"""
+
         def get_expected(phi, lam):
             one = np.ones_like(phi) * np.ones_like(lam)
             expected = np.array(
@@ -1367,7 +1358,7 @@ class TestMatrix:
     @pytest.mark.parametrize("lam", [0.218, np.array([-1.7, 3.2, 1.9])])
     def test_U3_gate_broadcasted(self, tol, theta, phi, lam):
         """Test broadcasted U3 gate matrix matches the documentation"""
-        if np.ndim(theta)==np.ndim(phi)==np.ndim(lam)==0:
+        if np.ndim(theta) == np.ndim(phi) == np.ndim(lam) == 0:
             pytest.skip("The scalars-only case is covered in a separate test.")
         one = np.ones_like(phi) * np.ones_like(lam) * np.ones_like(theta)
         expected = np.array(
@@ -1411,6 +1402,7 @@ class TestMatrix:
         exp_eigvals = np.ones((3, 4), dtype=complex)
         exp_eigvals[..., 3] = np.exp(1j * phi)
         assert np.allclose(res, exp_eigvals)
+
 
 class TestGrad:
     device_methods = [
@@ -1973,7 +1965,6 @@ class TestPauliRot:
         assert np.allclose(op.matrix() / op.matrix()[0, 0], np.eye(4))
 
         assert len(decomp_ops) == 0
-
 
     def test_PauliRot_all_Identity_broadcasted(self):
         """Test handling of the broadcasted all-identity Pauli."""
@@ -2618,9 +2609,9 @@ pow_parametric_ops = (
     qml.IsingZZ(1.789, wires=("a", "b")),
     # broadcasted ops
     qml.RX(np.array([1.234, 4.129]), wires=0),
-    qml.RY(np.array([2.345, 6,789]), wires=0),
+    qml.RY(np.array([2.345, 6, 789]), wires=0),
     qml.RZ(np.array([3.456]), wires=0),
-    qml.PhaseShift(np.array([6., 7., 8.]), wires=0),
+    qml.PhaseShift(np.array([6.0, 7.0, 8.0]), wires=0),
     qml.ControlledPhaseShift(np.array([0.234]), wires=(0, 1)),
     qml.MultiRZ(np.array([-0.4432, -0.231, 0.251]), wires=(0, 1, 2)),
     qml.PauliRot(np.array([0.5, 0.9]), "X", wires=0),
