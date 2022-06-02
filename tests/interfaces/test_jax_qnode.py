@@ -1414,18 +1414,26 @@ class TestJIT:
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
-        def cost(x, y):
+        def cost(x, y, idx):
             res = circuit(x, y)
-            return res[0]
+            return res[idx]
 
         x = jnp.array(1.0)
         y = jnp.array(2.0)
-        g0 = jax.grad(cost, argnums=0)(x, y)
-        g1 = jax.grad(cost, argnums=1)(x, y)
-
         expected_g = (
             np.array([-np.sin(x) * np.cos(y) / 2, np.cos(y) * np.sin(x) / 2]),
             np.array([-np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
         )
-        assert np.allclose(g0, expected_g[0][0], atol=tol, rtol=0)
-        assert np.allclose(g1, expected_g[1][0], atol=tol, rtol=0)
+
+        idx = 0
+        g0 = jax.grad(cost, argnums=0)(x, y, idx)
+        g1 = jax.grad(cost, argnums=1)(x, y, idx)
+        assert np.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
+        assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
+
+        idx = 1
+        g0 = jax.grad(cost, argnums=0)(x, y, idx)
+        g1 = jax.grad(cost, argnums=1)(x, y, idx)
+
+        assert np.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
+        assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
