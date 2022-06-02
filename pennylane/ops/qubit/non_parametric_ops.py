@@ -1263,15 +1263,9 @@ class SWAP(Operation):
 
     def _controlled(self, wire):
         CSWAP(wires=wire + self.wires)
-<<<<<<< HEAD
 
 
 class ECR(Operation):
-
-=======
-        
-class ECR(Operation): 
->>>>>>> a89072a45c403234ac9ac153380ff38292eed877
     r""" ECR(wires)
 
     An echoed RZX(pi/2) gate.
@@ -1294,25 +1288,15 @@ class ECR(Operation):
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
     """
-<<<<<<< HEAD
 
     num_wires = 2
     num_params = 0
 
-    @staticmethod
-    def compute_matrix():  # pylint: disable=arguments-differ
-=======
-    
-    
-    num_wires = 2 
-    num_params = 0 
-
     def label(self, decimals=None, base_label=None, cache=None):
         return base_label or "ECR"
 
-    @staticmethod 
-    def compute_matrix(): # pylint: disable=arguments-differ
->>>>>>> a89072a45c403234ac9ac153380ff38292eed877
+    @staticmethod
+    def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1321,7 +1305,6 @@ class ECR(Operation):
         .. seealso:: :meth:`~.ECR.matrix`
 
 
-<<<<<<< HEAD
         Return type: tensor_like
 
         **Example**
@@ -1342,22 +1325,6 @@ class ECR(Operation):
         )
 
     @staticmethod
-=======
-        Returns:
-            ndarray: matrix
-        
-        **Example**
-
-        >>> print(qml.ECR.compute_matrix())
-         [[0+0.j 0.+0.j 1/sqrt(2)+0.j 0.+1j/sqrt(2)]
-         [0.+0.j 0.+0.j 0.+1.j/sqrt(2) 1/sqrt(2)+0.j]
-         [1/sqrt(2)+0.j 0.-1.j/sqrt(2) 0.+0.j 0.+0.j]
-         [0.-1/sqrt(2)j 1/sqrt(2)+0.j 0.+0.j 0.+0.j]]
-"""
-        return (np.array([[0, 0, INV_SQRT2, INV_SQRT2*1j], [0, 0, INV_SQRT2*1j, INV_SQRT2], [INV_SQRT2, -INV_SQRT2*1j, 0, 0], [-INV_SQRT2*1j, INV_SQRT2, 0, 0]]))
-
-    @staticmethod 
->>>>>>> a89072a45c403234ac9ac153380ff38292eed877
     def compute_eigvals():
         r"""Eigenvalues of the operator in the computational basis (static method).
 
@@ -1379,49 +1346,44 @@ class ECR(Operation):
         **Example**
 
         >>> print(qml.ECR.compute_eigvals())
-<<<<<<< HEAD
         [1, -1, 1, -1]
-
-=======
-        [ 1 -1  1 -1]
->>>>>>> a89072a45c403234ac9ac153380ff38292eed877
         """
+
         return np.array([1, -1, 1, -1])
 
     @staticmethod
     def compute_decomposition(wires):
         r"""Representation of the operator as a product of other operators (static method).
 
-        .. math:: O = O_1 O_2 \dots O_n.
+                .. math:: O = O_1 O_2 \dots O_n.
 
 
-        .. seealso:: :meth:`~.ECR.decomposition`.
+                .. seealso:: :meth:`~.ECR.decomposition`.
 
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
+                Args:
+                    wires (Iterable, Wires): wires that the operator acts on
 
-        Returns:
-            list[Operator]: decomposition into lower level operations
+                Returns:
+                    list[Operator]: decomposition into lower level operations
 
-        **Example:**
+                **Example:**
 
-        >>> print(qml.ECR.compute_decomposition((0,1)))
-<<<<<<< HEAD
-=======
-        [   PauliZ(wires=[wires[0]]),
-            CNOT(wires=[wires[0], wires[1]]),
-            SX(wires=[wires[1]]),
-            qml.RX(pi / 2, wires=[wires[0]]),
-            qml.RY(pi / 2, wires=[wires[0]]),
-            qml.RX(pi / 2, wires=[wires[0]]),]
->>>>>>> a89072a45c403234ac9ac153380ff38292eed877
+                >>> print(qml.ECR.compute_decomposition((0,1)))
+        <<<<<<< HEAD
+        =======
+                [   PauliZ(wires=[wires[0]]),
+                    CNOT(wires=[wires[0], wires[1]]),
+                    SX(wires=[wires[1]]),
+                    qml.RX(pi / 2, wires=[wires[0]]),
+                    qml.RY(pi / 2, wires=[wires[0]]),
+                    qml.RX(pi / 2, wires=[wires[0]]),]
 
-        [PauliZ(wires=[0]),
-         CNOT(wires=[0, 1]),
-         SX(wires=[1]),
-         RX(1.5707963267948966, wires=[0]),
-         RY(1.5707963267948966, wires=[0]),
-         RX(1.5707963267948966, wires=[0])]
+                [PauliZ(wires=[0]),
+                 CNOT(wires=[0, 1]),
+                 SX(wires=[1]),
+                 RX(1.5707963267948966, wires=[0]),
+                 RY(1.5707963267948966, wires=[0]),
+                 RX(1.5707963267948966, wires=[0])]
 
         """
         pi = np.pi
