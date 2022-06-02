@@ -583,3 +583,26 @@ class TestMutualInformation:
 
         actual = param.grad
         assert np.allclose(actual, expected)
+
+    @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize(
+        "params", [np.array([0.0, 0.0]), np.array([0.3, 0.4]), np.array([0.6, 0.8])]
+    )
+    def test_custom_wire_labels_error(self, device, interface, params):
+        """Tests that an error is raised when mutual information is measured
+        with custom wire labels"""
+        dev = qml.device(device, wires=["a", "b"])
+
+        params = qml.math.asarray(params, like=interface)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(params):
+            qml.RY(params[0], wires="a")
+            qml.RY(params[1], wires="b")
+            qml.CNOT(wires=["a", "b"])
+            return qml.mutual_info(wires0=["a"], wires1=["b"])
+
+        msg = "Returning the mutual information is not supported when using custom wire labels"
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+            circuit(params)
