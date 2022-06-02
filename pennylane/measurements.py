@@ -123,10 +123,12 @@ class MeasurementProcess:
         id=None,
         shape=None,
         numeric_type=None,
+        log_base=None,
     ):
         self.return_type = return_type
         self.obs = obs
         self.id = id
+        self.log_base = log_base
 
         if wires is not None and obs is not None:
             raise ValueError("Cannot set the wires if an observable is provided.")
@@ -232,6 +234,7 @@ class MeasurementProcess:
         pre-defined (e.g., expectation values, states, etc.).
         """
         shot_vector = device._shot_vector
+        # pylint: disable=consider-using-generator
         num_shot_elements = sum([s.copies for s in shot_vector])
         shape = ()
 
@@ -323,6 +326,9 @@ class MeasurementProcess:
 
         if self.obs is not None:
             return cls(self.return_type, obs=copy.copy(self.obs))
+
+        if self.log_base is not None:
+            return cls(self.return_type, wires=self._wires, log_base=self.log_base)
 
         return cls(self.return_type, eigvals=self._eigvals, wires=self._wires)
 
@@ -821,13 +827,14 @@ def density_matrix(wires):
     return MeasurementProcess(State, wires=wires, shape=shape, numeric_type=complex)
 
 
-def vn_entropy(wires):
+def vn_entropy(wires, log_base=None):
     r"""Von Neumann entropy of the system prior to measurement.
 
     Args:
         wires (Sequence[int] or int): the wires of the subsystem
+        log_base (int, float): base to use in the logarithm.
 
-        **Example:**
+    **Example:**
 
     .. code-block:: python3
 
@@ -849,12 +856,13 @@ def vn_entropy(wires):
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device.
     """
-    # pylint: disable=protected-access
     wires = qml.wires.Wires(wires)
-    return MeasurementProcess(VnEntropy, wires=wires, shape=(1,), numeric_type=float)
+    return MeasurementProcess(
+        VnEntropy, wires=wires, shape=(1,), log_base=log_base, numeric_type=float
+    )
 
 
-def mutual_info(wires0, wires1):
+def mutual_info(wires0, wires1, log_base=None):
     r"""Mutual information between the subsystems prior to measurement.
 
     Args:
@@ -885,7 +893,9 @@ def mutual_info(wires0, wires1):
     """
     wires0 = qml.wires.Wires(wires0)
     wires1 = qml.wires.Wires(wires1)
-    return MeasurementProcess(MutualInfo, wires=[wires0, wires1], shape=(1,), numeric_type=float)
+    return MeasurementProcess(
+        MutualInfo, wires=[wires0, wires1], shape=(1,), log_base=log_base, numeric_type=float
+    )
 
 
 T = TypeVar("T")

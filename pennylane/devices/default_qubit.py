@@ -605,27 +605,29 @@ class DefaultQubit(QubitDevice):
         """
         wires = wires.tolist()
         state = self._flatten(self._pre_rotated_state)
-        return qml.math.to_density_matrix(state, indices=wires)
+        return qml.math.to_density_matrix(state, indices=wires, c_dtype=self.C_DTYPE)
 
-    def vn_entropy(self, wires):
+    def vn_entropy(self, wires, log_base):
         """Returns the Von Neumann entropy prior to measurement.
 
         Args:
             wires (Wires): wires of the considered subsystem.
+            log_base (int, float): base to use in the logarithm.
 
         Returns:
             float: returns the Von Neumann entropy
         """
         wires = wires.tolist()
         state = self._flatten(self._pre_rotated_state)
-        return qml.math.to_vn_entropy(state, indices=wires)
+        return qml.math.to_vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
 
-    def mutual_info(self, wires0, wires1):
+    def mutual_info(self, wires0, wires1, log_base):
         """Returns the mutual information between the subsystems.
 
         Args:
             wires0 (Wires): wires of the first subsystem.
             wires1 (Wires): wires of the second subsystem
+            log_base (float): base to use in the logarithm.
 
         Returns:
             float: the mutual information
@@ -633,7 +635,9 @@ class DefaultQubit(QubitDevice):
         wires0 = wires0.tolist()
         wires1 = wires1.tolist()
         state = self._flatten(self._pre_rotated_state)
-        return qml.math.to_mutual_info(state, indices0=wires0, indices1=wires1)
+        return qml.math.to_mutual_info(
+            state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
+        )
 
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.
