@@ -22,6 +22,7 @@ from numpy import float64
 
 import pennylane as qml
 
+from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import diag, dot, scatter_element_add
 from .utils import is_abstract, allclose, cast, convert_like
 
