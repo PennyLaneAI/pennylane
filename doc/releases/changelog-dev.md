@@ -35,7 +35,7 @@
   DeviceArray([0.8397495 , 0.16025047], dtype=float32)
   ```
   Computing the jacobian of vector-valued QNodes is not supported with the JAX
-  JIT interface. The output of vector-valued QNodes can be, however, used in
+  JIT interface. The output of vector-valued QNodes can, however, be used in
   the definition of scalar-valued cost functions whose gradients can be
   computed.
 
