@@ -69,10 +69,10 @@ def norm(one, two, eigvals):
      >>> l, w, v = factorize(two, 1e-5)
      >>> print(norm(one, two, w))
      52.98762043980203
-     """
+    """
     lambda_one = 0.25 * np.sum([np.sum(abs(val)) ** 2 for val in eigvals])
 
-    t_mat = one - 0.5 * np.einsum('illj', two) + np.einsum('llij', two)
+    t_mat = one - 0.5 * np.einsum("illj", two) + np.einsum("llij", two)
 
     val, vec = np.linalg.eigh(t_mat)
 
