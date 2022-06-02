@@ -22,14 +22,16 @@ import tensorflow as tf
 import tensorflow.python.ops.numpy_ops.np_config as np_config
 
 
-def torch_jac(circ):
+def _torch_jac(circ):
+    """Torch jacobian as a callable function"""
     def wrapper(params):
         return torch.autograd.functional.jacobian(circ, (params))
 
     return wrapper
 
 
-def tf_jac(circ):
+def _tf_jac(circ):
+    """Tensorflow jacobian as a callable function"""
     def wrapper(params):
         with tf.GradientTape() as tape:
             loss = circ(params)
@@ -51,11 +53,11 @@ def CFIM(qnode):
     if interface == "jax":
         jac = jax.jacobian(new_qnode)
     if interface == "torch":
-        jac = torch_jac(new_qnode)
+        jac = _torch_jac(new_qnode)
     if interface == "autograd":
         jac = qml.jacobian(new_qnode)
     if interface == "tf":
-        jac = tf_jac(new_qnode)
+        jac = _tf_jac(new_qnode)
         np_config.enable_numpy_behavior()  # this allows for the manipulations in _compute_cfim with tensors
 
     def wrapper(*args, **kwargs):
