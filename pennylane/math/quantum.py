@@ -609,8 +609,8 @@ def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dt
     if len([index for index in indices0 if index in indices1]) > 0:
         raise ValueError("Subsystems for computing mutual information must not overlap")
 
-    # Cast as a complex128 array
-    state = cast(state, dtype="complex128")
+    # Cast to a complex array
+    state = cast(state, dtype=c_dtype)
 
     state_shape = state.shape
     if len(state_shape) > 0:

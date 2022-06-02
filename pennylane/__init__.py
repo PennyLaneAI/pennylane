@@ -54,7 +54,7 @@ from pennylane.measurements import (
     state,
     var,
     vn_entropy,
-    mutual_info
+    mutual_info,
 )
 from pennylane.ops import *
 from pennylane.templates import broadcast, layer

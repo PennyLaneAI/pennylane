@@ -84,10 +84,10 @@ def mutual_info_transform(qnode, indices0, indices1, base=None):
     0.3325090393262875
     """
 
+    density_matrix_qnode = qml.qinfo.density_matrix_transform(qnode, qnode.device.wires.tolist())
+
     def wrapper(*args, **kwargs):
-        density_matrix = qml.qinfo.density_matrix_transform(qnode, qnode.device.wires.tolist())(
-            *args, **kwargs
-        )
+        density_matrix = density_matrix_qnode(*args, **kwargs)
         entropy = qml.math.to_mutual_info(density_matrix, indices0, indices1, base=base)
         return entropy
 

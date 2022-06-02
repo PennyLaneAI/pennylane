@@ -862,7 +862,7 @@ def vn_entropy(wires, log_base=None):
     )
 
 
-def mutual_info(wires0, wires1):
+def mutual_info(wires0, wires1, log_base=None):
     r"""Mutual information between the subsystems prior to measurement.
 
     Args:
@@ -893,8 +893,10 @@ def mutual_info(wires0, wires1):
     """
     wires0 = qml.wires.Wires(wires0)
     wires1 = qml.wires.Wires(wires1)
-    return MeasurementProcess(MutualInfo, wires=[wires0, wires1], shape=(1,), numeric_type=float)
-    
+    return MeasurementProcess(
+        MutualInfo, wires=[wires0, wires1], shape=(1,), log_base=log_base, numeric_type=float
+    )
+
 
 T = TypeVar("T")
 

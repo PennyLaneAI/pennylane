@@ -505,8 +505,14 @@ class QubitDevice(Device):
                 results.append(self.vn_entropy(wires=obs.wires, log_base=obs.log_base))
 
             elif obs.return_type is MutualInfo:
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the mutual information is not supported when using custom wire labels"
+                    )
                 wires0, wires1 = obs.raw_wires
-                results.append(self.mutual_info(wires0=wires0, wires1=wires1))
+                results.append(
+                    self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
+                )
 
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
@@ -685,7 +691,7 @@ class QubitDevice(Device):
         """
         raise NotImplementedError
 
-    def mutual_info(self, wires0, wires1):  # pragma: no cover
+    def mutual_info(self, wires0, wires1, log_base):  # pragma: no cover
         """Returns the mutual information prior to measurement.
 
         .. note::
