@@ -30,9 +30,9 @@ def torch_jac(circ):
 
 
 def tf_jac(circ):
-    def wrapper(params):
+    def wrapper(*args, **kwargs):
         with tf.GradientTape() as tape:
-            loss = circ(params)
+            loss = circ(*args, **kwargs)
         return tape.jacobian(loss, params)
 
     return wrapper
