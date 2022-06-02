@@ -1141,3 +1141,37 @@ class TestCustomJacobian:
 
         d_out = d_circuit(params)
         assert np.allclose(d_out, np.array([1.0, 2.0, 3.0, 4.0]))
+
+    def test_custom_jacobians_2(self):
+        """Test computing the gradient using the parameter-shift
+        rule with a device that provides a jacobian"""
+
+        class MyQubit(DefaultQubit):
+            @classmethod
+            def capabilities(cls):
+                capabilities = super().capabilities().copy()
+                capabilities.update(
+                    provides_jacobian=True,
+                )
+                return capabilities
+
+            def jacobian(self, *args, **kwargs):
+                raise NotImplementedError()
+
+        dev = MyQubit(wires=2)
+
+        @qml.qnode(dev, diff_method="parameter-shift", mode="backward")
+        def qnode(a, b):
+            qml.RY(a, wires=0)
+            qml.RX(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
+
+        a = np.array(0.1, requires_grad=True)
+        b = np.array(0.2, requires_grad=True)
+
+        res = qml.jacobian(qnode)(a, b)
+        expected = ([-np.sin(a), np.sin(a) * np.sin(b)], [0, -np.cos(a) * np.cos(b)])
+
+        assert np.allclose(res[0], expected[0])
+        assert np.allclose(res[1], expected[1])
