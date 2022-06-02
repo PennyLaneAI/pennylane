@@ -451,7 +451,7 @@ class QutritDevice(Device):
                 "The current device is not capable of returning the state"
             )
 
-        state = getattr(self, "state", None)
+        state = getattr(self, "state", None)()
 
         if state is None:
             raise qml.QuantumFunctionError("The state is not available in the current device")

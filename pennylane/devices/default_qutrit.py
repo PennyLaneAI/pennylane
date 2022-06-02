@@ -45,6 +45,7 @@ class DefaultQutrit(QutritDevice):
         "TShift",
         "TClock",
         "TAdd",
+        "TSWAP",
         "Identity",
     }
 

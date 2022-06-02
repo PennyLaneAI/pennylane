@@ -12,6 +12,7 @@ ops = {
     "TShift",
     "TClock",
     "TAdd",
+    "TSWAP",
 }
 
 obs = {
