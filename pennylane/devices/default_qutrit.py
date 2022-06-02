@@ -42,7 +42,10 @@ class DefaultQutrit(QutritDevice):
     operations = {
         "QutritUnitary",
         "ControlledQutritUnitary",
-        "Identity"
+        "TShift",
+        "TClock",
+        "TAdd",
+        "Identity",
     }
 
     observables = {

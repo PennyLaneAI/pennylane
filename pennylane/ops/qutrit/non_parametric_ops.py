@@ -79,9 +79,9 @@ Args:
         **Example**
 
         >>> print(qml.TShift.compute_eigvals())
-        [-0.5+0.8660254j -0.5-0.8660254j  1. +0.j       ]
+        [ 1. +0.j        -0.5-0.8660254j -0.5+0.8660254j]
         """
-        return np.array([-0.5 + 1j * np.sqrt(3) / 2, -0.5 - 1j * np.sqrt(3) / 2, 1])
+        return np.array([1, OMEGA**2, OMEGA])
 
     def adjoint(self):
         op = TShift(wires=self.wires)
@@ -421,23 +421,23 @@ class QutritT(Operation):
         return op
 
 
-class QutritCX(Operation):
-    r"""QutritCX(wires)
-    The 2-qutrit controlled-X gate
+class TAdd(Operation):
+    r"""TAdd(wires)
+    The 2-qutrit controlled add gate
 
-    .. math:: CX = \begin{bmatrix}
-                1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-                0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-                0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
-                0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
-                0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
-                0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
-                0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\
-                0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0
-            \end{bmatrix}
+    .. math:: TAdd = \begin{bmatrix}
+                        1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+                        0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+                        0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+                        0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+                        0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
+                        0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+                        0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+                        0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\
+                        0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0
+                    \end{bmatrix}
 
-    .. note:: The first wire provided corresponds to the **control qubit**.
+    .. note:: The first wire provided corresponds to the **control qutrit**.
 
     **Details:**
 
@@ -454,7 +454,7 @@ class QutritCX(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "CX"
+        return base_label or "TAdd"
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
@@ -468,7 +468,7 @@ class QutritCX(Operation):
 
         **Example**
 
-        >>> print(qml.QutritCX.compute_matrix())
+        >>> print(qml.TAdd.compute_matrix())
         [[1 0 0 0 0 0 0 0 0]
          [0 1 0 0 0 0 0 0 0]
          [0 0 1 0 0 0 0 0 0]
@@ -510,13 +510,13 @@ class QutritCX(Operation):
 
         **Example**
 
-        >>> print(qml.QutritCX.compute_eigvals())
-        [-0.5+0.8660254j -0.5-0.8660254j  1. +0.j -0.5+0.8660254j -0.5-0.8660254j  1. +0.j  1. +0.j  1. +0.j  1. +0.j]
+        >>> print(qml.TAdd.compute_eigvals())
+        [ 1. +0.j         1. +0.j         1. +0.j         1. +0.j         1. +0.j        -0.5-0.8660254j -0.5-0.8660254j -0.5+0.8660254j -0.5+0.8660254j ]
         """
-        return np.array([-0.5+0.8660254j, -0.5-0.8660254j, 1, -0.5+0.8660254j, -0.5-0.8660254j, 1, 1, 1, 1])
+        return np.array([1, 1, 1, 1, 1, OMEGA**2, OMEGA**2, OMEGA, OMEGA])
 
     def adjoint(self):
-        op = QutritCX(self.wires)
+        op = TAdd(self.wires)
         op.inverse = not self.inverse
         return op
 

@@ -9,10 +9,13 @@ ops = {
     "Identity",
     "QutritUnitary",
     "ControlledQutritUnitary",
+    "TShift",
+    "TClock",
+    "TAdd",
 }
 
 obs = {
-    "QutritUnitary"
+    "QutritUnitary",
 }
 
 __all__ = list(ops | obs)
