@@ -492,6 +492,7 @@ def _ndim_torch(tensor):
 
 
 ar.register_function("torch", "ndim", _ndim_torch)
+# pylint: disable=unnecessary-lambda
 ar.register_function("torch", "eigvalsh", lambda x: _i("torch").linalg.eigvalsh(x))
 ar.register_function("torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x)))
 
@@ -527,5 +528,6 @@ ar.register_function(
     lambda x, index, value: x.at[tuple(index)].add(value),
 )
 ar.register_function("jax", "unstack", list)
+# pylint: disable=unnecessary-lambda
 ar.register_function("jax", "eigvalsh", lambda x: _i("jax").numpy.linalg.eigvalsh(x))
 ar.register_function("jax", "entr", lambda x: _i("jax").numpy.sum(_i("jax").scipy.special.entr(x)))
