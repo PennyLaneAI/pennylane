@@ -295,7 +295,7 @@ def IsingXY(phi):
         array[complex]: unitary 4x4 rotation matrix
     """
     mat = II.copy()
-    mat[1][1] = np.cos(phi/2)
+    mat[1][1] = np.cos(phi / 2)
     mat[2][2] = np.cos(phi / 2)
     mat[1][2] = 1j * np.sin(phi / 2)
     mat[2][1] = 1j * np.sin(phi / 2)

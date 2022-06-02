@@ -937,7 +937,7 @@ class TestGrad:
 
         phi = npp.array(0.1, requires_grad=True)
 
-        expected = (1 / norm**2) * (psi_2 ** 2 - psi_1 ** 2) * np.sin(phi)
+        expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * np.sin(phi)
 
         res = qml.grad(circuit)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -975,7 +975,7 @@ class TestGrad:
 
         phi = jnp.array(0.1)
 
-        expected = (1 / norm**2) * (psi_2 ** 2 - psi_1 ** 2) * np.sin(phi)
+        expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * np.sin(phi)
 
         res = jax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
@@ -1139,7 +1139,7 @@ class TestGrad:
 
         phi = tf.Variable(0.1, dtype=tf.complex128)
 
-        expected = (1 / norm**2) * (psi_2 ** 2 - psi_1 ** 2) * tf.sin(phi)
+        expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * tf.sin(phi)
 
         with tf.GradientTape() as tape:
             result = circuit(phi)
@@ -2026,4 +2026,5 @@ class TestEigvalCalculation:
         evs_np = np.linalg.eigvals(qml.IsingXY(phi, [0, 1]).matrix())
 
         from collections import Counter
+
         assert Counter(evs_np.round(8)) == Counter(evs.round(8))
