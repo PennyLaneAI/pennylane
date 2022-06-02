@@ -2009,7 +2009,9 @@ class TestExpandMatrix:
 
     def test_expansion_broadcasted(self):
         """Tests the case where the broadcasted original matrix is expanded"""
-        res = qml.operation.expand_matrix(self.base_matrix_1_broadcasted, wires=[2], wire_order=[0, 2])
+        res = qml.operation.expand_matrix(
+            self.base_matrix_1_broadcasted, wires=[2], wire_order=[0, 2]
+        )
         expected = np.array(
             [
                 [
@@ -2034,7 +2036,9 @@ class TestExpandMatrix:
         )
         assert np.allclose(expected, res)
 
-        res = qml.operation.expand_matrix(self.base_matrix_1_broadcasted, wires=[2], wire_order=[2, 0])
+        res = qml.operation.expand_matrix(
+            self.base_matrix_1_broadcasted, wires=[2], wire_order=[2, 0]
+        )
         expected = np.array(
             [
                 [
@@ -2274,7 +2278,9 @@ class TestExpandMatrix:
         # CNOT with target on wire 1 and a batch dimension of size 1
         res = qml.operation.expand_matrix(CNOT_broadcasted, [1, 0], [0, 1, 2, 3])
         rows = [0, 2, 1, 3]
-        expected = np.kron(np.kron(CNOT_broadcasted[:, :, rows][:, rows], I_broadcasted), I_broadcasted)
+        expected = np.kron(
+            np.kron(CNOT_broadcasted[:, :, rows][:, rows], I_broadcasted), I_broadcasted
+        )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_expand_three_consecutive_wires(self, tol):
