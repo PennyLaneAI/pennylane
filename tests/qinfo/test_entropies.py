@@ -449,5 +449,111 @@ class TestMutualInformation:
 
         assert np.allclose(actual, expected)
 
-    def test_grad_qnode(self):
-        """Test that the gradient of mutual information works for QNodes"""
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
+    def test_qnode_grad(self, param):
+        """Test that the gradient of mutual information works for QNodes
+        with the autograd interface"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="autograd")
+        def circuit(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+        if param == 0:
+            # we don't allow gradients to flow through the discontinuity at 0
+            expected = 0
+        else:
+            expected = np.sin(param) * (
+                np.log(np.cos(param / 2) ** 2) - np.log(np.sin(param / 2) ** 2)
+            )
+
+        actual = qml.grad(circuit)(param)
+        assert np.allclose(actual, expected)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
+    def test_qnode_grad_jax(self, param):
+        """Test that the gradient of mutual information works for QNodes
+        with the JAX interface"""
+        import jax.numpy as jnp
+
+        dev = qml.device("default.qubit", wires=2)
+
+        param = jnp.array(param)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+        if param == 0:
+            # we don't allow gradients to flow through the discontinuity at 0
+            expected = 0
+        else:
+            expected = jnp.sin(param) * (
+                jnp.log(jnp.cos(param / 2) ** 2) - jnp.log(jnp.sin(param / 2) ** 2)
+            )
+
+        actual = jax.grad(circuit)(param)
+        assert np.allclose(actual, expected)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
+    def test_qnode_grad_tf(self, param):
+        """Test that the gradient of mutual information works for QNodes
+        with the tensorflow interface"""
+        dev = qml.device("default.qubit", wires=2)
+
+        param = tf.Variable(param)
+
+        @qml.qnode(dev, interface="tensorflow")
+        def circuit(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+        if param == 0:
+            # we don't allow gradients to flow through the discontinuity at 0
+            expected = 0
+        else:
+            expected = np.sin(param) * (
+                np.log(np.cos(param / 2) ** 2) - np.log(np.sin(param / 2) ** 2)
+            )
+
+        with tf.GradientTape() as tape:
+            out = circuit(param)
+
+        actual = tape.gradient(out, param)
+        assert np.allclose(actual, expected)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
+    def test_qnode_grad_torch(self, param):
+        """Test that the gradient of mutual information works for QNodes
+        with the torch interface"""
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def circuit(param):
+            qml.RY(param, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+        if param == 0:
+            # we don't allow gradients to flow through the discontinuity at 0
+            expected = 0
+        else:
+            expected = np.sin(param) * (
+                np.log(np.cos(param / 2) ** 2) - np.log(np.sin(param / 2) ** 2)
+            )
+
+        param = torch.tensor(param, requires_grad=True)
+        out = circuit(param)
+        out.backward()
+
+        actual = param.grad
+        assert np.allclose(actual, expected)
