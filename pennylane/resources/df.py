@@ -74,7 +74,7 @@ def norm(one, two, eigvals):
 
     t_mat = one - 0.5 * np.einsum("illj", two) + np.einsum("llij", two)
 
-    val, vec = np.linalg.eigh(t_mat)
+    val, _ = np.linalg.eigh(t_mat)
 
     lambda_two = np.sum(abs(val))
 

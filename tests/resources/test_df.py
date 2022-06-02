@@ -15,6 +15,7 @@
 Unit tests for functions needed for resource estimation with double factorization method.
 """
 import pytest
+
 import pennylane as qml
 from pennylane import numpy as np
 
