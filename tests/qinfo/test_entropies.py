@@ -344,6 +344,8 @@ class TestVonNeumannEntropy:
         """Test entropy for a QNode with jax-jit interface."""
         import jax
 
+        dev = qml.device("default.qubit", wires=2)
+
         @qml.qnode(dev, interface="jax-jit")
         def circuit_state(x):
             qml.IsingXX(x, wires=[0, 1])
