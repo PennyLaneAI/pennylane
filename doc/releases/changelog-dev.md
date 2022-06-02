@@ -203,6 +203,9 @@
   instead of the controlled version of the diagonal unitary.
   [(#2525)](https://github.com/PennyLaneAI/pennylane/pull/2525)
 
+* Updated the gradients fix [(#2485)](https://github.com/PennyLaneAI/pennylane/pull/2485) to only apply to the `strawberryfields.gbs` device, since
+  the original logic was breaking some devices. [(#2595)](https://github.com/PennyLaneAI/pennylane/pull/2595)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
@@ -222,5 +225,4 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad
-
+Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Samuel Banning, Soran Jahangiri, Utkarsh Azad
