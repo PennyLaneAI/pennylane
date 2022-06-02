@@ -20,9 +20,12 @@ from string import ascii_letters as ABC
 from autoray import numpy as np
 from numpy import float64
 
+import pennylane as qml
+
 from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import diag, dot, scatter_element_add
-from .utils import is_abstract, allclose, cast, convert_like, get_interface
+from .utils import is_abstract, allclose, cast, convert_like
+
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -521,53 +524,8 @@ def compute_vn_entropy(density_matrix, base=None):
     else:
         div_base = 1
 
-    interface = get_interface(density_matrix)
-
-    if interface == "autograd":
-        # Get eigenvalues
-        evs = np.linalg.eigh(density_matrix)[0]
-        new_evs = []
-        for ev in evs:
-            if ev > 0:
-                new_evs.append(ev)
-    else:
-        evs = np.linalg.eigvalsh(density_matrix)
-
-    if interface == "jax":
-        import jax
-
-        evs = jax.numpy.maximum(evs, jax.numpy.array(0))
-        entropy = jax.numpy.sum(jax.scipy.special.entr(evs) / div_base)
-
-    elif interface == "torch":
-        import torch
-
-        evs = torch.maximum(evs, torch.tensor(0))
-        non_zeros = torch.nonzero(evs)
-        evs = evs[non_zeros]
-        entropy = torch.sum(torch.special.entr(evs) / div_base)
-
-    elif interface == "tensorflow":
-        import tensorflow as tf
-
-        evs = tf.math.real(evs)
-        evs = tf.math.maximum(evs, 0)
-
-        boolean_mask = tf.cast(evs, dtype=tf.bool)
-        evs = tf.boolean_mask(evs, boolean_mask, axis=0)
-
-        log_evs = tf.math.log(evs)
-        entropy = -tf.math.reduce_sum(evs * log_evs / div_base)
-
-    elif interface == "autograd":
-        import autograd
-
-        entropy = 0
-        for elem in new_evs:
-            entropy = entropy - autograd.numpy.log(elem) * elem
-
-    else:
-        evs = np.array([ev for ev in evs if ev > 0])
-        entropy = -np.sum(evs * np.log(evs) / div_base)
+    evs = qml.math.eigvalsh(density_matrix)
+    evs = qml.math.where(evs > 0, evs, 1.0)
+    entropy = qml.math.entr(evs) / div_base
 
     return entropy
