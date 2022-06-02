@@ -1,3 +1,4 @@
-[tool.black]
-line-length = 100
-include = 'pennylane\.pyi?$, tests\.pyi?$'
+[build-system]
+requires = ["setuptools>=61.2.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
