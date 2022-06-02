@@ -75,6 +75,10 @@
 
 <h3>Improvements</h3>
 
+* IPython displays the `str` representation of a `Hamiltonian`, rather than the `repr`. This displays
+  more information about the object.
+  [(#2648)](https://github.com/PennyLaneAI/pennylane/pull/2648)
+
 * The qchem openfermion-dependent tests are localized and collected in `tests.qchem.of_tests`. The
   new module `test_structure` is created to collect the tests of the `qchem.structure` module in
   one place and remove their dependency to openfermion.
