@@ -4,6 +4,52 @@
 
 <h3>New features since last release</h3>
 
+* The JAX JIT interface now supports evaluating vector-valued QNodes
+  enabling new types of workflows to utilize the power of just-in-time
+  compilation for significant performance boosts.
+  [(#2034)](https://github.com/PennyLaneAI/pennylane/pull/2034)
+
+  Vector-valued QNodes include those with:
+  * `qml.probs`;
+  * `qml.state`;
+  * `qml.sample` or
+  * multiple `qml.expval` / `qml.var` measurements.
+
+  Consider a QNode that returns basis-state probabilities:
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+  x = jnp.array(0.543)
+  y = jnp.array(-0.654)
+
+  @jax.jit
+  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
+  def circuit(x, y):
+      qml.RX(x, wires=[0])
+      qml.RY(y, wires=[1])
+      qml.CNOT(wires=[0, 1])
+      return qml.probs(wires=[1])
+  ```
+  The QNode can now be evaluated:
+  ```pycon
+  >>> circuit(x, y)
+  DeviceArray([0.8397495 , 0.16025047], dtype=float32)
+  ```
+  Computing the jacobian of vector-valued QNodes is not supported with the JAX
+  JIT interface. The output of vector-valued QNodes can be, however, used in
+  the definition of scalar-valued cost functions whose gradients can be
+  computed.
+
+  For example, one can define a cost function that outputs the first element of
+  the probability vector:
+  ```pycon
+  def cost(x, y):
+      return circuit(x, y)[0]
+  ```
+  ```pycon
+  >>> jax.grad(cost, argnums=[0])(x, y)
+  (DeviceArray(-0.2050439, dtype=float32),)
+  ```
+
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
   attribute `batch_size`.
   - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
@@ -129,7 +175,7 @@
   for `qml.QueuingContext.update_info` in a variety of places.
   [(#2612)](https://github.com/PennyLaneAI/pennylane/pull/2612)
 
-* `BasisEmbedding` can accept an int as argument instead of a list of bits (optionally). Example: `qml.BasisEmbedding(4, wires = range(4))` is now equivalent to `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because 4=0b100). 
+* `BasisEmbedding` can accept an int as argument instead of a list of bits (optionally). Example: `qml.BasisEmbedding(4, wires = range(4))` is now equivalent to `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because 4=0b100).
   [(#2601)](https://github.com/PennyLaneAI/pennylane/pull/2601)
 
 * Introduced a new `is_hermitian` property to determine if an operator can be used in a measurement process.
@@ -175,7 +221,7 @@
   as trainable do not have any impact on the QNode output.
   [(#2584)](https://github.com/PennyLaneAI/pennylane/pull/2584)
 
-* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` or `"jax-jit"`, when requesting backpropagation. 
+* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` or `"jax-jit"`, when requesting backpropagation.
   [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
 
 * Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
