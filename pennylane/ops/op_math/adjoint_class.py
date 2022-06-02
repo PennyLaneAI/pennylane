@@ -145,7 +145,7 @@ class Adjoint(Operator):
 
     _operation_type = None  # type if base inherits from operation and not observable
     _operation_observable_type = None  # type if base inherits from both operation and observable
-    _observable_type = None  # type if base inherits from observable and not oepration
+    _observable_type = None  # type if base inherits from observable and not operation
 
     # pylint: disable=unused-argument
     def __new__(cls, base=None, do_queue=True, id=None):

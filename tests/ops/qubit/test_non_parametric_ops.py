@@ -534,7 +534,7 @@ class TestBarrier:
         assert optimized_gates == 2
 
     def test_barrier_adjoint(self):
-        """Test if adjoint of a Barrier is decomposes correctly."""
+        """Test if adjoint of a Barrier is decomposed correctly."""
 
         base = qml.Barrier(wires=(0, 1))
         adj = qml.ops.op_math.Adjoint(base)
