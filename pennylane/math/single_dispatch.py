@@ -128,13 +128,6 @@ def _to_numpy_autograd(x, max_depth=None, _n=0):
 ar.register_function("autograd", "to_numpy", _to_numpy_autograd)
 
 
-def _scatter_autograd(indices, array, shape):
-    _np = _i("qml").numpy
-    new_array = _np.zeros(shape, dtype=array.dtype.type)
-    new_array[indices] = array
-    return new_array
-
-
 def _scatter_element_add_autograd(tensor, index, value):
     """In-place addition of a multidimensional value over various
     indices of a tensor. Since Autograd doesn't support indexing
@@ -152,7 +145,6 @@ def _scatter_element_add_autograd(tensor, index, value):
     return tensor + pnp.array(t).reshape(tensor.shape)
 
 
-ar.register_function("autograd", "scatter", _scatter_autograd)
 ar.register_function("autograd", "scatter_element_add", _scatter_element_add_autograd)
 
 
