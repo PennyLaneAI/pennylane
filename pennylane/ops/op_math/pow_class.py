@@ -24,8 +24,10 @@ from pennylane.operation import (
     Operator,
     Operation,
     Observable,
+    expand_matrix,
 )
 from pennylane.queuing import QueuingContext, apply
+from pennylane.wires import Wires
 
 from pennylane import math as qmlmath
 
@@ -36,7 +38,11 @@ _superscript = str.maketrans("0123456789.+-", "⁰¹²³⁴⁵⁶⁷⁸⁹⋅⁺
 class PowOperation(Operation):
     """Operation-specific methods and properties for the ``Pow`` class.
 
-    Dynamically mixed in based on the provided base matrix.
+    Dynamically mixed in based on the provided base operator.  If the base operator is an
+    Operation, this class will be mixed in.
+
+    When we no longer rely on certain functionality through `Operation`, we can get rid of this
+    class.
     """
 
     # until we add gradient support
@@ -79,7 +85,7 @@ class Pow(Operator):
 
     Args:
         base (~.operation.Operator): the operator to be raised to a power
-        z=0 (float): the exponent
+        z=1 (float): the exponent
 
     **Example**
 
@@ -103,7 +109,7 @@ class Pow(Operator):
     _observable_type = None  # type if base inherits from observable and not oepration
 
     # pylint: disable=unused-argument
-    def __new__(cls, base=None, z=0, do_queue=True, id=None):
+    def __new__(cls, base=None, z=1, do_queue=True, id=None):
         """Mixes in parents based on inheritance structure of base.
 
         Though all the types will be named "Pow", their *identity* and location in memory will be different
@@ -114,20 +120,20 @@ class Pow(Operator):
         if isinstance(base, Operation):
             if isinstance(base, Observable):
                 if cls._operation_observable_type is None:
-                    class_bases = (PowOperation, Pow, Observable, Operation)
-                    cls._operation_observable_type = type("Pow", class_bases, dict(cls.__dict__))
+                    base_classes = (PowOperation, Pow, Observable, Operation)
+                    cls._operation_observable_type = type("Pow", base_classes, dict(cls.__dict__))
                 return object.__new__(cls._operation_observable_type)
 
             # not an observable
             if cls._operation_type is None:
-                class_bases = (PowOperation, Pow, Operation)
-                cls._operation_type = type("Pow", class_bases, dict(cls.__dict__))
+                base_classes = (PowOperation, Pow, Operation)
+                cls._operation_type = type("Pow", base_classes, dict(cls.__dict__))
             return object.__new__(cls._operation_type)
 
         if isinstance(base, Observable):
             if cls._observable_type is None:
-                class_bases = (Pow, Observable)
-                cls._observable_type = type("Pow", class_bases, dict(cls.__dict__))
+                base_classes = (Pow, Observable)
+                cls._observable_type = type("Pow", base_classes, dict(cls.__dict__))
             return object.__new__(cls._observable_type)
 
         return object.__new__(Pow)
@@ -149,7 +155,7 @@ class Pow(Operator):
         return copied_op
 
     # pylint: disable=super-init-not-called
-    def __init__(self, base=None, z=0, do_queue=True, id=None):
+    def __init__(self, base=None, z=1, do_queue=True, id=None):
 
         # incorporate base inverse attribute into the exponent
         if getattr(base, "inverse", False):
@@ -229,15 +235,22 @@ class Pow(Operator):
     def has_matrix(self):
         return self.base.has_matrix
 
-    # pylint: disable=arguments-differ
-    @staticmethod
-    def compute_matrix(*params, base=None, z=0):
-        base_matrix = base.compute_matrix(*params, **base.hyperparameters)
+    @property
+    def is_hermitian(self):
+        return self.base.is_hermitian
 
-        if isinstance(z, int):
-            return qmlmath.linalg.matrix_power(base_matrix, z)
+    def matrix(self, wire_order=None):
+        base_matrix = self.base.matrix()
 
-        return fractional_matrix_power(base_matrix, z)
+        if isinstance(self.z, int):
+            mat = qmlmath.linalg.matrix_power(base_matrix, self.z)
+        else:
+            mat = fractional_matrix_power(base_matrix, self.z)
+
+        if wire_order is None or self.wires == Wires(wire_order):
+            return mat
+
+        return expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
     # pylint: disable=arguments-differ
     @staticmethod
