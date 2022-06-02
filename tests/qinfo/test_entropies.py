@@ -189,7 +189,7 @@ class TestVonNeumannEntropy:
 
         expected_entropy = expected_entropy_ising_xx(param) / np.log(base)
 
-        assert qml.math.allclose(entropy, expected_entropy / np.log(base))
+        assert qml.math.allclose(entropy, expected_entropy)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("wires", single_wires_list)
