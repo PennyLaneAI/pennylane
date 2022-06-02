@@ -21,17 +21,17 @@ from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math.pow_class import Pow, PowOperation
 
 
+class TempOperator(qml.operation.Operator):
+    num_wires = 1
+
+
 class TestInheritanceMixins:
     """Test the inheritance structure and mixin addition through dynamic __new__ method."""
 
     def test_plain_operator(self):
         """Test when base directly inherits from Operator only inherits from Operator."""
 
-        class Tester(qml.operation.Operator):
-            num_wires = 1
-            num_params = 1
-
-        base = Tester(1.234, wires=0)
+        base = TempOperator(1.234, wires=0)
         op = Pow(base, 1.2)
 
         assert isinstance(op, Pow)
@@ -219,10 +219,30 @@ class TestProperties:
 
     def test_has_matrix_false(self):
         """Test has_matrix property carries over when base op does not define a matrix."""
-        base = qml.QubitStateVector([1, 0], wires=0)
-        op = Pow(base, 2.0)
+
+        op = Pow(TempOperator(wires=0), 2.0)
 
         assert not op.has_matrix
+
+    def test_is_hermitian_true(self):
+        """Test that if the base is hermitian, then the power is hermitian."""
+
+        class HermitianOp(qml.operation.Operator):
+            num_wires = 1
+            is_hermitian = True
+
+        op = Pow(HermitianOp(1), 2.5)
+        assert op.is_hermitian is True
+
+    def test_is_hermitian_false(self):
+        """Test that if the base is not hermitian, then the power is non-hermitian."""
+
+        class NonHermitianOp(qml.operation.Operator):
+            num_wires = 1
+            is_hermitian = False
+
+        op = Pow(NonHermitianOp(1), -2)
+        assert op.is_hermitian is False
 
     def test_queue_category(self):
         """Test that the queue category `"_ops"` carries over."""
@@ -236,8 +256,11 @@ class TestProperties:
 
 
 class TestMiscMethods:
-    def test_copy(self):
+    """Test miscellaneous minor Pow methods."""
 
+    def test_copy(self):
+        """Test that a copy of a power operator can have its parameters updated
+        independently of the original operator."""
         param1 = 1.2345
         z = 2.3
         base = qml.RX(param1, wires=0)
@@ -283,22 +306,22 @@ class TestMiscMethods:
         base = qml.RX(2.34, wires=0)
         op = Pow(base, z)
 
-        base_gen = qml.generator(base, format="prefactor")
-        op_gen = qml.generator(op, format="prefactor")
+        base_gen_op, base_gen_coeff = qml.generator(base, format="prefactor")
+        op_gen_op, op_gen_coeff = qml.generator(op, format="prefactor")
 
-        assert qml.math.allclose(base_gen[1] * z, op_gen[1])
-        assert base_gen[0].__class__ is op_gen[0].__class__
+        assert qml.math.allclose(base_gen_coeff * z, op_gen_coeff)
+        assert base_gen_op.__class__ is op_gen_op.__class__
 
 
 class TestDiagonalizingGates:
     """Test Pow operators diagonalizing_gates method."""
 
-    def test_diagonalizing_gates_int_exist(self):
-        """Test the diagonalizing gates method when the operator defines them and the exponent
-        is an int."""
+    @pytest.mark.parametrize("z", (2, -1, 0.25))
+    def test_diagonalizing_gates_int_exist(self, z):
+        """Test the diagonalizing gates method returns the same thing as the base operator."""
 
         base = qml.PauliX(0)
-        op = Pow(base, 2)
+        op = Pow(base, z)
 
         op_gates = op.diagonalizing_gates()
         base_gates = base.diagonalizing_gates()
@@ -308,14 +331,6 @@ class TestDiagonalizingGates:
         for op1, op2 in zip(op_gates, base_gates):
             assert op1.__class__ is op2.__class__
             assert op1.wires == op2.wires
-
-    def test_diagonalizing_gates_float(self):
-        """Test the diagonalizing gates method when the exponent is a float. They should be undefined."""
-        base = qml.PauliX(0)
-        op = Pow(base, 0.5)
-
-        with pytest.raises(qml.operation.DiagGatesUndefinedError):
-            op.diagonalizing_gates()
 
     def test_base_doesnt_define(self):
         """Test that when the base gate does not define the diagonalizing gates and raises an error,
@@ -454,8 +469,7 @@ class TestSparseMatrix:
 
     def test_base_no_sparse_matrix(self):
         """Test that if the base doesn't define a sparse matrix, then the power won't either."""
-        base = qml.PauliX(0)
-        op = Pow(base, 2)
+        op = Pow(TempOperator(0.1), 2)
 
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
             op.sparse_matrix()
@@ -562,14 +576,17 @@ class TestInverse:
 
 
 class TestOperationProperties:
-    def test_basis(self):
+    """Test Operation specific properties."""
 
+    def test_basis(self):
+        """Test that the basis attribute is the same as the base op's basis attribute."""
         base = qml.RX(1.2, wires=0)
         op = Pow(base, 2.1)
 
         assert base.basis == op.basis
 
     def test_control_wires(self):
+        """Test that the control wires of a Pow operator are the same as the control wires of the base op."""
 
         base = qml.Toffoli(wires=(0, 1, 2))
         op = Pow(base, 3.5)
@@ -585,6 +602,8 @@ class TestIntegration:
     )
     @pytest.mark.parametrize("z", (2, -2, 0.5))
     def test_gradient_pow_rx(self, diff_method, z):
+        """Test execution and gradients for a decomposable power operator."""
+
         @qml.qnode(qml.device("default.qubit", wires=1), diff_method=diff_method)
         def circuit(x, z):
             Pow(qml.RX(x, wires=0), z)

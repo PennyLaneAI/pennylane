@@ -273,16 +273,49 @@ class Pow(Operator):
             raise DecompositionUndefinedError from e
 
     def diagonalizing_gates(self):
-        if isinstance(self.z, int):
-            return self.base.diagonalizing_gates()
-        # does this hold for non-integer z?
-        return super().diagonalizing_gates()
+        r"""Sequence of gates that diagonalize the operator in the computational basis.
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U`.
+
+        The diagonalizing gates of an operator to a power is the same as the diagonalizing
+        gates as the original operator. As we can see,
+
+        .. math::
+
+            O^2 = U \Sigma U^{\dagger} U \Sigma U^{\dagger} = U \Sigma^2 U^{\dagger}
+
+        This formula can be extended to inversion and any rational number.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
+
+        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
+
+        Returns:
+            list[.Operator] or None: a list of operators
+        """
+        return self.base.diagonalizing_gates()
 
     def eigvals(self):
         base_eigvals = self.base.eigvals()
         return [value**self.z for value in base_eigvals]
 
     def generator(self):
+        r"""Generator of an operator that is in single-parameter-form.
+
+        The generator of a power operator is ``z`` times the generator of the
+        base matrix.
+
+        .. math::
+
+            U(\phi)^z = e^{i\phi (z G)}
+
+        See also :func:`~.generator`
+        """
         return self.z * self.base.generator()
 
     @property
@@ -293,5 +326,11 @@ class Pow(Operator):
         used outside of ``QuantumTape._process_queue``.
 
         Returns ``_queue_cateogory`` for base operator.
+
+        Options are:
+            * `"_prep"`
+            * `"_ops"`
+            * `"_measurements"`
+            * `None`
         """
         return self.base._queue_category  # pylint: disable=protected-access
