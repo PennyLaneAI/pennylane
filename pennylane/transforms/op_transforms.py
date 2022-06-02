@@ -430,8 +430,8 @@ class op_transform:
                 # HOTFIX: some operator transforms return a tape containing
                 # a single transformed operator. As a result, for now we need
                 # to treat a tape with a single operation as a single operation.
-                if len(getattr(tape, "operations", [])) == 1 and self._tape_fn is None:
-                    tape = tape.operations[0]
+                # if len(getattr(tape, "operations", [])) == 1 and self._tape_fn is None:
+                #    tape = tape.operations[0]
 
                 if wire_order is not None or (
                     "wire_order" in self._sig and isinstance(obj, qml.QNode)
