@@ -125,18 +125,17 @@ def commutation_dag(circuit):
 def _create_commute_function():
     """This function constructs the ``_commutes`` helper utility function while using closure
     to hide the ``commutation_map`` data away from the global scope of the file.
-
     This function only needs to be called a single time.
-
     Returns:
         function
     """
-
     pauliz_group = {
         "PauliZ",
         "ctrl",
         "S",
+        "Adjoint(S)",
         "T",
+        "Adjoint(T)",
         "RZ",
         "PhaseShift",
         "MultiRZ",
@@ -146,8 +145,8 @@ def _create_commute_function():
         "S.inv",
         "T.inv",
     }
-    swap_group = {"SWAP", "ISWAP", "SISWAP", "Identity"}
-    paulix_group = {"PauliX", "SX", "RX", "Identity", "IsingXX", "SX.inv"}
+    swap_group = {"SWAP", "ISWAP", "SISWAP", "Identity", "Adjoint(ISWAP)", "Adjoint(SISWAP)"}
+    paulix_group = {"PauliX", "SX", "RX", "Identity", "IsingXX", "SX.inv", "Adjoint(SX)"}
     pauliy_group = {"PauliY", "RY", "Identity", "IsingYY"}
 
     commutation_map = {}
@@ -155,38 +154,17 @@ def _create_commute_function():
         for op in group:
             commutation_map[op] = group
 
-    for op in ("Hadamard", "U2", "U3", "Rot"):
+    identity_only = {"Hadamard", "U2", "U3", "Rot"}
+    for op in identity_only:
         commutation_map[op] = {"Identity", op}
 
-    for op in ("Barrier", "WireCut", "QubitStateVector", "BasisState"):
+    no_commutation = {"Barrier", "WireCut", "QubitStateVector", "BasisState"}
+    for op in no_commutation:
         commutation_map[op] = {}
 
-    commutation_map["Identity"] = {
-        "Hadamard",
-        "PauliX",
-        "PauliY",
-        "PauliZ",
-        "SWAP",
-        "ctrl",
-        "S",
-        "T",
-        "SX",
-        "ISWAP",
-        "SISWAP",
-        "RX",
-        "RY",
-        "RZ",
-        "PhaseShift",
-        "Rot",
-        "MultiRZ",
-        "Identity",
-        "U1",
-        "U2",
-        "U3",
-        "IsingXX",
-        "IsingYY",
-        "IsingZZ",
-    }
+    commutation_map["Identity"] = pauliz_group.union(
+        swap_group, paulix_group, pauliy_group, identity_only
+    )
 
     def commutes_inner(op_name1, op_name2):
         """Determine whether or not two operations commute.

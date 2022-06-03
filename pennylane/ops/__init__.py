@@ -18,6 +18,8 @@
 This module contains core quantum operations supported by PennyLane -
 such as gates, state preparations and observables.
 """
+from .op_math import adjoint
+
 from .cv import *
 from .qubit import *
 from .channel import *
@@ -31,10 +33,6 @@ from .qubit import ops as _qubit__ops__
 from .qubit import obs as _qubit__obs__
 
 from .channel import __all__ as _channel__ops__
-
-
-class AdjointError(Exception):
-    """Exception for non-adjointable operations."""
 
 
 __all__ = _cv__all__ + _qubit__all__ + _channel__ops__
