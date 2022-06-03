@@ -71,6 +71,7 @@ class DefaultQutrit(QutritDevice):
         self._apply_ops = {
             "TShift": self._apply_tshift,
             "TClock": self._apply_tclock,
+            "TSWAP": self._apply_tswap,
         }
 
     @functools.lru_cache()
@@ -190,13 +191,20 @@ class DefaultQutrit(QutritDevice):
         return self._apply_phase(partial_state, axes, 2, OMEGA**2, inverse)
 
     def _apply_tswap(self, state, axes, **kwargs):
-        """_summary_
+        """Applies a ternary SWAP gate by performing a partial transposition along the
+        specified axes.
 
         Args:
-            state (_type_): _description_
-            axes (_type_): _description_
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+
+        Returns:
+            array[complex]: output state
         """
-        pass
+        all_axes = list(range(len(state.shape)))
+        all_axes[axes[0]] = axes[1]
+        all_axes[axes[1]] = axes[0]
+        return self._transpose(state, all_axes)
 
     def _apply_tadd(self, state, axes, **kwargs):
         """_summary_
