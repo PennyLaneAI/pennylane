@@ -730,12 +730,22 @@ def test_different_batchdim_error():
     dimensions are given to the decorated QNode"""
     dev = qml.device("default.qubit", wires=2)
 
+    # To test this error message, we need to use operations that do
+    # not report problematic broadcasting dimensions (in place of problematic
+    # batch dimensions) at tape creation. For this, we "delete" `ndim_params`.
+
+    class RX_no_ndim(qml.RX):
+        ndim_params = property(lambda self: self._ndim_params)
+
+    class RY_no_ndim(qml.RY):
+        ndim_params = property(lambda self: self._ndim_params)
+
     @qml.qnode(dev)
     def circuit(x, y, z):
-        qml.RX(x, wires=0)
-        qml.RY(y[..., 0], wires=0)
-        qml.RY(y[..., 1], wires=1)
-        qml.RX(z, wires=1)
+        RX_no_ndim(x, wires=0)
+        RY_no_ndim(y[..., 0], wires=0)
+        RY_no_ndim(y[..., 1], wires=1)
+        RX_no_ndim(z, wires=1)
         return qml.expval(qml.PauliZ(wires=0) @ qml.PauliZ(wires=1))
 
     batch_size1, batch_size2 = 5, 4
