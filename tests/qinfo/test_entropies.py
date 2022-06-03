@@ -316,27 +316,6 @@ class TestVonNeumannEntropy:
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
 
-        grad_expected_entropy = -(
-            (np.log(eigs[0]) + 1)
-            * (
-                np.sin(param / 2) ** 3 * np.cos(param / 2)
-                - np.sin(param / 2) * np.cos(param / 2) ** 3
-            )
-            / np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)
-        ) - (
-            (np.log(eigs[1]) + 1)
-            * (
-                np.sin(param / 2)
-                * np.cos(param / 2)
-                * (np.cos(param / 2) ** 2 - np.sin(param / 2) ** 2)
-            )
-            / np.sqrt(1 - 4 * np.cos(param / 2) ** 2 * np.sin(param / 2) ** 2)
-        )
-
-        assert qml.math.allclose(
-            grad_entropy, grad_expected_entropy / np.log(base), rtol=1e-04, atol=1e-05
-        )
-
 
 class TestMutualInformation:
     """Tests for the mutual information functions"""
