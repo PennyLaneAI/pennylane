@@ -29,24 +29,26 @@ def norm(one, two, eigvals):
 
         \lambda = ||T|| + \frac{1}{4} \sum_r ||L^{(r)}||^2,
 
-    where the Schatten norm, :math:`||L||`, is defined as
+    where the Schatten norm for a given matrix :math:`T` is defined as
 
     .. math::
 
-        ||L|| = \sum_k |\text{eigvals}[L]_k|.
+        ||T|| = \sum_k |\text{eigvals}[T]_k|.
 
     The matrices :math:`L^{(r)}` are obtained from a rank-r factorizing the two-electron integral
-    tensor :math:`h`, arranged in the chemist notation, such that
+    tensor :math:`h` such that
 
     .. math::
 
-        h_{ijkl} = \sum_r L_{ij}^{(r)} L_{kl}^{(r) T}.
+        h_{ijkl} = \sum_r L_{ij}^{(r)} L_{kl}^{(r) T},
 
-    The matrix :math:`T` is constructed from the one-and two electron integrals as
+    and the matrix :math:`T` is constructed from the one- and two-electron integrals
 
     .. math::
 
         T = h_{ij} - \frac{1}{2} \sum_l h_{illj} + \sum_l h_{llij}.
+
+    Note that the two-electron integral tensor must be arranged in the chemist notation [11|22].
 
      Args:
          one (array[array[float]]): one-electron integrals
