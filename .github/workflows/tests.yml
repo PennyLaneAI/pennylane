@@ -7,7 +7,7 @@ on:
 
 
 env:
-  TF_VERSION: 2.6
+  TF_VERSION: 2.6.0
   TORCH_VERSION: 1.10.0+cpu
   COVERAGE_FLAGS: "--cov=pennylane --cov-report=term-missing --cov-report=xml --no-flaky-report -p no:warnings --tb=native"
 
@@ -63,7 +63,7 @@ jobs:
 
       - name: Conditionally install TensorFlow
         if: matrix.config.suite == 'tf'
-        run: pip3 install tensorflow==$TF_VERSION keras==$TF_VERSION
+        run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       # Jax releases new version very frequently, so we should always build
       # to the latest release. We can always fix a version later if it breaks.
@@ -119,7 +119,7 @@ jobs:
         run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Install TensorFlow
-        run: pip3 install tensorflow==$TF_VERSION keras==$TF_VERSION
+        run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
         run: pip3 install jax jaxlib
@@ -170,7 +170,7 @@ jobs:
         run: pip3 install torch==$TORCH_VERSION -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Install TensorFlow
-        run: pip3 install tensorflow==$TF_VERSION keras==$TF_VERSION
+        run: pip3 install tensorflow~=$TF_VERSION keras~=$TF_VERSION
 
       - name: Install JAX
         run: pip3 install jax jaxlib
@@ -282,7 +282,7 @@ jobs:
 
       - name: Conditionally install TensorFlow
         if: contains(matrix.config.device, 'tf')
-        run: pip3 install tensorflow==$TF_VERSION
+        run: pip3 install tensorflow~=$TF_VERSION
 
       - name: Conditionally install Jax
         if: contains(matrix.config.device, 'jax')

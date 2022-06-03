@@ -168,7 +168,7 @@ Hardware-compatible differentiation
 The following methods support both quantum hardware and simulators, and are examples of `forward
 accumulation <https://en.wikipedia.org/wiki/Automatic_differentiation#Forward_accumulation>`__.
 However, when using a simulator, you may notice that the time required to compute the gradients
-:doc:`scales quadratically <demos/tutorial_backprop>` with the number of trainable circuit
+with these methods :doc:`scales linearly <demos/tutorial_backprop>` with the number of trainable circuit
 parameters.
 
 * ``"parameter-shift"``: Use the analytic :doc:`parameter-shift rule
@@ -320,7 +320,7 @@ At the moment, it takes into account the following parameters:
 +------------------+------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
 | ``"torch"``      | ``"device"``                       |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`3`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
-|                  | ``"backprop"``                     |     :gr:`5`  |   :rd:`11`    |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     |
+|                  | ``"backprop"``                     |     :gr:`5`  |   :rd:`5`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
 |                  | ``"adjoint"``                      |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :rd:`6`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
@@ -348,7 +348,6 @@ At the moment, it takes into account the following parameters:
 9. Not supported. The discretization of the output caused by wave function collapse is
    not differentiable. The forward pass is still supported. See :ref:`Sample gradients <Sample gradients>` for details.
 10. Not supported. "We just don't have the theory yet."
-11. Not supported, but due to a bug.
 
 :html:`</div>`
 
