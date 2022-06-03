@@ -540,10 +540,20 @@ class DefaultQubit(QubitDevice):
                     Hmat = observable.sparse_matrix()
 
                 state = qml.math.toarray(self.state)
-                res = csr_matrix.dot(
-                    csr_matrix(qml.math.conj(state)),
-                    csr_matrix.dot(Hmat, csr_matrix(state.reshape(len(self.state), 1))),
-                ).toarray()[0]
+                if qml.math.ndim(state)==2:
+                    res = qml.math.array([
+                        csr_matrix.dot(
+                            csr_matrix(qml.math.conj(_state)),
+                            csr_matrix.dot(Hmat, csr_matrix(_state[..., None])),
+                        ).toarray()[0]
+                        for _state in state
+                    ])
+                else:
+                    res = csr_matrix.dot(
+                        csr_matrix(qml.math.conj(state)),
+                        csr_matrix.dot(Hmat, csr_matrix(state[..., None])),
+                    ).toarray()[0]
+
 
             if observable.name == "Hamiltonian":
                 res = qml.math.squeeze(res)
@@ -655,7 +665,7 @@ class DefaultQubit(QubitDevice):
 
         # translate to wire labels used by device
         device_wires = self.map_wires(device_wires)
-        dim = 2**len(device_wires)
+        dim = 2 ** len(device_wires)
 
         state = self._asarray(state, dtype=self.C_DTYPE)
         batch_size = self._get_batch_size(state, (dim,), dim)
@@ -687,7 +697,9 @@ class DefaultQubit(QubitDevice):
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
         if batch_size:
-            state = self._scatter((slice(None), ravelled_indices), state, [batch_size, 2**self.num_wires])
+            state = self._scatter(
+                (slice(None), ravelled_indices), state, [batch_size, 2**self.num_wires]
+            )
         else:
             state = self._scatter(ravelled_indices, state, [2**self.num_wires])
         state = self._reshape(state, output_shape)
@@ -738,7 +750,7 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        dim = 2**len(device_wires)
+        dim = 2 ** len(device_wires)
         mat_batch_size = self._get_batch_size(mat, (dim, dim), dim**2)
         state_batch_size = self._get_batch_size(state, (2,) * self.num_wires, 2**self.num_wires)
 
@@ -787,7 +799,7 @@ class DefaultQubit(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
 
-        dim = 2**len(device_wires)
+        dim = 2 ** len(device_wires)
         batch_size = self._get_batch_size(mat, (dim, dim), dim**2)
 
         shape = [2] * (len(device_wires) * 2)
@@ -813,7 +825,9 @@ class DefaultQubit(QubitDevice):
         )
 
         # We now put together the indices in the notation numpy's einsum requires
-        einsum_indices = f"...{new_indices}{affected_indices},...{state_indices}->...{new_state_indices}"
+        einsum_indices = (
+            f"...{new_indices}{affected_indices},...{state_indices}->...{new_state_indices}"
+        )
 
         return self._einsum(einsum_indices, mat, state)
 
@@ -832,7 +846,7 @@ class DefaultQubit(QubitDevice):
         """
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
-        dim = 2**len(device_wires)
+        dim = 2 ** len(device_wires)
         batch_size = self._get_batch_size(phases, (dim,), dim)
 
         # reshape vectors

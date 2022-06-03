@@ -1594,6 +1594,7 @@ def test_asarray_ragged_dtype_conversion(monkeypatch):
     res = dev._asarray(np.array([1]), tf.float32)
     assert res.dtype == tf.float32
 
+
 @pytest.mark.tf
 class TestGetBatchSize:
     """Tests for the updated helper method ``_get_batch_size`` of ``DefaultQubitTF``."""
