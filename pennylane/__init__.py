@@ -46,6 +46,7 @@ from pennylane.tracker import Tracker
 from pennylane.io import *
 from pennylane.measurements import density_matrix, measure, expval, probs, sample, state, var
 from pennylane.ops import *
+from pennylane.ops import adjoint
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -55,7 +56,6 @@ from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 from pennylane.transforms import (
-    adjoint,
     adjoint_metric_tensor,
     batch_params,
     batch_input,

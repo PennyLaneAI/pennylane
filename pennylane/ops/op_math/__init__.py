@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
- This module contains classes and functions for Operator arithmetic.
+This module contains classes and functions for Operator arithmetic.
 
- .. currentmodule:: pennylane.arithmetic
- .. autosummary::
-     :toctree: api
+.. currentmodule:: pennylane.ops.op_math
+.. autosummary::
+    :toctree: api
 
- """
+"""
 
+from .adjoint_class import Adjoint
+from .adjoint_constructor import adjoint
 from .sum import sum, Sum
