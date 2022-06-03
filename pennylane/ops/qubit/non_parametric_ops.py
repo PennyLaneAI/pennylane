@@ -1375,9 +1375,7 @@ class ECR(Operation):
         ]
 
     def adjoint(self):
-        op = ECR(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
+        return ECR(wires=self.wires)
 
     def pow(self, z):
         return super().pow(z % 2)
