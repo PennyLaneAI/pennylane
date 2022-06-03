@@ -272,8 +272,8 @@
 * Introduced a new `is_hermitian` property to determine if an operator can be used in a measurement process.
   [(#2629)](https://github.com/PennyLaneAI/pennylane/pull/2629)
 
-* Added seperate requirements_dev.txt for seperation of concerns for code development and just using PennyLane.
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/2635)
+* Added separate requirements_dev.txt for separation of concerns for code development and just using PennyLane.
+  [(#2635)](https://github.com/PennyLaneAI/pennylane/pull/2635)
 
 <h3>Breaking changes</h3>
 
