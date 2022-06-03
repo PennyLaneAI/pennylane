@@ -738,6 +738,7 @@ class TestDefaultGaussianIntegration:
             "returns_state": False,
             "supports_reversible_diff": False,
             "supports_analytic_computation": True,
+            "supports_broadcasting": False,
         }
         assert cap == capabilities
 
