@@ -50,27 +50,27 @@ def norm(one, two, eigvals):
 
     Note that the two-electron integral tensor must be arranged in the chemist notation [11|22].
 
-     Args:
-         one (array[array[float]]): one-electron integrals
-         two (array[array[float]]): two-electron integrals
-         eigvals (array[float]): eigenvalues of the matrices obtained from factorizing the
-             two-electron integral tensor
+    Args:
+        one (array[array[float]]): one-electron integrals
+        two (array[array[float]]): two-electron integrals
+        eigvals (array[float]): eigenvalues of the matrices obtained from factorizing the
+            two-electron integral tensor
 
-     Returns:
-         array[float]: 1-norm of the Hamiltonian
+    Returns:
+        array[float]: 1-norm of the Hamiltonian
 
-     **Example**
+    **Example**
 
-     >>> symbols  = ['H', 'H', 'O']
-     >>> geometry = np.array([[0.0,  0.000000000,  0.150166845],
-     >>>                      [0.0,  0.768778665, -0.532681406],
-     >>>                      [0.0, -0.768778665, -0.532681406]], requires_grad = False) / 0.529177
-     >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
-     >>> core, one, two = qml.qchem.electron_integrals(mol)()
-     >>> two = np.swapaxes(two, 1, 3) # convert to the chemists notation
-     >>> l, w, v = factorize(two, 1e-5)
-     >>> print(norm(one, two, w))
-     52.98762043980203
+    >>> symbols  = ['H', 'H', 'O']
+    >>> geometry = np.array([[0.0,  0.000000000,  0.150166845],
+    >>>                      [0.0,  0.768778665, -0.532681406],
+    >>>                      [0.0, -0.768778665, -0.532681406]], requires_grad = False) / 0.529177
+    >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
+    >>> core, one, two = qml.qchem.electron_integrals(mol)()
+    >>> two = np.swapaxes(two, 1, 3) # convert to the chemists notation
+    >>> l, w, v = factorize(two, 1e-5)
+    >>> print(norm(one, two, w))
+    52.98762043980203
     """
     lambda_one = 0.25 * np.sum([np.sum(abs(val)) ** 2 for val in eigvals])
 
