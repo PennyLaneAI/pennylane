@@ -4,6 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* Support adding `Observable` objects to the integer `0`.
+  [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603)
+
+  This allows us to directly sum a list of observables as follows:
+  ```
+  H = sum([qml.PauliX(i) for i in range(10)])
+  ```
+
 * Parameter broadcasting within operations and tapes was introduced.
   [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
   [(#2590)](https://github.com/PennyLaneAI/pennylane/pull/2590)
@@ -363,6 +371,5 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Samuel Banning, Soran Jahangiri, 
+Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, 
 Utkarsh Azad, WingCode
-
