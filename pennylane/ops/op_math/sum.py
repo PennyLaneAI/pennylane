@@ -19,7 +19,7 @@ import warnings
 import numpy as np
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, expand_matrix
+from pennylane.operation import Operator, expand_matrix, MatrixUndefinedError
 
 
 def sum(*summands):
@@ -128,8 +128,12 @@ class Sum(Operator):
     def _sum(self, mats_gen, dtype=None, cast_like=None):
         """Super inefficient Sum method just as a proof of concept"""
         res = None
-        for i, mat in enumerate(mats_gen):
-            res = mat if i == 0 else math.add(res, mat)
+        try:
+            for i, mat in enumerate(mats_gen):
+                res = mat if i == 0 else math.add(res, mat)
+        except MatrixUndefinedError as error:
+            print(f"\nThe matrix method must be defined for all summands: \n")
+            raise error
 
         if dtype is not None:                     # additional casting logic
             res = math.cast(res, dtype)
