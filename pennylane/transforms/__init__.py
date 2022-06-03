@@ -228,4 +228,3 @@ from .tape_expand import (
 from .transpile import transpile
 from . import qcut
 from .qcut import cut_circuit, cut_circuit_mc
-from .make_probs import _make_probs
