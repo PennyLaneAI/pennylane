@@ -316,7 +316,7 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e08
     (0.14297) [Z0 Z1]
     + (-0.0548) [X0 X1 Y2 Y3]
     """
-    if format not in ("openfermion"):
+    if format not in "openfermion":
         raise TypeError(f"Converter does not exist for {format} format.")
 
     if any(
