@@ -432,7 +432,7 @@ class Hamiltonian(Observable):
         """
         if len(self.ops) < 15:
             print(str(self))
-        else:
+        else:  # pragma: no-cover
             print(repr(self))
 
     def _obs_data(self):
