@@ -221,8 +221,8 @@ class TestOtherTransforms:
         assert ops[0].return_type == qml.measurements.MidMeasure
 
         assert isinstance(ops[1], qml.transforms.condition.Conditional)
-        assert isinstance(ops[1].then_op, qml.RX)
-        assert ops[1].then_op.data == [-r]  # adjoint
+        assert isinstance(ops[1].then_op, qml.ops.op_math.Adjoint)
+        assert isinstance(ops[1].then_op.base, qml.RX)
         assert ops[1].then_op.wires == target_wire
 
         assert isinstance(ops[2], qml.transforms.condition.Conditional)
