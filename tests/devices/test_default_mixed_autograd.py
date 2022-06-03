@@ -51,6 +51,7 @@ class TestQNodeIntegration:
             "supports_finite_shots": True,
             "supports_tensor_observables": True,
             "supports_inverse_operations": True,
+            "supports_broadcasting": False,
             "returns_probs": True,
             "returns_state": True,
             "passthru_interface": "autograd",
