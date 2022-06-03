@@ -143,6 +143,9 @@
 * The `qml.queuing.Queue` class is now removed.
   [(#2599)](https://github.com/PennyLaneAI/pennylane/pull/2599)
 
+* The `qml.utils.expand` function is now removed.
+  [(#2654)](https://github.com/PennyLaneAI/pennylane/pull/2654)
+
 * The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
   [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
 
@@ -225,4 +228,4 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Samuel Banning, Soran Jahangiri, Utkarsh Azad
+Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mason Moreland, Mikhail Andrenkov, Samuel Banning, Soran Jahangiri, Utkarsh Azad
