@@ -1676,7 +1676,7 @@ class TestDefaultRepresentations:
     def test_adjoint_undefined(self):
         """Tests that custom error is raised in the default adjoint representation."""
         with pytest.raises(qml.operation.AdjointUndefinedError):
-            gate.adjoint()
+            op.adjoint()
 
     def test_generator_undefined(self):
         """Tests that custom error is raised in the default generator representation."""

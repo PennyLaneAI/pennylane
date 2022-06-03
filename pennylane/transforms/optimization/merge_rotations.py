@@ -18,6 +18,7 @@ from pennylane.transforms import qfunc_transform
 from pennylane.math import allclose, stack, cast_like, zeros, is_abstract
 
 from pennylane.ops.qubit.attributes import composable_rotations
+from pennylane.ops.op_math import Adjoint
 from .optimization_utils import find_next_gate, fuse_rot_angles
 
 
@@ -87,8 +88,9 @@ def merge_rotations(tape, atol=1e-8, include_gates=None):
      1: ──╭C──────RY(2)──RY(-2)──│───────┤
      2: ──╰X──────H──────────────╰C──────┤
     """
-    # Make a working copy of the list to traverse
-    list_copy = tape.operations.copy()
+    # Expand away adjoint ops
+    expanded_tape = tape.expand(stop_at=lambda obj: not isinstance(obj, Adjoint))
+    list_copy = expanded_tape.operations
 
     while len(list_copy) > 0:
         current_gate = list_copy[0]
