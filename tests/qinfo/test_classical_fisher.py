@@ -21,7 +21,18 @@ import pennylane as qml
 import numpy as np
 import pennylane.numpy as pnp
 
-from pennylane.qinfo import _compute_cfim, CFIM
+from pennylane.qinfo import _compute_cfim, CFIM, _make_probs
+
+
+def test_make_probs():
+    """Testing the private _make_probs transform"""
+    with qml.tape.QuantumTape() as tape:
+        qml.PauliX(0)
+        qml.PauliZ(1)
+        qml.PauliY(2)
+    new_tape, fn = _make_probs(tape)
+    assert len(new_tape) == 1
+    assert np.isclose(fn([1]), 1)
 
 
 class TestComputeCFIMfn:
