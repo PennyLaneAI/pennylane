@@ -17,7 +17,55 @@ This module contains the qml.equal function.
 import pennylane as qml
 
 
-def equal(op1, op2, rtol=1e-5, atol=1e-9, check_interface=True, check_trainability=True):
+def equal(op1, op2, check_interface=True, check_trainability=True, rtol=1e-5, atol=1e-9):
+    r"""Function for determining operator equality.
+
+    Args:
+        op1 (.Operator): First operator to compare
+        op2 (.Operator): Second operator to compare
+        check_interface (bool, optional): Whether to compare interfaces. Default: True
+        check_trainability (bool, optional): Whether to compare trainability status. Default: True
+        rtol (float, optional): Relative tolerance for parameters
+        atol (float, optional): Absolute tolerance for parameters
+
+    Returns:
+        bool: True if the operators are equal, else False
+
+    **Example**
+
+    Given two operators, ``qml.equal`` determines their equality:
+
+    >>> op1 = qml.RX(np.array(.12), wires=0)
+    >>> op2 = qml.RY(np.array(1.23), wires=0)
+    >>> print(qml.equal(op1, op1), qml.equal(op1, op2))
+    True False
+
+    .. details::
+        :title: Usage Details
+
+        You can use the optional arguments to get more specific results.
+
+        Consider the following comparisons:
+
+        >>> op1 = qml.RX(torch.tensor(1.2), wires=0)
+        >>> op2 = qml.RX(jax.numpy.array(1.2), wires=0)
+        >>> print(qml.equal(op1, op2))
+        False
+
+        >>> qml.equal(op1, op2, check_interface=False, check_trainability=False)
+        True
+
+        >>> op3 = qml.RX(np.array(1.2, requires_grad=True), wires=0)
+        >>> op4 = qml.RX(np.array(1.2, requires_grad=False), wires=0)
+        >>> print(qml.equal(op3, op4))
+        False
+
+        >>> qml.equal(op3, op4, check_trainability=False)
+        True
+
+        If the parameters do not have a `requires_grad` attribute, the function will return False if `check_trainability`
+        is `True`.
+    """
     try:
         assert op1.__class__ is op2.__class__
         assert all(
