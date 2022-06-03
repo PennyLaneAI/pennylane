@@ -14,12 +14,13 @@
 """
 Tests for the classical fisher information matrix in the pennylane.qinfo
 """
-from xml.dom.minidom import Element
+# pylint: disable=no-self-use, import-outside-toplevel, no-member, import-error, too-few-public-methods
 import pytest
 
 import pennylane as qml
-import numpy as np
 import pennylane.numpy as pnp
+import numpy as np
+
 
 from pennylane.qinfo import _compute_cfim, CFIM, _make_probs
 
@@ -70,11 +71,12 @@ class TestComputeCFIMfn:
         res = _compute_cfim(p, dp, None)
         assert np.allclose(res, np.ones((n_params, n_params)))
 
+
 class TestIntegration:
     """Integration test of classical fisher information matrix CFIM"""
-    
-    @pytest.mark.parametrize("n_wires", np.arange(1,5))
-    @pytest.mark.parametrize("n_params", np.arange(1,5))
+
+    @pytest.mark.parametrize("n_wires", np.arange(1, 5))
+    @pytest.mark.parametrize("n_params", np.arange(1, 5))
     def test_different_sizes(self, n_wires, n_params):
         """Testing that for any number of wires and parameters, the correct size and values are computed"""
         dev = qml.device("default.qubit", wires=n_wires)
@@ -91,10 +93,10 @@ class TestIntegration:
                     qml.RZ(x, wires=j)
 
             return qml.probs(wires=range(n_wires))
+
         params = pnp.zeros(n_params, requires_grad=True)
         res = CFIM(circ)(params)
         assert np.allclose(res, n_wires * np.ones((n_params, n_params)))
-
 
 
 class TestInterfaces:
@@ -140,7 +142,6 @@ class TestInterfaces:
     @pytest.mark.parametrize("n_wires", np.arange(1, 5))
     def test_cfim_allnonzero_jax(self, n_wires):
         """Integration test of CFIM() with jax for examples where all probabilities are all nonzero"""
-        import jax
         import jax.numpy as jnp
 
         dev = qml.device("default.qubit", wires=n_wires)
@@ -175,12 +176,13 @@ class TestInterfaces:
         params = np.pi / 4 * jnp.ones(2)
         cfim = CFIM(circ)(params)
         assert np.allclose(cfim, np.ones((2, 2)))
-    
+
     @pytest.mark.jax
     def test_cfim_multiple_args_jax(self):
         """Testing multiple args to be differentiated using jax"""
         import jax.numpy as jnp
-        n_wires=3
+
+        n_wires = 3
 
         dev = qml.device("default.qubit", wires=n_wires)
 
@@ -197,14 +199,13 @@ class TestInterfaces:
                 qml.RZ(zi, wires=1)
             return qml.probs(wires=range(n_wires))
 
-        x = jnp.pi/8 * jnp.ones(2)
-        y = jnp.pi/8 * jnp.ones(10)
+        x = jnp.pi / 8 * jnp.ones(2)
+        y = jnp.pi / 8 * jnp.ones(10)
         z = jnp.ones(1)
         cfim = qml.qinfo.CFIM(circ, argnums=(0, 1, 2))(x, y, z)
-        assert qml.math.allclose(cfim[0], 2./3. * np.ones((2, 2)))
-        assert qml.math.allclose(cfim[1], 2./3. * np.ones((10, 10)))
-        assert qml.math.allclose(cfim[2], np.zeros((1,1)))
-
+        assert qml.math.allclose(cfim[0], 2.0 / 3.0 * np.ones((2, 2)))
+        assert qml.math.allclose(cfim[1], 2.0 / 3.0 * np.ones((10, 10)))
+        assert qml.math.allclose(cfim[2], np.zeros((1, 1)))
 
     @pytest.mark.torch
     @pytest.mark.parametrize("n_wires", np.arange(1, 5))
@@ -244,12 +245,13 @@ class TestInterfaces:
         params = np.pi / 4 * torch.tensor([1.0, 1.0], requires_grad=True)
         cfim = CFIM(circ)(params)
         assert np.allclose(cfim.detach().numpy(), np.ones((2, 2)))
-    
+
     @pytest.mark.torch
     def test_cfim_multiple_args_torch(self):
         """Testing multiple args to be differentiated using torch"""
         import torch
-        n_wires=3
+
+        n_wires = 3
 
         dev = qml.device("default.qubit", wires=n_wires)
 
@@ -266,13 +268,13 @@ class TestInterfaces:
                 qml.RZ(zi, wires=1)
             return qml.probs(wires=range(n_wires))
 
-        x = np.pi/8 * torch.ones(2, requires_grad=True)
-        y = np.pi/8 * torch.ones(10, requires_grad=True)
+        x = np.pi / 8 * torch.ones(2, requires_grad=True)
+        y = np.pi / 8 * torch.ones(10, requires_grad=True)
         z = torch.ones(1, requires_grad=True)
         cfim = qml.qinfo.CFIM(circ)(x, y, z)
-        assert np.allclose(cfim[0].detach().numpy(), 2./3. * np.ones((2, 2)))
-        assert np.allclose(cfim[1].detach().numpy(), 2./3. * np.ones((10, 10)))
-        assert np.allclose(cfim[2].detach().numpy(), np.zeros((1,1)))
+        assert np.allclose(cfim[0].detach().numpy(), 2.0 / 3.0 * np.ones((2, 2)))
+        assert np.allclose(cfim[1].detach().numpy(), 2.0 / 3.0 * np.ones((10, 10)))
+        assert np.allclose(cfim[2].detach().numpy(), np.zeros((1, 1)))
 
     @pytest.mark.tf
     @pytest.mark.parametrize("n_wires", np.arange(1, 5))
