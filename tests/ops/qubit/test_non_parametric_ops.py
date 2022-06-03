@@ -452,7 +452,6 @@ class TestEigenval:
         op = qml.ECR(wires=[0, 1])
         exp = np.linalg.eigvals(op.matrix())
         res = op.eigvals()
-        print(exp)
         assert np.allclose(res, exp)
 
     @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW])
