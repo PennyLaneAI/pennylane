@@ -426,6 +426,12 @@ class Hamiltonian(Observable):
         # Constructor-call-like representation
         return f"<Hamiltonian: terms={qml.math.shape(self.coeffs)[0]}, wires={self.wires.tolist()}>"
 
+    def _ipython_display_(self):  # pragma: no-cover
+        """Displays __str__ in ipython instead of __repr__
+        See https://ipython.readthedocs.io/en/stable/config/integrating.html
+        """
+        print(self.__str__())
+
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
 

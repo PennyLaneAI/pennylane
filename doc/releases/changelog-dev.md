@@ -5,21 +5,20 @@
 <h3>New features since last release</h3>
 
 * Parameter broadcasting within operations and tapes was introduced.
-
   [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
   [(#2590)](https://github.com/PennyLaneAI/pennylane/pull/2590)
   [(#2609)](https://github.com/PennyLaneAI/pennylane/pull/2609)
 
   Parameter broadcasting refers to passing parameters with a (single) leading additional
-  dimension (compared to the expected parameter shape) to `Operator`s.
-  Introducing this concept includes multiple changes:
+  dimension (compared to the expected parameter shape) to `Operator`'s.
+  Introducing this concept involves multiple changes:
 
   1. New class attributes
-    - `Operator.ndim_params` contains the expected number of dimensions for each parameter
+    - `Operator.ndim_params` can be specified by developers to provide the expected number of dimensions for each parameter
       of an operator.
-    - `Operator.batch_size` contains the size of an additional parameter-broadcasting axis,
+    - `Operator.batch_size` returns the size of an additional parameter-broadcasting axis,
       if present.
-    - `QuantumTape.batch_size` contains the `batch_size` of its operations (see logic below).
+    - `QuantumTape.batch_size` returns the `batch_size` of its operations (see logic below).
     - `Device.capabilities()["supports_broadcasting"]` is a Boolean flag indicating whether a
       device natively is able to apply broadcasted operators.
   2. New functionalities
@@ -40,7 +39,7 @@
       allow arguments with a broadcasting dimension in their numerical representations.
       This includes all gates in `ops/qubit/parametric_ops` and `ops/qubit/matrix_ops`.
       The broadcasted dimension is the first dimension in representations.
-      Note that the broadcasted parameter has to be passed as an `array` but not as a python
+      Note that the broadcasted parameter has to be passed as an `tensor` but not as a python
       `list` or `tuple` for most operations.
 
   **Example**
@@ -66,7 +65,6 @@
   >>> op.matrix().shape
   (3, 2, 2)
   ```
-
   A tape with such an operation will detect the `batch_size` and inherit it:
 
   ```pycon
@@ -152,7 +150,32 @@
   The code that checks for qubit wise commuting (QWC) got a performance boost that is noticable
   when many commuting paulis of the same type are measured.
 
+* Added new transform `qml.batch_partial` which behaves similarly to `functools.partial` but supports batching in the unevaluated parameters.
+  [(#2585)](https://github.com/PennyLaneAI/pennylane/pull/2585)
+
+  This is useful for executing a circuit with a batch dimension in some of its parameters:
+
+  ```python
+  dev = qml.device("default.qubit", wires=1)
+
+  @qml.qnode(dev)
+  def circuit(x, y):
+     qml.RX(x, wires=0)
+     qml.RY(y, wires=0)
+     return qml.expval(qml.PauliZ(wires=0))
+  ```
+  ```pycon
+  >>> batched_partial_circuit = qml.batch_partial(circuit, x=np.array(np.pi / 2))
+  >>> y = np.array([0.2, 0.3, 0.4])
+  >>> batched_partial_circuit(y=y)
+  tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
+  ```
+
 <h3>Improvements</h3>
+
+* IPython displays the `str` representation of a `Hamiltonian`, rather than the `repr`. This displays
+  more information about the object.
+  [(#2648)](https://github.com/PennyLaneAI/pennylane/pull/2648)
 
 * The qchem openfermion-dependent tests are localized and collected in `tests.qchem.of_tests`. The
   new module `test_structure` is created to collect the tests of the `qchem.structure` module in
@@ -285,6 +308,9 @@
   instead of the controlled version of the diagonal unitary.
   [(#2525)](https://github.com/PennyLaneAI/pennylane/pull/2525)
 
+* Updated the gradients fix [(#2485)](https://github.com/PennyLaneAI/pennylane/pull/2485) to only apply to the `strawberryfields.gbs` device, since
+  the original logic was breaking some devices. [(#2595)](https://github.com/PennyLaneAI/pennylane/pull/2595)
+
 <h3>Deprecations</h3>
 
 <h3>Documentation</h3>
@@ -304,5 +330,4 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad
-
+Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Samuel Banning, Soran Jahangiri, Utkarsh Azad
