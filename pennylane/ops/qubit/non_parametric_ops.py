@@ -1292,8 +1292,7 @@ class ECR(Operation):
     num_wires = 2
     num_params = 0
 
-    # def label(self, decimals=None, base_label=None, cache=None):
-    #   return base_label or "ECR"
+
 
     @staticmethod
     def compute_matrix():  # pylint: disable=arguments-differ
