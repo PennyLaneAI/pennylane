@@ -86,7 +86,8 @@ class DefaultQutrit(QutritDevice):
         # wire map that produces Wires objects
         consecutive_wires = range(self.num_wires)
         wire_map = zip(wires, consecutive_wires)
-        return dict(wire_map)
+        wire_map = dict(wire_map)
+        return wire_map
 
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
@@ -315,7 +316,7 @@ class DefaultQutrit(QutritDevice):
         device_wires = self.map_wires(wires)
 
         mat = self._cast(self._reshape(mat, [3] * len(device_wires) * 2), dtype=self.C_DTYPE)
-        axes = (np.arange(stop=len(device_wires), step=3 * len(device_wires)), device_wires)
+        axes = (np.arange(len(device_wires), 2 * len(device_wires)), device_wires)
         tdot = self._tensordot(mat, state, axes=axes)
 
         # tensordot causes the axes given in `wires` to end up in the first positions
