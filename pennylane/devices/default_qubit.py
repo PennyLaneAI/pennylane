@@ -540,20 +540,21 @@ class DefaultQubit(QubitDevice):
                     Hmat = observable.sparse_matrix()
 
                 state = qml.math.toarray(self.state)
-                if qml.math.ndim(state)==2:
-                    res = qml.math.array([
-                        csr_matrix.dot(
-                            csr_matrix(qml.math.conj(_state)),
-                            csr_matrix.dot(Hmat, csr_matrix(_state[..., None])),
-                        ).toarray()[0]
-                        for _state in state
-                    ])
+                if qml.math.ndim(state) == 2:
+                    res = qml.math.array(
+                        [
+                            csr_matrix.dot(
+                                csr_matrix(qml.math.conj(_state)),
+                                csr_matrix.dot(Hmat, csr_matrix(_state[..., None])),
+                            ).toarray()[0]
+                            for _state in state
+                        ]
+                    )
                 else:
                     res = csr_matrix.dot(
                         csr_matrix(qml.math.conj(state)),
                         csr_matrix.dot(Hmat, csr_matrix(state[..., None])),
                     ).toarray()[0]
-
 
             if observable.name == "Hamiltonian":
                 res = qml.math.squeeze(res)

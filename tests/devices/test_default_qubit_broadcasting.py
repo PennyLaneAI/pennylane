@@ -606,7 +606,7 @@ class TestApplyBroadcasted:
             ],
             [
                 [
-                    np.array([[1, -1j], [-1j, 1]]) * INVSQ2, 
+                    np.array([[1, -1j], [-1j, 1]]) * INVSQ2,
                     np.array([[1, -1], [1, 1]]) * INVSQ2,
                     np.array([[np.conj(T_PHASE), 0], [0, T_PHASE]]),
                 ]
@@ -632,7 +632,7 @@ class TestApplyBroadcasted:
             ],
             [
                 [
-                    np.array([[1, -1j], [-1j, 1]]) * INVSQ2, 
+                    np.array([[1, -1j], [-1j, 1]]) * INVSQ2,
                     np.array([[1, -1], [1, 1]]) * INVSQ2,
                     np.array([[np.conj(T_PHASE), 0], [0, T_PHASE]]),
                 ]
@@ -641,7 +641,7 @@ class TestApplyBroadcasted:
         (  # broadcasted parameters
             qml.DiagonalQubitUnitary,
             [0.6, 0.8],
-            [[0.6, - 0.8j], [np.exp(1j * 0.4) * 0.6, np.exp(1j * -0.4) * 0.8]],
+            [[0.6, -0.8j], [np.exp(1j * 0.4) * 0.6, np.exp(1j * -0.4) * 0.8]],
             [[[1, -1j], [np.exp(1j * 0.4), np.exp(1j * -0.4)]]],
         ),
         (  # broadcasted state
@@ -869,7 +869,7 @@ class TestApplyBroadcasted:
             ],
             [
                 [
-                    np.array([[1, -1j], [-1j, 1]]) * INVSQ2, 
+                    np.array([[1, -1j], [-1j, 1]]) * INVSQ2,
                     np.array([[1, -1], [1, 1]]) * INVSQ2,
                     np.array([[np.conj(T_PHASE), 0], [0, T_PHASE]]),
                 ]
@@ -895,7 +895,7 @@ class TestApplyBroadcasted:
             ],
             [
                 [
-                    np.array([[1, -1j], [-1j, 1]]) * INVSQ2, 
+                    np.array([[1, -1j], [-1j, 1]]) * INVSQ2,
                     np.array([[1, -1], [1, 1]]) * INVSQ2,
                     np.array([[np.conj(T_PHASE), 0], [0, T_PHASE]]),
                 ]
@@ -1237,7 +1237,7 @@ class TestExpvalBroadcasted:
         [
             (
                 qml.Hermitian,
-                [ 
+                [
                     [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
                     [0, 0, 0, 1],
                     [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
@@ -1275,7 +1275,7 @@ class TestExpvalBroadcasted:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
-            qml.RX(np.zeros(5), wires=0) # Broadcast the tape without applying an op
+            qml.RX(np.zeros(5), wires=0)  # Broadcast the tape without applying an op
             return qml.expval(qml.PauliX(0))
 
         expval = circuit()
@@ -1377,7 +1377,7 @@ class TestVarBroadcasted:
 
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
-            qml.RX(np.zeros(5), wires=0) # Broadcast the tape without applying an op
+            qml.RX(np.zeros(5), wires=0)  # Broadcast the tape without applying an op
             return qml.var(qml.PauliX(0))
 
         var = circuit()
@@ -1400,13 +1400,16 @@ class TestSampleBroadcasted:
         # initialized during reset
         dev = qml.device("default.qubit", wires=2, shots=1000)
 
-        dev.apply([qml.RX(np.array([np.pi/2, 0.0]), 0), qml.RX(np.array([np.pi/2, 0.0]), 1)])
+        dev.apply([qml.RX(np.array([np.pi / 2, 0.0]), 0), qml.RX(np.array([np.pi / 2, 0.0]), 1)])
 
         dev.shots = 10
         dev._wires_measured = {0}
         dev._samples = dev.generate_samples()
         s1 = dev.sample(qml.PauliZ(0))
-        assert s1.shape == (2, 10,)
+        assert s1.shape == (
+            2,
+            10,
+        )
 
         dev.reset()
         dev.shots = 12
@@ -1530,7 +1533,12 @@ class TestDefaultQubitIntegrationBroadcasted:
         "name,state,expected_output,par",
         [
             ("Identity", [[1, 0], [0, 1], [INVSQ2, INVSQ2]], [1, 1, 1], []),
-            ("Hermitian", [[1, 0], [0, 1], [INVSQ2, -INVSQ2]], [1, 1, 1], [np.array([[1, 1j], [-1j, 1]])]),
+            (
+                "Hermitian",
+                [[1, 0], [0, 1], [INVSQ2, -INVSQ2]],
+                [1, 1, 1],
+                [np.array([[1, 1j], [-1j, 1]])],
+            ),
         ],
     )
     def test_supported_observable_single_wire_with_parameters(
@@ -1554,7 +1562,7 @@ class TestDefaultQubitIntegrationBroadcasted:
         [
             (
                 "Hermitian",
-                [ 
+                [
                     [1 / math.sqrt(3), 0, 1 / math.sqrt(3), 1 / math.sqrt(3)],
                     [0, 0, 0, 1],
                     [1 / math.sqrt(2), 0, -1 / math.sqrt(2), 0],
@@ -1627,8 +1635,7 @@ class TestDefaultQubitIntegrationBroadcasted:
 
 
 @pytest.mark.parametrize(
-    "theta,phi,varphi",
-    [(THETA, PHI, VARPHI), (THETA, PHI[0], VARPHI), (THETA[0], PHI, VARPHI[1])]
+    "theta,phi,varphi", [(THETA, PHI, VARPHI), (THETA, PHI[0], VARPHI), (THETA[0], PHI, VARPHI[1])]
 )
 class TestTensorExpvalBroadcasted:
     """Test tensor expectation values"""
@@ -1841,8 +1848,7 @@ class TestTensorExpvalBroadcasted:
 
 
 @pytest.mark.parametrize(
-    "theta,phi,varphi",
-    [(THETA, PHI, VARPHI), (THETA, PHI[0], VARPHI), (THETA[0], PHI, VARPHI[1])]
+    "theta,phi,varphi", [(THETA, PHI, VARPHI), (THETA, PHI[0], VARPHI), (THETA[0], PHI, VARPHI[1])]
 )
 class TestTensorVarBroadcasted:
     """Tests for variance of tensor observables"""
@@ -1968,8 +1974,7 @@ class TestTensorVarBroadcasted:
 
 
 @pytest.mark.parametrize(
-    "theta,phi,varphi",
-    [(THETA, PHI, VARPHI), (THETA, PHI[0], VARPHI), (THETA[0], PHI, VARPHI[1])]
+    "theta,phi,varphi", [(THETA, PHI, VARPHI), (THETA, PHI[0], VARPHI), (THETA[0], PHI, VARPHI[1])]
 )
 class TestTensorSampleBroadcasted:
     """Test tensor expectation values"""
@@ -2155,13 +2160,13 @@ class TestDtypePreservedBroadcasted:
         [
             # TODO[dwierichs]: Include the following test cases once the operations support
             # broadcasting.
-            #qml.SingleExcitation,
-            #qml.SingleExcitationPlus,
-            #qml.SingleExcitationMinus,
-            #qml.DoubleExcitation,
-            #qml.DoubleExcitationPlus,
-            #qml.DoubleExcitationMinus,
-            #qml.OrbitalRotation,
+            # qml.SingleExcitation,
+            # qml.SingleExcitationPlus,
+            # qml.SingleExcitationMinus,
+            # qml.DoubleExcitation,
+            # qml.DoubleExcitationPlus,
+            # qml.DoubleExcitationMinus,
+            # qml.OrbitalRotation,
             qml.QubitSum,
             qml.QubitCarry,
         ],
@@ -2417,6 +2422,7 @@ class TestStateVector:
         assert np.all(res == state)
         spy.assert_called()
 
+
 class TestApplyOperationBroadcasted:
     """Unit tests for the internal _apply_operation method."""
 
@@ -2578,7 +2584,7 @@ class TestHamiltonianSupportBroadcasted:
 
         @qml.qnode(dev, diff_method="parameter-shift", interface=None)
         def circuit():
-            qml.RX(np.zeros(5), 0) # Broadcast the state by applying a broadcasted identity
+            qml.RX(np.zeros(5), 0)  # Broadcast the state by applying a broadcasted identity
             return qml.expval(H)
 
         spy = mocker.spy(dev, "expval")
@@ -2596,7 +2602,7 @@ class TestHamiltonianSupportBroadcasted:
 
         @qml.qnode(dev)
         def circuit():
-            qml.RX(np.zeros(5), 0) # Broadcast the state by applying a broadcasted identity
+            qml.RX(np.zeros(5), 0)  # Broadcast the state by applying a broadcasted identity
             return qml.expval(H)
 
         circuit()
