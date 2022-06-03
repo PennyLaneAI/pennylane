@@ -1,4 +1,13 @@
 [build-system]
-requires = ["setuptools>=61.2.0", "wheel"]
+requires = ["setuptools>=61.2.0",
+            "semantic_version==2.6",
+            "autoray>=0.3.1",
+            "pennylane-lightning>=0.23",
+            "wheel"]
+
 build-backend = "setuptools.build_meta"
 
+
+[tool.black]
+line-length = 100
+include = '\.pyi?$'
