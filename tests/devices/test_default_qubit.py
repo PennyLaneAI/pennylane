@@ -346,7 +346,6 @@ class TestApply:
         assert np.allclose(
             qubit_device_3_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
         )
-        print(qubit_device_3_wires.C_DTYPE)
         assert qubit_device_3_wires._state.dtype == qubit_device_3_wires.C_DTYPE
 
     @pytest.mark.parametrize("operation,input,expected_output", test_data_three_wires_no_parameters)
@@ -1155,6 +1154,7 @@ class TestDefaultQubitIntegration:
             "supports_reversible_diff": True,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
+            "supports_broadcasting": False,
             "passthru_devices": {
                 "torch": "default.qubit.torch",
                 "tf": "default.qubit.tf",
@@ -2527,3 +2527,70 @@ class TestHamiltonianSupport:
 
         with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
             dev.expval(H)
+
+
+class TestBroadcastingSupport:
+    """Tests that the device correctly makes use of ``broadcast_expand`` to
+    execute broadcasted tapes."""
+
+    @pytest.mark.parametrize("x", [0.2, [0.1, 0.6, 0.3], [0.1]])
+    @pytest.mark.parametrize("shots", [None, 100000])
+    def test_with_single_broadcasted_par(self, x, shots):
+        """Test that broadcasting on a circuit with a
+        single parametrized operation works."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0))
+            # return qml.expval(qml.Hamiltonian([0.3], [qml.PauliZ(0)]))
+
+        out = circuit(np.array(x))
+
+        assert circuit.device.num_executions == (1 if isinstance(x, float) else len(x))
+        tol = 1e-10 if shots is None else 1e-2
+        assert qml.math.allclose(out, qml.math.cos(x), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("x, y", [(0.2, [0.4]), ([0.1, 5.1], [0.1, -0.3])])
+    @pytest.mark.parametrize("shots", [None, 1000000])
+    def test_with_multiple_pars(self, x, y, shots):
+        """Test that broadcasting on a circuit with a
+        single parametrized operation works."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=1)
+            return [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
+
+        out = circuit(x, y)
+        expected = qml.math.stack([qml.math.cos(x) * qml.math.ones_like(y), -qml.math.sin(y)]).T
+
+        assert circuit.device.num_executions == len(y)
+        tol = 1e-10 if shots is None else 1e-2
+        assert qml.math.allclose(out, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("x, y", [(0.2, [0.4]), ([0.1, 5.1], [0.1, -0.3])])
+    @pytest.mark.parametrize("shots", [None, 1000000])
+    def test_with_Hamiltonian(self, x, y, shots):
+        """Test that broadcasting on a circuit with a
+        single parametrized operation works."""
+        dev = qml.device("default.qubit", wires=2, shots=shots)
+
+        H = qml.Hamiltonian([0.3, 0.9], [qml.PauliZ(0), qml.PauliY(1)])
+        H.compute_grouping()
+
+        @qml.qnode(dev)
+        def circuit(x, y):
+            qml.RX(x, wires=0)
+            qml.RX(y, wires=1)
+            return qml.expval(H)
+
+        out = circuit(x, y)
+        expected = 0.3 * qml.math.cos(x) * qml.math.ones_like(y) - 0.9 * qml.math.sin(y)
+
+        assert circuit.device.num_executions == len(y)
+        tol = 1e-10 if shots is None else 1e-2
+        assert qml.math.allclose(out, expected, atol=tol, rtol=0)

@@ -534,25 +534,12 @@ class TestBarrier:
         assert optimized_gates == 2
 
     def test_barrier_adjoint(self):
-        """Test if Barrier is correctly included in queue after adjoint"""
-        dev = qml.device("default.qubit", wires=2)
+        """Test if adjoint of a Barrier is decomposed correctly."""
 
-        @qml.qnode(dev)
-        def circuit():
-            barrier()
-            qml.adjoint(barrier)()
-            return qml.state()
+        base = qml.Barrier(wires=(0, 1))
+        adj = qml.ops.op_math.Adjoint(base)
 
-        def barrier():
-            qml.PauliX(wires=0)
-            qml.Barrier(wires=[0, 1])
-            qml.CNOT(wires=[0, 1])
-
-        circuit()
-        queue = circuit.tape.queue
-
-        assert queue[1].name == "Barrier"
-        assert queue[4].name == "Barrier"
+        assert adj.decomposition()[0].name == "Barrier"
 
     def test_barrier_control(self):
         """Test if Barrier is correctly included in queue when controlling"""
@@ -1197,70 +1184,28 @@ def test_control_wires(op, control_wires):
     assert op.control_wires == control_wires
 
 
-all_ops = [
+involution_ops = [  # ops who are their own inverses
     qml.Identity(0),
     qml.Hadamard(0),
     qml.PauliX(0),
     qml.PauliY(0),
     qml.PauliZ(0),
-    qml.S(wires=0),
-    qml.T(wires=0),
-    qml.SX(wires=0),
-    qml.CNOT(wires=(0, 1)),
-    qml.CZ(wires=(0, 1)),
-    qml.CY(wires=(0, 1)),
-    qml.SWAP(wires=(0, 1)),
-    qml.ISWAP(wires=(0, 1)),
-    qml.SISWAP(wires=(0, 1)),
-    qml.SQISW(wires=(0, 1)),
-    qml.CSWAP(wires=(0, 1, 2)),
-    qml.Toffoli(wires=(0, 1, 2)),
+    qml.CNOT((0, 1)),
+    qml.CZ((0, 1)),
+    qml.CY((0, 1)),
+    qml.SWAP((0, 1)),
+    qml.CSWAP((0, 1, 2)),
+    qml.Toffoli((0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
     qml.Barrier(0),
-    qml.WireCut(wires=0),
-]
-
-involution_ops = [  # ops who are their own inverses
-    qml.Identity,
-    qml.Hadamard,
-    qml.PauliX,
-    qml.PauliY,
-    qml.PauliZ,
-    qml.CNOT,
-    qml.CZ,
-    qml.CY,
-    qml.SWAP,
-    qml.CSWAP,
-    qml.Toffoli,
-    qml.MultiControlledX,
-    qml.Barrier,
-    qml.WireCut,
+    qml.WireCut(0),
 ]
 
 
-@pytest.mark.parametrize("op", all_ops)
+@pytest.mark.parametrize("op", involution_ops)
 def test_adjoint_method(op, tol):
-    for num_adjoint_calls in range(1, 4):
+    adj_op = copy.copy(op)
+    for _ in range(4):
+        adj_op = adj_op.adjoint()
 
-        adj_op = copy.copy(op)
-        for i in range(num_adjoint_calls):
-            adj_op = adj_op.adjoint()
-
-        if (type(op) in involution_ops) or (num_adjoint_calls % 2 == 0):
-            expected_adj_op = copy.copy(op)
-
-        else:
-            expected_adj_op = copy.copy(op)
-            expected_adj_op.inverse = not expected_adj_op.inverse
-
-        assert adj_op.name == expected_adj_op.name
-        assert (
-            adj_op.label() == expected_adj_op.label()
-        )  # check that the name and labels are the same
-
-        try:
-            np.testing.assert_allclose(
-                adj_op.matrix(), expected_adj_op.matrix(), atol=tol
-            )  # compare matrix if its defined
-        except qml.operation.OperatorPropertyUndefined:
-            pass
+        assert adj_op.name == op.name
