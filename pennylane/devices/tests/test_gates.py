@@ -67,14 +67,14 @@ ops = {
     "RZ": qml.RZ(0, wires=[0]),
     "Rot": qml.Rot(0, 0, 0, wires=[0]),
     "S": qml.S(wires=[0]),
-    "Adjoint(S)": qml.ops.op_math.Adjoint(qml.S(wires=[0])),
+    "Adjoint(S)": qml.adjoint(qml.S(wires=[0])),
     "SWAP": qml.SWAP(wires=[0, 1]),
     "ISWAP": qml.ISWAP(wires=[0, 1]),
-    "Adjoint(ISWAP)": qml.ops.op_math.Adjoint(qml.ISWAP(wires=[0, 1])),
+    "Adjoint(ISWAP)": qml.adjoint(qml.ISWAP(wires=[0, 1])),
     "T": qml.T(wires=[0]),
-    "Adjoint(T)": qml.ops.op_math.Adjoint(qml.T(wires=[0])),
+    "Adjoint(T)": qml.adjoint(qml.T(wires=[0])),
     "SX": qml.SX(wires=[0]),
-    "Adjoint(SX)": qml.ops.op_math.Adjoint(qml.SX(wires=[0])),
+    "Adjoint(SX)": qml.adjoint(qml.SX(wires=[0])),
     "Barrier": qml.Barrier(wires=[0, 1, 2]),
     "WireCut": qml.WireCut(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
@@ -214,9 +214,8 @@ IsingZZ = lambda phi: np.array(
 
 def adjoint_tuple(op, orig_mat):
     """Returns op constructor and matrix for provided base ops."""
-    op_func = lambda wires: qml.ops.op_math.Adjoint(op(wires))
     mat = qml.math.conj(qml.math.transpose(orig_mat))
-    return (op_func, mat)
+    return (qml.adjoint(op), mat)
 
 
 # list of all non-parametrized single-qubit gates,

@@ -202,6 +202,7 @@
   [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
 
 * Several non-decomposable `Adjoint` ops are added to the device test suite.
+  [(#2658)](https://github.com/PennyLaneAI/pennylane/pull/2658)
 
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
   for many classes.
