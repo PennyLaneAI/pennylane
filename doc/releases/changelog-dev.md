@@ -4,6 +4,14 @@
 
 <h3>New features since last release</h3>
 
+* Support adding `Observable` objects to the integer `0`.
+  [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603)
+
+  This allows us to directly sum a list of observables as follows:
+  ```
+  H = sum([qml.PauliX(i) for i in range(10)])
+  ```
+
 * Parameter broadcasting within operations and tapes was introduced.
   [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
   [(#2590)](https://github.com/PennyLaneAI/pennylane/pull/2590)
@@ -272,6 +280,9 @@
 * Introduced a new `is_hermitian` property to determine if an operator can be used in a measurement process.
   [(#2629)](https://github.com/PennyLaneAI/pennylane/pull/2629)
 
+* Added separate requirements_dev.txt for separation of concerns for code development and just using PennyLane.
+  [(#2635)](https://github.com/PennyLaneAI/pennylane/pull/2635)
+
 <h3>Breaking changes</h3>
 
 * The `qml.queuing.Queue` class is now removed.
@@ -305,6 +316,9 @@
   ```
 
 <h3>Bug fixes</h3>
+
+* Fixed a bug where returning `qml.density_matrix` using the PyTorch interface would return a density matrix with wrong shape.
+  [(#2643)](https://github.com/PennyLaneAI/pennylane/pull/2643)
 
 * Fixed a bug to make `param_shift_hessian` work with QNodes in which gates marked
   as trainable do not have any impact on the QNode output.
@@ -357,4 +371,5 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Samuel Banning, Soran Jahangiri, Utkarsh Azad
+Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, 
+Utkarsh Azad, WingCode

@@ -97,6 +97,7 @@ import abc
 import copy
 import itertools
 import functools
+import numbers
 import warnings
 from enum import IntEnum
 from scipy.sparse import kron, eye, coo_matrix
@@ -1659,11 +1660,15 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
+        if isinstance(other, numbers.Number) and other == 0:
+            return self
         if isinstance(other, qml.Hamiltonian):
             return other + self
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
         raise ValueError(f"Cannot add Observable and {type(other)}")
+
+    __radd__ = __add__
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
