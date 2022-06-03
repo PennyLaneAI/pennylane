@@ -24,9 +24,9 @@ from operator import matmul
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import AnyWires, Operation, expand_matrix
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
-from pennylane.utils import expand, pauli_eigs
+from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / math.sqrt(2)
@@ -1079,7 +1079,7 @@ class PauliRot(Operation):
             [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
 
-        return expand(
+        return expand_matrix(
             qml.math.dot(
                 qml.math.conj(conjugation_matrix),
                 qml.math.dot(multi_Z_rot_matrix, conjugation_matrix),
