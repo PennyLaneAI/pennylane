@@ -41,7 +41,7 @@ from pennylane import numpy as np
 )
 def test_rank(factors, eigvals, rank_r_ref, rank_m_ref):
     r"""Test that rank function returns the correct ranks."""
-    rank_r, rank_m = qml.resources.rank
+    rank_r, rank_m = qml.resources.rank(factors, eigvals)
 
     assert rank_r == rank_r_ref
     assert rank_m == rank_m_ref
