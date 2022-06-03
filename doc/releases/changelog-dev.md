@@ -152,7 +152,7 @@
   when many commuting paulis of the same type are measured.
 
 * Added the `qml.ECR` operation to represent the echoed RZX(pi/2) gate.
-  [(#2613)(https://github.com/PennyLaneAI/pennylane/pull/2613)]
+  [(#2613)](https://github.com/PennyLaneAI/pennylane/pull/2613)
 
 * Added new transform `qml.batch_partial` which behaves similarly to `functools.partial` but supports batching in the unevaluated parameters.
   [(#2585)](https://github.com/PennyLaneAI/pennylane/pull/2585)
@@ -276,6 +276,9 @@
 * Introduced a new `is_hermitian` property to determine if an operator can be used in a measurement process.
   [(#2629)](https://github.com/PennyLaneAI/pennylane/pull/2629)
 
+* Added separate requirements_dev.txt for separation of concerns for code development and just using PennyLane.
+  [(#2635)](https://github.com/PennyLaneAI/pennylane/pull/2635)
+
 <h3>Breaking changes</h3>
 
 * The `qml.queuing.Queue` class is now removed.
@@ -309,6 +312,9 @@
   ```
 
 <h3>Bug fixes</h3>
+
+* Fixed a bug where returning `qml.density_matrix` using the PyTorch interface would return a density matrix with wrong shape.
+  [(#2643)](https://github.com/PennyLaneAI/pennylane/pull/2643)
 
 * Fixed a bug to make `param_shift_hessian` work with QNodes in which gates marked
   as trainable do not have any impact on the QNode output.
@@ -361,4 +367,5 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Avani Bhardwaj, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Soran Jahangiri, Utkarsh Azad
+Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Samuel Banning, Soran Jahangiri, 
+Utkarsh Azad, WingCode
