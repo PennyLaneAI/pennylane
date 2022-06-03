@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the equal function
+Unit tests for the equal function.
+Tests are divided by number of parameters and wires different operators take.
 """
 import pytest
 import numpy as np
@@ -108,14 +109,17 @@ PARAMETRIZED_OPERATIONS_COMBINATIONS = list(
 class TestEqual:
     @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
     def test_equal_simple_diff_op(self, ops):
+        """Test different operators return False"""
         assert not qml.equal(ops[0], ops[1], check_trainability=False, check_interface=False)
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
     def test_equal_simple_same_op(self, op1):
+        """Test same operators return True"""
         assert qml.equal(op1, op1, check_trainability=False, check_interface=False)
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_1W)
     def test_equal_simple_op_1p1w(self, op1):
+        """Test changing parameter or wire returns False"""
         wire = 0
         param = 0.123
         assert qml.equal(
@@ -139,6 +143,7 @@ class TestEqual:
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_1W)
     def test_equal_op_1p1w(self, op1):
+        """Test optional arguments are working"""
         wire = 0
 
         torch = pytest.importorskip("torch")
@@ -182,6 +187,7 @@ class TestEqual:
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_2W)
     def test_equal_op_1p2w(self, op1):
+        """Test optional arguments are working"""
         wire = [0, 1]
 
         torch = pytest.importorskip("torch")
@@ -225,6 +231,7 @@ class TestEqual:
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_2W)
     def test_equal_simple_op_1p2w(self, op1):
+        """Test changing parameter or wire returns False"""
         wire = [0, 1]
         param = 0.123
         assert qml.equal(
@@ -248,6 +255,7 @@ class TestEqual:
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_4W)
     def test_equal_op_1p4w(self, op1):
+        """Test optional arguments are working"""
         wire = [0, 1, 2, 3]
 
         torch = pytest.importorskip("torch")
@@ -291,6 +299,7 @@ class TestEqual:
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_4W)
     def test_equal_simple_op_1p4w(self, op1):
+        """Test changing parameter or wire returns False"""
         wire = [0, 1, 2, 3]
         param = 0.123
         assert qml.equal(
@@ -314,6 +323,7 @@ class TestEqual:
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_3P_1W)
     def test_equal_op_3p1w(self, op1):
+        """Test optional arguments are working"""
         wire = 0
 
         torch = pytest.importorskip("torch")
@@ -357,6 +367,7 @@ class TestEqual:
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_3P_1W)
     def test_equal_simple_op_3p1w(self, op1):
+        """Test changing parameter or wire returns False"""
         wire = 0
         param = [0.123] * 3
         assert qml.equal(
@@ -379,6 +390,7 @@ class TestEqual:
         )
 
     def test_equal_op_remaining(self):
+        """Test optional arguments are working"""
         wire = 0
 
         torch = pytest.importorskip("torch")
@@ -638,6 +650,7 @@ class TestEqual:
         )
 
     def test_equal_simple_op_remaining(self):
+        """Test changing parameter or wire returns False"""
         wire = 0
         param = [0.123] * 2
         op1 = PARAMETRIZED_OPERATIONS_2P_1W[0]
