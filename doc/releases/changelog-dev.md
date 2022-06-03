@@ -272,6 +272,9 @@
 * Introduced a new `is_hermitian` property to determine if an operator can be used in a measurement process.
   [(#2629)](https://github.com/PennyLaneAI/pennylane/pull/2629)
 
+* Added separate requirements_dev.txt for separation of concerns for code development and just using PennyLane.
+  [(#2635)](https://github.com/PennyLaneAI/pennylane/pull/2635)
+
 <h3>Breaking changes</h3>
 
 * The `qml.queuing.Queue` class is now removed.
@@ -361,4 +364,5 @@ This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
 Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Samuel Banning, Soran Jahangiri, 
-Utkarsh Azad
+Utkarsh Azad, WingCode
+
