@@ -146,7 +146,6 @@ class DefaultQubitTorch(DefaultQubit):
     )
     _transpose = staticmethod(lambda a, axes=None: a.permute(*axes))
     _asnumpy = staticmethod(lambda x: x.cpu().numpy())
-    _conj = staticmethod(torch.conj)
     _real = staticmethod(torch.real)
     _imag = staticmethod(torch.imag)
     _norm = staticmethod(torch.norm)
