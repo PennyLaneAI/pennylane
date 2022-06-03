@@ -19,6 +19,8 @@ from pennylane.measurements import MeasurementProcess
 # tolerance for numerical errors
 tolerance = 1e-10
 
+OMEGA = np.exp(2 * np.pi * 1j / 3)
+
 
 class DefaultQutrit(QutritDevice):
     """Default qutrit device for PennyLane
@@ -66,7 +68,10 @@ class DefaultQutrit(QutritDevice):
         self._pre_rotated_state = self._state
 
         # TODO: Add operations
-        self._apply_ops = {}
+        self._apply_ops = {
+            "TShift": self._apply_tshift,
+            "TClock": self._apply_tclock,
+        }
 
     @functools.lru_cache()
     def map_wires(self, wires):
@@ -86,8 +91,7 @@ class DefaultQutrit(QutritDevice):
         # wire map that produces Wires objects
         consecutive_wires = range(self.num_wires)
         wire_map = zip(wires, consecutive_wires)
-        wire_map = dict(wire_map)
-        return wire_map
+        return dict(wire_map)
 
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
@@ -150,6 +154,81 @@ class DefaultQutrit(QutritDevice):
         #     return self._apply_unitary_einsum(state, matrix, wires)
 
         return self._apply_unitary(state, matrix, wires)
+
+    def _apply_tshift(self, state, axes, inverse=False):
+        """Applies a Shift gate by rolling 1 unit along the axis specified in ``axes``.
+
+        Rolling by 1 unit along the axis means that the :math:`|0 \rangle` state with index ``0`` is
+        shifted to the :math:`|1 \rangle` state with index ``1``. Likewise, since rolling beyond
+        the last index loops back to the first, :math:`|2 \rangle` is transformed to
+        :math:`|0\rangle`.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+            inverse (bool): whether to apply the inverse operation
+
+        Returns:
+            array[complex]: output state
+        """
+        shift = -1 if inverse else 1
+        return self._roll(state, shift, axes[0])
+
+    def _apply_tclock(self, state, axes, inverse=False):
+        """Applies a ternary Clock gate by adding a phase of :math:`\omega` to the 1 index and
+        :math:`\omega^{2}` to the 2 index along the axis specified in ``axes``
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+            inverse (bool): whether to apply the inverse operation
+
+        Returns:
+            array[complex]: output state
+        """
+        partial_state = self._apply_phase(state, axes, 1, OMEGA, inverse)
+        return self._apply_phase(partial_state, axes, 2, OMEGA**2, inverse)
+
+    def _apply_tswap(self, state, axes, **kwargs):
+        """_summary_
+
+        Args:
+            state (_type_): _description_
+            axes (_type_): _description_
+        """
+        pass
+
+    def _apply_tadd(self, state, axes, **kwargs):
+        """_summary_
+
+        Args:
+            state (_type_): _description_
+            axes (_type_): _description_
+        """
+        pass
+
+    def _apply_phase(self, state, axes, index, parameters, inverse=False):
+        """Applies a phase onto the specified index along the axis specified in ``axes``.
+
+        Args:
+            state (array[complex]): input state
+            axes (List[int]): target axes to apply transformation
+            index (int): target index of axis to apply phase to
+            parameters (float): phase to apply
+            inverse (bool): whether to apply the inverse phase
+
+        Returns:
+            array[complex]: output state
+        """
+        num_wires = len(state.shape)
+        # sl_0 = _get_slice(0, axes[0], num_wires)
+        # sl_1 = _get_slice(1, axes[0], num_wires)
+        # sl_2 = _get_slice(2, axes[0], num_wires)
+        slices = [_get_slice(i, axes[0], num_wires) for i in range(3)]
+
+        phase = self._conj(parameters) if inverse else parameters
+        state_slices = [self._const_mul(phase if i == index else 1, state[slices[i]]) for i in range(3)]
+        return self._stack(state_slices, axis=axes[0])
 
     def expval(self, observable, shot_range=None, bin_size=None):
         # TODO: Update later
