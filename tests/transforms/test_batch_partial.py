@@ -729,13 +729,14 @@ def test_different_batchdim_error():
     """Test that an error is raised when different batch
     dimensions are given to the decorated QNode"""
     dev = qml.device("default.qubit", wires=2)
-    
+
     # To test this error message, we need to use operations that do
     # not report problematic broadcasting dimensions (in place of problematic
     # batch dimensions) at tape creation. For this, we "delete" `ndim_params`.
 
     class RX_no_ndim(qml.RX):
         ndim_params = property(lambda self: self._ndim_params)
+
     class RY_no_ndim(qml.RY):
         ndim_params = property(lambda self: self._ndim_params)
 
