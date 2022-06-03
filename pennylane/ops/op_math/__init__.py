@@ -22,3 +22,5 @@ This module contains classes and functions for Operator arithmetic.
 
 from .adjoint_class import Adjoint
 from .adjoint_constructor import adjoint
+
+from .control import ctrl, ControlledOperation

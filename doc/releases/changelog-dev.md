@@ -198,6 +198,9 @@
   array([1.-0.j, 0.-1.j])
   ```
 
+  * The `ctrl` transform and `ControlledOperation` have been moved to the new `qml.ops.op_math`
+    submodule.  The developer-facing `ControlledOperation` class is no longer imported top-level.
+
 * The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
   [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
 
