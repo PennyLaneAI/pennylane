@@ -430,6 +430,21 @@ class TestMatrix:
         param = tf.Variable(2.34)
         assert self.check_matrix(param, z)
 
+    def test_matrix_wire_order(self):
+        """Test that the wire_order keyword rearranges ording."""
+
+        param = 1.234
+        z = 3
+        base = qml.IsingXX(param, wires=(0, 1))
+        op = Pow(base, z)
+
+        compare_op = qml.IsingXX(param * z, wires=(0, 1))
+
+        op_mat = op.matrix(wire_order=(1, 0))
+        compare_mat = compare_op.matrix(wire_order=(1, 0))
+
+        assert qml.math.allclose(op_mat, compare_mat)
+
 
 class TestSparseMatrix:
     """Tests involving the sparse matrix method."""
