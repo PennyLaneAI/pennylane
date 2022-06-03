@@ -152,7 +152,7 @@
   when many commuting paulis of the same type are measured.
 
 * Added the `qml.ECR` operation to represent the echoed RZX(pi/2) gate.
-  [(#2613)(https://github.com/PennyLaneAI/pennylane/pull/2613)]
+  [(#2613)](https://github.com/PennyLaneAI/pennylane/pull/2613)
 
 * Added new transform `qml.batch_partial` which behaves similarly to `functools.partial` but supports batching in the unevaluated parameters.
   [(#2585)](https://github.com/PennyLaneAI/pennylane/pull/2585)
