@@ -33,6 +33,17 @@ def _i(name):
     return import_module(name)
 
 
+# -------------------------------- SciPy --------------------------------- #
+# the following is required to ensure that SciPy sparse Hamiltonians passed to
+# qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
+ar.register_function("scipy", "to_numpy", lambda x: x)
+
+ar.register_function("scipy", "shape", np.shape)
+ar.register_function("scipy", "conj", np.conj)
+ar.register_function("scipy", "transpose", np.transpose)
+ar.register_function("scipy", "ndim", np.ndim)
+
+
 # -------------------------------- NumPy --------------------------------- #
 from scipy.linalg import block_diag as _scipy_block_diag
 
@@ -43,12 +54,6 @@ ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("numpy", "unstack", list)
 ar.register_function("builtins", "unstack", list)
-
-# the following is required to ensure that SciPy sparse Hamiltonians passed to
-# qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
-ar.register_function("scipy", "to_numpy", lambda x: x)
-ar.register_function("scipy", "shape", np.shape)
-ar.register_function("scipy", "ndim", np.ndim)
 
 
 def _scatter_element_add_numpy(tensor, index, value):

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the QuantumTape"""
 import copy
+from this import d
 import warnings
 from collections import defaultdict
 
@@ -879,7 +880,7 @@ class TestParameters:
         assert np.all(obs.data[0] == H2)
 
 
-class TestInverse:
+class TestInverseAdjoint:
     """Tests for tape inversion"""
 
     def test_inverse(self):
@@ -903,6 +904,35 @@ class TestInverse:
 
         # check that parameter order has reversed
         assert tape.get_parameters() == [init_state, p[1], p[2], p[3], p[0]]
+
+    def test_adjoint(self):
+        """Test that tape.adjoint is a copy of in-place inversion."""
+
+        init_state = np.array([1, 1])
+        p = [0.1, 0.2, 0.3, 0.4]
+
+        with QuantumTape() as tape:
+            prep = qml.BasisState(init_state, wires=[0, "a"])
+            ops = [qml.RX(p[0], wires=0), qml.Rot(*p[1:], wires=0).inv(), qml.CNOT(wires=[0, "a"])]
+            m1 = qml.probs(wires=0)
+            m2 = qml.probs(wires="a")
+
+        with QuantumTape() as tape2:
+            adjoint_tape = tape.adjoint()
+
+        assert tape2[0] is adjoint_tape
+
+        assert id(adjoint_tape) != id(tape)
+        assert isinstance(adjoint_tape, QuantumTape)
+
+        tape.inv()
+
+        for op1, op2 in zip(adjoint_tape.circuit, tape.circuit):
+            assert op1.__class__ is op2.__class__
+            if hasattr(op1, "inverse"):
+                assert op1.inverse == op2.inverse
+            if hasattr(op1, "data"):
+                assert qml.math.allclose(op1.data, op2.data)
 
     def test_parameter_transforms(self):
         """Test that inversion correctly changes trainable parameters"""
