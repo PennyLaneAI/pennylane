@@ -18,7 +18,6 @@ works correctly an a device.
 # pylint: disable=no-self-use
 # pylint: disable=too-many-arguments
 # pylint: disable=pointless-statement
-# pylint: disable=no-member
 from cmath import exp
 from math import cos, sin, sqrt
 
@@ -95,7 +94,7 @@ ops = {
     "U2": qml.U2(0, 0, wires=0),
     "U3": qml.U3(0, 0, 0, wires=0),
     "SISWAP": qml.SISWAP(wires=[0, 1]),
-    "Adjoint(SISWAP)": qml.ops.op_math.Adjoint(qml.SISWAP(wires=[0, 1])),
+    "Adjoint(SISWAP)": qml.adjoint(qml.SISWAP(wires=[0, 1])),
     "OrbitalRotation": qml.OrbitalRotation(0, wires=[0, 1, 2, 3]),
 }
 
