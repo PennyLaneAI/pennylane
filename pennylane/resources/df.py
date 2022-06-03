@@ -25,8 +25,8 @@ def rank(factors, eigvals, tol=1e-5):
     First, the tensor is factorized such that
 
     .. math::
-￼
-￼           h_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
+
+        h_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
 
     where :math:`R` is the rank of the first factorization step. Then, the matrices :math:`L^{(r)}`
     are diagonalized to obtain a set of eigenvalues and eigenvectors for each matrix which can be
