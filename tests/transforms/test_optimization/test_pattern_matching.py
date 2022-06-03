@@ -151,6 +151,41 @@ class TestPatternMatchingOptimization:
 
         assert np.allclose(qml.matrix(optimized_qnode)(), qml.matrix(qnode)())
 
+    def test_adjoint_s(self):
+        def circuit():
+            qml.S(wires=0)
+            qml.PauliZ(wires=0)
+            qml.S(wires=1)
+            qml.CZ(wires=[0, 1])
+            qml.S(wires=1)
+            qml.S(wires=2)
+            qml.CZ(wires=[1, 2])
+            qml.S(wires=2)
+            return qml.expval(qml.PauliX(wires=0))
+
+        with qml.tape.QuantumTape() as template:
+            qml.S(wires=0)
+            qml.S(wires=0)
+            qml.PauliZ(wires=0)
+
+        dev = qml.device("default.qubit", wires=5)
+
+        qnode = qml.QNode(circuit, dev)
+        qnode()
+
+        optimized_qfunc = pattern_matching_optimization(pattern_tapes=[template])(circuit)
+        optimized_qnode = qml.QNode(optimized_qfunc, dev)
+        optimized_qnode()
+
+        s_qnode = qml.specs(qnode)()["gate_types"]["S"]
+        s_adjoint_optimized_qnode = qml.specs(optimized_qnode)()["gate_types"]["Adjoint(S)"]
+
+        assert len(qnode.qtape.operations) == 8
+        assert s_qnode == 5
+
+        assert len(optimized_qnode.qtape.operations) == 5
+        assert s_adjoint_optimized_qnode == 1
+
     def test_template_with_toffoli(self):
         """Test pattern matching algorithm for circuit optimization with a template having Toffoli gates."""
 

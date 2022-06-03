@@ -14,6 +14,7 @@
 """Transform for cancelling adjacent inverse gates in quantum circuits."""
 # pylint: disable=too-many-branches
 from pennylane import apply
+from pennylane.ops.op_math import Adjoint
 from pennylane.wires import Wires
 from pennylane.transforms import qfunc_transform
 
@@ -25,10 +26,51 @@ from pennylane.ops.qubit.attributes import (
 from .optimization_utils import find_next_gate
 
 
+def _ops_equal(op1, op2):
+    """Checks if two operators are equal up to class, data, hyperparameters, and wires"""
+    return (
+        op1.__class__ is op2.__class__
+        and (op1.data == op2.data)
+        and (op1.hyperparameters == op2.hyperparameters)
+        and (op1.wires == op2.wires)
+    )
+
+
+def _are_inverses(op1, op2):
+    """Checks if two operators are inverses of each other
+
+    Args:
+        op1 (~.Operator)
+        op2 (~.Operator)
+
+    Returns:
+        Bool
+    """
+    # op1 is self-inverse and the next gate is also op1
+    if op1 in self_inverses and op1.name == op2.name:
+        return True
+
+    # Either gate is the in-place inverse of the other
+    name_set = {op1.name, op2.name}
+    shortest_name = min(name_set)
+    if {shortest_name, shortest_name + ".inv"} == name_set:
+        return True
+
+    # op1 is an `Adjoint` class and its base is equal to op2
+    if isinstance(op1, Adjoint) and _ops_equal(op1.base, op2):
+        return True
+
+    # op2 is an `Adjoint` class and its base is equal to op1
+    if isinstance(op2, Adjoint) and _ops_equal(op2.base, op1):
+        return True
+
+    return False
+
+
 @qfunc_transform
 def cancel_inverses(tape):
     """Quantum function transform to remove any operations that are applied next to their
-    (self-)inverse.
+    (self-)inverses or adjoint.
 
     Args:
         qfunc (function): A quantum function.
@@ -94,23 +136,8 @@ def cancel_inverses(tape):
         # Otherwise, get the next gate
         next_gate = list_copy[next_gate_idx]
 
-        # There are then three possibilities that may lead to inverse cancellation. For a gate U,
-        # 1. U is self-inverse, and the next gate is also U
-        # 2. The current gate is U.inv and the next gate is U
-        # 3. The current gate is U and the next gate is U.inv
-
-        # Case 1
-        are_self_inverses = (current_gate in self_inverses) and current_gate.name == next_gate.name
-
-        # Cases 2 and 3
-        are_inverses = False
-        name_set = set([current_gate.name, next_gate.name])
-        shortest_name = min(name_set)
-        if {shortest_name, shortest_name + ".inv"} == name_set:
-            are_inverses = True
-
         # If either of the two flags is true, we can potentially cancel the gates
-        if are_self_inverses or are_inverses:
+        if _are_inverses(current_gate, next_gate):
             # If the wires are the same, then we can safely remove both
             if current_gate.wires == next_gate.wires:
                 list_copy.pop(next_gate_idx)
