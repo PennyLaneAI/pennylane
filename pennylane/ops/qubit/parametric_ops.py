@@ -2602,7 +2602,7 @@ class IsingXY(Operation):
         **Example:**
 
         >>> qml.IsingXY.compute_decomposition(1.23, wires=(0,1))
-        [CY(wires=[0, 1]), RY(0.615, wires=[0]), RX(-0.615, wires=[1]), CY(wires=[0, 1]), Hadamard(wires=[0])]
+        [Hadamard(wires=[0]), CY(wires=[0, 1]), RY(0.615, wires=[0]), RX(-0.615, wires=[1]), CY(wires=[0, 1]), Hadamard(wires=[0])]
 
         """
         return [
