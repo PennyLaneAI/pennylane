@@ -2847,12 +2847,8 @@ class IsingXY(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        if phi > 0:
-            pos_phase = qml.math.exp(1.0j * phi / 2)
-            neg_phase = qml.math.exp(-1.0j * phi / 2)
-        else:
-            neg_phase = qml.math.exp(1.0j * phi / 2)
-            pos_phase = qml.math.exp(-1.0j * phi / 2)
+        pos_phase = qml.math.exp(1.0j * phi / 2)
+        neg_phase = qml.math.exp(-1.0j * phi / 2)
 
         return qml.math.stack([pos_phase, neg_phase, 1, 1])
 
