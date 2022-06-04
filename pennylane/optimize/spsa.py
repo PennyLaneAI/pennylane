@@ -18,7 +18,7 @@ from pennylane import numpy as np
 
 class SPSAOptimizer:
     r"""The Simultaneous Perturbation Stochastic Approximation method (SPSA)
-    is an iterative algortihm for optimization where the input information
+    is an iterative algorithm for optimization where the input information
     may be contaminated with noise.
     In contrast to other methods that perform multiple operations to determine
     the gradient, SPSA only measures two times the loss function to obtain it.
@@ -54,11 +54,18 @@ class SPSAOptimizer:
         * In case of using ``step_and_cost`` method instead of ``step``,
         the number of executions increment to calculate the cost function.
 
-        * In cases of hybrid classical-quantum workflows like the implementation of a QNode
-        as a layer of a Keras sequential model, possible optimizers for the model
-        are from the classical platform i.e. `tf.keras.optimizers.SGD <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/SGD>`_
+    .. note::
 
+        In cases of hybrid classical-quantum workflows:
 
+        * In implementation of a QNode as a layer of a Keras sequential model, 
+        possible optimizers for the model are from the classical platform i.e. `tf.keras.optimizers.SGD <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/SGD>`_
+
+        * In order to use SPSAOptimizer we have to extract the values of the classical tensor
+        in order to use it in the quantum circuit and assign the new parameters to the 
+        classical tensor after the quantum circuit
+
+         
 
     **Examples:**
 
@@ -85,6 +92,22 @@ class SPSAOptimizer:
     >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
     >>> for n in range(max_iterations):
     >>>     params, energy = opt.step_and_cost(cost, params)
+
+    Example of hybrid classical-quantum workflow:
+
+    >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
+    >>> init_params = tf.Variable([3.97507603, 3.00854038])
+    >>> tensor2 = tf.Variable([3.97507603, 3.00854038])
+    >>> init = tf.compat.v1.global_variables_initializer()
+
+    >>> with tf.compat.v1.Session() as sess:
+    >>>    sess.run(init)
+    >>>    params = init_params
+    >>>    for n in range(max_iterations):
+    >>>        new_params, prev_energy = opt.step_and_cost(cost_fn_spsa, np.tensor(params.eval(sess)))
+    >>>        params.assign(new_params, sess)
+    >>>        tensor2.assign(new_params, sess)
+
 
 
     Keyword Args:
