@@ -83,7 +83,7 @@ class SPSAOptimizer:
             If single arg is provided, list [array] is replaced by array.
         """
 
-        new_args = self.step(objective_fn, a, c, A, alpha, gamma, *args, **kwargs)
+        new_args = self.step(objective_fn, *args, a=a, c=c, A=A, alpha=alpha, gamma=gamma, **kwargs)
 
         forward = objective_fn(*args, **kwargs)
 
@@ -119,8 +119,8 @@ class SPSAOptimizer:
         if gamma is None:
             gamma = self.gamma
 
-        g = self.compute_grad(objective_fn, args, kwargs, c, self.k, gamma)
-        new_args = self.apply_grad(g, args, a, A, self.k, alpha)
+        g = self.compute_grad(objective_fn, args, kwargs, c=c, k=self.k, gamma=gamma)
+        new_args = self.apply_grad(g, args, a=a, A=A, k=self.k, alpha=alpha)
 
         self.k += 1
 
@@ -157,15 +157,14 @@ class SPSAOptimizer:
 
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
-                delta.append(np.random.binomial(1, 1 / 2, arg.size) * 2 - 1)
-                args_minus_pert[index] = arg - ck * delta[index]
-                args_plus_pert[index] = arg + ck * delta[index]
+                di = np.random.binomial(1, 1 / 2, arg.size) * 2 - 1
+                args_minus_pert[index] = arg - ck * di
+                args_plus_pert[index] = arg + ck * di
+                delta.append(di)
 
-        diff_sc = (
+        grad = (
             objective_fn(*args_plus_pert, **kwargs) - objective_fn(*args_minus_pert, **kwargs)
-        ) / (2 * ck)
-
-        grad = (diff_sc / di for di in delta)
+        ) / (2 * ck * np.array(delta, dtype=object))
 
         num_trainable_args = sum(getattr(arg, "requires_grad", False) for arg in args)
         grad = (grad,) if num_trainable_args == 1 else grad
@@ -191,7 +190,7 @@ class SPSAOptimizer:
         """
 
         if a is None:
-            a = (A + 1) ** alpha * 0.1 / max(g.max() for g in grad)
+            a = (A + 1) ** alpha * 0.1 / (np.abs(np.concatenate(grad)).max() + 1)
             self.a = a
 
         ak = a / (k + A + 1) ** alpha
@@ -202,7 +201,6 @@ class SPSAOptimizer:
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
                 args_new[index] = arg - ak * grad[trained_index]
-
                 trained_index += 1
 
         return args_new
