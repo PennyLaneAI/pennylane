@@ -149,6 +149,7 @@ class SPSAOptimizer:
         return new_args
 
     def increment_k(self):
+        """Increments k"""
         self.k += 1
 
     def compute_grad(self, objective_fn, args, kwargs):
