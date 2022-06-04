@@ -119,18 +119,17 @@ class SPSAOptimizer:
         A=None (float): The stability constant expected to be 10% of maximum number of expected iterations
         a=None (float): An hyperparameter expected to be small in noisy situations, whose value could be :math:`\frac{mag(\Delta\theta)}{mag(g(\theta))}(A+1)^\alpha`
     """
-    #pylint: disable-msg=too-many-arguments
-    def __init__(self, maxiter=200, alpha=0.602, gamma=0.101, c=0.2,
-                 A=None, a=None):
+    # pylint: disable-msg=too-many-arguments
+    def __init__(self, maxiter=200, alpha=0.602, gamma=0.101, c=0.2, A=None, a=None):
         if not A:
             self.A = maxiter * 0.1
         if not a:
-            self.a = 0.05 * (self.A + 1)**alpha
+            self.a = 0.05 * (self.A + 1) ** alpha
         self.c = c
         self.alpha = alpha
         self.gamma = gamma
         self.k = 0
-        self.ak = self.a / (self.A + 1 + 1.0)**self.alpha
+        self.ak = self.a / (self.A + 1 + 1.0) ** self.alpha
 
     def step_and_cost(self, objective_fn, *args, **kwargs):
         """Update the parameter array :math:`x` with one step of the optimizer and return
@@ -196,19 +195,18 @@ class SPSAOptimizer:
         if type(args) in [list, int, float] or len(list(np.extract_tensors(args))) > 1:
             raise ValueError("The parameters must be in a tensor.")
         self.increment_k()
-        ck = self.c / (self.k + 1.0)**self.gamma
+        ck = self.c / (self.k + 1.0) ** self.gamma
         shape = args[0].shape if isinstance(args, tuple) else args.shape
         delta = np.random.choice([-1, 1], size=shape)
-        thetaplus = args + ck*delta
-        thetaminus = args - ck*delta
+        thetaplus = args + ck * delta
+        thetaminus = args - ck * delta
         yplus = objective_fn(*thetaplus, **kwargs)
         yminus = objective_fn(*thetaminus, **kwargs)
-        grad = (yplus-yminus) / (2*ck*delta)
+        grad = (yplus - yminus) / (2 * ck * delta)
         num_trainable_args = sum(getattr(arg, "requires_grad", False) for arg in args)
         grad = (grad,) if num_trainable_args == 1 else grad
 
         return grad, None
-
 
     def apply_grad(self, grad, args):
         r"""Update the variables to take a single optimization step.
@@ -220,7 +218,7 @@ class SPSAOptimizer:
 
         Returns:
             list [array]: the new values :math:`x^{(t+1)}`"""
-        self.ak = self.a / (self.A + self.k + 1.0)**self.alpha
+        self.ak = self.a / (self.A + self.k + 1.0) ** self.alpha
         args_new = list(args)
         trained_index = 0
         for index, arg in enumerate(args):
