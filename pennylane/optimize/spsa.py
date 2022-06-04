@@ -26,7 +26,8 @@ class SPSAOptimizer:
     through a simultaneous perturbation:
 
     .. math::
-        \hat{g}_k(\hat{\theta}_k) = \frac{y(\hat{\theta}_k+c_k\Delta_k)-y(\hat{\theta}_k-c_k\Delta_k)}{2c_k\Delta_k} \begin{bmatrix}
+        \hat{g}_k(\hat{\theta}_k) = \frac{y(\hat{\theta}_k+c_k\Delta_k)-
+        y(\hat{\theta}_k-c_k\Delta_k)}{2c_k\Delta_k} \begin{bmatrix}
            \Delta_{k1}^{-1} \\
            \Delta_{k2}^{-1} \\
            \vdots \\
@@ -38,26 +39,34 @@ class SPSAOptimizer:
     .. math::
         \hat{\theta}_{k+1} = \hat{\theta}_{k} - a_k\hat{g}_k(\hat{\theta}_k)
 
-    where the gain sequences are :math:`a_k=\frac{a}{(A+k+1)^\alpha}` and :math:`c_k=\frac{c}{(k+1)^\gamma}`
+    where the gain sequences are :math:`a_k=\frac{a}{(A+k+1)^\alpha}` and
+    :math:`c_k=\frac{c}{(k+1)^\gamma}`
 
 
     For more details, see:
 
         J. Spall
         "An Overview of the Simultaneous Perturbation Method for Efficient Optimization."
-        `Johns Hopkins api technical digest, 19(4), 482-492, 1998 <https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF>`_
+        `Johns Hopkins api technical digest, 19(4), 482-492, 1998
+        <https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF>`_
 
     .. note::
 
-        * The number of quantum device executions is :math:`iter*2*num_terms_hamiltonian`.
-        * In case of using ``step_and_cost`` method instead of ``step``, the number of executions increment to calculate the cost function.
+        * The number of quantum device executions is :math:`2*iter*num terms hamiltonian`.
+        * In case of using ``step_and_cost`` method instead of ``step``, the number
+          of executions increment to calculate the cost function.
 
     .. note::
 
         In cases of hybrid classical-quantum workflows:
 
-        * In implementation of a QNode as a layer of a Keras sequential model, possible optimizers for the model are from the classical platform i.e. `tf.keras.optimizers.SGD <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/SGD>`_.
-        * In order to use SPSAOptimizer we have to extract the values of the classical tensor in order to use it in the quantum circuit and assign the new parameters to the classical tensor after the quantum circuit.
+        * In implementation of a QNode as a layer of a Keras sequential model,
+          possible optimizers for the model are from the classical platform i.e.
+          `tf.keras.optimizers.SGD
+          <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/SGD>`_.
+        * In order to use SPSAOptimizer we have to extract the values of the
+          classical tensor in order to use it in the quantum circuit and assign
+          the new parameters to the classical tensor after the quantum circuit.
 
 
     **Examples:**
@@ -84,7 +93,7 @@ class SPSAOptimizer:
     >>> max_iterations = 100
     >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
     >>> for n in range(max_iterations):
-    >>>     params, energy = opt.step_and_cost(cost, params)
+    ...     params, energy = opt.step_and_cost(cost, params)
 
     Example of hybrid classical-quantum workflow:
 
@@ -94,23 +103,27 @@ class SPSAOptimizer:
     >>> init = tf.compat.v1.global_variables_initializer()
 
     >>> with tf.compat.v1.Session() as sess:
-    >>>    sess.run(init)
-    >>>    params = init_params
-    >>>    for n in range(max_iterations):
-    >>>        new_params, prev_energy = opt.step_and_cost(cost_fn_spsa, np.tensor(params.eval(sess)))
-    >>>        params.assign(new_params, sess)
-    >>>        tensor2.assign(new_params, sess)
+    ...    sess.run(init)
+    ...    params = init_params
+    ...    for n in range(max_iterations):
+    ...        new_params, _ = opt.step_and_cost(cost_fn_spsa, np.tensor(params.eval(sess)))
+    ...        params.assign(new_params, sess)
+    ...        tensor2.assign(new_params, sess)
 
 
 
     Keyword Args:
-        maxiter=200 (int): the maximum number of iterations expected to be performed
-        alpha (float): An hyperparameter to calculate :math:`a_k=\frac{a}{(A+k+1)^\alpha}` for each iteration. Its asymptotically optimal value is 1.0
-        gamma=0.101 (float): An hyperparameter to calculate :math:`c_k=\frac{c}{(k+1)^\gamma}` for each iteration. Its asymptotically optimal value is 1/6
-        c=0.2 (float): An hyperparameter related to the expected noise. It
-        should be approximately the standard deviation of the expected noise on the cost function
-        A=None (float): The stability constant expected to be 10% of maximum number of expected iterations
-        a=None (float): An hyperparameter expected to be small in noisy situations, whose value could be :math:`\frac{mag(\Delta\theta)}{mag(g(\theta))}(A+1)^\alpha`
+        maxiter (int): the maximum number of iterations expected to be performed
+        alpha (float): An hyperparameter to calculate :math:`a_k=\frac{a}{(A+k+1)^\alpha}`
+            for each iteration. Its asymptotically optimal value is 1.0
+        gamma (float): An hyperparameter to calculate :math:`c_k=\frac{c}{(k+1)^\gamma}`
+            for each iteration. Its asymptotically optimal value is 1/6
+        c (float): An hyperparameter related to the expected noise. It should be
+            approximately the standard deviation of the expected noise on the cost function
+        A (float): The stability constant expected to be 10% of maximum number
+            of expected iterations
+        a (float): An hyperparameter expected to be small in noisy situations,
+            whose value could be :math:`\frac{mag(\Delta\theta)}{mag(g(\theta))}(A+1)^\alpha`
     """
     # pylint: disable-msg=too-many-arguments
     def __init__(self, maxiter=200, alpha=0.602, gamma=0.101, c=0.2, A=None, a=None):
@@ -126,7 +139,7 @@ class SPSAOptimizer:
 
     def step_and_cost(self, objective_fn, *args, **kwargs):
         """Update the parameter array :math:`x` with one step of the optimizer and return
-        the step and the corresponding objective function
+        the step and the corresponding objective function.
 
         Args:
             objective_fn (function): The objective function for optimization
@@ -182,7 +195,8 @@ class SPSAOptimizer:
             kwargs (dict): keyword arguments for the objective function
 
         Returns:
-            tuple (array): Numpy array containing the gradient :math:`\hat{g}_k(\hat{\theta}_k)` and ``None``
+            tuple (array): Numpy array containing the gradient
+                :math:`\hat{g}_k(\hat{\theta}_k)` and ``None``
             """
         # pylint: disable=arguments-differ
         if type(args) in [list, int, float] or len(list(np.extract_tensors(args))) > 1:
