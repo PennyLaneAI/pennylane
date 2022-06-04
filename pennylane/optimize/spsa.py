@@ -101,24 +101,24 @@ class SPSAOptimizer:
         self.c = c
         self.alpha = alpha
         self.gamma = gamma
+        self.k = 0
         self.ak = self.a / (self.A + 1 + 1.0)**self.alpha
 
-    def step_and_cost(self, objective_fn, *args, step, **kwargs):
+    def step_and_cost(self, objective_fn, *args, **kwargs):
         """Update the parameter array :math:`x` with one step of the optimizer and return
         the step and the corresponding objective function
 
         Args:
             objective_fn (function): The objective function for optimization
             *args : variable length argument array for objective function
-            step (int): The number of iteration
             **kwargs : variable length of keyword arguments for the objective function
 
         Returns:
             tuple[array, float]: the new variable values :math:`x^{(t+1)}` and the
             objective function output prior to the step.
         """
-        g, forward = self.compute_grad(objective_fn, args, kwargs, k=step)
-        new_args = self.apply_grad(g, args, k=step)
+        g, forward = self.compute_grad(objective_fn, args, kwargs)
+        new_args = self.apply_grad(g, args)
 
         if forward is None:
             forward = objective_fn(*args, **kwargs)
@@ -128,20 +128,19 @@ class SPSAOptimizer:
             return new_args[0], forward
         return new_args, forward
 
-    def step(self, objective_fn, *args, step=None, **kwargs):
+    def step(self, objective_fn, *args, **kwargs):
         """Update trainable arguments with one step of the optimizer.
 
         Args:
             objective_fn (function): The objective function for optimization
             *args : variable length argument array for objective function
-            step (int): The number of iteration
             **kwargs : variable length of keyword arguments for the objective function
 
         Returns:
             array: the new variable values :math:`x^{(t+1)}`.
             """
-        g, _ = self.compute_grad(objective_fn, args, kwargs, k=step)
-        new_args = self.apply_grad(g, args, k=step)
+        g, _ = self.compute_grad(objective_fn, args, kwargs)
+        new_args = self.apply_grad(g, args)
 
         # unwrap from list if one argument, cleaner return
         if len(new_args) == 1:
@@ -149,7 +148,10 @@ class SPSAOptimizer:
 
         return new_args
 
-    def compute_grad(self, objective_fn, args, kwargs, k=None):
+    def increment_k(self):
+        self.k += 1
+
+    def compute_grad(self, objective_fn, args, kwargs):
         r"""Compute approximation of gradient of the objective function at the
         given point.
 
@@ -157,7 +159,6 @@ class SPSAOptimizer:
             objective_fn (function): The objective function for optimization
             args (array): NumPy array containing the current parameters for objective function
             kwargs (dict): keyword arguments for the objective function
-            k (int): The number of iteration
 
         Returns:
             tuple (array): Numpy array containing the gradient :math:`\hat{g}_k(\hat{\theta}_k)` and ``None``
@@ -165,7 +166,8 @@ class SPSAOptimizer:
         # pylint: disable=arguments-differ
         if type(args) in [list, int, float] or len(list(np.extract_tensors(args))) > 1:
             raise ValueError("The parameters must be in a tensor.")
-        ck = self.c / (k + 1.0)**self.gamma
+        self.increment_k()
+        ck = self.c / (self.k + 1.0)**self.gamma
         shape = args[0].shape if isinstance(args, tuple) else args.shape
         delta = np.random.choice([-1, 1], size=shape)
         thetaplus = args + ck*delta
@@ -179,7 +181,7 @@ class SPSAOptimizer:
         return grad, None
 
 
-    def apply_grad(self, grad, args, k=None):
+    def apply_grad(self, grad, args):
         r"""Update the variables to take a single optimization step.
 
         Args:
@@ -189,9 +191,8 @@ class SPSAOptimizer:
 
         Returns:
             list [array]: the new values :math:`x^{(t+1)}`"""
-        self.ak = self.a / (self.A + k + 1.0)**self.alpha
+        self.ak = self.a / (self.A + self.k + 1.0)**self.alpha
         args_new = list(args)
-        print(grad)
         trained_index = 0
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
