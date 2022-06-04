@@ -179,7 +179,31 @@
   >>> batched_partial_circuit(y=y)
   tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
   ```
+* Added new optimizer `qml.SPSAOptimizer` for noisy problems. It performs less device executions, due
+to the fact that it performs two measures to determine the gradient.
 
+```python
+dev = qml.device("default.qubit", wires=1)
+def circuit(params, wires):
+    qml.BasisState(np.array([1, 1, 0, 0]), wires=wires)
+    for i in wires:
+        qml.Rot(*params[i], wires=i)
+    qml.CNOT(wires=[2, 3])
+    qml.CNOT(wires=[2, 0])
+    qml.CNOT(wires=[3, 1])
+
+def exp_val_circuit(params):
+    circuit(params, range(dev.num_wires))
+    return qml.expval(h2_ham)
+
+params = np.random.normal(0, np.pi, (num_qubits, 3), requires_grad=True)
+cost = qml.QNode(exp_val_circuit, dev)
+
+max_iterations = 100
+opt = qml.SPSAOptimizer(maxiter=max_iterations)
+for n in range(max_iterations):
+    params, energy = opt.step_and_cost(cost, params)
+```
 **Operator Arithmetic:**
 
 * The adjoint transform `adjoint` can now accept either a single instantiated operator or
