@@ -948,18 +948,32 @@ class TestMatrix:
         evs_expected = qml.math.linalg.eigvals(qml.IsingXY(phi, [0, 1]).matrix())
         assert qml.math.allclose(evs, evs_expected)
 
-        torch = pytest.importorskip("torch")
-        tf = pytest.importorskip("tensorflow")
-        jax = pytest.importorskip("jax")
+    @pytest.mark.tf
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_isingxy_eigvals(self, phi, tol):
+        import tensorflow as tf
 
-        param_torch = torch.tensor(phi)
-        evs_expected = qml.math.linalg.eigvals(qml.IsingXY(param_torch, [0, 1]).matrix())
-        assert qml.math.allclose(evs, evs_expected)
-
+        evs = qml.IsingXY.compute_eigvals(phi)
         param_tf = tf.Variable(phi)
         evs_expected = qml.math.linalg.eigvals(qml.IsingXY(param_tf, [0, 1]).matrix())
         assert qml.math.allclose(evs, evs_expected)
 
+    @pytest.mark.torch
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_isingxy_eigvals(self, phi, tol):
+        import torch
+
+        evs = qml.IsingXY.compute_eigvals(phi)
+        param_torch = torch.tensor(phi)
+        evs_expected = qml.math.linalg.eigvals(qml.IsingXY(param_torch, [0, 1]).matrix())
+        assert qml.math.allclose(evs, evs_expected)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_isingxy_eigvals(self, phi, tol):
+        import jax
+
+        evs = qml.IsingXY.compute_eigvals(phi)
         param_jax = jax.numpy.array(phi)
         evs_expected = qml.math.linalg.eigvals(qml.IsingXY(param_jax, [0, 1]).matrix())
         assert qml.math.allclose(evs, evs_expected)
