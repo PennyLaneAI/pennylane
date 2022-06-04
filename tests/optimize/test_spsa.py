@@ -18,17 +18,12 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
-univariate = [
-    (np.sin),
-    (lambda x: np.exp(x / 10.0)),
-    (lambda x: x**2),
-]
+univariate = [(np.sin), (lambda x: np.exp(x / 10.0)), (lambda x: x ** 2)]
 
 multivariate = [
     (lambda x: np.sin(x[0]) + np.cos(x[1])),
-    (
-        lambda x: np.exp(x[0] / 3) * np.tanh(x[1])),
-    (lambda x: np.sum([x_**2 for x_ in x])),
+    (lambda x: np.exp(x[0] / 3) * np.tanh(x[1])),
+    (lambda x: np.sum([x_ ** 2 for x_ in x])),
 ]
 
 
@@ -54,9 +49,7 @@ class TestExceptions:
             np.array(0.1, requires_grad=True),
         ]
 
-        with pytest.raises(
-            ValueError,
-            match="The parameters must be in a tensor.",):
+        with pytest.raises(ValueError, match="The parameters must be in a tensor."):
             _, _ = spsa_opt.step_and_cost(quant_fun, *inputs)
 
 
@@ -73,18 +66,18 @@ class TestSPSAOptimizer:
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
         args = np.array([args], requires_grad=True)
 
-        alpha=0.602
-        gamma=0.101
-        c=0.2
-        A=20.0
-        a = 0.05 * (A + 1)**alpha
-        k=1
-        ck = c / (k + 1.0)**gamma
-        ak = a / (A + k + 1.0)**alpha
+        alpha = 0.602
+        gamma = 0.101
+        c = 0.2
+        A = 20.0
+        a = 0.05 * (A + 1) ** alpha
+        k = 1
+        ck = c / (k + 1.0) ** gamma
+        ak = a / (A + k + 1.0) ** alpha
         tol = np.maximum(np.abs(f(args - ck)), np.abs(f(args + ck)))
 
         y = f(args)
-        grad = (y) / (2*ck)
+        grad = (y) / (2 * ck)
         spsa_opt.increment_k()
 
         res = spsa_opt.apply_grad(grad, args)
@@ -97,14 +90,14 @@ class TestSPSAOptimizer:
         Test that a gradient step can be applied correctly to a multivariate
         function.
         """
-        alpha=0.602
-        gamma=0.101
-        c=0.2
-        A=20.0
-        a = 0.05 * (A + 1)**alpha
-        k=1
-        ck = c / (k + 1.0)**gamma
-        ak = a / (A + k + 1.0)**alpha
+        alpha = 0.602
+        gamma = 0.101
+        c = 0.2
+        A = 20.0
+        a = 0.05 * (A + 1) ** alpha
+        k = 1
+        ck = c / (k + 1.0) ** gamma
+        ak = a / (A + k + 1.0) ** alpha
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
 
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
@@ -112,7 +105,7 @@ class TestSPSAOptimizer:
         for jdx in range(len(x_vals[:-1])):
             x_vec = x_vals[jdx : jdx + 2]
             y = f(x_vec)
-            grad = (y) / (2*ck*np.ones((2)))
+            grad = (y) / (2 * ck * np.ones((2)))
             spsa_opt.increment_k()
             x_new = spsa_opt.apply_grad(grad, x_vec)
             x_al = x_vec - ak * grad
@@ -177,18 +170,18 @@ class TestSPSAOptimizer:
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
         args = np.array([args], requires_grad=True)
 
-        alpha=0.602
-        gamma=0.101
-        c=0.2
-        A=20.0
-        a = 0.05 * (A + 1)**alpha
-        k=1
-        ck = c / (k + 1.0)**gamma
-        ak = a / (A + k + 1.0)**alpha
+        alpha = 0.602
+        gamma = 0.101
+        c = 0.2
+        A = 20.0
+        a = 0.05 * (A + 1) ** alpha
+        k = 1
+        ck = c / (k + 1.0) ** gamma
+        ak = a / (A + k + 1.0) ** alpha
         tol = np.maximum(np.abs(f(args - ck)), np.abs(f(args + ck)))
 
         y = f(args)
-        grad = (y) / (2*ck)
+        grad = (y) / (2 * ck)
 
         res = spsa_opt.step(f, args)
         expected = args - ak * grad
@@ -204,18 +197,18 @@ class TestSPSAOptimizer:
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
         args = np.array([args], requires_grad=True)
 
-        alpha=0.602
-        gamma=0.101
-        c=0.2
-        A=20.0
-        a = 0.05 * (A + 1)**alpha
-        k=1
-        ck = c / (k + 1.0)**gamma
-        ak = a / (A + k + 1.0)**alpha
+        alpha = 0.602
+        gamma = 0.101
+        c = 0.2
+        A = 20.0
+        a = 0.05 * (A + 1) ** alpha
+        k = 1
+        ck = c / (k + 1.0) ** gamma
+        ak = a / (A + k + 1.0) ** alpha
         tol = np.maximum(np.abs(f(args - ck)), np.abs(f(args + ck)))
 
         y = f(args)
-        grad = (y) / (2*ck)
+        grad = (y) / (2 * ck)
 
         res, rescost = spsa_opt.step_and_cost(f, args)
         expected = args - ak * grad
