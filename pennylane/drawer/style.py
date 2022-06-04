@@ -49,6 +49,7 @@ def _black_white():
     """Apply the black and white style to matplotlib's configuration. This function
     modifies ``plt.rcParams``.
     """
+    plt.rcParams['savefig.facecolor'] = "white"
     plt.rcParams["patch.facecolor"] = "white"
     plt.rcParams["patch.edgecolor"] = "black"
     plt.rcParams["patch.linewidth"] = 2
@@ -61,6 +62,7 @@ def _black_white():
 def _black_white_dark():
     """Apply the black and white dark style to matplotlib's configuration. This functions modifies ``plt.rcParams``."""
     almost_black = "#151515"  # less harsh than full black
+    plt.rcParams['savefig.facecolor'] = almost_black
     plt.rcParams["figure.facecolor"] = almost_black
     plt.rcParams["axes.facecolor"] = almost_black
     plt.rcParams["patch.edgecolor"] = "white"
@@ -69,10 +71,39 @@ def _black_white_dark():
     plt.rcParams["lines.color"] = "white"
     plt.rcParams["text.color"] = "white"
 
+@_needs_mpl
+def _solarized_light():
+    """Apply the solarized light style to matplotlib's configuration. This function
+    modifies ``plt.rcParams``.
+    """
+    plt.rcParams['savefig.facecolor'] = '#fdf6e3'
+    plt.rcParams["figure.facecolor"] = '#fdf6e3'
+    plt.rcParams["axes.facecolor"] = '#eee8d5'
+    plt.rcParams["patch.edgecolor"] = "#93a1a1"
+    plt.rcParams["patch.facecolor"] = '#eee8d5'
+    plt.rcParams["lines.color"] = "#657b83"
+    plt.rcParams["text.color"] = "#586e75"
+    plt.rcParams["patch.force_edgecolor"] = True
+
+@_needs_mpl
+def _solarized_dark():
+    """Apply the solarized light style to matplotlib's configuration. This function
+    modifies ``plt.rcParams``.
+    """
+    plt.rcParams['savefig.facecolor'] = '#002b36'
+    plt.rcParams["figure.facecolor"] = '#002b36'
+    plt.rcParams["axes.facecolor"] = '#002b36'
+    plt.rcParams["patch.edgecolor"] = "#268bd2"
+    plt.rcParams["patch.facecolor"] = '#073642'
+    plt.rcParams["lines.color"] = "#839496"
+    plt.rcParams["text.color"] = "#2aa198"
+    plt.rcParams["patch.force_edgecolor"] = True
 
 _styles_map = {
     "black_white": _black_white,
     "black_white_dark": _black_white_dark,
+    "solarized_light": _solarized_light,
+    "solarized_dark": _solarized_dark,
     "default": _needs_mpl(lambda: plt.style.use("default")),
 }
 
