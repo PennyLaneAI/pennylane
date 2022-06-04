@@ -166,3 +166,57 @@ class TestSPSAOptimizer:
         expected = quant_fun_mdarr(multid_array)
 
         assert np.all(res == expected)
+
+    @pytest.mark.parametrize("args", [0, -3, 42])
+    @pytest.mark.parametrize("f", univariate)
+    def test_step(self, args, f):
+        """
+        Test that a gradient step can be applied correctly with a univariate
+        function.
+        """
+        spsa_opt = qml.SPSAOptimizer(maxiter=10)
+        args = np.array([args], requires_grad=True)
+
+        alpha=0.602
+        gamma=0.101
+        c=0.2
+        A=20.0
+        a = 0.05 * (A + 1)**alpha
+        k=1
+        ck = c / (k + 1.0)**gamma
+        ak = a / (A + k + 1.0)**alpha
+        tol = np.maximum(np.abs(f(args - ck)), np.abs(f(args + ck)))
+
+        y = f(args)
+        grad = (y) / (2*ck)
+
+        res = spsa_opt.step(f, args)
+        expected = args - ak * grad
+        assert np.allclose(res, expected, atol=tol)
+
+    @pytest.mark.parametrize("args", [0, -3, 42])
+    @pytest.mark.parametrize("f", univariate)
+    def test_step_and_cost(self, args, f):
+        """
+        Test that a gradient step can be applied correctly with a univariate
+        function.
+        """
+        spsa_opt = qml.SPSAOptimizer(maxiter=10)
+        args = np.array([args], requires_grad=True)
+
+        alpha=0.602
+        gamma=0.101
+        c=0.2
+        A=20.0
+        a = 0.05 * (A + 1)**alpha
+        k=1
+        ck = c / (k + 1.0)**gamma
+        ak = a / (A + k + 1.0)**alpha
+        tol = np.maximum(np.abs(f(args - ck)), np.abs(f(args + ck)))
+
+        y = f(args)
+        grad = (y) / (2*ck)
+
+        res = spsa_opt.step(f, args)
+        expected = args - ak * grad
+        assert np.allclose(res, expected, atol=tol)
