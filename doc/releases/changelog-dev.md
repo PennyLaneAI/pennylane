@@ -181,6 +181,7 @@
   ```
 * Added new optimizer `qml.SPSAOptimizer` for noisy problems. It performs less device executions, due
 to the fact that it performs two measures to determine the gradient.
+[(#2661)](https://github.com/PennyLaneAI/pennylane/pull/2661)
 
 ```python
 dev = qml.device("default.qubit", wires=1)
