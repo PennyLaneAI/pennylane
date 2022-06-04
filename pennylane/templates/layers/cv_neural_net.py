@@ -253,8 +253,3 @@ class CVNeuralNetLayers(Operation):
         )
 
         return shapes
-
-    def adjoint(self):
-        adjoint_op = CVNeuralNetLayers(*self.parameters, wires=self.wires)
-        adjoint_op.inverse = not self.inverse
-        return adjoint_op
