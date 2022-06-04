@@ -179,7 +179,7 @@
   >>> batched_partial_circuit(y=y)
   tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
   ```
-  
+
 * Added new optimizer `qml.SPSAOptimizer` for noisy problems. It performs less device executions, due
 to the fact that it performs two measures to determine the gradient.
 [(#2661)](https://github.com/PennyLaneAI/pennylane/pull/2661)
@@ -409,5 +409,5 @@ for n in range(max_iterations):
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, 
+Ixchel Meza Chavez, Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, 
 Utkarsh Azad, WingCode
