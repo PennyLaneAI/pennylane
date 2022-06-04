@@ -26,10 +26,13 @@ import numpy as np
 import pennylane as qml
 from pennylane.operation import AnyWires, Operation
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
-from pennylane.utils import expand, pauli_eigs
+from pennylane.operation import expand_matrix
+from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
 INV_SQRT2 = 1 / math.sqrt(2)
+
+stack_last = functools.partial(qml.math.stack, axis=-1)
 
 
 class RX(Operation):
@@ -45,6 +48,7 @@ class RX(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(R_x(\phi)) = \frac{1}{2}\left[f(R_x(\phi+\pi/2)) - f(R_x(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`R_x(\phi)`.
 
@@ -58,6 +62,9 @@ class RX(Operation):
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     basis = "X"
     grad_method = "A"
@@ -97,11 +104,10 @@ class RX(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
+        # The following avoids casting an imaginary quantity to reals when backpropagating
+        c = (1 + 0j) * c
         js = -1j * s
-
-        return qml.math.diag([c, c]) + qml.math.stack(
-            [qml.math.stack([0, js]), qml.math.stack([js, 0])]
-        )
+        return qml.math.stack([stack_last([c, js]), stack_last([js, c])], axis=-2)
 
     def adjoint(self):
         return RX(-self.data[0], wires=self.wires)
@@ -114,7 +120,8 @@ class RX(Operation):
 
     def single_qubit_rot_angles(self):
         # RX(\theta) = RZ(-\pi/2) RY(\theta) RZ(\pi/2)
-        return [np.pi / 2, self.data[0], -np.pi / 2]
+        pi_half = qml.math.ones_like(self.data[0]) * (np.pi / 2)
+        return [pi_half, self.data[0], -pi_half]
 
 
 class RY(Operation):
@@ -130,6 +137,7 @@ class RY(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(R_y(\phi)) = \frac{1}{2}\left[f(R_y(\phi+\pi/2)) - f(R_y(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`R_y(\phi)`.
 
@@ -143,6 +151,9 @@ class RY(Operation):
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     basis = "Y"
     grad_method = "A"
@@ -179,10 +190,13 @@ class RY(Operation):
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
-
-        return qml.math.diag([c, c]) + qml.math.stack(
-            [qml.math.stack([0, -s]), qml.math.stack([s, 0])]
-        )
+        if qml.math.get_interface(theta) == "tensorflow":
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+        # The following avoids casting an imaginary quantity to reals when backpropagating
+        c = (1 + 0j) * c
+        s = (1 + 0j) * s
+        return qml.math.stack([stack_last([c, -s]), stack_last([s, c])], axis=-2)
 
     def adjoint(self):
         return RY(-self.data[0], wires=self.wires)
@@ -211,6 +225,7 @@ class RZ(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(R_z(\phi)) = \frac{1}{2}\left[f(R_z(\phi+\pi/2)) - f(R_z(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`R_z(\phi)`.
 
@@ -224,6 +239,9 @@ class RZ(Operation):
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     basis = "Z"
     grad_method = "A"
@@ -260,8 +278,9 @@ class RZ(Operation):
             theta = qml.math.cast_like(theta, 1j)
 
         p = qml.math.exp(-0.5j * theta)
+        z = qml.math.zeros_like(p)
 
-        return qml.math.diag([p, qml.math.conj(p)])
+        return qml.math.stack([stack_last([p, z]), stack_last([z, qml.math.conj(p)])], axis=-2)
 
     @staticmethod
     def compute_eigvals(theta):  # pylint: disable=arguments-differ
@@ -296,7 +315,7 @@ class RZ(Operation):
 
         p = qml.math.exp(-0.5j * theta)
 
-        return qml.math.stack([p, qml.math.conj(p)])
+        return stack_last([p, qml.math.conj(p)])
 
     def adjoint(self):
         return RZ(-self.data[0], wires=self.wires)
@@ -325,6 +344,7 @@ class PhaseShift(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(R_\phi(\phi)) = \frac{1}{2}\left[f(R_\phi(\phi+\pi/2)) - f(R_\phi(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`R_{\phi}(\phi)`.
 
@@ -338,6 +358,9 @@ class PhaseShift(Operation):
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     basis = "Z"
     grad_method = "A"
@@ -377,9 +400,10 @@ class PhaseShift(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        exp_part = qml.math.exp(1j * phi)
+        p = qml.math.exp(1j * phi)
+        z = qml.math.zeros_like(p)
 
-        return qml.math.diag([1, exp_part])
+        return qml.math.stack([stack_last([qml.math.ones_like(p), z]), stack_last([z, p])], axis=-2)
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
@@ -411,9 +435,9 @@ class PhaseShift(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        exp_part = qml.math.exp(1j * phi)
+        p = qml.math.exp(1j * phi)
 
-        return qml.math.stack([1, exp_part])
+        return stack_last([qml.math.ones_like(p), p])
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -470,6 +494,7 @@ class ControlledPhaseShift(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(CR_\phi(\phi)) = \frac{1}{2}\left[f(CR_\phi(\phi+\pi/2)) - f(CR_\phi(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`CR_{\phi}(\phi)`.
 
@@ -483,6 +508,9 @@ class ControlledPhaseShift(Operation):
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     basis = "Z"
     grad_method = "A"
@@ -525,6 +553,18 @@ class ControlledPhaseShift(Operation):
 
         exp_part = qml.math.exp(1j * phi)
 
+        if qml.math.ndim(phi) > 0:
+            ones = qml.math.ones_like(exp_part)
+            zeros = qml.math.zeros_like(exp_part)
+            matrix = [
+                [ones, zeros, zeros, zeros],
+                [zeros, ones, zeros, zeros],
+                [zeros, zeros, ones, zeros],
+                [zeros, zeros, zeros, exp_part],
+            ]
+
+            return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
+
         return qml.math.diag([1, 1, 1, exp_part])
 
     @staticmethod
@@ -558,8 +598,8 @@ class ControlledPhaseShift(Operation):
             phi = qml.math.cast_like(phi, 1j)
 
         exp_part = qml.math.exp(1j * phi)
-
-        return qml.math.stack([1, 1, 1, exp_part])
+        ones = qml.math.ones_like(exp_part)
+        return stack_last([ones, ones, ones, exp_part])
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -626,6 +666,7 @@ class Rot(Operation):
 
     * Number of wires: 1
     * Number of parameters: 3
+    * Number of dimensions per parameter: (0, 0, 0)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(R(\phi, \theta, \omega)) = \frac{1}{2}\left[f(R(\phi+\pi/2, \theta, \omega)) - f(R(\phi-\pi/2, \theta, \omega))\right]`
       where :math:`f` is an expectation value depending on :math:`R(\phi, \theta, \omega)`.
       This gradient recipe applies for each angle argument :math:`\{\phi, \theta, \omega\}`.
@@ -647,6 +688,9 @@ class Rot(Operation):
     num_wires = 1
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0, 0, 0)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
@@ -694,6 +738,11 @@ class Rot(Operation):
             c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
             s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
 
+        # The following variable is used to assert the all terms to be stacked have same shape
+        one = qml.math.ones_like(phi) * qml.math.ones_like(omega)
+        c = c * one
+        s = s * one
+
         mat = [
             [
                 qml.math.exp(-0.5j * (phi + omega)) * c,
@@ -705,7 +754,7 @@ class Rot(Operation):
             ],
         ]
 
-        return qml.math.stack([qml.math.stack(row) for row in mat])
+        return qml.math.stack([stack_last(row) for row in mat], axis=-2)
 
     @staticmethod
     def compute_decomposition(phi, theta, omega, wires):
@@ -761,6 +810,7 @@ class MultiRZ(Operation):
 
     * Number of wires: Any
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\theta}f(MultiRZ(\theta)) = \frac{1}{2}\left[f(MultiRZ(\theta +\pi/2)) - f(MultiRZ(\theta-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`MultiRZ(\theta)`.
 
@@ -779,6 +829,9 @@ class MultiRZ(Operation):
     num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -818,7 +871,11 @@ class MultiRZ(Operation):
             theta = qml.math.cast_like(theta, 1j)
             eigs = qml.math.cast_like(eigs, 1j)
 
-        eigvals = qml.math.exp(-1j * theta / 2 * eigs)
+        if qml.math.ndim(theta) > 0:
+            eigvals = [qml.math.exp(-0.5j * t * eigs) for t in theta]
+            return qml.math.stack([qml.math.diag(eig) for eig in eigvals])
+
+        eigvals = qml.math.exp(-0.5j * theta * eigs)
         return qml.math.diag(eigvals)
 
     def generator(self):
@@ -859,7 +916,10 @@ class MultiRZ(Operation):
             theta = qml.math.cast_like(theta, 1j)
             eigs = qml.math.cast_like(eigs, 1j)
 
-        return qml.math.exp(-1j * theta / 2 * eigs)
+        if qml.math.ndim(theta) > 0:
+            return qml.math.exp(qml.math.tensordot(-0.5j * theta, eigs, axes=0))
+
+        return qml.math.exp(-0.5j * theta * eigs)
 
     @staticmethod
     def compute_decomposition(
@@ -910,6 +970,7 @@ class PauliRot(Operation):
 
     * Number of wires: Any
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\theta}f(RP(\theta)) = \frac{1}{2}\left[f(RP(\theta +\pi/2)) - f(RP(\theta-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`RP(\theta)`.
 
@@ -941,6 +1002,9 @@ class PauliRot(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
     do_check_domain = False
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -967,7 +1031,8 @@ class PauliRot(Operation):
 
         if not len(pauli_word) == num_wires:
             raise ValueError(
-                f"The given Pauli word has length {len(pauli_word)}, length {num_wires} was expected for wires {wires}"
+                f"The given Pauli word has length {len(pauli_word)}, length "
+                f"{num_wires} was expected for wires {wires}"
             )
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -1000,7 +1065,8 @@ class PauliRot(Operation):
         if self.inverse:
             op_label += "⁻¹"
 
-        if decimals is not None:
+        # TODO[dwierichs]: Implement a proper label for parameter-broadcasted operators
+        if decimals is not None and self.batch_size is None:
             param_string = f"\n({qml.math.asarray(self.parameters[0]):.{decimals}f})"
             op_label += param_string
 
@@ -1016,7 +1082,7 @@ class PauliRot(Operation):
         Returns:
             bool: Whether the Pauli word has correct structure.
         """
-        return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in pauli_word)
+        return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
 
     @staticmethod
     def compute_matrix(theta, pauli_word):  # pylint: disable=arguments-differ
@@ -1053,17 +1119,17 @@ class PauliRot(Operation):
             theta = qml.math.cast_like(theta, 1j)
 
         # Simplest case is if the Pauli is the identity matrix
-        if pauli_word == "I" * len(pauli_word):
+        if set(pauli_word) == {"I"}:
 
-            exp = qml.math.exp(-1j * theta / 2)
-            iden = qml.math.eye(2 ** len(pauli_word))
-            if interface == "torch":
-                # Use convert_like to ensure that the tensor is put on the correct
-                # Torch device
-                iden = qml.math.convert_like(iden, theta)
+            exp = qml.math.exp(-0.5j * theta)
+            iden = qml.math.eye(2 ** len(pauli_word), like=theta)
+            if qml.math.get_interface(theta) == "tensorflow":
+                iden = qml.math.cast_like(iden, 1j)
+
+            if qml.math.ndim(theta) == 0:
                 return exp * iden
 
-            return qml.math.array(exp * iden, like=interface)
+            return qml.math.stack([e * iden for e in exp])
 
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
@@ -1078,11 +1144,15 @@ class PauliRot(Operation):
             qml.math.kron,
             [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
-
-        return expand(
-            qml.math.dot(
+        if interface == "tensorflow":
+            conjugation_matrix = qml.math.cast_like(conjugation_matrix, 1j)
+        # Note: we use einsum with reverse arguments here because it is not multi-dispatched
+        # and the tensordot containing multi_Z_rot_matrix should decide about the interface
+        return expand_matrix(
+            qml.math.einsum(
+                "...jk,ij->...ik",
+                qml.math.tensordot(multi_Z_rot_matrix, conjugation_matrix, axes=[[-1], [0]]),
                 qml.math.conj(conjugation_matrix),
-                qml.math.dot(multi_Z_rot_matrix, conjugation_matrix),
             ),
             non_identity_wires,
             list(range(len(pauli_word))),
@@ -1121,8 +1191,16 @@ class PauliRot(Operation):
             theta = qml.math.cast_like(theta, 1j)
 
         # Identity must be treated specially because its eigenvalues are all the same
-        if pauli_word == "I" * len(pauli_word):
-            return qml.math.exp(-1j * theta / 2) * qml.math.ones(2 ** len(pauli_word))
+        if set(pauli_word) == {"I"}:
+            exp = qml.math.exp(-0.5j * theta)
+            ones = qml.math.ones(2 ** len(pauli_word), like=theta)
+            if qml.math.get_interface(theta) == "tensorflow":
+                ones = qml.math.cast_like(ones, 1j)
+
+            if qml.math.ndim(theta) == 0:
+                return exp * ones
+
+            return qml.math.tensordot(exp, ones, axes=0)
 
         return MultiRZ.compute_eigvals(theta, len(pauli_word))
 
@@ -1157,7 +1235,7 @@ class PauliRot(Operation):
             wires = [wires]
 
         # Check for identity and do nothing
-        if pauli_word == "I" * len(wires):
+        if set(pauli_word) == {"I"}:
             return []
 
         active_wires, active_gates = zip(
@@ -1207,6 +1285,7 @@ class CRX(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: The controlled-RX operator satisfies a four-term parameter-shift rule
       (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
@@ -1230,6 +1309,9 @@ class CRX(Operation):
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     basis = "X"
     grad_method = "A"
@@ -1272,24 +1354,23 @@ class CRX(Operation):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        if interface == "torch":
-            # Use convert_like to ensure that the tensor is put on the correct
-            # Torch device
-            z = qml.math.convert_like(qml.math.zeros([4]), theta)
-        else:
-            z = qml.math.zeros([4], like=interface)
-
         if interface == "tensorflow":
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
-            z = qml.math.cast_like(z, 1j)
 
+        # The following avoids casting an imaginary quantity to reals when backpropagating
+        c = (1 + 0j) * c
         js = -1j * s
+        ones = qml.math.ones_like(js)
+        zeros = qml.math.zeros_like(js)
+        matrix = [
+            [ones, zeros, zeros, zeros],
+            [zeros, ones, zeros, zeros],
+            [zeros, zeros, c, js],
+            [zeros, zeros, js, c],
+        ]
 
-        mat = qml.math.diag([1, 1, c, c])
-        return mat + qml.math.stack(
-            [z, z, qml.math.stack([0, 0, 0, js]), qml.math.stack([0, 0, js, 0])]
-        )
+        return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -1318,13 +1399,14 @@ class CRX(Operation):
         RZ(-1.5707963267948966, wires=[1])]
 
         """
+        pi_half = qml.math.ones_like(phi) * (np.pi / 2)
         decomp_ops = [
-            RZ(np.pi / 2, wires=wires[1]),
+            RZ(pi_half, wires=wires[1]),
             RY(phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
             RY(-phi / 2, wires=wires[1]),
             qml.CNOT(wires=wires),
-            RZ(-np.pi / 2, wires=wires[1]),
+            RZ(-pi_half, wires=wires[1]),
         ]
         return decomp_ops
 
@@ -1359,6 +1441,7 @@ class CRY(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: The controlled-RY operator satisfies a four-term parameter-shift rule
       (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
@@ -1382,6 +1465,9 @@ class CRY(Operation):
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     basis = "Y"
     grad_method = "A"
@@ -1425,17 +1511,23 @@ class CRY(Operation):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        if interface == "torch":
-            # Use convert_like to ensure that the tensor is put on the correct
-            # Torch device
-            z = qml.math.convert_like(qml.math.zeros([4]), theta)
-        else:
-            z = qml.math.zeros([4], like=interface)
+        if interface == "tensorflow":
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
 
-        mat = qml.math.diag([1, 1, c, c])
-        return mat + qml.math.stack(
-            [z, z, qml.math.stack([0, 0, 0, -s]), qml.math.stack([0, 0, s, 0])]
-        )
+        # The following avoids casting an imaginary quantity to reals when backpropagating
+        c = (1 + 0j) * c
+        s = (1 + 0j) * s
+        ones = qml.math.ones_like(s)
+        zeros = qml.math.zeros_like(s)
+        matrix = [
+            [ones, zeros, zeros, zeros],
+            [zeros, ones, zeros, zeros],
+            [zeros, zeros, c, -s],
+            [zeros, zeros, s, c],
+        ]
+
+        return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -1504,6 +1596,7 @@ class CRZ(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: The controlled-RZ operator satisfies a four-term parameter-shift rule
       (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
@@ -1527,6 +1620,9 @@ class CRZ(Operation):
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     basis = "Z"
     grad_method = "A"
@@ -1567,9 +1663,18 @@ class CRZ(Operation):
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
-        exp_part = qml.math.exp(-0.5j * theta)
+        exp_part = qml.math.exp(-1j * theta / 2)
 
-        return qml.math.diag([1, 1, exp_part, qml.math.conj(exp_part)])
+        ones = qml.math.ones_like(exp_part)
+        zeros = qml.math.zeros_like(exp_part)
+        matrix = [
+            [ones, zeros, zeros, zeros],
+            [zeros, ones, zeros, zeros],
+            [zeros, zeros, exp_part, zeros],
+            [zeros, zeros, zeros, qml.math.conj(exp_part)],
+        ]
+
+        return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
     def compute_eigvals(theta):  # pylint: disable=arguments-differ
@@ -1598,14 +1703,13 @@ class CRZ(Operation):
         >>> qml.CRZ.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.9689-0.2474j, 0.9689+0.2474j])
         """
-        theta = qml.math.flatten(qml.math.stack([theta]))[0]
-
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
         exp_part = qml.math.exp(-0.5j * theta)
+        o = qml.math.ones_like(exp_part)
 
-        return qml.math.stack([1, 1, exp_part, qml.math.conj(exp_part)])
+        return stack_last([o, o, exp_part, qml.math.conj(exp_part)])
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -1668,6 +1772,7 @@ class CRot(Operation):
 
     * Number of wires: 2
     * Number of parameters: 3
+    * Number of dimensions per parameter: (0, 0, 0)
     * Gradient recipe: The controlled-Rot operator satisfies a four-term parameter-shift rule
       (see Appendix F, https://doi.org/10.1088/1367-2630/ac2cb3):
 
@@ -1694,6 +1799,9 @@ class CRot(Operation):
     num_wires = 2
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0, 0, 0)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
@@ -1731,7 +1839,7 @@ class CRot(Operation):
                 [ 0.0+0.0j,  0.0+0.0j,  0.0993+0.0100j,  0.9752+0.1977j]])
         """
         # It might be that they are in different interfaces, e.g.,
-        # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
+        # CRot(0.2, 0.3, tf.Variable(0.5), wires=[0, 1])
         # So we need to make sure the matrix comes out having the right type
         interface = qml.math._multi_dispatch([phi, theta, omega])
 
@@ -1745,24 +1853,31 @@ class CRot(Operation):
             c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
             s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
 
+        # The following variable is used to assert the all terms to be stacked have same shape
+        one = qml.math.ones_like(phi) * qml.math.ones_like(omega)
+        c = c * one
+        s = s * one
+
+        o = qml.math.ones_like(c)
+        z = qml.math.zeros_like(c)
         mat = [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
+            [o, z, z, z],
+            [z, o, z, z],
             [
-                0,
-                0,
+                z,
+                z,
                 qml.math.exp(-0.5j * (phi + omega)) * c,
                 -qml.math.exp(0.5j * (phi - omega)) * s,
             ],
             [
-                0,
-                0,
+                z,
+                z,
                 qml.math.exp(-0.5j * (phi - omega)) * s,
                 qml.math.exp(0.5j * (phi + omega)) * c,
             ],
         ]
 
-        return qml.math.stack([qml.math.stack(row) for row in mat])
+        return qml.math.stack([stack_last(row) for row in mat], axis=-2)
 
     @staticmethod
     def compute_decomposition(phi, theta, omega, wires):
@@ -1831,6 +1946,7 @@ class U1(Operation):
 
     * Number of wires: 1
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(U_1(\phi)) = \frac{1}{2}\left[f(U_1(\phi+\pi/2)) - f(U_1(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`U_1(\phi)`.
 
@@ -1844,6 +1960,9 @@ class U1(Operation):
     num_wires = 1
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -1878,9 +1997,10 @@ class U1(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        exp_part = qml.math.exp(1j * phi)
+        p = qml.math.exp(1j * phi)
+        z = qml.math.zeros_like(p)
 
-        return qml.math.diag([1, exp_part])
+        return qml.math.stack([stack_last([qml.math.ones_like(p), z]), stack_last([z, p])], axis=-2)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -1938,6 +2058,7 @@ class U2(Operation):
 
     * Number of wires: 1
     * Number of parameters: 2
+    * Number of dimensions per parameter: (0, 0)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(U_2(\phi, \delta)) = \frac{1}{2}\left[f(U_2(\phi+\pi/2, \delta)) - f(U_2(\phi-\pi/2, \delta))\right]`
       where :math:`f` is an expectation value depending on :math:`U_2(\phi, \delta)`.
       This gradient recipe applies for each angle argument :math:`\{\phi, \delta\}`.
@@ -1953,6 +2074,9 @@ class U2(Operation):
     num_wires = 1
     num_params = 2
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0, 0)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     parameter_frequencies = [(1,), (1,)]
@@ -1989,12 +2113,13 @@ class U2(Operation):
             phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
             delta = qml.math.cast_like(qml.math.asarray(delta, like=interface), 1j)
 
+        one = qml.math.ones_like(phi) * qml.math.ones_like(delta)
         mat = [
-            [1, -qml.math.exp(1j * delta)],
-            [qml.math.exp(1j * phi), qml.math.exp(1j * (phi + delta))],
+            [one, -qml.math.exp(1j * delta) * one],
+            [qml.math.exp(1j * phi) * one, qml.math.exp(1j * (phi + delta))],
         ]
 
-        return INV_SQRT2 * qml.math.stack([qml.math.stack(row) for row in mat])
+        return INV_SQRT2 * qml.math.stack([stack_last(row) for row in mat], axis=-2)
 
     @staticmethod
     def compute_decomposition(phi, delta, wires):
@@ -2020,8 +2145,9 @@ class U2(Operation):
         PhaseShift(1.23, wires=[0])]
 
         """
+        pi_half = qml.math.ones_like(delta) * (np.pi / 2)
         decomp_ops = [
-            Rot(delta, np.pi / 2, -delta, wires=wires),
+            Rot(delta, pi_half, -delta, wires=wires),
             PhaseShift(delta, wires=wires),
             PhaseShift(phi, wires=wires),
         ]
@@ -2029,8 +2155,8 @@ class U2(Operation):
 
     def adjoint(self):
         phi, delta = self.parameters
-        new_delta = (np.pi - phi) % (2 * np.pi)
-        new_phi = (np.pi - delta) % (2 * np.pi)
+        new_delta = qml.math.mod((np.pi - phi), (2 * np.pi))
+        new_phi = qml.math.mod((np.pi - delta), (2 * np.pi))
         return U2(new_phi, new_delta, wires=self.wires)
 
 
@@ -2059,6 +2185,7 @@ class U3(Operation):
 
     * Number of wires: 1
     * Number of parameters: 3
+    * Number of dimensions per parameter: (0, 0, 0)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(U_3(\theta, \phi, \delta)) = \frac{1}{2}\left[f(U_3(\theta+\pi/2, \phi, \delta)) - f(U_3(\theta-\pi/2, \phi, \delta))\right]`
       where :math:`f` is an expectation value depending on :math:`U_3(\theta, \phi, \delta)`.
       This gradient recipe applies for each angle argument :math:`\{\theta, \phi, \delta\}`.
@@ -2075,6 +2202,9 @@ class U3(Operation):
     num_wires = 1
     num_params = 3
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0, 0, 0)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     parameter_frequencies = [(1,), (1,), (1,)]
@@ -2107,7 +2237,7 @@ class U3(Operation):
 
         """
         # It might be that they are in different interfaces, e.g.,
-        # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
+        # U3(0.2, 0.3, tf.Variable(0.5), wires=0)
         # So we need to make sure the matrix comes out having the right type
         interface = qml.math._multi_dispatch([theta, phi, delta])
 
@@ -2121,12 +2251,17 @@ class U3(Operation):
             c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
             s = qml.math.cast_like(qml.math.asarray(s, like=interface), 1j)
 
+        # The following variable is used to assert the all terms to be stacked have same shape
+        one = qml.math.ones_like(phi) * qml.math.ones_like(delta)
+        c = c * one
+        s = s * one
+
         mat = [
             [c, -s * qml.math.exp(1j * delta)],
             [s * qml.math.exp(1j * phi), c * qml.math.exp(1j * (phi + delta))],
         ]
 
-        return qml.math.stack([qml.math.stack(row) for row in mat])
+        return qml.math.stack([stack_last(row) for row in mat], axis=-2)
 
     @staticmethod
     def compute_decomposition(theta, phi, delta, wires):
@@ -2163,8 +2298,8 @@ class U3(Operation):
 
     def adjoint(self):
         theta, phi, delta = self.parameters
-        new_delta = (np.pi - phi) % (2 * np.pi)
-        new_phi = (np.pi - delta) % (2 * np.pi)
+        new_delta = qml.math.mod((np.pi - phi), (2 * np.pi))
+        new_phi = qml.math.mod((np.pi - delta), (2 * np.pi))
         return U3(theta, new_phi, new_delta, wires=self.wires)
 
 
@@ -2183,6 +2318,7 @@ class IsingXX(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(XX(\phi)) = \frac{1}{2}\left[f(XX(\phi +\pi/2)) - f(XX(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`XX(\phi)`.
 
@@ -2196,6 +2332,9 @@ class IsingXX(Operation):
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -2232,15 +2371,23 @@ class IsingXX(Operation):
         """
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
-        Y = qml.math.convert_like(np.eye(4)[::-1].copy(), phi)
 
         if qml.math.get_interface(phi) == "tensorflow":
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
-            Y = qml.math.cast_like(Y, 1j)
 
-        mat = qml.math.diag([c, c, c, c]) - 1j * s * Y
-        return mat
+        # The following avoids casting an imaginary quantity to reals when backpropagating
+        c = (1 + 0j) * c
+        js = -1j * s
+        z = qml.math.zeros_like(js)
+
+        matrix = [
+            [c, z, z, js],
+            [z, c, js, z],
+            [z, js, c, z],
+            [js, z, z, c],
+        ]
+        return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -2294,6 +2441,7 @@ class IsingYY(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(YY(\phi)) = \frac{1}{2}\left[f(YY(\phi +\pi/2)) - f(YY(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`YY(\phi)`.
 
@@ -2307,6 +2455,9 @@ class IsingYY(Operation):
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -2371,14 +2522,23 @@ class IsingYY(Operation):
         """
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
-        Y = qml.math.convert_like(np.diag([1, -1, -1, 1])[::-1].copy(), phi)
 
         if qml.math.get_interface(phi) == "tensorflow":
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
-            Y = qml.math.cast_like(Y, 1j)
 
-        return qml.math.diag([c, c, c, c]) + 1j * s * Y
+        # The following avoids casting an imaginary quantity to reals when backpropagating
+        c = (1 + 0j) * c
+        js = 1j * s
+        z = qml.math.zeros_like(js)
+
+        matrix = [
+            [c, z, z, js],
+            [z, c, -js, z],
+            [z, -js, c, z],
+            [js, z, z, c],
+        ]
+        return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     def adjoint(self):
         (phi,) = self.parameters
@@ -2403,6 +2563,7 @@ class IsingZZ(Operation):
 
     * Number of wires: 2
     * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
     * Gradient recipe: :math:`\frac{d}{d\phi}f(ZZ(\phi)) = \frac{1}{2}\left[f(ZZ(\phi +\pi/2)) - f(ZZ(\phi-\pi/2))\right]`
       where :math:`f` is an expectation value depending on :math:`ZZ(\theta)`.
 
@@ -2416,6 +2577,9 @@ class IsingZZ(Operation):
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = "A"
     parameter_frequencies = [(1,)]
@@ -2481,10 +2645,18 @@ class IsingZZ(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        pos_phase = qml.math.exp(1.0j * phi / 2)
-        neg_phase = qml.math.exp(-1.0j * phi / 2)
+        neg_phase = qml.math.exp(-0.5j * phi)
+        pos_phase = qml.math.exp(0.5j * phi)
 
-        return qml.math.diag([neg_phase, pos_phase, pos_phase, neg_phase])
+        zeros = qml.math.zeros_like(pos_phase)
+        matrix = [
+            [neg_phase, zeros, zeros, zeros],
+            [zeros, pos_phase, zeros, zeros],
+            [zeros, zeros, pos_phase, zeros],
+            [zeros, zeros, zeros, neg_phase],
+        ]
+
+        return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
@@ -2519,7 +2691,7 @@ class IsingZZ(Operation):
         pos_phase = qml.math.exp(1.0j * phi / 2)
         neg_phase = qml.math.exp(-1.0j * phi / 2)
 
-        return qml.math.stack([neg_phase, pos_phase, pos_phase, neg_phase])
+        return stack_last([neg_phase, pos_phase, pos_phase, neg_phase])
 
     def adjoint(self):
         (phi,) = self.parameters
