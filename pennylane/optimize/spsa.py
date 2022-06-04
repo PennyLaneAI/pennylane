@@ -49,9 +49,14 @@ class SPSAOptimizer:
 
     .. note::
 
-        The number of quantum device executions is :math:`iter*2*num_terms_hamiltonian`.
-        In case of using ``step_and_cost`` method instead of ``step``,
+        * The number of quantum device executions is :math:`iter*2*num_terms_hamiltonian`.
+
+        * In case of using ``step_and_cost`` method instead of ``step``,
         the number of executions increment to calculate the cost function.
+
+        * In cases of hybrid classical-quantum workflows like the implementation of a QNode
+        as a layer of a Keras sequential model, possible optimizers for the model
+        are from the classical platform i.e. `tf.keras.optimizers.SGD <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/SGD>`_
 
 
 

@@ -57,7 +57,7 @@ class TestExceptions:
         with pytest.raises(
             ValueError,
             match="The parameters must be in a tensor.",):
-            _, res = spsa_opt.step_and_cost(quant_fun, *inputs)
+            _, _ = spsa_opt.step_and_cost(quant_fun, *inputs)
 
 
 class TestSPSAOptimizer:
