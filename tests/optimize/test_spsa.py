@@ -57,7 +57,7 @@ class TestExceptions:
         with pytest.raises(
             ValueError,
             match="The parameters must be in a tensor.",):
-            _, res = spsa_opt.step_and_cost(quant_fun, *inputs, step=1)
+            _, res = spsa_opt.step_and_cost(quant_fun, *inputs)
 
 
 class TestSPSAOptimizer:
@@ -85,8 +85,9 @@ class TestSPSAOptimizer:
 
         y = f(args)
         grad = (y) / (2*ck)
+        spsa_opt.increment_k()
 
-        res = spsa_opt.apply_grad(grad, args, k=k)
+        res = spsa_opt.apply_grad(grad, args)
         expected = args - ak * grad
         assert np.allclose(res, expected, atol=tol)
 
@@ -112,7 +113,8 @@ class TestSPSAOptimizer:
             x_vec = x_vals[jdx : jdx + 2]
             y = f(x_vec)
             grad = (y) / (2*ck*np.ones((2)))
-            x_new = spsa_opt.apply_grad(grad, x_vec, k=k)
+            spsa_opt.increment_k()
+            x_new = spsa_opt.apply_grad(grad, x_vec)
             x_al = x_vec - ak * grad
             tol = np.maximum(np.abs(f(x_vec - ck)), np.abs(f(x_vec + ck)))
             assert np.allclose(x_new, x_al, atol=tol)
@@ -124,7 +126,7 @@ class TestSPSAOptimizer:
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
         args = np.array(args, requires_grad=True)
 
-        _, res = spsa_opt.step_and_cost(f, args, step=1)
+        _, res = spsa_opt.step_and_cost(f, args)
         expected = f(args)
         assert np.all(res == expected)
 
@@ -143,7 +145,7 @@ class TestSPSAOptimizer:
         inputs = np.array([0.4, 0.2, 0.4], requires_grad=True)
 
         expected = quant_fun(inputs)
-        _, res = spsa_opt.step_and_cost(quant_fun, inputs, step=1)
+        _, res = spsa_opt.step_and_cost(quant_fun, inputs)
 
         assert np.all(res == expected)
 
@@ -160,7 +162,7 @@ class TestSPSAOptimizer:
             qml.RY(var[1, 1], wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        _, res = spsa_opt.step_and_cost(quant_fun_mdarr, multid_array, step=1)
+        _, res = spsa_opt.step_and_cost(quant_fun_mdarr, multid_array)
         expected = quant_fun_mdarr(multid_array)
 
         assert np.all(res == expected)
