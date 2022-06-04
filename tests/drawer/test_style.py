@@ -24,12 +24,7 @@ plt = pytest.importorskip("matplotlib.pyplot")
 def test_available_styles():
     """Assert ``available_styles`` returns tuple of available styles."""
 
-    assert qml.drawer.available_styles() == (
-        "black_white", 
-        "black_white_dark", 
-        "solarized_light"
-        "default"
-        )
+    assert qml.drawer.available_styles() == ( "black_white",  "black_white_dark",  "solarized_light", "solarized_dark", "default")
 
 
 def test_black_white_style():
