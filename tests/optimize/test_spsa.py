@@ -217,6 +217,7 @@ class TestSPSAOptimizer:
         y = f(args)
         grad = (y) / (2*ck)
 
-        res = spsa_opt.step(f, args)
+        res, rescost = spsa_opt.step_and_cost(f, args)
         expected = args - ak * grad
         assert np.allclose(res, expected, atol=tol)
+        assert np.allclose(y, rescost, atol=tol)
