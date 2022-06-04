@@ -2846,15 +2846,19 @@ class IsingXY(Operation):
         **Example**
 
         >>> qml.IsingXY.compute_eigvals(0.5)
-        array([1.        +0.j        , 1.        +0.j        ,       0.96891242-0.24740396j, 0.96891242+0.24740396j])
+        array([0.96891242+0.24740396j, 0.96891242-0.24740396j,       1.        +0.j        , 1.        +0.j        ])
         """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        pos_phase = qml.math.exp(1.0j * phi / 2)
-        neg_phase = qml.math.exp(-1.0j * phi / 2)
+        if phi > 0:
+            pos_phase = qml.math.exp(1.0j * phi / 2)
+            neg_phase = qml.math.exp(-1.0j * phi / 2)
+        else:
+            neg_phase = qml.math.exp(1.0j * phi / 2)
+            pos_phase = qml.math.exp(-1.0j * phi / 2)
 
-        return qml.math.stack([1, 1, neg_phase, pos_phase])
+        return qml.math.stack([pos_phase, neg_phase, 1, 1])
 
     def adjoint(self):
         (phi,) = self.parameters

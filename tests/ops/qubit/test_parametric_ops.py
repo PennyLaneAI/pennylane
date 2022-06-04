@@ -942,6 +942,28 @@ class TestMatrix:
             qml.IsingXY(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
 
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_isingxy_eigvals(self, phi, tol):
+        evs = qml.IsingXY.compute_eigvals(phi)
+        evs_expected = qml.math.linalg.eigvals(qml.IsingXY(phi, [0, 1]).matrix())
+        assert qml.math.allclose(evs, evs_expected)
+
+        torch = pytest.importorskip("torch")
+        tf = pytest.importorskip("tensorflow")
+        jax = pytest.importorskip("jax")
+
+        param_torch = torch.tensor(phi)
+        evs_expected = qml.math.linalg.eigvals(qml.IsingXY(param_torch, [0, 1]).matrix())
+        assert qml.math.allclose(evs, evs_expected)
+
+        param_tf = tf.Variable(phi)
+        evs_expected = qml.math.linalg.eigvals(qml.IsingXY(param_tf, [0, 1]).matrix())
+        assert qml.math.allclose(evs, evs_expected)
+
+        param_jax = jax.numpy.array(phi)
+        evs_expected = qml.math.linalg.eigvals(qml.IsingXY(param_jax, [0, 1]).matrix())
+        assert qml.math.allclose(evs, evs_expected)
+
     def test_isingxx_broadcasted(self, tol):
         """Test that the broadcasted IsingXX operation is correct"""
         z = np.zeros(3)
@@ -2837,14 +2859,3 @@ control_data = [
 def test_control_wires(op, control_wires):
     """Test the ``control_wires`` attribute for parametrized operations."""
     assert op.control_wires == control_wires
-
-
-class TestEigvalCalculation:
-    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
-    def test_isingxy_eigvals(self, phi, tol):
-        evs = qml.IsingXY.compute_eigvals(phi)
-        evs_np = np.linalg.eigvals(qml.IsingXY(phi, [0, 1]).matrix())
-
-        from collections import Counter
-
-        assert Counter(evs_np.round(8)) == Counter(evs.round(8))
