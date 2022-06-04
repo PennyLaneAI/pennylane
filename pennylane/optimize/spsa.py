@@ -13,19 +13,16 @@
 # limitations under the License.
 """SPSA optimizer"""
 
-from pennylane._grad import grad as get_gradient
-from .gradient_descent import GradientDescentOptimizer
 from pennylane import numpy as np
-import pennylane as qml
 
 
 class SPSAOptimizer:
-    r"""The Simultaneous Perturbation Stochastic Approximation method (SPSA) 
-    is an iterative algortihm for optimization where the input information 
+    r"""The Simultaneous Perturbation Stochastic Approximation method (SPSA)
+    is an iterative algortihm for optimization where the input information
     may be contaminated with noise.
-    In contrast to other methods that perform multiple operations to determine 
+    In contrast to other methods that perform multiple operations to determine
     the gradient, SPSA only measures two times the loss function to obtain it.
-    It is based on an approximation to the unknown gradient :math:`\hat{g}(\hat{\theta}_{k})` 
+    It is based on an approximation to the unknown gradient :math:`\hat{g}(\hat{\theta}_{k})`
     through a simultaneous perturbation:
 
     .. math::
@@ -35,12 +32,12 @@ class SPSAOptimizer:
            \vdots \\
            \Delta_{kp}^{-1}
          \end{bmatrix}
-        
+
     To update :math:`\hat{\theta}_k` to a new set of parameters:
 
     .. math::
         \hat{\theta}_{k+1} = \hat{\theta}_{k} - a_k\hat{g}_k(\hat{\theta}_k)
-        
+
     where the gain sequences are :math:`a_k=\frac{a}{(A+k+1)^\alpha}` and :math:`c_k=\frac{c}{(k+1)^\gamma}`
 
 
@@ -53,11 +50,11 @@ class SPSAOptimizer:
     .. note::
 
         The number of quantum device executions is :math:`iter*2*num_terms_hamiltonian`.
-        In case of using ``step_and_cost`` method instead of ``step``, 
+        In case of using ``step_and_cost`` method instead of ``step``,
         the number of executions increment to calculate the cost function.
 
-        
-                
+
+
     **Examples:**
 
     For VQE/VQE-like problems, the objective function can be the following:
@@ -89,12 +86,14 @@ class SPSAOptimizer:
         maxiter=200 (int): the maximum number of iterations expected to be performed
         alpha (float): An hyperparameter to calculate :math:`a_k=\frac{a}{(A+k+1)^\alpha}` for each iteration. Its asymptotically optimal value is 1.0
         gamma=0.101 (float): An hyperparameter to calculate :math:`c_k=\frac{c}{(k+1)^\gamma}` for each iteration. Its asymptotically optimal value is 1/6
-        c=0.2 (float): An hyperparameter related to the expected noise. It 
+        c=0.2 (float): An hyperparameter related to the expected noise. It
         should be approximately the standard deviation of the expected noise on the cost function
         A=None (float): The stability constant expected to be 10% of maximum number of expected iterations
-        a=None (float): An hyperparameter expected to be small in noisy situations, whose value could be :math:`\frac{mag(\Delta\theta)}{mag(g(\theta))}(A+1)^\alpha`    
+        a=None (float): An hyperparameter expected to be small in noisy situations, whose value could be :math:`\frac{mag(\Delta\theta)}{mag(g(\theta))}(A+1)^\alpha`
     """
-    def __init__(self, maxiter=200, alpha=0.602, gamma=0.101, c=0.2, A=None, a=None):
+    #pylint: disable-msg=too-many-arguments
+    def __init__(self, maxiter=200, alpha=0.602, gamma=0.101, c=0.2,
+                 A=None, a=None):
         if not A:
             self.A = maxiter * 0.1
         if not a:
@@ -102,17 +101,18 @@ class SPSAOptimizer:
         self.c = c
         self.alpha = alpha
         self.gamma = gamma
+        self.ak = self.a / (self.A + 1 + 1.0)**self.alpha
 
     def step_and_cost(self, objective_fn, *args, step, **kwargs):
         """Update the parameter array :math:`x` with one step of the optimizer and return
         the step and the corresponding objective function
-        
+
         Args:
             objective_fn (function): The objective function for optimization
             *args : variable length argument array for objective function
             step (int): The number of iteration
             **kwargs : variable length of keyword arguments for the objective function
-            
+
         Returns:
             tuple[array, float]: the new variable values :math:`x^{(t+1)}` and the
             objective function output prior to the step.
@@ -130,13 +130,13 @@ class SPSAOptimizer:
 
     def step(self, objective_fn, *args, step=None, **kwargs):
         """Update trainable arguments with one step of the optimizer.
-        
+
         Args:
             objective_fn (function): The objective function for optimization
             *args : variable length argument array for objective function
             step (int): The number of iteration
             **kwargs : variable length of keyword arguments for the objective function
-            
+
         Returns:
             array: the new variable values :math:`x^{(t+1)}`.
             """
@@ -152,7 +152,7 @@ class SPSAOptimizer:
     def compute_grad(self, objective_fn, args, kwargs, k=None):
         r"""Compute approximation of gradient of the objective function at the
         given point.
-        
+
         Args:
             objective_fn (function): The objective function for optimization
             args (array): NumPy array containing the current parameters for objective function
@@ -166,7 +166,7 @@ class SPSAOptimizer:
         if type(args) in [list, int, float] or len(list(np.extract_tensors(args))) > 1:
             raise ValueError("The parameters must be in a tensor.")
         ck = self.c / (k + 1.0)**self.gamma
-        shape = args[0].shape if type(args) == tuple else args.shape
+        shape = args[0].shape if isinstance(args, tuple) else args.shape
         delta = np.random.choice([-1, 1], size=shape)
         thetaplus = args + ck*delta
         thetaminus = args - ck*delta
@@ -180,7 +180,7 @@ class SPSAOptimizer:
 
 
     def apply_grad(self, grad, args, k=None):
-        r"""Update the variables to take a single optimization step. 
+        r"""Update the variables to take a single optimization step.
 
         Args:
             grad (tuple [array]): the gradient approximation of the objective
