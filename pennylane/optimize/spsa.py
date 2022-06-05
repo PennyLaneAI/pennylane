@@ -223,13 +223,7 @@ class SPSAOptimizer:
         grad = []
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
-                try:
-                    delta[index] = np.random.choice([-1, 1], size=arg.shape)
-                except AttributeError:
-                    try:
-                        delta[index] = np.random.choice([-1, 1], size=arg.size)
-                    except AttributeError:
-                        delta[index] = np.random.choice([-1, 1])
+                delta[index] = np.random.choice([-1, 1], size=arg.shape)
                 thetaplus[index] = arg + ck * delta[index]
                 thetaminus[index] = arg - ck * delta[index]
         yplus = objective_fn(*thetaplus, **kwargs)
