@@ -27,32 +27,6 @@ multivariate = [
 ]
 
 
-class TestExceptions:
-    """Test exceptions are raised for incorrect usage"""
-
-    def test_parameters_not_a_tensor(self):
-        """Test exception due to parameters in a list of tensors of different
-        shapes. SPSA is a simultaneous algorithm that only performs two measures
-        of the cost function"""
-        spsa_opt = qml.SPSAOptimizer(maxiter=10)
-
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def quant_fun(*variables):
-            qml.RX(variables[0][1], wires=[0])
-            qml.RY(variables[1][2], wires=[0])
-            qml.RY(variables[2], wires=[0])
-            return qml.expval(qml.PauliZ(0))
-
-        inputs = [
-            np.array((0.2, 0.3), requires_grad=True),
-            np.array([0.4, 0.2, 0.4], requires_grad=False),
-            np.array(0.1, requires_grad=True),
-        ]
-
-        with pytest.raises(ValueError, match="The parameters must be in a tensor."):
-            _, _ = spsa_opt.step_and_cost(quant_fun, *inputs)
-
-
 class TestSPSAOptimizer:
     """Test the SPSA optimizer"""
 
@@ -214,3 +188,48 @@ class TestSPSAOptimizer:
         expected = args - ak * grad
         assert np.allclose(res, expected, atol=tol)
         assert np.allclose(y, rescost, atol=tol)
+
+    def test_parameters_not_a_tensor_and_not_all_require_grad(self):
+        """Test execution of list of parameters of different sizes
+        and not all require grad"""
+        spsa_opt = qml.SPSAOptimizer(maxiter=10)
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def quant_fun(*variables):
+            qml.RX(variables[0][1], wires=[0])
+            qml.RY(variables[1][2], wires=[0])
+            qml.RY(variables[2], wires=[0])
+            return qml.expval(qml.PauliZ(0))
+
+        inputs = [
+            np.array((0.2, 0.3), requires_grad=True),
+            np.array([0.4, 0.2, 0.4], requires_grad=False),
+            np.array(0.1, requires_grad=True),
+        ]
+
+        res, cost = spsa_opt.step_and_cost(quant_fun, *inputs)
+        assert isinstance(res, list)
+        assert np.all(res[1] == inputs[1])
+        assert np.all(res[0] != inputs[0])
+
+    def test_parameter_not_an_array(self):
+        """Test function when there is only one float parameter that doesn't
+        require grad"""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def cost(a):
+            return circuit(a)
+
+        spsa_opt = qml.SPSAOptimizer(maxiter=10)
+        params = 0.5
+
+        res = spsa_opt.step(cost, params)
+
+        assert isinstance(res, float)
+        assert res == params

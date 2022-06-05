@@ -147,7 +147,7 @@ class SPSAOptimizer:
             **kwargs : variable length of keyword arguments for the objective function
 
         Returns:
-            tuple[array, float]: the new variable values :math:`x^{(t+1)}` and the
+            tuple[list [array], float]: the new variable values :math:`x^{(t+1)}` and the
             objective function output prior to the step.
         """
         g, forward = self.compute_grad(objective_fn, args, kwargs)
@@ -170,7 +170,7 @@ class SPSAOptimizer:
             **kwargs : variable length of keyword arguments for the objective function
 
         Returns:
-            array: the new variable values :math:`x^{(t+1)}`.
+            list [array]: the new variable values :math:`x^{(t+1)}`.
         """
         g, _ = self.compute_grad(objective_fn, args, kwargs)
         new_args = self.apply_grad(g, args)
@@ -191,29 +191,38 @@ class SPSAOptimizer:
 
         Args:
             objective_fn (function): The objective function for optimization
-            args (array): NumPy array containing the current parameters for objective function
+            args (tuple): tuple of NumPy array containing the current parameters
+                for objective function
             kwargs (dict): keyword arguments for the objective function
 
         Returns:
             tuple (array): Numpy array containing the gradient
                 :math:`\hat{g}_k(\hat{\theta}_k)` and ``None``
         """
-        # pylint: disable=arguments-differ
-        if type(args) in [list, int, float] or len(list(np.extract_tensors(args))) > 1:
-            raise ValueError("The parameters must be in a tensor.")
         self.increment_k()
         ck = self.c / (self.k + 1.0) ** self.gamma
-        shape = args[0].shape if isinstance(args, tuple) else args.shape
-        delta = np.random.choice([-1, 1], size=shape)
-        thetaplus = args + ck * delta
-        thetaminus = args - ck * delta
+        delta = list(args)
+        thetaplus = list(args)
+        thetaminus = list(args)
+        grad = []
+        for index, arg in enumerate(args):
+            if getattr(arg, "requires_grad", False):
+                try:
+                    delta[index] = np.random.choice([-1, 1], size=arg.shape)
+                except AttributeError:
+                    try:
+                        delta[index] = np.random.choice([-1, 1], size=arg.size)
+                    except AttributeError:
+                        delta[index] = np.random.choice([-1, 1])
+                thetaplus[index] = arg + ck * delta[index]
+                thetaminus[index] = arg - ck * delta[index]
         yplus = objective_fn(*thetaplus, **kwargs)
         yminus = objective_fn(*thetaminus, **kwargs)
-        grad = (yplus - yminus) / (2 * ck * delta)
-        num_trainable_args = sum(getattr(arg, "requires_grad", False) for arg in args)
-        grad = (grad,) if num_trainable_args == 1 else grad
+        for index, arg in enumerate(args):
+            if getattr(arg, "requires_grad", False):
+                grad.append((yplus - yminus) / (2 * ck * delta[index]))
 
-        return grad, None
+        return tuple(grad), None
 
     def apply_grad(self, grad, args):
         r"""Update the variables to take a single optimization step.
@@ -221,7 +230,7 @@ class SPSAOptimizer:
         Args:
             grad (tuple [array]): the gradient approximation of the objective
                 function at point :math:`x^{(t)}`
-            args (array): the current value of the variables :math:`x^{(t)}`
+            args (tuple): the current value of the variables :math:`x^{(t)}`
 
         Returns:
             list [array]: the new values :math:`x^{(t+1)}`"""
