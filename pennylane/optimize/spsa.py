@@ -171,7 +171,7 @@ class SPSAOptimizer:
 
         Returns:
             array: the new variable values :math:`x^{(t+1)}`.
-            """
+        """
         g, _ = self.compute_grad(objective_fn, args, kwargs)
         new_args = self.apply_grad(g, args)
 
@@ -197,7 +197,7 @@ class SPSAOptimizer:
         Returns:
             tuple (array): Numpy array containing the gradient
                 :math:`\hat{g}_k(\hat{\theta}_k)` and ``None``
-            """
+        """
         # pylint: disable=arguments-differ
         if type(args) in [list, int, float] or len(list(np.extract_tensors(args))) > 1:
             raise ValueError("The parameters must be in a tensor.")
