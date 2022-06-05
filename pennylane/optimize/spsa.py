@@ -64,9 +64,10 @@ class SPSAOptimizer:
           possible optimizers for the model are from the classical platform i.e.
           `tf.keras.optimizers.SGD
           <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/SGD>`_.
-        * In order to use SPSAOptimizer we have to extract the values of the
-          classical tensor in order to use it in the quantum circuit and assign
-          the new parameters to the classical tensor after the quantum circuit.
+        * In a hybrid classical-quantum-classical workflow where we use SPSAOptimizer
+          for the quantum part, we have to extract the values of the classical tensor
+          in order to use it in the quantum circuit as inputs and assign the output
+          of the quantum circuit to a subsecuent classical tensor.
 
 
     **Examples:**
@@ -97,18 +98,33 @@ class SPSAOptimizer:
 
     Example of hybrid classical-quantum workflow:
 
-    >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
-    >>> init_params = tf.Variable([3.97507603, 3.00854038])
-    >>> tensor2 = tf.Variable([3.97507603, 3.00854038])
-    >>> init = tf.compat.v1.global_variables_initializer()
+    >>> dev = qml.device("default.qubit", wires=n_qubits)
+    >>> @qml.qnode(dev, interface=None)
+    >>> def layer_fn_spsa(inputs, weights):
+    ...     qml.AngleEmbedding(inputs, wires=range(n_qubits))
+    ...     qml.BasicEntanglerLayers(weights, wires=range(n_qubits))
+    ...     return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
 
+    >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
+    >>> tensor_in = tf.Variable([0.27507603, 0.3453423])
+    >>> params = tf.Variable([[3.97507603, 2.00854038],
+    ...                       [3.12950603, 3.00854038],
+    ...                       [1.17907603, 1.10854038],
+    ...                       [0.97507603, 1.00854038],
+    ...                       [1.25907603, 0.40854088]])
+    >>> tensor_out = tf.Variable([0,0])
+
+    >>> init = tf.compat.v1.global_variables_initializer()
     >>> with tf.compat.v1.Session() as sess:
-    ...    sess.run(init)
-    ...    params = init_params
-    ...    for n in range(max_iterations):
-    ...        new_params, _ = opt.step_and_cost(cost_fn_spsa, np.tensor(params.eval(sess)))
-    ...        params.assign(new_params, sess)
-    ...        tensor2.assign(new_params, sess)
+    ...     sess.run(init)
+    ...     for _ in range(max_iterations):
+    ...         # Take step
+    ...         params_a, layer_res = opt.step_and_cost(layer_fn_spsa,
+    ...                                np.tensor(tensor_in.eval(sess), requires_grad=False),
+    ...                                np.tensor(params.eval(sess)))
+    ...         params.assign(params_a[1], sess)
+    ...         tensor_out.assign(layer_res, sess)
+
 
 
 
