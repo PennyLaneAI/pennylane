@@ -13,7 +13,6 @@
 # limitations under the License.
 """Tests for the SPSA optimizer"""
 import pytest
-from sympy import Q
 
 import pennylane as qml
 from pennylane import numpy as np
