@@ -44,8 +44,8 @@ def _tf_jac(circ):
     return wrapper
 
 
-def CFIM(qnode, argnums=0):
-    """Computing the classical fisher information matrix (CFIM) using the jacobian of the output probabilities
+def classical_fisher(qnode, argnums=0):
+    """Computing the classical fisher information matrix (classical_fisher) using the jacobian of the output probabilities
     as described in eq. (15) in https://arxiv.org/abs/2103.15191
     """
     new_qnode = _make_probs(qnode, post_processing_fn=lambda x: qml.math.squeeze(qml.math.stack(x)))
@@ -81,32 +81,18 @@ def CFIM(qnode, argnums=0):
 
 def _compute_cfim(p, dp, interface):
     r"""Computes the (num_params, num_params) classical fisher information matrix from the probabilities and its derivatives
-    I.e. it computes :math:`CFIM_{ij} = \sum_\ell (\partial_i p_\ell) (\partial_i p_\ell) / p_\ell`
+    I.e. it computes :math:`classical_fisher_{ij} = \sum_\ell (\partial_i p_\ell) (\partial_i p_\ell) / p_\ell`
     """
+    # Note that casting and being careful about dtypes is necessary as interfaces
+    # typically treat derivatives (dp) with float32, while standard execution (p) comes in float64
 
-    # Compute 1/p for p!=0, else 0
-    if any(qml.math.isclose(p, qml.math.zeros_like(p))) and not interface == "tf":
-        mask = p != 0
-        one_over_p = qml.math.zeros_like(p)
-        if interface == "jax":
-            one_over_p = one_over_p.at[mask].set(1 / p[mask])
-        else:
-            one_over_p[mask] = 1 / p[mask]
-    elif interface == "tf":
-        import tensorflow as tf
-        import tensorflow.python.ops.numpy_ops.np_config as np_config
-
-        np_config.enable_numpy_behavior()  # this allows for the manipulations in _compute_cfim with tensors
-        one_over_p = tf.math.divide_no_nan(qml.math.ones_like(p), p)
-    else:
-        one_over_p = 1 / p
+    nonzeros_p = qml.math.where(p > 0, p, qml.math.ones_like(p))
+    one_over_p = qml.math.where(p > 0, qml.math.ones_like(p), qml.math.zeros_like(p))
+    one_over_p = qml.math.divide(one_over_p, nonzeros_p)
 
     # Multiply dp and p
+    dp = qml.math.cast(dp, dtype=p.dtype)
     dp_over_p = qml.math.transpose(dp) * one_over_p  # creates (n_params, n_probs) array
-
-    # create final matrix cfim_ij = \sum_l (d_i p_l) (d_j p_l) / p_l
-    if interface == "torch":
-        return dp_over_p @ qml.math.cast(dp, dtype=p.dtype)
 
     return dp_over_p @ dp  # (n_params, n_probs) @ (n_probs, n_params) = (n_params, n_params)
 
@@ -128,8 +114,8 @@ def _make_probs(tape, wires=None, post_processing_fn=None):
     return [new_tape], post_processing_fn
 
 
-# def CFIM_alt(qnode):
-#     """Computing the classical fisher information matrix (CFIM) by computing the hessian of log(p)
+# def classical_fisher_alt(qnode):
+#     """Computing the classical fisher information matrix (classical_fisher) by computing the hessian of log(p)
 #     as described in eq. (14) in https://arxiv.org/abs/2103.15191
 #     """
 #     new_qnode = qml.transforms._make_probs(
@@ -150,7 +136,7 @@ def _make_probs(tape, wires=None, post_processing_fn=None):
 
 
 # def _compute_cfim_alt(p, d_sqrt_p, interface=None):
-#     """Computes :math:`CFIM_{ij} = \sum_\ell (\partial_i \sqrt{p_\ell}) (\partial_i \sqrt{p_\ell})`"""
+#     """Computes :math:`classical_fisher_{ij} = \sum_\ell (\partial_i \sqrt{p_\ell}) (\partial_i \sqrt{p_\ell})`"""
 #     if any(qml.math.isclose(p, 0)):
 #         mask = qml.math.where(qml.math.isclose(p, 0))
 #         n_zeros = len(mask[0])

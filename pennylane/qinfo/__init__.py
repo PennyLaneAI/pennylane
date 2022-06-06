@@ -16,4 +16,4 @@
 
 from .utils import *
 from .entropies import *
-from .classical_fisher import CFIM, _compute_cfim, _make_probs
+from .classical_fisher import classical_fisher, _compute_cfim, _make_probs
