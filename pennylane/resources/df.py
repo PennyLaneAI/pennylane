@@ -69,63 +69,41 @@ def rank(factors, eigvals, tol=1e-5):
     def near_k(self, n_opt):
         return np.array([2 ** np.floor(n_opt), 2 ** np.ceil(n_opt)])
 
-    def expansion_factor(self, n, l, bp1, bo, bp2, xi, beth):
-        r"""Return expansion factors that minimize the cost.
 
-        The expansion factors are parameters chosen as powers of 2 that determine the complexity of
-        applying QROMs.
+def expansion_factor(constants):
+    r"""Return expansion factors that minimize the cost.
 
-        k1: QROM for state preparation on the first register
-        k2: QROM for outputing data from the l register
+    The expansion factors are parameters, selected as integer powers of 2 as :math:`k = 2^n`, that
+    determine the complexity of applying QROMs. These parameters are optimized to minimize the
+    cost. In the most general form, the complexity of a QROM computation depends on the expansion
+    factor as [`arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_]
 
-        k3: inverse the k2 QROM
-        k4: inverse the k1 QROM
+    .. math::
 
-        k5: QROM for the rotation
+        cost = \left \lceil \frac{a + b}{k} \right \rceil + \left \lceil \frac{c}{k} \right \rceil +
+        d \left ( k + e \right ),
 
-        k6:
+    where :math:`a, b, c, d, e` are constants that depend on the nature of the QROM implementation.
 
-        """
-        # kp1
-        n1 = np.log2(((l + 1) / bp1) ** 0.5)
-        k1 = np.array([2 ** np.floor(n1), 2 ** np.ceil(n1)])
-        cost = np.ceil((l + 1) / k1) + bp1 * (k1 - 1)
-        k1_opt = int(k1[np.argmin(cost)])
+    To obtain the optimum values of :math:`k`, we first assume that the cost function is continues
+    and use differentiation to obtain the value of :math:`k` that minimizes the cost. This value of
+    :math:`k` is not necessarily an integer power of 2. We then obtain the value of :math:`n` as
+    :math:`n = \log_2(k)` and compute the cost for
+    :math:`n_{int}= \left \{\left \lceil n \right \rceil, \left \lfloor n \right \rfloor \right \}`.
+    The value of :math:`n_{int}` that gives the smaller cost is used to compute :math:`k_{opt}`.
 
-        # ko
-        n2 = np.log2(((l + 1) / bo) ** 0.5)
-        k2 = np.array([2 ** np.floor(n2), 2 ** np.ceil(n2)])
-        cost = np.ceil((l + 1) / k2) + bo * (k2 - 1)
-        k2_opt = int(k2[np.argmin(cost)])
+    Args:
+        constants (tuple[float]): constants determining the QROM complexity
 
-        # kpp1
-        n3 = np.log2((l + 1) ** 0.5)
-        k3 = np.array([2 ** np.floor(n3), 2 ** np.ceil(n3)])
-        cost = np.ceil((l + 1) / k3) + k3
-        k3_opt = int(k3[np.argmin(cost)])
+    Returns:
+        int: the expansion factor
 
-        # kppo
-        k4_opt = k3_opt
+    **Example**
+    """
+    a, b, c, d, e = constants
+    n = np.log2(((a + b + c) / d) ** 0.5)
+    k = np.array([2 ** np.floor(n), 2 ** np.ceil(n)])
+    cost = np.ceil((a + b) / k) + np.ceil(c / k) + d * (k + e)
+    k_opt = int(k[np.argmin(cost)])
 
-        # kr
-        n5 = np.log2(((2 * l * xi - n / 2) / (n * beth)) ** 0.5)
-        k5 = np.array([2 ** np.floor(n5), 2 ** np.ceil(n5)])
-        cost = np.ceil((l * xi + n / 2) / k5) + np.ceil((l * xi) / k5) + n * beth * k5
-        k5_opt = int(k5[np.argmin(cost)])
-
-        # kpr
-        n6 = np.log2((l * xi - n / 4) ** 0.5)
-        k6 = np.array([2 ** np.floor(n6), 2 ** np.ceil(n6)])
-        cost = np.ceil((l * xi + n / 2) / k6) + np.ceil((l * xi) / k6) + 2 * k6
-        k6_opt = int(k6[np.argmin(cost)])
-
-        # kp2
-        n7 = np.log2(((2 * l * xi - n / 2) / (2 * bp2)) ** 0.5)
-        k7 = np.array([2 ** np.floor(n7), 2 ** np.ceil(n7)])
-        cost = np.ceil((l * xi + n / 2) / k7) + np.ceil((l * xi) / k7) + 2 * bp2 * (k7 - 1)
-        k7_opt = int(k7[np.argmin(cost)])
-
-        # kpp2
-        k8_opt = k6_opt
-
-        return k1_opt, k2_opt, k3_opt, k4_opt, k5_opt, k6_opt, k7_opt, k8_opt
+    return k_opt
