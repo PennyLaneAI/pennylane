@@ -96,6 +96,9 @@ def expansion_factor(constants):
         int: the expansion factor
 
     **Example**
+    >>> constants = (151.0, 7.0, 151.0, 30.0, -1.0)
+    >>> expansion_factor(constants)
+    4
     """
     a, b, c, d, e = constants
     n = np.log2(((a + b + c) / d) ** 0.5)
