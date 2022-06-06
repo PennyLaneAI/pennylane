@@ -12,7 +12,7 @@ import pennylane as qml
 from pennylane import QutritDevice, DeviceError
 from pennylane.wires import Wires, WireError
 from .._version import __version__
-from .default_qubit import _get_slice
+from pennylane.devices.default_qubit import _get_slice
 
 from pennylane.measurements import MeasurementProcess
 
