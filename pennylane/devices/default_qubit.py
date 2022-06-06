@@ -608,7 +608,6 @@ class DefaultQubit(QubitDevice):
             array[complex]: complex tensor of shape ``(2 ** len(wires), 2 ** len(wires))``
             representing the reduced density matrix.
         """
-        wires = wires.tolist()
         state = self._flatten(self._pre_rotated_state)
         return qml.math.to_density_matrix(state, indices=wires, c_dtype=self.C_DTYPE)
 
