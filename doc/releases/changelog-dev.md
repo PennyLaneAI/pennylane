@@ -186,8 +186,6 @@
 
   As a result, the default differentiation method for the device is now `"backprop"`. To continue using the old default `"parameter-shift"`, explicitly specify this differentiation method in the QNode.
 
-  **Example**
-
   ```python
   dev = qml.device("default.mixed", wires=2)
 
@@ -198,7 +196,7 @@
       return qml.expval(qml.PauliZ(wires=1))
   ```
   ```pycon
-  >>> x = np.array(0.5)
+  >>> x = np.array(0.5, requires_grad=True)
   >>> circuit(x)
   array(0.87758256)
   >>> qml.grad(circuit)(x)

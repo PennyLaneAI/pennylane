@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Integration tests for the ``default.qubit.autograd`` device.
+Tests for the ``default.qubit.autograd`` device.
 """
 import re
 import pytest
@@ -39,7 +39,7 @@ def test_analytic_deprecation():
 @pytest.mark.autograd
 class TestQNodeIntegration:
     """Integration tests for default.qubit.autograd. This test ensures it integrates
-    properly with the PennyLane UI, in particular the new QNode."""
+    properly with the PennyLane UI, in particular the QNode."""
 
     def test_defines_correct_capabilities(self):
         """Test that the device defines the right capabilities"""
@@ -74,7 +74,7 @@ class TestQNodeIntegration:
 
         dev = qml.device("default.mixed", wires=1)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev, interface="autograd", diff_method="backprop")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -85,7 +85,7 @@ class TestQNodeIntegration:
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):
-        """Test that the device state is correct after applying a
+        """Test that the device state is correct after evaluating a
         quantum function on the device"""
 
         dev = qml.device("default.mixed", wires=2)
@@ -152,7 +152,6 @@ class TestDtypePreserved:
         p = 0.543
 
         dev = qml.device("default.mixed", wires=3, c_dtype=c_dtype)
-        # dev.C_DTYPE = c_dtype
 
         @qml.qnode(dev, diff_method="backprop")
         def circuit(x):
