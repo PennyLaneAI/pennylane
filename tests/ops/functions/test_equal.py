@@ -141,14 +141,15 @@ class TestEqual:
             check_interface=False,
         )
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_1W)
     def test_equal_op_1p1w(self, op1):
         """Test optional arguments are working"""
         wire = 0
 
-        torch = pytest.importorskip("torch")
-        tf = pytest.importorskip("tensorflow")
-        jax = pytest.importorskip("jax")
+        import torch
+        import tensorflow as tf
+        import jax
 
         param_torch = torch.tensor(0.123)
         param_tf = tf.Variable(0.123)
@@ -185,14 +186,15 @@ class TestEqual:
             check_interface=False,
         )
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_2W)
     def test_equal_op_1p2w(self, op1):
         """Test optional arguments are working"""
         wire = [0, 1]
 
-        torch = pytest.importorskip("torch")
-        tf = pytest.importorskip("tensorflow")
-        jax = pytest.importorskip("jax")
+        import torch
+        import tensorflow as tf
+        import jax
 
         param_torch = torch.tensor(0.123)
         param_tf = tf.Variable(0.123)
@@ -253,14 +255,15 @@ class TestEqual:
             check_interface=False,
         )
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_4W)
     def test_equal_op_1p4w(self, op1):
         """Test optional arguments are working"""
         wire = [0, 1, 2, 3]
 
-        torch = pytest.importorskip("torch")
-        tf = pytest.importorskip("tensorflow")
-        jax = pytest.importorskip("jax")
+        import torch
+        import tensorflow as tf
+        import jax
 
         param_torch = torch.tensor(0.123)
         param_tf = tf.Variable(0.123)
@@ -321,14 +324,15 @@ class TestEqual:
             check_interface=False,
         )
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_3P_1W)
     def test_equal_op_3p1w(self, op1):
         """Test optional arguments are working"""
         wire = 0
 
-        torch = pytest.importorskip("torch")
-        tf = pytest.importorskip("tensorflow")
-        jax = pytest.importorskip("jax")
+        import torch
+        import tensorflow as tf
+        import jax
 
         param_torch = torch.tensor([1, 2, 3])
         param_tf = tf.Variable([1, 2, 3])
@@ -389,13 +393,14 @@ class TestEqual:
             check_interface=False,
         )
 
+    @pytest.mark.all_interfaces
     def test_equal_op_remaining(self):
         """Test optional arguments are working"""
         wire = 0
 
-        torch = pytest.importorskip("torch")
-        tf = pytest.importorskip("tensorflow")
-        jax = pytest.importorskip("jax")
+        import torch
+        import tensorflow as tf
+        import jax
 
         param_torch = torch.tensor([1, 2])
         param_tf = tf.Variable([1, 2])
