@@ -24,7 +24,13 @@ plt = pytest.importorskip("matplotlib.pyplot")
 def test_available_styles():
     """Assert ``available_styles`` returns tuple of available styles."""
 
-    assert qml.drawer.available_styles() == ( "black_white",  "black_white_dark",  "solarized_light", "solarized_dark", "default")
+    assert qml.drawer.available_styles() == (
+        "black_white",
+        "black_white_dark",
+        "solarized_light",
+        "solarized_dark",
+        "default",
+    )
 
 
 def test_black_white_style():
@@ -41,30 +47,32 @@ def test_black_white_style():
 
     plt.style.use("default")
 
+
 def test_solarized_light_style():
     """Tests the solarized light style sets ``plt.rcParams`` with correct values"""
 
     qml.drawer.use_style("solarized_light")
-    assert plt.rcParams['savefig.facecolor'] == '#fdf6e3'
-    assert plt.rcParams["figure.facecolor"] == '#fdf6e3'
-    assert plt.rcParams["axes.facecolor"] == '#eee8d5'
+    assert plt.rcParams["savefig.facecolor"] == "#fdf6e3"
+    assert plt.rcParams["figure.facecolor"] == "#fdf6e3"
+    assert plt.rcParams["axes.facecolor"] == "#eee8d5"
     assert plt.rcParams["patch.edgecolor"] == "#93a1a1"
-    assert plt.rcParams["patch.facecolor"] == '#eee8d5'
+    assert plt.rcParams["patch.facecolor"] == "#eee8d5"
     assert plt.rcParams["lines.color"] == "#657b83"
     assert plt.rcParams["text.color"] == "#586e75"
     assert plt.rcParams["patch.force_edgecolor"]  # = True
 
     plt.style.use("default")
 
+
 def test_solarized_dark_style():
     """Tests the solarized dark style sets ``plt.rcParams`` with correct values"""
 
     qml.drawer.use_style("solarized_dark")
-    assert plt.rcParams['savefig.facecolor'] == '#002b36'
-    assert plt.rcParams["figure.facecolor"] == '#002b36'
-    assert plt.rcParams["axes.facecolor"] == '#002b36'
+    assert plt.rcParams["savefig.facecolor"] == "#002b36"
+    assert plt.rcParams["figure.facecolor"] == "#002b36"
+    assert plt.rcParams["axes.facecolor"] == "#002b36"
     assert plt.rcParams["patch.edgecolor"] == "#268bd2"
-    assert plt.rcParams["patch.facecolor"] == '#073642'
+    assert plt.rcParams["patch.facecolor"] == "#073642"
     assert plt.rcParams["lines.color"] == "#839496"
     assert plt.rcParams["text.color"] == "#2aa198"
     assert plt.rcParams["patch.force_edgecolor"]  # = True
