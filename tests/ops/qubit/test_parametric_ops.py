@@ -945,15 +945,13 @@ class TestMatrix:
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals(self, phi, tol):
         evs = qml.IsingXY.compute_eigvals(phi)
-        evs_expected = qml.math.linalg.eigvals(qml.IsingXY(phi, [0, 1]).matrix())
-
-        if phi > 0:
-            assert qml.math.allclose(evs, evs_expected)
-        else:
-            pos = evs[1]
-            neg = evs[0]
-            evs = [pos, neg, evs[2], evs[3]]
-            assert qml.math.allclose(evs, evs_expected)
+        evs_expected = [
+            qml.math.cos(phi / 2) + 1j * qml.math.sin(phi / 2),
+            qml.math.cos(phi / 2) - 1j * qml.math.sin(phi / 2),
+            1,
+            1,
+        ]
+        assert qml.math.allclose(evs, evs_expected)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
@@ -962,15 +960,13 @@ class TestMatrix:
 
         param_tf = tf.Variable(phi)
         evs = qml.IsingXY.compute_eigvals(param_tf)
-        evs_expected = qml.math.linalg.eigvals(qml.IsingXY(param_tf, [0, 1]).matrix())
-
-        if phi > 0:
-            assert qml.math.allclose(evs, evs_expected)
-        else:
-            pos = evs[1]
-            neg = evs[0]
-            evs = [pos, neg, evs[2], evs[3]]
-            assert qml.math.allclose(evs, evs_expected)
+        evs_expected = [
+            qml.math.cos(phi / 2) + 1j * qml.math.sin(phi / 2),
+            qml.math.cos(phi / 2) - 1j * qml.math.sin(phi / 2),
+            1,
+            1,
+        ]
+        assert qml.math.allclose(evs, evs_expected)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
@@ -979,15 +975,13 @@ class TestMatrix:
 
         param_torch = torch.tensor(phi)
         evs = qml.IsingXY.compute_eigvals(param_torch)
-        evs_expected = qml.math.linalg.eigvals(qml.IsingXY(param_torch, [0, 1]).matrix())
-
-        if phi > 0:
-            assert qml.math.allclose(evs, evs_expected)
-        else:
-            pos = evs[1]
-            neg = evs[0]
-            evs = [pos, neg, evs[2], evs[3]]
-            assert qml.math.allclose(evs, evs_expected)
+        evs_expected = [
+            qml.math.cos(phi / 2) + 1j * qml.math.sin(phi / 2),
+            qml.math.cos(phi / 2) - 1j * qml.math.sin(phi / 2),
+            1,
+            1,
+        ]
+        assert qml.math.allclose(evs, evs_expected)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
@@ -996,15 +990,13 @@ class TestMatrix:
 
         param_jax = jax.numpy.array(phi)
         evs = qml.IsingXY.compute_eigvals(param_jax)
-        evs_expected = qml.math.linalg.eigvals(qml.IsingXY(param_jax, [0, 1]).matrix())
-
-        if phi > 0:
-            assert qml.math.allclose(evs, evs_expected)
-        else:
-            pos = evs[1]
-            neg = evs[0]
-            evs = [pos, neg, evs[2], evs[3]]
-            assert qml.math.allclose(evs, evs_expected)
+        evs_expected = [
+            qml.math.cos(phi / 2) + 1j * qml.math.sin(phi / 2),
+            qml.math.cos(phi / 2) - 1j * qml.math.sin(phi / 2),
+            1,
+            1,
+        ]
+        assert qml.math.allclose(evs, evs_expected)
 
     def test_isingxx_broadcasted(self, tol):
         """Test that the broadcasted IsingXX operation is correct"""
