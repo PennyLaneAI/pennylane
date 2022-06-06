@@ -66,9 +66,6 @@ def rank(factors, eigvals, tol=1e-5):
 
     return rank_r, rank_m
 
-    def near_k(self, n_opt):
-        return np.array([2 ** np.floor(n_opt), 2 ** np.ceil(n_opt)])
-
 
 def expansion_factor(constants):
     r"""Return expansion factors that minimize the cost.
