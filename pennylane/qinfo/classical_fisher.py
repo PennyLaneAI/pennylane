@@ -18,7 +18,7 @@ import pennylane as qml
 
 from pennylane.transforms import batch_transform
 
-
+# TODO: create qml.jacobian and replace by it
 def _torch_jac(circ):
     """Torch jacobian as a callable function"""
     import torch
@@ -32,6 +32,7 @@ def _torch_jac(circ):
     return wrapper
 
 
+# TODO: create qml.jacobian and replace by it
 def _tf_jac(circ):
     """TF jacobian as a callable function"""
     import tensorflow as tf
@@ -71,15 +72,22 @@ def classical_fisher(qnode, argnums=0):
         j = jac(*args, **kwargs)
 
         # In case multiple variables are used
-        if isinstance(j, tuple):
-            return [_compute_cfim(p, j_i, interface) for j_i in j]
+        if isinstance(j, tuple) and len(j) > 1:
+            res = []
+            for j_i in j:
+                if interface == "tf":
+                    j_i = qml.math.transpose(qml.math.cast(j_i, dtype=p.dtype))
 
-        return _compute_cfim(p, j, interface)
+                res.append(_compute_cfim(p, j_i))
+
+            return res
+
+        return _compute_cfim(p, j)
 
     return wrapper
 
 
-def _compute_cfim(p, dp, interface):
+def _compute_cfim(p, dp):
     r"""Computes the (num_params, num_params) classical fisher information matrix from the probabilities and its derivatives
     I.e. it computes :math:`classical_fisher_{ij} = \sum_\ell (\partial_i p_\ell) (\partial_i p_\ell) / p_\ell`
     """
@@ -92,6 +100,9 @@ def _compute_cfim(p, dp, interface):
 
     # Multiply dp and p
     dp = qml.math.cast(dp, dtype=p.dtype)
+    dp = qml.math.reshape(
+        dp, (len(p), -1)
+    )  # Squeeze does not work, as you could have shape (num_probs, num_params) with num_params = 1
     dp_over_p = qml.math.transpose(dp) * one_over_p  # creates (n_params, n_probs) array
 
     return dp_over_p @ dp  # (n_params, n_probs) @ (n_probs, n_params) = (n_params, n_params)

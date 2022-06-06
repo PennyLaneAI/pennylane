@@ -46,7 +46,7 @@ class TestComputeclassical_fisherfn:
         dp = np.arange(2**n_wires * n_params, dtype=float).reshape(2**n_wires, n_params)
         p = np.ones(2**n_wires)
 
-        res = _compute_cfim(p, dp, None)
+        res = _compute_cfim(p, dp)
 
         assert np.allclose(res, res.T)
         assert all(
@@ -68,7 +68,7 @@ class TestComputeclassical_fisherfn:
         dp = np.ones(2**n_wires * n_params, dtype=float).reshape(2**n_wires, n_params)
         p = np.zeros(2**n_wires)
         p[0] = 1
-        res = _compute_cfim(p, dp, None)
+        res = _compute_cfim(p, dp)
         assert np.allclose(res, np.ones((n_params, n_params)))
 
 
@@ -315,31 +315,32 @@ class TestInterfaces:
         cfim = classical_fisher(circ)(params)
         assert np.allclose(cfim, np.ones((2, 2)))
 
-    # @pytest.mark.tf
-    # def test_cfim_multiple_args_tf(self):
-    #     """Testing multiple args to be differentiated using tf"""
-    #     import tensorflow as tf
-    #     n_wires=3
+    @pytest.mark.tf
+    def test_cfim_multiple_args_tf(self):
+        """Testing multiple args to be differentiated using tf"""
+        import tensorflow as tf
 
-    #     dev = qml.device("default.qubit", wires=n_wires)
+        n_wires = 3
 
-    #     @qml.qnode(dev, interface="tf")
-    #     def circ(x, y, z):
-    #         for xi in x:
-    #             qml.RX(xi, wires=0)
-    #             qml.RX(xi, wires=1)
-    #         for yi in y:
-    #             qml.RY(yi, wires=0)
-    #             qml.RY(yi, wires=1)
-    #         for zi in z:
-    #             qml.RZ(zi, wires=0)
-    #             qml.RZ(zi, wires=1)
-    #         return qml.probs(wires=range(n_wires))
+        dev = qml.device("default.qubit", wires=n_wires)
 
-    #     x = tf.Variable([np.pi/8 for _ in range(2)])
-    #     y = tf.Variable([np.pi/8 for _ in range(10)])
-    #     z = tf.Variable([1 for _ in range(1)])
-    #     cfim = qml.qinfo.classical_fisher(circ)(x, y, z)
-    #     assert np.allclose(cfim[0], 2./3. * np.ones((2, 2)))
-    #     assert np.allclose(cfim[1], 2./3. * np.ones((10, 10)))
-    #     assert np.allclose(cfim[2], np.zeros((1,1)))
+        @qml.qnode(dev, interface="tf")
+        def circ(x, y, z):
+            for xi in x:
+                qml.RX(xi, wires=0)
+                qml.RX(xi, wires=1)
+            for yi in y:
+                qml.RY(yi, wires=0)
+                qml.RY(yi, wires=1)
+            for zi in z:
+                qml.RZ(zi, wires=0)
+                qml.RZ(zi, wires=1)
+            return qml.probs(wires=range(n_wires))
+
+        x = [tf.Variable(np.pi / 8) for _ in range(2)]
+        y = [tf.Variable(np.pi / 8) for _ in range(10)]
+        z = [tf.Variable(1.0) for _ in range(1)]
+        cfim = qml.qinfo.classical_fisher(circ)(x, y, z)
+        assert np.allclose(cfim[0], 2.0 / 3.0 * np.ones((2, 2)))
+        assert np.allclose(cfim[1], 2.0 / 3.0 * np.ones((10, 10)))
+        assert np.allclose(cfim[2], np.zeros((1, 1)))
