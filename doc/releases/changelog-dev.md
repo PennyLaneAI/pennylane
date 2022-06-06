@@ -221,6 +221,9 @@
 * The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
   [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
 
+* Several non-decomposable `Adjoint` ops are added to the device test suite.
+  [(#2658)](https://github.com/PennyLaneAI/pennylane/pull/2658)
+
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
   for many classes.
   [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
