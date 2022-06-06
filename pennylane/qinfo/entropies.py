@@ -56,6 +56,10 @@ def mutual_info_transform(qnode, indices0, indices1, base=None):
     """
     Compute the mutual information from a :class:`.QNode` returning a :func:`~.state`.
 
+    The mutual information is a measure of correlation between two subsystems.
+    More specifically, it quantifies the amount of information obtained about
+    one system by measuring the other system.
+
     Args:
         qnode (QNode): A :class:`.QNode` returning a :func:`~.state`.
         indices (list[int]): List of indices in the first subsystem.

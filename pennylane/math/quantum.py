@@ -535,6 +535,10 @@ def compute_vn_entropy(density_matrix, base=None):
 def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"):
     """Compute the mutual information between two subsystems given a state.
 
+    The mutual information is a measure of correlation between two subsystems.
+    More specifically, it quantifies the amount of information obtained about
+    one system by measuring the other system.
+
     The state can be given as a state vector in the computational basis, or
     as a density matrix.
 
