@@ -298,7 +298,7 @@
 * Added separate requirements_dev.txt for separation of concerns for code development and just using PennyLane.
   [(#2635)](https://github.com/PennyLaneAI/pennylane/pull/2635)
 
-* Performance improvements to building sparse Hamiltonians. Accumulate sparse representations of coefficient-operator pairs in a temporary storage then sum them every 100 coefficient-operator pairs, rather than adding them into the overall Hamiltonian sparse matrix at every iteration. Also improve performance of generating each pair's sparse representation by eliminating unnecessary `kron` operations on identity matrices.
+* The performance of building sparse Hamiltonians has been improved by accumulating the sparse representation of coefficient-operator pairs in a temporary storage and by eliminating unnecessary `kron` operations on identity matrices. 
   [(#2630)](https://github.com/PennyLaneAI/pennylane/pull/2630)
 
 <h3>Breaking changes</h3>
