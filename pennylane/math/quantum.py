@@ -644,6 +644,6 @@ def _compute_fidelity(density_matrix0, density_matrix1):
     sqrt_mat_sqrt = sqrt_matrix @ density_matrix1 @ sqrt_matrix
     evs = qml.math.eigvalsh(sqrt_mat_sqrt)
     evs = np.real(evs)
-    evs = np.where(evs > 0, evs, 0.0)
-    trace = (np.sum(np.sqrt(evs))) ** 2
+    evs = qml.math.where(evs > 0.0, evs, 0.0)
+    trace = (qml.math.sum(qml.math.sqrt(evs))) ** 2
     return trace

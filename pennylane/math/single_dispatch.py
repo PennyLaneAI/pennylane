@@ -172,7 +172,7 @@ ar.register_function(
 def _sqrt_matrix_autograd(matrix):
     """Sqrt matrix for Autograd"""
     evs, vecs = _i("autograd").numpy.linalg.eigh(matrix)
-    evs = _i("autograd").numpy.where(evs > 0, evs, 0.0)
+    evs = _i("autograd").numpy.where(evs > 0.0, evs, 0.0)
     return (
         vecs
         @ _i("autograd").numpy.diag(_i("autograd").numpy.sqrt(evs))
