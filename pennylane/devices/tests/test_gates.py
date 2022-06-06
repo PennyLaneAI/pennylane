@@ -215,7 +215,7 @@ PSWAP = lambda phi: np.array(
     [
         [1, 0, 0, 0],
         [0, 0, exp(1.0j * phi), 0],
-        [0, -exp(1.0j * phi), 0, 0],
+        [0, exp(1.0j * phi), 0, 0],
         [0, 0, 0, 1],
     ]
 )
