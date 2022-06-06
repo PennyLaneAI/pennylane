@@ -14,4 +14,4 @@
 """
 This subpackage provides the functionality for algorithm resource estimation.
 """
-from .df import rank
+from .df import rank, expansion_factor

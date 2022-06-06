@@ -45,3 +45,31 @@ def test_rank(factors, eigvals, rank_r_ref, rank_m_ref):
 
     assert rank_r == rank_r_ref
     assert rank_m == rank_m_ref
+
+
+@pytest.mark.parametrize(
+    ("constants", "k_ref"),
+    [
+        (
+            (26.0, 1.0, 0.0, 15.0, -1.0),
+            1,
+        ),
+        (
+            (26.0, 1.0, 0.0, 1.0, 0.0),
+            4,
+        ),
+        (
+            (151.0, 7.0, 151.0, 30.0, -1.0),
+            4,
+        ),
+        (
+            (151.0, 7.0, 151.0, 2.0, 0.0),
+            16,
+        ),
+    ],
+)
+def test_expansion_factor(constants, k_ref):
+    r"""Test that expansion_factor function returns the correct value."""
+    k = qml.resources.expansion_factor(constants)
+
+    assert k == k_ref
