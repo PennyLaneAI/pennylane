@@ -323,7 +323,7 @@ class TestDensityMatrixFromMatrix:
         """Test that non hermitian matrix raises an error with check_state=True"""
         density_matrix = [[3, 0], [0, -2]]
 
-        with pytest.raises(ValueError, match="The matrix is not positive definite."):
+        with pytest.raises(ValueError, match="The matrix is not positive semi-definite."):
             fn.quantum.to_density_matrix(density_matrix, indices=[0], check_state=True)
 
     def test_density_matrix_from_state_vector_jax_jit(self):

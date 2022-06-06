@@ -224,8 +224,11 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False):
             conj_trans = np.transpose(np.conj(density_matrix))
             if not allclose(density_matrix, conj_trans):
                 raise ValueError("The matrix is not hermitian.")
-            if not np.all(np.linalg.eigvals(density_matrix) > 0):
-                raise ValueError("The matrix is not positive definite.")
+            # Check if positive semi definite
+            evs = np.linalg.eigvalsh(density_matrix)
+            evs_non_negative = [ev for ev in evs if ev >= 0.0]
+            if len(evs) != len(evs_non_negative):
+                raise ValueError("The matrix is not positive semi-definite.")
 
     consecutive_indices = list(range(0, num_indices))
 
