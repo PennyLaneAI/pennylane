@@ -598,3 +598,51 @@ def _compute_mutual_info(
     )
 
     return vn_entropy_1 + vn_entropy_2 - vn_entropy_12
+
+
+def to_fidelity(state0, state1, check_state=False, c_dtype="complex128"):
+    # Cast as a c_dtype array
+    state0 = cast(state0, dtype=c_dtype)
+    len_state0 = state0.shape[0]
+
+    state1 = cast(state1, dtype=c_dtype)
+    len_state1 = state1.shape[0]
+
+    # TODO: Coerc state1 to state0 interfaces
+
+    # TODO: Check states
+
+    # Get dimension of the quantum system and reshape
+    num_indices0 = int(np.log2(len_state0))
+    num_indices1 = int(np.log2(len_state1))
+
+    consecutive_wires = list(range(num_indices0))
+
+    if num_indices0 != num_indices1:
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+
+    # State vector
+    if state1.shape == (len_state1,) and state0.shape == (len_state0,):
+        overlap = np.tensordot(state0, np.transpose(np.conj(state1)))
+        return overlap
+
+    elif state1.shape == (len_state1,) and state0.shape != (len_state0,):
+        state0 = np.tensordot(state0, np.conj(state0))
+
+    elif state0.shape != (len_state0,) and state1.shape == (len_state1,):
+        state1 = np.tensordot(state1, np.conj(state1))
+
+    fidelity = _compute_fidelity(state0, state1)
+    return fidelity
+
+
+def _compute_fidelity(density_matrix0, density_matrix1):
+    """
+    Compute the fidelity for two density matrices.
+    """
+    sqrt_matrix = qml.math.sqrt_matrix(density_matrix0)
+
+    sqrt_mat_sqrt = sqrt_matrix @ density_matrix1 @ sqrt_matrix
+    eigs = qml.math.eigvalsh(sqrt_mat_sqrt)
+    trace = (np.sum(np.sqrt(eigs))) ** 2
+    return trace
