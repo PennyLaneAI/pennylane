@@ -157,6 +157,7 @@ Parametrized gates
     ~pennylane.IsingXX
     ~pennylane.IsingYY
     ~pennylane.IsingZZ
+    ~pennylane.PSWAP
 
 :html:`</div>`
 

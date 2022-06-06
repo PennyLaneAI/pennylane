@@ -299,6 +299,25 @@ def IsingZZ(phi):
     return np.array([[e_m, 0, 0, 0], [0, e, 0, 0], [0, 0, e, 0], [0, 0, 0, e_m]])
 
 
+def PSWAP(phi):
+    r"""Phase SWAP gate
+
+    .. math:: \mathtt{PSWAP}(\phi) = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & 0 & e^{i \phi} & 0 \\
+            0 & e^{i \phi} & 0 & 0 \\
+            0 & 0 & 0 & 1
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+    """
+    e = np.exp(1j * phi)
+    return np.array([[1, 0, 0, 0], [0, 0, e, 0], [0, e, 0, 0], [0, 0, 0, 1]])
+
+
 def ControlledPhaseShift(phi):
     r"""Controlled phase shift.
 

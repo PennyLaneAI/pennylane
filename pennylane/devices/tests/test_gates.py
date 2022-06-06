@@ -69,6 +69,7 @@ ops = {
     "Adjoint(S)": qml.adjoint(qml.S(wires=[0])),
     "SWAP": qml.SWAP(wires=[0, 1]),
     "ISWAP": qml.ISWAP(wires=[0, 1]),
+    "PSWAP": qml.PSWAP(0, wires=[0, 1]),
     "Adjoint(ISWAP)": qml.adjoint(qml.ISWAP(wires=[0, 1])),
     "T": qml.T(wires=[0]),
     "Adjoint(T)": qml.adjoint(qml.T(wires=[0])),
@@ -210,6 +211,14 @@ IsingZZ = lambda phi: np.array(
     ]
 )
 
+PSWAP = lambda phi: np.array(
+    [
+        [1, 0, 0, 0],
+        [0, 0, exp(1.0j * phi), 0],
+        [0, -exp(1.0j * phi), 0, 0],
+        [0, 0, 0, 1],
+    ]
+)
 
 def adjoint_tuple(op, orig_mat):
     """Returns op constructor and matrix for provided base ops."""
@@ -257,6 +266,7 @@ two_qubit_param = [
     (qml.IsingXX, IsingXX),
     (qml.IsingYY, IsingYY),
     (qml.IsingZZ, IsingZZ),
+    (qml.PSWAP, qml.PSWAP)
 ]
 two_qubit_multi_param = [(qml.CRot, crot)]
 # list of all three-qubit gates
