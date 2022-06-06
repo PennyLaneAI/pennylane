@@ -641,8 +641,8 @@ def _compute_fidelity(density_matrix0, density_matrix1):
     Compute the fidelity for two density matrices.
     """
     sqrt_matrix = qml.math.sqrt_matrix(density_matrix0)
-
     sqrt_mat_sqrt = sqrt_matrix @ density_matrix1 @ sqrt_matrix
-    eigs = qml.math.eigvalsh(sqrt_mat_sqrt)
-    trace = (np.sum(np.sqrt(eigs))) ** 2
+    evs = qml.math.eigvalsh(sqrt_mat_sqrt)
+    evs = qml.math.abs(evs)
+    trace = (np.sum(np.sqrt(evs))) ** 2
     return trace

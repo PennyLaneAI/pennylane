@@ -65,6 +65,7 @@ ar.register_function("numpy", "entr", lambda x: -np.sum(x * np.log(x)))
 def _sqrt_matrix_numpy(matrix):
     """Sqrt matrix for Numpy"""
     evs, vecs = np.linalg.eigh(matrix)
+    evs = np.abs(evs)
     return vecs @ np.diag(np.sqrt(evs)) @ np.conj(np.transpose(vecs))
 
 
@@ -171,6 +172,7 @@ ar.register_function(
 def _sqrt_matrix_autograd(matrix):
     """Sqrt matrix for Autograd"""
     evs, vecs = _i("autograd").numpy.linalg.eigh(matrix)
+    evs = _i("autograd").numpy.abs(evs)
     return (
         vecs
         @ _i("autograd").numpy.diag(_i("autograd").numpy.sqrt(evs))
@@ -348,6 +350,7 @@ ar.register_function(
 def _sqrt_matrix_tf(matrix):
     """Sqrt matrix for tf"""
     evs, vecs = _i("tf").linalg.eigh(matrix)
+    evs = _i("tf").math.abs(evs)
     return (
         vecs
         @ _i("tf").linalg.diag(_i("tf").math.sqrt(evs))
@@ -535,6 +538,7 @@ ar.register_function("torch", "entr", lambda x: _i("torch").sum(_i("torch").spec
 def _sqrt_matrix_torch(matrix):
     """Sqrt matrix for torch"""
     evs, vecs = _i("torch").linalg.eigh(matrix)
+    evs = _i("torch").abs(evs)
     return (
         vecs
         @ _i("torch").diag(_i("torch").sqrt(evs))
@@ -584,6 +588,7 @@ ar.register_function("jax", "entr", lambda x: _i("jax").numpy.sum(_i("jax").scip
 def _sqrt_matrix_jax(matrix):
     """Sqrt matrix for jax"""
     evs, vecs = _i("jax").numpy.linalg.eigh(matrix)
+    evs = _i("jax").numpy.abs(evs)
     return (
         vecs
         @ _i("jax").numpy.diag(_i("jax").numpy.sqrt(evs))
