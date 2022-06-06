@@ -1225,7 +1225,7 @@ involution_ops = [  # ops who are their own inverses
     qml.CZ((0, 1)),
     qml.CY((0, 1)),
     qml.SWAP((0, 1)),
-    qml.ECR((0,1)),
+    qml.ECR((0, 1)),
     qml.CSWAP((0, 1, 2)),
     qml.Toffoli((0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
