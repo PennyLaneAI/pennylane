@@ -32,6 +32,7 @@ class QubitUnitary(Operation):
 
     * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
+    * Number of dimensions per parameter: (2,)
     * Gradient recipe: None
 
     Args:
@@ -55,6 +56,9 @@ class QubitUnitary(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
+    ndim_params = (2,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
     grad_method = None
     """Gradient computation method."""
 
@@ -65,20 +69,25 @@ class QubitUnitary(Operation):
         # of wires fits the dimensions of the matrix
         if not isinstance(self, ControlledQubitUnitary):
             U = params[0]
+            U_shape = qml.math.shape(U)
 
             dim = 2 ** len(wires)
 
-            if qml.math.shape(U) != (dim, dim):
+            if not (len(U_shape) in {2, 3} and U_shape[-2:] == (dim, dim)):
                 raise ValueError(
-                    f"Input unitary must be of shape {(dim, dim)} to act on {len(wires)} wires."
+                    f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
+                    f"to act on {len(wires)} wires."
                 )
 
             # Check for unitarity; due to variable precision across the different ML frameworks,
             # here we issue a warning to check the operation, instead of raising an error outright.
-            if not qml.math.is_abstract(U) and not qml.math.allclose(
-                qml.math.dot(U, qml.math.T(qml.math.conj(U))),
-                qml.math.eye(qml.math.shape(U)[0]),
-                atol=1e-6,
+            if not (
+                qml.math.is_abstract(U)
+                or qml.math.allclose(
+                    qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
+                    qml.math.eye(dim),
+                    atol=1e-6,
+                )
             ):
                 warnings.warn(
                     f"Operator {U}\n may not be unitary."
@@ -142,16 +151,29 @@ class QubitUnitary(Operation):
         """
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
         # or a single RZ for diagonal matrices.
-        if qml.math.shape(U) == (2, 2):
+        shape = qml.math.shape(U)
+        if shape == (2, 2):
             return qml.transforms.decompositions.zyz_decomposition(U, Wires(wires)[0])
 
-        if qml.math.shape(U) == (4, 4):
+        if shape == (4, 4):
             return qml.transforms.two_qubit_decomposition(U, Wires(wires))
+
+        # TODO[dwierichs]: Implement decomposition of broadcasted unitary
+        if len(shape) == 3:
+            raise DecompositionUndefinedError(
+                "The decomposition of QubitUnitary does not support broadcasting."
+            )
 
         return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
 
     def adjoint(self):
-        return QubitUnitary(qml.math.T(qml.math.conj(self.matrix())), wires=self.wires)
+        U = self.matrix()
+        return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
+
+    def pow(self, z):
+        if isinstance(z, int):
+            return [QubitUnitary(qml.math.linalg.matrix_power(self.matrix(), z), wires=self.wires)]
+        return super().pow(z)
 
     def _controlled(self, wire):
         ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
@@ -174,6 +196,7 @@ class ControlledQubitUnitary(QubitUnitary):
 
     * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
+    * Number of dimensions per parameter: (2,)
     * Gradient recipe: None
 
     Args:
@@ -209,6 +232,9 @@ class ControlledQubitUnitary(QubitUnitary):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (2,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = None
     """Gradient computation method."""
@@ -276,8 +302,12 @@ class ControlledQubitUnitary(QubitUnitary):
          [ 0.        +0.j  0.        +0.j -0.31594146+0.j  0.94877869+0.j]]
         """
         target_dim = 2 ** len(u_wires)
-        if len(U) != target_dim:
-            raise ValueError(f"Input unitary must be of shape {(target_dim, target_dim)}")
+        shape = qml.math.shape(U)
+        if not (len(shape) in {2, 3} and shape[-2:] == (target_dim, target_dim)):
+            raise ValueError(
+                f"Input unitary must be of shape {(target_dim, target_dim)} or "
+                f"(batch_size, {target_dim}, {target_dim})."
+            )
 
         # A multi-controlled operation is a block-diagonal matrix partitioned into
         # blocks where the operation being applied sits in the block positioned at
@@ -298,24 +328,37 @@ class ControlledQubitUnitary(QubitUnitary):
                 raise ValueError("Length of control bit string must equal number of control wires.")
 
             # Make sure all values are either 0 or 1
-            if any(x not in ["0", "1"] for x in control_values):
+            if not set(control_values).issubset({"0", "1"}):
                 raise ValueError("String of control values can contain only '0' or '1'.")
 
             control_int = int(control_values, 2)
         else:
             raise ValueError("Alternative control values must be passed as a binary string.")
 
-        padding_left = control_int * len(U)
-        padding_right = 2 ** len(total_wires) - len(U) - padding_left
+        padding_left = control_int * target_dim
+        padding_right = 2 ** len(total_wires) - target_dim - padding_left
 
         interface = qml.math.get_interface(U)
         left_pad = qml.math.cast_like(qml.math.eye(padding_left, like=interface), 1j)
         right_pad = qml.math.cast_like(qml.math.eye(padding_right, like=interface), 1j)
+        if len(qml.math.shape(U)) == 3:
+            return qml.math.stack([qml.math.block_diag([left_pad, _U, right_pad]) for _U in U])
         return qml.math.block_diag([left_pad, U, right_pad])
 
     @property
     def control_wires(self):
         return self.hyperparameters["control_wires"]
+
+    def pow(self, z):
+        if isinstance(z, int):
+            return [
+                ControlledQubitUnitary(
+                    qml.math.linalg.matrix_power(self.data[0], z),
+                    control_wires=self.control_wires,
+                    wires=self.hyperparameters["u_wires"],
+                )
+            ]
+        return super().pow(z)
 
     def _controlled(self, wire):
         ctrl_wires = sorted(self.control_wires + wire)
@@ -332,6 +375,7 @@ class DiagonalQubitUnitary(Operation):
 
     * Number of wires: Any (the operation can act on any number of wires)
     * Number of parameters: 1
+    * Number of dimensions per parameter: (1,)
     * Gradient recipe: None
 
     Args:
@@ -343,6 +387,9 @@ class DiagonalQubitUnitary(Operation):
 
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (1,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = None
     """Gradient computation method."""
@@ -372,6 +419,10 @@ class DiagonalQubitUnitary(Operation):
 
         if not qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D)):
             raise ValueError("Operator must be unitary.")
+
+        # The diagonal is supposed to have one-dimension. If it is broadcasted, it has two
+        if qml.math.ndim(D) == 2:
+            return qml.math.stack([qml.math.diag(_D) for _D in D])
 
         return qml.math.diag(D)
 
@@ -403,8 +454,9 @@ class DiagonalQubitUnitary(Operation):
         """
         D = qml.math.asarray(D)
 
-        if not qml.math.is_abstract(D) and not qml.math.allclose(
-            D * qml.math.conj(D), qml.math.ones_like(D)
+        if not (
+            qml.math.is_abstract(D)
+            or qml.math.allclose(D * qml.math.conj(D), qml.math.ones_like(D))
         ):
             raise ValueError("Operator must be unitary.")
 
@@ -434,14 +486,25 @@ class DiagonalQubitUnitary(Operation):
         [QubitUnitary(array([[1, 0], [0, 1]]), wires=[0])]
 
         """
-        return [QubitUnitary(qml.math.diag(D), wires=wires)]
+        return [QubitUnitary(DiagonalQubitUnitary.compute_matrix(D), wires=wires)]
 
     def adjoint(self):
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
 
+    def pow(self, z):
+        if isinstance(self.data[0], list):
+            if isinstance(self.data[0][0], list):
+                # Support broadcasted list
+                new_data = [[(el + 0j) ** z for el in x] for x in self.data[0]]
+            else:
+                new_data = [(x + 0.0j) ** z for x in self.data[0]]
+            return [DiagonalQubitUnitary(new_data, wires=self.wires)]
+        casted_data = qml.math.cast(self.data[0], np.complex128)
+        return [DiagonalQubitUnitary(casted_data**z, wires=self.wires)]
+
     def _controlled(self, control):
         DiagonalQubitUnitary(
-            qml.math.concatenate([np.ones_like(self.parameters[0]), self.parameters[0]]),
+            qml.math.hstack([np.ones_like(self.parameters[0]), self.parameters[0]]),
             wires=Wires(control) + self.wires,
         )
 

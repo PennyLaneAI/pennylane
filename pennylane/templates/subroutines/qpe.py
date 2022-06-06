@@ -170,12 +170,3 @@ class QuantumPhaseEstimation(Operation):
         op_list.append(qml.templates.QFT(wires=estimation_wires).inv())
 
         return op_list
-
-    def adjoint(self):  # pylint: disable=arguments-differ
-        adjoint_op = QuantumPhaseEstimation(
-            self.parameters[0],
-            target_wires=self.hyperparameters["target_wires"],
-            estimation_wires=self.hyperparameters["estimation_wires"],
-        )
-        adjoint_op.inverse = not self.inverse
-        return adjoint_op

@@ -20,7 +20,7 @@ import pennylane as qml
 from pennylane.tape import QuantumTape, get_active_tape
 from pennylane.operation import DecompositionUndefinedError, Operation, AnyWires
 from pennylane.wires import Wires
-from pennylane.transforms.adjoint import adjoint
+from pennylane.ops.op_math import adjoint
 
 
 def requeue_ops_in_tape(tape):
@@ -155,7 +155,7 @@ class ControlledOperation(Operation):
             tape = ctrl_tape
         return tape
 
-    def adjoint(self, do_queue=True):
+    def adjoint(self, do_queue=True):  # pylint: disable=arguments-differ
         """Returns a new ControlledOperation that is equal to the adjoint of `self`"""
 
         active_tape = get_active_tape()

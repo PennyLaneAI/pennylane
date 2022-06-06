@@ -271,7 +271,7 @@ class TestSparse:
         assert np.allclose(sparse_matrix.toarray(), ref_matrix)
 
     def test_sparse_format(self):
-        """Tests that sparse_hamiltonian returns a scipy.sparse.coo_matrix object"""
+        """Tests that sparse_hamiltonian returns a scipy.sparse.csr_matrix object"""
 
         coeffs = [-0.25, 0.75]
         obs = [
@@ -282,7 +282,7 @@ class TestSparse:
 
         sparse_matrix = qml.utils.sparse_hamiltonian(H)
 
-        assert isinstance(sparse_matrix, scipy.sparse.coo_matrix)
+        assert isinstance(sparse_matrix, scipy.sparse.csr_matrix)
 
     def test_sparse_typeerror(self):
         """Tests that sparse_hamiltonian raises an error if the given Hamiltonian is not of type

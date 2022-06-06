@@ -133,9 +133,6 @@ class AmplitudeEmbedding(Operation):
     def num_params(self):
         return 1
 
-    def adjoint(self):  # pylint: disable=arguments-differ
-        return qml.adjoint(qml.MottonenStatePreparation)(self.parameters[0], wires=self.wires)
-
     @staticmethod
     def compute_decomposition(features, wires):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
