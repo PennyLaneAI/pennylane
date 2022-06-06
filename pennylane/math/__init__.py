@@ -70,6 +70,9 @@ sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
+# small constant for numerical stability that the user can modify
+eps = 1e-14
+
 
 def __getattr__(name):
     return getattr(ar.numpy, name)

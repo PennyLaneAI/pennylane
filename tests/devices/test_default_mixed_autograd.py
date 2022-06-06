@@ -50,7 +50,6 @@ class TestQNodeIntegration:
             "model": "qubit",
             "supports_finite_shots": True,
             "supports_tensor_observables": True,
-            "supports_inverse_operations": True,
             "supports_broadcasting": False,
             "returns_probs": True,
             "returns_state": True,
@@ -128,7 +127,8 @@ class TestDtypePreserved:
         ],
     )
     def test_real_dtype(self, r_dtype, measurement, tol):
-        """Test that the default qubit plugin provides correct result for a simple circuit"""
+        """Test that the user-defined dtype of the device is preserved
+        for QNodes with real-valued outputs"""
         p = 0.543
 
         dev = qml.device("default.mixed", wires=3)
@@ -148,7 +148,8 @@ class TestDtypePreserved:
         [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
     )
     def test_complex_dtype(self, c_dtype, measurement, tol):
-        """Test that the default qubit plugin provides correct result for a simple circuit"""
+        """Test that the user-defined dtype of the device is preserved
+        for QNodes with complex-valued outputs"""
         p = 0.543
 
         dev = qml.device("default.mixed", wires=3, c_dtype=c_dtype)
@@ -160,6 +161,55 @@ class TestDtypePreserved:
 
         res = circuit(p)
         assert res.dtype == c_dtype
+
+
+@pytest.mark.autograd
+class TestOps:
+    """Unit tests for operations supported by the default.qubit.autograd device"""
+
+    def test_multirz_jacobian(self):
+        """Test that the patched numpy functions are used for the MultiRZ
+        operation and the jacobian can be computed."""
+        wires = 4
+        dev = qml.device("default.mixed", wires=wires)
+
+        @qml.qnode(dev, diff_method="backprop")
+        def circuit(param):
+            qml.MultiRZ(param, wires=[0, 1])
+            return qml.probs(wires=list(range(wires)))
+
+        param = np.array(0.3, requires_grad=True)
+        res = qml.jacobian(circuit)(param)
+        assert np.allclose(res, np.zeros(wires**2))
+
+    def test_full_subsystem(self, mocker):
+        """Test applying a state vector to the full subsystem"""
+        dev = DefaultMixed(wires=["a", "b", "c"])
+        state = np.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.0
+        state_wires = qml.wires.Wires(["a", "b", "c"])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+
+        state = np.outer(state, np.conj(state))
+
+        assert np.all(dev._state.flatten() == state.flatten())
+        spy.assert_not_called()
+
+    def test_partial_subsystem(self, mocker):
+        """Test applying a state vector to a subset of wires of the full subsystem"""
+
+        dev = DefaultMixed(wires=["a", "b", "c"])
+        state = np.array([1, 0, 1, 0]) / np.sqrt(2.0)
+        state_wires = qml.wires.Wires(["a", "c"])
+
+        spy = mocker.spy(qml.math, "scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+
+        state = np.kron(np.outer(state, np.conj(state)), np.array([[1, 0], [0, 0]]))
+
+        assert np.all(np.reshape(dev._state, (8, 8)) == state)
+        spy.assert_called()
 
 
 @pytest.mark.autograd
@@ -267,15 +317,38 @@ class TestPassthruIntegration:
         @qml.qnode(dev, diff_method="backprop", interface="autograd")
         def circuit(a):
             qml.RY(a, wires=0)
-            return qml.expval(qml.PauliZ(0))
+            return qml.state()
 
         a = np.array(0.54, requires_grad=True)
 
         def cost(a):
             """A function of the device quantum state, as a function
             of input QNode parameters."""
-            circuit(a)
-            res = np.abs(dev.state) ** 2
+            state = circuit(a)
+            res = np.abs(state) ** 2
+            return res[1][1] - res[0][0]
+
+        grad = qml.grad(cost)(a)
+        expected = np.sin(a)
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    def test_density_matrix_differentiability(self, tol):
+        """Test that the density matrix can be differentiated"""
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        def circuit(a):
+            qml.RY(a, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.density_matrix(wires=1)
+
+        a = np.array(0.54, requires_grad=True)
+
+        def cost(a):
+            """A function of the device quantum state, as a function
+            of input QNode parameters."""
+            state = circuit(a)
+            res = np.abs(state) ** 2
             return res[1][1] - res[0][0]
 
         grad = qml.grad(cost)(a)
@@ -308,6 +381,19 @@ class TestPassthruIntegration:
         expected = [np.sin(a) * np.cos(b), np.cos(a) * np.sin(b)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    def test_sample_backprop_error(self):
+        """Test that sampling in backpropagation mode raises an error"""
+        dev = qml.device("default.mixed", wires=1, shots=100)
+
+        msg = "Backpropagation is only supported when shots=None"
+
+        with pytest.raises(qml.QuantumFunctionError, match=msg):
+
+            @qml.qnode(dev, diff_method="backprop", interface="autograd")
+            def circuit(a):
+                qml.RY(a, wires=0)
+                return qml.sample(qml.PauliZ(0))
+
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
         dev = qml.device("default.mixed", wires=2)
@@ -331,7 +417,6 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
-    @pytest.mark.skip
     @pytest.mark.parametrize(
         "x, shift",
         [np.array((0.0, 0.0), requires_grad=True), np.array((0.5, -0.5), requires_grad=True)],
@@ -464,22 +549,6 @@ class TestPassthruIntegration:
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
-    @pytest.mark.skip
-    def test_do_not_split_analytic_autograd(self, mocker):
-        """Tests that the Hamiltonian is not split for shots=None using the autograd device."""
-        dev = qml.device("default.mixed", wires=2)
-        H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
-
-        @qml.qnode(dev, diff_method="backprop", interface="autograd")
-        def circuit():
-            return qml.expval(H)
-
-        spy = mocker.spy(dev, "expval")
-
-        circuit()
-        # evaluated one expval altogether
-        assert spy.call_count == 1
-
     def test_template_integration(self):
         """Test that a PassthruQNode default.qubit.autograd works with templates."""
         dev = qml.device("default.mixed", wires=2)
@@ -516,69 +585,3 @@ class TestHighLevelIntegration:
 
         grad = qml.grad(cost)(weights)
         assert grad.shape == weights.shape
-
-
-@pytest.mark.autograd
-class TestOps:
-    """Unit tests for operations supported by the default.qubit.autograd device"""
-
-    def test_multirz_jacobian(self):
-        """Test that the patched numpy functions are used for the MultiRZ
-        operation and the jacobian can be computed."""
-        wires = 4
-        dev = qml.device("default.mixed", wires=wires)
-
-        @qml.qnode(dev, diff_method="backprop")
-        def circuit(param):
-            qml.MultiRZ(param, wires=[0, 1])
-            return qml.probs(wires=list(range(wires)))
-
-        param = np.array(0.3, requires_grad=True)
-        res = qml.jacobian(circuit)(param)
-        assert np.allclose(res, np.zeros(wires**2))
-
-    def test_inverse_operation_jacobian_backprop(self, tol):
-        """Test that inverse operations work in backprop
-        mode"""
-        dev = qml.device("default.mixed", wires=1)
-
-        @qml.qnode(dev, diff_method="backprop")
-        def circuit(param):
-            qml.RY(param, wires=0).inv()
-            return qml.expval(qml.PauliX(0))
-
-        x = np.array(0.3, requires_grad=True)
-        res = circuit(x)
-        assert np.allclose(res, -np.sin(x), atol=tol, rtol=0)
-
-        grad = qml.grad(circuit)(x)
-        assert np.allclose(grad, -np.cos(x), atol=tol, rtol=0)
-
-    def test_full_subsystem(self, mocker):
-        """Test applying a state vector to the full subsystem"""
-        dev = DefaultMixed(wires=["a", "b", "c"])
-        state = np.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.0
-        state_wires = qml.wires.Wires(["a", "b", "c"])
-
-        spy = mocker.spy(dev, "_scatter")
-        dev._apply_state_vector(state=state, device_wires=state_wires)
-
-        state = np.outer(state, np.conj(state))
-
-        assert np.all(dev._state.flatten() == state.flatten())
-        spy.assert_not_called()
-
-    def test_partial_subsystem(self, mocker):
-        """Test applying a state vector to a subset of wires of the full subsystem"""
-
-        dev = DefaultMixed(wires=["a", "b", "c"])
-        state = np.array([1, 0, 1, 0]) / np.sqrt(2.0)
-        state_wires = qml.wires.Wires(["a", "c"])
-
-        spy = mocker.spy(qml.math, "scatter")
-        dev._apply_state_vector(state=state, device_wires=state_wires)
-
-        state = np.kron(np.outer(state, np.conj(state)), np.array([[1, 0], [0, 0]]))
-
-        assert np.all(np.reshape(dev._state, (8, 8)) == state)
-        spy.assert_called()

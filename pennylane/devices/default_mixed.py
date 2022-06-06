@@ -118,14 +118,14 @@ class DefaultMixed(QubitDevice):
         is_ragged = False
 
         try:
-            res = qnp.asarray(array, dtype=dtype)
+            res = qnp.asarray(qnp.stack(array), dtype=dtype)
         except ValueError:
             is_ragged = True
 
         if is_ragged or res.dtype is np.dtype("O"):
             return qnp.hstack(array).flatten().astype(dtype)
 
-        return qnp.asarray(qnp.stack(array), dtype=dtype)
+        return res
 
     def __init__(
         self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
@@ -161,9 +161,7 @@ class DefaultMixed(QubitDevice):
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(
-            returns_state=True, supports_inverse_operations=True, passthru_interface="autograd"
-        )
+        capabilities.update(returns_state=True, passthru_interface="autograd")
         return capabilities
 
     @property
@@ -219,7 +217,8 @@ class DefaultMixed(QubitDevice):
         probs = self.marginal_prob(qnp.diag(rho), wires)
 
         # take the real part so probabilities are not shown as complex numbers
-        return qnp.abs(qnp.real(probs))
+        probs = qnp.real(probs)
+        return qnp.where(probs < 0, -probs, probs)
 
     def _get_kraus(self, operation):  # pylint: disable=no-self-use
         """Return the Kraus operators representing the operation.
@@ -261,13 +260,13 @@ class DefaultMixed(QubitDevice):
         # Changes tensor shape
         if kraus[0].shape[0] == kraus[0].shape[1]:
             kraus_shape = [len(kraus)] + [2] * num_ch_wires * 2
-            kraus = qnp.reshape(qnp.cast(kraus, dtype=self.C_DTYPE), kraus_shape)
-            kraus_dagger = qnp.reshape(qnp.cast(kraus_dagger, dtype=self.C_DTYPE), kraus_shape)
+            kraus = qnp.cast(qnp.reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
+            kraus_dagger = qnp.cast(qnp.reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
 
         # Add the possibility to give a (1,2) shape Kraus operator
         elif (kraus[0].shape == (1, 2)) and (num_ch_wires == 1):
             kraus_shape = [len(kraus)] + list(kraus[0].shape)
-            qnp.reshape(qnp.cast(kraus, dtype=self.C_DTYPE), kraus_shape)
+            qnp.cast(qnp.reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
             kraus_dagger_shape = [len(kraus)] + list(kraus[0].shape)[::-1]
             kraus_dagger = qnp.cast(
                 qnp.reshape(kraus_dagger, kraus_dagger_shape), dtype=self.C_DTYPE
@@ -320,7 +319,7 @@ class DefaultMixed(QubitDevice):
         eigvals = qnp.stack(eigvals)
 
         # reshape vectors
-        eigvals = qnp.reshape(qnp.cast(eigvals, dtype=self.C_DTYPE), [2] * len(channel_wires))
+        eigvals = qnp.cast(qnp.reshape(eigvals, [2] * len(channel_wires)), dtype=self.C_DTYPE)
 
         # Tensor indices of the state. For each qubit, need an index for rows *and* columns
         state_indices = ABC[: 2 * self.num_wires]
@@ -507,7 +506,6 @@ class DefaultMixed(QubitDevice):
             return
 
         matrices = self._get_kraus(operation)
-        matrices = [qnp.cast(mat, dtype=self.C_DTYPE) for mat in matrices]
 
         if operation in diagonal_in_z_basis:
             self._apply_diagonal_unitary(matrices, wires)

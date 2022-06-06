@@ -189,7 +189,7 @@
   ```python
   dev = qml.device("default.mixed", wires=2)
 
-  @qml.qnode(dev, interface="autograd")
+  @qml.qnode(dev, interface="autograd", diff_method="backprop")
   def circuit(x):
       qml.RY(x, wires=0)
       qml.CNOT(wires=[0, 1])
