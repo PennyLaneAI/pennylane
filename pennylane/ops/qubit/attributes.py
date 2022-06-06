@@ -199,3 +199,35 @@ The reason is that if this method is missing, eigenvalues are computed from the 
 representation using ``np.linalg.eigvals``, which fails for some tensor types that the matrix
 may be cast in on backpropagation devices.
 """
+
+supports_broadcasting = Attribute(
+    [
+        "QubitUnitary",
+        "ControlledQubitUnitary",
+        "DiagonalQubitUnitary",
+        "RX",
+        "RY",
+        "RZ",
+        "PhaseShift",
+        "ControlledPhaseShift",
+        "Rot",
+        "MultiRZ",
+        "PauliRot",
+        "CRX",
+        "CRY",
+        "CRZ",
+        "CRot",
+        "U1",
+        "U2",
+        "U3",
+        "IsingXX",
+        "IsingYY",
+        "IsingZZ",
+    ]
+)
+"""Attribute: Operations that support parameter broadcasting.
+
+For such operations, the input parameters are allowed to have a single leading additional
+broadcasting dimension, creating the operation with a ``batch_size`` and leading to
+broadcasted tapes when used in a ``QuantumTape``.
+"""
