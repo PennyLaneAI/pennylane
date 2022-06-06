@@ -16,25 +16,130 @@ This submodule defines the symbolic operation that indicates the control of an o
 """
 
 import warnings
+from copy import copy
 
 from pennylane import math as qmlmath
 from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.operation import (
+    Operator,
     Operation,
+    Observable,
     expand_matrix,
 )
 from pennylane.queuing import QueuingContext
 from pennylane.wires import Wires
 
 
-# pylint: disable=too-many-arguments
-class Controlled(Operation):
+# pylint: disable=no-member
+class ControlledOperation(Operation):
+    """Operation-specific methods and properties for the ``Controlled`` class.
+
+    Dynamically mixed in based on the provided base operator.  If the base operator is an
+    Operation, this class will be mixed in.
+
+    When we no longer rely on certain functionality through `Operation`, we can get rid of this
+    class.
     """
-    Class docstring
+
+    @property
+    def grad_method(self):
+        return self.base.grad_method
+
+    # pylint: disable=missing-function-docstring
+    @property
+    def basis(self):
+        return self.base.basis
+
+    # TODO: parameter-frequencies
+
+
+# pylint: disable=too-many-arguments
+class Controlled(Operator):
+    """Symbolic operator denoting a controlled operator.
+
+    Args:
+        base (~.operation.Operator): the operator that is controlled
+        control_wires (Any): The wires to control on.
+
+    Keyword Args:
+        control_values (Iterable[Bool]): The values to control on. Must be the same
+            length as ``control_wires``. Defaults to ``True`` for all control wires.
+        work_wires (Any): Any auxiliary wires that can be used in the decomposition
+
+    **Example:**
+
+    >>> base = qml.RX(1.234, 2)
+    >>> op = Controlled(base, (0,1))
+    >>> op
+    CRX(1.234, wires=[0, 1, 2])
+    >>> op.base
+    RX(1.234, wires=[2])
+    >>> op.data
+    [1.234]
+    >>> op.wires
+    <Wires = [0, 1, 2]>
+    >>> op.control_wires
+    <Wires = [0, 1]>
+    >>> op.target_wires
+    <Wires = [2]>
+    >>> op.control_values
+    [True, True]
+
+    >>> op2 = Controlled(qml.PauliX(1), 0)
+    >>> qml.matrix(op2)
+    array([[1.+0.j, 0.+0.j, 0.+0.j, 0.+0.j],
+           [0.+0.j, 1.+0.j, 0.+0.j, 0.+0.j],
+           [0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j],
+           [0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j]])
+    >>> qml.eigvals(op2)
+    tensor([ 1.,  1.,  1., -1.], requires_grad=True)
+    >>> qml.generator(op)
+    (Projector([1, 1], wires=[0, 1]) @ PauliX(wires=[2]), -0.5)
+    >>> op.pow(-1.2)
+    [CRX(-1.4808, wires=[0, 1, 2])]
+
 
     """
+
+    _operation_type = None  # type if base inherits from operation and not observable
+    _operation_observable_type = None  # type if base inherits from both operation and observable
+    _observable_type = None  # type if base inherits from observable and not oepration
+
+    # pylint: disable=unused-argument
+    def __new__(
+        cls, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
+    ):
+        """Mixes in parents based on inheritance structure of base.
+
+        Though all the types will be named "Pow", their *identity* and location in memory will be different
+        based on ``base``'s inheritance.  We cache the different types in private class variables so that:
+
+        """
+
+        if isinstance(base, Operation):
+            if isinstance(base, Observable):
+                if cls._operation_observable_type is None:
+                    base_classes = (ControlledOperation, Controlled, Observable, Operation)
+                    cls._operation_observable_type = type(
+                        "Controlled", base_classes, dict(cls.__dict__)
+                    )
+                return object.__new__(cls._operation_observable_type)
+
+            # not an observable
+            if cls._operation_type is None:
+                base_classes = (ControlledOperation, Controlled, Operation)
+                cls._operation_type = type("Controlled", base_classes, dict(cls.__dict__))
+            return object.__new__(cls._operation_type)
+
+        if isinstance(base, Observable):
+            if cls._observable_type is None:
+                base_classes = (Controlled, Observable)
+                cls._observable_type = type("Controlled", base_classes, dict(cls.__dict__))
+            return object.__new__(cls._observable_type)
+
+        return object.__new__(Controlled)
 
     # pylint: disable=attribute-defined-outside-init
     def __copy__(self):
@@ -45,9 +150,10 @@ class Controlled(Operation):
         # this way preserves inheritance structure
 
         for attr, value in vars(self).items():
-            if attr not in {"data"}:
+            if attr != "_hyperparameters":
                 setattr(copied_op, attr, value)
-        copied_op._hyperparameters["base"] = self.base.__copy__()
+        copied_op._hyperparameters = copy(self._hyperparameters)
+        copied_op._hyperparameters["base"] = copy(self.base)
 
         return copied_op
 
@@ -56,22 +162,26 @@ class Controlled(Operation):
         self, base, control_wires, control_values=None, work_wires=None, do_queue=True, id=None
     ):
         control_wires = Wires(control_wires)
-        if isinstance(control_values, str):
-            warnings.warn(
-                "Specifying control values as a string is deprecated. Please use Sequence[Bool]",
-                UserWarning,
-            )
-            control_values = [(x == "1") for x in control_values]
         if control_values is None:
             control_values = [True] * len(control_wires)
-        if not set(control_values).issubset({False, True}):
-            raise ValueError(
-                "control_values can only take on True or False.  Provided control"
-                f" values are {control_values}."
-            )
+        else:
+            if isinstance(control_values, str):
+                warnings.warn(
+                    "Specifying control values as a string is deprecated. Please use Sequence[Bool]",
+                    UserWarning,
+                )
+                control_values = [(x == "1") for x in control_values]
 
-        if Wires.shared_wires([base.wires, control_wires]):
-            raise ValueError("The control wires must be different from the base operation wires.")
+            assert len(control_values) == len(
+                control_wires
+            ), "control_values should be the same length as control_wires"
+            assert set(control_values).issubset(
+                {False, True}
+            ), "control_values can only take on True or False"
+
+        assert (
+            len(Wires.shared_wires([base.wires, control_wires])) == 0
+        ), "The control wires must be different from the base operation wires."
 
         self.hyperparameters["base"] = base
         self.hyperparameters["control_wires"] = control_wires
@@ -141,14 +251,16 @@ class Controlled(Operation):
     # pylint: disable=protected-access
     @_wires.setter
     def _wires(self, new_wires):
+        new_wires = new_wires if isinstance(new_wires, Wires) else Wires(new_wires)
+
         num_control = len(self.control_wires)
         num_base = len(self.base.wires)
         num_control_and_base = num_control + num_base
 
-        if len(new_wires) < num_control_and_base:
-            raise ValueError(
-                f"{self} needs at least {num_control_and_base} wires." f"{len(new_wires)} provided."
-            )
+        assert num_control_and_base <= len(new_wires), (
+            f"{self.name} needs at least {num_control_and_base} wires."
+            f" {len(new_wires)} provided."
+        )
 
         self.hyperparameters["control_wires"] = new_wires[0:num_control]
 
@@ -162,11 +274,6 @@ class Controlled(Operation):
     @property
     def num_wires(self):
         return len(self.wires)
-
-    @property
-    def basis(self):
-        """Used in compilation."""
-        return self.base.basis
 
     def queue(self, context=QueuingContext):
         context.safe_update_info(self.base, owner=self)
@@ -212,6 +319,12 @@ class Controlled(Operation):
             return qml.math.concatenate([ones, base_eigvals])
         return super().eigvals()
 
+    def diagonalizing_gates(self):
+        return self.base.diagonalizing_gates()
+
+    # TODO: decomposition
+    # TODO: sparse_matrix (requires performance team help for optimization)
+
     def generator(self):
         sub_gen = self.base.generator()
         proj_ones = np.ones(len(self.control_wires), dtype=int, requires_grad=False)
@@ -231,5 +344,18 @@ class Controlled(Operation):
         ]
 
     @property
-    def grad_method(self):
-        return self.base.grad_method
+    def _queue_category(self):
+        """Used for sorting objects into their respective lists in `QuantumTape` objects.
+
+        This property is a temporary solution that should not exist long-term and should not be
+        used outside of ``QuantumTape._process_queue``.
+
+        Returns ``_queue_cateogory`` for base operator.
+
+        Options are:
+            * `"_prep"`
+            * `"_ops"`
+            * `"_measurements"`
+            * `None`
+        """
+        return self.base._queue_category  # pylint: disable=protected-access
