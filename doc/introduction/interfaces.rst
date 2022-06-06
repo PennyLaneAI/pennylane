@@ -126,7 +126,7 @@ of the classical autodifferentiation library, and are available from different a
 points.
 
 NumPy
-^^^^^
+~~~~~
 
 When using the standard NumPy framework, PennyLane offers some built-in optimizers.
 Some of these are specific to quantum optimization, such as the :class:`~.QNGOptimizer`, :class:`~.LieAlgebraOptimizer`
@@ -152,20 +152,20 @@ Some of these are specific to quantum optimization, such as the :class:`~.QNGOpt
 :html:`</div>`
 
 PyTorch
-^^^^^^^
+~~~~~~~
 
 If you are using the :ref:`PennyLane PyTorch framework <torch_interf>`, you should import one of the native
 `PyTorch optimizers <https://pytorch.org/docs/stable/optim.html>`_ (found in ``torch.optim``).
 
 TensorFlow
-^^^^^^^^^^
+~~~~~~~~~~
 
 When using the :ref:`PennyLane TensorFlow framework <tf_interf>`, you will need to leverage one of
 the `TensorFlow optimizers <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/Optimizer>`_
 (found in ``tf.keras.optimizers``).
 
 JAX
-^^^^
+~~~
 
 Check out the `jaxopt <https://github.com/google/jaxopt>`_ to find optimizers for the
 :ref:`PennyLane JAX framework <jax_interf>`.
