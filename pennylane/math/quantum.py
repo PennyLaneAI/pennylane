@@ -252,7 +252,6 @@ def to_density_matrix(state, indices, check_state=False, c_dtype="complex128"):
 
     """
     state = cast(state, dtype=c_dtype)
-    print(state)
     # State vector
     density_matrix = _density_matrix_from_state_vector(state, indices, check_state)
     # TODO
