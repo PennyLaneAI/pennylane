@@ -6,9 +6,9 @@
 Compiling circuits
 ==================
 
-PennyLane offers various functionality to compile circuits. We use the term "compilation"
-here in a loose sense as the process of transforming one circuit (or a sequence of operators)
-into one or more differing circuits (or sequences of operators). For example, such a transformation could
+PennyLane offers multiple tools for compiling circuits. We use the term "compilation"
+here in a loose sense as the process of transforming one circuit 
+into one or more differing circuits. A circuit could be either a quantum function or a sequence of operators. For example, such a transformation could
 replace a gate type with another, fuse gates, exploit mathematical relations that simplify an observable,
 or replace a large circuit by a number of smaller circuits.
 
@@ -18,7 +18,7 @@ section on :doc:`inspecting circuits </introduction/inspecting_circuits>`.
 Compilation transforms for circuit optimization
 -----------------------------------------------
 
-PennyLane offers a number of transforms that take quantum functions and alter them to represent
+PennyLane includes multiple transforms that take quantum functions and return new
 quantum functions of optimized circuits:
 
 :html:`<div class="summary-table">`
@@ -69,7 +69,7 @@ For example, take the following decorated quantum function:
         qml.CZ(wires=[1, 2])
         return qml.expval(qml.PauliZ(wires=0))
 
-The default behaviour of :func:`~.pennylane.compile` is to apply a sequence of three
+The default behaviour of :func:`~.pennylane.compile` applies a sequence of three
 transforms: :func:`~.pennylane.transforms.commute_controlled`, :func:`~.pennylane.transforms.cancel_inverses`,
 and then :func:`~.pennylane.transforms.merge_rotations`.
 
@@ -126,8 +126,7 @@ Groups of commuting Pauli words
 -------------------------------
 
 Mutually commuting Pauli words can be measured simultaneously on a quantum computer.
-When given an observable that is a linear combination of Pauli words, it can therefore
-be useful to find such groups in order to optimize the number of circuit runs.
+Finding groups of mutually commuting observables given a general linear combination of Pauli words can optimize the number of circuit executions.
 
 This can be done with the :func:`~.pennylane.grouping.group_observables` function:
 
@@ -147,9 +146,7 @@ solving the minimum clique cover problem, and other Pauli operator logic, refer 
 Custom decompositions
 ---------------------
 
-PennyLane decomposes gates unknown to a particular device into other,
-"lower-level" gates. As a user you may want to fine-tune this mechanism,
-for example if you want your circuit to only use a certain gate set.
+PennyLane decomposes gates unknown to the device into other, "lower-level" gates. As a user, you may want to fine-tune this mechanism. For example, you may wish your circuit to use different fundamental gates.
 
 For example, suppose we would like to implement the following QNode:
 
@@ -231,9 +228,9 @@ The example below shows how a three-wire circuit can be run on a two-wire device
 
         return qml.expval(qml.grouping.string_to_pauli_word("ZZZ"))
 
-Instead of executing the circuit directly, it will be partitioned into
+Instead of being executed directly, the circuit will be partitioned into
 smaller fragments according to the :class:`~.pennylane.WireCut` locations,
-and each fragment executed multiple times. PennyLane automatically combines the results
+and each fragment will be executed multiple times. PennyLane automatically combines the results
 of the fragment executions to recover the expected output of the original uncut circuit.
 
 >>> x = np.array(0.531, requires_grad=True)
