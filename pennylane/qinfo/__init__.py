@@ -15,3 +15,4 @@
 
 from .utils import *
 from .entropies import *
+from .fidelity import *

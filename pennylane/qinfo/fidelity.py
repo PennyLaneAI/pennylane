@@ -13,16 +13,21 @@
 # limitations under the License.
 """Differentiable quantum fidelity"""
 
-def fidelity(qnode, indices, base=None):
-    """Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~.state`.
+import pennylane as qml
+
+
+def fidelity(qnode0, qnode1, indices0, indices1):
+    """Compute the Fidelity entropy from two :class:`.QNode` returning a :func:`~.state`.
 
     """
 
-    density_matrix_qnode = qml.qinfo.density_matrix_transform(qnode, indices)
+    density_matrix_qnode0 = qml.qinfo.density_matrix_transform(qnode0, indices0)
+    density_matrix_qnode1 = qml.qinfo.density_matrix_transform(qnode1, indices1)
 
-    def wrapper(*args, **kwargs):
-        density_matrix = density_matrix_qnode(*args, **kwargs)
-        entropy = qml.math.compute_vn_entropy(density_matrix, base)
-        return entropy
+    def wrapper(signature0, signature1):
+        density_matrix0 = density_matrix_qnode0(*signature0)
+        density_matrix1 = density_matrix_qnode1(*signature1)
+        fidelity = qml.math.to_fidelity(density_matrix0, density_matrix1)
+        return fidelity
 
     return wrapper
