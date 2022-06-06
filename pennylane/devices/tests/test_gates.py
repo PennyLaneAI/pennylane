@@ -66,10 +66,14 @@ ops = {
     "RZ": qml.RZ(0, wires=[0]),
     "Rot": qml.Rot(0, 0, 0, wires=[0]),
     "S": qml.S(wires=[0]),
+    "Adjoint(S)": qml.adjoint(qml.S(wires=[0])),
     "SWAP": qml.SWAP(wires=[0, 1]),
     "ISWAP": qml.ISWAP(wires=[0, 1]),
+    "Adjoint(ISWAP)": qml.adjoint(qml.ISWAP(wires=[0, 1])),
     "T": qml.T(wires=[0]),
+    "Adjoint(T)": qml.adjoint(qml.T(wires=[0])),
     "SX": qml.SX(wires=[0]),
+    "Adjoint(SX)": qml.adjoint(qml.SX(wires=[0])),
     "Barrier": qml.Barrier(wires=[0, 1, 2]),
     "WireCut": qml.WireCut(wires=[0]),
     "Toffoli": qml.Toffoli(wires=[0, 1, 2]),
@@ -90,6 +94,7 @@ ops = {
     "U2": qml.U2(0, 0, wires=0),
     "U3": qml.U3(0, 0, 0, wires=0),
     "SISWAP": qml.SISWAP(wires=[0, 1]),
+    "Adjoint(SISWAP)": qml.adjoint(qml.SISWAP(wires=[0, 1])),
     "OrbitalRotation": qml.OrbitalRotation(0, wires=[0, 1, 2, 3]),
 }
 
@@ -102,7 +107,9 @@ all_available_ops.remove("CPhase")  # CPhase is an alias of ControlledPhaseShift
 all_available_ops.remove("SQISW")  # SQISW is an alias of SISWAP
 all_available_ops.add("QFT")  # QFT was recently moved to being a template, but let's keep it here
 
-if not set(all_ops) == all_available_ops:
+symbolic_ops = {"Adjoint(S)", "Adjoint(T)", "Adjoint(SX)", "Adjoint(ISWAP)", "Adjoint(SISWAP)"}
+
+if not set(all_ops) == all_available_ops.union(symbolic_ops):
     raise ValueError(
         "A qubit operation has been added that is not being tested in the "
         "device test suite. Please add to the ops dictionary in "
@@ -203,6 +210,13 @@ IsingZZ = lambda phi: np.array(
     ]
 )
 
+
+def adjoint_tuple(op, orig_mat):
+    """Returns op constructor and matrix for provided base ops."""
+    mat = qml.math.conj(qml.math.transpose(orig_mat))
+    return (qml.adjoint(op), mat)
+
+
 # list of all non-parametrized single-qubit gates,
 # along with the PennyLane operation name
 single_qubit = [
@@ -213,6 +227,9 @@ single_qubit = [
     (qml.S, S),
     (qml.T, T),
     (qml.SX, SX),
+    adjoint_tuple(qml.S, S),
+    adjoint_tuple(qml.T, T),
+    adjoint_tuple(qml.SX, SX),
 ]
 
 # list of all parametrized single-qubit gates
@@ -224,7 +241,14 @@ single_qubit_param = [
     (qml.RZ, rz),
 ]
 # list of all non-parametrized two-qubit gates
-two_qubit = [(qml.CNOT, CNOT), (qml.SWAP, SWAP), (qml.ISWAP, ISWAP), (qml.CZ, CZ), (qml.CY, CY)]
+two_qubit = [
+    (qml.CNOT, CNOT),
+    (qml.SWAP, SWAP),
+    (qml.ISWAP, ISWAP),
+    (qml.CZ, CZ),
+    (qml.CY, CY),
+    adjoint_tuple(qml.ISWAP, ISWAP),
+]
 # list of all parametrized two-qubit gates
 two_qubit_param = [
     (qml.CRX, crx),
@@ -424,7 +448,7 @@ class TestGatesQubit:
         n_wires = 2
         dev = device(n_wires)
         skip_if(dev, {"returns_probs": False})
-        if not dev.supports_operation(op):
+        if not dev.supports_operation(op(wires=range(n_wires)).name):
             pytest.skip("op not supported")
 
         rnd_state = init_state(n_wires)
