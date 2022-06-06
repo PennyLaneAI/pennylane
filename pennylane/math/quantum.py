@@ -164,14 +164,13 @@ def marginal_prob(prob, axis):
     return np.flatten(prob)
 
 
-def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype="complex128"):
+def _density_matrix_from_state_vector(state, indices, check_state=False):
     """Compute the density matrix from a state vector.
 
     Args:
         state (tensor_like): 1D tensor state vector. This tensor should of size ``(2**N,)`` for some integer value ``N``.
         indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
-        c_dtype (str): Complex floating point precision type.
 
     Returns:
         tensor_like: Density matrix of size ``(2**len(indices), 2**len(indices))``
@@ -199,8 +198,6 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
     """
-    # Cast as a complex array
-    state = cast(state, dtype=c_dtype)
     len_state = np.shape(state)[0]
 
     # Check the format and norm of the state vector
@@ -254,8 +251,10 @@ def to_density_matrix(state, indices, check_state=False, c_dtype="complex128"):
      [0.+0.j 0.+0.j]]
 
     """
+    state = cast(state, dtype=c_dtype)
+    print(state)
     # State vector
-    density_matrix = _density_matrix_from_state_vector(state, indices, check_state, c_dtype)
+    density_matrix = _density_matrix_from_state_vector(state, indices, check_state)
     # TODO
     # Density matrix
     return density_matrix

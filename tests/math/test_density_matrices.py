@@ -88,6 +88,8 @@ multiple_wires_list = [
 ]
 # fmt: on
 
+c_dtypes = ["complex64", "complex128"]
+
 
 class TestDensityMatrixFromStateVectors:
     """Tests for creating a density matrix from state vectors."""
@@ -144,9 +146,7 @@ class TestDensityMatrixFromStateVectors:
     ):
         """Test the density matrix from state vectors for single wires with state checking"""
         state_vector = array_func(state_vector)
-        density_matrix = fn.quantum._density_matrix_from_state_vector(
-            state_vector, indices=wires, check_state=True
-        )
+        density_matrix = fn.quantum.to_density_matrix(state_vector, indices=wires, check_state=True)
         assert np.allclose(density_matrix, expected_density_matrix[2])
 
     def test_state_vector_wrong_shape(self):
@@ -210,3 +210,22 @@ class TestDensityMatrixFromStateVectors:
         )
         density_matrix = density_matrix(state_vector)
         assert np.allclose(density_matrix, [[1, 0], [0, 0]])
+
+    @pytest.mark.parametrize("c_dtype", c_dtypes)
+    @pytest.mark.parametrize("array_func", array_funcs)
+    @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
+    @pytest.mark.parametrize("wires", single_wires_list)
+    def test_density_matrix_c_dtype(
+        self, array_func, state_vector, wires, c_dtype, expected_density_matrix
+    ):
+        """Test different complex dtype."""
+        state_vector = array_func(state_vector)
+        if fn.get_interface(state_vector) == "jax" and c_dtype == "complex128":
+            pytest.skip("Jax does not support complex 128")
+        density_matrix = fn.to_density_matrix(state_vector, indices=wires, c_dtype=c_dtype)
+        if fn.get_interface(state_vector) == "torch":
+            if c_dtype == "complex64":
+                c_dtype = torch.complex64
+            elif c_dtype == "complex128":
+                c_dtype = torch.complex128
+        assert density_matrix.dtype == c_dtype
