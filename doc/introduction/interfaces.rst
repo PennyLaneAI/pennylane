@@ -167,7 +167,7 @@ the `TensorFlow optimizers <https://www.tensorflow.org/api_docs/python/tf/keras/
 JAX
 ~~~
 
-Check out the `jaxopt <https://github.com/google/jaxopt>`_ to find optimizers for the
+Check out the `jaxopt package <https://github.com/google/jaxopt>`_ to find optimizers for the
 :ref:`PennyLane JAX framework <jax_interf>`.
 
 Gradients
