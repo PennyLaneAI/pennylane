@@ -183,6 +183,21 @@ def test_analytic_deprecation():
 
 
 #####################################################
+# Helper Method Test
+#####################################################
+
+
+def test_conj_helper_method():
+    """Unittests the _conj helper method."""
+
+    dev = qml.device("default.qubit.torch", wires=1)
+
+    x = qml.numpy.array(1.0 + 1j)
+    conj_x = dev._conj(x)
+    assert qml.math.allclose(conj_x, qml.math.conj(x))
+
+
+#####################################################
 # Device-level integration tests
 #####################################################
 
@@ -1141,6 +1156,7 @@ class TestQNodeIntegration:
             "supports_reversible_diff": False,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
+            "supports_broadcasting": False,
             "passthru_interface": "torch",
             "passthru_devices": {
                 "torch": "default.qubit.torch",

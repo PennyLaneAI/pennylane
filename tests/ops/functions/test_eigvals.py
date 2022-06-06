@@ -97,9 +97,10 @@ class TestSingleOperation:
     @pytest.mark.parametrize("op_class", one_qubit_one_parameter)
     def test_adjoint(self, op_class):
         """Test that the adjoint is correctly taken into account"""
+        rounding_precision = 6
         res = qml.eigvals(qml.adjoint(op_class))(0.54, wires=0)
         expected = op_class(-0.54, wires=0).eigvals()
-        assert np.allclose(res, expected)
+        assert set(np.around(res, rounding_precision)) == set(np.around(res, rounding_precision))
 
     def test_ctrl(self):
         """Test that the ctrl is correctly taken into account"""
