@@ -206,6 +206,18 @@
   array([1.-0.j, 0.-1.j])
   ```
 
+* A new symbolic operator class `qml.ops.op_math.Pow` represents an operator raised to a power.
+  [(#2621)](https://github.com/PennyLaneAI/pennylane/pull/2621)
+
+  ```pycon
+  >>> op = qml.ops.op_math.Pow(qml.PauliX(0), 0.5)
+  >>> op.decomposition()
+  [SX(wires=[0])]
+  >>> qml.matrix(op)
+  array([[0.5+0.5j, 0.5-0.5j],
+       [0.5-0.5j, 0.5+0.5j]])
+  ```
+
 * The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
   [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
 
