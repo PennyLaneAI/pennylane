@@ -65,3 +65,67 @@ def rank(factors, eigvals, tol=1e-5):
     rank_m = int(len(vals_nonzero) / len(eigvals))
 
     return rank_r, rank_m
+
+    def near_k(self, n_opt):
+        return np.array([2 ** np.floor(n_opt), 2 ** np.ceil(n_opt)])
+
+    def expansion_factor(self, n, l, bp1, bo, bp2, xi, beth):
+        r"""Return expansion factors that minimize the cost.
+
+        The expansion factors are parameters chosen as powers of 2 that determine the complexity of
+        applying QROMs.
+
+        k1: QROM for state preparation on the first register
+        k2: QROM for outputing data from the l register
+
+        k3: inverse the k2 QROM
+        k4: inverse the k1 QROM
+
+        k5: QROM for the rotation
+
+        k6:
+
+        """
+        # kp1
+        n1 = np.log2(((l + 1) / bp1) ** 0.5)
+        k1 = np.array([2 ** np.floor(n1), 2 ** np.ceil(n1)])
+        cost = np.ceil((l + 1) / k1) + bp1 * (k1 - 1)
+        k1_opt = int(k1[np.argmin(cost)])
+
+        # ko
+        n2 = np.log2(((l + 1) / bo) ** 0.5)
+        k2 = np.array([2 ** np.floor(n2), 2 ** np.ceil(n2)])
+        cost = np.ceil((l + 1) / k2) + bo * (k2 - 1)
+        k2_opt = int(k2[np.argmin(cost)])
+
+        # kpp1
+        n3 = np.log2((l + 1) ** 0.5)
+        k3 = np.array([2 ** np.floor(n3), 2 ** np.ceil(n3)])
+        cost = np.ceil((l + 1) / k3) + k3
+        k3_opt = int(k3[np.argmin(cost)])
+
+        # kppo
+        k4_opt = k3_opt
+
+        # kr
+        n5 = np.log2(((2 * l * xi - n / 2) / (n * beth)) ** 0.5)
+        k5 = np.array([2 ** np.floor(n5), 2 ** np.ceil(n5)])
+        cost = np.ceil((l * xi + n / 2) / k5) + np.ceil((l * xi) / k5) + n * beth * k5
+        k5_opt = int(k5[np.argmin(cost)])
+
+        # kpr
+        n6 = np.log2((l * xi - n / 4) ** 0.5)
+        k6 = np.array([2 ** np.floor(n6), 2 ** np.ceil(n6)])
+        cost = np.ceil((l * xi + n / 2) / k6) + np.ceil((l * xi) / k6) + 2 * k6
+        k6_opt = int(k6[np.argmin(cost)])
+
+        # kp2
+        n7 = np.log2(((2 * l * xi - n / 2) / (2 * bp2)) ** 0.5)
+        k7 = np.array([2 ** np.floor(n7), 2 ** np.ceil(n7)])
+        cost = np.ceil((l * xi + n / 2) / k7) + np.ceil((l * xi) / k7) + 2 * bp2 * (k7 - 1)
+        k7_opt = int(k7[np.argmin(cost)])
+
+        # kpp2
+        k8_opt = k6_opt
+
+        return k1_opt, k2_opt, k3_opt, k4_opt, k5_opt, k6_opt, k7_opt, k8_opt
