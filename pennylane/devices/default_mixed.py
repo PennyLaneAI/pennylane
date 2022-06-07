@@ -153,20 +153,6 @@ class DefaultMixed(QubitDevice):
         # User obtains state as a matrix
         return self._reshape(self._pre_rotated_state, (dim, dim))
 
-    def density_matrix(self, wires):
-        """Returns the reduced density matrix over the given wires.
-
-        Args:
-            wires (Wires): wires of the reduced system
-
-        Returns:
-            array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
-            representing the reduced density matrix of the state prior to measurement.
-        """
-
-        state = np.reshape(self._pre_rotated_state, (2**self.num_wires, 2**self.num_wires))
-        return qnp.to_density_matrix(state, indices=wires, c_dtype=self.C_DTYPE)
-
     def reset(self):
         """Resets the device"""
         super().reset()

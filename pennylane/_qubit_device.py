@@ -653,14 +653,17 @@ class QubitDevice(Device):
         raise NotImplementedError
 
     def density_matrix(self, wires):
-        """Returns the reduced density matrix prior to measurement.
+        """Returns the reduced density matrix over the given wires.
 
-        .. note::
+        Args:
+            wires (Wires): wires of the reduced system
 
-            Only state vector simulators support this property. Please see the
-            plugin documentation for more details.
+        Returns:
+            array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
+            representing the reduced density matrix of the state prior to measurement.
         """
-        raise NotImplementedError
+        state = getattr(self, "state", None)
+        return qml.math.to_density_matrix(state, indices=wires, c_dtype=self.C_DTYPE)
 
     def vn_entropy(self, wires, log_base):
         """Returns the Von Neumann entropy prior to measurement.
