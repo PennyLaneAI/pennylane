@@ -14,7 +14,7 @@
 """
 This module contains the qml.equal function.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-return-statements
 import pennylane as qml
 
 
