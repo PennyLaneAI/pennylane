@@ -33,10 +33,8 @@ class TestSPSAOptimizer:
     @pytest.mark.parametrize("args", [0, -3, 42])
     @pytest.mark.parametrize("f", univariate)
     def test_apply_grad(self, args, f):
-        """
-        Test that a gradient step can be applied correctly with a univariate
-        function.
-        """
+        """Test that a gradient step can be applied correctly with a univariate
+        function."""
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
         args = np.array([args], requires_grad=True)
 
