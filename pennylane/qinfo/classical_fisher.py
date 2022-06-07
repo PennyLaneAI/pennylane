@@ -58,10 +58,10 @@ def classical_fisher(qnode, argnums=0):
 
     Args:
         tape (qml.QNode or qml.QuantumTape): A QNode or quantum tape that may have arbitrary return types.
-    
+
     Returns:
         func: The function that computes the classical fisher information matrix. This function accepts the same signature as the QNode.
-    
+
     .. warning::
         In its current form, this functionality is not hardware compatible and can only be used by simulators.
 
@@ -87,11 +87,11 @@ def classical_fisher(qnode, argnums=0):
             return qml.probs(wires=range(n_wires))
 
     Executing this circuit yields the ``2**n_wires`` elements of :math:`p_\ell(\bm{\theta})`
-    
+
     >>> params = pnp.random.random(2)
     >>> circ(params)
     tensor([0.77708372, 0.        , 0.        , 0.22291628], requires_grad=True)
-    
+
     We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the new function that we generate via ``classical_fisher()``:
 
     >>> cfim_func = qml.qinfo.classical_fisher(circ)
@@ -114,11 +114,11 @@ def classical_fisher(qnode, argnums=0):
     >>> qml.qinfo.classical_fisher(circ)(x, y)
      [tensor([[0.15828019]], requires_grad=True),
       tensor([[0.74825326]], requires_grad=True)])
-    
+
     Note how in the case of multiple variables we get a list of matrices with sizes
     ``[(n_params0, n_params0), (n_params1, n_params1)]``, which in this case is simply two ``(1, 1)`` matrices.
 
-    
+
     A typical setting where the classical fisher information matrix is used is in variational quantum algorithms.
     Closely related to the `quantum natural gradient<https://arxiv.org/abs/1909.02108>`_, which employs the _quantum_ fisher information matrix,
     we can compute a rescaled gradient using the CFIM. In this scenario, typically a Hamiltonian objective function :math:`\langle H \rangle` is minimized:
@@ -136,7 +136,7 @@ def classical_fisher(qnode, argnums=0):
             return qml.expval(H)
 
         params = pnp.random.random(4)
-    
+
     We can compute both the gradient of :math:`\langle H \rangle` and the CFIM with the same QNode ``circ`` in this example since ``classical_fisher()`` ignores the return types
     and assumes ``qml.probs()`` for all wires.
 
@@ -158,6 +158,7 @@ def classical_fisher(qnode, argnums=0):
 
     if interface == "jax" or interface == "jax-jit":
         import jax
+
         jac = jax.jacobian(new_qnode, argnums=argnums)
 
     if interface == "torch":
