@@ -46,16 +46,118 @@ def _tf_jac(circ):
 
 
 def classical_fisher(qnode, argnums=0):
-    """Computing the classical fisher information matrix (classical_fisher) using the jacobian of the output probabilities
-    as described in eq. (15) in https://arxiv.org/abs/2103.15191
+    r"""Returns a function that computes the classical fisher information matrix (CFIM) of a given QNode or quantum tape.
+
+    Given a parametrized (classical) probability distribution :math:`p(\bm{\theta})`, the classical fisher information matrix quantifies how changes to the parameters :math:`\bm{\theta}`
+    are reflected in the probability distribution. For a parametrized quantum state, we apply the concept of classical fisher information to the computational
+    basis measurement.
+    More explicitly, this function implements eq. (15) in `arxiv:2103.15191<https://arxiv.org/abs/2103.15191>`_:
+
+    .. math::
+        \text{CFIM}_{i, j} = \sum_{\ell=0}^{2^N} \frac{1}{p_\ell(\bm{\theta})} \frac{\partial p_\ell(\bm{\theta})}{\partial \theta_i} \frac{\partial p_\ell(\bm{\theta})}{\partial \theta_j}
+
+    Args:
+        tape (qml.QNode or qml.QuantumTape): A QNode or quantum tape that may have arbitrary return types.
+    
+    Returns:
+        func: The function that computes the classical fisher information matrix. This function accepts the same signature as the QNode.
+    
+    .. warning::
+        In its current form, this functionality is not hardware compatible and can only be used by simulators.
+
+    **See also:**
+
+    :func:`metric_tensor`, :func:`qinfo.quantum_fisher`
+
+    **Example**
+
+    First, let us define a parametrized quantum state and return its (classical) probability distribution for all computational basis elements:
+
+    .. code-block:: python
+        import pennylane.numpy as pnp
+        n_wires = 2
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circ(params):
+        qml.RX(params[0], wires=0)
+        qml.RX(params[1], wires=0)
+            qml.CNOT(wires=(0,1))
+            return qml.probs(wires=range(n_wires))
+
+    Executing this circuit yields the ``2**n_wires`` elements of :math:`p_\ell(\bm{\theta})`
+    
+    >>> params = pnp.random.random(2)
+    >>> circ(params)
+    tensor([0.77708372, 0.        , 0.        , 0.22291628], requires_grad=True)
+    
+    We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the new function that we generate via ``classical_fisher()``:
+
+    >>> cfim_func = qml.qinfo.classical_fisher(circ)
+    >>> cfim_func(params)
+    tensor([[1., 1.],
+        [1., 1.]], requires_grad=True)
+
+    This new function accepts the same signature as the QNode. Here is a small example with multiple arguments:
+
+    .. code-block:: python
+        @qml.qnode(dev)
+        def circ(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            return qml.probs(wires=range(n_wires))
+
+    >>> x, y = pnp.array([0.5, 0.6], requires_grad=True)
+    >>> circ(x, y)
+    (tensor([0.87380224, 0.        , 0.12619776, 0.        ], requires_grad=True)
+    >>> qml.qinfo.classical_fisher(circ)(x, y)
+     [tensor([[0.15828019]], requires_grad=True),
+      tensor([[0.74825326]], requires_grad=True)])
+    
+    Note how in the case of multiple variables we get a list of matrices with sizes
+    ``[(n_params0, n_params0), (n_params1, n_params1)]``, which in this case is simply two ``(1, 1)`` matrices.
+
+    
+    A typical setting where the classical fisher information matrix is used is in variational quantum algorithms.
+    Closely related to the `quantum natural gradient<https://arxiv.org/abs/1909.02108>`_, which employs the _quantum_ fisher information matrix,
+    we can compute a rescaled gradient using the CFIM. In this scenario, typically a Hamiltonian objective function :math:`\langle H \rangle` is minimized:
+
+    .. code-block:: python
+        H = qml.Hamiltonian(coeffs = [0.5, 0.5], ops = [qml.PauliZ(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev)
+        def circ(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            qml.RX(params[2], wires=1)
+            qml.RY(params[3], wires=1)
+            qml.CNOT(wires=(0,1))
+            return qml.expval(H)
+
+        params = pnp.random.random(4)
+    
+    We can compute both the gradient of :math:`\langle H \rangle` and the CFIM with the same QNode ``circ`` in this example since ``classical_fisher()`` ignores the return types
+    and assumes ``qml.probs()`` for all wires.
+
+    >>> grad = qml.grad(circ)(params)
+    >>> cfim = qml.qinfo.classical_fisher(circ)(params)
+    >>> print(grad.shape, cfim.shape)
+    (4,) (4, 4)
+
+    Combined together, we can get a rescaled gradient to be employed for optimization schemes like natural gradient descent.
+
+    >>> rescaled_grad = cfim @ grad
+    >>> print(rescaled_grad)
+    [-0.66772533 -0.16618756 -0.05865127 -0.06696078]
+
     """
     new_qnode = _make_probs(qnode, post_processing_fn=lambda x: qml.math.squeeze(qml.math.stack(x)))
 
     interface = qnode.interface
 
-    if interface == "jax":
+    if interface == "jax" or interface == "jax-jit":
         import jax
-
         jac = jax.jacobian(new_qnode, argnums=argnums)
 
     if interface == "torch":
@@ -68,8 +170,8 @@ def classical_fisher(qnode, argnums=0):
         jac = _tf_jac(new_qnode)
 
     def wrapper(*args, **kwargs):
-        p = qnode(*args, **kwargs)
         j = jac(*args, **kwargs)
+        p = new_qnode(*args, **kwargs)
 
         # In case multiple variables are used
         if isinstance(j, tuple) and len(j) > 1:

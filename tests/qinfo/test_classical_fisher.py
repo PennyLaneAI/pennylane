@@ -24,7 +24,7 @@ import numpy as np
 
 from pennylane.qinfo import _compute_cfim, classical_fisher, _make_probs
 
-
+# TODO: add test that ignores expvals and appends probs instead
 def test_make_probs():
     """Testing the private _make_probs transform"""
     with qml.tape.QuantumTape() as tape:
