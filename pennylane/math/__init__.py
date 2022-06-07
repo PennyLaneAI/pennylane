@@ -100,6 +100,7 @@ __all__ = [
     "scatter_element_add",
     "stack",
     "tensordot",
+    "to_vn_entropy",
     "unwrap",
     "where",
 ]

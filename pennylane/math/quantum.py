@@ -326,7 +326,7 @@ def _partial_trace(density_matrix, indices):
             f"{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
             f"{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}"
         )
-
+        print(density_matrix, kraus)
         density_matrix = np.einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
 
     number_wires_sub = num_indices - len(indices)
@@ -483,9 +483,7 @@ def to_vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex
     0.6931472
 
     """
-    state = cast(state, dtype=c_dtype)
-
-    density_matrix = to_density_matrix(state, indices, check_state)
+    density_matrix = to_density_matrix(state, indices, check_state, c_dtype)
     entropy = compute_vn_entropy(density_matrix, base)
 
     return entropy
