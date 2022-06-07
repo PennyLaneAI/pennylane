@@ -4,15 +4,16 @@
 
 <h3>New features since last release</h3>
 
-* A new quantum information module is added. It includes a function for computing the reduced density matrix functions 
+* A new quantum information module is added. It includes a function for computing the reduced density matrix functions
   for state vectors and density matrices.
 
   [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
   [(#2569)](https://github.com/PennyLaneAI/pennylane/pull/2569)
   [(#2598)](https://github.com/PennyLaneAI/pennylane/pull/2598)
   [(#2617)](https://github.com/PennyLaneAI/pennylane/pull/2617)
-  
-  A `to_density_matrix` function that can handle both state vectors and density matrix, to return a reduced 
+  [(#2631)](https://github.com/PennyLaneAI/pennylane/pull/2631)
+
+  A `to_density_matrix` function that can handle both state vectors and density matrix, to return a reduced
   density matrix:
   ```pycon
   >>> x = [1, 0, 1, 0] / np.sqrt(2)
@@ -23,12 +24,12 @@
   >>> to_density_matrix(x, indices=[1])
   [[1.+0.j 0.+0.j]
    [0.+0.j 0.+0.j]]
-  
+
   >>> y = [[0.5, 0, 0.0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]
   >>> to_density_matrix(y, indices=[0])
   [[0.5+0.j 0.0+0.j]
    [0.0+0.j 0.5+0.j]]
-  
+
   >>> import tensorflow as tf
   >>> z = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
   >>> to_density_matrix(z, indices=[1])
@@ -36,7 +37,7 @@
   [[1.+0.j 0.+0.j]
    [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
   ```
-  It also contains a `QNode` transform `density_matrix_transform`, that returns the density matrix from a `QNode` 
+  It also contains a `QNode` transform `density_matrix_transform`, that returns the density matrix from a `QNode`
   returning `qml.state`:
   ```python3
   dev = qml.device("default.qubit", wires=2)
@@ -50,7 +51,7 @@
   [[0.5+0.j 0.+0.j]
    [0.+0.j 0.5+0.j]]
   ```
-  
+
   We add Von Neumann entropy capabilities, `qml.math.to_vn_entropy` that accepts both state vectors and density matrices
   for all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
 
@@ -58,12 +59,12 @@
   >>> x = [1, 0, 0, 1] / np.sqrt(2)
   >>> to_vn_entropy(x, indices=[0])
   0.6931472
-  
+
   >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
   >>> to_vn_entropy(x, indices=[0])
   0.6931472
   ```
-  
+
   A Von Neumann measurement process `qml.vn_entropy` can be used as return in QNodes:
 
   ```python3
@@ -73,12 +74,12 @@
       qml.IsingXX(x, wires=[0,1])
       return qml.vn_entropy(wires=[0], log_base=2)
   ```
-  
+
   ```pycon
   >>> circuit_entropy(np.pi/2)
   1.0
   ```
-  The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy 
+  The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy
   `qml.qinfo.vn_entropy_transform`:
   ```python3
   dev = qml.device("default.qubit", wires=2)
@@ -87,13 +88,52 @@
       qml.IsingXX(x, wires=[0,1])
       return qml.state()
   ```
-  
+
   ```pycon
   >>> vn_entropy_transform(circuit, indices=[0], base=2)(np.pi/2)
   1.0
   ```
-  
 
+  Support for mutual information computation is also added. The `qml.math.to_mutual_info`
+  function computes the mutual information from a state vector or a density matrix:
+  ```pycon
+  >>> x = np.array([1, 0, 0, 1]) / np.sqrt(2)
+  >>> qml.math.to_mutual_info(x, indices0=[0], indices1=[1])
+  1.3862943611198906
+  >>>
+  >>> y = np.array([[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]])
+  >>> qml.math.to_mutual_info(x, indices0=[0], indices1=[1])
+  1.3862943611198906
+  ```
+  The `qml.mutual_info` measurement process can be returned from a QNode:
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.IsingXX(x, wires=[0, 1])
+      return qml.mutual_info(wires0=[0], wires1=[1])
+  ```
+  ```pycon
+  >>> circuit(np.pi / 2)
+  tensor(1.38629436, requires_grad=True)
+  ```
+  The `qml.qinfo.mutual_info_transform` can be used to transform a QNode returning
+  a state to a function returning the mutual information:
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.IsingXX(x, wires=[0, 1])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> mutual_info_circuit = qml.qinfo.mutual_info_transform(circuit, indices0=[0], indices1=[1])
+  >>> mutual_info_circuit(np.pi / 2)
+  1.3862943611198906
+  ```
 
 
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
@@ -191,7 +231,7 @@
   >>> tape.batch_size
   3
   ```
-  
+
   but not `Operation`s with differing (non-`None`) `batch_size`s:
 
   ```pycon
@@ -385,11 +425,11 @@
 
 * `BasisEmbedding` can accept an int as argument instead of a list of bits (optionally).
   [(#2601)](https://github.com/PennyLaneAI/pennylane/pull/2601)
-  
+
   Example:
 
   `qml.BasisEmbedding(4, wires = range(4))` is now equivalent to
-  `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because `4=0b100`). 
+  `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because `4=0b100`).
 
 * Introduced a new `is_hermitian` property to determine if an operator can be used in a measurement process.
   [(#2629)](https://github.com/PennyLaneAI/pennylane/pull/2629)
@@ -438,8 +478,8 @@
   as trainable do not have any impact on the QNode output.
   [(#2584)](https://github.com/PennyLaneAI/pennylane/pull/2584)
 
-* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` 
-  or `"jax-jit"`, when requesting backpropagation. 
+* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"`
+  or `"jax-jit"`, when requesting backpropagation.
   [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
 
 * Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
@@ -485,5 +525,5 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, 
+Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri,
 Utkarsh Azad, WingCode
