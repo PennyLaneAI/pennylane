@@ -217,6 +217,14 @@ class Pow(Operator):
         self.base._wires = new_wires
 
     @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def ndim_params(self):
+        return self.base.ndim_params
+
+    @property
     def num_wires(self):
         return len(self.wires)
 
