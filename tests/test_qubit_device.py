@@ -134,7 +134,7 @@ def mock_qubit_device_with_paulis_rotations_and_methods(monkeypatch):
         m.setattr(QubitDevice, "expval", lambda self, *args, **kwargs: 0)
         m.setattr(QubitDevice, "var", lambda self, *args, **kwargs: 0)
         m.setattr(QubitDevice, "sample", lambda self, *args, **kwargs: 0)
-        m.setattr(QubitDevice, "apply", lambda self, x: None)
+        m.setattr(QubitDevice, "apply", lambda self, x, **kwargs: None)
 
         def get_qubit_device(wires=1):
             return QubitDevice(wires=wires)
@@ -1098,7 +1098,6 @@ class TestCapabilities:
         assert capabilities == QubitDevice.capabilities()
 
 
-# Todo :broadcasted execution tests
 class TestExecution:
     """Tests for the execute method"""
 
@@ -1149,8 +1148,59 @@ class TestExecution:
             node_3(0.432, 0.12)
         assert dev_1.num_executions == num_evals_1 + num_evals_3
 
+class TestExecutionBroadcasted:
+    """Tests for the execute method with broadcasted parameters"""
 
-# Todo :broadcasted execution tests
+    def test_device_executions(self):
+        """Test the number of times a qubit device is executed over a QNode's
+        lifetime is tracked by `num_executions`"""
+
+        dev_1 = qml.device("default.qubit", wires=2)
+
+        def circuit_1(x, y):
+            qml.RX(x, wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node_1 = qml.QNode(circuit_1, dev_1)
+        num_evals_1 = 10
+
+        for _ in range(num_evals_1):
+            node_1(0.432, np.array([0.12, 0.5, 3.2]))
+        assert dev_1.num_executions == num_evals_1
+
+        # test a second instance of a default qubit device
+        dev_2 = qml.device("default.qubit", wires=2)
+
+        assert dev_2.num_executions == 0
+
+        def circuit_2(x, y):
+            qml.RX(x, wires=[0])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node_2 = qml.QNode(circuit_2, dev_2)
+        num_evals_2 = 5
+
+        for _ in range(num_evals_2):
+            node_2(np.array([0.432, 0.61, 8.2]), 0.12)
+        assert dev_2.num_executions == num_evals_2
+
+        # test a new circuit on an existing instance of a qubit device
+        def circuit_3(x, y):
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
+
+        node_3 = qml.QNode(circuit_3, dev_1)
+        num_evals_3 = 7
+
+        for _ in range(num_evals_3):
+            node_3(np.array([0.432, 0.2]), np.array([0.12, 1.214]))
+        assert dev_1.num_executions == num_evals_1 + num_evals_3
+
+
 class TestBatchExecution:
     """Tests for the batch_execute method."""
 
@@ -1214,6 +1264,33 @@ class TestBatchExecution:
 
         assert len(res) == 3
         assert np.allclose(res[0], dev.execute(empty_tape), rtol=tol, atol=0)
+
+class TestBatchExecutionBroadcasted:
+    """Tests for the batch_execute method with broadcasted parameters."""
+
+    with qml.tape.QuantumTape() as tape1:
+        qml.RX(np.zeros(5), 0)
+        qml.PauliX(wires=0)
+        qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
+
+    with qml.tape.QuantumTape() as tape2:
+        qml.RY(np.zeros(7), 0)
+        qml.PauliX(wires=0)
+        qml.expval(qml.PauliZ(wires=0))
+
+    @pytest.mark.parametrize("n_tapes", [1, 2, 3])
+    def test_calls_to_execute(self, n_tapes, mocker, mock_qubit_device_with_original_statistics):
+        """Tests that the device's execute method is called the correct number of times."""
+
+        dev = mock_qubit_device_with_original_statistics(wires=2)
+        spy1 = mocker.spy(QubitDevice, "execute")
+        spy2 = mocker.spy(QubitDevice, "reset")
+
+        tapes = [self.tape1] * n_tapes
+        dev.batch_execute(tapes)
+
+        assert spy1.call_count == n_tapes
+        assert spy2.call_count == n_tapes
 
 
 class TestShotList:
