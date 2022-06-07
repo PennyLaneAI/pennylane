@@ -342,14 +342,14 @@ class TestEqual:
         param_list = [param_qml, param_torch, param_jax, param_tf]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert qml.equal(
-                op1(*p1, wires=wire),
-                op1(*p2, wires=wire),
+                op1(p1[0], p1[1], p1[2], wires=wire),
+                op1(p2[0], p2[1], p2[2], wires=wire),
                 check_trainability=False,
                 check_interface=False,
             )
             assert not qml.equal(
-                op1(*p1, wires=wire),
-                op1(*p2, wires=wire),
+                op1(p1[0], p1[1], p1[2], wires=wire),
+                op1(p2[0], p2[1], p2[2], wires=wire),
                 check_trainability=False,
                 check_interface=True,
             )
