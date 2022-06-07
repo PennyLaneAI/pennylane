@@ -35,7 +35,7 @@ class SPSAOptimizer:
            \vdots \\
            \Delta_{kp}^{-1}
          \end{bmatrix}\text{,}
-    
+
     where
         * :math:`k` is the current iteration step,
         * :math:`\hat{\theta}_k` are the input parameters at iteration step :math:`k`,
@@ -50,11 +50,11 @@ class SPSAOptimizer:
         \hat{\theta}_{k+1} = \hat{\theta}_{k} - a_k\hat{g}_k(\hat{\theta}_k)\text{,}
 
     where the gain sequences :math:`a_k=\frac{a}{(A+k+1)^\alpha}` controls parameter update step size.
-    
+
     The gain sequence :math:`c_k` can be controlled with
         * scaling parameter :math:`c` and
         * scaling exponent :math:`gamma`
-    
+
     The gain sequence :math:`a_k` can be controlled with
         * scaling parameter :math:`a`,
         * scaling exponent :math:`alpha` and
@@ -234,7 +234,7 @@ class SPSAOptimizer:
             tuple (array): Numpy array containing the gradient
                 :math:`\hat{g}_k(\hat{\theta}_k)` and ``None``
         """
-        ck = self.c / self.k ** self.gamma
+        ck = self.c / self.k**self.gamma
 
         delta = []
         thetaplus = list(args)
@@ -250,10 +250,10 @@ class SPSAOptimizer:
                 thetaplus[index] = arg + ck * di
                 thetaminus[index] = arg - ck * di
                 delta.append(di)
-        
+
         yplus = objective_fn(*thetaplus, **kwargs)
         yminus = objective_fn(*thetaminus, **kwargs)
-        
+
         grad = [(yplus - yminus) / (2 * ck * di) for di in delta]
 
         return tuple(grad), None
