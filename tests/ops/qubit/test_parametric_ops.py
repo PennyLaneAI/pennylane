@@ -562,6 +562,8 @@ class TestDecompositions:
 
         decomposed_matrix = np.linalg.multi_dot(mats)
 
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
     def test_isingxx_decomposition_broadcasted(self, tol):
         """Tests that the decomposition of the broadcasted IsingXX gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
@@ -944,6 +946,7 @@ class TestMatrix:
 
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals(self, phi, tol):
+        """Test eigenvalues computation for IsingXY"""
         evs = qml.IsingXY.compute_eigvals(phi)
         evs_expected = [
             qml.math.cos(phi / 2) + 1j * qml.math.sin(phi / 2),
@@ -956,6 +959,7 @@ class TestMatrix:
     @pytest.mark.tf
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals_tf(self, phi, tol):
+        """Test eigenvalues computation for IsingXY using Tensorflow interface"""
         import tensorflow as tf
 
         param_tf = tf.Variable(phi)
@@ -971,6 +975,7 @@ class TestMatrix:
     @pytest.mark.torch
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals_torch(self, phi, tol):
+        """Test eigenvalues computation for IsingXY using Torch interface"""
         import torch
 
         param_torch = torch.tensor(phi)
@@ -986,6 +991,7 @@ class TestMatrix:
     @pytest.mark.jax
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     def test_isingxy_eigvals_jax(self, phi, tol):
+        """Test eigenvalues computation for IsingXY using JAX interface"""
         import jax
 
         param_jax = jax.numpy.array(phi)
@@ -1640,7 +1646,7 @@ class TestGrad:
     @pytest.mark.autograd
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingxy_autograd_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient for the gate IsingXY."""
+        """Test the gradient with Autograd for the gate IsingXY."""
         dev = qml.device(dev_name, wires=2)
 
         psi_0 = 0.1
@@ -1668,7 +1674,7 @@ class TestGrad:
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingxy_jax_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient for the gate IsingXY."""
+        """Test the gradient with JAX for the gate IsingXY."""
 
         if diff_method in {"finite-diff"}:
             pytest.skip("Test does not support finite-diff")
@@ -1840,7 +1846,7 @@ class TestGrad:
     @pytest.mark.tf
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingxy_tf_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient for the gate IsingXY."""
+        """Test the gradient with Tensorflow for the gate IsingXY."""
         import tensorflow as tf
 
         dev = qml.device(dev_name, wires=2)
