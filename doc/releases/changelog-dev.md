@@ -185,6 +185,7 @@
 * The adjoint transform `adjoint` can now accept either a single instantiated operator or
   a quantum function. It returns an entity of the same type/ call signature as what it was given:
   [(#2222)](https://github.com/PennyLaneAI/pennylane/pull/2222)
+  [(#2672)](https://github.com/PennyLaneAI/pennylane/pull/2672)
 
   ```pycon
   >>> qml.adjoint(qml.PauliX(0))
@@ -298,6 +299,12 @@
 * Added separate requirements_dev.txt for separation of concerns for code development and just using PennyLane.
   [(#2635)](https://github.com/PennyLaneAI/pennylane/pull/2635)
 
+* Add `IsingXY` gate.
+  [(#2649)](https://github.com/PennyLaneAI/pennylane/pull/2649)
+
+* The performance of building sparse Hamiltonians has been improved by accumulating the sparse representation of coefficient-operator pairs in a temporary storage and by eliminating unnecessary `kron` operations on identity matrices. 
+  [(#2630)](https://github.com/PennyLaneAI/pennylane/pull/2630)
+
 <h3>Breaking changes</h3>
 
 * The `qml.queuing.Queue` class is now removed.
@@ -389,6 +396,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Korbinian, Kottmann, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, 
-Utkarsh Azad, WingCode
+Amintor Dusko, Ankit Khandelwal, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
+Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian, Kottmann, Maria Schuld, Mikhail Andrenkov, Romain Moyard,
+Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, WingCode

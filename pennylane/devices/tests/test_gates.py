@@ -81,6 +81,7 @@ ops = {
     "IsingXX": qml.IsingXX(0, wires=[0, 1]),
     "IsingYY": qml.IsingYY(0, wires=[0, 1]),
     "IsingZZ": qml.IsingZZ(0, wires=[0, 1]),
+    "IsingXY": qml.IsingXY(0, wires=[0, 1]),
     "SingleExcitation": qml.SingleExcitation(0, wires=[0, 1]),
     "SingleExcitationPlus": qml.SingleExcitationPlus(0, wires=[0, 1]),
     "SingleExcitationMinus": qml.SingleExcitationMinus(0, wires=[0, 1]),
@@ -192,6 +193,15 @@ IsingXX = lambda phi: np.array(
     ]
 )
 
+IsingXY = lambda phi: np.array(
+    [
+        [1, 0, 0, 0],
+        [0, cos(phi / 2), 1j * sin(phi / 2), 0],
+        [0, 1j * sin(phi / 2), cos(phi / 2), 0],
+        [0, 0, 0, 1],
+    ]
+)
+
 IsingYY = lambda phi: np.array(
     [
         [cos(phi / 2), 0, 0, 1j * sin(phi / 2)],
@@ -255,6 +265,7 @@ two_qubit_param = [
     (qml.CRY, cry),
     (qml.CRZ, crz),
     (qml.IsingXX, IsingXX),
+    (qml.IsingXY, IsingXY),
     (qml.IsingYY, IsingYY),
     (qml.IsingZZ, IsingZZ),
 ]
