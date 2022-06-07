@@ -18,7 +18,6 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit
-from pennylane.wires import Wires
 
 try:
     import jax.numpy as jnp
@@ -244,7 +243,8 @@ class DefaultQubitJax(DefaultQubit):
         states_sampled_base_ten = samples[..., None] & powers_of_two
         return (states_sampled_base_ten > 0).astype(dtype)[..., ::-1]
 
-    def _count_unbinned_samples(self, indices, batch_size, dim):
+    @staticmethod
+    def _count_unbinned_samples(indices, batch_size, dim):
         """Count the occurences of sampled indices and convert them to relative
         counts in order to estimate their occurence probability."""
 
@@ -269,7 +269,8 @@ class DefaultQubitJax(DefaultQubit):
         # prob = jnp.resize(prob, (batch_size, dim))
         return prob[:, :-1]
 
-    def _count_binned_samples(self, indices, batch_size, dim, bin_size, num_bins):
+    @staticmethod
+    def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
         """Count the occurences of bins of sampled indices and convert them to relative
         counts in order to estimate their occurence probability per bin."""
 

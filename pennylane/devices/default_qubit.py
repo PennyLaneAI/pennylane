@@ -679,7 +679,7 @@ class DefaultQubit(QubitDevice):
         if batch_size:
             output_shape.insert(0, batch_size)
 
-        if not (state.shape == (dim,) or state.shape == (batch_size, dim)):
+        if not (state.shape in [(dim,), (batch_size, dim)]):
             raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
 
         if not qml.math.is_abstract(state):

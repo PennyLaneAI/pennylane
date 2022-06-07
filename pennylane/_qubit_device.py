@@ -734,7 +734,8 @@ class QubitDevice(Device):
 
         return self._asarray(prob, dtype=self.R_DTYPE)
 
-    def _count_unbinned_samples(self, indices, batch_size, dim):
+    @staticmethod
+    def _count_unbinned_samples(indices, batch_size, dim):
         """Count the occurences of sampled indices and convert them to relative
         counts in order to estimate their occurence probability."""
         prob = np.zeros(dim, dtype=np.float64)
@@ -753,7 +754,8 @@ class QubitDevice(Device):
 
         return prob
 
-    def _count_binned_samples(self, indices, batch_size, dim, bin_size, num_bins):
+    @staticmethod
+    def _count_binned_samples(indices, batch_size, dim, bin_size, num_bins):
         """Count the occurences of bins of sampled indices and convert them to relative
         counts in order to estimate their occurence probability per bin."""
 
