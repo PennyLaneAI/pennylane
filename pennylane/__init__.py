@@ -99,7 +99,6 @@ from pennylane.debugging import snapshots
 
 # QueuingContext and collections needs to be imported after all other pennylane imports
 from .collections import QNodeCollection, dot, map, sum
-import pennylane.qinfo  # pylint:disable=wrong-import-order
 import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
 import pennylane.qinfo  # pylint:disable=wrong-import-order
