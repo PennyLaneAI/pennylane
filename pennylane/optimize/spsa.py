@@ -37,12 +37,13 @@ class SPSAOptimizer:
          \end{bmatrix}\text{,}
 
     where
-        * :math:`k` is the current iteration step,
-        * :math:`\hat{\theta}_k` are the input parameters at iteration step :math:`k`,
-        * :math:`y` is the objective function,
-        * :math:`c_k=\frac{c}{(k+1)^\gamma}` is the gain sequence corresponding to evaluation step size and
-        * :math:`\Delta_{ki}^{-1} \left(1 \leq i \leq p \right)` are the inverted elements of
-          random pertubation vector :math:`\Delta_k`.
+
+    * :math:`k` is the current iteration step,
+    * :math:`\hat{\theta}_k` are the input parameters at iteration step :math:`k`,
+    * :math:`y` is the objective function,
+    * :math:`c_k=\frac{c}{(k+1)^\gamma}` is the gain sequence corresponding to evaluation step size and
+    * :math:`\Delta_{ki}^{-1} \left(1 \leq i \leq p \right)` are the inverted elements of
+      random pertubation vector :math:`\Delta_k`.
 
     :math:`\hat{\theta}_k` is updated to a new set of parameters with
 
@@ -52,13 +53,15 @@ class SPSAOptimizer:
     where the gain sequences :math:`a_k=\frac{a}{(A+k+1)^\alpha}` controls parameter update step size.
 
     The gain sequence :math:`c_k` can be controlled with
-        * scaling parameter :math:`c` and
-        * scaling exponent :math:`gamma`
+
+    * scaling parameter :math:`c` and
+    * scaling exponent :math:`\gamma`
 
     The gain sequence :math:`a_k` can be controlled with
-        * scaling parameter :math:`a`,
-        * scaling exponent :math:`alpha` and
-        * stability constant :math:`A`
+
+    * scaling parameter :math:`a`,
+    * scaling exponent :math:`\alpha` and
+    * stability constant :math:`A`
 
     For more details, see:
 
