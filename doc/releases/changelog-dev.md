@@ -184,28 +184,35 @@
   [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
   [(#2661)](https://github.com/PennyLaneAI/pennylane/pull/2661)
 
-```python
-dev = qml.device("default.qubit", wires=1)
-def circuit(params, wires):
-    qml.BasisState(np.array([1, 1, 0, 0]), wires=wires)
-    for i in wires:
-        qml.Rot(*params[i], wires=i)
-    qml.CNOT(wires=[2, 3])
-    qml.CNOT(wires=[2, 0])
-    qml.CNOT(wires=[3, 1])
-
-def exp_val_circuit(params):
-    circuit(params, range(dev.num_wires))
-    return qml.expval(h2_ham)
-
-params = np.random.normal(0, np.pi, (num_qubits, 3), requires_grad=True)
-cost = qml.QNode(exp_val_circuit, dev)
-
-max_iterations = 100
-opt = qml.SPSAOptimizer(maxiter=max_iterations)
-for n in range(max_iterations):
-    params, energy = opt.step_and_cost(cost, params)
-```
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=1)
+  >>> def circuit(params):
+  ...     qml.RX(params[0], wires=0)
+  ...     qml.RY(params[1], wires=0)
+  ... 
+  >>> coeffs = [1, 1]
+  >>> obs = [qml.PauliX(0), qml.PauliZ(0)]
+  >>> H = qml.Hamiltonian(coeffs, obs)
+  >>> @qml.qnode(dev)
+  ... def cost(params):
+  ...     circuit(params)
+  ...     return qml.expval(H)
+  ... 
+  >>> params = np.random.normal(0, np.pi, (2), requires_grad=True)
+  >>> print(params)
+  [-5.92774911 -4.26420843]
+  >>> print(cost(params))
+  0.43866366253270167
+  >>> max_iterations = 50
+  >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
+  >>> for n in range(max_iterations):
+  ...     params, energy = opt.step_and_cost(cost, params)
+  ... 
+  >>> print(params)
+  [-6.21193761 -2.99360548]
+  >>> print(energy)
+  -1.1258709813834058
+  ```
 **Operator Arithmetic:**
 
 * The adjoint transform `adjoint` can now accept either a single instantiated operator or
