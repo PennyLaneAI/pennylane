@@ -56,7 +56,7 @@ def classical_fisher(qnode, argnums=0):
     .. math::
 
         \text{CFIM}_{i, j} = \sum_{\ell=0}^{2^N-1} \frac{1}{p_\ell(\bm{\theta})} \frac{\partial p_\ell(\bm{\theta})}{\partial \theta_i} \frac{\partial p_\ell(\bm{\theta})}{\partial \theta_j}
-    
+
     for :math:`N` qubits.
 
     Args:
