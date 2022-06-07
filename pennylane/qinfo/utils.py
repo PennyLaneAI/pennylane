@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Utils function for the quantum information module.
-"""
+"""Utils function for the quantum information module."""
+
 import pennylane as qml
 
 
 def density_matrix_transform(qnode, indices):
-    """Compute the reduced density matrix from a QNode.
+    """Compute the reduced density matrix from a :class:`~.QNode` returning :func:`~.state`.
 
      Args:
          qnode (QNode): A :class:`~.QNode` returning :func:`~.state`.
@@ -43,6 +43,7 @@ def density_matrix_transform(qnode, indices):
      [[0.5+0.j 0.+0.j]
       [0.+0.j 0.5+0.j]]
 
+    .. seealso:: :func:`pennylane.density_matrix`
     """
 
     def wrapper(*args, **kwargs):
@@ -51,9 +52,13 @@ def density_matrix_transform(qnode, indices):
         if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
             raise ValueError("The qfunc return type needs to be a state.")
 
-        # TODO: optimize given the wires
+        # TODO: optimize given the wires by creating a tape with relevant operations
         state_built = qnode(*args, **kwargs)
-        density_matrix = qml.math.to_density_matrix(state_built, indices=indices)
+        print("hello")
+        print(qnode.device.C_DTYPE)
+        density_matrix = qml.math.to_density_matrix(
+            state_built, indices=indices, c_dtype=qnode.device.C_DTYPE
+        )
         return density_matrix
 
     return wrapper

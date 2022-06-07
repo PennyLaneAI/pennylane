@@ -318,7 +318,6 @@ class QubitDevice(Device):
         if self.tracker.active:
             self.tracker.update(executions=1, shots=self._shots)
             self.tracker.record()
-
         return results
 
     def batch_execute(self, circuits):
@@ -567,7 +566,6 @@ class QubitDevice(Device):
             array[int]: the sampled basis states
         """
         if self.shots is None:
-
             raise qml.QuantumFunctionError(
                 "The number of shots has to be explicitly set on the device "
                 "when using sample-based measurements."
@@ -1063,7 +1061,6 @@ class QubitDevice(Device):
 
             if op.grad_method is not None:
                 if param_number in trainable_params:
-
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
                     jac[:, trainable_param_number] = 2 * dot_product_real(bras, ket_temp)

@@ -28,7 +28,6 @@ from pennylane.queuing import apply, QueuingContext
 import pennylane.fourier
 import pennylane.kernels
 import pennylane.math
-import pennylane.qinfo
 import pennylane.operation
 import pennylane.qnn
 import pennylane.templates
@@ -56,6 +55,7 @@ from pennylane.measurements import (
     vn_entropy,
 )
 from pennylane.ops import *
+from pennylane.ops import adjoint
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -65,7 +65,6 @@ from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.qnode import QNode, qnode
 from pennylane.transforms import (
-    adjoint,
     adjoint_metric_tensor,
     batch_params,
     batch_input,
@@ -101,6 +100,7 @@ from pennylane.debugging import snapshots
 from .collections import QNodeCollection, dot, map, sum
 import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
+import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 
 # Look for an existing configuration file
