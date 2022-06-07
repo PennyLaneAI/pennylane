@@ -18,8 +18,7 @@ from pennylane import numpy as np
 
 class SPSAOptimizer:
     r"""The Simultaneous Perturbation Stochastic Approximation method (SPSA)
-    is an iterative algorithm for optimization where the input information
-    may be contaminated with noise.
+    is a stochastic approximation algorithm for optimizing cost functions whose evaluation may involve noise.
     In contrast to other methods that perform multiple operations to determine
     the gradient, SPSA only measures two times the loss function to obtain it.
     It is based on an approximation to the unknown gradient :math:`\hat{g}(\hat{\theta}_{k})`
