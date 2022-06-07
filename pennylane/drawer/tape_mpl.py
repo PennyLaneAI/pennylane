@@ -56,10 +56,10 @@ def _add_multicontrolledx(drawer, layer, mapped_wires, op):
 def _add_controlledqubitunitary(drawer, layer, mapped_wires, op):
     # convert control values
     control_values = [(i == "1") for i in op.hyperparameters["control_values"]]
-    drawer.box_gate(layer, mapped_wires[-1], text="U")
     drawer.ctrl(
         layer, wires=mapped_wires[:-1], wires_target=mapped_wires[-1], control_values=control_values
     )
+    drawer.box_gate(layer, mapped_wires[-1], text="U")
 
 
 # pylint: disable=unused-argument

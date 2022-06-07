@@ -251,6 +251,33 @@ class TestSpecialGates:
         assert len(ax.lines) == 5
         plt.close()
 
+    def test_ControlledQubitUnitary(self):
+        """Test ControlledQubitUnitary gets a special call."""
+
+        with QuantumTape() as tape:
+            qml.ControlledQubitUnitary(
+                qml.matrix(qml.RX)(0, 0),
+                control_wires=[0, 1, 2, 3],
+                wires=[4],
+                control_values="1010",
+            )
+
+        _, ax = tape_mpl(tape)
+        layer = 0
+
+        assert len(ax.patches) == 5
+        assert ax.patches[0].center == (layer, 0)
+        assert ax.patches[1].center == (layer, 1)
+        assert ax.patches[2].center == (layer, 2)
+        assert ax.patches[3].center == (layer, 3)
+
+        # five wires, one control line
+        assert len(ax.lines) == 6
+        control_line = ax.lines[5]
+        assert control_line.get_data() == ((layer, layer), (0, 4))
+
+        plt.close()
+
     def test_Toffoli(self):
         """Test Toffoli gets a special call."""
 
