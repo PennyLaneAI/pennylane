@@ -133,7 +133,7 @@ class SPSAOptimizer:
 
     Keyword Args:
         maxiter (int): the maximum number of iterations expected to be performed
-        alpha (float): An hyperparameter to calculate :math:`a_k=\frac{a}{(A+k+1)^\alpha}`
+        alpha (float): A hyperparameter to calculate :math:`a_k=\frac{a}{(A+k+1)^\alpha}`
             for each iteration. Its asymptotically optimal value is 1.0
         gamma (float): An hyperparameter to calculate :math:`c_k=\frac{c}{(k+1)^\gamma}`
             for each iteration. Its asymptotically optimal value is 1/6
