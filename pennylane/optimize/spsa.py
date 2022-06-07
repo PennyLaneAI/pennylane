@@ -176,7 +176,7 @@ class SPSAOptimizer:
         self.ak = self.a / (self.A + 1 + 1.0) ** self.alpha
 
     def step_and_cost(self, objective_fn, *args, **kwargs):
-        """Update the parameter array :math:`\hat{\theta}_k` with one step of the optimizer and return
+        r"""Update the parameter array :math:`\hat{\theta}_k` with one step of the optimizer and return
         the step and the corresponding objective function.
 
         Args:
@@ -202,7 +202,7 @@ class SPSAOptimizer:
         return new_args, forward
 
     def step(self, objective_fn, *args, **kwargs):
-        """Update trainable arguments with one step of the optimizer.
+        r"""Update trainable arguments with one step of the optimizer.
 
         Args:
             objective_fn (function): The objective function for optimization
