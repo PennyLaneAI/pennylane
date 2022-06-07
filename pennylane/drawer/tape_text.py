@@ -42,14 +42,12 @@ def _add_op(op, layer_str, wire_map, decimals, cache):
 
     control_wires = op.control_wires
     control_values = op.hyperparameters.get("control_values", None)
-    for i, w in enumerate(control_wires):
-        if control_values:
-            if control_values[i] == "1":
-                layer_str[wire_map[w]] += "C"
-            elif control_values[i] == "0":
-                layer_str[wire_map[w]] += "O"
-        else:
-            layer_str[wire_map[w]] += "C"
+    if control_values:
+        for w, val in zip(control_wires, control_values):
+            layer_str[wire_map[w]] += "●" if val == "1" else "○"
+    else:
+        for w in control_wires:
+            layer_str[wire_map[w]] += "●"
 
     label = op.label(decimals=decimals, cache=cache).replace("\n", "")
     if len(op.wires) == 0:  # operation (e.g. barrier, snapshot) across all wires
