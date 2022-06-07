@@ -714,6 +714,7 @@ class QubitDevice(Device):
         wires = Wires(wires)
         # translate to wire labels used by device
         device_wires = self.map_wires(wires)
+        num_wires = len(device_wires)
 
         if shot_range is None:
             samples = self._samples[..., device_wires]
@@ -721,7 +722,7 @@ class QubitDevice(Device):
             samples = self._samples[..., slice(*shot_range), device_wires]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
-        powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
+        powers_of_two = 2 ** np.arange(num_wires)[::-1]
         indices = samples @ powers_of_two
 
         # count the basis state occurrences, and construct the probability vector
@@ -730,7 +731,7 @@ class QubitDevice(Device):
 
             if np.ndim(self._samples) == 2:
                 indices = indices.reshape((num_bins, bin_size))
-                prob = np.zeros([2 ** len(device_wires), num_bins], dtype=np.float64)
+                prob = np.zeros([2 ** num_wires, num_bins], dtype=np.float64)
 
                 # count the basis state occurrences, and construct the probability vector
                 # for each bin
@@ -741,7 +742,7 @@ class QubitDevice(Device):
             elif np.ndim(self._samples) == 3:
                 batch_size = self._samples.shape[0]
                 indices = indices.reshape((batch_size, num_bins, bin_size))
-                prob = np.zeros([batch_size, 2 ** len(device_wires), num_bins], dtype=np.float64)
+                prob = np.zeros([batch_size, 2 ** num_wires, num_bins], dtype=np.float64)
 
                 # count the basis state occurrences, and construct the probability vector
                 # for each bin and broadcasting index
@@ -755,12 +756,12 @@ class QubitDevice(Device):
 
         else:
             if np.ndim(self._samples) == 2:
-                prob = np.zeros([2 ** len(device_wires)], dtype=np.float64)
+                prob = np.zeros([2 ** num_wires], dtype=np.float64)
                 basis_states, counts = np.unique(indices, return_counts=True)
                 prob[..., basis_states] = counts / len(samples)
 
             elif np.ndim(self._samples) == 3:
-                prob = np.zeros([self._samples.shape[0], 2 ** len(device_wires)], dtype=np.float64)
+                prob = np.zeros([self._samples.shape[0], 2 ** num_wires], dtype=np.float64)
 
                 for i, idx in enumerate(indices):
                     basis_states, counts = np.unique(idx, return_counts=True)

@@ -154,13 +154,40 @@ class TestTFMatrix:
         [
             (qml.PhaseShift, [0.1], 0),
             (qml.ControlledPhaseShift, [0.1], [0, 1]),
+            (qml.CRX, [0.1], [0, 1]),
+            (qml.CRY, [0.1], [0, 1]),
             (qml.CRZ, [0.1], [0, 1]),
+            (qml.CRot, [0.1, 0.2, 0.3], [0, 1]),
             (qml.U1, [0.1], 0),
             (qml.U2, [0.1, 0.2], 0),
             (qml.U3, [0.1, 0.2, 0.3], 0),
+            (qml.Rot, [0.1, 0.2, 0.3], 0),
         ],
     )
-    def test_one_qubit_tf_matrix(self, op, params, wires):
+    def test_tf_matrix(self, op, params, wires):
+        tf_params = [tf.Variable(x) for x in params]
+        expected_mat = op(*params, wires=wires).matrix()
+        obtained_mat = op(*tf_params, wires=wires).matrix()
+        assert qml.math.get_interface(obtained_mat) == "tensorflow"
+        assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
+
+    @pytest.mark.parametrize(
+        "op,params,wires",
+        [
+            (qml.PhaseShift, ([0.1, 0.2, 0.5],), 0),
+            (qml.ControlledPhaseShift, ([0.1],), [0, 1]),
+            (qml.CRX, ([0.1, -0.6, 0.2],), [0, 1]),
+            (qml.CRY, ([0.1, -0.4, 6.3],), [0, 1]),
+            (qml.CRZ, ([0.1, -0.6, 0.2],), [0, 1]),
+            (qml.CRot, ([0.1, 0.2, 0.3], 0.6, [0.2, 1.2, 4.3]), [0, 1]),
+            (qml.U1, ([0.1, 0.2, 0.5],), 0),
+            (qml.U2, ([0.1, 0.2, 0.5], [0.6, 9.3, 2.1]), 0),
+            (qml.U3, ([0.1, 0.2, 0.3], 0.6, [0.2, 1.2, 4.3]), 0),
+            (qml.Rot, ([0.1, 0.2, 0.3], 0.6, [0.2, 1.2, 4.3]), 0),
+        ],
+    )
+    def test_broadcasted_tf_matrix(self, op, params, wires):
+        params = [np.array(p) for p in params]
         tf_params = [tf.Variable(x) for x in params]
         expected_mat = op(*params, wires=wires).matrix()
         obtained_mat = op(*tf_params, wires=wires).matrix()
@@ -174,9 +201,14 @@ class TestTFMatrix:
             (0.2, "IX", ["a", "b"]),
             (-0.3, "III", [0, 1, 2]),
             (0.5, "ZXI", [0, 1, 2]),
+            ([0.1, 0.6], "I", "a"),
+            ([0.2], "IX", ["a", "b"]),
+            ([-0.3, 0.0, 0.2], "III", [0, 1, 2]),
+            ([0.5, 0.2], "ZXI", [0, 1, 2]),
         ],
     )
     def test_pauli_rot_tf_(self, param, pauli, wires):
+        param = np.array(param)
         op = qml.PauliRot(param, pauli, wires=wires)
         expected_mat = op.matrix()
         expected_eigvals = op.eigvals()
@@ -198,6 +230,10 @@ class TestTFMatrix:
             (qml.ControlledPhaseShift, 0.1, [1, 2]),
             (qml.CRZ, 0.1, [1, 2]),
             (qml.U1, 0.1, [1]),
+            (qml.PhaseShift, np.array([0.1, 0.6]), [1]),
+            (qml.ControlledPhaseShift, np.array([0.1]), [1, 2]),
+            (qml.CRZ, np.array([0.1, 0.7, 8.3]), [1, 2]),
+            (qml.U1, np.array([0.1, 0.7, 8.3]), [1]),
         ],
     )
     def test_expand_tf_matrix(self, op, param, wires):

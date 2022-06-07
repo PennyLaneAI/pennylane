@@ -260,7 +260,6 @@ class DefaultQubitJax(DefaultQubit):
         Returns:
             array[float]: list of the probabilities
         """
-        # todo: adapt to broadcasting (where does this function differ from `QubitDevice`'s?)
 
         wires = wires or self.wires
         # convert to a wires object
@@ -273,44 +272,86 @@ class DefaultQubitJax(DefaultQubit):
         samples = self._samples[sample_slice, device_wires]
 
         # convert samples from a list of 0, 1 integers, to base 10 representation
-        powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
+        powers_of_two = 2 ** np.arange(num_wires)[::-1]
         indices = samples @ powers_of_two
 
         if bin_size is not None:
-            bins = len(samples) // bin_size
+            num_bins = samples.shape[-2] // bin_size
 
-            indices = indices.reshape((bins, -1))
-            prob = np.zeros(
-                [2**num_wires + 1, bins], dtype=jnp.float64
-            )  # extend it to store 'filled values'
-            prob = qml.math.convert_like(prob, indices)
+            if jnp.ndim(self._samples) == 2:
+                indices = indices.reshape((num_bins, bin_size))
+                # extend the probability vector to store 'filled values'
+                prob = np.zeros([2 ** num_wires + 1, num_bins], dtype=np.float64)
+                prob = qml.math.convert_like(prob, indices)
 
-            # count the basis state occurrences, and construct the probability vector
-            for b, idx in enumerate(indices):
-                idx = qml.math.convert_like(idx, indices)
-                basis_states, counts = qml.math.unique(
-                    idx, return_counts=True, size=2**num_wires, fill_value=-1
-                )
+                # count the basis state occurrences, and construct the probability vector
+                # for each bin
+                for b, idx in enumerate(indices):
+                    idx = qml.math.convert_like(idx, indices)
+                    basis_states, counts = qml.math.unique(
+                        idx, return_counts=True, size=2**num_wires, fill_value=-1
+                    )
+                    for state, count in zip(basis_states, counts):
+                        prob = prob.at[state, b].set(count / bin_size)
 
-                for state, count in zip(basis_states, counts):
-                    prob = prob.at[state, b].set(count / bin_size)
+                # resize prob which discards the 'filled values'
+                #prob = jnp.resize(prob, (2**num_wires, num_bins))  
+                prob = prob[:-1]
 
-            prob = jnp.resize(
-                prob, (2**num_wires, bins)
-            )  # resize prob which discards the 'filled values'
+            elif jnp.ndim(self._samples) == 3:
+                batch_size = self._samples.shape[0]
+                indices = indices.reshape((batch_size, num_bins, bin_size))
+                # extend the probability vector to store 'filled values'
+                prob = np.zeros([batch_size, 2 ** num_wires + 1, num_bins], dtype=np.float64)
+                prob = qml.math.convert_like(prob, indices)
+
+                # count the basis state occurrences, and construct the probability vector
+                # for each bin and broadcasting index
+                for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
+                    for b, idx in enumerate(_indices):  # Then iterate over bins dimension
+                        idx = qml.math.convert_like(idx, indices)
+                        basis_states, counts = qml.math.unique(
+                            idx, return_counts=True, size=2**num_wires, fill_value=-1
+                        )
+                        for state, count in zip(basis_states, counts):
+                            prob = prob.at[i, state, b].set(count / bin_size)
+                # resize prob which discards the 'filled values'
+                #prob = jnp.resize(prob, (batch_size, 2**num_wires, num_bins))  
+                prob = prob[:, :-1]
+
+            else:
+                raise ValueError("Unexpected shape of stored samples")
 
         else:
-            basis_states, counts = qml.math.unique(
-                indices, return_counts=True, size=2**num_wires, fill_value=-1
-            )
-            prob = np.zeros([2**num_wires + 1], dtype=jnp.float64)
-            prob = qml.math.convert_like(prob, indices)
 
-            for state, count in zip(basis_states, counts):
-                prob = prob.at[state].set(count / len(samples))
+            if np.ndim(self._samples) == 2:
+                prob = jnp.zeros([2 ** num_wires + 1], dtype=jnp.float64)
+                prob = qml.math.convert_like(prob, indices)
+                basis_states, counts = qml.math.unique(
+                    indices, return_counts=True, size=2**num_wires, fill_value=-1
+                )
+                for state, count in zip(basis_states, counts):
+                    prob = prob.at[state].set(count / len(samples))
+                # resize prob which discards the 'filled values'
+                #prob = jnp.resize(prob, 2**num_wires)
+                prob = prob[:-1]
 
-            prob = jnp.resize(
-                prob, 2**num_wires
-            )  # resize prob which discards the 'filled values'
+            elif np.ndim(self._samples) == 3:
+                batch_size = self._samples.shape[0]
+                prob = jnp.zeros((batch_size, 2 ** num_wires + 1), dtype=jnp.float64)
+                prob = qml.math.convert_like(prob, indices)
+                for i, idx in enumerate(indices):
+                    basis_states, counts = qml.math.unique(
+                        idx, return_counts=True, size=2**num_wires, fill_value=-1
+                    )
+                    for state, count in zip(basis_states, counts):
+                        prob = prob.at[i, state].set(count / len(idx))
+
+                # resize prob which discards the 'filled values'
+                #prob = jnp.resize(prob, (batch_size, 2**num_wires))  
+                prob = prob[:, :-1]
+
+            else:
+                raise ValueError("Unexpected shape of stored samples")
 
         return self._asarray(prob, dtype=self.R_DTYPE)
