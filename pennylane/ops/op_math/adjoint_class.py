@@ -257,6 +257,18 @@ class Adjoint(Operator):
     def num_wires(self):
         return self.base.num_wires
 
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def ndim_params(self):
+        return self.base.ndim_params
+
+    @property
+    def is_hermitian(self):
+        return self.base.is_hermitian
+
     def queue(self, context=QueuingContext):
         context.safe_update_info(self.base, owner=self)
         context.append(self, owns=self.base)
