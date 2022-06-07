@@ -33,6 +33,17 @@ def _i(name):
     return import_module(name)
 
 
+# -------------------------------- SciPy --------------------------------- #
+# the following is required to ensure that SciPy sparse Hamiltonians passed to
+# qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
+ar.register_function("scipy", "to_numpy", lambda x: x)
+
+ar.register_function("scipy", "shape", np.shape)
+ar.register_function("scipy", "conj", np.conj)
+ar.register_function("scipy", "transpose", np.transpose)
+ar.register_function("scipy", "ndim", np.ndim)
+
+
 # -------------------------------- NumPy --------------------------------- #
 from scipy.linalg import block_diag as _scipy_block_diag
 
@@ -43,10 +54,7 @@ ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("numpy", "unstack", list)
 
-# the following is required to ensure that SciPy sparse Hamiltonians passed to
-# qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
-ar.register_function("scipy", "to_numpy", lambda x: x)
-ar.register_function("scipy", "shape", np.shape)
+ar.register_function("builtins", "unstack", list)
 
 
 def _scatter_element_add_numpy(tensor, index, value):
@@ -58,6 +66,8 @@ def _scatter_element_add_numpy(tensor, index, value):
 
 
 ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
+ar.register_function("numpy", "eigvalsh", np.linalg.eigvalsh)
+ar.register_function("numpy", "entr", lambda x: -np.sum(x * np.log(x)))
 
 
 # -------------------------------- Autograd --------------------------------- #
@@ -71,7 +81,6 @@ ar.autoray._BACKEND_ALIASES["pennylane"] = "autograd"
 # When dispatching to autograd, ensure that autoray will instead call
 # qml.numpy rather than autograd.numpy, to take into account our autograd modification.
 ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
-
 
 ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
@@ -152,6 +161,10 @@ def _take_autograd(tensor, indices, axis=None):
 
 
 ar.register_function("autograd", "take", _take_autograd)
+ar.register_function("autograd", "eigvalsh", lambda x: _i("autograd").numpy.linalg.eigh(x)[0])
+ar.register_function(
+    "autograd", "entr", lambda x: -_i("autograd").numpy.sum(x * _i("autograd").numpy.log(x))
+)
 
 
 # -------------------------------- TensorFlow --------------------------------- #
@@ -169,13 +182,11 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "sinc"] = "tensorflow.experimental.n
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experimental.numpy"
 
-
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
 ar.autoray._FUNC_ALIASES["tensorflow", "arccos"] = "acos"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
-
 
 ar.register_function("tensorflow", "asarray", lambda x: _i("tf").convert_to_tensor(x))
 ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
@@ -306,6 +317,18 @@ def _transpose_tf(a, axes=None):
 
 
 ar.register_function("tensorflow", "transpose", _transpose_tf)
+
+
+def _eigvalsh(density_matrix):
+    evs = _i("tf").linalg.eigvalsh(density_matrix)
+    evs = _i("tf").math.real(evs)
+    return evs
+
+
+ar.register_function("tensorflow", "eigvalsh", _eigvalsh)
+ar.register_function(
+    "tensorflow", "entr", lambda x: -_i("tf").math.reduce_sum(x * _i("tf").math.log(x))
+)
 
 # -------------------------------- Torch --------------------------------- #
 
@@ -477,7 +500,9 @@ def _ndim_torch(tensor):
 
 
 ar.register_function("torch", "ndim", _ndim_torch)
-
+# pylint: disable=unnecessary-lambda
+ar.register_function("torch", "eigvalsh", lambda x: _i("torch").linalg.eigvalsh(x))
+ar.register_function("torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x)))
 
 # -------------------------------- JAX --------------------------------- #
 
@@ -511,3 +536,6 @@ ar.register_function(
     lambda x, index, value: x.at[tuple(index)].add(value),
 )
 ar.register_function("jax", "unstack", list)
+# pylint: disable=unnecessary-lambda
+ar.register_function("jax", "eigvalsh", lambda x: _i("jax").numpy.linalg.eigvalsh(x))
+ar.register_function("jax", "entr", lambda x: _i("jax").numpy.sum(_i("jax").scipy.special.entr(x)))

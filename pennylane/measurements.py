@@ -441,20 +441,18 @@ class MeasurementProcess:
     @property
     def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
-        wires_list = [self.wires] if not isinstance(self.wires, list) else self.wires
-        wires_list = [wire for wires in wires_list for wire in wires.tolist()]
 
         if self.obs is None:
             fingerprint = (
                 str(self.name),
-                tuple(wires_list),
+                tuple(self.wires.tolist()),
                 str(self.data),
                 self.return_type,
             )
         else:
             fingerprint = (
                 str(self.obs.name),
-                tuple(wires_list),
+                tuple(self.wires.tolist()),
                 str(self.obs.data),
                 self.return_type,
             )
@@ -832,7 +830,7 @@ def vn_entropy(wires, log_base=None):
 
     Args:
         wires (Sequence[int] or int): the wires of the subsystem
-        log_base (int, float): base to use in the logarithm.
+        log_base (int, float): Base for the logarithm. If None, the natural logarithm is used.
 
     **Example:**
 
@@ -865,9 +863,14 @@ def vn_entropy(wires, log_base=None):
 def mutual_info(wires0, wires1, log_base=None):
     r"""Mutual information between the subsystems prior to measurement.
 
+    The mutual information is a measure of correlation between two subsystems.
+    More specifically, it quantifies the amount of information obtained about
+    one system by measuring the other system.
+
     Args:
         wires0 (Sequence[int] or int): the wires of the first subsystem
         wires1 (Sequence[int] or int): the wires of the second subsystem
+        log_base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     **Example:**
 
@@ -891,6 +894,12 @@ def mutual_info(wires0, wires1, log_base=None):
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device.
     """
+    # the subsystems cannot overlap
+    if len([wire for wire in wires0 if wire in wires1]) > 0:
+        raise qml.QuantumFunctionError(
+            "Subsystems for computing mutual information must not overlap."
+        )
+
     wires0 = qml.wires.Wires(wires0)
     wires1 = qml.wires.Wires(wires1)
     return MeasurementProcess(

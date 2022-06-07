@@ -20,9 +20,12 @@ from string import ascii_letters as ABC
 from autoray import numpy as np
 from numpy import float64
 
+import pennylane as qml
+
 from . import single_dispatch  # pylint:disable=unused-import
-from .multi_dispatch import diag, dot, scatter_element_add
-from .utils import is_abstract, allclose, cast, convert_like, get_interface
+from .multi_dispatch import diag, dot, scatter_element_add, einsum
+from .utils import is_abstract, allclose, cast, convert_like, cast_like
+
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -169,7 +172,7 @@ def marginal_prob(prob, axis):
     return np.flatten(prob)
 
 
-def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dtype="complex128"):
+def _density_matrix_from_matrix(density_matrix, indices, check_state=False):
     """Compute the density matrix from a state represented with a density matrix.
 
     Args:
@@ -177,7 +180,6 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dt
             integer number of wires``N``.
         indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
-        c_dtype (str): Complex floating point precision type.
 
     Returns:
         tensor_like: Density matrix of size ``(2**len(wires), 2**len(wires))``
@@ -206,7 +208,6 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dt
 
 
     """
-    density_matrix = cast(density_matrix, dtype=c_dtype)
     shape = density_matrix.shape[0]
     num_indices = int(np.log2(shape))
 
@@ -227,6 +228,11 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dt
             conj_trans = np.transpose(np.conj(density_matrix))
             if not allclose(density_matrix, conj_trans):
                 raise ValueError("The matrix is not hermitian.")
+            # Check if positive semi definite
+            evs = np.linalg.eigvalsh(density_matrix)
+            evs_non_negative = [ev for ev in evs if ev >= 0.0]
+            if len(evs) != len(evs_non_negative):
+                raise ValueError("The matrix is not positive semi-definite.")
 
     consecutive_indices = list(range(0, num_indices))
 
@@ -235,18 +241,17 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dt
         return density_matrix
 
     traced_wires = [x for x in consecutive_indices if x not in indices]
-    density_matrix = partial_trace(density_matrix, traced_wires, c_dtype=c_dtype)
+    density_matrix = _partial_trace(density_matrix, traced_wires)
     return density_matrix
 
 
-def partial_trace(density_matrix, indices, c_dtype="complex128"):
+def _partial_trace(density_matrix, indices):
     """Compute the reduced density matrix by tracing out the provided indices.
 
     Args:
         density_matrix (tensor_like): 2D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` for some
             integer number of wires ``N``.
         indices (list(int)): List of indices to be traced.
-        c_dtype (str): Complex floating point precision type.
 
     Returns:
         tensor_like: (reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
@@ -254,25 +259,16 @@ def partial_trace(density_matrix, indices, c_dtype="complex128"):
     **Example**
 
     >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
-    >>> partial_trace(x, indices=[0])
+    >>> _partial_trace(x, indices=[0])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
 
     >>> x = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
-    >>> partial_trace(x, indices=[1])
+    >>> _partial_trace(x, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
-
-    >>> y = [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
-    >>> partial_trace(y, indices=[1])
-    [[0.5+0.j 0.5+0.j]
-     [0.5+0.j 0.5+0.j]]
-
-    >>> partial_trace(y, indices=[0])
-    [[1.+0.j 0.+0.j]
-     [0.+0.j 0.+0.j]]
     """
     # Dimension and reshape
     shape = density_matrix.shape[0]
@@ -282,7 +278,11 @@ def partial_trace(density_matrix, indices, c_dtype="complex128"):
     density_matrix = np.reshape(density_matrix, [2] * 2 * num_indices)
 
     # Kraus operator for partial trace
-    kraus = cast(np.eye(2), dtype=c_dtype)
+    if not is_abstract(density_matrix):
+        kraus = cast_like(np.eye(2), density_matrix)
+    else:
+        kraus = cast(np.eye(2), density_matrix.dtype)
+
     kraus = np.reshape(kraus, (2, 1, 2))
     kraus_dagger = np.asarray([np.conj(np.transpose(k)) for k in kraus])
 
@@ -326,8 +326,7 @@ def partial_trace(density_matrix, indices, c_dtype="complex128"):
             f"{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
             f"{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}"
         )
-
-        density_matrix = np.einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
+        density_matrix = einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
@@ -336,14 +335,13 @@ def partial_trace(density_matrix, indices, c_dtype="complex128"):
     return reduced_density_matrix
 
 
-def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype="complex128"):
+def _density_matrix_from_state_vector(state, indices, check_state=False):
     """Compute the density matrix from a state vector.
 
     Args:
         state (tensor_like): 1D tensor state vector. This tensor should of size ``(2**N,)`` for some integer value ``N``.
         indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
-        c_dtype (str): Complex floating point precision type.
 
     Returns:
         tensor_like: Density matrix of size ``(2**len(indices), 2**len(indices))``
@@ -371,8 +369,6 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
     """
-    # Cast as a complex array
-    state = cast(state, dtype=c_dtype)
     len_state = np.shape(state)[0]
 
     # Check the format and norm of the state vector
@@ -465,7 +461,7 @@ def to_vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex
     Args:
         state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
         indices (list(int)): List of indices in the considered subsystem.
-        base (float, int): Base for the logarithm.
+        base (float, int): Base for the logarithm. If None, the natural logarithm is used.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 
@@ -486,20 +482,18 @@ def to_vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex
     0.6931472
 
     """
-    state = cast(state, dtype=c_dtype)
-
-    density_matrix = to_density_matrix(state, indices, check_state)
-    entropy = compute_vn_entropy(density_matrix, base)
+    density_matrix = to_density_matrix(state, indices, check_state, c_dtype)
+    entropy = _compute_vn_entropy(density_matrix, base)
 
     return entropy
 
 
-def compute_vn_entropy(density_matrix, base=None):
+def _compute_vn_entropy(density_matrix, base=None):
     """Compute the Von Neumann entropy from a density matrix
 
     Args:
         density_matrix (tensor_like): ``(2**N, 2**N)`` tensor density matrix for an integer `N`.
-        base (float, int): Base for the logarithm.
+        base (float, int): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
         float: Von Neumann entropy of the density matrix.
@@ -507,11 +501,11 @@ def compute_vn_entropy(density_matrix, base=None):
     **Example**
 
     >>> x = [[1/2, 0], [0, 1/2]]
-    >>> compute_vn_entropy(x, indices=[0])
+    >>> _compute_vn_entropy(x, indices=[0])
     0.6931472
 
     >>> x = [[1/2, 0], [0, 1/2]]
-    >>> compute_vn_entropy(x, indices=[0], base=2)
+    >>> _compute_vn_entropy(x, indices=[0], base=2)
     1.0
 
     """
@@ -521,54 +515,9 @@ def compute_vn_entropy(density_matrix, base=None):
     else:
         div_base = 1
 
-    interface = get_interface(density_matrix)
-
-    if interface == "autograd":
-        # Get eigenvalues
-        evs = np.linalg.eigh(density_matrix)[0]
-        new_evs = []
-        for ev in evs:
-            if ev > 0:
-                new_evs.append(ev)
-    else:
-        evs = np.linalg.eigvalsh(density_matrix)
-
-    if interface == "jax":
-        import jax
-
-        evs = jax.numpy.maximum(evs, jax.numpy.array(0))
-        entropy = jax.numpy.sum(jax.scipy.special.entr(evs) / div_base)
-
-    elif interface == "torch":
-        import torch
-
-        evs = torch.maximum(evs, torch.tensor(0))
-        non_zeros = torch.nonzero(evs)
-        evs = evs[non_zeros]
-        entropy = torch.sum(torch.special.entr(evs) / div_base)
-
-    elif interface == "tensorflow":
-        import tensorflow as tf
-
-        evs = tf.math.real(evs)
-        evs = tf.math.maximum(evs, 0)
-
-        boolean_mask = tf.cast(evs, dtype=tf.bool)
-        evs = tf.boolean_mask(evs, boolean_mask, axis=0)
-
-        log_evs = tf.math.log(evs)
-        entropy = -tf.math.reduce_sum(evs * log_evs / div_base)
-
-    elif interface == "autograd":
-        import autograd
-
-        entropy = 0
-        for elem in new_evs:
-            entropy = entropy - autograd.numpy.log(elem) * elem
-
-    else:
-        evs = np.array([ev for ev in evs if ev > 0])
-        entropy = -np.sum(evs * np.log(evs) / div_base)
+    evs = qml.math.eigvalsh(density_matrix)
+    evs = qml.math.where(evs > 0, evs, 1.0)
+    entropy = qml.math.entr(evs) / div_base
 
     return entropy
 
@@ -577,14 +526,18 @@ def compute_vn_entropy(density_matrix, base=None):
 def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"):
     """Compute the mutual information between two subsystems given a state.
 
-    The state can be given as a state vector in the computational basis, or
+    The mutual information is a measure of correlation between two subsystems.
+    More specifically, it quantifies the amount of information obtained about
+    one system by measuring the other system.
+
+    Each state can be given as a state vector in the computational basis, or
     as a density matrix.
 
     Args:
-        state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
+        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
         indices0 (list[int]): List of indices in the first subsystem.
-        indices0 (list[int]): List of indices in the second subsystem.
-        base (float): Base for the logarithm.
+        indices1 (list[int]): List of indices in the second subsystem.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 
@@ -607,7 +560,7 @@ def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dt
 
     # the subsystems cannot overlap
     if len([index for index in indices0 if index in indices1]) > 0:
-        raise ValueError("Subsystems for computing mutual information must not overlap")
+        raise ValueError("Subsystems for computing mutual information must not overlap.")
 
     # Cast to a complex array
     state = cast(state, dtype=c_dtype)
@@ -627,7 +580,7 @@ def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dt
 def _compute_mutual_info(
     state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
 ):
-    """Compute the mutual information between the subsystems"""
+    """Compute the mutual information between the subsystems."""
     all_indices = sorted([*indices0, *indices1])
     vn_entropy_1 = to_vn_entropy(
         state, indices=indices0, base=base, check_state=check_state, c_dtype=c_dtype

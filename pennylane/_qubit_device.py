@@ -326,7 +326,6 @@ class QubitDevice(Device):
         if self.tracker.active:
             self.tracker.update(executions=1, shots=self._shots)
             self.tracker.record()
-
         return results
 
     def batch_execute(self, circuits):
@@ -585,7 +584,6 @@ class QubitDevice(Device):
             array[int]: the sampled basis states
         """
         if self.shots is None:
-
             raise qml.QuantumFunctionError(
                 "The number of shots has to be explicitly set on the device "
                 "when using sample-based measurements."
@@ -682,23 +680,50 @@ class QubitDevice(Device):
         """
         raise NotImplementedError
 
-    def vn_entropy(self, wires, log_base):  # pragma: no cover
+    def vn_entropy(self, wires, log_base):
         """Returns the Von Neumann entropy prior to measurement.
 
-        .. note::
+        Args:
+            wires (Wires): wires of the considered subsystem.
+            log_base (int, float): base to use in the logarithm.
 
-            Only simulators support this property.
+        Returns:
+            float: returns the Von Neumann entropy
         """
-        raise NotImplementedError
+        try:
+            state = self.access_state()
+        except qml.QuantumFunctionError as e:  # pragma: no cover
+            raise NotImplementedError(
+                f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
+                f"state. "
+            ) from e
+        wires = wires.tolist()
+        return qml.math.to_vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
 
-    def mutual_info(self, wires0, wires1, log_base):  # pragma: no cover
+    def mutual_info(self, wires0, wires1, log_base):
         """Returns the mutual information prior to measurement.
 
-        .. note::
+        Args:
+            wires0 (Wires): wires of the first subsystem.
+            wires1 (Wires): wires of the second subsystem
+            log_base (float): base to use in the logarithm.
 
-            Only simulators support this property.
+        Returns:
+            float: the mutual information
         """
-        raise NotImplementedError
+        try:
+            state = self.access_state()
+        except qml.QuantumFunctionError as e:  # pragma: no cover
+            raise NotImplementedError(
+                f"Cannot compute the mutual information with device {self.name} that is not capable of returning the "
+                f"state. "
+            ) from e
+
+        wires0 = wires0.tolist()
+        wires1 = wires1.tolist()
+        return qml.math.to_mutual_info(
+            state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
+        )
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis
@@ -1090,7 +1115,6 @@ class QubitDevice(Device):
 
             if op.grad_method is not None:
                 if param_number in trainable_params:
-
                     ket_temp = self._apply_unitary(ket, d_op_matrix, op.wires)
 
                     jac[:, trainable_param_number] = 2 * dot_product_real(bras, ket_temp)
