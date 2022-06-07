@@ -251,7 +251,7 @@ class SPSAOptimizer:
             args (tuple): the current value of the variables :math:`\hat{\theta}_{k}`
 
         Returns:
-            list [array]: the new values :math:`x^{(t+1)}`"""
+            list [array]: the new values :math:`\hat{\theta}_{k+1}`"""
         self.ak = self.a / (self.A + self.k + 1.0) ** self.alpha
         args_new = list(args)
         trained_index = 0
