@@ -723,7 +723,7 @@ class QubitDevice(Device):
         powers_of_two = 2 ** np.arange(num_wires)[::-1]
         indices = samples @ powers_of_two
 
-        batch_size = self._samples.shape[0] if np.ndim(self._samples)==3 else None
+        batch_size = self._samples.shape[0] if np.ndim(self._samples) == 3 else None
         dim = 2**num_wires
         # count the basis state occurrences, and construct the probability vector
         if bin_size is not None:

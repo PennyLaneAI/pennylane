@@ -259,11 +259,9 @@ class DefaultQubitJax(DefaultQubit):
             # resize prob which discards the 'filled values'
             # prob = jnp.resize(prob, dim)
             return prob[:-1]
-    
+
         for i, idx in enumerate(indices):
-            basis_states, counts = qml.math.unique(
-                idx, return_counts=True, size=dim, fill_value=-1
-            )
+            basis_states, counts = qml.math.unique(idx, return_counts=True, size=dim, fill_value=-1)
             for state, count in zip(basis_states, counts):
                 prob = prob.at[i, state].set(count / len(idx))
 

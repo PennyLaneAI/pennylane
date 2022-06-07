@@ -932,6 +932,7 @@ class TestEstimateProb:
 
         assert np.allclose(res, expected)
 
+
 class TestMarginalProb:
     """Test the marginal_prob method"""
 
@@ -1213,6 +1214,7 @@ class TestBatchExecution:
 
         assert len(res) == 3
         assert np.allclose(res[0], dev.execute(empty_tape), rtol=tol, atol=0)
+
 
 class TestShotList:
     """Tests for passing shots as a list"""
