@@ -67,6 +67,28 @@ def rank(factors, eigvals, tol=1e-5):
     return rank_r, rank_m
 
 
+def eta(k):
+    r"""Return the value of :math:`\eta` for a given rank.
+
+    This function computes the maximum value of :math:`\eta` such that a given rank is divisible by
+    :math:`2^\eta` [`arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_].
+
+    Args:
+        k (int): the rank for which :math:`\eta` is computed
+
+    Returns:
+        int: the value of :math:`\eta` for a given rank
+
+    **Example**
+
+    >>> eta(26)
+    1
+    """
+    factors = [n for n in range(1, k + 1) if k % n == 0]
+    etas = [int(np.log2(f)) for f in factors if np.log2(f) % 1 == 0]
+    return max(etas)
+
+
 def expansion_factor(constants):
     r"""Return expansion factors that minimize the cost.
 

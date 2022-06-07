@@ -48,6 +48,21 @@ def test_rank(factors, eigvals, rank_r_ref, rank_m_ref):
 
 
 @pytest.mark.parametrize(
+    ("rank", "eta_ref"),
+    [
+        (73, 0),
+        (148, 2),
+        (376, 3),
+    ],
+)
+def test_eta(rank, eta_ref):
+    r"""Test that eta function returns the correct value."""
+    eta = qml.resources.eta(rank)
+
+    assert eta == eta_ref
+
+
+@pytest.mark.parametrize(
     ("constants", "k_ref"),
     [
         # k_ref is obtained manually by computing the cost for different k values and choosing the k
