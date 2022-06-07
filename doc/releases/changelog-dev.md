@@ -180,8 +180,8 @@
   tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
   ```
 
-* Added new optimizer `qml.SPSAOptimizer` for noisy problems. It performs less device executions, due
-to the fact that it performs two measures to determine the gradient.
+* Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous perturbation stochastic approximation method based on
+  [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
 [(#2661)](https://github.com/PennyLaneAI/pennylane/pull/2661)
 
 ```python
