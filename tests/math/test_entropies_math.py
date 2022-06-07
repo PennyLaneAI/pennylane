@@ -92,6 +92,19 @@ class TestVonNeumannEntropy:
 
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("state_vector,pure", state_vector)
+    @pytest.mark.parametrize("check_state", check_state)
+    def test_state_vector_entropy_without_base(self, state_vector, wires, check_state, pure):
+        """Test entropy for different state vectors with base for log."""
+        entropy = qml.math.to_vn_entropy(state_vector, wires, check_state=check_state)
+
+        if pure:
+            expected_entropy = 0
+        else:
+            expected_entropy = np.log(2)
+        assert qml.math.allclose(entropy, expected_entropy)
+
+    @pytest.mark.parametrize("wires", single_wires_list)
+    @pytest.mark.parametrize("state_vector,pure", state_vector)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("check_state", check_state)
     def test_state_vector_entropy(self, state_vector, wires, base, check_state, pure):

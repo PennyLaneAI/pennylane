@@ -46,11 +46,54 @@
       return qml.state()
   ```
   ```pycon
-  >>> density_matrix_transform(circuit, wires=[0])(np.pi/2)
+  >>> density_matrix_transform(circuit, indices=[0])(np.pi/2)
   [[0.5+0.j 0.+0.j]
    [0.+0.j 0.5+0.j]]
   ```
   
+  We add Von Neumann entropy capabilities, `qml.math.to_vn_entropy` that accepts both state vectors and density matrices
+  for all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
+
+  ```pycon
+  >>> x = [1, 0, 0, 1] / np.sqrt(2)
+  >>> to_vn_entropy(x, indices=[0])
+  0.6931472
+  
+  >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
+  >>> to_vn_entropy(x, indices=[0])
+  0.6931472
+  ```
+  
+  A Von Neumann measurement process `qml.vn_entropy` can be used as return in QNodes:
+
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit_entropy(x):
+      qml.IsingXX(x, wires=[0,1])
+      return qml.vn_entropy(wires=[0], log_base=2)
+  ```
+  
+  ```pycon
+  >>> circuit_entropy(np.pi/2)
+  1.0
+  ```
+  The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy 
+  `qml.qinfo.vn_entropy_transform`:
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit_entropy(x):
+      qml.IsingXX(x, wires=[0,1])
+      return qml.state()
+  ```
+  
+  ```pycon
+  >>> vn_entropy_transform(circuit, indices=[0], base=2)(np.pi/2)
+  1.0
+  ```
+  
+
 
 
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
