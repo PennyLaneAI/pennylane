@@ -288,17 +288,6 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_backprop_none_shots(self, interface, return_type, wire_specs):
         """Test diff_method=backprop works for all interfaces when shots=None"""
-
-        # DensityMatrix doesn't work with torch at the moment
-        # TODO: github issue https://github.com/PennyLaneAI/pennylane/issues/2553
-        if interface == "torch" and return_type == "DensityMatrix":
-            with pytest.raises(IndexError):
-                circuit = get_qnode(interface, "backprop", return_type, None, wire_specs)
-                x = get_variable(interface, wire_specs)
-                grad = compute_gradient(x, interface, circuit, return_type)
-            return
-
-        # correctness is already tested in other test files
         circuit = get_qnode(interface, "backprop", return_type, None, wire_specs)
         x = get_variable(interface, wire_specs)
         grad = compute_gradient(x, interface, circuit, return_type)
@@ -309,15 +298,6 @@ class TestSupportedConfs:
     def test_all_backprop_finite_shots(self, interface, return_type, wire_specs):
         """Test diff_method=backprop fails for all interfaces when shots>0"""
         msg = "Backpropagation is only supported when shots=None."
-
-        # DensityMatrix doesn't work with torch at the moment
-        # TODO: github issue https://github.com/PennyLaneAI/pennylane/issues/2553
-        if interface == "torch" and return_type == "DensityMatrix":
-            with pytest.raises(IndexError):
-                circuit = get_qnode(interface, "backprop", return_type, None, wire_specs)
-                x = get_variable(interface, wire_specs)
-                grad = compute_gradient(x, interface, circuit, return_type)
-            return
 
         with pytest.raises(QuantumFunctionError, match=msg):
             circuit = get_qnode(interface, "backprop", return_type, 100, wire_specs)

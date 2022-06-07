@@ -97,6 +97,7 @@ import abc
 import copy
 import itertools
 import functools
+import numbers
 import warnings
 from enum import IntEnum
 from scipy.sparse import kron, eye, coo_matrix
@@ -510,8 +511,7 @@ class Operator(abc.ABC):
         return copied_op
 
     def __deepcopy__(self, memo):
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
+        copied_op = object.__new__(type(self))
 
         # The memo dict maps object ID to object, and is required by
         # the deepcopy function to keep track of objects it has already
@@ -1164,6 +1164,21 @@ class Operator(abc.ABC):
         """
         return "_ops"
 
+    def adjoint(self):  # pylint:disable=no-self-use
+        """Create an operation that is the adjoint of this one.
+
+        Adjointed operations are the conjugated and transposed version of the
+        original operation. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        Args:
+            do_queue: Whether to add the adjointed gate to the context queue.
+
+        Returns:
+            The adjointed operation.
+        """
+        raise AdjointUndefinedError
+
     def expand(self):
         """Returns a tape that has recorded the decomposition of the operator.
 
@@ -1280,7 +1295,6 @@ class Operation(Operator):
         """
         return Wires([])
 
-    @property
     def single_qubit_rot_angles(self):
         r"""The parameters required to implement a single-qubit gate as an
         equivalent ``Rot`` gate, up to a global phase.
@@ -1382,21 +1396,6 @@ class Operation(Operator):
     def inverse(self):
         """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
-
-    def adjoint(self):  # pylint:disable=no-self-use
-        """Create an operation that is the adjoint of this one.
-
-        Adjointed operations are the conjugated and transposed version of the
-        original operation. Adjointed ops are equivalent to the inverted operation for unitary
-        gates.
-
-        Args:
-            do_queue: Whether to add the adjointed gate to the context queue.
-
-        Returns:
-            The adjointed operation.
-        """
-        raise AdjointUndefinedError
 
     @inverse.setter
     def inverse(self, boolean):
@@ -1661,11 +1660,15 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
+        if isinstance(other, numbers.Number) and other == 0:
+            return self
         if isinstance(other, qml.Hamiltonian):
             return other + self
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
         raise ValueError(f"Cannot add Observable and {type(other)}")
+
+    __radd__ = __add__
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
