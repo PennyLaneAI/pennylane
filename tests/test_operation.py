@@ -19,6 +19,8 @@ from functools import reduce
 import warnings
 
 import pytest
+from scipy.sparse import csr_matrix
+
 import numpy as np
 from pennylane import numpy as pnp
 from numpy.linalg import multi_dot
@@ -27,6 +29,7 @@ import pennylane as qml
 from pennylane.operation import Tensor, operation_derivative, Operator, Operation
 
 from gate_data import I, X, CNOT, Toffoli, SWAP, II
+from pennylane.ops import cv
 from pennylane.wires import Wires
 
 
@@ -1478,6 +1481,23 @@ add_obs = [
     ),
 ]
 
+add_zero_obs = [
+    qml.PauliX(0),
+    qml.Hermitian(np.array([[1, 0], [0, -1]]), 1.2),
+    qml.PauliX(0) @ qml.Hadamard(2),
+    # qml.Projector(np.array([1, 1]), wires=[0, 1]),
+    # qml.SparseHamiltonian(csr_matrix(np.array([[1, 0], [-1.5, 0]])), 1),
+    # CVObservables
+    qml.Identity(1),
+    cv.NumberOperator(wires=[1]),
+    cv.TensorN(wires=[1]),
+    cv.X(wires=[1]),
+    cv.P(wires=[1]),
+    # cv.QuadOperator(1.234, wires=0),
+    # cv.FockStateProjector([1,2,3], wires=[0, 1, 2]),
+    cv.PolyXP(np.array([1.0, 2.0, 3.0]), wires=[0]),
+]
+
 mul_obs = [
     (qml.PauliZ(0), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
     (qml.PauliZ(0) @ qml.Identity(1), 3, qml.Hamiltonian([3], [qml.PauliZ(0)])),
@@ -1579,6 +1599,16 @@ class TestTensorObservableOperations:
     def test_addition(self, obs1, obs2, obs):
         """Tests addition between Tensors and Observables"""
         assert obs.compare(obs1 + obs2)
+
+    @pytest.mark.parametrize("obs", add_zero_obs)
+    def test_add_zero(self, obs):
+        """Tests adding Tensors and Observables to zero"""
+        assert obs.compare(obs + 0)
+        assert obs.compare(0 + obs)
+        assert obs.compare(obs + 0.0)
+        assert obs.compare(0.0 + obs)
+        assert obs.compare(obs + 0e1)
+        assert obs.compare(0e1 + obs)
 
     @pytest.mark.parametrize(("coeff", "obs", "res_obs"), mul_obs)
     def test_scalar_multiplication(self, coeff, obs, res_obs):
