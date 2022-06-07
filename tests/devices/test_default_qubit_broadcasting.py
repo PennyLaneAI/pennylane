@@ -25,59 +25,8 @@ from pennylane import numpy as np, DeviceError
 from pennylane.devices.default_qubit import _get_slice, DefaultQubit
 from pennylane.wires import Wires, WireError
 
-U = np.array(
-    [
-        [0.83645892 - 0.40533293j, -0.20215326 + 0.30850569j],
-        [-0.23889780 - 0.28101519j, -0.88031770 - 0.29832709j],
-    ]
-)
-
-U2 = np.array(
-    [
-        [
-            -0.07843244 - 3.57825948e-01j,
-            0.71447295 - 5.38069384e-02j,
-            0.20949966 + 6.59100734e-05j,
-            -0.50297381 + 2.35731613e-01j,
-        ],
-        [
-            -0.26626692 + 4.53837083e-01j,
-            0.27771991 - 2.40717436e-01j,
-            0.41228017 - 1.30198687e-01j,
-            0.01384490 - 6.33200028e-01j,
-        ],
-        [
-            -0.69254712 - 2.56963068e-02j,
-            -0.15484858 + 6.57298384e-02j,
-            -0.53082141 + 7.18073414e-02j,
-            -0.41060450 - 1.89462315e-01j,
-        ],
-        [
-            -0.09686189 - 3.15085273e-01j,
-            -0.53241387 - 1.99491763e-01j,
-            0.56928622 + 3.97704398e-01j,
-            -0.28671074 - 6.01574497e-02j,
-        ],
-    ]
-)
-
 U_toffoli = np.diag([1 for i in range(8)])
 U_toffoli[6:8, 6:8] = np.array([[0, 1], [1, 0]])
-
-U_swap = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
-
-U_cswap = np.array(
-    [
-        [1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 0, 0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1],
-    ]
-)
 
 H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
@@ -87,11 +36,12 @@ VARPHI = np.linspace(0.02, 1, 3)
 
 INVSQ2 = 1 / math.sqrt(2)
 T_PHASE = np.exp(1j * np.pi / 4)
+T_PHASE_C = np.exp(-1j * np.pi / 4)
 
 
 class TestApplyBroadcasted:
     """Tests that operations and inverses of certain operations are applied to a broadcasted
-    state correctly or that the proper errors are raised.
+    state/with broadcasted parameters (or both) correctly, or that the proper errors are raised.
     """
 
     triple_state = [[1, 0], [INVSQ2, INVSQ2], [0, 1]]
@@ -117,7 +67,7 @@ class TestApplyBroadcasted:
         (
             qml.T,
             triple_state,
-            np.array([[1, 0], [INVSQ2, np.conj(T_PHASE) * INVSQ2], [0, np.conj(T_PHASE)]]),
+            np.array([[1, 0], [INVSQ2, T_PHASE_C * INVSQ2], [0, T_PHASE_C]]),
         ),
         (
             qml.Hadamard,
@@ -448,16 +398,16 @@ class TestApplyBroadcasted:
         (  # broadcasted parameters
             qml.RZ,
             [1, 0],
-            [[1, 0], [np.conj(T_PHASE), 0], [-1j, 0], [-T_PHASE, 0]],
+            [[1, 0], [T_PHASE_C, 0], [-1j, 0], [-T_PHASE, 0]],
             [[np.pi / 2 * i for i in range(4)]],
         ),
         (  # broadcasted state
             qml.RZ,
             [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
             [
-                [T_PHASE * INVSQ2, np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE * INVSQ2, T_PHASE_C * INVSQ2],
                 [T_PHASE, 0],
-                [0, np.conj(T_PHASE)],
+                [0, T_PHASE_C],
             ],
             [-np.pi / 2],
         ),
@@ -465,25 +415,25 @@ class TestApplyBroadcasted:
             qml.RZ,
             [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, -T_PHASE * INVSQ2],
+                [T_PHASE_C * INVSQ2, -T_PHASE * INVSQ2],
                 [-0.6j, 0.8j],
-                [0, -np.conj(T_PHASE)],
+                [0, -T_PHASE_C],
             ],
             [[np.pi / 2 * i for i in range(1, 4)]],
         ),
         (  # broadcasted parameters
             qml.MultiRZ,
             [1, 0],
-            [[1, 0], [np.conj(T_PHASE), 0], [-1j, 0], [-T_PHASE, 0]],
+            [[1, 0], [T_PHASE_C, 0], [-1j, 0], [-T_PHASE, 0]],
             [[np.pi / 2 * i for i in range(4)]],
         ),
         (  # broadcasted state
             qml.MultiRZ,
             [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
             [
-                [T_PHASE * INVSQ2, np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE * INVSQ2, T_PHASE_C * INVSQ2],
                 [T_PHASE, 0],
-                [0, np.conj(T_PHASE)],
+                [0, T_PHASE_C],
             ],
             [-np.pi / 2],
         ),
@@ -491,25 +441,25 @@ class TestApplyBroadcasted:
             qml.MultiRZ,
             [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, -T_PHASE * INVSQ2],
+                [T_PHASE_C * INVSQ2, -T_PHASE * INVSQ2],
                 [-0.6j, 0.8j],
-                [0, -np.conj(T_PHASE)],
+                [0, -T_PHASE_C],
             ],
             [[np.pi / 2 * i for i in range(1, 4)]],
         ),
         (  # broadcasted parameters acting like RZ with first par
             qml.Rot,
             [1, 0],
-            [[1, 0], [np.conj(T_PHASE), 0], [-1j, 0], [-T_PHASE, 0]],
+            [[1, 0], [T_PHASE_C, 0], [-1j, 0], [-T_PHASE, 0]],
             [[np.pi / 2 * i for i in range(4)], 0, 0],
         ),
         (  # broadcasted state acting like RZ with first par
             qml.Rot,
             [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
             [
-                [T_PHASE * INVSQ2, np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE * INVSQ2, T_PHASE_C * INVSQ2],
                 [T_PHASE, 0],
-                [0, np.conj(T_PHASE)],
+                [0, T_PHASE_C],
             ],
             [-np.pi / 2, 0, 0],
         ),
@@ -517,25 +467,25 @@ class TestApplyBroadcasted:
             qml.Rot,
             [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, -T_PHASE * INVSQ2],
+                [T_PHASE_C * INVSQ2, -T_PHASE * INVSQ2],
                 [-0.6j, 0.8j],
-                [0, -np.conj(T_PHASE)],
+                [0, -T_PHASE_C],
             ],
             [[np.pi / 2 * i for i in range(1, 4)], 0, 0],
         ),
         (  # broadcasted parameters acting like RZ with last par
             qml.Rot,
             [1, 0],
-            [[1, 0], [np.conj(T_PHASE), 0], [-1j, 0], [-T_PHASE, 0]],
+            [[1, 0], [T_PHASE_C, 0], [-1j, 0], [-T_PHASE, 0]],
             [0, 0, [np.pi / 2 * i for i in range(4)]],
         ),
         (  # broadcasted state acting like RZ with last par
             qml.Rot,
             [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
             [
-                [T_PHASE * INVSQ2, np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE * INVSQ2, T_PHASE_C * INVSQ2],
                 [T_PHASE, 0],
-                [0, np.conj(T_PHASE)],
+                [0, T_PHASE_C],
             ],
             [0, 0, -np.pi / 2],
         ),
@@ -543,9 +493,9 @@ class TestApplyBroadcasted:
             qml.Rot,
             [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, -T_PHASE * INVSQ2],
+                [T_PHASE_C * INVSQ2, -T_PHASE * INVSQ2],
                 [-0.6j, 0.8j],
-                [0, -np.conj(T_PHASE)],
+                [0, -T_PHASE_C],
             ],
             [0, 0, [np.pi / 2 * i for i in range(1, 4)]],
         ),
@@ -580,7 +530,7 @@ class TestApplyBroadcasted:
             [1, 0],
             [
                 [-1j, 0],
-                [-1j * np.conj(T_PHASE) * INVSQ2, 1j * np.conj(T_PHASE) * INVSQ2],
+                [-1j * T_PHASE_C * INVSQ2, 1j * T_PHASE_C * INVSQ2],
                 [0, 1],
                 [-1j * T_PHASE * INVSQ2, -1j * T_PHASE * INVSQ2],
             ],
@@ -608,7 +558,7 @@ class TestApplyBroadcasted:
                 [
                     np.array([[1, -1j], [-1j, 1]]) * INVSQ2,
                     np.array([[1, -1], [1, 1]]) * INVSQ2,
-                    np.array([[np.conj(T_PHASE), 0], [0, T_PHASE]]),
+                    np.array([[T_PHASE_C, 0], [0, T_PHASE]]),
                 ]
             ],
         ),
@@ -634,7 +584,7 @@ class TestApplyBroadcasted:
                 [
                     np.array([[1, -1j], [-1j, 1]]) * INVSQ2,
                     np.array([[1, -1], [1, 1]]) * INVSQ2,
-                    np.array([[np.conj(T_PHASE), 0], [0, T_PHASE]]),
+                    np.array([[T_PHASE_C, 0], [0, T_PHASE]]),
                 ]
             ],
         ),
@@ -687,7 +637,7 @@ class TestApplyBroadcasted:
             qml.RX,
             [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE_C * INVSQ2, T_PHASE_C * INVSQ2],
                 [INVSQ2, -1j * INVSQ2],
                 [-1j * INVSQ2, INVSQ2],
             ],
@@ -697,7 +647,7 @@ class TestApplyBroadcasted:
             qml.RX,
             [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, -np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE_C * INVSQ2, -T_PHASE_C * INVSQ2],
                 [0.8j, 0.6j],
                 [1j * INVSQ2, -INVSQ2],
             ],
@@ -713,7 +663,7 @@ class TestApplyBroadcasted:
             qml.RY,
             [[INVSQ2, 1j * INVSQ2], [1, 0], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, 1j * np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE_C * INVSQ2, 1j * T_PHASE_C * INVSQ2],
                 [INVSQ2, INVSQ2],
                 [-INVSQ2, INVSQ2],
             ],
@@ -723,7 +673,7 @@ class TestApplyBroadcasted:
             qml.RY,
             [[INVSQ2, -1j * INVSQ2], [0.6, 0.8], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, -1j * np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE_C * INVSQ2, -1j * T_PHASE_C * INVSQ2],
                 [0.8, -0.6],
                 [INVSQ2, -INVSQ2],
             ],
@@ -732,15 +682,15 @@ class TestApplyBroadcasted:
         (  # broadcasted parameters
             qml.RZ,
             [1, 0],
-            [[1, 0], [T_PHASE, 0], [1j, 0], [-np.conj(T_PHASE), 0]],
+            [[1, 0], [T_PHASE, 0], [1j, 0], [-T_PHASE_C, 0]],
             [[np.pi / 2 * i for i in range(4)]],
         ),
         (  # broadcasted state
             qml.RZ,
             [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, T_PHASE * INVSQ2],
-                [np.conj(T_PHASE), 0],
+                [T_PHASE_C * INVSQ2, T_PHASE * INVSQ2],
+                [T_PHASE_C, 0],
                 [0, T_PHASE],
             ],
             [-np.pi / 2],
@@ -749,7 +699,7 @@ class TestApplyBroadcasted:
             qml.RZ,
             [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
             [
-                [T_PHASE * INVSQ2, -np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE * INVSQ2, -T_PHASE_C * INVSQ2],
                 [0.6j, -0.8j],
                 [0, -T_PHASE],
             ],
@@ -758,15 +708,15 @@ class TestApplyBroadcasted:
         (  # broadcasted parameters
             qml.MultiRZ,
             [1, 0],
-            [[1, 0], [T_PHASE, 0], [1j, 0], [-np.conj(T_PHASE), 0]],
+            [[1, 0], [T_PHASE, 0], [1j, 0], [-T_PHASE_C, 0]],
             [[np.pi / 2 * i for i in range(4)]],
         ),
         (  # broadcasted state
             qml.MultiRZ,
             [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, T_PHASE * INVSQ2],
-                [np.conj(T_PHASE), 0],
+                [T_PHASE_C * INVSQ2, T_PHASE * INVSQ2],
+                [T_PHASE_C, 0],
                 [0, T_PHASE],
             ],
             [-np.pi / 2],
@@ -775,7 +725,7 @@ class TestApplyBroadcasted:
             qml.MultiRZ,
             [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
             [
-                [T_PHASE * INVSQ2, -np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE * INVSQ2, -T_PHASE_C * INVSQ2],
                 [0.6j, -0.8j],
                 [0, -T_PHASE],
             ],
@@ -784,15 +734,15 @@ class TestApplyBroadcasted:
         (  # broadcasted parameters acting like RZ with first par
             qml.Rot,
             [1, 0],
-            [[1, 0], [T_PHASE, 0], [1j, 0], [-np.conj(T_PHASE), 0]],
+            [[1, 0], [T_PHASE, 0], [1j, 0], [-T_PHASE_C, 0]],
             [[np.pi / 2 * i for i in range(4)], 0, 0],
         ),
         (  # broadcasted state acting like RZ with first par
             qml.Rot,
             [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, T_PHASE * INVSQ2],
-                [np.conj(T_PHASE), 0],
+                [T_PHASE_C * INVSQ2, T_PHASE * INVSQ2],
+                [T_PHASE_C, 0],
                 [0, T_PHASE],
             ],
             [-np.pi / 2, 0, 0],
@@ -801,7 +751,7 @@ class TestApplyBroadcasted:
             qml.Rot,
             [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
             [
-                [T_PHASE * INVSQ2, -np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE * INVSQ2, -T_PHASE_C * INVSQ2],
                 [0.6j, -0.8j],
                 [0, -T_PHASE],
             ],
@@ -810,15 +760,15 @@ class TestApplyBroadcasted:
         (  # broadcasted parameters acting like RZ with last par
             qml.Rot,
             [1, 0],
-            [[1, 0], [T_PHASE, 0], [1j, 0], [-np.conj(T_PHASE), 0]],
+            [[1, 0], [T_PHASE, 0], [1j, 0], [-T_PHASE_C, 0]],
             [0, 0, [np.pi / 2 * i for i in range(4)]],
         ),
         (  # broadcasted state acting like RZ with last par
             qml.Rot,
             [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, T_PHASE * INVSQ2],
-                [np.conj(T_PHASE), 0],
+                [T_PHASE_C * INVSQ2, T_PHASE * INVSQ2],
+                [T_PHASE_C, 0],
                 [0, T_PHASE],
             ],
             [0, 0, -np.pi / 2],
@@ -827,7 +777,7 @@ class TestApplyBroadcasted:
             qml.Rot,
             [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
             [
-                [T_PHASE * INVSQ2, -np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE * INVSQ2, -T_PHASE_C * INVSQ2],
                 [0.6j, -0.8j],
                 [0, -T_PHASE],
             ],
@@ -843,7 +793,7 @@ class TestApplyBroadcasted:
             qml.Rot,
             [[INVSQ2, 1j * INVSQ2], [1, 0], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, 1j * np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE_C * INVSQ2, 1j * T_PHASE_C * INVSQ2],
                 [INVSQ2, INVSQ2],
                 [-INVSQ2, INVSQ2],
             ],
@@ -853,7 +803,7 @@ class TestApplyBroadcasted:
             qml.Rot,
             [[INVSQ2, -1j * INVSQ2], [0.6, 0.8], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, -1j * np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE_C * INVSQ2, -1j * T_PHASE_C * INVSQ2],
                 [0.8, -0.6],
                 [INVSQ2, -INVSQ2],
             ],
@@ -871,7 +821,7 @@ class TestApplyBroadcasted:
                 [
                     np.array([[1, -1j], [-1j, 1]]) * INVSQ2,
                     np.array([[1, -1], [1, 1]]) * INVSQ2,
-                    np.array([[np.conj(T_PHASE), 0], [0, T_PHASE]]),
+                    np.array([[T_PHASE_C, 0], [0, T_PHASE]]),
                 ]
             ],
         ),
@@ -879,7 +829,7 @@ class TestApplyBroadcasted:
             qml.QubitUnitary,
             [[INVSQ2, INVSQ2], [1, 0], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE_C * INVSQ2, T_PHASE_C * INVSQ2],
                 [INVSQ2, -1j * INVSQ2],
                 [-1j * INVSQ2, INVSQ2],
             ],
@@ -889,15 +839,15 @@ class TestApplyBroadcasted:
             qml.QubitUnitary,
             [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
             [
-                [np.conj(T_PHASE) * INVSQ2, -np.conj(T_PHASE) * INVSQ2],
+                [T_PHASE_C * INVSQ2, -T_PHASE_C * INVSQ2],
                 [1.4 * INVSQ2, 0.2 * INVSQ2],
-                [0, np.conj(T_PHASE)],
+                [0, T_PHASE_C],
             ],
             [
                 [
                     np.array([[1, -1j], [-1j, 1]]) * INVSQ2,
                     np.array([[1, -1], [1, 1]]) * INVSQ2,
-                    np.array([[np.conj(T_PHASE), 0], [0, T_PHASE]]),
+                    np.array([[T_PHASE_C, 0], [0, T_PHASE]]),
                 ]
             ],
         ),
@@ -916,7 +866,7 @@ class TestApplyBroadcasted:
         (  # broadcasted state and parameters
             qml.DiagonalQubitUnitary,
             [[INVSQ2, -INVSQ2], [0.6, 0.8], [0, 1]],
-            [[1j * INVSQ2, 1j * INVSQ2], [-0.6, -0.8], [0, -np.conj(T_PHASE)]],
+            [[1j * INVSQ2, 1j * INVSQ2], [-0.6, -0.8], [0, -T_PHASE_C]],
             [[[-1j, 1j], [-1, -1], [T_PHASE, -T_PHASE]]],
         ),
     ]
@@ -924,7 +874,7 @@ class TestApplyBroadcasted:
     @pytest.mark.parametrize(
         "operation,input,expected_output,par", test_data_single_wire_with_parameters
     )
-    def test_apply_operation_single_wire_with_parameters(
+    def test_apply_operation_single_wire_with_parameters_broadcasted(
         self, qubit_device_1_wire, tol, operation, input, expected_output, par
     ):
         """Tests that applying an operation yields the expected output state for single wire
@@ -941,7 +891,7 @@ class TestApplyBroadcasted:
     @pytest.mark.parametrize(
         "operation,input,expected_output,par", test_data_single_wire_with_parameters_inverses
     )
-    def test_apply_operation_single_wire_with_parameters_inverse(
+    def test_apply_operation_single_wire_with_parameters_inverse_broadcasted(
         self, qubit_device_1_wire, tol, operation, input, expected_output, par
     ):
         """Tests that applying the inverse of an operation yields the expected output state for single wire
@@ -956,235 +906,465 @@ class TestApplyBroadcasted:
         assert qubit_device_1_wire._state.dtype == qubit_device_1_wire.C_DTYPE
 
     test_data_two_wires_with_parameters = [
-        (qml.CRX, [0, 1, 0, 0], [0, 1, 0, 0], [math.pi / 2]),
-        (qml.CRX, [0, 0, 0, 1], [0, 0, -1j, 0], [math.pi]),
-        (
+        ( # broadcasted state
             qml.CRX,
-            [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0],
-            [0, 1 / math.sqrt(2), 1 / 2, -1j / 2],
-            [math.pi / 2],
+            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0, 1, 0, 0], [0, 0, -1j * INVSQ2, INVSQ2], [0, INVSQ2, 0.5, -0.5j]],
+            ([np.pi / 2],),
         ),
-        (qml.CRY, [0, 0, 0, 1], [0, 0, -1 / math.sqrt(2), 1 / math.sqrt(2)], [math.pi / 2]),
-        (qml.CRY, [0, 0, 0, 1], [0, 0, -1, 0], [math.pi]),
-        (
+        ( # broadcasted parameter
+            qml.CRX,
+            [0.5, 0.5, INVSQ2, 0],
+            [[0.5, 0.5, 0.5, -0.5j], [0.5, 0.5, 0, -1j*INVSQ2], [0.5, 0.5, -0.5, -0.5j]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state and parameter
+            qml.CRX,
+            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0.5, 0.5, -0.5j, 0.5], [0, 0, -1j, 0], [0, INVSQ2, -0.5, -0.5j]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state
             qml.CRY,
-            [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
-            [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
-            [math.pi / 2],
+            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0, 1, 0, 0], [0, 0, -INVSQ2, INVSQ2], [0, INVSQ2, 0.5, 0.5]],
+            ([np.pi / 2],),
         ),
-        (qml.CRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2]),
-        (qml.CRZ, [0, 0, 0, 1], [0, 0, 0, 1j], [math.pi]),
-        (
+        ( # broadcasted parameter
+            qml.CRY,
+            [0.5, 0.5, INVSQ2, 0],
+            [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0, INVSQ2], [0.5, 0.5, -0.5, 0.5]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state and parameter
+            qml.CRY,
+            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0.5, 0.5, -0.5, 0.5], [0, 0, -1, 0], [0, INVSQ2, -0.5, 0.5]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state
             qml.CRZ,
-            [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
-            [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
-            [math.pi / 2],
+            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0, 1, 0, 0], [0, 0, 0, T_PHASE], [0, INVSQ2, INVSQ2 * T_PHASE_C, 0]],
+            ([np.pi / 2],),
         ),
-        (qml.MultiRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) - 1j / math.sqrt(2)], [math.pi / 2]),
-        (qml.MultiRZ, [0, 0, 1, 0], [0, 0, 1j, 0], [math.pi]),
-        (
+        ( # broadcasted parameter
+            qml.CRZ,
+            [0.5, 0.5, INVSQ2, 0],
+            [[0.5, 0.5, INVSQ2 * T_PHASE_C, 0], [0.5, 0.5, -1j * INVSQ2, 0], [0.5, 0.5, -T_PHASE * INVSQ2, 0]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state and parameter
+            qml.CRZ,
+            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0.5, 0.5, 0, INVSQ2 * T_PHASE], [0, 0, 0, 1j], [0, INVSQ2, -INVSQ2 * T_PHASE, 0]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state
             qml.MultiRZ,
-            [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
-            [1 / 2 - 1j / 2, 1 / 2 + 1j / 2, 0, 0],
-            [math.pi / 2],
+            [[0, 1, 0, 0], [0, 0, 0, 1], [INVSQ2, 0, INVSQ2, 0]],
+            [[0, T_PHASE, 0, 0], [0, 0, 0, T_PHASE_C], [T_PHASE_C * INVSQ2, 0, T_PHASE * INVSQ2, 0]],
+            ([np.pi / 2],),
         ),
-        (
+        ( # broadcasted parameter
+            qml.MultiRZ,
+            [0.5, 0.5, INVSQ2, 0],
+            [
+                [T_PHASE_C * 0.5, T_PHASE * 0.5, INVSQ2 * T_PHASE, 0],
+                [-0.5j, 0.5j, 1j * INVSQ2, 0],
+                [-0.5 * T_PHASE, -0.5 * T_PHASE_C, -T_PHASE_C * INVSQ2, 0]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state and parameter
+            qml.MultiRZ,
+            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [
+                [T_PHASE_C * 0.5, T_PHASE * 0.5, 0, INVSQ2 * T_PHASE_C],
+                [0, 0, 0, -1j],
+                [0, -T_PHASE_C * INVSQ2, -INVSQ2 * T_PHASE_C, 0]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state - like CRY
             qml.CRot,
-            [0, 0, 0, 1],
-            [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)],
-            [math.pi / 2, 0, 0],
+            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0, 1, 0, 0], [0, 0, -INVSQ2, INVSQ2], [0, INVSQ2, 0.5, 0.5]],
+            (0, [np.pi / 2], 0),
         ),
-        (qml.CRot, [0, 0, 0, 1], [0, 0, -1 / math.sqrt(2), 1 / math.sqrt(2)], [0, math.pi / 2, 0]),
-        (
+        ( # broadcasted parameter - like CRY
             qml.CRot,
-            [0, 0, 1 / math.sqrt(2), 1 / math.sqrt(2)],
-            [0, 0, 1 / 2 - 1j / 2, 1 / 2 + 1j / 2],
-            [0, 0, math.pi / 2],
+            [0.5, 0.5, INVSQ2, 0],
+            [[0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0, INVSQ2], [0.5, 0.5, -0.5, 0.5]],
+            (0, [np.pi / 2, np.pi, 3 * np.pi / 2], [0] * 3),
         ),
-        (
+        ( # broadcasted state and parameter - like CRY
             qml.CRot,
-            [0, 0, 0, 1],
-            [0, 0, 1 / math.sqrt(2), 1j / math.sqrt(2)],
-            [math.pi / 2, -math.pi / 2, math.pi / 2],
+            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0.5, 0.5, -0.5, 0.5], [0, 0, -1, 0], [0, INVSQ2, -0.5, 0.5]],
+            ([0] * 3, [np.pi / 2, np.pi, 3 * np.pi / 2], 0),
         ),
-        (
+        ( # broadcasted state - like CRZ
             qml.CRot,
-            [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0],
-            [0, 1 / math.sqrt(2), 0, -1 / 2 + 1j / 2],
-            [-math.pi / 2, math.pi, math.pi],
+            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0, 1, 0, 0], [0, 0, 0, T_PHASE], [0, INVSQ2, INVSQ2 * T_PHASE_C, 0]],
+            ([np.pi / 2], 0, 0),
         ),
-        (
+        ( # broadcasted parameter - like CRZ
+            qml.CRot,
+            [0.5, 0.5, INVSQ2, 0],
+            [[0.5, 0.5, INVSQ2 * T_PHASE_C, 0], [0.5, 0.5, -1j * INVSQ2, 0], [0.5, 0.5, -T_PHASE * INVSQ2, 0]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2], 0, [0] * 3),
+        ),
+        ( # broadcasted state and parameter - like CRZ
+            qml.CRot,
+            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0.5, 0.5, 0, INVSQ2 * T_PHASE], [0, 0, 0, 1j], [0, INVSQ2, -INVSQ2 * T_PHASE, 0]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2], [0] * 3, 0),
+        ),
+        ( # broadcasted state
             qml.QubitUnitary,
-            [1, 0, 0, 0],
-            [1, 0, 0, 0],
+            [[1, 0, 0, 0], [0, 1, 0, 0], [0.5, 0.5, -0.5, 0.5]],
+            [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0.5, 0, INVSQ2, 0.5]],
             [
                 np.array(
-                    [
-                        [1, 0, 0, 0],
-                        [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0],
-                        [0, 1 / math.sqrt(2), -1 / math.sqrt(2), 0],
-                        [0, 0, 0, 1],
-                    ]
+                    [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0, INVSQ2, -INVSQ2, 0], [0, 0, 0, 1]]
                 )
             ],
         ),
-        (
+        ( # broadcasted parameter
             qml.QubitUnitary,
-            [0, 1, 0, 0],
-            [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0],
+            [0.5, 0.5, -0.5, 0.5j],
             [
-                np.array(
-                    [
-                        [1, 0, 0, 0],
-                        [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0],
-                        [0, 1 / math.sqrt(2), -1 / math.sqrt(2), 0],
-                        [0, 0, 0, 1],
-                    ]
-                )
+                [0.5, 0, INVSQ2, 0.5j],
+                [0.5, 0.5, -(0.5 + 0.5j) * INVSQ2, (-0.5 + 0.5j) * INVSQ2],
+                [0.5, 0.5, 0, 1j * INVSQ2]
             ],
+            (
+                [
+                    [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0, INVSQ2, -INVSQ2, 0], [0, 0, 0, 1]],
+                    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, INVSQ2, -INVSQ2], [0, 0, INVSQ2, INVSQ2]],
+                    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, INVSQ2, -1j * INVSQ2], [0, 0, -1j * INVSQ2, INVSQ2]],
+                ],
+            ),
         ),
-        (
+        ( # broadcasted state and parameter
             qml.QubitUnitary,
-            [1 / 2, 1 / 2, -1 / 2, 1 / 2],
-            [1 / 2, 0, 1 / math.sqrt(2), 1 / 2],
+            [[0.5, 0.5, -0.5, 0.5j], [0, 0, 1j, 0], [INVSQ2, 0, 0, 1j * INVSQ2]],
             [
-                np.array(
-                    [
-                        [1, 0, 0, 0],
-                        [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0],
-                        [0, 1 / math.sqrt(2), -1 / math.sqrt(2), 0],
-                        [0, 0, 0, 1],
-                    ]
-                )
+                [0.5, 0, INVSQ2, 0.5j],
+                [0, 0, 1j * INVSQ2, 1j * INVSQ2],
+                [INVSQ2, 0, 0.5, 0.5j],
             ],
+            (
+                [
+                    [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0, INVSQ2, -INVSQ2, 0], [0, 0, 0, 1]],
+                    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, INVSQ2, -INVSQ2], [0, 0, INVSQ2, INVSQ2]],
+                    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, INVSQ2, -1j * INVSQ2], [0, 0, -1j * INVSQ2, INVSQ2]],
+                ],
+            ),
         ),
-        (qml.DiagonalQubitUnitary, [1, 0, 0, 0], [-1, 0, 0, 0], [np.array([-1, 1, 1, -1])]),
-        (
+        ( # broadcasted state
             qml.DiagonalQubitUnitary,
-            [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), 0, 0, -1 / math.sqrt(2)],
-            [np.array([1, 1, 1, -1])],
+            [[1, 0, 0, 0], [0, 1, 0, 0], [0.5, 0.5, -0.5, 0.5]],
+            [[1j, 0, 0, 0], [0, -1j, 0, 0], [0.5j, -0.5j, 0.5, 0.5]],
+            [[1j, -1j, -1, 1]],
         ),
-        (qml.DiagonalQubitUnitary, [0, 0, 1, 0], [0, 0, 1j, 0], [np.array([-1, 1j, 1j, -1])]),
-        (qml.IsingXX, [0, 0, 1, 0], [0, -1j / math.sqrt(2), 1 / math.sqrt(2), 0], [math.pi / 2]),
-        (qml.IsingXX, [0, 0, 0, 1], [-1j / math.sqrt(2), 0, 0, 1 / math.sqrt(2)], [math.pi / 2]),
-        (qml.IsingXX, [1, 0, 0, 0], [1 / math.sqrt(2), 0, 0, -1j / math.sqrt(2)], [math.pi / 2]),
-        (qml.IsingYY, [0, 0, 1, 0], [0, -1j / math.sqrt(2), 1 / math.sqrt(2), 0], [math.pi / 2]),
-        (qml.IsingYY, [0, 0, 0, 1], [1j / math.sqrt(2), 0, 0, 1 / math.sqrt(2)], [math.pi / 2]),
-        (qml.IsingYY, [1, 0, 0, 0], [1 / math.sqrt(2), 0, 0, 1j / math.sqrt(2)], [math.pi / 2]),
-        (qml.IsingZZ, [0, 0, 1, 0], [0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2), 0], [math.pi / 2]),
-        (qml.IsingZZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) - 1j / math.sqrt(2)], [math.pi / 2]),
-        (qml.IsingZZ, [1, 0, 0, 0], [1 / math.sqrt(2) - 1j / math.sqrt(2), 0, 0, 0], [math.pi / 2]),
+        ( # broadcasted parameter
+            qml.DiagonalQubitUnitary,
+            [0.5, 0.5, -0.5, 0.5j],
+            [[-0.5j, -0.5, -0.5, -0.5], [0.5, 0.5, -0.5, 0.5j], [-0.5, 0.5, 0.5, -0.5j]],
+            ([[-1j, -1, 1, 1j], [1, 1, 1, 1], [-1, 1, -1, -1]],),
+        ),
+        ( # broadcasted state and parameter
+            qml.DiagonalQubitUnitary,
+            [[0.5, 0.5, -0.5, 0.5j], [0, 0, 1j, 0], [INVSQ2, 0, 0, 1j * INVSQ2]],
+            [[-0.5j, -0.5, -0.5, -0.5], [0, 0, 1j, 0], [-INVSQ2, 0, 0, -1j * INVSQ2]],
+            ([[-1j, -1, 1, 1j], [1, 1, 1, 1], [-1, 1, -1, -1]],),
+        ),
+        ( # broadcasted state
+            qml.IsingXX,
+            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0, INVSQ2, -1j * INVSQ2, 0], [-1j * INVSQ2, 0, 0, INVSQ2], [0, 0.5-0.5j, 0.5-0.5j, 0]],
+            ([np.pi / 2],),
+        ),
+        ( # broadcasted parameter
+            qml.IsingXX,
+            [0.5, 0.5, INVSQ2, 0],
+            [
+                [0.5 * INVSQ2, 0.5 * INVSQ2 - 1j * 0.5, 0.5 - 0.5j * INVSQ2, -0.5j * INVSQ2],
+                [0, -1j * INVSQ2, -0.5j, -0.5j],
+                [-0.5 * INVSQ2, -0.5j - 0.5 * INVSQ2, -0.5j * INVSQ2 - 0.5, -0.5j * INVSQ2],
+            ],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state and parameter
+            qml.IsingXX,
+            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [
+                [0.5 * INVSQ2 - 0.5j, 0.5 * INVSQ2, -0.5j * INVSQ2, 0.5 - 0.5j * INVSQ2],
+                [-1j, 0, 0, 0],
+                [0, -0.5 - 0.5j, -0.5 - 0.5j, 0],
+            ],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state
+            qml.IsingYY,
+            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0, INVSQ2, -1j * INVSQ2, 0], [1j * INVSQ2, 0, 0, INVSQ2], [0, 0.5-0.5j, 0.5-0.5j, 0]],
+            ([np.pi / 2],),
+        ),
+        ( # broadcasted parameter
+            qml.IsingYY,
+            [0.5, 0.5, INVSQ2, 0],
+            [
+                [0.5 * INVSQ2, 0.5 * INVSQ2 - 1j * 0.5, 0.5 - 0.5j * INVSQ2, 0.5j * INVSQ2],
+                [0, -1j * INVSQ2, -0.5j, 0.5j],
+                [-0.5 * INVSQ2, -0.5j - 0.5 * INVSQ2, -0.5j * INVSQ2 - 0.5, 0.5j * INVSQ2],
+            ],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state and parameter
+            qml.IsingYY,
+            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [
+                [0.5 * INVSQ2 + 0.5j, 0.5 * INVSQ2, -0.5j * INVSQ2, 0.5 + 0.5j * INVSQ2],
+                [1j, 0, 0, 0],
+                [0, -0.5 - 0.5j, -0.5 - 0.5j, 0],
+            ],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state
+            qml.IsingZZ,
+            [[0, 1, 0, 0], [0, 0, 0, 1], [INVSQ2, 0, INVSQ2, 0]],
+            [[0, T_PHASE, 0, 0], [0, 0, 0, T_PHASE_C], [INVSQ2 * T_PHASE_C, 0, INVSQ2 * T_PHASE, 0]],
+            ([np.pi / 2],),
+        ),
+        ( # broadcasted parameter
+            qml.IsingZZ,
+            [0.5, 0.5, INVSQ2, 0],
+            [
+                [T_PHASE_C * 0.5, T_PHASE * 0.5, INVSQ2 * T_PHASE, 0],
+                [-0.5j, 0.5j, 1j * INVSQ2, 0],
+                [-0.5 * T_PHASE, -0.5 * T_PHASE_C, -T_PHASE_C * INVSQ2, 0]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state and parameter
+            qml.IsingZZ,
+            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [
+                [T_PHASE_C * 0.5, T_PHASE * 0.5, 0, INVSQ2 * T_PHASE_C],
+                [0, 0, 0, -1j],
+                [0, -T_PHASE_C * INVSQ2, -INVSQ2 * T_PHASE_C, 0]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
     ]
 
     test_data_two_wires_with_parameters_inverses = [
-        (qml.CRX, [0, 1, 0, 0], [0, 1, 0, 0], [math.pi / 2]),
-        (qml.CRX, [0, 0, 0, 1], [0, 0, 1j, 0], [math.pi]),
-        (
+        ( # broadcasted state
             qml.CRX,
-            [0, 1 / math.sqrt(2), 1 / math.sqrt(2), 0],
-            [0, 1 / math.sqrt(2), 1 / 2, 1j / 2],
-            [math.pi / 2],
+            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0, 1, 0, 0], [0, 0, 1j * INVSQ2, INVSQ2], [0, INVSQ2, 0.5, 0.5j]],
+            ([np.pi / 2],),
         ),
-        (qml.MultiRZ, [0, 0, 0, 1], [0, 0, 0, 1 / math.sqrt(2) + 1j / math.sqrt(2)], [math.pi / 2]),
-        (qml.MultiRZ, [0, 0, 1, 0], [0, 0, -1j, 0], [math.pi]),
-        (
+        ( # broadcasted parameter
+            qml.CRX,
+            [0.5, 0.5, INVSQ2, 0],
+            [[0.5, 0.5, 0.5, 0.5j], [0.5, 0.5, 0, 1j*INVSQ2], [0.5, 0.5, -0.5, 0.5j]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state and parameter
+            qml.CRX,
+            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0.5, 0.5, 0.5j, 0.5], [0, 0, 1j, 0], [0, INVSQ2, -0.5, 0.5j]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state
+            qml.IsingYY,
+            [[0, 1, 0, 0], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [[0, INVSQ2, 1j * INVSQ2, 0], [-1j * INVSQ2, 0, 0, INVSQ2], [0, 0.5 + 0.5j, 0.5 + 0.5j, 0]],
+            ([np.pi / 2],),
+        ),
+        ( # broadcasted parameter
+            qml.IsingYY,
+            [0.5, 0.5, INVSQ2, 0],
+            [
+                [0.5 * INVSQ2, 0.5 * INVSQ2 + 1j * 0.5, 0.5 + 0.5j * INVSQ2, -0.5j * INVSQ2],
+                [0, 1j * INVSQ2, 0.5j, -0.5j],
+                [-0.5 * INVSQ2, 0.5j - 0.5 * INVSQ2, 0.5j * INVSQ2 - 0.5, -0.5j * INVSQ2],
+            ],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state and parameter
+            qml.IsingYY,
+            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [
+                [0.5 * INVSQ2 - 0.5j, 0.5 * INVSQ2, 0.5j * INVSQ2, 0.5 - 0.5j * INVSQ2],
+                [-1j, 0, 0, 0],
+                [0, -0.5 + 0.5j, -0.5 + 0.5j, 0],
+            ],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state
             qml.MultiRZ,
-            [1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
-            [1 / 2 + 1j / 2, 1 / 2 - 1j / 2, 0, 0],
-            [math.pi / 2],
+            [[0, 1, 0, 0], [0, 0, 0, 1], [INVSQ2, 0, INVSQ2, 0]],
+            [[0, T_PHASE_C, 0, 0], [0, 0, 0, T_PHASE], [T_PHASE * INVSQ2, 0, T_PHASE_C * INVSQ2, 0]],
+            ([np.pi / 2],),
         ),
-        (qml.DiagonalQubitUnitary, [1, 0, 0, 0], [-1, 0, 0, 0], [np.array([-1, 1, 1, -1])]),
-        (
-            qml.DiagonalQubitUnitary,
-            [1 / math.sqrt(2), 0, 0, 1 / math.sqrt(2)],
-            [1 / math.sqrt(2), 0, 0, -1 / math.sqrt(2)],
-            [np.array([1, 1, 1, -1])],
+        ( # broadcasted parameter
+            qml.MultiRZ,
+            [0.5, 0.5, INVSQ2, 0],
+            [
+                [T_PHASE * 0.5, T_PHASE_C * 0.5, INVSQ2 * T_PHASE_C, 0],
+                [0.5j, -0.5j, -1j * INVSQ2, 0],
+                [-0.5 * T_PHASE_C, -0.5 * T_PHASE, -T_PHASE * INVSQ2, 0]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
         ),
-        (qml.DiagonalQubitUnitary, [0, 0, 1, 0], [0, 0, -1j, 0], [np.array([-1, 1j, 1j, -1])]),
+        ( # broadcasted state and parameter
+            qml.MultiRZ,
+            [[0.5, 0.5, 0, INVSQ2], [0, 0, 0, 1], [0, INVSQ2, INVSQ2, 0]],
+            [
+                [T_PHASE * 0.5, T_PHASE_C * 0.5, 0, INVSQ2 * T_PHASE],
+                [0, 0, 0, 1j],
+                [0, -T_PHASE * INVSQ2, -INVSQ2 * T_PHASE, 0]],
+            ([np.pi / 2, np.pi, 3 * np.pi / 2],),
+        ),
+        ( # broadcasted state
+            qml.QubitUnitary,
+            [[1, 0, 0, 0], [0, 1, 0, 0], [0.5, 0.5, -0.5, 0.5]],
+            [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0.5, 0, INVSQ2, 0.5]],
+            [
+                np.array(
+                    [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0, INVSQ2, -INVSQ2, 0], [0, 0, 0, 1]]
+                )
+            ],
+        ),
+        ( # broadcasted parameter
+            qml.QubitUnitary,
+            [0.5, 0.5, -0.5, 0.5j],
+            [
+                [0.5, 0, INVSQ2, 0.5j],
+                [0.5, 0.5, -(0.5 + 0.5j) * INVSQ2, (-0.5 + 0.5j) * INVSQ2],
+                [0.5, 0.5, 0, 1j * INVSQ2]
+            ],
+            (
+                [
+                    [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0, INVSQ2, -INVSQ2, 0], [0, 0, 0, 1]],
+                    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, INVSQ2, INVSQ2], [0, 0, -INVSQ2, INVSQ2]],
+                    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, INVSQ2, 1j * INVSQ2], [0, 0, 1j * INVSQ2, INVSQ2]],
+                ],
+            ),
+        ),
+        ( # broadcasted state and parameter
+            qml.QubitUnitary,
+            [[0.5, 0.5, -0.5, 0.5j], [0, 0, 1j, 0], [INVSQ2, 0, 0, 1j * INVSQ2]],
+            [[0.5, 0, INVSQ2, 0.5j], [0, 0, 1j * INVSQ2, 1j * INVSQ2], [INVSQ2, 0, 0.5, 0.5j]],
+            (
+                [
+                    [[1, 0, 0, 0], [0, INVSQ2, INVSQ2, 0], [0, INVSQ2, -INVSQ2, 0], [0, 0, 0, 1]],
+                    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, INVSQ2, INVSQ2], [0, 0, -INVSQ2, INVSQ2]],
+                    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, INVSQ2, 1j * INVSQ2], [0, 0, 1j * INVSQ2, INVSQ2]],
+                ],
+            ),
+        ),
     ]
 
     @pytest.mark.parametrize(
         "operation,input,expected_output,par", test_data_two_wires_with_parameters
     )
-    def test_apply_operation_two_wires_with_parameters(
+    def test_apply_operation_two_wires_with_parameters_broadcasted(
         self, qubit_device_2_wires, tol, operation, input, expected_output, par
     ):
         """Tests that applying an operation yields the expected output state for two wire
         operations that have parameters."""
 
-        qubit_device_2_wires._state = np.array(input, dtype=qubit_device_2_wires.C_DTYPE).reshape(
-            (2, 2)
-        )
+        shape = (3, 2, 2) if np.array(input).size == 12 else (2, 2)
+        dtype = qubit_device_2_wires.C_DTYPE
+        qubit_device_2_wires._state = np.array(input, dtype=dtype).reshape(shape)
+        par = tuple(np.array(p) for p in par)
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1])])
 
         assert np.allclose(
-            qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+            qubit_device_2_wires._state.reshape((3, 4)), expected_output, atol=tol, rtol=0
         )
         assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
     @pytest.mark.parametrize(
         "operation,input,expected_output,par", test_data_two_wires_with_parameters_inverses
     )
-    def test_apply_operation_two_wires_with_parameters_inverse(
+    def test_apply_operation_two_wires_with_parameters_inverse_broadcasted(
         self, qubit_device_2_wires, tol, operation, input, expected_output, par
     ):
         """Tests that applying the inverse of an operation yields the expected output state for two wire
         operations that have parameters."""
 
-        qubit_device_2_wires._state = np.array(input, dtype=qubit_device_2_wires.C_DTYPE).reshape(
-            (2, 2)
-        )
+        shape = (3, 2, 2) if np.array(input).size == 12 else (2, 2)
+        dtype = qubit_device_2_wires.C_DTYPE
+        qubit_device_2_wires._state = np.array(input, dtype=dtype).reshape(shape)
+        par = tuple(np.array(p) for p in par)
         qubit_device_2_wires.apply([operation(*par, wires=[0, 1]).inv()])
 
         assert np.allclose(
-            qubit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+            qubit_device_2_wires._state.reshape((3, 4)), expected_output, atol=tol, rtol=0
         )
         assert qubit_device_2_wires._state.dtype == qubit_device_2_wires.C_DTYPE
 
-    def test_apply_errors_qubit_state_vector(self, qubit_device_2_wires):
+    def test_apply_errors_qubit_state_vector_broadcasted(self, qubit_device_2_wires):
         """Test that apply fails for incorrect state preparation, and > 2 qubit gates"""
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
-            qubit_device_2_wires.apply([qml.QubitStateVector(np.array([1, -1]), wires=[0])])
+            qubit_device_2_wires.apply([qml.QubitStateVector(np.array([[1, -1], [0, 2]]), wires=[0])])
+
+        # Also test that the sum-check is *not* performed along the broadcasting dimension
+        qubit_device_2_wires.apply([qml.QubitStateVector(np.array([[0.6, 0.8], [0.6, 0.8]]), wires=[0])])
 
         with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)."):
-            p = np.array([1, 0, 1, 1, 0]) / np.sqrt(3)
+            # Second dimension does not match 2**num_wires
+            p = np.array([[1, 0, 1, 1, 0], [0, 1, 1, 0, 1]]) / np.sqrt(3)
             qubit_device_2_wires.apply([qml.QubitStateVector(p, wires=[0, 1])])
 
+        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)."):
+            # Broadcasting dimension is not first dimension
+            p = np.array([[1, 1, 0], [0, 1, 1], [1, 0, 1], [0, 1, 1]]) / np.sqrt(2)
+            qubit_device_2_wires.apply([qml.QubitStateVector(p, wires=[0, 1])])
+
+        qubit_device_2_wires.reset()
+        vec = qml.QubitStateVector(np.array([[0, 1, 0, 0], [0, 0, 1, 0]]), wires=[0, 1])
         with pytest.raises(
             DeviceError,
             match="Operation QubitStateVector cannot be used after other Operations have already been applied "
             "on a default.qubit device.",
         ):
-            qubit_device_2_wires.reset()
-            qubit_device_2_wires.apply(
-                [qml.RZ(0.5, wires=[0]), qml.QubitStateVector(np.array([0, 1, 0, 0]), wires=[0, 1])]
-            )
+            qubit_device_2_wires.apply([qml.RZ(0.5, wires=[0]), vec])
 
-    def test_apply_errors_basis_state(self, qubit_device_2_wires):
+    @pytest.mark.skip("Applying a BasisState does not support broadcasting yet")
+    def test_apply_errors_basis_state_broadcasted(self, qubit_device_2_wires):
+        """Test that applying the BasisState operation raises the correct errors."""
         with pytest.raises(
             ValueError, match="BasisState parameter must consist of 0 or 1 integers."
         ):
-            qubit_device_2_wires.apply([qml.BasisState(np.array([-0.2, 4.2]), wires=[0, 1])])
+            op = qml.BasisState(np.array([[-0.2, 4.2], [0.5, 1.2]]), wires=[0, 1])
+            qubit_device_2_wires.apply([op])
 
         with pytest.raises(
             ValueError, match="BasisState parameter and wires must be of equal length."
         ):
-            qubit_device_2_wires.apply([qml.BasisState(np.array([0, 1]), wires=[0])])
+            # Test that the error is raised
+            qubit_device_2_wires.apply([qml.BasisState(np.array([[0, 1], [1, 1], [1, 0]]), wires=[0])])
+        # Test that the broadcasting dimension is allowed to mismatch the length of the wires
+        qubit_device_2_wires.apply([qml.BasisState(np.array([[0], [1], [0]]), wires=[0])])
 
+        qubit_device_2_wires.reset()
+        qubit_device_2_wires.apply([qml.RZ(0.5, wires=[0])])
+        vec = qml.BasisState(np.array([[0, 0], [1, 0], [1, 1]]), wires=[0, 1])
         with pytest.raises(
             DeviceError,
             match="Operation BasisState cannot be used after other Operations have already been applied "
             "on a default.qubit device.",
         ):
-            qubit_device_2_wires.reset()
-            qubit_device_2_wires.apply(
-                [qml.RZ(0.5, wires=[0]), qml.BasisState(np.array([1, 1]), wires=[0, 1])]
-            )
+            qubit_device_2_wires.apply([vec])
 
 
 class TestExpvalBroadcasted:
-    """Tests that expectation values are properly calculated or that the proper errors are raised."""
+    """Tests that expectation values are properly calculated for broadcasted states
+    or that the proper errors are raised."""
 
     @pytest.mark.parametrize(
         "operation,input,expected_output",
@@ -1196,7 +1376,7 @@ class TestExpvalBroadcasted:
             (qml.Identity, [[INVSQ2, -INVSQ2], [1, 0], [0, 1]], [1, 1, 1]),
         ],
     )
-    def test_expval_single_wire_no_parameters(
+    def test_expval_single_wire_no_parameters_broadcasted(
         self, qubit_device_1_wire, tol, operation, input, expected_output
     ):
         """Tests that expectation values are properly calculated for single-wire observables without parameters."""
@@ -1217,7 +1397,7 @@ class TestExpvalBroadcasted:
             (qml.Hermitian, [[1, 0], [0, 1], [INVSQ2, -INVSQ2]], [1, 1, 1], [[1, 1j], [-1j, 1]]),
         ],
     )
-    def test_expval_single_wire_with_parameters(
+    def test_expval_single_wire_with_parameters_broadcasted(
         self, qubit_device_1_wire, tol, operation, input, expected_output, par
     ):
         """Tests that expectation values are properly calculated for single-wire observables with parameters."""
@@ -1253,7 +1433,7 @@ class TestExpvalBroadcasted:
             ),
         ],
     )
-    def test_expval_two_wires_with_parameters(
+    def test_expval_two_wires_with_parameters_broadcasted(
         self, qubit_device_2_wires, tol, operation, input, expected_output, par
     ):
         """Tests that expectation values are properly calculated for two-wire observables with parameters."""
@@ -1268,7 +1448,7 @@ class TestExpvalBroadcasted:
 
         assert np.allclose(res, expected_output, atol=tol, rtol=0)
 
-    def test_expval_estimate(self):
+    def test_expval_estimate_broadcasted(self):
         """Test that the expectation value is not analytically calculated"""
 
         dev = qml.device("default.qubit", wires=1, shots=3)
@@ -1286,7 +1466,7 @@ class TestExpvalBroadcasted:
 
 
 class TestVarBroadcasted:
-    """Tests that variances are properly calculated."""
+    """Tests that variances are properly calculated for broadcasted states."""
 
     @pytest.mark.parametrize(
         "operation,input,expected_output",
@@ -1298,7 +1478,7 @@ class TestVarBroadcasted:
             (qml.Identity, [[INVSQ2, -INVSQ2], [1, 0], [0, 1]], [0, 0, 0]),
         ],
     )
-    def test_var_single_wire_no_parameters(
+    def test_var_single_wire_no_parameters_broadcasted(
         self, qubit_device_1_wire, tol, operation, input, expected_output
     ):
         """Tests that variances are properly calculated for single-wire observables without parameters."""
@@ -1319,7 +1499,7 @@ class TestVarBroadcasted:
             (qml.Hermitian, [[1, 0], [0, 1], [INVSQ2, -INVSQ2]], [1, 1, 1], [[1, 1j], [-1j, 1]]),
         ],
     )
-    def test_var_single_wire_with_parameters(
+    def test_var_single_wire_with_parameters_broadcasted(
         self, qubit_device_1_wire, tol, operation, input, expected_output, par
     ):
         """Tests that variances are properly calculated for single-wire observables with parameters."""
@@ -1355,7 +1535,7 @@ class TestVarBroadcasted:
             ),
         ],
     )
-    def test_var_two_wires_with_parameters(
+    def test_var_two_wires_with_parameters_broadcasted(
         self, qubit_device_2_wires, tol, operation, input, expected_output, par
     ):
         """Tests that variances are properly calculated for two-wire observables with parameters."""
@@ -1370,7 +1550,7 @@ class TestVarBroadcasted:
 
         assert np.allclose(res, expected_output, atol=tol, rtol=0)
 
-    def test_var_estimate(self):
+    def test_var_estimate_broadcasted(self):
         """Test that the variance is not analytically calculated"""
 
         dev = qml.device("default.qubit", wires=1, shots=3)
@@ -1388,9 +1568,9 @@ class TestVarBroadcasted:
 
 
 class TestSampleBroadcasted:
-    """Tests that samples are properly calculated."""
+    """Tests that samples are properly calculated for broadcasted states."""
 
-    def test_sample_dimensions(self):
+    def test_sample_dimensions_broadcasted(self):
         """Tests if the samples returned by the sample function have
         the correct dimensions
         """
@@ -1426,7 +1606,7 @@ class TestSampleBroadcasted:
         s3 = dev.sample(qml.PauliX(0) @ qml.PauliZ(1))
         assert s3.shape == (5, 17)
 
-    def test_sample_values(self, qubit_device_2_wires, tol):
+    def test_sample_values_broadcasted(self, qubit_device_2_wires, tol):
         """Tests if the samples returned by sample have
         the correct values
         """
@@ -1452,7 +1632,7 @@ class TestDefaultQubitIntegrationBroadcasted:
     properly with the PennyLane interface, in particular QNode."""
 
     @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
-    def test_qubit_circuit(self, qubit_device_1_wire, r_dtype, tol):
+    def test_qubit_circuit_broadcasted(self, qubit_device_1_wire, r_dtype, tol):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
 
         p = np.array([0.543, np.pi / 2, 0.0, 1.0])
@@ -1471,7 +1651,7 @@ class TestDefaultQubitIntegrationBroadcasted:
         assert np.allclose(res, expected, atol=tol, rtol=0)
         assert res.dtype == r_dtype
 
-    def test_qubit_identity(self, qubit_device_1_wire, tol):
+    def test_qubit_identity_broadcasted(self, qubit_device_1_wire, tol):
         """Test that the default qubit plugin provides correct result for the Identity expectation"""
 
         p = np.array([0.543, np.pi / 2, 0.0, 1.0])
@@ -1484,7 +1664,7 @@ class TestDefaultQubitIntegrationBroadcasted:
 
         assert np.allclose(circuit(p), 1, atol=tol, rtol=0)
 
-    def test_nonzero_shots(self, tol):
+    def test_nonzero_shots_broadcasted(self, tol):
         """Test that the default qubit plugin provides correct result for high shot number"""
 
         shots = 10**5
@@ -1513,7 +1693,7 @@ class TestDefaultQubitIntegrationBroadcasted:
             ("Hadamard", [[INVSQ2, INVSQ2], [0, 1], [1, 0]], [INVSQ2, -INVSQ2, INVSQ2]),
         ],
     )
-    def test_supported_observable_single_wire_no_parameters(
+    def test_supported_observable_single_wire_no_parameters_broadcasted(
         self, qubit_device_1_wire, tol, name, state, expected_output
     ):
         """Tests supported observables on single wires without parameters."""
@@ -1541,7 +1721,7 @@ class TestDefaultQubitIntegrationBroadcasted:
             ),
         ],
     )
-    def test_supported_observable_single_wire_with_parameters(
+    def test_supported_observable_single_wire_with_parameters_broadcasted(
         self, qubit_device_1_wire, tol, name, state, expected_output, par
     ):
         """Tests supported observables on single wires with parameters."""
@@ -1578,7 +1758,7 @@ class TestDefaultQubitIntegrationBroadcasted:
             ),
         ],
     )
-    def test_supported_observable_two_wires_with_parameters(
+    def test_supported_observable_two_wires_with_parameters_broadcasted(
         self, qubit_device_2_wires, tol, name, state, expected_output, par
     ):
         """Tests supported observables on two wires with parameters."""
@@ -1594,7 +1774,7 @@ class TestDefaultQubitIntegrationBroadcasted:
 
         assert np.allclose(circuit(), expected_output, atol=tol, rtol=0)
 
-    def test_multi_samples_return_correlated_results(self):
+    def test_multi_samples_return_correlated_results_broadcasted(self):
         """Tests if the samples returned by the sample function are correlated
         correctly for correlated observables.
         """
@@ -1613,7 +1793,7 @@ class TestDefaultQubitIntegrationBroadcasted:
         assert np.array_equal(outcomes[0], outcomes[1])
 
     @pytest.mark.parametrize("num_wires", [3, 4, 5, 6, 7, 8])
-    def test_multi_samples_return_correlated_results_more_wires_than_size_of_observable(
+    def test_multi_samples_correlated_results_more_wires_than_observable_broadcasted(
         self, num_wires
     ):
         """Tests if the samples returned by the sample function are correlated
@@ -1638,9 +1818,9 @@ class TestDefaultQubitIntegrationBroadcasted:
     "theta,phi,varphi", [(THETA, PHI, VARPHI), (THETA, PHI[0], VARPHI), (THETA[0], PHI, VARPHI[1])]
 )
 class TestTensorExpvalBroadcasted:
-    """Test tensor expectation values"""
+    """Test tensor expectation values for broadcasted states"""
 
-    def test_paulix_pauliy(self, theta, phi, varphi, tol):
+    def test_paulix_pauliy_broadcasted(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qml.device("default.qubit", wires=3)
         dev.reset()
@@ -1664,7 +1844,7 @@ class TestTensorExpvalBroadcasted:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_pauliz_identity(self, theta, phi, varphi, tol):
+    def test_pauliz_identity_broadcasted(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and Identity works correctly"""
         dev = qml.device("default.qubit", wires=3)
         dev.reset()
@@ -1688,7 +1868,7 @@ class TestTensorExpvalBroadcasted:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_pauliz_hadamard(self, theta, phi, varphi, tol):
+    def test_pauliz_hadamard_broadcasted(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         dev = qml.device("default.qubit", wires=3)
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
@@ -1711,7 +1891,7 @@ class TestTensorExpvalBroadcasted:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_hermitian(self, theta, phi, varphi, tol):
+    def test_hermitian_broadcasted(self, theta, phi, varphi, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
         dev = qml.device("default.qubit", wires=3)
         dev.reset()
@@ -1749,7 +1929,7 @@ class TestTensorExpvalBroadcasted:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_hermitian_hermitian(self, theta, phi, varphi, tol):
+    def test_hermitian_hermitian_broadcasted(self, theta, phi, varphi, tol):
         """Test that a tensor product involving two Hermitian matrices works correctly"""
         dev = qml.device("default.qubit", wires=3)
 
@@ -1798,7 +1978,7 @@ class TestTensorExpvalBroadcasted:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_hermitian_identity_expectation(self, theta, phi, varphi, tol):
+    def test_hermitian_identity_expectation_broadcasted(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix and the identity works correctly"""
         dev = qml.device("default.qubit", wires=2)
 
@@ -1822,7 +2002,7 @@ class TestTensorExpvalBroadcasted:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_hermitian_two_wires_identity_expectation(self, theta, phi, varphi, tol):
+    def test_hermitian_two_wires_identity_expectation_broadcasted(self, theta, phi, varphi, tol):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
         dev = qml.device("default.qubit", wires=3)
 
@@ -1851,9 +2031,9 @@ class TestTensorExpvalBroadcasted:
     "theta,phi,varphi", [(THETA, PHI, VARPHI), (THETA, PHI[0], VARPHI), (THETA[0], PHI, VARPHI[1])]
 )
 class TestTensorVarBroadcasted:
-    """Tests for variance of tensor observables"""
+    """Tests for variance of tensor observables for broadcasted states"""
 
-    def test_paulix_pauliy(self, theta, phi, varphi, tol):
+    def test_paulix_pauliy_broadcasted(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qml.device("default.qubit", wires=3)
 
@@ -1883,7 +2063,7 @@ class TestTensorVarBroadcasted:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_pauliz_hadamard(self, theta, phi, varphi, tol):
+    def test_pauliz_hadamard_broadcasted(self, theta, phi, varphi, tol):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         dev = qml.device("default.qubit", wires=3)
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
@@ -1911,7 +2091,7 @@ class TestTensorVarBroadcasted:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_hermitian(self, theta, phi, varphi, tol):
+    def test_hermitian_broadcasted(self, theta, phi, varphi, tol):
         """Test that a tensor product involving qml.Hermitian works correctly"""
         dev = qml.device("default.qubit", wires=3)
 
@@ -1977,9 +2157,9 @@ class TestTensorVarBroadcasted:
     "theta,phi,varphi", [(THETA, PHI, VARPHI), (THETA, PHI[0], VARPHI), (THETA[0], PHI, VARPHI[1])]
 )
 class TestTensorSampleBroadcasted:
-    """Test tensor expectation values"""
+    """Test tensor sampling for broadcated states"""
 
-    def test_paulix_pauliy(self, theta, phi, varphi, tol_stochastic):
+    def test_paulix_pauliy_broadcasted(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qml.device("default.qubit", wires=3, shots=int(1e6))
 
@@ -2021,7 +2201,7 @@ class TestTensorSampleBroadcasted:
         ) / 16
         assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
-    def test_pauliz_hadamard(self, theta, phi, varphi, tol_stochastic):
+    def test_pauliz_hadamard_broadcasted(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving PauliZ and PauliY and hadamard works correctly"""
         dev = qml.device("default.qubit", wires=3, shots=int(1e6))
         obs = qml.PauliZ(0) @ qml.Hadamard(1) @ qml.PauliY(2)
@@ -2059,7 +2239,7 @@ class TestTensorSampleBroadcasted:
         ) / 4
         assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
-    def test_hermitian(self, theta, phi, varphi, tol_stochastic):
+    def test_hermitian_broadcasted(self, theta, phi, varphi, tol_stochastic):
         """Test that a tensor product involving qml.Hermitian works correctly"""
         dev = qml.device("default.qubit", wires=3, shots=int(1e6))
 
@@ -2171,7 +2351,7 @@ class TestDtypePreservedBroadcasted:
             qml.QubitCarry,
         ],
     )
-    def test_state_dtype_after_op(self, r_dtype, c_dtype, op, tol):
+    def test_state_dtype_after_op_broadcasted(self, r_dtype, c_dtype, op, tol):
         """Test that the default qubit plugin preserves data types of states when an operation is
         applied. As TestApply class check most of operators, we here only check some subtle
         examples.
@@ -2205,7 +2385,7 @@ class TestDtypePreservedBroadcasted:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_measurement_real_dtype(self, r_dtype, c_dtype, measurement, tol):
+    def test_measurement_real_dtype_broadcasted(self, r_dtype, c_dtype, measurement, tol):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = np.array([0.543, 0.622, 1.3])
 
@@ -2219,7 +2399,7 @@ class TestDtypePreservedBroadcasted:
         res = circuit(p)
         assert res.dtype == r_dtype
 
-    def test_measurement_complex_dtype(self, r_dtype, c_dtype, tol):
+    def test_measurement_complex_dtype_broadcasted(self, r_dtype, c_dtype, tol):
         """Test that the default qubit plugin provides correct result for a simple circuit"""
         p = np.array([0.543, 0.622, 1.3])
         m = qml.state()
@@ -2242,7 +2422,7 @@ class TestProbabilityIntegrationBroadcasted:
         self.analytic_counter += 1
         return np.array([1, 0, 0, 0], dtype=float)
 
-    def test_probability(self, tol):
+    def test_probability_broadcasted(self, tol):
         """Test that the probability function works for finite and infinite shots"""
         dev = qml.device("default.qubit", wires=2, shots=1000)
         dev_analytic = qml.device("default.qubit", wires=2, shots=None)
@@ -2291,7 +2471,7 @@ class TestWiresIntegrationBroadcasted:
             (["a"], ["nothing"]),
         ],
     )
-    def test_wires_probs(self, wires1, wires2, tol):
+    def test_wires_probs_broadcasted(self, wires1, wires2, tol):
         """Test that the probability vector of a circuit is independent from the wire labels used."""
 
         circuit1 = self.make_circuit_probs(wires1)
@@ -2392,10 +2572,10 @@ class TestApplyOpsBroadcasted:
         assert np.allclose(state_out, state_out_einsum)
 
 
-class TestStateVector:
-    """Unit tests for the _apply_state_vector method"""
+class TestStateVectorBroadcasted:
+    """Unit tests for the _apply_state_vector method with broadcasting"""
 
-    def test_full_subsystem(self, mocker):
+    def test_full_subsystem_broadcasted(self, mocker):
         """Test applying a state vector to the full subsystem"""
         dev = DefaultQubit(wires=["a", "b", "c"])
         state = np.array([[0, 1, 1, 0, 1, 1, 0, 0], [1, 0, 0, 0, 1, 0, 1, 1]]) / 2.0
@@ -2407,7 +2587,7 @@ class TestStateVector:
         assert np.all(dev._state.reshape((2, 8)) == state)
         spy.assert_not_called()
 
-    def test_partial_subsystem(self, mocker):
+    def test_partial_subsystem_broadcasted(self, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
 
         dev = DefaultQubit(wires=["a", "b", "c"])
@@ -2427,7 +2607,7 @@ class TestApplyOperationBroadcasted:
     """Unit tests for the internal _apply_operation method."""
 
     @pytest.mark.parametrize("inverse", [True, False])
-    def test_internal_apply_ops_case(self, inverse, monkeypatch):
+    def test_internal_apply_ops_case_broadcasted(self, inverse, monkeypatch):
         """Tests that if we provide an operation that has an internal
         implementation, then we use that specific implementation.
 
@@ -2450,7 +2630,7 @@ class TestApplyOperationBroadcasted:
             res = dev._apply_operation(test_state, op)
             assert np.allclose(res, expected_test_output)
 
-    def test_diagonal_operation_case(self, mocker, monkeypatch):
+    def test_diagonal_operation_case_broadcasted(self, mocker, monkeypatch):
         """Tests the case when the operation to be applied is
         diagonal in the computational basis and the _apply_diagonal_unitary method is used."""
         dev = qml.device("default.qubit", wires=1)
@@ -2476,7 +2656,7 @@ class TestApplyOperationBroadcasted:
             assert np.allclose(res_mat, np.diag(op.matrix()))
             assert np.allclose(res_wires, wires)
 
-    def test_apply_einsum_case(self, mocker, monkeypatch):
+    def test_apply_einsum_case_broadcasted(self, mocker, monkeypatch):
         """Tests the case when np.einsum is used to apply an operation in
         default.qubit."""
         dev = qml.device("default.qubit", wires=1)
@@ -2514,7 +2694,7 @@ class TestApplyOperationBroadcasted:
             assert np.allclose(res_wires, wires)
 
     @pytest.mark.parametrize("inverse", [True, False])
-    def test_apply_tensordot_case(self, inverse, mocker, monkeypatch):
+    def test_apply_tensordot_case_broadcasted(self, inverse, mocker, monkeypatch):
         """Tests the case when np.tensordot is used to apply an operation in
         default.qubit."""
         dev = qml.device("default.qubit", wires=3)
@@ -2555,7 +2735,7 @@ class TestApplyOperationBroadcasted:
             assert np.allclose(res_mat, op.matrix())
             assert np.allclose(res_wires, wires)
 
-    def test_identity_skipped(self, mocker):
+    def test_identity_skipped_broadcasted(self, mocker):
         """Test that applying the identity operation does not perform any additional computations."""
         dev = qml.device("default.qubit", wires=1)
 
@@ -2577,7 +2757,7 @@ class TestApplyOperationBroadcasted:
 class TestHamiltonianSupportBroadcasted:
     """Tests the devices' native support for Hamiltonian observables."""
 
-    def test_do_not_split_analytic(self, mocker):
+    def test_do_not_split_analytic_broadcasted(self, mocker):
         """Tests that the Hamiltonian is not split for shots=None."""
         dev = qml.device("default.qubit", wires=2)
         H = qml.Hamiltonian(np.array([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
@@ -2593,7 +2773,7 @@ class TestHamiltonianSupportBroadcasted:
         # evaluated one expval altogether
         assert spy.call_count == 1
 
-    def test_split_finite_shots(self, mocker):
+    def test_split_finite_shots_broadcasted(self, mocker):
         """Tests that the Hamiltonian is split for finite shots."""
         dev = qml.device("default.qubit", wires=2, shots=10)
         spy = mocker.spy(dev, "expval")

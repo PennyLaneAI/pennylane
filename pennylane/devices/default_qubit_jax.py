@@ -260,7 +260,7 @@ class DefaultQubitJax(DefaultQubit):
         Returns:
             array[float]: list of the probabilities
         """
-        # todo: adapt to broadcasting (where does this function differ from `QubitDevice`'s?
+        # todo: adapt to broadcasting (where does this function differ from `QubitDevice`'s?)
 
         wires = wires or self.wires
         # convert to a wires object
