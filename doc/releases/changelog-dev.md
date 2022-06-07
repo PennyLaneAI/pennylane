@@ -186,6 +186,7 @@
   a quantum function. It returns an entity of the same type/ call signature as what it was given:
   [(#2222)](https://github.com/PennyLaneAI/pennylane/pull/2222)
   [(#2672)](https://github.com/PennyLaneAI/pennylane/pull/2672)
+
   ```pycon
   >>> qml.adjoint(qml.PauliX(0))
   Adjoint(PauliX)(wires=[0])
