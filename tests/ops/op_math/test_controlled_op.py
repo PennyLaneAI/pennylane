@@ -160,6 +160,8 @@ class TestInitialization:
 
 
 class TestProperties:
+    """Test the properties of the ``Controlled`` symbolic operator."""
+
     def test_data(self):
         """Test that the base data can be get and set through Controlled class."""
 
@@ -178,6 +180,49 @@ class TestProperties:
         x_new2 = np.array(3.456)
         base.data = x_new2
         assert op.data == [x_new2]
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_matrix(self, value):
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            has_matrix = value
+
+        op = Controlled(DummyOp(1), 0)
+        assert op.has_matrix is value
+
+    @pytest.mark.parametrize("value", ("_ops", "_prep", None))
+    def test_queue_cateogry(self, value):
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            _queue_category = value
+
+        op = Controlled(DummyOp(1), 0)
+        assert op._queue_category == value
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_is_hermitian(self, value):
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            is_hermitian = value
+
+        op = Controlled(DummyOp(1), 0)
+        assert op.is_hermitian is value
+
+    def test_batching_properties(self):
+        """Test that Adjoint batching behavior mirrors that of the base."""
+
+        class DummyOp(qml.operation.Operator):
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        param1 = [0.3] * 3
+        param2 = [[[0.3, 1.2]]] * 3
+
+        base = DummyOp(param1, param2, wires=0)
+        op = Controlled(base, 1)
+
+        assert op.ndim_params == (0, 2)
+        assert op.batch_size == 3
 
     def test_private_wires_getter_setter(self):
         """Test that we can get and set private wires."""

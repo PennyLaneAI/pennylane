@@ -21,11 +21,12 @@ from copy import copy
 from pennylane import math as qmlmath
 from pennylane import numpy as np
 
-import pennylane as qml
+from pennylane import Projector
 from pennylane.operation import (
     Operator,
     Operation,
     Observable,
+    Tensor,
     expand_matrix,
 )
 from pennylane.queuing import QueuingContext
@@ -55,7 +56,7 @@ class ControlledOperation(Operation):
     # TODO: parameter-frequencies
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-public-methods
 class Controlled(Operator):
     """Symbolic operator denoting a controlled operator.
 
@@ -275,6 +276,18 @@ class Controlled(Operator):
     def num_wires(self):
         return len(self.wires)
 
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def ndim_params(self):
+        return self.base.ndim_params
+
+    @property
+    def is_hermitian(self):
+        return self.base.is_hermitian
+
     def queue(self, context=QueuingContext):
         context.safe_update_info(self.base, owner=self)
         context.append(self, owns=self.base)
@@ -313,11 +326,9 @@ class Controlled(Operator):
         return expand_matrix(canonical_matrix, wires=active_wires, wire_order=wire_order)
 
     def eigvals(self):
-        if all(self.control_values):
-            base_eigvals = self.base.eigvals()
-            ones = np.ones(2 ** len(self.control_wires))
-            return qml.math.concatenate([ones, base_eigvals])
-        return super().eigvals()
+        base_eigvals = self.base.eigvals()
+        ones = np.ones(2 ** len(self.control_wires))
+        return qmlmath.concatenate([ones, base_eigvals])
 
     def diagonalizing_gates(self):
         return self.base.diagonalizing_gates()
@@ -327,9 +338,8 @@ class Controlled(Operator):
 
     def generator(self):
         sub_gen = self.base.generator()
-        proj_ones = np.ones(len(self.control_wires), dtype=int, requires_grad=False)
-        proj = qml.Projector(proj_ones, wires=self.control_wires)
-        return 1.0 * proj @ sub_gen
+        proj_tensor = Tensor(*(Projector([1], wires=w) for w in self.control_wires))
+        return 1.0 * proj_tensor @ sub_gen
 
     def adjoint(self):
         return Controlled(
