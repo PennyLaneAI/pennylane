@@ -29,7 +29,7 @@ class SPSAOptimizer:
 
     .. math::
         \hat{g}_k(\hat{\theta}_k) = \frac{y(\hat{\theta}_k+c_k\Delta_k)-
-        y(\hat{\theta}_k-c_k\Delta_k)}{2c_k\Delta_k} \begin{bmatrix}
+        y(\hat{\theta}_k-c_k\Delta_k)}{2c_k} \begin{bmatrix}
            \Delta_{k1}^{-1} \\
            \Delta_{k2}^{-1} \\
            \vdots \\
