@@ -145,7 +145,7 @@ class DefaultQubitTF(DefaultQubit):
     _roll = staticmethod(tf.roll)
     _stack = staticmethod(tf.stack)
     _size = staticmethod(tf.size)
-    _ndim = staticmethod(tf.experimental.numpy.ndim)
+    _ndim = staticmethod(qml.math.ndim)
 
     @staticmethod
     def _const_mul(constant, array):
