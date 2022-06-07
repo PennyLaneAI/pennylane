@@ -56,7 +56,12 @@ def vn_entropy_transform(qnode, indices, base=None):
 
 
 def mutual_info_transform(qnode, indices0, indices1, base=None):
-    """Compute the mutual information from a :class:`.QNode` returning a :func:`~.state`.
+    """Compute the mutual information from a :class:`.QNode` returning a :func:`~.state`:
+
+    .. math:
+        I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
+
+    where :math:`S` is the von Neumann entropy.
 
     The mutual information is a measure of correlation between two subsystems.
     More specifically, it quantifies the amount of information obtained about
