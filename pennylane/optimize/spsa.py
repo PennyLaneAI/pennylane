@@ -176,7 +176,7 @@ class SPSAOptimizer:
         self.ak = self.a / (self.A + 1 + 1.0) ** self.alpha
 
     def step_and_cost(self, objective_fn, *args, **kwargs):
-        """Update the parameter array :math:`x` with one step of the optimizer and return
+        """Update the parameter array :math:`\hat{\theta}_k` with one step of the optimizer and return
         the step and the corresponding objective function.
 
         Args:
@@ -185,7 +185,7 @@ class SPSAOptimizer:
             **kwargs : variable length of keyword arguments for the objective function
 
         Returns:
-            tuple[list [array], float]: the new variable values :math:`x^{(t+1)}` and the
+            tuple[list [array], float]: the new variable values :math:`\hat{\theta}_{k+1}` and the
             objective function output prior to the step.
         """
         g, forward = self.compute_grad(objective_fn, args, kwargs)
@@ -210,7 +210,7 @@ class SPSAOptimizer:
             **kwargs : variable length of keyword arguments for the objective function
 
         Returns:
-            list [array]: the new variable values :math:`x^{(t+1)}`.
+            list [array]: the new variable values :math:`\hat{\theta}_{k+1}`.
         """
         g, _ = self.compute_grad(objective_fn, args, kwargs)
         new_args = self.apply_grad(g, args)
