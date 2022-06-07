@@ -50,7 +50,6 @@ class TestSPSAOptimizer:
 
         y = f(args)
         grad = (y) / (2 * ck)
-        spsa_opt.increment_k()
 
         res = spsa_opt.apply_grad(grad, args)
         expected = args - ak * grad
@@ -78,7 +77,6 @@ class TestSPSAOptimizer:
             x_vec = x_vals[jdx : jdx + 2]
             y = f(x_vec)
             grad = (y) / (2 * ck * np.ones((2)))
-            spsa_opt.increment_k()
             x_new = spsa_opt.apply_grad(grad, x_vec)
             x_al = x_vec - ak * grad
             tol = np.maximum(np.abs(f(x_vec - ck)), np.abs(f(x_vec + ck)))
@@ -320,11 +318,3 @@ class TestSPSAOptimizer:
 
         assert isinstance(res, float)
         assert res == params
-
-    def test_increment(self):
-        """Test that increment works"""
-        spsa_opt = qml.SPSAOptimizer(maxiter=10)
-        spsa_opt.increment_k()
-        spsa_opt.increment_k()
-
-        assert spsa_opt.k == 2
