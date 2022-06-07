@@ -77,6 +77,7 @@ ops = {
     "IsingXX",
     "IsingYY",
     "IsingZZ",
+    "IsingXY",
     "BasisState",
     "QubitStateVector",
     "QubitDensityMatrix",
