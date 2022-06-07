@@ -429,25 +429,23 @@ class QNode:
             # device is analytic and has child devices that support backpropagation natively
 
             if mapped_interface in backprop_devices:
+
+                # no need to create another device if the child device is the same
+                if backprop_devices[mapped_interface] == device.short_name:
+                    return "backprop", {}, device
+
                 # TODO: need a better way of passing existing device init options
                 # to a new device?
                 expand_fn = device.expand_fn
                 batch_transform = device.batch_transform
 
-                new_device = qml.device(
+                device = qml.device(
                     backprop_devices[mapped_interface], wires=device.wires, shots=device.shots
                 )
-                new_device.expand_fn = expand_fn
-                new_device.batch_transform = batch_transform
+                device.expand_fn = expand_fn
+                device.batch_transform = batch_transform
 
-                # set the dtypes of the new device
-                if type(device) == type(new_device):
-                    if hasattr(device, "R_DTYPE"):
-                        new_device.R_DTYPE = device.R_DTYPE
-                    if hasattr(device, "C_DTYPE"):
-                        new_device.C_DTYPE = device.C_DTYPE
-
-                return "backprop", {}, new_device
+                return "backprop", {}, device
 
             raise qml.QuantumFunctionError(
                 f"Device {device.short_name} only supports diff_method='backprop' when using the "

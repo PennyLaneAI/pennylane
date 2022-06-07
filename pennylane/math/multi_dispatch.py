@@ -672,6 +672,11 @@ def frobenius_inner_product(A, B, normalize=False, like=None):
     return inner_product
 
 
+@multi_dispatch(argnum=[1])
+def scatter(indices, array, new_dims, like=None):
+    return np.scatter(indices, array, new_dims, like=like)
+
+
 @multi_dispatch(argnum=[0, 2])
 def scatter_element_add(tensor, index, value, like=None):
     """In-place addition of a multidimensional value over various

@@ -167,7 +167,7 @@ def _take_autograd(tensor, indices, axis=None):
 
 
 ar.register_function("autograd", "take", _take_autograd)
-ar.register_function("autograd", "diagonal", lambda x: _i("qml").numpy.diag(x))
+ar.register_function("autograd", "diagonal", lambda x, *args: _i("qml").numpy.diag(x))
 
 
 # -------------------------------- TensorFlow --------------------------------- #
@@ -199,7 +199,7 @@ ar.register_function(
 ar.register_function(
     "tensorflow",
     "hstack",
-    lambda *args, **kwargs: _i("tf").experimental.numpy.hstack(*args, **kwargs),
+    lambda *args, **kwargs: _i("tf").experimental.numpy.hstack(*args),
 )
 ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
@@ -307,6 +307,13 @@ def _block_diag_tf(tensors):
 ar.register_function("tensorflow", "block_diag", _block_diag_tf)
 
 
+def _scatter_tf(indices, array, new_dims):
+    import tensorflow as tf
+
+    indices = np.expand_dims(indices, 1)
+    return tf.scatter_nd(indices, array, new_dims)
+
+
 def _scatter_element_add_tf(tensor, index, value):
     """In-place addition of a multidimensional value over various
     indices of a tensor."""
@@ -319,6 +326,7 @@ def _scatter_element_add_tf(tensor, index, value):
     return tf.tensor_scatter_nd_add(tensor, indices, value)
 
 
+ar.register_function("tensorflow", "scatter", _scatter_tf)
 ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_tf)
 
 
@@ -329,7 +337,7 @@ def _transpose_tf(a, axes=None):
 
 
 ar.register_function("tensorflow", "transpose", _transpose_tf)
-ar.register_function("tensorflow", "diagonal", lambda x: _i("tf").linalg.diag_part(x))
+ar.register_function("tensorflow", "diagonal", lambda x, *args: _i("tf").linalg.diag_part(x))
 ar.register_function("tensorflow", "outer", lambda a, b: _i("tf").tensordot(a, b, axes=0))
 
 # -------------------------------- Torch --------------------------------- #

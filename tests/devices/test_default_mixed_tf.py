@@ -183,7 +183,6 @@ class TestOps:
         assert np.all(tf.reshape(dev._state, (-1,)) == tf.reshape(state, (-1,)))
         spy.assert_not_called()
 
-    @pytest.mark.skip
     def test_partial_subsystem(self, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
 

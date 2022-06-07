@@ -120,13 +120,13 @@ class DefaultMixed(QubitDevice):
 
     @staticmethod
     def _asarray(array, dtype=None):
-        is_ragged = False
 
-        try:
+        # check if the array is ragged
+        first_shape = qnp.shape(array[0])
+        is_ragged = any([qnp.shape(array[i]) != first_shape for i in range(qnp.shape(array)[0])])
+
+        if not is_ragged:
             res = qnp.cast(qnp.stack(array), dtype=dtype)
-        except Exception:
-            # is there a better way to catch a framework-agnostic Exception class?
-            is_ragged = True
 
         if is_ragged or res.dtype is np.dtype("O"):
             return qnp.cast(qnp.flatten(qnp.hstack(array)), dtype=dtype)
