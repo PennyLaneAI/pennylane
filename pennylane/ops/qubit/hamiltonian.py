@@ -17,6 +17,7 @@ arithmetic operations on their input states.
 """
 # pylint: disable=too-many-arguments,too-many-instance-attributes
 import itertools
+import numbers
 from copy import copy
 from collections.abc import Iterable
 
@@ -24,7 +25,6 @@ import pennylane as qml
 from pennylane import numpy as np
 
 from pennylane.operation import Observable, Tensor
-from pennylane.queuing import QueuingError
 from pennylane.wires import Wires
 
 OBS_MAP = {"PauliX": "X", "PauliY": "Y", "PauliZ": "Z", "Hadamard": "H", "Identity": "I"}
@@ -427,6 +427,12 @@ class Hamiltonian(Observable):
         # Constructor-call-like representation
         return f"<Hamiltonian: terms={qml.math.shape(self.coeffs)[0]}, wires={self.wires.tolist()}>"
 
+    def _ipython_display_(self):  # pragma: no-cover
+        """Displays __str__ in ipython instead of __repr__
+        See https://ipython.readthedocs.io/en/stable/config/integrating.html
+        """
+        print(self.__str__())
+
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
 
@@ -566,6 +572,9 @@ class Hamiltonian(Observable):
         ops = self.ops.copy()
         self_coeffs = copy(self.coeffs)
 
+        if isinstance(H, numbers.Number) and H == 0:
+            return self
+
         if isinstance(H, Hamiltonian):
             coeffs = qml.math.concatenate([self_coeffs, copy(H.coeffs)], axis=0)
             ops.extend(H.ops.copy())
@@ -579,6 +588,8 @@ class Hamiltonian(Observable):
             return qml.Hamiltonian(coeffs, ops, simplify=True)
 
         raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+
+    __radd__ = __add__
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and a Hamiltonian."""
@@ -599,6 +610,9 @@ class Hamiltonian(Observable):
 
     def __iadd__(self, H):
         r"""The inplace addition operation between a Hamiltonian and a Hamiltonian/Tensor/Observable."""
+        if isinstance(H, numbers.Number) and H == 0:
+            return self
+
         if isinstance(H, Hamiltonian):
             self._coeffs = qml.math.concatenate([self._coeffs, H.coeffs], axis=0)
             self._ops.extend(H.ops.copy())
@@ -633,11 +647,6 @@ class Hamiltonian(Observable):
     def queue(self, context=qml.QueuingContext):
         """Queues a qml.Hamiltonian instance"""
         for o in self.ops:
-            try:
-                context.update_info(o, owner=self)
-            except QueuingError:
-                o.queue(context=context)
-                context.update_info(o, owner=self)
-
+            context.safe_update_info(o, owner=self)
         context.append(self, owns=tuple(self.ops))
         return self
