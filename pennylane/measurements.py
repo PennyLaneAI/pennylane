@@ -814,9 +814,12 @@ def density_matrix(wires):
 def vn_entropy(wires, log_base=None):
     r"""Von Neumann entropy of the system prior to measurement.
 
+    .. math::
+        S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
+
     Args:
-        wires (Sequence[int] or int): the wires of the subsystem
-        log_base (int, float): base to use in the logarithm.
+        wires (Sequence[int] or int): The wires of the subsystem
+        log_base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
 
     **Example:**
 

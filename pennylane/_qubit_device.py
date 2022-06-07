@@ -666,11 +666,14 @@ class QubitDevice(Device):
         return qml.math.to_density_matrix(state, indices=wires, c_dtype=self.C_DTYPE)
 
     def vn_entropy(self, wires, log_base):
-        """Returns the Von Neumann entropy prior to measurement.
+        r"""Returns the Von Neumann entropy prior to measurement.
+
+        .. math::
+            S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
 
         Args:
-            wires (Wires): wires of the considered subsystem.
-            log_base (int, float): base to use in the logarithm.
+            wires (Wires): Wires of the considered subsystem.
+            log_base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
 
         Returns:
             float: returns the Von Neumann entropy
