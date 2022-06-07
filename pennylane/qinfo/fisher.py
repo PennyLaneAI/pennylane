@@ -252,6 +252,9 @@ def quantum_fisher(*args, **kwargs):
     with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
 
     for :math:`N` qubits.
+
+    .. note::
+        ``quantum_fisher()`` is simply calling :func:`metric_tensor`, to which we refer for implementation details.
     """
     def wrapper(*args0, **kwargs0):
         return 4 * qml.metric_tensor(*args, **kwargs)(*args0, **kwargs0)
