@@ -205,7 +205,7 @@ class SPSAOptimizer:
         self.k += 1
 
     def compute_grad(self, objective_fn, args, kwargs):
-        r"""Compute approximation of gradient of the objective function at the
+        r"""Approximate the gradient of the objective function at the
         given point.
 
         Args:
