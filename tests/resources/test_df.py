@@ -50,6 +50,8 @@ def test_rank(factors, eigvals, rank_r_ref, rank_m_ref):
 @pytest.mark.parametrize(
     ("constants", "k_ref"),
     [
+        # k_ref is obtained manually by computing the cost for different k values and choosing the k
+        # that gives the lowest cost.
         (
             (26.0, 1.0, 0.0, 15.0, -1.0),
             1,
