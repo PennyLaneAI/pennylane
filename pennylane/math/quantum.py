@@ -21,7 +21,7 @@ from numpy import float64
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import diag, dot, scatter_element_add
-from .utils import is_abstract, allclose, cast, convert_like
+from .utils import is_abstract, allclose, cast, convert_like, cast_like
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -168,7 +168,7 @@ def marginal_prob(prob, axis):
     return np.flatten(prob)
 
 
-def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dtype="complex128"):
+def _density_matrix_from_matrix(density_matrix, indices, check_state=False):
     """Compute the density matrix from a state represented with a density matrix.
 
     Args:
@@ -176,7 +176,6 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dt
             integer number of wires``N``.
         indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
-        c_dtype (str): Complex floating point precision type.
 
     Returns:
         tensor_like: Density matrix of size ``(2**len(wires), 2**len(wires))``
@@ -205,7 +204,6 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dt
 
 
     """
-    density_matrix = cast(density_matrix, dtype=c_dtype)
     shape = density_matrix.shape[0]
     num_indices = int(np.log2(shape))
 
@@ -226,6 +224,11 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dt
             conj_trans = np.transpose(np.conj(density_matrix))
             if not allclose(density_matrix, conj_trans):
                 raise ValueError("The matrix is not hermitian.")
+            # Check if positive semi definite
+            evs = np.linalg.eigvalsh(density_matrix)
+            evs_non_negative = [ev for ev in evs if ev >= 0.0]
+            if len(evs) != len(evs_non_negative):
+                raise ValueError("The matrix is not positive semi-definite.")
 
     consecutive_indices = list(range(0, num_indices))
 
@@ -234,18 +237,17 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False, c_dt
         return density_matrix
 
     traced_wires = [x for x in consecutive_indices if x not in indices]
-    density_matrix = partial_trace(density_matrix, traced_wires, c_dtype=c_dtype)
+    density_matrix = _partial_trace(density_matrix, traced_wires)
     return density_matrix
 
 
-def partial_trace(density_matrix, indices, c_dtype="complex128"):
+def _partial_trace(density_matrix, indices):
     """Compute the reduced density matrix by tracing out the provided indices.
 
     Args:
         density_matrix (tensor_like): 2D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` for some
             integer number of wires ``N``.
         indices (list(int)): List of indices to be traced.
-        c_dtype (str): Complex floating point precision type.
 
     Returns:
         tensor_like: (reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
@@ -253,25 +255,16 @@ def partial_trace(density_matrix, indices, c_dtype="complex128"):
     **Example**
 
     >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
-    >>> partial_trace(x, indices=[0])
+    >>> _partial_trace(x, indices=[0])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
 
     >>> x = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
-    >>> partial_trace(x, indices=[1])
+    >>> _partial_trace(x, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
-
-    >>> y = [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
-    >>> partial_trace(y, indices=[1])
-    [[0.5+0.j 0.5+0.j]
-     [0.5+0.j 0.5+0.j]]
-
-    >>> partial_trace(y, indices=[0])
-    [[1.+0.j 0.+0.j]
-     [0.+0.j 0.+0.j]]
     """
     # Dimension and reshape
     shape = density_matrix.shape[0]
@@ -281,7 +274,11 @@ def partial_trace(density_matrix, indices, c_dtype="complex128"):
     density_matrix = np.reshape(density_matrix, [2] * 2 * num_indices)
 
     # Kraus operator for partial trace
-    kraus = cast(np.eye(2), dtype=c_dtype)
+    if not is_abstract(density_matrix):
+        kraus = cast_like(np.eye(2), density_matrix)
+    else:
+        kraus = cast(np.eye(2), density_matrix.dtype)
+
     kraus = np.reshape(kraus, (2, 1, 2))
     kraus_dagger = np.asarray([np.conj(np.transpose(k)) for k in kraus])
 
@@ -335,14 +332,13 @@ def partial_trace(density_matrix, indices, c_dtype="complex128"):
     return reduced_density_matrix
 
 
-def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype="complex128"):
+def _density_matrix_from_state_vector(state, indices, check_state=False):
     """Compute the density matrix from a state vector.
 
     Args:
         state (tensor_like): 1D tensor state vector. This tensor should of size ``(2**N,)`` for some integer value ``N``.
         indices (list(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
-        c_dtype (str): Complex floating point precision type.
 
     Returns:
         tensor_like: Density matrix of size ``(2**len(indices), 2**len(indices))``
@@ -370,8 +366,6 @@ def _density_matrix_from_state_vector(state, indices, check_state=False, c_dtype
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
     """
-    # Cast as a complex array
-    state = cast(state, dtype=c_dtype)
     len_state = np.shape(state)[0]
 
     # Check the format and norm of the state vector
