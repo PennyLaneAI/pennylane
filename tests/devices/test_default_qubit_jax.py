@@ -122,9 +122,29 @@ class TestQNodeIntegration:
 
         expected = -jnp.sin(p)
         # Do not test isinstance here since the @jax.jit changes the function
-        # type.
-        # Just test that it works and spits our the right value.
+        # type. Just test that it works and spits our the right value.
         assert jnp.isclose(circuit(p), expected, atol=tol, rtol=0)
+
+        # Test with broadcasted parameters
+        p = jnp.array([0.543, 0.21, 1.5])
+        expected = -jnp.sin(p)
+        assert jnp.allclose(circuit(p), expected, atol=tol, rtol=0)
+
+    def test_qubit_circuit_broadcasted(self, tol):
+        """Test that the device provides the correct
+        result for a simple broadcasted circuit."""
+        p = jnp.array([0.543, 0.21, 1.5])
+
+        dev = qml.device("default.qubit.jax", wires=1)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliY(0))
+
+        expected = -jnp.sin(p)
+
+        assert jnp.allclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):
         """Test that the device state is correct after applying a
@@ -150,6 +170,30 @@ class TestQNodeIntegration:
         expected = jnp.array([amplitude, 0, jnp.conj(amplitude), 0])
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
 
+    def test_correct_state_broadcasted(self, tol):
+        """Test that the device state is correct after applying a
+        broadcasted quantum function on the device"""
+
+        dev = qml.device("default.qubit.jax", wires=2)
+
+        state = dev.state
+        expected = jnp.array([1, 0, 0, 0])
+        assert jnp.allclose(state, expected, atol=tol, rtol=0)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.RZ(jnp.array([np.pi / 4, np.pi / 2]), wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        circuit()
+        state = dev.state
+
+        phase = jnp.exp(-1j * jnp.pi / 8)
+
+        expected = np.array([[phase / jnp.sqrt(2), 0, jnp.conj(phase) / jnp.sqrt(2), 0], [phase**2 / jnp.sqrt(2), 0, jnp.conj(phase)**2 / jnp.sqrt(2), 0]])
+        assert jnp.allclose(state, expected, atol=tol, rtol=0)
+
     def test_correct_state_returned(self, tol):
         """Test that the device state is correct after applying a
         quantum function on the device"""
@@ -168,6 +212,24 @@ class TestQNodeIntegration:
         expected = jnp.array([amplitude, 0, jnp.conj(amplitude), 0])
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
 
+    def test_correct_state_returned_broadcasted(self, tol):
+        """Test that the device state is correct after applying a
+        broadcasted quantum function on the device"""
+        dev = qml.device("default.qubit.jax", wires=2)
+
+        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.RZ(jnp.array([np.pi / 4, np.pi / 2]), wires=0)
+            return qml.state()
+
+        state = circuit()
+
+        phase = jnp.exp(-1j * jnp.pi / 8)
+
+        expected = np.array([[phase / jnp.sqrt(2), 0, jnp.conj(phase) / jnp.sqrt(2), 0], [phase**2 / jnp.sqrt(2), 0, jnp.conj(phase)**2 / jnp.sqrt(2), 0]])
+        assert jnp.allclose(state, expected, atol=tol, rtol=0)
+
     def test_probs_jax(self, tol):
         """Test that returning probs works with jax"""
         dev = qml.device("default.qubit.jax", wires=1, shots=100)
@@ -181,18 +243,40 @@ class TestQNodeIntegration:
         result = circuit()
         assert jnp.allclose(result, expected, atol=tol)
 
+    def test_probs_jax_broadcasted(self, tol):
+        """Test that returning probs works with jax"""
+        dev = qml.device("default.qubit.jax", wires=1, shots=100)
+        expected = jnp.array([[0.0, 1.0]] * 3)
+
+        @qml.qnode(dev, interface="jax", diff_method=None)
+        def circuit():
+            qml.RX(jnp.zeros(3), 0)
+            qml.PauliX(wires=0)
+            return qml.probs(wires=0)
+
+        result = circuit()
+        assert jnp.allclose(result, expected, atol=tol)
+
     def test_probs_jax_jit(self, tol):
         """Test that returning probs works with jax and jit"""
         dev = qml.device("default.qubit.jax", wires=1, shots=100)
         expected = jnp.array([0.0, 1.0])
 
-        @jax.jit
         @qml.qnode(dev, interface="jax", diff_method=None)
-        def circuit():
+        def circuit(z):
+            qml.RX(z, wires=0)
             qml.PauliX(wires=0)
             return qml.probs(wires=0)
 
-        result = circuit()
+        result = circuit(0.)
+        print(result)
+        assert jnp.allclose(result, expected, atol=tol)
+
+        # Test with broadcasting
+        result = circuit(jnp.zeros(3))
+        expected = jnp.array([[0.0, 1.0]] * 3)
+        print(result)
+        print(expected)
         assert jnp.allclose(result, expected, atol=tol)
 
     def test_custom_shots_probs_jax_jit(self, tol):
@@ -203,6 +287,22 @@ class TestQNodeIntegration:
         @jax.jit
         @qml.qnode(dev, diff_method=None, interface="jax")
         def circuit():
+            qml.PauliX(wires=0)
+            return qml.probs(wires=0)
+
+        result = circuit()
+        assert jnp.allclose(result, expected, atol=tol)
+
+    def test_custom_shots_probs_jax_jit_broadcasted(self, tol):
+        """Test that returning probs works with jax and jit when
+        using a custom shot vector and broadcasting"""
+        dev = qml.device("default.qubit.jax", wires=1, shots=(2, 2))
+        expected = jnp.array([[[0.0, 1.0], [0.0, 1.0]]] * 5)
+
+        @jax.jit
+        @qml.qnode(dev, diff_method=None, interface="jax")
+        def circuit():
+            qml.RX(jnp.zeros(5), 0)
             qml.PauliX(wires=0)
             return qml.probs(wires=0)
 
