@@ -653,7 +653,7 @@ class TestHamiltonian:
 
     @patch("builtins.print")
     def test_big_hamiltonian_ipython_display(self, mock_print):
-        """Test that the ipython_dipslay method prints __repr__ when H has more than 15 terms."""
+        """Test that the ipython_display method prints __repr__ when H has more than 15 terms."""
         H = qml.Hamiltonian([1] * 16, [qml.PauliX(i) for i in range(16)])
         H._ipython_display_()
         mock_print.assert_called_with(repr(H))
