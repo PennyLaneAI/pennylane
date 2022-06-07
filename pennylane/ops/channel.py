@@ -267,6 +267,11 @@ class DepolarizingChannel(Channel):
     where :math:`p \in [0, 1]` is the depolarization probability and is equally
     divided in the application of all Pauli operations.
 
+    .. note:
+        * For :math:`p = 0`, the channel will be an Identity channel, i.e., a noise-free channel.
+        * For :math:`p = \frac{3}{4}`, the channel will be a fully depolarizing channel.
+        * For :math:`p = 1`, the channel will be a uniform Pauli error channel.
+
     **Details:**
 
     * Number of wires: 1
