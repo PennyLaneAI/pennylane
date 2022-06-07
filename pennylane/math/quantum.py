@@ -527,7 +527,7 @@ def _compute_vn_entropy(density_matrix, base=None):
 
 # pylint: disable=too-many-arguments
 def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"):
-    """Compute the mutual information between two subsystems given a state:
+    r"""Compute the mutual information between two subsystems given a state:
 
     .. math::
         I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
