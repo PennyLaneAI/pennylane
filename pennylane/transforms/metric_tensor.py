@@ -43,7 +43,7 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
 
         \text{metric_tensor}_{i, j} = \text{Re}\left[ \langle \partial_i \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle
         - \langle \partial_i \psi(\bm{\theta}) | \psi(\bm{\theta}) \rangle \langle \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle \right]
-    
+
     with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
     It is closely related to the quantum fisher information matrix, see :func:`~.qinfo.quantum_fisher` and eq. (26) in `arxiv:2103.15191 <https://arxiv.org/abs/2103.15191>`_.
 

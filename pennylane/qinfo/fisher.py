@@ -236,7 +236,6 @@ def _make_probs(tape, wires=None, post_processing_fn=None):
     return [new_tape], post_processing_fn
 
 
-
 def quantum_fisher(*args, **kwargs):
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode` or quantum tape.
 
@@ -248,12 +247,14 @@ def quantum_fisher(*args, **kwargs):
 
         \text{QFIM}_{i, j} = 4 \text{Re}\left[ \langle \partial_i \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle
         - \langle \partial_i \psi(\bm{\theta}) | \psi(\bm{\theta}) \rangle \langle \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle \right]
-    
+
     with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
 
     .. note::
         ``quantum_fisher()`` is simply calling :func:`~.metric_tensor`, to which we refer for implementation details.
     """
+
     def wrapper(*args0, **kwargs0):
         return 4 * metric_tensor(*args, **kwargs)(*args0, **kwargs0)
+
     return wrapper
