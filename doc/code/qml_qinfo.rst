@@ -24,3 +24,11 @@ Entropies
     :no-heading:
     :no-inheritance-diagram:
     :no-inherited-members:
+
+Fisher information matrices
+---------------------------
+
+.. automodapi:: pennylane.qinfo.fisher
+    :no-heading:
+    :no-inheritance-diagram:
+    :no-inherited-members:
