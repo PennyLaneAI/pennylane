@@ -298,6 +298,9 @@
 * Added separate requirements_dev.txt for separation of concerns for code development and just using PennyLane.
   [(#2635)](https://github.com/PennyLaneAI/pennylane/pull/2635)
 
+* The performance of building sparse Hamiltonians has been improved by accumulating the sparse representation of coefficient-operator pairs in a temporary storage and by eliminating unnecessary `kron` operations on identity matrices. 
+  [(#2630)](https://github.com/PennyLaneAI/pennylane/pull/2630)
+
 <h3>Breaking changes</h3>
 
 * The `qml.queuing.Queue` class is now removed.
@@ -390,5 +393,5 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Korbinian, Kottmann, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, 
-Utkarsh Azad, WingCode
+Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian, Kottmann, Maria Schuld, Mikhail Andrenkov, Romain Moyard,
+Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, WingCode
