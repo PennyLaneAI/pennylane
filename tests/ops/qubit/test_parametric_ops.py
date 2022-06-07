@@ -33,6 +33,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.IsingXX(0.123, wires=[0, 1]),
     qml.IsingYY(0.123, wires=[0, 1]),
     qml.IsingZZ(0.123, wires=[0, 1]),
+    qml.IsingXY(0.123, wires=[0, 1]),
     qml.Rot(0.123, 0.456, 0.789, wires=0),
     qml.PhaseShift(2.133, wires=0),
     qml.ControlledPhaseShift(1.777, wires=[0, 2]),
@@ -526,6 +527,43 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
+    def test_isingxy_decomposition(self, tol):
+        """Tests that the decomposition of the IsingXY gate is correct"""
+        param = 0.1234
+        op = qml.IsingXY(param, wires=[3, 2])
+        res = op.decomposition()
+
+        assert len(res) == 6
+
+        assert res[0].wires == Wires([3])
+        assert res[1].wires == Wires([3, 2])
+        assert res[2].wires == Wires([3])
+        assert res[3].wires == Wires([2])
+        assert res[4].wires == Wires([3, 2])
+        assert res[5].wires == Wires([3])
+
+        assert res[0].name == "Hadamard"
+        assert res[1].name == "CY"
+        assert res[2].name == "RY"
+        assert res[3].name == "RX"
+        assert res[4].name == "CY"
+        assert res[5].name == "Hadamard"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([3]):
+                # RY and Hadamard gate
+                mats.append(np.kron(i.matrix(), np.eye(2)))
+            elif i.wires == Wires([2]):
+                # RX gate
+                mats.append(np.kron(np.eye(2), i.matrix()))
+            else:
+                mats.append(i.matrix())
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
     def test_isingxx_decomposition_broadcasted(self, tol):
         """Tests that the decomposition of the broadcasted IsingXX gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
@@ -880,6 +918,91 @@ class TestMatrix:
         assert np.allclose(
             qml.IsingXX(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
+
+    def test_isingxy(self, tol):
+        """Test that the IsingXY operation is correct"""
+        assert np.allclose(qml.IsingXY.compute_matrix(0), np.identity(4), atol=tol, rtol=0)
+        assert np.allclose(qml.IsingXY(0, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
+
+        def get_expected(theta):
+            expected = np.eye(4, dtype=np.complex128)
+            expected[1][1] = np.cos(theta / 2)
+            expected[2][2] = np.cos(theta / 2)
+            expected[1][2] = 1j * np.sin(theta / 2)
+            expected[2][1] = 1j * np.sin(theta / 2)
+            return expected
+
+        param = np.pi / 2
+        assert np.allclose(qml.IsingXY.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingXY(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
+        )
+
+        param = np.pi
+        assert np.allclose(qml.IsingXY.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.IsingXY(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
+        )
+
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_isingxy_eigvals(self, phi, tol):
+        """Test eigenvalues computation for IsingXY"""
+        evs = qml.IsingXY.compute_eigvals(phi)
+        evs_expected = [
+            qml.math.cos(phi / 2) + 1j * qml.math.sin(phi / 2),
+            qml.math.cos(phi / 2) - 1j * qml.math.sin(phi / 2),
+            1,
+            1,
+        ]
+        assert qml.math.allclose(evs, evs_expected)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_isingxy_eigvals_tf(self, phi, tol):
+        """Test eigenvalues computation for IsingXY using Tensorflow interface"""
+        import tensorflow as tf
+
+        param_tf = tf.Variable(phi)
+        evs = qml.IsingXY.compute_eigvals(param_tf)
+        evs_expected = [
+            qml.math.cos(phi / 2) + 1j * qml.math.sin(phi / 2),
+            qml.math.cos(phi / 2) - 1j * qml.math.sin(phi / 2),
+            1,
+            1,
+        ]
+        assert qml.math.allclose(evs, evs_expected)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_isingxy_eigvals_torch(self, phi, tol):
+        """Test eigenvalues computation for IsingXY using Torch interface"""
+        import torch
+
+        param_torch = torch.tensor(phi)
+        evs = qml.IsingXY.compute_eigvals(param_torch)
+        evs_expected = [
+            qml.math.cos(phi / 2) + 1j * qml.math.sin(phi / 2),
+            qml.math.cos(phi / 2) - 1j * qml.math.sin(phi / 2),
+            1,
+            1,
+        ]
+        assert qml.math.allclose(evs, evs_expected)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_isingxy_eigvals_jax(self, phi, tol):
+        """Test eigenvalues computation for IsingXY using JAX interface"""
+        import jax
+
+        param_jax = jax.numpy.array(phi)
+        evs = qml.IsingXY.compute_eigvals(param_jax)
+        evs_expected = [
+            qml.math.cos(phi / 2) + 1j * qml.math.sin(phi / 2),
+            qml.math.cos(phi / 2) - 1j * qml.math.sin(phi / 2),
+            1,
+            1,
+        ]
+        assert qml.math.allclose(evs, evs_expected)
 
     def test_isingxx_broadcasted(self, tol):
         """Test that the broadcasted IsingXX operation is correct"""
@@ -1520,6 +1643,72 @@ class TestGrad:
         res = qml.grad(circuit)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_isingxy_autograd_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient with Autograd for the gate IsingXY."""
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = 0.1
+        psi_1 = 0.2
+        psi_2 = 0.3
+        psi_3 = 0.4
+
+        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        norm = np.linalg.norm(init_state)
+        init_state /= norm
+
+        @qml.qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.IsingXY(phi, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        phi = npp.array(0.1, requires_grad=True)
+
+        expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * np.sin(phi)
+
+        res = qml.grad(circuit)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_isingxy_jax_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient with JAX for the gate IsingXY."""
+
+        if diff_method in {"finite-diff"}:
+            pytest.skip("Test does not support finite-diff")
+
+        if diff_method in {"parameter-shift"}:
+            pytest.skip("Test does not support parameter-shift")
+
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = 0.1
+        psi_1 = 0.2
+        psi_2 = 0.3
+        psi_3 = 0.4
+
+        init_state = jnp.array([psi_0, psi_1, psi_2, psi_3])
+        norm = jnp.linalg.norm(init_state)
+        init_state = init_state / norm
+
+        @qml.qnode(dev, diff_method=diff_method, interface="jax")
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.IsingXY(phi, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        phi = jnp.array(0.1)
+
+        expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * np.sin(phi)
+
+        res = jax.grad(circuit, argnums=0)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingxx_jax_grad(self, tol, dev_name, diff_method, phi):
@@ -1652,6 +1841,38 @@ class TestGrad:
         expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
 
         res = jax.grad(circuit, argnums=0)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_isingxy_tf_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient with Tensorflow for the gate IsingXY."""
+        import tensorflow as tf
+
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = tf.Variable(0.1, dtype=tf.complex128)
+        psi_1 = tf.Variable(0.2, dtype=tf.complex128)
+        psi_2 = tf.Variable(0.3, dtype=tf.complex128)
+        psi_3 = tf.Variable(0.4, dtype=tf.complex128)
+
+        init_state = tf.Variable([psi_0, psi_1, psi_2, psi_3], dtype=tf.complex128)
+        norm = tf.norm(init_state)
+        init_state = init_state / norm
+
+        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.IsingXY(phi, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        phi = tf.Variable(0.1, dtype=tf.complex128)
+
+        expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * tf.sin(phi)
+
+        with tf.GradientTape() as tape:
+            result = circuit(phi)
+        res = tape.gradient(result, phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.tf
@@ -2606,6 +2827,7 @@ pow_parametric_ops = (
     qml.U1(1.23, wires=0),
     qml.IsingXX(-2.345, wires=(0, 1)),
     qml.IsingYY(3.1652, wires=(0, 1)),
+    qml.IsingXY(-1.234, wires=(0, 1)),
     qml.IsingZZ(1.789, wires=("a", "b")),
     # broadcasted ops
     qml.RX(np.array([1.234, 4.129]), wires=0),
@@ -2659,6 +2881,8 @@ control_data = [
     (qml.U2(1.234, 2.345, wires=0), Wires([])),
     (qml.U3(1.234, 2.345, 3.456, wires=0), Wires([])),
     (qml.IsingXX(1.234, wires=(0, 1)), Wires([])),
+    (qml.IsingYY(1.234, wires=(0, 1)), Wires([])),
+    (qml.IsingXY(1.234, wires=(0, 1)), Wires([])),
     (qml.IsingYY(np.array([-5.1, 0.219]), wires=(0, 1)), Wires([])),
     (qml.IsingZZ(1.234, wires=(0, 1)), Wires([])),
     ### Controlled Ops
