@@ -433,20 +433,21 @@ class QNode:
                 # to a new device?
                 expand_fn = device.expand_fn
                 batch_transform = device.batch_transform
-                r_dtype = getattr(device, "R_DTYPE", None)
-                c_dtype = getattr(device, "C_DTYPE", None)
 
-                device = qml.device(backprop_devices[mapped_interface], wires=device.wires, shots=device.shots)
-                device.expand_fn = expand_fn
-                device.batch_transform = batch_transform
+                new_device = qml.device(
+                    backprop_devices[mapped_interface], wires=device.wires, shots=device.shots
+                )
+                new_device.expand_fn = expand_fn
+                new_device.batch_transform = batch_transform
 
-                if r_dtype is not None:
-                    device.R_DTYPE = r_dtype
+                # set the dtypes of the new device
+                if type(device) == type(new_device):
+                    if hasattr(device, "R_DTYPE"):
+                        new_device.R_DTYPE = device.R_DTYPE
+                    if hasattr(device, "C_DTYPE"):
+                        new_device.C_DTYPE = device.C_DTYPE
 
-                if c_dtype is not None:
-                    device.C_DTYPE = c_dtype
-
-                return "backprop", {}, device
+                return "backprop", {}, new_device
 
             raise qml.QuantumFunctionError(
                 f"Device {device.short_name} only supports diff_method='backprop' when using the "

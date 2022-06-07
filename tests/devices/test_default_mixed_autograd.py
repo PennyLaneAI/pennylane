@@ -53,10 +53,7 @@ class TestQNodeIntegration:
             "supports_broadcasting": False,
             "returns_probs": True,
             "returns_state": True,
-            "passthru_devices": {
-                "autograd": "default.mixed",
-                "tf": "default.mixed"
-            }
+            "passthru_devices": {"autograd": "default.mixed", "tf": "default.mixed"},
         }
 
         assert cap == capabilities

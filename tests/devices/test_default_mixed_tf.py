@@ -146,7 +146,6 @@ class TestDtypePreserved:
         assert res.dtype == c_dtype
 
 
-@pytest.mark.skip
 class TestOps:
     """Unit tests for operations supported by the default.qubit.autograd device"""
 
@@ -162,14 +161,18 @@ class TestOps:
             return qml.probs(wires=list(range(wires)))
 
         param = tf.Variable(0.3, trainable=True)
-        res = qml.jacobian(circuit)(param)
+
+        with tf.GradientTape() as tape:
+            out = circuit(param)
+
+        res = tape.gradient(out, param)
 
         assert np.allclose(res, np.zeros(wires**2))
 
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
         dev = DefaultMixed(wires=["a", "b", "c"])
-        state = tf.constant([1.0, 0, 0, 0, 1, 0, 1, 1]) / 2.0
+        state = tf.constant([1, 0, 0, 0, 1, 0, 1, 1], dtype=tf.complex128) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
         spy = mocker.spy(qml.math, "scatter")
@@ -177,14 +180,15 @@ class TestOps:
 
         state = np.outer(state, np.conj(state))
 
-        assert np.all(dev._state.flatten() == state.flatten())
+        assert np.all(tf.reshape(dev._state, (-1,)) == tf.reshape(state, (-1,)))
         spy.assert_not_called()
 
+    @pytest.mark.skip
     def test_partial_subsystem(self, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
 
         dev = DefaultMixed(wires=["a", "b", "c"])
-        state = tf.constant([1.0, 0, 1, 0]) / tf.sqrt(2.0)
+        state = tf.constant([1, 0, 1, 0], dtype=tf.complex128) / np.sqrt(2.0)
         state_wires = qml.wires.Wires(["a", "c"])
 
         spy = mocker.spy(qml.math, "scatter")
@@ -192,7 +196,7 @@ class TestOps:
 
         state = np.kron(np.outer(state, np.conj(state)), np.array([[1, 0], [0, 0]]))
 
-        assert np.all(np.reshape(dev._state, (8, 8)) == state)
+        assert np.all(tf.reshape(dev._state, (8, 8)) == state)
         spy.assert_called()
 
 
@@ -234,9 +238,6 @@ class TestPassthruIntegration:
                 -0.5 * (np.sin(3 * x) * np.cos(z / 2) + np.cos(3 * x) * np.cos(y) * np.sin(z / 2)),
             ]
         )
-
-        print('res', res)
-        print('expected', expected)
 
         assert qml.math.allclose(res, expected, atol=tol, rtol=0)
 
@@ -450,7 +451,6 @@ class TestPassthruIntegration:
 
         def cost(params):
             """Perform some classical processing"""
-            print('circuit', circuit(params[0], params[1:], w=0))
             return circuit(params[0], params[1:], w=0) ** 2
 
         theta = 0.543
@@ -473,7 +473,6 @@ class TestPassthruIntegration:
 
         with tf.GradientTape() as tape:
             out = cost(params)
-            print('out', out)
 
         res = tape.gradient(out, params)
 
@@ -550,7 +549,6 @@ class TestPassthruIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.skip
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
@@ -558,35 +556,42 @@ class TestHighLevelIntegration:
         """Test that a PassthruQNode default.qubit.autograd works with templates."""
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(weights):
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-        weights = np.random.random(shape, requires_grad=True)
+        weights = tf.Variable(np.random.random(shape), trainable=True)
 
-        grad = qml.grad(circuit)(weights)
+        with tf.GradientTape() as tape:
+            res = circuit(weights)
+
+        grad = tape.gradient(res, weights)
+        assert isinstance(grad, tf.Tensor)
         assert grad.shape == weights.shape
 
     def test_qnode_collection_integration(self):
         """Test that a PassthruQNode default.qubit.autograd works with QNodeCollections."""
         dev = qml.device("default.mixed", wires=2)
 
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="autograd")
+        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="tf")
 
-        assert qnodes.interface == "autograd"
+        assert qnodes.interface == "tf"
 
-        weights = np.array([0.1, 0.2], requires_grad=True)
+        weights = tf.Variable(
+            np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2))
+        )
 
+        @tf.function
         def cost(weights):
-            return np.sum(qnodes(weights))
+            return tf.reduce_sum(qnodes(weights))
 
-        grad = qml.grad(cost)(weights)
+        with tf.GradientTape() as tape:
+            res = qnodes(weights)
+
+        grad = tape.gradient(res, weights)
+
+        assert isinstance(grad, tf.Tensor)
         assert grad.shape == weights.shape

@@ -159,18 +159,17 @@ class DefaultMixed(QubitDevice):
             array[complex]: complex array of shape ``[2] * (2 * num_wires)``
             representing the density matrix of the basis state.
         """
-        rho = qnp.zeros((2**self.num_wires, 2**self.num_wires), dtype=np.complex128)
+        rho = qnp.zeros((2**self.num_wires, 2**self.num_wires), dtype=self.C_DTYPE)
         rho[index, index] = 1
-        rho = qnp.asarray(rho, dtype=self.C_DTYPE)
         return qnp.reshape(rho, [2] * (2 * self.num_wires))
 
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(returns_state=True, passthru_devices={
-            "autograd": "default.mixed",
-            "tf": "default.mixed"
-        })
+        capabilities.update(
+            returns_state=True,
+            passthru_devices={"autograd": "default.mixed", "tf": "default.mixed"},
+        )
         return capabilities
 
     @property
