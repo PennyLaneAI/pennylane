@@ -53,6 +53,15 @@ def _add_multicontrolledx(drawer, layer, mapped_wires, op):
     drawer.CNOT(layer, mapped_wires, control_values=control_values)
 
 
+def _add_controlledqubitunitary(drawer, layer, mapped_wires, op):
+    # convert control values
+    control_values = [(i == "1") for i in op.hyperparameters["control_values"]]
+    drawer.box_gate(layer, mapped_wires[-1], text="U")
+    drawer.ctrl(
+        layer, wires=mapped_wires[:-1], wires_target=mapped_wires[-1], control_values=control_values
+    )
+
+
 # pylint: disable=unused-argument
 def _add_cz(drawer, layer, mapped_wires, op):
     drawer.ctrl(layer, mapped_wires)
@@ -83,6 +92,7 @@ special_cases = {
     ops.CZ: _add_cz,
     ops.Barrier: _add_barrier,
     ops.WireCut: _add_wirecut,
+    ops.ControlledQubitUnitary: _add_controlledqubitunitary,
 }
 """Dictionary mapping special case classes to functions for drawing them."""
 
