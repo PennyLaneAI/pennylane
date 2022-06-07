@@ -17,12 +17,15 @@ import pennylane as qml
 
 
 def vn_entropy_transform(qnode, indices, base=None):
-    """Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~.state`.
+    r"""Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~.state`.
+
+    .. math::
+        S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
 
     Args:
         qnode (tensor_like): A :class:`.QNode` returning a :func:`~.state`.
         indices (list(int)): List of indices in the considered subsystem.
-        base (float, int): Base for the logarithm. If None, the natural logarithm is used.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
         float: Von Neumann entropy of the considered subsystem.

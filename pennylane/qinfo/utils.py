@@ -39,7 +39,7 @@ def density_matrix_transform(qnode, indices):
            qml.IsingXX(x, wires=[0,1])
            return qml.state()
 
-    >>> density_matrix_transform(circuit, wires=[0])(np.pi/2)
+    >>> density_matrix_transform(circuit, indices=[0])(np.pi/2)
      [[0.5+0.j 0.+0.j]
       [0.+0.j 0.5+0.j]]
 
