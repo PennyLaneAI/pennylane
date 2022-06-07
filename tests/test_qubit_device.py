@@ -1148,6 +1148,7 @@ class TestExecution:
             node_3(0.432, 0.12)
         assert dev_1.num_executions == num_evals_1 + num_evals_3
 
+
 class TestExecutionBroadcasted:
     """Tests for the execute method with broadcasted parameters"""
 
@@ -1264,6 +1265,7 @@ class TestBatchExecution:
 
         assert len(res) == 3
         assert np.allclose(res[0], dev.execute(empty_tape), rtol=tol, atol=0)
+
 
 class TestBatchExecutionBroadcasted:
     """Tests for the batch_execute method with broadcasted parameters."""
