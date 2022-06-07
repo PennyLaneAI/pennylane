@@ -182,7 +182,7 @@
 
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous perturbation stochastic approximation method based on
   [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
-[(#2661)](https://github.com/PennyLaneAI/pennylane/pull/2661)
+  [(#2661)](https://github.com/PennyLaneAI/pennylane/pull/2661)
 
 ```python
 dev = qml.device("default.qubit", wires=1)
