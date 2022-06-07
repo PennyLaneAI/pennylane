@@ -416,5 +416,5 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Ixchel Meza Chavez, Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, 
+Ixchel Meza Chavez, Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Moritz Willmann, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, 
 Utkarsh Azad, WingCode
