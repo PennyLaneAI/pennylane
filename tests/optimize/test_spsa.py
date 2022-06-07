@@ -112,6 +112,23 @@ class TestSPSAOptimizer:
 
         assert np.all(res == expected)
 
+    def test_step_and_cost_supplied_cost3(self):
+        """Test that the correct cost is returned via the step_and_cost method
+        for the SPSA optimizer"""
+        spsa_opt = qml.SPSAOptimizer(maxiter=10)
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def quant_fun(variables):
+            obs = [qml.PauliX(0) @ qml.PauliZ(0), qml.PauliZ(0) @ qml.Hadamard(0)]
+            return qml.expval(qml.Hamiltonian(variables, obs))
+
+        inputs = np.array([0.2, -0.543], requires_grad=True)
+
+        expected = quant_fun(inputs)
+        _, res = spsa_opt.step_and_cost(quant_fun, inputs)
+
+        assert np.all(res == expected)
+
     def test_step_spsa2(self):
         """Test that the correct param is returned via the step method"""
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
