@@ -102,12 +102,17 @@ class DefaultQubit(QubitDevice):
         "MultiRZ",
         "Hadamard",
         "S",
+        "Adjoint(S)",
         "T",
+        "Adjoint(T)",
         "SX",
+        "Adjoint(SX)",
         "CNOT",
         "SWAP",
         "ISWAP",
+        "Adjoint(ISWAP)",
         "SISWAP",
+        "Adjoint(SISWAP)",
         "SQISW",
         "CSWAP",
         "Toffoli",
@@ -603,23 +608,8 @@ class DefaultQubit(QubitDevice):
             array[complex]: complex tensor of shape ``(2 ** len(wires), 2 ** len(wires))``
             representing the reduced density matrix.
         """
-        wires = wires.tolist()
         state = self._flatten(self._pre_rotated_state)
         return qml.math.to_density_matrix(state, indices=wires, c_dtype=self.C_DTYPE)
-
-    def vn_entropy(self, wires, log_base):
-        """Returns the Von Neumann entropy prior to measurement.
-
-        Args:
-            wires (Wires): wires of the considered subsystem.
-            log_base (int, float): base to use in the logarithm.
-
-        Returns:
-            float: returns the Von Neumann entropy
-        """
-        wires = wires.tolist()
-        state = self._flatten(self._pre_rotated_state)
-        return qml.math.to_vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
 
     def mutual_info(self, wires0, wires1, log_base):
         """Returns the mutual information between the subsystems.

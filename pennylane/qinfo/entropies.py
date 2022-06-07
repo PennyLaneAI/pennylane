@@ -42,11 +42,11 @@ def vn_entropy_transform(qnode, indices, base=None):
 
     """
 
-    density_matrix_qnode = qml.qinfo.density_matrix_transform(qnode, indices)
+    density_matrix_qnode = qml.qinfo.density_matrix_transform(qnode, qnode.device.wires)
 
     def wrapper(*args, **kwargs):
         density_matrix = density_matrix_qnode(*args, **kwargs)
-        entropy = qml.math.compute_vn_entropy(density_matrix, base)
+        entropy = qml.math.to_vn_entropy(density_matrix, indices, base)
         return entropy
 
     return wrapper

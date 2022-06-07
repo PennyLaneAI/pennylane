@@ -1208,6 +1208,69 @@ class TestDensityMatrix:
         assert len(obs) == 1
         assert obs[0].return_type is State
 
+    @pytest.mark.torch
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("diff_method", [None, "backprop"])
+    def test_correct_density_matrix_torch(self, dev_name, diff_method):
+        """Test that the correct density matrix is returned using torch interface."""
+        if dev_name == "default.mixed" and diff_method == "backprop":
+            pytest.skip("Mixed device does not support backprop.")
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qml.qnode(dev, interface="torch")
+        def func():
+            qml.Hadamard(wires=0)
+            return qml.density_matrix(wires=0)
+
+        density_mat = func()
+
+        assert np.allclose(
+            np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]]), density_mat
+        )
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("diff_method", [None, "backprop"])
+    def test_correct_density_matrix_jax(self, dev_name, diff_method):
+        """Test that the correct density matrix is returned using JAX interface."""
+        if dev_name == "default.mixed" and diff_method == "backprop":
+            pytest.skip("Mixed device does not support backprop.")
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qml.qnode(dev, interface="jax", diff_method=diff_method)
+        def func():
+            qml.Hadamard(wires=0)
+            return qml.density_matrix(wires=0)
+
+        density_mat = func()
+
+        assert np.allclose(
+            np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]]), density_mat
+        )
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
+    @pytest.mark.parametrize("diff_method", [None, "backprop"])
+    def test_correct_density_matrix_tf(self, dev_name, diff_method):
+        """Test that the correct density matrix is returned using the TensorFlow interface."""
+        if dev_name == "default.mixed" and diff_method == "backprop":
+            pytest.skip("Mixed device does not support backprop.")
+
+        dev = qml.device(dev_name, wires=2)
+
+        @qml.qnode(dev, interface="tf")
+        def func():
+            qml.Hadamard(wires=0)
+            return qml.density_matrix(wires=0)
+
+        density_mat = func()
+
+        assert np.allclose(
+            np.array([[0.5 + 0.0j, 0.5 + 0.0j], [0.5 + 0.0j, 0.5 + 0.0j]]), density_mat
+        )
+
     @pytest.mark.parametrize("dev_name", ["default.qubit", "default.mixed"])
     def test_correct_density_matrix_product_state_first(self, dev_name):
         """Test that the correct density matrix is returned when
