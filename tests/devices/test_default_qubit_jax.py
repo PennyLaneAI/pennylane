@@ -191,7 +191,12 @@ class TestQNodeIntegration:
 
         phase = jnp.exp(-1j * jnp.pi / 8)
 
-        expected = np.array([[phase / jnp.sqrt(2), 0, jnp.conj(phase) / jnp.sqrt(2), 0], [phase**2 / jnp.sqrt(2), 0, jnp.conj(phase)**2 / jnp.sqrt(2), 0]])
+        expected = np.array(
+            [
+                [phase / jnp.sqrt(2), 0, jnp.conj(phase) / jnp.sqrt(2), 0],
+                [phase**2 / jnp.sqrt(2), 0, jnp.conj(phase) ** 2 / jnp.sqrt(2), 0],
+            ]
+        )
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
 
     def test_correct_state_returned(self, tol):
@@ -227,7 +232,12 @@ class TestQNodeIntegration:
 
         phase = jnp.exp(-1j * jnp.pi / 8)
 
-        expected = np.array([[phase / jnp.sqrt(2), 0, jnp.conj(phase) / jnp.sqrt(2), 0], [phase**2 / jnp.sqrt(2), 0, jnp.conj(phase)**2 / jnp.sqrt(2), 0]])
+        expected = np.array(
+            [
+                [phase / jnp.sqrt(2), 0, jnp.conj(phase) / jnp.sqrt(2), 0],
+                [phase**2 / jnp.sqrt(2), 0, jnp.conj(phase) ** 2 / jnp.sqrt(2), 0],
+            ]
+        )
         assert jnp.allclose(state, expected, atol=tol, rtol=0)
 
     def test_probs_jax(self, tol):
@@ -268,7 +278,7 @@ class TestQNodeIntegration:
             qml.PauliX(wires=0)
             return qml.probs(wires=0)
 
-        result = circuit(0.)
+        result = circuit(0.0)
         assert jnp.allclose(result, expected, atol=tol)
 
         # Test with broadcasting
@@ -290,7 +300,7 @@ class TestQNodeIntegration:
         result = circuit()
         assert jnp.allclose(result, expected, atol=tol)
 
-    @pytest.mark.skip("Shot list not supported with broadcasting yet")
+    @pytest.mark.skip("Shot lists are not supported with broadcasting yet")
     def test_custom_shots_probs_jax_jit_broadcasted(self, tol):
         """Test that returning probs works with jax and jit when
         using a custom shot vector and broadcasting"""
@@ -322,9 +332,9 @@ class TestQNodeIntegration:
 
             return inner_circuit()
 
-        a = circuit(0., jax.random.PRNGKey(0))
-        b = circuit(0., jax.random.PRNGKey(0))
-        c = circuit(0., jax.random.PRNGKey(1))
+        a = circuit(0.0, jax.random.PRNGKey(0))
+        b = circuit(0.0, jax.random.PRNGKey(0))
+        c = circuit(0.0, jax.random.PRNGKey(1))
         np.testing.assert_array_equal(a, b)
         assert not np.all(a == c)
 
@@ -559,9 +569,11 @@ class TestPassthruIntegration:
 
         expected = jnp.array(
             [
-                -3 * (jnp.sin(3 * x) * jnp.cos(y) * jnp.cos(z / 2) + jnp.cos(3 * x) * jnp.sin(z / 2)),
+                -3
+                * (jnp.sin(3 * x) * jnp.cos(y) * jnp.cos(z / 2) + jnp.cos(3 * x) * jnp.sin(z / 2)),
                 -jnp.cos(3 * x) * jnp.sin(y) * jnp.cos(z / 2),
-                -0.5 * (jnp.sin(3 * x) * jnp.cos(z / 2) + jnp.cos(3 * x) * jnp.cos(y) * jnp.sin(z / 2)),
+                -0.5
+                * (jnp.sin(3 * x) * jnp.cos(z / 2) + jnp.cos(3 * x) * jnp.cos(y) * jnp.sin(z / 2)),
             ]
         )
 
@@ -618,7 +630,11 @@ class TestPassthruIntegration:
         res = grad_fn(p)
 
         expected = jnp.array(
-            [-jnp.cos(x) * jnp.sin(y) ** 2, -2 * (jnp.sin(x) + 1) * jnp.sin(y) * jnp.cos(y), jnp.zeros_like(x)]
+            [
+                -jnp.cos(x) * jnp.sin(y) ** 2,
+                -2 * (jnp.sin(x) + 1) * jnp.sin(y) * jnp.cos(y),
+                jnp.zeros_like(x),
+            ]
         )
         assert all(jnp.allclose(res[i, :, i], expected[:, i], atol=tol, rtol=0) for i in range(3))
 
@@ -744,7 +760,7 @@ class TestPassthruIntegration:
 
         jac = jax.jacobian(cost, argnums=[0, 1])(a, b)
         expected = jnp.array([jnp.sin(a) * jnp.cos(b), jnp.cos(a) * jnp.sin(b)])
-        expected = (jnp.diag(expected[0]), expected[1]) # Only first parameter is broadcasted
+        expected = (jnp.diag(expected[0]), expected[1])  # Only first parameter is broadcasted
         assert all(jnp.allclose(j, e, atol=tol, rtol=0) for j, e in zip(jac, expected))
 
     def test_backprop_gradient(self, tol):
@@ -988,6 +1004,7 @@ class TestHighLevelIntegration:
         grad = jax.jacobian(cost)(weights)
         assert grad.shape == (3, 2, 3)
 
+
 @pytest.mark.jax
 class TestOps:
     """Unit tests for operations supported by the default.qubit.jax device"""
@@ -1050,6 +1067,7 @@ class TestOps:
 
         assert jnp.all(res == state)
         spy.assert_called()
+
 
 @pytest.mark.jax
 class TestOpsBroadcasted:

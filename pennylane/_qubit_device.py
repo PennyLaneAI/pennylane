@@ -725,52 +725,61 @@ class QubitDevice(Device):
         powers_of_two = 2 ** np.arange(num_wires)[::-1]
         indices = samples @ powers_of_two
 
+        batch_size = self._samples.shape[0] if np.ndim(self._samples)==3 else None
+        dim = 2**num_wires
         # count the basis state occurrences, and construct the probability vector
         if bin_size is not None:
             num_bins = samples.shape[-2] // bin_size
-
-            if np.ndim(self._samples) == 2:
-                indices = indices.reshape((num_bins, bin_size))
-                prob = np.zeros([2 ** num_wires, num_bins], dtype=np.float64)
-
-                # count the basis state occurrences, and construct the probability vector
-                # for each bin
-                for b, idx in enumerate(indices):
-                    basis_states, counts = np.unique(idx, return_counts=True)
-                    prob[basis_states, b] = counts / bin_size
-
-            elif np.ndim(self._samples) == 3:
-                batch_size = self._samples.shape[0]
-                indices = indices.reshape((batch_size, num_bins, bin_size))
-                prob = np.zeros([batch_size, 2 ** num_wires, num_bins], dtype=np.float64)
-
-                # count the basis state occurrences, and construct the probability vector
-                # for each bin and broadcasting index
-                for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
-                    for b, idx in enumerate(_indices):  # Then iterate over bins dimension
-                        basis_states, counts = np.unique(idx, return_counts=True)
-                        prob[i, basis_states, b] = counts / bin_size
-
-            else:
-                raise ValueError("Unexpected shape of stored samples")
-
+            prob = self._count_binned_samples(indices, batch_size, dim, bin_size, num_bins)
         else:
-            if np.ndim(self._samples) == 2:
-                prob = np.zeros([2 ** num_wires], dtype=np.float64)
-                basis_states, counts = np.unique(indices, return_counts=True)
-                prob[..., basis_states] = counts / len(samples)
-
-            elif np.ndim(self._samples) == 3:
-                prob = np.zeros([self._samples.shape[0], 2 ** num_wires], dtype=np.float64)
-
-                for i, idx in enumerate(indices):
-                    basis_states, counts = np.unique(idx, return_counts=True)
-                    prob[i, basis_states] = counts / len(idx)
-
-            else:
-                raise ValueError("Unexpected shape of stored samples")
+            prob = self._count_unbinned_samples(indices, batch_size, dim)
 
         return self._asarray(prob, dtype=self.R_DTYPE)
+
+    def _count_unbinned_samples(self, indices, batch_size, dim):
+        """Count the occurences of sampled indices and convert them to relative
+        counts in order to estimate their occurence probability."""
+        prob = np.zeros(dim, dtype=np.float64)
+
+        if batch_size is None:
+            basis_states, counts = np.unique(indices, return_counts=True)
+            prob[basis_states] = counts / len(indices)
+
+            return prob
+
+        prob = np.zeros((batch_size, dim), dtype=np.float64)
+
+        for i, idx in enumerate(indices):
+            basis_states, counts = np.unique(idx, return_counts=True)
+            prob[i, basis_states] = counts / len(idx)
+
+        return prob
+
+    def _count_binned_samples(self, indices, batch_size, dim, bin_size, num_bins):
+        """Count the occurences of bins of sampled indices and convert them to relative
+        counts in order to estimate their occurence probability per bin."""
+
+        if batch_size is None:
+            prob = np.zeros((dim, num_bins), dtype=np.float64)
+            indices = indices.reshape((num_bins, bin_size))
+            # count the basis state occurrences, and construct the probability vector for each bin
+            for b, idx in enumerate(indices):
+                basis_states, counts = np.unique(idx, return_counts=True)
+                prob[basis_states, b] = counts / bin_size
+
+            return prob
+
+        prob = np.zeros((batch_size, dim, num_bins), dtype=np.float64)
+        indices = indices.reshape((batch_size, num_bins, bin_size))
+
+        # count the basis state occurrences, and construct the probability vector
+        # for each bin and broadcasting index
+        for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
+            for b, idx in enumerate(_indices):  # Then iterate over bins dimension
+                basis_states, counts = np.unique(idx, return_counts=True)
+                prob[i, basis_states, b] = counts / bin_size
+
+        return prob
 
     def probability(self, wires=None, shot_range=None, bin_size=None):
         """Return either the analytic probability or estimated probability of

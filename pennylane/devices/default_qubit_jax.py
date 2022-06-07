@@ -244,114 +244,67 @@ class DefaultQubitJax(DefaultQubit):
         states_sampled_base_ten = samples[..., None] & powers_of_two
         return (states_sampled_base_ten > 0).astype(dtype)[..., ::-1]
 
-    def estimate_probability(self, wires=None, shot_range=None, bin_size=None):
-        """Return the estimated probability of each computational basis state
-        using the generated samples.
+    def _count_unbinned_samples(self, indices, batch_size, dim):
+        """Count the occurences of sampled indices and convert them to relative
+        counts in order to estimate their occurence probability."""
 
-        Args:
-            wires (Iterable[Number, str], Number, str, Wires): wires to calculate
-                marginal probabilities for. Wires not provided are traced out of the system.
-            shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
-                to use. If not specified, all samples are used.
-            bin_size (int): Divides the shot range into bins of size ``bin_size``, and
-                returns the measurement statistic separately over each bin. If not
-                provided, the entire shot range is treated as a single bin.
+        shape = (dim + 1,) if batch_size is None else (batch_size, dim + 1)
+        prob = qml.math.convert_like(jnp.zeros(shape, dtype=jnp.float64), indices)
+        if batch_size is None:
+            basis_states, counts = qml.math.unique(
+                indices, return_counts=True, size=dim, fill_value=-1
+            )
+            for state, count in zip(basis_states, counts):
+                prob = prob.at[state].set(count / len(indices))
+            # resize prob which discards the 'filled values'
+            # prob = jnp.resize(prob, dim)
+            return prob[:-1]
+    
+        for i, idx in enumerate(indices):
+            basis_states, counts = qml.math.unique(
+                idx, return_counts=True, size=dim, fill_value=-1
+            )
+            for state, count in zip(basis_states, counts):
+                prob = prob.at[i, state].set(count / len(idx))
 
-        Returns:
-            array[float]: list of the probabilities
-        """
+        # resize prob which discards the 'filled values'
+        # prob = jnp.resize(prob, (batch_size, dim))
+        return prob[:, :-1]
 
-        wires = wires or self.wires
-        # convert to a wires object
-        wires = Wires(wires)
-        # translate to wire labels used by device
-        device_wires = self.map_wires(wires)
-        num_wires = len(device_wires)
+    def _count_binned_samples(self, indices, batch_size, dim, bin_size, num_bins):
+        """Count the occurences of bins of sampled indices and convert them to relative
+        counts in order to estimate their occurence probability per bin."""
 
-        sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
-        samples = self._samples[sample_slice, device_wires]
+        # extend the probability vectors to store 'filled values'
+        shape = (dim + 1, num_bins) if batch_size is None else (batch_size, dim + 1, num_bins)
+        prob = qml.math.convert_like(jnp.zeros(shape, dtype=jnp.float64), indices)
+        if batch_size is None:
+            indices = indices.reshape((num_bins, bin_size))
 
-        # convert samples from a list of 0, 1 integers, to base 10 representation
-        powers_of_two = 2 ** np.arange(num_wires)[::-1]
-        indices = samples @ powers_of_two
-
-        if bin_size is not None:
-            num_bins = samples.shape[-2] // bin_size
-
-            if jnp.ndim(self._samples) == 2:
-                indices = indices.reshape((num_bins, bin_size))
-                # extend the probability vector to store 'filled values'
-                prob = np.zeros([2 ** num_wires + 1, num_bins], dtype=np.float64)
-                prob = qml.math.convert_like(prob, indices)
-
-                # count the basis state occurrences, and construct the probability vector
-                # for each bin
-                for b, idx in enumerate(indices):
-                    idx = qml.math.convert_like(idx, indices)
-                    basis_states, counts = qml.math.unique(
-                        idx, return_counts=True, size=2**num_wires, fill_value=-1
-                    )
-                    for state, count in zip(basis_states, counts):
-                        prob = prob.at[state, b].set(count / bin_size)
-
-                # resize prob which discards the 'filled values'
-                #prob = jnp.resize(prob, (2**num_wires, num_bins))  
-                prob = prob[:-1]
-
-            elif jnp.ndim(self._samples) == 3:
-                batch_size = self._samples.shape[0]
-                indices = indices.reshape((batch_size, num_bins, bin_size))
-                # extend the probability vector to store 'filled values'
-                prob = np.zeros([batch_size, 2 ** num_wires + 1, num_bins], dtype=np.float64)
-                prob = qml.math.convert_like(prob, indices)
-
-                # count the basis state occurrences, and construct the probability vector
-                # for each bin and broadcasting index
-                for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
-                    for b, idx in enumerate(_indices):  # Then iterate over bins dimension
-                        idx = qml.math.convert_like(idx, indices)
-                        basis_states, counts = qml.math.unique(
-                            idx, return_counts=True, size=2**num_wires, fill_value=-1
-                        )
-                        for state, count in zip(basis_states, counts):
-                            prob = prob.at[i, state, b].set(count / bin_size)
-                # resize prob which discards the 'filled values'
-                #prob = jnp.resize(prob, (batch_size, 2**num_wires, num_bins))  
-                prob = prob[:, :-1]
-
-            else:
-                raise ValueError("Unexpected shape of stored samples")
-
-        else:
-
-            if np.ndim(self._samples) == 2:
-                prob = jnp.zeros([2 ** num_wires + 1], dtype=jnp.float64)
-                prob = qml.math.convert_like(prob, indices)
+            # count the basis state occurrences, and construct the probability vector for each bin
+            for b, idx in enumerate(indices):
+                idx = qml.math.convert_like(idx, indices)
                 basis_states, counts = qml.math.unique(
-                    indices, return_counts=True, size=2**num_wires, fill_value=-1
+                    idx, return_counts=True, size=dim, fill_value=-1
                 )
                 for state, count in zip(basis_states, counts):
-                    prob = prob.at[state].set(count / len(samples))
-                # resize prob which discards the 'filled values'
-                #prob = jnp.resize(prob, 2**num_wires)
-                prob = prob[:-1]
+                    prob = prob.at[state, b].set(count / bin_size)
 
-            elif np.ndim(self._samples) == 3:
-                batch_size = self._samples.shape[0]
-                prob = jnp.zeros((batch_size, 2 ** num_wires + 1), dtype=jnp.float64)
-                prob = qml.math.convert_like(prob, indices)
-                for i, idx in enumerate(indices):
-                    basis_states, counts = qml.math.unique(
-                        idx, return_counts=True, size=2**num_wires, fill_value=-1
-                    )
-                    for state, count in zip(basis_states, counts):
-                        prob = prob.at[i, state].set(count / len(idx))
+            # resize prob which discards the 'filled values'
+            # prob = jnp.resize(prob, (dim, num_bins))
+            return prob[:-1]
 
-                # resize prob which discards the 'filled values'
-                #prob = jnp.resize(prob, (batch_size, 2**num_wires))  
-                prob = prob[:, :-1]
-
-            else:
-                raise ValueError("Unexpected shape of stored samples")
-
-        return self._asarray(prob, dtype=self.R_DTYPE)
+        indices = indices.reshape((batch_size, num_bins, bin_size))
+        # count the basis state occurrences, and construct the probability vector
+        # for each bin and broadcasting index
+        for i, _indices in enumerate(indices):  # First iterate over broadcasting dimension
+            for b, idx in enumerate(_indices):  # Then iterate over bins dimension
+                idx = qml.math.convert_like(idx, indices)
+                basis_states, counts = qml.math.unique(
+                    idx, return_counts=True, size=dim, fill_value=-1
+                )
+                for state, count in zip(basis_states, counts):
+                    prob = prob.at[i, state, b].set(count / bin_size)
+        # resize prob which discards the 'filled values'
+        # prob = jnp.resize(prob, (batch_size, dim, num_bins))
+        return prob[:, :-1]

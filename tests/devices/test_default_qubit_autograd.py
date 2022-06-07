@@ -152,7 +152,12 @@ class TestQNodeIntegration:
 
         phase = np.exp(-1j * np.pi / 8)
 
-        expected = np.array([[phase / np.sqrt(2), 0, np.conj(phase) / np.sqrt(2), 0], [phase**2 / np.sqrt(2), 0, np.conj(phase)**2 / np.sqrt(2), 0]])
+        expected = np.array(
+            [
+                [phase / np.sqrt(2), 0, np.conj(phase) / np.sqrt(2), 0],
+                [phase**2 / np.sqrt(2), 0, np.conj(phase) ** 2 / np.sqrt(2), 0],
+            ]
+        )
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
 
@@ -382,7 +387,11 @@ class TestPassthruIntegration:
         res = grad_fn(p)
 
         expected = np.array(
-            [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), np.zeros_like(x)]
+            [
+                -np.cos(x) * np.sin(y) ** 2,
+                -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y),
+                np.zeros_like(x),
+            ]
         )
         assert all(np.allclose(res[i, :, i], expected[:, i], atol=tol, rtol=0) for i in range(3))
 
@@ -510,7 +519,7 @@ class TestPassthruIntegration:
 
         jac = qml.jacobian(cost)(a, b)
         expected = np.array([np.sin(a) * np.cos(b), np.cos(a) * np.sin(b)])
-        expected = (np.diag(expected[0]), expected[1]) # Only first parameter is broadcasted
+        expected = (np.diag(expected[0]), expected[1])  # Only first parameter is broadcasted
         assert all(np.allclose(j, e, atol=tol, rtol=0) for j, e in zip(jac, expected))
 
     def test_backprop_gradient(self, tol):
@@ -554,9 +563,7 @@ class TestPassthruIntegration:
         assert np.allclose(res, expected_cost, atol=tol, rtol=0)
 
         res = qml.jacobian(circuit)(a, b)
-        expected = np.array(
-            [-0.5 * np.sin(a) * (np.cos(b) + 1), 0.5 * np.sin(b) * (1 - np.cos(a))]
-        )
+        expected = np.array([-0.5 * np.sin(a) * (np.cos(b) + 1), 0.5 * np.sin(b) * (1 - np.cos(a))])
         expected = (expected[0], np.diag(expected[1]))
         assert all(np.allclose(r, e, atol=tol, rtol=0) for r, e in zip(res, expected))
 
@@ -748,7 +755,6 @@ class TestHighLevelIntegration:
         assert grad.shape == (3, 2, 3)
 
 
-
 @pytest.mark.autograd
 class TestOps:
     """Unit tests for operations supported by the default.qubit.autograd device"""
@@ -873,4 +879,3 @@ class TestOpsBroadcasted:
 
         assert np.allclose(res, state)
         spy.assert_called()
-

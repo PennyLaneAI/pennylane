@@ -932,26 +932,6 @@ class TestEstimateProb:
 
         assert np.allclose(res, expected)
 
-    @pytest.mark.parametrize("bin_size", [None, 2])
-    def test_estimate_probability_with_invalid_samples(
-        self, bin_size, mock_qubit_device_with_original_statistics, monkeypatch
-    ):
-        """Tests probability method when the analytic attribute is True."""
-        dev = mock_qubit_device_with_original_statistics(wires=2)
-        samples = np.array(
-            [
-                [[[1, 0], [1, 1], [1, 1], [1, 1]]],
-                [[[0, 0], [1, 1], [1, 1], [0, 0]]],
-                [[[1, 0], [1, 1], [1, 1], [0, 0]]],
-            ]
-        )
-
-        with monkeypatch.context() as m:
-            m.setattr(dev, "_samples", samples)
-            with pytest.raises(ValueError, match="Unexpected shape of stored samples"):
-                dev.estimate_probability(wires=dev.wires, bin_size=bin_size)
-
-
 class TestMarginalProb:
     """Test the marginal_prob method"""
 
@@ -1234,8 +1214,6 @@ class TestBatchExecution:
         assert len(res) == 3
         assert np.allclose(res[0], dev.execute(empty_tape), rtol=tol, atol=0)
 
-
-# Todo :broadcasted execution tests
 class TestShotList:
     """Tests for passing shots as a list"""
 
