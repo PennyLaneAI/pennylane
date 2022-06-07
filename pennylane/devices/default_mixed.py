@@ -123,7 +123,7 @@ class DefaultMixed(QubitDevice):
 
         # check if the array is ragged
         first_shape = qnp.shape(array[0])
-        is_ragged = any([qnp.shape(array[i]) != first_shape for i in range(qnp.shape(array)[0])])
+        is_ragged = any(qnp.shape(array[i]) != first_shape for i in range(qnp.shape(array)[0]))
 
         if not is_ragged:
             res = qnp.cast(qnp.stack(array), dtype=dtype)

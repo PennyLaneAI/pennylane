@@ -674,6 +674,7 @@ def frobenius_inner_product(A, B, normalize=False, like=None):
 
 @multi_dispatch(argnum=[1])
 def scatter(indices, array, new_dims, like=None):
+    """scatter function"""
     return np.scatter(indices, array, new_dims, like=like)
 
 
