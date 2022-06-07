@@ -109,6 +109,11 @@ class DefaultMixed(QubitDevice):
         "ThermalRelaxationError",
     }
 
+    _reshape = staticmethod(qnp.reshape)
+    _flatten = staticmethod(qnp.flatten)
+    _gather = staticmethod(qnp.gather)
+    _dot = staticmethod(qnp.dot)
+
     @staticmethod
     def _reduce_sum(array, axes):
         return qnp.sum(array, axis=tuple(axes))
@@ -118,12 +123,13 @@ class DefaultMixed(QubitDevice):
         is_ragged = False
 
         try:
-            res = qnp.asarray(qnp.stack(array), dtype=dtype)
-        except ValueError:
+            res = qnp.cast(qnp.stack(array), dtype=dtype)
+        except Exception:
+            # is there a better way to catch a framework-agnostic Exception class?
             is_ragged = True
 
         if is_ragged or res.dtype is np.dtype("O"):
-            return qnp.hstack(array).flatten().astype(dtype)
+            return qnp.cast(qnp.flatten(qnp.hstack(array)), dtype=dtype)
 
         return res
 
@@ -161,7 +167,10 @@ class DefaultMixed(QubitDevice):
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(returns_state=True, passthru_interface="autograd")
+        capabilities.update(returns_state=True, passthru_devices={
+            "autograd": "default.mixed",
+            "tf": "default.mixed"
+        })
         return capabilities
 
     @property
@@ -213,8 +222,9 @@ class DefaultMixed(QubitDevice):
 
         # convert rho from tensor to matrix
         rho = qnp.reshape(self._state, (2**self.num_wires, 2**self.num_wires))
+
         # probs are diagonal elements
-        probs = self.marginal_prob(qnp.diag(rho), wires)
+        probs = self.marginal_prob(qnp.diagonal(rho), wires)
 
         # take the real part so probabilities are not shown as complex numbers
         probs = qnp.real(probs)

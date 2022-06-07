@@ -433,12 +433,18 @@ class QNode:
                 # to a new device?
                 expand_fn = device.expand_fn
                 batch_transform = device.batch_transform
+                r_dtype = getattr(device, "R_DTYPE", None)
+                c_dtype = getattr(device, "C_DTYPE", None)
 
-                device = qml.device(
-                    backprop_devices[mapped_interface], wires=device.wires, shots=device.shots
-                )
+                device = qml.device(backprop_devices[mapped_interface], wires=device.wires, shots=device.shots)
                 device.expand_fn = expand_fn
                 device.batch_transform = batch_transform
+
+                if r_dtype is not None:
+                    device.R_DTYPE = r_dtype
+
+                if c_dtype is not None:
+                    device.C_DTYPE = c_dtype
 
                 return "backprop", {}, device
 

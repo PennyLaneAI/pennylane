@@ -167,6 +167,7 @@ def _take_autograd(tensor, indices, axis=None):
 
 
 ar.register_function("autograd", "take", _take_autograd)
+ar.register_function("autograd", "diagonal", lambda x: _i("qml").numpy.diag(x))
 
 
 # -------------------------------- TensorFlow --------------------------------- #
@@ -192,7 +193,8 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
 
-ar.register_function("tensorflow", "asarray", lambda x: _i("tf").convert_to_tensor(x))
+ar.register_function("tensorflow", "asarray", lambda x, **kwargs: _i("tf").convert_to_tensor(x, **kwargs))
+ar.register_function("tensorflow", "hstack", lambda *args, **kwargs: _i("tf").experimental.numpy.hstack(*args, **kwargs))
 ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
 ar.register_function(
@@ -321,6 +323,8 @@ def _transpose_tf(a, axes=None):
 
 
 ar.register_function("tensorflow", "transpose", _transpose_tf)
+ar.register_function("tensorflow", "diagonal", lambda x: _i("tf").linalg.diag_part(x))
+ar.register_function("tensorflow", "outer", lambda a, b: _i("tf").tensordot(a, b, axes=0))
 
 # -------------------------------- Torch --------------------------------- #
 
