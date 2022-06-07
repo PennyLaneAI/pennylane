@@ -238,9 +238,12 @@ class DefaultQubitTorch(DefaultQubit):
             if not isinstance(a[0], torch.Tensor):
                 res = np.asarray(a)
                 res = torch.from_numpy(res)
+                res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
+            elif len(a) == 1 and len(a[0].shape) > 1:
+                res = a[0]
             else:
                 res = torch.cat([torch.reshape(i, (-1,)) for i in a], dim=0)
-            res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
+                res = torch.cat([torch.reshape(i, (-1,)) for i in res], dim=0)
         else:
             res = torch.as_tensor(a, dtype=dtype)
 
