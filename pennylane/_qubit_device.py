@@ -700,14 +700,30 @@ class QubitDevice(Device):
         wires = wires.tolist()
         return qml.math.to_vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
 
-    def mutual_info(self, wires0, wires1, log_base):  # pragma: no cover
+    def mutual_info(self, wires0, wires1, log_base):
         """Returns the mutual information prior to measurement.
 
-        .. note::
+        Args:
+            wires0 (Wires): wires of the first subsystem.
+            wires1 (Wires): wires of the second subsystem
+            log_base (float): base to use in the logarithm.
 
-            Only simulators that are capable of returning the state support this property.
+        Returns:
+            float: the mutual information
         """
-        raise NotImplementedError
+        try:
+            state = self.access_state()
+        except qml.QuantumFunctionError as e:  # pragma: no cover
+            raise NotImplementedError(
+                f"Cannot compute the mutual information with device {self.name} that is not capable of returning the "
+                f"state. "
+            ) from e
+
+        wires0 = wires0.tolist()
+        wires1 = wires1.tolist()
+        return qml.math.to_mutual_info(
+            state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
+        )
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis
