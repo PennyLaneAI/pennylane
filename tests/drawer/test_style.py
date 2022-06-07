@@ -37,7 +37,7 @@ def test_black_white_style():
     """Tests the black white style sets ``plt.rcParams`` with correct values"""
 
     qml.drawer.use_style("black_white")
-
+    assert plt.rcParams['patch.linewidth'] == 3.0
     assert plt.rcParams["patch.facecolor"] == "white"
     assert plt.rcParams["patch.edgecolor"] == "black"
     assert plt.rcParams["patch.linewidth"] == 2
@@ -52,6 +52,7 @@ def test_solarized_light_style():
     """Tests the solarized light style sets ``plt.rcParams`` with correct values"""
 
     qml.drawer.use_style("solarized_light")
+    assert plt.rcParams['patch.linewidth'] == 3.0
     assert plt.rcParams["savefig.facecolor"] == "#fdf6e3"
     assert plt.rcParams["figure.facecolor"] == "#fdf6e3"
     assert plt.rcParams["axes.facecolor"] == "#eee8d5"
@@ -68,6 +69,7 @@ def test_solarized_dark_style():
     """Tests the solarized dark style sets ``plt.rcParams`` with correct values"""
 
     qml.drawer.use_style("solarized_dark")
+    assert plt.rcParams['patch.linewidth'] == 3.0
     assert plt.rcParams["savefig.facecolor"] == "#002b36"
     assert plt.rcParams["figure.facecolor"] == "#002b36"
     assert plt.rcParams["axes.facecolor"] == "#002b36"
