@@ -137,7 +137,7 @@ class SPSAOptimizer:
             for each iteration. Its asymptotically optimal value is 1.0.
         gamma (float): An hyperparameter to calculate :math:`c_k=\frac{c}{(k+1)^\gamma}`
             for each iteration. Its asymptotically optimal value is 1/6.
-        c (float): An hyperparameter related to the expected noise. It should be
+        c (float): A hyperparameter related to the expected noise. It should be
             approximately the standard deviation of the expected noise on the cost function
         A (float): The stability constant expected to be 10% of maximum number
             of expected iterations
