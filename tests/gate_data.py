@@ -279,6 +279,29 @@ def IsingYY(phi):
     return np.cos(phi / 2) * II - 1j * np.sin(phi / 2) * YY
 
 
+def IsingXY(phi):
+    r"""Ising XY coupling gate.
+
+    .. math:: \mathtt{XY}(\phi) = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
+            0 & i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+            0 & 0 & 0 & 1
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+    """
+    mat = II.copy()
+    mat[1][1] = np.cos(phi / 2)
+    mat[2][2] = np.cos(phi / 2)
+    mat[1][2] = 1j * np.sin(phi / 2)
+    mat[2][1] = 1j * np.sin(phi / 2)
+    return mat
+
+
 def IsingZZ(phi):
     r"""Ising ZZ coupling gate
 
