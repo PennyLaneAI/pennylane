@@ -23,7 +23,7 @@ from numpy import float64
 import pennylane as qml
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .multi_dispatch import diag, dot, scatter_element_add
+from .multi_dispatch import diag, dot, scatter_element_add, einsum
 from .utils import is_abstract, allclose, cast, convert_like, cast_like
 
 
@@ -326,8 +326,7 @@ def _partial_trace(density_matrix, indices):
             f"{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
             f"{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}"
         )
-        print(density_matrix, kraus)
-        density_matrix = np.einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
+        density_matrix = einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
@@ -484,12 +483,12 @@ def to_vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex
 
     """
     density_matrix = to_density_matrix(state, indices, check_state, c_dtype)
-    entropy = compute_vn_entropy(density_matrix, base)
+    entropy = _compute_vn_entropy(density_matrix, base)
 
     return entropy
 
 
-def compute_vn_entropy(density_matrix, base=None):
+def _compute_vn_entropy(density_matrix, base=None):
     """Compute the Von Neumann entropy from a density matrix
 
     Args:
@@ -502,11 +501,11 @@ def compute_vn_entropy(density_matrix, base=None):
     **Example**
 
     >>> x = [[1/2, 0], [0, 1/2]]
-    >>> compute_vn_entropy(x, indices=[0])
+    >>> _compute_vn_entropy(x, indices=[0])
     0.6931472
 
     >>> x = [[1/2, 0], [0, 1/2]]
-    >>> compute_vn_entropy(x, indices=[0], base=2)
+    >>> _compute_vn_entropy(x, indices=[0], base=2)
     1.0
 
     """
