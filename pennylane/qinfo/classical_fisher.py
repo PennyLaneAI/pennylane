@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Differentiable classical fisher information"""
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel, not-callable
 import functools
 import pennylane as qml
 
@@ -156,7 +156,7 @@ def classical_fisher(qnode, argnums=0):
 
     interface = qnode.interface
 
-    if interface == "jax" or interface == "jax-jit":
+    if interface in ("jax", "jax-jit"):
         import jax
 
         jac = jax.jacobian(new_qnode, argnums=argnums)
