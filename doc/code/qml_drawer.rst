@@ -60,6 +60,8 @@ Currently Available Styles
 .. |def| image:: ../_static/style/default_style.png
     :width: 100%
 
-+-----+-----+-----+-----+-----+
-+|bws|+|bwd|+|sol|+|sod|+|def|+
-+-----+-----+-----+-----+-----+
++-----+-----+-----+
++|bws|+|bwd|+|sol|+
++-----+-----+-----+
++|sod|+|def|+     +
++-----+-----+-----+
