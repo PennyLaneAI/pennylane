@@ -237,7 +237,8 @@ class SPSAOptimizer:
         yminus = objective_fn(*thetaminus, **kwargs)
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
-                grad.append((yplus - yminus) / (2 * ck * delta[index]))
+                ghat = (yplus - yminus) / (2 * ck * delta[index])
+                grad.append(ghat)
 
         return tuple(grad), None
 
