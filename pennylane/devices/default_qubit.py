@@ -132,6 +132,7 @@ class DefaultQubit(QubitDevice):
         "IsingXX",
         "IsingYY",
         "IsingZZ",
+        "IsingXY",
         "SingleExcitation",
         "SingleExcitationPlus",
         "SingleExcitationMinus",
