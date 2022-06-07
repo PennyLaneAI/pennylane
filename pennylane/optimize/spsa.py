@@ -25,7 +25,7 @@ class SPSAOptimizer:
     evaluating the cost function twice in each iteration step. This cost may result in
     a significant decrease in the overall cost of function evaluations for the entire optimization.
     It is based on an approximation to the unknown gradient :math:`\hat{g}(\hat{\theta}_{k})`
-    through a simultaneous perturbation:
+    through a simultaneous perturbation of the input parameters:
 
     .. math::
         \hat{g}_k(\hat{\theta}_k) = \frac{y(\hat{\theta}_k+c_k\Delta_k)-
