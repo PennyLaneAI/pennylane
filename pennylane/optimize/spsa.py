@@ -247,8 +247,8 @@ class SPSAOptimizer:
 
         Args:
             grad (tuple [array]): the gradient approximation of the objective
-                function at point :math:`x^{(t)}`
-            args (tuple): the current value of the variables :math:`x^{(t)}`
+                function at point :math:`\hat{\theta}_{k}`
+            args (tuple): the current value of the variables :math:`\hat{\theta}_{k}`
 
         Returns:
             list [array]: the new values :math:`x^{(t+1)}`"""
