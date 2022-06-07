@@ -804,8 +804,8 @@ class TestDrawing:
         transformed_qnode = qml.QNode(transformed_qfunc, dev)
 
         expected = (
-            "0: ─╭C────────────────────────────────────────────────────┤     \n"
+            "0: ─╭●────────────────────────────────────────────────────┤     \n"
             "1: ─╰ControlledOperation(0.31)─╭ControlledOperation(0.31)─┤  <Z>\n"
-            "2: ────────────────────────────╰C─────────────────────────┤     "
+            "2: ────────────────────────────╰●─────────────────────────┤     "
         )
         assert qml.draw(transformed_qnode)() == expected
