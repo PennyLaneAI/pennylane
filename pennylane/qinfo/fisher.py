@@ -16,7 +16,8 @@
 import functools
 import pennylane as qml
 
-from pennylane.transforms import batch_transform
+from pennylane.transforms import batch_transform, metric_tensor
+
 
 # TODO: create qml.jacobian and replace it here
 def _torch_jac(circ):
@@ -233,3 +234,25 @@ def _make_probs(tape, wires=None, post_processing_fn=None):
         post_processing_fn = lambda x: qml.math.squeeze(qml.math.stack(x))
 
     return [new_tape], post_processing_fn
+
+
+
+def quantum_fisher(*args, **kwargs):
+    r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode` or quantum tape.
+
+    Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
+    are reflected in the quantum state. The metric used to induce the QFIM is the fidelity :math:`f = |\langle \psi \ \psi' \rangle|^2` between two (pure) quantum states.
+    This leads to the following definition of the QFIM (see eq. (27) in `arxiv:2103.15191 <https://arxiv.org/abs/2103.15191>`_):
+
+    .. math::
+
+        \text{QFIM}_{i, j} = 4 \text{Re}\left[ \langle \partial_i \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle
+        - \langle \partial_i \psi(\bm{\theta}) | \psi(\bm{\theta}) \rangle \langle \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle \right]
+    
+    with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
+
+    for :math:`N` qubits.
+    """
+    def wrapper(*args0, **kwargs0):
+        return 4 * qml.metric_tensor(*args, **kwargs)(*args0, **kwargs0)
+    return wrapper
