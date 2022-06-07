@@ -169,7 +169,7 @@ class SPSAOptimizer:
         self.c = c
         self.alpha = alpha
         self.gamma = gamma
-        self.k = 0
+        self.k = 1
         self.ak = self.a / (self.A + 1 + 1.0) ** self.alpha
 
     def step_and_cost(self, objective_fn, *args, **kwargs):
@@ -187,6 +187,8 @@ class SPSAOptimizer:
         """
         g, forward = self.compute_grad(objective_fn, args, kwargs)
         new_args = self.apply_grad(g, args)
+
+        self.k += 1
 
         if forward is None:
             forward = objective_fn(*args, **kwargs)
@@ -210,15 +212,13 @@ class SPSAOptimizer:
         g, _ = self.compute_grad(objective_fn, args, kwargs)
         new_args = self.apply_grad(g, args)
 
+        self.k += 1
+
         # unwrap from list if one argument, cleaner return
         if len(new_args) == 1:
             return new_args[0]
 
         return new_args
-
-    def increment_k(self):
-        """Increments k"""
-        self.k += 1
 
     def compute_grad(self, objective_fn, args, kwargs):
         r"""Approximate the gradient of the objective function at the
@@ -234,8 +234,8 @@ class SPSAOptimizer:
             tuple (array): Numpy array containing the gradient
                 :math:`\hat{g}_k(\hat{\theta}_k)` and ``None``
         """
-        self.increment_k()
-        ck = self.c / (self.k + 1.0) ** self.gamma
+        ck = self.c / self.k ** self.gamma
+
         delta = list(args)
         thetaplus = list(args)
         thetaminus = list(args)
@@ -268,7 +268,7 @@ class SPSAOptimizer:
 
         Returns:
             list [array]: the new values :math:`\hat{\theta}_{k+1}`"""
-        self.ak = self.a / (self.A + self.k + 1.0) ** self.alpha
+        self.ak = self.a / (self.A + self.k) ** self.alpha
         args_new = list(args)
         trained_index = 0
         for index, arg in enumerate(args):
