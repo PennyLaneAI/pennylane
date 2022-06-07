@@ -121,3 +121,21 @@ class TestDensityMatrixQNode:
         )
         density_matrix = density_matrix(tf.Variable(0.0, dtype=tf.float32))
         assert np.allclose(density_matrix, [[1, 0], [0, 0]])
+
+    c_dtypes = [np.complex64, np.complex128]
+
+    @pytest.mark.parametrize("c_dtype", c_dtypes)
+    @pytest.mark.parametrize("check", check_state)
+    @pytest.mark.parametrize("wires", wires_list)
+    def test_density_matrix_c_dtype(self, wires, check, tol, c_dtype):
+        """Test different complex dtype."""
+
+        dev = qml.device("default.qubit", wires=2, c_dtype=c_dtype)
+
+        @qml.qnode(dev, diff_method=None)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
+
+        density_matrix = qml.qinfo.density_matrix_transform(circuit, indices=wires)(0.5)
+        assert density_matrix.dtype == c_dtype
