@@ -130,7 +130,7 @@ class TestOperations:
         np.testing.assert_allclose(op.matrix(), copied_op2.matrix(), atol=tol)
         op.inv()
 
-    @pytest.mark.parametrize("op", ALL_OPERATIONS)
+    @pytest.mark.parametrize("op", PARAMETRIZED_OPERATIONS)
     def test_adjoint_unitaries(self, op, tol):
         op_d = op.adjoint()
         res1 = np.dot(op.matrix(), op_d.matrix())
