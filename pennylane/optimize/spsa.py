@@ -226,6 +226,10 @@ class SPSAOptimizer:
         grad = []
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
+                # Use the symmetric Bernoulli distribution to generate
+                # the coordinates of delta. Note that other distributions
+                # may also be used (they need to satisfy certain conditions).
+                # Refer to the paper linked in the class docstring for more info.
                 delta[index] = np.random.choice([-1, 1], size=arg.shape)
                 thetaplus[index] = arg + ck * delta[index]
                 thetaminus[index] = arg - ck * delta[index]
