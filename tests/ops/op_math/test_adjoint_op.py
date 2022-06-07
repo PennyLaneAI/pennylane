@@ -223,6 +223,33 @@ class TestProperties:
         op._wires = wire1
         assert op._wires == base._wires == wire1
 
+    @pytest.mark.parametrize("value", (True, False))
+    def test_is_hermitian(self, value):
+        """Test `is_hermitian` property mirrors that of the base."""
+
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+            is_hermitian = value
+
+        op = Adjoint(DummyOp(0))
+        assert op.is_hermitian == value
+
+    def test_batching_properties(self):
+        """Test that Adjoint batching behavior mirrors that of the base."""
+
+        class DummyOp(qml.operation.Operator):
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        param1 = [0.3] * 3
+        param2 = [[[0.3, 1.2]]] * 3
+
+        base = DummyOp(param1, param2, wires=0)
+        op = Adjoint(base)
+
+        assert op.ndim_params == (0, 2)
+        assert op.batch_size == 3
+
 
 class TestMiscMethods:
     """Test miscellaneous small methods on the Adjoint class."""
