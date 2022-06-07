@@ -1872,7 +1872,7 @@ class Tensor(Observable):
         ):
             qml.QueuingContext.append(self)
 
-        qml.QueuingContext.safe_update_info(self, owns=self.obs)
+        qml.QueuingContext.safe_update_info(self, owns=tuple(self.obs))
         qml.QueuingContext.safe_update_info(other, owner=self)
 
         return self

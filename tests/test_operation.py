@@ -957,7 +957,7 @@ class TestTensor:
 
         assert len(tape._queue) == 2
         assert tape._queue[op3] == {"owner": t2}
-        assert tape._queue[t2] == {"owns": [op1, op2, op3]}
+        assert tape._queue[t2] == {"owns": (op1, op2, op3)}
 
     def test_queuing_tensor_rmatmul(self):
         """Tests tensor-specific rmatmul updates queuing metatadata."""
