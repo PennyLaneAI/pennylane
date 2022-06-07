@@ -662,14 +662,25 @@ class QubitDevice(Device):
         """
         raise NotImplementedError
 
-    def vn_entropy(self, wires, log_base):  # pragma: no cover
+    def vn_entropy(self, wires, log_base):
         """Returns the Von Neumann entropy prior to measurement.
 
-        .. note::
+        Args:
+            wires (Wires): wires of the considered subsystem.
+            log_base (int, float): base to use in the logarithm.
 
-            Only simulators support this property.
+        Returns:
+            float: returns the Von Neumann entropy
         """
-        raise NotImplementedError
+        try:
+            state = self.access_state()
+        except qml.QuantumFunctionError as e:  # pragma: no cover
+            raise NotImplementedError(
+                f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
+                f"state. "
+            ) from e
+        wires = wires.tolist()
+        return qml.math.to_vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis
