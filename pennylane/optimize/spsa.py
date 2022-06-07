@@ -34,16 +34,31 @@ class SPSAOptimizer:
            \Delta_{k2}^{-1} \\
            \vdots \\
            \Delta_{kp}^{-1}
-         \end{bmatrix}
+         \end{bmatrix}\text{,}
+    
+    where
+        * :math:`k` is the current iteration step,
+        * :math:`\hat{\theta}_k` are the input parameters at iteration step :math:`k`,
+        * :math:`y` is the objective function,
+        * :math:`c_k=\frac{c}{(k+1)^\gamma}` is the gain sequence corresponding to evaluation step size and
+        * :math:`\Delta_{ki}^{-1} \left(1 \leq i \leq p \right)` are the inverted elements of
+          random pertubation vector :math:`\Delta_k`.
 
-    To update :math:`\hat{\theta}_k` to a new set of parameters:
+    :math:`\hat{\theta}_k` is updated to a new set of parameters with
 
     .. math::
-        \hat{\theta}_{k+1} = \hat{\theta}_{k} - a_k\hat{g}_k(\hat{\theta}_k)
+        \hat{\theta}_{k+1} = \hat{\theta}_{k} - a_k\hat{g}_k(\hat{\theta}_k)\text{,}
 
-    where the gain sequences are :math:`a_k=\frac{a}{(A+k+1)^\alpha}` and
-    :math:`c_k=\frac{c}{(k+1)^\gamma}`
-
+    where the gain sequences :math:`a_k=\frac{a}{(A+k+1)^\alpha}` controls parameter update step size.
+    
+    The gain sequence :math:`c_k` can be controlled with
+        * scaling parameter :math:`c` and
+        * scaling exponent :math:`gamma`
+    
+    The gain sequence :math:`a_k` can be controlled with
+        * scaling parameter :math:`a`,
+        * scaling exponent :math:`alpha` and
+        * stability constant :math:`A`
 
     For more details, see:
 
@@ -132,7 +147,8 @@ class SPSAOptimizer:
 
 
     Keyword Args:
-        maxiter (int): the maximum number of iterations expected to be performed
+        maxiter (int): the maximum number of iterations expected to be performed.
+            Used to determine A, if A is not supplied, otherwise ignored.
         alpha (float): A hyperparameter to calculate :math:`a_k=\frac{a}{(A+k+1)^\alpha}`
             for each iteration. Its asymptotically optimal value is 1.0.
         gamma (float): An hyperparameter to calculate :math:`c_k=\frac{c}{(k+1)^\gamma}`
