@@ -461,7 +461,7 @@ def to_vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex
     Args:
         state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
         indices (list(int)): List of indices in the considered subsystem.
-        base (float, int): Base for the logarithm.
+        base (float, int): Base for the logarithm. If None, the natural logarithm is used.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 
@@ -493,7 +493,7 @@ def _compute_vn_entropy(density_matrix, base=None):
 
     Args:
         density_matrix (tensor_like): ``(2**N, 2**N)`` tensor density matrix for an integer `N`.
-        base (float, int): Base for the logarithm.
+        base (float, int): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
         float: Von Neumann entropy of the density matrix.
@@ -537,7 +537,7 @@ def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dt
         state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
         indices0 (list[int]): List of indices in the first subsystem.
         indices1 (list[int]): List of indices in the second subsystem.
-        base (float): Base for the logarithm.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 

@@ -95,6 +95,8 @@ __all__ = [
     "is_independent",
     "marginal_prob",
     "to_density_matrix",
+    "to_vn_entropy",
+    "to_mutual_info",
     "ones_like",
     "requires_grad",
     "scatter_element_add",

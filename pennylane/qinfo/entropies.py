@@ -22,7 +22,7 @@ def vn_entropy_transform(qnode, indices, base=None):
     Args:
         qnode (tensor_like): A :class:`.QNode` returning a :func:`~.state`.
         indices (list(int)): List of indices in the considered subsystem.
-        base (float, int): Base for the logarithm.
+        base (float, int): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
         float: Von Neumann entropy of the considered subsystem.
