@@ -41,8 +41,15 @@ def _add_op(op, layer_str, wire_map, decimals, cache):
     layer_str = _add_grouping_symbols(op, layer_str, wire_map)
 
     control_wires = op.control_wires
-    for w in control_wires:
-        layer_str[wire_map[w]] += "C"
+    control_values = op.hyperparameters.get("control_values", None)
+    for i, w in enumerate(control_wires):
+        if control_values:
+            if control_values[i] == "1":
+                layer_str[wire_map[w]] += "C"
+            elif control_values[i] == "0":
+                layer_str[wire_map[w]] += "O"
+        else:
+            layer_str[wire_map[w]] += "C"
 
     label = op.label(decimals=decimals, cache=cache).replace("\n", "")
     if len(op.wires) == 0:  # operation (e.g. barrier, snapshot) across all wires
