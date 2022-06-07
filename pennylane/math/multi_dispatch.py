@@ -555,6 +555,7 @@ def einsum(indices, *operands, like=None):
     """
     if like is None:
         like = _multi_dispatch(operands)
+    operands = np.coerce(operands, like=like)
     return np.einsum(indices, *operands, like=like)
 
 
