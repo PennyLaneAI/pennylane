@@ -896,7 +896,7 @@ def mutual_info(wires0, wires1, log_base=None):
     # the subsystems cannot overlap
     if len([wire for wire in wires0 if wire in wires1]) > 0:
         raise qml.QuantumFunctionError(
-            "Subsystems for computing mutual information must not overlap"
+            "Subsystems for computing mutual information must not overlap."
         )
 
     wires0 = qml.wires.Wires(wires0)

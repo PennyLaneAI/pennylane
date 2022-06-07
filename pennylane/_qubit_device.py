@@ -696,7 +696,7 @@ class QubitDevice(Device):
 
         .. note::
 
-            Only simulators support this property.
+            Only simulators that are capable of returning the state support this property.
         """
         raise NotImplementedError
 

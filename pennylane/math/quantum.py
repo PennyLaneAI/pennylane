@@ -539,13 +539,13 @@ def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dt
     More specifically, it quantifies the amount of information obtained about
     one system by measuring the other system.
 
-    The state can be given as a state vector in the computational basis, or
+    Each state can be given as a state vector in the computational basis, or
     as a density matrix.
 
     Args:
-        state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
+        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
         indices0 (list[int]): List of indices in the first subsystem.
-        indices0 (list[int]): List of indices in the second subsystem.
+        indices1 (list[int]): List of indices in the second subsystem.
         base (float): Base for the logarithm.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
@@ -569,7 +569,7 @@ def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dt
 
     # the subsystems cannot overlap
     if len([index for index in indices0 if index in indices1]) > 0:
-        raise ValueError("Subsystems for computing mutual information must not overlap")
+        raise ValueError("Subsystems for computing mutual information must not overlap.")
 
     # Cast to a complex array
     state = cast(state, dtype=c_dtype)
@@ -589,7 +589,7 @@ def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dt
 def _compute_mutual_info(
     state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
 ):
-    """Compute the mutual information between the subsystems"""
+    """Compute the mutual information between the subsystems."""
     all_indices = sorted([*indices0, *indices1])
     vn_entropy_1 = to_vn_entropy(
         state, indices=indices0, base=base, check_state=check_state, c_dtype=c_dtype
