@@ -815,3 +815,13 @@ class TestEqual:
             check_trainability=False,
             check_interface=False,
         )
+
+    def test_equal_trainability_error(self):
+        """Test using interfaces without `requires_grad` attribute for trainability check will fail"""
+        op1 = qml.RX(np.array(0.123), wires=0)
+        op2 = qml.RX(npp.array(0.123), wires=0)
+
+        assert not qml.equal(op1, op1)
+        assert qml.equal(op2, op2)
+        assert qml.equal(op1, op2, check_trainability=False, check_interface=False)
+        assert qml.equal(op1, op1, check_trainability=False)
