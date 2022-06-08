@@ -379,14 +379,13 @@ class TestMutualInformation:
         assert np.allclose(actual, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
-    def test_qnode_state_jax_jit(self, device, params):
+    def test_qnode_state_jax_jit(self, params):
         """Test that the mutual information transform works for QNodes by comparing
         against analytic values, for the JAX-jit interface"""
         import jax.numpy as jnp
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         params = jnp.array(params)
 
@@ -408,14 +407,13 @@ class TestMutualInformation:
         assert np.allclose(actual, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
     @pytest.mark.parametrize("params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
-    def test_qnode_mutual_info_jax_jit(self, device, params):
+    def test_qnode_mutual_info_jax_jit(self, params):
         """Test that the measurement process for mutual information works for QNodes
         by comparing against the mutual information transform, for the JAX-jit interface"""
         import jax.numpy as jnp
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         params = qml.math.asarray(np.array(params), like="jax")
 
@@ -443,12 +441,11 @@ class TestMutualInformation:
         assert np.allclose(actual, expected)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    def test_qnode_grad(self, device, param):
+    def test_qnode_grad(self, param):
         """Test that the gradient of mutual information works for QNodes
         with the autograd interface"""
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="autograd")
         def circuit(param):
@@ -468,14 +465,13 @@ class TestMutualInformation:
         assert np.allclose(actual, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    def test_qnode_grad_jax(self, device, param):
+    def test_qnode_grad_jax(self, param):
         """Test that the gradient of mutual information works for QNodes
         with the JAX interface"""
         import jax.numpy as jnp
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         param = jnp.array(param)
 
@@ -497,14 +493,13 @@ class TestMutualInformation:
         assert np.allclose(actual, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    def test_qnode_grad_jax_jit(self, device, param):
+    def test_qnode_grad_jax_jit(self, param):
         """Test that the gradient of mutual information works for QNodes
         with the JAX-jit interface"""
         import jax.numpy as jnp
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         param = jnp.array(param)
 
@@ -526,12 +521,11 @@ class TestMutualInformation:
         assert np.allclose(actual, expected)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    def test_qnode_grad_tf(self, device, param):
+    def test_qnode_grad_tf(self, param):
         """Test that the gradient of mutual information works for QNodes
         with the tensorflow interface"""
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         param = tf.Variable(param)
 
@@ -556,12 +550,11 @@ class TestMutualInformation:
         assert np.allclose(actual, expected)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("device", ["default.qubit", "lightning.qubit"])
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    def test_qnode_grad_torch(self, device, param):
+    def test_qnode_grad_torch(self, param):
         """Test that the gradient of mutual information works for QNodes
         with the torch interface"""
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="torch")
         def circuit(param):
