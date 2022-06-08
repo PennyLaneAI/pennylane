@@ -28,7 +28,7 @@ multivariate = [
 
 
 class TestSPSAOptimizer:
-    """Test the SPSA optimizer"""
+    """Test the SPSA optimizer."""
 
     @pytest.mark.parametrize("args", [0, -3, 42])
     @pytest.mark.parametrize("f", univariate)
@@ -85,7 +85,9 @@ class TestSPSAOptimizer:
     @pytest.mark.parametrize("args", [0, -3, 42])
     @pytest.mark.parametrize("f", univariate)
     def test_step_and_cost_supplied_cost(self, args, f):
-        """Test that returned cost is correct"""
+        """
+        Test that returned cost is correct.
+        """
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
         args = np.array(args, requires_grad=True)
 
@@ -94,8 +96,10 @@ class TestSPSAOptimizer:
         assert np.all(res == expected)
 
     def test_step_and_cost_supplied_cost2(self):
-        """Test that the correct cost is returned via the step_and_cost method
-        for the SPSA optimizer"""
+        """
+        Test that the correct cost is returned via the step_and_cost method
+        for the SPSA optimizer.
+        """
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
 
         @qml.qnode(qml.device("default.qubit", wires=1))
@@ -113,8 +117,10 @@ class TestSPSAOptimizer:
         assert np.all(res == expected)
 
     def test_step_and_cost_supplied_cost3(self):
-        """Test that the correct cost is returned via the step_and_cost method
-        for the SPSA optimizer"""
+        """
+        Test that the correct cost is returned via the step_and_cost method
+        for the SPSA optimizer.
+        """
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
 
         @qml.qnode(qml.device("default.qubit", wires=1))
@@ -130,7 +136,9 @@ class TestSPSAOptimizer:
         assert np.all(res == expected)
 
     def test_step_spsa2(self):
-        """Test that the correct param is returned via the step method"""
+        """
+        Test that the correct param is returned via the step method.
+        """
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
 
         @qml.qnode(qml.device("default.qubit", wires=1))
@@ -162,8 +170,10 @@ class TestSPSAOptimizer:
         assert np.allclose(res, expected, atol=tol)
 
     def test_step_and_cost_spsa_single_multid_input(self):
-        """Test that the correct cost is returned via the step_and_cost method
-        with a multidimensional input"""
+        """
+        Test that the correct cost is returned via the step_and_cost method
+        with a multidimensional input.
+        """
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
         multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
 
@@ -180,8 +190,10 @@ class TestSPSAOptimizer:
         assert np.all(res == expected)
 
     def test_step_spsa_single_multid_input(self):
-        """Test that the correct param is returned via the step method
-        with a multidimensional input"""
+        """
+        Test that the correct param is returned via the step method
+        with a multidimensional input.
+        """
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
         multid_array = np.array([[0.1, 0.2], [-0.1, -0.4]])
 
@@ -269,8 +281,10 @@ class TestSPSAOptimizer:
         assert np.allclose(y, rescost, atol=tol)
 
     def test_parameters_not_a_tensor_and_not_all_require_grad(self):
-        """Test execution of list of parameters of different sizes
-        and not all require grad"""
+        """
+        Test execution of list of parameters of different sizes
+        and not all require grad.
+        """
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
 
         @qml.qnode(qml.device("default.qubit", wires=1))
@@ -292,8 +306,10 @@ class TestSPSAOptimizer:
         assert np.all(res[0] != inputs[0])
 
     def test_parameters_in_step(self):
-        """Test execution of list of parameters of different sizes
-        and not all require grad"""
+        """
+        Test execution of list of parameters of different sizes
+        and not all require grad.
+        """
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
 
         @qml.qnode(qml.device("default.qubit", wires=1))
@@ -315,9 +331,10 @@ class TestSPSAOptimizer:
         assert np.all(res[0] != inputs[0])
 
     def test_parameter_not_an_array(self):
-        """Test function when there is only one float parameter that doesn't
-        require grad"""
-
+        """
+        Test function when there is only one float parameter that doesn't
+        require grad.
+        """
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
@@ -335,3 +352,30 @@ class TestSPSAOptimizer:
 
         assert isinstance(res, float)
         assert res == params
+
+    def test_obj_func_not_a_scalar_function(self):
+        """
+        Test that if the objective function is not a
+        scalar function, an error is raised.
+        """
+
+        n_wires = 4
+        n_layers = 3
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        def circuit(params):
+            qml.StronglyEntanglingLayers(params, wires=list(range(n_wires)))
+
+        @qml.qnode(dev)
+        def cost(params):
+            circuit(params)
+            return qml.probs(wires=[0, 1, 2, 3])
+
+        opt = qml.SPSAOptimizer(maxiter=10)
+        params = np.random.normal(scale=0.1, size=(n_layers, n_wires, 3), requires_grad=True)
+
+        with pytest.raises(
+            ValueError,
+            match="The objective function must be a scalar function for the gradient ",
+        ):
+            opt.step(cost, params)

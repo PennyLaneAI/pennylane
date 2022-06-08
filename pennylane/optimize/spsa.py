@@ -165,6 +165,8 @@ class SPSAOptimizer:
     """
     # pylint: disable-msg=too-many-arguments
     def __init__(self, maxiter=200, alpha=0.602, gamma=0.101, c=0.2, A=None, a=None):
+        self.a = a
+        self.A = A
         if not A:
             self.A = maxiter * 0.1
         if not a:
@@ -250,13 +252,17 @@ class SPSAOptimizer:
                 # may also be used (they need to satisfy certain conditions).
                 # Refer to the paper linked in the class docstring for more info.
                 di = np.random.choice([-1, 1], size=arg.shape)
-                thetaplus[index] = arg + ck * di
-                thetaminus[index] = arg - ck * di
+                multiplier = ck * di
+                thetaplus[index] = arg + multiplier
+                thetaminus[index] = arg - multiplier
                 delta.append(di)
-
         yplus = objective_fn(*thetaplus, **kwargs)
         yminus = objective_fn(*thetaminus, **kwargs)
-
+        if yplus.size > 1:
+            raise ValueError(
+                "The objective function must be a scalar function for the gradient "
+                "to be computed. "
+            )
         grad = [(yplus - yminus) / (2 * ck * di) for di in delta]
 
         return tuple(grad), None
