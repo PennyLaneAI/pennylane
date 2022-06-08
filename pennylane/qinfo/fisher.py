@@ -70,9 +70,9 @@ def classical_fisher(qnode, argnums=0):
 
         In its current form, this functionality is not hardware compatible and can only be used by simulators.
 
-    **See also:**
+    .. seealso::
 
-    :func:`metric_tensor`, :func:`qinfo.quantum_fisher`
+        :func:`metric_tensor`, :func:`qinfo.quantum_fisher`
 
     **Example**
 
@@ -250,8 +250,8 @@ def quantum_fisher(*args, **kwargs):
 
     with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
 
-    .. note::
-        ``quantum_fisher()`` is simply calling :func:`~.metric_tensor`, to which we refer for implementation details.
+    .. seealso::
+        ``quantum_fisher()`` is simply calling :func:`~.pennylane.metric_tensor`, to which we refer for implementation details.
     """
 
     def wrapper(*args0, **kwargs0):

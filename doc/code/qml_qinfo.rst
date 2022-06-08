@@ -32,3 +32,4 @@ Fisher information matrices
     :no-heading:
     :no-inheritance-diagram:
     :no-inherited-members:
+    :skip: metric_tensor
