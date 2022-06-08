@@ -186,7 +186,9 @@ ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
 
 def _tf_einsum(equation, *inputs):
-    return _i("tf").einsum(equation, *inputs)
+    from tensorflow.python.ops.special_math_ops import _einsum_v2
+
+    return _einsum_v2(equation, *inputs)
 
 
 ar.register_function("tensorflow", "einsum", _tf_einsum)
