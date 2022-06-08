@@ -117,7 +117,12 @@ def factorize(two, tol):
      [[-8.14472856e-01  5.01669019e-13]
       [ 5.01689072e-13 -8.28642140e-01]]]
     """
-    n = two.shape[0]
+    shape = two.shape
+
+    if len(shape) != 4 or len(set(shape)) != 1:
+        raise ValueError("The two-electron repulsion tensor must have a (N x N x N x N) shape.")
+
+    n = shape[0]
     two = two.reshape(n * n, n * n)
 
     eigvals_r, eigvecs_r = np.linalg.eigh(two)

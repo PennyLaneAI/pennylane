@@ -66,7 +66,7 @@ def test_factorize(two_tensor, factors_ref):
 
 
 @pytest.mark.parametrize(
-    ("two_tensor"),
+    "two_tensor",
     [
         # two-electron tensor computed as
         # symbols  = ['H', 'H']
@@ -96,3 +96,23 @@ def test_factorize_reproduce(two_tensor):
         two_computed += np.einsum("ij, lk", mat, mat)
 
     assert np.allclose(two_computed, two_tensor)
+
+
+@pytest.mark.parametrize(
+    "two_tensor",
+    [
+        np.array(
+            [
+                [6.74755872e-01, -2.85826918e-13, -2.85799162e-13, 6.63711349e-01],
+                [-2.85965696e-13, 1.81210478e-01, 1.81210478e-01, -2.63900013e-13],
+                [-2.85854673e-13, 1.81210478e-01, 1.81210478e-01, -2.63900013e-13],
+                [6.63711349e-01, -2.63677968e-13, -2.63788991e-13, 6.97651447e-01],
+            ]
+        ),
+    ],
+)
+def test_shape_error(two_tensor):
+    r"""Test that the factorize function raises an error when the two-electron repulsion tensor does
+    not have the correct shape."""
+    with pytest.raises(ValueError, match="The two-electron repulsion tensor must have"):
+        qml.resources.factorize(two_tensor, 1e-5)
