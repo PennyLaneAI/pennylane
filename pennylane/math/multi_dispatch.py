@@ -624,13 +624,15 @@ def where(condition, x=None, y=None):
     """
     if x is None and y is None:
         interface = _multi_dispatch([condition])
-        return np.where(condition, like=interface)
+        res = np.where(condition, like=interface)
+
+        if interface == "tensorflow":
+            return np.transpose(np.stack(res))
+
+        return res
 
     interface = _multi_dispatch([condition, x, y])
     res = np.where(condition, x, y, like=interface)
-
-    if interface == "tensorflow":
-        return np.transpose(np.stack(res))
 
     return res
 

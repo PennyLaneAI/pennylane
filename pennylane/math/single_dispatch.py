@@ -341,7 +341,7 @@ ar.register_function("tensorflow", "diagonal", lambda x, *args: _i("tf").linalg.
 ar.register_function("tensorflow", "outer", lambda a, b: _i("tf").tensordot(a, b, axes=0))
 
 # for some reason Autoray modifies the default behaviour, so we change it back here
-ar.register_function("tensorflow", "where", lambda cond, x, y: _i("tf").where(cond, x, y))
+ar.register_function("tensorflow", "where", lambda *args, **kwargs: _i("tf").where(*args, **kwargs))
 
 # -------------------------------- Torch --------------------------------- #
 
