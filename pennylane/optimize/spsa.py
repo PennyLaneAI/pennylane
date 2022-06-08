@@ -63,7 +63,7 @@ class SPSAOptimizer:
     * scaling exponent :math:`\alpha` and
     * stability constant :math:`A`
 
-    For more details, see `Spall (1998) <https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF>`_.
+    For more details, see `Spall (1998a) <https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF>`_.
 
     .. note::
 
@@ -157,6 +157,8 @@ class SPSAOptimizer:
             of expected iterations.
         a (float): A hyperparameter expected to be small in noisy situations,
             whose value could be :math:`\frac{mag(\Delta\theta)}{mag(g(\theta))}(A+1)^\alpha`
+            for more details, see `Spall (1998b)
+            <https://www.jhuapl.edu/spsa/PDF-SPSA/Spall_Implementation_of_the_Simultaneous.PDF>`_.
     """
     # pylint: disable-msg=too-many-arguments
     def __init__(self, maxiter=200, alpha=0.602, gamma=0.101, c=0.2, A=None, a=None):
