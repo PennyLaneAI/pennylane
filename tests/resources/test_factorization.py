@@ -29,7 +29,7 @@ from pennylane import numpy as np
         # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
         # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
         # core, one, two = qml.qchem.electron_integrals(mol)()
-        # two = np.swapaxes(two, 1, 3) # convert to chemist notation
+        # two = np.swapaxes(two, 1, 3) # convert to the chemist notation
         (
             np.array(
                 [
@@ -73,7 +73,7 @@ def test_factorize(two_tensor, factors_ref):
         # geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.529177
         # mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
         # core, one, two = qml.qchem.electron_integrals(mol)()
-        # two = np.swapaxes(two, 1, 3) # convert to chemist notation
+        # two = np.swapaxes(two, 1, 3) # convert to the chemist notation
         np.array(
             [
                 [
