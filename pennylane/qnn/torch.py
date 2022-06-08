@@ -217,7 +217,7 @@ class TorchLayer(Module):
         super().__init__()
 
         weight_shapes = {
-            weight: (tuple(size) if isinstance(size, Iterable) else (size,))
+            weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
             for weight, size in weight_shapes.items()
         }
 
@@ -331,9 +331,14 @@ class TorchLayer(Module):
             return init(torch.Tensor(*weight_size))
 
         for name, size in weight_shapes.items():
-            self.qnode_weights[name] = torch.nn.Parameter(
-                init_weight(weight_name=name, weight_size=size)
-            )
+            if len(size) == 0:
+                self.qnode_weights[name] = torch.nn.Parameter(
+                    init_weight(weight_name=name, weight_size=[1])[0]
+                )
+            else:
+                self.qnode_weights[name] = torch.nn.Parameter(
+                    init_weight(weight_name=name, weight_size=size)
+                )
 
             self.register_parameter(name, self.qnode_weights[name])
 
