@@ -22,7 +22,7 @@ from pennylane import numpy as np
 
 
 @pytest.mark.parametrize(
-    ("two_tensor", "factors_ref"),
+    ("two_tensor", "tol", "factors_ref"),
     [
         # two-electron tensor computed as
         # symbols  = ['H', 'H']
@@ -43,6 +43,7 @@ from pennylane import numpy as np
                     ],
                 ]
             ),
+            1.0e-5,
             # factors computed with openfermion (rearranged)
             np.array(
                 [
@@ -52,11 +53,32 @@ from pennylane import numpy as np
                 ]
             ),
         ),
+        (
+            np.array(
+                [
+                    [
+                        [[6.74755872e-01, -2.85826918e-13], [-2.85799162e-13, 6.63711349e-01]],
+                        [[-2.85965696e-13, 1.81210478e-01], [1.81210478e-01, -2.63900013e-13]],
+                    ],
+                    [
+                        [[-2.85854673e-13, 1.81210478e-01], [1.81210478e-01, -2.63900013e-13]],
+                        [[6.63711349e-01, -2.63677968e-13], [-2.63788991e-13, 6.97651447e-01]],
+                    ],
+                ]
+            ),
+            1.0e-1,
+            np.array(
+                [
+                    [[-1.11022302e-16, -4.25688222e-01], [-4.25688222e-01, -1.11022302e-16]],
+                    [[-8.14472857e-01, 1.40518540e-16], [1.40518540e-16, -8.28642144e-01]],
+                ]
+            ),
+        ),
     ],
 )
-def test_factorize(two_tensor, factors_ref):
+def test_factorize(two_tensor, tol, factors_ref):
     r"""Test that factorize function returns the correct values."""
-    factors, eigvals, eigvecs = qml.resources.factorize(two_tensor, 1e-5)
+    factors, eigvals, eigvecs = qml.resources.factorize(two_tensor, tol)
 
     eigvals_ref, eigvecs_ref = np.linalg.eigh(factors_ref)
 
