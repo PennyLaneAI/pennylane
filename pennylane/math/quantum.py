@@ -284,7 +284,6 @@ def _partial_trace(density_matrix, indices):
 
         new_state_indices = state_indices.replace(target_letter, "")
         einsum_indices = f"{state_indices}->{new_state_indices}"
-        print(einsum_indices)
         density_matrix = einsum(einsum_indices, density_matrix)
 
     number_wires_sub = num_indices - len(indices)
