@@ -19,7 +19,7 @@ from autoray import numpy as np
 from numpy import float64
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .multi_dispatch import diag, dot, scatter_element_add
+from .multi_dispatch import diag, dot, scatter_element_add, einsum
 from .utils import is_abstract, allclose, cast
 
 ABC_ARRAY = np.array(list(ABC))
@@ -284,8 +284,8 @@ def _partial_trace(density_matrix, indices):
 
         new_state_indices = state_indices.replace(target_letter, "")
         einsum_indices = f"{state_indices}->{new_state_indices}"
-
-        density_matrix = np.einsum(einsum_indices, density_matrix)
+        print(einsum_indices)
+        density_matrix = einsum(einsum_indices, density_matrix)
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
