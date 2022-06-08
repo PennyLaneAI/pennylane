@@ -13,7 +13,6 @@
 # limitations under the License.
 """Differentiable quantum functions"""
 import itertools
-import functools
 
 from string import ascii_letters as ABC
 from autoray import numpy as np
@@ -21,7 +20,7 @@ from numpy import float64
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import diag, dot, scatter_element_add
-from .utils import is_abstract, allclose, cast, convert_like, cast_like
+from .utils import is_abstract, allclose, cast
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -272,58 +271,21 @@ def _partial_trace(density_matrix, indices):
     rho_dim = 2 * num_indices
 
     density_matrix = np.reshape(density_matrix, [2] * 2 * num_indices)
-
-    # Kraus operator for partial trace
-    if not is_abstract(density_matrix):
-        kraus = cast_like(np.eye(2), density_matrix)
-    else:
-        kraus = cast(np.eye(2), density_matrix.dtype)
-
-    kraus = np.reshape(kraus, (2, 1, 2))
-    kraus_dagger = np.asarray([np.conj(np.transpose(k)) for k in kraus])
-
-    kraus = convert_like(kraus, density_matrix)
-    kraus_dagger = convert_like(kraus_dagger, density_matrix)
-
+    indices = np.sort(indices)
     # For loop over wires
-    for target_wire in indices:
-        # Tensor indices of density matrix
-        state_indices = ABC[:rho_dim]
+    for i, target_index in enumerate(indices):
+        target_index = target_index - i
+        state_indices = ABC[: rho_dim - 2 * i]
+        state_indices = list(state_indices)
 
-        # row indices of the quantum state affected by this operation
-        row_wires_list = [target_wire]
-        row_indices = "".join(ABC_ARRAY[row_wires_list].tolist())
+        target_letter = state_indices[target_index]
+        state_indices[target_index + num_indices - i] = target_letter
+        state_indices = "".join(state_indices)
 
-        # column indices are shifted by the number of wires
-        col_wires_list = [w + num_indices for w in row_wires_list]
-        col_indices = "".join(ABC_ARRAY[col_wires_list].tolist())
+        new_state_indices = state_indices.replace(target_letter, "")
+        einsum_indices = f"{state_indices}->{new_state_indices}"
 
-        # indices in einsum must be replaced with new ones
-        num_partial_trace_wires = 1
-        new_row_indices = ABC[rho_dim : rho_dim + num_partial_trace_wires]
-        new_col_indices = ABC[
-            rho_dim + num_partial_trace_wires : rho_dim + 2 * num_partial_trace_wires
-        ]
-
-        # index for summation over Kraus operators
-        kraus_index = ABC[
-            rho_dim + 2 * num_partial_trace_wires : rho_dim + 2 * num_partial_trace_wires + 1
-        ]
-
-        # new state indices replace row and column indices with new ones
-        new_state_indices = functools.reduce(
-            lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
-            zip(col_indices + row_indices, new_col_indices + new_row_indices),
-            state_indices,
-        )
-
-        # index mapping for einsum, e.g., 'iga,abcdef,idh->gbchef'
-        einsum_indices = (
-            f"{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
-            f"{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}"
-        )
-
-        density_matrix = np.einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
+        density_matrix = np.einsum(einsum_indices, density_matrix)
 
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
