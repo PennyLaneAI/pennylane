@@ -240,7 +240,7 @@ def quantum_fisher(*args, **kwargs):
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode` or quantum tape.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
-    are reflected in the quantum state. The metric used to induce the QFIM is the fidelity :math:`f = |\langle \psi \ \psi' \rangle|^2` between two (pure) quantum states.
+    are reflected in the quantum state. The metric used to induce the QFIM is the fidelity :math:`f = |\langle \psi | \psi' \rangle|^2` between two (pure) quantum states.
     This leads to the following definition of the QFIM (see eq. (27) in `arxiv:2103.15191 <https://arxiv.org/abs/2103.15191>`_):
 
     .. math::
@@ -251,7 +251,7 @@ def quantum_fisher(*args, **kwargs):
     with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
 
     .. seealso::
-        ``quantum_fisher()`` is simply calling :func:`~.pennylane.metric_tensor`, to which we refer for implementation details.
+        :func:`~.pennylane.adjoint_metric_tensor`; ``quantum_fisher()`` is simply calling :func:`~.pennylane.metric_tensor` with a prefactor of 4. Please refer there for implementation details.
     """
 
     def wrapper(*args0, **kwargs0):

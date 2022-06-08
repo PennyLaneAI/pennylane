@@ -45,7 +45,7 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
         - \langle \partial_i \psi(\bm{\theta}) | \psi(\bm{\theta}) \rangle \langle \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle \right]
 
     with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
-    It is closely related to the quantum fisher information matrix, see :func:`~.qinfo.quantum_fisher` and eq. (26) in `arxiv:2103.15191 <https://arxiv.org/abs/2103.15191>`_.
+    It is closely related to the quantum fisher information matrix, see :func:`~.pennylane.qinfo.quantum_fisher` and eq. (27) in `arxiv:2103.15191 <https://arxiv.org/abs/2103.15191>`_.
 
     .. note::
 
@@ -94,6 +94,10 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
     Returns:
         func: Function which accepts the same arguments as the QNode. When called, this
         function will return the metric tensor.
+    
+    .. seealso::
+
+        :func:`.adjoint_metric_tensor`, :func:`~.pennylane.qinfo.quantum_fisher`
 
     The block-diagonal part of the metric tensor always is computed using the
     covariance-based approach. If no approximation is selected,

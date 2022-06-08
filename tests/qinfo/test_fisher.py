@@ -98,6 +98,7 @@ class TestClassicalIntegration:
         res = classical_fisher(circ)(params)
         assert np.allclose(res, n_wires * np.ones((n_params, n_params)))
 
+
 def test_quantum_fisher_info():
     """Integration test of quantum fisher information matrix CFIM. This is just calling ``qml.metric_tensor`` and multiplying by a factor of 4"""
 
@@ -109,13 +110,15 @@ def test_quantum_fisher_info():
     def circ(params):
         qml.RX(params[0], wires=0)
         qml.RX(params[1], wires=0)
-        qml.CNOT(wires=(0,1))
+        qml.CNOT(wires=(0, 1))
         return qml.state()
+
     params = pnp.random.random(2)
 
     QFIM = quantum_fisher(circ)(params)
-    QFIM1 = 4. * qml.metric_tensor(circ)(params)
+    QFIM1 = 4.0 * qml.metric_tensor(circ)(params)
     assert np.allclose(QFIM, QFIM1)
+
 
 class TestInterfaces:
     """Integration tests for the classical fisher information matrix CFIM"""
