@@ -20,77 +20,11 @@ from pennylane import numpy as np
 def factorize(two, tol):
     r"""Return the double-factorized form of a two-electron tensor.
 
-    The second quantized electronic Hamiltonian is constructed in terms of fermionic creation,
-    :math:`a^{\dagger}` , and annihilation, :math:`a`, operators as
-    [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_]
-
-    .. math::
-
-        H = \sum_{\alpha \in \{\uparrow, \downarrow \} } \sum_{pq} h_{pq} a_{p,\alpha}^{\dagger}
-        a_{q, \alpha} + \frac{1}{2} \sum_{\alpha, \beta \in \{\uparrow, \downarrow \} } \sum_{pqrs}
-        h_{pqrs} a_{p, \alpha}^{\dagger} a_{q, \beta}^{\dagger} a_{r, \beta} a_{s, \alpha},
-
-    where :math:`h_{pq}` and :math:`h_{pqrs}` are the one- and two-electron integrals computed as
-
-    .. math::
-
-        h_{pq} = \int \phi_p(r)^* \left ( -\frac{\nabla_r^2}{2} - \sum_i \frac{Z_i}{|r-R_i|} \right)
-        \phi_q(r) dr,
-
-    and
-
-    .. math::
-
-        h_{pqrs} = \int \frac{\phi_p(r_1)^* \phi_q(r_2)^* \phi_r(r_2) \phi_s(r_1)}{|r_1 - r_2|}
-        dr_1 dr_2.
-
-    The two-electron integrals can be rearranged in the so-called chemist notation which gives
-
-    .. math::
-
-        V_{pqrs} = \int \frac{\phi_p(r_1)^* \phi_q(r_1)^* \phi_r(r_2) \phi_s(r_2)}{|r_1 - r_2|}
-        dr_1 dr_2,
-
-    and the molecular Hamiltonian can be rewritten as
-
-    .. math::
-
-        H = \sum_{\alpha \in \{\uparrow, \downarrow \} } \sum_{pq} T_{pq} a_{p,\alpha}^{\dagger}
-        a_{q, \alpha} + \frac{1}{2} \sum_{\alpha, \beta \in \{\uparrow, \downarrow \} } \sum_{pqrs}
-        V_{pqrs} a_{p, \alpha}^{\dagger} a_{q, \alpha} a_{r, \beta}^{\dagger} a_{s, \beta}.
-
-    with
-
-    .. math::
-
-        T_{pq} = h_{pq} - \frac{1}{2} \sum_s h_{pssq}.
-
-
-    This notation allows a low-rank factorization of the two-electron integral. The objective of
-    the factorization is to find a set of symmetric matrices, :math:`L`, such that
-
-    .. math::
-
-           V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
-
-    with the rank :math:`R \leq n^2`. The matrices :math:`L` are diagonalized and for each matrix
-    the eigenvalues that are smaller than a given threshold (and their corresponding eigenvectors)
-    are discarded.
-
-    The algorithm has the following steps [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_]:
-
-    - Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
-      :math:`n^2 \times n^2` matrix where :math:`n` is the number of orbitals.
-
-    - Diagonalize the resulting matrix and keep the :math:`r` eigenvectors that have
-      corresponding eigenvalues larger than a threshold.
-
-    - Multiply the eigenvectors by the square root of the eigenvalues to obtain matrices :math:`L`.
-
-    - Reshape the selected eigenvectors to :math:`n \times n` matrices.
-
-    - Diagonalize the :math:`n \times n` matrices and keep those matrices such that the norm of
-      their eigenvalues is larger than a threshold.
+    The two-electron tensor :math:`V`, in the chemist notation, is first factorized in terms of
+    symmetric matrices :math:`L^{(r)` such that
+    :math:`V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T}`. The rank :math:`R` is determined by a
+    threshold error. Then, each matrix :math:`L^{(r)` is diagonalized and its eigenvalues (and
+    corresponding eigenvectors) are truncated with the same threshold error.
 
     Args:
         two (array[array[float]]): the two-electron repulsion tensor in the molecular orbital basis
@@ -116,6 +50,81 @@ def factorize(two, tol):
       [-4.25688222e-01 -2.98228790e-13]]
      [[-8.14472856e-01  5.01669019e-13]
       [ 5.01689072e-13 -8.28642140e-01]]]
+
+    .. details::
+      :title: Theory
+
+        The second quantized electronic Hamiltonian is constructed in terms of fermionic creation,
+        :math:`a^{\dagger}` , and annihilation, :math:`a`, operators as
+        [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_]
+
+        .. math::
+
+            H = \sum_{\alpha \in \{\uparrow, \downarrow \} } \sum_{pq} h_{pq} a_{p,\alpha}^{\dagger}
+            a_{q, \alpha} + \frac{1}{2} \sum_{\alpha, \beta \in \{\uparrow, \downarrow \} } \sum_{pqrs}
+            h_{pqrs} a_{p, \alpha}^{\dagger} a_{q, \beta}^{\dagger} a_{r, \beta} a_{s, \alpha},
+
+        where :math:`h_{pq}` and :math:`h_{pqrs}` are the one- and two-electron integrals computed as
+
+        .. math::
+
+            h_{pq} = \int \phi_p(r)^* \left ( -\frac{\nabla_r^2}{2} - \sum_i \frac{Z_i}{|r-R_i|} \right)
+            \phi_q(r) dr,
+
+        and
+
+        .. math::
+
+            h_{pqrs} = \int \frac{\phi_p(r_1)^* \phi_q(r_2)^* \phi_r(r_2) \phi_s(r_1)}{|r_1 - r_2|}
+            dr_1 dr_2.
+
+        The two-electron integrals can be rearranged in the so-called chemist notation which gives
+
+        .. math::
+
+            V_{pqrs} = \int \frac{\phi_p(r_1)^* \phi_q(r_1)^* \phi_r(r_2) \phi_s(r_2)}{|r_1 - r_2|}
+            dr_1 dr_2,
+
+        and the molecular Hamiltonian can be rewritten as
+
+        .. math::
+
+            H = \sum_{\alpha \in \{\uparrow, \downarrow \} } \sum_{pq} T_{pq} a_{p,\alpha}^{\dagger}
+            a_{q, \alpha} + \frac{1}{2} \sum_{\alpha, \beta \in \{\uparrow, \downarrow \} } \sum_{pqrs}
+            V_{pqrs} a_{p, \alpha}^{\dagger} a_{q, \alpha} a_{r, \beta}^{\dagger} a_{s, \beta}.
+
+        with
+
+        .. math::
+
+            T_{pq} = h_{pq} - \frac{1}{2} \sum_s h_{pssq}.
+
+
+        This notation allows a low-rank factorization of the two-electron integral. The objective of
+        the factorization is to find a set of symmetric matrices, :math:`L`, such that
+
+        .. math::
+
+               V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
+
+        with the rank :math:`R \leq n^2`. The matrices :math:`L` are diagonalized and for each matrix
+        the eigenvalues that are smaller than a given threshold (and their corresponding eigenvectors)
+        are discarded.
+
+        The algorithm has the following steps [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_]:
+
+        - Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
+          :math:`n^2 \times n^2` matrix where :math:`n` is the number of orbitals.
+
+        - Diagonalize the resulting matrix and keep the :math:`r` eigenvectors that have
+          corresponding eigenvalues larger than a threshold.
+
+        - Multiply the eigenvectors by the square root of the eigenvalues to obtain matrices :math:`L`.
+
+        - Reshape the selected eigenvectors to :math:`n \times n` matrices.
+
+        - Diagonalize the :math:`n \times n` matrices and keep those matrices such that the norm of
+          their eigenvalues is larger than a threshold.
     """
     shape = two.shape
 
