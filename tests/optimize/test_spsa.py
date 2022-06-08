@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the SPSA optimizer"""
+import os
+
+os.environ["OMP_NUM_THREADS"] = "2"
 import pytest
 
 import pennylane as qml
@@ -353,3 +356,63 @@ class TestSPSAOptimizer:
             match="The objective function must be a scalar function for the gradient ",
         ):
             opt.step(cost, params)
+
+    def test_lighting_device(self):
+        """Test SPSAOptimizer implementation with lightning.qubit device."""
+        coeffs = [0.2, -0.543, 0.4514]
+        obs = [
+            qml.PauliX(0) @ qml.PauliZ(1),
+            qml.PauliZ(0) @ qml.Hadamard(2),
+            qml.PauliX(3) @ qml.PauliZ(1),
+        ]
+        H = qml.Hamiltonian(coeffs, obs)
+        num_qubits = 4
+        dev = qml.device("lightning.qubit", wires=num_qubits, batch_obs=True)
+
+        @qml.qnode(dev)
+        def cost_fun(params, num_qubits=1):
+            qml.BasisState(np.array([1, 1, 0, 0]), wires=range(num_qubits))
+            for i in range(num_qubits):
+                qml.Rot(*params[i], wires=0)
+                qml.CNOT(wires=[2, 3])
+                qml.CNOT(wires=[2, 0])
+                qml.CNOT(wires=[3, 1])
+            return qml.expval(H)
+
+        init_params = np.random.normal(0, np.pi, (num_qubits, 3), requires_grad=True)
+        params = init_params
+
+        init_energy = cost_fun(init_params, num_qubits)
+
+        max_iterations = 100
+        opt = qml.SPSAOptimizer(maxiter=max_iterations)
+        for _ in range(max_iterations):
+            params, energy = opt.step_and_cost(cost_fun, params, num_qubits=num_qubits)
+
+        assert np.all(params != init_params)
+        assert energy < init_energy
+
+    def test_default_mixed_device(self):
+        """Test SPSAOptimizer implementation with default.mixed device."""
+        n_qubits = 1
+        max_iterations = 400
+        dev = qml.device("default.mixed", wires=n_qubits)
+
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            qml.AmplitudeDamping(0.5, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        opt = qml.SPSAOptimizer(maxiter=max_iterations, c=0.3)
+
+        init_params = np.random.normal(scale=0.1, size=(2,), requires_grad=True)
+        params = init_params
+        init_circuit_res = circuit(params)
+
+        for _ in range(max_iterations):
+            params, circuit_res = opt.step_and_cost(circuit, params)
+
+        assert np.all(params != init_params)
+        assert circuit_res < init_circuit_res
