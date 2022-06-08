@@ -69,6 +69,7 @@ ops = {
     "Adjoint(S)": qml.adjoint(qml.S(wires=[0])),
     "SWAP": qml.SWAP(wires=[0, 1]),
     "ISWAP": qml.ISWAP(wires=[0, 1]),
+    "ECR": qml.ECR(wires=[0, 1]),
     "Adjoint(ISWAP)": qml.adjoint(qml.ISWAP(wires=[0, 1])),
     "T": qml.T(wires=[0]),
     "Adjoint(T)": qml.adjoint(qml.T(wires=[0])),
@@ -128,6 +129,14 @@ T = np.diag([1, np.exp(1j * np.pi / 4)])
 SX = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 ISWAP = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
+ECR = np.array(
+    [
+        [0, 0, 1 / sqrt(2), 1j * 1 / sqrt(2)],
+        [0, 0, 1j * 1 / sqrt(2), 1 / sqrt(2)],
+        [1 / sqrt(2), -1j * 1 / sqrt(2), 0, 0],
+        [-1j * 1 / sqrt(2), 1 / sqrt(2), 0, 0],
+    ]
+)
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 CZ = np.diag([1, 1, 1, -1])
 CY = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
@@ -255,6 +264,7 @@ two_qubit = [
     (qml.CNOT, CNOT),
     (qml.SWAP, SWAP),
     (qml.ISWAP, ISWAP),
+    (qml.ECR, ECR),
     (qml.CZ, CZ),
     (qml.CY, CY),
     adjoint_tuple(qml.ISWAP, ISWAP),
