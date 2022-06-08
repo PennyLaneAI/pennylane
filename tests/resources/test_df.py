@@ -60,33 +60,3 @@ def test_eta(rank, eta_ref):
     eta = qml.resources.eta(rank)
 
     assert eta == eta_ref
-
-
-@pytest.mark.parametrize(
-    ("constants", "k_ref"),
-    [
-        # k_ref is obtained manually by computing the cost for different k values and choosing the k
-        # that gives the lowest cost.
-        (
-            (26.0, 1.0, 0.0, 15.0, -1.0),
-            1,
-        ),
-        (
-            (26.0, 1.0, 0.0, 1.0, 0.0),
-            4,
-        ),
-        (
-            (151.0, 7.0, 151.0, 30.0, -1.0),
-            4,
-        ),
-        (
-            (151.0, 7.0, 151.0, 2.0, 0.0),
-            16,
-        ),
-    ],
-)
-def test_expansion_factor(constants, k_ref):
-    r"""Test that expansion_factor function returns the correct value."""
-    k = qml.resources.expansion_factor(constants)
-
-    assert k == k_ref
