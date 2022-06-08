@@ -86,8 +86,8 @@ def classical_fisher(qnode, argnums=0):
 
         @qml.qnode(dev)
         def circ(params):
-        qml.RX(params[0], wires=0)
-        qml.RX(params[1], wires=0)
+            qml.RX(params[0], wires=0)
+            qml.RX(params[1], wires=0)
             qml.CNOT(wires=(0,1))
             return qml.probs(wires=range(n_wires))
 
