@@ -256,7 +256,7 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_jacobian_agrees_backprop_parameter_shift(self, tol):
+    def test_backprop_jacobian_agrees_parameter_shift(self, tol):
         """Test that jacobian of a QNode with an attached default.mixed.tf device
         gives the correct result with respect to the parameter-shift method"""
         p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
