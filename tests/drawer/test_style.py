@@ -40,7 +40,6 @@ def test_black_white_style():
     assert plt.rcParams['patch.linewidth'] == 3.0
     assert plt.rcParams["patch.facecolor"] == "white"
     assert plt.rcParams["patch.edgecolor"] == "black"
-    assert plt.rcParams["patch.linewidth"] == 2
     assert plt.rcParams["patch.force_edgecolor"]  # = True
     assert plt.rcParams["lines.color"] == "black"
     assert plt.rcParams["text.color"] == "black"
