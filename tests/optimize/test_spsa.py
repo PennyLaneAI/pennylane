@@ -116,7 +116,7 @@ class TestSPSAOptimizer:
 
         assert np.all(res == expected)
 
-    def test_step_and_cost_supplied_cost3(self):
+    def test_step_and_cost_hamiltonian(self):
         """
         Test that the correct cost is returned via the step_and_cost method
         for the SPSA optimizer.
