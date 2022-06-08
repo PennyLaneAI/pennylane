@@ -620,17 +620,23 @@ def to_fidelity(state0, state1, check_state=False, c_dtype="complex128"):
 
     if num_indices0 != num_indices1:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
-
     # State vector
     if state1.shape == (len_state1,) and state0.shape == (len_state0,):
-        overlap = np.tensordot(state0, np.transpose(np.conj(state1)))
+        overlap = np.tensordot(state0, np.transpose(np.conj(state1)), axes=1)
+        overlap = np.absolute(overlap) ** 2
         return overlap
 
     elif state1.shape == (len_state1,) and state0.shape != (len_state0,):
-        state0 = np.tensordot(state0, np.conj(state0))
+        overlap = np.tensordot(state0, np.transpose(np.conj(state1)), axes=1)
+        overlap = np.tensordot(state1, overlap, axes=1)
+        overlap = np.absolute(overlap) ** 2
+        return overlap
 
-    elif state0.shape != (len_state0,) and state1.shape == (len_state1,):
-        state1 = np.tensordot(state1, np.conj(state1))
+    elif state0.shape == (len_state0,) and state1.shape != (len_state1,):
+        overlap = np.tensordot(state1, np.transpose(np.conj(state0)), axes=1)
+        overlap = np.tensordot(state0, overlap, axes=1)
+        overlap = np.absolute(overlap) ** 2
+        return overlap
 
     fidelity = _compute_fidelity(state0, state1)
     return fidelity
@@ -640,6 +646,7 @@ def _compute_fidelity(density_matrix0, density_matrix1):
     """
     Compute the fidelity for two density matrices.
     """
+    print(density_matrix0, density_matrix1)
     sqrt_matrix = qml.math.sqrt_matrix(density_matrix0)
     sqrt_mat_sqrt = sqrt_matrix @ density_matrix1 @ sqrt_matrix
     evs = qml.math.eigvalsh(sqrt_mat_sqrt)

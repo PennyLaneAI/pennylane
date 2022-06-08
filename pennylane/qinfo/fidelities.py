@@ -19,31 +19,41 @@ import pennylane as qml
 from autograd.numpy.numpy_boxes import ArrayBox
 
 
-def fidelity(qnode0, qnode1, indices0, indices1):
+def fidelity(qnode0, qnode1, wires0, wires1):
     """Compute the Fidelity entropy from two :class:`.QNode` returning a :func:`~.state`."""
-    density_matrix_qnode0 = qml.qinfo.density_matrix_transform(qnode0, indices0)
-    density_matrix_qnode1 = qml.qinfo.density_matrix_transform(qnode1, indices1)
+
+    if wires0 != wires1:
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
     def wrapper(signature0=None, signature1=None):
+        if len(wires0) == len(qnode0.device.wires):
+            state_qnode0 = qnode0
+        else:
+            state_qnode0 = qml.qinfo.density_matrix_transform(qnode0, indices=wires0)
+
+        if len(wires1) == len(qnode1.device.wires):
+            state_qnode1 = qnode1
+        else:
+            state_qnode1 = qml.qinfo.density_matrix_transform(qnode1, indices=wires1)
 
         if signature0 is not None:
             if isinstance(signature0, Iterable) or isinstance(signature0, ArrayBox):
-                density_matrix0 = density_matrix_qnode0(signature0)
+                state_qnode0 = state_qnode0(signature0)
             else:
-                density_matrix0 = density_matrix_qnode0(*signature0)
+                state_qnode0 = state_qnode0(*signature0)
         else:
-            density_matrix0 = density_matrix_qnode0()
+            # No args
+            state_qnode0 = state_qnode0()
 
         if signature1 is not None:
-            print(signature1)
             if isinstance(signature1, Iterable) or isinstance(signature1, ArrayBox):
-                density_matrix1 = density_matrix_qnode1(signature1)
+                state_qnode1 = state_qnode1(signature1)
             else:
-                density_matrix1 = density_matrix_qnode1(*signature1)
+                state_qnode1 = state_qnode1(*signature1)
         else:
-            density_matrix1 = density_matrix_qnode1()
+            state_qnode1 = state_qnode1()
 
-        fidelity = qml.math.to_fidelity(density_matrix0, density_matrix1)
+        fidelity = qml.math.to_fidelity(state_qnode0, state_qnode1)
         return fidelity
 
     return wrapper
