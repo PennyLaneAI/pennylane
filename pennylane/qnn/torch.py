@@ -267,8 +267,9 @@ class TorchLayer(Module):
         """
 
         if len(inputs.shape) > 1:
-            # If the input size is not 1-dimensional, unstack the input along its first dimension, recursively call
-            # the forward pass on each of the yielded tensors, and then stack the outputs back into the correct shape
+            # If the input size is not 1-dimensional, unstack the input along its first dimension,
+            # recursively call the forward pass on each of the yielded tensors, and then stack the
+            # outputs back into the correct shape
             reconstructor = [self.forward(x) for x in torch.unbind(inputs)]
             return torch.stack(reconstructor)
 

@@ -18,3 +18,4 @@ flaky
 pytest_mock
 pre-commit
 pylint
+black
