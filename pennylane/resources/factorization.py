@@ -21,9 +21,9 @@ def factorize(two, tol):
     r"""Return the double-factorized form of a two-electron tensor.
 
     The two-electron tensor :math:`V`, in the chemist notation, is first factorized in terms of
-    symmetric matrices :math:`L^{(r)` such that
+    symmetric matrices :math:`L^{(r)}` such that
     :math:`V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T}`. The rank :math:`R` is determined by a
-    threshold error. Then, each matrix :math:`L^{(r)` is diagonalized and its eigenvalues (and
+    threshold error. Then, each matrix :math:`L^{(r)}` is diagonalized and its eigenvalues (and
     corresponding eigenvectors) are truncated with the same threshold error.
 
     Args:
