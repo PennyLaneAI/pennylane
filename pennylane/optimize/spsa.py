@@ -41,7 +41,12 @@ class SPSAOptimizer:
     * :math:`k` is the current iteration step,
     * :math:`\hat{\theta}_k` are the input parameters at iteration step :math:`k`,
     * :math:`y` is the objective function,
-    * :math:`c_k=\frac{c}{(k+1)^\gamma}` is the gain sequence corresponding to evaluation step size and
+    * :math:`c_k=\frac{c}{k^\gamma}` is the gain sequence corresponding to evaluation step size
+      and it can be controlled with
+
+      * scaling parameter :math:`c` and
+      * scaling exponent :math:`\gamma`
+
     * :math:`\Delta_{ki}^{-1} \left(1 \leq i \leq p \right)` are the inverted elements of
       random pertubation vector :math:`\Delta_k`.
 
@@ -50,12 +55,7 @@ class SPSAOptimizer:
     .. math::
         \hat{\theta}_{k+1} = \hat{\theta}_{k} - a_k\hat{g}_k(\hat{\theta}_k)\text{,}
 
-    where the gain sequences :math:`a_k=\frac{a}{(A+k+1)^\alpha}` controls parameter update step size.
-
-    The gain sequence :math:`c_k` can be controlled with
-
-    * scaling parameter :math:`c` and
-    * scaling exponent :math:`\gamma`
+    where the gain sequences :math:`a_k=\frac{a}{(A+k)^\alpha}` controls parameter update step size.
 
     The gain sequence :math:`a_k` can be controlled with
 
@@ -72,19 +72,6 @@ class SPSAOptimizer:
         * The forward-pass value of the cost function is not computed when stepping the optimizer.
           Therefore, in case of using ``step_and_cost`` method instead of ``step``, the number
           of executions will include the cost function evaluations.
-
-    .. note::
-
-        In cases of hybrid classical-quantum workflows:
-
-        * In implementation of a QNode as a layer of a Keras sequential model,
-          possible optimizers for the model are from the classical platform i.e.
-          `tf.keras.optimizers.SGD
-          <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/SGD>`_.
-        * In a hybrid classical-quantum-classical workflow where we use SPSAOptimizer
-          for the quantum part, we have to extract the values of the classical tensor
-          in order to use it in the quantum circuit as inputs and assign the output
-          of the quantum circuit to a subsecuent classical tensor.
 
 
     **Examples:**
@@ -187,8 +174,9 @@ class SPSAOptimizer:
         self.ak = self.a / (self.A + 1) ** self.alpha
 
     def step_and_cost(self, objective_fn, *args, **kwargs):
-        r"""Update the parameter array :math:`\hat{\theta}_k` with one step of the optimizer and return
-        the step and the corresponding objective function.
+        r"""Update the parameter array :math:`\hat{\theta}_k` with one step of the
+        optimizer and return the step and the corresponding objective function. The number
+        of steps is being counted through calls to ``step_and_cost`` and ``cost``.
 
         Args:
             objective_fn (function): the objective function for optimization
@@ -212,7 +200,8 @@ class SPSAOptimizer:
         return new_args, forward
 
     def step(self, objective_fn, *args, **kwargs):
-        r"""Update trainable arguments with one step of the optimizer.
+        r"""Update trainable arguments with one step of the optimizer. The number
+        of steps is being counted through calls to ``step_and_cost`` and ``cost``.
 
         Args:
             objective_fn (function): the objective function for optimization
