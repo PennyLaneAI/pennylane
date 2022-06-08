@@ -177,7 +177,7 @@ class SPSAOptimizer:
         the step and the corresponding objective function.
 
         Args:
-            objective_fn (function): The objective function for optimization
+            objective_fn (function): the objective function for optimization
             *args : variable length argument array for objective function
             **kwargs : variable length of keyword arguments for the objective function
 
