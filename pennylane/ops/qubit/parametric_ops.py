@@ -2699,3 +2699,162 @@ class IsingZZ(Operation):
 
     def pow(self, z):
         return [IsingZZ(self.data[0] * z, wires=self.wires)]
+
+
+class IsingXY(Operation):
+    r"""
+    Ising XY coupling gate
+
+    .. math:: \mathtt{XY}(\phi) = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
+            0 & i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+            0 & 0 & 0 & 1
+        \end{bmatrix}.
+
+    **Details:**
+
+    * Number of wires: 2
+    * Number of parameters: 1
+    * Gradient recipe: The XY operator satisfies a four-term parameter-shift rule
+
+      .. math::
+          \frac{d}{d \phi} f(XY(\phi))
+          = c_+ \left[ f(XY(\phi + a)) - f(XY(\phi - a)) \right]
+          - c_- \left[ f(XY(\phi + b)) - f(XY(\phi - b)) \right]
+
+      where :math:`f` is an expectation value depending on :math:`XY(\phi)`, and
+
+      - :math:`a = \pi / 2`
+      - :math:`b = 3 \pi / 2`
+      - :math:`c_{\pm} = (\sqrt{2} \pm 1)/{4 \sqrt{2}}`
+
+    Args:
+        phi (float): the phase angle
+        wires (int): the subsystem the gate acts on
+        do_queue (bool): Indicates whether the operator should be
+            immediately pushed into the Operator queue (optional)
+        id (str or None): String representing the operation (optional)
+    """
+    num_wires = 2
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    grad_method = "A"
+    parameter_frequencies = [(0.5, 1.0)]
+
+    def generator(self):
+        return 0.25 * qml.PauliX(wires=self.wires[0]) @ qml.PauliX(
+            wires=self.wires[1]
+        ) + 0.25 * qml.PauliY(wires=self.wires[0]) @ qml.PauliY(wires=self.wires[1])
+
+    def __init__(self, phi, wires, do_queue=True, id=None):
+        super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
+
+    @staticmethod
+    def compute_decomposition(phi, wires):
+        r"""Representation of the operator as a product of other operators (static method). :
+
+        .. math:: O = O_1 O_2 \dots O_n.
+
+
+        .. seealso:: :meth:`~.IsingXY.decomposition`.
+
+        Args:
+            phi (float): the phase angle
+            wires (Iterable, Wires): the subsystem the gate acts on
+
+        Returns:
+            list[Operator]: decomposition into lower level operations
+
+        **Example:**
+
+        >>> qml.IsingXY.compute_decomposition(1.23, wires=(0,1))
+        [Hadamard(wires=[0]), CY(wires=[0, 1]), RY(0.615, wires=[0]), RX(-0.615, wires=[1]), CY(wires=[0, 1]), Hadamard(wires=[0])]
+
+        """
+        return [
+            qml.Hadamard(wires=[wires[0]]),
+            qml.CY(wires=wires),
+            qml.RY(phi / 2, wires=[wires[0]]),
+            qml.RX(-phi / 2, wires=[wires[1]]),
+            qml.CY(wires=wires),
+            qml.Hadamard(wires=[wires[0]]),
+        ]
+
+    @staticmethod
+    def compute_matrix(phi):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.IsingXY.matrix`
+
+
+        Args:
+           phi (tensor_like or float): phase angle
+
+        Returns:
+           tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qml.IsingXY.compute_matrix(0.5)
+        array([[1.        +0.j        , 0.        +0.j        ,        0.        +0.j        , 0.        +0.j        ],
+               [0.        +0.j        , 0.96891242+0.j        ,        0.        +0.24740396j, 0.        +0.j        ],
+               [0.        +0.j        , 0.        +0.24740396j,        0.96891242+0.j        , 0.        +0.j        ],
+               [0.        +0.j        , 0.        +0.j        ,        0.        +0.j        , 1.        +0.j        ]])
+        """
+        c = qml.math.cos(phi / 2)
+        s = qml.math.sin(phi / 2)
+        Y = qml.math.convert_like(np.diag([0, 1, 1, 0])[::-1].copy(), phi)
+
+        if qml.math.get_interface(phi) == "tensorflow":
+            c = qml.math.cast_like(c, 1j)
+            s = qml.math.cast_like(s, 1j)
+            Y = qml.math.cast_like(Y, 1j)
+
+        return qml.math.diag([1, c, c, 1]) + 1j * s * Y
+
+    @staticmethod
+    def compute_eigvals(phi):  # pylint: disable=arguments-differ
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.IsingXY.eigvals`
+
+
+        Args:
+            phi (tensor_like or float): phase angle
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.IsingXY.compute_eigvals(0.5)
+        array([0.96891242+0.24740396j, 0.96891242-0.24740396j,       1.        +0.j        , 1.        +0.j        ])
+        """
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        pos_phase = qml.math.exp(1.0j * phi / 2)
+        neg_phase = qml.math.exp(-1.0j * phi / 2)
+
+        return qml.math.stack([pos_phase, neg_phase, 1, 1])
+
+    def adjoint(self):
+        (phi,) = self.parameters
+        return IsingXY(-phi, wires=self.wires)
+
+    def pow(self, z):
+        return [IsingXY(self.data[0] * z, wires=self.wires)]

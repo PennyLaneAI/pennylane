@@ -159,6 +159,9 @@
   The code that checks for qubit wise commuting (QWC) got a performance boost that is noticable
   when many commuting paulis of the same type are measured.
 
+* Added the `qml.ECR` operation to represent the echoed RZX(pi/2) gate.
+  [(#2613)](https://github.com/PennyLaneAI/pennylane/pull/2613)
+
 * Added new transform `qml.batch_partial` which behaves similarly to `functools.partial` but supports batching in the unevaluated parameters.
   [(#2585)](https://github.com/PennyLaneAI/pennylane/pull/2585)
 
@@ -185,6 +188,7 @@
 * The adjoint transform `adjoint` can now accept either a single instantiated operator or
   a quantum function. It returns an entity of the same type/ call signature as what it was given:
   [(#2222)](https://github.com/PennyLaneAI/pennylane/pull/2222)
+  [(#2672)](https://github.com/PennyLaneAI/pennylane/pull/2672)
 
   ```pycon
   >>> qml.adjoint(qml.PauliX(0))
@@ -224,6 +228,9 @@
 
 * The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
   [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
+
+* Several non-decomposable `Adjoint` ops are added to the device test suite.
+  [(#2658)](https://github.com/PennyLaneAI/pennylane/pull/2658)
 
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
   for many classes.
@@ -273,6 +280,7 @@
 * The `QNode` class now contains a new method `best_method_str` that returns the best differentiation
   method for a provided device and interface, in human-readable format.
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
+   
 
 * Using `Operation.inv()` in a queuing environment no longer updates the queue's metadata, but merely updates
   the operation in place.
@@ -298,6 +306,15 @@
 
 * Added separate requirements_dev.txt for separation of concerns for code development and just using PennyLane.
   [(#2635)](https://github.com/PennyLaneAI/pennylane/pull/2635)
+
+* Add `IsingXY` gate.
+  [(#2649)](https://github.com/PennyLaneAI/pennylane/pull/2649)
+
+* The performance of building sparse Hamiltonians has been improved by accumulating the sparse representation of coefficient-operator pairs in a temporary storage and by eliminating unnecessary `kron` operations on identity matrices. 
+  [(#2630)](https://github.com/PennyLaneAI/pennylane/pull/2630)
+
+* Control values are now displayed distinctly in text and mpl drawings of circuits.
+  [(#2668)](https://github.com/PennyLaneAI/pennylane/pull/2668)
 
 <h3>Breaking changes</h3>
 
@@ -376,6 +393,10 @@
   is now used to style the Sphinx documentation.
   [(#2450)](https://github.com/PennyLaneAI/pennylane/pull/2450)
 
+* Added reference to `qml.utils.sparse_hamiltonian` in `qml.SparseHamiltonian` to clarify
+  how to construct sparse Hamiltonians in PennyLane.
+  [(2572)](https://github.com/PennyLaneAI/pennylane/pull/2572)
+
 * Added a new section in the [Gradients and Training](https://pennylane.readthedocs.io/en/stable/introduction/interfaces.html)
   page that summarizes the supported device configurations and provides justification. Also
   added [code examples](https://pennylane.readthedocs.io/en/stable/introduction/unsupported.html)
@@ -386,6 +407,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, 
-Utkarsh Azad, WingCode
+Amintor Dusko, Ankit Khandelwal, Avani Bhardwaj, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
+Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian, Kottmann, Maria Schuld, Mikhail Andrenkov, Romain Moyard,
+Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, WingCode
