@@ -94,7 +94,7 @@ def metric_tensor(tape, approx=None, allow_nonunitary=True, aux_wire=None, devic
     Returns:
         func: Function which accepts the same arguments as the QNode. When called, this
         function will return the metric tensor.
-    
+
     .. seealso::
 
         :func:`.adjoint_metric_tensor`, :func:`~.pennylane.qinfo.quantum_fisher`
