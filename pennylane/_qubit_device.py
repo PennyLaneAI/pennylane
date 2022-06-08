@@ -707,14 +707,13 @@ class QubitDevice(Device):
         return qml.math.to_vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
 
     def mutual_info(self, wires0, wires1, log_base):
-        """Returns the mutual information prior to measurement:
+        r"""Returns the mutual information prior to measurement:
 
         .. math::
 
             I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
 
         where :math:`S` is the von Neumann entropy.
-
 
         Args:
             wires0 (Wires): wires of the first subsystem.
