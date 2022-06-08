@@ -17,7 +17,8 @@ This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
 """
 import warnings
-import numpy as np
+
+import pennylane.math as np
 
 from pennylane.operation import AnyWires, Channel
 
@@ -81,8 +82,8 @@ class AmplitudeDamping(Channel):
         if not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
-        K0 = np.diag([1, np.sqrt(1 - gamma)])
-        K1 = np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
+        K0 = np.diag([1, np.sqrt(1 - gamma + np.eps)])
+        K1 = np.sqrt(gamma + np.eps) * np.array([[0, 1], [0, 0]])
         return [K0, K1]
 
 
@@ -165,10 +166,10 @@ class GeneralizedAmplitudeDamping(Channel):
         if not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1].")
 
-        K0 = np.sqrt(p) * np.diag([1, np.sqrt(1 - gamma)])
-        K1 = np.sqrt(p) * np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
-        K2 = np.sqrt(1 - p) * np.diag([np.sqrt(1 - gamma), 1])
-        K3 = np.sqrt(1 - p) * np.sqrt(gamma) * np.array([[0, 0], [1, 0]])
+        K0 = np.sqrt(p + np.eps) * np.diag([1, np.sqrt(1 - gamma + np.eps)])
+        K1 = np.sqrt(p + np.eps) * np.sqrt(gamma) * np.array([[0, 1], [0, 0]])
+        K2 = np.sqrt(1 - p + np.eps) * np.diag([np.sqrt(1 - gamma + np.eps), 1])
+        K3 = np.sqrt(1 - p + np.eps) * np.sqrt(gamma) * np.array([[0, 0], [1, 0]])
         return [K0, K1, K2, K3]
 
 
@@ -229,8 +230,8 @@ class PhaseDamping(Channel):
         if not 0.0 <= gamma <= 1.0:
             raise ValueError("gamma must be in the interval [0,1].")
 
-        K0 = np.diag([1, np.sqrt(1 - gamma)])
-        K1 = np.diag([0, np.sqrt(gamma)])
+        K0 = np.diag([1, np.sqrt(1 - gamma + np.eps)])
+        K1 = np.diag([0, np.sqrt(gamma + np.eps)])
         return [K0, K1]
 
 
@@ -308,10 +309,10 @@ class DepolarizingChannel(Channel):
         if not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
-        K0 = np.sqrt(1 - p) * np.eye(2)
-        K1 = np.sqrt(p / 3) * np.array([[0, 1], [1, 0]])
-        K2 = np.sqrt(p / 3) * np.array([[0, -1j], [1j, 0]])
-        K3 = np.sqrt(p / 3) * np.array([[1, 0], [0, -1]])
+        K0 = np.sqrt(1 - p + np.eps) * np.eye(2)
+        K1 = np.sqrt(p / 3 + np.eps) * np.array([[0, 1], [1, 0]])
+        K2 = np.sqrt(p / 3 + np.eps) * np.array([[0, -1j], [1j, 0]])
+        K3 = np.sqrt(p / 3 + np.eps) * np.array([[1, 0], [0, -1]])
         return [K0, K1, K2, K3]
 
 
@@ -374,8 +375,8 @@ class BitFlip(Channel):
         if not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
-        K0 = np.sqrt(1 - p) * np.eye(2)
-        K1 = np.sqrt(p) * np.array([[0, 1], [1, 0]])
+        K0 = np.sqrt(1 - p + np.eps) * np.eye(2)
+        K1 = np.sqrt(p + np.eps) * np.array([[0, 1], [1, 0]])
         return [K0, K1]
 
 
@@ -467,11 +468,12 @@ class ResetError(Channel):
         if not 0.0 <= p_0 + p_1 <= 1.0:
             raise ValueError("p_0 + p_1 must be in the interval [0,1]")
 
-        K0 = np.sqrt(1 - p_0 - p_1) * np.eye(2)
-        K1 = np.sqrt(p_0) * np.array([[1, 0], [0, 0]])
-        K2 = np.sqrt(p_0) * np.array([[0, 1], [0, 0]])
-        K3 = np.sqrt(p_1) * np.array([[0, 0], [1, 0]])
-        K4 = np.sqrt(p_1) * np.array([[0, 0], [0, 1]])
+        K0 = np.sqrt(1 - p_0 - p_1 + np.eps) * np.eye(2)
+        K1 = np.sqrt(p_0 + np.eps) * np.array([[1, 0], [0, 0]])
+        K2 = np.sqrt(p_0 + np.eps) * np.array([[0, 1], [0, 0]])
+        K3 = np.sqrt(p_1 + np.eps) * np.array([[0, 0], [1, 0]])
+        K4 = np.sqrt(p_1 + np.eps) * np.array([[0, 0], [0, 1]])
+
         return [K0, K1, K2, K3, K4]
 
 
@@ -571,7 +573,7 @@ class PauliError(Channel):
         nq = len(operators)
 
         # K0 is sqrt(1-p) * Identity
-        K0 = np.sqrt(1 - p) * np.eye(2**nq)
+        K0 = np.sqrt(1 - p + np.eps) * np.eye(2**nq)
 
         ops = {
             "X": np.array([[0, 1], [1, 0]]),
@@ -580,7 +582,7 @@ class PauliError(Channel):
         }
 
         # K1 is composed by Kraus matrices of operators
-        K1 = np.sqrt(p) * np.array([1])
+        K1 = np.sqrt(p + np.eps) * np.array([1])
         for op in operators[::-1]:
             K1 = np.kron(ops[op], K1)
 
@@ -646,8 +648,8 @@ class PhaseFlip(Channel):
         if not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
-        K0 = np.sqrt(1 - p) * np.eye(2)
-        K1 = np.sqrt(p) * np.array([[1, 0], [0, -1]])
+        K0 = np.sqrt(1 - p + np.eps) * np.eye(2)
+        K1 = np.sqrt(p + np.eps) * np.array([[1, 0], [0, -1]])
         return [K0, K1]
 
 
@@ -855,32 +857,36 @@ class ThermalRelaxationError(Channel):
             pr1 = pe * p_reset
             pid = 1 - pz - pr0 - pr1
 
-            K0 = np.sqrt(pid) * np.eye(2)
-            K1 = np.sqrt(pz) * np.array([[1, 0], [0, -1]])
-            K2 = np.sqrt(pr0) * np.array([[1, 0], [0, 0]])
-            K3 = np.sqrt(pr0) * np.array([[0, 1], [0, 0]])
-            K4 = np.sqrt(pr1) * np.array([[0, 0], [1, 0]])
-            K5 = np.sqrt(pr1) * np.array([[0, 0], [0, 1]])
+            K0 = np.sqrt(pid + np.eps) * np.eye(2)
+            K1 = np.sqrt(pz + np.eps) * np.array([[1, 0], [0, -1]])
+            K2 = np.sqrt(pr0 + np.eps) * np.array([[1, 0], [0, 0]])
+            K3 = np.sqrt(pr0 + np.eps) * np.array([[0, 1], [0, 0]])
+            K4 = np.sqrt(pr1 + np.eps) * np.array([[0, 0], [1, 0]])
+            K5 = np.sqrt(pr1 + np.eps) * np.array([[0, 0], [0, 1]])
 
             K = [K0, K1, K2, K3, K4, K5]
         else:
             e0 = p_reset * pe
             v0 = np.array([[0, 0], [1, 0]])
-            K0 = np.sqrt(e0) * v0
+            K0 = np.sqrt(e0 + np.eps) * v0
             e1 = -p_reset * pe + p_reset
             v1 = np.array([[0, 1], [0, 0]])
-            K1 = np.sqrt(e1) * v1
+            K1 = np.sqrt(e1 + np.eps) * v1
             common_term = np.sqrt(
-                4 * eT2**2 + 4 * p_reset**2 * pe**2 - 4 * p_reset**2 * pe + p_reset**2
+                4 * eT2**2
+                + 4 * p_reset**2 * pe**2
+                - 4 * p_reset**2 * pe
+                + p_reset**2
+                + np.eps
             )
             e2 = 1 - p_reset / 2 - common_term / 2
             term2 = 2 * eT2 / (2 * p_reset * pe - p_reset - common_term)
             v2 = np.array([[term2, 0], [0, 1]]) / np.sqrt(term2**2 + 1)
-            K2 = np.sqrt(e2) * v2
+            K2 = np.sqrt(e2 + np.eps) * v2
             term3 = 2 * eT2 / (2 * p_reset * pe - p_reset + common_term)
             e3 = 1 - p_reset / 2 + common_term / 2
             v3 = np.array([[term3, 0], [0, 1]]) / np.sqrt(term3**2 + 1)
-            K3 = np.sqrt(e3) * v3
+            K3 = np.sqrt(e3 + np.eps) * v3
 
             K = [K0, K1, K2, K3]
         return K

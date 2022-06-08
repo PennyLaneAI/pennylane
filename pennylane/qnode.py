@@ -435,9 +435,7 @@ class QNode:
                 batch_transform = device.batch_transform
 
                 device = qml.device(
-                    backprop_devices[mapped_interface],
-                    wires=device.wires,
-                    shots=device.shots,
+                    backprop_devices[mapped_interface], wires=device.wires, shots=device.shots
                 )
                 device.expand_fn = expand_fn
                 device.batch_transform = batch_transform
