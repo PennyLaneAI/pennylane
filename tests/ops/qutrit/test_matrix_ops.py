@@ -283,9 +283,6 @@ class TestQutritUnitary:
     #     print(expected)
     #     assert qml.math.allclose(mat, expected)
 
-if __name__=="__main__":
-    test = TestQutritUnitary()
-    test.test_qutrit_unitary_tf(U_thadamard_01, 1)
 
 # class TestControlledQutritUnitary:
 #     """Tests for the ControlledQutritUnitary operation"""
