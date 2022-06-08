@@ -119,7 +119,7 @@
   tensor(1.38629436, requires_grad=True)
   ```
   The `qml.qinfo.mutual_info_transform` can be used to transform a QNode returning
-  a state to a function returning the mutual information:
+  a state to a function that returns the mutual information:
   ```python3
   dev = qml.device("default.qubit", wires=2)
 

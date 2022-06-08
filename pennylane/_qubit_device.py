@@ -716,9 +716,9 @@ class QubitDevice(Device):
         where :math:`S` is the von Neumann entropy.
 
         Args:
-            wires0 (Wires): wires of the first subsystem.
+            wires0 (Wires): wires of the first subsystem
             wires1 (Wires): wires of the second subsystem
-            log_base (float): base to use in the logarithm.
+            log_base (float): base to use in the logarithm
 
         Returns:
             float: the mutual information
