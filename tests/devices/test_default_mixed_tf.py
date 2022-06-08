@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the ``default.qubit.autograd`` device.
+Tests for the ``default.mixed`` device for the TensorFlow interface
 """
 import re
 import pytest
@@ -27,20 +27,8 @@ pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow", minversion="2.1")
 
 
-def test_analytic_deprecation():
-    """Tests if the kwarg `analytic` is used and displays error message."""
-    msg = "The analytic argument has been replaced by shots=None. "
-    msg += "Please use shots=None instead of analytic=True."
-
-    with pytest.raises(
-        DeviceError,
-        match=msg,
-    ):
-        qml.device("default.mixed", wires=1, shots=1, analytic=True)
-
-
 class TestQNodeIntegration:
-    """Integration tests for default.qubit.autograd. This test ensures it integrates
+    """Integration tests for default.mixed.tf. This test ensures it integrates
     properly with the PennyLane UI, in particular the QNode."""
 
     def test_load_device(self):
@@ -147,7 +135,7 @@ class TestDtypePreserved:
 
 
 class TestOps:
-    """Unit tests for operations supported by the default.qubit.autograd device"""
+    """Unit tests for operations supported by the default.mixed.tf device"""
 
     def test_multirz_jacobian(self):
         """Test that the patched numpy functions are used for the MultiRZ
@@ -203,7 +191,7 @@ class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
     def test_jacobian_variable_multiply(self, tol):
-        """Test that jacobian of a QNode with an attached default.qubit.autograd device
+        """Test that jacobian of a QNode with an attached default.mixed.tf device
         gives the correct result in the case of parameters multiplied by scalars"""
         x = 0.43316321
         y = 0.2162158
@@ -241,7 +229,7 @@ class TestPassthruIntegration:
         assert qml.math.allclose(res, expected, atol=tol, rtol=0)
 
     def test_jacobian_repeated(self, tol):
-        """Test that jacobian of a QNode with an attached default.qubit.autograd device
+        """Test that jacobian of a QNode with an attached default.mixed.tf device
         gives the correct result in the case of repeated parameters"""
         x = 0.43316321
         y = 0.2162158
@@ -269,7 +257,7 @@ class TestPassthruIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_jacobian_agrees_backprop_parameter_shift(self, tol):
-        """Test that jacobian of a QNode with an attached default.qubit.autograd device
+        """Test that jacobian of a QNode with an attached default.mixed.tf device
         gives the correct result with respect to the parameter-shift method"""
         p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
         p_tf = tf.Variable(p, trainable=True)
@@ -320,6 +308,25 @@ class TestPassthruIntegration:
 
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    def test_state_vector_differentiability(self, tol):
+        """Test that the device state vector can be differentiated directly"""
+        dev = qml.device("default.mixed", wires=1)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(a):
+            qml.RY(a, wires=0)
+            return qml.state()
+
+        a = tf.Variable(0.54, dtype=tf.complex128, trainable=True)
+
+        with tf.GradientTape() as tape:
+            res = circuit(a)
+
+        grad = tape.jacobian(res, a)
+        expected = 0.5 * np.array([[-np.sin(a), np.cos(a)], [np.cos(a), np.sin(a)]])
+
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
     def test_density_matrix_differentiability(self, tol):
         """Test that the density matrix can be differentiated"""
         dev = qml.device("default.mixed", wires=2)
@@ -367,6 +374,37 @@ class TestPassthruIntegration:
         expected = [np.sin(a) * np.cos(b), np.cos(a) * np.sin(b)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    def test_prob_vector_differentiability(self, tol):
+        """Test that the device probability vector can be differentiated directly"""
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(a, b):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[1])
+
+        a = tf.Variable(0.54, trainable=True)
+        b = tf.Variable(0.12, trainable=True)
+
+        with tf.GradientTape() as tape:
+            res = circuit(a, b)
+
+        expected = [
+            np.cos(a / 2) ** 2 * np.cos(b / 2) ** 2 + np.sin(a / 2) ** 2 * np.sin(b / 2) ** 2,
+            np.cos(a / 2) ** 2 * np.sin(b / 2) ** 2 + np.sin(a / 2) ** 2 * np.cos(b / 2) ** 2
+        ]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        grad = tape.jacobian(res, [a, b])
+        expected = 0.5 * np.array([
+            [-np.sin(a) * np.cos(b), np.sin(a) * np.cos(b)],
+            [-np.cos(a) * np.sin(b), np.cos(a) * np.sin(b)]
+        ])
+
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
     def test_sample_backprop_error(self):
         """Test that sampling in backpropagation mode raises an error"""
         dev = qml.device("default.mixed", wires=1, shots=100)
@@ -380,8 +418,8 @@ class TestPassthruIntegration:
                 qml.RY(a, wires=0)
                 return qml.sample(qml.PauliZ(0))
 
-    def test_backprop_gradient(self, tol):
-        """Tests that the gradient of the qnode is correct"""
+    def test_expval_gradient(self, tol):
+        """Tests that the gradient of expval is correct"""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="tf")
@@ -553,10 +591,7 @@ class TestPassthruIntegration:
         assert np.allclose(res, expected_cost, atol=tol, rtol=0)
 
         res_a, res_b = tape.jacobian(res, [a, b])
-        expected_a, expected_b = [
-            -0.5 * np.sin(a) * (np.cos(b) + 1),
-            0.5 * np.sin(b) * (1 - np.cos(a)),
-        ]
+        expected_a, expected_b = [-0.5 * np.sin(a) * (np.cos(b) + 1), 0.5 * np.sin(b) * (1 - np.cos(a))]
 
         assert np.allclose(tf.linalg.diag_part(res_a), expected_a, atol=tol, rtol=0)
         assert np.allclose(tf.linalg.diag_part(res_b), expected_b, atol=tol, rtol=0)
@@ -566,7 +601,7 @@ class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
     def test_template_integration(self):
-        """Test that a PassthruQNode default.qubit.autograd works with templates."""
+        """Test that a PassthruQNode default.mixed.tf works with templates."""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
@@ -585,7 +620,7 @@ class TestHighLevelIntegration:
         assert grad.shape == weights.shape
 
     def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.qubit.autograd works with QNodeCollections."""
+        """Test that a PassthruQNode default.mixed.tf works with QNodeCollections."""
         dev = qml.device("default.mixed", wires=2)
 
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
