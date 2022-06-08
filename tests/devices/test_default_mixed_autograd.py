@@ -488,21 +488,6 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("interface", ["torch"])
-    def test_error_backprop_wrong_interface(self, interface, tol):
-        """Tests that an error is raised if diff_method='backprop' but not using
-        the Autograd interface"""
-        dev = qml.device("default.mixed", wires=1)
-
-        def circuit(x, w=None):
-            qml.RZ(x, wires=w)
-            return qml.expval(qml.PauliX(w))
-
-        msg = "Device default.mixed only supports diff_method='backprop' when using the ['autograd', 'tf'] interfaces."
-        msg = re.escape(msg)
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
-            qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
-
     @pytest.mark.parametrize(
         "dev_name,diff_method,mode",
         [
@@ -543,6 +528,33 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+
+    def test_batching(self, tol):
+        """Tests that the gradient of the qnode is correct with batching"""
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.batch_params
+        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        def circuit(a, b):
+            qml.RX(a, wires=0)
+            qml.CRX(b, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        a = np.array([-0.234, 0.678], requires_grad=True)
+        b = np.array([0.654, 1.236], requires_grad=True)
+
+        res = circuit(a, b)
+        expected_cost = 0.5 * (np.cos(a) * np.cos(b) + np.cos(a) - np.cos(b) + 1)
+        assert np.allclose(res, expected_cost, atol=tol, rtol=0)
+
+        res_a, res_b = qml.jacobian(circuit)(a, b)
+        expected_a, expected_b = [
+            -0.5 * np.sin(a) * (np.cos(b) + 1),
+            0.5 * np.sin(b) * (1 - np.cos(a)),
+        ]
+
+        assert np.allclose(np.diag(res_a), expected_a, atol=tol, rtol=0)
+        assert np.allclose(np.diag(res_b), expected_b, atol=tol, rtol=0)
 
 
 @pytest.mark.autograd
