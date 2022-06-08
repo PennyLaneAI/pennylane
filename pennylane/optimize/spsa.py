@@ -153,7 +153,7 @@ class SPSAOptimizer:
             for each iteration. Its asymptotically optimal value is 1/6.
         c (float): A hyperparameter related to the expected noise. It should be
             approximately the standard deviation of the expected noise of the cost function.
-        A (float): The stability constant expected to be 10% of the maximum number
+        A (float): The stability constant; if not provided, set to be 10% of the maximum number
             of expected iterations.
         a (float): A hyperparameter expected to be small in noisy situations,
             whose value could be :math:`\frac{mag(\Delta\theta)}{mag(g(\theta))}(A+1)^\alpha`
