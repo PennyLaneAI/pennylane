@@ -81,6 +81,11 @@ class QutritUnitary(Operation):
     def adjoint(self):
         return QutritUnitary(qml.math.T(qml.math.conj(self.matrix())), wires=self.wires)
 
+    def pow(self, z):
+        if isinstance(z, int):
+            return [QutritUnitary(qml.math.linalg.matrix_power(self.matrix(), z), wires=self.wires)]
+        return super().pow(z)
+
     def _controlled(self, wire):
         ControlledQutritUnitary(*self.parameters, control_wires=wire, wires=self.wires)
 
@@ -186,15 +191,15 @@ class ControlledQutritUnitary(QutritUnitary):
 
         total_wires = qml.wires.Wires(control_wires) + qml.wires.Wires(u_wires)
 
-        # if control values unspecified, we control on the all-ones string
+        # if control values unspecified, we control on the all-twos string
         if not control_values:
             control_values = "2" * len(control_wires)
 
         if isinstance(control_values, str):
             if len(control_values) != len(control_wires):
-                raise ValueError("Length of control bit string must equal number of control wires.")
+                raise ValueError("Length of control trit string must equal number of control wires.")
 
-            # Make sure all values are either 0 or 1
+            # Make sure all values are either 0 or 1 or 2
             if any(x not in ["0", "1", "2"] for x in control_values):
                 raise ValueError("String of control values can contain only '0' or '1' or '2'.")
 
@@ -213,6 +218,17 @@ class ControlledQutritUnitary(QutritUnitary):
     @property
     def control_wires(self):
         return self.hyperparameters["control_wires"]
+
+    def pow(self, z):
+        if isinstance(z, int):
+            return [
+                ControlledQutritUnitary(
+                    qml.math.linalg.matrix_power(self.data[0], z),
+                    control_wires=self.control_wires,
+                    wires=self.hyperparameters["u_wires"],
+                )
+            ]
+        return super().pow(z)
 
     def _controlled(self, wire):
         ctrl_wires = sorted(self.control_wires + wire)
