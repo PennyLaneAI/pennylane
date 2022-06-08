@@ -303,7 +303,7 @@
 * The `QNode` class now contains a new method `best_method_str` that returns the best differentiation
   method for a provided device and interface, in human-readable format.
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
-   
+
 
 * Using `Operation.inv()` in a queuing environment no longer updates the queue's metadata, but merely updates
   the operation in place.
@@ -333,11 +333,13 @@
 * Add `IsingXY` gate.
   [(#2649)](https://github.com/PennyLaneAI/pennylane/pull/2649)
 
-* The performance of building sparse Hamiltonians has been improved by accumulating the sparse representation of coefficient-operator pairs in a temporary storage and by eliminating unnecessary `kron` operations on identity matrices. 
+* The performance of building sparse Hamiltonians has been improved by accumulating the sparse representation of coefficient-operator pairs in a temporary storage and by eliminating unnecessary `kron` operations on identity matrices.
   [(#2630)](https://github.com/PennyLaneAI/pennylane/pull/2630)
 
 * Control values are now displayed distinctly in text and mpl drawings of circuits.
   [(#2668)](https://github.com/PennyLaneAI/pennylane/pull/2668)
+
+* The `TorchLayer`'s `init_method` argument now accepts either a `torch.nn.init` function or a dictionary which should specify a `torch.nn.init`/`torch.Tensor` for each different weight.
 
 <h3>Breaking changes</h3>
 
