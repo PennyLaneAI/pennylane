@@ -18,11 +18,11 @@ from pennylane import numpy as np
 
 
 def factorize(two, tol):
-    r"""Return double-factorized form of a two-electron tensor.
+    r"""Return the double-factorized form of a two-electron tensor.
 
     The second quantized electronic Hamiltonian is constructed in terms of fermionic creation,
     :math:`a^{\dagger}` , and annihilation, :math:`a`, operators as
-    [`arXiv:1902.02134 <https://arxiv.org/pdf/1902.02134.pdf>`_]
+    [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_]
 
     .. math::
 
@@ -56,7 +56,7 @@ def factorize(two, tol):
 
     .. math::
 
-        T_{pq} = h_{ij} - \frac{1}{2} \sum_s h_{pssq}.
+        T_{pq} = h_{pq} - \frac{1}{2} \sum_s h_{pssq}.
 
 
     and :math:`V` is the two-electron tensor in chemist notation.
@@ -65,43 +65,42 @@ def factorize(two, tol):
 
     .. math::
 
-           V_{ijkl} = \sum_r L_{ij}^{(r)} L_{kl}^{(r) T}.
+           V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
 
-    with the rank :math:`r \in \mathcal{O}(n)`. The matrices :math:`L` are further diagonalized
+    with the rank :math:`R \leq n^2`. The matrices :math:`L` are further diagonalized
     and truncated in a second level of factorization.
 
-    The algorithm has the following steps
-    [`arXiv:1902.02134 <https://arxiv.org/pdf/1902.02134.pdf>`_].
+    The algorithm has the following steps [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_]:
 
-    1. Matricize the :math:`n \times n \times n \times n` two-electron tensor to a \
-        :math:`n^2 \times n^2` matrix where n is the number of orbitals.
+        1. Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
+            :math:`n^2 \times n^2` matrix where :math:`n` is the number of orbitals.
 
-    2. Diagonalize the resulting matrix and keep the :math:`r` eigenvectors that have \
-        corresponding eigenvalues larger than a threshold.
+        2. Diagonalize the resulting matrix and keep the :math:`r` eigenvectors that have
+            corresponding eigenvalues larger than a threshold.
 
-    3. Reshape the selected eigenvectors to :math:`n \times n` matrices.
+        3. Reshape the selected eigenvectors to :math:`n \times n` matrices.
 
-    4. Diagonalize the :math:`n \times n` matrices and keep those that the norm of their \
-        eigenvalues is larger than a threshold.
+        4. Diagonalize the :math:`n \times n` matrices and keep those matrices that the norm of
+            their eigenvalues is larger than a threshold.
 
     Args:
         two (array[array[float]]): the two-electron repulsion tensor in the molecular orbital basis
             arranged in chemist notation [11|22]
-        tol (float): cutoff value for discarding the negligible factors
+        tol (float): threshold error value for discarding the negligible factors
 
     Returns:
         tuple(array[float]): array of symmetric matrices (factors) approximating the two-electron
-        tensor, eigenvalues of the generated factors, eigenvectors of the generated factors
+        tensor, eigenvalues of the generated factors, and eigenvectors of the generated factors
 
     **Example**
 
     >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.5291772
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [1.398397361, 0.0, 0.0]], requires_grad = False)
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
     >>> two = np.swapaxes(two, 1, 3) # convert to chemist's notation
-    >>> l, w, v = factorize(two, 1e-5)
-    >>> print(l)
+    >>> factors, eigvals, eigvecs = factorize(two, 1e-5)
+    >>> print(factors)
     [[[ 1.06723440e-01  9.73575768e-15]
       [ 8.36288956e-15 -1.04898533e-01]]
      [[-2.20945401e-13 -4.25688222e-01]
@@ -112,16 +111,17 @@ def factorize(two, tol):
     n = two.shape[0]
     two = two.reshape(n * n, n * n)
 
-    eigvals, eigvecs = np.linalg.eigh(two)
-    eigvals = np.array([val for val in eigvals if abs(val) > tol])
-    eigvecs = eigvecs[:, -len(eigvals) :]
+    eigvals_r, eigvecs_r = np.linalg.eigh(two)
+    eigvals_r = np.array([val for val in eigvals_r if abs(val) > tol])
+    eigvecs_r = eigvecs_r[:, -len(eigvals_r) :]
 
-    vectors = eigvecs @ np.diag(np.sqrt(abs(eigvals)))
+    vectors = eigvecs_r @ np.diag(np.sqrt(abs(eigvals_r)))
 
-    factors = np.array([vectors.reshape(n, n, len(eigvals))[:, :, r] for r in range(len(eigvals))])
+    r = len(eigvals_r)
+    factors = np.array([vectors.reshape(n, n, r)[:, :, k] for k in range(r)])
 
-    eigvals, eigvecs = np.linalg.eigh(factors)
-    eigvals = np.array([val for val in eigvals if np.sum(abs(eigvals)) > tol])
-    eigvecs = eigvecs[:, -len(eigvals) :]
+    eigvals_m, eigvecs_m = np.linalg.eigh(factors)
+    eigvals_m = np.array([val for val in eigvals_m if np.sum(abs(eigvals_m)) > tol])
+    eigvecs_m = eigvecs_m[:, -len(eigvals_m) :]
 
-    return factors, eigvals, eigvecs
+    return factors, eigvals_m, eigvecs_m
