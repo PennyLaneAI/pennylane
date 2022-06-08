@@ -18,7 +18,7 @@ import pennylane as qml
 
 from pennylane.transforms import batch_transform
 
-# TODO: create qml.jacobian and replace it here
+# TODO: create qml.math.jacobian and replace it here
 def _torch_jac(circ):
     """Torch jacobian as a callable function"""
     import torch
