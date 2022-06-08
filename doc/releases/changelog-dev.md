@@ -309,6 +309,9 @@
 * The performance of building sparse Hamiltonians has been improved by accumulating the sparse representation of coefficient-operator pairs in a temporary storage and by eliminating unnecessary `kron` operations on identity matrices. 
   [(#2630)](https://github.com/PennyLaneAI/pennylane/pull/2630)
 
+* Control values are now displayed distinctly in text and mpl drawings of circuits.
+  [(#2668)](https://github.com/PennyLaneAI/pennylane/pull/2668)
+
 <h3>Breaking changes</h3>
 
 * The `qml.queuing.Queue` class is now removed.
