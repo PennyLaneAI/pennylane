@@ -334,7 +334,10 @@ class MeasurementProcess:
 
     @property
     def wires(self):
-        r"""The wires the measurement process acts on."""
+        r"""The wires the measurement process acts on.
+
+        This is the union of all the Wires objects of the measurement.
+        """
         if self.obs is not None:
             return self.obs.wires
 
@@ -345,7 +348,12 @@ class MeasurementProcess:
 
     @property
     def raw_wires(self):
-        r"""The raw wires passed to the constructor of the class"""
+        r"""The wires the measurement process acts on.
+
+        For measurements involving more than one set of wires (such as
+        mutual information), this is a list of the Wires objects. Otherwise,
+        this is the same as :func:`~.MeasurementProcess.wires`
+        """
         return self._wires
 
     def eigvals(self):
