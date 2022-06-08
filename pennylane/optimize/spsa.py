@@ -184,7 +184,7 @@ class SPSAOptimizer:
         self.alpha = alpha
         self.gamma = gamma
         self.k = 1
-        self.ak = self.a / (self.A + 1 + 1.0) ** self.alpha
+        self.ak = self.a / (self.A + 1) ** self.alpha
 
     def step_and_cost(self, objective_fn, *args, **kwargs):
         r"""Update the parameter array :math:`\hat{\theta}_k` with one step of the optimizer and return

@@ -38,25 +38,27 @@ class TestSPSAOptimizer:
     def test_apply_grad(self, args, f):
         """Test that a gradient step can be applied correctly with a univariate
         function."""
-        spsa_opt = qml.SPSAOptimizer(maxiter=10)
+        spsa_opt = qml.SPSAOptimizer(maxiter=10, c=0.1, gamma=0.3)
         args = np.array([args], requires_grad=True)
 
         alpha = 0.602
-        gamma = 0.101
-        c = 0.2
-        A = 20.0
+        gamma = 0.3
+        c = 0.1
+        A = 1.0
         a = 0.05 * (A + 1) ** alpha
         k = 1
-        ck = c / (k + 1.0) ** gamma
-        ak = a / (A + k + 1.0) ** alpha
-        tol = np.maximum(np.abs(f(args - ck)), np.abs(f(args + ck)))
-
-        y = f(args)
-        grad = (y) / (2 * ck)
+        ck = c / k**gamma
+        ak = a / (A + k) ** alpha
+        # assume delta is 1.
+        di = 1
+        multiplier = ck * di
+        yplus = f(args + multiplier)
+        yminus = f(args - multiplier)
+        grad = (yplus - yminus) / (2 * multiplier)
 
         res = spsa_opt.apply_grad(grad, args)
         expected = args - ak * grad
-        assert np.allclose(res, expected, atol=tol)
+        assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("f", multivariate)
     def test_apply_grad_multivar(self, f):
@@ -65,23 +67,37 @@ class TestSPSAOptimizer:
         alpha = 0.602
         gamma = 0.101
         c = 0.2
-        A = 20.0
+        A = 10.0
         a = 0.05 * (A + 1) ** alpha
         k = 1
-        ck = c / (k + 1.0) ** gamma
-        ak = a / (A + k + 1.0) ** alpha
-        spsa_opt = qml.SPSAOptimizer(maxiter=10)
+        ck = c / k**gamma
+        ak = a / (A + k) ** alpha
+        deltas = np.array(np.meshgrid([1, -1], [1, -1])).T.reshape(-1, 2)
+
+        spsa_opt = qml.SPSAOptimizer(maxiter=10, A=10)
 
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
 
         for jdx in range(len(x_vals[:-1])):
-            x_vec = x_vals[jdx : jdx + 2]
-            y = f(x_vec)
-            grad = (y) / (2 * ck * np.ones((2)))
-            x_new = spsa_opt.apply_grad(grad, x_vec)
-            x_al = x_vec - ak * grad
-            tol = np.maximum(np.abs(f(x_vec - ck)), np.abs(f(x_vec + ck)))
-            assert np.allclose(x_new, x_al, atol=tol)
+            args = x_vals[jdx : jdx + 2]
+            y_pm = []
+            for delta in deltas:
+                thetaplus = list(args)
+                thetaminus = list(args)
+                for index, arg in enumerate(args):
+                    multiplier = ck * delta[index]
+                    thetaplus[index] = arg + multiplier
+                    thetaminus[index] = arg - multiplier
+                yplus = f(thetaplus)
+                yminus = f(thetaminus)
+                y_pm.append(yplus - yminus)
+            # choose one delta
+            d = 0
+            grad = np.array([y_pm[d] / (2 * ck * di) for di in deltas[d]])
+            tol = ak * max(np.abs(y_pm)) / ck
+            args_res = spsa_opt.apply_grad(grad, args)
+            expected = args - ak * grad
+            assert np.allclose(args_res, expected, atol=tol)
 
     @pytest.mark.parametrize("args", [0, -3, 42])
     @pytest.mark.parametrize("f", univariate)
@@ -135,30 +151,43 @@ class TestSPSAOptimizer:
         spsa_opt = qml.SPSAOptimizer(maxiter=10)
 
         @qml.qnode(qml.device("default.qubit", wires=1))
-        def quant_fun(variables):
-            qml.RX(variables[0], wires=[0])
-            qml.RY(variables[1], wires=[0])
-            qml.RY(variables[2], wires=[0])
+        def quant_fun(params):
+            qml.RX(params[0], wires=[0])
+            qml.RY(params[1], wires=[0])
+            qml.RY(params[2], wires=[0])
             return qml.expval(qml.PauliZ(0))
 
-        inputs = np.array([0.4, 0.2, 0.4], requires_grad=True)
+        args = np.array([0.4, 0.2, 0.8], requires_grad=True)
 
         alpha = 0.602
         gamma = 0.101
         c = 0.2
-        A = 20.0
+        A = 1.0
         a = 0.05 * (A + 1) ** alpha
         k = 1
-        ck = c / (k + 1.0) ** gamma
-        ak = a / (A + k + 1.0) ** alpha
-        tol = np.maximum(np.abs(quant_fun(inputs - ck)), np.abs(quant_fun(inputs + ck)))
+        ck = c / k**gamma
+        ak = a / (A + k) ** alpha
+        deltas = np.array(np.meshgrid([1, -1], [1, -1], [1, -1])).T.reshape(-1, 3)
 
-        y = quant_fun(inputs)
-        grad = (y) / (2 * ck)
+        y_pm = []
+        for delta in deltas:
+            thetaplus = list(args)
+            thetaminus = list(args)
+            for index, arg in enumerate(args):
+                multiplier = ck * delta[index]
+                thetaplus[index] = arg + multiplier
+                thetaminus[index] = arg - multiplier
+            yplus = quant_fun(thetaplus)
+            yminus = quant_fun(thetaminus)
+            y_pm.append(yplus - yminus)
+        # choose one delta
+        d = 0
+        grad = np.array([y_pm[d] / (2 * ck * di) for di in deltas[d]])
+        tol = ak * max(np.abs(y_pm)) / ck
 
-        expected = inputs - ak * grad
+        expected = args - ak * grad
 
-        res = spsa_opt.step(quant_fun, inputs)
+        res = spsa_opt.step(quant_fun, args)
 
         assert np.allclose(res, expected, atol=tol)
 
@@ -188,6 +217,7 @@ class TestSPSAOptimizer:
 
         @qml.qnode(qml.device("default.qubit", wires=1))
         def quant_fun_mdarr(var):
+            qml.RX(var[0, 0], wires=[0])
             qml.RX(var[0, 1], wires=[0])
             qml.RY(var[1, 0], wires=[0])
             qml.RY(var[1, 1], wires=[0])
@@ -196,17 +226,29 @@ class TestSPSAOptimizer:
         alpha = 0.602
         gamma = 0.101
         c = 0.2
-        A = 20.0
+        A = 1.0
         a = 0.05 * (A + 1) ** alpha
         k = 1
-        ck = c / (k + 1.0) ** gamma
-        ak = a / (A + k + 1.0) ** alpha
-        tol = np.maximum(
-            np.abs(quant_fun_mdarr(multid_array - ck)), np.abs(quant_fun_mdarr(multid_array + ck))
-        )
+        ck = c / k**gamma
+        ak = a / (A + k) ** alpha
+        deltas = np.array(np.meshgrid([1, -1], [1, -1], [1, -1], [1, -1])).T.reshape(-1, 2, 2)
 
-        y = quant_fun_mdarr(multid_array)
-        grad = (y) / (2 * ck)
+        args = (multid_array,)
+        y_pm = []
+        for delta in deltas:
+            thetaplus = list(args)
+            thetaminus = list(args)
+            for index, arg in enumerate(args):
+                multiplier = ck * delta
+                thetaplus[index] = arg + multiplier
+                thetaminus[index] = arg - multiplier
+            yplus = quant_fun_mdarr(*thetaplus)
+            yminus = quant_fun_mdarr(*thetaminus)
+            y_pm.append(yplus - yminus)
+        # choose one delta
+        d = 0
+        grad = np.array([y_pm[d] / (2 * ck * deltas[d])])
+        tol = ak * max(np.abs(y_pm)) / ck
 
         expected = multid_array - ak * grad
 
@@ -225,19 +267,22 @@ class TestSPSAOptimizer:
         alpha = 0.602
         gamma = 0.101
         c = 0.2
-        A = 20.0
+        A = 1.0
         a = 0.05 * (A + 1) ** alpha
         k = 1
-        ck = c / (k + 1.0) ** gamma
-        ak = a / (A + k + 1.0) ** alpha
-        tol = np.maximum(np.abs(f(args - ck)), np.abs(f(args + ck)))
+        ck = c / k**gamma
+        ak = a / (A + k) ** alpha
 
-        y = f(args)
-        grad = (y) / (2 * ck)
+        # assume delta is 1.
+        di = 1
+        multiplier = ck * di
+        yplus = f(args + multiplier)
+        yminus = f(args - multiplier)
+        grad = (yplus - yminus) / (2 * multiplier)
 
         res = spsa_opt.step(f, args)
         expected = args - ak * grad
-        assert np.allclose(res, expected, atol=tol)
+        assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("args", [0, -3, 42])
     @pytest.mark.parametrize("f", univariate)
@@ -250,20 +295,23 @@ class TestSPSAOptimizer:
         alpha = 0.602
         gamma = 0.101
         c = 0.2
-        A = 20.0
+        A = 1.0
         a = 0.05 * (A + 1) ** alpha
         k = 1
-        ck = c / (k + 1.0) ** gamma
-        ak = a / (A + k + 1.0) ** alpha
-        tol = np.maximum(np.abs(f(args - ck)), np.abs(f(args + ck)))
-
+        ck = c / k**gamma
+        ak = a / (A + k) ** alpha
+        # assume delta is 1.
+        di = 1
+        multiplier = ck * di
+        yplus = f(args + multiplier)
+        yminus = f(args - multiplier)
+        grad = (yplus - yminus) / (2 * multiplier)
         y = f(args)
-        grad = (y) / (2 * ck)
 
         res, rescost = spsa_opt.step_and_cost(f, args)
         expected = args - ak * grad
-        assert np.allclose(res, expected, atol=tol)
-        assert np.allclose(y, rescost, atol=tol)
+        assert np.allclose(res, expected)
+        assert np.allclose(y, rescost)
 
     def test_parameters_not_a_tensor_and_not_all_require_grad(self):
         """Test execution of list of parameters of different sizes
@@ -283,7 +331,7 @@ class TestSPSAOptimizer:
             np.array(0.1, requires_grad=True),
         ]
 
-        res, cost = spsa_opt.step_and_cost(quant_fun, *inputs)
+        res, _ = spsa_opt.step_and_cost(quant_fun, *inputs)
         assert isinstance(res, list)
         assert np.all(res[1] == inputs[1])
         assert np.all(res[0] != inputs[0])
