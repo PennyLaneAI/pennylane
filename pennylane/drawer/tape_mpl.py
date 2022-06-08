@@ -53,15 +53,6 @@ def _add_multicontrolledx(drawer, layer, mapped_wires, op):
     drawer.CNOT(layer, mapped_wires, control_values=control_values)
 
 
-def _add_controlledqubitunitary(drawer, layer, mapped_wires, op):
-    # convert control values
-    control_values = [(i == "1") for i in op.hyperparameters["control_values"]]
-    drawer.ctrl(
-        layer, wires=mapped_wires[:-1], wires_target=mapped_wires[-1], control_values=control_values
-    )
-    drawer.box_gate(layer, mapped_wires[-1], text="U")
-
-
 # pylint: disable=unused-argument
 def _add_cz(drawer, layer, mapped_wires, op):
     drawer.ctrl(layer, mapped_wires)
@@ -92,7 +83,6 @@ special_cases = {
     ops.CZ: _add_cz,
     ops.Barrier: _add_barrier,
     ops.WireCut: _add_wirecut,
-    ops.ControlledQubitUnitary: _add_controlledqubitunitary,
 }
 """Dictionary mapping special case classes to functions for drawing them."""
 
@@ -292,9 +282,19 @@ def tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, **kwarg
             else:
                 control_wires = [wire_map[w] for w in op.control_wires]
                 target_wires = [wire_map[w] for w in op.wires if w not in op.control_wires]
+                control_values = op.hyperparameters.get("control_values", None)
+
+                if control_values is None:
+                    control_values = "1" * len(control_wires)
+                control_values = [(i == "1") for i in control_values]
 
                 if len(control_wires) != 0:
-                    drawer.ctrl(layer, control_wires, wires_target=target_wires)
+                    drawer.ctrl(
+                        layer,
+                        control_wires,
+                        wires_target=target_wires,
+                        control_values=control_values,
+                    )
                 drawer.box_gate(
                     layer,
                     target_wires,
