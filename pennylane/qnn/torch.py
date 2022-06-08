@@ -49,7 +49,7 @@ class TorchLayer(Module):
             their corresponding shapes
         init_method (Union[Callable, Dict[str, Union[Callable, torch.Tensor]], None]): Either a
             `torch.nn.init <https://pytorch.org/docs/stable/nn.init.html>`__ function for
-            initializing the QNode weights or a dictionary specifying the callable/value used for
+            initializing all QNode weights or a dictionary specifying the callable/value used for
             each weight. If not specified, weights are randomly initialized using the uniform
             distribution over :math:`[0, 2 \pi]`.
 
