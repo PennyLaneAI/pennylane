@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Differentiable classical fisher information"""
+"""Classical and quantum fisher information matrices"""
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
 import pennylane as qml
@@ -19,7 +19,7 @@ import pennylane as qml
 from pennylane.transforms import batch_transform, metric_tensor
 
 
-# TODO: create qml.jacobian and replace it here
+# TODO: create qml.math.jacobian and replace it here
 def _torch_jac(circ):
     """Torch jacobian as a callable function"""
     import torch
@@ -33,7 +33,7 @@ def _torch_jac(circ):
     return wrapper
 
 
-# TODO: create qml.jacobian and replace it here
+# TODO: create qml.math.jacobian and replace it here
 def _tf_jac(circ):
     """TF jacobian as a callable function"""
     import tensorflow as tf
@@ -64,7 +64,9 @@ def classical_fisher(qnode, argnums=0):
         tape (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
 
     Returns:
-        func: The function that computes the classical fisher information matrix. This function accepts the same signature as the :class:`.QNode`.
+        func: The function that computes the classical fisher information matrix. This function accepts the same signature as the :class:`.QNode`. If the signature contains one differentiable
+        variable ``params``, the function returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``, it returns a list of sizes
+        ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
 
     .. warning::
 
@@ -87,8 +89,8 @@ def classical_fisher(qnode, argnums=0):
 
         @qml.qnode(dev)
         def circ(params):
-        qml.RX(params[0], wires=0)
-        qml.RX(params[1], wires=0)
+            qml.RX(params[0], wires=0)
+            qml.RX(params[1], wires=0)
             qml.CNOT(wires=(0,1))
             return qml.probs(wires=range(n_wires))
 
@@ -98,14 +100,14 @@ def classical_fisher(qnode, argnums=0):
     >>> circ(params)
     tensor([0.77708372, 0.        , 0.        , 0.22291628], requires_grad=True)
 
-    We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the new function that we generate via ``classical_fisher()``:
+    We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the function returned by ``classical_fisher()``:
 
     >>> cfim_func = qml.qinfo.classical_fisher(circ)
     >>> cfim_func(params)
     tensor([[1., 1.],
         [1., 1.]], requires_grad=True)
 
-    This new function accepts the same signature as the :class:`.QNode`. Here is a small example with multiple arguments:
+    This function has the same signature as the :class:`.QNode`. Here is a small example with multiple arguments:
 
     .. code-block:: python
 
@@ -182,7 +184,7 @@ def classical_fisher(qnode, argnums=0):
         j = jac(*args, **kwargs)
         p = new_qnode(*args, **kwargs)
 
-        # In case multiple variables are used
+        # In case multiple variables are used, we create a list of cfi matrices
         if isinstance(j, tuple) and len(j) > 1:
             res = []
             for j_i in j:
@@ -202,21 +204,22 @@ def _compute_cfim(p, dp):
     r"""Computes the (num_params, num_params) classical fisher information matrix from the probabilities and its derivatives
     I.e. it computes :math:`classical_fisher_{ij} = \sum_\ell (\partial_i p_\ell) (\partial_i p_\ell) / p_\ell`
     """
-    # Note that casting and being careful about dtypes is necessary as interfaces
-    # typically treat derivatives (dp) with float32, while standard execution (p) comes in float64
-
+    # Exclude values where p=0 and calculate 1/p
     nonzeros_p = qml.math.where(p > 0, p, qml.math.ones_like(p))
     one_over_p = qml.math.where(p > 0, qml.math.ones_like(p), qml.math.zeros_like(p))
     one_over_p = qml.math.divide(one_over_p, nonzeros_p)
 
     # Multiply dp and p
+    # Note that casting and being careful about dtypes is necessary as interfaces
+    # typically treat derivatives (dp) with float32, while standard execution (p) comes in float64
     dp = qml.math.cast(dp, dtype=p.dtype)
     dp = qml.math.reshape(
         dp, (len(p), -1)
     )  # Squeeze does not work, as you could have shape (num_probs, num_params) with num_params = 1
     dp_over_p = qml.math.transpose(dp) * one_over_p  # creates (n_params, n_probs) array
 
-    return dp_over_p @ dp  # (n_params, n_probs) @ (n_probs, n_params) = (n_params, n_params)
+    # (n_params, n_probs) @ (n_probs, n_params) = (n_params, n_params)
+    return dp_over_p @ dp
 
 
 @batch_transform

@@ -36,13 +36,13 @@ def test_make_probs():
     assert np.isclose(fn([1]), 1)
 
 
-class TestComputeclassical_fisherfn:
+class TestComputeclassicalFisher:
     """Testing that given p and dp, _compute_cfim() computes the correct outputs"""
 
     @pytest.mark.parametrize("n_params", np.arange(1, 10))
     @pytest.mark.parametrize("n_wires", np.arange(1, 5))
     def test_construction_of_compute_cfim(self, n_params, n_wires):
-        """Ensuring the construction in _compute_cfim is correct"""
+        """Test that the construction in _compute_cfim is correct"""
         dp = np.arange(2**n_wires * n_params, dtype=float).reshape(2**n_wires, n_params)
         p = np.ones(2**n_wires)
 
@@ -120,7 +120,7 @@ def test_quantum_fisher_info():
     assert np.allclose(QFIM, QFIM1)
 
 
-class TestInterfaces:
+class TestInterfacesClassicalFisher:
     """Integration tests for the classical fisher information matrix CFIM"""
 
     @pytest.mark.autograd
