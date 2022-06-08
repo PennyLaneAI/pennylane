@@ -32,7 +32,7 @@ def _torch_jac(circ):
     return wrapper
 
 
-# TODO: create qml.jacobian and replace it here
+# TODO: create qml.math.jacobian and replace it here
 def _tf_jac(circ):
     """TF jacobian as a callable function"""
     import tensorflow as tf
