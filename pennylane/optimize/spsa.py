@@ -67,7 +67,7 @@ class SPSAOptimizer:
 
     .. note::
 
-        * The number of quantum device executions is :math:`2*iter*num terms hamiltonian`.
+        * The number of quantum device executions is :math:`2*iter*num\_terms\_hamiltonian`.
         * The forward-pass value of the cost function is not computed when stepping the optimizer.
           Therefore, in case of using ``step_and_cost`` method instead of ``step``, the number
           of executions will include the cost function evaluations.
@@ -115,7 +115,7 @@ class SPSAOptimizer:
     Example of hybrid classical-quantum workflow:
 
     >>> dev = qml.device("default.qubit", wires=n_qubits)
-    >>> @qml.qnode(dev, interface=None)
+    >>> @qml.qnode(dev)
     >>> def layer_fn_spsa(inputs, weights):
     ...     qml.AngleEmbedding(inputs, wires=range(n_qubits))
     ...     qml.BasicEntanglerLayers(weights, wires=range(n_qubits))
@@ -185,13 +185,12 @@ class SPSAOptimizer:
             tuple[list [array], float]: the new variable values :math:`\hat{\theta}_{k+1}` and the
             objective function output prior to the step.
         """
-        g, forward = self.compute_grad(objective_fn, args, kwargs)
+        g = self.compute_grad(objective_fn, args, kwargs)
         new_args = self.apply_grad(g, args)
 
         self.k += 1
 
-        if forward is None:
-            forward = objective_fn(*args, **kwargs)
+        forward = objective_fn(*args, **kwargs)
 
         # unwrap from list if one argument, cleaner return
         if len(new_args) == 1:
@@ -209,7 +208,7 @@ class SPSAOptimizer:
         Returns:
             list [array]: the new variable values :math:`\hat{\theta}_{k+1}`.
         """
-        g, _ = self.compute_grad(objective_fn, args, kwargs)
+        g = self.compute_grad(objective_fn, args, kwargs)
         new_args = self.apply_grad(g, args)
 
         self.k += 1
@@ -232,7 +231,7 @@ class SPSAOptimizer:
 
         Returns:
             tuple (array): NumPy array containing the gradient
-                :math:`\hat{g}_k(\hat{\theta}_k)` and ``None``
+                :math:`\hat{g}_k(\hat{\theta}_k)`
         """
         ck = self.c / self.k**self.gamma
 
@@ -260,7 +259,7 @@ class SPSAOptimizer:
             )
         grad = [(yplus - yminus) / (2 * ck * di) for di in delta]
 
-        return tuple(grad), None
+        return tuple(grad)
 
     def apply_grad(self, grad, args):
         r"""Update the variables to take a single optimization step.
