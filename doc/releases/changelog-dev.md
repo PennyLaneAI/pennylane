@@ -312,6 +312,9 @@
 * Control values are now displayed distinctly in text and mpl drawings of circuits.
   [(#2668)](https://github.com/PennyLaneAI/pennylane/pull/2668)
 
+* Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
+  [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
+
 <h3>Breaking changes</h3>
 
 * The `qml.queuing.Queue` class is now removed.
