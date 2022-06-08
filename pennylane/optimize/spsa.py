@@ -231,7 +231,7 @@ class SPSAOptimizer:
             kwargs (dict): keyword arguments for the objective function
 
         Returns:
-            tuple (array): Numpy array containing the gradient
+            tuple (array): NumPy array containing the gradient
                 :math:`\hat{g}_k(\hat{\theta}_k)` and ``None``
         """
         ck = self.c / self.k**self.gamma
