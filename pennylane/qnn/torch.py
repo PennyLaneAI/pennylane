@@ -250,9 +250,10 @@ class TorchLayer(Module):
         if inspect.Parameter.VAR_POSITIONAL in param_kinds:
             raise TypeError("Cannot have a variable number of positional arguments")
 
-        if inspect.Parameter.VAR_KEYWORD not in param_kinds:
-            if set(weight_shapes.keys()) | {self.input_arg} != set(sig.keys()):
-                raise ValueError("Must specify a shape for every non-input parameter in the QNode")
+        if inspect.Parameter.VAR_KEYWORD not in param_kinds and set(weight_shapes.keys()) | {
+            self.input_arg
+        } != set(sig.keys()):
+            raise ValueError("Must specify a shape for every non-input parameter in the QNode")
 
     def forward(self, inputs):  # pylint: disable=arguments-differ
         """Evaluates a forward pass through the QNode based upon input data and the initialized
@@ -268,9 +269,7 @@ class TorchLayer(Module):
         if len(inputs.shape) > 1:
             # If the input size is not 1-dimensional, unstack the input along its first dimension, recursively call
             # the forward pass on each of the yielded tensors, and then stack the outputs back into the correct shape
-            reconstructor = []
-            for x in torch.unbind(inputs):
-                reconstructor.append(self.forward(x))
+            reconstructor = [self.forward(x) for x in torch.unbind(inputs)]
             return torch.stack(reconstructor)
 
         # If the input is 1-dimensional, calculate the forward pass as usual
