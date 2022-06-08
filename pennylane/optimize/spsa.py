@@ -105,7 +105,7 @@ class SPSAOptimizer:
     >>> cost = qml.QNode(exp_val_circuit, dev)
 
     Once constructed, the cost function can be passed directly to the
-    optimizer's ``step`` or ``step_and_cost`` function:
+    ``step`` or ``step_and_cost`` function of the optimizer:
 
     >>> max_iterations = 100
     >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
