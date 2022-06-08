@@ -328,17 +328,13 @@ class TorchLayer(Module):
                 init = init_method[weight_name]
                 if isinstance(init, torch.Tensor):
                     return init
-            return init(torch.Tensor(*weight_size))
+            # TODO: Figure out why a 1-dim Tensor is assigned to all weights with shape <= 1.
+            return init(torch.Tensor(1))[0] if len(size) == 0 else init(torch.Tensor(*weight_size))
 
         for name, size in weight_shapes.items():
-            if len(size) == 0:
-                self.qnode_weights[name] = torch.nn.Parameter(
-                    init_weight(weight_name=name, weight_size=[1])[0]
-                )
-            else:
-                self.qnode_weights[name] = torch.nn.Parameter(
-                    init_weight(weight_name=name, weight_size=size)
-                )
+            self.qnode_weights[name] = torch.nn.Parameter(
+                init_weight(weight_name=name, weight_size=size)
+            )
 
             self.register_parameter(name, self.qnode_weights[name])
 
