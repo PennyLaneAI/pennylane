@@ -89,7 +89,7 @@ def factorize(two, tol):
 
     - Reshape the selected eigenvectors to :math:`n \times n` matrices.
 
-    - Diagonalize the :math:`n \times n` matrices and keep those matrices that the norm of
+    - Diagonalize the :math:`n \times n` matrices and keep those matrices such that the norm of
       their eigenvalues is larger than a threshold.
 
     Args:
