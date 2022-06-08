@@ -117,7 +117,6 @@ def test_quantum_fisher_info():
     QFIM1 = 4. * qml.metric_tensor(circ)(params)
     assert np.allclose(QFIM, QFIM1)
 
-
 class TestInterfaces:
     """Integration tests for the classical fisher information matrix CFIM"""
 
