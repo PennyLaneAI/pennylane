@@ -44,7 +44,14 @@ def factorize(two, tol):
         h_{pqrs} = \int \frac{\phi_p(r_1)^* \phi_q(r_2)^* \phi_r(r_2) \phi_s(r_1)}{|r_1 - r_2|}
         dr_1 dr_2.
 
-    Rearranging the integrals in the chemist notation, [11|22], gives
+    The two-electron integrals can be rearranged in the so-called chemist notation which gives
+
+    .. math::
+
+        V_{pqrs} = \int \frac{\phi_p(r_1)^* \phi_q(r_1)^* \phi_r(r_2) \phi_s(r_2)}{|r_1 - r_2|}
+        dr_1 dr_2,
+
+    and the molecular Hamiltonian can be rewritten as
 
     .. math::
 
@@ -59,33 +66,35 @@ def factorize(two, tol):
         T_{pq} = h_{pq} - \frac{1}{2} \sum_s h_{pssq}.
 
 
-    and :math:`V` is the two-electron tensor in chemist notation.
-
-    The objective of the factorization is to find a set of symmetric matrices, :math:`L`, such that
+    This notation allows a low-rank factorization of the two-electron integral. The objective of
+    the factorization is to find a set of symmetric matrices, :math:`L`, such that
 
     .. math::
 
            V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
 
-    with the rank :math:`R \leq n^2`. The matrices :math:`L` are further diagonalized
-    and truncated in a second level of factorization.
+    with the rank :math:`R \leq n^2`. The matrices :math:`L` are diagonalized and for each matrix
+    the eigenvalues that are smaller than a given threshold (and their corresponding eigenvectors)
+    are discarded.
 
     The algorithm has the following steps [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_]:
 
-        1. Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
-            :math:`n^2 \times n^2` matrix where :math:`n` is the number of orbitals.
+    1. Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
+      :math:`n^2 \times n^2` matrix where :math:`n` is the number of orbitals.
 
-        2. Diagonalize the resulting matrix and keep the :math:`r` eigenvectors that have
-            corresponding eigenvalues larger than a threshold.
+    2. Diagonalize the resulting matrix and keep the :math:`r` eigenvectors that have
+      corresponding eigenvalues larger than a threshold.
 
-        3. Reshape the selected eigenvectors to :math:`n \times n` matrices.
+    3. Multiply the eigenvectors by the square root of the eigenvalues to obtain matrices :math:`L`.
 
-        4. Diagonalize the :math:`n \times n` matrices and keep those matrices that the norm of
-            their eigenvalues is larger than a threshold.
+    3. Reshape the selected eigenvectors to :math:`n \times n` matrices.
+
+    4. Diagonalize the :math:`n \times n` matrices and keep those matrices that the norm of
+      their eigenvalues is larger than a threshold.
 
     Args:
         two (array[array[float]]): the two-electron repulsion tensor in the molecular orbital basis
-            arranged in chemist notation [11|22]
+            arranged in chemist notation
         tol (float): threshold error value for discarding the negligible factors
 
     Returns:
@@ -98,7 +107,7 @@ def factorize(two, tol):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [1.398397361, 0.0, 0.0]], requires_grad = False)
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
-    >>> two = np.swapaxes(two, 1, 3) # convert to chemist's notation
+    >>> two = np.swapaxes(two, 1, 3) # convert to the chemist notation
     >>> factors, eigvals, eigvecs = factorize(two, 1e-5)
     >>> print(factors)
     [[[ 1.06723440e-01  9.73575768e-15]
@@ -115,7 +124,7 @@ def factorize(two, tol):
     eigvals_r = np.array([val for val in eigvals_r if abs(val) > tol])
     eigvecs_r = eigvecs_r[:, -len(eigvals_r) :]
 
-    vectors = eigvecs_r @ np.diag(np.sqrt(abs(eigvals_r)))
+    vectors = eigvecs_r @ np.diag(np.sqrt(eigvals_r))
 
     r = len(eigvals_r)
     factors = np.array([vectors.reshape(n, n, r)[:, :, k] for k in range(r)])

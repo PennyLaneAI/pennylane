@@ -4,8 +4,8 @@ qml.resources
 Overview
 --------
 
-The resources module provides the functionality to estimate the cost of implementing quantum
-algorithms.
+The resources module provides the functionality to estimate the cost of implementing advanced
+quantum algorithms.
 
 .. currentmodule:: pennylane.resources
 
