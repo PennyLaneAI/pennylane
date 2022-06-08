@@ -210,6 +210,10 @@
   array([1.-0.j, 0.-1.j])
   ```
 
+* The `ctrl` transform and `ControlledOperation` have been moved to the new `qml.ops.op_math`
+  submodule.  The developer-facing `ControlledOperation` class is no longer imported top-level.
+  [(#2656)](https://github.com/PennyLaneAI/pennylane/pull/2656)
+
 * A new symbolic operator class `qml.ops.op_math.Pow` represents an operator raised to a power.
   [(#2621)](https://github.com/PennyLaneAI/pennylane/pull/2621)
 
