@@ -59,6 +59,7 @@ def mutual_info_transform(qnode, indices0, indices1, base=None):
     r"""Compute the mutual information from a :class:`.QNode` returning a :func:`~.state`:
 
     .. math::
+
         I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
 
     where :math:`S` is the von Neumann entropy.

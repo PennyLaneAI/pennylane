@@ -530,6 +530,7 @@ def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dt
     r"""Compute the mutual information between two subsystems given a state:
 
     .. math::
+
         I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
 
     where :math:`S` is the von Neumann entropy.

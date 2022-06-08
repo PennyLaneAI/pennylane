@@ -867,6 +867,7 @@ def mutual_info(wires0, wires1, log_base=None):
     r"""Mutual information between the subsystems prior to measurement:
 
     .. math::
+
         I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
 
     where :math:`S` is the von Neumann entropy.
