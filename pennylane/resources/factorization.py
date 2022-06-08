@@ -52,7 +52,7 @@ def factorize(two, tol):
       [ 5.01689072e-13 -8.28642140e-01]]]
 
     .. details::
-      :title: Theory
+        :title: Theory
 
         The second quantized electronic Hamiltonian is constructed in terms of fermionic creation,
         :math:`a^{\dagger}` , and annihilation, :math:`a`, operators as
