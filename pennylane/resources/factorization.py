@@ -79,17 +79,17 @@ def factorize(two, tol):
 
     The algorithm has the following steps [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_]:
 
-    1. Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
+    - Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
       :math:`n^2 \times n^2` matrix where :math:`n` is the number of orbitals.
 
-    2. Diagonalize the resulting matrix and keep the :math:`r` eigenvectors that have
+    - Diagonalize the resulting matrix and keep the :math:`r` eigenvectors that have
       corresponding eigenvalues larger than a threshold.
 
-    3. Multiply the eigenvectors by the square root of the eigenvalues to obtain matrices :math:`L`.
+    - Multiply the eigenvectors by the square root of the eigenvalues to obtain matrices :math:`L`.
 
-    4. Reshape the selected eigenvectors to :math:`n \times n` matrices.
+    - Reshape the selected eigenvectors to :math:`n \times n` matrices.
 
-    5. Diagonalize the :math:`n \times n` matrices and keep those matrices that the norm of
+    - Diagonalize the :math:`n \times n` matrices and keep those matrices that the norm of
       their eigenvalues is larger than a threshold.
 
     Args:
