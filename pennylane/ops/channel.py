@@ -269,7 +269,7 @@ class DepolarizingChannel(Channel):
 
     .. note::
 
-        Multiple equivalent definitions of the Kraus operators :math:`\{K_0 \ldots K_3\}` exists in
+        Multiple equivalent definitions of the Kraus operators :math:`\{K_0 \ldots K_3\}` exist in
         the literature [`1 <https://michaelnielsen.org/qcqi/>`_] (Eqs. 8.102-103). Here, we adopt the
         one from Eq. 8.103, which is also presented in [`2 <http://theory.caltech.edu/~preskill/ph219/chap3_15.pdf>`_] (Eq. 3.85).
         For this definition, please make a note of the following:
