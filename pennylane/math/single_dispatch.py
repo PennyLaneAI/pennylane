@@ -33,6 +33,17 @@ def _i(name):
     return import_module(name)
 
 
+# -------------------------------- SciPy --------------------------------- #
+# the following is required to ensure that SciPy sparse Hamiltonians passed to
+# qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
+ar.register_function("scipy", "to_numpy", lambda x: x)
+
+ar.register_function("scipy", "shape", np.shape)
+ar.register_function("scipy", "conj", np.conj)
+ar.register_function("scipy", "transpose", np.transpose)
+ar.register_function("scipy", "ndim", np.ndim)
+
+
 # -------------------------------- NumPy --------------------------------- #
 from scipy.linalg import block_diag as _scipy_block_diag
 
@@ -43,10 +54,7 @@ ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("numpy", "unstack", list)
 
-# the following is required to ensure that SciPy sparse Hamiltonians passed to
-# qml.SparseHamiltonian are not automatically 'unwrapped' to dense NumPy arrays.
-ar.register_function("scipy", "to_numpy", lambda x: x)
-ar.register_function("scipy", "shape", np.shape)
+ar.register_function("builtins", "unstack", list)
 
 
 def _scatter_element_add_numpy(tensor, index, value):
@@ -168,7 +176,6 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "moveaxis"] = "tensorflow.experiment
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "sinc"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experimental.numpy"
-ar.autoray._SUBMODULE_ALIASES["tensorflow", "ndim"] = "tensorflow.experimental.numpy"
 
 
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
@@ -198,6 +205,16 @@ def _round_tf(tensor, decimals=0):
 
 
 ar.register_function("tensorflow", "round", _round_tf)
+
+
+def _ndim_tf(tensor):
+    try:
+        return _i("tf").experimental.numpy.ndim(tensor)
+    except AttributeError:
+        return len(tensor.shape)
+
+
+ar.register_function("tensorflow", "ndim", _ndim_tf)
 
 
 def _take_tf(tensor, indices, axis=None):
