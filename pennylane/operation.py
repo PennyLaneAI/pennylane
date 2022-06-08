@@ -97,6 +97,7 @@ import abc
 import copy
 import itertools
 import functools
+import numbers
 import warnings
 from enum import IntEnum
 from scipy.sparse import kron, eye, coo_matrix
@@ -184,19 +185,23 @@ def expand_matrix(base_matrix, wires, wire_order):
     """
     wire_order = Wires(wire_order)
     n = len(wires)
-    interface = qml.math._multi_dispatch(base_matrix)  # pylint: disable=protected-access
+    shape = qml.math.shape(base_matrix)
+    batch_dim = shape[0] if len(shape) == 3 else None
+    interface = qml.math.get_interface(base_matrix)  # pylint: disable=protected-access
 
     # operator's wire positions relative to wire ordering
     op_wire_pos = wire_order.indices(wires)
 
     identity = qml.math.reshape(
-        qml.math.eye(2 ** len(wire_order), like=interface), [2] * len(wire_order) * 2
+        qml.math.eye(2 ** len(wire_order), like=interface), [2] * (len(wire_order) * 2)
     )
-    axes = (list(range(n, 2 * n)), op_wire_pos)
+    # The first axis entries are range(n, 2n) for batch_dim=None and range(n+1, 2n+1) else
+    axes = (list(range(-n, 0)), op_wire_pos)
 
     # reshape op.matrix()
     op_matrix_interface = qml.math.convert_like(base_matrix, identity)
-    mat_op_reshaped = qml.math.reshape(op_matrix_interface, [2] * n * 2)
+    shape = [batch_dim] + [2] * (n * 2) if batch_dim else [2] * (n * 2)
+    mat_op_reshaped = qml.math.reshape(op_matrix_interface, shape)
     mat_tensordot = qml.math.tensordot(
         mat_op_reshaped, qml.math.cast_like(identity, mat_op_reshaped), axes
     )
@@ -204,9 +209,14 @@ def expand_matrix(base_matrix, wires, wire_order):
     unused_idxs = [idx for idx in range(len(wire_order)) if idx not in op_wire_pos]
     # permute matrix axes to match wire ordering
     perm = op_wire_pos + unused_idxs
-    mat = qml.math.moveaxis(mat_tensordot, wire_order.indices(wire_order), perm)
+    sources = wire_order.indices(wire_order)
+    if batch_dim:
+        perm = [p + 1 for p in perm]
+        sources = [s + 1 for s in sources]
 
-    mat = qml.math.reshape(mat, (2 ** len(wire_order), 2 ** len(wire_order)))
+    mat = qml.math.moveaxis(mat_tensordot, sources, perm)
+    shape = [batch_dim] + [2 ** len(wire_order)] * 2 if batch_dim else [2 ** len(wire_order)] * 2
+    mat = qml.math.reshape(mat, shape)
 
     return mat
 
@@ -495,8 +505,7 @@ class Operator(abc.ABC):
         return copied_op
 
     def __deepcopy__(self, memo):
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
+        copied_op = object.__new__(type(self))
 
         # The memo dict maps object ID to object, and is required by
         # the deepcopy function to keep track of objects it has already
@@ -798,7 +807,9 @@ class Operator(abc.ABC):
 
         if len(qml.math.shape(params[0])) != 0:
             # assume that if the first parameter is matrix-valued, there is only a single parameter
-            # this holds true for all current operations and templates
+            # this holds true for all current operations and templates unless parameter broadcasting
+            # is used
+            # TODO[dwierichs]: Implement a proper label for broadcasted operators
             if (
                 cache is None
                 or not isinstance(cache.get("matrices", None), list)
@@ -920,7 +931,8 @@ class Operator(abc.ABC):
             ]
             if not qml.math.allclose(first_dims, first_dims[0]):
                 raise ValueError(
-                    f"Batching was attempted but the batched dimensions do not match: {first_dims}."
+                    "Broadcasting was attempted but the broadcasted dimensions "
+                    f"do not match: {first_dims}."
                 )
             self._batch_size = first_dims[0]
 
@@ -1146,6 +1158,21 @@ class Operator(abc.ABC):
         """
         return "_ops"
 
+    def adjoint(self):  # pylint:disable=no-self-use
+        """Create an operation that is the adjoint of this one.
+
+        Adjointed operations are the conjugated and transposed version of the
+        original operation. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        Args:
+            do_queue: Whether to add the adjointed gate to the context queue.
+
+        Returns:
+            The adjointed operation.
+        """
+        raise AdjointUndefinedError
+
     def expand(self):
         """Returns a tape that has recorded the decomposition of the operator.
 
@@ -1262,7 +1289,6 @@ class Operation(Operator):
         """
         return Wires([])
 
-    @property
     def single_qubit_rot_angles(self):
         r"""The parameters required to implement a single-qubit gate as an
         equivalent ``Rot`` gate, up to a global phase.
@@ -1365,21 +1391,6 @@ class Operation(Operator):
         """Boolean determining if the inverse of the operation was requested."""
         return self._inverse
 
-    def adjoint(self):  # pylint:disable=no-self-use
-        """Create an operation that is the adjoint of this one.
-
-        Adjointed operations are the conjugated and transposed version of the
-        original operation. Adjointed ops are equivalent to the inverted operation for unitary
-        gates.
-
-        Args:
-            do_queue: Whether to add the adjointed gate to the context queue.
-
-        Returns:
-            The adjointed operation.
-        """
-        raise AdjointUndefinedError
-
     @inverse.setter
     def inverse(self, boolean):
         self._inverse = boolean
@@ -1403,7 +1414,7 @@ class Operation(Operator):
         canonical_matrix = self.compute_matrix(*self.parameters, **self.hyperparameters)
 
         if self.inverse:
-            canonical_matrix = qml.math.conj(qml.math.T(canonical_matrix))
+            canonical_matrix = qml.math.conj(qml.math.moveaxis(canonical_matrix, -2, -1))
 
         if wire_order is None or self.wires == Wires(wire_order):
             return canonical_matrix
@@ -1643,11 +1654,15 @@ class Observable(Operator):
 
     def __add__(self, other):
         r"""The addition operation between Observables/Tensors/qml.Hamiltonian objects."""
+        if isinstance(other, numbers.Number) and other == 0:
+            return self
         if isinstance(other, qml.Hamiltonian):
             return other + self
         if isinstance(other, (Observable, Tensor)):
             return qml.Hamiltonian([1, 1], [self, other], simplify=True)
         raise ValueError(f"Cannot add Observable and {type(other)}")
+
+    __radd__ = __add__
 
     def __mul__(self, a):
         r"""The scalar multiplication operation between a scalar and an Observable/Tensor."""
