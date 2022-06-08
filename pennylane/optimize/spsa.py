@@ -69,7 +69,7 @@ class SPSAOptimizer:
 
         * The number of quantum device executions is :math:`2*iter*num terms hamiltonian`.
         * The forward-pass value of the cost function is not computed when stepping the optimizer.
-        Therefore, in case of using ``step_and_cost`` method instead of ``step``, the number
+          Therefore, in case of using ``step_and_cost`` method instead of ``step``, the number
           of executions will include the cost function evaluations.
 
     .. note::
