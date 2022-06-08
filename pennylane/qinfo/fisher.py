@@ -181,7 +181,7 @@ def classical_fisher(qnode, argnums=0):
         j = jac(*args, **kwargs)
         p = new_qnode(*args, **kwargs)
 
-        # In case multiple variables are used
+        # In case multiple variables are used, we create a list of cfi matrices
         if isinstance(j, tuple) and len(j) > 1:
             res = []
             for j_i in j:
