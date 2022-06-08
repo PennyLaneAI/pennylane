@@ -565,6 +565,10 @@ def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dt
     >>> y = np.array([[1/2, 1/2, 0, 1/2], [1/2, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]])
     >>> qml.math.to_mutual_info(y, indices0=[0], indices1=[1])
     0.4682351577408206
+
+    .. seealso::
+
+        :func:`~.math.to_vn_entropy`
     """
 
     # the subsystems cannot overlap

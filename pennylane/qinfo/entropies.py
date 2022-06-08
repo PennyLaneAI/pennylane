@@ -94,6 +94,10 @@ def mutual_info_transform(qnode, indices0, indices1, base=None):
     1.3862943611198906
     >>> mutual_info_circuit(0.4)
     0.3325090393262875
+
+    .. seealso::
+
+        :func:`~.qinfo.vn_entropy_transform`
     """
 
     density_matrix_qnode = qml.qinfo.density_matrix_transform(qnode, qnode.device.wires)

@@ -902,6 +902,10 @@ def mutual_info(wires0, wires1, log_base=None):
         Calculating the derivative of :func:`~.mutual_info` is currently only supported when
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device.
+
+    .. seealso::
+
+        :func:`~.vn_entropy`
     """
     # the subsystems cannot overlap
     if len([wire for wire in wires0 if wire in wires1]) > 0:
