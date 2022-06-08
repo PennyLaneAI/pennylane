@@ -121,7 +121,6 @@ class DefaultMixed(QubitDevice):
 
     @staticmethod
     def _asarray(array, dtype=None):
-
         # check if the array is ragged
         first_shape = qnp.shape(array[0])
         is_ragged = any(qnp.shape(array[i]) != first_shape for i in range(len(array)))
@@ -228,7 +227,6 @@ class DefaultMixed(QubitDevice):
 
         # take the real part so probabilities are not shown as complex numbers
         probs = qnp.real(probs)
-
         return qnp.where(probs < 0, -probs, probs)
 
     def _get_kraus(self, operation):  # pylint: disable=no-self-use

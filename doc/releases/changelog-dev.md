@@ -426,6 +426,10 @@
   for some selected configurations.
   [(#2540)](https://github.com/PennyLaneAI/pennylane/pull/2540)
 
+* Added a note for the [Depolarization Channel](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.DepolarizingChannel.html)
+  that specifies how the channel behaves for the different values of depolarization probability `p`.
+  [(#2669)](https://github.com/PennyLaneAI/pennylane/pull/2669)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
