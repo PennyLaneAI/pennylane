@@ -109,7 +109,7 @@ class SPSAOptimizer:
 
     >>> max_iterations = 100
     >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
-    >>> for n in range(max_iterations):
+    >>> for _ in range(max_iterations):
     ...     params, energy = opt.step_and_cost(cost, params)
 
     Example of hybrid classical-quantum workflow:
