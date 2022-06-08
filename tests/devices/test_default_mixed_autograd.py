@@ -398,15 +398,17 @@ class TestPassthruIntegration:
         res = circuit(a, b)
         expected = [
             np.cos(a / 2) ** 2 * np.cos(b / 2) ** 2 + np.sin(a / 2) ** 2 * np.sin(b / 2) ** 2,
-            np.cos(a / 2) ** 2 * np.sin(b / 2) ** 2 + np.sin(a / 2) ** 2 * np.cos(b / 2) ** 2
+            np.cos(a / 2) ** 2 * np.sin(b / 2) ** 2 + np.sin(a / 2) ** 2 * np.cos(b / 2) ** 2,
         ]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         grad = qml.jacobian(circuit)(a, b)
-        expected = 0.5 * np.array([
-            [-np.sin(a) * np.cos(b), np.sin(a) * np.cos(b)],
-            [-np.cos(a) * np.sin(b), np.cos(a) * np.sin(b)]
-        ])
+        expected = 0.5 * np.array(
+            [
+                [-np.sin(a) * np.cos(b), np.sin(a) * np.cos(b)],
+                [-np.cos(a) * np.sin(b), np.cos(a) * np.sin(b)],
+            ]
+        )
 
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
