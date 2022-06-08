@@ -159,6 +159,9 @@
   The code that checks for qubit wise commuting (QWC) got a performance boost that is noticable
   when many commuting paulis of the same type are measured.
 
+* Added the `qml.ECR` operation to represent the echoed RZX(pi/2) gate.
+  [(#2613)](https://github.com/PennyLaneAI/pennylane/pull/2613)
+
 * Added new transform `qml.batch_partial` which behaves similarly to `functools.partial` but supports batching in the unevaluated parameters.
   [(#2585)](https://github.com/PennyLaneAI/pennylane/pull/2585)
 
@@ -273,6 +276,7 @@
 * The `QNode` class now contains a new method `best_method_str` that returns the best differentiation
   method for a provided device and interface, in human-readable format.
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
+   
 
 * Using `Operation.inv()` in a queuing environment no longer updates the queue's metadata, but merely updates
   the operation in place.
@@ -396,6 +400,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-Amintor Dusko, Ankit Khandelwal, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
+Amintor Dusko, Ankit Khandelwal, Avani Bhardwaj, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
 Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian, Kottmann, Maria Schuld, Mikhail Andrenkov, Romain Moyard,
 Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, WingCode
