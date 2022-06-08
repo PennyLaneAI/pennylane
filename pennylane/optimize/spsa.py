@@ -63,7 +63,8 @@ class SPSAOptimizer:
     * scaling exponent :math:`\alpha` and
     * stability constant :math:`A`
 
-    For more details, see `Spall (1998a) <https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF>`_.
+    For more details, see `Spall (1998a)
+    <https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF>`_.
 
     .. note::
 
@@ -90,19 +91,23 @@ class SPSAOptimizer:
 
     For VQE/VQE-like problems, the objective function can be the following:
 
-    >>> dev = qml.device("default.qubit", wires=1)
-    >>> def circuit(params, wires):
-    ...    qml.BasisState(np.array([1, 1, 0, 0]), wires=wires)
-    ...    for i in wires:
-    ...        qml.Rot(*params[i], wires=i)
-    ...    qml.CNOT(wires=[2, 3])
-    ...    qml.CNOT(wires=[2, 0])
-    ...    qml.CNOT(wires=[3, 1])
-    >>> def exp_val_circuit(params):
-    ...    circuit(params, range(dev.num_wires))
-    ...    return qml.expval(h2_ham)
+    >>> coeffs = [0.2, -0.543, 0.4514]
+    >>> obs = [qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.Hadamard(2),
+    ...             qml.PauliX(3) @ qml.PauliZ(1)]
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> num_qubits = 4
+    >>> dev = qml.device("default.qubit", wires=num_qubits)
+    >>> @qml.qnode(dev)
+    ... def cost(params, num_qubits=1):
+    ...     qml.BasisState(np.array([1, 1, 0, 0]), wires=range(num_qubits))
+    ...     for i in range(num_qubits):
+    ...         qml.Rot(*params[i], wires=0)
+    ...         qml.CNOT(wires=[2, 3])
+    ...         qml.CNOT(wires=[2, 0])
+    ...         qml.CNOT(wires=[3, 1])
+    ...     return qml.expval(H)
+    ...
     >>> params = np.random.normal(0, np.pi, (num_qubits, 3), requires_grad=True)
-    >>> cost = qml.QNode(exp_val_circuit, dev)
 
     Once constructed, the cost function can be passed directly to the
     ``step`` or ``step_and_cost`` function of the optimizer:
@@ -110,37 +115,44 @@ class SPSAOptimizer:
     >>> max_iterations = 100
     >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
     >>> for _ in range(max_iterations):
-    ...     params, energy = opt.step_and_cost(cost, params)
+    ...     params, energy = opt.step_and_cost(cost, params, num_qubits=num_qubits)
+    >>> print(energy)
+    -0.4294539602541956
 
     Example of hybrid classical-quantum workflow:
 
+    >>> n_qubits = 1
+    >>> max_iterations = 20
     >>> dev = qml.device("default.qubit", wires=n_qubits)
     >>> @qml.qnode(dev)
-    >>> def layer_fn_spsa(inputs, weights):
+    ... def layer_fn_spsa(inputs, weights):
     ...     qml.AngleEmbedding(inputs, wires=range(n_qubits))
     ...     qml.BasicEntanglerLayers(weights, wires=range(n_qubits))
-    ...     return [qml.expval(qml.PauliZ(wires=i)) for i in range(n_qubits)]
-
+    ...     return qml.expval(qml.PauliZ(wires=0))
+    ...
     >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
-    >>> tensor_in = tf.Variable([0.27507603, 0.3453423])
-    >>> params = tf.Variable([[3.97507603, 2.00854038],
-    ...                       [3.12950603, 3.00854038],
-    ...                       [1.17907603, 1.10854038],
-    ...                       [0.97507603, 1.00854038],
-    ...                       [1.25907603, 0.40854088]])
-    >>> tensor_out = tf.Variable([0,0])
-
-    >>> init = tf.compat.v1.global_variables_initializer()
-    >>> with tf.compat.v1.Session() as sess:
-    ...     sess.run(init)
-    ...     for _ in range(max_iterations):
-    ...         # Take step
-    ...         params_a, layer_res = opt.step_and_cost(layer_fn_spsa,
-    ...                                np.tensor(tensor_in.eval(sess), requires_grad=False),
-    ...                                np.tensor(params.eval(sess)))
-    ...         params.assign(params_a[1], sess)
-    ...         tensor_out.assign(layer_res, sess)
-
+    >>> @tf.function
+    ... def fn(params, tensor_in, tensor_out):
+    ...     with tf.init_scope():
+    ...             for _ in range(max_iterations):
+    ...                     #Do something else here
+    ...                     params_a, layer_res = opt.step_and_cost(layer_fn_spsa,
+    ...                                     np.tensor(tensor_in, requires_grad=False),
+    ...                                     np.tensor(params))
+    ...                     params = params_a[1]
+    ...                     tensor_out = layer_res
+    ...                     #Do something else here
+    ...     return layer_res
+    ...
+    >>> tensor_in = tf.Variable([0.27507603])
+    >>> tensor_out = tf.Variable([0])
+    >>> params = tf.Variable([[3.97507603],
+    ...     [3.12950603],
+    ...     [1.00854038],
+    ...     [1.25907603]])
+    >>> loss = fn(params, tensor_in, tensor_out)
+    >>> print(loss)
+    tf.Tensor(-0.9995854230771829, shape=(), dtype=float64)
 
 
 
