@@ -36,7 +36,7 @@ def test_make_probs():
     assert np.isclose(fn([1]), 1)
 
 
-class TestComputeclassical_fisherfn:
+class TestComputeclassicalFisher:
     """Testing that given p and dp, _compute_cfim() computes the correct outputs"""
 
     @pytest.mark.parametrize("n_params", np.arange(1, 10))
