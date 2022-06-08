@@ -107,6 +107,7 @@ class DefaultMixed(QubitDevice):
         "OrbitalRotation",
         "QFT",
         "ThermalRelaxationError",
+        "ECR",
     }
 
     _reshape = staticmethod(qnp.reshape)
