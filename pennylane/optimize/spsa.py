@@ -63,12 +63,7 @@ class SPSAOptimizer:
     * scaling exponent :math:`\alpha` and
     * stability constant :math:`A`
 
-    For more details, see:
-
-        J. Spall
-        "An Overview of the Simultaneous Perturbation Method for Efficient Optimization."
-        `Johns Hopkins api technical digest, 19(4), 482-492, 1998
-        <https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF>`_
+    For more details, see `Spall (1998) <https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF>`_.
 
     .. note::
 
