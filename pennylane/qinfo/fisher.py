@@ -104,7 +104,7 @@ def classical_fisher(qnode, argnums=0):
     tensor([[1., 1.],
         [1., 1.]], requires_grad=True)
 
-    This new function accepts the same signature as the :class:`.QNode`. Here is a small example with multiple arguments:
+    This function has the same signature as the :class:`.QNode`. Here is a small example with multiple arguments:
 
     .. code-block:: python
 
