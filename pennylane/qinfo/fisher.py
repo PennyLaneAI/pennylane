@@ -97,7 +97,7 @@ def classical_fisher(qnode, argnums=0):
     >>> circ(params)
     tensor([0.77708372, 0.        , 0.        , 0.22291628], requires_grad=True)
 
-    We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the new function that we generate via ``classical_fisher()``:
+    We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the function returned by ``classical_fisher()``:
 
     >>> cfim_func = qml.qinfo.classical_fisher(circ)
     >>> cfim_func(params)
