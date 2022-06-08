@@ -268,6 +268,34 @@ add_hamiltonians = [
     ),
 ]
 
+add_zero_hamiltonians = [
+    qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+    qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+    qml.Hamiltonian(
+        [1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
+    ),
+]
+
+iadd_zero_hamiltonians = [
+    # identical hamiltonians
+    (
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+        qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
+    ),
+    (
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+        qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Hermitian(np.array([[1, 0], [0, -1]]), 0)]),
+    ),
+    (
+        qml.Hamiltonian(
+            [1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
+        ),
+        qml.Hamiltonian(
+            [1.5, 1.2, 1.1, 0.3], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]
+        ),
+    ),
+]
+
 sub_hamiltonians = [
     (
         qml.Hamiltonian([1, 1.2, 0.1], [qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2)]),
@@ -645,11 +673,18 @@ class TestHamiltonian:
         assert H.__str__() == string
 
     @patch("builtins.print")
-    def test_hamiltonian_ipython_display(self, mock_print):
+    def test_small_hamiltonian_ipython_display(self, mock_print):
         """Test that the ipython_dipslay method prints __str__."""
         H = 1.0 * qml.PauliX(0)
         H._ipython_display_()
         mock_print.assert_called_with(str(H))
+
+    @patch("builtins.print")
+    def test_big_hamiltonian_ipython_display(self, mock_print):
+        """Test that the ipython_display method prints __repr__ when H has more than 15 terms."""
+        H = qml.Hamiltonian([1] * 16, [qml.PauliX(i) for i in range(16)])
+        H._ipython_display_()
+        mock_print.assert_called_with(repr(H))
 
     @pytest.mark.parametrize("terms, string", zip(valid_hamiltonians, valid_hamiltonians_repr))
     def test_hamiltonian_repr(self, terms, string):
@@ -723,6 +758,16 @@ class TestHamiltonian:
         """Tests that Hamiltonians are added correctly"""
         assert H.compare(H1 + H2)
 
+    @pytest.mark.parametrize("H", add_zero_hamiltonians)
+    def test_hamiltonian_add_zero(self, H):
+        """Tests that Hamiltonians can be added to zero"""
+        assert H.compare(H + 0)
+        assert H.compare(0 + H)
+        assert H.compare(H + 0.0)
+        assert H.compare(0.0 + H)
+        assert H.compare(H + 0e1)
+        assert H.compare(0e1 + H)
+
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
     def test_hamiltonian_mul(self, coeff, H, res):
         """Tests that scalars and Hamiltonians are multiplied correctly"""
@@ -763,6 +808,16 @@ class TestHamiltonian:
         """Tests that Hamiltonians are added inline correctly"""
         H1 += H2
         assert H.compare(H1)
+
+    @pytest.mark.parametrize(("H1", "H2"), iadd_zero_hamiltonians)
+    def test_hamiltonian_iadd_zero(self, H1, H2):
+        """Tests in-place addition between Hamiltonians and zero"""
+        H1 += 0
+        assert H1.compare(H2)
+        H1 += 0.0
+        assert H1.compare(H2)
+        H1 += 0e1
+        assert H1.compare(H2)
 
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
     def test_hamiltonian_imul(self, coeff, H, res):

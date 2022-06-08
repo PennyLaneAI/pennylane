@@ -156,6 +156,7 @@ Parametrized gates
     ~pennylane.U2
     ~pennylane.U3
     ~pennylane.IsingXX
+    ~pennylane.IsingXY
     ~pennylane.IsingYY
     ~pennylane.IsingZZ
 
