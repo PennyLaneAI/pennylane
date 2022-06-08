@@ -252,7 +252,7 @@ class TestSpecialGates:
         plt.close()
 
     def test_ControlledQubitUnitary(self):
-        """Test ControlledQubitUnitary gets a special call."""
+        """Test ControlledQubitUnitary"""
 
         with QuantumTape() as tape:
             qml.ControlledQubitUnitary(
@@ -267,9 +267,13 @@ class TestSpecialGates:
 
         assert len(ax.patches) == 5
         assert ax.patches[0].center == (layer, 0)
+        assert ax.patches[0].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["lines.color"])
         assert ax.patches[1].center == (layer, 1)
+        assert ax.patches[1].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["axes.facecolor"])
         assert ax.patches[2].center == (layer, 2)
+        assert ax.patches[2].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["lines.color"])
         assert ax.patches[3].center == (layer, 3)
+        assert ax.patches[3].get_facecolor() == mpl.colors.to_rgba(plt.rcParams["axes.facecolor"])
 
         # five wires, one control line
         assert len(ax.lines) == 6
