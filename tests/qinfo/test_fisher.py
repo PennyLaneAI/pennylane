@@ -99,7 +99,7 @@ class TestIntegration:
         assert np.allclose(res, n_wires * np.ones((n_params, n_params)))
 
 
-class TestInterfaces:
+class TestInterfacesClassicalFisher:
     """Integration tests for the classical fisher information matrix CFIM"""
 
     @pytest.mark.autograd
