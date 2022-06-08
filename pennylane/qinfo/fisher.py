@@ -69,7 +69,7 @@ def classical_fisher(qnode, argnums=0):
 
         In its current form, this functionality is not hardware compatible and can only be used by simulators.
 
-    **See also:**
+.. seealso:: :func:`metric_tensor`, :func:`qinfo.quantum_fisher`
 
     :func:`metric_tensor`, :func:`qinfo.quantum_fisher`
 
