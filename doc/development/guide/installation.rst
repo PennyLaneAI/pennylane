@@ -38,7 +38,7 @@ requirements:
 
 * **PyTorch interface**: ``pytorch >= 1.1``
 
-* **TensorFlow interface**: ``tensorflow >= 2.2``
+* **TensorFlow interface**: ``tensorflow >= 2.3``
 
 
 Installation
