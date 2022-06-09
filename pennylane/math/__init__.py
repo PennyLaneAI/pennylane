@@ -56,6 +56,7 @@ from .quantum import (
     to_vn_entropy,
     to_mutual_info,
     fidelity,
+    sqrt_matrix,
 )
 
 

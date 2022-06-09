@@ -26,7 +26,6 @@ from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import diag, dot, scatter_element_add, einsum
 from .utils import is_abstract, allclose, cast, convert_like, cast_like
 
-
 ABC_ARRAY = np.array(list(ABC))
 
 
@@ -703,6 +702,21 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     return fid
 
 
+def sqrt_matrix(density_matrix):
+    r"""Compute the square root matrix of a density matrix where :math:`\rho = \sqrt{\rho} \times \sqrt{\rho}`
+    Args:
+        density_matrix (tensor_like): 2D density matrix of the quantum system.
+    Returns:
+        (tensor_like): Square root of the density matrix.
+    """
+    evs, vecs = qml.math.linalg.eigh(density_matrix)
+    evs = np.real(evs)
+    evs = qml.math.where(evs > 0.0, evs, 0.0)
+    if not is_abstract(evs):
+        evs = qml.math.cast_like(evs, vecs)
+    return vecs @ qml.math.diag(np.sqrt(evs)) @ np.conj(np.transpose(vecs))
+
+
 def _compute_fidelity(density_matrix0, density_matrix1):
     r"""Compute the fidelity for two density matrices with the same number of wires.
 
@@ -710,10 +724,10 @@ def _compute_fidelity(density_matrix0, density_matrix1):
             F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
     """
     # Implementation in single dispatches (sqrt(rho))
-    sqrt_matrix = _sqrt_matrix(density_matrix0)
+    sqrt_mat = qml.math.sqrt_matrix(density_matrix0)
 
     # sqrt(rho) * sigma * sqrt(rho)
-    sqrt_mat_sqrt = sqrt_matrix @ density_matrix1 @ sqrt_matrix
+    sqrt_mat_sqrt = sqrt_mat @ density_matrix1 @ sqrt_mat
 
     evs = qml.math.eigvalsh(sqrt_mat_sqrt)
     evs = np.real(evs)
@@ -761,13 +775,3 @@ def _check_state_vector(state_vector):
     if not is_abstract(norm):
         if not allclose(norm, 1.0, atol=1e-10):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
-
-
-def _sqrt_matrix(mat):
-    """Compute that matrix A such that A @ A = mat"""
-    evs, vecs = qml.math.linalg.eigh(mat)
-    evs = np.real(evs)
-    evs = qml.math.where(evs > 0.0, evs, 0.0)
-    if not is_abstract(evs):
-        evs = qml.math.cast_like(evs, vecs)
-    return vecs @ qml.math.diag(np.sqrt(evs)) @ np.conj(np.transpose(vecs))
