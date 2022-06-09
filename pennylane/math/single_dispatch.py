@@ -539,17 +539,3 @@ ar.register_function("jax", "unstack", list)
 # pylint: disable=unnecessary-lambda
 ar.register_function("jax", "eigvalsh", lambda x: _i("jax").numpy.linalg.eigvalsh(x))
 ar.register_function("jax", "entr", lambda x: _i("jax").numpy.sum(_i("jax").scipy.special.entr(x)))
-
-
-def _sqrt_matrix_jax(matrix):
-    """Sqrt matrix for jax"""
-    evs, vecs = _i("jax").numpy.linalg.eigh(matrix)
-    evs = _i("jax").numpy.where(evs > 0, evs, 0.0)
-    return (
-        vecs
-        @ _i("jax").numpy.diag(_i("jax").numpy.sqrt(evs))
-        @ _i("jax").numpy.conj(_i("jax").numpy.transpose(vecs))
-    )
-
-
-ar.register_function("jax", "sqrt_matrix", _sqrt_matrix_jax)
