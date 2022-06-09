@@ -211,6 +211,24 @@ class TestTorchLayer:
             assert weight.data.tolist() == init_method[name].tolist()
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_fixed_init_raises_error(self, get_circuit, n_qubits):
+        """Test that a ValueError is raised when using a Tensor with the wrong shape."""
+        c, w = get_circuit
+
+        init_method = {
+            "w1": torch.normal(mean=0, std=1, size=(1,)),
+            "w2": torch.normal(mean=0, std=1, size=(1,)),
+            "w3": torch.normal(mean=0, std=1, size=[]),
+            "w4": torch.normal(mean=0, std=1, size=(3,)),
+            "w5": torch.normal(mean=0, std=1, size=(2, n_qubits, 3)),
+            "w6": torch.normal(mean=0, std=1, size=(3,)),
+            "w7": torch.normal(mean=0, std=1, size=[]),
+        }
+
+        with pytest.raises(ValueError):
+            TorchLayer(qnode=c, weight_shapes=w, init_method=init_method)
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_fixed_and_callable_init(self, get_circuit, n_qubits):
         """Test if weights are initialized according to the callables and values specified in the
         init_method argument."""
