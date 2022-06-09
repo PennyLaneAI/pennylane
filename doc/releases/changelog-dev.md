@@ -344,6 +344,9 @@
 
 <h3>Breaking changes</h3>
 
+* PennyLane does not support TensorFlow `2.1.~` anymore.
+  [(#2683)](https://github.com/PennyLaneAI/pennylane/pull/2683)
+
 * The `qml.queuing.Queue` class is now removed.
   [(#2599)](https://github.com/PennyLaneAI/pennylane/pull/2599)
 
