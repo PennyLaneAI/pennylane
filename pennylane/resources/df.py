@@ -40,7 +40,7 @@ def rank(factors, eigvals, tol=1e-5):
             two-electron integral tensor
         eigvals (array[float]): eigenvalues of the matrices obtained from factorizing the
             two-electron integral tensor
-        tol (float): cutoff value for discarding the negligible eigenvalues
+        tol (float): threshold error value for discarding the negligible eigenvalues
 
     Returns:
         tuple(array[float]): the ranks of double-factorized two-electron integral tensor
@@ -48,12 +48,12 @@ def rank(factors, eigvals, tol=1e-5):
     **Example**
 
     >>> symbols  = ['H', 'H']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]], requires_grad = False) / 0.5291772
+    >>> geometry = np.array([[0.0, 0.0, 0.0], [1.398397361, 0.0, 0.0]], requires_grad = False)
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
     >>> two = np.swapaxes(two, 1, 3) # convert to chemist's notation
-    >>> l, w, v = factorize(two, 1e-5)
-    >>> print(rank(l, w))
+    >>> factors, eigvals, eigvecs = factorize(two, 1e-5)
+    >>> print(rank(factors, eigvals))
     (3, 2)
     """
     rank_r = len(factors)
