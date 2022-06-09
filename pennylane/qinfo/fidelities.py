@@ -67,6 +67,18 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
+    # Get the state vector if all wires are selected
+    if len(wires0) == len(qnode0.device.wires):
+        state_qnode0 = qnode0
+    else:
+        state_qnode0 = qml.qinfo.density_matrix_transform(qnode0, indices=wires0)
+
+    # Get the state vector if all wires are selected
+    if len(wires1) == len(qnode1.device.wires):
+        state_qnode1 = qnode1
+    else:
+        state_qnode1 = qml.qinfo.density_matrix_transform(qnode1, indices=wires1)
+
     def evaluate_fidelity(all_args0=None, all_args1=None):
         """Wrapper used for evaluation of the fidelity between two states computed from QNodes. It allows giving
         the args and kwargs to each :class:`.QNode`.
@@ -84,34 +96,22 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         if not isinstance(all_args1, tuple) and all_args1 is not None:
             all_args1 = (all_args1,)
 
-        # Get the state vector if all wires are selected
-        if len(wires0) == len(qnode0.device.wires):
-            state_qnode0 = qnode0
-        else:
-            state_qnode0 = qml.qinfo.density_matrix_transform(qnode0, indices=wires0)
-
-        # Get the state vector if all wires are selected
-        if len(wires1) == len(qnode1.device.wires):
-            state_qnode1 = qnode1
-        else:
-            state_qnode1 = qml.qinfo.density_matrix_transform(qnode1, indices=wires1)
-
         # If no all_args is given, evaluate the QNode without args
         if all_args0 is not None:
-            state_qnode0 = state_qnode0(*all_args0)
+            state0 = state_qnode0(*all_args0)
         else:
             # No args
-            state_qnode0 = state_qnode0()
+            state0 = state_qnode0()
 
         # If no all_args is given, evaluate the QNode without args
         if all_args1 is not None:
-            state_qnode1 = state_qnode1(*all_args1)
+            state1 = state_qnode1(*all_args1)
         else:
             # No args
-            state_qnode1 = state_qnode1()
+            state1 = state_qnode1()
 
         # From the two generated states, compute the fidelity.
-        fid = qml.math.fidelity(state_qnode0, state_qnode1)
+        fid = qml.math.fidelity(state0, state1)
         return fid
 
     return evaluate_fidelity
