@@ -35,12 +35,12 @@ class TestSPSAOptimizer:
     def test_apply_grad(self, args, f):
         """Test that a gradient step can be applied correctly with a univariate
         function."""
-        spsa_opt = qml.SPSAOptimizer(maxiter=10, c=0.1, gamma=0.3)
+        gamma = 0.3
+        c = 0.1
+        spsa_opt = qml.SPSAOptimizer(maxiter=10, c=c, gamma=gamma)
         args = np.array([args], requires_grad=True)
 
         alpha = 0.602
-        gamma = 0.3
-        c = 0.1
         A = 1.0
         a = 0.05 * (A + 1) ** alpha
         k = 1
@@ -71,7 +71,7 @@ class TestSPSAOptimizer:
         ak = a / (A + k) ** alpha
         deltas = np.array(np.meshgrid([1, -1], [1, -1])).T.reshape(-1, 2)
 
-        spsa_opt = qml.SPSAOptimizer(maxiter=10, A=10)
+        spsa_opt = qml.SPSAOptimizer(maxiter=10, A=A)
 
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
 
