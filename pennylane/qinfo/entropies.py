@@ -92,8 +92,11 @@ def mutual_info_transform(qnode, indices0, indices1, base=None):
     >>> mutual_info_circuit = qinfo.mutual_info_transform(circuit, indices0=[0], indices1=[1])
     >>> mutual_info_circuit(np.pi/2)
     1.3862943611198906
-    >>> mutual_info_circuit(0.4)
+    >>> x = np.array(0.4, requires_grad=True)
+    >>> mutual_info_circuit(x)
     0.3325090393262875
+    >>> qml.grad(mutual_info_circuit)(0.4)
+    1.2430067731198946
 
     .. seealso::
 
