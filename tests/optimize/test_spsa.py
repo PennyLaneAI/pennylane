@@ -103,7 +103,7 @@ class TestSPSAOptimizer:
     @pytest.mark.parametrize("f", univariate)
     def test_step_and_cost_supplied_univar_cost(self, args, f):
         """Test that returned cost is correct."""
-        spsa_opt = qml.SPSAOptimizer(maxiter=10)
+        spsa_opt = qml.SPSAOptimizer(10)
         args = np.array(args, requires_grad=True)
 
         _, res = spsa_opt.step_and_cost(f, args)

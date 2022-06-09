@@ -160,7 +160,7 @@ class SPSAOptimizer:
             <https://www.jhuapl.edu/spsa/PDF-SPSA/Spall_Implementation_of_the_Simultaneous.PDF>`_.
     """
     # pylint: disable-msg=too-many-arguments
-    def __init__(self, maxiter=200, alpha=0.602, gamma=0.101, c=0.2, A=None, a=None):
+    def __init__(self, maxiter, alpha=0.602, gamma=0.101, c=0.2, A=None, a=None):
         self.a = a
         self.A = A
         if not A:
