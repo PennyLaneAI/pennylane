@@ -132,6 +132,7 @@ class DefaultQubit(QubitDevice):
         "IsingXX",
         "IsingYY",
         "IsingZZ",
+        "IsingXY",
         "SingleExcitation",
         "SingleExcitationPlus",
         "SingleExcitationMinus",
@@ -142,6 +143,7 @@ class DefaultQubit(QubitDevice):
         "QubitSum",
         "OrbitalRotation",
         "QFT",
+        "ECR",
     }
 
     observables = {

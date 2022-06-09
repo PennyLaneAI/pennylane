@@ -507,6 +507,57 @@ def stack(values, axis=0, like=None):
     return np.stack(values, axis=axis, like=like)
 
 
+def einsum(indices, *operands, like=None):
+    """Evaluates the Einstein summation convention on the operands.
+
+    Args:
+        indices (str): Specifies the subscripts for summation as comma separated list of
+            subscript labels. An implicit (classical Einstein summation) calculation is
+            performed unless the explicit indicator ‘->’ is included as well as subscript
+            labels of the precise output form.
+        operands (tuple[tensor_like]): The tensors for the operation.
+
+    Returns:
+        tensor_like: The calculation based on the Einstein summation convention.
+
+    **Examples**
+
+    >>> a = np.arange(25).reshape(5,5)
+    >>> b = np.arange(5)
+    >>> c = np.arange(6).reshape(2,3)
+
+    Trace of a matrix:
+
+    >>> qml.math.einsum('ii', a)
+    60
+
+    Extract the diagonal (requires explicit form):
+
+    >>> qml.math.einsum('ii->i', a)
+    array([ 0,  6, 12, 18, 24])
+
+    Sum over an axis (requires explicit form):
+
+    >>> qml.math.einsum('ij->i', a)
+    array([ 10,  35,  60,  85, 110])
+
+    Compute a matrix transpose, or reorder any number of axes:
+
+    >>> np.einsum('ij->ji', c)
+    array([[0, 3],
+           [1, 4],
+           [2, 5]])
+
+    Matrix vector multiplication:
+
+    >>> np.einsum('ij,j', a, b)
+    array([ 30,  80, 130, 180, 230])
+    """
+    if like is None:
+        like = _multi_dispatch(operands)
+    return np.einsum(indices, *operands, like=like)
+
+
 def where(condition, x=None, y=None):
     """Returns elements chosen from x or y depending on a boolean tensor condition,
     or the indices of entries satisfying the condition.

@@ -40,6 +40,7 @@ from .multi_dispatch import (
     concatenate,
     diag,
     dot,
+    einsum,
     frobenius_inner_product,
     get_trainable_indices,
     ones_like,
@@ -70,6 +71,9 @@ sum = ar.numpy.sum
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
+# small constant for numerical stability that the user can modify
+eps = 1e-14
+
 
 def __getattr__(name):
     return getattr(ar.numpy, name)
@@ -88,6 +92,7 @@ __all__ = [
     "cov_matrix",
     "diag",
     "dot",
+    "einsum",
     "frobenius_inner_product",
     "get_interface",
     "get_trainable_indices",
