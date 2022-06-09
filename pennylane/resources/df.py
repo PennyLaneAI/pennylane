@@ -62,22 +62,20 @@ def norm(one, two, eigvals):
     **Example**
 
     >>> symbols  = ['H', 'H', 'O']
-    >>> geometry = np.array([[0.0,  0.000000000,  0.150166845],
-    >>>                      [0.0,  0.768778665, -0.532681406],
-    >>>                      [0.0, -0.768778665, -0.532681406]], requires_grad = False) / 0.529177
+    >>> geometry = np.array([[0.00000000,  0.00000000,  0.28377432],
+    >>>                      [0.00000000,  1.45278171, -1.00662237],
+    >>>                      [0.00000000, -1.45278171, -1.00662237]], requires_grad=False)
     >>> mol = qml.qchem.Molecule(symbols, geometry, basis_name='sto-3g')
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
     >>> two = np.swapaxes(two, 1, 3) # convert to the chemists notation
-    >>> l, w, v = factorize(two, 1e-5)
-    >>> print(norm(one, two, w))
+    >>> _, eigvals, _ = factorize(two, 1e-5)
+    >>> print(norm(one, two, eigvals))
     52.98762043980203
     """
-    lambda_one = 0.25 * np.sum([np.sum(abs(val)) ** 2 for val in eigvals])
+    lambda_one = 0.25 * np.sum([np.sum(abs(v)) ** 2 for v in eigvals])
 
     t_mat = one - 0.5 * np.einsum("illj", two) + np.einsum("llij", two)
-
-    val, _ = np.linalg.eigh(t_mat)
-
-    lambda_two = np.sum(abs(val))
+    eigvals_t, _ = np.linalg.eigh(t_mat)
+    lambda_two = np.sum(abs(eigvals_t))
 
     return lambda_one + lambda_two
