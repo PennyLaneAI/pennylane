@@ -710,7 +710,7 @@ def _compute_fidelity(density_matrix0, density_matrix1):
             F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
     """
     # Implementation in single dispatches (sqrt(rho))
-    sqrt_matrix = qml.math.sqrt_matrix(density_matrix0)
+    sqrt_matrix = _sqrt_matrix(density_matrix0)
 
     # sqrt(rho) * sigma * sqrt(rho)
     sqrt_mat_sqrt = sqrt_matrix @ density_matrix1 @ sqrt_matrix
@@ -761,3 +761,11 @@ def _check_state_vector(state_vector):
     if not is_abstract(norm):
         if not allclose(norm, 1.0, atol=1e-10):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
+
+
+def _sqrt_matrix(mat):
+    """Compute that matrix A such that A @ A = mat"""
+    evs, vecs = qml.math.linalg.eigh(mat)
+    evs = qml.math.where(evs == 0, 0.0, evs)
+    evs = qml.math.cast_like(evs, vecs)
+    return vecs @ qml.math.diag(np.sqrt(evs)) @ np.conj(np.transpose(vecs))

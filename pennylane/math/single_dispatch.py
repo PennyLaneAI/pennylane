@@ -70,16 +70,6 @@ ar.register_function("numpy", "eigvalsh", np.linalg.eigvalsh)
 ar.register_function("numpy", "entr", lambda x: -np.sum(x * np.log(x)))
 
 
-def _sqrt_matrix_numpy(matrix):
-    """Sqrt matrix for Numpy"""
-    evs, vecs = np.linalg.eigh(matrix)
-    evs = np.where(evs > 0, evs, 0.0)
-    return vecs @ np.diag(np.sqrt(evs)) @ np.conj(np.transpose(vecs))
-
-
-ar.register_function("numpy", "sqrt_matrix", _sqrt_matrix_numpy)
-
-
 # -------------------------------- Autograd --------------------------------- #
 
 
@@ -175,21 +165,6 @@ ar.register_function("autograd", "eigvalsh", lambda x: _i("autograd").numpy.lina
 ar.register_function(
     "autograd", "entr", lambda x: -_i("autograd").numpy.sum(x * _i("autograd").numpy.log(x))
 )
-
-
-def _sqrt_matrix_autograd(matrix):
-    """Sqrt matrix for Autograd"""
-    evs, vecs = _i("autograd").numpy.linalg.eigh(matrix)
-    evs = _i("autograd").numpy.where(evs > 0.0, evs, 0.0)
-    return (
-        vecs
-        @ _i("autograd").numpy.diag(_i("autograd").numpy.sqrt(evs))
-        @ _i("autograd").numpy.conj(_i("autograd").numpy.transpose(vecs))
-    )
-
-
-ar.register_function("autograd", "sqrt_matrix", _sqrt_matrix_autograd)
-
 
 # -------------------------------- TensorFlow --------------------------------- #
 
@@ -353,22 +328,6 @@ ar.register_function("tensorflow", "eigvalsh", _eigvalsh)
 ar.register_function(
     "tensorflow", "entr", lambda x: -_i("tf").math.reduce_sum(x * _i("tf").math.log(x))
 )
-
-
-def _sqrt_matrix_tf(matrix):
-    """Sqrt matrix for tf"""
-    evs, vecs = _i("tf").linalg.eigh(matrix)
-    evs = _i("tf").math.real(evs)
-    evs = _i("tf").where(evs > 0, evs, 0.0)
-    evs = _i("tf").cast(evs, vecs.dtype)
-    return (
-        vecs
-        @ _i("tf").linalg.diag(_i("tf").math.sqrt(evs))
-        @ _i("tf").math.conj(_i("tf").transpose(vecs))
-    )
-
-
-ar.register_function("tensorflow", "sqrt_matrix", _sqrt_matrix_tf)
 
 # -------------------------------- Torch --------------------------------- #
 
@@ -544,20 +503,6 @@ ar.register_function("torch", "ndim", _ndim_torch)
 ar.register_function("torch", "eigvalsh", lambda x: _i("torch").linalg.eigvalsh(x))
 ar.register_function("torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x)))
 
-
-def _sqrt_matrix_torch(matrix):
-    """Sqrt matrix for torch"""
-    evs, vecs = _i("torch").linalg.eigh(matrix)
-    evs = _i("torch").where(evs > 0, evs, 0.0)
-    evs = evs.type(vecs.dtype)
-    return (
-        vecs
-        @ _i("torch").diag(_i("torch").sqrt(evs))
-        @ _i("torch").conj(_i("torch").transpose(vecs, 0, 1))
-    )
-
-
-ar.register_function("torch", "sqrt_matrix", _sqrt_matrix_torch)
 
 # -------------------------------- JAX --------------------------------- #
 
