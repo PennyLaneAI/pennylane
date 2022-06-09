@@ -122,48 +122,6 @@ For more details on :func:`~.pennylane.compile` and the available compilation tr
 `the compilation documentation
 <../code/qml_transforms.html#transforms-for-circuit-compilation>`_.
 
-Groups of commuting Pauli words
--------------------------------
-
-Mutually commuting Pauli words can be measured simultaneously on a quantum computer.
-Finding groups of mutually commuting observables given a general linear combination of Pauli
-words can optimize the number of circuit executions.
-
-PennyLane contains different functionalities for this purpuse, ranging from higher-level
-transforms acting on QNodes to lower-level functions found in the :mod:`~.pennylane.grouping` module
-
-An example of a transform manipulating QNodes is :func:`~.pennylane.transforms.split_non_commuting`.
-It turns a QNode that measures non-commuting observables to a QNode that uses *multiple* circuit executions
-with qubit-wise commuting groups:
-
-.. code-block:: python3
-
-    @qml.qnode(dev)
-    def circuit(x):
-        qml.RX(x,wires=0)
-        return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
-
-    circuit = qml.transforms.split_non_commuting(circuit)
-
-Internally, the QNode is split into groups of commuting observables when executed:
-
-    >>> print(qml.draw(circuit)(0.5))
-    0: ──RX(0.50)─┤  <X>
-    \
-    0: ──RX(0.50)─┤  <Z>
-
-On a lower level, the :func:`~.pennylane.grouping.group_observables` can be used to split lists of
-observables and coefficients:
-
->>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
->>> coeffs = [1.43, 4.21, 0.97]
->>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'anticommuting', 'lf')
->>> obs_groupings
-[[PauliZ(wires=[1]), PauliX(wires=[0]) @ PauliX(wires=[1])],
- [PauliY(wires=[0])]]
->>> coeffs_groupings
-[[0.97, 4.21], [1.43]]
-
 Custom decompositions
 ---------------------
 
@@ -268,3 +226,32 @@ Circuit cutting support is also differentiable:
     Simulated quantum circuits that produce samples can be cut using
     the :func:`~.pennylane.cut_circuit_mc`
     transform, which is based on the Monte Carlo method.
+
+Groups of commuting Pauli words
+-------------------------------
+
+Mutually commuting Pauli words can be measured simultaneously on a quantum computer.
+Finding groups of mutually commuting observables given a general linear combination of Pauli
+words can optimize the number of circuit executions.
+
+PennyLane contains different functionalities for this purpose, ranging from higher-level
+transforms acting on QNodes to lower-level functions acting on operators.
+
+An example of a transform manipulating QNodes is :func:`~.pennylane.transforms.split_non_commuting`.
+It turns a QNode that measures non-commuting observables into a QNode that internally
+uses *multiple* circuit executions with qubit-wise commuting groups. The transform is used
+by devices to make such measurements possible.
+
+On a lower level, the :func:`~.pennylane.grouping.group_observables` function can be used to split lists of
+observables and coefficients:
+
+>>> obs = [qml.PauliY(0), qml.PauliX(0) @ qml.PauliX(1), qml.PauliZ(1)]
+>>> coeffs = [1.43, 4.21, 0.97]
+>>> obs_groupings, coeffs_groupings = group_observables(obs, coeffs, 'anticommuting', 'lf')
+>>> obs_groupings
+[[PauliZ(wires=[1]), PauliX(wires=[0]) @ PauliX(wires=[1])],
+ [PauliY(wires=[0])]]
+>>> coeffs_groupings
+[[0.97, 4.21], [1.43]]
+
+This and more logic to manipulate Pauli observables is found in the :mod:`~.pennylane.grouping` module.
