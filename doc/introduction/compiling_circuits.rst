@@ -231,8 +231,8 @@ Groups of commuting Pauli words
 -------------------------------
 
 Mutually commuting Pauli words can be measured simultaneously on a quantum computer.
-Finding groups of mutually commuting observables given a general linear combination of Pauli
-words can optimize the number of circuit executions.
+Finding groups of mutually commuting observables can therefore reduce the number of circuit executions,
+and is an example of how observables can be "compiled".
 
 PennyLane contains different functionalities for this purpose, ranging from higher-level
 transforms acting on QNodes to lower-level functions acting on operators.
