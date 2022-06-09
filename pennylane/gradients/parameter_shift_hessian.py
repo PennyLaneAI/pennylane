@@ -388,15 +388,15 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         gate arguments generated from parameter-shift rules (we only draw the first four out of
         all 13 tapes here):
 
-        >>> for h_tape in hessian_tapes:
+        >>> for h_tape in hessian_tapes[0:4]:
         ...     print(qml.drawer.tape_text(h_tape, decimals=1))
-        0: ──RX(0.5)─╭C───────┤ ╭<Z@Z>
+        0: ──RX(0.5)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
-        0: ──RX(-2.6)─╭C───────┤ ╭<Z@Z>
+        0: ──RX(-2.6)─╭●───────┤ ╭<Z@Z>
         1: ───────────╰RY(0.2)─┤ ╰<Z@Z>
-        0: ──RX(2.1)─╭C───────┤ ╭<Z@Z>
+        0: ──RX(2.1)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(1.8)─┤ ╰<Z@Z>
-        0: ──RX(2.1)─╭C────────┤ ╭<Z@Z>
+        0: ──RX(2.1)─╭●────────┤ ╭<Z@Z>
         1: ──────────╰RY(-1.4)─┤ ╰<Z@Z>
 
         To enable more detailed control over the parameter shifts, shift values can be provided
@@ -409,15 +409,15 @@ def param_shift_hessian(tape, argnum=None, diagonal_shifts=None, off_diagonal_sh
         >>> hessian_tapes, postproc_fn = qml.gradients.param_shift_hessian(
         ...     tape, diagonal_shifts=diag_shifts, off_diagonal_shifts=offdiag_shifts
         ... )
-        >>> for h_tape in hessian_tapes:
+        >>> for h_tape in hessian_tapes[0:4]:
         ...     print(qml.drawer.tape_text(h_tape, decimals=1))
-        0: ──RX(0.5)─╭C───────┤ ╭<Z@Z>
+        0: ──RX(0.5)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
-        0: ──RX(0.0)─╭C───────┤ ╭<Z@Z>
+        0: ──RX(0.0)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
-        0: ──RX(1.0)─╭C───────┤ ╭<Z@Z>
+        0: ──RX(1.0)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.2)─┤ ╰<Z@Z>
-        0: ──RX(1.0)─╭C───────┤ ╭<Z@Z>
+        0: ──RX(1.0)─╭●───────┤ ╭<Z@Z>
         1: ──────────╰RY(0.4)─┤ ╰<Z@Z>
 
         .. note::
