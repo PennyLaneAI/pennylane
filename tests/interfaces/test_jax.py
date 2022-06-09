@@ -905,7 +905,8 @@ class TestVectorValuedJIT:
 
     @pytest.mark.parametrize("ret, out_dim", ret_and_output_dim)
     def test_vector_valued_qnode(self, execute_kwargs, ret, out_dim):
-        """Tests the shape of vector valued QNode results."""
+        """Tests the shape of vector-valued QNode results."""
+
         dev = qml.device("default.qubit", wires=2)
         params = jnp.array([0.1, 0.2, 0.3])
 
