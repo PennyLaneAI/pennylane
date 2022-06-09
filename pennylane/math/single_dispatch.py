@@ -544,12 +544,16 @@ def _ndim_torch(tensor):
 ar.register_function("torch", "ndim", _ndim_torch)
 
 
-def _sum_torch(tensor, axes):
+def _sum_torch(tensor, axis=None, keepdims=False):
     import torch
 
-    if not axes:
+    if axis is None:
+        return torch.sum(tensor)
+
+    if len(axis) == 0:
         return tensor
-    return torch.sum(tensor, dim=axes)
+
+    return torch.sum(tensor, dim=axis, keepdim=keepdims)
 
 
 ar.register_function("torch", "sum", _sum_torch)
