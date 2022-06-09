@@ -188,6 +188,14 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
+
+def _tf_einsum(equation, *inputs):
+    from tensorflow.python.ops.special_math_ops import _einsum_v2
+
+    return _einsum_v2(equation, *inputs)
+
+
+ar.register_function("tensorflow", "einsum", _tf_einsum)
 ar.register_function("tensorflow", "asarray", lambda x: _i("tf").convert_to_tensor(x))
 ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
