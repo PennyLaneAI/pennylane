@@ -81,7 +81,7 @@ def _solarized_light():
     plt.rcParams["figure.facecolor"] = "#fdf6e3"
     plt.rcParams["axes.facecolor"] = "#eee8d5"
     plt.rcParams["patch.edgecolor"] = "#93a1a1"
-    plt.rcParams['patch.linewidth'] = 3.0
+    plt.rcParams["patch.linewidth"] = 3.0
     plt.rcParams["patch.facecolor"] = "#eee8d5"
     plt.rcParams["lines.color"] = "#657b83"
     plt.rcParams["text.color"] = "#586e75"
@@ -97,7 +97,7 @@ def _solarized_dark():
     plt.rcParams["figure.facecolor"] = "#002b36"
     plt.rcParams["axes.facecolor"] = "#002b36"
     plt.rcParams["patch.edgecolor"] = "#268bd2"
-    plt.rcParams['patch.linewidth'] = 3.0
+    plt.rcParams["patch.linewidth"] = 3.0
     plt.rcParams["patch.facecolor"] = "#073642"
     plt.rcParams["lines.color"] = "#839496"
     plt.rcParams["text.color"] = "#2aa198"
