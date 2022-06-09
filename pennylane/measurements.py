@@ -188,6 +188,11 @@ class MeasurementProcess:
         model define ``shape=(1, 2**num_wires)`` where ``num_wires`` is the
         number of wires the measurement acts on.
 
+        Note that the shapes for vector-valued return types such as
+        ``Probability`` and ``State`` are adjusted to the output of
+        ``qml.execute`` and may have an extra first element that is squeezed
+        when using QNodes.
+
         Args:
             device (.Device): a PennyLane device to use for determining the
                 shape
