@@ -29,9 +29,24 @@ def estimation_cost(norm, error):
 
     Returns:
         int: number of calls to unitary
+
+    **Example**
+
+    >>> cost = estimation_cost(72.49779513025341, 0.001)
+    >>> print(cost)
+    113880
     """
     return int(np.ceil(np.pi * norm / (2 * error)))
 
+
+def cost_qrom(*constants):
+
+    a, b, c, d, e = constants
+    n = np.log2(((a + b + c) / d) ** 0.5)
+    k = np.array([2 ** np.floor(n), 2 ** np.ceil(n)])
+    cost = np.ceil((a + b) / k) + np.ceil(c / k) + d * (k + e)
+
+    return np.min(cost)
 
 def unitary_cost(n, lamb, eps, l, xi, br, aleph=None, beth=None):
 
