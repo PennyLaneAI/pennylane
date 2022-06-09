@@ -118,7 +118,7 @@ class TestIntegration:
         params = pnp.zeros(n_params, requires_grad=True)
         res = classical_fisher(circ)(params)
         assert np.allclose(res, n_wires * np.ones((n_params, n_params)))
-    
+
     def test_hardware_compatibility_classical_fisher(self):
         """Testing that classical_fisher can be computed with finite shots"""
         n_wires = 3
