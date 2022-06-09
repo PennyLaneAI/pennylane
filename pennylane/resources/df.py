@@ -19,21 +19,21 @@ from pennylane import numpy as np
 
 
 def rank(factors, eigvals, tol=1e-5):
-    r"""Return the ranks of double-factorization for a two-electron integral tensor.
+    r"""Return the double-factorization ranks for a two-electron integral tensor.
 
-    The double factorization of a two-electron integral tensor consists of two factorization steps.
-    First, the tensor is factorized such that
+    The double factorization of a two-electron integral tensor :math:`V`, in the chemist notation,
+    consists of two factorization steps. First, the tensor is factorized such that
 
     .. math::
 
-        h_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
+        V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
 
     where :math:`R` is the rank of the first factorization step. Then, the matrices :math:`L^{(r)}`
-    are diagonalized to obtain a set of eigenvalues and eigenvectors for each matrix which can be
-    truncated with a rank :math:`M^{(r)}` for each matrix.
+    are diagonalized to obtain a set of eigenvalues and eigenvectors for each matrix. These
+    eigenvalues and eigenvectors are truncated with a rank :math:`M^{(r)}` for each matrix. An
+    average rank :math:`M` is then computed by averaging over all :math:`M^{(r)}` ranks.
 
-    This function computes the rank :math:`R` and the average rank :math:`M` which is averaged over
-    :math:`M^{(r)}` ranks.
+    This function computes the rank :math:`R` and the average rank :math:`M`.
 
     Args:
         factors (array[array[float]]): matrices (factors) obtained from factorizing the
@@ -62,7 +62,7 @@ def rank(factors, eigvals, tol=1e-5):
 
     vals_nonzero = [val for val in vals_flat if abs(val) > tol]
 
-    rank_m = int(len(vals_nonzero) / len(eigvals))
+    rank_m = int(len(vals_nonzero) / len(factors))
 
     return rank_r, rank_m
 
