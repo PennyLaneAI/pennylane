@@ -315,6 +315,7 @@
 * A new method `safe_update_info` is added to `qml.QueuingContext`. This method is substituted
   for `qml.QueuingContext.update_info` in a variety of places.
   [(#2612)](https://github.com/PennyLaneAI/pennylane/pull/2612)
+  [(#2675)](https://github.com/PennyLaneAI/pennylane/pull/2675)
 
 * `BasisEmbedding` can accept an int as argument instead of a list of bits (optionally).
   [(#2601)](https://github.com/PennyLaneAI/pennylane/pull/2601)
