@@ -430,7 +430,7 @@ class QNode:
 
             if mapped_interface in backprop_devices:
 
-                # no need to create another device if the child device is the same
+                # no need to create another device if the child device is the same (e.g., default.mixed)
                 if backprop_devices[mapped_interface] == device.short_name:
                     return "backprop", {}, device
 
