@@ -232,7 +232,7 @@ class TestCapabilities:
 
             try:
                 state = dev.state
-            except AttributeError:
+            except (AttributeError, NotImplementedError):
                 state = None
 
             assert state is None
