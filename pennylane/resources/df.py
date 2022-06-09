@@ -39,14 +39,47 @@ def estimation_cost(norm, error):
     return int(np.ceil(np.pi * norm / (2 * error)))
 
 
-def cost_qrom(*constants):
+def cost_qrom(constants):
+    r"""Return the number of Toffoli gates and the expansion factor needed to implement a QROM.
 
+    The complexity of a QROM computation in the most general form is given by
+    [`arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_]
+
+    .. math::
+
+        cost = \left \lceil \frac{a + b}{k} \right \rceil + \left \lceil \frac{c}{k} \right \rceil +
+        d \left ( k + e \right ),
+
+    where :math:`a, b, c, d, e` are constants that depend on the nature of the QROM implementation
+    and the expansion factor :math:`k` is a parameter, selected as an integer power of 2
+    :math:`k = 2^n`, that minimizes the cost.
+
+    To obtain the optimum values of :math:`k`, we first assume that the cost function is continues
+    and use differentiation to obtain the value of :math:`k` that minimizes the cost. This value of
+    :math:`k` is not necessarily an integer power of 2. We then obtain the value of :math:`n` as
+    :math:`n = \log_2(k)` and compute the cost for
+    :math:`n_{int}= \left \{\left \lceil n \right \rceil, \left \lfloor n \right \rfloor \right \}`.
+    The value of :math:`n_{int}` that gives the smaller cost is used to compute the optimim
+    :math:`k`.
+
+    Args:
+        constants (tuple[float]): constants determining a QROM
+
+    Returns:
+        tuple(int, int): the cost and the expansion factor for the QROM
+
+    **Example**
+    >>> constants = (151.0, 7.0, 151.0, 30.0, -1.0)
+    >>> cost_qrom(constants)
+    168, 4
+    """
     a, b, c, d, e = constants
     n = np.log2(((a + b + c) / d) ** 0.5)
     k = np.array([2 ** np.floor(n), 2 ** np.ceil(n)])
     cost = np.ceil((a + b) / k) + np.ceil(c / k) + d * (k + e)
 
-    return np.min(cost)
+    return int(cost[np.argmin(cost)]), int(k[np.argmin(cost)])
+
 
 def unitary_cost(n, lamb, eps, l, xi, br, aleph=None, beth=None):
 
@@ -108,7 +141,7 @@ def qubit_cost(n, lamb, eps, l, xi, br, aleph=None, beth=None):
     bp2 = nxi + aleph + 2
     bo = nxi + nlxi + br + 1
 
-    kp1, ko, kpp1, kpo, kr, kpr, kp2, kpp2 = expansion_factor(n, l, bp1, bo, bp2, xi, beth)
+    # kp1, ko, kpp1, kpo, kr, kpr, kp2, kpp2 = expansion_factor(n, l, bp1, bo, bp2, xi, beth)
 
     iteration = estimation_cost(lamb, eps)
 

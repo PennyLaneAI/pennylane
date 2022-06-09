@@ -31,3 +31,42 @@ def test_estimation_cost(norm, error, cost_ref):
     cost = qml.resources.estimation_cost(norm, error)
 
     assert cost == cost_ref
+
+
+@pytest.mark.parametrize(
+    ("constants", "cost_ref", "k_ref"),
+    [  # The reference costs and k values are obtained manually, by computing the cost for a range
+        # of k values and selecting the k that gives the minimum cost.
+        (
+            (26, 1, 0, 15.0, -1),
+            27,
+            1,
+        ),
+        (
+            (26, 1, 0, 1, 0),
+            11,
+            4,
+        ),
+        (
+            (151.0, 7.0, 151.0, 280, 0),
+            589,
+            1,
+        ),
+        (
+            (151.0, 7.0, 151.0, 2, 0),
+            52,
+            16,
+        ),
+        (
+            (151.0, 7.0, 151.0, 30.0, -1),
+            168,
+            4,
+        ),
+    ],
+)
+def test_cost_qrom(constants, cost_ref, k_ref):
+    r"""Test that cost_qrom returns the correct values."""
+    cost, k = qml.resources.cost_qrom(constants)
+
+    assert cost == cost_ref
+    assert k == k_ref
