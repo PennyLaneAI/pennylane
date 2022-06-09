@@ -36,19 +36,19 @@ def norm(one, two, eigvals):
         ||T|| = \sum_k |\text{eigvals}[T]_k|.
 
     The matrices :math:`L^{(r)}` are obtained from a rank-r factorizing the two-electron integral
-    tensor :math:`h` such that
+    tensor :math:`V`, in the chemist notation, such that
 
     .. math::
 
-        h_{ijkl} = \sum_r L_{ij}^{(r)} L_{kl}^{(r) T},
+        V_{ijkl} = \sum_r L_{ij}^{(r)} L_{kl}^{(r) T}.
 
-    and the matrix :math:`T` is constructed from the one- and two-electron integrals
+    The matrix :math:`T` is constructed from the one- and two-electron integrals
 
     .. math::
 
-        T = h_{ij} - \frac{1}{2} \sum_l h_{illj} + \sum_l h_{llij}.
+        T = h_{ij} - \frac{1}{2} \sum_l V_{illj} + \sum_l V_{llij}.
 
-    Note that the two-electron integral tensor must be arranged in the chemist notation [11|22].
+    Note that the two-electron integral tensor must be arranged in the chemist notation.
 
     Args:
         one (array[array[float]]): one-electron integrals
