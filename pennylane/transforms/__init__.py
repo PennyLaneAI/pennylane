@@ -36,7 +36,7 @@ that compute the desired quantity.
     ~metric_tensor
     ~adjoint_metric_tensor
     ~specs
-    ~split_non_commuting
+    ~transforms.split_non_commuting
     ~transforms.mitigate_with_zne
     ~transforms.split_non_commuting
 
