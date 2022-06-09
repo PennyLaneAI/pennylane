@@ -766,6 +766,7 @@ def _check_state_vector(state_vector):
 def _sqrt_matrix(mat):
     """Compute that matrix A such that A @ A = mat"""
     evs, vecs = qml.math.linalg.eigh(mat)
-    evs = qml.math.where(evs == 0, 0.0, evs)
-    evs = qml.math.cast_like(evs, vecs)
+    evs = qml.math.where(evs > 0.0, evs, 0.0)
+    if not is_abstract(evs):
+        evs = qml.math.cast_like(evs, vecs)
     return vecs @ qml.math.diag(np.sqrt(evs)) @ np.conj(np.transpose(vecs))

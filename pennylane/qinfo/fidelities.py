@@ -78,7 +78,6 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         Returns:
             float: Fidelity between two quantum states
         """
-        print(signature0)
         if not isinstance(signature0, tuple) and signature0 is not None:
             signature0 = (signature0,)
 
