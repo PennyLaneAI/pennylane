@@ -13,9 +13,6 @@
 # limitations under the License.
 """Differentiable quantum fidelity"""
 
-from collections.abc import Iterable
-from autograd.numpy.numpy_boxes import ArrayBox
-
 import pennylane as qml
 
 
@@ -82,6 +79,12 @@ def fidelity(qnode0, qnode1, wires0, wires1):
             float: Fidelity between two quantum states
         """
         print(signature0, signature1)
+        if isinstance(signature0, tuple):
+            signature0 = (signature0,)
+
+        if isinstance(signature1, tuple):
+            signature1 = (signature1,)
+
         if len(wires0) == len(qnode0.device.wires):
             state_qnode0 = qnode0
         else:
@@ -93,19 +96,13 @@ def fidelity(qnode0, qnode1, wires0, wires1):
             state_qnode1 = qml.qinfo.density_matrix_transform(qnode1, indices=wires1)
 
         if signature0 is not None:
-            if not isinstance(signature0, Iterable) or isinstance(signature0, ArrayBox):
-                state_qnode0 = state_qnode0(signature0)
-            else:
-                state_qnode0 = state_qnode0(*signature0)
+            state_qnode0 = state_qnode0(*signature0)
         else:
             # No args
             state_qnode0 = state_qnode0()
 
         if signature1 is not None:
-            if not isinstance(signature1, Iterable) or isinstance(signature1, ArrayBox):
-                state_qnode1 = state_qnode1(signature1)
-            else:
-                state_qnode1 = state_qnode1(*signature1)
+            state_qnode1 = state_qnode1(*signature1)
         else:
             # No args
             state_qnode1 = state_qnode1()

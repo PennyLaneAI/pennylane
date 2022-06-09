@@ -676,19 +676,19 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     # Two pure states, squared overlap
     if state1.shape == (len_state1,) and state0.shape == (len_state0,):
         overlap = np.tensordot(state0, np.transpose(np.conj(state1)), axes=1)
-        overlap = np.absolute(overlap) ** 2
+        overlap = np.real(overlap) ** 2
         return overlap
     # First state mixed, second state pure
     if state1.shape == (len_state1,) and state0.shape != (len_state0,):
         overlap = np.tensordot(state0, np.transpose(np.conj(state1)), axes=1)
         overlap = np.tensordot(state1, overlap, axes=1)
-        overlap = np.absolute(overlap) ** 2
+        overlap = np.real(overlap)
         return overlap
     # First state pure, second state mixed
     if state0.shape == (len_state0,) and state1.shape != (len_state1,):
         overlap = np.tensordot(state1, np.transpose(np.conj(state0)), axes=1)
         overlap = np.tensordot(state0, overlap, axes=1)
-        overlap = np.absolute(overlap) ** 2
+        overlap = np.real(overlap)
         return overlap
     # Two mixed states
     fid = _compute_fidelity(state0, state1)
@@ -734,6 +734,11 @@ def _check_density_matrix(density_matrix):
         conj_trans = np.transpose(np.conj(density_matrix))
         if not allclose(density_matrix, conj_trans):
             raise ValueError("The matrix is not hermitian.")
+        # Check if positive semi definite
+        evs = np.linalg.eigvalsh(density_matrix)
+        evs_non_negative = [ev for ev in evs if ev >= 0.0]
+        if len(evs) != len(evs_non_negative):
+            raise ValueError("The matrix is not positive semi-definite.")
 
 
 def _check_state_vector(state_vector):

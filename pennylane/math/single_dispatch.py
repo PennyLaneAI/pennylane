@@ -350,7 +350,9 @@ ar.register_function(
 def _sqrt_matrix_tf(matrix):
     """Sqrt matrix for tf"""
     evs, vecs = _i("tf").linalg.eigh(matrix)
+    evs = _i("tf").math.real(evs)
     evs = _i("tf").where(evs > 0, evs, 0.0)
+    evs = _i("tf").cast(evs, vecs.dtype)
     return (
         vecs
         @ _i("tf").linalg.diag(_i("tf").math.sqrt(evs))
@@ -539,10 +541,11 @@ def _sqrt_matrix_torch(matrix):
     """Sqrt matrix for torch"""
     evs, vecs = _i("torch").linalg.eigh(matrix)
     evs = _i("torch").where(evs > 0, evs, 0.0)
+    evs = evs.type(vecs.dtype)
     return (
         vecs
         @ _i("torch").diag(_i("torch").sqrt(evs))
-        @ _i("torch").conj(_i("torch").transpose(vecs))
+        @ _i("torch").conj(_i("torch").transpose(vecs, 0, 1))
     )
 
 
