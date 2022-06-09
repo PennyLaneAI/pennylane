@@ -4,6 +4,8 @@
 
 <h3>New features since last release</h3>
 
+* New `solarized_light` and `solarized_dark` styles available for drawing circuit diagram graphics. [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
+
 * Support adding `Observable` objects to the integer `0`.
   [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603)
 
