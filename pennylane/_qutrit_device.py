@@ -115,7 +115,9 @@ class QutritDevice(Device):
         return permuted_wires
 
     # TODO: Add list of observables
-    observables = {}
+    observables = {
+        "Identity",
+    }
 
     def __init__(
         self, wires=1, shots=None, *, r_dtype=np.float64, c_dtype=np.complex128, analytic=None
@@ -451,7 +453,7 @@ class QutritDevice(Device):
                 "The current device is not capable of returning the state"
             )
 
-        state = getattr(self, "state", None)()
+        state = getattr(self, "state", None)
 
         if state is None:
             raise qml.QuantumFunctionError("The state is not available in the current device")
