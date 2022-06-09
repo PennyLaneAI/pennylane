@@ -345,14 +345,14 @@ def set_decomposition(custom_decomps, dev, decomp_depth=10):
             return qml.expval(qml.PauliZ(wires=0))
 
     >>> print(qml.draw(circuit)())
-    0: ─╭C─┤  <Z>
+    0: ─╭●─┤  <Z>
     1: ─╰X─┤
 
     Now let's set up a context where the custom decomposition will be applied:
 
     >>> with qml.transforms.set_decomposition({qml.CNOT : custom_cnot}, dev):
     ...     print(qml.draw(circuit)())
-    0: ────╭C────┤  <Z>
+    0: ────╭●────┤  <Z>
     1: ──H─╰Z──H─┤
 
     """

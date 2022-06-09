@@ -201,10 +201,10 @@ information processing on a quantum device. It is created by a quantum function 
 >>> qnode(params)
 0.8776
 
->>> qnode_drawer = qml.transforms.draw(qnode)
->>> qnode_drawer(params)
-a: ───────────╭C──RY(0.2)──┤
-b: ──RX(0.5)──╰X───────────┤ ⟨Z⟩
+>>> qnode_drawer = qml.draw(qnode)
+>>> print(qnode_drawer(params))
+a: ───────────╭●──RY(0.20)─┤     
+b: ──RX(0.50)─╰X───────────┤  <Z>
 
 .. note::
 
