@@ -178,7 +178,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                 getattr(new_tape, queue).append(obj)
                 continue
 
-            if isinstance(obj, (qml.operation.Operation, qml.measurements.MeasurementProcess)):
+            if isinstance(obj, (qml.operation.Operator, qml.measurements.MeasurementProcess)):
                 # Object is an operation; query it for its expansion
                 try:
                     obj = obj.expand()
@@ -459,6 +459,7 @@ class QuantumTape(AnnotatedQueue):
                 if list_order[obj._queue_category] > list_order[current_list]:
                     current_list = obj._queue_category
                 elif list_order[obj._queue_category] < list_order[current_list]:
+                    print(self._queue)
                     raise ValueError(
                         f"{obj._queue_category[1:]} operation {obj} must occur prior "
                         f"to {current_list[1:]}. Please place earlier in the queue."
@@ -717,9 +718,8 @@ class QuantumTape(AnnotatedQueue):
         Returns:
             ~.QuantumTape: the adjointed tape
         """
-        new_tape = self.copy(copy_operations=True)
-
         with qml.tape.stop_recording():
+            new_tape = self.copy(copy_operations=True)
             new_tape.inv()
 
         # the current implementation of the adjoint

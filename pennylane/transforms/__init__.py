@@ -48,8 +48,6 @@ containing quantum operations) that are used to construct QNodes.
 .. autosummary::
     :toctree: api
 
-    ~adjoint
-    ~ctrl
     ~transforms.cond
     ~defer_measurements
     ~apply_controlled_Q
@@ -149,6 +147,7 @@ more tapes as well as a classical processing function.
 .. autosummary::
     :toctree: api
 
+    ~transforms.broadcast_expand
     ~transforms.measurement_grouping
     ~transforms.hamiltonian_expand
 
@@ -178,14 +177,12 @@ to help build custom QNode, quantum function, and tape transforms:
 from .batch_transform import batch_transform, map_batch_transform
 from .qfunc_transforms import make_tape, single_tape_transform, qfunc_transform
 from .op_transforms import op_transform
-from .adjoint import adjoint
 from .batch_params import batch_params
 from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .classical_jacobian import classical_jacobian
 from .condition import cond, Conditional
 from .compile import compile
-from .control import ControlledOperation, ctrl
 from .decompositions import zyz_decomposition, two_qubit_decomposition
 from .defer_measurements import defer_measurements
 from .hamiltonian_expand import hamiltonian_expand
@@ -228,3 +225,4 @@ from .tape_expand import (
 from .transpile import transpile
 from . import qcut
 from .qcut import cut_circuit, cut_circuit_mc
+from .broadcast_expand import broadcast_expand

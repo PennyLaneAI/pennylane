@@ -36,7 +36,7 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
 This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays, Torch Tensors,
 or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
 the gradients of the quantum circuit accessible to the classical library, enabling the
-optimization of arbitrary hybrid circuits.
+optimization of arbitrary hybrid circuits by making use of the library's native optimizers.
 
 When specifying an interface, the objects of the chosen framework are converted
 into NumPy objects and are passed to a device in most cases. Exceptions include
@@ -115,6 +115,60 @@ PennyLane also provides higher-level classes for converting QNodes into both Ker
     this overhead and result in a slightly faster evaluation. However, gradients will no
     longer be available.
 
+.. _intro_ref_opt:
+
+Optimizers
+----------
+
+Optimizers are objects which can be used to automatically update the parameters of a quantum
+or hybrid machine learning model. The optimizers you should use are dependent on your choice
+of the classical autodifferentiation library, and are available from different access
+points.
+
+NumPy
+~~~~~
+
+When using the standard NumPy framework, PennyLane offers some built-in optimizers.
+Some of these are specific to quantum optimization, such as the :class:`~.QNGOptimizer`, :class:`~.LieAlgebraOptimizer`
+:class:`~.RotosolveOptimizer`, :class:`~.RotoselectOptimizer`, and :class:`~.ShotAdaptiveOptimizer`.
+
+:html:`<div class="summary-table">`
+
+.. autosummary::
+    :nosignatures:
+
+    ~pennylane.AdagradOptimizer
+    ~pennylane.AdamOptimizer
+    ~pennylane.GradientDescentOptimizer
+    ~pennylane.LieAlgebraOptimizer
+    ~pennylane.MomentumOptimizer
+    ~pennylane.NesterovMomentumOptimizer
+    ~pennylane.QNGOptimizer
+    ~pennylane.RMSPropOptimizer
+    ~pennylane.RotosolveOptimizer
+    ~pennylane.RotoselectOptimizer
+    ~pennylane.ShotAdaptiveOptimizer
+
+:html:`</div>`
+
+PyTorch
+~~~~~~~
+
+If you are using the :ref:`PennyLane PyTorch framework <torch_interf>`, you should import one of the native
+`PyTorch optimizers <https://pytorch.org/docs/stable/optim.html>`_ (found in ``torch.optim``).
+
+TensorFlow
+~~~~~~~~~~
+
+When using the :ref:`PennyLane TensorFlow framework <tf_interf>`, you will need to leverage one of
+the `TensorFlow optimizers <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/Optimizer>`_
+(found in ``tf.keras.optimizers``).
+
+JAX
+~~~
+
+Check out the `JAXopt package <https://github.com/google/jaxopt>`_ to find optimizers for the
+:ref:`PennyLane JAX framework <jax_interf>`.
 
 Gradients
 ---------
@@ -320,7 +374,7 @@ At the moment, it takes into account the following parameters:
 +------------------+------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
 | ``"torch"``      | ``"device"``                       |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`3`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
-|                  | ``"backprop"``                     |     :gr:`5`  |   :rd:`11`    |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     |
+|                  | ``"backprop"``                     |     :gr:`5`  |   :rd:`5`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
 |                  | ``"adjoint"``                      |      :rd:`6` |     :rd:`6`   |  :rd:`6`     | :rd:`6`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :rd:`6`     |
 +                  +------------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+
@@ -348,7 +402,6 @@ At the moment, it takes into account the following parameters:
 9. Not supported. The discretization of the output caused by wave function collapse is
    not differentiable. The forward pass is still supported. See :ref:`Sample gradients <Sample gradients>` for details.
 10. Not supported. "We just don't have the theory yet."
-11. Not supported, but due to a bug.
 
 :html:`</div>`
 

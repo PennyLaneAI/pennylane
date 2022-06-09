@@ -102,12 +102,17 @@ class DefaultQubit(QubitDevice):
         "MultiRZ",
         "Hadamard",
         "S",
+        "Adjoint(S)",
         "T",
+        "Adjoint(T)",
         "SX",
+        "Adjoint(SX)",
         "CNOT",
         "SWAP",
         "ISWAP",
+        "Adjoint(ISWAP)",
         "SISWAP",
+        "Adjoint(SISWAP)",
         "SQISW",
         "CSWAP",
         "Toffoli",
@@ -127,6 +132,7 @@ class DefaultQubit(QubitDevice):
         "IsingXX",
         "IsingYY",
         "IsingZZ",
+        "IsingXY",
         "SingleExcitation",
         "SingleExcitationPlus",
         "SingleExcitationMinus",
@@ -137,6 +143,7 @@ class DefaultQubit(QubitDevice):
         "QubitSum",
         "OrbitalRotation",
         "QFT",
+        "ECR",
     }
 
     observables = {

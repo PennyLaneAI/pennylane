@@ -197,6 +197,21 @@ class SparseHamiltonian(Observable):
         do_queue (bool): Indicates whether the operator should be
             immediately pushed into the Operator queue (optional)
         id (str or None): String representing the operation (optional)
+
+    **Example**
+
+    Sparse Hamiltonians can be constructed directly with a SciPy-compatible sparse matrix.
+
+    Alternatively, you can construct your Hamiltonian as usual using :class:`~.Hamiltonian`, and then use
+    the utility function :func:`~.utils.sparse_hamiltonian` to construct the sparse matrix that serves as the input
+    to ``SparseHamiltonian``:
+
+    >>> wires = 20
+    >>> coeffs = [1 for _ in range(wires)]
+    >>> observables = [qml.PauliZ(i) for _ in range(wires)]
+    >>> H = qml.Hamiltonian(coeffs, observables)
+    >>> Hmat = qml.utils.sparse_hamiltonian(H)
+    >>> H_sparse = qml.SparseHamiltonian(Hmat, wires=wires)
     """
     num_wires = AllWires
     num_params = 1
