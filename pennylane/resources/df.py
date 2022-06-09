@@ -35,14 +35,14 @@ def norm(one, two, eigvals):
 
         ||T|| = \sum_k |\text{eigvals}[T]_k|.
 
-    The matrices :math:`L^{(r)}` are obtained from a rank-r factorizing the two-electron integral
-    tensor :math:`V`, in the chemist notation, such that
+    The matrices :math:`L^{(r)}` are obtained from factorization of the two-electron integral
+    tensor :math:`V` such that
 
     .. math::
 
         V_{ijkl} = \sum_r L_{ij}^{(r)} L_{kl}^{(r) T}.
 
-    The matrix :math:`T` is constructed from the one- and two-electron integrals
+    The matrix :math:`T` is constructed from the one- and two-electron integrals as
 
     .. math::
 
