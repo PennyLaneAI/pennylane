@@ -29,5 +29,22 @@ jax = pytest.importorskip("jax")
 class TestFidelityQnode:
     """Tests for Fidelity function between two QNodes ."""
 
-    def test_wires_not_same_length(self):
-        "Test that wires must have the same length"
+    devices = ["default.qubit", "default.mixed"]
+
+    @pytest.mark.parametrize("device", devices)
+    def test_not_same_number_wires(self, device):
+        """Test that wires must have the same length"""
+        dev = qml.device(device, wires=1)
+
+        @qml.qnode(dev)
+        def circuit0():
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit1():
+            return qml.state()
+
+        with pytest.raises(
+            qml.QuantumFunctionError, match="The two states must have the same number of wires"
+        ):
+            qml.qinfo.fidelity(circuit0, circuit1, wires0=[0, 1], wires1=[0])()
