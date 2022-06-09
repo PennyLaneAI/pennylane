@@ -441,8 +441,8 @@ introductory quickstarts:
 * **Templates**: new templates should be added to the :doc:`/introduction/templates` quickstart,
   located at ``doc/introduction/templates.rst``. For more details, see :doc:`../adding_operators`.
 
-* **Optimizers**: new optimizers should be added to the :doc:`/introduction/optimizers` quickstart,
-  located at ``doc/introduction/optimizers.rst``.
+* **Optimizers**: new optimizers should be added to the relevant quickstart section
+  in :doc:`/introduction/interfaces`, located at ``doc/introduction/interfaces.rst``.
 
 * **Measurement**: new measurement functions should be added to the :doc:`/introduction/measurements` quickstart,
   located at ``doc/introduction/measurements.rst``.
