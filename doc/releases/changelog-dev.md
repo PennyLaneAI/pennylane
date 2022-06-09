@@ -481,5 +481,6 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Ankit Khandelwal, Avani Bhardwaj, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs,
-Edward Jiang, Guillermo Alonso-Linaje, Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard,
-Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, Antal Száva, WingCode
+Edward Jiang, Guillermo Alonso-Linaje, Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian Kottmann,
+Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, Antal Száva,
+WingCode
