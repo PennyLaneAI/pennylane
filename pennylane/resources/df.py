@@ -12,16 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module contains the functions needed for resource estimation with double factorization method.
+This module contains the functions needed for resource estimation with the double factorization
+method.
 """
 
 from pennylane import numpy as np
 
 
 def estimation_cost(norm, error):
-    r"""
+    r"""Return the number of calls to the unitary needed to achieve the desired error in phase
+    estimation.
+
+    Args:
+        norm (float): 1-norm of a second-quantized Hamiltonian
+        error (float): target error in the algorithm
+
+    Returns:
+        int: number of calls to unitary
     """
-    return np.ceil(np.pi * norm / (2 * error))
+    return int(np.ceil(np.pi * norm / (2 * error)))
 
 
 def unitary_cost(n, lamb, eps, l, xi, br, aleph=None, beth=None):
