@@ -744,6 +744,7 @@ def _check_density_matrix(density_matrix):
             raise ValueError("The matrix is not hermitian.")
         # Check if positive semi definite
         evs = np.linalg.eigvalsh(density_matrix)
+        evs = np.real(evs)
         evs_non_negative = [ev for ev in evs if ev >= 0.0]
         if len(evs) != len(evs_non_negative):
             raise ValueError("The matrix is not positive semi-definite.")
