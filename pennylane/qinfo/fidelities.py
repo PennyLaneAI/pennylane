@@ -78,29 +78,32 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         Returns:
             float: Fidelity between two quantum states
         """
-        print(signature0, signature1)
         if isinstance(signature0, tuple):
             signature0 = (signature0,)
 
         if isinstance(signature1, tuple):
             signature1 = (signature1,)
 
+        # Get the state vector if all wires are selected
         if len(wires0) == len(qnode0.device.wires):
             state_qnode0 = qnode0
         else:
             state_qnode0 = qml.qinfo.density_matrix_transform(qnode0, indices=wires0)
 
+        # Get the state vector if all wires are selected
         if len(wires1) == len(qnode1.device.wires):
             state_qnode1 = qnode1
         else:
             state_qnode1 = qml.qinfo.density_matrix_transform(qnode1, indices=wires1)
 
+        # If no signature is given, evaluate the QNode without args
         if signature0 is not None:
             state_qnode0 = state_qnode0(*signature0)
         else:
             # No args
             state_qnode0 = state_qnode0()
 
+        # If no signature is given, evaluate the QNode without args
         if signature1 is not None:
             state_qnode1 = state_qnode1(*signature1)
         else:

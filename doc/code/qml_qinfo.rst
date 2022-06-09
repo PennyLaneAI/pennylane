@@ -24,3 +24,11 @@ Entropies
     :no-heading:
     :no-inheritance-diagram:
     :no-inherited-members:
+
+Fidelities
+---------_
+
+.. automodapi:: pennylane.qinfo.fidelities
+    :no-heading:
+    :no-inheritance-diagram:
+    :no-inherited-members:
