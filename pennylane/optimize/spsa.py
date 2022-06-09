@@ -176,7 +176,7 @@ class SPSAOptimizer:
     def step_and_cost(self, objective_fn, *args, **kwargs):
         r"""Update the parameter array :math:`\hat{\theta}_k` with one step of the
         optimizer and return the step and the corresponding objective function. The number
-        of steps is being counted through calls to ``step_and_cost`` and ``cost``.
+        of steps stored by the ``k`` attribute of the optimizer is counted internally when calling ``step_and_cost`` and ``cost``.
 
         Args:
             objective_fn (function): the objective function for optimization
@@ -258,7 +258,7 @@ class SPSAOptimizer:
         if yplus.size > 1:
             raise ValueError(
                 "The objective function must be a scalar function for the gradient "
-                "to be computed. "
+                "to be computed."
             )
         grad = [(yplus - yminus) / (2 * ck * di) for di in delta]
 
