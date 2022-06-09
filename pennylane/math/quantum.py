@@ -615,11 +615,11 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     mixed states, it is defined by the last formula:
 
     .. math::
-        F( \ket{\psi} , \ket{\phi}) = \left|\bra{\psi}\ket{\phi}\right|^2
+        \vspace \text{ (1)} F( \ket{\psi} , \ket{\phi}) = \left|\bra{\psi}\ket{\phi}\right|^2
 
-        F( \ket{\psi} , \sigma ) = \left|\bra{\psi} \sigma \ket{\psi}\right|^2
+        \vspace \text{ (2)} F( \ket{\psi} , \sigma ) = \bra{\psi} \sigma \ket{\psi}\right
 
-        F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
+        \vspace \text{ (3)} F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
 
     .. warning::
         The second state is coerced to the type and dtype of the first state. The fidelity is returned in the type
@@ -766,6 +766,7 @@ def _check_state_vector(state_vector):
 def _sqrt_matrix(mat):
     """Compute that matrix A such that A @ A = mat"""
     evs, vecs = qml.math.linalg.eigh(mat)
+    evs = np.real(evs)
     evs = qml.math.where(evs > 0.0, evs, 0.0)
     if not is_abstract(evs):
         evs = qml.math.cast_like(evs, vecs)

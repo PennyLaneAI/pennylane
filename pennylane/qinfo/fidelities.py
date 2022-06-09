@@ -23,11 +23,11 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     expectation of the mixed state in the pure state. Finally for two mixed states, it is defined by the last formula:
 
     .. math::
-        F( \ket{\psi} , \ket{\phi}) = \left|\bra{\psi}\ket{\phi}\right|^2
+        \vspace \text{ (1)} F( \ket{\psi} , \ket{\phi}) = \left|\bra{\psi}\ket{\phi}\right|^2
 
-        F( \ket{\psi} , \sigma ) = \left|\bra{\psi} \sigma \ket{\psi}\right|^2
+        \vspace \text{ (2)} F( \ket{\psi} , \sigma ) = \left|\bra{\psi} \sigma \ket{\psi}\right|^2
 
-        F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
+        \vspace \text{ (3)} F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
 
     .. warning::
         The second state is coerced to the type and dtype of the first state. The fidelity is returned in the type
@@ -67,22 +67,22 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     if len(wires0) != len(wires1):
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
 
-    def evaluate_fidelity(signature0=None, signature1=None):
+    def evaluate_fidelity(all_args0=None, all_args1=None):
         """Wrapper used for evaluation of the fidelity between two states computed from QNodes. It allows giving
         the args and kwargs to each :class:`.QNode`.
 
         Args:
-            signature0 (tuple): Tuple containing the arguments (*args, **kwargs) of the first :class:`.QNode`.
-            signature1 (tuple): Tuple containing the arguments (*args, **kwargs) of the second :class:`.QNode`.
+            all_args0 (tuple): Tuple containing the arguments (*args, **kwargs) of the first :class:`.QNode`.
+            all_args1 (tuple): Tuple containing the arguments (*args, **kwargs) of the second :class:`.QNode`.
 
         Returns:
             float: Fidelity between two quantum states
         """
-        if not isinstance(signature0, tuple) and signature0 is not None:
-            signature0 = (signature0,)
+        if not isinstance(all_args0, tuple) and all_args0 is not None:
+            all_args0 = (all_args0,)
 
-        if not isinstance(signature1, tuple) and signature1 is not None:
-            signature1 = (signature1,)
+        if not isinstance(all_args1, tuple) and all_args1 is not None:
+            all_args1 = (all_args1,)
 
         # Get the state vector if all wires are selected
         if len(wires0) == len(qnode0.device.wires):
@@ -96,16 +96,16 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         else:
             state_qnode1 = qml.qinfo.density_matrix_transform(qnode1, indices=wires1)
 
-        # If no signature is given, evaluate the QNode without args
-        if signature0 is not None:
-            state_qnode0 = state_qnode0(*signature0)
+        # If no all_args is given, evaluate the QNode without args
+        if all_args0 is not None:
+            state_qnode0 = state_qnode0(*all_args0)
         else:
             # No args
             state_qnode0 = state_qnode0()
 
-        # If no signature is given, evaluate the QNode without args
-        if signature1 is not None:
-            state_qnode1 = state_qnode1(*signature1)
+        # If no all_args is given, evaluate the QNode without args
+        if all_args1 is not None:
+            state_qnode1 = state_qnode1(*all_args1)
         else:
             # No args
             state_qnode1 = state_qnode1()

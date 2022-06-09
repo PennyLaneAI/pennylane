@@ -66,7 +66,7 @@ class TestFidelityMath:
     @pytest.mark.parametrize("state0,state1,fid", state0_state1_fid)
     @pytest.mark.parametrize("check_state", check_state)
     @pytest.mark.parametrize("func", array_funcs)
-    def test_state_vector_entropy(self, state0, state1, check_state, fid, func):
+    def test_state_vector_fidelity(self, state0, state1, check_state, fid, func):
         """Test fidelity between different quantum states."""
         state0 = func(state0)
         state1 = func(state1)

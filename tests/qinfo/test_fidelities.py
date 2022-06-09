@@ -246,11 +246,60 @@ class TestFidelityQnode:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
-    def test_fidelity_qnodes_rx_pauliz_torch_grad(self, device, param, wire):
+    def test_fidelity_qnodes_rx_pauliz_tf(self, device, param, wire):
+        """Test the fidelity between Rx and PauliZ circuits with Tensorflow."""
+        import tensorflow as tf
+
+        dev = qml.device(device, wires=wire)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit0(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev, interface="tf")
+        def circuit1():
+            qml.PauliZ(wires=0)
+            return qml.state()
+
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((tf.Variable(param)))
+        expected_fid = expected_fidelity_rx_pauliz(param)
+        assert qml.math.allclose(fid, expected_fid)
+
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("wire", wires)
+    def test_fidelity_qnodes_rx_pauliz_tf_grad(self, param, wire):
+        """Test the gradient of fidelity between Rx and PauliZ circuits with Tensorflow."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=wire)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit0(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev, interface="tf")
+        def circuit1():
+            qml.PauliZ(wires=0)
+            return qml.state()
+
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((tf.Variable(param)))
+        expected_grad_fid = expected_grad_fidelity_rx_pauliz(param)
+        param = tf.Variable(param)
+        with tf.GradientTape() as tape:
+            entropy = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((param))
+
+        fid_grad = tape.gradient(entropy, param)
+        assert qml.math.allclose(fid_grad, expected_grad_fid)
+
+    @pytest.mark.parametrize("param", parameters)
+    @pytest.mark.parametrize("wire", wires)
+    def test_fidelity_qnodes_rx_pauliz_torch_grad(self, param, wire):
         """Test the gradient of fidelity between Rx and PauliZ circuits with Torch."""
         import torch
 
-        dev = qml.device(device, wires=wire)
+        dev = qml.device("default.qubit", wires=wire)
 
         @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit0(x):
