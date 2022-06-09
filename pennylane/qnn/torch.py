@@ -331,6 +331,11 @@ class TorchLayer(Module):
             elif isinstance(init_method, dict):
                 init = init_method[weight_name]
                 if isinstance(init, torch.Tensor):
+                    if tuple(init.shape) != weight_size:
+                        raise ValueError(
+                            f"The Tensor specified for weight '{weight_name}' doesn't have the"
+                            + "appropiate shape."
+                        )
                     return init
             # TODO: Figure out why a 1-dim Tensor is assigned to all weights with shape <= 1.
             return init(torch.Tensor(*weight_size)) if weight_size else init(torch.Tensor(1))[0]
