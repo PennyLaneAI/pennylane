@@ -48,3 +48,21 @@ class TestFidelityQnode:
             qml.QuantumFunctionError, match="The two states must have the same number of wires"
         ):
             qml.qinfo.fidelity(circuit0, circuit1, wires0=[0, 1], wires1=[0])()
+
+    @pytest.mark.parametrize("device", devices)
+    def test_fidelity_qnodes_rx(self, device):
+        """Test the fidelity between two Qnodes."""
+        dev = qml.device(device, wires=1)
+
+        @qml.qnode(dev)
+        def circuit0(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit1(y):
+            qml.RX(y, wires=0)
+            return qml.state()
+
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((0.1), (0.1))
+        assert qml.math.allclose(fid, 1.0)

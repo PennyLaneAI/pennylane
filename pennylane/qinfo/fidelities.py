@@ -78,10 +78,10 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         Returns:
             float: Fidelity between two quantum states
         """
-        if isinstance(signature0, tuple):
+        if not isinstance(signature0, tuple):
             signature0 = (signature0,)
 
-        if isinstance(signature1, tuple):
+        if not isinstance(signature1, tuple):
             signature1 = (signature1,)
 
         # Get the state vector if all wires are selected
