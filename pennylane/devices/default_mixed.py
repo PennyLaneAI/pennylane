@@ -117,7 +117,7 @@ class DefaultMixed(QubitDevice):
 
     @staticmethod
     def _reduce_sum(array, axes):
-        return qnp.sum(array, axis=tuple(axes))
+        return qnp.sum(array, tuple(axes))
 
     @staticmethod
     def _asarray(array, dtype=None):
@@ -159,7 +159,7 @@ class DefaultMixed(QubitDevice):
             array[complex]: complex array of shape ``[2] * (2 * num_wires)``
             representing the density matrix of the basis state.
         """
-        rho = qnp.zeros((2**self.num_wires, 2**self.num_wires), dtype=self.C_DTYPE)
+        rho = qnp.zeros((2**self.num_wires, 2**self.num_wires), dtype=np.complex128)
         rho[index, index] = 1
         return qnp.reshape(rho, [2] * (2 * self.num_wires))
 
@@ -168,7 +168,11 @@ class DefaultMixed(QubitDevice):
         capabilities = super().capabilities().copy()
         capabilities.update(
             returns_state=True,
-            passthru_devices={"autograd": "default.mixed", "tf": "default.mixed"},
+            passthru_devices={
+                "autograd": "default.mixed",
+                "tf": "default.mixed",
+                "torch": "default.mixed",
+            },
         )
         return capabilities
 
