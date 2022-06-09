@@ -24,7 +24,7 @@ import pennylane as qml
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import diag, dot, scatter_element_add
-from .utils import is_abstract, allclose, cast, convert_like
+from .utils import is_abstract, allclose, cast, convert_like, cast_like
 
 
 ABC_ARRAY = np.array(list(ABC))
@@ -600,57 +600,150 @@ def _compute_mutual_info(
     return vn_entropy_1 + vn_entropy_2 - vn_entropy_12
 
 
-def to_fidelity(state0, state1, check_state=False, c_dtype="complex128"):
+def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
+    r"""Compute the fidelity for two states (a state can be a state vector or a density matrix) acting on quantum
+    systems with the same size. For two pure states, the fidelity corresponds to the squared overlap. For a pure state
+    and a mixed state, it corresponds to the squared expectation of the mixed state in the pure state. Finally for two
+    mixed states, it is defined by the last formula:
+
+    .. math::
+        F( \ket{\psi} , \ket{\phi}) = \left|\bra{\psi}\ket{\phi}\right|^2
+
+        F( \ket{\psi} , \sigma ) = \left|\bra{\psi} \sigma \ket{\psi}\right|^2
+
+        F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
+
+    .. warning::
+        The second state is coerced to the type and dtype of the first state. The fidelity is returned in the type
+        of the interface of the first state.
+
+    Args:
+        state0 (tensor_like): 1D state vector or 2D density matrix
+        state1 (tensor_like): 1D state vector or 2D density matrix
+        check_state (bool): If True, the function will check the state validity (shape, norm) or (shape, trace,
+            semi positive definitiveness).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: Fidelity between the two quantum states.
+
+    **Example**
+
+        >>> state0 = [0.98753537-0.14925137j, 0.00746879-0.04941796j]
+        >>> state1 = [0.99500417+0.j, 0.09983342+0.j]
+        >>> qml.math.fidelity(state0, state1)
+        0.9905158135644924
+
+        >>> state0 = [0, 1]
+        >>> state1 = [[0, 0], [0, 1]]
+        >>> qml.math.fidelity(state0, state1)
+        1.0
+
+        >>> state0 = [[1, 0], [0, 0]]
+        >>> state1 = [[0, 0], [0, 1]]
+        >>> qml.math.fidelity(state0, state1)
+        0.0
+
+    """
     # Cast as a c_dtype array
     state0 = cast(state0, dtype=c_dtype)
     len_state0 = state0.shape[0]
 
-    state1 = cast(state1, dtype=c_dtype)
+    # Cannot be cast_like if jit
+    if not is_abstract(state0):
+        state1 = cast_like(state1, state0)
+
     len_state1 = state1.shape[0]
 
-    # TODO: Coerc state1 to state0 interfaces
+    if check_state:
+        if state0.shape == (len_state0,):
+            _check_state_vector(state0)
+        else:
+            _check_density_matrix(state0)
 
-    # TODO: Check states
+        if state1.shape == (len_state1,):
+            _check_state_vector(state1)
+        else:
+            _check_density_matrix(state1)
 
     # Get dimension of the quantum system and reshape
     num_indices0 = int(np.log2(len_state0))
     num_indices1 = int(np.log2(len_state1))
 
-    consecutive_wires = list(range(num_indices0))
-
     if num_indices0 != num_indices1:
         raise qml.QuantumFunctionError("The two states must have the same number of wires.")
-    # State vector
+
+    # Two pure states, squared overlap
     if state1.shape == (len_state1,) and state0.shape == (len_state0,):
         overlap = np.tensordot(state0, np.transpose(np.conj(state1)), axes=1)
         overlap = np.absolute(overlap) ** 2
         return overlap
-
-    elif state1.shape == (len_state1,) and state0.shape != (len_state0,):
+    # First state mixed, second state pure
+    if state1.shape == (len_state1,) and state0.shape != (len_state0,):
         overlap = np.tensordot(state0, np.transpose(np.conj(state1)), axes=1)
         overlap = np.tensordot(state1, overlap, axes=1)
         overlap = np.absolute(overlap) ** 2
         return overlap
-
-    elif state0.shape == (len_state0,) and state1.shape != (len_state1,):
+    # First state pure, second state mixed
+    if state0.shape == (len_state0,) and state1.shape != (len_state1,):
         overlap = np.tensordot(state1, np.transpose(np.conj(state0)), axes=1)
         overlap = np.tensordot(state0, overlap, axes=1)
         overlap = np.absolute(overlap) ** 2
         return overlap
-
-    fidelity = _compute_fidelity(state0, state1)
-    return fidelity
+    # Two mixed states
+    fid = _compute_fidelity(state0, state1)
+    return fid
 
 
 def _compute_fidelity(density_matrix0, density_matrix1):
+    r"""Compute the fidelity for two density matrices with the same number of wires.
+
+    .. math::
+            F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
     """
-    Compute the fidelity for two density matrices.
-    """
-    print(density_matrix0, density_matrix1)
+    # Implementation in single dispatches (sqrt(rho))
     sqrt_matrix = qml.math.sqrt_matrix(density_matrix0)
+
+    # sqrt(rho) * sigma * sqrt(rho)
     sqrt_mat_sqrt = sqrt_matrix @ density_matrix1 @ sqrt_matrix
+
     evs = qml.math.eigvalsh(sqrt_mat_sqrt)
     evs = np.real(evs)
     evs = qml.math.where(evs > 0.0, evs, 0.0)
+
     trace = (qml.math.sum(qml.math.sqrt(evs))) ** 2
+
     return trace
+
+
+def _check_density_matrix(density_matrix):
+    """Check the shape, the trace and the semi positive definitiveness of a matrix."""
+    shape = density_matrix.shape[0]
+    if (
+        len(density_matrix.shape) != 2
+        or density_matrix.shape[0] != density_matrix.shape[1]
+        or not np.log2(shape).is_integer()
+    ):
+        raise ValueError("Density matrix must be of shape (2**N, 2**N).")
+    # Check trace
+    trace = np.trace(density_matrix)
+    if not is_abstract(trace):
+        if not allclose(trace, 1.0, atol=1e-10):
+            raise ValueError("The trace of the density matrix should be one.")
+        # Check if the matrix is hermitian
+        conj_trans = np.transpose(np.conj(density_matrix))
+        if not allclose(density_matrix, conj_trans):
+            raise ValueError("The matrix is not hermitian.")
+
+
+def _check_state_vector(state_vector):
+    """Check the shape and the norm of a state vector."""
+    len_state = state_vector.shape[0]
+    # Check format
+    if len(np.shape(state_vector)) != 1 or not np.log2(len_state).is_integer():
+        raise ValueError("State vector must be of length 2**wires.")
+    # Check norm
+    norm = np.linalg.norm(state_vector, ord=2)
+    if not is_abstract(norm):
+        if not allclose(norm, 1.0, atol=1e-10):
+            raise ValueError("Sum of amplitudes-squared does not equal one.")

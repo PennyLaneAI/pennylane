@@ -56,7 +56,7 @@ from .quantum import (
     to_vn_entropy,
     compute_vn_entropy,
     to_mutual_info,
-    to_fidelity,
+    fidelity,
 )
 
 from .utils import (
