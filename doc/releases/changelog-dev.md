@@ -92,7 +92,7 @@
   >>> tape.batch_size
   3
   ```
-  
+
   but not `Operation`s with differing (non-`None`) `batch_size`s:
 
   ```pycon
@@ -183,6 +183,29 @@
   tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
   ```
 
+* The `default.mixed` device now supports backpropagation with the `"autograd"`
+  interface.
+  [(#2615)](https://github.com/PennyLaneAI/pennylane/pull/2615)
+
+  As a result, the default differentiation method for the device is now `"backprop"`. To continue using the old default `"parameter-shift"`, explicitly specify this differentiation method in the QNode.
+
+  ```python
+  dev = qml.device("default.mixed", wires=2)
+
+  @qml.qnode(dev, interface="autograd", diff_method="backprop")
+  def circuit(x):
+      qml.RY(x, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(wires=1))
+  ```
+  ```pycon
+  >>> x = np.array(0.5, requires_grad=True)
+  >>> circuit(x)
+  array(0.87758256)
+  >>> qml.grad(circuit)(x)
+  -0.479425538604203
+  ```
+
 **Operator Arithmetic:**
 
 * The adjoint transform `adjoint` can now accept either a single instantiated operator or
@@ -209,6 +232,10 @@
   >>> qml.eigvals(op)
   array([1.-0.j, 0.-1.j])
   ```
+
+* The `ctrl` transform and `ControlledOperation` have been moved to the new `qml.ops.op_math`
+  submodule.  The developer-facing `ControlledOperation` class is no longer imported top-level.
+  [(#2656)](https://github.com/PennyLaneAI/pennylane/pull/2656)
 
 * A new symbolic operator class `qml.ops.op_math.Pow` represents an operator raised to a power.
   [(#2621)](https://github.com/PennyLaneAI/pennylane/pull/2621)
@@ -288,14 +315,15 @@
 * A new method `safe_update_info` is added to `qml.QueuingContext`. This method is substituted
   for `qml.QueuingContext.update_info` in a variety of places.
   [(#2612)](https://github.com/PennyLaneAI/pennylane/pull/2612)
+  [(#2675)](https://github.com/PennyLaneAI/pennylane/pull/2675)
 
 * `BasisEmbedding` can accept an int as argument instead of a list of bits (optionally).
   [(#2601)](https://github.com/PennyLaneAI/pennylane/pull/2601)
-  
+
   Example:
 
   `qml.BasisEmbedding(4, wires = range(4))` is now equivalent to
-  `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because `4=0b100`). 
+  `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because `4=0b100`).
 
 * Introduced a new `is_hermitian` property to determine if an operator can be used in a measurement process.
   [(#2629)](https://github.com/PennyLaneAI/pennylane/pull/2629)
@@ -353,8 +381,8 @@
   as trainable do not have any impact on the QNode output.
   [(#2584)](https://github.com/PennyLaneAI/pennylane/pull/2584)
 
-* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` 
-  or `"jax-jit"`, when requesting backpropagation. 
+* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"`
+  or `"jax-jit"`, when requesting backpropagation.
   [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
 
 * Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
@@ -399,10 +427,14 @@
   for some selected configurations.
   [(#2540)](https://github.com/PennyLaneAI/pennylane/pull/2540)
 
+* Added a note for the [Depolarization Channel](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.DepolarizingChannel.html)
+  that specifies how the channel behaves for the different values of depolarization probability `p`.
+  [(#2669)](https://github.com/PennyLaneAI/pennylane/pull/2669)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Ankit Khandelwal, Avani Bhardwaj, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian, Kottmann, Maria Schuld, Mikhail Andrenkov, Romain Moyard,
+Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian Kottmann, Maria Schuld, Mikhail Andrenkov, Romain Moyard,
 Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, WingCode

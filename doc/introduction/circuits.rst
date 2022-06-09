@@ -23,7 +23,7 @@ QNodes can interface with any of the supported numerical and machine learning li
 :doc:`JAX <interfaces/jax>`---indicated by providing an optional ``interface`` argument
 when creating a QNode. Each interface allows the quantum circuit to integrate seamlessly with
 library-specific data structures (e.g., NumPy and JAX arrays or Pytorch/TensorFlow tensors) and
-:doc:`optimizers <optimizers>`.
+:doc:`optimizers <interfaces>`.
 
 By default, QNodes use the NumPy interface. The other PennyLane interfaces are
 introduced in more detail in the section on :doc:`interfaces <interfaces>`.
@@ -96,6 +96,11 @@ the available options that can be passed to the device loader.
 
     For example, check out the ``'lightning.qubit'`` `plugin <https://github.com/PennyLaneAI/pennylane-lightning>`_,
     which is a fast state-vector simulator supporting GPUs.
+
+.. note::
+
+    For details on saving device configurations, please visit the
+    :doc:`configurations page</introduction/configuration>`.
 
 Device options
 ^^^^^^^^^^^^^^

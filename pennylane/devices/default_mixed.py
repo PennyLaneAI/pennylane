@@ -23,7 +23,7 @@ import functools
 import itertools
 from string import ascii_letters as ABC
 
-import pennylane.numpy as np
+from pennylane import numpy as np
 import pennylane.math as qnp
 from pennylane import QubitDevice, QubitStateVector, BasisState, DeviceError, QubitDensityMatrix
 from pennylane import Snapshot
@@ -110,14 +110,34 @@ class DefaultMixed(QubitDevice):
         "ECR",
     }
 
-    def __init__(self, wires, *, shots=None, analytic=None):
+    @staticmethod
+    def _reduce_sum(array, axes):
+        return qnp.sum(array, axis=tuple(axes))
+
+    @staticmethod
+    def _asarray(array, dtype=None):
+        is_ragged = False
+
+        try:
+            res = qnp.asarray(qnp.stack(array), dtype=dtype)
+        except ValueError:
+            is_ragged = True
+
+        if is_ragged or res.dtype is np.dtype("O"):
+            return qnp.hstack(array).flatten().astype(dtype)
+
+        return res
+
+    def __init__(
+        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
+    ):
         if isinstance(wires, int) and wires > 23:
             raise ValueError(
                 "This device does not currently support computations on more than 23 wires"
             )
 
         # call QubitDevice init
-        super().__init__(wires, shots, analytic=analytic)
+        super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
 
         # Create the initial state.
@@ -134,17 +154,15 @@ class DefaultMixed(QubitDevice):
             array[complex]: complex array of shape ``[2] * (2 * num_wires)``
             representing the density matrix of the basis state.
         """
-        rho = np.zeros((2**self.num_wires, 2**self.num_wires), dtype=np.complex128)
+        rho = qnp.zeros((2**self.num_wires, 2**self.num_wires), dtype=np.complex128)
         rho[index, index] = 1
-        rho = self._asarray(rho, dtype=self.C_DTYPE)
-        return self._reshape(rho, [2] * (2 * self.num_wires))
+        rho = qnp.asarray(rho, dtype=self.C_DTYPE)
+        return qnp.reshape(rho, [2] * (2 * self.num_wires))
 
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(
-            returns_state=True,
-        )
+        capabilities.update(returns_state=True, passthru_interface="autograd")
         return capabilities
 
     @property
@@ -152,7 +170,7 @@ class DefaultMixed(QubitDevice):
         """Returns the state density matrix of the circuit prior to measurement"""
         dim = 2**self.num_wires
         # User obtains state as a matrix
-        return self._reshape(self._pre_rotated_state, (dim, dim))
+        return qnp.reshape(self._pre_rotated_state, (dim, dim))
 
     def density_matrix(self, wires):
         """Returns the reduced density matrix over the given wires.
@@ -171,8 +189,8 @@ class DefaultMixed(QubitDevice):
         traced_wires = [x for x in self.wires if x not in wires]
 
         # Trace first subsystem by applying kraus operators of the partial trace
-        tr_op = self._cast(np.eye(2), dtype=self.C_DTYPE)
-        tr_op = self._reshape(tr_op, (2, 1, 2))
+        tr_op = qnp.cast(qnp.eye(2), dtype=self.C_DTYPE)
+        tr_op = qnp.reshape(tr_op, (2, 1, 2))
 
         self._apply_channel(tr_op, Wires(traced_wires[0]))
 
@@ -180,7 +198,7 @@ class DefaultMixed(QubitDevice):
         for traced_wire in traced_wires[1:]:
             self._apply_channel(tr_op, Wires(traced_wire))
 
-        return self._reshape(self._state, (2 ** len(wires), 2 ** len(wires)))
+        return qnp.reshape(self._state, (2 ** len(wires), 2 ** len(wires)))
 
     def reset(self):
         """Resets the device"""
@@ -195,12 +213,13 @@ class DefaultMixed(QubitDevice):
             return None
 
         # convert rho from tensor to matrix
-        rho = self._reshape(self._state, (2**self.num_wires, 2**self.num_wires))
+        rho = qnp.reshape(self._state, (2**self.num_wires, 2**self.num_wires))
         # probs are diagonal elements
-        probs = self.marginal_prob(self._diag(rho), wires)
+        probs = self.marginal_prob(qnp.diag(rho), wires)
 
         # take the real part so probabilities are not shown as complex numbers
-        return self._abs(self._real(probs))
+        probs = qnp.real(probs)
+        return qnp.where(probs < 0, -probs, probs)
 
     def _get_kraus(self, operation):  # pylint: disable=no-self-use
         """Return the Kraus operators representing the operation.
@@ -229,27 +248,29 @@ class DefaultMixed(QubitDevice):
             kraus (list[array]): Kraus operators
             wires (Wires): target wires
         """
-
         channel_wires = self.map_wires(wires)
         rho_dim = 2 * self.num_wires
         num_ch_wires = len(channel_wires)
 
         # Computes K^\dagger, needed for the transformation K \rho K^\dagger
-        kraus_dagger = [self._conj(self._transpose(k)) for k in kraus]
+        kraus_dagger = [qnp.conj(qnp.transpose(k)) for k in kraus]
+
+        kraus = qnp.stack(kraus)
+        kraus_dagger = qnp.stack(kraus_dagger)
 
         # Changes tensor shape
         if kraus[0].shape[0] == kraus[0].shape[1]:
             kraus_shape = [len(kraus)] + [2] * num_ch_wires * 2
-            kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
-            kraus_dagger = self._cast(self._reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
+            kraus = qnp.cast(qnp.reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
+            kraus_dagger = qnp.cast(qnp.reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
 
         # Add the possibility to give a (1,2) shape Kraus operator
         elif (kraus[0].shape == (1, 2)) and (num_ch_wires == 1):
             kraus_shape = [len(kraus)] + list(kraus[0].shape)
-            kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
+            qnp.cast(qnp.reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
             kraus_dagger_shape = [len(kraus)] + list(kraus[0].shape)[::-1]
-            kraus_dagger = self._cast(
-                self._reshape(kraus_dagger, kraus_dagger_shape), dtype=self.C_DTYPE
+            kraus_dagger = qnp.cast(
+                qnp.reshape(kraus_dagger, kraus_dagger_shape), dtype=self.C_DTYPE
             )
 
         # Tensor indices of the state. For each qubit, need an index for rows *and* columns
@@ -283,7 +304,7 @@ class DefaultMixed(QubitDevice):
             f"{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}"
         )
 
-        self._state = self._einsum(einsum_indices, kraus, self._state, kraus_dagger)
+        self._state = qnp.einsum(einsum_indices, kraus, self._state, kraus_dagger)
 
     def _apply_diagonal_unitary(self, eigvals, wires):
         r"""Apply a diagonal unitary gate specified by a list of eigenvalues. This method uses
@@ -296,8 +317,10 @@ class DefaultMixed(QubitDevice):
 
         channel_wires = self.map_wires(wires)
 
+        eigvals = qnp.stack(eigvals)
+
         # reshape vectors
-        eigvals = self._cast(self._reshape(eigvals, [2] * len(channel_wires)), dtype=self.C_DTYPE)
+        eigvals = qnp.cast(qnp.reshape(eigvals, [2] * len(channel_wires)), dtype=self.C_DTYPE)
 
         # Tensor indices of the state. For each qubit, need an index for rows *and* columns
         state_indices = ABC[: 2 * self.num_wires]
@@ -312,7 +335,7 @@ class DefaultMixed(QubitDevice):
 
         einsum_indices = f"{row_indices},{state_indices},{col_indices}->{state_indices}"
 
-        self._state = self._einsum(einsum_indices, eigvals, self._state, self._conj(eigvals))
+        self._state = qnp.einsum(einsum_indices, eigvals, self._state, qnp.conj(eigvals))
 
     def _apply_basis_state(self, state, wires):
         """Initialize the device in a specified computational basis state.
@@ -336,7 +359,7 @@ class DefaultMixed(QubitDevice):
 
         # get computational basis state number
         basis_states = 2 ** (self.num_wires - 1 - device_wires.toarray())
-        num = int(np.dot(state, basis_states))
+        num = int(qnp.dot(state, basis_states))
 
         self._state = self._create_basis_state(num)
 
@@ -352,37 +375,39 @@ class DefaultMixed(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(device_wires)
 
-        state = self._asarray(state, dtype=self.C_DTYPE)
+        state = qnp.asarray(state, dtype=self.C_DTYPE)
         n_state_vector = state.shape[0]
 
         if state.ndim != 1 or n_state_vector != 2 ** len(device_wires):
             raise ValueError("State vector must be of length 2**wires.")
 
-        if not np.allclose(np.linalg.norm(state, ord=2), 1.0, atol=tolerance):
+        if not qnp.allclose(qnp.linalg.norm(state, ord=2), 1.0, atol=tolerance):
             raise ValueError("Sum of amplitudes-squared does not equal one.")
 
         if len(device_wires) == self.num_wires and sorted(device_wires.labels) == list(
             device_wires.labels
         ):
             # Initialize the entire wires with the state
-            rho = self._outer(state, self._conj(state))
-            self._state = self._reshape(rho, [2] * 2 * self.num_wires)
+            rho = qnp.outer(state, qnp.conj(state))
+            self._state = qnp.reshape(rho, [2] * 2 * self.num_wires)
 
         else:
             # generate basis states on subset of qubits via the cartesian product
-            basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))
+            basis_states = qnp.asarray(
+                list(itertools.product([0, 1], repeat=len(device_wires))), dtype=self.C_DTYPE
+            )
 
             # get basis states to alter on full set of qubits
-            unravelled_indices = np.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
+            unravelled_indices = qnp.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
             unravelled_indices[:, device_wires] = basis_states
 
             # get indices for which the state is changed to input state vector elements
-            ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
+            ravelled_indices = qnp.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
-            state = self._scatter(ravelled_indices, state, [2**self.num_wires])
-            rho = self._outer(state, self._conj(state))
-            rho = self._reshape(rho, [2] * 2 * self.num_wires)
-            self._state = self._asarray(rho, dtype=self.C_DTYPE)
+            state = qnp.scatter(ravelled_indices, state, [2**self.num_wires])
+            rho = qnp.outer(state, qnp.conj(state))
+            rho = qnp.reshape(rho, [2] * 2 * self.num_wires)
+            self._state = qnp.asarray(rho, dtype=self.C_DTYPE)
 
     def _apply_density_matrix(self, state, device_wires):
         r"""Initialize the internal state in a specified mixed state.
@@ -400,7 +425,7 @@ class DefaultMixed(QubitDevice):
         # translate to wire labels used by device
         device_wires = self.map_wires(device_wires)
 
-        state = self._asarray(state, dtype=self.C_DTYPE)
+        state = qnp.asarray(state, dtype=self.C_DTYPE)
         state = qnp.reshape(state, (-1,))
 
         state_dim = 2 ** len(device_wires)
@@ -417,7 +442,7 @@ class DefaultMixed(QubitDevice):
             device_wires.labels
         ):
             # Initialize the entire wires with the state
-            self._state = self._reshape(state, [2] * 2 * self.num_wires)
+            self._state = qnp.reshape(state, [2] * 2 * self.num_wires)
 
         else:
             # Initialize tr_in(ρ) ⊗ ρ_in with transposed wires where ρ is the density matrix before this operation.
@@ -447,7 +472,7 @@ class DefaultMixed(QubitDevice):
                 1.0,
                 atol=tolerance,
             )
-            self._state = self._asarray(rho, dtype=self.C_DTYPE)
+            self._state = qnp.asarray(rho, dtype=self.C_DTYPE)
 
     def _apply_operation(self, operation):
         """Applies operations to the internal device state.
@@ -474,7 +499,7 @@ class DefaultMixed(QubitDevice):
         if isinstance(operation, Snapshot):
             if self._debugger and self._debugger.active:
                 dim = 2**self.num_wires
-                density_matrix = self._reshape(self._state, (dim, dim))
+                density_matrix = qnp.reshape(self._state, (dim, dim))
                 if operation.tag:
                     self._debugger.snapshots[operation.tag] = density_matrix
                 else:
