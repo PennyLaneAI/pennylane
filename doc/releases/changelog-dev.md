@@ -4,6 +4,8 @@
 
 <h3>New features since last release</h3>
 
+* New `solarized_light` and `solarized_dark` styles available for drawing circuit diagram graphics. [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
+
 * Support adding `Observable` objects to the integer `0`.
   [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603)
 
@@ -316,6 +318,7 @@
 * A new method `safe_update_info` is added to `qml.QueuingContext`. This method is substituted
   for `qml.QueuingContext.update_info` in a variety of places.
   [(#2612)](https://github.com/PennyLaneAI/pennylane/pull/2612)
+  [(#2675)](https://github.com/PennyLaneAI/pennylane/pull/2675)
 
 * `BasisEmbedding` can accept an int as argument instead of a list of bits (optionally).
   [(#2601)](https://github.com/PennyLaneAI/pennylane/pull/2601)
