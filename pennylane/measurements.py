@@ -142,7 +142,7 @@ class MeasurementProcess:
         """The Python numeric type of the measurement result.
 
         Returns:
-            tuple: The output numeric type; ``int``, ``float`` or ``complex``.
+            type: The output numeric type; ``int``, ``float`` or ``complex``.
 
         Raises:
             QuantumFunctionError: the return type of the measurement process is
