@@ -118,6 +118,30 @@ class TestIntegration:
         params = pnp.zeros(n_params, requires_grad=True)
         res = classical_fisher(circ)(params)
         assert np.allclose(res, n_wires * np.ones((n_params, n_params)))
+    
+    def test_hardware_compatibility_classical_fisher(self):
+        """Testing that classical_fisher can be computed with finite shots"""
+        n_wires = 3
+        n_params = 3
+
+        dev = qml.device("default.qubit", wires=n_wires, shots=10000)
+
+        @qml.qnode(dev)
+        def circ(params):
+            for i in range(n_wires):
+                qml.Hadamard(wires=i)
+
+            for x in params:
+                for j in range(n_wires):
+                    qml.RX(x, wires=j)
+                    qml.RY(x, wires=j)
+                    qml.RZ(x, wires=j)
+
+            return qml.probs(wires=range(n_wires))
+
+        params = pnp.zeros(n_params, requires_grad=True)
+        res = qml.qinfo.classical_fisher(circ)(params)
+        assert np.allclose(res, n_wires * np.ones((n_params, n_params)), atol=1)
 
 
 class TestInterfacesClassicalFisher:

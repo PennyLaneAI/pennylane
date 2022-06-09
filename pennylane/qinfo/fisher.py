@@ -69,8 +69,7 @@ def classical_fisher(qnode, argnums=0):
 
     .. warning::
 
-        In its current form, this functionality is not hardware compatible and can only be used by simulators.
-        It is currently also not differentiable.
+        The ``classical_fisher()`` matrix is currently not differentiable.
 
     .. seealso:: :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.qinfo.quantum_fisher`.
 
