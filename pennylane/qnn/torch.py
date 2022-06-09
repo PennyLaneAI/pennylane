@@ -217,7 +217,9 @@ class TorchLayer(Module):
         super().__init__()
 
         weight_shapes = {
-            weight: (tuple(size) if isinstance(size, Iterable) else (size,) if size > 1 else ())
+            weight: (
+                tuple(size) if isinstance(size, Iterable) else () if size in [0, 1] else (size,)
+            )
             for weight, size in weight_shapes.items()
         }
 
@@ -329,7 +331,7 @@ class TorchLayer(Module):
                 if isinstance(init, torch.Tensor):
                     return init
             # TODO: Figure out why a 1-dim Tensor is assigned to all weights with shape <= 1.
-            return init(torch.Tensor(1))[0] if len(size) == 0 else init(torch.Tensor(*weight_size))
+            return init(torch.Tensor(*weight_size)) if weight_size else init(torch.Tensor(1))[0]
 
         for name, size in weight_shapes.items():
             self.qnode_weights[name] = torch.nn.Parameter(
