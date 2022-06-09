@@ -32,8 +32,9 @@ def factorize(two, tol):
         tol (float): threshold error value for discarding the negligible factors
 
     Returns:
-        tuple(array[float]): array of symmetric matrices (factors) approximating the two-electron
-        tensor, eigenvalues of the generated factors, and eigenvectors of the generated factors
+        tuple(array[array[float]]], list[array[float]], list[array[float]]): tuple containing
+        symmetric matrices (factors) approximating the two-electron tensor, truncated eigenvalues of
+        the generated factors, and truncated eigenvectors of the generated factors
 
     **Example**
 
@@ -143,8 +144,12 @@ def factorize(two, tol):
     r = len(eigvals_r)
     factors = np.array([vectors.reshape(n, n, r)[:, :, k] for k in range(r)])
 
-    eigvals_m, eigvecs_m = np.linalg.eigh(factors)
-    eigvals_m = np.array([val for val in eigvals_m if np.sum(abs(eigvals_m)) > tol])
-    eigvecs_m = eigvecs_m[:, -len(eigvals_m) :]
+    eigvals, eigvecs = np.linalg.eigh(factors)
+    eigvals_m = []
+    eigvecs_m = []
+    for n in range(len(eigvals)):
+        idx = [i for i, v in enumerate(eigvals[n]) if abs(v) > tol]
+        eigvals_m.append(eigvals[n][idx])
+        eigvecs_m.append(eigvecs[n][idx])
 
     return factors, eigvals_m, eigvecs_m
