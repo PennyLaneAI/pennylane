@@ -57,6 +57,12 @@ ar.register_function("numpy", "unstack", list)
 ar.register_function("builtins", "unstack", list)
 
 
+def _scatter_numpy(indices, array, shape):
+    new_array = np.zeros(shape, dtype=array.dtype.type)
+    new_array[indices] = array
+    return new_array
+
+
 def _scatter_element_add_numpy(tensor, index, value):
     """In-place addition of a multidimensional value over various
     indices of a tensor."""
@@ -65,6 +71,7 @@ def _scatter_element_add_numpy(tensor, index, value):
     return new_tensor
 
 
+ar.register_function("numpy", "scatter", _scatter_numpy)
 ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
 
 

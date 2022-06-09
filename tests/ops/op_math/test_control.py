@@ -6,7 +6,7 @@ import pytest
 import pennylane as qml
 from pennylane.tape import QuantumTape
 from pennylane.tape.tape import expand_tape
-from pennylane.transforms.control import ControlledOperation, ctrl
+from pennylane.ops.op_math import ControlledOperation, ctrl
 
 
 def assert_equal_operations(ops1, ops2):
