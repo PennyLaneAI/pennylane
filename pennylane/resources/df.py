@@ -51,8 +51,9 @@ def cost_qrom(constants):
         d \left ( k + e \right ),
 
     where :math:`a, b, c, d, e` are constants that depend on the nature of the QROM implementation
-    and the expansion factor :math:`k` is a parameter, selected as an integer power of 2
-    :math:`k = 2^n`, that minimizes the cost.
+    and the expansion factor :math:`k` is an integer power of two, :math:`k = 2^n`, that minimizes
+    the cost. This function computes the optimum :math:`k` and the minimum cost for a QROM
+    specification.
 
     To obtain the optimum values of :math:`k`, we first assume that the cost function is continues
     and use differentiation to obtain the value of :math:`k` that minimizes the cost. This value of
@@ -81,38 +82,37 @@ def cost_qrom(constants):
     return int(cost[np.argmin(cost)]), int(k[np.argmin(cost)])
 
 
-def unitary_cost(n, lamb, eps, l, xi, br, aleph=None, beth=None):
+def unitary_cost(n, norm, error, rank_r, rank_m, br=None, aleph=None, beth=None, eta=None):
 
-    nxi = np.ceil(np.log2(xi))
-    nlxi = np.ceil(np.log2(l * xi + n / 2))
-    nl = np.ceil(np.log2(l + 1))
+    if not br:
+        br = 7
 
     if not aleph:
-        aleph = np.ceil(2.5 + np.log2(lamb / eps))
+        aleph = np.ceil(2.5 + np.log2(norm / error))
 
     if not beth:
-        beth = np.ceil(5.652 + np.log2(lamb * n / eps))
+        beth = np.ceil(5.652 + np.log2(norm * n / error))
 
-    eta = np.array([np.log2(n) for n in range(1, l + 1) if l % n == 0])
-    eta = int(np.max([n for n in eta if n % 1 == 0]))
+    if not eta:
+        eta = np.array([np.log2(n) for n in range(1, rank_r + 1) if rank_r % n == 0])
+        eta = int(np.max([n for n in eta if n % 1 == 0]))
+
+    nxi = np.ceil(np.log2(rank_m))
+    nlxi = np.ceil(np.log2(rank_r * rank_m + n / 2))
+    nl = np.ceil(np.log2(rank_r + 1))
 
     bp1 = nl + aleph
     bp2 = nxi + aleph + 2
     bo = nxi + nlxi + br + 1
 
-    kp1, ko, kpp1, kpo, kr, kpr, kp2, kpp2 = expansion_factor(n, l, bp1, bo, bp2, xi, beth)
+    cost = 9 * nl - 6 * eta + 12 * br + 34 * nxi + 8 * nlxi + 9 * aleph + 3 * n * beth - 6 * n - 43
 
-    cost = 9 * nl - 6 * eta + 12 * br
-    cost += np.ceil((l + 1) / kp1) + bp1 * (kp1 - 1)
-    cost += np.ceil((l + 1) / ko) + bo * (ko - 1)
-    cost += np.ceil((l + 1) / kpp1) + kpp1
-    cost += np.ceil((l + 1) / kpo) + kpo
-    cost += np.ceil((l * xi + n / 2) / kr) + np.ceil((l * xi) / kr) + n * beth * kr
-    cost += np.ceil((l * xi + n / 2) / kpr) + np.ceil((l * xi) / kpr) + 2 * kpr
-    cost += 34 * nxi + 8 * nlxi
-    cost += np.ceil((l * xi + n / 2) / kp2) + np.ceil((l * xi) / kp2) + 2 * bp2 * (kp2 - 1)
-    cost += np.ceil((l * xi + n / 2) / kpp2) + np.ceil((l * xi) / kpp2) + 2 * kpp2
-    cost += 3 * aleph + 6 * aleph + 3 * n * beth - 6 * n - 43
+    cost += cost_qrom((rank_r, 1, 0, bp1, -1))
+    cost += cost_qrom((rank_r, 1, 0, bo, -1))
+    cost += cost_qrom((rank_r, 1, 0, 1, 0)) * 2
+    cost += cost_qrom((rank_r * rank_m, n / 2, rank_r * rank_m, n * beth, 0))
+    cost += cost_qrom((rank_r * rank_m, n / 2, rank_r * rank_m, 2, 0)) * 2
+    cost += cost_qrom((rank_r * rank_m, n / 2, rank_r * rank_m, 2 * bp2, -1))
 
     return cost
 
