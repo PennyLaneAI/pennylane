@@ -43,17 +43,12 @@ class DefaultQutrit(QutritDevice):
     # TODO: Add list of operations and observables
     operations = {
         "QutritUnitary",
-        "ControlledQutritUnitary",
-        "TShift",
-        "TClock",
-        "TAdd",
-        "TSWAP",
-        "Identity",
     }
 
+    # TODO: Remove QutritUnitary from observables list
     observables = {
         "Identity",
-        "QutritUnitary"
+        "QutritUnitary",
     }
 
     def __init__(
@@ -69,10 +64,7 @@ class DefaultQutrit(QutritDevice):
 
         # TODO: Add operations
         self._apply_ops = {
-            "TShift": self._apply_tshift,
-            "TClock": self._apply_tclock,
-            "TSWAP": self._apply_tswap,
-            "TAdd": self._apply_tadd,
+
         }
 
     @functools.lru_cache()
@@ -100,29 +92,7 @@ class DefaultQutrit(QutritDevice):
 
         # apply the circuit operations
         for i, operation in enumerate(operations):
-
-            # if i > 0 and isinstance(operation, (QubitStateVector, BasisState)):
-            #     raise DeviceError(
-            #         f"Operation {operation.name} cannot be used after other Operations have already been applied "
-            #         f"on a {self.short_name} device."
-            #     )
-
-            # if isinstance(operation, QubitStateVector):
-            #     self._apply_state_vector(operation.parameters[0], operation.wires)
-            # elif isinstance(operation, BasisState):
-            #     self._apply_basis_state(operation.parameters[0], operation.wires)
-            # elif isinstance(operation, Snapshot):
-            #     if self._debugger and self._debugger.active:
-            #         state_vector = np.array(self._flatten(self._state))
-            #         if operation.tag:
-            #             self._debugger.snapshots[operation.tag] = state_vector
-            #         else:
-            #             self._debugger.snapshots[len(self._debugger.snapshots)] = state_vector
-            if False:
-                # DO NOTHING
-                continue
-            else:
-                self._state = self._apply_operation(self._state, operation)
+            self._state = self._apply_operation(self._state, operation)
 
         # store the pre-rotated state
         self._pre_rotated_state = self._state
@@ -151,118 +121,7 @@ class DefaultQutrit(QutritDevice):
 
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
 
-        # if len(wires) <= 2:
-        #     # Einsum is faster for small gates
-        #     return self._apply_unitary_einsum(state, matrix, wires)
-
         return self._apply_unitary(state, matrix, wires)
-
-    def _apply_tshift(self, state, axes, inverse=False):
-        """Applies a Shift gate by rolling 1 unit along the axis specified in ``axes``.
-
-        Rolling by 1 unit along the axis means that the :math:`|0 \rangle` state with index ``0`` is
-        shifted to the :math:`|1 \rangle` state with index ``1``. Likewise, since rolling beyond
-        the last index loops back to the first, :math:`|2 \rangle` is transformed to
-        :math:`|0\rangle`.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-            inverse (bool): whether to apply the inverse operation
-
-        Returns:
-            array[complex]: output state
-        """
-        shift = -1 if inverse else 1
-        return self._roll(state, shift, axes[0])
-
-    def _apply_tclock(self, state, axes, inverse=False):
-        """Applies a ternary Clock gate by adding a phase of :math:`\omega` to the 1 index and
-        :math:`\omega^{2}` to the 2 index along the axis specified in ``axes``
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-            inverse (bool): whether to apply the inverse operation
-
-        Returns:
-            array[complex]: output state
-        """
-        partial_state = self._apply_phase(state, axes, 1, OMEGA, inverse)
-        return self._apply_phase(partial_state, axes, 2, OMEGA**2, inverse)
-
-    def _apply_tswap(self, state, axes, **kwargs):
-        """Applies a ternary SWAP gate by performing a partial transposition along the
-        specified axes.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        all_axes = list(range(len(state.shape)))
-        all_axes[axes[0]] = axes[1]
-        all_axes[axes[1]] = axes[0]
-        return self._transpose(state, all_axes)
-
-    def _apply_tadd(self, state, axes, **kwargs):
-        """Applies a controlled add gate by slicing along the first axis specified in ``axes`` and
-        applying a TShift transformation along the second axis
-
-        By slicing along the first axis, we are able to select all of the amplitudes with corresponding
-        :math:`|1\rangle` and :math:`|2\rangle` for the control qutrit. This means we just need to apply
-        a :class:`~.TShift` gate when slicing along index 1, and a :class:`~.TShift` adjoint gate when
-        slicing along index 2
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-
-        Returns:
-            array[complex]: output state
-        """
-        slices = [_get_slice(i, axes[0], self.num_wires) for i in range(3)]
-
-        # We will be slicing into the state according to state[slices[1]] and state[slices[2]],
-        # giving us all of the amplitudes with a |1> and |2> for the control qutrit. The resulting
-        # array has lost an axis relative to state and we need to be careful about the axis we
-        # roll. If axes[1] is larger than axes[0], then we need to shift the target axis down by
-        # one, otherwise we can leave as-is. For example: a state has [0, 1, 2, 3], control=1,
-        # target=3. Then, state[slices[1]] has 3 axes and target=3 now corresponds to the second axis.
-        if axes[1] > axes[0]:
-            target_axes = [axes[1] - 1]
-        else:
-            target_axes = [axes[1]]
-
-        state_1 = self._apply_tshift(state[slices[1]], axes=target_axes)
-        state_2 = self._apply_tshift(state[slices[2]], axes=target_axes, inverse=True)
-        return self._stack([state[slices[0]], state_1, state_2], axis=axes[0])
-
-    def _apply_phase(self, state, axes, index, parameters, inverse=False):
-        """Applies a phase onto the specified index along the axis specified in ``axes``.
-
-        Args:
-            state (array[complex]): input state
-            axes (List[int]): target axes to apply transformation
-            index (int): target index of axis to apply phase to
-            parameters (float): phase to apply
-            inverse (bool): whether to apply the inverse phase
-
-        Returns:
-            array[complex]: output state
-        """
-        num_wires = len(state.shape)
-        slices = [_get_slice(i, axes[0], num_wires) for i in range(3)]
-
-        phase = self._conj(parameters) if inverse else parameters
-        state_slices = [self._const_mul(phase if i == index else 1, state[slices[i]]) for i in range(3)]
-        return self._stack(state_slices, axis=axes[0])
-
-    def expval(self, observable, shot_range=None, bin_size=None):
-        # TODO: Update later
-        return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
     def _get_unitary_matrix(self, unitary):
         """Return the matrix representing a unitary operation.
@@ -436,10 +295,6 @@ class DefaultQutrit(QutritDevice):
         perm = list(device_wires) + unused_idxs
         inv_perm = np.argsort(perm)  # argsort gives inverse permutation
         return self._transpose(tdot, inv_perm)
-
-    # TODO: Implement function
-    # def _apply_unitary_einsum(self, state, mat, wires):
-    #     pass
 
     def reset(self):
         """Reset the device"""
