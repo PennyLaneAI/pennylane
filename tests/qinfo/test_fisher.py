@@ -22,18 +22,33 @@ import pennylane.numpy as pnp
 import numpy as np
 
 
-from pennylane.qinfo import _compute_cfim, classical_fisher, _make_probs
+from pennylane.qinfo import classical_fisher
+from pennylane.qinfo.fisher import _make_probs, _compute_cfim
 
-# TODO: add test that ignores expvals and appends probs instead
-def test_make_probs():
-    """Testing the private _make_probs transform"""
-    with qml.tape.QuantumTape() as tape:
-        qml.PauliX(0)
-        qml.PauliZ(1)
-        qml.PauliY(2)
-    new_tape, fn = _make_probs(tape)
-    assert len(new_tape) == 1
-    assert np.isclose(fn([1]), 1)
+class TestMakeProbs:
+    def test_make_probs_makes_probs(self,):
+        """Testing the _make_probs makes probs"""
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def qnode(x):
+            qml.RX(x, 0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliX(0))
+        x = pnp.array([0.5])
+        new_qnode = _make_probs(qnode)
+        tape, _ = new_qnode.construct(x, {})
+        assert tape[0].observables[0].return_type == qml.measurements.Probability
+
+    def test_make_probs(self,):
+        """Testing the private _make_probs transform"""
+        with qml.tape.QuantumTape() as tape:
+            qml.PauliX(0)
+            qml.PauliZ(1)
+            qml.PauliY(2)
+        new_tape, fn = _make_probs(tape)
+        assert len(new_tape) == 1
+        assert np.isclose(fn([1]), 1)
 
 
 class TestComputeclassicalFisher:
