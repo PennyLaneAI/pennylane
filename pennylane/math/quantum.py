@@ -610,7 +610,7 @@ def _compute_mutual_info(
 def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     r"""Compute the fidelity for two states (a state can be a state vector or a density matrix) acting on quantum
     systems with the same size. For two pure states, the fidelity corresponds to the squared overlap. For a pure state
-    and a mixed state, it corresponds to the squared expectation of the mixed state in the pure state. Finally for two
+    and a mixed state, it corresponds to the squared expectation of the mixed state and the pure state. Finally for two
     mixed states, it is defined by the last formula:
 
     .. math::

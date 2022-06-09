@@ -17,7 +17,7 @@ import pennylane as qml
 
 
 def fidelity(qnode0, qnode1, wires0, wires1):
-    r"""Compute the fidelity for two for two :class:`.QNode` returning a :func:`~.state` (a state can be a state vector
+    r"""Compute the fidelity for two :class:`.QNode` returning a :func:`~.state` (a state can be a state vector
     or a density matrix, depending on the device) acting on quantum systems with the same size. For two pure states, the
     fidelity corresponds to the squared overlap. For a pure state and a mixed state, it corresponds to the squared
     expectation of the mixed state in the pure state. Finally for two mixed states, it is defined by the last formula:
@@ -40,7 +40,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         wires1 (Sequence[int]): the wires of the second subsystem
 
     Returns:
-        func: A function with the same arguments as the QNode that returns the mutual information from its output state.
+        func: A function with the same arguments as the QNodes that returns the fidelities between the output states.
 
     **Example**
 
