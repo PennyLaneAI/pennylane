@@ -41,7 +41,7 @@
 
   For example, one can define a cost function that outputs the first element of
   the probability vector:
-  ```pycon
+  ```python
   def cost(x, y):
       return circuit(x, y)[0]
   ```
