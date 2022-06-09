@@ -66,3 +66,96 @@ class TestFidelityQnode:
 
         fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((0.1), (0.1))
         assert qml.math.allclose(fid, 1.0)
+
+    @pytest.mark.parametrize("device", devices)
+    def test_fidelity_qnodes_rxrz_ry(self, device):
+        """Test the fidelity between two Qnodes."""
+        dev = qml.device(device, wires=1)
+
+        @qml.qnode(dev)
+        def circuit0(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit1(y):
+            qml.RY(y, wires=0)
+            return qml.state()
+
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((0.0, 0.2), (0.2))
+        assert qml.math.allclose(fid, 1.0)
+
+    @pytest.mark.parametrize("device", devices)
+    def test_fidelity_qnodes_rx_empty(self, device):
+        """Test the fidelity between two Qnodes."""
+        dev = qml.device(device, wires=1)
+
+        @qml.qnode(dev)
+        def circuit0(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit1():
+            return qml.state()
+
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((np.pi))
+        assert qml.math.allclose(fid, 0.0)
+
+    @pytest.mark.parametrize("device", devices)
+    def test_fidelity_qnodes_rx_empty(self, device):
+        """Test the fidelity between two Qnodes."""
+        dev = qml.device(device, wires=1)
+
+        @qml.qnode(dev)
+        def circuit0(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit1():
+            return qml.state()
+
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])((np.pi))
+        assert qml.math.allclose(fid, 0.0)
+
+    @pytest.mark.parametrize("device", devices)
+    def test_fidelity_qnodes_rx_empty(self, device):
+        """Test the fidelity between two Qnodes."""
+        dev = qml.device(device, wires=1)
+
+        @qml.qnode(dev)
+        def circuit0():
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit1(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(signature1=(np.pi))
+        assert qml.math.allclose(fid, 0.0)
+
+    @pytest.mark.parametrize("device", devices)
+    def test_fidelity_qnodes_rxrz_rxry(self, device):
+        """Test the fidelity between two Qnodes."""
+        dev = qml.device(device, wires=1)
+
+        @qml.qnode(dev)
+        def circuit0(x, y):
+            qml.RX(x, wires=0)
+            qml.RZ(y, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit1(x, y):
+            qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            return qml.state()
+
+        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
+            (0.0, np.pi), (0.0, 0.0)
+        )
+
+        assert qml.math.allclose(fid, 1.0)
