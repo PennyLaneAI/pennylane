@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the SPSA optimizer"""
-import os
-
-os.environ["OMP_NUM_THREADS"] = "2"
 import pytest
 
 import pennylane as qml
@@ -415,7 +412,7 @@ class TestSPSAOptimizer:
         ]
         H = qml.Hamiltonian(coeffs, obs)
         num_qubits = 4
-        dev = qml.device("lightning.qubit", wires=num_qubits, batch_obs=True)
+        dev = qml.device("lightning.qubit", wires=num_qubits)
 
         @qml.qnode(dev)
         def cost_fun(params, num_qubits=1):
