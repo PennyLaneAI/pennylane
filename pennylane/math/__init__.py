@@ -59,6 +59,7 @@ from .quantum import (
     fidelity,
 )
 
+
 from .utils import (
     allclose,
     allequal,
@@ -100,12 +101,14 @@ __all__ = [
     "is_abstract",
     "is_independent",
     "marginal_prob",
-    "to_density_matrix",
     "ones_like",
     "requires_grad",
     "scatter_element_add",
     "stack",
     "tensordot",
+    "to_density_matrix",
+    "to_mutual_info",
+    "to_vn_entropy",
     "unwrap",
     "where",
 ]

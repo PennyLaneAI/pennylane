@@ -190,7 +190,6 @@ from pennylane import qchem
 def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
     r"""Test that fermionic_observable returns the correct fermionic observable."""
     f = qchem.fermionic_observable(core_constant, integral_one, integral_two)
-    print(f)
     assert np.allclose(f[0], f_ref[0])  # fermionic coefficients
     assert f[1] == f_ref[1]  # fermionic operators
 
@@ -237,7 +236,6 @@ def test_fermionic_observable(core_constant, integral_one, integral_two, f_ref):
 )
 def test_qubit_observable(f_observable, q_observable):
     r"""Test that qubit_observable returns the correct operator."""
-    print(f_observable)
     h = qchem.qubit_observable(f_observable)
     h_ref = qml.Hamiltonian(q_observable[0], q_observable[1])
 

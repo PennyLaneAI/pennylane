@@ -17,12 +17,15 @@ import pennylane as qml
 
 
 def vn_entropy_transform(qnode, indices, base=None):
-    """Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~.state`.
+    r"""Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~.state`.
+
+    .. math::
+        S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
 
     Args:
         qnode (tensor_like): A :class:`.QNode` returning a :func:`~.state`.
         indices (list(int)): List of indices in the considered subsystem.
-        base (float, int): Base for the logarithm.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
         float: Von Neumann entropy of the considered subsystem.
@@ -42,24 +45,33 @@ def vn_entropy_transform(qnode, indices, base=None):
 
     """
 
-    density_matrix_qnode = qml.qinfo.density_matrix_transform(qnode, indices)
+    density_matrix_qnode = qml.qinfo.density_matrix_transform(qnode, qnode.device.wires)
 
     def wrapper(*args, **kwargs):
         density_matrix = density_matrix_qnode(*args, **kwargs)
-        entropy = qml.math.compute_vn_entropy(density_matrix, base)
+        entropy = qml.math.to_vn_entropy(density_matrix, indices, base)
         return entropy
 
     return wrapper
 
 
 def mutual_info_transform(qnode, indices0, indices1, base=None):
-    """
-    Compute the mutual information from a :class:`.QNode` returning a :func:`~.state`.
+    r"""Compute the mutual information from a :class:`.QNode` returning a :func:`~.state`:
+
+    .. math::
+
+        I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
+
+    where :math:`S` is the von Neumann entropy.
+
+    The mutual information is a measure of correlation between two subsystems.
+    More specifically, it quantifies the amount of information obtained about
+    one system by measuring the other system.
 
     Args:
         qnode (QNode): A :class:`.QNode` returning a :func:`~.state`.
-        indices (list[int]): List of indices in the first subsystem.
-        indices (list[int]): List of indices in the second subsystem.
+        indices0 (list[int]): List of indices in the first subsystem.
+        indices1 (list[int]): List of indices in the second subsystem.
         base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
@@ -82,9 +94,13 @@ def mutual_info_transform(qnode, indices0, indices1, base=None):
     1.3862943611198906
     >>> mutual_info_circuit(0.4)
     0.3325090393262875
+
+    .. seealso::
+
+        :func:`~.qinfo.vn_entropy_transform`
     """
 
-    density_matrix_qnode = qml.qinfo.density_matrix_transform(qnode, qnode.device.wires.tolist())
+    density_matrix_qnode = qml.qinfo.density_matrix_transform(qnode, qnode.device.wires)
 
     def wrapper(*args, **kwargs):
         density_matrix = density_matrix_qnode(*args, **kwargs)
