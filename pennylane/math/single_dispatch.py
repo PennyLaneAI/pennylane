@@ -550,7 +550,7 @@ def _sum_torch(tensor, axis=None, keepdims=False):
     if axis is None:
         return torch.sum(tensor)
 
-    if len(axis) == 0:
+    if not isinstance(axis, int) and len(axis) == 0:
         return tensor
 
     return torch.sum(tensor, dim=axis, keepdim=keepdims)
