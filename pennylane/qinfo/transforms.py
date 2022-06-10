@@ -15,7 +15,7 @@
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
 import pennylane as qml
-from pennylane.transforms import batch_transform, metric_tensor
+from pennylane.transforms import batch_transform, metric_tensor, adjoint_metric_tensor
 
 
 def reduced_dm(qnode, wires):
@@ -260,10 +260,11 @@ def classical_fisher(qnode, argnums=0):
         tape (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
         argnums (Optional[int or List[int]]): Arguments to be differentiated in case interface ``jax`` is used.
 
-    Returns: func: The function that computes the classical fisher information matrix. This function accepts the same
-    signature as the :class:`.QNode`. If the signature contains one differentiable variable ``params``, the function
-    returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
-    it returns a list of sizes ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
+    Returns:
+        func: The function that computes the classical fisher information matrix. This function accepts the same
+        signature as the :class:`.QNode`. If the signature contains one differentiable variable ``params``, the function
+        returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
+        it returns a list of sizes ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
 
     .. warning::
 
@@ -399,7 +400,7 @@ def classical_fisher(qnode, argnums=0):
     return wrapper
 
 
-def quantum_fisher(*args, **kwargs):
+def quantum_fisher(*args, hardware=False, **kwargs):
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode` or quantum tape.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
@@ -414,11 +415,28 @@ def quantum_fisher(*args, **kwargs):
     with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
 
     .. seealso::
-        ``quantum_fisher()`` is simply calling :func:`~.pennylane.metric_tensor` with a prefactor of 4. Please refer there for implementation details.
-        :func:`~.pennylane.qinfo.classical_fisher`; :func:`~.pennylane.adjoint_metric_tensor`
-    """
+        :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.adjoint_metric_tensor`, :func:`~.pennylane.qinfo.classical_fisher`
 
-    def wrapper(*args0, **kwargs0):
-        return 4 * metric_tensor(*args, **kwargs)(*args0, **kwargs0)
+    Args:
+        hardware (bool): Indicate if execution needs to be hardware compatible (True)
+
+    Returns:
+        func: The function that computes the quantum fisher information matrix.
+
+    .. note::
+
+        ``quantum_fisher`` coincides with the ``metric_tensor`` and a prefactor of :math:`4`. In case of ``hardware=True``, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
+        In case of  ``hardware=False``, :func:`~.pennylane.adjoint_metric_tensor` is used. Please refer to their respective documentations for details on the arguments.
+
+    """
+    if hardware:
+
+        def wrapper(*args0, **kwargs0):
+            return 4 * metric_tensor(*args, **kwargs)(*args0, **kwargs0)
+
+    else:
+
+        def wrapper(*args0, **kwargs0):
+            return 4 * adjoint_metric_tensor(*args, **kwargs)(*args0, **kwargs0)
 
     return wrapper

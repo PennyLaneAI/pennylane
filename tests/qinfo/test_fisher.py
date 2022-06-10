@@ -150,7 +150,7 @@ class TestIntegration:
     def test_quantum_fisher_info(
         self,
     ):
-        """Integration test of quantum fisher information matrix CFIM. This is just calling ``qml.metric_tensor`` and multiplying by a factor of 4"""
+        """Integration test of quantum fisher information matrix CFIM. This is just calling ``qml.metric_tensor`` or ``qml.adjoint_metric_tensor`` and multiplying by a factor of 4"""
 
         n_wires = 2
 
@@ -165,9 +165,13 @@ class TestIntegration:
 
         params = pnp.random.random(2)
 
-        QFIM = quantum_fisher(circ)(params)
-        QFIM1 = 4.0 * qml.metric_tensor(circ)(params)
+        QFIM_hard = quantum_fisher(circ, hardware=True)(params)
+        QFIM1_hard = 4.0 * qml.metric_tensor(circ)(params)
+
+        QFIM = quantum_fisher(circ, hardware=False)(params)
+        QFIM1 = 4.0 * qml.adjoint_metric_tensor(circ)(params)
         assert np.allclose(QFIM, QFIM1)
+        assert np.allclose(QFIM_hard, QFIM1_hard)
 
 
 class TestInterfacesClassicalFisher:
