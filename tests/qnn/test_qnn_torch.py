@@ -229,6 +229,22 @@ class TestTorchLayer:
             TorchLayer(qnode=c, weight_shapes=w, init_method=init_method)
 
     @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
+    def test_init_missing_weights(self, get_circuit, n_qubits):
+        """Test that a KeyError is raised when using an init_method with missing weights."""
+        c, w = get_circuit
+
+        init_method = {
+            "w1": torch.normal(mean=0, std=1, size=(3, n_qubits, 3)),
+            "w2": torch.normal(mean=0, std=1, size=(1,)),
+            "w3": torch.normal(mean=0, std=1, size=[]),
+            "w5": torch.normal(mean=0, std=1, size=(2, n_qubits, 3)),
+            "w7": torch.normal(mean=0, std=1, size=[]),
+        }
+
+        with pytest.raises(KeyError):
+            TorchLayer(qnode=c, weight_shapes=w, init_method=init_method)
+
+    @pytest.mark.parametrize("n_qubits, output_dim", indices_up_to(1))
     def test_fixed_and_callable_init(self, get_circuit, n_qubits):
         """Test if weights are initialized according to the callables and values specified in the
         init_method argument."""
