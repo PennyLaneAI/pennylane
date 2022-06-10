@@ -74,7 +74,6 @@ class TestDensityMatrixQNode:
 
     def test_qnode_not_returning_state(self):
         """Test that the QNode of reduced_dm function must return state."""
-
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
