@@ -6,10 +6,14 @@
 
 * A new quantum information module is added. It includes a function for computing the reduced density matrix functions 
   for state vectors and density matrices.
+
   [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
   [(#2569)](https://github.com/PennyLaneAI/pennylane/pull/2569)
+  [(#2598)](https://github.com/PennyLaneAI/pennylane/pull/2598)
   
-  A `reduced_dm` that can handle both state vectors and density matrix, to return a reduced density matrix:
+
+  A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
+
   ```pycon
   >>> x = [1, 0, 1, 0] / np.sqrt(2)
   >>> reduced_dm(x, indices=[0])
@@ -31,6 +35,21 @@
   tf.Tensor(
   [[1.+0.j 0.+0.j]
    [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+  ```
+
+  It also contains a `QNode` transform `qml.qinfo.reduced_dm`, that returns the density matrix from a `QNode` 
+  returning `qml.state`:
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.IsingXX(x, wires=[0,1])
+      return qml.state()
+  ```
+  ```pycon
+  >>> qml.qinfo.reduced_dm(circuit, wires=[0])(np.pi/2)
+  [[0.5+0.j 0.+0.j]
+   [0.+0.j 0.5+0.j]]
   ```
 
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
