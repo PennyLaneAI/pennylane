@@ -396,3 +396,163 @@ def classical_fisher(qnode, argnums=0):
         return _compute_cfim(p, j)
 
     return wrapper
+
+
+def fidelity(qnode0, qnode1, wires0, wires1):
+    r"""Compute the fidelity for two :class:`.QNode` returning a :func:`~.state` (a state can be a state vector
+    or a density matrix, depending on the device) acting on quantum systems with the same size.
+
+    The fidelity for two mixed states given by density matrices :math:`\rho` and :math:`\sigma`
+    is defined as
+
+    .. math::
+        F( \rho , \sigma ) = \text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
+
+    If one of the states is pure, say :math:`\rho=\ket{\psi}\bra{\psi}`, then the expression
+    for fidelity simplifies to
+
+    .. math::
+        F( \ket{\psi} , \sigma ) = \bra{\psi} \sigma \ket{\psi}
+
+    Finally, if both states are pure, :math:`\sigma=\ket{\phi}\bra{\phi}`, then the
+    fidelity is simply
+
+    .. math::
+        F( \ket{\psi} , \ket{\phi}) = \left|\braket{\psi, \phi}\right|^2
+
+    .. note::
+        The second state is coerced to the type and dtype of the first state. The fidelity is returned in the type
+        of the interface of the first state.
+
+    Args:
+        state0 (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        state1 (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        wires0 (Sequence[int]): the wires of the first subsystem
+        wires1 (Sequence[int]): the wires of the second subsystem
+
+    Returns:
+        func: A function that returns the fidelity between the states outputted by the QNodes.
+
+    **Example**
+
+    First, let's consider two QNodes with potentially different signatures: a circuit with two parameters
+    and another circuit with a single parameter. The output of the `qml.qinfo.fidelity` transform then requires
+    two tuples to be passed as arguments, each containing the args and kwargs of their respective circuit, e.g. `all_args0 = (0.1, 0.3)` and
+    `all_args1 = (0.2)` in the following case:
+
+    .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit_rx(x, y):
+            qml.RX(x, wires=0)
+            qml.RZ(y, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit_ry(y):
+            qml.RY(y, wires=0)
+            return qml.state()
+
+    >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.2))
+    0.9905158135644924
+
+    It is also possible to use QNodes that do not depend on any parameters. When it is the case for the first QNode, you
+    need to pass an empty tuple as an argument for the first QNode.
+
+    .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit_rx():
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit_ry(x):
+            qml.RY(x, wires=0)
+            return qml.state()
+
+    >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((), (0.2))
+    0.9900332889206207
+
+    On the other hand, if the second QNode is the one that does not depend on parameters then a single tuple can also be
+    passed:
+
+    >>> qml.qinfo.fidelity(circuit_ry, circuit_rx, wires0=[0], wires1=[0])((0.2))
+    0.9900332889206207
+
+    The `qml.qinfo.fidelity` transform is also differentiable and you can use the gradient in the different frameworks
+    with backpropagation, the following example uses `jax` and `backprop`.
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit0(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev, interface="jax")
+        def circuit1():
+            qml.PauliZ(wires=0)
+            return qml.state()
+
+    >>> jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))((jax.numpy.array(0.3)))
+    -0.14776011
+
+    """
+
+    if len(wires0) != len(wires1):
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+
+    # Get the state vector if all wires are selected
+    if len(wires0) == len(qnode0.device.wires):
+        state_qnode0 = qnode0
+    else:
+        state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
+
+    # Get the state vector if all wires are selected
+    if len(wires1) == len(qnode1.device.wires):
+        state_qnode1 = qnode1
+    else:
+        state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
+
+    def evaluate_fidelity(all_args0=None, all_args1=None):
+        """Wrapper used for evaluation of the fidelity between two states computed from QNodes. It allows giving
+        the args and kwargs to each :class:`.QNode`.
+
+        Args:
+            all_args0 (tuple): Tuple containing the arguments (*args, **kwargs) of the first :class:`.QNode`.
+            all_args1 (tuple): Tuple containing the arguments (*args, **kwargs) of the second :class:`.QNode`.
+
+        Returns:
+            float: Fidelity between two quantum states
+        """
+        if not isinstance(all_args0, tuple) and all_args0 is not None:
+            all_args0 = (all_args0,)
+
+        if not isinstance(all_args1, tuple) and all_args1 is not None:
+            all_args1 = (all_args1,)
+
+        # If no all_args is given, evaluate the QNode without args
+        if all_args0 is not None:
+            state0 = state_qnode0(*all_args0)
+        else:
+            # No args
+            state0 = state_qnode0()
+
+        # If no all_args is given, evaluate the QNode without args
+        if all_args1 is not None:
+            state1 = state_qnode1(*all_args1)
+        else:
+            # No args
+            state1 = state_qnode1()
+
+        # From the two generated states, compute the fidelity.
+        fid = qml.math.fidelity(state0, state1)
+        return fid
+
+    return evaluate_fidelity

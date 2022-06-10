@@ -164,6 +164,7 @@ class TestVonNeumannEntropy:
 
         param = torch.tensor(param, dtype=torch.float64, requires_grad=True)
         entropy = qml.qinfo.vn_entropy(circuit_state, wires=wires, base=base)(param)
+
         entropy.backward()
         grad_entropy = param.grad
 
