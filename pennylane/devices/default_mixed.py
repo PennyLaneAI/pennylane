@@ -110,21 +110,26 @@ class DefaultMixed(QubitDevice):
         "ECR",
     }
 
+    _reshape = staticmethod(qnp.reshape)
+    _flatten = staticmethod(qnp.flatten)
+    _gather = staticmethod(qnp.gather)
+    _dot = staticmethod(qnp.dot)
+
     @staticmethod
     def _reduce_sum(array, axes):
         return qnp.sum(array, axis=tuple(axes))
 
     @staticmethod
     def _asarray(array, dtype=None):
-        is_ragged = False
+        # check if the array is ragged
+        first_shape = qnp.shape(array[0])
+        is_ragged = any(qnp.shape(array[i]) != first_shape for i in range(len(array)))
 
-        try:
-            res = qnp.asarray(qnp.stack(array), dtype=dtype)
-        except ValueError:
-            is_ragged = True
+        if not is_ragged:
+            res = qnp.cast(qnp.stack(array), dtype=dtype)
 
         if is_ragged or res.dtype is np.dtype("O"):
-            return qnp.hstack(array).flatten().astype(dtype)
+            return qnp.cast(qnp.flatten(qnp.hstack(array)), dtype=dtype)
 
         return res
 
@@ -154,15 +159,17 @@ class DefaultMixed(QubitDevice):
             array[complex]: complex array of shape ``[2] * (2 * num_wires)``
             representing the density matrix of the basis state.
         """
-        rho = qnp.zeros((2**self.num_wires, 2**self.num_wires), dtype=np.complex128)
+        rho = qnp.zeros((2**self.num_wires, 2**self.num_wires), dtype=self.C_DTYPE)
         rho[index, index] = 1
-        rho = qnp.asarray(rho, dtype=self.C_DTYPE)
         return qnp.reshape(rho, [2] * (2 * self.num_wires))
 
     @classmethod
     def capabilities(cls):
         capabilities = super().capabilities().copy()
-        capabilities.update(returns_state=True, passthru_interface="autograd")
+        capabilities.update(
+            returns_state=True,
+            passthru_devices={"autograd": "default.mixed", "tf": "default.mixed"},
+        )
         return capabilities
 
     @property
@@ -214,8 +221,9 @@ class DefaultMixed(QubitDevice):
 
         # convert rho from tensor to matrix
         rho = qnp.reshape(self._state, (2**self.num_wires, 2**self.num_wires))
+
         # probs are diagonal elements
-        probs = self.marginal_prob(qnp.diag(rho), wires)
+        probs = self.marginal_prob(qnp.diagonal(rho), wires)
 
         # take the real part so probabilities are not shown as complex numbers
         probs = qnp.real(probs)

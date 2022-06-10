@@ -44,6 +44,7 @@ from .multi_dispatch import (
     frobenius_inner_product,
     get_trainable_indices,
     ones_like,
+    scatter,
     scatter_element_add,
     stack,
     tensordot,

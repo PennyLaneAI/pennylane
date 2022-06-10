@@ -185,9 +185,10 @@
   tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
   ```
 
-* The `default.mixed` device now supports backpropagation with the `"autograd"`
-  interface.
+* The `default.mixed` device now supports backpropagation with the Autograd and TensorFlow
+  interfaces.
   [(#2615)](https://github.com/PennyLaneAI/pennylane/pull/2615)
+  [(#2670)](https://github.com/PennyLaneAI/pennylane/pull/2670)
 
   As a result, the default differentiation method for the device is now `"backprop"`. To continue using the old default `"parameter-shift"`, explicitly specify this differentiation method in the QNode.
 
@@ -305,7 +306,7 @@
 * The `QNode` class now contains a new method `best_method_str` that returns the best differentiation
   method for a provided device and interface, in human-readable format.
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
-   
+
 
 * Using `Operation.inv()` in a queuing environment no longer updates the queue's metadata, but merely updates
   the operation in place.
@@ -336,7 +337,7 @@
 * Add `IsingXY` gate.
   [(#2649)](https://github.com/PennyLaneAI/pennylane/pull/2649)
 
-* The performance of building sparse Hamiltonians has been improved by accumulating the sparse representation of coefficient-operator pairs in a temporary storage and by eliminating unnecessary `kron` operations on identity matrices. 
+* The performance of building sparse Hamiltonians has been improved by accumulating the sparse representation of coefficient-operator pairs in a temporary storage and by eliminating unnecessary `kron` operations on identity matrices.
   [(#2630)](https://github.com/PennyLaneAI/pennylane/pull/2630)
 
 * Control values are now displayed distinctly in text and mpl drawings of circuits.
