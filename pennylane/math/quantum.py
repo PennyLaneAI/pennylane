@@ -24,7 +24,7 @@ import pennylane as qml
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import diag, dot, scatter_element_add, einsum, get_interface
-from .utils import is_abstract, allclose, cast, convert_like
+from .utils import is_abstract, allclose, cast, convert_like, cast_like
 
 ABC_ARRAY = np.array(list(ABC))
 
@@ -683,7 +683,7 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
 
     # Cannot be cast_like if jit
     if not is_abstract(state0):
-        state1 = qml.math.convert_like(state1, state0)
+        state1 = cast_like(state1, state0)
 
     len_state1 = state1.shape[0]
 
