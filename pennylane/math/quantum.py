@@ -634,7 +634,7 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     Args:
         state0 (tensor_like): 1D state vector or 2D density matrix
         state1 (tensor_like): 1D state vector or 2D density matrix
-        check_state (bool): If True, the function will check the validity of both states, it checks (shape, norm) for
+        check_state (bool): If True, the function will check the validity of both states; it checks (shape, norm) for
             state vectors or (shape, trace, positive-definitiveness) for density matrices.
         c_dtype (str): Complex floating point precision type.
 

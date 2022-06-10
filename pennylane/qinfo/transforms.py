@@ -458,8 +458,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.2))
         0.9905158135644924
 
-    It also possible to use QNodes that do not depend on any parameters. When it is the case for the first QNode, you
-    need to pass an empty tuple as argument for the firs QNode.
+    It is also possible to use QNodes that do not depend on any parameters. When it is the case for the first QNode, you
+    need to pass an empty tuple as an argument for the first QNode.
 
     .. code-block:: python
         dev = qml.device('default.qubit', wires=1)
@@ -476,7 +476,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((), (0.2))
         0.9900332889206207
 
-    On the other hand, if the second QNode is the one that does not depend on parameters you can simply write:
+    On the other hand, if the second QNode is the one that does not depend on parameters then a single tuple can also be passed:
 
     .. code-block:: python
         dev = qml.device('default.qubit', wires=1)
@@ -497,9 +497,6 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     with backpropagation, the following example uses `jax` and `backprop`.
 
     .. code-block:: python
-
-        import jax
-        import numpy as np
 
         dev = qml.device("default.qubit", wires=1)
 
