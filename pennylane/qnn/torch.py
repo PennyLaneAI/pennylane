@@ -322,7 +322,7 @@ class TorchLayer(Module):
                 weight_size (tuple): size of the weight
 
             Returns:
-                torch.Tensor: Tensor containing the weights
+                torch.Tensor: tensor containing the weights
             """
             if init_method is None:
                 init = functools.partial(torch.nn.init.uniform_, b=2 * math.pi)
