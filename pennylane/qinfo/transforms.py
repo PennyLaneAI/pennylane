@@ -270,7 +270,7 @@ def classical_fisher(qnode, argnums=0):
 
         The ``classical_fisher()`` matrix is currently not differentiable.
 
-    .. seealso:: :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.qinfo.quantum_fisher`
+    .. seealso:: :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.qinfo.transforms.quantum_fisher`
 
     **Example**
 
@@ -400,7 +400,7 @@ def classical_fisher(qnode, argnums=0):
     return wrapper
 
 
-def quantum_fisher(*args, hardware=False, **kwargs):
+def quantum_fisher(qnode, *args, hardware=False, **kwargs):
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode` or quantum tape.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
@@ -415,10 +415,16 @@ def quantum_fisher(*args, hardware=False, **kwargs):
     with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
 
     .. seealso::
-        :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.adjoint_metric_tensor`, :func:`~.pennylane.qinfo.classical_fisher`
+        :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.adjoint_metric_tensor`, :func:`~.pennylane.qinfo.transforms.classical_fisher`
 
     Args:
+        qnode (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
         hardware (bool): Indicate if execution needs to be hardware compatible (True)
+        *args, **kwargs: Additional parameters for the specific routine in order to compute the QFIM.
+
+            - If ``hardware=False`` (default): ``args`` and ``kwargs`` of :func:`~.pennylane.adjoint_metric_tensor`.
+
+            - If ``hardware=True``: ``args`` and ``kwargs`` of :func:`~.pennylane.metric_tensor`.
 
     Returns:
         func: The function that computes the quantum fisher information matrix.
@@ -428,16 +434,52 @@ def quantum_fisher(*args, hardware=False, **kwargs):
         ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. In case of ``hardware=True``, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
         In case of  ``hardware=False``, :func:`~.pennylane.adjoint_metric_tensor` is used. Please refer to their respective documentations for details on the arguments.
 
+    **Example**
+
+    The quantum Fisher information matrix (QIFM) can be used to compute the `natural` gradient for `Quantum Natural Gradient Descent <https://arxiv.org/abs/1909.02108>`_.
+    A typical scenario is optimizing the expectation value of a Hamiltonian:
+
+    .. code-block:: python
+
+        n_wires = 2
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        H = 1.*qml.PauliX(0) @ qml.PauliX(1) - 0.5 * qml.PauliZ(1)
+
+        @qml.qnode(dev)
+        def circ(params):
+            qml.RY(params[0], wires=1)
+            qml.CNOT(wires=(1,0))
+            qml.RY(params[1], wires=1)
+            qml.RZ(params[2], wires=1)
+            return qml.expval(H)
+
+        params = pnp.array([0.5, 1., 0.2], requires_grad=True)
+    
+    The natural gradient is then simply the QFIM multiplied by the gradient:
+
+    >>> grad = qml.grad(circ)(params)  # [ 0.59422561, -0.02615095, -0.05146226]
+    >>> qfim = qml.qinfo.quantum_fisher(circ)(params)  # np.diag([1., 1., 0.77517241])
+    >>> q_nat_grad = qfim @ grad  # [ 0.59422561 -0.02615095 -0.03989212]
+
+    When using real hardware with finite shots, we have to specify ``hardware=True`` in order to compute the QFIM.
+    Additionally, we need to provide a device that has a spare wire for the Hadamard test, otherwise it will just be able to compute the block diagonal terms.
+
+    >>> dev = qml.device("default.qubit", wires=n_wires+1, shots=1000)
+    >>> circ = qml.QNode(circ, dev)
+    >>> qfim = qml.qinfo.quantum_fisher(circ, hardware=True)(params)
+
     """
     # TODO: ``hardware`` argument will be obsolete in future releases when ``shots`` can be inferred.
     if hardware:
 
         def wrapper(*args0, **kwargs0):
-            return 4 * metric_tensor(*args, **kwargs)(*args0, **kwargs0)
+            return 4 * metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
 
     else:
 
         def wrapper(*args0, **kwargs0):
-            return 4 * adjoint_metric_tensor(*args, **kwargs)(*args0, **kwargs0)
+            return 4 * adjoint_metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
 
     return wrapper
