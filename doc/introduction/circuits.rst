@@ -125,7 +125,7 @@ Alternatively, you can use custom labels by passing an iterable that contains un
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit', wires=['ancilla', 'q1', 'q2'])
+    dev = qml.device('default.qubit', wires=['aux', 'q1', 'q2'])
 
 In the quantum function you can now use your own labels to address wires:
 
@@ -133,7 +133,7 @@ In the quantum function you can now use your own labels to address wires:
 
     def my_quantum_function(x, y):
         qml.RZ(x, wires='q1')
-        qml.CNOT(wires=['ancilla' ,'q1'])
+        qml.CNOT(wires=['aux' ,'q1'])
         qml.RY(y, wires='q2')
         return qml.expval(qml.PauliZ('q2'))
 
@@ -210,8 +210,9 @@ To view the quantum circuit given specific parameter values, we can use the :fun
 transform,
 
 >>> print(qml.draw(circuit)(np.pi/4, 0.7))
-wire1: ──RZ(0.79)─╭C───────────┤     
-wire2: ───────────╰X──RY(0.70)─┤  <Z>
+aux: ───────────╭●─┤     
+ q1: ──RZ(0.79)─╰X─┤     
+ q2: ──RY(0.70)────┤  <Z>
 
 or the :func:`~.pennylane.draw_mpl` transform:
 

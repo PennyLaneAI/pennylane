@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the ``default.qubit.autograd`` device.
+Tests for the ``default.mixed`` device for the Autograd interface
 """
 import re
 import pytest
@@ -38,7 +38,7 @@ def test_analytic_deprecation():
 
 @pytest.mark.autograd
 class TestQNodeIntegration:
-    """Integration tests for default.qubit.autograd. This test ensures it integrates
+    """Integration tests for default.mixed.autograd. This test ensures it integrates
     properly with the PennyLane UI, in particular the QNode."""
 
     def test_defines_correct_capabilities(self):
@@ -53,7 +53,11 @@ class TestQNodeIntegration:
             "supports_broadcasting": False,
             "returns_probs": True,
             "returns_state": True,
-            "passthru_interface": "autograd",
+            "passthru_devices": {
+                "autograd": "default.mixed",
+                "tf": "default.mixed",
+                "torch": "default.mixed",
+            },
         }
 
         assert cap == capabilities
@@ -64,7 +68,7 @@ class TestQNodeIntegration:
         assert dev.num_wires == 2
         assert dev.shots == None
         assert dev.short_name == "default.mixed"
-        assert dev.capabilities()["passthru_interface"] == "autograd"
+        assert dev.capabilities()["passthru_devices"]["autograd"] == "default.mixed"
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct
@@ -165,7 +169,7 @@ class TestDtypePreserved:
 
 @pytest.mark.autograd
 class TestOps:
-    """Unit tests for operations supported by the default.qubit.autograd device"""
+    """Unit tests for operations supported by the default.mixed.autograd device"""
 
     def test_multirz_jacobian(self):
         """Test that the patched numpy functions are used for the MultiRZ
@@ -188,7 +192,7 @@ class TestOps:
         state = np.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
-        spy = mocker.spy(dev, "_scatter")
+        spy = mocker.spy(qml.math, "scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
 
         state = np.outer(state, np.conj(state))
@@ -217,7 +221,7 @@ class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
     def test_jacobian_variable_multiply(self, tol):
-        """Test that jacobian of a QNode with an attached default.qubit.autograd device
+        """Test that jacobian of a QNode with an attached default.mixed.autograd device
         gives the correct result in the case of parameters multiplied by scalars"""
         x = 0.43316321
         y = 0.2162158
@@ -253,7 +257,7 @@ class TestPassthruIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_jacobian_repeated(self, tol):
-        """Test that jacobian of a QNode with an attached default.qubit.autograd device
+        """Test that jacobian of a QNode with an attached default.mixed.autograd device
         gives the correct result in the case of repeated parameters"""
         x = 0.43316321
         y = 0.2162158
@@ -281,7 +285,7 @@ class TestPassthruIntegration:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_jacobian_agrees_backprop_parameter_shift(self, tol):
-        """Test that jacobian of a QNode with an attached default.qubit.autograd device
+        """Test that jacobian of a QNode with an attached default.mixed.autograd device
         gives the correct result with respect to the parameter-shift method"""
         p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242], requires_grad=True)
 
@@ -381,6 +385,37 @@ class TestPassthruIntegration:
         expected = [np.sin(a) * np.cos(b), np.cos(a) * np.sin(b)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    def test_prob_vector_differentiability(self, tol):
+        """Test that the device probability vector can be differentiated directly"""
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        def circuit(a, b):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[1])
+
+        a = np.array(0.54, requires_grad=True)
+        b = np.array(0.12, requires_grad=True)
+
+        res = circuit(a, b)
+        expected = [
+            np.cos(a / 2) ** 2 * np.cos(b / 2) ** 2 + np.sin(a / 2) ** 2 * np.sin(b / 2) ** 2,
+            np.cos(a / 2) ** 2 * np.sin(b / 2) ** 2 + np.sin(a / 2) ** 2 * np.cos(b / 2) ** 2,
+        ]
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        grad = qml.jacobian(circuit)(a, b)
+        expected = 0.5 * np.array(
+            [
+                [-np.sin(a) * np.cos(b), np.sin(a) * np.cos(b)],
+                [-np.cos(a) * np.sin(b), np.cos(a) * np.sin(b)],
+            ]
+        )
+
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
     def test_sample_backprop_error(self):
         """Test that sampling in backpropagation mode raises an error"""
         dev = qml.device("default.mixed", wires=1, shots=100)
@@ -394,8 +429,8 @@ class TestPassthruIntegration:
                 qml.RY(a, wires=0)
                 return qml.sample(qml.PauliZ(0))
 
-    def test_backprop_gradient(self, tol):
-        """Tests that the gradient of the qnode is correct"""
+    def test_expval_gradient(self, tol):
+        """Tests that the gradient of expval is correct"""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.qnode(dev, diff_method="backprop", interface="autograd")
@@ -424,7 +459,7 @@ class TestPassthruIntegration:
     def test_hessian_at_zero(self, x, shift):
         """Tests that the Hessian at vanishing state vector amplitudes
         is correct."""
-        dev = qml.device("default.qubit.autograd", wires=1)
+        dev = qml.device("default.mixed", wires=1)
 
         @qml.qnode(dev, interface="autograd", diff_method="backprop")
         def circuit(x):
@@ -488,21 +523,6 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("interface", ["tf", "torch"])
-    def test_error_backprop_wrong_interface(self, interface, tol):
-        """Tests that an error is raised if diff_method='backprop' but not using
-        the Autograd interface"""
-        dev = qml.device("default.mixed", wires=1)
-
-        def circuit(x, w=None):
-            qml.RZ(x, wires=w)
-            return qml.expval(qml.PauliX(w))
-
-        msg = "Device default.mixed only supports diff_method='backprop' when using the autograd interface"
-        msg = re.escape(msg)
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
-            qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
-
     @pytest.mark.parametrize(
         "dev_name,diff_method,mode",
         [
@@ -544,13 +564,40 @@ class TestPassthruIntegration:
         assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
 
+    def test_batching(self, tol):
+        """Tests that the gradient of the qnode is correct with batching"""
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.batch_params
+        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        def circuit(a, b):
+            qml.RX(a, wires=0)
+            qml.CRX(b, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        a = np.array([-0.234, 0.678], requires_grad=True)
+        b = np.array([0.654, 1.236], requires_grad=True)
+
+        res = circuit(a, b)
+        expected_cost = 0.5 * (np.cos(a) * np.cos(b) + np.cos(a) - np.cos(b) + 1)
+        assert np.allclose(res, expected_cost, atol=tol, rtol=0)
+
+        res_a, res_b = qml.jacobian(circuit)(a, b)
+        expected_a, expected_b = [
+            -0.5 * np.sin(a) * (np.cos(b) + 1),
+            0.5 * np.sin(b) * (1 - np.cos(a)),
+        ]
+
+        assert np.allclose(np.diag(res_a), expected_a, atol=tol, rtol=0)
+        assert np.allclose(np.diag(res_b), expected_b, atol=tol, rtol=0)
+
 
 @pytest.mark.autograd
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
     def test_template_integration(self):
-        """Test that a PassthruQNode default.qubit.autograd works with templates."""
+        """Test that a PassthruQNode default.mixed.autograd works with templates."""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.qnode(dev, diff_method="backprop")
@@ -565,7 +612,7 @@ class TestHighLevelIntegration:
         assert grad.shape == weights.shape
 
     def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.qubit.autograd works with QNodeCollections."""
+        """Test that a PassthruQNode default.mixed.autograd works with QNodeCollections."""
         dev = qml.device("default.mixed", wires=2)
 
         def ansatz(weights, **kwargs):

@@ -156,6 +156,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/measurements
    introduction/templates
    introduction/inspecting_circuits
+   introduction/compiling_circuits
    introduction/chemistry
 
 .. toctree::
@@ -182,6 +183,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qml_grouping
    code/qml_kernels
    code/qml_math
+   code/qml_qinfo
    code/qml_numpy
    code/qml_qaoa
    code/qml_hf

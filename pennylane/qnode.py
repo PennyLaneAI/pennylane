@@ -429,6 +429,11 @@ class QNode:
             # device is analytic and has child devices that support backpropagation natively
 
             if mapped_interface in backprop_devices:
+
+                # no need to create another device if the child device is the same (e.g., default.mixed)
+                if backprop_devices[mapped_interface] == device.short_name:
+                    return "backprop", {}, device
+
                 # TODO: need a better way of passing existing device init options
                 # to a new device?
                 expand_fn = device.expand_fn
