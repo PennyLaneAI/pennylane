@@ -119,23 +119,23 @@ class TestDensityMatrixFromStateVectors:
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
     @pytest.mark.parametrize("wires", single_wires_list)
-    def test_to_density_matrix_with_state_vector_single_wires(
+    def test_reduced_dm_with_state_vector_single_wires(
         self, state_vector, wires, expected_density_matrix, array_func
     ):
-        """Test the to_density_matrix with state vectors for single wires."""
+        """Test the reduced_dm with state vectors for single wires."""
         state_vector = array_func(state_vector)
-        density_matrix = fn.to_density_matrix(state_vector, indices=wires)
+        density_matrix = fn.reduced_dm(state_vector, indices=wires)
         assert np.allclose(density_matrix, expected_density_matrix[wires[0]])
 
     @pytest.mark.parametrize("array_func", array_funcs)
     @pytest.mark.parametrize("state_vector, expected_density_matrix", state_vectors)
     @pytest.mark.parametrize("wires", multiple_wires_list)
-    def test_to_density_matrix_with_state_vector_full_wires(
+    def test_reduced_dm_with_state_vector_full_wires(
         self, state_vector, wires, expected_density_matrix, array_func
     ):
-        """Test the to_density_matrix with state vectors for full wires."""
+        """Test the reduced_dm with state vectors for full wires."""
         state_vector = array_func(state_vector)
-        density_matrix = fn.to_density_matrix(state_vector, indices=wires)
+        density_matrix = fn.reduced_dm(state_vector, indices=wires)
         assert np.allclose(density_matrix, expected_density_matrix[2])
 
     @pytest.mark.parametrize("array_func", array_funcs)
@@ -146,7 +146,8 @@ class TestDensityMatrixFromStateVectors:
     ):
         """Test the density matrix from state vectors for single wires with state checking"""
         state_vector = array_func(state_vector)
-        density_matrix = fn.quantum.to_density_matrix(state_vector, indices=wires, check_state=True)
+        density_matrix = fn.quantum.reduced_dm(state_vector, indices=wires, check_state=True)
+
         assert np.allclose(density_matrix, expected_density_matrix[2])
 
     def test_state_vector_wrong_shape(self):
@@ -201,7 +202,8 @@ class TestDensityMatrixFromStateVectors:
         from functools import partial
 
         state_vector = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-        density_matrix = partial(fn.to_density_matrix, indices=[0])
+
+        density_matrix = partial(fn.reduced_dm, indices=[0])
 
         density_matrix = tf.function(
             density_matrix,
@@ -222,7 +224,7 @@ class TestDensityMatrixFromStateVectors:
         state_vector = array_func(state_vector)
         if fn.get_interface(state_vector) == "jax" and c_dtype == "complex128":
             pytest.skip("Jax does not support complex 128")
-        density_matrix = fn.to_density_matrix(state_vector, indices=wires, c_dtype=c_dtype)
+        density_matrix = fn.reduced_dm(state_vector, indices=wires, c_dtype=c_dtype)
         if fn.get_interface(state_vector) == "torch":
             if c_dtype == "complex64":
                 c_dtype = torch.complex64
@@ -273,20 +275,21 @@ class TestDensityMatrixFromMatrix:
 
     @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
     @pytest.mark.parametrize("wires", single_wires_list)
-    def test_to_density_matrix_with_matrix_single_wires(
+    def test_reduced_dm_with_matrix_single_wires(
         self, density_matrix, wires, expected_density_matrix
     ):
-        """Test the to_density_matrix with matrix for single wires."""
-        density_matrix = fn.to_density_matrix(density_matrix, indices=wires)
+        """Test the reduced_dm with matrix for single wires."""
+        density_matrix = fn.reduced_dm(density_matrix, indices=wires)
         assert np.allclose(density_matrix, expected_density_matrix[wires[0]])
 
     @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
     @pytest.mark.parametrize("wires", multiple_wires_list)
-    def test_to_density_matrix_with_matrix_full_wires(
+    def test_reduced_dm_with_matrix_full_wires(
         self, density_matrix, wires, expected_density_matrix
     ):
-        """Test the to_density_matrix with matrix for full wires."""
-        returned_density_matrix = fn.to_density_matrix(density_matrix, indices=wires)
+        """Test the reduced_dm with matrix for full wires."""
+        returned_density_matrix = fn.reduced_dm(density_matrix, indices=wires)
+
         assert np.allclose(density_matrix, returned_density_matrix)
 
     @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
@@ -303,28 +306,28 @@ class TestDensityMatrixFromMatrix:
         density_matrix = [[1, 0, 0], [0, 0, 0], [0, 0, 0]]
 
         with pytest.raises(ValueError, match="Density matrix must be of shape"):
-            fn.quantum.to_density_matrix(density_matrix, indices=[0], check_state=True)
+            fn.quantum.reduced_dm(density_matrix, indices=[0], check_state=True)
 
     def test_matrix_wrong_trace(self):
         """Test that density matrix with wrong trace raises an error with check_state=True"""
         density_matrix = [[0.1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]
 
         with pytest.raises(ValueError, match="The trace of the density matrix should be one."):
-            fn.quantum.to_density_matrix(density_matrix, indices=[0], check_state=True)
+            fn.quantum.reduced_dm(density_matrix, indices=[0], check_state=True)
 
     def test_matrix_not_hermitian(self):
         """Test that non hermitian matrix raises an error with check_state=True"""
         density_matrix = [[0.1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0.5, 0.9]]
 
         with pytest.raises(ValueError, match="The matrix is not hermitian."):
-            fn.quantum.to_density_matrix(density_matrix, indices=[0], check_state=True)
+            fn.quantum.reduced_dm(density_matrix, indices=[0], check_state=True)
 
     def test_matrix_not_positive_definite(self):
         """Test that non hermitian matrix raises an error with check_state=True"""
         density_matrix = [[3, 0], [0, -2]]
 
         with pytest.raises(ValueError, match="The matrix is not positive semi-definite."):
-            fn.quantum.to_density_matrix(density_matrix, indices=[0], check_state=True)
+            fn.quantum.reduced_dm(density_matrix, indices=[0], check_state=True)
 
     def test_density_matrix_from_state_vector_jax_jit(self):
         """Test jitting the density matrix from state vector function."""
@@ -333,7 +336,7 @@ class TestDensityMatrixFromMatrix:
 
         state_vector = jnp.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
 
-        jitted_dens_matrix_func = jit(fn.quantum.to_density_matrix, static_argnums=[1, 2])
+        jitted_dens_matrix_func = jit(fn.quantum.reduced_dm, static_argnums=[1, 2])
 
         density_matrix = jitted_dens_matrix_func(state_vector, indices=(0,), check_state=True)
         assert np.allclose(density_matrix, [[1, 0], [0, 0]])
@@ -364,7 +367,7 @@ class TestDensityMatrixFromMatrix:
             ],
             dtype=tf.complex128,
         )
-        density_matrix = partial(fn.to_density_matrix, indices=[0])
+        density_matrix = partial(fn.reduced_dm, indices=[0])
 
         density_matrix = tf.function(
             density_matrix,
@@ -384,7 +387,7 @@ class TestDensityMatrixFromMatrix:
         """Test different complex dtype."""
         if fn.get_interface(density_matrix) == "jax" and c_dtype == "complex128":
             pytest.skip("Jax does not support complex 128")
-        density_matrix = fn.to_density_matrix(density_matrix, indices=wires, c_dtype=c_dtype)
+        density_matrix = fn.reduced_dm(density_matrix, indices=wires, c_dtype=c_dtype)
         if fn.get_interface(density_matrix) == "torch":
             if c_dtype == "complex64":
                 c_dtype = torch.complex64

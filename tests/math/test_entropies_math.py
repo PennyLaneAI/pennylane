@@ -85,7 +85,7 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     def test_state_vector_entropy_without_base(self, state_vector, wires, check_state, pure):
         """Test entropy for different state vectors without base for log."""
-        entropy = qml.math.to_vn_entropy(state_vector, wires, check_state=check_state)
+        entropy = qml.math.vn_entropy(state_vector, wires, check_state=check_state)
 
         if pure:
             expected_entropy = 0
@@ -99,7 +99,7 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     def test_state_vector_entropy(self, state_vector, wires, base, check_state, pure):
         """Test entropy for different state vectors."""
-        entropy = qml.math.to_vn_entropy(state_vector, wires, base, check_state)
+        entropy = qml.math.vn_entropy(state_vector, wires, base, check_state)
 
         if pure:
             expected_entropy = 0
@@ -119,7 +119,7 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     def test_density_matrices_entropy(self, density_matrix, wires, base, check_state, pure):
         """Test entropy for different density matrices."""
-        entropy = qml.math.to_vn_entropy(density_matrix, wires, base, check_state)
+        entropy = qml.math.vn_entropy(density_matrix, wires, base, check_state)
 
         if pure:
             expected_entropy = 0
@@ -128,7 +128,8 @@ class TestVonNeumannEntropy:
 
         assert qml.math.allclose(entropy, expected_entropy)
 
-    parameters = np.linspace(0, 2 * np.pi, 50)
+    parameters = np.linspace(0, 2 * np.pi, 20)
+
     devices = ["default.qubit", "default.mixed"]
 
     single_wires_list = [
@@ -140,7 +141,6 @@ class TestVonNeumannEntropy:
 
     check_state = [True, False]
 
-    parameters = np.linspace(0, 2 * np.pi, 50)
     devices = ["default.qubit", "default.mixed"]
 
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -395,8 +395,8 @@ class TestMutualInformation:
     def test_state(self, interface, state, expected):
         """Test that mutual information works for states"""
         state = qml.math.asarray(state, like=interface)
-        actual = qml.math.to_mutual_info(state, indices0=[0], indices1=[1])
-        assert np.allclose(actual, expected)
+        actual = qml.math.mutual_info(state, indices0=[0], indices1=[1])
+        assert np.allclose(actual, expected, rtol=1e-06, atol=1e-07)
 
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize(
@@ -411,7 +411,8 @@ class TestMutualInformation:
     def test_density_matrix(self, interface, state, expected):
         """Test that mutual information works for density matrices"""
         state = qml.math.asarray(state, like=interface)
-        actual = qml.math.to_mutual_info(state, indices0=[0], indices1=[1])
+        actual = qml.math.mutual_info(state, indices0=[0], indices1=[1])
+
         assert np.allclose(actual, expected)
 
     @pytest.mark.parametrize(
@@ -428,7 +429,7 @@ class TestMutualInformation:
         with pytest.raises(
             ValueError, match="Subsystems for computing mutual information must not overlap"
         ):
-            qml.math.to_mutual_info(state, indices0=wires0, indices1=wires1)
+            qml.math.mutual_info(state, indices0=wires0, indices1=wires1)
 
     @pytest.mark.parametrize("state", [np.array(5), np.ones((3, 4)), np.ones((2, 2, 2))])
     def test_invalid_type(self, state):
@@ -436,4 +437,4 @@ class TestMutualInformation:
         with pytest.raises(
             ValueError, match="The state is not a state vector or a density matrix."
         ):
-            qml.math.to_mutual_info(state, indices0=[0], indices1=[1])
+            qml.math.mutual_info(state, indices0=[0], indices1=[1])

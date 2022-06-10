@@ -24,22 +24,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane.wires import Wires
 
-from gate_data import (
-    I,
-    X,
-    Y,
-    Z,
-    H,
-    CNOT,
-    SWAP,
-    ISWAP,
-    SISWAP,
-    CZ,
-    S,
-    T,
-    CSWAP,
-    Toffoli,
-)
+from gate_data import I, X, Y, Z, H, CNOT, SWAP, ISWAP, SISWAP, CZ, S, T, CSWAP, Toffoli, ECR
 
 
 # Non-parametrized operations and their matrix representation
@@ -54,6 +39,7 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.T, T),
     (qml.CSWAP, CSWAP),
     (qml.Toffoli, Toffoli),
+    (qml.ECR, ECR),
 ]
 
 
@@ -251,6 +237,41 @@ class TestDecompositions:
         assert res[3].name == "CNOT"
         assert res[4].name == "CNOT"
         assert res[5].name == "Hadamard"
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([1]):
+                mats.append(np.kron(np.eye(2), i.matrix()))
+            elif i.wires == Wires([0]):
+                mats.append(np.kron(i.matrix(), np.eye(2)))
+            elif i.wires == Wires([1, 0]) and i.name == "CNOT":
+                mats.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
+            else:
+                mats.append(i.matrix())
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
+    def test_ECR_decomposition(self, tol):
+        """Tests that the decomposition of the ECR gate is correct"""
+        op = qml.ECR(wires=[0, 1])
+        res = op.decomposition()
+
+        assert len(res) == 6
+
+        assert res[0].wires == Wires([0])
+        assert res[1].wires == Wires([0, 1])
+        assert res[2].wires == Wires([1])
+        assert res[3].wires == Wires([0])
+        assert res[4].wires == Wires([0])
+        assert res[5].wires == Wires([0])
+
+        assert res[0].name == "PauliZ"
+        assert res[1].name == "CNOT"
+        assert res[2].name == "SX"
+        assert res[3].name == "RX"
+        assert res[4].name == "RY"
+        assert res[5].name == "RX"
 
         mats = []
         for i in reversed(res):
@@ -422,6 +443,13 @@ class TestEigenval:
     def test_iswap_eigenval(self):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
         op = qml.ISWAP(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix())
+        res = op.eigvals()
+        assert np.allclose(res, exp)
+
+    def test_ECR_eigenval(self):
+        """Tests that the ECR eigenvalue matches the numpy eigenvalues of the ECR matrix"""
+        op = qml.ECR(wires=[0, 1])
         exp = np.linalg.eigvals(op.matrix())
         res = op.eigvals()
         assert np.allclose(res, exp)
@@ -978,6 +1006,7 @@ period_two_ops = (
     qml.CY(wires=(0, 1)),
     qml.SWAP(wires=(0, 1)),
     qml.ISWAP(wires=(0, 1)),
+    qml.ECR(wires=(0, 1)),
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
@@ -1138,6 +1167,7 @@ label_data = [
     (qml.CY(wires=(0, 1)), "Y", "Y"),
     (qml.SWAP(wires=(0, 1)), "SWAP", "SWAP⁻¹"),
     (qml.ISWAP(wires=(0, 1)), "ISWAP", "ISWAP⁻¹"),
+    (qml.ECR(wires=(0, 1)), "ECR", "ECR⁻¹"),
     (qml.SISWAP(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
     (qml.SQISW(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
@@ -1168,6 +1198,7 @@ control_data = [
     (qml.SWAP(wires=(0, 1)), Wires([])),
     (qml.ISWAP(wires=(0, 1)), Wires([])),
     (qml.SISWAP(wires=(0, 1)), Wires([])),
+    (qml.ECR(wires=(0, 1)), Wires([])),
     (qml.CNOT(wires=(0, 1)), Wires(0)),
     (qml.CZ(wires=(0, 1)), Wires(0)),
     (qml.CY(wires=(0, 1)), Wires(0)),
@@ -1194,6 +1225,7 @@ involution_ops = [  # ops who are their own inverses
     qml.CZ((0, 1)),
     qml.CY((0, 1)),
     qml.SWAP((0, 1)),
+    qml.ECR((0, 1)),
     qml.CSWAP((0, 1, 2)),
     qml.Toffoli((0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
