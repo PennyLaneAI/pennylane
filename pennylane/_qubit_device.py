@@ -681,7 +681,7 @@ class QubitDevice(Device):
             representing the reduced density matrix of the state prior to measurement.
         """
         state = getattr(self, "state", None)
-        return qml.math.to_density_matrix(state, indices=wires, c_dtype=self.C_DTYPE)
+        return qml.math.reduced_dm(state, indices=wires, c_dtype=self.C_DTYPE)
 
     def vn_entropy(self, wires, log_base):
         r"""Returns the Von Neumann entropy prior to measurement.
@@ -704,7 +704,7 @@ class QubitDevice(Device):
                 f"state. "
             ) from e
         wires = wires.tolist()
-        return qml.math.to_vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
+        return qml.math.vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
 
     def mutual_info(self, wires0, wires1, log_base):
         r"""Returns the mutual information prior to measurement:
@@ -733,7 +733,7 @@ class QubitDevice(Device):
 
         wires0 = wires0.tolist()
         wires1 = wires1.tolist()
-        return qml.math.to_mutual_info(
+        return qml.math.mutual_info(
             state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
         )
 

@@ -336,7 +336,7 @@ def apply(op, context=QueuingContext):
                 return qml.apply(meas)
 
         >>> print(qml.draw(circuit)(0.6))
-         0: ──RY(0.6)──╭C──╭┤ ⟨Z ⊗ Y⟩
+         0: ──RY(0.6)──╭●──╭┤ ⟨Z ⊗ Y⟩
          1: ───────────╰X──╰┤ ⟨Z ⊗ Y⟩
 
         By default, ``apply`` will queue operators to the currently
