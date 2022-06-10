@@ -509,12 +509,14 @@ def stack(values, axis=0, like=None):
 
 def einsum(indices, *operands, like=None):
     """Evaluates the Einstein summation convention on the operands.
+
     Args:
         indices (str): Specifies the subscripts for summation as comma separated list of
             subscript labels. An implicit (classical Einstein summation) calculation is
             performed unless the explicit indicator ‘->’ is included as well as subscript
             labels of the precise output form.
         operands (tuple[tensor_like]): The tensors for the operation.
+
     Returns:
         tensor_like: The calculation based on the Einstein summation convention.
 
@@ -553,7 +555,6 @@ def einsum(indices, *operands, like=None):
     """
     if like is None:
         like = _multi_dispatch(operands)
-
     operands = np.coerce(operands, like=like)
     return np.einsum(indices, *operands, like=like)
 
