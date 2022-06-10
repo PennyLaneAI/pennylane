@@ -321,7 +321,7 @@ class TestFidelityQnode:
         expected_fid = expected_fidelity_rx_pauliz(param)
         assert qml.math.allclose(fid, expected_fid, rtol=1e-03, atol=1e-04)
 
-    @pytest.mark.tf
+    @pytest.mark.jax
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("wire", wires)
     def test_fidelity_qnodes_rx_pauliz_jax_jit(self, param, wire):
