@@ -129,6 +129,7 @@ class TestVonNeumannEntropy:
         assert qml.math.allclose(entropy, expected_entropy)
 
     parameters = np.linspace(0, 2 * np.pi, 20)
+
     devices = ["default.qubit", "default.mixed"]
 
     single_wires_list = [
@@ -411,6 +412,7 @@ class TestMutualInformation:
         """Test that mutual information works for density matrices"""
         state = qml.math.asarray(state, like=interface)
         actual = qml.math.mutual_info(state, indices0=[0], indices1=[1])
+
         assert np.allclose(actual, expected)
 
     @pytest.mark.parametrize(

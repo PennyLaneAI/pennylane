@@ -733,6 +733,7 @@ class QubitDevice(Device):
 
         wires0 = wires0.tolist()
         wires1 = wires1.tolist()
+
         return qml.math.mutual_info(
             state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
         )

@@ -172,6 +172,7 @@ ar.register_function("autograd", "eigvalsh", lambda x: _i("autograd").numpy.lina
 ar.register_function(
     "autograd", "entr", lambda x: -_i("autograd").numpy.sum(x * _i("autograd").numpy.log(x))
 )
+
 ar.register_function("autograd", "diagonal", lambda x, *args: _i("qml").numpy.diag(x))
 
 
@@ -196,7 +197,6 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
-
 ar.register_function(
     "tensorflow", "asarray", lambda x, **kwargs: _i("tf").convert_to_tensor(x, **kwargs)
 )
@@ -205,6 +205,7 @@ ar.register_function(
     "hstack",
     lambda *args, **kwargs: _i("tf").experimental.numpy.hstack(*args),
 )
+
 ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
 ar.register_function(
@@ -358,6 +359,7 @@ ar.register_function("tensorflow", "eigvalsh", _eigvalsh_tf)
 ar.register_function(
     "tensorflow", "entr", lambda x: -_i("tf").math.reduce_sum(x * _i("tf").math.log(x))
 )
+
 
 # -------------------------------- Torch --------------------------------- #
 
