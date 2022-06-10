@@ -13,6 +13,7 @@
   [(#2617)](https://github.com/PennyLaneAI/pennylane/pull/2617)
   [(#2631)](https://github.com/PennyLaneAI/pennylane/pull/2631)
   [(#2640)](https://github.com/PennyLaneAI/pennylane/pull/2640)
+  [(#2663)](https://github.com/PennyLaneAI/pennylane/pull/2663)
   
   A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
   
@@ -219,6 +220,42 @@
   tensor([[1., 1.],
       [1., 1.]], requires_grad=True)
   ```
+  
+  The support for calculating the fidelity between two arbitrary states is added as `qml.math.fidelity` for state 
+  vectors and density matrices.
+  
+  ```pycon
+  >>> state0 = [0, 1]
+  >>> state1 = [[0, 0], [0, 1]]
+  >>> qml.math.fidelity(state0, state1)
+  1.0
+  
+  >>> state0 = [[0.5, 0.5], [0.5, 0.5]]
+  >>> state1 = [[0.5, 0], [0, 0.5]]
+  >>> qml.math.fidelity(state0, state1)
+  0.4999999999999998
+  ```
+  The quantum information module now have a differentiable fidelity transform for QNodes.
+  
+  ```python
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev)
+  def circuit_rx(x, y):
+      qml.RX(x, wires=0)
+      qml.RZ(y, wires=0)
+      return qml.state()
+
+  @qml.qnode(dev)
+  def circuit_ry(y):
+      qml.RY(y, wires=0)
+      return qml.state()
+  ```
+  ```pycon
+  >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.2))
+  0.9905158135644924
+  ```
+  
 
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
   attribute `batch_size`.

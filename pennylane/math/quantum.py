@@ -607,26 +607,35 @@ def _compute_mutual_info(
 
 def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
     r"""Compute the fidelity for two states (a state can be a state vector or a density matrix) acting on quantum
-    systems with the same size. For two pure states, the fidelity corresponds to the squared overlap. For a pure state
-    and a mixed state, it corresponds to the squared expectation of the mixed state and the pure state. Finally for two
-    mixed states, it is defined by the last formula:
+    systems with the same size.
+
+    The fidelity for two mixed states given by density matrices :math:`\rho` and :math:`\sigma`
+    is defined as
 
     .. math::
-        \vspace \text{ (1)} F( \ket{\psi} , \ket{\phi}) = \left|\bra{\psi}\ket{\phi}\right|^2
+        F( \rho , \sigma ) = \text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
 
-        \vspace \text{ (2)} F( \ket{\psi} , \sigma ) = \bra{\psi} \sigma \ket{\psi}\right
+    If one of the states is pure, say :math:`\rho=\ket{\psi}\bra{\psi}`, then the expression
+    for fidelity simplifies to
 
-        \vspace \text{ (3)} F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
+    .. math::
+        F( \ket{\psi} , \sigma ) = \bra{\psi} \sigma \ket{\psi}
 
-    .. warning::
+    Finally, if both states are pure, :math:`\sigma=\ket{\phi}\bra{\phi}`, then the
+    fidelity is simply
+
+    .. math::
+        F( \ket{\psi} , \ket{\phi}) = \left|\braket{\psi, \phi}\right|^2
+
+    .. note::
         The second state is coerced to the type and dtype of the first state. The fidelity is returned in the type
         of the interface of the first state.
 
     Args:
         state0 (tensor_like): 1D state vector or 2D density matrix
         state1 (tensor_like): 1D state vector or 2D density matrix
-        check_state (bool): If True, the function will check the state validity (shape, norm) or (shape, trace,
-            semi positive definitiveness).
+        check_state (bool): If True, the function will check the validity of both states, it checks (shape, norm) for
+            state vectors or (shape, trace, positive-definitiveness) for density matrices.
         c_dtype (str): Complex floating point precision type.
 
     Returns:
@@ -727,6 +736,7 @@ def _compute_fidelity(density_matrix0, density_matrix1):
     # sqrt(rho) * sigma * sqrt(rho)
     sqrt_mat_sqrt = sqrt_mat @ density_matrix1 @ sqrt_mat
 
+    # extract eigenvalues
     evs = qml.math.eigvalsh(sqrt_mat_sqrt)
     evs = np.real(evs)
     evs = qml.math.where(evs > 0.0, evs, 0.0)
@@ -737,7 +747,7 @@ def _compute_fidelity(density_matrix0, density_matrix1):
 
 
 def _check_density_matrix(density_matrix):
-    """Check the shape, the trace and the semi positive definitiveness of a matrix."""
+    """Check the shape, the trace and the positive semi-definitiveness of a matrix."""
     shape = density_matrix.shape[0]
     if (
         len(density_matrix.shape) != 2
@@ -750,11 +760,11 @@ def _check_density_matrix(density_matrix):
     if not is_abstract(trace):
         if not allclose(trace, 1.0, atol=1e-10):
             raise ValueError("The trace of the density matrix should be one.")
-        # Check if the matrix is hermitian
+        # Check if the matrix is Hermitian
         conj_trans = np.transpose(np.conj(density_matrix))
         if not allclose(density_matrix, conj_trans):
-            raise ValueError("The matrix is not hermitian.")
-        # Check if positive semi definite
+            raise ValueError("The matrix is not Hermitian.")
+        # Check if positive semi-definite
         evs = np.linalg.eigvalsh(density_matrix)
         evs = np.real(evs)
         evs_non_negative = [ev for ev in evs if ev >= 0.0]

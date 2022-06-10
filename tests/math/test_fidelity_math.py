@@ -32,19 +32,23 @@ class TestFidelityMath:
     """Tests for Fidelity function between two states (state vectors or density matrix)."""
 
     state0_state1_fid = [
+        # Vector-Vector-Fid
         ([1, 0], [0, 1], 0),
         ([0, 1], [0, 1], 1.0),
         ([1, 0], [1, 1] / np.sqrt(2), 0.5),
+        # Vector-Density mat-Fid
         ([1, 0], [[0, 0], [0, 1]], 0),
         ([1, 0], [[1, 0], [0, 0]], 1.0),
         ([1, 0], [[0.5, 0], [0, 0.5]], 0.5),
         ([0, 1], [[0.5, 0], [0, 0.5]], 0.5),
         ([1, 0], [[0.5, 0.5], [0.5, 0.5]], 0.5),
         ([0, 1], [[0.5, 0.5], [0.5, 0.5]], 0.5),
+        # Density mat-Vector-Fid
         ([[0.5, 0], [0, 0.5]], [1, 0], 0.5),
         ([[0.5, 0], [0, 0.5]], [0, 1], 0.5),
         ([[0.5, 0.5], [0.5, 0.5]], [1, 0], 0.5),
         ([[0.5, 0.5], [0.5, 0.5]], [0, 1], 0.5),
+        # Density mat-Density mat-Fid
         ([[1, 0], [0, 0]], [[0.5, 0], [0, 0.5]], 0.5),
         ([[0, 0], [0, 1]], [[0.5, 0], [0, 0.5]], 0.5),
         ([[1, 0], [0, 0]], [[0.5, 0.5], [0.5, 0.5]], 0.5),
@@ -74,87 +78,54 @@ class TestFidelityMath:
 
         assert qml.math.allclose(fid, fidelity)
 
-    def test_state_vector_0_amplitudes(self):
-        """Test that a message is raised when the state 0does not have right norm"""
-        state0 = [0.5, 0]
-        state1 = [0, 1]
+    state_wrong_amp = [([0.5, 0], [0, 1]), ([0, 1], [0.5, 0])]
+
+    @pytest.mark.parametrize("state0,state1", state_wrong_amp)
+    def test_state_vector_wrong_amplitudes(self, state0, state1):
+        """Test that a message is raised when a state does not have right norm"""
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
             qml.math.fidelity(state0, state1, check_state=True)
 
-    def test_state_vector_1_amplitudes(self):
-        """Test that a message is raised when the state 1 does not have right norm"""
-        state0 = [0, 1]
-        state1 = [0.5, 1]
-        with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
-            qml.math.fidelity(state0, state1, check_state=True)
+    state_wrong_shape = [([0, 1, 1], [0, 1]), ([0, 1], [0, 1, 1])]
 
-    def test_state_vector_0_wrong_shape(self):
-        """Test that a message is raised when the state 0does not have right norm"""
-        state0 = [0, 1, 1]
-        state1 = [0, 1]
+    @pytest.mark.parametrize("state0,state1", state_wrong_shape)
+    def test_state_vector_wrong_shape(self, state0, state1):
+        """Test that a message is raised when the state does not have the right shape."""
         with pytest.raises(ValueError, match="State vector must be of length"):
             qml.math.fidelity(state0, state1, check_state=True)
 
-    def test_state_vector_1_wrong_shape(self):
-        """Test that a message is raised when the state 1 does not have right norm"""
-        state0 = [0, 1]
-        state1 = [0, 1, 1]
-        with pytest.raises(ValueError, match="State vector must be of length"):
-            qml.math.fidelity(state0, state1, check_state=True)
+    d_mat_wrong_shape = [
+        ([[1, 0, 0], [0, 0, 0], [0, 0, 0]], [0, 1]),
+        ([0, 1], [[1, 0, 0], [0, 0, 0], [0, 0, 0]]),
+    ]
 
-    def test_density_matrix_0_wrong_shape(self):
-        """Test that a message is raised when the state0 does not have the right shape."""
-        state0 = [[1, 0, 0], [0, 0, 0], [0, 0, 0]]
-        state1 = [0, 1]
+    @pytest.mark.parametrize("state0,state1", d_mat_wrong_shape)
+    def test_density_matrix_wrong_shape(self, state0, state1):
+        """Test that a message is raised when the density matrix does not have the right shape."""
         with pytest.raises(ValueError, match="Density matrix must be of shape"):
             qml.math.fidelity(state0, state1, check_state=True)
 
-    def test_density_matrix_1_wrong_shape(self):
-        """Test that a message is raised when the state 1 does not have the right shape."""
-        state0 = [0, 1]
-        state1 = [[1, 0, 0], [0, 0, 0], [0, 0, 0]]
-        with pytest.raises(ValueError, match="Density matrix must be of shape"):
-            qml.math.fidelity(state0, state1, check_state=True)
+    d_mat_wrong_trace = [([[1, 0], [0, -1]], [0, 1]), ([0, 1], [[1, 0], [0, -1]])]
 
-    def test_density_matrix_0_wrong_trace(self):
-        """Test that a message is raised when the state0 does not have the right trace."""
-        state0 = [[1, 0], [0, -1]]
-        state1 = [0, 1]
+    @pytest.mark.parametrize("state0,state1", d_mat_wrong_trace)
+    def test_density_matrix_wrong_trace(self, state0, state1):
+        """Test that a message is raised when the density matrix does not have the right trace."""
         with pytest.raises(ValueError, match="The trace of the density matrix should be one"):
             qml.math.fidelity(state0, state1, check_state=True)
 
-    def test_density_matrix_1_wrong_trace(self):
-        """Test that a message is raised when the state 1 does not have the right trace."""
-        state0 = [0, 1]
-        state1 = [[1, 0], [0, -1]]
-        with pytest.raises(ValueError, match="The trace of the density matrix should be one"):
+    d_mat_not_hermitian = [([[1, 1], [0, 0]], [0, 1]), ([0, 1], [[1, 1], [0, 0]])]
+
+    @pytest.mark.parametrize("state0,state1", d_mat_not_hermitian)
+    def test_density_matrix_not_hermitian(self, state0, state1):
+        """Test that a message is raised when the density matrix is not Hermitian."""
+        with pytest.raises(ValueError, match="The matrix is not Hermitian"):
             qml.math.fidelity(state0, state1, check_state=True)
 
-    def test_density_matrix_0_not_hermitian(self):
-        """Test that a message is raised when the state0 is not hermitian."""
-        state0 = [[1, 1], [0, 0]]
-        state1 = [0, 1]
-        with pytest.raises(ValueError, match="The matrix is not hermitian"):
-            qml.math.fidelity(state0, state1, check_state=True)
+    d_mat_not_positive = [([[2, 0], [0, -1]], [0, 1]), ([0, 1], [[2, 0], [0, -1]])]
 
-    def test_density_matrix_1_not_hermitian(self):
-        """Test that a message is raised when the state 1 is not hermitian."""
-        state0 = [0, 1]
-        state1 = [[1, 1], [0, 0]]
-        with pytest.raises(ValueError, match="The matrix is not hermitian"):
-            qml.math.fidelity(state0, state1, check_state=True)
-
-    def test_density_matrix_0_not_positive_semi_def(self):
-        """Test that a message is raised when the state0 is not positive semi def."""
-        state0 = [[2, 0], [0, -1]]
-        state1 = [0, 1]
-        with pytest.raises(ValueError, match="The matrix is not positive semi"):
-            qml.math.fidelity(state0, state1, check_state=True)
-
-    def test_density_matrix_1_not_positive_semi_def(self):
-        """Test that a message is raised when the state 1 is not positive semi def."""
-        state0 = [0, 1]
-        state1 = [[2, 0], [0, -1]]
+    @pytest.mark.parametrize("state0,state1", d_mat_not_positive)
+    def test_density_matrix_not_positive_semi_def(self, state0, state1):
+        """Test that a message is raised when the density matrix is not positive semi def."""
         with pytest.raises(ValueError, match="The matrix is not positive semi"):
             qml.math.fidelity(state0, state1, check_state=True)
 

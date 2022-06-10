@@ -155,18 +155,14 @@ class TestDensityMatrixFromStateVectors:
         state_vector = [1, 0, 0]
 
         with pytest.raises(ValueError, match="State vector must be"):
-            fn.quantum._density_matrix_from_state_vector(
-                state_vector, indices=[0], check_state=True
-            )
+            fn.quantum.reduced_dm(state_vector, indices=[0], check_state=True)
 
     def test_state_vector_wrong_norm(self):
         """Test that state vector with wrong norm raises an error with check_state=True"""
         state_vector = [0.1, 0, 0, 0]
 
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
-            fn.quantum._density_matrix_from_state_vector(
-                state_vector, indices=[0], check_state=True
-            )
+            fn.quantum.reduced_dm(state_vector, indices=[0], check_state=True)
 
     def test_density_matrix_from_state_vector_jax_jit(self):
         """Test jitting the density matrix from state vector function."""
@@ -319,7 +315,7 @@ class TestDensityMatrixFromMatrix:
         """Test that non hermitian matrix raises an error with check_state=True"""
         density_matrix = [[0.1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0.5, 0.9]]
 
-        with pytest.raises(ValueError, match="The matrix is not hermitian."):
+        with pytest.raises(ValueError, match="The matrix is not Hermitian."):
             fn.quantum.reduced_dm(density_matrix, indices=[0], check_state=True)
 
     def test_matrix_not_positive_definite(self):

@@ -406,7 +406,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     is defined as
 
     .. math::
-        F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
+        F( \rho , \sigma ) = \text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
 
     If one of the states is pure, say :math:`\rho=\ket{\psi}\bra{\psi}`, then the expression
     for fidelity simplifies to
@@ -418,9 +418,9 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     fidelity is simply
 
     .. math::
-        F( \ket{\psi} , \ket{\phi}) = \left|\bra{\psi}\ket{\phi}\right|^2
+        F( \ket{\psi} , \ket{\phi}) = \left|\braket{\psi, \phi}\right|^2
 
-    .. warning::
+    .. note::
         The second state is coerced to the type and dtype of the first state. The fidelity is returned in the type
         of the interface of the first state.
 
@@ -431,7 +431,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
         wires1 (Sequence[int]): the wires of the second subsystem
 
     Returns:
-        func: A function with the same arguments as the QNodes that returns the fidelities between the output states.
+        func: A function that returns the fidelity between the states outputted by the QNodes.
 
     **Example**
 
@@ -457,7 +457,41 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
         >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.2))
         0.9905158135644924
-        **Example**
+
+    It also possible to use QNodes that do not depend on any parameters. When it is the case for the first QNode, you
+    need to pass an empty tuple as argument for the firs QNode.
+
+    .. code-block:: python
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit_rx():
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit_ry(x):
+            qml.RY(x, wires=0)
+            return qml.state()
+
+        >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((), (0.2))
+        0.9900332889206207
+
+    On the other hand, if the second QNode is the one that does not depend on parameters you can simply write:
+
+    .. code-block:: python
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit_rx():
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit_ry(x):
+            qml.RY(x, wires=0)
+            return qml.state()
+
+        >>> qml.qinfo.fidelity(circuit_ry, circuit_rx, wires0=[0], wires1=[0])((0.2))
+        0.9900332889206207
 
     The `qml.qinfo.fidelity` transform is also differentiable and you can use the gradient in the different frameworks
     with backpropagation, the following example uses `jax` and `backprop`.
