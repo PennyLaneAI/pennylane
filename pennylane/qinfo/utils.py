@@ -54,7 +54,7 @@ def density_matrix_transform(qnode, indices):
 
         # TODO: optimize given the wires by creating a tape with relevant operations
         state_built = qnode(*args, **kwargs)
-        density_matrix = qml.math.to_density_matrix(
+        density_matrix = qml.math.reduced_dm(
             state_built, indices=indices, c_dtype=qnode.device.C_DTYPE
         )
         return density_matrix

@@ -115,7 +115,7 @@ def insert(
     >>> f(0.9, 0.4, 0.5, 0.6)
     tensor(0.754847, requires_grad=True)
     >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
-    0: ──RX(0.90)─╭C──RY(0.50)──AmplitudeDamping(0.20)─┤ ╭<Z@Z>
+    0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.20)─┤ ╭<Z@Z>
     1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.20)─┤ ╰<Z@Z>
 
     .. details::
@@ -151,7 +151,7 @@ def insert(
         To check this, let's print out the circuit:
 
         >>> print(qml.draw(f)(0.9, 0.4, 0.5, 0.6))
-        0: ──RX(0.90)─╭C──RY(0.50)──RX(0.20)──Rϕ(0.30)─┤ ╭<Z@Z>
+        0: ──RX(0.90)─╭●──RY(0.50)──RX(0.20)──Rϕ(0.30)─┤ ╭<Z@Z>
         1: ──RY(0.40)─╰X──RX(0.60)──RX(0.20)──Rϕ(0.30)─┤ ╰<Z@Z>
 
         **Transforming tapes:**
@@ -173,7 +173,7 @@ def insert(
         >>> from pennylane.transforms import insert
         >>> noisy_tape = insert(qml.AmplitudeDamping, 0.05, position="end")(tape)
         >>> print(qml.drawer.tape_text(noisy_tape, decimals=2))
-        0: ──RX(0.90)─╭C──RY(0.50)──AmplitudeDamping(0.05)─┤ ╭<Z@Z>
+        0: ──RX(0.90)─╭●──RY(0.50)──AmplitudeDamping(0.05)─┤ ╭<Z@Z>
         1: ──RY(0.40)─╰X──RX(0.60)──AmplitudeDamping(0.05)─┤ ╰<Z@Z>
 
         **Transforming devices:**

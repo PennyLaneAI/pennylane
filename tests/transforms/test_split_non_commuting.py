@@ -144,7 +144,7 @@ exp_grad = np.array(
 )
 
 
-@pytest.mark.all_inferfaces
+@pytest.mark.all_interfaces
 class TestAutodiffSplitNonCommuting:
     """Autodiff tests for all frameworks"""
 

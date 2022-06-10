@@ -57,6 +57,12 @@ ar.register_function("numpy", "unstack", list)
 ar.register_function("builtins", "unstack", list)
 
 
+def _scatter_numpy(indices, array, shape):
+    new_array = np.zeros(shape, dtype=array.dtype.type)
+    new_array[indices] = array
+    return new_array
+
+
 def _scatter_element_add_numpy(tensor, index, value):
     """In-place addition of a multidimensional value over various
     indices of a tensor."""
@@ -65,6 +71,7 @@ def _scatter_element_add_numpy(tensor, index, value):
     return new_tensor
 
 
+ar.register_function("numpy", "scatter", _scatter_numpy)
 ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
 ar.register_function("numpy", "eigvalsh", np.linalg.eigvalsh)
 ar.register_function("numpy", "entr", lambda x: -np.sum(x * np.log(x)))
@@ -189,13 +196,6 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
 
-def _tf_einsum(equation, *inputs):
-    from tensorflow.python.ops.special_math_ops import _einsum_v2
-
-    return _einsum_v2(equation, *inputs)
-
-
-ar.register_function("tensorflow", "einsum", _tf_einsum)
 ar.register_function("tensorflow", "asarray", lambda x: _i("tf").convert_to_tensor(x))
 ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
