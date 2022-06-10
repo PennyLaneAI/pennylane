@@ -116,11 +116,6 @@ def _extract_shape_dtype_structs(tapes, device):
     for t in tapes:
         shape = t.shape(device)
 
-        # Note: for qml.probs we'll first have a [1,dim] shape for the tape
-        # which is then reduced by the QNode
-        if isinstance(shape, int):
-            shape = [shape]
-
         tape_dtype = _numeric_type_to_dtype(t.numeric_type)
         shape_and_dtype = jax.ShapeDtypeStruct(tuple(shape), tape_dtype)
 
