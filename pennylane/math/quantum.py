@@ -354,7 +354,7 @@ def _partial_trace_autograd(density_matrix, indices):
     )
     return reduced_density_matrix
 
-
+  
 def _density_matrix_from_state_vector(state, indices, check_state=False):
     """Compute the density matrix from a state vector.
 
