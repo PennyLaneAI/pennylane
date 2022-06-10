@@ -17,7 +17,6 @@ Unit tests for functions needed for resource estimation with the double factoriz
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
 
 
 @pytest.mark.parametrize(
