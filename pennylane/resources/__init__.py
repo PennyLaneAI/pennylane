@@ -14,4 +14,4 @@
 """
 This subpackage provides the functionality for algorithm resource estimation.
 """
-from .df import qrom_cost, estimation_cost, gate_cost, unitary_cost
+from .df import qrom_cost, estimation_cost, gate_cost, qubit_cost, unitary_cost

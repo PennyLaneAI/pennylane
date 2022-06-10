@@ -96,3 +96,16 @@ def test_gate_cost(n, norm, error, rank_r, rank_m, br, aleph, beth, cost_ref):
     cost = qml.resources.gate_cost(n, norm, error, rank_r, rank_m, br, aleph, beth)
 
     assert cost == cost_ref
+
+
+@pytest.mark.parametrize(
+    ("n", "norm", "error", "rank_r", "rank_m", "br", "aleph", "beth", "cost_ref"),
+    [
+        (14, 52.98761457453095, 0.001, 26, 5.5, 7, 10, 20, 292),
+    ],
+)
+def test_qubit_cost(n, norm, error, rank_r, rank_m, br, aleph, beth, cost_ref):
+    r"""Test that qubit_cost returns the correct value."""
+    cost = qml.resources.qubit_cost(n, norm, error, rank_r, rank_m, br, aleph, beth)
+
+    assert cost == cost_ref
