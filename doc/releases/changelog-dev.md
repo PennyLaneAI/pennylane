@@ -7,12 +7,14 @@
 * A new quantum information module is added. It includes a function for computing the reduced density matrix functions
   for state vectors and density matrices.
 
-  [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
-  [(#2569)](https://github.com/PennyLaneAI/pennylane/pull/2569)
-  [(#2598)](https://github.com/PennyLaneAI/pennylane/pull/2598)
-  [(#2617)](https://github.com/PennyLaneAI/pennylane/pull/2617)
-  [(#2631)](https://github.com/PennyLaneAI/pennylane/pull/2631)
-  [(#2640)](https://github.com/PennyLaneAI/pennylane/pull/2640)
+  [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)  
+  [(#2569)](https://github.com/PennyLaneAI/pennylane/pull/2569)  
+  [(#2598)](https://github.com/PennyLaneAI/pennylane/pull/2598)  
+  [(#2617)](https://github.com/PennyLaneAI/pennylane/pull/2617)  
+  [(#2631)](https://github.com/PennyLaneAI/pennylane/pull/2631)  
+  [(#2640)](https://github.com/PennyLaneAI/pennylane/pull/2640)  
+    
+  [(#2684)](https://github.com/PennyLaneAI/pennylane/pull/2684)
   
   A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
   
@@ -182,7 +184,7 @@
   1.3862943611198906
   ```
   
-  Support for the classical and quantum Fisher information matrices is also added:
+  Support for the classical and quantum Fisher information matrices, `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher` is also added:
 
   These are typically employed in variational optimization schemes to tilt the gradient in a more favorable direction, see [2103.15191](https://arxiv.org/abs/2103.15191) and [1909.02108](https://arxiv.org/abs/1909.02108). Here is a very simple example of a Hamiltonian loss function:
 
@@ -201,17 +203,13 @@
 
   params = pnp.array([0.5, 1., 0.2], requires_grad=True)
   ```
-  From this circuit we can directly obtain the gradient of $\langle H \rangle$, as well as the classical fisher information matrix (cfim) and quantum fisher information matrix (qfim) of the variational state.
-  
+  From this circuit we can directly obtain the gradient of the expectation value, as well as the classical fisher information matrix (cfim) and quantum fisher information matrix (qfim) of the variational state.
   ```pycon
   >>> grad = qml.grad(circ)(params)
   >>> cfim = qml.qinfo.classical_fisher(circ)(params)
   >>> qfim = qml.qinfo.quantum_fisher(circ)(params)
   ```
-  
   From this we can compute the tilted (natural) gradients:
-
-  
   ```pycon
   >>> c_grad = cfim @ grad
   >>> q_grad = qfim @ grad
