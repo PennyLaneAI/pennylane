@@ -420,11 +420,6 @@ def quantum_fisher(qnode, *args, hardware=False, **kwargs):
     Args:
         qnode (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
         hardware (bool): Indicate if execution needs to be hardware compatible (True)
-        *args, **kwargs: Additional parameters for the specific routine in order to compute the QFIM.
-
-            - If ``hardware=False`` (default): ``args`` and ``kwargs`` of :func:`~.pennylane.adjoint_metric_tensor`.
-
-            - If ``hardware=True``: ``args`` and ``kwargs`` of :func:`~.pennylane.metric_tensor`.
 
     Returns:
         func: The function that computes the quantum fisher information matrix.
