@@ -179,34 +179,6 @@ class DefaultMixed(QubitDevice):
         # User obtains state as a matrix
         return qnp.reshape(self._pre_rotated_state, (dim, dim))
 
-    def density_matrix(self, wires):
-        """Returns the reduced density matrix over the given wires.
-
-        Args:
-            wires (Wires): wires of the reduced system
-
-        Returns:
-            array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
-            representing the reduced density matrix of the state prior to measurement.
-        """
-        # Return the full density matrix if all the wires are given
-        if wires == self.wires:
-            return self.state
-
-        traced_wires = [x for x in self.wires if x not in wires]
-
-        # Trace first subsystem by applying kraus operators of the partial trace
-        tr_op = qnp.cast(qnp.eye(2), dtype=self.C_DTYPE)
-        tr_op = qnp.reshape(tr_op, (2, 1, 2))
-
-        self._apply_channel(tr_op, Wires(traced_wires[0]))
-
-        # Trace next subsystem by applying kraus operators of the partial trace
-        for traced_wire in traced_wires[1:]:
-            self._apply_channel(tr_op, Wires(traced_wire))
-
-        return qnp.reshape(self._state, (2 ** len(wires), 2 ** len(wires)))
-
     def reset(self):
         """Resets the device"""
         super().reset()
@@ -266,20 +238,10 @@ class DefaultMixed(QubitDevice):
         kraus = qnp.stack(kraus)
         kraus_dagger = qnp.stack(kraus_dagger)
 
-        # Changes tensor shape
-        if kraus[0].shape[0] == kraus[0].shape[1]:
-            kraus_shape = [len(kraus)] + [2] * num_ch_wires * 2
-            kraus = qnp.cast(qnp.reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
-            kraus_dagger = qnp.cast(qnp.reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
-
-        # Add the possibility to give a (1,2) shape Kraus operator
-        elif (kraus[0].shape == (1, 2)) and (num_ch_wires == 1):
-            kraus_shape = [len(kraus)] + list(kraus[0].shape)
-            qnp.cast(qnp.reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
-            kraus_dagger_shape = [len(kraus)] + list(kraus[0].shape)[::-1]
-            kraus_dagger = qnp.cast(
-                qnp.reshape(kraus_dagger, kraus_dagger_shape), dtype=self.C_DTYPE
-            )
+        # Shape kraus operators
+        kraus_shape = [len(kraus)] + [2] * num_ch_wires * 2
+        kraus = qnp.cast(qnp.reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
+        kraus_dagger = qnp.cast(qnp.reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
 
         # Tensor indices of the state. For each qubit, need an index for rows *and* columns
         state_indices = ABC[:rho_dim]
@@ -311,7 +273,6 @@ class DefaultMixed(QubitDevice):
             f"{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
             f"{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}"
         )
-
         self._state = qnp.einsum(einsum_indices, kraus, self._state, kraus_dagger)
 
     def _apply_diagonal_unitary(self, eigvals, wires):
@@ -451,6 +412,7 @@ class DefaultMixed(QubitDevice):
         ):
             # Initialize the entire wires with the state
             self._state = qnp.reshape(state, [2] * 2 * self.num_wires)
+            self._pre_rotated_state = self._state
 
         else:
             # Initialize tr_in(ρ) ⊗ ρ_in with transposed wires where ρ is the density matrix before this operation.
@@ -481,6 +443,7 @@ class DefaultMixed(QubitDevice):
                 atol=tolerance,
             )
             self._state = qnp.asarray(rho, dtype=self.C_DTYPE)
+            self._pre_rotated_state = self._state
 
     def _apply_operation(self, operation):
         """Applies operations to the internal device state.

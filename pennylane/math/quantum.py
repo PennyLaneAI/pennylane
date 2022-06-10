@@ -13,13 +13,17 @@
 # limitations under the License.
 """Differentiable quantum functions"""
 import itertools
+import functools
 
+from string import ascii_letters as ABC
 from autoray import numpy as np
 from numpy import float64
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .multi_dispatch import diag, dot, scatter_element_add
-from .utils import is_abstract, allclose, cast
+from .multi_dispatch import diag, dot, scatter_element_add, einsum, get_interface
+from .utils import is_abstract, allclose, cast, convert_like
+
+ABC_ARRAY = np.array(list(ABC))
 
 
 def cov_matrix(prob, obs, wires=None, diag_approx=False):
@@ -164,6 +168,193 @@ def marginal_prob(prob, axis):
     return np.flatten(prob)
 
 
+def _density_matrix_from_matrix(density_matrix, indices, check_state=False):
+    """Compute the density matrix from a state represented with a density matrix.
+
+    Args:
+        density_matrix (tensor_like): 2D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` for some
+            integer number of wires``N``.
+        indices (list(int)): List of indices in the considered subsystem.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+
+    Returns:
+        tensor_like: Density matrix of size ``(2**len(wires), 2**len(wires))``
+
+    **Example**
+
+    >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    >>> _density_matrix_from_matrix(x, indices=[0])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
+
+    >>> y = [[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]]
+    >>> _density_matrix_from_matrix(y, indices=[0])
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
+
+    >>> _density_matrix_from_matrix(y, indices=[1])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
+
+    >>> z = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+    >>> _density_matrix_from_matrix(x, indices=[1])
+    tf.Tensor(
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+
+
+    """
+    shape = density_matrix.shape[0]
+    num_indices = int(np.log2(shape))
+
+    if check_state:
+        # Check format
+        if (
+            len(density_matrix.shape) != 2
+            or density_matrix.shape[0] != density_matrix.shape[1]
+            or not np.log2(shape).is_integer()
+        ):
+            raise ValueError("Density matrix must be of shape (2**N, 2**N).")
+        # Check trace
+        trace = np.trace(density_matrix)
+        if not is_abstract(trace):
+            if not allclose(trace, 1.0, atol=1e-10):
+                raise ValueError("The trace of the density matrix should be one.")
+            # Check if the matrix is hermitian
+            conj_trans = np.transpose(np.conj(density_matrix))
+            if not allclose(density_matrix, conj_trans):
+                raise ValueError("The matrix is not hermitian.")
+            # Check if positive semi definite
+            evs = np.linalg.eigvalsh(density_matrix)
+            evs_non_negative = [ev for ev in evs if ev >= 0.0]
+            if len(evs) != len(evs_non_negative):
+                raise ValueError("The matrix is not positive semi-definite.")
+
+    consecutive_indices = list(range(0, num_indices))
+
+    # Return the full density matrix if all the wires are given
+    if tuple(indices) == tuple(consecutive_indices):
+        return density_matrix
+
+    traced_wires = [x for x in consecutive_indices if x not in indices]
+    density_matrix = _partial_trace(density_matrix, traced_wires)
+    return density_matrix
+
+
+def _partial_trace(density_matrix, indices):
+    """Compute the reduced density matrix by tracing out the provided indices.
+
+    Args:
+        density_matrix (tensor_like): 2D density matrix tensor. This tensor should be of size ``(2**N, 2**N)`` for some
+            integer number of wires ``N``.
+        indices (list(int)): List of indices to be traced.
+
+    Returns:
+        tensor_like: (reduced) Density matrix of size ``(2**len(wires), 2**len(wires))``
+
+    **Example**
+
+    >>> x = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]])
+    >>> _partial_trace(x, indices=[0])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
+
+
+    >>> x = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+    >>> _partial_trace(x, indices=[1])
+    tf.Tensor(
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+    """
+    # Does not support same indices sum in backprop
+    if get_interface(density_matrix) == "autograd":
+        density_matrix = _partial_trace_autograd(density_matrix, indices)
+        return density_matrix
+
+    # Dimension and reshape
+    shape = density_matrix.shape[0]
+    num_indices = int(np.log2(shape))
+    rho_dim = 2 * num_indices
+
+    density_matrix = np.reshape(density_matrix, [2] * 2 * num_indices)
+    indices = np.sort(indices)
+
+    # For loop over wires
+    for i, target_index in enumerate(indices):
+        target_index = target_index - i
+        state_indices = ABC[: rho_dim - 2 * i]
+        state_indices = list(state_indices)
+
+        target_letter = state_indices[target_index]
+        state_indices[target_index + num_indices - i] = target_letter
+        state_indices = "".join(state_indices)
+
+        einsum_indices = f"{state_indices}"
+        density_matrix = einsum(einsum_indices, density_matrix)
+
+    number_wires_sub = num_indices - len(indices)
+    reduced_density_matrix = np.reshape(
+        density_matrix, (2**number_wires_sub, 2**number_wires_sub)
+    )
+    return reduced_density_matrix
+
+
+def _partial_trace_autograd(density_matrix, indices):
+    """Compute the reduced density matrix for autograd interface by tracing out the provided indices with the use
+    of projectors as same subscripts indices are not supported in autograd backprop.
+    """
+    # Dimension and reshape
+    shape = density_matrix.shape[0]
+    num_indices = int(np.log2(shape))
+    rho_dim = 2 * num_indices
+    density_matrix = np.reshape(density_matrix, [2] * 2 * num_indices)
+
+    kraus = cast(np.eye(2), density_matrix.dtype)
+
+    kraus = np.reshape(kraus, (2, 1, 2))
+    kraus_dagger = np.asarray([np.conj(np.transpose(k)) for k in kraus])
+
+    kraus = convert_like(kraus, density_matrix)
+    kraus_dagger = convert_like(kraus_dagger, density_matrix)
+    # For loop over wires
+    for target_wire in indices:
+        # Tensor indices of density matrix
+        state_indices = ABC[:rho_dim]
+        # row indices of the quantum state affected by this operation
+        row_wires_list = [target_wire]
+        row_indices = "".join(ABC_ARRAY[row_wires_list].tolist())
+        # column indices are shifted by the number of wires
+        col_wires_list = [w + num_indices for w in row_wires_list]
+        col_indices = "".join(ABC_ARRAY[col_wires_list].tolist())
+        # indices in einsum must be replaced with new ones
+        num_partial_trace_wires = 1
+        new_row_indices = ABC[rho_dim : rho_dim + num_partial_trace_wires]
+        new_col_indices = ABC[
+            rho_dim + num_partial_trace_wires : rho_dim + 2 * num_partial_trace_wires
+        ]
+        # index for summation over Kraus operators
+        kraus_index = ABC[
+            rho_dim + 2 * num_partial_trace_wires : rho_dim + 2 * num_partial_trace_wires + 1
+        ]
+        # new state indices replace row and column indices with new ones
+        new_state_indices = functools.reduce(
+            lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
+            zip(col_indices + row_indices, new_col_indices + new_row_indices),
+            state_indices,
+        )
+        # index mapping for einsum, e.g., 'iga,abcdef,idh->gbchef'
+        einsum_indices = (
+            f"{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
+            f"{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}"
+        )
+        density_matrix = einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
+    number_wires_sub = num_indices - len(indices)
+    reduced_density_matrix = np.reshape(
+        density_matrix, (2**number_wires_sub, 2**number_wires_sub)
+    )
+    return reduced_density_matrix
+
+
 def _density_matrix_from_state_vector(state, indices, check_state=False):
     """Compute the density matrix from a state vector.
 
@@ -250,10 +441,35 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
+    >>> y = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
+    >>> reduced_dm(z, indices=[1])
+    tf.Tensor(
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+
+    >>> z = [[0.5, 0, 0.0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]
+    >>> reduced_dm(z, indices=[0])
+    [[0.5+0.j 0.0+0.j]
+     [0.0+0.j 0.5+0.j]]
+
+    >>> reduced_dm(z, indices=[1])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
+
+    >>> y_mat_tf = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+    >>> reduced_dm(y_mat_tf, indices=[1])
+    tf.Tensor(
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
     """
+    # Cast as a c_dtype array
     state = cast(state, dtype=c_dtype)
+    len_state = state.shape[0]
     # State vector
-    density_matrix = _density_matrix_from_state_vector(state, indices, check_state)
-    # TODO
-    # Density matrix
+    if state.shape == (len_state,):
+        density_matrix = _density_matrix_from_state_vector(state, indices, check_state)
+        return density_matrix
+
+    density_matrix = _density_matrix_from_matrix(state, indices, check_state)
+
     return density_matrix

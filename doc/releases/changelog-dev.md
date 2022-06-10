@@ -4,8 +4,10 @@
 
 <h3>New features since last release</h3>
 
-* Quantum information module including: reduced density matrix functions for state vectors.
+* A new quantum information module is added. It includes a function for computing the reduced density matrix functions 
+  for state vectors and density matrices.
   [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
+  [(#2569)](https://github.com/PennyLaneAI/pennylane/pull/2569)
   
   A `reduced_dm` that can handle both state vectors and density matrix, to return a reduced density matrix:
   ```pycon
@@ -17,8 +19,19 @@
   >>> reduced_dm(x, indices=[1])
   [[1.+0.j 0.+0.j]
    [0.+0.j 0.+0.j]]
+  
+  >>> y = [[0.5, 0, 0.0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]
+  >>> reduced_dm(y, indices=[0])
+  [[0.5+0.j 0.0+0.j]
+   [0.0+0.j 0.5+0.j]]
+  
+  >>> import tensorflow as tf
+  >>> z = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+  >>> reduced_dm(z, indices=[1])
+  tf.Tensor(
+  [[1.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
   ```
-
 
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
   attribute `batch_size`.

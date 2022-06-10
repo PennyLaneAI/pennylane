@@ -600,19 +600,6 @@ class DefaultQubit(QubitDevice):
     def state(self):
         return self._flatten(self._pre_rotated_state)
 
-    def density_matrix(self, wires):
-        """Returns the reduced density matrix of a given set of wires.
-
-        Args:
-            wires (Wires): wires of the reduced system.
-
-        Returns:
-            array[complex]: complex tensor of shape ``(2 ** len(wires), 2 ** len(wires))``
-            representing the reduced density matrix.
-        """
-        state = self._flatten(self._pre_rotated_state)
-        return qml.math.reduced_dm(state, indices=wires, c_dtype=self.C_DTYPE)
-
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.
 
