@@ -81,9 +81,9 @@
   1.0
   ```
 
-  The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy 
-  `qml.qinfo.vn_entropy:
-
+  The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy
+  `qml.qinfo.vn_entropy`:
+  
   ```python3
   dev = qml.device("default.qubit", wires=2)
   @qml.qnode(dev)
