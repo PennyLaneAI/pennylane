@@ -26,7 +26,6 @@ from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import diag, dot, scatter_element_add, einsum, get_interface
 from .utils import is_abstract, allclose, cast, convert_like
 
-
 ABC_ARRAY = np.array(list(ABC))
 
 
@@ -480,7 +479,8 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
 
 
 def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
-    r"""Compute the Von Neumann entropy from a state vector, a density matrix given a subsystem.
+    r"""Compute the Von Neumann entropy from a state vector or density matrix on a given subsystem.
+
 
     .. math::
         S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
@@ -488,7 +488,7 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
     Args:
         state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
         indices (list(int)): List of indices in the considered subsystem.
-        base (float): Base for the logarithm. If None, the natural logarithm is used.
+        base (float): Base for the logarithm, default is None in which case the natural logarithm is used.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 
