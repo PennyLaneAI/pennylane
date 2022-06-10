@@ -455,8 +455,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
             qml.RY(y, wires=0)
             return qml.state()
 
-        >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.2))
-        0.9905158135644924
+    >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.2))
+    0.9905158135644924
 
     It is also possible to use QNodes that do not depend on any parameters. When it is the case for the first QNode, you
     need to pass an empty tuple as an argument for the first QNode.
@@ -473,8 +473,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
             qml.RY(x, wires=0)
             return qml.state()
 
-        >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((), (0.2))
-        0.9900332889206207
+    >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((), (0.2))
+    0.9900332889206207
 
     On the other hand, if the second QNode is the one that does not depend on parameters then a single tuple can also be passed:
 
@@ -490,8 +490,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
             qml.RY(x, wires=0)
             return qml.state()
 
-        >>> qml.qinfo.fidelity(circuit_ry, circuit_rx, wires0=[0], wires1=[0])((0.2))
-        0.9900332889206207
+    >>> qml.qinfo.fidelity(circuit_ry, circuit_rx, wires0=[0], wires1=[0])((0.2))
+    0.9900332889206207
 
     The `qml.qinfo.fidelity` transform is also differentiable and you can use the gradient in the different frameworks
     with backpropagation, the following example uses `jax` and `backprop`.
@@ -510,8 +510,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
             qml.PauliZ(wires=0)
             return qml.state()
 
-        >>> jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))((jax.numpy.array(0.3)))
-        -0.14776011
+    >>> jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))((jax.numpy.array(0.3)))
+    -0.14776011
 
     """
 
