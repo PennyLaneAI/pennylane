@@ -426,6 +426,11 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
     **Example**
 
+    First define two QNodes with potentially different signatures, let's consider a first circuit with two parameters
+    and a second circuit with only one parameter. In the `qml.qinfo.fidelity` transform it is then necessary to give
+    two tuple, each containing the args and kwargs of their respective circuit, e.g. `all_args0` = (0.1, 0.3) and
+    `all_args1` = (0.2) in the following.
+
     .. code-block:: python
 
         dev = qml.device('default.qubit', wires=1)
@@ -443,6 +448,30 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
         >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.2))
         0.9905158135644924
+        **Example**
+
+    The `qml.qinfo.fidelity` transform is also differentiable and you can use the gradient in the different frameworks
+    with backpropagation, the following example uses `jax` and `backprop`.
+
+    .. code-block:: python
+
+        import jax
+        import numpy as np
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit0(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev, interface="jax")
+        def circuit1():
+            qml.PauliZ(wires=0)
+            return qml.state()
+
+        >>> jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))((jax.numpy.array(0.3)))
+        -0.14776011
 
     """
 
