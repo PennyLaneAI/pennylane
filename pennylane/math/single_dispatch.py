@@ -348,13 +348,13 @@ ar.register_function("tensorflow", "outer", lambda a, b: _i("tf").tensordot(a, b
 ar.register_function("tensorflow", "where", lambda *args, **kwargs: _i("tf").where(*args, **kwargs))
 
 
-def _eigvalsh(density_matrix):
+def _eigvalsh_tf(density_matrix):
     evs = _i("tf").linalg.eigvalsh(density_matrix)
     evs = _i("tf").math.real(evs)
     return evs
 
 
-ar.register_function("tensorflow", "eigvalsh", _eigvalsh)
+ar.register_function("tensorflow", "eigvalsh", _eigvalsh_tf)
 ar.register_function(
     "tensorflow", "entr", lambda x: -_i("tf").math.reduce_sum(x * _i("tf").math.log(x))
 )

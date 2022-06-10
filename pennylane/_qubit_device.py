@@ -686,7 +686,7 @@ class QubitDevice(Device):
                 f"state. "
             ) from e
         wires = wires.tolist()
-        return qml.math.to_vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
+        return qml.math.vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis

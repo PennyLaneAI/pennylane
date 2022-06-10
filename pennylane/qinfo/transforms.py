@@ -94,8 +94,20 @@ def vn_entropy(qnode, wires, base=None):
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
 
     def wrapper(*args, **kwargs):
+        # If pure state directly return 0.
+        if len(wires) == len(qnode.device.wires):
+            qnode.construct(args, kwargs)
+            return_type = qnode.tape.observables[0].return_type
+            if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
+                raise ValueError("The qfunc return type needs to be a state.")
+            density_matrix = qnode(*args, **kwargs)
+            if density_matrix.shape == (density_matrix.shape[0],):
+                return 0.0
+            entropy = qml.math.vn_entropy(density_matrix, wires, base)
+            return entropy
+
         density_matrix = density_matrix_qnode(*args, **kwargs)
-        entropy = qml.math.to_vn_entropy(density_matrix, wires, base)
+        entropy = qml.math.vn_entropy(density_matrix, wires, base)
         return entropy
 
     return wrapper

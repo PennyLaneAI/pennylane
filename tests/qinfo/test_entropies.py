@@ -1,4 +1,4 @@
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -301,3 +301,49 @@ class TestVonNeumannEntropy:
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
+
+    def test_qnode_entropy_wires_full_range_not_state(self):
+        """Test entropy needs a QNode returning state."""
+        param = 0.1
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit_state(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.expval(qml.PauliX(wires=0))
+
+        with pytest.raises(
+            ValueError,
+            match="The qfunc return type needs to be a state.",
+        ):
+            qml.qinfo.vn_entropy(circuit_state, wires=[0, 1])(param)
+
+    def test_qnode_entropy_wires_full_range_state_vector(self):
+        """Test entropy for a QNode that returns a state vector with all wires, entropy is 0."""
+        param = 0.1
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit_state(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
+
+        entropy = qml.qinfo.vn_entropy(circuit_state, wires=[0, 1])(param)
+
+        expected_entropy = 0.0
+        assert qml.math.allclose(entropy, expected_entropy)
+
+    def test_qnode_entropy_wires_full_range_density_mat(self):
+        """Test entropy for a QNode that returns a density mat with all wires, entropy is 0."""
+        param = 0.1
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev)
+        def circuit_state(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
+
+        entropy = qml.qinfo.vn_entropy(circuit_state, wires=[0, 1])(param)
+        expected_entropy = 0.0
+
+        assert qml.math.allclose(entropy, expected_entropy)

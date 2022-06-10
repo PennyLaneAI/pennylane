@@ -53,7 +53,7 @@ from .multi_dispatch import (
 )
 
 from .quantum import cov_matrix, marginal_prob
-from .quantum import reduced_dm, to_vn_entropy
+from .quantum import reduced_dm, vn_entropy
 
 from .utils import (
     allclose,
@@ -106,7 +106,7 @@ __all__ = [
     "scatter_element_add",
     "stack",
     "tensordot",
-    "to_vn_entropy",
+    "vn_entropy",
     "unwrap",
     "where",
 ]

@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -479,7 +479,7 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
     return density_matrix
 
 
-def to_vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
+def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
     r"""Compute the Von Neumann entropy from a state vector, a density matrix given a subsystem.
 
     .. math::
@@ -498,16 +498,15 @@ def to_vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex
     **Example**
 
     >>> x = [1, 0, 0, 1] / np.sqrt(2)
-    >>> to_vn_entropy(x, indices=[0])
+    >>> vn_entropy(x, indices=[0])
     0.6931472
 
-    >>> to_vn_entropy(x, indices=[0], base=2)
+    >>> vn_entropy(x, indices=[0], base=2)
     1.0
 
     >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
-    >>> to_vn_entropy(x, indices=[0])
+    >>> vn_entropy(x, indices=[0])
     0.6931472
-
     """
     density_matrix = reduced_dm(state, indices, check_state, c_dtype)
     entropy = _compute_vn_entropy(density_matrix, base)

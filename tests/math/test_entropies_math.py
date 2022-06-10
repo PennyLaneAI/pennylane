@@ -14,7 +14,7 @@
 """Unit tests for entropiess functions.
 """
 
-# Copyright 2018-2020 Xanadu Quantum Technologies Inc.
+# Copyright 2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -95,7 +95,7 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     def test_state_vector_entropy_without_base(self, state_vector, wires, check_state, pure):
         """Test entropy for different state vectors without base for log."""
-        entropy = qml.math.to_vn_entropy(state_vector, wires, check_state=check_state)
+        entropy = qml.math.vn_entropy(state_vector, wires, check_state=check_state)
 
         if pure:
             expected_entropy = 0
@@ -109,7 +109,7 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     def test_state_vector_entropy(self, state_vector, wires, base, check_state, pure):
         """Test entropy for different state vectors."""
-        entropy = qml.math.to_vn_entropy(state_vector, wires, base, check_state)
+        entropy = qml.math.vn_entropy(state_vector, wires, base, check_state)
 
         if pure:
             expected_entropy = 0
@@ -129,7 +129,7 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("check_state", check_state)
     def test_density_matrices_entropy(self, density_matrix, wires, base, check_state, pure):
         """Test entropy for different density matrices."""
-        entropy = qml.math.to_vn_entropy(density_matrix, wires, base, check_state)
+        entropy = qml.math.vn_entropy(density_matrix, wires, base, check_state)
 
         if pure:
             expected_entropy = 0
@@ -138,7 +138,7 @@ class TestVonNeumannEntropy:
 
         assert qml.math.allclose(entropy, expected_entropy)
 
-    parameters = np.linspace(0, 2 * np.pi, 50)
+    parameters = np.linspace(0, 2 * np.pi, 20)
     devices = ["default.qubit", "default.mixed"]
 
     single_wires_list = [
@@ -150,7 +150,6 @@ class TestVonNeumannEntropy:
 
     check_state = [True, False]
 
-    parameters = np.linspace(0, 2 * np.pi, 50)
     devices = ["default.qubit", "default.mixed"]
 
     @pytest.mark.parametrize("wires", single_wires_list)
