@@ -172,6 +172,7 @@ def mutual_info(qnode, wires0, wires1, base=None):
 
     return wrapper
 
+
 # TODO: create qml.math.jacobian and replace it here
 def _torch_jac(circ):
     """Torch jacobian as a callable function"""
