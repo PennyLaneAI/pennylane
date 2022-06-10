@@ -456,10 +456,10 @@ def quantum_fisher(qnode, *args, hardware=False, **kwargs):
 
     >>> grad = qml.grad(circ)(params)
     [ 0.59422561, -0.02615095, -0.05146226]
-    
+
     >>> qfim = qml.qinfo.quantum_fisher(circ)(params)
     np.diag([1., 1., 0.77517241])
-    
+
     >>> q_nat_grad = qfim @ grad
     [ 0.59422561 -0.02615095 -0.03989212]
 
