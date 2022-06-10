@@ -425,10 +425,11 @@ def quantum_fisher(*args, hardware=False, **kwargs):
 
     .. note::
 
-        ``quantum_fisher`` coincides with the ``metric_tensor`` and a prefactor of :math:`4`. In case of ``hardware=True``, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
+        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. In case of ``hardware=True``, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
         In case of  ``hardware=False``, :func:`~.pennylane.adjoint_metric_tensor` is used. Please refer to their respective documentations for details on the arguments.
 
     """
+    # TODO: ``hardware`` argument will be obsolete in future releases when ``shots`` can be inferred.
     if hardware:
 
         def wrapper(*args0, **kwargs0):
