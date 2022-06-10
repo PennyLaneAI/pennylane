@@ -377,6 +377,7 @@ class TestVonNeumannEntropy:
         ):
             circuit_entropy(0.1)
 
+
 class TestMutualInformation:
     """Tests for the mutual information functions"""
 
