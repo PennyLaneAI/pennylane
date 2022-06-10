@@ -570,6 +570,10 @@
 
 <h3>Breaking changes</h3>
 
+* Weights with negative shapes will raise an error, weights with `size = 0` will result in creating empty Tensor objects now with `qml.TorchLayer`.
+  [(#2678)](https://github.com/PennyLaneAI/pennylane/pull/2678)
+
+
 * PennyLane does not support TensorFlow `2.1.~` anymore.
   [(#2683)](https://github.com/PennyLaneAI/pennylane/pull/2683)
 
