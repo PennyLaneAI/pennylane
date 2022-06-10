@@ -23,14 +23,16 @@ import numpy as np
 
 
 from pennylane.qinfo import classical_fisher
-from pennylane.qinfo.fisher import _make_probs, _compute_cfim
+from pennylane.qinfo.transforms import _make_probs, _compute_cfim
 
 
 class TestMakeProbs:
+    """Class to test the private function _make_probs."""
+
     def test_make_probs_makes_probs(
         self,
     ):
-        """Testing the _make_probs makes probs"""
+        """Testing the correctness of _make_probs."""
         dev = qml.device("default.qubit", wires=3)
 
         @qml.qnode(dev)

@@ -334,7 +334,10 @@ class MeasurementProcess:
 
     @property
     def wires(self):
-        r"""The wires the measurement process acts on."""
+        r"""The wires the measurement process acts on.
+
+        This is the union of all the Wires objects of the measurement.
+        """
         if self.obs is not None:
             return self.obs.wires
 
@@ -345,7 +348,12 @@ class MeasurementProcess:
 
     @property
     def raw_wires(self):
-        r"""The raw wires passed to the constructor of the class"""
+        r"""The wires the measurement process acts on.
+
+        For measurements involving more than one set of wires (such as
+        mutual information), this is a list of the Wires objects. Otherwise,
+        this is the same as :func:`~.MeasurementProcess.wires`
+        """
         return self._wires
 
     def eigvals(self):
@@ -828,9 +836,12 @@ def density_matrix(wires):
 def vn_entropy(wires, log_base=None):
     r"""Von Neumann entropy of the system prior to measurement.
 
+    .. math::
+        S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
+
     Args:
-        wires (Sequence[int] or int): the wires of the subsystem
-        log_base (int, float): Base for the logarithm. If None, the natural logarithm is used.
+        wires (Sequence[int] or int): The wires of the subsystem
+        log_base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     **Example:**
 
@@ -861,7 +872,13 @@ def vn_entropy(wires, log_base=None):
 
 
 def mutual_info(wires0, wires1, log_base=None):
-    r"""Mutual information between the subsystems prior to measurement.
+    r"""Mutual information between the subsystems prior to measurement:
+
+    .. math::
+
+        I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
+
+    where :math:`S` is the von Neumann entropy.
 
     The mutual information is a measure of correlation between two subsystems.
     More specifically, it quantifies the amount of information obtained about
@@ -893,6 +910,10 @@ def mutual_info(wires0, wires1, log_base=None):
         Calculating the derivative of :func:`~.mutual_info` is currently only supported when
         using the classical backpropagation differentiation method (``diff_method="backprop"``)
         with a compatible device.
+
+    .. seealso::
+
+        :func:`~.vn_entropy`
     """
     # the subsystems cannot overlap
     if len([wire for wire in wires0 if wire in wires1]) > 0:

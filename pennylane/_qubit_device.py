@@ -671,21 +671,27 @@ class QubitDevice(Device):
         raise NotImplementedError
 
     def density_matrix(self, wires):
-        """Returns the reduced density matrix prior to measurement.
-
-        .. note::
-
-            Only state vector simulators support this property. Please see the
-            plugin documentation for more details.
-        """
-        raise NotImplementedError
-
-    def vn_entropy(self, wires, log_base):
-        """Returns the Von Neumann entropy prior to measurement.
+        """Returns the reduced density matrix over the given wires.
 
         Args:
-            wires (Wires): wires of the considered subsystem.
-            log_base (int, float): base to use in the logarithm.
+            wires (Wires): wires of the reduced system
+
+        Returns:
+            array[complex]: complex array of shape ``(2 ** len(wires), 2 ** len(wires))``
+            representing the reduced density matrix of the state prior to measurement.
+        """
+        state = getattr(self, "state", None)
+        return qml.math.reduced_dm(state, indices=wires, c_dtype=self.C_DTYPE)
+
+    def vn_entropy(self, wires, log_base):
+        r"""Returns the Von Neumann entropy prior to measurement.
+
+        .. math::
+            S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
+
+        Args:
+            wires (Wires): Wires of the considered subsystem.
+            log_base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
 
         Returns:
             float: returns the Von Neumann entropy
@@ -698,15 +704,21 @@ class QubitDevice(Device):
                 f"state. "
             ) from e
         wires = wires.tolist()
-        return qml.math.to_vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
+        return qml.math.vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
 
     def mutual_info(self, wires0, wires1, log_base):
-        """Returns the mutual information prior to measurement.
+        r"""Returns the mutual information prior to measurement:
+
+        .. math::
+
+            I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
+
+        where :math:`S` is the von Neumann entropy.
 
         Args:
-            wires0 (Wires): wires of the first subsystem.
+            wires0 (Wires): wires of the first subsystem
             wires1 (Wires): wires of the second subsystem
-            log_base (float): base to use in the logarithm.
+            log_base (float): base to use in the logarithm
 
         Returns:
             float: the mutual information
@@ -721,7 +733,7 @@ class QubitDevice(Device):
 
         wires0 = wires0.tolist()
         wires1 = wires1.tolist()
-        return qml.math.to_mutual_info(
+        return qml.math.mutual_info(
             state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
         )
 

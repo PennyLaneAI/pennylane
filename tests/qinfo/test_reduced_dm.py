@@ -57,7 +57,7 @@ class TestDensityMatrixQNode:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        density_matrix = qml.qinfo.density_matrix_transform(circuit, indices=wires)(angle)
+        density_matrix = qml.qinfo.reduced_dm(circuit, wires=wires)(angle)
 
         def expected_density_matrix(x, wires):
             if wires == [0] or wires == [1]:
@@ -73,7 +73,7 @@ class TestDensityMatrixQNode:
         assert np.allclose(expected_density_matrix(angle, wires), density_matrix, atol=tol, rtol=0)
 
     def test_qnode_not_returning_state(self):
-        """Test that the QNode of to_density_matrix function must return state."""
+        """Test that the QNode of reduced_dm function must return state."""
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
@@ -82,10 +82,10 @@ class TestDensityMatrixQNode:
             return qml.expval(qml.PauliX(wires=0))
 
         with pytest.raises(ValueError, match="The qfunc return type needs to be a state"):
-            qml.qinfo.density_matrix_transform(circuit, indices=[0])()
+            qml.qinfo.reduced_dm(circuit, wires=[0])()
 
     def test_density_matrix_qnode_jax_jit(self, tol):
-        """Test to_density_matrix jitting for QNode."""
+        """Test reduced_dm jitting for QNode."""
         from jax import jit
         import jax.numpy as jnp
 
@@ -98,7 +98,7 @@ class TestDensityMatrixQNode:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        density_matrix = jit(qml.qinfo.density_matrix_transform(circuit, indices=[0]))(angle)
+        density_matrix = jit(qml.qinfo.reduced_dm(circuit, wires=[0]))(angle)
         expected_density_matrix = [[np.cos(angle / 2) ** 2, 0], [0, np.sin(angle / 2) ** 2]]
 
         assert np.allclose(density_matrix, expected_density_matrix, atol=tol, rtol=0)
@@ -115,7 +115,7 @@ class TestDensityMatrixQNode:
             return qml.state()
 
         density_matrix = tf.function(
-            qml.qinfo.density_matrix_transform(circuit, indices=[0]),
+            qml.qinfo.reduced_dm(circuit, wires=[0]),
             jit_compile=True,
             input_signature=(tf.TensorSpec(shape=(), dtype=tf.float32),),
         )
@@ -137,5 +137,5 @@ class TestDensityMatrixQNode:
             qml.IsingXX(x, wires=[0, 1])
             return qml.state()
 
-        density_matrix = qml.qinfo.density_matrix_transform(circuit, indices=wires)(0.5)
+        density_matrix = qml.qinfo.reduced_dm(circuit, wires=wires)(0.5)
         assert density_matrix.dtype == c_dtype

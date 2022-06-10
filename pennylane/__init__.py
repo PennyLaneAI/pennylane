@@ -56,7 +56,7 @@ from pennylane.measurements import (
     mutual_info,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint
+from pennylane.ops import adjoint, ctrl
 from pennylane.templates import broadcast, layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
@@ -73,9 +73,7 @@ from pennylane.transforms import (
     batch_partial,
     cut_circuit,
     cut_circuit_mc,
-    ControlledOperation,
     compile,
-    ctrl,
     cond,
     defer_measurements,
     measurement_grouping,

@@ -100,7 +100,7 @@ with our collection of
 
 You can also check out the :doc:`Using PennyLane <introduction/pennylane>` section for
 more details on the :doc:`quantum operations <introduction/operations>`, and to explore
-the available :doc:`optimization tools <introduction/optimizers>` provided by PennyLane.
+the available :doc:`optimization tools <introduction/interfaces>` provided by PennyLane.
 We also have a detailed guide on :doc:`how to write your own <development/plugins>`
 PennyLane-compatible quantum device.
 
@@ -156,9 +156,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    introduction/measurements
    introduction/templates
    introduction/inspecting_circuits
-   introduction/optimizers
    introduction/chemistry
-   introduction/configuration
 
 .. toctree::
    :maxdepth: 1

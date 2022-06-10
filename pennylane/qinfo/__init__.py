@@ -13,7 +13,4 @@
 # limitations under the License.
 """Differentiable quantum information module"""
 
-
-from .utils import *
-from .entropies import *
-from .fisher import classical_fisher
+from .transforms import reduced_dm, vn_entropy, mutual_info, classical_fisher

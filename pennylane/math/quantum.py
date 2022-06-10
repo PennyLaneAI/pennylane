@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ from numpy import float64
 import pennylane as qml
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .multi_dispatch import diag, dot, scatter_element_add, einsum
-from .utils import is_abstract, allclose, cast, convert_like, cast_like
+from .multi_dispatch import diag, dot, scatter_element_add, einsum, get_interface
+from .utils import is_abstract, allclose, cast, convert_like
 
 
 ABC_ARRAY = np.array(list(ABC))
@@ -270,64 +270,88 @@ def _partial_trace(density_matrix, indices):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
     """
+    # Does not support same indices sum in backprop
+    if get_interface(density_matrix) == "autograd":
+        density_matrix = _partial_trace_autograd(density_matrix, indices)
+        return density_matrix
+
     # Dimension and reshape
     shape = density_matrix.shape[0]
     num_indices = int(np.log2(shape))
     rho_dim = 2 * num_indices
 
     density_matrix = np.reshape(density_matrix, [2] * 2 * num_indices)
+    indices = np.sort(indices)
 
-    # Kraus operator for partial trace
-    if not is_abstract(density_matrix):
-        kraus = cast_like(np.eye(2), density_matrix)
-    else:
-        kraus = cast(np.eye(2), density_matrix.dtype)
+    # For loop over wires
+    for i, target_index in enumerate(indices):
+        target_index = target_index - i
+        state_indices = ABC[: rho_dim - 2 * i]
+        state_indices = list(state_indices)
+
+        target_letter = state_indices[target_index]
+        state_indices[target_index + num_indices - i] = target_letter
+        state_indices = "".join(state_indices)
+
+        einsum_indices = f"{state_indices}"
+        density_matrix = einsum(einsum_indices, density_matrix)
+
+    number_wires_sub = num_indices - len(indices)
+    reduced_density_matrix = np.reshape(
+        density_matrix, (2**number_wires_sub, 2**number_wires_sub)
+    )
+    return reduced_density_matrix
+
+
+def _partial_trace_autograd(density_matrix, indices):
+    """Compute the reduced density matrix for autograd interface by tracing out the provided indices with the use
+    of projectors as same subscripts indices are not supported in autograd backprop.
+    """
+    # Dimension and reshape
+    shape = density_matrix.shape[0]
+    num_indices = int(np.log2(shape))
+    rho_dim = 2 * num_indices
+    density_matrix = np.reshape(density_matrix, [2] * 2 * num_indices)
+
+    kraus = cast(np.eye(2), density_matrix.dtype)
 
     kraus = np.reshape(kraus, (2, 1, 2))
     kraus_dagger = np.asarray([np.conj(np.transpose(k)) for k in kraus])
 
     kraus = convert_like(kraus, density_matrix)
     kraus_dagger = convert_like(kraus_dagger, density_matrix)
-
     # For loop over wires
     for target_wire in indices:
         # Tensor indices of density matrix
         state_indices = ABC[:rho_dim]
-
         # row indices of the quantum state affected by this operation
         row_wires_list = [target_wire]
         row_indices = "".join(ABC_ARRAY[row_wires_list].tolist())
-
         # column indices are shifted by the number of wires
         col_wires_list = [w + num_indices for w in row_wires_list]
         col_indices = "".join(ABC_ARRAY[col_wires_list].tolist())
-
         # indices in einsum must be replaced with new ones
         num_partial_trace_wires = 1
         new_row_indices = ABC[rho_dim : rho_dim + num_partial_trace_wires]
         new_col_indices = ABC[
             rho_dim + num_partial_trace_wires : rho_dim + 2 * num_partial_trace_wires
         ]
-
         # index for summation over Kraus operators
         kraus_index = ABC[
             rho_dim + 2 * num_partial_trace_wires : rho_dim + 2 * num_partial_trace_wires + 1
         ]
-
         # new state indices replace row and column indices with new ones
         new_state_indices = functools.reduce(
             lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
             zip(col_indices + row_indices, new_col_indices + new_row_indices),
             state_indices,
         )
-
         # index mapping for einsum, e.g., 'iga,abcdef,idh->gbchef'
         einsum_indices = (
             f"{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
             f"{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}"
         )
         density_matrix = einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
-
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
         density_matrix, (2**number_wires_sub, 2**number_wires_sub)
@@ -397,47 +421,47 @@ def _density_matrix_from_state_vector(state, indices, check_state=False):
     return density_matrix
 
 
-def to_density_matrix(state, indices, check_state=False, c_dtype="complex128"):
+def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
     """Compute the reduced density matrix from a state vector or a density matrix.
 
     Args:
-        state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
-        indices (list(int)): List of indices in the considered subsystem.
+        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        indices (Sequence(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 
     Returns:
-        tensor_like: (Reduced) Density matrix of size ``(2**len(indices), 2**len(indices))``
+        tensor_like: Reduced density matrix of size ``(2**len(indices), 2**len(indices))``
 
 
     **Example**
 
     >>> x = [1, 0, 1, 0] / np.sqrt(2)
-    >>> to_density_matrix(x, indices=[0])
+    >>> reduced_dm(x, indices=[0])
     [[0.5+0.j 0.5+0.j]
      [0.5+0.j 0.5+0.j]]
 
-    >>> to_density_matrix(x, indices=[1])
+    >>> reduced_dm(x, indices=[1])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
     >>> y = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-    >>> to_density_matrix(z, indices=[1])
+    >>> reduced_dm(z, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
     >>> z = [[0.5, 0, 0.0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]
-    >>> to_density_matrix(z, indices=[0])
+    >>> reduced_dm(z, indices=[0])
     [[0.5+0.j 0.0+0.j]
      [0.0+0.j 0.5+0.j]]
 
-    >>> to_density_matrix(z, indices=[1])
+    >>> reduced_dm(z, indices=[1])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
     >>> y_mat_tf = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
-    >>> to_density_matrix(y_mat_tf, indices=[1])
+    >>> reduced_dm(y_mat_tf, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
@@ -455,13 +479,16 @@ def to_density_matrix(state, indices, check_state=False, c_dtype="complex128"):
     return density_matrix
 
 
-def to_vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
-    """Compute the Von Neumann entropy from a state vector, a density matrix given a subsystem.
+def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
+    r"""Compute the Von Neumann entropy from a state vector, a density matrix given a subsystem.
+
+    .. math::
+        S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
 
     Args:
         state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
         indices (list(int)): List of indices in the considered subsystem.
-        base (float, int): Base for the logarithm. If None, the natural logarithm is used.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 
@@ -471,18 +498,17 @@ def to_vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex
     **Example**
 
     >>> x = [1, 0, 0, 1] / np.sqrt(2)
-    >>> to_vn_entropy(x, indices=[0])
+    >>> vn_entropy(x, indices=[0])
     0.6931472
 
-    >>> to_vn_entropy(x, indices=[0], base=2)
+    >>> vn_entropy(x, indices=[0], base=2)
     1.0
 
     >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
-    >>> to_vn_entropy(x, indices=[0])
+    >>> vn_entropy(x, indices=[0])
     0.6931472
-
     """
-    density_matrix = to_density_matrix(state, indices, check_state, c_dtype)
+    density_matrix = reduced_dm(state, indices, check_state, c_dtype)
     entropy = _compute_vn_entropy(density_matrix, base)
 
     return entropy
@@ -523,8 +549,14 @@ def _compute_vn_entropy(density_matrix, base=None):
 
 
 # pylint: disable=too-many-arguments
-def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"):
-    """Compute the mutual information between two subsystems given a state.
+def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"):
+    r"""Compute the mutual information between two subsystems given a state:
+
+    .. math::
+
+        I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
+
+    where :math:`S` is the von Neumann entropy.
 
     The mutual information is a measure of correlation between two subsystems.
     More specifically, it quantifies the amount of information obtained about
@@ -547,15 +579,19 @@ def to_mutual_info(state, indices0, indices1, base=None, check_state=False, c_dt
     **Examples**
 
     >>> x = np.array([1, 0, 0, 1]) / np.sqrt(2)
-    >>> qml.math.to_mutual_info(x, indices0=[0], indices1=[1])
+    >>> qml.math.mutual_info(x, indices0=[0], indices1=[1])
     1.3862943611198906
 
-    >>> qml.math.to_mutual_info(x, indices0=[0], indices1=[1], base=2)
+    >>> qml.math.mutual_info(x, indices0=[0], indices1=[1], base=2)
     2.0
 
     >>> y = np.array([[1/2, 1/2, 0, 1/2], [1/2, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]])
-    >>> qml.math.to_mutual_info(y, indices0=[0], indices1=[1])
+    >>> qml.math.mutual_info(y, indices0=[0], indices1=[1])
     0.4682351577408206
+
+    .. seealso::
+
+        :func:`~.math.vn_entropy`
     """
 
     # the subsystems cannot overlap
@@ -582,13 +618,13 @@ def _compute_mutual_info(
 ):
     """Compute the mutual information between the subsystems."""
     all_indices = sorted([*indices0, *indices1])
-    vn_entropy_1 = to_vn_entropy(
+    vn_entropy_1 = vn_entropy(
         state, indices=indices0, base=base, check_state=check_state, c_dtype=c_dtype
     )
-    vn_entropy_2 = to_vn_entropy(
+    vn_entropy_2 = vn_entropy(
         state, indices=indices1, base=base, check_state=check_state, c_dtype=c_dtype
     )
-    vn_entropy_12 = to_vn_entropy(
+    vn_entropy_12 = vn_entropy(
         state, indices=all_indices, base=base, check_state=check_state, c_dtype=c_dtype
     )
 
