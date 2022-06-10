@@ -562,6 +562,7 @@ ar.register_function("torch", "ndim", _ndim_torch)
 ar.register_function("torch", "eigvalsh", lambda x: _i("torch").linalg.eigvalsh(x))
 ar.register_function("torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x)))
 
+
 def _sum_torch(tensor, axis=None, keepdims=False):
     import torch
 
