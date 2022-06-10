@@ -7,14 +7,14 @@
 * Quantum information module including: reduced density matrix functions for state vectors.
   [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
   
-  A `to_density_matrix` that can handle both state vectors and density matrix, to return a reduced density matrix:
+  A `reduced_dm` that can handle both state vectors and density matrix, to return a reduced density matrix:
   ```pycon
   >>> x = [1, 0, 1, 0] / np.sqrt(2)
-  >>> to_density_matrix(x, indices=[0])
+  >>> reduced_dm(x, indices=[0])
   [[0.5+0.j 0.5+0.j]
    [0.5+0.j 0.5+0.j]]
 
-  >>> to_density_matrix(x, indices=[1])
+  >>> reduced_dm(x, indices=[1])
   [[1.+0.j 0.+0.j]
    [0.+0.j 0.+0.j]]
   ```
