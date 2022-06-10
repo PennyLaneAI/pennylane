@@ -355,47 +355,47 @@ def _density_matrix_from_state_vector(state, indices, check_state=False):
     return density_matrix
 
 
-def to_density_matrix(state, indices, check_state=False, c_dtype="complex128"):
-    """Compute the reduced density matrix from a state vector, a density matrix or a QNode returning ``qml.state``.
+def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
+    """Compute the reduced density matrix from a state vector or a density matrix.
 
     Args:
-        state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
-        indices (list(int)): List of indices in the considered subsystem.
+        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        indices (Sequence(int)): List of indices in the considered subsystem.
         check_state (bool): If True, the function will check the state validity (shape and norm).
         c_dtype (str): Complex floating point precision type.
 
     Returns:
-        tensor_like: (Reduced) Density matrix of size ``(2**len(indices), 2**len(indices))``
+        tensor_like: Reduced density matrix of size ``(2**len(indices), 2**len(indices))``
 
 
     **Example**
 
     >>> x = [1, 0, 1, 0] / np.sqrt(2)
-    >>> to_density_matrix(x, indices=[0])
+    >>> reduced_dm(x, indices=[0])
     [[0.5+0.j 0.5+0.j]
      [0.5+0.j 0.5+0.j]]
 
-    >>> to_density_matrix(x, indices=[1])
+    >>> reduced_dm(x, indices=[1])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
     >>> y = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-    >>> to_density_matrix(z, indices=[1])
+    >>> reduced_dm(z, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
 
     >>> z = [[0.5, 0, 0.0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]
-    >>> to_density_matrix(z, indices=[0])
+    >>> reduced_dm(z, indices=[0])
     [[0.5+0.j 0.0+0.j]
      [0.0+0.j 0.5+0.j]]
 
-    >>> to_density_matrix(z, indices=[1])
+    >>> reduced_dm(z, indices=[1])
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]]
 
     >>> y_mat_tf = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
-    >>> to_density_matrix(y_mat_tf, indices=[1])
+    >>> reduced_dm(y_mat_tf, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)

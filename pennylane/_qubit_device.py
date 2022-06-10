@@ -657,7 +657,7 @@ class QubitDevice(Device):
             representing the reduced density matrix of the state prior to measurement.
         """
         state = getattr(self, "state", None)
-        return qml.math.to_density_matrix(state, indices=wires, c_dtype=self.C_DTYPE)
+        return qml.math.reduced_dm(state, indices=wires, c_dtype=self.C_DTYPE)
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis

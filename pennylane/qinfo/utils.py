@@ -16,12 +16,12 @@
 import pennylane as qml
 
 
-def density_matrix_transform(qnode, indices):
+def reduced_dm(qnode, wires):
     """Compute the reduced density matrix from a :class:`~.QNode` returning :func:`~.state`.
 
      Args:
          qnode (QNode): A :class:`~.QNode` returning :func:`~.state`.
-         indices (list(int)): List of indices in the considered subsystem.
+         wires (Sequence(int)): List of indices in the considered subsystem.
 
      Returns:
          func: Function which wraps the QNode and accepts the same arguments. When called, this function will
@@ -39,11 +39,11 @@ def density_matrix_transform(qnode, indices):
            qml.IsingXX(x, wires=[0,1])
            return qml.state()
 
-    >>> density_matrix_transform(circuit, indices=[0])(np.pi/2)
+    >>> reduced_dm(circuit, wires=[0])(np.pi/2)
      [[0.5+0.j 0.+0.j]
       [0.+0.j 0.5+0.j]]
 
-    .. seealso:: :func:`pennylane.density_matrix`
+    .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduced_dm`
     """
 
     def wrapper(*args, **kwargs):
@@ -54,8 +54,8 @@ def density_matrix_transform(qnode, indices):
 
         # TODO: optimize given the wires by creating a tape with relevant operations
         state_built = qnode(*args, **kwargs)
-        density_matrix = qml.math.to_density_matrix(
-            state_built, indices=indices, c_dtype=qnode.device.C_DTYPE
+        density_matrix = qml.math.reduced_dm(
+            state_built, indices=wires, c_dtype=qnode.device.C_DTYPE
         )
         return density_matrix
 
