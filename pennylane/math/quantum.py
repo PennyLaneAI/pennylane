@@ -266,8 +266,7 @@ def _partial_trace(density_matrix, indices):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
     """
-    # Does not support multiple same indices in backprop
-    print(get_interface(density_matrix))
+    # Does not support same indices sum in backprop
     if get_interface(density_matrix) == "autograd":
         density_matrix = _partial_trace_autograd(density_matrix, indices)
         return density_matrix
