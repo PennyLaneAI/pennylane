@@ -4,16 +4,17 @@
 
 <h3>New features since last release</h3>
 
-* A new quantum information module is added. It includes a function for computing the reduced density matrix functions 
+* A new quantum information module is added. It includes a function for computing the reduced density matrix functions
   for state vectors and density matrices.
 
   [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
   [(#2569)](https://github.com/PennyLaneAI/pennylane/pull/2569)
   [(#2598)](https://github.com/PennyLaneAI/pennylane/pull/2598)
   [(#2617)](https://github.com/PennyLaneAI/pennylane/pull/2617)
-
+  [(#2631)](https://github.com/PennyLaneAI/pennylane/pull/2631)
+  
   A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
-
+  
   ```pycon
   >>> x = [1, 0, 1, 0] / np.sqrt(2)
   >>> reduced_dm(x, indices=[0])
@@ -23,12 +24,12 @@
   >>> reduced_dm(x, indices=[1])
   [[1.+0.j 0.+0.j]
    [0.+0.j 0.+0.j]]
-  
+
   >>> y = [[0.5, 0, 0.0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]
   >>> reduced_dm(y, indices=[0])
   [[0.5+0.j 0.0+0.j]
    [0.0+0.j 0.5+0.j]]
-  
+
   >>> import tensorflow as tf
   >>> z = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
   >>> reduced_dm(z, indices=[1])
@@ -37,7 +38,7 @@
    [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
   ```
 
-  It also contains a `QNode` transform `qml.qinfo.reduced_dm`, that returns the density matrix from a `QNode` 
+  It also contains a `QNode` transform `qml.qinfo.reduced_dm`, that returns the density matrix from a `QNode`
   returning `qml.state`:
   ```python3
   dev = qml.device("default.qubit", wires=2)
@@ -93,6 +94,91 @@
   ```pycon
   >>> vn_entropy(circuit, indices=[0], base=2)(np.pi/2)
   1.0
+  ```
+
+  We add Von Neumann entropy capabilities, `qml.math.vn_entropy` that accepts both state vectors and density matrices
+  for all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
+
+  ```pycon
+  >>> x = [1, 0, 0, 1] / np.sqrt(2)
+  >>> vn_entropy(x, indices=[0])
+  0.6931472
+
+  >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
+  >>> vn_entropy(x, indices=[0])
+  0.6931472
+  ```
+
+  A Von Neumann measurement process `qml.vn_entropy` can be used as return in QNodes:
+
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit_entropy(x):
+      qml.IsingXX(x, wires=[0,1])
+      return qml.vn_entropy(wires=[0], log_base=2)
+  ```
+
+  ```pycon
+  >>> circuit_entropy(np.pi/2)
+  1.0
+  ```
+
+  The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy
+  `qml.qinfo.vn_entropy`:
+  
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit_entropy(x):
+      qml.IsingXX(x, wires=[0,1])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> vn_entropy(circuit, indices=[0], base=2)(np.pi/2)
+  1.0
+  ```
+
+  Support for mutual information computation is also added. The `qml.math.mutual_info`
+  function computes the mutual information from a state vector or a density matrix:
+  ```pycon
+  >>> x = np.array([1, 0, 0, 1]) / np.sqrt(2)
+  >>> qml.math.mutual_info(x, indices0=[0], indices1=[1])
+  1.3862943611198906
+  >>>
+  >>> y = np.array([[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]])
+  >>> qml.math.mutual_info(x, indices0=[0], indices1=[1])
+  1.3862943611198906
+  ```
+  The `qml.mutual_info` measurement process can be returned from a QNode:
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.IsingXX(x, wires=[0, 1])
+      return qml.mutual_info(wires0=[0], wires1=[1])
+  ```
+  ```pycon
+  >>> circuit(np.pi / 2)
+  tensor(1.38629436, requires_grad=True)
+  ```
+  The `qml.qinfo.mutual_info` can be used to transform a QNode returning
+  a state to a function that returns the mutual information:
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.IsingXX(x, wires=[0, 1])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> mutual_info_circuit = qml.qinfo.mutual_info(circuit, indices0=[0], indices1=[1])
+  >>> mutual_info_circuit(np.pi / 2)
+  1.3862943611198906
   ```
 
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new

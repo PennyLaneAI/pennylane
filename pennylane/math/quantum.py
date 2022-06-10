@@ -519,7 +519,7 @@ def _compute_vn_entropy(density_matrix, base=None):
 
     Args:
         density_matrix (tensor_like): ``(2**N, 2**N)`` tensor density matrix for an integer `N`.
-        base (float, int): Base for the logarithm.
+        base (float, int): Base for the logarithm. If None, the natural logarithm is used.
 
     Returns:
         float: Von Neumann entropy of the density matrix.
@@ -546,3 +546,86 @@ def _compute_vn_entropy(density_matrix, base=None):
     entropy = qml.math.entr(evs) / div_base
 
     return entropy
+
+
+# pylint: disable=too-many-arguments
+def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"):
+    r"""Compute the mutual information between two subsystems given a state:
+
+    .. math::
+
+        I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
+
+    where :math:`S` is the von Neumann entropy.
+
+    The mutual information is a measure of correlation between two subsystems.
+    More specifically, it quantifies the amount of information obtained about
+    one system by measuring the other system.
+
+    Each state can be given as a state vector in the computational basis, or
+    as a density matrix.
+
+    Args:
+        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        indices0 (list[int]): List of indices in the first subsystem.
+        indices1 (list[int]): List of indices in the second subsystem.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: Mutual information between the subsystems
+
+    **Examples**
+
+    >>> x = np.array([1, 0, 0, 1]) / np.sqrt(2)
+    >>> qml.math.mutual_info(x, indices0=[0], indices1=[1])
+    1.3862943611198906
+
+    >>> qml.math.mutual_info(x, indices0=[0], indices1=[1], base=2)
+    2.0
+
+    >>> y = np.array([[1/2, 1/2, 0, 1/2], [1/2, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]])
+    >>> qml.math.mutual_info(y, indices0=[0], indices1=[1])
+    0.4682351577408206
+
+    .. seealso::
+
+        :func:`~.math.vn_entropy`
+    """
+
+    # the subsystems cannot overlap
+    if len([index for index in indices0 if index in indices1]) > 0:
+        raise ValueError("Subsystems for computing mutual information must not overlap.")
+
+    # Cast to a complex array
+    state = cast(state, dtype=c_dtype)
+
+    state_shape = state.shape
+    if len(state_shape) > 0:
+        len_state = state_shape[0]
+        if state_shape in [(len_state,), (len_state, len_state)]:
+            return _compute_mutual_info(
+                state, indices0, indices1, base=base, check_state=check_state, c_dtype=c_dtype
+            )
+
+    raise ValueError("The state is not a state vector or a density matrix.")
+
+
+# pylint: disable=too-many-arguments
+def _compute_mutual_info(
+    state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"
+):
+    """Compute the mutual information between the subsystems."""
+    all_indices = sorted([*indices0, *indices1])
+    vn_entropy_1 = vn_entropy(
+        state, indices=indices0, base=base, check_state=check_state, c_dtype=c_dtype
+    )
+    vn_entropy_2 = vn_entropy(
+        state, indices=indices1, base=base, check_state=check_state, c_dtype=c_dtype
+    )
+    vn_entropy_12 = vn_entropy(
+        state, indices=all_indices, base=base, check_state=check_state, c_dtype=c_dtype
+    )
+
+    return vn_entropy_1 + vn_entropy_2 - vn_entropy_12

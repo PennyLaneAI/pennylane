@@ -27,7 +27,15 @@ import numpy as np
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane.operation import operation_derivative
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State, VnEntropy
+from pennylane.measurements import (
+    Sample,
+    Variance,
+    Expectation,
+    Probability,
+    State,
+    VnEntropy,
+    MutualInfo,
+)
 from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.math import multiply as qmlmul
@@ -495,6 +503,16 @@ class QubitDevice(Device):
                     )
                 results.append(self.vn_entropy(wires=obs.wires, log_base=obs.log_base))
 
+            elif obs.return_type is MutualInfo:
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the mutual information is not supported when using custom wire labels"
+                    )
+                wires0, wires1 = obs.raw_wires
+                results.append(
+                    self.mutual_info(wires0=wires0, wires1=wires1, log_base=obs.log_base)
+                )
+
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
@@ -687,6 +705,37 @@ class QubitDevice(Device):
             ) from e
         wires = wires.tolist()
         return qml.math.vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
+
+    def mutual_info(self, wires0, wires1, log_base):
+        r"""Returns the mutual information prior to measurement:
+
+        .. math::
+
+            I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
+
+        where :math:`S` is the von Neumann entropy.
+
+        Args:
+            wires0 (Wires): wires of the first subsystem
+            wires1 (Wires): wires of the second subsystem
+            log_base (float): base to use in the logarithm
+
+        Returns:
+            float: the mutual information
+        """
+        try:
+            state = self.access_state()
+        except qml.QuantumFunctionError as e:  # pragma: no cover
+            raise NotImplementedError(
+                f"Cannot compute the mutual information with device {self.name} that is not capable of returning the "
+                f"state. "
+            ) from e
+
+        wires0 = wires0.tolist()
+        wires1 = wires1.tolist()
+        return qml.math.mutual_info(
+            state, indices0=wires0, indices1=wires1, c_dtype=self.C_DTYPE, base=log_base
+        )
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis

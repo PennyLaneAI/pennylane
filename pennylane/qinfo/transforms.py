@@ -21,7 +21,7 @@ def reduced_dm(qnode, wires):
 
      Args:
          qnode (QNode): A :class:`~.QNode` returning :func:`~.state`.
-         wires (Sequence(int)): List of indices in the considered subsystem.
+         wires (Sequence(int)): List of wires in the considered subsystem.
 
      Returns:
          func: Function which wraps the QNode and accepts the same arguments. When called, this function will
@@ -70,7 +70,7 @@ def vn_entropy(qnode, wires, base=None):
 
     Args:
         qnode (tensor_like): A :class:`.QNode` returning a :func:`~.state`.
-        wires (Sequence(int)): List of indices in the considered subsystem.
+        wires (Sequence(int)): List of wires in the considered subsystem.
         base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
 
     Returns:
@@ -86,7 +86,7 @@ def vn_entropy(qnode, wires, base=None):
                 qml.IsingXX(x, wires=[0, 1])
                 return qml.state()
 
-    >>> vn_entropy(circuit, indices=[0])(np.pi/2)
+    >>> vn_entropy(circuit, wires=[0])(np.pi/2)
     0.6931472
 
     """
@@ -108,6 +108,64 @@ def vn_entropy(qnode, wires, base=None):
 
         density_matrix = density_matrix_qnode(*args, **kwargs)
         entropy = qml.math.vn_entropy(density_matrix, wires, base, c_dtype=qnode.device.C_DTYPE)
+        return entropy
+
+    return wrapper
+
+
+def mutual_info(qnode, wires0, wires1, base=None):
+    r"""Compute the mutual information from a :class:`.QNode` returning a :func:`~.state`:
+
+    .. math::
+
+        I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
+
+    where :math:`S` is the von Neumann entropy.
+
+    The mutual information is a measure of correlation between two subsystems.
+    More specifically, it quantifies the amount of information obtained about
+    one system by measuring the other system.
+
+    Args:
+        qnode (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        wires0 (Sequence(int)): List of wires in the first subsystem.
+        wires1 (Sequence(int)): List of wires in the second subsystem.
+        base (float): Base for the logarithm. If None, the natural logarithm is used.
+
+    Returns:
+        func: A function with the same arguments as the QNode that returns
+        the mutual information from its output state.
+
+    **Example**
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2)
+
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.IsingXX(x, wires=[0, 1])
+                return qml.state()
+
+    >>> mutual_info_circuit = qinfo.mutual_info(circuit, wires0=[0], wires1=[1])
+    >>> mutual_info_circuit(np.pi/2)
+    1.3862943611198906
+    >>> x = np.array(0.4, requires_grad=True)
+    >>> mutual_info_circuit(x)
+    0.3325090393262875
+    >>> qml.grad(mutual_info_circuit)(0.4)
+    1.2430067731198946
+
+    .. seealso::
+
+        :func:`~.qinfo.vn_entropy_transform`
+    """
+
+    density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
+
+    def wrapper(*args, **kwargs):
+        density_matrix = density_matrix_qnode(*args, **kwargs)
+        entropy = qml.math.mutual_info(density_matrix, wires0, wires1, base=base)
         return entropy
 
     return wrapper
