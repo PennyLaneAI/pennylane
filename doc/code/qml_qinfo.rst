@@ -4,7 +4,8 @@ qml.qinfo
 Overview
 --------
 
-This module provides a collection of transforms to return quantum information quantities from :class:`~.QNode`.
+This module provides a collection of methods to return quantum information quantities from :class:`~.QNode`
+returning :func:`~.state`.
 
 .. currentmodule:: pennylane.qinfo
 

@@ -137,14 +137,17 @@ the ``@jax.jit`` decorator can be directly applied to the QNode.
     the computation was just-in-time compiled. This is done by checking if any
     of the input parameters were subject to a JAX transformation. If so, a
     variant of the interface that supports the just-in-time compilation of
-    scalar-valued QNodes (i.e., those that have a single expectation value or
-    variance measurement) will be used. This is equivalent to passing
-    ``interface='jax-jit'``.
+    QNodes will be used. This is equivalent to passing ``interface='jax-jit'``.
+
+    Computing the jacobian of vector-valued QNodes is not supported with the
+    JAX JIT interface. The output of vector-valued QNodes can, however, be used
+    in the definition of scalar-valued cost functions whose gradients can be
+    computed.
 
     Specify ``interface='jax-python'`` to enforce support for computing the
-    forward and backward pass of vector-valued QNodes (e.g., QNodes with
-    probability, state or multiple expectation value measurements). This
-    option does not support just-in-time compilation.
+    backward pass of vector-valued QNodes (e.g., QNodes with probability, state
+    or multiple expectation value measurements). This option does not support
+    just-in-time compilation.
 
 
 Randomness: Shots and Samples
