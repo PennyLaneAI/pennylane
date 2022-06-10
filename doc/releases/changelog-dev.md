@@ -13,6 +13,7 @@
   
 
   A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
+
   ```pycon
   >>> x = [1, 0, 1, 0] / np.sqrt(2)
   >>> reduced_dm(x, indices=[0])
@@ -35,6 +36,7 @@
   [[1.+0.j 0.+0.j]
    [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
   ```
+
   It also contains a `QNode` transform `qml.qinfo.reduced_dm`, that returns the density matrix from a `QNode` 
   returning `qml.state`:
   ```python3
