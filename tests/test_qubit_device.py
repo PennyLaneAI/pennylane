@@ -1015,7 +1015,7 @@ class TestMarginalProb:
     # Note that the broadcasted probs enter `marginal_probs` as a flattened array
     broadcasted_marginal_test_data = [
         (
-            np.array([0.1, 0.2, 0.3, 0.4, 0.8, 0.02, 0.05, 0.13, 0.6, 0.3, 0.02, 0.08]),
+            np.array([[0.1, 0.2, 0.3, 0.4], [0.8, 0.02, 0.05, 0.13], [0.6, 0.3, 0.02, 0.08]]),
             np.array([[0.4, 0.6], [0.85, 0.15], [0.62, 0.38]]),
             [1],
             2,
@@ -1023,22 +1023,8 @@ class TestMarginalProb:
         (
             np.array(
                 [
-                    0.17,
-                    0.06,
-                    0.21,
-                    0.04,
-                    0.19,
-                    0.19,
-                    0.08,
-                    0.06,
-                    0.07,
-                    0.04,
-                    0.11,
-                    0.04,
-                    0.29,
-                    0.04,
-                    0.18,
-                    0.23,
+                    [0.17, 0.06, 0.21, 0.04, 0.19, 0.19, 0.08, 0.06],
+                    [0.07, 0.04, 0.11, 0.04, 0.29, 0.04, 0.18, 0.23],
                 ]
             ),
             np.array([[0.38, 0.27, 0.1, 0.25], [0.18, 0.47, 0.08, 0.27]]),
@@ -1267,34 +1253,6 @@ class TestBatchExecution:
         assert np.allclose(res[0], dev.execute(empty_tape), rtol=tol, atol=0)
 
 
-class TestBatchExecutionBroadcasted:
-    """Tests for the batch_execute method with broadcasted parameters."""
-
-    with qml.tape.QuantumTape() as tape1:
-        qml.RX(np.zeros(5), 0)
-        qml.PauliX(wires=0)
-        qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
-
-    with qml.tape.QuantumTape() as tape2:
-        qml.RY(np.zeros(7), 0)
-        qml.PauliX(wires=0)
-        qml.expval(qml.PauliZ(wires=0))
-
-    @pytest.mark.parametrize("n_tapes", [1, 2, 3])
-    def test_calls_to_execute(self, n_tapes, mocker, mock_qubit_device_with_original_statistics):
-        """Tests that the device's execute method is called the correct number of times."""
-
-        dev = mock_qubit_device_with_original_statistics(wires=2)
-        spy1 = mocker.spy(QubitDevice, "execute")
-        spy2 = mocker.spy(QubitDevice, "reset")
-
-        tapes = [self.tape1] * n_tapes
-        dev.batch_execute(tapes)
-
-        assert spy1.call_count == n_tapes
-        assert spy2.call_count == n_tapes
-
-
 class TestShotList:
     """Tests for passing shots as a list"""
 
@@ -1503,6 +1461,21 @@ class TestShotList:
 
         with pytest.raises(ValueError, match="Unknown shot sequence"):
             qml.device("default.qubit", wires=2, shots=["a", "b", "c"])
+
+    @pytest.mark.parametrize("shot_list", [[1, 2, 3, 10], [1, 2, 2, 10, 1, 1], [10, 10, 10], [1]])
+    def test_error_shot_list_with_broadcasting(self, shot_list):
+        """Test that an error is raised when using parameter broadcasting with a
+        shot vector is attempted."""
+        dev = qml.device("default.qubit", wires=2, shots=shot_list)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.RY(np.zeros(3), wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(qml.PauliZ(wires=0)), qml.sample(qml.PauliZ(wires=1))
+
+        with pytest.raises(NotImplementedError, match="Parameter broadcasting when using"):
+            circuit()
 
 
 class TestGetBatchSize:

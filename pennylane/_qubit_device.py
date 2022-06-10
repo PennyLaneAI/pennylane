@@ -263,6 +263,10 @@ class QubitDevice(Device):
         # compute the required statistics
         if not self.analytic and self._shot_vector is not None:
 
+            if self._ndim(self._samples) == 3:
+                raise NotImplementedError(
+                    "Parameter broadcasting when using a shot vector is not supported yet."
+                )
             results = []
             s1 = 0
 
@@ -449,7 +453,7 @@ class QubitDevice(Device):
             >>> dev = qml.device("my_device", shots=[5, (10, 3), 100])
 
             This device will execute QNodes using 135 shots, however
-            measurement statistics will be **course grained** across these 135
+            measurement statistics will be **coarse grained** across these 135
             shots:
 
             * All measurement statistics will first be computed using the
@@ -467,15 +471,20 @@ class QubitDevice(Device):
         for obs in observables:
             # Pass instances directly
             if obs.return_type is Expectation:
+                # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
                 results.append(self.expval(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Variance:
+                # Appends a result of shape (num_bins,) if bin_size is not None, else a scalar
                 results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Sample:
+                # Appends a result of shape (shots, num_bins,) if bin_size is not None else (shots,)
                 results.append(self.sample(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Probability:
+                # Appends a result of shape (2**len(obs.wires), num_bins,)
+                # if bin_size is not None else (2**len(obs.wires),)
                 results.append(
                     self.probability(wires=obs.wires, shot_range=shot_range, bin_size=bin_size)
                 )
@@ -845,11 +854,11 @@ class QubitDevice(Device):
             array[float]: array of the resulting marginal probabilities.
         """
         dim = 2**self.num_wires
-        batch_size = self._get_batch_size(prob, (dim,), dim)
+        batch_size = qml.math.shape(prob)[0] if self._ndim(prob) == 2 else None
 
         if wires is None:
             # no need to marginalize
-            return self._reshape(prob, [batch_size, dim]) if batch_size else prob
+            return prob
 
         wires = Wires(wires)
         # determine which subsystems are to be summed over
@@ -873,9 +882,8 @@ class QubitDevice(Device):
 
         if batch_size:
             inactive_device_wires = [idx + 1 for idx in inactive_device_wires]
-        prob = self._reduce_sum(prob, inactive_device_wires)
-        flat_shape = [batch_size, -1] if batch_size else [-1]
-        prob = self._reshape(prob, flat_shape)
+        flat_shape = (-1,) if batch_size is None else (batch_size, -1)
+        prob = self._reshape(self._reduce_sum(prob, inactive_device_wires), flat_shape)
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
@@ -888,6 +896,7 @@ class QubitDevice(Device):
         perm = basis_states @ powers_of_two
         # The permutation happens on the last axis both with and without broadcasting
         out = self._gather(prob, perm, axis=1 if batch_size else 0)
+
         return out
 
     def expval(self, observable, shot_range=None, bin_size=None):

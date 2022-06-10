@@ -880,7 +880,9 @@ class DefaultQubit(QubitDevice):
         if self._state is None:
             return None
 
-        flat_state = self._flatten(self._state)
+        dim = 2**self.num_wires
+        batch_size = self._get_batch_size(self._state, [2] * self.num_wires, dim)
+        flat_state = self._reshape(self._state, (batch_size, dim) if batch_size else (dim,))
         real_state = self._real(flat_state)
         imag_state = self._imag(flat_state)
         return self.marginal_prob(real_state**2 + imag_state**2, wires)
