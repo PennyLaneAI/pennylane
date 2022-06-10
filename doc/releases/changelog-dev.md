@@ -407,7 +407,7 @@
   tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
   ```
 
-* The `default.mixed` device now supports backpropagation with the Autograd, TensorFlow, and PyTorch interfaces.
+* The `default.mixed` device now supports backpropagation with the Autograd, TensorFlow, and PyTorch (CPU) interfaces.
   [(#2615)](https://github.com/PennyLaneAI/pennylane/pull/2615)
   [(#2670)](https://github.com/PennyLaneAI/pennylane/pull/2670)
   [(#2680)](https://github.com/PennyLaneAI/pennylane/pull/2680)

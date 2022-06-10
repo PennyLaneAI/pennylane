@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the ``default.mixed`` device for the torch interface.
+Tests for the ``default.mixed`` device for the Torch interface.
 """
 import re
 import pytest
@@ -28,7 +28,7 @@ torch = pytest.importorskip("torch")
 
 
 class TestQNodeIntegration:
-    """Integration tests for default.mixed.torch. This test ensures it integrates
+    """Integration tests for default.mixed with Torch. This test ensures it integrates
     properly with the PennyLane UI, in particular the QNode."""
 
     def test_load_device(self):
@@ -140,7 +140,7 @@ class TestDtypePreserved:
 
 
 class TestOps:
-    """Unit tests for operations supported by the default.mixed.torch device"""
+    """Unit tests for operations supported by the default.mixed device with Torch"""
 
     def test_multirz_jacobian(self):
         """Test that the patched numpy functions are used for the MultiRZ
@@ -228,7 +228,7 @@ class TestPassthruIntegration:
         assert qml.math.allclose(res, expected, atol=tol, rtol=0)
 
     def test_jacobian_repeated(self, tol):
-        """Test that jacobian of a QNode with an attached default.mixed.torch device
+        """Test that the jacobian of a QNode with an attached default.mixed.torch device
         gives the correct result in the case of repeated parameters"""
         x = torch.tensor(0.43316321, dtype=torch.float64)
         y = torch.tensor(0.2162158, dtype=torch.float64)
@@ -556,7 +556,7 @@ class TestPassthruIntegration:
         assert torch.allclose(res_y, expected_y, atol=tol, rtol=0)
 
     def test_batching(self, tol):
-        """Tests that the gradient of the qnode is correct with batching"""
+        """Tests that the gradient of the qnode is correct with batching parameters"""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.batch_params
