@@ -435,10 +435,10 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
     **Example**
 
-    First define two QNodes with potentially different signatures, let's consider a first circuit with two parameters
-    and a second circuit with only one parameter. In the `qml.qinfo.fidelity` transform it is then necessary to give
-    two tuple, each containing the args and kwargs of their respective circuit, e.g. `all_args0` = (0.1, 0.3) and
-    `all_args1` = (0.2) in the following.
+    First, let's consider two QNodes with potentially different signatures: a circuit with two parameters
+    and another circuit with a single parameter. The output of the `qml.qinfo.fidelity` transform then requires
+    two tuples to be passed as arguments, each containing the args and kwargs of their respective circuit, e.g. `all_args0 = (0.1, 0.3)` and
+    `all_args1 = (0.2)` in the following case:
 
     .. code-block:: python
 
