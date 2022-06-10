@@ -26,7 +26,6 @@ from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import diag, dot, scatter_element_add, einsum, get_interface
 from .utils import is_abstract, allclose, cast, convert_like
 
-
 ABC_ARRAY = np.array(list(ABC))
 
 

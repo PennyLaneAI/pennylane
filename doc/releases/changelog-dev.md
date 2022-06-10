@@ -11,7 +11,7 @@
   [(#2569)](https://github.com/PennyLaneAI/pennylane/pull/2569)
   [(#2598)](https://github.com/PennyLaneAI/pennylane/pull/2598)
   [(#2617)](https://github.com/PennyLaneAI/pennylane/pull/2617)
-  
+
   A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
 
   ```pycon
@@ -36,6 +36,7 @@
   [[1.+0.j 0.+0.j]
    [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
   ```
+
   It also contains a `QNode` transform `qml.qinfo.reduced_dm`, that returns the density matrix from a `QNode` 
   returning `qml.state`:
   ```python3
@@ -93,7 +94,7 @@
   >>> vn_entropy(circuit, indices=[0], base=2)(np.pi/2)
   1.0
   ```
-  
+
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
   attribute `batch_size`.
   - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
