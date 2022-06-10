@@ -337,7 +337,6 @@ class TorchLayer(Module):
                             + "appropiate shape."
                         )
                     return init
-            # TODO: Figure out why a 1-dim Tensor is assigned to all weights with shape <= 1.
             return init(torch.Tensor(*weight_size)) if weight_size else init(torch.Tensor(1))[0]
 
         for name, size in weight_shapes.items():
