@@ -14,7 +14,7 @@
 """
 Tests for the classical fisher information matrix in the pennylane.qinfo
 """
-# pylint: disable=no-self-use, import-outside-toplevel, no-member, import-error, too-few-public-methods
+# pylint: disable=no-self-use, import-outside-toplevel, no-member, import-error, too-few-public-methods, bad-continuation
 import pytest
 
 import pennylane as qml
@@ -121,7 +121,9 @@ class TestIntegration:
         res = classical_fisher(circ)(params)
         assert np.allclose(res, n_wires * np.ones((n_params, n_params)))
 
-    def test_hardware_compatibility_classical_fisher(self):
+    def test_hardware_compatibility_classical_fisher(
+        self,
+    ):
         """Testing that classical_fisher can be computed with finite shots"""
         n_wires = 3
         n_params = 3
@@ -145,7 +147,9 @@ class TestIntegration:
         res = qml.qinfo.classical_fisher(circ)(params)
         assert np.allclose(res, n_wires * np.ones((n_params, n_params)), atol=1)
 
-    def test_quantum_fisher_info():
+    def test_quantum_fisher_info(
+        self,
+    ):
         """Integration test of quantum fisher information matrix CFIM. This is just calling ``qml.metric_tensor`` and multiplying by a factor of 4"""
 
         n_wires = 2

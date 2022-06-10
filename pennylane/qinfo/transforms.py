@@ -397,6 +397,7 @@ def classical_fisher(qnode, argnums=0):
 
     return wrapper
 
+
 def quantum_fisher(*args, **kwargs):
     r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode` or quantum tape.
 
@@ -412,7 +413,8 @@ def quantum_fisher(*args, **kwargs):
     with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
 
     .. seealso::
-        :func:`~.pennylane.adjoint_metric_tensor`; ``quantum_fisher()`` is simply calling :func:`~.pennylane.metric_tensor` with a prefactor of 4. Please refer there for implementation details.
+        ``quantum_fisher()`` is simply calling :func:`~.pennylane.metric_tensor` with a prefactor of 4. Please refer there for implementation details.
+        :func:`~.pennylane.qinfo.classical_fisher`; :func:`~.pennylane.adjoint_metric_tensor`
     """
 
     def wrapper(*args0, **kwargs0):
