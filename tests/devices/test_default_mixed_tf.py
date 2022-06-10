@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the ``default.mixed`` device for the Autograd interface
+Tests for the ``default.mixed`` device for the TensorFlow interface
 """
 import re
 import pytest
@@ -22,41 +22,20 @@ from pennylane import numpy as np
 from pennylane.devices.default_mixed import DefaultMixed
 from pennylane import DeviceError
 
+pytestmark = pytest.mark.tf
 
-@pytest.mark.autograd
-def test_analytic_deprecation():
-    """Tests if the kwarg `analytic` is used and displays error message."""
-    msg = "The analytic argument has been replaced by shots=None. "
-    msg += "Please use shots=None instead of analytic=True."
+tf = pytest.importorskip("tensorflow", minversion="2.1")
 
-    with pytest.raises(
-        DeviceError,
-        match=msg,
-    ):
-        qml.device("default.mixed", wires=1, shots=1, analytic=True)
+# The decorator and interface pairs to test:
+#   1. No QNode decorator and "tf" interface
+#   2. QNode decorated with tf.function and "tf" interface
+#   3. No QNode decorator and "tf-autograph" interface
+decorators_interfaces = [(lambda x: x, "tf"), (tf.function, "tf"), (lambda x: x, "tf-autograph")]
 
 
-@pytest.mark.autograd
 class TestQNodeIntegration:
-    """Integration tests for default.mixed.autograd. This test ensures it integrates
+    """Integration tests for default.mixed.tf. This test ensures it integrates
     properly with the PennyLane UI, in particular the QNode."""
-
-    def test_defines_correct_capabilities(self):
-        """Test that the device defines the right capabilities"""
-
-        dev = qml.device("default.mixed", wires=1)
-        cap = dev.capabilities()
-        capabilities = {
-            "model": "qubit",
-            "supports_finite_shots": True,
-            "supports_tensor_observables": True,
-            "supports_broadcasting": False,
-            "returns_probs": True,
-            "returns_state": True,
-            "passthru_devices": {"autograd": "default.mixed", "tf": "default.mixed"},
-        }
-
-        assert cap == capabilities
 
     def test_load_device(self):
         """Test that the plugin device loads correctly"""
@@ -64,16 +43,16 @@ class TestQNodeIntegration:
         assert dev.num_wires == 2
         assert dev.shots == None
         assert dev.short_name == "default.mixed"
-        assert dev.capabilities()["passthru_devices"]["autograd"] == "default.mixed"
+        assert dev.capabilities()["passthru_devices"]["tf"] == "default.mixed"
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct
         result for a simple circuit."""
-        p = np.array(0.543)
+        p = tf.Variable(0.543)
 
         dev = qml.device("default.mixed", wires=1)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -94,13 +73,13 @@ class TestQNodeIntegration:
         expected[0, 0] = 1
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
-        def circuit():
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(a):
             qml.Hadamard(wires=0)
-            qml.RZ(np.pi / 4, wires=0)
+            qml.RZ(a, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        circuit()
+        circuit(tf.constant(np.pi / 4))
         state = dev.state
 
         amplitude = np.exp(-1j * np.pi / 4) / 2
@@ -111,7 +90,6 @@ class TestQNodeIntegration:
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.autograd
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
@@ -129,12 +107,11 @@ class TestDtypePreserved:
     def test_real_dtype(self, r_dtype, measurement, tol):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
-        p = 0.543
+        p = tf.constant(0.543)
 
-        dev = qml.device("default.mixed", wires=3)
-        dev.R_DTYPE = r_dtype
+        dev = qml.device("default.mixed", wires=3, r_dtype=r_dtype)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.apply(measurement)
@@ -150,11 +127,11 @@ class TestDtypePreserved:
     def test_complex_dtype(self, c_dtype, measurement, tol):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
-        p = 0.543
+        p = tf.constant(0.543)
 
         dev = qml.device("default.mixed", wires=3, c_dtype=c_dtype)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.apply(measurement)
@@ -163,9 +140,8 @@ class TestDtypePreserved:
         assert res.dtype == c_dtype
 
 
-@pytest.mark.autograd
 class TestOps:
-    """Unit tests for operations supported by the default.mixed.autograd device"""
+    """Unit tests for operations supported by the default.mixed.tf device"""
 
     def test_multirz_jacobian(self):
         """Test that the patched numpy functions are used for the MultiRZ
@@ -173,19 +149,24 @@ class TestOps:
         wires = 4
         dev = qml.device("default.mixed", wires=wires)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(param):
             qml.MultiRZ(param, wires=[0, 1])
             return qml.probs(wires=list(range(wires)))
 
-        param = np.array(0.3, requires_grad=True)
-        res = qml.jacobian(circuit)(param)
+        param = tf.Variable(0.3, trainable=True)
+
+        with tf.GradientTape() as tape:
+            out = circuit(param)
+
+        res = tape.gradient(out, param)
+
         assert np.allclose(res, np.zeros(wires**2))
 
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
         dev = DefaultMixed(wires=["a", "b", "c"])
-        state = np.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.0
+        state = tf.constant([1, 0, 0, 0, 1, 0, 1, 1], dtype=tf.complex128) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
         spy = mocker.spy(qml.math, "scatter")
@@ -193,14 +174,14 @@ class TestOps:
 
         state = np.outer(state, np.conj(state))
 
-        assert np.all(dev._state.flatten() == state.flatten())
+        assert np.all(tf.reshape(dev._state, (-1,)) == tf.reshape(state, (-1,)))
         spy.assert_not_called()
 
     def test_partial_subsystem(self, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
 
         dev = DefaultMixed(wires=["a", "b", "c"])
-        state = np.array([1, 0, 1, 0]) / np.sqrt(2.0)
+        state = tf.constant([1, 0, 1, 0], dtype=tf.complex128) / np.sqrt(2.0)
         state_wires = qml.wires.Wires(["a", "c"])
 
         spy = mocker.spy(qml.math, "scatter")
@@ -208,25 +189,26 @@ class TestOps:
 
         state = np.kron(np.outer(state, np.conj(state)), np.array([[1, 0], [0, 0]]))
 
-        assert np.all(np.reshape(dev._state, (8, 8)) == state)
+        assert np.all(tf.reshape(dev._state, (8, 8)) == state)
         spy.assert_called()
 
 
-@pytest.mark.autograd
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
-    def test_jacobian_variable_multiply(self, tol):
-        """Test that jacobian of a QNode with an attached default.mixed.autograd device
+    @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
+    def test_jacobian_variable_multiply(self, decorator, interface, tol):
+        """Test that jacobian of a QNode with an attached default.mixed.tf device
         gives the correct result in the case of parameters multiplied by scalars"""
         x = 0.43316321
         y = 0.2162158
         z = 0.75110998
-        weights = np.array([x, y, z], requires_grad=True)
+        weights = tf.Variable([x, y, z], trainable=True)
 
         dev = qml.device("default.mixed", wires=1)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @decorator
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit(p):
             qml.RX(3 * p[0], wires=0)
             qml.RY(p[1], wires=0)
@@ -239,8 +221,10 @@ class TestPassthruIntegration:
         expected = np.cos(3 * x) * np.cos(y) * np.cos(z / 2) - np.sin(3 * x) * np.sin(z / 2)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        grad_fn = qml.jacobian(circuit, 0)
-        res = grad_fn(np.array(weights))
+        with tf.GradientTape() as tape:
+            out = circuit(weights)
+
+        res = tape.jacobian(out, weights)
 
         expected = np.array(
             [
@@ -250,40 +234,44 @@ class TestPassthruIntegration:
             ]
         )
 
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert qml.math.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_jacobian_repeated(self, tol):
-        """Test that jacobian of a QNode with an attached default.mixed.autograd device
+    @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
+    def test_jacobian_repeated(self, decorator, interface, tol):
+        """Test that jacobian of a QNode with an attached default.mixed.tf device
         gives the correct result in the case of repeated parameters"""
         x = 0.43316321
         y = 0.2162158
         z = 0.75110998
-        p = np.array([x, y, z], requires_grad=True)
+        p = tf.Variable([x, y, z], trainable=True)
         dev = qml.device("default.mixed", wires=1)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @decorator
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.Rot(x[0], x[1], x[2], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        res = circuit(p)
+        with tf.GradientTape() as tape:
+            res = circuit(p)
 
         expected = np.cos(y) ** 2 - np.sin(x) * np.sin(y) ** 2
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        grad_fn = qml.jacobian(circuit, 0)
-        res = grad_fn(p)
+        res = tape.jacobian(res, p)
 
         expected = np.array(
             [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_jacobian_agrees_backprop_parameter_shift(self, tol):
-        """Test that jacobian of a QNode with an attached default.mixed.autograd device
+    @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
+    def test_backprop_jacobian_agrees_parameter_shift(self, decorator, interface, tol):
+        """Test that jacobian of a QNode with an attached default.mixed.tf device
         gives the correct result with respect to the parameter-shift method"""
-        p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242], requires_grad=True)
+        p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
+        p_tf = tf.Variable(p, trainable=True)
 
         def circuit(x):
             for i in range(0, len(p), 2):
@@ -296,113 +284,141 @@ class TestPassthruIntegration:
         dev1 = qml.device("default.mixed", wires=3)
         dev2 = qml.device("default.mixed", wires=3)
 
-        circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="autograd")
+        circuit1 = decorator(qml.QNode(circuit, dev1, diff_method="backprop", interface=interface))
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
 
         assert circuit1.gradient_fn == "backprop"
         assert circuit2.gradient_fn is qml.gradients.param_shift
 
-        res = circuit1(p)
+        with tf.GradientTape() as tape:
+            res = circuit1(p_tf)
 
         assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
 
-        grad_fn = qml.jacobian(circuit1, 0)
-        res = grad_fn(p)
+        res = tape.jacobian(res, p_tf)
         assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
-    def test_state_differentiability(self, tol):
+    @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
+    def test_state_differentiability(self, decorator, interface, tol):
         """Test that the device state can be differentiated"""
         dev = qml.device("default.mixed", wires=1)
 
-        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        @decorator
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit(a):
             qml.RY(a, wires=0)
             return qml.state()
 
-        a = np.array(0.54, requires_grad=True)
+        a = tf.Variable(0.54, trainable=True)
 
-        def cost(a):
-            """A function of the device quantum state, as a function
-            of input QNode parameters."""
+        with tf.GradientTape() as tape:
             state = circuit(a)
-            res = np.abs(state) ** 2
-            return res[1][1] - res[0][0]
+            res = tf.abs(state) ** 2
+            res = res[1][1] - res[0][0]
 
-        grad = qml.grad(cost)(a)
+        grad = tape.gradient(res, a)
         expected = np.sin(a)
+
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_density_matrix_differentiability(self, tol):
+    @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
+    def test_state_vector_differentiability(self, decorator, interface, tol):
+        """Test that the device state vector can be differentiated directly"""
+        dev = qml.device("default.mixed", wires=1)
+
+        @decorator
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
+        def circuit(a):
+            qml.RY(a, wires=0)
+            return qml.state()
+
+        a = tf.Variable(0.54, dtype=tf.complex128, trainable=True)
+
+        with tf.GradientTape() as tape:
+            res = circuit(a)
+
+        grad = tape.jacobian(res, a)
+        expected = 0.5 * np.array([[-np.sin(a), np.cos(a)], [np.cos(a), np.sin(a)]])
+
+        assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
+    def test_density_matrix_differentiability(self, decorator, interface, tol):
         """Test that the density matrix can be differentiated"""
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        @decorator
+        @qml.qnode(dev, diff_method="backprop", interface=interface)
         def circuit(a):
             qml.RY(a, wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.density_matrix(wires=1)
 
-        a = np.array(0.54, requires_grad=True)
+        a = tf.Variable(0.54, trainable=True)
 
-        def cost(a):
-            """A function of the device quantum state, as a function
-            of input QNode parameters."""
+        with tf.GradientTape() as tape:
             state = circuit(a)
-            res = np.abs(state) ** 2
-            return res[1][1] - res[0][0]
+            res = tf.abs(state) ** 2
+            res = res[1][1] - res[0][0]
 
-        grad = qml.grad(cost)(a)
+        grad = tape.gradient(res, a)
         expected = np.sin(a)
+
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_prob_differentiability(self, tol):
+    @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
+    def test_prob_differentiability(self, decorator, interface, tol):
         """Test that the device probability can be differentiated"""
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        @decorator
+        @qml.qnode(dev, diff_method="backprop", interface=interface)
         def circuit(a, b):
             qml.RX(a, wires=0)
             qml.RY(b, wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
-        a = np.array(0.54, requires_grad=True)
-        b = np.array(0.12, requires_grad=True)
+        a = tf.Variable(0.54, trainable=True)
+        b = tf.Variable(0.12, trainable=True)
 
-        def cost(a, b):
+        with tf.GradientTape() as tape:
             prob_wire_1 = circuit(a, b)
-            return prob_wire_1[1] - prob_wire_1[0]
+            res = prob_wire_1[1] - prob_wire_1[0]
 
-        res = cost(a, b)
         expected = -np.cos(a) * np.cos(b)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        grad = qml.grad(cost)(a, b)
+        grad = tape.gradient(res, [a, b])
         expected = [np.sin(a) * np.cos(b), np.cos(a) * np.sin(b)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
-    def test_prob_vector_differentiability(self, tol):
+    @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
+    def test_prob_vector_differentiability(self, decorator, interface, tol):
         """Test that the device probability vector can be differentiated directly"""
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        @decorator
+        @qml.qnode(dev, diff_method="backprop", interface=interface)
         def circuit(a, b):
             qml.RX(a, wires=0)
             qml.RY(b, wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
-        a = np.array(0.54, requires_grad=True)
-        b = np.array(0.12, requires_grad=True)
+        a = tf.Variable(0.54, trainable=True)
+        b = tf.Variable(0.12, trainable=True)
 
-        res = circuit(a, b)
+        with tf.GradientTape() as tape:
+            res = circuit(a, b)
+
         expected = [
             np.cos(a / 2) ** 2 * np.cos(b / 2) ** 2 + np.sin(a / 2) ** 2 * np.sin(b / 2) ** 2,
             np.cos(a / 2) ** 2 * np.sin(b / 2) ** 2 + np.sin(a / 2) ** 2 * np.cos(b / 2) ** 2,
         ]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        grad = qml.jacobian(circuit)(a, b)
+        grad = tape.jacobian(res, [a, b])
         expected = 0.5 * np.array(
             [
                 [-np.sin(a) * np.cos(b), np.sin(a) * np.cos(b)],
@@ -420,62 +436,76 @@ class TestPassthruIntegration:
 
         with pytest.raises(qml.QuantumFunctionError, match=msg):
 
-            @qml.qnode(dev, diff_method="backprop", interface="autograd")
+            @qml.qnode(dev, diff_method="backprop", interface="tf")
             def circuit(a):
                 qml.RY(a, wires=0)
                 return qml.sample(qml.PauliZ(0))
 
-    def test_expval_gradient(self, tol):
+    @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
+    def test_expval_gradient(self, decorator, interface, tol):
         """Tests that the gradient of expval is correct"""
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        @decorator
+        @qml.qnode(dev, diff_method="backprop", interface=interface)
         def circuit(a, b):
             qml.RX(a, wires=0)
             qml.CRX(b, wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        a = np.array(-0.234, requires_grad=True)
-        b = np.array(0.654, requires_grad=True)
+        a = tf.Variable(-0.234, trainable=True)
+        b = tf.Variable(0.654, trainable=True)
 
-        res = circuit(a, b)
+        with tf.GradientTape() as tape:
+            res = circuit(a, b)
+
         expected_cost = 0.5 * (np.cos(a) * np.cos(b) + np.cos(a) - np.cos(b) + 1)
         assert np.allclose(res, expected_cost, atol=tol, rtol=0)
 
-        res = qml.grad(circuit)(a, b)
+        res = tape.gradient(res, [a, b])
         expected_grad = np.array(
             [-0.5 * np.sin(a) * (np.cos(b) + 1), 0.5 * np.sin(b) * (1 - np.cos(a))]
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "x, shift",
-        [np.array((0.0, 0.0), requires_grad=True), np.array((0.5, -0.5), requires_grad=True)],
-    )
-    def test_hessian_at_zero(self, x, shift):
+    @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
+    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
+    def test_hessian_at_zero(self, decorator, interface, x, shift):
         """Tests that the Hessian at vanishing state vector amplitudes
         is correct."""
         dev = qml.device("default.mixed", wires=1)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        shift = tf.constant(shift)
+        x = tf.Variable(x)
+
+        @decorator
+        @qml.qnode(dev, interface=interface, diff_method="backprop")
         def circuit(x):
             qml.RY(shift, wires=0)
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert qml.math.isclose(qml.jacobian(circuit)(x), 0.0)
-        assert qml.math.isclose(qml.jacobian(qml.jacobian(circuit))(x), -1.0)
-        assert qml.math.isclose(qml.grad(qml.grad(circuit))(x), -1.0)
+        with tf.GradientTape(persistent=True) as t2:
+            with tf.GradientTape(persistent=True) as t1:
+                value = circuit(x)
+            grad = t1.gradient(value, x)
+            jac = t1.jacobian(value, x)
+        hess_grad = t2.gradient(grad, x)
+        hess_jac = t2.jacobian(jac, x)
+
+        assert qml.math.isclose(grad, 0.0)
+        assert qml.math.isclose(hess_grad, -1.0)
+        assert qml.math.isclose(hess_jac, -1.0)
 
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.compute_decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
-    def test_autograd_interface_gradient(self, operation, diff_method, tol):
+    def test_tf_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
-        using the Autograd interface, using a variety of differentiation methods."""
+        using the TF interface, using a variety of differentiation methods."""
         dev = qml.device("default.mixed", wires=1)
-        state = np.array(1j * np.array([1, -1]) / np.sqrt(2), requires_grad=False)
+        state = tf.Variable(1j * np.array([1, -1]) / np.sqrt(2), trainable=False)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="autograd")
+        @qml.qnode(dev, diff_method=diff_method, interface="tf")
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
@@ -491,7 +521,7 @@ class TestPassthruIntegration:
         phi = -0.234
         lam = 0.654
 
-        params = np.array([theta, phi, lam], requires_grad=True)
+        params = tf.Variable([theta, phi, lam], trainable=True)
 
         res = cost(params)
         expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2
@@ -505,7 +535,11 @@ class TestPassthruIntegration:
         else:
             assert circuit.gradient_fn is qml.gradients.finite_diff
 
-        res = qml.grad(cost)(params)
+        with tf.GradientTape() as tape:
+            out = cost(params)
+
+        res = tape.gradient(out, params)
+
         expected_grad = (
             np.array(
                 [
@@ -519,6 +553,7 @@ class TestPassthruIntegration:
         )
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
 
+    @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
     @pytest.mark.parametrize(
         "dev_name,diff_method,mode",
         [
@@ -527,104 +562,118 @@ class TestPassthruIntegration:
             ["default.mixed", "backprop", "forward"],
         ],
     )
-    def test_ragged_differentiation(self, dev_name, diff_method, mode, tol):
+    def test_ragged_differentiation(self, decorator, interface, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        dev = qml.device(dev_name, wires=2)
-        x = np.array(0.543, requires_grad=True)
-        y = np.array(-0.654, requires_grad=True)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="autograd", mode=mode)
+        dev = qml.device(dev_name, wires=2)
+        x = tf.Variable(0.543, dtype=tf.float64)
+        y = tf.Variable(-0.654, dtype=tf.float64)
+
+        @decorator
+        @qml.qnode(dev, diff_method=diff_method, mode=mode, interface=interface)
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
             qml.CNOT(wires=[0, 1])
             return [qml.expval(qml.PauliZ(0)), qml.probs(wires=[1])]
 
-        res = circuit(x, y)
+        with tf.GradientTape() as tape:
+            res = circuit(x, y)
 
         expected = np.array(
-            [np.cos(x), (1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]
+            [
+                tf.cos(x),
+                (1 + tf.cos(x) * tf.cos(y)) / 2,
+                (1 - tf.cos(x) * tf.cos(y)) / 2,
+            ]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        res = qml.jacobian(circuit)(x, y)
-        assert isinstance(res, tuple) and len(res) == 2
-        assert res[0].shape == (3,)
-        assert res[1].shape == (3,)
-
-        expected = (
-            np.array([-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
-            np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
+        res = tape.jacobian(res, [x, y])
+        expected = np.array(
+            [
+                [-tf.sin(x), -tf.sin(x) * tf.cos(y) / 2, tf.cos(y) * tf.sin(x) / 2],
+                [0, -tf.cos(x) * tf.sin(y) / 2, tf.cos(x) * tf.sin(y) / 2],
+            ]
         )
-        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
-        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    def test_batching(self, tol):
+    @pytest.mark.parametrize("decorator, interface", decorators_interfaces)
+    def test_batching(self, decorator, interface, tol):
         """Tests that the gradient of the qnode is correct with batching"""
         dev = qml.device("default.mixed", wires=2)
 
+        @decorator
         @qml.batch_params
-        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        @qml.qnode(dev, diff_method="backprop", interface=interface)
         def circuit(a, b):
             qml.RX(a, wires=0)
             qml.CRX(b, wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        a = np.array([-0.234, 0.678], requires_grad=True)
-        b = np.array([0.654, 1.236], requires_grad=True)
+        a = tf.Variable([-0.234, 0.678], trainable=True)
+        b = tf.Variable([0.654, 1.236], trainable=True)
 
-        res = circuit(a, b)
+        with tf.GradientTape() as tape:
+            res = circuit(a, b)
+
         expected_cost = 0.5 * (np.cos(a) * np.cos(b) + np.cos(a) - np.cos(b) + 1)
         assert np.allclose(res, expected_cost, atol=tol, rtol=0)
 
-        res_a, res_b = qml.jacobian(circuit)(a, b)
+        res_a, res_b = tape.jacobian(res, [a, b])
         expected_a, expected_b = [
             -0.5 * np.sin(a) * (np.cos(b) + 1),
             0.5 * np.sin(b) * (1 - np.cos(a)),
         ]
 
-        assert np.allclose(np.diag(res_a), expected_a, atol=tol, rtol=0)
-        assert np.allclose(np.diag(res_b), expected_b, atol=tol, rtol=0)
+        assert np.allclose(tf.linalg.diag_part(res_a), expected_a, atol=tol, rtol=0)
+        assert np.allclose(tf.linalg.diag_part(res_b), expected_b, atol=tol, rtol=0)
 
 
-@pytest.mark.autograd
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
     def test_template_integration(self):
-        """Test that a PassthruQNode default.mixed.autograd works with templates."""
+        """Test that a PassthruQNode default.mixed.tf works with templates."""
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
         def circuit(weights):
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-        weights = np.random.random(shape, requires_grad=True)
+        weights = tf.Variable(np.random.random(shape), trainable=True)
 
-        grad = qml.grad(circuit)(weights)
+        with tf.GradientTape() as tape:
+            res = circuit(weights)
+
+        grad = tape.gradient(res, weights)
+        assert isinstance(grad, tf.Tensor)
         assert grad.shape == weights.shape
 
     def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.mixed.autograd works with QNodeCollections."""
+        """Test that a PassthruQNode default.mixed.tf works with QNodeCollections."""
         dev = qml.device("default.mixed", wires=2)
 
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="autograd")
+        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="tf")
 
-        assert qnodes.interface == "autograd"
+        assert qnodes.interface == "tf"
 
-        weights = np.array([0.1, 0.2], requires_grad=True)
+        weights = tf.Variable(
+            np.random.random(qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2))
+        )
 
+        @tf.function
         def cost(weights):
-            return np.sum(qnodes(weights))
+            return tf.reduce_sum(qnodes(weights))
 
-        grad = qml.grad(cost)(weights)
+        with tf.GradientTape() as tape:
+            res = qnodes(weights)
+
+        grad = tape.gradient(res, weights)
+
+        assert isinstance(grad, tf.Tensor)
         assert grad.shape == weights.shape

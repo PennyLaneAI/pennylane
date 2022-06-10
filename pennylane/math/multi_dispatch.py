@@ -555,6 +555,7 @@ def einsum(indices, *operands, like=None):
     """
     if like is None:
         like = _multi_dispatch(operands)
+    operands = np.coerce(operands, like=like)
     return np.einsum(indices, *operands, like=like)
 
 
@@ -623,13 +624,15 @@ def where(condition, x=None, y=None):
     """
     if x is None and y is None:
         interface = _multi_dispatch([condition])
-        return np.where(condition, like=interface)
+        res = np.where(condition, like=interface)
+
+        if interface == "tensorflow":
+            return np.transpose(np.stack(res))
+
+        return res
 
     interface = _multi_dispatch([condition, x, y])
     res = np.where(condition, x, y, like=interface)
-
-    if interface == "tensorflow":
-        return np.transpose(np.stack(res))
 
     return res
 
@@ -669,6 +672,33 @@ def frobenius_inner_product(A, B, normalize=False, like=None):
         inner_product = inner_product / norm
 
     return inner_product
+
+
+@multi_dispatch(argnum=[1])
+def scatter(indices, array, new_dims, like=None):
+    """Scatters an array into a tensor of shape new_dims according to indices.
+
+    This operation is similar to scatter_element_add, except that the tensor
+    is zero-initialized. Calling scatter(indices, array, new_dims) is identical
+    to calling scatter_element_add(np.zeros(new_dims), indices, array)
+
+    Args:
+        indices (tensor_like[int]): Indices to update
+        array (tensor_like[float]): Values to assign to the new tensor
+        new_dims (int or tuple[int]): The shape of the new tensor
+        like (str): Manually chosen interface to dispatch to.
+    Returns:
+        tensor_like[float]: The tensor with the values modified the given indices.
+
+    **Example**
+
+    >>> indices = np.array([4, 3, 1, 7])
+    >>> updates = np.array([9, 10, 11, 12])
+    >>> shape = 8
+    >>> qml.math.scatter(indices, updates, shape)
+    array([ 0, 11,  0, 10,  9,  0,  0, 12])
+    """
+    return np.scatter(indices, array, new_dims, like=like)
 
 
 @multi_dispatch(argnum=[0, 2])
