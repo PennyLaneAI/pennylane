@@ -361,17 +361,6 @@ ar.register_function(
 )
 
 
-def _eigvalsh(density_matrix):
-    evs = _i("tf").linalg.eigvalsh(density_matrix)
-    evs = _i("tf").math.real(evs)
-    return evs
-
-
-ar.register_function("tensorflow", "eigvalsh", _eigvalsh)
-ar.register_function(
-    "tensorflow", "entr", lambda x: -_i("tf").math.reduce_sum(x * _i("tf").math.log(x))
-)
-
 # -------------------------------- Torch --------------------------------- #
 
 ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
