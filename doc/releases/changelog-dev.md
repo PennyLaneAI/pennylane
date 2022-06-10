@@ -143,18 +143,18 @@
   First, let us define a parametrized quantum state and return its (classical) probability distribution for all 
   computational basis elements: 
 
-  .. code-block:: python
-      n_wires = 2
+  ```python3
+  n_wires = 2
 
-      dev = qml.device("default.qubit", wires=n_wires)
+  dev = qml.device("default.qubit", wires=n_wires)
 
-      @qml.qnode(dev)
-      def circ(params):
-          qml.RX(params[0], wires=0)
-          qml.RX(params[1], wires=0)
-          qml.CNOT(wires=(0,1))
-          return qml.probs(wires=range(n_wires))
-
+  @qml.qnode(dev)
+  def circ(params):
+      qml.RX(params[0], wires=0)
+      qml.RX(params[1], wires=0)
+      qml.CNOT(wires=(0,1))
+      return qml.probs(wires=range(n_wires))
+  ```
   Executing this circuit yields the ``2**n_wires`` elements of the probability vector.
   
   ```pycon
