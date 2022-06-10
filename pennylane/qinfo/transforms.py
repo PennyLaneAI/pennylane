@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Utils function for the quantum information module."""
+"""QNode transforms for the quantum information quantities."""
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
 import pennylane as qml
