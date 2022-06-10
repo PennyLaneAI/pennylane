@@ -50,7 +50,6 @@ info = {
             "default.qubit.autograd = pennylane.devices.default_qubit_autograd:DefaultQubitAutograd",
             "default.qubit.jax = pennylane.devices.default_qubit_jax:DefaultQubitJax",
             "default.mixed = pennylane.devices.default_mixed:DefaultMixed",
-            "default.mixed.autograd = pennylane.devices.default_mixed_autograd:DefaultMixedAutograd",
         ],
         "console_scripts": ["pl-device-test=pennylane.devices.tests:cli"],
     },

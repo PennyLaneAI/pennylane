@@ -23,7 +23,8 @@ from jax.experimental import host_callback
 
 import numpy as np
 import pennylane as qml
-from pennylane.measurements import Variance, Expectation
+
+from pennylane.measurements import Variance, Expectation, VnEntropy, MutualInfo
 from pennylane.interfaces import InterfaceUnsupportedError
 
 dtype = jnp.float64
@@ -107,7 +108,12 @@ def _validate_tapes(tapes):
 
         for o in t.observables:
             return_type = o.return_type
-            if return_type is not Variance and return_type is not Expectation:
+            if (
+                return_type is not Variance
+                and return_type is not Expectation
+                and return_type is not VnEntropy
+                and return_type is not MutualInfo
+            ):
                 raise InterfaceUnsupportedError(
                     f"Only Variance and Expectation returns are supported for the jittable JAX interface, given {return_type}."
                 )
