@@ -73,7 +73,8 @@ class TestDensityMatrixQNode:
         assert np.allclose(expected_density_matrix(angle, wires), density_matrix, atol=tol, rtol=0)
 
     def test_qnode_not_returning_state(self):
-        """Test that the QNode of to_density_matrix function must return state."""
+        """Test that the QNode of reduced_dm function must return state."""
+
         dev = qml.device("default.qubit", wires=1)
 
         @qml.qnode(dev)
@@ -85,7 +86,7 @@ class TestDensityMatrixQNode:
             qml.qinfo.reduced_dm(circuit, wires=[0])()
 
     def test_density_matrix_qnode_jax_jit(self, tol):
-        """Test to_density_matrix jitting for QNode."""
+        """Test reduced_dm jitting for QNode."""
         from jax import jit
         import jax.numpy as jnp
 

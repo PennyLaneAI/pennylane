@@ -60,3 +60,54 @@ def reduced_dm(qnode, wires):
         return density_matrix
 
     return wrapper
+
+
+def vn_entropy(qnode, wires, base=None):
+    r"""Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~.state`.
+
+    .. math::
+        S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
+
+    Args:
+        qnode (tensor_like): A :class:`.QNode` returning a :func:`~.state`.
+        wires (Sequence(int)): List of indices in the considered subsystem.
+        base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
+
+    Returns:
+        float: Von Neumann entropy of the considered subsystem.
+
+    **Example**
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2)
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.IsingXX(x, wires=[0, 1])
+                return qml.state()
+
+    >>> vn_entropy(circuit, indices=[0])(np.pi/2)
+    0.6931472
+
+    """
+
+    density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
+
+    def wrapper(*args, **kwargs):
+        # If pure state directly return 0.
+        if len(wires) == len(qnode.device.wires):
+            qnode.construct(args, kwargs)
+            return_type = qnode.tape.observables[0].return_type
+            if len(qnode.tape.observables) != 1 or not return_type == qml.measurements.State:
+                raise ValueError("The qfunc return type needs to be a state.")
+            density_matrix = qnode(*args, **kwargs)
+            if density_matrix.shape == (density_matrix.shape[0],):
+                return 0.0
+            entropy = qml.math.vn_entropy(density_matrix, wires, base, c_dtype=qnode.device.C_DTYPE)
+            return entropy
+
+        density_matrix = density_matrix_qnode(*args, **kwargs)
+        entropy = qml.math.vn_entropy(density_matrix, wires, base, c_dtype=qnode.device.C_DTYPE)
+        return entropy
+
+    return wrapper

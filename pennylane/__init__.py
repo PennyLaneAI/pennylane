@@ -44,7 +44,16 @@ from pennylane.configuration import Configuration
 from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
 from pennylane.io import *
-from pennylane.measurements import density_matrix, measure, expval, probs, sample, state, var
+from pennylane.measurements import (
+    density_matrix,
+    measure,
+    expval,
+    probs,
+    sample,
+    state,
+    var,
+    vn_entropy,
+)
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl
 from pennylane.templates import broadcast, layer

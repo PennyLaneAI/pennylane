@@ -53,7 +53,8 @@ from .multi_dispatch import (
 )
 
 from .quantum import cov_matrix, marginal_prob
-from .quantum import reduced_dm
+from .quantum import reduced_dm, vn_entropy
+
 
 from .utils import (
     allclose,
@@ -100,12 +101,13 @@ __all__ = [
     "is_abstract",
     "is_independent",
     "marginal_prob",
-    "reduced_dm",
     "ones_like",
+    "reduced_dm",
     "requires_grad",
     "scatter_element_add",
     "stack",
     "tensordot",
+    "vn_entropy",
     "unwrap",
     "where",
 ]

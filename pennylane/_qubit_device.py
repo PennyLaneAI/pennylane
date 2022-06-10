@@ -27,7 +27,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane.operation import operation_derivative
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State
+from pennylane.measurements import Sample, Variance, Expectation, Probability, State, VnEntropy
 from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.math import multiply as qmlmul
@@ -243,7 +243,6 @@ class QubitDevice(Device):
         Returns:
             array[float]: measured value(s)
         """
-
         self.check_validity(circuit.operations, circuit.observables)
 
         # apply all circuit operations
@@ -489,6 +488,13 @@ class QubitDevice(Device):
                 # matrix.
                 results.append(self.access_state(wires=obs.wires))
 
+            elif obs.return_type is VnEntropy:
+                if self.wires.labels != tuple(range(self.num_wires)):
+                    raise qml.QuantumFunctionError(
+                        "Returning the Von Neumann entropy is not supported when using custom wire labels"
+                    )
+                results.append(self.vn_entropy(wires=obs.wires, log_base=obs.log_base))
+
             elif obs.return_type is not None:
                 raise qml.QuantumFunctionError(
                     f"Unsupported return type specified for observable {obs.name}"
@@ -658,6 +664,29 @@ class QubitDevice(Device):
         """
         state = getattr(self, "state", None)
         return qml.math.reduced_dm(state, indices=wires, c_dtype=self.C_DTYPE)
+
+    def vn_entropy(self, wires, log_base):
+        r"""Returns the Von Neumann entropy prior to measurement.
+
+        .. math::
+            S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
+
+        Args:
+            wires (Wires): Wires of the considered subsystem.
+            log_base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
+
+        Returns:
+            float: returns the Von Neumann entropy
+        """
+        try:
+            state = self.access_state()
+        except qml.QuantumFunctionError as e:  # pragma: no cover
+            raise NotImplementedError(
+                f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
+                f"state. "
+            ) from e
+        wires = wires.tolist()
+        return qml.math.vn_entropy(state, indices=wires, c_dtype=self.C_DTYPE, base=log_base)
 
     def analytic_probability(self, wires=None):
         r"""Return the (marginal) probability of each computational basis
@@ -963,6 +992,7 @@ class QubitDevice(Device):
         """
         # broadcasted inner product not summing over first dimension of b
         sum_axes = tuple(range(1, self.num_wires + 1))
+        # pylint: disable=unnecessary-lambda-assignment)
         dot_product_real = lambda b, k: self._real(qmlsum(self._conj(b) * k, axis=sum_axes))
 
         for m in tape.measurements:

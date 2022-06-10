@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Differentiable quantum functions"""
+# pylint: disable=import-outside-toplevel
 import itertools
 import functools
 
 from string import ascii_letters as ABC
 from autoray import numpy as np
 from numpy import float64
+
+import pennylane as qml
 
 from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import diag, dot, scatter_element_add, einsum, get_interface
@@ -473,3 +476,73 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
     density_matrix = _density_matrix_from_matrix(state, indices, check_state)
 
     return density_matrix
+
+
+def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
+    r"""Compute the Von Neumann entropy from a state vector or density matrix on a given subsystem.
+
+
+    .. math::
+        S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
+
+    Args:
+        state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
+        indices (list(int)): List of indices in the considered subsystem.
+        base (float): Base for the logarithm, default is None in which case the natural logarithm is used.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        float: Von Neumann entropy of the considered subsystem.
+
+    **Example**
+
+    >>> x = [1, 0, 0, 1] / np.sqrt(2)
+    >>> vn_entropy(x, indices=[0])
+    0.6931472
+
+    >>> vn_entropy(x, indices=[0], base=2)
+    1.0
+
+    >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
+    >>> vn_entropy(x, indices=[0])
+    0.6931472
+    """
+    density_matrix = reduced_dm(state, indices, check_state, c_dtype)
+    entropy = _compute_vn_entropy(density_matrix, base)
+
+    return entropy
+
+
+def _compute_vn_entropy(density_matrix, base=None):
+    """Compute the Von Neumann entropy from a density matrix
+
+    Args:
+        density_matrix (tensor_like): ``(2**N, 2**N)`` tensor density matrix for an integer `N`.
+        base (float, int): Base for the logarithm.
+
+    Returns:
+        float: Von Neumann entropy of the density matrix.
+
+    **Example**
+
+    >>> x = [[1/2, 0], [0, 1/2]]
+    >>> _compute_vn_entropy(x, indices=[0])
+    0.6931472
+
+    >>> x = [[1/2, 0], [0, 1/2]]
+    >>> _compute_vn_entropy(x, indices=[0], base=2)
+    1.0
+
+    """
+    # Change basis if necessary
+    if base:
+        div_base = np.log(base)
+    else:
+        div_base = 1
+
+    evs = qml.math.eigvalsh(density_matrix)
+    evs = qml.math.where(evs > 0, evs, 1.0)
+    entropy = qml.math.entr(evs) / div_base
+
+    return entropy
