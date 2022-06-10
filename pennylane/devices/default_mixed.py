@@ -232,8 +232,8 @@ class DefaultMixed(QubitDevice):
 
         # Shape kraus operators
         kraus_shape = [len(kraus)] + [2] * num_ch_wires * 2
-        kraus = self._cast(self._reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
-        kraus_dagger = self._cast(self._reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
+        kraus = qnp.cast(qnp.reshape(kraus, kraus_shape), dtype=self.C_DTYPE)
+        kraus_dagger = qnp.cast(qnp.reshape(kraus_dagger, kraus_shape), dtype=self.C_DTYPE)
 
         # Tensor indices of the state. For each qubit, need an index for rows *and* columns
         state_indices = ABC[:rho_dim]
