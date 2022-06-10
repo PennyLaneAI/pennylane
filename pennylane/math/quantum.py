@@ -547,6 +547,7 @@ def _compute_vn_entropy(density_matrix, base=None):
 
     return entropy
 
+
 # pylint: disable=too-many-arguments
 def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype="complex128"):
     r"""Compute the mutual information between two subsystems given a state:
@@ -628,4 +629,3 @@ def _compute_mutual_info(
     )
 
     return vn_entropy_1 + vn_entropy_2 - vn_entropy_12
-  

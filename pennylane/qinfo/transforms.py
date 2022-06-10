@@ -112,6 +112,7 @@ def vn_entropy(qnode, wires, base=None):
 
     return wrapper
 
+
 def mutual_info(qnode, wires0, wires1, base=None):
     r"""Compute the mutual information from a :class:`.QNode` returning a :func:`~.state`:
 
