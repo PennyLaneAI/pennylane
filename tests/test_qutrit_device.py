@@ -353,45 +353,445 @@ class TestSampleBasisStates:
 
 
 class TestStatesToTernary:
-    pass
+    """Test the states_to_ternary method"""
+
+    def test_correct_conversion_two_states(self, mock_qutrit_device):
+        """Tests that the sample_basis_states method converts samples to binary correctly"""
+        wires = 4
+        shots = 10
+
+        number_of_states = 3**wires
+        basis_states = np.arange(number_of_states)
+        samples = np.random.choice(basis_states, shots)
+
+        dev = mock_qutrit_device()
+        res = dev.states_to_ternary(samples, wires)
+
+        expected = []
+
+        for s in samples:
+            num = []
+            for _ in range(wires):
+                num.append(s % 3)
+                s = s // 3
+
+            expected.append(num[::-1])
+
+        assert np.array_equal(res, np.array(expected))
+
+    test_binary_conversion_data = [
+        (
+            np.array([2, 3, 2, 0, 0, 1, 6, 8, 5, 6]),
+            np.array(
+                [
+                    [0, 2],
+                    [1, 0],
+                    [0, 2],
+                    [0, 0],
+                    [0, 0],
+                    [0, 1],
+                    [2, 0],
+                    [2, 2],
+                    [1, 2],
+                    [2, 0],
+                ]
+            ),
+        ),
+        (
+            np.array([2, 7, 6, 8, 4, 1, 5]),
+            np.array(
+                [
+                    [0, 2],
+                    [2, 1],
+                    [2, 0],
+                    [2, 2],
+                    [1, 1],
+                    [0, 1],
+                    [1, 2],
+                ]
+            ),
+        ),
+        (
+            np.array([10, 7, 2, 15, 26, 20, 18, 24, 11, 6, 1, 0]),
+            np.array(
+                [
+                    [1, 0, 1],
+                    [0, 2, 1],
+                    [0, 0, 2],
+                    [1, 2, 0],
+                    [2, 2, 2],
+                    [2, 0, 2],
+                    [2, 0, 0],
+                    [2, 2, 0],
+                    [1, 0, 2],
+                    [0, 2, 0],
+                    [0, 0, 1],
+                    [0, 0, 0],
+                ]
+            ),
+        ),
+    ]
+
+    @pytest.mark.parametrize("samples, ternary_states", test_binary_conversion_data)
+    def test_correct_conversion(self, mock_qutrit_device, samples, ternary_states, tol):
+        """Tests that the states_to_binary method converts samples to binary correctly"""
+        dev = mock_qutrit_device()
+        dev.shots = 5
+        wires = ternary_states.shape[1]
+        res = dev.states_to_ternary(samples, wires)
+        assert np.allclose(res, ternary_states, atol=tol, rtol=0)
 
 
-# TODO: Add tests for expval, var
-class TestExpval:
-    pass
+# TODO: Add tests for expval, var after observables are added
+# class TestExpval:
+#     pass
 
 
-class TestVar:
-    pass
+# class TestVar:
+#     pass
 
 
-class TestSample:
-    pass
+# class TestSample:
+#     pass
 
 
 class TestEstimateProb:
-    pass
+    """Test the estimate_probability method"""
+
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            ([0], [0.5, 0.25, 0.25]),
+            (None, [0.25, 0, 0.25, 0, 0.25, 0, 0, 0, 0.25]),
+            ([0, 1], [0.25, 0, 0.25, 0, 0.25, 0, 0, 0, 0.25]),
+            ([1], [0.25, 0.25, 0.5]),
+        ]
+    )
+    def test_estimate_probability(
+        self, wires, expected, mock_qutrit_device_with_original_statistics, monkeypatch
+    ):
+        """Tests probability method when the analytic attribute is True."""
+        dev = mock_qutrit_device_with_original_statistics(wires=2)
+        samples = np.array([[0, 0], [2, 2], [1, 1], [0, 2]])
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_samples", samples)
+            m.setattr(dev, "shots", 4)
+            res = dev.estimate_probability(wires=wires)
+
+        assert np.allclose(res, expected)
 
 
 class TestMarginalProb:
-    pass
+    """Test the marginal_prob method"""
+
+    @pytest.mark.parametrize(
+        "wires, inactive_wires",
+        [
+            ([0], [1, 2]),
+            ([1], [0, 2]),
+            ([2], [0, 1]),
+            ([0, 1], [2]),
+            ([0, 2], [1]),
+            ([1, 2], [0]),
+            ([0, 1, 2], []),
+            (Wires([0]), [1, 2]),
+            (Wires([0, 1]), [2]),
+            (Wires([0, 1, 2]), []),
+        ],
+    )
+    def test_correct_arguments_for_marginals(
+        self, mock_qutrit_device_with_original_statistics, mocker, wires, inactive_wires, tol
+    ):
+        """Test that the correct arguments are passed to the marginal_prob method"""
+
+        # Generate probabilities
+        probs = np.array([random() for i in range(3**3)])
+        probs /= sum(probs)
+
+        spy = mocker.spy(np, "sum")
+        dev = mock_qutrit_device_with_original_statistics(wires=3)
+        res = dev.marginal_prob(probs, wires=wires)
+        array_call = spy.call_args[0][0]
+        axis_call = spy.call_args[1]["axis"]
+
+        assert np.allclose(array_call.flatten(), probs, atol=tol, rtol=0)
+        assert axis_call == tuple(inactive_wires)
+
+    p = np.arange(0.01, 0.28, 0.01) / np.sum(np.arange(0.01, 0.28, 0.01))
+    probs = np.reshape(p, [3] * 3)
+    s00 = np.sum(probs[0, :, 0])
+    s10 = np.sum(probs[1, :, 0])
+    s20 = np.sum(probs[2, :, 0])
+    s01 = np.sum(probs[0, :, 1])
+    s11 = np.sum(probs[1, :, 1])
+    s21 = np.sum(probs[2, :, 1])
+    s02 = np.sum(probs[0, :, 2])
+    s12 = np.sum(probs[1, :, 2])
+    s22 = np.sum(probs[2, :, 2])
+    m_probs = np.array([s00, s10, s20, s01, s11, s21, s02, s12, s22])
+
+    marginal_test_data = [
+        (
+            np.array([0.1, 0.2, 0.3, 0.04, 0.03, 0.02, 0.01, 0.18, 0.12]),
+            np.array([0.15, 0.41, 0.44]),
+            [1],
+        ),
+        (
+            np.array([0.1, 0.2, 0.3, 0.04, 0.03, 0.02, 0.01, 0.18, 0.12]),
+            np.array([0.6, 0.09, 0.31]),
+            [0],
+        ),
+        (p, m_probs, [2, 0]),
+    ]
+
+    @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
+    def test_correct_marginals_returned(
+        self, mock_qutrit_device_with_original_statistics, probs, marginals, wires, tol
+    ):
+        """Test that the correct marginals are returned by the marginal_prob method"""
+        num_wires = int(np.log(len(probs)) / np.log(3))     # Same as log_3(len(probs))
+        dev = mock_qutrit_device_with_original_statistics(num_wires)
+        res = dev.marginal_prob(probs, wires=wires)
+        assert np.allclose(res, marginals, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("probs, marginals, wires", marginal_test_data)
+    def test_correct_marginals_returned_wires_none(
+        self, mock_qutrit_device_with_original_statistics, probs, marginals, wires, tol
+    ):
+        """Test that passing wires=None simply returns the original probability."""
+        num_wires = int(np.log(len(probs)) / np.log(3))     # Same as log_3(len(probs))
+        dev = mock_qutrit_device_with_original_statistics(wires=num_wires)
+        dev.num_wires = num_wires
+
+        res = dev.marginal_prob(probs, wires=None)
+        assert np.allclose(res, probs, atol=tol, rtol=0)
 
 
 class TestActiveWires:
-    pass
+    """Test that the active_wires static method works as required."""
+
+    def test_active_wires_from_queue(self, mock_qutrit_device):
+        queue = [qml.QutritUnitary(np.eye(9), wires=[0, 2]), qml.QutritUnitary(np.eye(3), wires=0), qml.expval(qml.Identity(wires=5))]
+
+        dev = mock_qutrit_device(wires=6)
+        res = dev.active_wires(queue)
+
+        assert res == Wires([0, 2, 5])
 
 
 class TestCapabilities:
-    pass
+    """Test that a default qutrit device defines capabilities that all devices inheriting
+    from it will automatically have."""
+
+    def test_defines_correct_capabilities(self):
+        """Test that the device defines the right capabilities"""
+        capabilities = {
+            "model": "qutrit",
+            "supports_finite_shots": True,
+            "supports_tensor_observables": True,
+            "returns_probs": True,
+            "supports_broadcasting": False,
+        }
+        assert capabilities == QutritDevice.capabilities()
 
 
 class TestExecution:
-    pass
+    """Tests for the execute method"""
+
+    def test_device_executions(self):
+        """Test the number of times a qubit device is executed over a QNode's
+        lifetime is tracked by `num_executions`"""
+
+        dev_1 = qml.device("default.qutrit", wires=2)
+
+        def circuit_1(U1, U2, U3):
+            qml.QutritUnitary(U1, wires=[0])
+            qml.QutritUnitary(U2, wires=[1])
+            qml.QutritUnitary(U3, wires=[0, 1])
+            return qml.state()
+
+        node_1 = qml.QNode(circuit_1, dev_1)
+        num_evals_1 = 10
+
+        for _ in range(num_evals_1):
+            node_1(np.eye(3), np.eye(3), np.eye(9))
+        assert dev_1.num_executions == num_evals_1
+
+        # test a second instance of a default qubit device
+        dev_2 = qml.device("default.qutrit", wires=2)
+
+        def circuit_2(U1, U2):
+            qml.QutritUnitary(U1, wires=[0])
+            qml.QutritUnitary(U2, wires=[1])
+            return qml.state()
+
+        node_2 = qml.QNode(circuit_2, dev_2)
+        num_evals_2 = 5
+
+        for _ in range(num_evals_2):
+            node_2(np.eye(3), np.eye(3))
+        assert dev_2.num_executions == num_evals_2
+
+        # test a new circuit on an existing instance of a qubit device
+        def circuit_3(U1, U2):
+            qml.QutritUnitary(U1, wires=[0])
+            qml.QutritUnitary(U2, wires=[0, 1])
+            return qml.state()
+
+        node_3 = qml.QNode(circuit_3, dev_1)
+        num_evals_3 = 7
+
+        for _ in range(num_evals_3):
+            node_3(np.eye(3), np.eye(9))
+        assert dev_1.num_executions == num_evals_1 + num_evals_3
 
 
 class TestBatchExecution:
-    pass
+    """Tests for the batch_execute method."""
+
+    with qml.tape.QuantumTape() as tape1:
+        qml.QutritUnitary(np.eye(3), wires=0)
+        qml.expval(qml.Identity(0)), qml.expval(qml.Identity(1))
+
+    with qml.tape.QuantumTape() as tape2:
+        qml.QutritUnitary(np.eye(3), wires=0)
+        qml.expval(qml.Identity(0))
+
+    @pytest.mark.parametrize("n_tapes", [1, 2, 3])
+    def test_calls_to_execute(self, n_tapes, mocker, mock_qutrit_device):
+        """Tests that the device's execute method is called the correct number of times."""
+
+        dev = mock_qutrit_device(wires=2)
+        spy = mocker.spy(QutritDevice, "execute")
+
+        tapes = [self.tape1] * n_tapes
+        dev.batch_execute(tapes)
+
+        assert spy.call_count == n_tapes
+
+    @pytest.mark.parametrize("n_tapes", [1, 2, 3])
+    def test_calls_to_reset(self, n_tapes, mocker, mock_qutrit_device):
+        """Tests that the device's reset method is called the correct number of times."""
+
+        dev = mock_qutrit_device(wires=2)
+
+        spy = mocker.spy(QutritDevice, "reset")
+
+        tapes = [self.tape1] * n_tapes
+        dev.batch_execute(tapes)
+
+        assert spy.call_count == n_tapes
+
+    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    def test_result(self, mock_qutrit_device, r_dtype, tol):
+        """Tests that the result has the correct shape and entry types."""
+
+        dev = mock_qutrit_device(wires=2)
+        dev.R_DTYPE = r_dtype
+
+        tapes = [self.tape1, self.tape2]
+        res = dev.batch_execute(tapes)
+
+        assert len(res) == 2
+        assert np.allclose(res[0], dev.execute(self.tape1), rtol=tol, atol=0)
+        assert np.allclose(res[1], dev.execute(self.tape2), rtol=tol, atol=0)
+        assert res[0].dtype == r_dtype
+        assert res[1].dtype == r_dtype
+
+    def test_result_empty_tape(self, mock_qutrit_device, tol):
+        """Tests that the result has the correct shape and entry types for empty tapes."""
+
+        dev = mock_qutrit_device(wires=2)
+
+        empty_tape = qml.tape.QuantumTape()
+        tapes = [empty_tape] * 3
+        res = dev.batch_execute(tapes)
+
+        assert len(res) == 3
+        assert np.allclose(res[0], dev.execute(empty_tape), rtol=tol, atol=0)
 
 
 class TestShotList:
-    pass
+    """Tests for passing shots as a list"""
+
+    # TODO: Add tests for expval and sample with shot lists after observables are added
+
+    def test_invalid_shot_list(self):
+        """Test exception raised if the shot list is the wrong type"""
+        with pytest.raises(qml.DeviceError, match="Shots must be"):
+            qml.device("default.qubit", wires=2, shots=0.5)
+
+        with pytest.raises(ValueError, match="Unknown shot sequence"):
+            qml.device("default.qubit", wires=2, shots=["a", "b", "c"])
+
+    shot_data = [
+        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 9), 16],
+        [
+            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
+            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
+            (11, 9),
+            27,
+        ],
+        [[10, 10, 10], [(10, 3)], (3, 9), 30],
+        [[(10, 3)], [(10, 3)], (3, 9), 30],
+    ]
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
+    def test_probs(self, shot_list, shot_vector, expected_shape, total_shots):
+        """Test a probability return"""
+        dev = qml.device("default.qutrit", wires=2, shots=shot_list)
+
+        @qml.qnode(dev)
+        def circuit(U):
+            qml.QutritUnitary(np.eye(3), wires=0)
+            qml.QutritUnitary(np.eye(3), wires=0)
+            qml.QutritUnitary(U, wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        res = circuit(pnp.eye(9))
+
+        assert res.shape == expected_shape
+        assert circuit.device._shot_vector == shot_vector
+        assert circuit.device.shots == total_shots
+
+        # test gradient works
+        # TODO: Add after differentiability of qutrit circuits is implemented
+        # res = qml.jacobian(circuit, argnum=[0, 1])(pnp.eye(9))
+
+    shot_data = [
+        [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 3, 2), 16],
+        [
+            [1, 2, 2, 2, 10, 1, 1, 5, 1, 1, 1],
+            [(1, 1), (2, 3), (10, 1), (1, 2), (5, 1), (1, 3)],
+            (11, 3, 2),
+            27,
+        ],
+        [[10, 10, 10], [(10, 3)], (3, 3, 2), 30],
+        [[(10, 3)], [(10, 3)], (3, 3, 2), 30],
+    ]
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
+    def test_multiple_probs(self, shot_list, shot_vector, expected_shape, total_shots):
+        """Test multiple probability returns"""
+        dev = qml.device("default.qutrit", wires=2, shots=shot_list)
+
+        @qml.qnode(dev)
+        def circuit(U):
+            qml.QutritUnitary(np.eye(3), wires=0)
+            qml.QutritUnitary(np.eye(3), wires=0)
+            qml.QutritUnitary(U, wires=[0, 1])
+            return qml.probs(wires=0), qml.probs(wires=1)
+
+        res = circuit(pnp.eye(9))
+
+        assert res.shape == expected_shape
+        assert circuit.device._shot_vector == shot_vector
+        assert circuit.device.shots == total_shots
+
+        # test gradient works
+        # TODO: Add after differentiability of qutrit circuits is implemented
+        # res = qml.jacobian(circuit, argnum=[0, 1])(pnp.eye(9))
+

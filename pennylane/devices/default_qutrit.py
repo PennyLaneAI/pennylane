@@ -265,7 +265,7 @@ class DefaultQutrit(QutritDevice):
 
         self._state = self._create_basis_state(num)
 
-    # TODO: Edit later
+    @property
     def state(self):
         return self._flatten(self._state)
 

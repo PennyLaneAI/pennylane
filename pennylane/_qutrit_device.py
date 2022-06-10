@@ -457,6 +457,10 @@ class QutritDevice(Device):
 
         if state is None:
             raise qml.QuantumFunctionError("The state is not available in the current device")
+        # try:
+        #     state = self.state
+        # except:
+        #     raise qml.QuantumFunctionError("The state is not available in the current device")
 
         if wires:
             density_matrix = self.density_matrix(wires)
@@ -808,7 +812,7 @@ class QutritDevice(Device):
         # Replace the basis state in the computational basis with the correct eigenvalue.
         # Extract only the columns of the basis samples required based on ``wires``.
         samples = self._samples[
-            sample_slice, np.array(device_wires)
+            sample_slice, np.array(device_wires, dtype=np.int32)
         ]  # Add np.array here for Jax support.
         powers_of_three = 3 ** np.arange(samples.shape[-1])[::-1]
         indices = samples @ powers_of_three
