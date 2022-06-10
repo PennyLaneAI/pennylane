@@ -486,7 +486,7 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
         S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
 
     Args:
-        state (tensor_like): ``(2**N)`` tensor state vector or ``(2**N, 2**N)`` tensor density matrix.
+        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
         indices (list(int)): List of indices in the considered subsystem.
         base (float): Base for the logarithm. If None, the natural logarithm is used.
         check_state (bool): If True, the function will check the state validity (shape and norm).
