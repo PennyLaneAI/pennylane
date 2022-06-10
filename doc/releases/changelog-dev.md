@@ -665,12 +665,6 @@
 
 This release contains contributions from (in alphabetical order):
 
-<<<<<<< HEAD
-Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri,
-Utkarsh Azad, WingCode
-=======
 Amintor Dusko, Ankit Khandelwal, Avani Bhardwaj, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
 Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian Kottmann, Maria Schuld, Mikhail Andrenkov, Romain Moyard,
 Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, WingCode
->>>>>>> origin
