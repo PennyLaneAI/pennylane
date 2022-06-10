@@ -83,7 +83,7 @@ def qrom_cost(constants):
 
 
 def unitary_cost(n, rank_r, rank_m, br=7, aleph=10, beth=20):
-    r"""Return the number of Toffoli gates for the double factorization method.
+    r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator.
 
     The expression for computing the cost is taken from
     [`arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_].
@@ -97,15 +97,13 @@ def unitary_cost(n, rank_r, rank_m, br=7, aleph=10, beth=20):
         beth (int): number of bits for the rotation angles
 
     Returns:
-        int: the number of Toffoli gates for the double factorization method
+        int: the number of Toffoli gates to implement the qubitization unitary
 
     **Example**
 
     >>> n = 14
-    >>> norm = 52.98761457453095
-    >>> error = 0.001
     >>> rank_r = 26
-    >>> rank_r = 5.5
+    >>> rank_m = 5.5
     >>> br = 7
     >>> aleph = 10
     >>> beth = 20
@@ -137,12 +135,39 @@ def unitary_cost(n, rank_r, rank_m, br=7, aleph=10, beth=20):
     return cost
 
 
-def gate_cost(n, lamb, eps, l, xi, br, aleph=None, beth=None):
+def gate_cost(n, norm, error, rank_r, rank_m, br=7, aleph=10, beth=20):
+    r"""Return the number of Toffoli gates needed to implement the double factorization method.
 
-    est_cost = estimation_cost(lamb, eps)
-    u_cost = unitary_cost(n, lamb, eps, l, xi, br, aleph, beth)
+    Args:
+        n (int): number of molecular orbitals
+        norm (float): 1-norm of a second-quantized Hamiltonian
+        error (float): target error in the algorithm
+        rank_r (int): the rank of the first factorization step
+        rank_m (int): the average rank of the second factorization step
+        br (int): number of bits for ancilla qubit rotation
+        aleph (int): number of bits for the keep register
+        beth (int): number of bits for the rotation angles
 
-    return est_cost * u_cost
+    Returns:
+        int: the number of Toffoli gates to for the double factorization method
+
+    **Example**
+
+    >>> n = 14
+    >>> norm = 52.98761457453095
+    >>> error = 0.001
+    >>> rank_r = 26
+    >>> rank_m = 5.5
+    >>> br = 7
+    >>> aleph = 10
+    >>> beth = 20
+    >>> gate_cost(n, norm, error, rank_r, rank_m, br, aleph, beth)
+    167048631
+    """
+    e_cost = estimation_cost(norm, error)
+    u_cost = unitary_cost(n, rank_r, rank_m, br, aleph, beth)
+
+    return int(e_cost * u_cost)
 
 
 def qubit_cost(n, lamb, eps, l, xi, br, aleph=None, beth=None):
