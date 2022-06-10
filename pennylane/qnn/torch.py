@@ -331,7 +331,7 @@ class TorchLayer(Module):
                 if isinstance(init, torch.Tensor):
                     if tuple(init.shape) != weight_size:
                         raise ValueError(
-                            f"The Tensor specified for weight '{weight_name}' doesn't have the"
+                            f"The Tensor specified for weight '{weight_name}' doesn't have the "
                             + "appropiate shape."
                         )
                     return init
