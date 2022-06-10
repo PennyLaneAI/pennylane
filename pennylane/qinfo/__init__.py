@@ -13,5 +13,4 @@
 # limitations under the License.
 """Differentiable quantum information module"""
 
-from .utils import *
-from .entropies import *
+from .transforms import *

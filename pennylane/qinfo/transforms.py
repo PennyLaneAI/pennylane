@@ -16,12 +16,12 @@
 import pennylane as qml
 
 
-def density_matrix_transform(qnode, indices):
+def reduced_dm(qnode, wires):
     """Compute the reduced density matrix from a :class:`~.QNode` returning :func:`~.state`.
 
      Args:
          qnode (QNode): A :class:`~.QNode` returning :func:`~.state`.
-         indices (list(int)): List of indices in the considered subsystem.
+         wires (Sequence(int)): List of indices in the considered subsystem.
 
      Returns:
          func: Function which wraps the QNode and accepts the same arguments. When called, this function will
@@ -39,11 +39,11 @@ def density_matrix_transform(qnode, indices):
            qml.IsingXX(x, wires=[0,1])
            return qml.state()
 
-    >>> density_matrix_transform(circuit, indices=[0])(np.pi/2)
+    >>> reduced_dm(circuit, wires=[0])(np.pi/2)
      [[0.5+0.j 0.+0.j]
       [0.+0.j 0.5+0.j]]
 
-    .. seealso:: :func:`pennylane.density_matrix`
+    .. seealso:: :func:`pennylane.density_matrix` and :func:`pennylane.math.reduced_dm`
     """
 
     def wrapper(*args, **kwargs):
@@ -55,8 +55,47 @@ def density_matrix_transform(qnode, indices):
         # TODO: optimize given the wires by creating a tape with relevant operations
         state_built = qnode(*args, **kwargs)
         density_matrix = qml.math.reduced_dm(
-            state_built, indices=indices, c_dtype=qnode.device.C_DTYPE
+            state_built, indices=wires, c_dtype=qnode.device.C_DTYPE
         )
         return density_matrix
+
+    return wrapper
+
+
+def vn_entropy(qnode, wires, base=None):
+    r"""Compute the Von Neumann entropy from a :class:`.QNode` returning a :func:`~.state`.
+
+    .. math::
+        S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
+
+    Args:
+        qnode (tensor_like): A :class:`.QNode` returning a :func:`~.state`.
+        wires (Sequence(int)): List of indices in the considered subsystem.
+        base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
+
+    Returns:
+        float: Von Neumann entropy of the considered subsystem.
+
+    **Example**
+
+        .. code-block:: python
+
+            dev = qml.device("default.qubit", wires=2)
+            @qml.qnode(dev)
+            def circuit(x):
+                qml.IsingXX(x, wires=[0, 1])
+                return qml.state()
+
+    >>> vn_entropy(circuit, indices=[0])(np.pi/2)
+    0.6931472
+
+    """
+
+    density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
+
+    def wrapper(*args, **kwargs):
+        density_matrix = density_matrix_qnode(*args, **kwargs)
+        entropy = qml.math.to_vn_entropy(density_matrix, wires, base)
+        return entropy
 
     return wrapper

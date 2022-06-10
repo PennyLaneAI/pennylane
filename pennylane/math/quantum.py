@@ -14,6 +14,7 @@
 """Differentiable quantum functions"""
 # pylint: disable=import-outside-toplevel
 import itertools
+import functools
 
 from string import ascii_letters as ABC
 from autoray import numpy as np
@@ -22,8 +23,8 @@ from numpy import float64
 import pennylane as qml
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .multi_dispatch import diag, dot, scatter_element_add, einsum
-from .utils import is_abstract, allclose, cast
+from .multi_dispatch import diag, dot, scatter_element_add, einsum, get_interface
+from .utils import is_abstract, allclose, cast, convert_like
 
 
 ABC_ARRAY = np.array(list(ABC))
@@ -269,6 +270,12 @@ def _partial_trace(density_matrix, indices):
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
     """
+    # Does not support multiple same indices in backprop
+    print(get_interface(density_matrix))
+    if get_interface(density_matrix) == "autograd":
+        density_matrix = _partial_trace_autograd(density_matrix, indices)
+        return density_matrix
+
     # Dimension and reshape
     shape = density_matrix.shape[0]
     num_indices = int(np.log2(shape))
@@ -276,6 +283,7 @@ def _partial_trace(density_matrix, indices):
 
     density_matrix = np.reshape(density_matrix, [2] * 2 * num_indices)
     indices = np.sort(indices)
+
     # For loop over wires
     for i, target_index in enumerate(indices):
         target_index = target_index - i
@@ -286,10 +294,65 @@ def _partial_trace(density_matrix, indices):
         state_indices[target_index + num_indices - i] = target_letter
         state_indices = "".join(state_indices)
 
-        new_state_indices = state_indices.replace(target_letter, "")
-        einsum_indices = f"{state_indices}->{new_state_indices}"
+        einsum_indices = f"{state_indices}"
         density_matrix = einsum(einsum_indices, density_matrix)
 
+    number_wires_sub = num_indices - len(indices)
+    reduced_density_matrix = np.reshape(
+        density_matrix, (2**number_wires_sub, 2**number_wires_sub)
+    )
+    return reduced_density_matrix
+
+
+def _partial_trace_autograd(density_matrix, indices):
+    """Compute the reduced density matrix for autograd interface by tracing out the provided indices with the use
+    of projectors as same subscripts indices are not supported in autograd backprop.
+    """
+    # Dimension and reshape
+    shape = density_matrix.shape[0]
+    num_indices = int(np.log2(shape))
+    rho_dim = 2 * num_indices
+    density_matrix = np.reshape(density_matrix, [2] * 2 * num_indices)
+
+    kraus = cast(np.eye(2), density_matrix.dtype)
+
+    kraus = np.reshape(kraus, (2, 1, 2))
+    kraus_dagger = np.asarray([np.conj(np.transpose(k)) for k in kraus])
+
+    kraus = convert_like(kraus, density_matrix)
+    kraus_dagger = convert_like(kraus_dagger, density_matrix)
+    # For loop over wires
+    for target_wire in indices:
+        # Tensor indices of density matrix
+        state_indices = ABC[:rho_dim]
+        # row indices of the quantum state affected by this operation
+        row_wires_list = [target_wire]
+        row_indices = "".join(ABC_ARRAY[row_wires_list].tolist())
+        # column indices are shifted by the number of wires
+        col_wires_list = [w + num_indices for w in row_wires_list]
+        col_indices = "".join(ABC_ARRAY[col_wires_list].tolist())
+        # indices in einsum must be replaced with new ones
+        num_partial_trace_wires = 1
+        new_row_indices = ABC[rho_dim : rho_dim + num_partial_trace_wires]
+        new_col_indices = ABC[
+            rho_dim + num_partial_trace_wires : rho_dim + 2 * num_partial_trace_wires
+        ]
+        # index for summation over Kraus operators
+        kraus_index = ABC[
+            rho_dim + 2 * num_partial_trace_wires : rho_dim + 2 * num_partial_trace_wires + 1
+        ]
+        # new state indices replace row and column indices with new ones
+        new_state_indices = functools.reduce(
+            lambda old_string, idx_pair: old_string.replace(idx_pair[0], idx_pair[1]),
+            zip(col_indices + row_indices, new_col_indices + new_row_indices),
+            state_indices,
+        )
+        # index mapping for einsum, e.g., 'iga,abcdef,idh->gbchef'
+        einsum_indices = (
+            f"{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
+            f"{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}"
+        )
+        density_matrix = einsum(einsum_indices, kraus, density_matrix, kraus_dagger)
     number_wires_sub = num_indices - len(indices)
     reduced_density_matrix = np.reshape(
         density_matrix, (2**number_wires_sub, 2**number_wires_sub)

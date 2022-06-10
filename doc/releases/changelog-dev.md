@@ -12,8 +12,8 @@
   [(#2598)](https://github.com/PennyLaneAI/pennylane/pull/2598)
   [(#2617)](https://github.com/PennyLaneAI/pennylane/pull/2617)
   
-  A `reduced_dm` that can handle both state vectors and density matrix, to return a reduced density matrix:
-  
+  A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
+
   ```pycon
   >>> x = [1, 0, 1, 0] / np.sqrt(2)
   >>> reduced_dm(x, indices=[0])
@@ -36,7 +36,7 @@
   [[1.+0.j 0.+0.j]
    [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
   ```
-  It also contains a `QNode` transform `density_matrix_transform`, that returns the density matrix from a `QNode` 
+  It also contains a `QNode` transform `qml.qinfo.reduced_dm`, that returns the density matrix from a `QNode` 
   returning `qml.state`:
   ```python3
   dev = qml.device("default.qubit", wires=2)
@@ -46,21 +46,22 @@
       return qml.state()
   ```
   ```pycon
-  >>> density_matrix_transform(circuit, indices=[0])(np.pi/2)
+
+  >>> qml.qinfo.reduced_dm(circuit, wires=[0])(np.pi/2)
   [[0.5+0.j 0.+0.j]
    [0.+0.j 0.5+0.j]]
   ```
   
-  We add Von Neumann entropy capabilities, `qml.math.to_vn_entropy` that accepts both state vectors and density matrices
+  We add Von Neumann entropy capabilities, `qml.math.vn_entropy` that accepts both state vectors and density matrices
   for all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
 
   ```pycon
   >>> x = [1, 0, 0, 1] / np.sqrt(2)
-  >>> to_vn_entropy(x, indices=[0])
+  >>> vn_entropy(x, indices=[0])
   0.6931472
   
   >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
-  >>> to_vn_entropy(x, indices=[0])
+  >>> vn_entropy(x, indices=[0])
   0.6931472
   ```
   
@@ -79,7 +80,7 @@
   1.0
   ```
   The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy 
-  `qml.qinfo.vn_entropy_transform`:
+  `qml.qinfo.vn_entropy:
   ```python3
   dev = qml.device("default.qubit", wires=2)
   @qml.qnode(dev)
@@ -89,7 +90,7 @@
   ```
   
   ```pycon
-  >>> vn_entropy_transform(circuit, indices=[0], base=2)(np.pi/2)
+  >>> vn_entropy(circuit, indices=[0], base=2)(np.pi/2)
   1.0
   ```
   
@@ -284,9 +285,10 @@
   tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
   ```
 
-* The `default.mixed` device now supports backpropagation with the `"autograd"`
-  interface.
+* The `default.mixed` device now supports backpropagation with the Autograd and TensorFlow
+  interfaces.
   [(#2615)](https://github.com/PennyLaneAI/pennylane/pull/2615)
+  [(#2670)](https://github.com/PennyLaneAI/pennylane/pull/2670)
 
   As a result, the default differentiation method for the device is now `"backprop"`. To continue using the old default `"parameter-shift"`, explicitly specify this differentiation method in the QNode.
 
@@ -404,7 +406,7 @@
 * The `QNode` class now contains a new method `best_method_str` that returns the best differentiation
   method for a provided device and interface, in human-readable format.
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
-   
+
 
 * Using `Operation.inv()` in a queuing environment no longer updates the queue's metadata, but merely updates
   the operation in place.
@@ -435,7 +437,7 @@
 * Add `IsingXY` gate.
   [(#2649)](https://github.com/PennyLaneAI/pennylane/pull/2649)
 
-* The performance of building sparse Hamiltonians has been improved by accumulating the sparse representation of coefficient-operator pairs in a temporary storage and by eliminating unnecessary `kron` operations on identity matrices. 
+* The performance of building sparse Hamiltonians has been improved by accumulating the sparse representation of coefficient-operator pairs in a temporary storage and by eliminating unnecessary `kron` operations on identity matrices.
   [(#2630)](https://github.com/PennyLaneAI/pennylane/pull/2630)
 
 * Control values are now displayed distinctly in text and mpl drawings of circuits.
