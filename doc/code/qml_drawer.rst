@@ -51,9 +51,17 @@ Currently Available Styles
 .. |bwd| image:: ../_static/style/black_white_dark_style.png
     :width: 100%
 
+.. |sol| image:: ../_static/style/solarized_light_style.png
+    :width: 100%
+
+.. |sod| image:: ../_static/style/solarized_dark_style.png
+    :width: 100%
+
 .. |def| image:: ../_static/style/default_style.png
     :width: 100%
 
 +-----+-----+-----+
-+|bws|+|bwd|+|def|+
++|bws|+|bwd|+|sol|+
++-----+-----+-----+
++|sod|+|def|+     +
 +-----+-----+-----+

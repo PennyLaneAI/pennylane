@@ -58,7 +58,7 @@ def execute(tapes, device, execute_fn, gradient_fn, gradient_kwargs, _n=1, max_d
         tape.trainable_params = qml.math.get_trainable_indices(params)
 
     # pylint misidentifies autograd.builtins as a dict
-    # pylint:disable=no-member
+    # pylint: disable=no-member
     parameters = autograd.builtins.tuple(
         [autograd.builtins.list(t.get_parameters()) for t in tapes]
     )

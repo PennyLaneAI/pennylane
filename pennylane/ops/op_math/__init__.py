@@ -25,4 +25,7 @@ from .adjoint_constructor import adjoint
 
 from .controlled_class import Controlled
 
+from .control import ctrl, ControlledOperation
+
+
 from .pow_class import Pow
