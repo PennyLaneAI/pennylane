@@ -400,16 +400,25 @@ def classical_fisher(qnode, argnums=0):
 
 def fidelity(qnode0, qnode1, wires0, wires1):
     r"""Compute the fidelity for two :class:`.QNode` returning a :func:`~.state` (a state can be a state vector
-    or a density matrix, depending on the device) acting on quantum systems with the same size. For two pure states, the
-    fidelity corresponds to the squared overlap. For a pure state and a mixed state, it corresponds to the squared
-    expectation of the mixed state in the pure state. Finally for two mixed states, it is defined by the last formula:
+    or a density matrix, depending on the device) acting on quantum systems with the same size.
+
+    The fidelity for two mixed states given by density matrices :math:`\rho` and :math:`\sigma`
+    is defined as
 
     .. math::
-        \vspace \text{ (1)} F( \ket{\psi} , \ket{\phi}) = \left|\bra{\psi}\ket{\phi}\right|^2
+        F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
 
-        \vspace \text{ (2)} F( \ket{\psi} , \sigma ) = \left|\bra{\psi} \sigma \ket{\psi}\right|^2
+    If one of the states is pure, say :math:`\rho=\ket{\psi}\bra{\psi}`, then the expression
+    for fidelity simplifies to
 
-        \vspace \text{ (3)} F( \rho , \sigma ) = -\text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
+    .. math::
+        F( \ket{\psi} , \sigma ) = \bra{\psi} \sigma \ket{\psi}
+
+    Finally, if both states are pure, :math:`\sigma=\ket{\phi}\bra{\phi}`, then the
+    fidelity is simply
+
+    .. math::
+        F( \ket{\psi} , \ket{\phi}) = \left|\bra{\psi}\ket{\phi}\right|^2
 
     .. warning::
         The second state is coerced to the type and dtype of the first state. The fidelity is returned in the type
