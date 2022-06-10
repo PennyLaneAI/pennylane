@@ -22,7 +22,7 @@ import pennylane.numpy as pnp
 import numpy as np
 
 
-from pennylane.qinfo import classical_fisher
+from pennylane.qinfo import classical_fisher, quantum_fisher
 from pennylane.qinfo.transforms import _make_probs, _compute_cfim
 
 
@@ -96,7 +96,7 @@ class TestComputeclassicalFisher:
 
 
 class TestIntegration:
-    """Integration test of classical fisher information matrix CFIM"""
+    """Integration test of classical and quantum fisher information matrices"""
 
     @pytest.mark.parametrize("n_wires", np.arange(1, 5))
     @pytest.mark.parametrize("n_params", np.arange(1, 5))
@@ -144,6 +144,26 @@ class TestIntegration:
         params = pnp.zeros(n_params, requires_grad=True)
         res = qml.qinfo.classical_fisher(circ)(params)
         assert np.allclose(res, n_wires * np.ones((n_params, n_params)), atol=1)
+
+    def test_quantum_fisher_info():
+        """Integration test of quantum fisher information matrix CFIM. This is just calling ``qml.metric_tensor`` and multiplying by a factor of 4"""
+
+        n_wires = 2
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        @qml.qnode(dev)
+        def circ(params):
+            qml.RX(params[0], wires=0)
+            qml.RX(params[1], wires=0)
+            qml.CNOT(wires=(0, 1))
+            return qml.state()
+
+        params = pnp.random.random(2)
+
+        QFIM = quantum_fisher(circ)(params)
+        QFIM1 = 4.0 * qml.metric_tensor(circ)(params)
+        assert np.allclose(QFIM, QFIM1)
 
 
 class TestInterfacesClassicalFisher:
