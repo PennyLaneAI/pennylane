@@ -135,7 +135,7 @@ class TestTorchLayer:
             "w4": [3],
             "w5": (2, n_qubits, 3),
             "w6": 3,
-            "w7": 0,
+            "w7": 1,
         }
 
         @qml.qnode(dev, interface="torch")
@@ -285,7 +285,7 @@ class TestTorchLayer:
             "w4": [3],
             "w5": (2, n_qubits, 3),
             "w6": 3,
-            "w7": 0,
+            "w7": 1,
         }
 
         @qml.qnode(dev, interface="torch")

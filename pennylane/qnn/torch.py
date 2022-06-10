@@ -219,9 +219,7 @@ class TorchLayer(Module):
         super().__init__()
 
         weight_shapes = {
-            weight: (
-                tuple(size) if isinstance(size, Iterable) else () if size in [0, 1] else (size,)
-            )
+            weight: (tuple(size) if isinstance(size, Iterable) else () if size == 1 else (size,))
             for weight, size in weight_shapes.items()
         }
 
