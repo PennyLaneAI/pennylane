@@ -4,7 +4,30 @@
 
 <h3>New features since last release</h3>
 
-* New `solarized_light` and `solarized_dark` styles available for drawing circuit diagram graphics. [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
+* Quantum information module including: reduced density matrix functions for state vectors.
+  [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
+  
+  A `reduced_dm` that can handle both state vectors and density matrix, to return a reduced density matrix:
+  ```pycon
+  >>> x = [1, 0, 1, 0] / np.sqrt(2)
+  >>> reduced_dm(x, indices=[0])
+  [[0.5+0.j 0.5+0.j]
+   [0.5+0.j 0.5+0.j]]
+
+  >>> reduced_dm(x, indices=[1])
+  [[1.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j]]
+  ```
+
+
+* Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
+  attribute `batch_size`.
+  - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
+  - `Operator.batch_size` contains the size of an additional parameter broadcasting axis, if present,
+  - `QuantumTape.batch_size` contains the `batch_size` of its operations (see below).
+
+* New `solarized_light` and `solarized_dark` styles available for drawing circuit diagram graphics. 
+  [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
 
 * Support adding `Observable` objects to the integer `0`.
   [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603)
@@ -15,6 +38,7 @@
   ```
 
 * Parameter broadcasting within operations and tapes was introduced.
+
   [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
   [(#2590)](https://github.com/PennyLaneAI/pennylane/pull/2590)
   [(#2609)](https://github.com/PennyLaneAI/pennylane/pull/2609)

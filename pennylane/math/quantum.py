@@ -18,7 +18,8 @@ from autoray import numpy as np
 from numpy import float64
 
 from . import single_dispatch  # pylint:disable=unused-import
-from .multi_dispatch import cast, diag, dot, scatter_element_add
+from .multi_dispatch import diag, dot, scatter_element_add
+from .utils import is_abstract, allclose, cast
 
 
 def cov_matrix(prob, obs, wires=None, diag_approx=False):
@@ -89,11 +90,11 @@ def cov_matrix(prob, obs, wires=None, diag_approx=False):
 
     # diagonal variances
     for i, o in enumerate(obs):
-        l = cast(o.eigvals(), dtype=float64)
+        eigvals = cast(o.eigvals(), dtype=float64)
         w = o.wires.labels if wires is None else wires.indices(o.wires)
         p = marginal_prob(prob, w)
 
-        res = dot(l**2, p) - (dot(l, p)) ** 2
+        res = dot(eigvals**2, p) - (dot(eigvals, p)) ** 2
         variances.append(res)
 
     cov = diag(variances)
@@ -161,3 +162,98 @@ def marginal_prob(prob, axis):
     prob = np.reshape(prob, [2] * num_wires)
     prob = np.sum(prob, axis=inactive_wires)
     return np.flatten(prob)
+
+
+def _density_matrix_from_state_vector(state, indices, check_state=False):
+    """Compute the density matrix from a state vector.
+
+    Args:
+        state (tensor_like): 1D tensor state vector. This tensor should of size ``(2**N,)`` for some integer value ``N``.
+        indices (list(int)): List of indices in the considered subsystem.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+
+    Returns:
+        tensor_like: Density matrix of size ``(2**len(indices), 2**len(indices))``
+
+    **Example**
+
+    >>> x = np.array([1, 0, 0, 0])
+    >>> _density_matrix_from_state_vector(x, indices=[0])
+    [[1.+0.j 0.+0.j]
+    [0.+0.j 0.+0.j]]
+
+    >>> y = [1, 0, 1, 0] / np.sqrt(2)
+    >>> _density_matrix_from_state_vector(y, indices=[0])
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
+
+    >>> _density_matrix_from_state_vector(y, indices=[1])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
+
+    >>> z = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
+    >>> _density_matrix_from_state_vector(z, indices=[1])
+    tf.Tensor(
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+
+    """
+    len_state = np.shape(state)[0]
+
+    # Check the format and norm of the state vector
+    if check_state:
+        # Check format
+        if len(np.shape(state)) != 1 or not np.log2(len_state).is_integer():
+            raise ValueError("State vector must be of length 2**wires.")
+        # Check norm
+        norm = np.linalg.norm(state, ord=2)
+        if not is_abstract(norm):
+            if not allclose(norm, 1.0, atol=1e-10):
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
+
+    # Get dimension of the quantum system and reshape
+    num_indices = int(np.log2(len_state))
+    consecutive_wires = list(range(num_indices))
+    state = np.reshape(state, [2] * num_indices)
+
+    # Get the system to be traced
+    traced_system = [x for x in consecutive_wires if x not in indices]
+
+    # Return the reduced density matrix by using numpy tensor product
+    density_matrix = np.tensordot(state, np.conj(state), axes=(traced_system, traced_system))
+    density_matrix = np.reshape(density_matrix, (2 ** len(indices), 2 ** len(indices)))
+
+    return density_matrix
+
+
+def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
+    """Compute the reduced density matrix from a state vector or a density matrix.
+
+    Args:
+        state (tensor_like): ``(2**N)`` state vector or ``(2**N, 2**N)`` density matrix.
+        indices (Sequence(int)): List of indices in the considered subsystem.
+        check_state (bool): If True, the function will check the state validity (shape and norm).
+        c_dtype (str): Complex floating point precision type.
+
+    Returns:
+        tensor_like: Reduced density matrix of size ``(2**len(indices), 2**len(indices))``
+
+
+    **Example**
+
+    >>> x = [1, 0, 1, 0] / np.sqrt(2)
+    >>> reduced_dm(x, indices=[0])
+    [[0.5+0.j 0.5+0.j]
+     [0.5+0.j 0.5+0.j]]
+
+    >>> reduced_dm(x, indices=[1])
+    [[1.+0.j 0.+0.j]
+     [0.+0.j 0.+0.j]]
+
+    """
+    state = cast(state, dtype=c_dtype)
+    # State vector
+    density_matrix = _density_matrix_from_state_vector(state, indices, check_state)
+    # TODO
+    # Density matrix
+    return density_matrix
