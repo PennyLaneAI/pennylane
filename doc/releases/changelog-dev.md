@@ -59,6 +59,7 @@
   [(#2617)](https://github.com/PennyLaneAI/pennylane/pull/2617)
   [(#2631)](https://github.com/PennyLaneAI/pennylane/pull/2631)
   [(#2640)](https://github.com/PennyLaneAI/pennylane/pull/2640)
+  [(#2663)](https://github.com/PennyLaneAI/pennylane/pull/2663)
   
   A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
   
@@ -95,6 +96,7 @@
       return qml.state()
   ```
   ```pycon
+  
   >>> qml.qinfo.reduced_dm(circuit, wires=[0])(np.pi/2)
   [[0.5+0.j 0.+0.j]
    [0.+0.j 0.5+0.j]]
@@ -173,7 +175,7 @@
 
   The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy
   `qml.qinfo.vn_entropy`:
-  
+
   ```python3
   dev = qml.device("default.qubit", wires=2)
   @qml.qnode(dev)
@@ -211,6 +213,7 @@
   >>> circuit(np.pi / 2)
   tensor(1.38629436, requires_grad=True)
   ```
+
   The `qml.qinfo.mutual_info` can be used to transform a QNode returning
   a state to a function that returns the mutual information:
   ```python3
@@ -263,16 +266,52 @@
   tensor([[1., 1.],
       [1., 1.]], requires_grad=True)
   ```
+  
+  The support for calculating the fidelity between two arbitrary states is added as `qml.math.fidelity` for state 
+  vectors and density matrices.
+  
+  ```pycon
+  >>> state0 = [0, 1]
+  >>> state1 = [[0, 0], [0, 1]]
+  >>> qml.math.fidelity(state0, state1)
+  1.0
+  
+  >>> state0 = [[0.5, 0.5], [0.5, 0.5]]
+  >>> state1 = [[0.5, 0], [0, 0.5]]
+  >>> qml.math.fidelity(state0, state1)
+  0.4999999999999998
+  ```
+  The quantum information module now have a differentiable fidelity transform for QNodes.
+  
+  ```python
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev)
+  def circuit_rx(x, y):
+      qml.RX(x, wires=0)
+      qml.RZ(y, wires=0)
+      return qml.state()
+
+  @qml.qnode(dev)
+  def circuit_ry(y):
+      qml.RY(y, wires=0)
+      return qml.state()
+  ```
+  ```pycon
+  >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.2))
+  0.9905158135644924
+  ```
+  
 
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
   attribute `batch_size`.
   - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
   - `Operator.batch_size` contains the size of an additional parameter broadcasting axis, if present,
   - `QuantumTape.batch_size` contains the `batch_size` of its operations (see below).
-
+  
 * New `solarized_light` and `solarized_dark` styles available for drawing circuit diagram graphics. 
   [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
-
+  
 * Support adding `Observable` objects to the integer `0`.
   [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603)
 

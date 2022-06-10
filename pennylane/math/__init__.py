@@ -53,7 +53,7 @@ from .multi_dispatch import (
 )
 
 from .quantum import cov_matrix, marginal_prob
-from .quantum import reduced_dm, vn_entropy, mutual_info
+from .quantum import reduced_dm, vn_entropy, mutual_info, sqrt_matrix, fidelity
 
 from .utils import (
     allclose,
@@ -94,6 +94,7 @@ __all__ = [
     "diag",
     "dot",
     "einsum",
+    "fidelity",
     "frobenius_inner_product",
     "get_interface",
     "get_trainable_indices",
@@ -105,10 +106,10 @@ __all__ = [
     "ones_like",
     "reduced_dm",
     "requires_grad",
+    "sqrt_matrix",
     "scatter_element_add",
     "stack",
     "tensordot",
-    "vn_entropy",
     "unwrap",
     "vn_entropy",
     "where",
