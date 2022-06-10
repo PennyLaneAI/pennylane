@@ -665,6 +665,9 @@
 * The `qml.queuing.Queue` class is now removed.
   [(#2599)](https://github.com/PennyLaneAI/pennylane/pull/2599)
 
+* The `qml.utils.expand` function is now removed; `qml.operation.expand_matrix` should be used instead.
+  [(#2654)](https://github.com/PennyLaneAI/pennylane/pull/2654)
+  
 * The module `qml.gradients.param_shift_hessian` has been renamed to
   `qml.gradients.parameter_shift_hessian` in order to distinguish it from the identically named
   function. Note that the `param_shift_hessian` function is unaffected by this change and can be
@@ -757,5 +760,5 @@ This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Ankit Khandelwal, Avani Bhardwaj, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs,
 Edward Jiang, Guillermo Alonso-Linaje, Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian Kottmann,
-Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, Antal Száva,
+Maria Schuld, Mason Moreland, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, Antal Száva,
 WingCode
