@@ -103,11 +103,11 @@ def vn_entropy(qnode, wires, base=None):
             density_matrix = qnode(*args, **kwargs)
             if density_matrix.shape == (density_matrix.shape[0],):
                 return 0.0
-            entropy = qml.math.vn_entropy(density_matrix, wires, base)
+            entropy = qml.math.vn_entropy(density_matrix, wires, base, c_dtype=qnode.device.C_DTYPE)
             return entropy
 
         density_matrix = density_matrix_qnode(*args, **kwargs)
-        entropy = qml.math.vn_entropy(density_matrix, wires, base)
+        entropy = qml.math.vn_entropy(density_matrix, wires, base, c_dtype=qnode.device.C_DTYPE)
         return entropy
 
     return wrapper
