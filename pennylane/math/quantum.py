@@ -211,27 +211,7 @@ def _density_matrix_from_matrix(density_matrix, indices, check_state=False):
     num_indices = int(np.log2(shape))
 
     if check_state:
-        # Check format
-        if (
-            len(density_matrix.shape) != 2
-            or density_matrix.shape[0] != density_matrix.shape[1]
-            or not np.log2(shape).is_integer()
-        ):
-            raise ValueError("Density matrix must be of shape (2**N, 2**N).")
-        # Check trace
-        trace = np.trace(density_matrix)
-        if not is_abstract(trace):
-            if not allclose(trace, 1.0, atol=1e-10):
-                raise ValueError("The trace of the density matrix should be one.")
-            # Check if the matrix is hermitian
-            conj_trans = np.transpose(np.conj(density_matrix))
-            if not allclose(density_matrix, conj_trans):
-                raise ValueError("The matrix is not hermitian.")
-            # Check if positive semi definite
-            evs = np.linalg.eigvalsh(density_matrix)
-            evs_non_negative = [ev for ev in evs if ev >= 0.0]
-            if len(evs) != len(evs_non_negative):
-                raise ValueError("The matrix is not positive semi-definite.")
+        _check_density_matrix(density_matrix)
 
     consecutive_indices = list(range(0, num_indices))
 
@@ -397,14 +377,7 @@ def _density_matrix_from_state_vector(state, indices, check_state=False):
 
     # Check the format and norm of the state vector
     if check_state:
-        # Check format
-        if len(np.shape(state)) != 1 or not np.log2(len_state).is_integer():
-            raise ValueError("State vector must be of length 2**wires.")
-        # Check norm
-        norm = np.linalg.norm(state, ord=2)
-        if not is_abstract(norm):
-            if not allclose(norm, 1.0, atol=1e-10):
-                raise ValueError("Sum of amplitudes-squared does not equal one.")
+        _check_state_vector(state)
 
     # Get dimension of the quantum system and reshape
     num_indices = int(np.log2(len_state))
