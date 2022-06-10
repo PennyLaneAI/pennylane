@@ -15,7 +15,7 @@
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
 import pennylane as qml
-from pennylane.transforms import batch_transform
+from pennylane.transforms import batch_transform, metric_tensor, adjoint_metric_tensor
 
 
 def reduced_dm(qnode, wires):
@@ -258,17 +258,19 @@ def classical_fisher(qnode, argnums=0):
 
     Args:
         tape (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
+        argnums (Optional[int or List[int]]): Arguments to be differentiated in case interface ``jax`` is used.
 
-    Returns: func: The function that computes the classical fisher information matrix. This function accepts the same
-    signature as the :class:`.QNode`. If the signature contains one differentiable variable ``params``, the function
-    returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
-    it returns a list of sizes ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
+    Returns:
+        func: The function that computes the classical fisher information matrix. This function accepts the same
+        signature as the :class:`.QNode`. If the signature contains one differentiable variable ``params``, the function
+        returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
+        it returns a list of sizes ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
 
     .. warning::
 
         The ``classical_fisher()`` matrix is currently not differentiable.
 
-    .. seealso:: :func:`~.pennylane.metric_tensor`
+    .. seealso:: :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.qinfo.transforms.quantum_fisher`
 
     **Example**
 
@@ -394,6 +396,91 @@ def classical_fisher(qnode, argnums=0):
             return res
 
         return _compute_cfim(p, j)
+
+    return wrapper
+
+
+def quantum_fisher(qnode, *args, hardware=False, **kwargs):
+    r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode` or quantum tape.
+
+    Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
+    are reflected in the quantum state. The metric used to induce the QFIM is the fidelity :math:`f = |\langle \psi | \psi' \rangle|^2` between two (pure) quantum states.
+    This leads to the following definition of the QFIM (see eq. (27) in `arxiv:2103.15191 <https://arxiv.org/abs/2103.15191>`_):
+
+    .. math::
+
+        \text{QFIM}_{i, j} = 4 \text{Re}\left[ \langle \partial_i \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle
+        - \langle \partial_i \psi(\bm{\theta}) | \psi(\bm{\theta}) \rangle \langle \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle \right]
+
+    with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
+
+    .. seealso::
+        :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.adjoint_metric_tensor`, :func:`~.pennylane.qinfo.transforms.classical_fisher`
+
+    Args:
+        qnode (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
+        hardware (bool): Indicate if execution needs to be hardware compatible (True)
+
+    Returns:
+        func: The function that computes the quantum fisher information matrix.
+
+    .. note::
+
+        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. In case of ``hardware=True``, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
+        In case of  ``hardware=False``, :func:`~.pennylane.adjoint_metric_tensor` is used. Please refer to their respective documentations for details on the arguments.
+
+    **Example**
+
+    The quantum Fisher information matrix (QIFM) can be used to compute the `natural` gradient for `Quantum Natural Gradient Descent <https://arxiv.org/abs/1909.02108>`_.
+    A typical scenario is optimizing the expectation value of a Hamiltonian:
+
+    .. code-block:: python
+
+        n_wires = 2
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        H = 1.*qml.PauliX(0) @ qml.PauliX(1) - 0.5 * qml.PauliZ(1)
+
+        @qml.qnode(dev)
+        def circ(params):
+            qml.RY(params[0], wires=1)
+            qml.CNOT(wires=(1,0))
+            qml.RY(params[1], wires=1)
+            qml.RZ(params[2], wires=1)
+            return qml.expval(H)
+
+        params = pnp.array([0.5, 1., 0.2], requires_grad=True)
+
+    The natural gradient is then simply the QFIM multiplied by the gradient:
+
+    >>> grad = qml.grad(circ)(params)
+    [ 0.59422561, -0.02615095, -0.05146226]
+
+    >>> qfim = qml.qinfo.quantum_fisher(circ)(params)
+    np.diag([1., 1., 0.77517241])
+
+    >>> q_nat_grad = qfim @ grad
+    [ 0.59422561 -0.02615095 -0.03989212]
+
+    When using real hardware with finite shots, we have to specify ``hardware=True`` in order to compute the QFIM.
+    Additionally, we need to provide a device that has a spare wire for the Hadamard test, otherwise it will just be able to compute the block diagonal terms.
+
+    >>> dev = qml.device("default.qubit", wires=n_wires+1, shots=1000)
+    >>> circ = qml.QNode(circ, dev)
+    >>> qfim = qml.qinfo.quantum_fisher(circ, hardware=True)(params)
+
+    """
+    # TODO: ``hardware`` argument will be obsolete in future releases when ``shots`` can be inferred.
+    if hardware:
+
+        def wrapper(*args0, **kwargs0):
+            return 4 * metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
+
+    else:
+
+        def wrapper(*args0, **kwargs0):
+            return 4 * adjoint_metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
 
     return wrapper
 
