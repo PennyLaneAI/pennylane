@@ -53,6 +53,7 @@ from pennylane.measurements import (
     state,
     var,
     vn_entropy,
+    mutual_info,
 )
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl

@@ -27,7 +27,8 @@ def split_non_commuting(tape):
     Splits a qnode measuring non-commuting observables into groups of commuting observables.
 
     Args:
-        qnode (pennylane.QNode or .QuantumTape): quantum tape of QNode that contains a list of non-commuting observables to measure.
+        qnode (pennylane.QNode or .QuantumTape): quantum tape or QNode that contains a list of
+            non-commuting observables to measure.
 
     Returns:
         qnode (pennylane.QNode) or tuple[List[.QuantumTape], function]: If a QNode is passed,

@@ -44,6 +44,7 @@ class ObservableReturnTypes(Enum):
     State = "state"
     MidMeasure = "measure"
     VnEntropy = "vnentropy"
+    MutualInfo = "mutualinfo"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -74,6 +75,9 @@ basis in the middle of the circuit."""
 
 VnEntropy = ObservableReturnTypes.VnEntropy
 """Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
+
+MutualInfo = ObservableReturnTypes.MutualInfo
+"""Enum: An enumeration which represents returning the mutual information before measurements."""
 
 
 class MeasurementShapeError(ValueError):
@@ -330,9 +334,26 @@ class MeasurementProcess:
 
     @property
     def wires(self):
-        r"""The wires the measurement process acts on."""
+        r"""The wires the measurement process acts on.
+
+        This is the union of all the Wires objects of the measurement.
+        """
         if self.obs is not None:
             return self.obs.wires
+
+        if not isinstance(self._wires, list):
+            return self._wires
+
+        return Wires.all_wires(self._wires)
+
+    @property
+    def raw_wires(self):
+        r"""The wires the measurement process acts on.
+
+        For measurements involving more than one set of wires (such as
+        mutual information), this is a list of the Wires objects. Otherwise,
+        this is the same as :func:`~.MeasurementProcess.wires`
+        """
         return self._wires
 
     def eigvals(self):
@@ -428,6 +449,7 @@ class MeasurementProcess:
     @property
     def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
+
         if self.obs is None:
             fingerprint = (
                 str(self.name),
@@ -819,7 +841,7 @@ def vn_entropy(wires, log_base=None):
 
     Args:
         wires (Sequence[int] or int): The wires of the subsystem
-        log_base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
+        log_base (float): Base for the logarithm. If None, the natural logarithm is used.
 
     **Example:**
 
@@ -846,6 +868,63 @@ def vn_entropy(wires, log_base=None):
     wires = qml.wires.Wires(wires)
     return MeasurementProcess(
         VnEntropy, wires=wires, shape=(1,), log_base=log_base, numeric_type=float
+    )
+
+
+def mutual_info(wires0, wires1, log_base=None):
+    r"""Mutual information between the subsystems prior to measurement:
+
+    .. math::
+
+        I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
+
+    where :math:`S` is the von Neumann entropy.
+
+    The mutual information is a measure of correlation between two subsystems.
+    More specifically, it quantifies the amount of information obtained about
+    one system by measuring the other system.
+
+    Args:
+        wires0 (Sequence[int] or int): the wires of the first subsystem
+        wires1 (Sequence[int] or int): the wires of the second subsystem
+        log_base (float): Base for the logarithm. If None, the natural logarithm is used.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+    Executing this QNode:
+
+    >>> circuit(np.pi / 2)
+    1.3862943611198906
+
+    .. note::
+
+        Calculating the derivative of :func:`~.mutual_info` is currently only supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device.
+
+    .. seealso::
+
+        :func:`~.vn_entropy`
+    """
+    # the subsystems cannot overlap
+    if len([wire for wire in wires0 if wire in wires1]) > 0:
+        raise qml.QuantumFunctionError(
+            "Subsystems for computing mutual information must not overlap."
+        )
+
+    wires0 = qml.wires.Wires(wires0)
+    wires1 = qml.wires.Wires(wires1)
+    return MeasurementProcess(
+        MutualInfo, wires=[wires0, wires1], shape=(1,), log_base=log_base, numeric_type=float
     )
 
 

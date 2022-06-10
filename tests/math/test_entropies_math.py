@@ -11,22 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for entropiess functions.
-"""
-
-# Copyright 2022 Xanadu Quantum Technologies Inc.
-
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-
-#     http://www.apache.org/licenses/LICENSE-2.0
-
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 """Unit tests for differentiable quantum entropies.
 """
 
@@ -34,6 +18,12 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+
+pytestmark = pytest.mark.all_interfaces
+
+tf = pytest.importorskip("tensorflow", minversion="2.1")
+torch = pytest.importorskip("torch")
+jax = pytest.importorskip("jax")
 
 
 def expected_entropy_ising_xx(param):
@@ -386,3 +376,63 @@ class TestVonNeumannEntropy:
             match="Returning the Von Neumann entropy is not supported when using custom wire labels",
         ):
             circuit_entropy(0.1)
+
+
+class TestMutualInformation:
+    """Tests for the mutual information functions"""
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize(
+        "state, expected",
+        [
+            ([1, 0, 0, 0], 0),
+            ([np.sqrt(2) / 2, 0, np.sqrt(2) / 2, 0], 0),
+            ([np.sqrt(2) / 2, 0, 0, np.sqrt(2) / 2], 2 * np.log(2)),
+            (np.ones(4) * 0.5, 0),
+        ],
+    )
+    def test_state(self, interface, state, expected):
+        """Test that mutual information works for states"""
+        state = qml.math.asarray(state, like=interface)
+        actual = qml.math.mutual_info(state, indices0=[0], indices1=[1])
+        assert np.allclose(actual, expected, rtol=1e-06, atol=1e-07)
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize(
+        "state, expected",
+        [
+            ([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], 0),
+            ([[0.5, 0, 0.5, 0], [0, 0, 0, 0], [0.5, 0, 0.5, 0], [0, 0, 0, 0]], 0),
+            ([[0.5, 0, 0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]], 2 * np.log(2)),
+            (np.ones((4, 4)) * 0.25, 0),
+        ],
+    )
+    def test_density_matrix(self, interface, state, expected):
+        """Test that mutual information works for density matrices"""
+        state = qml.math.asarray(state, like=interface)
+        actual = qml.math.mutual_info(state, indices0=[0], indices1=[1])
+        assert np.allclose(actual, expected)
+
+    @pytest.mark.parametrize(
+        "state, wires0, wires1",
+        [
+            (np.array([1, 0, 0, 0]), [0], [0]),
+            (np.array([1, 0, 0, 0]), [0], [0, 1]),
+            (np.array([1, 0, 0, 0, 0, 0, 0, 0]), [0, 1], [1]),
+            (np.array([1, 0, 0, 0, 0, 0, 0, 0]), [0, 1], [1, 2]),
+        ],
+    )
+    def test_subsystem_overlap(self, state, wires0, wires1):
+        """Test that an error is raised when the subsystems overlap"""
+        with pytest.raises(
+            ValueError, match="Subsystems for computing mutual information must not overlap"
+        ):
+            qml.math.mutual_info(state, indices0=wires0, indices1=wires1)
+
+    @pytest.mark.parametrize("state", [np.array(5), np.ones((3, 4)), np.ones((2, 2, 2))])
+    def test_invalid_type(self, state):
+        """Test that an error is raised when an unsupported type is passed"""
+        with pytest.raises(
+            ValueError, match="The state is not a state vector or a density matrix."
+        ):
+            qml.math.mutual_info(state, indices0=[0], indices1=[1])
