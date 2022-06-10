@@ -376,7 +376,7 @@ def _to_numpy_torch(x):
 ar.register_function("torch", "to_numpy", _to_numpy_torch)
 
 
-def _asarray_torch(x, dtype=None, device=None):
+def _asarray_torch(x, dtype=None, **kwargs):
     import torch
 
     dtype_map = {
@@ -392,9 +392,9 @@ def _asarray_torch(x, dtype=None, device=None):
     }
 
     if dtype in dtype_map:
-        return torch.as_tensor(x, dtype=dtype_map[dtype], device=device)
+        return torch.as_tensor(x, dtype=dtype_map[dtype], **kwargs)
 
-    return torch.as_tensor(x, dtype=dtype, device=device)
+    return torch.as_tensor(x, dtype=dtype, **kwargs)
 
 
 ar.register_function("torch", "asarray", _asarray_torch)
@@ -513,10 +513,9 @@ def _block_diag_torch(tensors):
 ar.register_function("torch", "block_diag", _block_diag_torch)
 
 
-def _scatter_torch(indices, array, new_dimensions):
+def _scatter_torch(indices, tensor, new_dimensions):
     import torch
 
-    tensor = array
     new_tensor = torch.zeros(new_dimensions, dtype=tensor.dtype, device=tensor.device)
     new_tensor[indices] = tensor
     return new_tensor
@@ -565,16 +564,16 @@ ar.register_function("torch", "eigvalsh", lambda x: _i("torch").linalg.eigvalsh(
 ar.register_function("torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x)))
 
 
-def _sum_torch(tensor, axis=None, keepdims=False):
+def _sum_torch(tensor, axis=None, keepdims=False, dtype=None):
     import torch
 
     if axis is None:
-        return torch.sum(tensor)
+        return torch.sum(tensor, dtype=dtype)
 
     if not isinstance(axis, int) and len(axis) == 0:
         return tensor
 
-    return torch.sum(tensor, dim=axis, keepdim=keepdims)
+    return torch.sum(tensor, dim=axis, keepdim=keepdims, dtype=dtype)
 
 
 ar.register_function("torch", "sum", _sum_torch)
