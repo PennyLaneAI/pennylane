@@ -117,7 +117,7 @@ class DefaultMixed(QubitDevice):
 
     @staticmethod
     def _reduce_sum(array, axes):
-        return qnp.sum(array, axis=tuple(axes))
+        return qnp.sum(array, tuple(axes))
 
     @staticmethod
     def _asarray(array, dtype=None):
@@ -168,7 +168,11 @@ class DefaultMixed(QubitDevice):
         capabilities = super().capabilities().copy()
         capabilities.update(
             returns_state=True,
-            passthru_devices={"autograd": "default.mixed", "tf": "default.mixed"},
+            passthru_devices={
+                "autograd": "default.mixed",
+                "tf": "default.mixed",
+                "torch": "default.mixed",
+            },
         )
         return capabilities
 
