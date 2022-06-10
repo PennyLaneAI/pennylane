@@ -4,7 +4,105 @@
 
 <h3>New features since last release</h3>
 
-* New `solarized_light` and `solarized_dark` styles available for drawing circuit diagram graphics. [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
+* A new quantum information module is added. It includes a function for computing the reduced density matrix functions 
+  for state vectors and density matrices.
+
+  [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
+  [(#2569)](https://github.com/PennyLaneAI/pennylane/pull/2569)
+  [(#2598)](https://github.com/PennyLaneAI/pennylane/pull/2598)
+  [(#2617)](https://github.com/PennyLaneAI/pennylane/pull/2617)
+
+  A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
+
+  ```pycon
+  >>> x = [1, 0, 1, 0] / np.sqrt(2)
+  >>> reduced_dm(x, indices=[0])
+  [[0.5+0.j 0.5+0.j]
+   [0.5+0.j 0.5+0.j]]
+
+  >>> reduced_dm(x, indices=[1])
+  [[1.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j]]
+  
+  >>> y = [[0.5, 0, 0.0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]
+  >>> reduced_dm(y, indices=[0])
+  [[0.5+0.j 0.0+0.j]
+   [0.0+0.j 0.5+0.j]]
+  
+  >>> import tensorflow as tf
+  >>> z = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+  >>> reduced_dm(z, indices=[1])
+  tf.Tensor(
+  [[1.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+  ```
+
+  It also contains a `QNode` transform `qml.qinfo.reduced_dm`, that returns the density matrix from a `QNode` 
+  returning `qml.state`:
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.IsingXX(x, wires=[0,1])
+      return qml.state()
+  ```
+  ```pycon
+  >>> qml.qinfo.reduced_dm(circuit, wires=[0])(np.pi/2)
+  [[0.5+0.j 0.+0.j]
+   [0.+0.j 0.5+0.j]]
+  ```
+  
+  We add Von Neumann entropy capabilities, `qml.math.vn_entropy` that accepts both state vectors and density matrices
+  for all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
+
+  ```pycon
+  >>> x = [1, 0, 0, 1] / np.sqrt(2)
+  >>> vn_entropy(x, indices=[0])
+  0.6931472
+  
+  >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
+  >>> vn_entropy(x, indices=[0])
+  0.6931472
+  ```
+  
+  A Von Neumann measurement process `qml.vn_entropy` can be used as return in QNodes:
+
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit_entropy(x):
+      qml.IsingXX(x, wires=[0,1])
+      return qml.vn_entropy(wires=[0], log_base=2)
+  ```
+  
+  ```pycon
+  >>> circuit_entropy(np.pi/2)
+  1.0
+  ```
+  The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy 
+  `qml.qinfo.vn_entropy`:
+  
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit_entropy(x):
+      qml.IsingXX(x, wires=[0,1])
+      return qml.state()
+  ```
+  
+  ```pycon
+  >>> vn_entropy(circuit, indices=[0], base=2)(np.pi/2)
+  1.0
+  ```
+
+* Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
+  attribute `batch_size`.
+  - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
+  - `Operator.batch_size` contains the size of an additional parameter broadcasting axis, if present,
+  - `QuantumTape.batch_size` contains the `batch_size` of its operations (see below).
+
+* New `solarized_light` and `solarized_dark` styles available for drawing circuit diagram graphics. 
+  [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
 
 * Support adding `Observable` objects to the integer `0`.
   [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603)
@@ -15,6 +113,7 @@
   ```
 
 * Parameter broadcasting within operations and tapes was introduced.
+
   [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
   [(#2590)](https://github.com/PennyLaneAI/pennylane/pull/2590)
   [(#2609)](https://github.com/PennyLaneAI/pennylane/pull/2609)
@@ -185,9 +284,10 @@
   tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
   ```
 
-* The `default.mixed` device now supports backpropagation with the `"autograd"`
-  interface.
+* The `default.mixed` device now supports backpropagation with the Autograd and TensorFlow
+  interfaces.
   [(#2615)](https://github.com/PennyLaneAI/pennylane/pull/2615)
+  [(#2670)](https://github.com/PennyLaneAI/pennylane/pull/2670)
 
   As a result, the default differentiation method for the device is now `"backprop"`. To continue using the old default `"parameter-shift"`, explicitly specify this differentiation method in the QNode.
 
@@ -346,6 +446,9 @@
   [(#2678)](https://github.com/PennyLaneAI/pennylane/pull/2678)
 
 <h3>Breaking changes</h3>
+
+* PennyLane does not support TensorFlow `2.1.~` anymore.
+  [(#2683)](https://github.com/PennyLaneAI/pennylane/pull/2683)
 
 * The `qml.queuing.Queue` class is now removed.
   [(#2599)](https://github.com/PennyLaneAI/pennylane/pull/2599)

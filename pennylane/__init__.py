@@ -44,7 +44,16 @@ from pennylane.configuration import Configuration
 from pennylane.drawer import draw, draw_mpl
 from pennylane.tracker import Tracker
 from pennylane.io import *
-from pennylane.measurements import density_matrix, measure, expval, probs, sample, state, var
+from pennylane.measurements import (
+    density_matrix,
+    measure,
+    expval,
+    probs,
+    sample,
+    state,
+    var,
+    vn_entropy,
+)
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl
 from pennylane.templates import broadcast, layer
@@ -89,6 +98,7 @@ from pennylane.debugging import snapshots
 from .collections import QNodeCollection, dot, map, sum
 import pennylane.grouping  # pylint:disable=wrong-import-order
 import pennylane.gradients  # pylint:disable=wrong-import-order
+import pennylane.qinfo  # pylint:disable=wrong-import-order
 from pennylane.interfaces import execute  # pylint:disable=wrong-import-order
 
 # Look for an existing configuration file

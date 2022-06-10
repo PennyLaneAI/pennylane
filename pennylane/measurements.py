@@ -43,6 +43,7 @@ class ObservableReturnTypes(Enum):
     Probability = "probs"
     State = "state"
     MidMeasure = "measure"
+    VnEntropy = "vnentropy"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -70,6 +71,9 @@ State = ObservableReturnTypes.State
 MidMeasure = ObservableReturnTypes.MidMeasure
 """Enum: An enumeration which represents returning sampling the computational
 basis in the middle of the circuit."""
+
+VnEntropy = ObservableReturnTypes.VnEntropy
+"""Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
 
 
 class MeasurementShapeError(ValueError):
@@ -115,10 +119,12 @@ class MeasurementProcess:
         id=None,
         shape=None,
         numeric_type=None,
+        log_base=None,
     ):
         self.return_type = return_type
         self.obs = obs
         self.id = id
+        self.log_base = log_base
 
         if wires is not None and obs is not None:
             raise ValueError("Cannot set the wires if an observable is provided.")
@@ -224,6 +230,7 @@ class MeasurementProcess:
         pre-defined (e.g., expectation values, states, etc.).
         """
         shot_vector = device._shot_vector
+        # pylint: disable=consider-using-generator
         num_shot_elements = sum([s.copies for s in shot_vector])
         shape = ()
 
@@ -315,6 +322,9 @@ class MeasurementProcess:
 
         if self.obs is not None:
             return cls(self.return_type, obs=copy.copy(self.obs))
+
+        if self.log_base is not None:
+            return cls(self.return_type, wires=self._wires, log_base=self.log_base)
 
         return cls(self.return_type, eigvals=self._eigvals, wires=self._wires)
 
@@ -799,6 +809,44 @@ def density_matrix(wires):
     dim = 2 ** len(wires)
     shape = (1, dim, dim)
     return MeasurementProcess(State, wires=wires, shape=shape, numeric_type=complex)
+
+
+def vn_entropy(wires, log_base=None):
+    r"""Von Neumann entropy of the system prior to measurement.
+
+    .. math::
+        S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
+
+    Args:
+        wires (Sequence[int] or int): The wires of the subsystem
+        log_base (float): Base for the logarithm, default is None the natural logarithm is used in this case.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=[0])
+
+    Executing this QNode:
+
+    >>> circuit_entropy(np.pi/2)
+    0.6931472
+
+    .. note::
+
+        Calculating the derivative of :func:`~.vn_entropy` is currently only supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device.
+    """
+    wires = qml.wires.Wires(wires)
+    return MeasurementProcess(
+        VnEntropy, wires=wires, shape=(1,), log_base=log_base, numeric_type=float
+    )
 
 
 T = TypeVar("T")

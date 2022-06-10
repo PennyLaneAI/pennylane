@@ -207,6 +207,17 @@ def test_conj_helper_method():
 class TestApply:
     """Test application of PennyLane operations."""
 
+    def test_conj_array(self, device, torch_device, tol):
+        """Test using conj method from the device."""
+        dev = device(wires=4, torch_device=torch_device)
+        state = torch.tensor([-1.0 + 1j, 1.0 + 1j], dtype=torch.complex128, device=torch_device)
+        assert torch.allclose(
+            dev._conj(state),
+            torch.tensor([-1.0 - 1j, 1.0 - 1j], dtype=torch.complex128),
+            atol=tol,
+            rtol=0,
+        )
+
     def test_basis_state(self, device, torch_device, tol):
         """Test basis state initialization"""
 
