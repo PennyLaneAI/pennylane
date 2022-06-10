@@ -517,23 +517,6 @@ def einsum(indices, *operands, like=None):
         operands (tuple[tensor_like]): The tensors for the operation.
     Returns:
         tensor_like: The calculation based on the Einstein summation convention.
-    **Examples**
-    >>> a = np.arange(25).reshape(5,5)
-    >>> b = np.arange(5)
-    >>> c = np.arange(6).reshape(2,3)
-    Trace of a matrix:
-    >>> qml.math.einsum('ii', a)
-    60
-    Extract the diagonal (requires explicit form):
-    >>> qml.math.einsum('ii->i', a)
-    array([ 0,  6, 12, 18, 24])
-    Sum over an axis (requires explicit form):
-    >>> qml.math.einsum('ij->i', a)
-    array([ 10,  35,  60,  85, 110])
-    Compute a matrix transpose, or reorder any number of axes:
-
-    Returns:
-        tensor_like: The calculation based on the Einstein summation convention.
 
     **Examples**
 
