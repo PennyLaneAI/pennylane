@@ -43,6 +43,8 @@ class ObservableReturnTypes(Enum):
     Probability = "probs"
     State = "state"
     MidMeasure = "measure"
+    VnEntropy = "vnentropy"
+    MutualInfo = "mutualinfo"
 
     def __repr__(self):
         """String representation of the return types."""
@@ -70,6 +72,12 @@ State = ObservableReturnTypes.State
 MidMeasure = ObservableReturnTypes.MidMeasure
 """Enum: An enumeration which represents returning sampling the computational
 basis in the middle of the circuit."""
+
+VnEntropy = ObservableReturnTypes.VnEntropy
+"""Enum: An enumeration which represents returning Von Neumann entropy before measurements."""
+
+MutualInfo = ObservableReturnTypes.MutualInfo
+"""Enum: An enumeration which represents returning the mutual information before measurements."""
 
 
 class MeasurementShapeError(ValueError):
@@ -115,10 +123,12 @@ class MeasurementProcess:
         id=None,
         shape=None,
         numeric_type=None,
+        log_base=None,
     ):
         self.return_type = return_type
         self.obs = obs
         self.id = id
+        self.log_base = log_base
 
         if wires is not None and obs is not None:
             raise ValueError("Cannot set the wires if an observable is provided.")
@@ -224,6 +234,7 @@ class MeasurementProcess:
         pre-defined (e.g., expectation values, states, etc.).
         """
         shot_vector = device._shot_vector
+        # pylint: disable=consider-using-generator
         num_shot_elements = sum([s.copies for s in shot_vector])
         shape = ()
 
@@ -316,13 +327,33 @@ class MeasurementProcess:
         if self.obs is not None:
             return cls(self.return_type, obs=copy.copy(self.obs))
 
+        if self.log_base is not None:
+            return cls(self.return_type, wires=self._wires, log_base=self.log_base)
+
         return cls(self.return_type, eigvals=self._eigvals, wires=self._wires)
 
     @property
     def wires(self):
-        r"""The wires the measurement process acts on."""
+        r"""The wires the measurement process acts on.
+
+        This is the union of all the Wires objects of the measurement.
+        """
         if self.obs is not None:
             return self.obs.wires
+
+        if not isinstance(self._wires, list):
+            return self._wires
+
+        return Wires.all_wires(self._wires)
+
+    @property
+    def raw_wires(self):
+        r"""The wires the measurement process acts on.
+
+        For measurements involving more than one set of wires (such as
+        mutual information), this is a list of the Wires objects. Otherwise,
+        this is the same as :func:`~.MeasurementProcess.wires`
+        """
         return self._wires
 
     def eigvals(self):
@@ -418,6 +449,7 @@ class MeasurementProcess:
     @property
     def hash(self):
         """int: returns an integer hash uniquely representing the measurement process"""
+
         if self.obs is None:
             fingerprint = (
                 str(self.name),
@@ -799,6 +831,101 @@ def density_matrix(wires):
     dim = 2 ** len(wires)
     shape = (1, dim, dim)
     return MeasurementProcess(State, wires=wires, shape=shape, numeric_type=complex)
+
+
+def vn_entropy(wires, log_base=None):
+    r"""Von Neumann entropy of the system prior to measurement.
+
+    .. math::
+        S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
+
+    Args:
+        wires (Sequence[int] or int): The wires of the subsystem
+        log_base (float): Base for the logarithm. If None, the natural logarithm is used.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=[0])
+
+    Executing this QNode:
+
+    >>> circuit_entropy(np.pi/2)
+    0.6931472
+
+    .. note::
+
+        Calculating the derivative of :func:`~.vn_entropy` is currently only supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device.
+    """
+    wires = qml.wires.Wires(wires)
+    return MeasurementProcess(
+        VnEntropy, wires=wires, shape=(1,), log_base=log_base, numeric_type=float
+    )
+
+
+def mutual_info(wires0, wires1, log_base=None):
+    r"""Mutual information between the subsystems prior to measurement:
+
+    .. math::
+
+        I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
+
+    where :math:`S` is the von Neumann entropy.
+
+    The mutual information is a measure of correlation between two subsystems.
+    More specifically, it quantifies the amount of information obtained about
+    one system by measuring the other system.
+
+    Args:
+        wires0 (Sequence[int] or int): the wires of the first subsystem
+        wires1 (Sequence[int] or int): the wires of the second subsystem
+        log_base (float): Base for the logarithm. If None, the natural logarithm is used.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+    Executing this QNode:
+
+    >>> circuit(np.pi / 2)
+    1.3862943611198906
+
+    .. note::
+
+        Calculating the derivative of :func:`~.mutual_info` is currently only supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device.
+
+    .. seealso::
+
+        :func:`~.vn_entropy`
+    """
+    # the subsystems cannot overlap
+    if len([wire for wire in wires0 if wire in wires1]) > 0:
+        raise qml.QuantumFunctionError(
+            "Subsystems for computing mutual information must not overlap."
+        )
+
+    wires0 = qml.wires.Wires(wires0)
+    wires1 = qml.wires.Wires(wires1)
+    return MeasurementProcess(
+        MutualInfo, wires=[wires0, wires1], shape=(1,), log_base=log_base, numeric_type=float
+    )
 
 
 T = TypeVar("T")

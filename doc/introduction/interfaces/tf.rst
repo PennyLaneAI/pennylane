@@ -11,7 +11,7 @@ translated into a quantum node that interfaces with TensorFlow by calling the
 
 .. note::
     To use the TensorFlow interface in PennyLane, you must first install TensorFlow.
-    Note that this interface only supports TensorFlow versions >= 2.0!
+    Note that this interface only supports TensorFlow versions >= 2.3!
 
 Tensorflow is imported as follows:
 

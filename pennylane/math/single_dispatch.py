@@ -57,6 +57,12 @@ ar.register_function("numpy", "unstack", list)
 ar.register_function("builtins", "unstack", list)
 
 
+def _scatter_numpy(indices, array, shape):
+    new_array = np.zeros(shape, dtype=array.dtype.type)
+    new_array[indices] = array
+    return new_array
+
+
 def _scatter_element_add_numpy(tensor, index, value):
     """In-place addition of a multidimensional value over various
     indices of a tensor."""
@@ -65,7 +71,10 @@ def _scatter_element_add_numpy(tensor, index, value):
     return new_tensor
 
 
+ar.register_function("numpy", "scatter", _scatter_numpy)
 ar.register_function("numpy", "scatter_element_add", _scatter_element_add_numpy)
+ar.register_function("numpy", "eigvalsh", np.linalg.eigvalsh)
+ar.register_function("numpy", "entr", lambda x: -np.sum(x * np.log(x)))
 
 
 # -------------------------------- Autograd --------------------------------- #
@@ -79,7 +88,6 @@ ar.autoray._BACKEND_ALIASES["pennylane"] = "autograd"
 # When dispatching to autograd, ensure that autoray will instead call
 # qml.numpy rather than autograd.numpy, to take into account our autograd modification.
 ar.autoray._MODULE_ALIASES["autograd"] = "pennylane.numpy"
-
 
 ar.register_function("autograd", "flatten", lambda x: x.flatten())
 ar.register_function("autograd", "coerce", lambda x: x)
@@ -160,6 +168,11 @@ def _take_autograd(tensor, indices, axis=None):
 
 
 ar.register_function("autograd", "take", _take_autograd)
+ar.register_function("autograd", "eigvalsh", lambda x: _i("autograd").numpy.linalg.eigh(x)[0])
+ar.register_function(
+    "autograd", "entr", lambda x: -_i("autograd").numpy.sum(x * _i("autograd").numpy.log(x))
+)
+ar.register_function("autograd", "diagonal", lambda x, *args: _i("qml").numpy.diag(x))
 
 
 # -------------------------------- TensorFlow --------------------------------- #
@@ -177,7 +190,6 @@ ar.autoray._SUBMODULE_ALIASES["tensorflow", "sinc"] = "tensorflow.experimental.n
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "isclose"] = "tensorflow.experimental.numpy"
 ar.autoray._SUBMODULE_ALIASES["tensorflow", "atleast_1d"] = "tensorflow.experimental.numpy"
 
-
 ar.autoray._FUNC_ALIASES["tensorflow", "arcsin"] = "asin"
 ar.autoray._FUNC_ALIASES["tensorflow", "arccos"] = "acos"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
@@ -185,7 +197,14 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
 
-ar.register_function("tensorflow", "asarray", lambda x: _i("tf").convert_to_tensor(x))
+ar.register_function(
+    "tensorflow", "asarray", lambda x, **kwargs: _i("tf").convert_to_tensor(x, **kwargs)
+)
+ar.register_function(
+    "tensorflow",
+    "hstack",
+    lambda *args, **kwargs: _i("tf").experimental.numpy.hstack(*args),
+)
 ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
 ar.register_function(
@@ -292,6 +311,13 @@ def _block_diag_tf(tensors):
 ar.register_function("tensorflow", "block_diag", _block_diag_tf)
 
 
+def _scatter_tf(indices, array, new_dims):
+    import tensorflow as tf
+
+    indices = np.expand_dims(indices, 1)
+    return tf.scatter_nd(indices, array, new_dims)
+
+
 def _scatter_element_add_tf(tensor, index, value):
     """In-place addition of a multidimensional value over various
     indices of a tensor."""
@@ -304,6 +330,7 @@ def _scatter_element_add_tf(tensor, index, value):
     return tf.tensor_scatter_nd_add(tensor, indices, value)
 
 
+ar.register_function("tensorflow", "scatter", _scatter_tf)
 ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_tf)
 
 
@@ -314,6 +341,23 @@ def _transpose_tf(a, axes=None):
 
 
 ar.register_function("tensorflow", "transpose", _transpose_tf)
+ar.register_function("tensorflow", "diagonal", lambda x, *args: _i("tf").linalg.diag_part(x))
+ar.register_function("tensorflow", "outer", lambda a, b: _i("tf").tensordot(a, b, axes=0))
+
+# for some reason Autoray modifies the default behaviour, so we change it back here
+ar.register_function("tensorflow", "where", lambda *args, **kwargs: _i("tf").where(*args, **kwargs))
+
+
+def _eigvalsh_tf(density_matrix):
+    evs = _i("tf").linalg.eigvalsh(density_matrix)
+    evs = _i("tf").math.real(evs)
+    return evs
+
+
+ar.register_function("tensorflow", "eigvalsh", _eigvalsh_tf)
+ar.register_function(
+    "tensorflow", "entr", lambda x: -_i("tf").math.reduce_sum(x * _i("tf").math.log(x))
+)
 
 # -------------------------------- Torch --------------------------------- #
 
@@ -485,7 +529,9 @@ def _ndim_torch(tensor):
 
 
 ar.register_function("torch", "ndim", _ndim_torch)
-
+# pylint: disable=unnecessary-lambda
+ar.register_function("torch", "eigvalsh", lambda x: _i("torch").linalg.eigvalsh(x))
+ar.register_function("torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x)))
 
 # -------------------------------- JAX --------------------------------- #
 
@@ -519,3 +565,6 @@ ar.register_function(
     lambda x, index, value: x.at[tuple(index)].add(value),
 )
 ar.register_function("jax", "unstack", list)
+# pylint: disable=unnecessary-lambda
+ar.register_function("jax", "eigvalsh", lambda x: _i("jax").numpy.linalg.eigvalsh(x))
+ar.register_function("jax", "entr", lambda x: _i("jax").numpy.sum(_i("jax").scipy.special.entr(x)))

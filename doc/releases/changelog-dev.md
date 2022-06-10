@@ -4,6 +4,229 @@
 
 <h3>New features since last release</h3>
 
+* A new quantum information module is added. It includes a function for computing the reduced density matrix functions
+  for state vectors and density matrices.
+
+  [(#2554)](https://github.com/PennyLaneAI/pennylane/pull/2554)
+  [(#2569)](https://github.com/PennyLaneAI/pennylane/pull/2569)
+  [(#2598)](https://github.com/PennyLaneAI/pennylane/pull/2598)
+  [(#2617)](https://github.com/PennyLaneAI/pennylane/pull/2617)
+  [(#2631)](https://github.com/PennyLaneAI/pennylane/pull/2631)
+  [(#2640)](https://github.com/PennyLaneAI/pennylane/pull/2640)
+  
+  A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
+  
+  ```pycon
+  >>> x = [1, 0, 1, 0] / np.sqrt(2)
+  >>> reduced_dm(x, indices=[0])
+  [[0.5+0.j 0.5+0.j]
+   [0.5+0.j 0.5+0.j]]
+
+  >>> reduced_dm(x, indices=[1])
+  [[1.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j]]
+
+  >>> y = [[0.5, 0, 0.0, 0.5], [0, 0, 0, 0], [0, 0, 0, 0], [0.5, 0, 0, 0.5]]
+  >>> reduced_dm(y, indices=[0])
+  [[0.5+0.j 0.0+0.j]
+   [0.0+0.j 0.5+0.j]]
+
+  >>> import tensorflow as tf
+  >>> z = tf.Variable([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], dtype=tf.complex128)
+  >>> reduced_dm(z, indices=[1])
+  tf.Tensor(
+  [[1.+0.j 0.+0.j]
+   [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
+  ```
+
+  It also contains a `QNode` transform `qml.qinfo.reduced_dm`, that returns the density matrix from a `QNode`
+  returning `qml.state`:
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.IsingXX(x, wires=[0,1])
+      return qml.state()
+  ```
+  ```pycon
+  >>> qml.qinfo.reduced_dm(circuit, wires=[0])(np.pi/2)
+  [[0.5+0.j 0.+0.j]
+   [0.+0.j 0.5+0.j]]
+  ```
+  
+  We add Von Neumann entropy capabilities, `qml.math.vn_entropy` that accepts both state vectors and density matrices
+  for all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
+
+  ```pycon
+  >>> x = [1, 0, 0, 1] / np.sqrt(2)
+  >>> vn_entropy(x, indices=[0])
+  0.6931472
+  
+  >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
+  >>> vn_entropy(x, indices=[0])
+  0.6931472
+  ```
+  
+  A Von Neumann measurement process `qml.vn_entropy` can be used as return in QNodes:
+
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit_entropy(x):
+      qml.IsingXX(x, wires=[0,1])
+      return qml.vn_entropy(wires=[0], log_base=2)
+  ```
+  
+  ```pycon
+  >>> circuit_entropy(np.pi/2)
+  1.0
+  ```
+  The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy 
+  `qml.qinfo.vn_entropy`:
+  
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit_entropy(x):
+      qml.IsingXX(x, wires=[0,1])
+      return qml.state()
+  ```
+  
+  ```pycon
+  >>> vn_entropy(circuit, indices=[0], base=2)(np.pi/2)
+  1.0
+  ```
+
+  We add Von Neumann entropy capabilities, `qml.math.vn_entropy` that accepts both state vectors and density matrices
+  for all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
+
+  ```pycon
+  >>> x = [1, 0, 0, 1] / np.sqrt(2)
+  >>> vn_entropy(x, indices=[0])
+  0.6931472
+
+  >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
+  >>> vn_entropy(x, indices=[0])
+  0.6931472
+  ```
+
+  A Von Neumann measurement process `qml.vn_entropy` can be used as return in QNodes:
+
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit_entropy(x):
+      qml.IsingXX(x, wires=[0,1])
+      return qml.vn_entropy(wires=[0], log_base=2)
+  ```
+
+  ```pycon
+  >>> circuit_entropy(np.pi/2)
+  1.0
+  ```
+
+  The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy
+  `qml.qinfo.vn_entropy`:
+  
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+  @qml.qnode(dev)
+  def circuit_entropy(x):
+      qml.IsingXX(x, wires=[0,1])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> vn_entropy(circuit, indices=[0], base=2)(np.pi/2)
+  1.0
+  ```
+
+  Support for mutual information computation is also added. The `qml.math.mutual_info`
+  function computes the mutual information from a state vector or a density matrix:
+  ```pycon
+  >>> x = np.array([1, 0, 0, 1]) / np.sqrt(2)
+  >>> qml.math.mutual_info(x, indices0=[0], indices1=[1])
+  1.3862943611198906
+  >>>
+  >>> y = np.array([[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]])
+  >>> qml.math.mutual_info(x, indices0=[0], indices1=[1])
+  1.3862943611198906
+  ```
+  The `qml.mutual_info` measurement process can be returned from a QNode:
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.IsingXX(x, wires=[0, 1])
+      return qml.mutual_info(wires0=[0], wires1=[1])
+  ```
+  ```pycon
+  >>> circuit(np.pi / 2)
+  tensor(1.38629436, requires_grad=True)
+  ```
+  The `qml.qinfo.mutual_info` can be used to transform a QNode returning
+  a state to a function that returns the mutual information:
+  ```python3
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.IsingXX(x, wires=[0, 1])
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> mutual_info_circuit = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1])
+  >>> mutual_info_circuit(np.pi / 2)
+  1.3862943611198906
+  ```
+  
+  Support for the classical Fisher information matrix is also added:
+
+  First, let us define a parametrized quantum state and return its (classical) probability distribution for all 
+  computational basis elements: 
+
+  ```python3
+  n_wires = 2
+
+  dev = qml.device("default.qubit", wires=n_wires)
+
+  @qml.qnode(dev)
+  def circ(params):
+      qml.RX(params[0], wires=0)
+      qml.RX(params[1], wires=0)
+      qml.CNOT(wires=(0,1))
+      return qml.probs(wires=range(n_wires))
+  ```
+  Executing this circuit yields the ``2**n_wires`` elements of the probability vector.
+  
+  ```pycon
+  >>> import pennylane.numpy as np
+  >>> params = np.random.random(2)
+  >>> circ(params)
+  tensor([0.77708372, 0.        , 0.        , 0.22291628], requires_grad=True)
+  ```
+  
+  We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the function returned
+  by ``classical_fisher()``:
+  
+  ```pycon
+  >>> cfim_func = qml.qinfo.classical_fisher(circ)
+  >>> cfim_func(params)
+  tensor([[1., 1.],
+      [1., 1.]], requires_grad=True)
+  ```
+
+* Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
+  attribute `batch_size`.
+  - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
+  - `Operator.batch_size` contains the size of an additional parameter broadcasting axis, if present,
+  - `QuantumTape.batch_size` contains the `batch_size` of its operations (see below).
+
+* New `solarized_light` and `solarized_dark` styles available for drawing circuit diagram graphics. 
+  [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
+
 * Support adding `Observable` objects to the integer `0`.
   [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603)
 
@@ -13,6 +236,7 @@
   ```
 
 * Parameter broadcasting within operations and tapes was introduced.
+
   [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
   [(#2590)](https://github.com/PennyLaneAI/pennylane/pull/2590)
   [(#2609)](https://github.com/PennyLaneAI/pennylane/pull/2609)
@@ -92,7 +316,7 @@
   >>> tape.batch_size
   3
   ```
-  
+
   but not `Operation`s with differing (non-`None`) `batch_size`s:
 
   ```pycon
@@ -159,6 +383,9 @@
   The code that checks for qubit wise commuting (QWC) got a performance boost that is noticable
   when many commuting paulis of the same type are measured.
 
+* Added the `qml.ECR` operation to represent the echoed RZX(pi/2) gate.
+  [(#2613)](https://github.com/PennyLaneAI/pennylane/pull/2613)
+
 * Added new transform `qml.batch_partial` which behaves similarly to `functools.partial` but supports batching in the unevaluated parameters.
   [(#2585)](https://github.com/PennyLaneAI/pennylane/pull/2585)
 
@@ -180,11 +407,36 @@
   tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
   ```
 
+* The `default.mixed` device now supports backpropagation with the Autograd and TensorFlow
+  interfaces.
+  [(#2615)](https://github.com/PennyLaneAI/pennylane/pull/2615)
+  [(#2670)](https://github.com/PennyLaneAI/pennylane/pull/2670)
+
+  As a result, the default differentiation method for the device is now `"backprop"`. To continue using the old default `"parameter-shift"`, explicitly specify this differentiation method in the QNode.
+
+  ```python
+  dev = qml.device("default.mixed", wires=2)
+
+  @qml.qnode(dev, interface="autograd", diff_method="backprop")
+  def circuit(x):
+      qml.RY(x, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.expval(qml.PauliZ(wires=1))
+  ```
+  ```pycon
+  >>> x = np.array(0.5, requires_grad=True)
+  >>> circuit(x)
+  array(0.87758256)
+  >>> qml.grad(circuit)(x)
+  -0.479425538604203
+  ```
+
 **Operator Arithmetic:**
 
 * The adjoint transform `adjoint` can now accept either a single instantiated operator or
   a quantum function. It returns an entity of the same type/ call signature as what it was given:
   [(#2222)](https://github.com/PennyLaneAI/pennylane/pull/2222)
+  [(#2672)](https://github.com/PennyLaneAI/pennylane/pull/2672)
 
   ```pycon
   >>> qml.adjoint(qml.PauliX(0))
@@ -205,6 +457,10 @@
   >>> qml.eigvals(op)
   array([1.-0.j, 0.-1.j])
   ```
+
+* The `ctrl` transform and `ControlledOperation` have been moved to the new `qml.ops.op_math`
+  submodule.  The developer-facing `ControlledOperation` class is no longer imported top-level.
+  [(#2656)](https://github.com/PennyLaneAI/pennylane/pull/2656)
 
 * A new symbolic operator class `qml.ops.op_math.Pow` represents an operator raised to a power.
   [(#2621)](https://github.com/PennyLaneAI/pennylane/pull/2621)
@@ -273,6 +529,7 @@
   method for a provided device and interface, in human-readable format.
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
 
+
 * Using `Operation.inv()` in a queuing environment no longer updates the queue's metadata, but merely updates
   the operation in place.
   [(#2596)](https://github.com/PennyLaneAI/pennylane/pull/2596)
@@ -283,14 +540,15 @@
 * A new method `safe_update_info` is added to `qml.QueuingContext`. This method is substituted
   for `qml.QueuingContext.update_info` in a variety of places.
   [(#2612)](https://github.com/PennyLaneAI/pennylane/pull/2612)
+  [(#2675)](https://github.com/PennyLaneAI/pennylane/pull/2675)
 
 * `BasisEmbedding` can accept an int as argument instead of a list of bits (optionally).
   [(#2601)](https://github.com/PennyLaneAI/pennylane/pull/2601)
-  
+
   Example:
 
   `qml.BasisEmbedding(4, wires = range(4))` is now equivalent to
-  `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because `4=0b100`). 
+  `qml.BasisEmbedding([0,1,0,0], wires = range(4))` (because `4=0b100`).
 
 * Introduced a new `is_hermitian` property to determine if an operator can be used in a measurement process.
   [(#2629)](https://github.com/PennyLaneAI/pennylane/pull/2629)
@@ -301,10 +559,16 @@
 * Add `IsingXY` gate.
   [(#2649)](https://github.com/PennyLaneAI/pennylane/pull/2649)
 
-* The performance of building sparse Hamiltonians has been improved by accumulating the sparse representation of coefficient-operator pairs in a temporary storage and by eliminating unnecessary `kron` operations on identity matrices. 
+* The performance of building sparse Hamiltonians has been improved by accumulating the sparse representation of coefficient-operator pairs in a temporary storage and by eliminating unnecessary `kron` operations on identity matrices.
   [(#2630)](https://github.com/PennyLaneAI/pennylane/pull/2630)
 
+* Control values are now displayed distinctly in text and mpl drawings of circuits.
+  [(#2668)](https://github.com/PennyLaneAI/pennylane/pull/2668)
+
 <h3>Breaking changes</h3>
+
+* PennyLane does not support TensorFlow `2.1.~` anymore.
+  [(#2683)](https://github.com/PennyLaneAI/pennylane/pull/2683)
 
 * The `qml.queuing.Queue` class is now removed.
   [(#2599)](https://github.com/PennyLaneAI/pennylane/pull/2599)
@@ -345,8 +609,8 @@
   as trainable do not have any impact on the QNode output.
   [(#2584)](https://github.com/PennyLaneAI/pennylane/pull/2584)
 
-* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"` 
-  or `"jax-jit"`, when requesting backpropagation. 
+* `QNode`'s now can interpret variations on the interface name, like `"tensorflow"`
+  or `"jax-jit"`, when requesting backpropagation.
   [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
 
 * Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
@@ -391,10 +655,14 @@
   for some selected configurations.
   [(#2540)](https://github.com/PennyLaneAI/pennylane/pull/2540)
 
+* Added a note for the [Depolarization Channel](https://pennylane.readthedocs.io/en/stable/code/api/pennylane.DepolarizingChannel.html)
+  that specifies how the channel behaves for the different values of depolarization probability `p`.
+  [(#2669)](https://github.com/PennyLaneAI/pennylane/pull/2669)
+
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
-Amintor Dusko, Ankit Khandelwal, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian, Kottmann, Maria Schuld, Mikhail Andrenkov, Romain Moyard,
+Amintor Dusko, Ankit Khandelwal, Avani Bhardwaj, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
+Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian Kottmann, Maria Schuld, Mikhail Andrenkov, Romain Moyard,
 Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, WingCode
