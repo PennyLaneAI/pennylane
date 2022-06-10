@@ -255,11 +255,18 @@ class SPSAOptimizer:
                 delta.append(di)
         yplus = objective_fn(*thetaplus, **kwargs)
         yminus = objective_fn(*thetaminus, **kwargs)
-        if yplus.size > 1:
-            raise ValueError(
-                "The objective function must be a scalar function for the gradient "
-                "to be computed."
-            )
+        try:
+            if np.prod(objective_fn.func(*args).shape(objective_fn.device)) > 1:
+                raise ValueError(
+                    "The objective function must be a scalar function for the gradient "
+                    "to be computed."
+                )
+        except AttributeError:
+            if yplus.size > 1:
+                raise ValueError(  # pylint: disable=raise-missing-from
+                    "The objective function must be a scalar function for the gradient "
+                    "to be computed."
+                )
         grad = [(yplus - yminus) / (2 * ck * di) for di in delta]
 
         return tuple(grad)

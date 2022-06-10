@@ -377,9 +377,9 @@ class TestSPSAOptimizer:
         assert isinstance(res, float)
         assert res == params
 
-    def test_obj_func_not_a_scalar_function(self):
+    def test_obj_func_with_probs_not_a_scalar_function(self):
         """Test that if the objective function is not a
-        scalar function, an error is raised."""
+        scalar function like qml.probs(), an error is raised."""
 
         n_wires = 4
         n_layers = 3
@@ -389,6 +389,44 @@ class TestSPSAOptimizer:
             qml.StronglyEntanglingLayers(params, wires=list(range(n_wires)))
 
         @qml.qnode(dev)
+        def cost(params):
+            circuit(params)
+            return qml.probs(wires=[0, 1, 2, 3])
+
+        opt = qml.SPSAOptimizer(maxiter=10)
+        params = np.random.normal(scale=0.1, size=(n_layers, n_wires, 3), requires_grad=True)
+
+        with pytest.raises(
+            ValueError,
+            match="The objective function must be a scalar function for the gradient ",
+        ):
+            opt.step(cost, params)
+
+    @pytest.mark.parametrize("f", univariate)
+    def test_obj_func_not_a_scalar_function(self, f):
+        """Test that if the objective function is not a
+        scalar function, an error is raised."""
+        spsa_opt = qml.SPSAOptimizer(10)
+        args = np.array([[0.1, 0.2], [-0.1, -0.4]])
+
+        with pytest.raises(
+            ValueError,
+            match="The objective function must be a scalar function for the gradient ",
+        ):
+            spsa_opt.step(f, args)
+
+    def test_obj_func_not_a_scalar_function_with_tensorflow_interface(self):
+        """Test that if the objective function is not a
+        scalar function, an error is raised using tensorflow_interface."""
+
+        n_wires = 4
+        n_layers = 3
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        def circuit(params):
+            qml.StronglyEntanglingLayers(params, wires=list(range(n_wires)))
+
+        @qml.qnode(dev, interface="tf")
         def cost(params):
             circuit(params)
             return qml.probs(wires=[0, 1, 2, 3])
