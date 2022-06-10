@@ -1866,12 +1866,14 @@ class Tensor(Observable):
         else:
             raise ValueError("Can only perform tensor products between observables.")
 
-        if qml.QueuingContext.recording():
-            owning_info = qml.QueuingContext.get_info(self)["owns"] + (other,)
+        if (
+            qml.QueuingContext.recording()
+            and self not in qml.QueuingContext.active_context()._queue
+        ):
+            qml.QueuingContext.append(self)
 
-            # update the annotated queue information
-            qml.QueuingContext.safe_update_info(self, owns=owning_info)
-            qml.QueuingContext.safe_update_info(other, owner=self)
+        qml.QueuingContext.safe_update_info(self, owns=tuple(self.obs))
+        qml.QueuingContext.safe_update_info(other, owner=self)
 
         return self
 

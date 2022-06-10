@@ -923,6 +923,20 @@ class TestApply:
 
         assert np.allclose(dev.state, root_state(nr_wires), atol=tol, rtol=0)
 
+    def test_apply_state_vector_subsystem(self, tol):
+        """Tests that we correctly apply a `QubitStateVector` operation when the
+        wires passed are a strict subset of the device wires"""
+        nr_wires = 2
+        dev = qml.device("default.mixed", wires=[0, 1, 2])
+        dim = 2**nr_wires
+        state = np.array([np.exp(1j * 2 * np.pi * n / dim) / np.sqrt(dim) for n in range(dim)])
+        dev.apply([QubitStateVector(state, wires=[0, 1])])
+
+        expected = np.array([1, 0, 1j, 0, -1, 0, -1j, 0]) / 2
+        expected = np.outer(expected, np.conj(expected))
+
+        assert np.allclose(dev.state, expected, atol=tol, rtol=0)
+
     def test_raise_order_error_basis_state(self):
         """Tests that an error is raised if a state is prepared after BasisState has been
         applied"""

@@ -75,6 +75,22 @@ def test_no_measure(tol):
         res = circuit(0.65)
 
 
+def test_numeric_type_unrecognized_error(tol):
+    """Test that querying the numeric type of a measurement process with an
+    unrecognized return type raises an error."""
+    mp = MeasurementProcess("NotValidReturnType")
+    with pytest.raises(qml.QuantumFunctionError, match="Cannot deduce the numeric type"):
+        mp.numeric_type()
+
+
+def test_shape_unrecognized_error(tol):
+    """Test that querying the shape of a measurement process with an
+    unrecognized return type raises an error."""
+    mp = MeasurementProcess("NotValidReturnType")
+    with pytest.raises(qml.QuantumFunctionError, match="Cannot deduce the shape"):
+        mp.shape()
+
+
 class TestExpval:
     """Tests for the expval function"""
 
@@ -261,7 +277,7 @@ class TestProbs:
         the shape of certain measurements."""
         with pytest.raises(
             MeasurementShapeError,
-            match="requires the device argument to be passed to obtain the shape",
+            match="The device argument is required to obtain the shape of the measurement process",
         ):
             measurement.shape()
 
@@ -284,6 +300,7 @@ class TestSample:
 
         assert np.array_equal(sample.shape, (2, n_sample))
 
+    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
     def test_sample_combination(self, tol):
         """Test the output of combining expval, var and sample"""
         n_sample = 10
@@ -338,6 +355,7 @@ class TestSample:
         assert np.array_equal(result.shape, (3, n_sample))
         assert result.dtype == np.dtype("int")
 
+    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
     def test_sample_output_type_in_combination(self, tol):
         """Test the return type and shape of sampling multiple works
         in combination with expvals and vars"""
@@ -1152,20 +1170,6 @@ class TestState:
         res = qml.state()
         assert res.shape(dev) == (3, 2**3)
 
-    @pytest.mark.parametrize("shots", [None, 1, 10])
-    def test_shape(self, shots):
-        """Test that the shape is correct for qml.density_matrix."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
-        res = qml.density_matrix(wires=[0, 1])
-        assert res.shape(dev) == (1, 2**2, 2**2)
-
-    @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
-    def test_shape_shot_vector(self, s_vec):
-        """Test that the shape is correct for qml.density_matrix with the shot vector too."""
-        dev = qml.device("default.qubit", wires=3, shots=s_vec)
-        res = qml.density_matrix(wires=[0, 1])
-        assert res.shape(dev) == (3, 2**2, 2**2)
-
     def test_numeric_type(self):
         """Test that the numeric type of state measurements."""
         assert qml.state().numeric_type == complex
@@ -1470,3 +1474,17 @@ class TestDensityMatrix:
 
         with pytest.raises(qml.QuantumFunctionError, match="custom wire labels"):
             func()
+
+    @pytest.mark.parametrize("shots", [None, 1, 10])
+    def test_shape(self, shots):
+        """Test that the shape is correct for qml.density_matrix."""
+        dev = qml.device("default.qubit", wires=3, shots=shots)
+        res = qml.density_matrix(wires=[0, 1])
+        assert res.shape(dev) == (1, 2**2, 2**2)
+
+    @pytest.mark.parametrize("s_vec", [(3, 2, 1), (1, 5, 10), (3, 1, 20)])
+    def test_shape_shot_vector(self, s_vec):
+        """Test that the shape is correct for qml.density_matrix with the shot vector too."""
+        dev = qml.device("default.qubit", wires=3, shots=s_vec)
+        res = qml.density_matrix(wires=[0, 1])
+        assert res.shape(dev) == (3, 2**2, 2**2)
