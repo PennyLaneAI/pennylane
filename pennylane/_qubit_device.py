@@ -854,7 +854,7 @@ class QubitDevice(Device):
             array[float]: array of the resulting marginal probabilities.
         """
         dim = 2**self.num_wires
-        batch_size = qml.math.shape(prob)[0] if self._ndim(prob) == 2 else None
+        batch_size = self._get_batch_size(prob, (dim,), dim)
 
         if wires is None:
             # no need to marginalize
