@@ -462,6 +462,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     need to pass an empty tuple as an argument for the first QNode.
 
     .. code-block:: python
+
         dev = qml.device('default.qubit', wires=1)
 
         @qml.qnode(dev)
@@ -476,19 +477,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((), (0.2))
     0.9900332889206207
 
-    On the other hand, if the second QNode is the one that does not depend on parameters then a single tuple can also be passed:
-
-    .. code-block:: python
-        dev = qml.device('default.qubit', wires=1)
-
-        @qml.qnode(dev)
-        def circuit_rx():
-            return qml.state()
-
-        @qml.qnode(dev)
-        def circuit_ry(x):
-            qml.RY(x, wires=0)
-            return qml.state()
+    On the other hand, if the second QNode is the one that does not depend on parameters then a single tuple can also be
+    passed:
 
     >>> qml.qinfo.fidelity(circuit_ry, circuit_rx, wires0=[0], wires1=[0])((0.2))
     0.9900332889206207
