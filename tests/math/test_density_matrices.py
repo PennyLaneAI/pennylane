@@ -147,6 +147,7 @@ class TestDensityMatrixFromStateVectors:
         """Test the density matrix from state vectors for single wires with state checking"""
         state_vector = array_func(state_vector)
         density_matrix = fn.quantum.reduced_dm(state_vector, indices=wires, check_state=True)
+
         assert np.allclose(density_matrix, expected_density_matrix[2])
 
     def test_state_vector_wrong_shape(self):
@@ -154,18 +155,14 @@ class TestDensityMatrixFromStateVectors:
         state_vector = [1, 0, 0]
 
         with pytest.raises(ValueError, match="State vector must be"):
-            fn.quantum._density_matrix_from_state_vector(
-                state_vector, indices=[0], check_state=True
-            )
+            fn.quantum.reduced_dm(state_vector, indices=[0], check_state=True)
 
     def test_state_vector_wrong_norm(self):
         """Test that state vector with wrong norm raises an error with check_state=True"""
         state_vector = [0.1, 0, 0, 0]
 
         with pytest.raises(ValueError, match="Sum of amplitudes-squared does not equal one."):
-            fn.quantum._density_matrix_from_state_vector(
-                state_vector, indices=[0], check_state=True
-            )
+            fn.quantum.reduced_dm(state_vector, indices=[0], check_state=True)
 
     def test_density_matrix_from_state_vector_jax_jit(self):
         """Test jitting the density matrix from state vector function."""
@@ -201,6 +198,7 @@ class TestDensityMatrixFromStateVectors:
         from functools import partial
 
         state_vector = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
+
         density_matrix = partial(fn.reduced_dm, indices=[0])
 
         density_matrix = tf.function(
@@ -287,6 +285,7 @@ class TestDensityMatrixFromMatrix:
     ):
         """Test the reduced_dm with matrix for full wires."""
         returned_density_matrix = fn.reduced_dm(density_matrix, indices=wires)
+
         assert np.allclose(density_matrix, returned_density_matrix)
 
     @pytest.mark.parametrize("density_matrix, expected_density_matrix", density_matrices)
@@ -316,7 +315,7 @@ class TestDensityMatrixFromMatrix:
         """Test that non hermitian matrix raises an error with check_state=True"""
         density_matrix = [[0.1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0.5, 0.9]]
 
-        with pytest.raises(ValueError, match="The matrix is not hermitian."):
+        with pytest.raises(ValueError, match="The matrix is not Hermitian."):
             fn.quantum.reduced_dm(density_matrix, indices=[0], check_state=True)
 
     def test_matrix_not_positive_definite(self):
