@@ -114,11 +114,25 @@ def init_state(scope="session"):
 
     def _init_state(n):
         """random initial state"""
+        np.random.seed(4214152)
         state = np.random.random([2**n]) + np.random.random([2**n]) * 1j
         state /= np.linalg.norm(state)
         return state
 
     return _init_state
+
+
+@pytest.fixture
+def broadcasted_init_state(scope="session"):
+    """Generates a random initial state"""
+
+    def _broadcasted_init_state(n, batch_size):
+        """random initial state"""
+        np.random.seed(4214152)
+        state = np.random.random([batch_size, 2**n]) + np.random.random([batch_size, 2**n]) * 1j
+        return state / np.linalg.norm(state, axis=1)[:, np.newaxis]
+
+    return _broadcasted_init_state
 
 
 #####################################################
@@ -201,6 +215,7 @@ class TestTFMatrix:
             (0.2, "IX", ["a", "b"]),
             (-0.3, "III", [0, 1, 2]),
             (0.5, "ZXI", [0, 1, 2]),
+            # Broadcasted rotations
             ([0.1, 0.6], "I", "a"),
             ([0.2], "IX", ["a", "b"]),
             ([-0.3, 0.0, 0.2], "III", [0, 1, 2]),
@@ -230,6 +245,7 @@ class TestTFMatrix:
             (qml.ControlledPhaseShift, 0.1, [1, 2]),
             (qml.CRZ, 0.1, [1, 2]),
             (qml.U1, 0.1, [1]),
+            # broadcasted operation matrices
             (qml.PhaseShift, np.array([0.1, 0.6]), [1]),
             (qml.ControlledPhaseShift, np.array([0.1]), [1, 2]),
             (qml.CRZ, np.array([0.1, 0.7, 8.3]), [1, 2]),
@@ -427,7 +443,6 @@ class TestApply:
 
     def test_inverse_operation(self, init_state, tol):
         """Test that the inverse of an operation is correctly applied"""
-        """Test three axis rotation gate"""
         dev = DefaultQubitTF(wires=1)
         state = init_state(1)
 
@@ -576,11 +591,381 @@ class TestApply:
         assert spy.call_count == 1
 
 
+@pytest.mark.tf
+class TestApplyBroadcasted:
+    """Test application of broadcasted PennyLane operations."""
+
+    @pytest.mark.skip("Applying a BasisState does not support broadcasting yet")
+    def test_basis_state_broadcasted(self, tol):
+        """Test basis state initialization"""
+        dev = DefaultQubitTF(wires=4)
+        state = np.array([0, 0, 1, 0])
+
+        dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
+
+        res = dev.state
+        expected = np.zeros([2**4])
+        expected[np.ravel_multi_index(state, [2] * 4)] = 1
+
+        assert isinstance(res, tf.Tensor)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.skip("Applying a BasisState does not support broadcasting yet")
+    def test_invalid_basis_state_length_broadcasted(self, tol):
+        """Test that an exception is raised if the basis state is the wrong size"""
+        dev = DefaultQubitTF(wires=4)
+        state = np.array([0, 0, 1, 0])
+
+        with pytest.raises(
+            ValueError, match=r"BasisState parameter and wires must be of equal length"
+        ):
+            dev.apply([qml.BasisState(state, wires=[0, 1, 2])])
+
+    @pytest.mark.skip("Applying a BasisState does not support broadcasting yet")
+    def test_invalid_basis_state_broadcasted(self, tol):
+        """Test that an exception is raised if the basis state is invalid"""
+        dev = DefaultQubitTF(wires=4)
+        state = np.array([0, 0, 1, 2])
+
+        with pytest.raises(
+            ValueError, match=r"BasisState parameter must consist of 0 or 1 integers"
+        ):
+            dev.apply([qml.BasisState(state, wires=[0, 1, 2, 3])])
+
+    @pytest.mark.parametrize("batch_size", [1, 3])
+    def test_qubit_state_vector_broadcasted(self, broadcasted_init_state, tol, batch_size):
+        """Test broadcasted qubit state vector application"""
+        dev = DefaultQubitTF(wires=1)
+        state = broadcasted_init_state(1, batch_size=batch_size)
+
+        dev.apply([qml.QubitStateVector(state, wires=[0])])
+
+        res = dev.state
+        expected = state
+        assert isinstance(res, tf.Tensor)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_full_subsystem_statevector_broadcasted(self, mocker):
+        """Test applying a broadcasted state vector to the full subsystem"""
+        dev = DefaultQubitTF(wires=["a", "b", "c"])
+        state = (
+            tf.constant(
+                [[1, 0, 0, 0, 1, 0, 1, 1], [1, 1, 1, 1, 0, 0, 0, 0], [0, 0, 1, 1, 0, 1, 0, 1]],
+                dtype=tf.complex128,
+            )
+            / 2
+        )
+        state_wires = qml.wires.Wires(["a", "b", "c"])
+
+        spy = mocker.spy(dev, "_scatter")
+        dev._apply_state_vector(state=state, device_wires=state_wires)
+
+        assert np.all(tf.reshape(dev._state, [3, 8]) == state)
+        spy.assert_not_called()
+
+    def test_error_partial_subsystem_statevector_broadcasted(self, mocker):
+        """Test applying a broadcasted state vector to a subset of wires of the full subsystem"""
+        dev = DefaultQubitTF(wires=["a", "b", "c"])
+        state = tf.constant(
+            [[1, 0, 1, 0], [1, 1, 0, 0], [0, 1, 1, 0]], dtype=tf.complex128
+        ) / np.sqrt(2.0)
+        state_wires = qml.wires.Wires(["a", "c"])
+
+        with pytest.raises(NotImplementedError, match="Parameter broadcasting is not supported"):
+            dev._apply_state_vector(state=state, device_wires=state_wires)
+
+    def test_invalid_qubit_state_vector_size_broadcasted(self):
+        """Test that an exception is raised if the broadcasted state
+        vector is the wrong size"""
+        dev = DefaultQubitTF(wires=2)
+        state = np.array([[0, 1], [1, 0], [1, 1], [0, 0]])
+
+        with pytest.raises(ValueError, match=r"State vector must have shape \(2\*\*wires,\)"):
+            dev.apply([qml.QubitStateVector(state, wires=[0, 1])])
+
+    def test_invalid_qubit_state_vector_norm_broadcasted(self):
+        """Test that an exception is raised if the broadcasted state
+        vector is not normalized"""
+        dev = DefaultQubitTF(wires=2)
+        state = np.array([[1, 0], [0, 12], [1.3, 1]])
+
+        with pytest.raises(ValueError, match=r"Sum of amplitudes-squared does not equal one"):
+            dev.apply([qml.QubitStateVector(state, wires=[0])])
+
+    @pytest.mark.parametrize("op,mat", single_qubit)
+    def test_single_qubit_no_parameters_broadcasted(self, broadcasted_init_state, op, mat, tol):
+        """Test non-parametrized single qubit operations"""
+        dev = DefaultQubitTF(wires=1)
+        state = broadcasted_init_state(1, 3)
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [op(wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("ij,kj->ki", mat, state)
+        assert isinstance(res, tf.Tensor)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [0.5432, -0.232])
+    @pytest.mark.parametrize("op,func", single_qubit_param)
+    def test_single_qubit_parameters_broadcasted_state(
+        self, broadcasted_init_state, op, func, theta, tol
+    ):
+        """Test parametrized single qubit operations with broadcasted initial state"""
+        dev = DefaultQubitTF(wires=1)
+        state = broadcasted_init_state(1, 3)
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [op(theta, wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("ij,kj->ki", func(theta), state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [[np.pi / 3], [0.5432, -0.232, 0.1]])
+    @pytest.mark.parametrize("op,func", single_qubit_param)
+    def test_single_qubit_parameters_broadcasted_par(self, init_state, op, func, theta, tol):
+        """Test parametrized single qubit operations with broadcasted parameters"""
+        theta = np.array(theta)
+        dev = DefaultQubitTF(wires=1)
+        state = init_state(1)
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [op(theta, wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        mat = np.array([func(t) for t in theta])
+        expected = np.einsum("lij,j->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("theta", [[np.pi / 3], [0.5432, -0.232, 0.1]])
+    @pytest.mark.parametrize("op,func", single_qubit_param)
+    def test_single_qubit_parameters_broadcasted_both(
+        self, broadcasted_init_state, op, func, theta, tol
+    ):
+        """Test parametrized single qubit operations with broadcasted init state and parameters"""
+        theta = np.array(theta)
+        dev = DefaultQubitTF(wires=1)
+        state = broadcasted_init_state(1, batch_size=len(theta))
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [op(theta, wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        mat = np.array([func(t) for t in theta])
+        expected = np.einsum("lij,lj->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_rotation_broadcasted_state(self, broadcasted_init_state, tol):
+        """Test three axis rotation gate with broadcasted state"""
+        dev = DefaultQubitTF(wires=1)
+        state = broadcasted_init_state(1, 3)
+
+        a = 0.542
+        b = 1.3432
+        c = -0.654
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [qml.Rot(a, b, c, wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("ij,lj->li", Rot3(a, b, c), state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_rotation_broadcasted_par(self, init_state, tol):
+        """Test three axis rotation gate with broadcasted parameters"""
+        dev = DefaultQubitTF(wires=1)
+        state = init_state(1)
+
+        a = np.array([0.542, 0.96, 0.213])
+        b = -0.654
+        c = np.array([1.3432, 0.6324, 6.32])
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [qml.Rot(a, b, c, wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        mat = np.array([Rot3(_a, b, _c) for _a, _c in zip(a, c)])
+        expected = np.einsum("lij,j->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_rotation_broadcasted_both(self, broadcasted_init_state, tol):
+        """Test three axis rotation gate with broadcasted state and parameters"""
+        dev = DefaultQubitTF(wires=1)
+        state = broadcasted_init_state(1, 3)
+
+        a = np.array([0.542, 0.96, 0.213])
+        b = np.array([1.3432, 0.6324, 6.32])
+        c = -0.654
+
+        queue = [qml.QubitStateVector(state, wires=[0])]
+        queue += [qml.Rot(a, b, c, wires=0)]
+        dev.apply(queue)
+
+        res = dev.state
+        mat = np.array([Rot3(_a, _b, c) for _a, _b in zip(a, b)])
+        expected = np.einsum("lij,lj->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_controlled_rotation_broadcasted_state(self, broadcasted_init_state, tol):
+        """Test controlled three axis rotation gate with broadcasted state"""
+        dev = DefaultQubitTF(wires=2)
+        state = broadcasted_init_state(2, 3)
+
+        a = 0.542
+        b = 1.3432
+        c = -0.654
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue += [qml.CRot(a, b, c, wires=[0, 1])]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("ij,lj->li", CRot3(a, b, c), state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_controlled_rotation_broadcasted_par(self, init_state, tol):
+        """Test controlled three axis rotation gate with broadcasted parameters"""
+        dev = DefaultQubitTF(wires=2)
+        state = init_state(2)
+
+        a = np.array([0.542, 0.96, 0.213])
+        b = -0.654
+        c = np.array([1.3432, 0.6324, 6.32])
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue += [qml.CRot(a, b, c, wires=[0, 1])]
+        dev.apply(queue)
+
+        res = dev.state
+        mat = np.array([CRot3(_a, b, _c) for _a, _c in zip(a, c)])
+        expected = np.einsum("lij,j->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_controlled_rotation_broadcasted_both(self, broadcasted_init_state, tol):
+        """Test controlled three axis rotation gate with broadcasted state and parameters"""
+        dev = DefaultQubitTF(wires=2)
+        state = broadcasted_init_state(2, 3)
+
+        a = np.array([0.542, 0.96, 0.213])
+        b = np.array([1.3432, 0.6324, 6.32])
+        c = -0.654
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue += [qml.CRot(a, b, c, wires=[0, 1])]
+        dev.apply(queue)
+
+        res = dev.state
+        mat = np.array([CRot3(_a, _b, c) for _a, _b in zip(a, b)])
+        expected = np.einsum("lij,lj->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("op,mat", two_qubit)
+    def test_two_qubit_no_parameters_broadcasted(self, broadcasted_init_state, op, mat, tol):
+        """Test non-parametrized two qubit operations"""
+        dev = DefaultQubitTF(wires=2)
+        state = broadcasted_init_state(2, 3)
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1])]
+        queue += [op(wires=[0, 1])]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("ij,lj->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("mat", [U, U2])
+    def test_qubit_unitary_broadcasted_state(self, broadcasted_init_state, mat, tol):
+        """Test application of arbitrary qubit unitaries for broadcasted state"""
+        N = int(np.log2(len(mat)))
+        dev = DefaultQubitTF(wires=N)
+        state = broadcasted_init_state(N, 3)
+
+        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue += [qml.QubitUnitary(mat, wires=range(N))]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("ij,lj->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("mat", [U, U2])
+    def test_qubit_unitary_broadcasted_par(self, init_state, mat, tol):
+        """Test application of broadcasted arbitrary qubit unitaries"""
+        mat = np.array([mat, mat, mat])
+        N = int(np.log2(mat.shape[-1]))
+        dev = DefaultQubitTF(wires=N)
+        state = init_state(N)
+
+        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue += [qml.QubitUnitary(mat, wires=range(N))]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("lij,j->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("mat", [U, U2])
+    def test_qubit_unitary_broadcasted_both(self, broadcasted_init_state, mat, tol):
+        """Test application of arbitrary qubit unitaries for broadcasted state and parameters"""
+        mat = np.array([mat, mat, mat])
+        N = int(np.log2(mat.shape[-1]))
+        dev = DefaultQubitTF(wires=N)
+        state = broadcasted_init_state(N, 3)
+
+        queue = [qml.QubitStateVector(state, wires=range(N))]
+        queue += [qml.QubitUnitary(mat, wires=range(N))]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("lij,lj->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("op, mat", three_qubit)
+    def test_three_qubit_no_parameters_broadcasted(self, broadcasted_init_state, op, mat, tol):
+        """Test broadcasted non-parametrized three qubit operations"""
+        dev = DefaultQubitTF(wires=3)
+        state = broadcasted_init_state(3, 2)
+
+        queue = [qml.QubitStateVector(state, wires=[0, 1, 2])]
+        queue += [op(wires=[0, 1, 2])]
+        dev.apply(queue)
+
+        res = dev.state
+        expected = np.einsum("ij,lj->li", mat, state)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_do_not_split_analytic_tf_broadcasted(self, mocker):
+        """Tests that the Hamiltonian is not split for shots=None using the tf device."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit.tf", wires=2)
+        H = qml.Hamiltonian(tf.Variable([0.1, 0.2]), [qml.PauliX(0), qml.PauliZ(1)])
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit():
+            qml.RX(np.zeros(5), 0)  # Broadcast the state by applying a broadcasted identity
+            return qml.expval(H)
+
+        spy = mocker.spy(dev, "expval")
+
+        circuit()
+        # evaluated one expval altogether
+        assert spy.call_count == 1
+
+
 THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
 
+# TODO
 @pytest.mark.tf
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestExpval:
@@ -871,6 +1256,7 @@ class TestExpval:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+# TODO
 @pytest.mark.tf
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestVar:
@@ -1035,6 +1421,7 @@ class TestVar:
 #####################################################
 
 
+# TODO
 @pytest.mark.tf
 class TestQNodeIntegration:
     """Integration tests for default.qubit.tf. This test ensures it integrates
@@ -1200,6 +1587,7 @@ class TestQNodeIntegration:
         assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
 
 
+# TODO
 @pytest.mark.tf
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
@@ -1505,6 +1893,7 @@ class TestPassthruIntegration:
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
 
+# TODO
 @pytest.mark.tf
 class TestSamples:
     """Tests for sampling outputs"""
@@ -1583,6 +1972,7 @@ class TestSamples:
         # assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
+# TODO
 @pytest.mark.tf
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""

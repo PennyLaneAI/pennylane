@@ -14,6 +14,7 @@
 """This module contains a TensorFlow implementation of the :class:`~.DefaultQubit`
 reference plugin.
 """
+import itertools
 import numpy as np
 import semantic_version
 
@@ -47,6 +48,7 @@ except ImportError:
     pass
 
 from . import DefaultQubit
+from .default_qubit import tolerance
 
 
 class DefaultQubitTF(DefaultQubit):
@@ -214,3 +216,59 @@ class DefaultQubitTF(DefaultQubit):
                 raise err
 
         return None
+
+    def _apply_state_vector(self, state, device_wires):
+        """Initialize the internal state vector in a specified state.
+
+        Args:
+            state (array[complex]): normalized input state of length ``2**len(wires)``
+                or broadcasted state of shape ``(batch_size, 2**len(wires))``
+            device_wires (Wires): wires that get initialized in the state
+
+        This implementation only adds a check for parameter broadcasting when initializing
+        a quantum state on subsystems of the device.
+        """
+
+        # translate to wire labels used by device
+        device_wires = self.map_wires(device_wires)
+        dim = 2 ** len(device_wires)
+
+        state = self._asarray(state, dtype=self.C_DTYPE)
+        batch_size = self._get_batch_size(state, (dim,), dim)
+        output_shape = [2] * self.num_wires
+        if batch_size:
+            output_shape.insert(0, batch_size)
+
+        if not (state.shape in [(dim,), (batch_size, dim)]):
+            raise ValueError("State vector must have shape (2**wires,) or (batch_size, 2**wires).")
+
+        if not qml.math.is_abstract(state):
+            norm = qml.math.linalg.norm(state, axis=-1, ord=2)
+            if not qml.math.allclose(norm, 1.0, atol=tolerance):
+                raise ValueError("Sum of amplitudes-squared does not equal one.")
+
+        if len(device_wires) == self.num_wires and sorted(device_wires) == device_wires:
+            # Initialize the entire device state with the input state
+            self._state = self._reshape(state, output_shape)
+            return
+
+        # generate basis states on subset of qubits via the cartesian product
+        basis_states = np.array(list(itertools.product([0, 1], repeat=len(device_wires))))
+
+        # get basis states to alter on full set of qubits
+        unravelled_indices = np.zeros((2 ** len(device_wires), self.num_wires), dtype=int)
+        unravelled_indices[:, device_wires] = basis_states
+
+        # get indices for which the state is changed to input state vector elements
+        ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
+
+        if batch_size:
+            # This is the only logical branch and line of code that differs from DefaultQubit
+            raise NotImplementedError(
+                "Parameter broadcasting is not supported together with initializing the state "
+                "vector of a subsystem of the device when using DefaultQubitTF."
+            )
+        else:
+            state = self._scatter(ravelled_indices, state, [2**self.num_wires])
+        state = self._reshape(state, output_shape)
+        self._state = self._asarray(state, dtype=self.C_DTYPE)
