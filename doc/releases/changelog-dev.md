@@ -4,6 +4,52 @@
 
 <h3>New features since last release</h3>
 
+* The JAX JIT interface now supports evaluating vector-valued QNodes
+  enabling new types of workflows to utilize the power of just-in-time
+  compilation for significant performance boosts.
+  [(#2034)](https://github.com/PennyLaneAI/pennylane/pull/2034)
+
+  Vector-valued QNodes include those with:
+  * `qml.probs`;
+  * `qml.state`;
+  * `qml.sample` or
+  * multiple `qml.expval` / `qml.var` measurements.
+
+  Consider a QNode that returns basis-state probabilities:
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+  x = jnp.array(0.543)
+  y = jnp.array(-0.654)
+
+  @jax.jit
+  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
+  def circuit(x, y):
+      qml.RX(x, wires=[0])
+      qml.RY(y, wires=[1])
+      qml.CNOT(wires=[0, 1])
+      return qml.probs(wires=[1])
+  ```
+  The QNode can now be evaluated:
+  ```pycon
+  >>> circuit(x, y)
+  DeviceArray([0.8397495 , 0.16025047], dtype=float32)
+  ```
+  Computing the jacobian of vector-valued QNodes is not supported with the JAX
+  JIT interface. The output of vector-valued QNodes can, however, be used in
+  the definition of scalar-valued cost functions whose gradients can be
+  computed.
+
+  For example, one can define a cost function that outputs the first element of
+  the probability vector:
+  ```python
+  def cost(x, y):
+      return circuit(x, y)[0]
+  ```
+  ```pycon
+  >>> jax.grad(cost, argnums=[0])(x, y)
+  (DeviceArray(-0.2050439, dtype=float32),)
+  ```
+
 * A new quantum information module is added. It includes a function for computing the reduced density matrix functions
   for state vectors and density matrices.
 
@@ -663,6 +709,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Amintor Dusko, Ankit Khandelwal, Avani Bhardwaj, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian Kottmann, Maria Schuld, Mikhail Andrenkov, Romain Moyard,
-Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, WingCode
+Amintor Dusko, Ankit Khandelwal, Avani Bhardwaj, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs,
+Edward Jiang, Guillermo Alonso-Linaje, Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian Kottmann,
+Maria Schuld, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, Antal Száva,
+WingCode
