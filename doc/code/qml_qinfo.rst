@@ -8,8 +8,8 @@ This module provides a collection of transforms to return quantum information qu
 
 .. currentmodule:: pennylane.qinfo
 
-Density matrices
-----------------
+Transforms
+----------
 
 .. automodapi:: pennylane.qinfo.transforms
     :no-heading:
