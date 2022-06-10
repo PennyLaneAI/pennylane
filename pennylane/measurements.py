@@ -38,6 +38,7 @@ class ObservableReturnTypes(Enum):
     """Enumeration class to represent the return types of an observable."""
 
     Sample = "sample"
+    Counts = "counts"
     Variance = "var"
     Expectation = "expval"
     Probability = "probs"
@@ -51,6 +52,10 @@ class ObservableReturnTypes(Enum):
 
 Sample = ObservableReturnTypes.Sample
 """Enum: An enumeration which represents sampling an observable."""
+
+Counts = ObservableReturnTypes.Counts
+"""Enum: An enumeration which represents returning the number of times
+ each sample was obtained."""
 
 Variance = ObservableReturnTypes.Variance
 """Enum: An enumeration which represents returning the variance of
@@ -504,7 +509,7 @@ def var(op):
     return MeasurementProcess(Variance, obs=op, shape=(1,), numeric_type=float)
 
 
-def sample(op=None, wires=None):
+def sample(op=None, wires=None, counts=False):
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device.
     If no observable is provided then basis state samples are returned directly
@@ -516,6 +521,7 @@ def sample(op=None, wires=None):
     Args:
         op (Observable or None): a quantum observable object
         wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if op is None
+        counts (bool): return the result as numbers of counts
 
     Raises:
         QuantumFunctionError: `op` is not an instance of :class:`~.Observable`
@@ -595,6 +601,11 @@ def sample(op=None, wires=None):
         else:
             numeric_type = int
 
+    if counts:
+        sample_or_counts = Counts
+    else:
+        sample_or_counts = Sample
+
     if wires is not None:
         if op is not None:
             raise ValueError(
@@ -603,10 +614,10 @@ def sample(op=None, wires=None):
             )
 
         return MeasurementProcess(
-            Sample, obs=op, wires=qml.wires.Wires(wires), numeric_type=numeric_type
+            sample_or_counts, obs=op, wires=qml.wires.Wires(wires), numeric_type=numeric_type
         )
 
-    return MeasurementProcess(Sample, obs=op, numeric_type=numeric_type)
+    return MeasurementProcess(sample_or_counts, obs=op, numeric_type=numeric_type)
 
 
 def probs(wires=None, op=None):

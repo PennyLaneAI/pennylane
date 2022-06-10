@@ -1055,6 +1055,7 @@ class Device(abc.ABC):
             observable (str or list[str]): name of the observable(s)
             wires (Wires): wires the observable(s) is to be measured on
             par (tuple or list[tuple]]): parameters for the observable(s)
+            counts (bool): return the result as numbers of counts
 
         Raises:
             NotImplementedError: if the device does not support sampling

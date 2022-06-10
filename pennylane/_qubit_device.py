@@ -27,7 +27,7 @@ import numpy as np
 import pennylane as qml
 from pennylane import DeviceError
 from pennylane.operation import operation_derivative
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State
+from pennylane.measurements import Sample, Variance, Expectation, Probability, State, Counts
 from pennylane import Device
 from pennylane.math import sum as qmlsum
 from pennylane.math import multiply as qmlmul
@@ -294,6 +294,8 @@ class QubitDevice(Device):
                 if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
+                elif circuit.measurements[0].return_type is qml.measurements.Counts:
+                    pass
                 else:
                     # Measurements with expval, var or probs
                     results = self._asarray(results, dtype=self.R_DTYPE)
@@ -468,7 +470,14 @@ class QubitDevice(Device):
                 results.append(self.var(obs, shot_range=shot_range, bin_size=bin_size))
 
             elif obs.return_type is Sample:
-                results.append(self.sample(obs, shot_range=shot_range, bin_size=bin_size))
+                results.append(
+                    self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
+                )
+
+            elif obs.return_type is Counts:
+                results.append(
+                    self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=True)
+                )
 
             elif obs.return_type is Probability:
                 results.append(
@@ -878,7 +887,27 @@ class QubitDevice(Device):
         samples = self.sample(observable, shot_range=shot_range, bin_size=bin_size)
         return np.squeeze(np.var(samples, axis=0))
 
-    def sample(self, observable, shot_range=None, bin_size=None):
+    def _samples_to_counts(self, samples):
+        """Group the obtained samples into a dictionary.
+
+        Example:
+            >>> samples
+            tensor([[0, 0, 1],
+                    [0, 0, 1],
+                    [1, 1, 1]], requires_grad=True)
+            >>> self._samples_to_counts(samples)
+             {'111':1, '001':2}
+        """
+        try:
+            # Express the states as ints
+            samples = [''.join(self._asarray(sample, dtype=str)) for sample in samples]
+        except TypeError:
+            # Evaluation of an observable
+            pass
+        states, counts = np.unique(samples, return_counts=True)
+        return {state: count for state, count in zip(states, counts)}
+
+    def sample(self, observable, shot_range=None, bin_size=None, counts=False):
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
@@ -918,6 +947,8 @@ class QubitDevice(Device):
                 ) from e
 
         if bin_size is None:
+            if counts:
+                return self._samples_to_counts(samples)
             return samples
 
         return samples.reshape((bin_size, -1))
