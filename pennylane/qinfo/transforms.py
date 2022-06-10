@@ -456,7 +456,7 @@ def quantum_fisher(qnode, *args, hardware=False, **kwargs):
             return qml.expval(H)
 
         params = pnp.array([0.5, 1., 0.2], requires_grad=True)
-    
+
     The natural gradient is then simply the QFIM multiplied by the gradient:
 
     >>> grad = qml.grad(circ)(params)  # [ 0.59422561, -0.02615095, -0.05146226]
@@ -484,7 +484,7 @@ def quantum_fisher(qnode, *args, hardware=False, **kwargs):
 
     return wrapper
 
-  
+
 def fidelity(qnode0, qnode1, wires0, wires1):
     r"""Compute the fidelity for two :class:`.QNode` returning a :func:`~.state` (a state can be a state vector
     or a density matrix, depending on the device) acting on quantum systems with the same size.
