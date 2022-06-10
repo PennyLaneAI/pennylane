@@ -46,7 +46,6 @@
       return qml.state()
   ```
   ```pycon
-
   >>> qml.qinfo.reduced_dm(circuit, wires=[0])(np.pi/2)
   [[0.5+0.j 0.+0.j]
    [0.+0.j 0.5+0.j]]
@@ -94,8 +93,6 @@
   1.0
   ```
   
-
-
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
   attribute `batch_size`.
   - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
