@@ -26,7 +26,6 @@ from . import single_dispatch  # pylint:disable=unused-import
 from .multi_dispatch import diag, dot, scatter_element_add, einsum, get_interface
 from .utils import is_abstract, allclose, cast, convert_like
 
-
 ABC_ARRAY = np.array(list(ABC))
 
 
@@ -480,7 +479,7 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
 
 
 def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128"):
-    r"""Compute the Von Neumann entropy from a state vector, a density matrix given a subsystem.
+    r"""Compute the Von Neumann entropy from a state vector or density matrix on a given subsystem.
 
     .. math::
         S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
