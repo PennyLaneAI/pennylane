@@ -454,9 +454,14 @@ def quantum_fisher(qnode, *args, hardware=False, **kwargs):
 
     The natural gradient is then simply the QFIM multiplied by the gradient:
 
-    >>> grad = qml.grad(circ)(params)  # [ 0.59422561, -0.02615095, -0.05146226]
-    >>> qfim = qml.qinfo.quantum_fisher(circ)(params)  # np.diag([1., 1., 0.77517241])
-    >>> q_nat_grad = qfim @ grad  # [ 0.59422561 -0.02615095 -0.03989212]
+    >>> grad = qml.grad(circ)(params)
+    [ 0.59422561, -0.02615095, -0.05146226]
+    
+    >>> qfim = qml.qinfo.quantum_fisher(circ)(params)
+    np.diag([1., 1., 0.77517241])
+    
+    >>> q_nat_grad = qfim @ grad
+    [ 0.59422561 -0.02615095 -0.03989212]
 
     When using real hardware with finite shots, we have to specify ``hardware=True`` in order to compute the QFIM.
     Additionally, we need to provide a device that has a spare wire for the Hadamard test, otherwise it will just be able to compute the block diagonal terms.
