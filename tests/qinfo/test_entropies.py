@@ -374,7 +374,7 @@ class TestMutualInformation:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        actual = qml.qinfo.mutual_info(circuit, indices0=[0], indices1=[1])(params)
+        actual = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1])(params)
 
         # compare transform results with analytic values
         expected = -2 * np.cos(params / 2) ** 2 * np.log(
@@ -410,7 +410,7 @@ class TestMutualInformation:
         actual = circuit_mutual_info(params)
 
         # compare measurement results with transform results
-        expected = qml.qinfo.mutual_info(circuit_state, indices0=[0], indices1=[1])(params)
+        expected = qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1])(params)
 
         assert np.allclose(actual, expected)
 
@@ -431,7 +431,7 @@ class TestMutualInformation:
             qml.CNOT(wires=[0, 1])
             return qml.state()
 
-        actual = jax.jit(qml.qinfo.mutual_info(circuit, indices0=[0], indices1=[1]))(params)
+        actual = jax.jit(qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1]))(params)
 
         # compare transform results with analytic values
         expected = -2 * jnp.cos(params / 2) ** 2 * jnp.log(
@@ -468,7 +468,7 @@ class TestMutualInformation:
         actual = jax.jit(circuit_mutual_info)(params)
 
         # compare measurement results with transform results
-        expected = jax.jit(qml.qinfo.mutual_info(circuit_state, indices0=[0], indices1=[1]))(params)
+        expected = jax.jit(qml.qinfo.mutual_info(circuit_state, wires0=[0], wires1=[1]))(params)
 
         assert np.allclose(actual, expected)
 
