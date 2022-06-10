@@ -258,6 +258,7 @@ def classical_fisher(qnode, argnums=0):
 
     Args:
         tape (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
+        argnums (Optional[int or List[int]]): Arguments to be differentiated in case interface ``jax`` is used. 
 
     Returns: func: The function that computes the classical fisher information matrix. This function accepts the same
     signature as the :class:`.QNode`. If the signature contains one differentiable variable ``params``, the function
@@ -268,7 +269,7 @@ def classical_fisher(qnode, argnums=0):
 
         The ``classical_fisher()`` matrix is currently not differentiable.
 
-    .. seealso:: :func:`~.pennylane.metric_tensor`
+    .. seealso:: :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.qinfo.quantum_fisher`
 
     **Example**
 
