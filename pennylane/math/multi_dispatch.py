@@ -676,7 +676,28 @@ def frobenius_inner_product(A, B, normalize=False, like=None):
 
 @multi_dispatch(argnum=[1])
 def scatter(indices, array, new_dims, like=None):
-    """scatter function"""
+    """Scatters an array into a tensor of shape new_dims according to indices.
+
+    This operation is similar to scatter_element_add, except that the tensor
+    is zero-initialized. Calling scatter(indices, array, new_dims) is identical
+    to calling scatter_element_add(np.zeros(new_dims), indices, array)
+
+    Args:
+        indices (tensor_like[int]): Indices to update
+        array (tensor_like[float]): Values to assign to the new tensor
+        new_dims (int or tuple[int]): The shape of the new tensor
+        like (str): Manually chosen interface to dispatch to.
+    Returns:
+        tensor_like[float]: The tensor with the values modified the given indices.
+
+    **Example**
+
+    >>> indices = np.array([4, 3, 1, 7])
+    >>> updates = np.array([9, 10, 11, 12])
+    >>> shape = 8
+    >>> qml.math.scatter(indices, updates, shape)
+    array([ 0, 11,  0, 10,  9,  0,  0, 12])
+    """
     return np.scatter(indices, array, new_dims, like=like)
 
 
