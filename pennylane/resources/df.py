@@ -39,7 +39,7 @@ def estimation_cost(norm, error):
     return int(np.ceil(np.pi * norm / (2 * error)))
 
 
-def cost_qrom(constants):
+def qrom_cost(constants):
     r"""Return the number of Toffoli gates and the expansion factor needed to implement a QROM.
 
     The complexity of a QROM computation in the most general form is given by
@@ -82,20 +82,38 @@ def cost_qrom(constants):
     return int(cost[np.argmin(cost)]), int(k[np.argmin(cost)])
 
 
-def unitary_cost(n, norm, error, rank_r, rank_m, br=None, aleph=None, beth=None, eta=None):
+def unitary_cost(n, rank_r, rank_m, br=7, aleph=10, beth=20):
+    r"""Return the number of Toffoli gates for the double factorization method.
 
-    if not br:
-        br = 7
+    The expression for computing the cost is taken from
+    [`arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_].
 
-    if not aleph:
-        aleph = np.ceil(2.5 + np.log2(norm / error))
+    Args:
+        n (int): number of molecular orbitals
+        rank_r (int): the rank of the first factorization step
+        rank_m (int): the average rank of the second factorization step
+        br (int): number of bits for ancilla qubit rotation
+        aleph (int): number of bits for the keep register
+        beth (int): number of bits for the rotation angles
 
-    if not beth:
-        beth = np.ceil(5.652 + np.log2(norm * n / error))
+    Returns:
+        int: the number of Toffoli gates for the double factorization method
 
-    if not eta:
-        eta = np.array([np.log2(n) for n in range(1, rank_r + 1) if rank_r % n == 0])
-        eta = int(np.max([n for n in eta if n % 1 == 0]))
+    **Example**
+
+    >>> n = 14
+    >>> norm = 52.98761457453095
+    >>> error = 0.001
+    >>> rank_r = 26
+    >>> rank_r = 5.5
+    >>> br = 7
+    >>> aleph = 10
+    >>> beth = 20
+    >>> unitary_cost(n, norm, error, rank_r, rank_m, br, aleph, beth)
+    2007
+    """
+    eta = np.array([np.log2(n) for n in range(1, rank_r + 1) if rank_r % n == 0])
+    eta = int(np.max([n for n in eta if n % 1 == 0]))
 
     nxi = np.ceil(np.log2(rank_m))
     nlxi = np.ceil(np.log2(rank_r * rank_m + n / 2))
@@ -105,14 +123,16 @@ def unitary_cost(n, norm, error, rank_r, rank_m, br=None, aleph=None, beth=None,
     bp2 = nxi + aleph + 2
     bo = nxi + nlxi + br + 1
 
+    rank_rm = rank_r * rank_m
+
     cost = 9 * nl - 6 * eta + 12 * br + 34 * nxi + 8 * nlxi + 9 * aleph + 3 * n * beth - 6 * n - 43
 
-    cost += cost_qrom((rank_r, 1, 0, bp1, -1))
-    cost += cost_qrom((rank_r, 1, 0, bo, -1))
-    cost += cost_qrom((rank_r, 1, 0, 1, 0)) * 2
-    cost += cost_qrom((rank_r * rank_m, n / 2, rank_r * rank_m, n * beth, 0))
-    cost += cost_qrom((rank_r * rank_m, n / 2, rank_r * rank_m, 2, 0)) * 2
-    cost += cost_qrom((rank_r * rank_m, n / 2, rank_r * rank_m, 2 * bp2, -1))
+    cost += qrom_cost((rank_r, 1, 0, bp1, -1))[0]
+    cost += qrom_cost((rank_r, 1, 0, bo, -1))[0]
+    cost += qrom_cost((rank_r, 1, 0, 1, 0))[0] * 2
+    cost += qrom_cost((rank_rm, n / 2, rank_rm, n * beth, 0))[0]
+    cost += qrom_cost((rank_rm, n / 2, rank_rm, 2, 0))[0] * 2
+    cost += qrom_cost((rank_rm, n / 2, rank_rm, 2 * bp2, -1))[0]
 
     return cost
 
@@ -137,11 +157,10 @@ def qubit_cost(n, lamb, eps, l, xi, br, aleph=None, beth=None):
     if not beth:
         beth = np.ceil(5.652 + np.log2(lamb * n / eps))
 
-    bp1 = nl + aleph
     bp2 = nxi + aleph + 2
     bo = nxi + nlxi + br + 1
 
-    # kp1, ko, kpp1, kpo, kr, kpr, kp2, kpp2 = expansion_factor(n, l, bp1, bo, bp2, xi, beth)
+    _, kr = cost_qrom(l * xi, n / 2, l * xi, n * beth, 0)
 
     iteration = estimation_cost(lamb, eps)
 

@@ -64,9 +64,22 @@ def test_estimation_cost(norm, error, cost_ref):
         ),
     ],
 )
-def test_cost_qrom(constants, cost_ref, k_ref):
-    r"""Test that cost_qrom returns the correct values."""
-    cost, k = qml.resources.cost_qrom(constants)
+def test_qrom_cost(constants, cost_ref, k_ref):
+    r"""Test that qrom_cost returns the correct values."""
+    cost, k = qml.resources.qrom_cost(constants)
 
     assert cost == cost_ref
     assert k == k_ref
+
+
+@pytest.mark.parametrize(
+    ("n", "rank_r", "rank_m", "br", "aleph", "beth", "cost_ref"),
+    [
+        (14, 26, 5.5, 7, 10, 20, 2007),
+    ],
+)
+def test_unitary_cost(n, rank_r, rank_m, br, aleph, beth, cost_ref):
+    r"""Test that unitary_cost returns the correct value."""
+    cost = qml.resources.unitary_cost(n, rank_r, rank_m, br, aleph, beth)
+
+    assert cost == cost_ref
