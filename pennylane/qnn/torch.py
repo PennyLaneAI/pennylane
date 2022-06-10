@@ -318,8 +318,8 @@ class TorchLayer(Module):
             """Initialize weights.
 
             Args:
-                weight_name (str): Weight name
-                weight_size (tuple): Size of the weight
+                weight_name (str): weight name
+                weight_size (tuple): size of the weight
 
             Returns:
                 torch.Tensor: Tensor containing the weights
