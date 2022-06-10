@@ -60,6 +60,7 @@
   [(#2631)](https://github.com/PennyLaneAI/pennylane/pull/2631)
   [(#2640)](https://github.com/PennyLaneAI/pennylane/pull/2640)
   [(#2663)](https://github.com/PennyLaneAI/pennylane/pull/2663)
+  [(#2684)](https://github.com/PennyLaneAI/pennylane/pull/2684)
   
   A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
   
@@ -231,40 +232,39 @@
   1.3862943611198906
   ```
   
-  Support for the classical Fisher information matrix is also added:
+  Support for the classical and quantum Fisher information matrices, `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher` is also added:
 
-  First, let us define a parametrized quantum state and return its (classical) probability distribution for all 
-  computational basis elements: 
+  These are typically employed in variational optimization schemes to tilt the gradient in a more favorable direction, see [2103.15191](https://arxiv.org/abs/2103.15191) and [1909.02108](https://arxiv.org/abs/1909.02108). Here is a very simple example of a Hamiltonian loss function:
 
   ```python3
-  n_wires = 2
+  n_wires = 3
 
   dev = qml.device("default.qubit", wires=n_wires)
 
   @qml.qnode(dev)
   def circ(params):
-      qml.RX(params[0], wires=0)
-      qml.RX(params[1], wires=0)
-      qml.CNOT(wires=(0,1))
-      return qml.probs(wires=range(n_wires))
+      qml.RY(params[0], wires=1)
+      qml.CNOT(wires=(1,0))
+      qml.RY(params[1], wires=1)
+      qml.RZ(params[2], wires=1)
+      return qml.expval(1.*qml.PauliX(0) @ qml.PauliX(1) - 0.5 * qml.PauliZ(1))
+
+  params = pnp.array([0.5, 1., 0.2], requires_grad=True)
   ```
-  Executing this circuit yields the ``2**n_wires`` elements of the probability vector.
-  
+  From this circuit we can directly obtain the gradient of the expectation value, as well as the classical fisher information matrix (cfim) and quantum fisher information matrix (qfim) of the variational state.
   ```pycon
-  >>> import pennylane.numpy as np
-  >>> params = np.random.random(2)
-  >>> circ(params)
-  tensor([0.77708372, 0.        , 0.        , 0.22291628], requires_grad=True)
+  >>> grad = qml.grad(circ)(params)
+  >>> cfim = qml.qinfo.classical_fisher(circ)(params)
+  >>> qfim = qml.qinfo.quantum_fisher(circ)(params)
   ```
-  
-  We can obtain its ``(2, 2)`` classical fisher information matrix (CFIM) by simply calling the function returned
-  by ``classical_fisher()``:
-  
+  From this we can compute the tilted (natural) gradients:
   ```pycon
-  >>> cfim_func = qml.qinfo.classical_fisher(circ)
-  >>> cfim_func(params)
-  tensor([[1., 1.],
-      [1., 1.]], requires_grad=True)
+  >>> c_grad = cfim @ grad
+  >>> q_grad = qfim @ grad
+  >>> print(f"Gradient: {grad} \n  c_grad: {c_grad} \n  q_grad: {q_grad}")
+  Gradient: [ 0.59422561 -0.02615095 -0.05146226] 
+    c_grad: [ 5.94225615e-01 -2.61509542e-02 -1.18674655e-18] 
+    q_grad: [ 0.59422561 -0.02615095 -0.03989212]
   ```
   
   The support for calculating the fidelity between two arbitrary states is added as `qml.math.fidelity` for state 
