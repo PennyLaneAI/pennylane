@@ -18,14 +18,18 @@ This submodule defines the symbolic operation that indicates the control of an o
 import warnings
 from copy import copy
 
+from scipy import sparse
+
 from pennylane import math as qmlmath
 from pennylane import numpy as np
 
-from pennylane import Projector
+import pennylane as qml
 from pennylane.operation import (
+    MatrixUndefinedError,
     Operator,
     Operation,
     Observable,
+    SparseMatrixUndefinedError,
     Tensor,
     expand_matrix,
 )
@@ -42,11 +46,14 @@ class ControlledOperation(Operation):
 
     When we no longer rely on certain functionality through `Operation`, we can get rid of this
     class.
+
+    Differs inversion behavior to base.  This way we don't have to modify the ``Controlled.matrix``
+    and ``Controlled.eigvals`` to account for in-place inversion. In-place inversion of a matrix
     """
 
     @property
     def _inverse(self):
-        return self.base._inverse  # pylint: disable=protected-access
+        return False
 
     @_inverse.setter
     def _inverse(self, boolean):
@@ -217,7 +224,6 @@ class Controlled(Operator):
 
         self._id = id
         self.queue_idx = None
-        self._inverse = False
 
         if do_queue:
             self.queue()
@@ -227,25 +233,7 @@ class Controlled(Operator):
         """The Operator being controlled."""
         return self.hyperparameters["base"]
 
-    @property
-    def control_wires(self):
-        """The control wires."""
-        return self.hyperparameters["control_wires"]
-
-    @property
-    def target_wires(self):
-        """The wires of the base operation."""
-        return self.base.wires
-
-    @property
-    def control_values(self):
-        """Iterable[Bool]. For each control wire, denotes whether to control on ``True`` or ``False``."""
-        return self.hyperparameters["control_values"]
-
-    @property
-    def work_wires(self):
-        """Additional wires that can be used in the decomposition. Not modified by the operation."""
-        return self.hyperparameters["work_wires"]
+    # Properties on the parameters ###########################
 
     @property
     def data(self):
@@ -263,6 +251,42 @@ class Controlled(Operator):
     @property
     def num_params(self):
         return self.base.num_params
+
+    @property
+    def batch_size(self):
+        return self.base.batch_size
+
+    @property
+    def ndim_params(self):
+        return self.base.ndim_params
+
+    # Properties on the control values ######################
+    @property
+    def control_values(self):
+        """Iterable[Bool]. For each control wire, denotes whether to control on ``True`` or ``False``."""
+        return self.hyperparameters["control_values"]
+
+    @property
+    def _control_int(self):
+        """Int. Conversion of ``control_values`` to an integer."""
+        return sum(2**i for i, val in enumerate(reversed(self.control_values)) if val)
+
+    # Properties on the wires ##########################
+
+    @property
+    def control_wires(self):
+        """The control wires."""
+        return self.hyperparameters["control_wires"]
+
+    @property
+    def target_wires(self):
+        """The wires of the target operator."""
+        return self.base.wires
+
+    @property
+    def work_wires(self):
+        """Additional wires that can be used in the decomposition. Not modified by the operation."""
+        return self.hyperparameters["work_wires"]
 
     @property
     def wires(self):
@@ -300,82 +324,16 @@ class Controlled(Operator):
     def num_wires(self):
         return len(self.wires)
 
-    @property
-    def batch_size(self):
-        return self.base.batch_size
-
-    @property
-    def ndim_params(self):
-        return self.base.ndim_params
+    # Operator Properties #####################################
 
     @property
     def is_hermitian(self):
         return self.base.is_hermitian
 
-    def queue(self, context=QueuingContext):
-        context.safe_update_info(self.base, owner=self)
-        context.append(self, owns=self.base)
-        return self
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
-
     # pylint: disable=invalid-overridden-method
     @property
     def has_matrix(self):
         return self.base.has_matrix
-
-    def matrix(self, wire_order=None):
-
-        base_matrix = self.base.matrix()
-        interface = qmlmath.get_interface(base_matrix)
-
-        base_matrix_size = qmlmath.shape(base_matrix)[0]
-        num_control_states = 2 ** len(self.control_wires)
-        total_matrix_size = num_control_states * base_matrix_size
-
-        control_int = sum(2**i for i, val in enumerate(reversed(self.control_values)) if val)
-        padding_left = control_int * base_matrix_size
-        padding_right = total_matrix_size - padding_left - base_matrix_size
-
-        left_pad = qmlmath.cast_like(qmlmath.eye(padding_left, like=interface), 1j)
-        right_pad = qmlmath.cast_like(qmlmath.eye(padding_right, like=interface), 1j)
-
-        canonical_matrix = qmlmath.block_diag([left_pad, base_matrix, right_pad])
-
-        if wire_order is None or self.wires == Wires(wire_order):
-            return canonical_matrix
-
-        active_wires = self.control_wires + self.target_wires
-        return expand_matrix(canonical_matrix, wires=active_wires, wire_order=wire_order)
-
-    def eigvals(self):
-        base_eigvals = self.base.eigvals()
-        ones = np.ones(2 ** len(self.control_wires))
-        return qmlmath.concatenate([ones, base_eigvals])
-
-    def diagonalizing_gates(self):
-        return self.base.diagonalizing_gates()
-
-    # TODO: decomposition
-    # TODO: sparse_matrix (requires performance team help for optimization)
-
-    def generator(self):
-        sub_gen = self.base.generator()
-        proj_tensor = Tensor(*(Projector([1], wires=w) for w in self.control_wires))
-        return 1.0 * proj_tensor @ sub_gen
-
-    def adjoint(self):
-        return Controlled(
-            self.base.adjoint(), self.control_wires, self.control_values, self.work_wires
-        )
-
-    def pow(self, z):
-        base_pow = self.base.pow(z)
-        return [
-            Controlled(op, self.control_wires, self.control_values, self.work_wires)
-            for op in base_pow
-        ]
 
     @property
     def _queue_category(self):
@@ -393,3 +351,106 @@ class Controlled(Operator):
             * `None`
         """
         return self.base._queue_category  # pylint: disable=protected-access
+
+    # Methods ##########################################
+
+    def queue(self, context=QueuingContext):
+        context.safe_update_info(self.base, owner=self)
+        context.append(self, owns=self.base)
+        return self
+
+    def label(self, decimals=None, base_label=None, cache=None):
+        return self.base.label(decimals=decimals, base_label=base_label, cache=cache)
+
+    def matrix(self, wire_order=None):
+
+        base_matrix = self.base.matrix()
+        interface = qmlmath.get_interface(base_matrix)
+
+        num_target_states = 2 ** len(self.target_wires)
+        num_control_states = 2 ** len(self.control_wires)
+        total_matrix_size = num_control_states * num_target_states
+
+        padding_left = self._control_int * num_target_states
+        padding_right = total_matrix_size - padding_left - num_target_states
+
+        left_pad = qmlmath.cast_like(qmlmath.eye(padding_left, like=interface), 1j)
+        right_pad = qmlmath.cast_like(qmlmath.eye(padding_right, like=interface), 1j)
+
+        canonical_matrix = qmlmath.block_diag([left_pad, base_matrix, right_pad])
+
+        if wire_order is None or self.wires == Wires(wire_order):
+            return canonical_matrix
+
+        active_wires = self.control_wires + self.target_wires
+        return expand_matrix(canonical_matrix, wires=active_wires, wire_order=wire_order)
+
+    # pylint: disable=arguments-differ
+    def sparse_matrix(self, wire_order=None, format="csr"):
+        if wire_order is not None:
+            raise NotImplementedError("wire_order argument is not yet implemented.")
+
+        try:
+            target_mat = self.base.sparse_matrix()
+        except SparseMatrixUndefinedError:
+            try:
+                target_mat = sparse.lil_matrix(self.base.matrix())
+            except MatrixUndefinedError as e:
+                raise SparseMatrixUndefinedError from e
+
+        num_target_states = 2 ** len(self.target_wires)
+        num_control_states = 2 ** len(self.control_wires)
+        total_states = num_target_states * num_control_states
+
+        start_ind = self._control_int * num_target_states
+        end_ind = start_ind + num_target_states
+
+        m = sparse.eye(total_states, format="lil", dtype=target_mat.dtype)
+
+        m[start_ind:end_ind, start_ind:end_ind] = target_mat
+
+        return m.asformat(format=format)
+
+    def eigvals(self):
+        base_eigvals = self.base.eigvals()
+        num_target_wires = len(self.target_wires)
+        num_control_wires = len(self.control_wires)
+
+        total = 2 ** (num_target_wires + num_control_wires)
+        ones = np.ones(total - len(base_eigvals))
+
+        return qmlmath.concatenate([ones, base_eigvals])
+
+    def diagonalizing_gates(self):
+        return self.base.diagonalizing_gates()
+
+    def decomposition(self):
+        if not all(self.control_values):
+            d = [
+                qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val
+            ]
+            d += [Controlled(self.base, self.control_wires, work_wires=self.work_wires)]
+            d += [
+                qml.PauliX(w) for w, val in zip(self.control_wires, self.control_values) if not val
+            ]
+
+            return d
+        # More to come.  This will be an extensive PR in and of itself.
+        return super().decomposition()
+
+    def generator(self):
+        sub_gen = self.base.generator()
+        proj_tensor = Tensor(*(qml.Projector([1], wires=w) for w in self.control_wires))
+        return 1.0 * proj_tensor @ sub_gen
+
+    def adjoint(self):
+        return Controlled(
+            self.base.adjoint(), self.control_wires, self.control_values, self.work_wires
+        )
+
+    def pow(self, z):
+        base_pow = self.base.pow(z)
+        return [
+            Controlled(op, self.control_wires, self.control_values, self.work_wires)
+            for op in base_pow
+        ]
