@@ -156,8 +156,8 @@ class SPSAOptimizer:
         A (float): The stability constant; if not provided, set to be 10% of the maximum number
             of expected iterations.
         a (float): A hyperparameter expected to be small in noisy situations,
-            whose value could be :math:`\frac{mag(\Delta\theta)}{mag(g(\theta))}(A+1)^\alpha`
-            for more details, see `Spall (1998b)
+            its value could be picked using `A`, :math:`\alpha` and :math:`\hat{g_0} (\hat{\theta_0})`.
+            For more details, see `Spall (1998b)
             <https://www.jhuapl.edu/spsa/PDF-SPSA/Spall_Implementation_of_the_Simultaneous.PDF>`_.
     """
     # pylint: disable-msg=too-many-arguments
