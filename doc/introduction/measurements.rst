@@ -99,7 +99,7 @@ the measurement results always coincide, and the lists are therefore equal:
 
 >>> np.all(result[0] == result[1])
 True
-
+ 
 
 Tensor observables
 ------------------
@@ -124,6 +124,49 @@ The tensor observable notation can be used inside all measurement functions that
 accept observables as arguments,
 including :func:`~.pennylane.expval`, :func:`~.pennylane.var`,
 and :func:`~.pennylane.sample`.
+
+Counts
+------
+
+To avoid dealing with long arrays for the larger numbers of shots, one can pass an argument counts=True
+to :func:`~pennylane.sample`. In this case the result will be a dictionnary indicating numbers of occurences for each
+unique sample. The previous example will be modified as follows:
+
+.. code-block:: python
+    dev = qml.device("default.qubit", wires=2, shots=1000)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        # passing the counts flag
+        return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
+
+After executing the circuit we can directly see how often each value was measured:
+        
+>>> result = circuit()
+>>> print(result)
+[tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)
+ tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)]
+ 
+Similarly, if the observable is not provided, the occurencies of each state are returned.
+
+.. code-block:: python
+    dev = qml.device("default.qubit", wires=2, shots=1000)
+
+    @qml.qnode(dev)
+    def circuit():
+        qml.Hadamard(wires=0)
+        qml.CNOT(wires=[0, 1])
+        # passing the counts flag
+        return qml.sample(counts=True)
+
+And the result is:
+           
+>>> result = circuit()
+>>> print(result)
+{'00': 495, '11': 505}
+
 
 Probability
 -----------
