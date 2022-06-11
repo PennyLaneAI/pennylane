@@ -182,7 +182,7 @@ class MeasurementProcess:
             if self._shape is not None:
                 return self._shape
 
-            if self.return_type in (Probability, State, Sample):
+            if self.return_type in (Probability, State, Sample, Counts):
                 raise MeasurementShapeError(
                     f"Return type {self.return_type} requires the device argument to be passed to obtain the shape."
                 )
@@ -202,7 +202,7 @@ class MeasurementProcess:
                 dim = 2 ** len(device.wires)
                 shape = (1, dim)
 
-            elif self.return_type == Sample:
+            elif self.return_type in [Sample, Counts]:
                 len_wires = len(device.wires)
 
                 if self.obs is not None:

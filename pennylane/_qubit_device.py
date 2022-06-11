@@ -294,7 +294,9 @@ class QubitDevice(Device):
                 if circuit.measurements[0].return_type is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
-                elif circuit.measurements[0].return_type is not qml.measurements.Counts:
+                elif circuit.measurements[0].return_type is qml.measurements.Counts:
+                    results = self._asarray(results)
+                else:
                     # Measurements with expval, var or probs
                     results = self._asarray(results, dtype=self.R_DTYPE)
 
@@ -897,13 +899,13 @@ class QubitDevice(Device):
              {'111':1, '001':2}
         """
         try:
-            # Express the states as ints
+            # Express the states as strings
             samples = [''.join(self._asarray(sample, dtype=str)) for sample in samples]
         except TypeError:
             # Evaluation of an observable
             pass
         states, counts = np.unique(samples, return_counts=True)
-        return {state: count for state, count in zip(states, counts)}
+        return dict(zip(states, counts))
 
     def sample(self, observable, shot_range=None, bin_size=None, counts=False):
 
