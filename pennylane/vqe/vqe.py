@@ -88,7 +88,7 @@ class ExpvalCost:
     tensor(-0.2316, dtype=torch.float64)
 
     The cost function can then be minimized using any gradient descent-based
-    :doc:`optimizer </introduction/optimizers>`.
+    :doc:`optimizer </introduction/interfaces>`.
 
     .. details::
         :title: Usage Details
