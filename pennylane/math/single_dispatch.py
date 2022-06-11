@@ -172,6 +172,7 @@ ar.register_function("autograd", "eigvalsh", lambda x: _i("autograd").numpy.lina
 ar.register_function(
     "autograd", "entr", lambda x: -_i("autograd").numpy.sum(x * _i("autograd").numpy.log(x))
 )
+
 ar.register_function("autograd", "diagonal", lambda x, *args: _i("qml").numpy.diag(x))
 
 
@@ -196,7 +197,6 @@ ar.autoray._FUNC_ALIASES["tensorflow", "arctan"] = "atan"
 ar.autoray._FUNC_ALIASES["tensorflow", "arctan2"] = "atan2"
 ar.autoray._FUNC_ALIASES["tensorflow", "diag"] = "diag"
 
-
 ar.register_function(
     "tensorflow", "asarray", lambda x, **kwargs: _i("tf").convert_to_tensor(x, **kwargs)
 )
@@ -205,6 +205,7 @@ ar.register_function(
     "hstack",
     lambda *args, **kwargs: _i("tf").experimental.numpy.hstack(*args),
 )
+
 ar.register_function("tensorflow", "flatten", lambda x: _i("tf").reshape(x, [-1]))
 ar.register_function("tensorflow", "shape", lambda x: tuple(x.shape))
 ar.register_function(
@@ -359,6 +360,7 @@ ar.register_function(
     "tensorflow", "entr", lambda x: -_i("tf").math.reduce_sum(x * _i("tf").math.log(x))
 )
 
+
 # -------------------------------- Torch --------------------------------- #
 
 ar.autoray._FUNC_ALIASES["torch", "unstack"] = "unbind"
@@ -372,11 +374,30 @@ def _to_numpy_torch(x):
 
 
 ar.register_function("torch", "to_numpy", _to_numpy_torch)
-ar.register_function(
-    "torch",
-    "asarray",
-    lambda x, device=None: _i("torch").as_tensor(x, device=device),
-)
+
+
+def _asarray_torch(x, dtype=None, **kwargs):
+    import torch
+
+    dtype_map = {
+        np.int8: torch.int8,
+        np.int16: torch.int16,
+        np.int32: torch.int32,
+        np.int64: torch.int64,
+        np.float16: torch.float16,
+        np.float32: torch.float32,
+        np.float64: torch.float64,
+        np.complex64: torch.complex64,
+        np.complex128: torch.complex128,
+    }
+
+    if dtype in dtype_map:
+        return torch.as_tensor(x, dtype=dtype_map[dtype], **kwargs)
+
+    return torch.as_tensor(x, dtype=dtype, **kwargs)
+
+
+ar.register_function("torch", "asarray", _asarray_torch)
 ar.register_function("torch", "diag", lambda x, k=0: _i("torch").diag(x, diagonal=k))
 ar.register_function("torch", "expand_dims", lambda x, axis: _i("torch").unsqueeze(x, dim=axis))
 ar.register_function("torch", "shape", lambda x: tuple(x.shape))
@@ -492,6 +513,14 @@ def _block_diag_torch(tensors):
 ar.register_function("torch", "block_diag", _block_diag_torch)
 
 
+def _scatter_torch(indices, tensor, new_dimensions):
+    import torch
+
+    new_tensor = torch.zeros(new_dimensions, dtype=tensor.dtype, device=tensor.device)
+    new_tensor[indices] = tensor
+    return new_tensor
+
+
 def _scatter_element_add_torch(tensor, index, value):
     """In-place addition of a multidimensional value over various
     indices of a tensor. Note that Torch only supports index assignments
@@ -502,6 +531,7 @@ def _scatter_element_add_torch(tensor, index, value):
     return tensor
 
 
+ar.register_function("torch", "scatter", _scatter_torch)
 ar.register_function("torch", "scatter_element_add", _scatter_element_add_torch)
 
 
@@ -532,6 +562,22 @@ ar.register_function("torch", "ndim", _ndim_torch)
 # pylint: disable=unnecessary-lambda
 ar.register_function("torch", "eigvalsh", lambda x: _i("torch").linalg.eigvalsh(x))
 ar.register_function("torch", "entr", lambda x: _i("torch").sum(_i("torch").special.entr(x)))
+
+
+def _sum_torch(tensor, axis=None, keepdims=False, dtype=None):
+    import torch
+
+    if axis is None:
+        return torch.sum(tensor, dtype=dtype)
+
+    if not isinstance(axis, int) and len(axis) == 0:
+        return tensor
+
+    return torch.sum(tensor, dim=axis, keepdim=keepdims, dtype=dtype)
+
+
+ar.register_function("torch", "sum", _sum_torch)
+
 
 # -------------------------------- JAX --------------------------------- #
 

@@ -117,7 +117,7 @@ class DefaultMixed(QubitDevice):
 
     @staticmethod
     def _reduce_sum(array, axes):
-        return qnp.sum(array, axis=tuple(axes))
+        return qnp.sum(array, tuple(axes))
 
     @staticmethod
     def _asarray(array, dtype=None):
@@ -168,7 +168,11 @@ class DefaultMixed(QubitDevice):
         capabilities = super().capabilities().copy()
         capabilities.update(
             returns_state=True,
-            passthru_devices={"autograd": "default.mixed", "tf": "default.mixed"},
+            passthru_devices={
+                "autograd": "default.mixed",
+                "tf": "default.mixed",
+                "torch": "default.mixed",
+            },
         )
         return capabilities
 
@@ -273,6 +277,7 @@ class DefaultMixed(QubitDevice):
             f"{kraus_index}{new_row_indices}{row_indices}, {state_indices},"
             f"{kraus_index}{col_indices}{new_col_indices}->{new_state_indices}"
         )
+
         self._state = qnp.einsum(einsum_indices, kraus, self._state, kraus_dagger)
 
     def _apply_diagonal_unitary(self, eigvals, wires):
@@ -411,6 +416,7 @@ class DefaultMixed(QubitDevice):
             device_wires.labels
         ):
             # Initialize the entire wires with the state
+
             self._state = qnp.reshape(state, [2] * 2 * self.num_wires)
             self._pre_rotated_state = self._state
 
@@ -442,6 +448,7 @@ class DefaultMixed(QubitDevice):
                 1.0,
                 atol=tolerance,
             )
+
             self._state = qnp.asarray(rho, dtype=self.C_DTYPE)
             self._pre_rotated_state = self._state
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the ``default.mixed`` device for the Autograd interface
+Tests for the ``default.mixed`` device for the Torch interface.
 """
 import re
 import pytest
@@ -22,45 +22,14 @@ from pennylane import numpy as np
 from pennylane.devices.default_mixed import DefaultMixed
 from pennylane import DeviceError
 
+pytestmark = pytest.mark.torch
 
-@pytest.mark.autograd
-def test_analytic_deprecation():
-    """Tests if the kwarg `analytic` is used and displays error message."""
-    msg = "The analytic argument has been replaced by shots=None. "
-    msg += "Please use shots=None instead of analytic=True."
-
-    with pytest.raises(
-        DeviceError,
-        match=msg,
-    ):
-        qml.device("default.mixed", wires=1, shots=1, analytic=True)
+torch = pytest.importorskip("torch")
 
 
-@pytest.mark.autograd
 class TestQNodeIntegration:
-    """Integration tests for default.mixed.autograd. This test ensures it integrates
+    """Integration tests for default.mixed with Torch. This test ensures it integrates
     properly with the PennyLane UI, in particular the QNode."""
-
-    def test_defines_correct_capabilities(self):
-        """Test that the device defines the right capabilities"""
-
-        dev = qml.device("default.mixed", wires=1)
-        cap = dev.capabilities()
-        capabilities = {
-            "model": "qubit",
-            "supports_finite_shots": True,
-            "supports_tensor_observables": True,
-            "supports_broadcasting": False,
-            "returns_probs": True,
-            "returns_state": True,
-            "passthru_devices": {
-                "autograd": "default.mixed",
-                "tf": "default.mixed",
-                "torch": "default.mixed",
-            },
-        }
-
-        assert cap == capabilities
 
     def test_load_device(self):
         """Test that the plugin device loads correctly"""
@@ -68,16 +37,16 @@ class TestQNodeIntegration:
         assert dev.num_wires == 2
         assert dev.shots == None
         assert dev.short_name == "default.mixed"
-        assert dev.capabilities()["passthru_devices"]["autograd"] == "default.mixed"
+        assert dev.capabilities()["passthru_devices"]["torch"] == "default.mixed"
 
     def test_qubit_circuit(self, tol):
         """Test that the device provides the correct
         result for a simple circuit."""
-        p = np.array(0.543)
+        p = torch.tensor(0.543)
 
         dev = qml.device("default.mixed", wires=1)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliY(0))
@@ -98,13 +67,13 @@ class TestQNodeIntegration:
         expected[0, 0] = 1
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
-        def circuit():
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit(a):
             qml.Hadamard(wires=0)
-            qml.RZ(np.pi / 4, wires=0)
+            qml.RZ(a, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        circuit()
+        circuit(torch.tensor(np.pi / 4))
         state = dev.state
 
         amplitude = np.exp(-1j * np.pi / 4) / 2
@@ -115,12 +84,13 @@ class TestQNodeIntegration:
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.autograd
 class TestDtypePreserved:
     """Test that the user-defined dtype of the device is preserved for QNode
     evaluation"""
 
-    @pytest.mark.parametrize("r_dtype", [np.float32, np.float64])
+    @pytest.mark.parametrize(
+        "r_dtype, r_dtype_torch", [(np.float32, torch.float32), (np.float64, torch.float64)]
+    )
     @pytest.mark.parametrize(
         "measurement",
         [
@@ -130,46 +100,47 @@ class TestDtypePreserved:
             qml.probs(wires=[2, 0]),
         ],
     )
-    def test_real_dtype(self, r_dtype, measurement, tol):
+    def test_real_dtype(self, r_dtype, r_dtype_torch, measurement, tol):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with real-valued outputs"""
-        p = 0.543
+        p = torch.tensor(0.543)
 
-        dev = qml.device("default.mixed", wires=3)
-        dev.R_DTYPE = r_dtype
+        dev = qml.device("default.mixed", wires=3, r_dtype=r_dtype)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.apply(measurement)
 
         res = circuit(p)
-        assert res.dtype == r_dtype
+        assert res.dtype == r_dtype_torch
 
-    @pytest.mark.parametrize("c_dtype", [np.complex64, np.complex128])
+    @pytest.mark.parametrize(
+        "c_dtype, c_dtype_torch",
+        [(np.complex64, torch.complex64), (np.complex128, torch.complex128)],
+    )
     @pytest.mark.parametrize(
         "measurement",
         [qml.state(), qml.density_matrix(wires=[1]), qml.density_matrix(wires=[2, 0])],
     )
-    def test_complex_dtype(self, c_dtype, measurement, tol):
+    def test_complex_dtype(self, c_dtype, c_dtype_torch, measurement, tol):
         """Test that the user-defined dtype of the device is preserved
         for QNodes with complex-valued outputs"""
-        p = 0.543
+        p = torch.tensor(0.543)
 
         dev = qml.device("default.mixed", wires=3, c_dtype=c_dtype)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.apply(measurement)
 
         res = circuit(p)
-        assert res.dtype == c_dtype
+        assert res.dtype == c_dtype_torch
 
 
-@pytest.mark.autograd
 class TestOps:
-    """Unit tests for operations supported by the default.mixed.autograd device"""
+    """Unit tests for operations supported by the default.mixed device with Torch"""
 
     def test_multirz_jacobian(self):
         """Test that the patched numpy functions are used for the MultiRZ
@@ -177,60 +148,60 @@ class TestOps:
         wires = 4
         dev = qml.device("default.mixed", wires=wires)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(param):
             qml.MultiRZ(param, wires=[0, 1])
             return qml.probs(wires=list(range(wires)))
 
-        param = np.array(0.3, requires_grad=True)
-        res = qml.jacobian(circuit)(param)
+        param = torch.tensor(0.3, dtype=torch.float64, requires_grad=True)
+        res = torch.autograd.functional.jacobian(circuit, param)
+
         assert np.allclose(res, np.zeros(wires**2))
 
     def test_full_subsystem(self, mocker):
         """Test applying a state vector to the full subsystem"""
         dev = DefaultMixed(wires=["a", "b", "c"])
-        state = np.array([1, 0, 0, 0, 1, 0, 1, 1]) / 2.0
+        state = torch.tensor([1, 0, 0, 0, 1, 0, 1, 1], dtype=torch.complex128) / 2.0
         state_wires = qml.wires.Wires(["a", "b", "c"])
 
         spy = mocker.spy(qml.math, "scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
 
-        state = np.outer(state, np.conj(state))
+        state = torch.outer(state, torch.conj(state))
 
-        assert np.all(dev._state.flatten() == state.flatten())
+        assert torch.allclose(torch.reshape(dev._state, (-1,)), torch.reshape(state, (-1,)))
         spy.assert_not_called()
 
     def test_partial_subsystem(self, mocker):
         """Test applying a state vector to a subset of wires of the full subsystem"""
 
         dev = DefaultMixed(wires=["a", "b", "c"])
-        state = np.array([1, 0, 1, 0]) / np.sqrt(2.0)
+        state = torch.tensor([1, 0, 1, 0], dtype=torch.complex128) / np.sqrt(2.0)
         state_wires = qml.wires.Wires(["a", "c"])
 
         spy = mocker.spy(qml.math, "scatter")
         dev._apply_state_vector(state=state, device_wires=state_wires)
 
-        state = np.kron(np.outer(state, np.conj(state)), np.array([[1, 0], [0, 0]]))
+        state = torch.kron(torch.outer(state, torch.conj(state)), torch.tensor([[1, 0], [0, 0]]))
 
-        assert np.all(np.reshape(dev._state, (8, 8)) == state)
+        assert torch.allclose(torch.reshape(dev._state, (8, 8)), state)
         spy.assert_called()
 
 
-@pytest.mark.autograd
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
 
     def test_jacobian_variable_multiply(self, tol):
-        """Test that jacobian of a QNode with an attached default.mixed.autograd device
+        """Test that jacobian of a QNode with an attached default.mixed.torch device
         gives the correct result in the case of parameters multiplied by scalars"""
-        x = 0.43316321
-        y = 0.2162158
-        z = 0.75110998
-        weights = np.array([x, y, z], requires_grad=True)
+        x = torch.tensor(0.43316321, dtype=torch.float64)
+        y = torch.tensor(0.2162158, dtype=torch.float64)
+        z = torch.tensor(0.75110998, dtype=torch.float64)
+        weights = torch.tensor([x, y, z], dtype=torch.float64, requires_grad=True)
 
         dev = qml.device("default.mixed", wires=1)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(p):
             qml.RX(3 * p[0], wires=0)
             qml.RY(p[1], wires=0)
@@ -241,10 +212,10 @@ class TestPassthruIntegration:
         res = circuit(weights)
 
         expected = np.cos(3 * x) * np.cos(y) * np.cos(z / 2) - np.sin(3 * x) * np.sin(z / 2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert qml.math.allclose(res, expected, atol=tol, rtol=0)
 
-        grad_fn = qml.jacobian(circuit, 0)
-        res = grad_fn(np.array(weights))
+        res.backward()
+        res = weights.grad
 
         expected = np.array(
             [
@@ -254,40 +225,43 @@ class TestPassthruIntegration:
             ]
         )
 
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert qml.math.allclose(res, expected, atol=tol, rtol=0)
 
     def test_jacobian_repeated(self, tol):
-        """Test that jacobian of a QNode with an attached default.mixed.autograd device
+        """Test that the jacobian of a QNode with an attached default.mixed.torch device
         gives the correct result in the case of repeated parameters"""
-        x = 0.43316321
-        y = 0.2162158
-        z = 0.75110998
-        p = np.array([x, y, z], requires_grad=True)
+        x = torch.tensor(0.43316321, dtype=torch.float64)
+        y = torch.tensor(0.2162158, dtype=torch.float64)
+        z = torch.tensor(0.75110998, dtype=torch.float64)
+        p = torch.tensor([x, y, z], dtype=torch.float64, requires_grad=True)
         dev = qml.device("default.mixed", wires=1)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
             qml.RX(x[1], wires=0)
             qml.Rot(x[0], x[1], x[2], wires=0)
             return qml.expval(qml.PauliZ(0))
 
         res = circuit(p)
+        res.backward()
 
-        expected = np.cos(y) ** 2 - np.sin(x) * np.sin(y) ** 2
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = torch.cos(y) ** 2 - torch.sin(x) * torch.sin(y) ** 2
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-        grad_fn = qml.jacobian(circuit, 0)
-        res = grad_fn(p)
-
-        expected = np.array(
-            [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0]
+        expected = torch.tensor(
+            [
+                -torch.cos(x) * torch.sin(y) ** 2,
+                -2 * (torch.sin(x) + 1) * torch.sin(y) * torch.cos(y),
+                0,
+            ]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert torch.allclose(p.grad, expected, atol=tol, rtol=0)
 
-    def test_jacobian_agrees_backprop_parameter_shift(self, tol):
-        """Test that jacobian of a QNode with an attached default.mixed.autograd device
+    def test_backprop_jacobian_agrees_parameter_shift(self, tol):
+        """Test that jacobian of a QNode with an attached default.mixed.torch device
         gives the correct result with respect to the parameter-shift method"""
-        p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242], requires_grad=True)
+        p = np.array([0.43316321, 0.2162158, 0.75110998, 0.94714242])
+        p_torch = torch.tensor(p, dtype=torch.float64, requires_grad=True)
 
         def circuit(x):
             for i in range(0, len(p), 2):
@@ -300,121 +274,131 @@ class TestPassthruIntegration:
         dev1 = qml.device("default.mixed", wires=3)
         dev2 = qml.device("default.mixed", wires=3)
 
-        circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="autograd")
+        circuit1 = qml.QNode(circuit, dev1, diff_method="backprop", interface="torch")
         circuit2 = qml.QNode(circuit, dev2, diff_method="parameter-shift")
 
         assert circuit1.gradient_fn == "backprop"
         assert circuit2.gradient_fn is qml.gradients.param_shift
 
-        res = circuit1(p)
+        res = circuit1(p_torch)
+        assert qml.math.allclose(res, circuit2(p), atol=tol, rtol=0)
 
-        assert np.allclose(res, circuit2(p), atol=tol, rtol=0)
-
-        grad_fn = qml.jacobian(circuit1, 0)
-        res = grad_fn(p)
-        assert np.allclose(res, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
+        grad = torch.autograd.functional.jacobian(circuit1, p_torch)
+        assert qml.math.allclose(grad, qml.jacobian(circuit2)(p), atol=tol, rtol=0)
 
     def test_state_differentiability(self, tol):
         """Test that the device state can be differentiated"""
         dev = qml.device("default.mixed", wires=1)
 
-        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a):
             qml.RY(a, wires=0)
             return qml.state()
 
-        a = np.array(0.54, requires_grad=True)
+        a = torch.tensor(0.54, dtype=torch.float64, requires_grad=True)
 
-        def cost(a):
-            """A function of the device quantum state, as a function
-            of input QNode parameters."""
-            state = circuit(a)
-            res = np.abs(state) ** 2
-            return res[1][1] - res[0][0]
+        state = circuit(a)
+        res = torch.abs(state) ** 2
+        res = res[1][1] - res[0][0]
+        res.backward()
 
-        grad = qml.grad(cost)(a)
-        expected = np.sin(a)
+        expected = torch.sin(a)
+        assert torch.allclose(a.grad, expected, atol=tol, rtol=0)
+
+    def test_state_vector_differentiability(self, tol):
+        """Test that the device state vector can be differentiated directly"""
+        dev = qml.device("default.mixed", wires=1)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        def circuit(a):
+            qml.RY(a, wires=0)
+            return qml.state()
+
+        a = torch.tensor(0.54, dtype=torch.complex128, requires_grad=True)
+
+        grad = torch.autograd.functional.jacobian(circuit, a)
+        expected = 0.5 * torch.tensor([[-torch.sin(a), torch.cos(a)], [torch.cos(a), torch.sin(a)]])
+
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
     def test_density_matrix_differentiability(self, tol):
         """Test that the density matrix can be differentiated"""
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a):
             qml.RY(a, wires=0)
             qml.CNOT(wires=[0, 1])
             return qml.density_matrix(wires=1)
 
-        a = np.array(0.54, requires_grad=True)
+        a = torch.tensor(0.54, dtype=torch.float64, requires_grad=True)
 
-        def cost(a):
-            """A function of the device quantum state, as a function
-            of input QNode parameters."""
-            state = circuit(a)
-            res = np.abs(state) ** 2
-            return res[1][1] - res[0][0]
+        state = circuit(a)
+        res = torch.abs(state) ** 2
+        res = res[1][1] - res[0][0]
+        res.backward()
 
-        grad = qml.grad(cost)(a)
-        expected = np.sin(a)
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        expected = torch.sin(a)
+        assert torch.allclose(a.grad, expected, atol=tol, rtol=0)
 
     def test_prob_differentiability(self, tol):
         """Test that the device probability can be differentiated"""
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
             qml.RX(a, wires=0)
             qml.RY(b, wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
-        a = np.array(0.54, requires_grad=True)
-        b = np.array(0.12, requires_grad=True)
+        a = torch.tensor(0.54, dtype=torch.float64, requires_grad=True)
+        b = torch.tensor(0.12, dtype=torch.float64, requires_grad=True)
 
-        def cost(a, b):
-            prob_wire_1 = circuit(a, b)
-            return prob_wire_1[1] - prob_wire_1[0]
+        probs = circuit(a, b)
+        res = probs[1] - probs[0]
+        res.backward()
 
-        res = cost(a, b)
-        expected = -np.cos(a) * np.cos(b)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        expected = -torch.cos(a) * torch.cos(b)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-        grad = qml.grad(cost)(a, b)
-        expected = [np.sin(a) * np.cos(b), np.cos(a) * np.sin(b)]
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        assert torch.allclose(a.grad, torch.sin(a) * torch.cos(b), atol=tol, rtol=0)
+        assert torch.allclose(b.grad, torch.cos(a) * torch.sin(b), atol=tol, rtol=0)
 
     def test_prob_vector_differentiability(self, tol):
         """Test that the device probability vector can be differentiated directly"""
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
             qml.RX(a, wires=0)
             qml.RY(b, wires=1)
             qml.CNOT(wires=[0, 1])
             return qml.probs(wires=[1])
 
-        a = np.array(0.54, requires_grad=True)
-        b = np.array(0.12, requires_grad=True)
+        a = torch.tensor(0.54, dtype=torch.float64, requires_grad=True)
+        b = torch.tensor(0.12, dtype=torch.float64, requires_grad=True)
 
         res = circuit(a, b)
-        expected = [
-            np.cos(a / 2) ** 2 * np.cos(b / 2) ** 2 + np.sin(a / 2) ** 2 * np.sin(b / 2) ** 2,
-            np.cos(a / 2) ** 2 * np.sin(b / 2) ** 2 + np.sin(a / 2) ** 2 * np.cos(b / 2) ** 2,
-        ]
-        assert np.allclose(res, expected, atol=tol, rtol=0)
 
-        grad = qml.jacobian(circuit)(a, b)
-        expected = 0.5 * np.array(
+        expected = torch.tensor(
             [
-                [-np.sin(a) * np.cos(b), np.sin(a) * np.cos(b)],
-                [-np.cos(a) * np.sin(b), np.cos(a) * np.sin(b)],
+                torch.cos(a / 2) ** 2 * torch.cos(b / 2) ** 2
+                + torch.sin(a / 2) ** 2 * torch.sin(b / 2) ** 2,
+                torch.cos(a / 2) ** 2 * torch.sin(b / 2) ** 2
+                + torch.sin(a / 2) ** 2 * torch.cos(b / 2) ** 2,
             ]
         )
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-        assert np.allclose(grad, expected, atol=tol, rtol=0)
+        grad_a, grad_b = torch.autograd.functional.jacobian(circuit, (a, b))
+
+        assert torch.allclose(
+            grad_a, 0.5 * torch.tensor([-torch.sin(a) * torch.cos(b), torch.sin(a) * torch.cos(b)])
+        )
+        assert torch.allclose(
+            grad_b, 0.5 * torch.tensor([-torch.cos(a) * torch.sin(b), torch.cos(a) * torch.sin(b)])
+        )
 
     def test_sample_backprop_error(self):
         """Test that sampling in backpropagation mode raises an error"""
@@ -424,7 +408,7 @@ class TestPassthruIntegration:
 
         with pytest.raises(qml.QuantumFunctionError, match=msg):
 
-            @qml.qnode(dev, diff_method="backprop", interface="autograd")
+            @qml.qnode(dev, diff_method="backprop", interface="torch")
             def circuit(a):
                 qml.RY(a, wires=0)
                 return qml.sample(qml.PauliZ(0))
@@ -433,53 +417,54 @@ class TestPassthruIntegration:
         """Tests that the gradient of expval is correct"""
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
             qml.RX(a, wires=0)
             qml.CRX(b, wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        a = np.array(-0.234, requires_grad=True)
-        b = np.array(0.654, requires_grad=True)
+        a = torch.tensor(-0.234, dtype=torch.float64, requires_grad=True)
+        b = torch.tensor(0.654, dtype=torch.float64, requires_grad=True)
 
         res = circuit(a, b)
-        expected_cost = 0.5 * (np.cos(a) * np.cos(b) + np.cos(a) - np.cos(b) + 1)
-        assert np.allclose(res, expected_cost, atol=tol, rtol=0)
+        res.backward()
 
-        res = qml.grad(circuit)(a, b)
-        expected_grad = np.array(
-            [-0.5 * np.sin(a) * (np.cos(b) + 1), 0.5 * np.sin(b) * (1 - np.cos(a))]
-        )
-        assert np.allclose(res, expected_grad, atol=tol, rtol=0)
+        expected_cost = 0.5 * (torch.cos(a) * torch.cos(b) + torch.cos(a) - torch.cos(b) + 1)
+        assert torch.allclose(res, expected_cost, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize(
-        "x, shift",
-        [np.array((0.0, 0.0), requires_grad=True), np.array((0.5, -0.5), requires_grad=True)],
-    )
+        assert torch.allclose(a.grad, -0.5 * torch.sin(a) * (torch.cos(b) + 1), atol=tol, rtol=0)
+        assert torch.allclose(b.grad, 0.5 * torch.sin(b) * (1 - torch.cos(a)), atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
     def test_hessian_at_zero(self, x, shift):
         """Tests that the Hessian at vanishing state vector amplitudes
         is correct."""
         dev = qml.device("default.mixed", wires=1)
 
-        @qml.qnode(dev, interface="autograd", diff_method="backprop")
+        shift = torch.tensor(shift)
+        x = torch.tensor(x, requires_grad=True)
+
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(x):
             qml.RY(shift, wires=0)
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert qml.math.isclose(qml.jacobian(circuit)(x), 0.0)
-        assert qml.math.isclose(qml.jacobian(qml.jacobian(circuit))(x), -1.0)
-        assert qml.math.isclose(qml.grad(qml.grad(circuit))(x), -1.0)
+        grad = torch.autograd.functional.jacobian(circuit, x)
+        hess = torch.autograd.functional.hessian(circuit, x)
+
+        assert qml.math.isclose(grad, torch.tensor(0.0))
+        assert qml.math.isclose(hess, torch.tensor(-1.0))
 
     @pytest.mark.parametrize("operation", [qml.U3, qml.U3.compute_decomposition])
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift", "finite-diff"])
-    def test_autograd_interface_gradient(self, operation, diff_method, tol):
+    def test_torch_interface_gradient(self, operation, diff_method, tol):
         """Tests that the gradient of an arbitrary U3 gate is correct
-        using the Autograd interface, using a variety of differentiation methods."""
+        using the TF interface, using a variety of differentiation methods."""
         dev = qml.device("default.mixed", wires=1)
-        state = np.array(1j * np.array([1, -1]) / np.sqrt(2), requires_grad=False)
+        state = torch.tensor(1j * np.array([1, -1]) / np.sqrt(2), requires_grad=False)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="autograd")
+        @qml.qnode(dev, diff_method=diff_method, interface="torch")
         def circuit(x, weights, w):
             """In this example, a mixture of scalar
             arguments, array arguments, and keyword arguments are used."""
@@ -495,11 +480,11 @@ class TestPassthruIntegration:
         phi = -0.234
         lam = 0.654
 
-        params = np.array([theta, phi, lam], requires_grad=True)
+        params = torch.tensor([theta, phi, lam], dtype=torch.float64, requires_grad=True)
 
         res = cost(params)
         expected_cost = (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi)) ** 2
-        assert np.allclose(res, expected_cost, atol=tol, rtol=0)
+        assert torch.allclose(res, torch.tensor(expected_cost), atol=tol, rtol=0)
 
         # Check that the correct differentiation method is being used.
         if diff_method == "backprop":
@@ -509,7 +494,9 @@ class TestPassthruIntegration:
         else:
             assert circuit.gradient_fn is qml.gradients.finite_diff
 
-        res = qml.grad(cost)(params)
+        res.backward()
+        res = params.grad
+
         expected_grad = (
             np.array(
                 [
@@ -521,7 +508,7 @@ class TestPassthruIntegration:
             * 2
             * (np.sin(lam) * np.sin(phi) - np.cos(theta) * np.cos(lam) * np.cos(phi))
         )
-        assert np.allclose(res, expected_grad, atol=tol, rtol=0)
+        assert torch.allclose(res, torch.tensor(expected_grad), atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
         "dev_name,diff_method,mode",
@@ -534,11 +521,12 @@ class TestPassthruIntegration:
     def test_ragged_differentiation(self, dev_name, diff_method, mode, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
-        dev = qml.device(dev_name, wires=2)
-        x = np.array(0.543, requires_grad=True)
-        y = np.array(-0.654, requires_grad=True)
 
-        @qml.qnode(dev, diff_method=diff_method, interface="autograd", mode=mode)
+        dev = qml.device(dev_name, wires=2)
+        x = torch.tensor(0.543, dtype=torch.float64)
+        y = torch.tensor(-0.654, dtype=torch.float64)
+
+        @qml.qnode(dev, diff_method=diff_method, mode=mode, interface="torch")
         def circuit(x, y):
             qml.RX(x, wires=[0])
             qml.RY(y, wires=[1])
@@ -547,88 +535,97 @@ class TestPassthruIntegration:
 
         res = circuit(x, y)
 
-        expected = np.array(
-            [np.cos(x), (1 + np.cos(x) * np.cos(y)) / 2, (1 - np.cos(x) * np.cos(y)) / 2]
+        expected = torch.tensor(
+            [
+                torch.cos(x),
+                (1 + torch.cos(x) * torch.cos(y)) / 2,
+                (1 - torch.cos(x) * torch.cos(y)) / 2,
+            ]
         )
-        assert np.allclose(res, expected, atol=tol, rtol=0)
+        assert torch.allclose(res, expected, atol=tol, rtol=0)
 
-        res = qml.jacobian(circuit)(x, y)
-        assert isinstance(res, tuple) and len(res) == 2
-        assert res[0].shape == (3,)
-        assert res[1].shape == (3,)
-
-        expected = (
-            np.array([-np.sin(x), -np.sin(x) * np.cos(y) / 2, np.sin(x) * np.cos(y) / 2]),
-            np.array([0, -np.cos(x) * np.sin(y) / 2, np.cos(x) * np.sin(y) / 2]),
+        res_x, res_y = torch.autograd.functional.jacobian(circuit, (x, y))
+        expected_x = torch.tensor(
+            [-torch.sin(x), -torch.sin(x) * torch.cos(y) / 2, torch.cos(y) * torch.sin(x) / 2]
         )
-        assert np.allclose(res[0], expected[0], atol=tol, rtol=0)
-        assert np.allclose(res[1], expected[1], atol=tol, rtol=0)
+        expected_y = torch.tensor(
+            [0, -torch.cos(x) * torch.sin(y) / 2, torch.cos(x) * torch.sin(y) / 2]
+        )
+
+        assert torch.allclose(res_x, expected_x, atol=tol, rtol=0)
+        assert torch.allclose(res_y, expected_y, atol=tol, rtol=0)
 
     def test_batching(self, tol):
-        """Tests that the gradient of the qnode is correct with batching"""
+        """Tests that the gradient of the qnode is correct with batching parameters"""
         dev = qml.device("default.mixed", wires=2)
 
         @qml.batch_params
-        @qml.qnode(dev, diff_method="backprop", interface="autograd")
+        @qml.qnode(dev, diff_method="backprop", interface="torch")
         def circuit(a, b):
             qml.RX(a, wires=0)
             qml.CRX(b, wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
-        a = np.array([-0.234, 0.678], requires_grad=True)
-        b = np.array([0.654, 1.236], requires_grad=True)
+        a = torch.tensor([-0.234, 0.678], dtype=torch.float64, requires_grad=True)
+        b = torch.tensor([0.654, 1.236], dtype=torch.float64, requires_grad=True)
 
         res = circuit(a, b)
-        expected_cost = 0.5 * (np.cos(a) * np.cos(b) + np.cos(a) - np.cos(b) + 1)
-        assert np.allclose(res, expected_cost, atol=tol, rtol=0)
 
-        res_a, res_b = qml.jacobian(circuit)(a, b)
+        expected_cost = 0.5 * (torch.cos(a) * torch.cos(b) + torch.cos(a) - torch.cos(b) + 1)
+        assert qml.math.allclose(res, expected_cost, atol=tol, rtol=0)
+
+        res_a, res_b = torch.autograd.functional.jacobian(circuit, (a, b))
         expected_a, expected_b = [
-            -0.5 * np.sin(a) * (np.cos(b) + 1),
-            0.5 * np.sin(b) * (1 - np.cos(a)),
+            -0.5 * torch.sin(a) * (torch.cos(b) + 1),
+            0.5 * torch.sin(b) * (1 - torch.cos(a)),
         ]
 
-        assert np.allclose(np.diag(res_a), expected_a, atol=tol, rtol=0)
-        assert np.allclose(np.diag(res_b), expected_b, atol=tol, rtol=0)
+        assert qml.math.allclose(torch.diagonal(res_a), expected_a, atol=tol, rtol=0)
+        assert qml.math.allclose(torch.diagonal(res_b), expected_b, atol=tol, rtol=0)
 
 
-@pytest.mark.autograd
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
     def test_template_integration(self):
-        """Test that a PassthruQNode default.mixed.autograd works with templates."""
+        """Test that a PassthruQNode default.mixed.torch works with templates."""
         dev = qml.device("default.mixed", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, interface="torch", diff_method="backprop")
         def circuit(weights):
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])
             return qml.expval(qml.PauliZ(0))
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-        weights = np.random.random(shape, requires_grad=True)
+        weights = torch.tensor(np.random.random(shape), dtype=torch.float64, requires_grad=True)
 
-        grad = qml.grad(circuit)(weights)
-        assert grad.shape == weights.shape
+        res = circuit(weights)
+        res.backward()
+
+        assert isinstance(weights.grad, torch.Tensor)
+        assert weights.grad.shape == weights.shape
 
     def test_qnode_collection_integration(self):
-        """Test that a PassthruQNode default.mixed.autograd works with QNodeCollections."""
+        """Test that a PassthruQNode default.mixed.torch works with QNodeCollections."""
         dev = qml.device("default.mixed", wires=2)
 
-        def ansatz(weights, **kwargs):
-            qml.RX(weights[0], wires=0)
-            qml.RY(weights[1], wires=1)
-            qml.CNOT(wires=[0, 1])
-
         obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
-        qnodes = qml.map(ansatz, obs_list, dev, interface="autograd")
+        qnodes = qml.map(qml.templates.StronglyEntanglingLayers, obs_list, dev, interface="torch")
 
-        assert qnodes.interface == "autograd"
+        assert qnodes.interface == "torch"
 
-        weights = np.array([0.1, 0.2], requires_grad=True)
+        torch.manual_seed(42)
+        weights = torch.rand(
+            qml.templates.StronglyEntanglingLayers.shape(n_wires=2, n_layers=2), requires_grad=True
+        )
 
         def cost(weights):
-            return np.sum(qnodes(weights))
+            return torch.sum(qnodes(weights))
 
-        grad = qml.grad(cost)(weights)
+        res = cost(weights)
+        res.backward()
+
+        grad = weights.grad
+
+        assert torch.is_tensor(res)
         assert grad.shape == weights.shape

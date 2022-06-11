@@ -15,7 +15,7 @@
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
 import pennylane as qml
-from pennylane.transforms import batch_transform
+from pennylane.transforms import batch_transform, metric_tensor, adjoint_metric_tensor
 
 
 def reduced_dm(qnode, wires):
@@ -258,17 +258,19 @@ def classical_fisher(qnode, argnums=0):
 
     Args:
         tape (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
+        argnums (Optional[int or List[int]]): Arguments to be differentiated in case interface ``jax`` is used.
 
-    Returns: func: The function that computes the classical fisher information matrix. This function accepts the same
-    signature as the :class:`.QNode`. If the signature contains one differentiable variable ``params``, the function
-    returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
-    it returns a list of sizes ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
+    Returns:
+        func: The function that computes the classical fisher information matrix. This function accepts the same
+        signature as the :class:`.QNode`. If the signature contains one differentiable variable ``params``, the function
+        returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
+        it returns a list of sizes ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
 
     .. warning::
 
         The ``classical_fisher()`` matrix is currently not differentiable.
 
-    .. seealso:: :func:`~.pennylane.metric_tensor`
+    .. seealso:: :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.qinfo.transforms.quantum_fisher`
 
     **Example**
 
@@ -396,3 +398,248 @@ def classical_fisher(qnode, argnums=0):
         return _compute_cfim(p, j)
 
     return wrapper
+
+
+def quantum_fisher(qnode, *args, hardware=False, **kwargs):
+    r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode` or quantum tape.
+
+    Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
+    are reflected in the quantum state. The metric used to induce the QFIM is the fidelity :math:`f = |\langle \psi | \psi' \rangle|^2` between two (pure) quantum states.
+    This leads to the following definition of the QFIM (see eq. (27) in `arxiv:2103.15191 <https://arxiv.org/abs/2103.15191>`_):
+
+    .. math::
+
+        \text{QFIM}_{i, j} = 4 \text{Re}\left[ \langle \partial_i \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle
+        - \langle \partial_i \psi(\bm{\theta}) | \psi(\bm{\theta}) \rangle \langle \psi(\bm{\theta}) | \partial_j \psi(\bm{\theta}) \rangle \right]
+
+    with short notation :math:`| \partial_j \psi(\bm{\theta}) \rangle := \frac{\partial}{\partial \theta_j}| \psi(\bm{\theta}) \rangle`.
+
+    .. seealso::
+        :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.adjoint_metric_tensor`, :func:`~.pennylane.qinfo.transforms.classical_fisher`
+
+    Args:
+        qnode (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
+        hardware (bool): Indicate if execution needs to be hardware compatible (True)
+
+    Returns:
+        func: The function that computes the quantum fisher information matrix.
+
+    .. note::
+
+        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. In case of ``hardware=True``, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
+        In case of  ``hardware=False``, :func:`~.pennylane.adjoint_metric_tensor` is used. Please refer to their respective documentations for details on the arguments.
+
+    **Example**
+
+    The quantum Fisher information matrix (QIFM) can be used to compute the `natural` gradient for `Quantum Natural Gradient Descent <https://arxiv.org/abs/1909.02108>`_.
+    A typical scenario is optimizing the expectation value of a Hamiltonian:
+
+    .. code-block:: python
+
+        n_wires = 2
+
+        dev = qml.device("default.qubit", wires=n_wires)
+
+        H = 1.*qml.PauliX(0) @ qml.PauliX(1) - 0.5 * qml.PauliZ(1)
+
+        @qml.qnode(dev)
+        def circ(params):
+            qml.RY(params[0], wires=1)
+            qml.CNOT(wires=(1,0))
+            qml.RY(params[1], wires=1)
+            qml.RZ(params[2], wires=1)
+            return qml.expval(H)
+
+        params = pnp.array([0.5, 1., 0.2], requires_grad=True)
+
+    The natural gradient is then simply the QFIM multiplied by the gradient:
+
+    >>> grad = qml.grad(circ)(params)
+    [ 0.59422561, -0.02615095, -0.05146226]
+
+    >>> qfim = qml.qinfo.quantum_fisher(circ)(params)
+    np.diag([1., 1., 0.77517241])
+
+    >>> q_nat_grad = qfim @ grad
+    [ 0.59422561 -0.02615095 -0.03989212]
+
+    When using real hardware with finite shots, we have to specify ``hardware=True`` in order to compute the QFIM.
+    Additionally, we need to provide a device that has a spare wire for the Hadamard test, otherwise it will just be able to compute the block diagonal terms.
+
+    >>> dev = qml.device("default.qubit", wires=n_wires+1, shots=1000)
+    >>> circ = qml.QNode(circ, dev)
+    >>> qfim = qml.qinfo.quantum_fisher(circ, hardware=True)(params)
+
+    """
+    # TODO: ``hardware`` argument will be obsolete in future releases when ``shots`` can be inferred.
+    if hardware:
+
+        def wrapper(*args0, **kwargs0):
+            return 4 * metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
+
+    else:
+
+        def wrapper(*args0, **kwargs0):
+            return 4 * adjoint_metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
+
+    return wrapper
+
+
+def fidelity(qnode0, qnode1, wires0, wires1):
+    r"""Compute the fidelity for two :class:`.QNode` returning a :func:`~.state` (a state can be a state vector
+    or a density matrix, depending on the device) acting on quantum systems with the same size.
+
+    The fidelity for two mixed states given by density matrices :math:`\rho` and :math:`\sigma`
+    is defined as
+
+    .. math::
+        F( \rho , \sigma ) = \text{Tr}( \sqrt{\sqrt{\rho} \sigma \sqrt{\rho}})^2
+
+    If one of the states is pure, say :math:`\rho=\ket{\psi}\bra{\psi}`, then the expression
+    for fidelity simplifies to
+
+    .. math::
+        F( \ket{\psi} , \sigma ) = \bra{\psi} \sigma \ket{\psi}
+
+    Finally, if both states are pure, :math:`\sigma=\ket{\phi}\bra{\phi}`, then the
+    fidelity is simply
+
+    .. math::
+        F( \ket{\psi} , \ket{\phi}) = \left|\braket{\psi, \phi}\right|^2
+
+    .. note::
+        The second state is coerced to the type and dtype of the first state. The fidelity is returned in the type
+        of the interface of the first state.
+
+    Args:
+        state0 (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        state1 (QNode): A :class:`.QNode` returning a :func:`~.state`.
+        wires0 (Sequence[int]): the wires of the first subsystem
+        wires1 (Sequence[int]): the wires of the second subsystem
+
+    Returns:
+        func: A function that returns the fidelity between the states outputted by the QNodes.
+
+    **Example**
+
+    First, let's consider two QNodes with potentially different signatures: a circuit with two parameters
+    and another circuit with a single parameter. The output of the `qml.qinfo.fidelity` transform then requires
+    two tuples to be passed as arguments, each containing the args and kwargs of their respective circuit, e.g. `all_args0 = (0.1, 0.3)` and
+    `all_args1 = (0.2)` in the following case:
+
+    .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit_rx(x, y):
+            qml.RX(x, wires=0)
+            qml.RZ(y, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit_ry(y):
+            qml.RY(y, wires=0)
+            return qml.state()
+
+    >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.2))
+    0.9905158135644924
+
+    It is also possible to use QNodes that do not depend on any parameters. When it is the case for the first QNode, you
+    need to pass an empty tuple as an argument for the first QNode.
+
+    .. code-block:: python
+
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit_rx():
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit_ry(x):
+            qml.RY(x, wires=0)
+            return qml.state()
+
+    >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((), (0.2))
+    0.9900332889206207
+
+    On the other hand, if the second QNode is the one that does not depend on parameters then a single tuple can also be
+    passed:
+
+    >>> qml.qinfo.fidelity(circuit_ry, circuit_rx, wires0=[0], wires1=[0])((0.2))
+    0.9900332889206207
+
+    The `qml.qinfo.fidelity` transform is also differentiable and you can use the gradient in the different frameworks
+    with backpropagation, the following example uses `jax` and `backprop`.
+
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="jax")
+        def circuit0(x):
+            qml.RX(x, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev, interface="jax")
+        def circuit1():
+            qml.PauliZ(wires=0)
+            return qml.state()
+
+    >>> jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))((jax.numpy.array(0.3)))
+    -0.14776011
+
+    """
+
+    if len(wires0) != len(wires1):
+        raise qml.QuantumFunctionError("The two states must have the same number of wires.")
+
+    # Get the state vector if all wires are selected
+    if len(wires0) == len(qnode0.device.wires):
+        state_qnode0 = qnode0
+    else:
+        state_qnode0 = qml.qinfo.reduced_dm(qnode0, wires=wires0)
+
+    # Get the state vector if all wires are selected
+    if len(wires1) == len(qnode1.device.wires):
+        state_qnode1 = qnode1
+    else:
+        state_qnode1 = qml.qinfo.reduced_dm(qnode1, wires=wires1)
+
+    def evaluate_fidelity(all_args0=None, all_args1=None):
+        """Wrapper used for evaluation of the fidelity between two states computed from QNodes. It allows giving
+        the args and kwargs to each :class:`.QNode`.
+
+        Args:
+            all_args0 (tuple): Tuple containing the arguments (*args, **kwargs) of the first :class:`.QNode`.
+            all_args1 (tuple): Tuple containing the arguments (*args, **kwargs) of the second :class:`.QNode`.
+
+        Returns:
+            float: Fidelity between two quantum states
+        """
+        if not isinstance(all_args0, tuple) and all_args0 is not None:
+            all_args0 = (all_args0,)
+
+        if not isinstance(all_args1, tuple) and all_args1 is not None:
+            all_args1 = (all_args1,)
+
+        # If no all_args is given, evaluate the QNode without args
+        if all_args0 is not None:
+            state0 = state_qnode0(*all_args0)
+        else:
+            # No args
+            state0 = state_qnode0()
+
+        # If no all_args is given, evaluate the QNode without args
+        if all_args1 is not None:
+            state1 = state_qnode1(*all_args1)
+        else:
+            # No args
+            state1 = state_qnode1()
+
+        # From the two generated states, compute the fidelity.
+        fid = qml.math.fidelity(state0, state1)
+        return fid
+
+    return evaluate_fidelity

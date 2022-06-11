@@ -24,9 +24,8 @@ from operator import matmul
 import numpy as np
 
 import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import AnyWires, Operation, expand_matrix
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ, Hadamard
-from pennylane.operation import expand_matrix
 from pennylane.utils import pauli_eigs
 from pennylane.wires import Wires
 
