@@ -239,6 +239,7 @@ PSWAP = lambda phi: np.array(
     ]
 )
 
+
 def adjoint_tuple(op, orig_mat):
     """Returns op constructor and matrix for provided base ops."""
     mat = qml.math.conj(qml.math.transpose(orig_mat))
@@ -287,7 +288,7 @@ two_qubit_param = [
     (qml.IsingXY, IsingXY),
     (qml.IsingYY, IsingYY),
     (qml.IsingZZ, IsingZZ),
-    (qml.PSWAP, qml.PSWAP)
+    (qml.PSWAP, PSWAP),
 ]
 two_qubit_multi_param = [(qml.CRot, crot)]
 # list of all three-qubit gates
