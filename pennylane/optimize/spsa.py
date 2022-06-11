@@ -123,7 +123,7 @@ class SPSAOptimizer:
     ... def fn(params, tensor_in, tensor_out):
     ...     with tf.init_scope():
     ...             for _ in range(max_iterations):
-    ...                     #Do something else here
+    ...                     # Some classical steps before the quantum computation
     ...                     params_a, layer_res = opt.step_and_cost(layer_fn_spsa,
     ...                                     np.tensor(tensor_in, requires_grad=False),
     ...                                     np.tensor(params))
