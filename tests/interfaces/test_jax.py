@@ -19,6 +19,11 @@ pytestmark = pytest.mark.jax
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
+
+from jax.config import config
+
+config.update("jax_enable_x64", True)
+
 import numpy as np
 
 import pennylane as qml
@@ -664,43 +669,10 @@ class TestJaxExecuteIntegration:
         res = jax.grad(cost)(params, cache=None)
         assert res.shape == (3,)
 
-    @pytest.mark.parametrize(
-        "ret, mes",
-        [
-            ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], "single return type"),
-            ([qml.state()], "Only Variance and Expectation"),
-        ],
-    )
-    def test_raises_for_jax_jit(self, execute_kwargs, interface, ret, mes):
-        """Tests multiple measurements and unsupported measurements raise an
-        error for the jit JAX interface."""
-        dev = qml.device("default.qubit", wires=2)
-        params = jnp.array([0.1, 0.2, 0.3])
-
-        def cost(a, cache):
-            with qml.tape.QuantumTape() as tape:
-                qml.RY(a[0], wires=0)
-                qml.RX(a[1], wires=0)
-                qml.RY(a[2], wires=0)
-                [qml.apply(r) for r in ret]
-
-            res = qml.interfaces.execute(
-                # Test only applicable for the jax jit interface
-                [tape],
-                dev,
-                cache=cache,
-                interface="jax-jit",
-                **execute_kwargs
-            )
-            return res[0][0]
-
-        with pytest.raises(InterfaceUnsupportedError, match=mes):
-            cost(params, cache=None)
-
 
 @pytest.mark.parametrize("execute_kwargs", execute_kwargs)
 class TestVectorValued:
-    """Test vector-valued returns for the JAX Python interface."""
+    """Test vector-valued jacobian returns for the JAX Python interface."""
 
     def test_multiple_expvals(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""
@@ -855,6 +827,231 @@ class TestVectorValued:
 
             res = qml.interfaces.execute(
                 [tape], dev, cache=cache, interface="jax-python", **execute_kwargs
+            )
+            return res[0]
+
+        with pytest.raises(InterfaceUnsupportedError):
+            jax.jacobian(cost)(params, cache=None)
+
+
+@pytest.mark.parametrize("execute_kwargs", execute_kwargs)
+class TestVectorValuedJIT:
+    """Test vector-valued returns for the JAX jit Python interface."""
+
+    @pytest.mark.parametrize(
+        "ret_type, shape",
+        [
+            ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], (2,)),
+            ([qml.probs(wires=[0, 1])], (1, 4)),
+        ],
+    )
+    def test_shapes(self, execute_kwargs, ret_type, shape):
+        """Test the shape of the result of vector-valued QNodes."""
+        adjoint = execute_kwargs.get("gradient_kwargs", {}).get("method", "") == "adjoint_jacobian"
+        if adjoint:
+            pytest.skip("The adjoint diff method doesn't support probabilities.")
+
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        idx = 0
+
+        def cost(a, cache):
+            with qml.tape.QuantumTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                for r in ret_type:
+                    qml.apply(r)
+
+            res = qml.interfaces.execute(
+                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
+            )
+            return res[0]
+
+        res = cost(params, cache=None)
+        assert res.shape == shape
+
+    def test_independent_expval(self, execute_kwargs):
+        """Tests computing an expectation value that is independent trainable
+        parameters."""
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        def cost(a, cache):
+            with qml.tape.QuantumTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.expval(qml.PauliZ(1))
+
+            res = qml.interfaces.execute(
+                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
+            )
+            return res[0][0]
+
+        res = jax.grad(cost)(params, cache=None)
+        assert res.shape == (3,)
+
+    ret_and_output_dim = [
+        ([qml.probs(wires=0)], (1, 2)),
+        ([qml.state()], (1, 4)),
+        ([qml.density_matrix(wires=0)], (1, 2, 2)),
+        # Multi measurements
+        ([qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))], (2,)),
+        ([qml.var(qml.PauliZ(0)), qml.var(qml.PauliZ(1))], (2,)),
+        ([qml.probs(wires=0), qml.probs(wires=1)], (2, 2)),
+    ]
+
+    @pytest.mark.parametrize("ret, out_dim", ret_and_output_dim)
+    def test_vector_valued_qnode(self, execute_kwargs, ret, out_dim):
+        """Tests the shape of vector-valued QNode results."""
+
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        grad_meth = (
+            execute_kwargs["gradient_kwargs"]["method"]
+            if "gradient_kwargs" in execute_kwargs
+            else ""
+        )
+        if "adjoint" in grad_meth and any(
+            r.return_type
+            in (qml.measurements.Probability, qml.measurements.State, qml.measurements.Variance)
+            for r in ret
+        ):
+            pytest.skip("Adjoint does not support probs")
+
+        def cost(a, cache):
+            with qml.tape.QuantumTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+
+                for r in ret:
+                    qml.apply(r)
+
+            res = qml.interfaces.execute(
+                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
+            )[0]
+            return res
+
+        res = cost(params, cache=None)
+        assert res.shape == out_dim
+
+    def test_qnode_sample(self, execute_kwargs):
+        """Tests computing multiple expectation values in a tape."""
+        dev = qml.device("default.qubit", wires=2, shots=10)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        grad_meth = (
+            execute_kwargs["gradient_kwargs"]["method"]
+            if "gradient_kwargs" in execute_kwargs
+            else ""
+        )
+        if "adjoint" in grad_meth or "backprop" in grad_meth:
+            pytest.skip("Adjoint does not support probs")
+
+        def cost(a, cache):
+            with qml.tape.QuantumTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.sample(qml.PauliZ(0))
+
+            res = qml.interfaces.execute(
+                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
+            )[0]
+            return res
+
+        res = cost(params, cache=None)
+        assert res.shape == (1, dev.shots)
+
+    def test_multiple_expvals_grad(self, execute_kwargs):
+        """Tests computing multiple expectation values in a tape."""
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
+        if fwd_mode:
+            pytest.skip("The forward mode is tested separately as it should raise an error.")
+
+        def cost(a, cache):
+            with qml.tape.QuantumTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            res = qml.interfaces.execute(
+                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
+            )[0]
+            return res[0] + res[1]
+
+        res = jax.grad(cost)(params, cache=None)
+        assert res.shape == (3,)
+
+    def test_multi_tape_jacobian_probs_expvals(self, execute_kwargs):
+        """Test the jacobian computation with multiple tapes with probability
+        and expectation value computations."""
+        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
+        if fwd_mode:
+            pytest.skip("The forward mode is tested separately as it should raise an error.")
+
+        adjoint = execute_kwargs.get("gradient_kwargs", {}).get("method", "") == "adjoint_jacobian"
+        if adjoint:
+            pytest.skip("The adjoint diff method doesn't support probabilities.")
+
+        def cost(x, y, device, interface, ek):
+            with qml.tape.QuantumTape() as tape1:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            with qml.tape.QuantumTape() as tape2:
+                qml.RX(x, wires=[0])
+                qml.RY(y, wires=[1])
+                qml.CNOT(wires=[0, 1])
+                qml.probs(wires=[0])
+                qml.probs(wires=[1])
+
+            return qml.execute([tape1, tape2], device, **ek, interface=interface)[0]
+
+        dev = qml.device("default.qubit", wires=2)
+        x = jnp.array(0.543)
+        y = jnp.array(-0.654)
+
+        x_ = np.array(0.543)
+        y_ = np.array(-0.654)
+
+        res = cost(x, y, dev, interface="jax-jit", ek=execute_kwargs)
+
+        exp = cost(x_, y_, dev, interface="autograd", ek=execute_kwargs)
+
+        for r, e in zip(res, exp):
+            assert jnp.allclose(r, e, atol=1e-7)
+
+    def test_multiple_expvals_raises_fwd_device_grad(self, execute_kwargs):
+        """Tests computing multiple expectation values in a tape."""
+        fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
+        if not fwd_mode:
+            pytest.skip("Forward mode is not turned on.")
+
+        dev = qml.device("default.qubit", wires=2)
+        params = jnp.array([0.1, 0.2, 0.3])
+
+        def cost(a, cache):
+            with qml.tape.QuantumTape() as tape:
+                qml.RY(a[0], wires=0)
+                qml.RX(a[1], wires=0)
+                qml.RY(a[2], wires=0)
+                qml.expval(qml.PauliZ(0))
+                qml.expval(qml.PauliZ(1))
+
+            res = qml.interfaces.execute(
+                [tape], dev, cache=cache, interface="jax-jit", **execute_kwargs
             )
             return res[0]
 

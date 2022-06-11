@@ -129,11 +129,6 @@ def expand_matrix(base_matrix, wires, wire_order):
     """Re-express a base matrix acting on a subspace defined by a set of wire labels
     according to a global wire order.
 
-    .. note::
-
-        This function has essentially the same behaviour as :func:`.utils.expand` but is fully
-        differentiable.
-
     Args:
         base_matrix (tensor_like): base matrix to expand
         wires (Iterable): wires determining the subspace that base matrix acts on; a base matrix of
@@ -188,7 +183,6 @@ def expand_matrix(base_matrix, wires, wire_order):
     >>> res.requires_grad
     True
     """
-    # TODO[Maria]: In future we should consider making ``utils.expand`` differentiable and calling it here.
     wire_order = Wires(wire_order)
     n = len(wires)
     shape = qml.math.shape(base_matrix)

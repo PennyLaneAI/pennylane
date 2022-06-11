@@ -134,8 +134,8 @@ def tape_text(
             qml.probs(wires=(0, 1, 2, "aux"))
 
     >>> print(qml.drawer.tape_text(tape))
-      0: ─╭QFT──RX─╭C─┤ ╭Var[Z@Z] ╭Probs
-      1: ─├QFT──RY─├C─┤ ╰Var[Z@Z] ├Probs
+      0: ─╭QFT──RX─╭●─┤ ╭Var[Z@Z] ╭Probs
+      1: ─├QFT──RY─├●─┤ ╰Var[Z@Z] ├Probs
       2: ─╰QFT──RZ─│──┤           ├Probs
     aux: ──────────╰X─┤  <Z>      ╰Probs
 
@@ -146,8 +146,8 @@ def tape_text(
     are displayed to the specified precision. Matrix-valued parameters are never displayed.
 
     >>> print(qml.drawer.tape_text(tape, decimals=2))
-      0: ─╭QFT──RX(1.23)─╭C─┤ ╭Var[Z@Z] ╭Probs
-      1: ─├QFT──RY(1.23)─├C─┤ ╰Var[Z@Z] ├Probs
+      0: ─╭QFT──RX(1.23)─╭●─┤ ╭Var[Z@Z] ╭Probs
+      1: ─├QFT──RY(1.23)─├●─┤ ╰Var[Z@Z] ├Probs
       2: ─╰QFT──RZ(1.23)─│──┤           ├Probs
     aux: ────────────────╰X─┤  <Z>      ╰Probs
 
@@ -165,17 +165,17 @@ def tape_text(
 
     .. code-block:: none
 
-        0: ──Rot─╭C──────────╭X──Rot─╭C───────╭X──Rot──────╭C────╭X
-        1: ──Rot─╰X─╭C───────│───Rot─│──╭C────│──╭X────Rot─│──╭C─│─
-        2: ──Rot────╰X─╭C────│───Rot─╰X─│──╭C─│──│─────Rot─│──│──╰C
-        3: ──Rot───────╰X─╭C─│───Rot────╰X─│──╰C─│─────Rot─╰X─│────
-        4: ──Rot──────────╰X─╰C──Rot───────╰X────╰C────Rot────╰X───
+        0: ──Rot─╭●──────────╭X──Rot─╭●───────╭X──Rot──────╭●────╭X
+        1: ──Rot─╰X─╭●───────│───Rot─│──╭●────│──╭X────Rot─│──╭●─│─
+        2: ──Rot────╰X─╭●────│───Rot─╰X─│──╭●─│──│─────Rot─│──│──╰●
+        3: ──Rot───────╰X─╭●─│───Rot────╰X─│──╰●─│─────Rot─╰X─│────
+        4: ──Rot──────────╰X─╰●──Rot───────╰X────╰●────Rot────╰X───
 
-        ───Rot───────────╭C─╭X──Rot──────╭C──────────────╭X─┤
-        ──╭X────Rot──────│──╰C─╭X────Rot─╰X───╭C─────────│──┤
-        ──│────╭X────Rot─│─────╰C───╭X────Rot─╰X───╭C────│──┤
-        ──╰C───│─────Rot─│──────────╰C───╭X────Rot─╰X─╭C─│──┤
-        ───────╰C────Rot─╰X──────────────╰C────Rot────╰X─╰C─┤
+        ───Rot───────────╭●─╭X──Rot──────╭●──────────────╭X─┤
+        ──╭X────Rot──────│──╰●─╭X────Rot─╰X───╭●─────────│──┤
+        ──│────╭X────Rot─│─────╰●───╭X────Rot─╰X───╭●────│──┤
+        ──╰●───│─────Rot─│──────────╰●───╭X────Rot─╰X─╭●─│──┤
+        ───────╰●────Rot─╰X──────────────╰●────Rot────╰X─╰●─┤
 
 
     The ``wire_order`` keyword specifies the order of the wires from
@@ -184,8 +184,8 @@ def tape_text(
     >>> print(qml.drawer.tape_text(tape, wire_order=["aux", 2, 1, 0]))
     aux: ──────────╭X─┤  <Z>      ╭Probs
       2: ─╭QFT──RZ─│──┤           ├Probs
-      1: ─├QFT──RY─├C─┤ ╭Var[Z@Z] ├Probs
-      0: ─╰QFT──RX─╰C─┤ ╰Var[Z@Z] ╰Probs
+      1: ─├QFT──RY─├●─┤ ╭Var[Z@Z] ├Probs
+      0: ─╰QFT──RX─╰●─┤ ╰Var[Z@Z] ╰Probs
 
     If the wire order contains empty wires, they are only shown if the ``show_all_wires=True``.
 
@@ -193,8 +193,8 @@ def tape_text(
       a: ─────────────┤
       b: ─────────────┤
     aux: ──────────╭X─┤  <Z>      ╭Probs
-      0: ─╭QFT──RX─├C─┤ ╭Var[Z@Z] ├Probs
-      1: ─├QFT──RY─╰C─┤ ╰Var[Z@Z] ├Probs
+      0: ─╭QFT──RX─├●─┤ ╭Var[Z@Z] ├Probs
+      1: ─├QFT──RY─╰●─┤ ╰Var[Z@Z] ├Probs
       2: ─╰QFT──RZ────┤           ╰Probs
 
     Matrix valued parameters are always denoted by ``M`` followed by an integer corresponding to
