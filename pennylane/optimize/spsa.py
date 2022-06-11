@@ -24,7 +24,7 @@ class SPSAOptimizer:
     the gradient analytically, SPSA involves approximating gradients at the cost of
     evaluating the cost function twice in each iteration step. This cost may result in
     a significant decrease in the overall cost of function evaluations for the entire optimization.
-    It is based on an approximation to the unknown gradient :math:`\hat{g}(\hat{\theta}_{k})`
+    It is based on an approximation of the unknown gradient :math:`\hat{g}(\hat{\theta}_{k})`
     through a simultaneous perturbation of the input parameters:
 
     .. math::
