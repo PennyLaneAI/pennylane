@@ -133,6 +133,7 @@ to :func:`~pennylane.sample`. In this case the result will be a dictionnary indi
 unique sample. The previous example will be modified as follows:
 
 .. code-block:: python
+
     dev = qml.device("default.qubit", wires=2, shots=1000)
 
     @qml.qnode(dev)
@@ -152,6 +153,7 @@ After executing the circuit we can directly see how often each value was measure
 Similarly, if the observable is not provided, the occurencies of each state are returned.
 
 .. code-block:: python
+
     dev = qml.device("default.qubit", wires=2, shots=1000)
 
     @qml.qnode(dev)
