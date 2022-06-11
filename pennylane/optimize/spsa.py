@@ -106,7 +106,8 @@ class SPSAOptimizer:
     >>> print(energy)
     -0.4294539602541956
 
-    Example of hybrid classical-quantum workflow:
+    The algorithm provided by SPSA does not rely on built-in automatic differentiation capabilities of the interface being used
+    and therefore the optimizer can be used in more complex hybrid classical-quantum workflow with any of the interfaces:
 
     >>> n_qubits = 1
     >>> max_iterations = 20
