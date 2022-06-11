@@ -207,12 +207,12 @@ def _compute_cfim(p, dp):
     # Exclude values where p=0 and calculate 1/p
     nonzeros_p = qml.math.where(p > 0, p, qml.math.ones_like(p))
     one_over_p = qml.math.where(p > 0, qml.math.ones_like(p), qml.math.zeros_like(p))
-    one_over_p = qml.math.divide(one_over_p, nonzeros_p)
+    one_over_p = one_over_p / nonzeros_p
 
     # Multiply dp and p
     # Note that casting and being careful about dtypes is necessary as interfaces
     # typically treat derivatives (dp) with float32, while standard execution (p) comes in float64
-    dp = qml.math.cast(dp, dtype=p.dtype)
+    dp = qml.math.cast_like(dp, p)
     dp = qml.math.reshape(
         dp, (len(p), -1)
     )  # Squeeze does not work, as you could have shape (num_probs, num_params) with num_params = 1
