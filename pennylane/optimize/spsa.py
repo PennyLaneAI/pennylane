@@ -112,7 +112,7 @@ class SPSAOptimizer:
     >>> n_qubits = 1
     >>> max_iterations = 20
     >>> dev = qml.device("default.qubit", wires=n_qubits)
-    >>> @qml.qnode(dev)
+    >>> @qml.qnode(dev, interface="tf")
     ... def layer_fn_spsa(inputs, weights):
     ...     qml.AngleEmbedding(inputs, wires=range(n_qubits))
     ...     qml.BasicEntanglerLayers(weights, wires=range(n_qubits))
