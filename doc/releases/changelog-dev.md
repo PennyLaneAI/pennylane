@@ -61,7 +61,7 @@
   [(#2640)](https://github.com/PennyLaneAI/pennylane/pull/2640)
   [(#2663)](https://github.com/PennyLaneAI/pennylane/pull/2663)
   [(#2684)](https://github.com/PennyLaneAI/pennylane/pull/2684)
-  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
+  [(#2688)](https://github.com/PennyLaneAI/pennylane/pull/2688)
   
   A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
   
