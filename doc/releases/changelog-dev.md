@@ -257,6 +257,9 @@
 * The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
   [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
 
+* Several non-decomposable `Adjoint` ops are added to the device test suite.
+  [(#2658)](https://github.com/PennyLaneAI/pennylane/pull/2658)
+
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
   for many classes.
   [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
@@ -408,6 +411,10 @@
   is now used to style the Sphinx documentation.
   [(#2450)](https://github.com/PennyLaneAI/pennylane/pull/2450)
 
+* Added reference to `qml.utils.sparse_hamiltonian` in `qml.SparseHamiltonian` to clarify
+  how to construct sparse Hamiltonians in PennyLane.
+  [(2572)](https://github.com/PennyLaneAI/pennylane/pull/2572)
+
 * Added a new section in the [Gradients and Training](https://pennylane.readthedocs.io/en/stable/introduction/interfaces.html)
   page that summarizes the supported device configurations and provides justification. Also
   added [code examples](https://pennylane.readthedocs.io/en/stable/introduction/unsupported.html)
@@ -419,5 +426,5 @@
 This release contains contributions from (in alphabetical order):
 
 Amintor Dusko, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs, Edward Jiang, Guillermo Alonso-Linaje,
-Ixchel Meza Chavez, Jay Soni, Juan Miguel Arrazola, Maria Schuld, Mikhail Andrenkov, Moritz Willmann, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, 
-Utkarsh Azad, WingCode
+Ixchel Meza Chavez, Jay Soni, Juan Miguel Arrazola, Korbinian, Kottmann, Maria Schuld, Mikhail Andrenkov, Moritz Willmann,
+Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, WingCode
