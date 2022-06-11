@@ -71,7 +71,7 @@ class TestSPSAOptimizer:
         ak = a / (A + k) ** alpha
         deltas = np.array(np.meshgrid([1, -1], [1, -1])).T.reshape(-1, 2)
 
-        spsa_opt = qml.SPSAOptimizer(maxiter=10, A=A)
+        spsa_opt = qml.SPSAOptimizer(A=A)
 
         x_vals = np.linspace(-10, 10, 16, endpoint=False)
 
@@ -499,3 +499,12 @@ class TestSPSAOptimizer:
 
         assert np.all(params != init_params)
         assert circuit_res < init_circuit_res
+
+    def test_not_A_nor_maxiter_provided(self):
+        """Test that if the objective function is not a
+        scalar function, an error is raised."""
+        with pytest.raises(
+            TypeError,
+            match="One of the parameters maxiter or A must be provided.",
+        ):
+            qml.SPSAOptimizer()

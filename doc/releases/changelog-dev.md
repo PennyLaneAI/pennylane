@@ -182,6 +182,9 @@
 
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous perturbation stochastic approximation method based on
   [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
+
+  It is a suitable optimizer for cost functions whose evaluation may involve noise, which at the
+  same time significantly decreases the number of executions for the entire optimization.
   [(#2661)](https://github.com/PennyLaneAI/pennylane/pull/2661)
 
   ```pycon

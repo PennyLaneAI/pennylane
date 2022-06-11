@@ -120,7 +120,6 @@ class SPSAOptimizer:
     ...     return qml.expval(qml.PauliZ(wires=0))
     ...
     >>> opt = qml.SPSAOptimizer(maxiter=max_iterations)
-    >>> @tf.function
     ... def fn(params, tensor_in, tensor_out):
     ...     with tf.init_scope():
     ...             for _ in range(max_iterations):
@@ -162,9 +161,11 @@ class SPSAOptimizer:
             <https://www.jhuapl.edu/spsa/PDF-SPSA/Spall_Implementation_of_the_Simultaneous.PDF>`_.
     """
     # pylint: disable-msg=too-many-arguments
-    def __init__(self, maxiter, alpha=0.602, gamma=0.101, c=0.2, A=None, a=None):
+    def __init__(self, maxiter=None, alpha=0.602, gamma=0.101, c=0.2, A=None, a=None):
         self.a = a
         self.A = A
+        if not maxiter and not A:
+            raise TypeError("One of the parameters maxiter or A must be provided.")
         if not A:
             self.A = maxiter * 0.1
         if not a:
