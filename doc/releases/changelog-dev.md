@@ -652,6 +652,9 @@
 
 * The `TorchLayer`'s `init_method` argument now accepts either a `torch.nn.init` function or a dictionary which should specify a `torch.nn.init`/`torch.Tensor` for each different weight.
   [(#2678)](https://github.com/PennyLaneAI/pennylane/pull/2678)
+  
+* Added the possibility to group samples into counts providing `counts=True` flag in `qml.sample` function. This required creation of a new measurement type `Counts` in `measurements.py`.
+[(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
 
 <h3>Breaking changes</h3>
 
