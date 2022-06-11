@@ -379,7 +379,7 @@ class TestSPSAOptimizer:
 
     def test_obj_func_with_probs_not_a_scalar_function(self):
         """Test that if the objective function is not a
-        scalar function like qml.probs(), an error is raised."""
+        scalar function, like qml.probs(), an error is raised."""
 
         n_wires = 4
         n_layers = 3
