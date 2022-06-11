@@ -984,7 +984,7 @@ class QubitDevice(Device):
         """
         try:
             # Express the states as strings
-            samples = [''.join(self._asarray(sample, dtype=str)) for sample in samples]
+            samples = ["".join(self._asarray(sample, dtype=str)) for sample in samples]
         except TypeError:
             # Evaluation of an observable
             pass

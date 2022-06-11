@@ -677,7 +677,6 @@ def sample(op=None, wires=None, counts=False):
     return MeasurementProcess(sample_or_counts, obs=op)
 
 
-
 def probs(wires=None, op=None):
     r"""Probability of each computational basis state.
 
