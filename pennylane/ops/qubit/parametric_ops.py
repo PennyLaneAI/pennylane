@@ -2891,7 +2891,6 @@ class PSWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
-    parameter_frequencies = [(0.5, 1.0)]
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -2951,7 +2950,7 @@ class PSWAP(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        return qml.math.diag([1, np.exp(1j * phi), np.exp(1j * phi), 1])[[0, 2, 1, 3]]
+        return qml.math.diag([1, qml.math.exp(1j * phi), qml.math.exp(1j * phi), 1])[[0, 2, 1, 3]]
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
@@ -2988,6 +2987,3 @@ class PSWAP(Operation):
     def adjoint(self):
         (phi,) = self.parameters
         return PSWAP(-phi, wires=self.wires)
-
-    def pow(self, z):
-        return [PSWAP(self.data[0] * z, wires=self.wires)]

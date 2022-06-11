@@ -55,6 +55,7 @@ PARAMETRIZED_OPERATIONS = [
     qml.DoubleExcitation(0.123, wires=[0, 1, 2, 3]),
     qml.DoubleExcitationPlus(0.123, wires=[0, 1, 2, 3]),
     qml.DoubleExcitationMinus(0.123, wires=[0, 1, 2, 3]),
+    qml.PSWAP(0.123, wires=[0, 1]),
 ]
 
 BROADCASTED_OPERATIONS = [
@@ -499,6 +500,36 @@ class TestDecompositions:
                 assert isinstance(op, c)
                 assert np.allclose(op.parameters, p)
 
+    def test_pswap_decomposition(self, tol):
+        """Tests that the decomposition of the PSWAP gate is correct"""
+        param = 0.1234
+        op = qml.PSWAP(param, wires=[0, 1])
+        res = op.decomposition()
+
+        assert len(res) == 4
+
+        assert res[0].wires == Wires([0, 1])
+        assert res[1].wires == Wires([0, 1])
+        assert res[2].wires == Wires([1])
+        assert res[3].wires == Wires([0, 1])
+
+        assert res[0].name == "SWAP"
+        assert res[1].name == "CNOT"
+        assert res[2].name == "PhaseShift"
+        assert res[3].name == "CNOT"
+
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([1]):
+                # PhaseShift gate
+                mats.append(np.kron(np.eye(2), i.matrix()))
+            else:
+                mats.append(i.matrix())
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
     def test_isingxx_decomposition(self, tol):
         """Tests that the decomposition of the IsingXX gate is correct"""
         param = 0.1234
@@ -918,6 +949,73 @@ class TestMatrix:
         assert np.allclose(
             qml.IsingXX(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
         )
+
+    def test_pswap(self, tol):
+        """Test that the PSWAP operation is correct"""
+        assert np.allclose(
+            qml.PSWAP.compute_matrix(0), np.diag([1, 1, 1, 1])[[0, 2, 1, 3]], atol=tol, rtol=0
+        )
+        assert np.allclose(
+            qml.PSWAP(0, wires=[0, 1]).matrix(),
+            np.diag([1, 1, 1, 1])[[0, 2, 1, 3]],
+            atol=tol,
+            rtol=0,
+        )
+
+        def get_expected(theta):
+            return np.diag([1, np.exp(1j * theta), np.exp(1j * theta), 1])[[0, 2, 1, 3]]
+
+        param = np.pi / 2
+        assert np.allclose(qml.PSWAP.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.PSWAP(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
+        )
+
+        param = np.pi
+        assert np.allclose(qml.PSWAP.compute_matrix(param), get_expected(param), atol=tol, rtol=0)
+        assert np.allclose(
+            qml.PSWAP(param, wires=[0, 1]).matrix(), get_expected(param), atol=tol, rtol=0
+        )
+
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_pswap_eigvals(self, phi, tol):
+        """Test eigenvalues computation for PSWAP"""
+        evs = qml.PSWAP.compute_eigvals(phi)
+        evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
+        assert qml.math.allclose(evs, evs_expected)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_pswap_eigvals_tf(self, phi, tol):
+        """Test eigenvalues computation for PSWAP using Tensorflow interface"""
+        import tensorflow as tf
+
+        param_tf = tf.Variable(phi)
+        evs = qml.PSWAP.compute_eigvals(param_tf)
+        evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
+        assert qml.math.allclose(evs, evs_expected)
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_pswap_eigvals_torch(self, phi, tol):
+        """Test eigenvalues computation for PSWAP using Torch interface"""
+        import torch
+
+        param_torch = torch.tensor(phi)
+        evs = qml.PSWAP.compute_eigvals(param_torch)
+        evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
+        assert qml.math.allclose(evs, evs_expected)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    def test_pswap_eigvals_jax(self, phi, tol):
+        """Test eigenvalues computation for PSWAP using JAX interface"""
+        import jax
+
+        param_jax = jax.numpy.array(phi)
+        evs = qml.PSWAP.compute_eigvals(param_jax)
+        evs_expected = [1, 1, -qml.math.exp(1j * phi), qml.math.exp(1j * phi)]
+        assert qml.math.allclose(evs, evs_expected)
 
     def test_isingxy(self, tol):
         """Test that the IsingXY operation is correct"""
@@ -2885,6 +2983,7 @@ control_data = [
     (qml.IsingXY(1.234, wires=(0, 1)), Wires([])),
     (qml.IsingYY(np.array([-5.1, 0.219]), wires=(0, 1)), Wires([])),
     (qml.IsingZZ(1.234, wires=(0, 1)), Wires([])),
+    (qml.PSWAP(1.234, wires=(0, 1)), Wires([])),
     ### Controlled Ops
     (qml.ControlledPhaseShift(1.234, wires=(0, 1)), Wires(0)),
     (qml.CPhase(1.234, wires=(0, 1)), Wires(0)),
