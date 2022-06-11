@@ -129,7 +129,7 @@ class SPSAOptimizer:
     ...                                     np.tensor(params))
     ...                     params = params_a[1]
     ...                     tensor_out = layer_res
-    ...                     #Do something else here
+    ...                     # Some classical steps after the quantum computation
     ...     return layer_res
     ...
     >>> tensor_in = tf.Variable([0.27507603])
