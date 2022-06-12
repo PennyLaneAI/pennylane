@@ -870,7 +870,7 @@ class QubitDevice(Device):
 
         # reshape the probability so that each axis corresponds to a wire
         shape = [2] * self.num_wires
-        if batch_size:
+        if batch_size is not None:
             shape.insert(0, batch_size)
         prob = self._reshape(prob, shape)
 
@@ -880,7 +880,7 @@ class QubitDevice(Device):
         if isinstance(inactive_device_wires, Wires):
             inactive_device_wires = inactive_device_wires.labels
 
-        if batch_size:
+        if batch_size is not None:
             inactive_device_wires = [idx + 1 for idx in inactive_device_wires]
         flat_shape = (-1,) if batch_size is None else (batch_size, -1)
         prob = self._reshape(self._reduce_sum(prob, inactive_device_wires), flat_shape)
@@ -895,7 +895,7 @@ class QubitDevice(Device):
         powers_of_two = 2 ** np.arange(len(device_wires))[::-1]
         perm = basis_states @ powers_of_two
         # The permutation happens on the last axis both with and without broadcasting
-        out = self._gather(prob, perm, axis=1 if batch_size else 0)
+        out = self._gather(prob, perm, axis=1 if batch_size is not None else 0)
 
         return out
 

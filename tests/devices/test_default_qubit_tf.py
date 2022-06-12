@@ -964,19 +964,40 @@ THETA = np.linspace(0.11, 1, 3)
 PHI = np.linspace(0.32, 1, 3)
 VARPHI = np.linspace(0.02, 1, 3)
 
+scalar_angles = list(zip(THETA, PHI, VARPHI))
+broadcasted_angles = [(THETA, PHI, VARPHI), (THETA[0], PHI, VARPHI)]
+all_angles = scalar_angles + broadcasted_angles
 
-# TODO
+
 @pytest.mark.tf
-@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
+@pytest.mark.parametrize("theta, phi, varphi", all_angles)
 class TestExpval:
     """Test expectation values"""
 
     # test data; each tuple is of the form (GATE, OBSERVABLE, EXPECTED)
     single_wire_expval_test_data = [
-        (qml.RX, qml.Identity, lambda t, p: np.array([1, 1])),
-        (qml.RX, qml.PauliZ, lambda t, p: np.array([np.cos(t), np.cos(t) * np.cos(p)])),
-        (qml.RY, qml.PauliX, lambda t, p: np.array([np.sin(t) * np.sin(p), np.sin(p)])),
-        (qml.RX, qml.PauliY, lambda t, p: np.array([0, -np.cos(t) * np.sin(p)])),
+        (
+            qml.RX,
+            qml.Identity,
+            lambda t, p: np.array(
+                [np.ones_like(t) * np.ones_like(p), np.ones_like(t) * np.ones_like(p)]
+            ),
+        ),
+        (
+            qml.RX,
+            qml.PauliZ,
+            lambda t, p: np.array([np.cos(t) * np.ones_like(p), np.cos(t) * np.cos(p)]),
+        ),
+        (
+            qml.RY,
+            qml.PauliX,
+            lambda t, p: np.array([np.sin(t) * np.sin(p), np.sin(p) * np.ones_like(t)]),
+        ),
+        (
+            qml.RX,
+            qml.PauliY,
+            lambda t, p: np.array([np.zeros_like(t) * np.zeros_like(p), -np.cos(t) * np.sin(p)]),
+        ),
         (
             qml.RY,
             qml.Hadamard,
@@ -1256,9 +1277,8 @@ class TestExpval:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-# TODO
 @pytest.mark.tf
-@pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
+@pytest.mark.parametrize("theta, phi, varphi", all_angles)
 class TestVar:
     """Tests for the variance"""
 
@@ -1421,7 +1441,6 @@ class TestVar:
 #####################################################
 
 
-# TODO
 @pytest.mark.tf
 class TestQNodeIntegration:
     """Integration tests for default.qubit.tf. This test ensures it integrates
@@ -1477,6 +1496,23 @@ class TestQNodeIntegration:
         assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
+    def test_qubit_circuit_broadcasted(self, tol):
+        """Test that the tensor network plugin provides correct
+        result for a simple circuit with broadcasting using the old QNode."""
+        p = tf.Variable([0.543, 0.21, 2.41])
+
+        dev = qml.device("default.qubit.tf", wires=1)
+
+        @qml.qnode(dev, interface="tf")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliY(0))
+
+        expected = -tf.math.sin(p)
+
+        assert circuit.gradient_fn == "backprop"
+        assert np.allclose(circuit(p), expected, atol=tol, rtol=0)
+
     def test_correct_state(self, tol):
         """Test that the device state is correct after applying a
         quantum function on the device"""
@@ -1499,6 +1535,35 @@ class TestQNodeIntegration:
         amplitude = np.exp(-1j * np.pi / 8) / np.sqrt(2)
 
         expected = np.array([amplitude, 0, np.conj(amplitude), 0])
+        assert np.allclose(state, expected, atol=tol, rtol=0)
+
+    def test_correct_state_broadcasted(self, tol):
+        """Test that the device state is correct after applying a
+        broadcasted quantum function on the device"""
+
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        state = dev.state
+        expected = np.array([1, 0, 0, 0])
+        assert np.allclose(state, expected, atol=tol, rtol=0)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit():
+            qml.Hadamard(wires=0)
+            qml.RZ(tf.constant([np.pi / 4, np.pi / 2]), wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        circuit()
+        state = dev.state
+
+        phase = np.exp(-1j * np.pi / 8)
+
+        expected = np.array(
+            [
+                [phase / np.sqrt(2), 0, np.conj(phase) / np.sqrt(2), 0],
+                [phase**2 / np.sqrt(2), 0, np.conj(phase) ** 2 / np.sqrt(2), 0],
+            ]
+        )
         assert np.allclose(state, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", [0.5432, -0.232])
@@ -1587,7 +1652,6 @@ class TestQNodeIntegration:
         assert np.allclose(res.numpy(), expected, atol=tol, rtol=0)
 
 
-# TODO
 @pytest.mark.tf
 class TestPassthruIntegration:
     """Tests for integration with the PassthruQNode"""
@@ -1636,6 +1700,52 @@ class TestPassthruIntegration:
 
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    def test_jacobian_variable_multiply_broadcasted(self, tol):
+        """Test that jacobian of a QNode with an attached default.qubit.tf device
+        gives the correct result in the case of broadcasted parameters multiplied by scalars"""
+        x = tf.Variable([0.43316321, 92.1, -0.5129])
+        y = tf.Variable([0.2162158, 0.241, -0.51])
+        z = tf.Variable([0.75110998, 0.12512, 9.12])
+
+        dev = qml.device("default.qubit.tf", wires=1)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(p):
+            qml.RX(3 * p[0], wires=0)
+            qml.RY(p[1], wires=0)
+            qml.RX(p[2] / 2, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with tf.GradientTape() as tape:
+            res = circuit([x, y, z])
+
+        expected = tf.math.cos(3 * x) * tf.math.cos(y) * tf.math.cos(z / 2) - tf.math.sin(
+            3 * x
+        ) * tf.math.sin(z / 2)
+        assert qml.math.shape(res) == (3,)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        jac = tape.jacobian(res, [x, y, z])
+        res = qml.math.stack([qml.math.diag(j.numpy()) for j in jac])
+
+        expected = np.array(
+            [
+                -3
+                * (
+                    tf.math.sin(3 * x) * tf.math.cos(y) * tf.math.cos(z / 2)
+                    + tf.math.cos(3 * x) * tf.math.sin(z / 2)
+                ),
+                -tf.math.cos(3 * x) * tf.math.sin(y) * tf.math.cos(z / 2),
+                -0.5
+                * (
+                    tf.math.sin(3 * x) * tf.math.cos(z / 2)
+                    + tf.math.cos(3 * x) * tf.math.cos(y) * tf.math.sin(z / 2)
+                ),
+            ]
+        )
+
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
     def test_jacobian_repeated(self, tol):
         """Test that jacobian of a QNode with an attached default.qubit.tf device
         gives the correct result in the case of repeated parameters"""
@@ -1663,6 +1773,32 @@ class TestPassthruIntegration:
             [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0]
         )
         assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    def test_jacobian_repeated_broadcasted(self, tol):
+        """Test that jacobian of a QNode with an attached default.qubit.tf device
+        gives the correct result in the case of repeated broadcasted parameters"""
+        p = tf.Variable([[0.433, 92.1, -0.512], [0.218, 0.241, -0.51], [0.71, 0.152, 9.12]])
+        dev = qml.device("default.qubit.tf", wires=1)
+
+        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        def circuit(x):
+            qml.RX(x[1], wires=0)
+            qml.Rot(x[0], x[1], x[2], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with tf.GradientTape() as tape:
+            res = circuit(p)
+
+        x, y, z = p
+        expected = np.cos(y) ** 2 - np.sin(x) * np.sin(y) ** 2
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        res = tape.jacobian(res, p)
+
+        expected = np.array(
+            [-np.cos(x) * np.sin(y) ** 2, -2 * (np.sin(x) + 1) * np.sin(y) * np.cos(y), 0 * x]
+        )
+        assert all(np.allclose(res[i, :, i], expected[:, i], atol=tol, rtol=0) for i in range(3))
 
     def test_jacobian_agrees_backprop_parameter_shift(self, tol):
         """Test that jacobian of a QNode with an attached default.qubit.tf device
@@ -1712,6 +1848,26 @@ class TestPassthruIntegration:
         expected = tf.sin(a)
         assert np.allclose(grad, expected, atol=tol, rtol=0)
 
+    def test_state_differentiability_broadcasted(self, tol):
+        """Test that the broadcasted device state can be differentiated"""
+        dev = qml.device("default.qubit.tf", wires=1)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(a):
+            qml.RY(a, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        a = tf.Variable([0.54, 0.32, 1.2])
+
+        with tf.GradientTape() as tape:
+            circuit(a)
+            res = tf.abs(dev.state) ** 2
+            res = res[:, 1] - res[:, 0]
+
+        jac = tape.jacobian(res, a)
+        expected = tf.sin(a)
+        assert np.allclose(qml.math.diag(jac.numpy()), expected, atol=tol, rtol=0)
+
     def test_prob_differentiability(self, tol):
         """Test that the device probability can be differentiated"""
         dev = qml.device("default.qubit.tf", wires=2)
@@ -1738,6 +1894,34 @@ class TestPassthruIntegration:
         grad = tape.gradient(res, [a, b])
         expected = [tf.sin(a) * tf.cos(b), tf.cos(a) * tf.sin(b)]
         assert np.allclose(grad, expected, atol=tol, rtol=0)
+
+    def test_prob_differentiability_broadcasted(self, tol):
+        """Test that the broadcasted device probability can be differentiated"""
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(a, b):
+            qml.RX(a, wires=0)
+            qml.RY(b, wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.probs(wires=[1])
+
+        a = tf.Variable([0.54, 0.32, 1.2])
+        b = tf.Variable(0.12)
+
+        with tf.GradientTape() as tape:
+            # get the probability of wire 1
+            prob_wire_1 = circuit(a, b)
+            # compute Prob(|1>_1) - Prob(|0>_1)
+            res = prob_wire_1[:, 1] - prob_wire_1[:, 0]
+
+        expected = -tf.cos(a) * tf.cos(b)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+        jac = tape.jacobian(res, [a, b])
+        expected = [tf.sin(a) * tf.cos(b), tf.cos(a) * tf.sin(b)]
+        assert np.allclose(qml.math.diag(jac[0].numpy()), expected[0])
+        assert np.allclose(jac[1], expected[1])
 
     def test_backprop_gradient(self, tol):
         """Tests that the gradient of the qnode is correct"""
@@ -1771,6 +1955,40 @@ class TestPassthruIntegration:
 
         res = tape.gradient(res, [a_tf, b_tf])
         assert np.allclose(res, expected_grad, atol=tol, rtol=0)
+
+    def test_backprop_gradient_broadcasted(self, tol):
+        """Tests that the gradient of the broadcasted qnode is correct"""
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        @qml.qnode(dev, diff_method="backprop", interface="tf")
+        def circuit(a, b):
+            qml.RX(a, wires=0)
+            qml.CRX(b, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        a = np.array(0.12)
+        b = np.array([0.54, 0.32, 1.2])
+
+        a_tf = tf.Variable(a, dtype=tf.float64)
+        b_tf = tf.Variable(b, dtype=tf.float64)
+
+        with tf.GradientTape() as tape:
+            tape.watch([a_tf, b_tf])
+            res = circuit(a_tf, b_tf)
+
+        # the analytic result of evaluating circuit(a, b)
+        expected_cost = 0.5 * (np.cos(a) * np.cos(b) + np.cos(a) - np.cos(b) + 1)
+
+        # the analytic result of evaluating grad(circuit(a, b))
+        expected_jac = np.array(
+            [-0.5 * np.sin(a) * (np.cos(b) + 1), 0.5 * np.sin(b) * (1 - np.cos(a))]
+        )
+
+        assert np.allclose(res.numpy(), expected_cost, atol=tol, rtol=0)
+
+        jac = tape.jacobian(res, [a_tf, b_tf])
+        assert np.allclose(jac[0], expected_jac[0], atol=tol, rtol=0)
+        assert np.allclose(qml.math.diag(jac[1].numpy()), expected_jac[1], atol=tol, rtol=0)
 
     @pytest.mark.parametrize("x, shift", [(0.0, 0.0), (0.5, -0.5)])
     def test_hessian_at_zero(self, x, shift):
@@ -1893,7 +2111,6 @@ class TestPassthruIntegration:
             qml.qnode(dev, diff_method="backprop", interface=interface)(circuit)
 
 
-# TODO
 @pytest.mark.tf
 class TestSamples:
     """Tests for sampling outputs"""
@@ -1932,7 +2149,7 @@ class TestSamples:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     def test_estimating_full_probability(self, tol):
-        """Test that the probability of a subset of wires is accurately estimated."""
+        """Test that the probability of all wires is accurately estimated."""
         dev = qml.device("default.qubit.tf", wires=2, shots=1000)
 
         @qml.qnode(dev, diff_method=None, interface="tf")
@@ -1972,11 +2189,94 @@ class TestSamples:
         # assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-# TODO
+@pytest.mark.tf
+class TestSamplesBroadcasted:
+    """Tests for broadcasted sampling outputs"""
+
+    def test_sample_observables_broadcasted(self):
+        """Test that the device allows for broadcasted sampling from observables."""
+        shots = 100
+        dev = qml.device("default.qubit.tf", wires=2, shots=shots)
+
+        @qml.qnode(dev, diff_method="best", interface="tf")
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        a = tf.Variable([0.54, -0.32, 0.19], dtype=tf.float64)
+        res = circuit(a)
+
+        assert isinstance(res, tf.Tensor)
+        assert res.shape == (
+            qml.math.shape(a)[0],
+            shots,
+        )
+        assert set(res.numpy().flat) == {-1, 1}
+
+    @pytest.mark.parametrize("batch_size", [2, 3])
+    def test_estimating_marginal_probability_broadcasted(self, batch_size, tol):
+        """Test that the broadcasted probability of a subset of wires is accurately estimated."""
+        dev = qml.device("default.qubit.tf", wires=2, shots=1000)
+
+        @qml.qnode(dev, diff_method=None, interface="tf")
+        def circuit():
+            qml.RX(tf.zeros(batch_size), 0)
+            qml.PauliX(0)
+            return qml.probs(wires=[0])
+
+        res = circuit()
+
+        assert isinstance(res, tf.Tensor)
+        assert qml.math.shape(res) == (batch_size, 2)
+
+        expected = np.array([[0, 1]] * batch_size)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("batch_size", [2, 3])
+    def test_estimating_full_probability_broadcasted(self, batch_size, tol):
+        """Test that the broadcasted probability of all wires is accurately estimated."""
+        dev = qml.device("default.qubit.tf", wires=2, shots=1000)
+
+        @qml.qnode(dev, diff_method=None, interface="tf")
+        def circuit():
+            qml.RX(tf.zeros(batch_size), 0)
+            qml.PauliX(0)
+            qml.PauliX(1)
+            return qml.probs(wires=[0, 1])
+
+        res = circuit()
+
+        assert isinstance(res, tf.Tensor)
+        assert qml.math.shape(res) == (batch_size, 4)
+
+        expected = np.array([[0, 0, 0, 1]] * batch_size)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.parametrize("a", [[0.54, -0.32, 0.19], [0.52]])
+    def test_estimating_expectation_values_broadcasted(self, a, tol):
+        """Test that estimating broadcasted expectation values using a finite number
+        of shots produces a numeric tensor"""
+        dev = qml.device("default.qubit.tf", wires=3, shots=1000)
+
+        @qml.qnode(dev, diff_method=None, interface="tf")
+        def circuit(a, b):
+            qml.RX(a, wires=[0])
+            qml.RX(b, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliZ(1))
+
+        a = tf.Variable(a, dtype=tf.float64)
+        b = tf.Variable(0.43, dtype=tf.float64)
+
+        res = circuit(a, b)
+        assert isinstance(res, tf.Tensor)
+
+
 @pytest.mark.tf
 class TestHighLevelIntegration:
     """Tests for integration with higher level components of PennyLane."""
 
+    @pytest.mark.slow
     def test_qnode_collection_integration(self):
         """Test that a PassthruQNode default.qubit.tf works with QNodeCollections."""
         dev = qml.device("default.qubit.tf", wires=2)
@@ -1995,12 +2295,44 @@ class TestHighLevelIntegration:
             return tf.reduce_sum(qnodes(weights))
 
         with tf.GradientTape() as tape:
-            res = qnodes(weights)
+            res = cost(weights)
 
         grad = tape.gradient(res, weights)
 
         assert isinstance(grad, tf.Tensor)
         assert grad.shape == weights.shape
+
+    @pytest.mark.slow
+    def test_qnode_collection_integration_broadcasted(self):
+        """Test that a broadcasted PassthruQNode default.qubit.tf
+        works with QNodeCollections."""
+        dev = qml.device("default.qubit.tf", wires=2)
+
+        def ansatz(weights, **kwargs):
+            qml.RX(weights[0], wires=0)
+            qml.RY(weights[1], wires=1)
+            qml.CNOT(wires=[0, 1])
+
+        obs_list = [qml.PauliX(0) @ qml.PauliY(1), qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)]
+        qnodes = qml.map(ansatz, obs_list, dev, interface="tf")
+
+        assert qnodes.interface == "tf"
+
+        weights = tf.Variable([[0.1, 0.65, 1.2], [0.2, 1.9, -0.6]])
+
+        @tf.function
+        def cost(weights):
+            return tf.reduce_sum(qnodes(weights), axis=-1)
+
+        with tf.GradientTape() as tape:
+            res = cost(weights)
+
+        assert qml.math.shape(res) == (3,)
+
+        jac = tape.jacobian(res, weights)
+
+        assert isinstance(jac, tf.Tensor)
+        assert jac.shape == (3, 2, 3)
 
 
 @pytest.mark.tf

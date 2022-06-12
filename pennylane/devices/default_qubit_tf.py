@@ -263,12 +263,12 @@ class DefaultQubitTF(DefaultQubit):
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
         if batch_size:
-            # This is the only logical branch and line of code that differs from DefaultQubit
+            # This is the only logical branch that differs from DefaultQubit
             raise NotImplementedError(
                 "Parameter broadcasting is not supported together with initializing the state "
                 "vector of a subsystem of the device when using DefaultQubitTF."
             )
-        else:
-            state = self._scatter(ravelled_indices, state, [2**self.num_wires])
+        # The following line is unchanged in the "else"-clause in DefaultQubit's implementation
+        state = self._scatter(ravelled_indices, state, [2**self.num_wires])
         state = self._reshape(state, output_shape)
         self._state = self._asarray(state, dtype=self.C_DTYPE)

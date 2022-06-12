@@ -624,7 +624,7 @@ class DefaultQubit(QubitDevice):
     def state(self):
         dim = 2**self.num_wires
         batch_size = self._get_batch_size(self._pre_rotated_state, (2,) * self.num_wires, dim)
-        shape = (batch_size, dim) if batch_size else (dim,)
+        shape = (batch_size, dim) if batch_size is not None else (dim,)
         return self._reshape(self._pre_rotated_state, shape)
 
     def density_matrix(self, wires):
@@ -676,7 +676,7 @@ class DefaultQubit(QubitDevice):
         state = self._asarray(state, dtype=self.C_DTYPE)
         batch_size = self._get_batch_size(state, (dim,), dim)
         output_shape = [2] * self.num_wires
-        if batch_size:
+        if batch_size is not None:
             output_shape.insert(0, batch_size)
 
         if not (state.shape in [(dim,), (batch_size, dim)]):
@@ -702,7 +702,7 @@ class DefaultQubit(QubitDevice):
         # get indices for which the state is changed to input state vector elements
         ravelled_indices = np.ravel_multi_index(unravelled_indices.T, [2] * self.num_wires)
 
-        if batch_size:
+        if batch_size is not None:
             state = self._scatter(
                 (slice(None), ravelled_indices), state, [batch_size, 2**self.num_wires]
             )
@@ -809,7 +809,7 @@ class DefaultQubit(QubitDevice):
         batch_size = self._get_batch_size(mat, (dim, dim), dim**2)
 
         shape = [2] * (len(device_wires) * 2)
-        if batch_size:
+        if batch_size is not None:
             shape.insert(0, batch_size)
         mat = self._cast(self._reshape(mat, shape), dtype=self.C_DTYPE)
 
@@ -857,7 +857,7 @@ class DefaultQubit(QubitDevice):
 
         # reshape vectors
         shape = [2] * len(device_wires)
-        if batch_size:
+        if batch_size is not None:
             shape.insert(0, batch_size)
         phases = self._cast(self._reshape(phases, shape), dtype=self.C_DTYPE)
 
@@ -882,7 +882,9 @@ class DefaultQubit(QubitDevice):
 
         dim = 2**self.num_wires
         batch_size = self._get_batch_size(self._state, [2] * self.num_wires, dim)
-        flat_state = self._reshape(self._state, (batch_size, dim) if batch_size else (dim,))
+        flat_state = self._reshape(
+            self._state, (batch_size, dim) if batch_size is not None else (dim,)
+        )
         real_state = self._real(flat_state)
         imag_state = self._imag(flat_state)
         return self.marginal_prob(real_state**2 + imag_state**2, wires)

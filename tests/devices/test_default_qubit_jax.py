@@ -677,9 +677,9 @@ class TestPassthruIntegration:
             res = jnp.abs(dev.state) ** 2
             return res[:, 1] - res[:, 0]
 
-        grad = jax.jacobian(cost)(a)
+        jac = jax.jacobian(cost)(a)
         expected = jnp.diag(jnp.sin(a))
-        assert jnp.allclose(grad, expected, atol=tol, rtol=0)
+        assert jnp.allclose(jac, expected, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, np.pi, 7))
     def test_CRot_gradient(self, theta, tol):
@@ -1001,8 +1001,8 @@ class TestHighLevelIntegration:
         res = cost(weights)
         assert res.shape == (3,)
 
-        grad = jax.jacobian(cost)(weights)
-        assert grad.shape == (3, 2, 3)
+        jac = jax.jacobian(cost)(weights)
+        assert jac.shape == (3, 2, 3)
 
 
 @pytest.mark.jax
