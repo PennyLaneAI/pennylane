@@ -32,7 +32,7 @@ def get_circuit(n_qubits, output_dim, interface):
         "w4": [3],
         "w5": (2, n_qubits, 3),
         "w6": 3,
-        "w7": 0,
+        "w7": 1,
     }
 
     @qml.qnode(dev, interface=interface)
@@ -66,7 +66,7 @@ def get_circuit_dm(n_qubits, output_dim, interface):
         "w4": [3],
         "w5": (2, n_qubits, 3),
         "w6": 3,
-        "w7": 0,
+        "w7": 1,
     }
 
     @qml.qnode(dev, interface=interface)

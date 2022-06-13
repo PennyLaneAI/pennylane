@@ -170,7 +170,7 @@ class TestBitFlip:
             return qml.expval(qml.PauliZ(0))
 
         gradient = np.squeeze(qml.grad(circuit)(prob))
-        assert gradient == circuit(1) - circuit(0)
+        assert np.allclose(gradient, circuit(1) - circuit(0))
         assert np.allclose(gradient, (-2 * np.cos(angle)))
 
     def test_p_invalid_parameter(self):
@@ -246,7 +246,7 @@ class TestDepolarizingChannel:
             return qml.expval(qml.PauliZ(0))
 
         gradient = np.squeeze(qml.grad(circuit)(prob))
-        assert gradient == circuit(1) - circuit(0)
+        assert np.allclose(gradient, circuit(1) - circuit(0))
         assert np.allclose(gradient, -(4 / 3) * np.cos(angle))
 
     def test_p_invalid_parameter(self):

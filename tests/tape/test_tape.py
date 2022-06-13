@@ -1299,6 +1299,7 @@ class TestExecution:
         expected = [np.cos(x), np.cos(y) ** 2]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and var outputs"""

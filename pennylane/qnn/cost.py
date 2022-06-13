@@ -84,7 +84,7 @@ class SquaredErrorLoss:
     tensor([0.2113, 0.2500, 0.0368], dtype=torch.float64)
 
     The loss function can be minimized using any gradient descent-based
-    :doc:`optimizer </introduction/optimizers>`.
+    :doc:`optimizer </introduction/interfaces>`.
     """
 
     def __init__(

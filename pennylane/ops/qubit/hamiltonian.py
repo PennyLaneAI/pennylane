@@ -431,7 +431,10 @@ class Hamiltonian(Observable):
         """Displays __str__ in ipython instead of __repr__
         See https://ipython.readthedocs.io/en/stable/config/integrating.html
         """
-        print(self.__str__())
+        if len(self.ops) < 15:
+            print(str(self))
+        else:  # pragma: no-cover
+            print(repr(self))
 
     def _obs_data(self):
         r"""Extracts the data from a Hamiltonian and serializes it in an order-independent fashion.
