@@ -262,7 +262,7 @@ class DefaultQubit(QubitDevice):
         wires = operation.wires
 
         if operation.base_name in self._apply_ops:
-            shifts = int(self._ndim(state) > self.num_wires)
+            shift = int(self._ndim(state) > self.num_wires)
             axes = [ax + shift for ax in self.wires.indices(wires)]
             return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
 
