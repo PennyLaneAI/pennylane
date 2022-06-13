@@ -20,8 +20,9 @@ from pennylane import numpy as np
 def factorize(two, tol_first, tol_second):
     r"""Return the double-factorized form of a two-electron tensor.
 
-    The two-electron tensor :math:`V`, in the chemist notation, is first factorized in terms of
-    symmetric matrices :math:`L^{(r)}` such that
+    The two-electron tensor :math:`V`, in
+    `chemist notation <http://vergil.chemistry.gatech.edu/notes/permsymm/permsymm.pdf>`_, is first
+    factorized in terms of symmetric matrices :math:`L^{(r)}` such that
     :math:`V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T}`. The rank :math:`R` is determined by a
     threshold error. Then, each matrix :math:`L^{(r)}` is diagonalized and its eigenvalues (and
     corresponding eigenvectors) are truncated with the same threshold error.
@@ -43,7 +44,7 @@ def factorize(two, tol_first, tol_second):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [1.398397361, 0.0, 0.0]], requires_grad = False)
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
-    >>> two = np.swapaxes(two, 1, 3) # convert to the chemist notation
+    >>> two = np.swapaxes(two, 1, 3) # convert to chemist notation
     >>> factors, eigvals, eigvecs = factorize(two, 1e-5, 1e-5)
     >>> print(factors)
     [[[ 1.06723440e-01  9.73575768e-15]
@@ -66,7 +67,8 @@ def factorize(two, tol_first, tol_second):
             a_{q, \alpha} + \frac{1}{2} \sum_{\alpha, \beta \in \{\uparrow, \downarrow \} } \sum_{pqrs}
             h_{pqrs} a_{p, \alpha}^{\dagger} a_{q, \beta}^{\dagger} a_{r, \beta} a_{s, \alpha},
 
-        where :math:`h_{pq}` and :math:`h_{pqrs}` are the one- and two-electron integrals computed as
+        where :math:`h_{pq}` and :math:`h_{pqrs}` are the one- and two-electron integrals computed
+        as
 
         .. math::
 
@@ -109,11 +111,12 @@ def factorize(two, tol_first, tol_second):
 
                V_{ijkl} = \sum_r^R L_{ij}^{(r)} L_{kl}^{(r) T},
 
-        with the rank :math:`R \leq n^2`. The matrices :math:`L` are diagonalized and for each matrix
-        the eigenvalues that are smaller than a given threshold (and their corresponding eigenvectors)
-        are discarded.
+        with the rank :math:`R \leq n^2`. The matrices :math:`L` are diagonalized and for each
+        matrix the eigenvalues that are smaller than a given threshold (and their corresponding
+        eigenvectors) are discarded.
 
-        The algorithm has the following steps [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_]:
+        The algorithm has the following steps
+        [`arXiv:1902.02134 <https://arxiv.org/abs/1902.02134>`_]:
 
         - Reshape the :math:`n \times n \times n \times n` two-electron tensor to a
           :math:`n^2 \times n^2` matrix where :math:`n` is the number of orbitals.
