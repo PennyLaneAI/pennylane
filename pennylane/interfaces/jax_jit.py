@@ -255,7 +255,7 @@ def _execute_with_fwd(
 
         fwd_shape_dtype_struct = _extract_shape_dtype_structs(tapes, device)
 
-        jacobian_shape = [t.shape(device) + (len(p),) for t in tapes for p in params]
+        jacobian_shape = [t.shape(device) + (len(t.get_parameters()),) for t in tapes]
         jac_dtypes = [_numeric_type_to_dtype(t.numeric_type) for t in tapes]
 
         # Note: for qml.probs we'll first have a [1,dim] shape for the tape
