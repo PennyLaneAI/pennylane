@@ -723,6 +723,31 @@ class TestVectorValued:
         res = jax.jacobian(cost)(params, cache=None)
         assert res.shape == (2, 1)
 
+    def test_multi_tape_fwd(self, execute_kwargs):
+        """Test the forward evaluation of a cost function that uses the output
+        of multiple tapes that be vector-valued."""
+        dev = qml.device("default.qubit", wires=2)
+        params = jax.numpy.array([0.3, 0.2])
+
+        def cost_fn(x):
+            with qml.tape.QuantumTape() as tape1:
+                qml.RX(x[0], wires=[0])
+                qml.expval(qml.PauliY(0))
+
+            with qml.tape.QuantumTape() as tape2:
+                qml.RX(x[1], wires=[0])
+                qml.expval(qml.PauliY(0))
+                qml.expval(qml.PauliY(1))
+
+            result = qml.execute(
+                tapes=[tape1, tape2], device=dev, interface="jax-jit", **execute_kwargs
+            )
+            return (result[0] + result[1])[0]
+
+        expected = -jnp.sin(params[0]) + -jnp.sin(params[1])
+        res = cost_fn(params)
+        assert jnp.allclose(expected, res)
+
     def test_multi_tape_jacobian(self, execute_kwargs):
         """Test the jacobian computation with multiple tapes."""
         fwd_mode = execute_kwargs.get("mode", "not forward") == "forward"
