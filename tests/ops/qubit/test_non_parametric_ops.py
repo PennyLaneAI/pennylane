@@ -24,22 +24,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane.wires import Wires
 
-from gate_data import (
-    I,
-    X,
-    Y,
-    Z,
-    H,
-    CNOT,
-    SWAP,
-    ISWAP,
-    SISWAP,
-    CZ,
-    S,
-    T,
-    CSWAP,
-    Toffoli,
-)
+from gate_data import I, X, Y, Z, H, CNOT, SWAP, ISWAP, SISWAP, CZ, S, T, CSWAP, Toffoli, ECR
 
 
 # Non-parametrized operations and their matrix representation
@@ -54,6 +39,7 @@ NON_PARAMETRIZED_OPERATIONS = [
     (qml.T, T),
     (qml.CSWAP, CSWAP),
     (qml.Toffoli, Toffoli),
+    (qml.ECR, ECR),
 ]
 
 
@@ -251,6 +237,41 @@ class TestDecompositions:
         assert res[3].name == "CNOT"
         assert res[4].name == "CNOT"
         assert res[5].name == "Hadamard"
+        mats = []
+        for i in reversed(res):
+            if i.wires == Wires([1]):
+                mats.append(np.kron(np.eye(2), i.matrix()))
+            elif i.wires == Wires([0]):
+                mats.append(np.kron(i.matrix(), np.eye(2)))
+            elif i.wires == Wires([1, 0]) and i.name == "CNOT":
+                mats.append(np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]]))
+            else:
+                mats.append(i.matrix())
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+
+        assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
+    def test_ECR_decomposition(self, tol):
+        """Tests that the decomposition of the ECR gate is correct"""
+        op = qml.ECR(wires=[0, 1])
+        res = op.decomposition()
+
+        assert len(res) == 6
+
+        assert res[0].wires == Wires([0])
+        assert res[1].wires == Wires([0, 1])
+        assert res[2].wires == Wires([1])
+        assert res[3].wires == Wires([0])
+        assert res[4].wires == Wires([0])
+        assert res[5].wires == Wires([0])
+
+        assert res[0].name == "PauliZ"
+        assert res[1].name == "CNOT"
+        assert res[2].name == "SX"
+        assert res[3].name == "RX"
+        assert res[4].name == "RY"
+        assert res[5].name == "RX"
 
         mats = []
         for i in reversed(res):
@@ -426,6 +447,13 @@ class TestEigenval:
         res = op.eigvals()
         assert np.allclose(res, exp)
 
+    def test_ECR_eigenval(self):
+        """Tests that the ECR eigenvalue matches the numpy eigenvalues of the ECR matrix"""
+        op = qml.ECR(wires=[0, 1])
+        exp = np.linalg.eigvals(op.matrix())
+        res = op.eigvals()
+        assert np.allclose(res, exp)
+
     @pytest.mark.parametrize("siswap_op", [qml.SISWAP, qml.SQISW])
     def test_siswap_eigenval(self, siswap_op):
         """Tests that the ISWAP eigenvalue matches the numpy eigenvalues of the ISWAP matrix"""
@@ -534,25 +562,12 @@ class TestBarrier:
         assert optimized_gates == 2
 
     def test_barrier_adjoint(self):
-        """Test if Barrier is correctly included in queue after adjoint"""
-        dev = qml.device("default.qubit", wires=2)
+        """Test if adjoint of a Barrier is decomposed correctly."""
 
-        @qml.qnode(dev)
-        def circuit():
-            barrier()
-            qml.adjoint(barrier)()
-            return qml.state()
+        base = qml.Barrier(wires=(0, 1))
+        adj = qml.ops.op_math.Adjoint(base)
 
-        def barrier():
-            qml.PauliX(wires=0)
-            qml.Barrier(wires=[0, 1])
-            qml.CNOT(wires=[0, 1])
-
-        circuit()
-        queue = circuit.tape.queue
-
-        assert queue[1].name == "Barrier"
-        assert queue[4].name == "Barrier"
+        assert adj.decomposition()[0].name == "Barrier"
 
     def test_barrier_control(self):
         """Test if Barrier is correctly included in queue when controlling"""
@@ -991,6 +1006,7 @@ period_two_ops = (
     qml.CY(wires=(0, 1)),
     qml.SWAP(wires=(0, 1)),
     qml.ISWAP(wires=(0, 1)),
+    qml.ECR(wires=(0, 1)),
     qml.CSWAP(wires=(0, 1, 2)),
     qml.Toffoli(wires=(0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
@@ -1151,6 +1167,7 @@ label_data = [
     (qml.CY(wires=(0, 1)), "Y", "Y"),
     (qml.SWAP(wires=(0, 1)), "SWAP", "SWAP⁻¹"),
     (qml.ISWAP(wires=(0, 1)), "ISWAP", "ISWAP⁻¹"),
+    (qml.ECR(wires=(0, 1)), "ECR", "ECR⁻¹"),
     (qml.SISWAP(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
     (qml.SQISW(wires=(0, 1)), "SISWAP", "SISWAP⁻¹"),
     (qml.CSWAP(wires=(0, 1, 2)), "SWAP", "SWAP"),
@@ -1181,6 +1198,7 @@ control_data = [
     (qml.SWAP(wires=(0, 1)), Wires([])),
     (qml.ISWAP(wires=(0, 1)), Wires([])),
     (qml.SISWAP(wires=(0, 1)), Wires([])),
+    (qml.ECR(wires=(0, 1)), Wires([])),
     (qml.CNOT(wires=(0, 1)), Wires(0)),
     (qml.CZ(wires=(0, 1)), Wires(0)),
     (qml.CY(wires=(0, 1)), Wires(0)),
@@ -1197,70 +1215,29 @@ def test_control_wires(op, control_wires):
     assert op.control_wires == control_wires
 
 
-all_ops = [
+involution_ops = [  # ops who are their own inverses
     qml.Identity(0),
     qml.Hadamard(0),
     qml.PauliX(0),
     qml.PauliY(0),
     qml.PauliZ(0),
-    qml.S(wires=0),
-    qml.T(wires=0),
-    qml.SX(wires=0),
-    qml.CNOT(wires=(0, 1)),
-    qml.CZ(wires=(0, 1)),
-    qml.CY(wires=(0, 1)),
-    qml.SWAP(wires=(0, 1)),
-    qml.ISWAP(wires=(0, 1)),
-    qml.SISWAP(wires=(0, 1)),
-    qml.SQISW(wires=(0, 1)),
-    qml.CSWAP(wires=(0, 1, 2)),
-    qml.Toffoli(wires=(0, 1, 2)),
+    qml.CNOT((0, 1)),
+    qml.CZ((0, 1)),
+    qml.CY((0, 1)),
+    qml.SWAP((0, 1)),
+    qml.ECR((0, 1)),
+    qml.CSWAP((0, 1, 2)),
+    qml.Toffoli((0, 1, 2)),
     qml.MultiControlledX(wires=(0, 1, 2, 3)),
     qml.Barrier(0),
-    qml.WireCut(wires=0),
-]
-
-involution_ops = [  # ops who are their own inverses
-    qml.Identity,
-    qml.Hadamard,
-    qml.PauliX,
-    qml.PauliY,
-    qml.PauliZ,
-    qml.CNOT,
-    qml.CZ,
-    qml.CY,
-    qml.SWAP,
-    qml.CSWAP,
-    qml.Toffoli,
-    qml.MultiControlledX,
-    qml.Barrier,
-    qml.WireCut,
+    qml.WireCut(0),
 ]
 
 
-@pytest.mark.parametrize("op", all_ops)
+@pytest.mark.parametrize("op", involution_ops)
 def test_adjoint_method(op, tol):
-    for num_adjoint_calls in range(1, 4):
+    adj_op = copy.copy(op)
+    for _ in range(4):
+        adj_op = adj_op.adjoint()
 
-        adj_op = copy.copy(op)
-        for i in range(num_adjoint_calls):
-            adj_op = adj_op.adjoint()
-
-        if (type(op) in involution_ops) or (num_adjoint_calls % 2 == 0):
-            expected_adj_op = copy.copy(op)
-
-        else:
-            expected_adj_op = copy.copy(op)
-            expected_adj_op.inverse = not expected_adj_op.inverse
-
-        assert adj_op.name == expected_adj_op.name
-        assert (
-            adj_op.label() == expected_adj_op.label()
-        )  # check that the name and labels are the same
-
-        try:
-            np.testing.assert_allclose(
-                adj_op.matrix(), expected_adj_op.matrix(), atol=tol
-            )  # compare matrix if its defined
-        except qml.operation.OperatorPropertyUndefined:
-            pass
+        assert adj_op.name == op.name
