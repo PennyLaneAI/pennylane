@@ -320,6 +320,9 @@ class QubitDevice(Device):
             ):
                 # Measurements with expval or var
                 results = self._asarray(results, dtype=self.R_DTYPE)
+            elif circuit.batch_size is not None:
+                results = np.hstack([r[..., np.newaxis] if ret in (qml.measurements.Expectation, qml.measurements.Variance) else r for r, ret in zip(results, ret_types)])
+                results = self._asarray(results)
             else:
                 results = self._asarray(results)
 

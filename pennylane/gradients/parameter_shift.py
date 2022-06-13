@@ -271,7 +271,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
                 if tape._qfunc_output is not None:
                     output_like_tape = tape._qfunc_output
                 else:
-                    output_like_tape = results[0][:][:-1] if unpack_output_like_tape else results[0][0]
+                    output_like_tape = results[0][..., 0] if unpack_output_like_tape else results[0][0]
                 print(output_like_tape)
                 g = qml.math.zeros_like(output_like_tape)
                 #print(f"zeroed grad: {g}")
@@ -289,6 +289,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
             #if batch_size == 1:
                 #res = [res]
             #print(res)
+            print(res)
             g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[1], [0]])
             #assert qml.math.shape(g)[0] == 1
 
@@ -349,14 +350,14 @@ def var_param_shift(tape, argnum, shifts=None, gradient_recipes=None, f0=None):
     # Get <A>, the expectation value of the tape with unshifted parameters.
     expval_tape = tape.copy(copy_operations=True)
 
+    gradient_tapes = [expval_tape]
+
     # Convert all variance measurements on the tape into expectation values
     for i in var_idx:
         obs = expval_tape._measurements[i].obs
         expval_tape._measurements[i] = qml.measurements.MeasurementProcess(
             qml.measurements.Expectation, obs=obs
         )
-
-    gradient_tapes = [expval_tape]
 
     # evaluate the analytic derivative of <A>
     pdA_tapes, pdA_fn = expval_param_shift(expval_tape, argnum, shifts, gradient_recipes, f0)

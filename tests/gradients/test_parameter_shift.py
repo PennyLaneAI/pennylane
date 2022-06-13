@@ -732,7 +732,8 @@ class TestParameterShiftRule:
             qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         tapes, fn = qml.gradients.param_shift(tape)
-        assert len(tapes) == 4
+        assert len(tapes) == 2
+        assert tapes[0].batch_size == tapes[1].batch_size == 2
 
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (1, 2)
@@ -755,7 +756,8 @@ class TestParameterShiftRule:
             qml.expval(qml.PauliX(1))
 
         tapes, fn = qml.gradients.param_shift(tape)
-        assert len(tapes) == 4
+        assert len(tapes) == 2
+        assert tapes[0].batch_size == tapes[1].batch_size == 2
 
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (2, 2)
@@ -778,7 +780,9 @@ class TestParameterShiftRule:
             qml.var(qml.PauliX(1))
 
         tapes, fn = qml.gradients.param_shift(tape)
-        assert len(tapes) == 5
+        assert len(tapes) == 3 # One unshifted, two broadcasted shifted tapes
+        assert tapes[0].batch_size is None
+        assert tapes[1].batch_size == tapes[2].batch_size == 2
 
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (2, 2)
@@ -800,8 +804,11 @@ class TestParameterShiftRule:
             qml.expval(qml.PauliZ(0))
             qml.probs(wires=[0, 1])
 
+        dev.execute(tape)
+
         tapes, fn = qml.gradients.param_shift(tape)
-        assert len(tapes) == 4
+        assert len(tapes) == 2
+        assert tapes[0].batch_size == tapes[1].batch_size == 2
 
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (5, 2)
