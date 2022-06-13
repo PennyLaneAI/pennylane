@@ -18,6 +18,7 @@ from collections.abc import Sequence
 from types import FunctionType
 from typing import Type, Union
 
+import pennylane as qml
 from pennylane import Device, apply
 from pennylane.operation import Operation
 from pennylane.tape import QuantumTape
@@ -206,7 +207,8 @@ def insert(
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
         tensor(0.72945434, requires_grad=True)
     """
-    circuit = circuit.expand(stop_at=lambda op: not isinstance(op, QuantumTape))
+    # decompose templates
+    circuit = circuit.expand(stop_at=lambda op: not hasattr(qml.templates, op.name))
 
     if not isinstance(op, FunctionType) and op.num_wires != 1:
         raise ValueError("Only single-qubit operations can be inserted into the circuit")
