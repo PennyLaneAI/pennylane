@@ -151,9 +151,9 @@ def factorize(two, tol_first, tol_second):
     eigvals, eigvecs = np.linalg.eigh(factors)
     eigvals_m = []
     eigvecs_m = []
-    for n in range(len(eigvals)):
-        idx = [i for i, v in enumerate(eigvals[n]) if abs(v) > tol_second]
-        eigvals_m.append(eigvals[n][idx])
+    for n, eigval in enumerate(eigvals):
+        idx = [i for i, v in enumerate(eigval) if abs(v) > tol_second]
+        eigvals_m.append(eigval[idx])
         eigvecs_m.append(eigvecs[n][idx])
 
     return factors, eigvals_m, eigvecs_m
