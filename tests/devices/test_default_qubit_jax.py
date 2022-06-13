@@ -1133,6 +1133,7 @@ class TestOpsBroadcasted:
         spy.assert_called()
 
 
+@pytest.mark.jax
 class TestEstimateProb:
     """Test the estimate_probability method"""
 
