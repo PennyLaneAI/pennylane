@@ -142,6 +142,14 @@ def mock_qubit_device_with_paulis_rotations_and_methods(monkeypatch):
         yield get_qubit_device
 
 
+def _working_get_batch_size(tensor, expected_shape, expected_size):
+    size = QubitDevice._size(tensor)
+    if QubitDevice._ndim(tensor) > len(expected_shape) or size > expected_size:
+        return size // expected_size
+
+    return None
+
+
 class TestOperations:
     """Tests the logic related to operations"""
 
@@ -1035,13 +1043,22 @@ class TestMarginalProb:
 
     @pytest.mark.parametrize("probs, marginals, wires, num_wires", broadcasted_marginal_test_data)
     def test_correct_broadcasted_marginals_returned(
-        self, mock_qubit_device_with_original_statistics, probs, marginals, wires, num_wires, tol
+        self,
+        monkeypatch,
+        mock_qubit_device_with_original_statistics,
+        probs,
+        marginals,
+        wires,
+        num_wires,
+        tol,
     ):
         """Test that the correct marginals are returned by the marginal_prob method when
         broadcasting is used"""
         dev = mock_qubit_device_with_original_statistics(num_wires)
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_get_batch_size", _working_get_batch_size)
+            res = dev.marginal_prob(probs, wires=wires)
 
-        res = dev.marginal_prob(probs, wires=wires)
         assert np.allclose(res, marginals, atol=tol, rtol=0)
 
     @pytest.mark.parametrize("probs, marginals, wires, num_wires", broadcasted_marginal_test_data)
@@ -1482,29 +1499,34 @@ class TestGetBatchSize:
     """Tests for the helper method ``_get_batch_size`` of ``QubitDevice``."""
 
     @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
-    def test_batch_size_None(self, mock_qubit_device, shape):
-        """Test that a ``batch_size=None`` is reported correctly."""
+    def test_batch_size_always_None(self, mock_qubit_device, shape):
+        """Test that QubitDevice always reports a batch_size of None."""
         dev = mock_qubit_device()
         tensor0 = np.ones(shape, dtype=complex)
         assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) is None
         tensor1 = np.arange(np.prod(shape)).reshape(shape)
         assert dev._get_batch_size(tensor1, shape, qml.math.prod(shape)) is None
 
-    @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
-    @pytest.mark.parametrize("batch_size", [1, 3])
-    def test_batch_size_int(self, mock_qubit_device, shape, batch_size):
-        """Test that an integral ``batch_size`` is reported correctly."""
-        dev = mock_qubit_device()
-        full_shape = (batch_size,) + shape
-        tensor0 = np.ones(full_shape, dtype=complex)
-        assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) == batch_size
-        tensor1 = np.arange(np.prod(full_shape)).reshape(full_shape)
-        assert dev._get_batch_size(tensor1, shape, qml.math.prod(shape)) == batch_size
+        broadcasted_shape = (1,) + shape
+        tensor0 = np.ones(broadcasted_shape, dtype=complex)
+        assert (
+            dev._get_batch_size(tensor0, broadcasted_shape, qml.math.prod(broadcasted_shape))
+            is None
+        )
+        tensor1 = np.arange(np.prod(broadcasted_shape)).reshape(broadcasted_shape)
+        assert (
+            dev._get_batch_size(tensor1, broadcasted_shape, qml.math.prod(broadcasted_shape))
+            is None
+        )
 
-    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested")
-    def test_invalid_tensor(self, mock_qubit_device):
-        """Test that an error is raised if a tensor is provided that does not
-        have a proper shape/ndim."""
-        dev = mock_qubit_device()
-        with pytest.raises(ValueError, match="could not broadcast"):
-            dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2), 8)
+        broadcasted_shape = (3,) + shape
+        tensor0 = np.ones(broadcasted_shape, dtype=complex)
+        assert (
+            dev._get_batch_size(tensor0, broadcasted_shape, qml.math.prod(broadcasted_shape))
+            is None
+        )
+        tensor1 = np.arange(np.prod(broadcasted_shape)).reshape(broadcasted_shape)
+        assert (
+            dev._get_batch_size(tensor1, broadcasted_shape, qml.math.prod(broadcasted_shape))
+            is None
+        )

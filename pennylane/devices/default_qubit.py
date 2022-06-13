@@ -203,6 +203,15 @@ class DefaultQubit(QubitDevice):
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
 
+    def _get_batch_size(self, tensor, expected_shape, expected_size):
+        """Determine whether a tensor has an additional batch dimension for broadcasting,
+        compared to an expected_shape."""
+        size = self._size(tensor)
+        if self._ndim(tensor) > len(expected_shape) or size > expected_size:
+            return size // expected_size
+
+        return None
+
     # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []

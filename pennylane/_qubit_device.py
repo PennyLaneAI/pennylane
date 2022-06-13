@@ -307,7 +307,7 @@ class QubitDevice(Device):
             ret_types = [m.return_type for m in circuit.measurements]
 
             if len(circuit.measurements) == 1:
-                if circuit.measurements[0].return_type is qml.measurements.State:
+                if ret_types[0] is qml.measurements.State:
                     # State: assumed to only be allowed if it's the only measurement
                     results = self._asarray(results, dtype=self.C_DTYPE)
                 else:
@@ -324,7 +324,6 @@ class QubitDevice(Device):
                 results = self._asarray(results)
 
         elif circuit.all_sampled and not self._has_partitioned_shots():
-
             results = self._asarray(results)
         else:
             results = tuple(self._asarray(r) for r in results)
@@ -894,11 +893,8 @@ class QubitDevice(Device):
 
     def _get_batch_size(self, tensor, expected_shape, expected_size):
         """Determine whether a tensor has an additional batch dimension for broadcasting,
-        compared to an expected_shape."""
-        size = self._size(tensor)
-        if self._ndim(tensor) > len(expected_shape) or size > expected_size:
-            return size // expected_size
-
+        compared to an expected_shape. As QubitDevice does not natively support broadcasting,
+        it always reports no batch size, that is ``batch_size=None``"""
         return None
 
     def marginal_prob(self, prob, wires=None):

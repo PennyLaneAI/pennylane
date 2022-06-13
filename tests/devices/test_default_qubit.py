@@ -2523,3 +2523,35 @@ class TestHamiltonianSupport:
 
         with pytest.raises(AssertionError, match="Hamiltonian must be used with shots=None"):
             dev.expval(H)
+
+
+class TestGetBatchSize:
+    """Tests for the helper method ``_get_batch_size`` of ``QubitDevice``."""
+
+    @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
+    def test_batch_size_None(self, shape):
+        """Test that a ``batch_size=None`` is reported correctly."""
+        dev = qml.device("default.qubit", wires=1)
+        tensor0 = np.ones(shape, dtype=complex)
+        assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) is None
+        tensor1 = np.arange(np.prod(shape)).reshape(shape)
+        assert dev._get_batch_size(tensor1, shape, qml.math.prod(shape)) is None
+
+    @pytest.mark.parametrize("shape", [(4, 4), (1, 8), (4,)])
+    @pytest.mark.parametrize("batch_size", [1, 3])
+    def test_batch_size_int(self, shape, batch_size):
+        """Test that an integral ``batch_size`` is reported correctly."""
+        dev = qml.device("default.qubit", wires=1)
+        full_shape = (batch_size,) + shape
+        tensor0 = np.ones(full_shape, dtype=complex)
+        assert dev._get_batch_size(tensor0, shape, qml.math.prod(shape)) == batch_size
+        tensor1 = np.arange(np.prod(full_shape)).reshape(full_shape)
+        assert dev._get_batch_size(tensor1, shape, qml.math.prod(shape)) == batch_size
+
+    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested")
+    def test_invalid_tensor(self):
+        """Test that an error is raised if a tensor is provided that does not
+        have a proper shape/ndim."""
+        dev = qml.device("default.qubit", wires=1)
+        with pytest.raises(ValueError, match="could not broadcast"):
+            dev._get_batch_size([qml.math.ones((2, 3)), qml.math.ones((2, 2))], (2, 2, 2), 8)
