@@ -891,10 +891,12 @@ class QubitDevice(Device):
 
         return self.estimate_probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
 
-    def _get_batch_size(self, tensor, expected_shape, expected_size):
+    @staticmethod
+    def _get_batch_size(tensor, expected_shape, expected_size):
         """Determine whether a tensor has an additional batch dimension for broadcasting,
         compared to an expected_shape. As QubitDevice does not natively support broadcasting,
         it always reports no batch size, that is ``batch_size=None``"""
+        # pylint: disable=unused-argument
         return None
 
     def marginal_prob(self, prob, wires=None):
@@ -932,7 +934,7 @@ class QubitDevice(Device):
             array[float]: array of the resulting marginal probabilities.
         """
         dim = 2**self.num_wires
-        batch_size = self._get_batch_size(prob, (dim,), dim)
+        batch_size = self._get_batch_size(prob, (dim,), dim)  # pylint: disable=assignment-from-none
 
         if wires is None:
             # no need to marginalize

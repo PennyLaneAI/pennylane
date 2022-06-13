@@ -114,6 +114,7 @@ class DefaultMixed(QubitDevice):
     _flatten = staticmethod(qnp.flatten)
     # Allow for the `axis` keyword argument for integration with broadcasting-enabling
     # code in QubitDevice. However, it is not used as DefaultMixed does not support broadcasting
+    # pylint: disable=unnecessary-lambda
     _gather = staticmethod(lambda *args, axis=0, **kwargs: qnp.gather(*args, **kwargs))
     _dot = staticmethod(qnp.dot)
 

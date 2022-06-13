@@ -1777,7 +1777,10 @@ class TestPassthruIntegration:
     def test_jacobian_repeated_broadcasted(self, tol):
         """Test that jacobian of a QNode with an attached default.qubit.tf device
         gives the correct result in the case of repeated broadcasted parameters"""
-        p = tf.Variable([[0.433, 92.1, -0.512], [0.218, 0.241, -0.51], [0.71, 0.152, 9.12]])
+        x = tf.Variable([0.433, 92.1, -0.512])
+        y = tf.Variable([0.218, 0.241, -0.51])
+        z = tf.Variable([0.71, 0.152, 9.12])
+        p = tf.Variable([x, y, z])
         dev = qml.device("default.qubit.tf", wires=1)
 
         @qml.qnode(dev, interface="tf", diff_method="backprop")
@@ -1789,7 +1792,6 @@ class TestPassthruIntegration:
         with tf.GradientTape() as tape:
             res = circuit(p)
 
-        x, y, z = p
         expected = np.cos(y) ** 2 - np.sin(x) * np.sin(y) ** 2
         assert np.allclose(res, expected, atol=tol, rtol=0)
 

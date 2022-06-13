@@ -203,6 +203,7 @@ class DefaultQubit(QubitDevice):
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
 
+    # pylint: disable=arguments-differ
     def _get_batch_size(self, tensor, expected_shape, expected_size):
         """Determine whether a tensor has an additional batch dimension for broadcasting,
         compared to an expected_shape."""
