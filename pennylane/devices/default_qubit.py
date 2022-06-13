@@ -23,7 +23,7 @@ import functools
 from string import ascii_letters as ABC
 
 import numpy as np
-from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import QubitDevice, DeviceError, QubitStateVector, BasisState, Snapshot
@@ -102,12 +102,17 @@ class DefaultQubit(QubitDevice):
         "MultiRZ",
         "Hadamard",
         "S",
+        "Adjoint(S)",
         "T",
+        "Adjoint(T)",
         "SX",
+        "Adjoint(SX)",
         "CNOT",
         "SWAP",
         "ISWAP",
+        "Adjoint(ISWAP)",
         "SISWAP",
+        "Adjoint(SISWAP)",
         "SQISW",
         "CSWAP",
         "Toffoli",
@@ -127,6 +132,7 @@ class DefaultQubit(QubitDevice):
         "IsingXX",
         "IsingYY",
         "IsingZZ",
+        "IsingXY",
         "SingleExcitation",
         "SingleExcitationPlus",
         "SingleExcitationMinus",
@@ -137,6 +143,7 @@ class DefaultQubit(QubitDevice):
         "QubitSum",
         "OrbitalRotation",
         "QFT",
+        "ECR",
     }
 
     observables = {
@@ -504,7 +511,7 @@ class DefaultQubit(QubitDevice):
                 for op, coeff in zip(observable.ops, observable.data):
 
                     # extract a scipy.sparse.coo_matrix representation of this Pauli word
-                    coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires)
+                    coo = qml.operation.Tensor(op).sparse_matrix(wires=self.wires, format="coo")
                     Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
 
                     product = (
@@ -522,16 +529,15 @@ class DefaultQubit(QubitDevice):
             else:
                 # Coefficients and the state are not trainable, we can be more
                 # efficient in how we compute the Hamiltonian sparse matrix.
-
                 if observable.name == "Hamiltonian":
                     Hmat = qml.utils.sparse_hamiltonian(observable, wires=self.wires)
                 elif observable.name == "SparseHamiltonian":
                     Hmat = observable.sparse_matrix()
 
                 state = qml.math.toarray(self.state)
-                res = coo_matrix.dot(
-                    coo_matrix(qml.math.conj(state)),
-                    coo_matrix.dot(Hmat, coo_matrix(state.reshape(len(self.state), 1))),
+                res = csr_matrix.dot(
+                    csr_matrix(qml.math.conj(state)),
+                    csr_matrix.dot(Hmat, csr_matrix(state.reshape(len(self.state), 1))),
                 ).toarray()[0]
 
             if observable.name == "Hamiltonian":
@@ -593,36 +599,6 @@ class DefaultQubit(QubitDevice):
     @property
     def state(self):
         return self._flatten(self._pre_rotated_state)
-
-    def density_matrix(self, wires):
-        """Returns the reduced density matrix of a given set of wires.
-
-        Args:
-            wires (Wires): wires of the reduced system.
-
-        Returns:
-            array[complex]: complex tensor of shape ``(2 ** len(wires), 2 ** len(wires))``
-            representing the reduced density matrix.
-        """
-        dim = self.num_wires
-        state = self._pre_rotated_state
-
-        # Return the full density matrix by using numpy tensor product
-        if wires == self.wires:
-            density_matrix = self._tensordot(state, self._conj(state), axes=0)
-            density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
-            return density_matrix
-
-        complete_system = list(range(0, dim))
-        traced_system = [x for x in complete_system if x not in wires.labels]
-
-        # Return the reduced density matrix by using numpy tensor product
-        density_matrix = self._tensordot(
-            state, self._conj(state), axes=(traced_system, traced_system)
-        )
-        density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
-
-        return density_matrix
 
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.

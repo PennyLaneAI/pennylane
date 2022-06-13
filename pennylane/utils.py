@@ -21,12 +21,27 @@ import functools
 import inspect
 import itertools
 import numbers
+import warnings
 from operator import matmul
 
 import numpy as np
 import scipy
 
 import pennylane as qml
+
+
+def __getattr__(name):
+    # for more information on overwriting `__getattr__`, see https://peps.python.org/pep-0562/
+    if name == "expand":
+        warning_string = (
+            "qml.utils.expand is deprecated; using qml.operation.expand_matrix instead."
+        )
+        warnings.warn(warning_string, UserWarning)
+        return qml.operation.expand_matrix
+    try:
+        return globals()[name]
+    except KeyError as e:
+        raise AttributeError from e
 
 
 def decompose_hamiltonian(H, hide_identity=False, wire_order=None):
@@ -118,7 +133,7 @@ def sparse_hamiltonian(H, wires=None):
          is constructed. If not profided, ``H.wires`` is used.
 
     Returns:
-        coo_matrix: a sparse matrix in scipy coordinate list (COO) format with dimension
+        csr_matrix: a sparse matrix in scipy Compressed Sparse Row (CSR) format with dimension
         :math:`(2^n, 2^n)`, where :math:`n` is the number of wires
 
     **Example:**
@@ -150,12 +165,12 @@ def sparse_hamiltonian(H, wires=None):
         wires = qml.wires.Wires(wires)
 
     n = len(wires)
-    matrix = scipy.sparse.coo_matrix((2**n, 2**n), dtype="complex128")
+    matrix = scipy.sparse.csr_matrix((2**n, 2**n), dtype="complex128")
 
     coeffs = qml.math.toarray(H.data)
 
+    temp_mats = []
     for coeff, op in zip(coeffs, H.ops):
-
         obs = []
         for o in qml.operation.Tensor(op).obs:
             if len(o.wires) > 1:
@@ -164,18 +179,41 @@ def sparse_hamiltonian(H, wires=None):
                     f"Can only sparsify Hamiltonians whose constituent observables consist of "
                     f"(tensor products of) single-qubit operators; got {op}."
                 )
-            obs.append(scipy.sparse.coo_matrix(o.matrix()))
+            obs.append(o.matrix())
 
-        mat = [scipy.sparse.eye(2, format="coo")] * n
+        # Array to store the single-wire observables which will be Kronecker producted together
+        mat = []
+        # i_count tracks the number of consecutive single-wire identity matrices encountered
+        # in order to avoid unnecessary Kronecker products, since I_n x I_m = I_{n+m}
+        i_count = 0
+        for wire_lab in wires:
+            if wire_lab in op.wires:
+                if i_count > 0:
+                    mat.append(scipy.sparse.eye(2**i_count, format="coo"))
+                i_count = 0
+                idx = op.wires.index(wire_lab)
+                # obs is an array storing the single-wire observables which
+                # make up the full Hamiltonian term
+                sp_obs = scipy.sparse.coo_matrix(obs[idx])
+                mat.append(sp_obs)
+            else:
+                i_count += 1
 
-        for i, wire in enumerate(op.wires):
-            # find index of this wire in the ordering
-            idx = wires.index(wire)
-            mat[idx] = obs[i]
+        if i_count > 0:
+            mat.append(scipy.sparse.eye(2**i_count, format="coo"))
 
-        matrix += functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
+        red_mat = functools.reduce(lambda i, j: scipy.sparse.kron(i, j, format="coo"), mat) * coeff
 
-    return matrix.tocoo()
+        temp_mats.append(red_mat.tocsr())
+        # Value of 100 arrived at empirically to balance time savings vs memory use. At this point
+        # the `temp_mats` are summed into the final result and the temporary storage array is
+        # cleared.
+        if (len(temp_mats) % 100) == 0:
+            matrix += sum(temp_mats)
+            temp_mats = []
+
+    matrix += sum(temp_mats)
+    return matrix
 
 
 def _flatten(x):
@@ -305,77 +343,6 @@ def pauli_eigs(n):
     if n == 1:
         return np.array([1, -1])
     return np.concatenate([pauli_eigs(n - 1), -pauli_eigs(n - 1)])
-
-
-def expand(matrix, original_wires, expanded_wires):
-    r"""Expand an operator matrix to more wires.
-
-    .. note::
-
-        This function has essentially the same behaviour as :func:`.operation.expand_matrix`, but is not
-        fully differentiable.
-
-
-    Args:
-        matrix (array): :math:`2^n \times 2^n` matrix where n = len(original_wires).
-        original_wires (Sequence[int]): original wires of matrix
-        expanded_wires (Union[Sequence[int], int]): expanded wires of matrix, can be shuffled.
-            If a single int m is given, corresponds to list(range(m))
-
-    Returns:
-        array: :math:`2^m \times 2^m` matrix where m = len(expanded_wires).
-    """
-    if isinstance(expanded_wires, numbers.Integral):
-        expanded_wires = list(range(expanded_wires))
-
-    N = len(original_wires)
-    M = len(expanded_wires)
-    D = M - N
-
-    if not set(expanded_wires).issuperset(original_wires):
-        raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
-
-    if qml.math.shape(matrix) != (2**N, 2**N):
-        raise ValueError(
-            "Matrix parameter must be of size (2**len(original_wires), 2**len(original_wires))"
-        )
-
-    dims = [2] * (2 * N)
-    tensor = qml.math.reshape(matrix, dims)
-
-    interface = qml.math.get_interface(tensor)
-
-    if D > 0:
-        extra_dims = [2] * (2 * D)
-        identity = qml.math.reshape(qml.math.eye(2**D), extra_dims)
-
-        if interface == "tensorflow":
-            identity = qml.math.cast_like(identity, tensor)
-
-        expanded_tensor = qml.math.tensordot(tensor, identity, axes=0)
-        # Fix order of tensor factors
-        expanded_tensor = qml.math.moveaxis(
-            expanded_tensor, tuple(range(2 * N, 2 * N + D)), tuple(range(N, N + D))
-        )
-    else:
-        expanded_tensor = tensor
-
-    wire_indices = []
-    for wire in original_wires:
-        wire_indices.append(expanded_wires.index(wire))
-
-    wire_indices = np.array(wire_indices)
-
-    # Order tensor factors according to wires
-    original_indices = np.array(range(N))
-    expanded_tensor = qml.math.moveaxis(
-        expanded_tensor, tuple(original_indices), tuple(wire_indices)
-    )
-    expanded_tensor = qml.math.moveaxis(
-        expanded_tensor, tuple(original_indices + M), tuple(wire_indices + M)
-    )
-
-    return qml.math.reshape(expanded_tensor, (2**M, 2**M))
 
 
 def expand_vector(vector, original_wires, expanded_wires):
