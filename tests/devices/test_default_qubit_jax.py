@@ -1131,3 +1131,115 @@ class TestOpsBroadcasted:
 
         assert jnp.allclose(res, state)
         spy.assert_called()
+
+
+class TestEstimateProb:
+    """Test the estimate_probability method"""
+
+    @pytest.mark.parametrize(
+        "wires, expected", [([0], [0.5, 0.5]), (None, [0.5, 0, 0, 0.5]), ([0, 1], [0.5, 0, 0, 0.5])]
+    )
+    def test_estimate_probability(self, wires, expected, monkeypatch):
+        """Tests the estimate_probability method"""
+        dev = qml.device("default.qubit.jax", wires=2)
+        samples = jnp.array([[0, 0], [1, 1], [1, 1], [0, 0]])
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_samples", samples)
+            res = dev.estimate_probability(wires=wires)
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            ([0], [[0.0, 0.5], [1.0, 0.5]]),
+            (None, [[0.0, 0.5], [0, 0], [0, 0.5], [1.0, 0]]),
+            ([0, 1], [[0.0, 0.5], [0, 0], [0, 0.5], [1.0, 0]]),
+        ],
+    )
+    def test_estimate_probability_with_binsize(self, wires, expected, monkeypatch):
+        """Tests the estimate_probability method with a bin size"""
+        dev = qml.device("default.qubit.jax", wires=2)
+        samples = jnp.array([[1, 1], [1, 1], [1, 0], [0, 0]])
+        bin_size = 2
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_samples", samples)
+            res = dev.estimate_probability(wires=wires, bin_size=bin_size)
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            ([0], [[0.0, 1.0], [0.5, 0.5], [0.25, 0.75]]),
+            (None, [[0, 0, 0.25, 0.75], [0.5, 0, 0, 0.5], [0.25, 0, 0.25, 0.5]]),
+            ([0, 1], [[0, 0, 0.25, 0.75], [0.5, 0, 0, 0.5], [0.25, 0, 0.25, 0.5]]),
+        ],
+    )
+    def test_estimate_probability_with_broadcasting(self, wires, expected, monkeypatch):
+        """Tests the estimate_probability method with parameter broadcasting"""
+        dev = qml.device("default.qubit.jax", wires=2)
+        samples = jnp.array(
+            [
+                [[1, 0], [1, 1], [1, 1], [1, 1]],
+                [[0, 0], [1, 1], [1, 1], [0, 0]],
+                [[1, 0], [1, 1], [1, 1], [0, 0]],
+            ]
+        )
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_samples", samples)
+            res = dev.estimate_probability(wires=wires)
+
+        assert np.allclose(res, expected)
+
+    @pytest.mark.parametrize(
+        "wires, expected",
+        [
+            (
+                [0],
+                [
+                    [[0, 0, 0.5], [1, 1, 0.5]],
+                    [[0.5, 0.5, 0], [0.5, 0.5, 1]],
+                    [[0, 0.5, 1], [1, 0.5, 0]],
+                ],
+            ),
+            (
+                None,
+                [
+                    [[0, 0, 0], [0, 0, 0.5], [0.5, 0, 0], [0.5, 1, 0.5]],
+                    [[0.5, 0.5, 0], [0, 0, 0], [0, 0, 0], [0.5, 0.5, 1]],
+                    [[0, 0.5, 0.5], [0, 0, 0.5], [0.5, 0, 0], [0.5, 0.5, 0]],
+                ],
+            ),
+            (
+                [0, 1],
+                [
+                    [[0, 0, 0], [0, 0, 0.5], [0.5, 0, 0], [0.5, 1, 0.5]],
+                    [[0.5, 0.5, 0], [0, 0, 0], [0, 0, 0], [0.5, 0.5, 1]],
+                    [[0, 0.5, 0.5], [0, 0, 0.5], [0.5, 0, 0], [0.5, 0.5, 0]],
+                ],
+            ),
+        ],
+    )
+    def test_estimate_probability_with_binsize_with_broadcasting(
+        self, wires, expected, monkeypatch
+    ):
+        """Tests the estimate_probability method with a bin size and parameter broadcasting"""
+        dev = qml.device("default.qubit.jax", wires=2)
+        bin_size = 2
+        samples = jnp.array(
+            [
+                [[1, 0], [1, 1], [1, 1], [1, 1], [1, 1], [0, 1]],
+                [[0, 0], [1, 1], [1, 1], [0, 0], [1, 1], [1, 1]],
+                [[1, 0], [1, 1], [1, 1], [0, 0], [0, 1], [0, 0]],
+            ]
+        )
+
+        with monkeypatch.context() as m:
+            m.setattr(dev, "_samples", samples)
+            res = dev.estimate_probability(wires=wires, bin_size=bin_size)
+
+        assert np.allclose(res, expected)

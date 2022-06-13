@@ -192,8 +192,8 @@ class DefaultQubitTF(DefaultQubit):
         """Determine whether a tensor has an additional batch dimension for broadcasting,
         compared to an expected_shape. Differs from QubitDevice implementation by the
         exception made for abstract tensors."""
-        size = self._size(tensor)
         try:
+            size = self._size(tensor)
             ndim = qml.math.ndim(tensor)
             if ndim > len(expected_shape) or size > expected_size:
                 return size // expected_size
