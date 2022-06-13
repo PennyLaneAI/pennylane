@@ -15,34 +15,39 @@
 This module contains the functions needed for resource estimation with double factorization method.
 """
 from pennylane import numpy as np
+from pennylane.operation import Operation
 
 
-class SQ:
-    """This class contains the functionality for estimating the number of non-Clifford gates and
-    logical qubits for quantum algorithms in second quantization based on the double factorization
-    approach.
+class SQ(Operation):
+    """Contains the functionality for estimating the number of non-Clifford gates and logical qubits
+    for quantum algorithms in second quantization based on the double factorization approach.
 
-    Users must provide the following inputs for their system of interest:
-    - one-electron integrals
-    - two-electron integrals in the chemist notation
-    - target error in quantum phase estimation
-
+    Args:
+        one_electron (array[array[float]]): one-electron integrals
+        two_electron (tensor_like): two-electron integrals
+        error (float): target quantum phase estimation error
+        tol_first (float): threshold error value for discarding the negligible factors
+        tol_second (float): threshold error value for discarding the negligible factor eigenvalues
+        br (int): number of bits for ancilla qubit rotation
+        aleph (int): number of bits for the keep register
+        beth (int): number of bits for the rotation angles
     """
 
-    def __init__(self, one_electron, two_electron, error, tol):
-        self.one_electron = one_electron
-        self.two_electron = two_electron
-        self.error = error
-        self.tol = tol
-
-        self.factors, self.vals, self.vecs = self.factorize(two_electron, tol)
+    def __init__(
+        self,
+        one_electron,
+        two_electron,
+        error,
+        tol_first,
+        tol_second,
+        br=None,
+        aleph=None,
+        beth=None,
+    ):
+        self.factors, self.vals, self.vecs = self.factorize(two_electron, tol_first, tol_second)
         self.lamb = self.norm(one_electron, two_electron, self.vals)
 
         self.rank_r, self.rank_m = self.compute_rank(self.factors, self.vals)
-
-        self.br = 7
-        self.aleph = 10
-        self.beth = 20
 
         self.n = two_electron.shape[0] * 2
 
@@ -50,8 +55,8 @@ class SQ:
         self.rank_m = np.mean([len(v) for v in self.vals])
 
         self.g_cost = self.gate_cost(
-            self.n, self.lamb, self.error, self.rank_r, self.rank_m, self.br, self.aleph, self.beth
+            self.n, self.lamb, self.error, self.rank_r, self.rank_m, br, aleph, beth
         )
         self.q_cost = self.qubit_cost(
-            self.n, self.lamb, self.error, self.rank_r, self.rank_m, self.br, self.aleph, self.beth
+            self.n, self.lamb, self.error, self.rank_r, self.rank_m, br, aleph, beth
         )
