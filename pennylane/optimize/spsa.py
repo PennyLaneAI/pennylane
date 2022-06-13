@@ -69,7 +69,7 @@ class SPSAOptimizer:
     .. note::
 
         * One SPSA iteration step of a cost function that involves computing the expectation value of
-        a Hamiltonian with ``M`` terms requires :math:`2*M` quantum device executions.
+          a Hamiltonian with ``M`` terms requires :math:`2*M` quantum device executions.
         * The forward-pass value of the cost function is not computed when stepping the optimizer.
           Therefore, in case of using ``step_and_cost`` method instead of ``step``, the number
           of executions will include the cost function evaluations.
