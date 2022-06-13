@@ -39,6 +39,15 @@ SISWAP = np.array(
 CZ = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, -1]])  #: CZ gate
 S = np.array([[1, 0], [0, 1j]])  #: Phase Gate
 T = np.array([[1, 0], [0, cmath.exp(1j * np.pi / 4)]])  #: T Gate
+ECR = np.array(
+    [
+        [0, 0, 1 / math.sqrt(2), 1j * 1 / math.sqrt(2)],  # ECR Gate
+        [0, 0, 1j * 1 / math.sqrt(2), 1 / math.sqrt(2)],
+        [1 / math.sqrt(2), -1j * 1 / math.sqrt(2), 0, 0],
+        [-1j * 1 / math.sqrt(2), 1 / math.sqrt(2), 0, 0],
+    ]
+)
+
 # Three qubit gates
 CSWAP = np.array(
     [
@@ -277,6 +286,29 @@ def IsingYY(phi):
         array[complex]: unitary 4x4 rotation matrix
     """
     return np.cos(phi / 2) * II - 1j * np.sin(phi / 2) * YY
+
+
+def IsingXY(phi):
+    r"""Ising XY coupling gate.
+
+    .. math:: \mathtt{XY}(\phi) = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
+            0 & i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+            0 & 0 & 0 & 1
+        \end{bmatrix}.
+
+    Args:
+        phi (float): rotation angle :math:`\phi`
+    Returns:
+        array[complex]: unitary 4x4 rotation matrix
+    """
+    mat = II.copy()
+    mat[1][1] = np.cos(phi / 2)
+    mat[2][2] = np.cos(phi / 2)
+    mat[1][2] = 1j * np.sin(phi / 2)
+    mat[2][1] = 1j * np.sin(phi / 2)
+    return mat
 
 
 def IsingZZ(phi):

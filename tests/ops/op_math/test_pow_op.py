@@ -224,25 +224,16 @@ class TestProperties:
 
         assert not op.has_matrix
 
-    def test_is_hermitian_true(self):
+    @pytest.mark.parametrize("value", (True, False))
+    def test_is_hermitian(self, value):
         """Test that if the base is hermitian, then the power is hermitian."""
 
-        class HermitianOp(qml.operation.Operator):
+        class DummyOp(qml.operation.Operator):
             num_wires = 1
-            is_hermitian = True
+            is_hermitian = value
 
-        op = Pow(HermitianOp(1), 2.5)
-        assert op.is_hermitian is True
-
-    def test_is_hermitian_false(self):
-        """Test that if the base is not hermitian, then the power is non-hermitian."""
-
-        class NonHermitianOp(qml.operation.Operator):
-            num_wires = 1
-            is_hermitian = False
-
-        op = Pow(NonHermitianOp(1), -2)
-        assert op.is_hermitian is False
+        op = Pow(DummyOp(1), 2.5)
+        assert op.is_hermitian is value
 
     def test_queue_category(self):
         """Test that the queue category `"_ops"` carries over."""
@@ -253,6 +244,22 @@ class TestProperties:
         """Test that the queue category `None` for some observables carries over."""
         op = Pow(qml.PauliX(0) @ qml.PauliY(1), -1.1)
         assert op._queue_category is None
+
+    def test_batching_properties(self):
+        """Test that Pow batching behavior mirrors that of the base."""
+
+        class DummyOp(qml.operation.Operator):
+            ndim_params = (0, 2)
+            num_wires = 1
+
+        param1 = [0.3] * 3
+        param2 = [[[0.3, 1.2]]] * 3
+
+        base = DummyOp(param1, param2, wires=0)
+        op = Pow(base, 3)
+
+        assert op.ndim_params == (0, 2)
+        assert op.batch_size == 3
 
 
 class TestMiscMethods:
