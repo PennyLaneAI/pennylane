@@ -20,27 +20,16 @@ from copy import copy
 
 from scipy import sparse
 
+import pennylane as qml
 from pennylane import math as qmlmath
 from pennylane import numpy as np
-
-import pennylane as qml
-from pennylane.operation import (
-    GeneratorUndefinedError,
-    ParameterFrequenciesUndefinedError,
-    MatrixUndefinedError,
-    Operator,
-    Operation,
-    Observable,
-    SparseMatrixUndefinedError,
-    Tensor,
-    expand_matrix,
-)
+from pennylane import operation
 from pennylane.queuing import QueuingContext
 from pennylane.wires import Wires
 
 
 # pylint: disable=no-member
-class ControlledOperation(Operation):
+class ControlledOperation(operation.Operation):
     """Operation-specific methods and properties for the ``Controlled`` class.
 
     Dynamically mixed in based on the provided base operator.  If the base operator is an
@@ -90,8 +79,8 @@ class ControlledOperation(Operation):
     def parameter_frequencies(self):
         try:
             base_gen = qml.generator(self.base, format="observable")
-        except GeneratorUndefinedError as e:
-            raise ParameterFrequenciesUndefinedError(
+        except operation.GeneratorUndefinedError as e:
+            raise operation.ParameterFrequenciesUndefinedError(
                 f"Operation {self.name} does not have parameter frequencies defined."
             ) from e
 
@@ -108,7 +97,7 @@ class ControlledOperation(Operation):
 
 
 # pylint: disable=too-many-arguments, too-many-public-methods
-class Controlled(Operator):
+class Controlled(operation.Operator):
     """Symbolic operator denoting a controlled operator.
 
     Args:
@@ -170,10 +159,15 @@ class Controlled(Operator):
 
         """
 
-        if isinstance(base, Operation):
-            if isinstance(base, Observable):
+        if isinstance(base, operation.Operation):
+            if isinstance(base, operation.Observable):
                 if cls._operation_observable_type is None:
-                    base_classes = (ControlledOperation, Controlled, Observable, Operation)
+                    base_classes = (
+                        ControlledOperation,
+                        Controlled,
+                        operation.Observable,
+                        operation.Operation,
+                    )
                     cls._operation_observable_type = type(
                         "Controlled", base_classes, dict(cls.__dict__)
                     )
@@ -181,13 +175,13 @@ class Controlled(Operator):
 
             # not an observable
             if cls._operation_type is None:
-                base_classes = (ControlledOperation, Controlled, Operation)
+                base_classes = (ControlledOperation, Controlled, operation.Operation)
                 cls._operation_type = type("Controlled", base_classes, dict(cls.__dict__))
             return object.__new__(cls._operation_type)
 
-        if isinstance(base, Observable):
+        if isinstance(base, operation.Observable):
             if cls._observable_type is None:
-                base_classes = (Controlled, Observable)
+                base_classes = (Controlled, operation.Observable)
                 cls._observable_type = type("Controlled", base_classes, dict(cls.__dict__))
             return object.__new__(cls._observable_type)
 
@@ -403,7 +397,7 @@ class Controlled(Operator):
             return canonical_matrix
 
         active_wires = self.control_wires + self.target_wires
-        return expand_matrix(canonical_matrix, wires=active_wires, wire_order=wire_order)
+        return operation.expand_matrix(canonical_matrix, wires=active_wires, wire_order=wire_order)
 
     # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
@@ -412,11 +406,11 @@ class Controlled(Operator):
 
         try:
             target_mat = self.base.sparse_matrix()
-        except SparseMatrixUndefinedError:
+        except operation.SparseMatrixUndefinedError:
             try:
                 target_mat = sparse.lil_matrix(self.base.matrix())
-            except MatrixUndefinedError as e:
-                raise SparseMatrixUndefinedError from e
+            except operation.MatrixUndefinedError as e:
+                raise operation.SparseMatrixUndefinedError from e
 
         num_target_states = 2 ** len(self.target_wires)
         num_control_states = 2 ** len(self.control_wires)
@@ -460,7 +454,7 @@ class Controlled(Operator):
 
     def generator(self):
         sub_gen = self.base.generator()
-        proj_tensor = Tensor(*(qml.Projector([1], wires=w) for w in self.control_wires))
+        proj_tensor = operation.Tensor(*(qml.Projector([1], wires=w) for w in self.control_wires))
         return 1.0 * proj_tensor @ sub_gen
 
     def adjoint(self):
