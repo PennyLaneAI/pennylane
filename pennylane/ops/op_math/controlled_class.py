@@ -25,6 +25,8 @@ from pennylane import numpy as np
 
 import pennylane as qml
 from pennylane.operation import (
+    GeneratorUndefinedError,
+    ParameterFrequenciesUndefinedError,
     MatrixUndefinedError,
     Operator,
     Operation,
@@ -84,7 +86,25 @@ class ControlledOperation(Operation):
     def basis(self):
         return self.base.basis
 
-    # TODO: parameter-frequencies
+    @property
+    def parameter_frequencies(self):
+        try:
+            base_gen = qml.generator(self.base, format="observable")
+        except GeneratorUndefinedError as e:
+            raise ParameterFrequenciesUndefinedError(
+                f"Operation {self.name} does not have parameter frequencies defined."
+            ) from e
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                action="ignore", message=r".+ eigenvalues will be computed numerically\."
+            )
+            base_gen_eigvals = qml.eigvals(base_gen)
+
+        gen_eigvals = np.append(base_gen_eigvals, 0)
+
+        processed_gen_eigvals = tuple(np.round(gen_eigvals, 8))
+        return [qml.gradients.eigvals_to_frequencies(processed_gen_eigvals)]
 
 
 # pylint: disable=too-many-arguments, too-many-public-methods

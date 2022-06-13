@@ -120,7 +120,7 @@ class TestInitialization:
         assert op.base is self.paulix_op
         assert op.hyperparameters["base"] is self.paulix_op
 
-        assert op.wires == Wires(("a", 0, 1, "aux"))
+        assert op.wires == Wires((0, 1, "a", "aux"))
 
         assert op.control_wires == Wires((0, 1))
         assert op.hyperparameters["control_wires"] == Wires((0, 1))
@@ -139,7 +139,7 @@ class TestInitialization:
         assert op.parameters == []
         assert op.data == []
 
-        assert op.num_wires == 3
+        assert op.num_wires == 4
 
     def test_default_control_values(self):
 
@@ -198,7 +198,7 @@ class TestProperties:
         assert op.parameters == [x_new2]
 
     @pytest.mark.parametrize(
-        "val, arr", ((1, [1, 0, 0]), (3, [1, 1, 0]), (4, [0, 0, 1]), (5, [1, 0, 1]))
+        "val, arr", ((4, [1, 0, 0]), (6, [1, 1, 0]), (1, [0, 0, 1]), (5, [1, 0, 1]))
     )
     def test_control_int(self, val, arr):
         """Test private `_control_int` property converts control_values to integer representation."""
@@ -289,7 +289,7 @@ class TestQueuing:
 
         assert tape._queue[base]["owner"] is op
         assert tape._queue[op]["owns"] is base
-        assert tape.oprations == [op]
+        assert tape.operations == [op]
 
     def test_queuing_base_defined_outside(self):
         """Test that base isn't added to queue if its defined outside the recording context."""
