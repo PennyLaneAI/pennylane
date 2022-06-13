@@ -278,6 +278,128 @@ class TestProperties:
             op._wires = ("a", "b")
 
 
+class TestMiscMethods:
+    """Test miscellaneous minor Controlled methods."""
+
+    def test_copy(self):
+        """Test that a copy of a controlled oeprator can have its parameters updated
+        independently of the original operator."""
+
+        param1 = 1.234
+        base_wire = "a"
+        control_wires = [0, 1]
+        base = qml.RX(param1, base_wire)
+        op = Controlled(base, control_wires, control_values=[0, 1])
+
+        copied_op = copy(op)
+
+        assert copied_op.__class__ is op.__class__
+        assert copied_op.control_wires == op.control_wires
+        assert copied_op.control_values == op.control_values
+        assert copied_op.data == [param1]
+
+        copied_op.data = [6.54]
+        assert op.data == [param1]
+
+    def test_label(self):
+        """Test that the label method defers to the label of the base."""
+        base = qml.U1(1.23, wires=0)
+        op = Controlled(base, "a")
+
+        assert op.label() == base.label()
+        assert op.label(decimals=2) == base.label(decimals=2)
+        assert op.label(base_label="hi") == base.label(base_label="hi")
+
+    def test_label_matrix_param(self):
+        """Test that the label method simply returns the label of the base and updates the cache."""
+        U = np.eye(2)
+        base = qml.QubitUnitary(U, wires=0)
+        op = Controlled(base, ["a", "b"])
+
+        cache = {"matrices": []}
+        assert op.label(cache=cache) == base.label(cache=cache)
+        assert cache["matrices"] == [U]
+
+    def test_eigvals(self):
+        """Test the eigenvalues against the matrix eigenvalues."""
+        base = qml.IsingXX(1.234, wires=(0, 1))
+        op = Controlled(base, (2, 3))
+
+        mat = op.matrix()
+        mat_eigvals = np.sort(qml.math.linalg.eigvals(mat))
+
+        eigs = op.eigvals()
+        sort_eigs = np.sort(eigs)
+
+        assert qml.math.allclose(mat_eigvals, sort_eigs)
+
+    def test_generator(self):
+        """Test that the generator is a tensor product of projectors and the base's generator."""
+
+        base = qml.RZ(-0.123, wires="a")
+        op = Controlled(base, ("b", "c"))
+
+        base_gen, base_gen_coeff = qml.generator(base, format="prefactor")
+        gen_tensor, gen_coeff = qml.generator(op, format="prefactor")
+
+        assert base_gen_coeff == gen_coeff
+
+        for wire, ob in zip(op.control_wires, gen_tensor.obs):
+            assert isinstance(ob, qml.Projector)
+            assert ob.data == [[1]]
+            assert ob.wires == qml.wires.Wires(wire)
+
+        assert gen_tensor.obs[-1].__class__ is base_gen.__class__
+        assert gen_tensor.obs[-1].wires == base_gen.wires
+
+    def test_diagonalizing_gates(self):
+        """Test that the Controlled diagonalizing gates is the same as the base diagonalizing gates."""
+        base = qml.PauliX(0)
+        op = Controlled(base, (1, 2))
+
+        op_gates = op.diagonalizing_gates()
+        base_gates = base.diagonalizing_gates()
+
+        assert len(op_gates) == len(base_gates)
+
+        for op1, op2 in zip(op_gates, base_gates):
+            assert op1.__class__ is op2.__class__
+            assert op1.wires == op2.wires
+
+
+class TestInverse:
+    def test_invert_pow_op(self):
+        """Test that in-place inversion of a power operator inverts the base operator."""
+
+        base = qml.S(0)
+        op = Controlled(base, 2)
+
+        assert op.inverse == base.inverse == False
+        assert op.name == "CS"
+
+        op.inv()
+
+        assert op.inverse == False
+        assert base.inverse == True
+        assert op.name == "CS.inv"
+        assert op.base_name == "CS"
+
+    def test_inverse_setter(self):
+
+        base = qml.T(0)
+        op = Controlled(base, 1)
+
+        assert op.inverse == base.inverse == False
+        assert op.name == "CT"
+
+        op.inverse = True
+
+        assert op.inverse == False
+        assert base.inverse == True
+        assert op.name == "CT.inv"
+        assert op.base_name == "CT"
+
+
 class TestQueuing:
     """Test that Controlled operators queue and update base metadata."""
 
@@ -371,17 +493,3 @@ class TestMatrix:
         sparse_mat = op.sparse_matrix()
         assert isinstance(sparse_mat, sparse.csr_matrix)
         assert qml.math.allclose(op.sparse_matrix().toarray(), op.matrix())
-
-
-def test_eigvals():
-    """Test the eigenvalues against the matrix eigenvalues."""
-    base = qml.IsingXX(1.234, wires=(0, 1))
-    op = Controlled(base, (2, 3))
-
-    mat = op.matrix()
-    mat_eigvals = np.sort(qml.math.linalg.eigvals(mat))
-
-    eigs = op.eigvals()
-    sort_eigs = np.sort(eigs)
-
-    assert qml.math.allclose(mat_eigvals, sort_eigs)

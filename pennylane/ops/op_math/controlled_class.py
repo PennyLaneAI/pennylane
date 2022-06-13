@@ -18,11 +18,11 @@ This submodule defines the symbolic operation that indicates the control of an o
 import warnings
 from copy import copy
 
+import numpy as np
 from scipy import sparse
 
 import pennylane as qml
 from pennylane import math as qmlmath
-from pennylane import numpy as np
 from pennylane import operation
 from pennylane.queuing import QueuingContext
 from pennylane.wires import Wires
@@ -38,7 +38,7 @@ class ControlledOperation(operation.Operation):
     When we no longer rely on certain functionality through `Operation`, we can get rid of this
     class.
 
-    Differs inversion behavior to base.  This way we don't have to modify the ``Controlled.matrix``
+    Defers inversion behavior to base.  This way we don't have to modify the ``Controlled.matrix``
     and ``Controlled.eigvals`` to account for in-place inversion. In-place inversion of a matrix
     """
 
@@ -60,7 +60,7 @@ class ControlledOperation(operation.Operation):
 
     @property
     def base_name(self):
-        return self._name
+        return f"C{self.base.base_name}"
 
     @property
     def name(self):
@@ -81,7 +81,7 @@ class ControlledOperation(operation.Operation):
             base_gen = qml.generator(self.base, format="observable")
         except operation.GeneratorUndefinedError as e:
             raise operation.ParameterFrequenciesUndefinedError(
-                f"Operation {self.name} does not have parameter frequencies defined."
+                f"Operation {self.base.name} does not have parameter frequencies defined."
             ) from e
 
         with warnings.catch_warnings():
