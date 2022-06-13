@@ -1019,6 +1019,10 @@ class TestExpval:
 
         res = dev.execute(tape)
         assert np.allclose(res, expected(theta, phi), atol=tol, rtol=0)
+        if qml.math.ndim(theta) == 1:
+            print(res)
+            print(expected(theta, phi))
+            assert False
 
     def test_hermitian_expectation(self, theta, phi, varphi, tol):
         """Test that arbitrary Hermitian expectation values are correct"""
@@ -2207,10 +2211,7 @@ class TestSamplesBroadcasted:
         res = circuit(a)
 
         assert isinstance(res, tf.Tensor)
-        assert res.shape == (
-            qml.math.shape(a)[0],
-            shots,
-        )
+        assert res.shape == (3, shots)
         assert set(res.numpy().flat) == {-1, 1}
 
     @pytest.mark.parametrize("batch_size", [2, 3])
@@ -2270,6 +2271,7 @@ class TestSamplesBroadcasted:
 
         res = circuit(a, b)
         assert isinstance(res, tf.Tensor)
+        assert qml.math.shape(res) == (batch_size, 2)
 
 
 @pytest.mark.tf
