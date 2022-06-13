@@ -22,7 +22,7 @@ from pennylane import numpy as np
 
 
 @pytest.mark.parametrize(
-    ("two_tensor", "tol", "factors_ref"),
+    ("two_tensor", "tol_f", "tol_s", "factors_ref"),
     [
         # two-electron tensor computed as
         # symbols  = ['H', 'H']
@@ -43,6 +43,7 @@ from pennylane import numpy as np
                     ],
                 ]
             ),
+            1.0e-5,
             1.0e-5,
             # factors computed with openfermion (rearranged)
             np.array(
@@ -67,6 +68,7 @@ from pennylane import numpy as np
                 ]
             ),
             1.0e-1,
+            1.0e-1,
             np.array(
                 [
                     [[-1.11022302e-16, -4.25688222e-01], [-4.25688222e-01, -1.11022302e-16]],
@@ -76,9 +78,9 @@ from pennylane import numpy as np
         ),
     ],
 )
-def test_factorize(two_tensor, tol, factors_ref):
+def test_factorize(two_tensor, tol_f, tol_s, factors_ref):
     r"""Test that factorize function returns the correct values."""
-    factors, eigvals, eigvecs = qml.resources.factorize(two_tensor, tol)
+    factors, eigvals, eigvecs = qml.resources.factorize(two_tensor, tol_f, tol_s)
 
     eigvals_ref, eigvecs_ref = np.linalg.eigh(factors_ref)
 
@@ -112,7 +114,7 @@ def test_factorize(two_tensor, tol, factors_ref):
 )
 def test_factorize_reproduce(two_tensor):
     r"""Test that factors returned by the factorize function reproduce the two-electron integral."""
-    factors, _, _ = qml.resources.factorize(two_tensor, 1e-5)
+    factors, _, _ = qml.resources.factorize(two_tensor, 1e-5, 1e-5)
     two_computed = np.zeros(two_tensor.shape)
     for mat in factors:
         two_computed += np.einsum("ij, lk", mat, mat)
@@ -137,4 +139,4 @@ def test_shape_error(two_tensor):
     r"""Test that the factorize function raises an error when the two-electron repulsion tensor does
     not have the correct shape."""
     with pytest.raises(ValueError, match="The two-electron repulsion tensor must have"):
-        qml.resources.factorize(two_tensor, 1e-5)
+        qml.resources.factorize(two_tensor, 1e-5, 1e-5)

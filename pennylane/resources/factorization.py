@@ -17,7 +17,7 @@ This module contains the functions needed for two-electron tensor factorization.
 from pennylane import numpy as np
 
 
-def factorize(two, tol):
+def factorize(two, tol_first, tol_second):
     r"""Return the double-factorized form of a two-electron tensor.
 
     The two-electron tensor :math:`V`, in the chemist notation, is first factorized in terms of
@@ -29,7 +29,8 @@ def factorize(two, tol):
     Args:
         two (array[array[float]]): the two-electron repulsion tensor in the molecular orbital basis
             arranged in chemist notation
-        tol (float): threshold error value for discarding the negligible factors
+        tol_first (float): threshold error value for discarding the negligible factors
+        tol_second (float): threshold error value for discarding the negligible factor eigenvalues
 
     Returns:
         tuple(array[array[float]]], list[array[float]], list[array[float]]): tuple containing
@@ -43,7 +44,7 @@ def factorize(two, tol):
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> core, one, two = qml.qchem.electron_integrals(mol)()
     >>> two = np.swapaxes(two, 1, 3) # convert to the chemist notation
-    >>> factors, eigvals, eigvecs = factorize(two, 1e-5)
+    >>> factors, eigvals, eigvecs = factorize(two, 1e-5, 1e-5)
     >>> print(factors)
     [[[ 1.06723440e-01  9.73575768e-15]
       [ 8.36288956e-15 -1.04898533e-01]]
@@ -136,7 +137,7 @@ def factorize(two, tol):
     two = two.reshape(n * n, n * n)
 
     eigvals_r, eigvecs_r = np.linalg.eigh(two)
-    eigvals_r = np.array([val for val in eigvals_r if abs(val) > tol])
+    eigvals_r = np.array([val for val in eigvals_r if abs(val) > tol_first])
     eigvecs_r = eigvecs_r[:, -len(eigvals_r) :]
 
     vectors = eigvecs_r @ np.diag(np.sqrt(eigvals_r))
@@ -148,7 +149,7 @@ def factorize(two, tol):
     eigvals_m = []
     eigvecs_m = []
     for n in range(len(eigvals)):
-        idx = [i for i, v in enumerate(eigvals[n]) if abs(v) > tol]
+        idx = [i for i, v in enumerate(eigvals[n]) if abs(v) > tol_second]
         eigvals_m.append(eigvals[n][idx])
         eigvecs_m.append(eigvecs[n][idx])
 
