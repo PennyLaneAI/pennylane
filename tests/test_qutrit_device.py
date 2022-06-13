@@ -1,3 +1,6 @@
+"""
+Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
+"""
 import pytest
 import numpy as np
 from random import random
