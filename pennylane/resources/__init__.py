@@ -14,4 +14,4 @@
 """
 This subpackage provides the functionality for algorithm resource estimation.
 """
-from .second_quantization import norm
+from .second_quantization import norm_df
