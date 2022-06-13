@@ -63,9 +63,6 @@ def equal(op1, op2, check_interface=True, check_trainability=True, rtol=1e-5, at
 
         >>> qml.equal(op3, op4, check_trainability=False)
         True
-
-        If the parameters do not have a `requires_grad` attribute, the function will return `False` if `check_trainability`
-        is `True`.
     """
     if op1.__class__ is not op2.__class__:
         return False
