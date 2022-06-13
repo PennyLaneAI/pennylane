@@ -42,7 +42,7 @@
 
 **Operator Arithmetic:**
 
-* A `Sum` arithmetic class is added that allows users to represent the sum of operators
+* A `Sum` symbolic class is added that allows users to represent the sum of operators
   [(#2475)](https://github.com/PennyLaneAI/pennylane/pull/2475)
 
 <h3>Improvements</h3>
