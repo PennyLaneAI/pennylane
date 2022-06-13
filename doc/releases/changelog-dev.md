@@ -16,6 +16,7 @@
   [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
   [(#2590)](https://github.com/PennyLaneAI/pennylane/pull/2590)
   [(#2609)](https://github.com/PennyLaneAI/pennylane/pull/2609)
+  [(#2627)](https://github.com/PennyLaneAI/pennylane/pull/2627)
 
   Parameter broadcasting refers to passing parameters with a (single) leading additional
   dimension (compared to the expected parameter shape) to `Operator`'s.
@@ -49,6 +50,10 @@
       The broadcasted dimension is the first dimension in representations.
       Note that the broadcasted parameter has to be passed as an `tensor` but not as a python
       `list` or `tuple` for most operations.
+    - `DefaultQubit` devices can handle broadcasted `QuantumTape`s natively by utilizing the
+      broadcasting capabilities of the used interface. This enables execution of broadcasted
+      tapes with a single circuit simulation, which can speed up the overall computation.
+      Correspondingly, `DefaultQubit` has `capabilities()["supports_broadcasting"] = True`.
 
   **Example**
 
@@ -118,7 +123,9 @@
   array([-0.33003414, -0.34999899, -0.38238817])
   ```
 
-  However, devices will handle this automatically under the hood:
+  However, devices will handle this automatically under the hood, either by
+  applying the `broadcast_expand` transform internally, or by making use of native
+  broadcasting support:
 
   ```pycon
   >>> qml.execute([tape], dev, None)[0]
