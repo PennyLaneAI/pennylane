@@ -917,6 +917,7 @@ class QuantumTape(AnnotatedQueue):
             iterator = enumerate(params)
             required_length = len(self._par_info)
 
+        #print(params)
         if len(params) != required_length:
             raise ValueError("Number of provided parameters does not match.")
 
@@ -924,6 +925,7 @@ class QuantumTape(AnnotatedQueue):
             op = self._par_info[idx]["op"]
             op.data[self._par_info[idx]["p_idx"]] = p
             op._check_batching(op.data)
+        #print([op.batch_size for op in self.operations])
         self._update_batch_size()
         self._update_output_dim()
 

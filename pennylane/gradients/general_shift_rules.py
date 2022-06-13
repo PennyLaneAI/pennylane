@@ -378,7 +378,7 @@ def generate_multi_shift_rule(frequencies, shifts=None, orders=None):
     return _combine_shift_rules(rules)
 
 
-def generate_shifted_tapes(tape, index, shifts, multipliers=None):
+def generate_shifted_tapes_old(tape, index, shifts, multipliers=None):
     r"""Generate a list of tapes where one marked trainable parameter has
     been shifted by the provided shift values.
 
@@ -414,6 +414,51 @@ def generate_shifted_tapes(tape, index, shifts, multipliers=None):
 
     return tapes
 
+def generate_shifted_tapes(tape, index, shifts, multipliers=None):
+    r"""Generate a list of tapes where one marked trainable parameter has
+    been shifted by the provided shift values.
+
+    Args:
+        tape (.QuantumTape): input quantum tape
+        index (int): index of the trainable parameter to shift
+        shifts (Sequence[float or int]): sequence of shift values.
+            The length determines how many parameter-shifted tapes are created.
+        multipliers (Sequence[float or int]): sequence of multiplier values.
+            The length should match the one of ``shifts``. Each multiplier scales the
+            corresponding gate parameter before the shift is applied. If not provided, the
+            parameters will not be scaled.
+
+    Returns:
+        list[QuantumTape]: List of quantum tapes. In each tape the parameter indicated
+            by ``index`` has been shifted by the values in ``shifts``. The number of tapes
+            matches the lenth of ``shifts`` and ``multipliers`` (if provided).
+    """
+    params = list(tape.get_parameters())
+    if multipliers is None:
+        multipliers = np.ones_like(shifts)
+
+    tapes = []
+
+    #new_params = qml.math.asarray([params.copy() for _ in shifts])
+    new_params = params.copy()
+    new_params[index] = new_params[index] * qml.math.convert_like(multipliers, new_params[index]) + qml.math.convert_like(shifts, new_params[index])
+    shifted_tape = tape.copy(copy_operations=True)
+    #print(new_params)
+    shifted_tape.set_parameters(new_params)
+    #print(shifted_tape.batch_size)
+    return [shifted_tape]
+    """
+    for shift, multiplier in zip(shifts, multipliers):
+        new_params = params.copy()
+        shifted_tape = tape.copy(copy_operations=True)
+        new_params[index] = new_params[index] * qml.math.convert_like(multiplier, new_params[index])
+        new_params[index] = new_params[index] + qml.math.convert_like(shift, new_params[index])
+
+        shifted_tape.set_parameters(new_params)
+        tapes.append(shifted_tape)
+
+    return tapes
+    """
 
 def generate_multishifted_tapes(tape, indices, shifts, multipliers=None):
     r"""Generate a list of tapes where multiple marked trainable

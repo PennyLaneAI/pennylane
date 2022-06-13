@@ -175,15 +175,19 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
     gradient_tapes = []
     gradient_coeffs = []
     shapes = []
+    batch_sizes = []
     unshifted_coeffs = []
 
     fns = []
+
+    unpack_output_like_tape = False
 
     for idx, _ in enumerate(tape.trainable_params):
 
         if idx not in argnum:
             # parameter has zero gradient
             shapes.append(0)
+            batch_sizes.append(0)
             gradient_coeffs.append([])
             fns.append(None)
             continue
@@ -201,6 +205,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
             g_tapes, h_fn = qml.gradients.hamiltonian_grad(tape, idx)
             gradient_tapes.extend(g_tapes)
             shapes.append(1)
+            batch_sizes.extend(t.batch_size for t in g_tapes)
             gradient_coeffs.append(np.array([1.0]))
             fns.append(h_fn)
             continue
@@ -222,7 +227,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
 
             if not unshifted_coeffs and f0 is None:
                 # Ensure that the unshifted tape is appended
-                # to the gradient tapes, if not already.
+                # to the gradient tapes, if not already present.
                 gradient_tapes.append(tape)
 
             # Store the unshifted coefficient. We know that
@@ -232,38 +237,60 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
 
         # generate the gradient tapes
         gradient_coeffs.append(coeffs)
+        #print(op_shifts, multipliers)
         g_tapes = generate_shifted_tapes(tape, idx, op_shifts, multipliers)
 
         gradient_tapes.extend(g_tapes)
+        #print(g_tapes)
+        #print([t.measurements for t in g_tapes])
+        #assert len(g_tapes)==1
         shapes.append(len(g_tapes))
+        batch_sizes.append(g_tapes[0].batch_size)
+        if len(gradient_tapes) == 1 and batch_sizes[-1] is not None and batch_sizes[-1] > 1:
+            unpack_output_like_tape = True
 
     def processing_fn(results):
         # Apply the same squeezing as in qml.QNode to make the transform output consistent.
         # pylint: disable=protected-access
+        #print(tape._qfunc_output)
         if tape._qfunc_output is not None and not isinstance(tape._qfunc_output, Sequence):
             results = [qml.math.squeeze(res) for res in results]
+        print(results)
 
         grads = []
         start = 1 if unshifted_coeffs and f0 is None else 0
         r0 = f0 or results[0]
 
-        for i, (s, f) in enumerate(zip(shapes, fns)):
+        #print(shapes)
+        for i, (s, f, batch_size) in enumerate(zip(shapes, fns, batch_sizes)):
 
             if s == 0:
                 # parameter has zero gradient
-                g = qml.math.zeros_like(results[0])
+                print(unpack_output_like_tape)
+                #print(results[0])
+                if tape._qfunc_output is not None:
+                    output_like_tape = tape._qfunc_output
+                else:
+                    output_like_tape = results[0][:][:-1] if unpack_output_like_tape else results[0][0]
+                print(output_like_tape)
+                g = qml.math.zeros_like(output_like_tape)
+                #print(f"zeroed grad: {g}")
                 grads.append(g)
                 continue
 
-            res = results[start : start + s]
+            res = results[start]
             start = start + s
 
             if f is not None:
                 res = f(res)
 
             # compute the linear combination of results and coefficients
-            res = qml.math.stack(res)
-            g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[0], [0]])
+            # For batch_size==1 we have to undo squeezing of the broadcasting dimension
+            #if batch_size == 1:
+                #res = [res]
+            #print(res)
+            g = qml.math.tensordot(res, qml.math.convert_like(gradient_coeffs[i], res), [[1], [0]])
+            #assert qml.math.shape(g)[0] == 1
 
             if unshifted_coeffs:
                 # add on the unshifted term
@@ -276,6 +303,7 @@ def expval_param_shift(tape, argnum=None, shifts=None, gradient_recipes=None, f0
         # size, resulting in a ragged array.
         # In the future, we might want to change this so that only tuples
         # of arrays are returned.
+        print(f"grads: {grads}")
         for i, g in enumerate(grads):
             if hasattr(g, "dtype") and g.dtype is np.dtype("object"):
                 if qml.math.ndim(g) > 0:

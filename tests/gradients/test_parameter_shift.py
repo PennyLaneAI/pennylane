@@ -141,12 +141,13 @@ class TestParamShift:
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[1])
+            qml.RY(-0.654, wires=[1]) # does not have any impact on the expval
             qml.expval(qml.PauliZ(0))
 
         dev = qml.device("default.qubit", wires=2)
         tapes, fn = qml.gradients.param_shift(tape)
-        assert len(tapes) == 2
+        assert len(tapes) == 1
+        assert tapes[0].batch_size == 2
 
         res = fn(dev.batch_execute(tapes))
         assert res.shape == (1, 2)
@@ -280,12 +281,22 @@ class TestParamShift:
         gradient_recipes = ([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], [[1, 1, 1], [2, 2, 2], [3, 3, 3]])
         tapes, _ = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes)
 
-        assert len(tapes) == 5
-        assert tapes[0].get_parameters(trainable_only=False) == [0.2 * 1.0 + 0.3, 2.0, 3.0, 4.0]
-        assert tapes[1].get_parameters(trainable_only=False) == [0.5 * 1.0 + 0.6, 2.0, 3.0, 4.0]
-        assert tapes[2].get_parameters(trainable_only=False) == [1.0, 2.0, 1 * 3.0 + 1, 4.0]
-        assert tapes[3].get_parameters(trainable_only=False) == [1.0, 2.0, 2 * 3.0 + 2, 4.0]
-        assert tapes[4].get_parameters(trainable_only=False) == [1.0, 2.0, 3 * 3.0 + 3, 4.0]
+        assert len(tapes) == 2
+        assert [t.batch_size for t in tapes] == [2, 3]
+        assert all(
+            qml.math.allclose(p, exp)
+            for p, exp in zip(
+                tapes[0].get_parameters(trainable_only=False),
+                [[0.2 * 1.0 + 0.3, 0.5 * 1.0 + 0.6], 2.0, 3.0, 4.0],
+            )
+        )
+        assert all(
+            qml.math.allclose(p, exp)
+            for p, exp in zip(
+                tapes[1].get_parameters(trainable_only=False),
+                [1.0, 2.0, [1 * 3.0 + 1, 2 * 3.0 + 2,3 * 3.0 + 3], 4.0],
+            )
+        )
 
     def test_recycled_unshifted_tape(self):
         """Test that if the gradient recipe has a zero-shift component, then
@@ -304,7 +315,8 @@ class TestParamShift:
         # one tape per parameter, plus one global call
         assert len(tapes) == tape.num_params + 1
 
-    def test_f0_provided(self):
+    @pytest.mark.parametrize("y_wire", [0, 1])
+    def test_f0_provided(self, y_wire):
         """Test that if the original tape output is provided, then
         the tape is not executed additionally at the current parameter
         values."""
@@ -312,15 +324,16 @@ class TestParamShift:
 
         with qml.tape.QuantumTape() as tape:
             qml.RX(0.543, wires=[0])
-            qml.RY(-0.654, wires=[0])
+            qml.RY(-0.654, wires=y_wire)
             qml.expval(qml.PauliZ(0))
 
         gradient_recipes = ([[-1e7, 1, 0], [1e7, 1, 1e7]],) * 2
         f0 = dev.execute(tape)
+        print(f"computed f0: {f0}")
         tapes, fn = qml.gradients.param_shift(tape, gradient_recipes=gradient_recipes, f0=f0)
 
-        # one tape per parameter, plus one global call
-        assert len(tapes) == tape.num_params
+        # one tape per parameter that impacts the expval
+        assert len(tapes) == 2 if y_wire==0 else 1
 
         fn(dev.batch_execute(tapes))
 
@@ -342,8 +355,9 @@ class TestParamShift:
         tapes, fn = qml.gradients.param_shift(tape1)
         j1 = fn(dev.batch_execute(tapes))
 
-        # We should only be executing the device to differentiate 1 parameter (2 executions)
-        assert dev.num_executions == 2
+        # We should only be executing the device to differentiate 1 parameter
+        # (1 broadcasted execution)
+        assert dev.num_executions == 1
 
         tapes, fn = qml.gradients.param_shift(tape2)
         j2 = fn(dev.batch_execute(tapes))
@@ -382,9 +396,9 @@ class TestParamShift:
 
         tapes, fn = qml.gradients.param_shift(tape)
 
-        assert len(tapes) == 2
-        assert tapes[0].operations[0].data[0] == 0
-        assert tapes[1].operations[0].data[0] == 2 * x
+        assert len(tapes) == 1
+        assert tapes[0].batch_size == 2
+        assert qml.math.allclose(tapes[0].operations[0].data[0], [0, 2 * x])
 
         grad = fn(dev.batch_execute(tapes))
         assert np.allclose(grad, -np.sin(x))
@@ -442,7 +456,8 @@ class TestParameterShiftRule:
         tape.trainable_params = {1}
 
         tapes, fn = qml.gradients.param_shift(tape, shifts=[(shift,)])
-        assert len(tapes) == 2
+        assert len(tapes) == 1
+        assert tapes[0].batch_size == 2
 
         autograd_val = fn(dev.batch_execute(tapes))
 
@@ -476,7 +491,8 @@ class TestParameterShiftRule:
         tape.trainable_params = {1, 2, 3}
 
         tapes, fn = qml.gradients.param_shift(tape, shifts=[(shift,)] * 3)
-        assert len(tapes) == 2 * len(tape.trainable_params)
+        assert len(tapes) == len(tape.trainable_params)
+        assert [t.batch_size for t in tapes] == [2, 2, 2]
 
         autograd_val = fn(dev.batch_execute(tapes))
         manualgrad_val = np.zeros_like(autograd_val)
@@ -546,7 +562,8 @@ class TestParameterShiftRule:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
         tapes, fn = qml.gradients.param_shift(tape)
-        assert len(tapes) == 4 * len(tape.trainable_params)
+        assert len(tapes) == len(tape.trainable_params)
+        assert [t.batch_size for t in tapes] == [4, 4, 4]
 
         grad = fn(dev.batch_execute(tapes))
         expected = np.array(
@@ -637,13 +654,14 @@ class TestParameterShiftRule:
         def cost_fn(params):
             with qml.tape.QuantumTape() as tape:
                 qml.RX(params[0], wires=[0])
-                RY(params[1], wires=[1])
+                RY(params[1], wires=[1]) # Use finite differences for this op
                 qml.CNOT(wires=[0, 1])
                 qml.expval(qml.PauliZ(0))
                 qml.var(qml.PauliX(1))
 
             tapes, fn = param_shift(tape, fallback_fn=qml.gradients.finite_diff)
-            assert len(tapes) == 5
+            #print([t.measurements for t in tapes])
+            assert len(tapes) == 4 # 1 for RX ???
 
             # check that the fallback method was called for the specified argnums
             spy.assert_called()
