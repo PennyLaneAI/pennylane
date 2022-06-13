@@ -302,13 +302,6 @@
   0.9905158135644924
   ```
   
-
-* Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
-  attribute `batch_size`.
-  - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
-  - `Operator.batch_size` contains the size of an additional parameter broadcasting axis, if present,
-  - `QuantumTape.batch_size` contains the `batch_size` of its operations (see below).
-  
 * New `solarized_light` and `solarized_dark` styles available for drawing circuit diagram graphics. 
   [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
   
@@ -461,7 +454,10 @@
         [ 0.        , -0.27633945,  0.        ],
         [ 0.        ,  0.        , -0.09928388]]])
   ```
-
+  
+* Add `IsingXY` gate.
+  [(#2649)](https://github.com/PennyLaneAI/pennylane/pull/2649)
+  
 * Speed up measuring of commuting Pauli operators
   [(#2425)](https://github.com/PennyLaneAI/pennylane/pull/2425)
 
@@ -613,14 +609,13 @@
 * The `QNode` class now contains a new method `best_method_str` that returns the best differentiation
   method for a provided device and interface, in human-readable format.
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
-
-
+  
 * Using `Operation.inv()` in a queuing environment no longer updates the queue's metadata, but merely updates
   the operation in place.
   [(#2596)](https://github.com/PennyLaneAI/pennylane/pull/2596)
 
 * Sparse Hamiltonians representation has changed from COOrdinate (COO) to Compressed Sparse Row (CSR) format. The CSR representation is more performant for arithmetic operations and matrix vector products. This change decreases the `expval()` calculation time, for `qml.SparseHamiltonian`, specially for large workflows. Also, the CRS format consumes less memory for the `qml.SparseHamiltonian` storage.
-[(#2561)](https://github.com/PennyLaneAI/pennylane/pull/2561)
+  [(#2561)](https://github.com/PennyLaneAI/pennylane/pull/2561)
 
 * A new method `safe_update_info` is added to `qml.QueuingContext`. This method is substituted
   for `qml.QueuingContext.update_info` in a variety of places.
@@ -641,9 +636,6 @@
 * Added separate requirements_dev.txt for separation of concerns for code development and just using PennyLane.
   [(#2635)](https://github.com/PennyLaneAI/pennylane/pull/2635)
 
-* Add `IsingXY` gate.
-  [(#2649)](https://github.com/PennyLaneAI/pennylane/pull/2649)
-
 * The performance of building sparse Hamiltonians has been improved by accumulating the sparse representation of coefficient-operator pairs in a temporary storage and by eliminating unnecessary `kron` operations on identity matrices.
   [(#2630)](https://github.com/PennyLaneAI/pennylane/pull/2630)
 
@@ -657,8 +649,7 @@
 
 * Weights with negative shapes will raise an error, weights with `size = 0` will result in creating empty Tensor objects now with `qml.TorchLayer`.
   [(#2678)](https://github.com/PennyLaneAI/pennylane/pull/2678)
-
-
+  
 * PennyLane does not support TensorFlow `2.1.~` anymore.
   [(#2683)](https://github.com/PennyLaneAI/pennylane/pull/2683)
 
@@ -673,6 +664,7 @@
   function. Note that the `param_shift_hessian` function is unaffected by this change and can be
   invoked in the same manner as before via the `qml.gradients` module.
   [(#2528)](https://github.com/PennyLaneAI/pennylane/pull/2528)
+  
 * The properties `eigval` and `matrix` from the `Operator` class were replaced with the
   methods `eigval()` and `matrix(wire_order=None)`.
   [(#2498)](https://github.com/PennyLaneAI/pennylane/pull/2498)
@@ -708,8 +700,8 @@
   or `"jax-jit"`, when requesting backpropagation.
   [(#2591)](https://github.com/PennyLaneAI/pennylane/pull/2591)
 
-* Fixed a bug for `diff_method="adjoint"` where incorrect gradients were
-  computed for QNodes with parametrized observables (e.g., `qml.Hermitian`).
+* Fixed a bug for `diff_method="adjoint"` where incorrect gradients were computed for QNodes with parametrized 
+  observables (e.g., `qml.Hermitian`).
   [(#2543)](https://github.com/PennyLaneAI/pennylane/pull/2543)
 
 * Fixed a bug where `QNGOptimizer` did not work with operators
@@ -729,8 +721,10 @@
   instead of the controlled version of the diagonal unitary.
   [(#2525)](https://github.com/PennyLaneAI/pennylane/pull/2525)
 
-* Updated the gradients fix [(#2485)](https://github.com/PennyLaneAI/pennylane/pull/2485) to only apply to the `strawberryfields.gbs` device, since
-  the original logic was breaking some devices. [(#2595)](https://github.com/PennyLaneAI/pennylane/pull/2595)
+* Updated the gradients fix to only apply to the `strawberryfields.gbs` device, since the original logic was breaking 
+  some devices.
+  [(#2485)](https://github.com/PennyLaneAI/pennylane/pull/2485)
+  [(#2595)](https://github.com/PennyLaneAI/pennylane/pull/2595)
 
 <h3>Deprecations</h3>
 
@@ -758,7 +752,8 @@
 
 This release contains contributions from (in alphabetical order):
 
-Amintor Dusko, Ankit Khandelwal, Avani Bhardwaj, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs,
-Edward Jiang, Guillermo Alonso-Linaje, Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian Kottmann,
-Maria Schuld, Mason Moreland, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, Antal Száva,
-WingCode
+Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Samuel Banning, Avani Bhardwaj, 
+Amintor Dusko, Christian Gogolin, Qi Hu, Katharine Hyatt, Soran Jahangiri, Edward Jiang, Korbinian Kottmann, 
+Ankit Khandelwal, Christina Lee, Chae-Yeun Park, Mason Moreland, Romain Moyard, Maria Schuld, Jay Soni, Antal Száva, 
+David Wierichs, WingCode
+
