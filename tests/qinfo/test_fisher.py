@@ -419,3 +419,49 @@ class TestInterfacesClassicalFisher:
         assert np.allclose(cfim[0], 2.0 / 3.0 * np.ones((2, 2)))
         assert np.allclose(cfim[1], 2.0 / 3.0 * np.ones((10, 10)))
         assert np.allclose(cfim[2], np.zeros((1, 1)))
+
+class TestDiffCFIM:
+    """Testing differentiability of classical fisher info matrix (CFIM)"""
+
+    def test_diffability_autograd(self,):
+        """Testing diffability with an analytic example for autograd. The CFIM of this single qubit is constant, so the gradient should be zero."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="autograd")
+        def circ(params):
+            qml.RY(params, wires=0)
+            return qml.probs(wires=range(1))
+
+        params = pnp.array([np.pi/4], requires_grad=True)
+
+        assert np.allclose(qml.qinfo.classical_fisher(circ)(params),1)
+
+        result = np.zeros((1, 1, 1), dtype="float64")
+
+        result_calc = qml.jacobian(qml.qinfo.classical_fisher(circ))(params)
+
+        assert np.allclose(result, result_calc, atol=1e-6)
+    
+    def test_diffability_jax(self,):
+        """Testing diffability with an analytic example for jax. The CFIM of this single qubit is constant, so the gradient should be zero."""
+        import jax.numpy as jnp
+        import jax
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="jax")
+        def circ(params):
+            qml.RY(params[0], wires=0)
+            return qml.probs(wires=range(1))
+        # no matter what the input the CFIM here is always constant = 1
+        # so the derivative should be 0
+
+        params = np.pi / 4 * jnp.array([1.0])
+
+        assert qml.math.allclose(qml.qinfo.classical_fisher(circ)(params), 1.)
+
+        result = np.zeros((1, 1, 1), dtype="float64")
+
+        result_calc = jax.jacobian(qml.qinfo.classical_fisher(circ))(params)
+
+        assert np.allclose(result, result_calc, atol=1e-6)
