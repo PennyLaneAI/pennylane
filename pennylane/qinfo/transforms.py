@@ -268,7 +268,7 @@ def classical_fisher(qnode, argnums=0):
 
     .. warning::
 
-        The ``classical_fisher()`` matrix is currently not differentiable.
+        Differentiating the ``classical_fisher()`` matrix using the ``torch`` or ``tensorflow`` interface is currently not supported.
 
     .. seealso:: :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.qinfo.transforms.quantum_fisher`
 
