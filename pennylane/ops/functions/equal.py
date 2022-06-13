@@ -81,17 +81,12 @@ def equal(op1, op2, check_interface=True, check_trainability=True, rtol=1e-5, at
 
     if check_trainability:
         for params_1, params_2 in zip(op1.data, op2.data):
-            # Vanilla NumPy and JAX do not have the `requires_grad` attribute.
-            # This will raise an `AttributeError` for such cases.
-            try:
-                if not params_1.requires_grad == params_2.requires_grad:
-                    return False
-            except AttributeError:
+            if qml.math.requires_grad(params_1) != qml.math.requires_grad(params_2):
                 return False
 
     if check_interface:
         for params_1, params_2 in zip(op1.data, op2.data):
-            if not isinstance(params_1, type(params_2)):
+            if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
                 return False
 
     return True

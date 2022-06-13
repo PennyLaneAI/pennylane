@@ -155,8 +155,9 @@ class TestEqual:
         param_tf = tf.Variable(0.123)
         param_jax = jax.numpy.array(0.123)
         param_qml = npp.array(0.123)
+        param_np = np.array(0.123)
 
-        param_list = [param_qml, param_torch, param_jax, param_tf]
+        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert qml.equal(
                 op1(p1, wires=wire),
@@ -200,8 +201,9 @@ class TestEqual:
         param_tf = tf.Variable(0.123)
         param_jax = jax.numpy.array(0.123)
         param_qml = npp.array(0.123)
+        param_np = np.array(0.123)
 
-        param_list = [param_qml, param_torch, param_jax, param_tf]
+        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert qml.equal(
                 op1(p1, wires=wire),
@@ -269,8 +271,9 @@ class TestEqual:
         param_tf = tf.Variable(0.123)
         param_jax = jax.numpy.array(0.123)
         param_qml = npp.array(0.123)
+        param_np = np.array(0.123)
 
-        param_list = [param_qml, param_torch, param_jax, param_tf]
+        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert qml.equal(
                 op1(p1, wires=wire),
@@ -338,8 +341,9 @@ class TestEqual:
         param_tf = tf.Variable([1, 2, 3])
         param_jax = jax.numpy.array([1, 2, 3])
         param_qml = npp.array([1, 2, 3])
+        param_np = np.array([1, 2, 3])
 
-        param_list = [param_qml, param_torch, param_jax, param_tf]
+        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert qml.equal(
                 op1(p1[0], p1[1], p1[2], wires=wire),
@@ -406,9 +410,10 @@ class TestEqual:
         param_tf = tf.Variable([1, 2])
         param_jax = jax.numpy.array([1, 2])
         param_qml = npp.array([1, 2])
+        param_np = np.array([1, 2])
 
         op1 = PARAMETRIZED_OPERATIONS_2P_1W[0]
-        param_list = [param_qml, param_torch, param_jax, param_tf]
+        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert qml.equal(
                 op1(p1[0], p1[1], wires=wire),
@@ -443,8 +448,10 @@ class TestEqual:
         param_tf = tf.Variable(1)
         param_jax = jax.numpy.array(1)
         param_qml = npp.array(1)
+        param_np = np.array(1)
+
         op1 = PARAMETRIZED_OPERATIONS_1P_3W[0]
-        param_list = [param_qml, param_torch, param_jax, param_tf]
+        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert qml.equal(
                 op1(p1, wires=wire),
@@ -479,8 +486,10 @@ class TestEqual:
         param_tf = tf.Variable([1, 2, 3])
         param_jax = jax.numpy.array([1, 2, 3])
         param_qml = npp.array([1, 2, 3])
+        param_np = np.array([1, 2, 3])
+
         op1 = PARAMETRIZED_OPERATIONS_3P_2W[0]
-        param_list = [param_qml, param_torch, param_jax, param_tf]
+        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert qml.equal(
                 op1(p1[0], p1[1], p1[2], wires=wire),
@@ -515,8 +524,10 @@ class TestEqual:
         param_tf = tf.Variable(1)
         param_jax = jax.numpy.array(1)
         param_qml = npp.array(1)
+        param_np = np.array(1)
+
         op1 = PARAMETRIZED_OPERATIONS_Remaining[0]
-        param_list = [param_qml, param_torch, param_jax, param_tf]
+        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert qml.equal(
                 op1(p1, "Y", wires=wire),
@@ -551,8 +562,10 @@ class TestEqual:
         param_tf = tf.Variable([[1, 0], [0, 1]], dtype=tf.complex64) * 1j
         param_jax = jax.numpy.eye(2) * 1j
         param_qml = npp.eye(2) * 1j
+        param_np = np.eye(2) * 1j
+
         op1 = PARAMETRIZED_OPERATIONS_Remaining[1]
-        param_list = [param_qml, param_torch, param_jax, param_tf]
+        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert qml.equal(
                 op1(p1, wires=wire),
@@ -587,8 +600,10 @@ class TestEqual:
         param_tf = tf.Variable([1.0 + 0j, 1.0j])
         param_jax = jax.numpy.array([1.0, 1.0j])
         param_qml = npp.array([1.0, 1.0j])
+        param_np = np.array([1.0, 1.0j])
+
         op1 = PARAMETRIZED_OPERATIONS_Remaining[2]
-        param_list = [param_qml, param_torch, param_jax, param_tf]
+        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert qml.equal(
                 op1(p1, wires=wire),
@@ -623,8 +638,10 @@ class TestEqual:
         param_tf = tf.Variable([[1, 0], [0, 1]], dtype=tf.complex64) * 1j
         param_jax = jax.numpy.eye(2) * 1j
         param_qml = npp.eye(2) * 1j
+        param_np = np.eye(2) * 1j
+
         op1 = PARAMETRIZED_OPERATIONS_Remaining[3]
-        param_list = [param_qml, param_torch, param_jax, param_tf]
+        param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
             assert qml.equal(
                 op1(p1, wires=wire, control_wires=wire + 1),
@@ -815,13 +832,3 @@ class TestEqual:
             check_trainability=False,
             check_interface=False,
         )
-
-    def test_equal_trainability_error(self):
-        """Test using interfaces without `requires_grad` attribute for trainability check will fail"""
-        op1 = qml.RX(np.array(0.123), wires=0)
-        op2 = qml.RX(npp.array(0.123), wires=0)
-
-        assert not qml.equal(op1, op1)
-        assert qml.equal(op2, op2)
-        assert qml.equal(op1, op2, check_trainability=False, check_interface=False)
-        assert qml.equal(op1, op1, check_trainability=False)
