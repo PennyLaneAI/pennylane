@@ -73,27 +73,6 @@ triple_qubit_non_param_ops = (
 )
 
 
-arithmetic_ops = (
-    (qml.QubitCarry, _),
-    (qml.QubitSum, _),
-)
-
-matrix_ops = (
-    (qml.QubitUnitary, _),
-    (qml.ControlledQubitUnitary, _),
-    (qml.DiagonalQubitUnitary, _),
-)
-
-observable_ops = (
-    (qml.Hermitian, _),
-    (qml.Projector, _),
-)
-
-templates = (
-
-)
-
-
 class TestMatrix:
 
     @pytest.mark.parametrize("op_and_mat1", single_qubit_non_param_ops)
@@ -102,7 +81,7 @@ class TestMatrix:
         op1, mat1 = op_and_mat1
         op2, mat2 = op_and_mat2
         wires = 0
-        sum_op = qml.ops.arithmetic.Sum(op1(wires), op2(wires))
+        sum_op = Sum(op1(wires), op2(wires))
 
         sum_mat = sum_op.matrix()
         true_mat = mat1 + mat2
@@ -122,14 +101,14 @@ class TestMatrix:
 class TestProperties:
 
     ops = (
-        (qml.PauliX(0), qml.PauliZ(0), qml.Hadamard(0)),
-        (qml.CNOT(wires=[0,1]), qml.RX(1.23, wires=1), qml.Identity(0)),
+        (qml.PauliX(wires=0), qml.PauliZ(wires=0), qml.Hadamard(wires=0)),
+        (qml.CNOT(wires=[0, 1]), qml.RX(1.23, wires=1), qml.Identity(wires=0)),
         (qml.IsingXX(4.56, wires=[2, 3]), qml.Toffoli(wires=[1, 2, 3]), qml.Rot(0.34, 1.0, 0, wires=0)),
     )
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_num_params(self, ops_lst):
-        sum_op = sum(ops_lst)
+        sum_op = sum(*ops_lst)
         true_num_params = 0
 
         for op in ops_lst:
@@ -139,17 +118,17 @@ class TestProperties:
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_num_wires(self, ops_lst):
-        sum_op = sum(ops_lst)
-        true_num_wires = 0
+        sum_op = sum(*ops_lst)
+        true_wires = set()
 
         for op in ops_lst:
-            true_num_wires += op.num_wires
+            true_wires = true_wires.union(op.wires.toset())
 
-        assert sum_op.num_params == true_num_wires
+        assert sum_op.num_wires == len(true_wires)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_is_hermitian(self, ops_lst):
-        sum_op = sum(ops_lst)
+        sum_op = sum(*ops_lst)
         true_hermitian_state = True
 
         for op in ops_lst:
@@ -159,7 +138,7 @@ class TestProperties:
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_queue_catagory(self, ops_lst):
-        sum_op = sum(ops_lst)
+        sum_op = sum(*ops_lst)
         assert sum_op._queue_category is None
 
 

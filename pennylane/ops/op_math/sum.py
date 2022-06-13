@@ -15,7 +15,6 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
-import warnings
 import numpy as np
 import pennylane as qml
 from pennylane import math
@@ -40,7 +39,10 @@ class Sum(Operator):
         self.summands = summands
 
         combined_wires = qml.wires.Wires.all_wires([s.wires for s in summands])
-        combined_params = [s.parameters for s in summands]
+        combined_params = []
+        for s in summands:
+            combined_params += s.parameters
+
         super().__init__(
             *combined_params, wires=combined_wires, do_queue=do_queue, id=id
         )
