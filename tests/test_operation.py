@@ -943,6 +943,22 @@ class TestTensor:
         assert tape._queue[t2] == {"owns": (op1, op2, op3)}
         assert tape._queue[op3] == {"owner": t2}
 
+    def test_queuing_tensor_matmul_components_outside(self):
+        """Tests the tensor-specific matmul method when components are defined outside the
+        queuing context."""
+
+        op1 = qml.PauliX(0)
+        op2 = qml.PauliY(1)
+        t1 = Tensor(op1, op2)
+
+        with qml.tape.QuantumTape() as tape:
+            op3 = qml.PauliZ(2)
+            t2 = t1 @ op3
+
+        assert len(tape._queue) == 2
+        assert tape._queue[op3] == {"owner": t2}
+        assert tape._queue[t2] == {"owns": (op1, op2, op3)}
+
     def test_queuing_tensor_rmatmul(self):
         """Tests tensor-specific rmatmul updates queuing metatadata."""
 

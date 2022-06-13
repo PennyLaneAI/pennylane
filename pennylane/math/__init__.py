@@ -40,9 +40,11 @@ from .multi_dispatch import (
     concatenate,
     diag,
     dot,
+    einsum,
     frobenius_inner_product,
     get_trainable_indices,
     ones_like,
+    scatter,
     scatter_element_add,
     stack,
     tensordot,
@@ -51,6 +53,7 @@ from .multi_dispatch import (
 )
 
 from .quantum import cov_matrix, marginal_prob
+from .quantum import reduced_dm, vn_entropy, mutual_info, sqrt_matrix, fidelity
 
 from .utils import (
     allclose,
@@ -70,6 +73,9 @@ add = ar.numpy.add
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
+# small constant for numerical stability that the user can modify
+eps = 1e-14
+
 
 def __getattr__(name):
     return getattr(ar.numpy, name)
@@ -88,17 +94,24 @@ __all__ = [
     "cov_matrix",
     "diag",
     "dot",
+    "einsum",
+    "fidelity",
     "frobenius_inner_product",
     "get_interface",
     "get_trainable_indices",
     "is_abstract",
     "is_independent",
     "marginal_prob",
+    "mutual_info",
+    "reduced_dm",
     "ones_like",
+    "reduced_dm",
     "requires_grad",
+    "sqrt_matrix",
     "scatter_element_add",
     "stack",
     "tensordot",
     "unwrap",
+    "vn_entropy",
     "where",
 ]
