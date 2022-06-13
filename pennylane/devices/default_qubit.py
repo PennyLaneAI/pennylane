@@ -132,6 +132,7 @@ class DefaultQubit(QubitDevice):
         "IsingXX",
         "IsingYY",
         "IsingZZ",
+        "IsingXY",
         "SingleExcitation",
         "SingleExcitationPlus",
         "SingleExcitationMinus",
@@ -142,6 +143,7 @@ class DefaultQubit(QubitDevice):
         "QubitSum",
         "OrbitalRotation",
         "QFT",
+        "ECR",
     }
 
     observables = {
@@ -626,39 +628,6 @@ class DefaultQubit(QubitDevice):
         batch_size = self._get_batch_size(self._pre_rotated_state, (2,) * self.num_wires, dim)
         shape = (batch_size, dim) if batch_size is not None else (dim,)
         return self._reshape(self._pre_rotated_state, shape)
-
-    def density_matrix(self, wires):
-        """Returns the reduced density matrix of a given set of wires.
-
-        Args:
-            wires (Wires): wires of the reduced system.
-
-        Returns:
-            array[complex]: complex tensor of shape ``(2 ** len(wires), 2 ** len(wires))``
-            representing the reduced density matrix.
-
-        .. warning::
-
-            This function does not support broadcasted states yet.
-        """
-        state = self._pre_rotated_state
-
-        # Return the full density matrix by using numpy tensor product
-        if wires == self.wires:
-            density_matrix = self._tensordot(state, self._conj(state), axes=0)
-            density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
-            return density_matrix
-
-        complete_system = list(range(0, self.num_wires))
-        traced_system = [x for x in complete_system if x not in wires.labels]
-
-        # Return the reduced density matrix by using numpy tensor product
-        density_matrix = self._tensordot(
-            state, self._conj(state), axes=(traced_system, traced_system)
-        )
-        density_matrix = self._reshape(density_matrix, (2 ** len(wires), 2 ** len(wires)))
-
-        return density_matrix
 
     def _apply_state_vector(self, state, device_wires):
         """Initialize the internal state vector in a specified state.

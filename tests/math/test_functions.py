@@ -23,8 +23,6 @@ from pennylane import numpy as np
 from pennylane import math as fn
 from autograd.numpy.numpy_boxes import ArrayBox
 
-import semantic_version
-
 pytestmark = pytest.mark.all_interfaces
 
 tf = pytest.importorskip("tensorflow", minversion="2.1")
@@ -2263,6 +2261,3 @@ class TestSortFunction:
         result = fn.sort(input)
 
         assert all(result == test_output)
-
-
-ones_functions = [onp.ones, np.ones, jnp.ones, torch.ones, tf.ones]
