@@ -262,9 +262,8 @@ class DefaultQubit(QubitDevice):
         wires = operation.wires
 
         if operation.base_name in self._apply_ops:
-            axes = [
-                ax + int(self._ndim(state) > self.num_wires) for ax in self.wires.indices(wires)
-            ]
+            shifts = int(self._ndim(state) > self.num_wires)
+            axes = [ax + shift for ax in self.wires.indices(wires)]
             return self._apply_ops[operation.base_name](state, axes, inverse=operation.inverse)
 
         matrix = self._asarray(self._get_unitary_matrix(operation), dtype=self.C_DTYPE)
@@ -502,10 +501,8 @@ class DefaultQubit(QubitDevice):
 
         .. warning::
 
-            While the QubitDevice function supports broadcasted states already,
-            this function does not support broadcasted states or observables yet,
-            i.e. it supports broadcasting depending on whether the logic below is
-            activated or the execution is passed to ``QubitDevice.expval``.
+            This function only supports broadcasting if no differentiation with
+            respect to the Hamiltonian or the quantum state directly is performed.
         """
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
@@ -519,6 +516,7 @@ class DefaultQubit(QubitDevice):
             ) and observable.name == "Hamiltonian"
 
             if backprop_mode:
+                # TODO[dwierichs]: This branch is not adapted to broadcasting yet
                 # We must compute the expectation value assuming that the Hamiltonian
                 # coefficients *and* the quantum states are tensor objects.
 

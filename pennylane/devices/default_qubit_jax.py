@@ -255,7 +255,6 @@ class DefaultQubitJax(DefaultQubit):
             for state, count in zip(basis_states, counts):
                 prob = prob.at[state].set(count / len(indices))
             # resize prob which discards the 'filled values'
-            # prob = jnp.resize(prob, dim)
             return prob[:-1]
 
         for i, idx in enumerate(indices):
@@ -264,7 +263,6 @@ class DefaultQubitJax(DefaultQubit):
                 prob = prob.at[i, state].set(count / len(idx))
 
         # resize prob which discards the 'filled values'
-        # prob = jnp.resize(prob, (batch_size, dim))
         return prob[:, :-1]
 
     @staticmethod
@@ -286,7 +284,6 @@ class DefaultQubitJax(DefaultQubit):
                     prob = prob.at[state, b].set(count / bin_size)
 
             # resize prob which discards the 'filled values'
-            # prob = jnp.resize(prob, (dim, num_bins))
             return prob[:-1]
 
         indices = indices.reshape((batch_size, num_bins, bin_size))
@@ -299,5 +296,4 @@ class DefaultQubitJax(DefaultQubit):
                 for state, count in zip(basis_states, counts):
                     prob = prob.at[i, state, b].set(count / bin_size)
         # resize prob which discards the 'filled values'
-        # prob = jnp.resize(prob, (batch_size, dim, num_bins))
         return prob[:, :-1]
