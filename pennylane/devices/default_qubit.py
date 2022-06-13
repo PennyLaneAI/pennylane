@@ -757,7 +757,7 @@ class DefaultQubit(QubitDevice):
             perm = [idx + 1 for idx in perm]
             perm.insert(0, 0)
         if state_batch_size:
-            # As the state batch dimension always is the first in the state, it always
+            # As the state broadcasting dimension always is the first in the state, it always
             # ends up in position `len(device_wires)` after the tensordot. The -1 causes it
             # being permuted to the leading dimension after transposition
             perm.insert(len(device_wires), -1)
