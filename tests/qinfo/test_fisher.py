@@ -424,6 +424,7 @@ class TestInterfacesClassicalFisher:
 class TestDiffCFIM:
     """Testing differentiability of classical fisher info matrix (CFIM)"""
 
+    @pytest.mark.autograd
     def test_diffability_autograd(
         self,
     ):
@@ -445,6 +446,7 @@ class TestDiffCFIM:
 
         assert np.allclose(result, result_calc, atol=1e-6)
 
+    @pytest.mark.jax
     def test_diffability_jax(
         self,
     ):
@@ -471,3 +473,113 @@ class TestDiffCFIM:
         result_calc = jax.jacobian(qml.qinfo.classical_fisher(circ))(params)
 
         assert np.allclose(result, result_calc, atol=1e-6)
+
+    @pytest.mark.tf
+    @pytest.mark.xfail  # tf gradient of cfim is currently not computing correctly
+    def test_diffability_tf(
+        self,
+    ):
+        """Testing diffability with an analytic example for tf. The CFIM of this single qubit is constant, so the gradient should be zero."""
+        import tensorflow as tf
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="tf")
+        def circ(params):
+            qml.RY(params, wires=0)
+            return qml.probs(wires=range(1))
+
+        params = tf.Variable([np.pi / 4])
+
+        assert np.allclose(qml.qinfo.classical_fisher(circ)(params), 1)
+
+        result = np.zeros((1, 1, 1), dtype="float64")
+
+        with tf.GradientTape() as tape:
+            loss = qml.qinfo.classical_fisher(circ)(params)
+        result_calc = tape.jacobian(loss, params)
+
+        assert np.allclose(result, result_calc, atol=1e-6)
+
+    @pytest.mark.torch
+    @pytest.mark.xfail  # torch gradient of cfim is currently not computing correctly
+    def test_diffability_torch(
+        self,
+    ):
+        """Testing diffability with an analytic example for torch. The CFIM of this single qubit is constant, so the gradient should be zero."""
+        import torch
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev, interface="torch")
+        def circ(params):
+            qml.RY(params, wires=0)
+            return qml.probs(wires=range(1))
+
+        params = np.pi / 4 * torch.tensor([1.0], requires_grad=True)
+
+        assert np.allclose(qml.qinfo.classical_fisher(circ)(params).detach().numpy(), 1)
+
+        result = np.zeros((1, 1, 1), dtype="float64")
+
+        result_calc = torch.autograd.functional.jacobian(qml.qinfo.classical_fisher(circ), params)
+
+        assert np.allclose(result, result_calc, atol=1e-6)
+
+    @pytest.mark.autograd
+    @pytest.mark.torch
+    @pytest.mark.tf
+    @pytest.mark.jax
+    @pytest.mark.xfail
+    def test_consistency(self):
+        """Testing that the derivative of the cfim is giving consistently the same results for all interfaces.
+        Currently failing as (jax and autograd) and (torch and tf) are giving two different results."""
+        dev = qml.device("default.qubit", wires=3)
+
+        def qfunc(weights):
+            qml.RX(weights[0], wires=0)
+            qml.RX(weights[1], wires=1)
+            qml.RX(weights[2], wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.RY(weights[4], wires=0)
+            qml.RY(weights[5], wires=1)
+            qml.RY(weights[6], wires=2)
+            qml.CNOT(wires=[1, 2])
+            qml.CRX(weights[7], wires=[0, 1])
+            qml.CRY(weights[8], wires=[1, 2])
+            qml.CRZ(weights[9], wires=[2, 0])
+            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+        # Compute gradients of CFIM for different interfaces
+        circuit = qml.QNode(qfunc, dev, interface="torch")
+        weights = torch.tensor(
+            [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], requires_grad=True
+        )
+        grad_torch = torch.autograd.functional.jacobian(
+            qml.qinfo.classical_fisher(circuit), weights
+        )
+
+        circuit = qml.QNode(qfunc, dev, interface="autograd")
+        weights = pnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], requires_grad=True)
+        grad_autograd = qml.jacobian(qml.qinfo.classical_fisher(circuit))(weights)
+
+        circuit = qml.QNode(qfunc, dev, interface="jax")
+        weights = jnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+        grad_jax = jax.jacobian(qml.qinfo.classical_fisher(circuit))(weights)
+
+        circuit = qml.QNode(qfunc, dev, interface="tf")
+        weights = tf.Variable([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+        with tf.GradientTape() as tape:
+            loss = qml.qinfo.classical_fisher(circuit)(weights)
+        grad_tf = tape.jacobian(loss, weights)
+
+        # Evaluate and compare
+        grads = [grad_autograd, grad_tf, grad_torch, grad_jax]
+
+        is_same = np.zeros((4, 4))
+
+        for i, g1 in enumerate(grads):
+            for j, g2 in enumerate(grads):
+                is_same[i, j] = np.allclose(g1, g2, atol=1e-6)
+
+        assert np.allclose(is_same, np.ones((4, 4)))
