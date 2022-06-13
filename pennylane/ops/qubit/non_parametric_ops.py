@@ -687,11 +687,6 @@ class S(Operation):
         """
         return [qml.PhaseShift(np.pi / 2, wires=wires)]
 
-    def adjoint(self):
-        op = S(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
-
     def pow(self, z):
         z_mod4 = z % 4
         pow_map = {
@@ -812,11 +807,6 @@ class T(Operation):
             self
         )
 
-    def adjoint(self):
-        op = T(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
-
     def single_qubit_rot_angles(self):
         # T = RZ(\pi/4) RY(0) RZ(0)
         return [np.pi / 4, 0.0, 0.0]
@@ -928,11 +918,6 @@ class SX(Operation):
         if z_mod4 == 2:
             return [PauliX(wires=self.wires)]
         return super().pow(z_mod4)
-
-    def adjoint(self):
-        op = SX(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
 
     def single_qubit_rot_angles(self):
         # SX = RZ(-\pi/2) RY(\pi/2) RZ(\pi/2)
@@ -1380,11 +1365,6 @@ class ISWAP(Operation):
         ]
         return decomp_ops
 
-    def adjoint(self):
-        op = ISWAP(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
-
     def pow(self, z):
         z_mod2 = z % 2
         if abs(z_mod2 - 0.5) < 1e-6:
@@ -1522,11 +1502,6 @@ class SISWAP(Operation):
     def pow(self, z):
         z_mod4 = z % 4
         return [ISWAP(wires=self.wires)] if z_mod4 == 2 else super().pow(z_mod4)
-
-    def adjoint(self):
-        op = SISWAP(wires=self.wires)
-        op.inverse = not self.inverse
-        return op
 
 
 SQISW = SISWAP
