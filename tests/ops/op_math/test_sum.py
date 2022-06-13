@@ -73,10 +73,12 @@ def compare_and_expand_mat(mat1, mat2):
     if mat1.size == mat2.size:
         return mat1, mat2
 
-    (smaller_mat, larger_mat, flip_order) = (mat1,  mat2, 0) if mat1.size < mat2.size else (mat2,  mat1, 1)
+    (smaller_mat, larger_mat, flip_order) = (
+        (mat1, mat2, 0) if mat1.size < mat2.size else (mat2, mat1, 1)
+    )
 
     while smaller_mat.size < larger_mat.size:
-        smaller_mat = math.cast_like(math.kron(smaller_mat,  math.eye(2)), smaller_mat)
+        smaller_mat = math.cast_like(math.kron(smaller_mat, math.eye(2)), smaller_mat)
 
     if flip_order:
         return larger_mat, smaller_mat
@@ -85,7 +87,6 @@ def compare_and_expand_mat(mat1, mat2):
 
 
 class TestMatrix:
-
     @pytest.mark.parametrize("op_and_mat1", non_param_ops)
     @pytest.mark.parametrize("op_and_mat2", non_param_ops)
     def test_non_parametric_ops_two_terms(self, op_and_mat1, op_and_mat2):
@@ -97,7 +98,7 @@ class TestMatrix:
         sum_mat = sum_op.matrix()
 
         true_mat = mat1 + mat2
-        assert(np.allclose(sum_mat, true_mat))
+        assert np.allclose(sum_mat, true_mat)
 
     @pytest.mark.parametrize("op_mat1", param_ops)
     @pytest.mark.parametrize("op_mat2", param_ops)
@@ -113,11 +114,11 @@ class TestMatrix:
         sum_mat = sum_op.matrix()
 
         true_mat = mat1 + mat2
-        assert(np.allclose(sum_mat, true_mat))
+        assert np.allclose(sum_mat, true_mat)
 
     @pytest.mark.parametrize("op", no_mat_ops)
     def test_error_no_mat(self, op):
-        sum_op = Sum(op(0), qml.PauliX(2), qml.PauliZ(1))
+        sum_op = Sum(op(wires=0), qml.PauliX(wires=2), qml.PauliZ(wires=1))
         with pytest.raises(MatrixUndefinedError):
             sum_op.matrix()
 
@@ -145,7 +146,11 @@ class TestProperties:
     ops = (
         (qml.PauliX(wires=0), qml.PauliZ(wires=0), qml.Hadamard(wires=0)),
         (qml.CNOT(wires=[0, 1]), qml.RX(1.23, wires=1), qml.Identity(wires=0)),
-        (qml.IsingXX(4.56, wires=[2, 3]), qml.Toffoli(wires=[1, 2, 3]), qml.Rot(0.34, 1.0, 0, wires=0)),
+        (
+            qml.IsingXX(4.56, wires=[2, 3]),
+            qml.Toffoli(wires=[1, 2, 3]),
+            qml.Rot(0.34, 1.0, 0, wires=0),
+        ),
     )
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -205,27 +210,25 @@ class TestProperties:
 
 
 class TestWrapperFunc:
-
     def test_sum_top_level(self):
         """Test that the top level function constructs an identical instance to one
         created using the class."""
 
-        summands = (qml.PauliX(1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
-        id = 'sum_op'
+        summands = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
+        op_id = "sum_op"
         do_queue = False
 
-        sum_func_op = sum(*summands, id=id, do_queue=do_queue)
-        sum_class_op = Sum(*summands, id=id, do_queue=do_queue)
+        sum_func_op = sum(*summands, id=op_id, do_queue=do_queue)
+        sum_class_op = Sum(*summands, id=op_id, do_queue=do_queue)
 
-        assert(sum_class_op.summands == sum_func_op.summands)
-        assert(sum_class_op.matrix() == sum_func_op.matrix())
-        assert(sum_class_op.id == sum_func_op.id)
-        assert(sum_class_op.wires == sum_func_op.wires)
-        assert(sum_class_op.parameters == sum_func_op.parameters)
+        assert sum_class_op.summands == sum_func_op.summands
+        assert np.allclose(sum_class_op.matrix(), sum_func_op.matrix())
+        assert sum_class_op.id == sum_func_op.id
+        assert sum_class_op.wires == sum_func_op.wires
+        assert sum_class_op.parameters == sum_func_op.parameters
 
 
 class TestPrivateSum:
-
     def test_sum_private(self):
         return
 
@@ -240,7 +243,6 @@ class TestPrivateSum:
 
 
 class TestIntegration:
-
     def test_measurement_process(self):
         return
 

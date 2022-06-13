@@ -143,11 +143,11 @@ def U1(phi):
     Args:
         phi (float): rotation angle :math:`\phi`
     """
-    return math.array([[1.0, 0.0], [0.0, math.exp(phi*1j)]])
+    return math.array([[1.0, 0.0], [0.0, math.exp(phi * 1j)]])
 
 
 def U2(phi, delta):
-    r""" Return the matrix representation of the U2 gate.
+    r"""Return the matrix representation of the U2 gate.
 
     .. math::
 
@@ -158,7 +158,13 @@ def U2(phi, delta):
         phi (float): azimuthal angle :math:`\phi`
         delta (float): quantum phase :math:`\delta`
     """
-    return 1/math.sqrt(2) * math.array([[1.0, -math.exp(delta*1j)], [math.exp(phi*1j), math.exp((phi + delta)*1j)]])
+    return (
+        1
+        / math.sqrt(2)
+        * math.array(
+            [[1.0, -math.exp(delta * 1j)], [math.exp(phi * 1j), math.exp((phi + delta) * 1j)]]
+        )
+    )
 
 
 def U3(theta, phi, delta):
@@ -175,8 +181,15 @@ def U3(theta, phi, delta):
         phi (float): azimuthal angle :math:`\phi`
         delta (float): quantum phase :math:`\delta`
     """
-    return math.array([[math.cos(theta/2), -math.exp(delta*1j)*math.sin(theta/2)],
-                       [math.exp(phi*1j)*math.sin(theta/2), math.exp((phi + delta)*1j)*math.cos(theta/2)]])
+    return math.array(
+        [
+            [math.cos(theta / 2), -math.exp(delta * 1j) * math.sin(theta / 2)],
+            [
+                math.exp(phi * 1j) * math.sin(theta / 2),
+                math.exp((phi + delta) * 1j) * math.cos(theta / 2),
+            ],
+        ]
+    )
 
 
 def CRotx(theta):

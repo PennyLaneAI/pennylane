@@ -23,7 +23,7 @@ from pennylane.operation import Operator, expand_matrix, MatrixUndefinedError
 
 def sum(*summands, do_queue=True, id=None):
     """Top level sum function to create an instance of Sum"""
-    return Sum(*summands, do_queue, id)
+    return Sum(*summands, do_queue=do_queue, id=id)
 
 
 def _sum(mats_gen, dtype=None, cast_like=None):
@@ -63,9 +63,7 @@ class Sum(Operator):
         for s in summands:
             combined_params += s.parameters
 
-        super().__init__(
-            *combined_params, wires=combined_wires, do_queue=do_queue, id=id
-        )
+        super().__init__(*combined_params, wires=combined_wires, do_queue=do_queue, id=id)
         self._name = "Sum"
 
     def __repr__(self):
@@ -94,7 +92,7 @@ class Sum(Operator):
         return all([s.is_hermitian for s in self.summands])
 
     def terms(self):
-        return [1.0]*len(self.summands), self.summands
+        return [1.0] * len(self.summands), self.summands
 
     @property
     def eigendecomposition(self):

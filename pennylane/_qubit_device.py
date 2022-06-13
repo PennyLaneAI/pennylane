@@ -178,7 +178,7 @@ class QubitDevice(Device):
         "Hermitian",
         "Identity",
         "Projector",
-        "Sum"
+        "Sum",
     }
 
     def __init__(
