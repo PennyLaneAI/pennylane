@@ -29,7 +29,7 @@ def norm(one, two, eigvals):
 
         \lambda = ||T|| + \frac{1}{4} \sum_r ||L^{(r)}||^2,
 
-    where the Schatten norm for a given matrix :math:`T` is defined as
+    where the Schatten 1-norm for a given matrix :math:`T` is defined as
 
     .. math::
 
