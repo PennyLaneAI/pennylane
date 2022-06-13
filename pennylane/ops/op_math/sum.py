@@ -21,9 +21,9 @@ from pennylane import math
 from pennylane.operation import Operator, expand_matrix, MatrixUndefinedError
 
 
-def sum(*summands):
-    """Compute the sum of the provided terms"""
-    return Sum(*summands)  # a wire order is required when combining operators of varying sizes
+def sum(*summands, do_queue=True, id=None):
+    """Top level sum function to create an instance of Sum"""
+    return Sum(*summands, do_queue, id)
 
 
 def _sum(mats_gen, dtype=None, cast_like=None):
@@ -145,7 +145,7 @@ class Sum(Operator):
         if wire_order is None:
             wire_order = self.wires
 
-        return self._sum(matrix_gen(self.summands, wire_order))
+        return _sum(matrix_gen(self.summands, wire_order))
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
