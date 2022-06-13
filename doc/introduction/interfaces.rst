@@ -148,6 +148,7 @@ Some of these are specific to quantum optimization, such as the :class:`~.QNGOpt
     ~pennylane.RotosolveOptimizer
     ~pennylane.RotoselectOptimizer
     ~pennylane.ShotAdaptiveOptimizer
+    ~pennylane.SPSAOptimizer
 
 :html:`</div>`
 
