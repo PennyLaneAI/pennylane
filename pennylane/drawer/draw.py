@@ -69,8 +69,8 @@ def draw(
             return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
 
     >>> print(qml.draw(circuit)(a=2.3, w=[1.2, 3.2, 0.7]))
-    1: ────╭RX(2.30)──Rot(1.20,3.20,0.70)─╭RX(-2.30)─┤ ╭<Z@Z>
-    0: ──H─╰C─────────────────────────────╰C─────────┤ ╰<Z@Z>
+    0: ──H─╭●─────────────────────────────╭●─────────┤ ╭<Z@Z>
+    1: ────╰RX(2.30)──Rot(1.20,3.20,0.70)─╰RX(-2.30)─┤ ╰<Z@Z>
 
     .. details::
         :title: Usage Details
@@ -79,13 +79,13 @@ def draw(
     By specifying the ``decimals`` keyword, parameters are displayed to the specified precision.
 
     >>> print(qml.draw(circuit, decimals=4)(a=2.3, w=[1.2, 3.2, 0.7]))
-    0: ──H─╭C─────────────────────────────────────╭C───────────┤ ╭<Z@Z>
+    0: ──H─╭●─────────────────────────────────────╭●───────────┤ ╭<Z@Z>
     1: ────╰RX(2.3000)──Rot(1.2000,3.2000,0.7000)─╰RX(-2.3000)─┤ ╰<Z@Z>
 
     Parameters can be omitted by requesting ``decimals=None``:
 
     >>> print(qml.draw(circuit, decimals=None)(a=2.3, w=[1.2, 3.2, 0.7]))
-    0: ──H─╭C───────╭C──┤ ╭<Z@Z>
+    0: ──H─╭●───────╭●──┤ ╭<Z@Z>
     1: ────╰RX──Rot─╰RX─┤ ╰<Z@Z>
 
     If the parameters are not acted upon by classical processing like ``-a``, then
@@ -135,20 +135,20 @@ def draw(
 
     .. code-block:: none
 
-        0: ──Rot(0.77,0.44,0.86)─╭C────╭X──Rot(0.45,0.37,0.93)─╭C─╭X
-        1: ──Rot(0.70,0.09,0.98)─╰X─╭C─│───Rot(0.64,0.82,0.44)─│──╰C
-        2: ──Rot(0.76,0.79,0.13)────╰X─╰C──Rot(0.23,0.55,0.06)─╰X───
+        0: ──Rot(0.77,0.44,0.86)─╭●────╭X──Rot(0.45,0.37,0.93)─╭●─╭X
+        1: ──Rot(0.70,0.09,0.98)─╰X─╭●─│───Rot(0.64,0.82,0.44)─│──╰●
+        2: ──Rot(0.76,0.79,0.13)────╰X─╰●──Rot(0.23,0.55,0.06)─╰X───
 
-        ───Rot(0.83,0.63,0.76)──────────────────────╭C────╭X─┤  <Z>
-        ──╭X────────────────────Rot(0.35,0.97,0.89)─╰X─╭C─│──┤  <Z>
-        ──╰C────────────────────Rot(0.78,0.19,0.47)────╰X─╰C─┤  <Z>
+        ───Rot(0.83,0.63,0.76)──────────────────────╭●────╭X─┤  <Z>
+        ──╭X────────────────────Rot(0.35,0.97,0.89)─╰X─╭●─│──┤  <Z>
+        ──╰●────────────────────Rot(0.78,0.19,0.47)────╰X─╰●─┤  <Z>
 
     The ``wire_order`` keyword specifies the order of the wires from
     top to bottom:
 
     >>> print(qml.draw(circuit, wire_order=[1,0])(a=2.3, w=[1.2, 3.2, 0.7]))
     1: ────╭RX(2.30)──Rot(1.20,3.20,0.70)─╭RX(-2.30)─┤ ╭<Z@Z>
-    0: ──H─╰C─────────────────────────────╰C─────────┤ ╰<Z@Z>
+    0: ──H─╰●─────────────────────────────╰●─────────┤ ╰<Z@Z>
 
     If the device or ``wire_order`` has wires not used by operations, those wires are omitted
     unless requested with ``show_all_wires=True``

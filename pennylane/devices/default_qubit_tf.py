@@ -31,19 +31,6 @@ except ImportError as e:
     raise ImportError("default.qubit.tf device requires TensorFlow>=2.0") from e
 
 
-# With TF 2.1+, the legacy tf.einsum was renamed to _einsum_v1, while
-# the replacement tf.einsum introduced the bug. This try-except block
-# will dynamically patch TensorFlow versions where _einsum_v1 exists, to make it the
-# default einsum implementation.
-#
-# For more details, see https://github.com/tensorflow/tensorflow/issues/37307
-try:
-    from tensorflow.python.ops.special_math_ops import _einsum_v1
-
-    tf.einsum = _einsum_v1
-except ImportError:
-    pass
-
 from . import DefaultQubit
 
 
