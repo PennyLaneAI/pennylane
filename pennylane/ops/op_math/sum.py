@@ -26,6 +26,26 @@ def sum(*summands):
     return Sum(*summands)  # a wire order is required when combining operators of varying sizes
 
 
+def _sum(mats_gen, dtype=None, cast_like=None):
+    """Private sum method given a series of matrices of correct size.
+    Super inefficient method just as a proof of concept."""
+
+    res = None
+    try:
+        for i, mat in enumerate(mats_gen):
+            res = mat if i == 0 else math.add(res, mat)
+    except MatrixUndefinedError as error:
+        print(f"\nThe matrix method must be defined for all summands: \n")
+        raise error
+
+    if dtype is not None:
+        res = math.cast(res, dtype)
+    if cast_like is not None:
+        res = math.cast_like(res, cast_like)
+
+    return res
+
+
 class Sum(Operator):
     """Arithmetic operator subclass representing the sum of operators"""
 
@@ -126,45 +146,6 @@ class Sum(Operator):
             wire_order = self.wires
 
         return self._sum(matrix_gen(self.summands, wire_order))
-
-    def _sum(self, mats_gen, dtype=None, cast_like=None):
-        """Super inefficient Sum method just as a proof of concept"""
-        res = None
-        try:
-            for i, mat in enumerate(mats_gen):
-                res = mat if i == 0 else math.add(res, mat)
-        except MatrixUndefinedError as error:
-            print(f"\nThe matrix method must be defined for all summands: \n")
-            raise error
-
-        if dtype is not None:                     # additional casting logic
-            res = math.cast(res, dtype)
-        if cast_like is not None:
-            res = math.cast_like(res, cast_like)
-
-        return res
-
-    @staticmethod
-    def is_commuting(terms, wires):
-        """Checks if a sequence of terms all commute with each other"""
-        num_terms = len(terms)
-        for i in range(num_terms):
-            for j in range(i+1, num_terms):
-                term_i = terms[i]
-                term_j = terms[j]
-
-                if term_i.wires.toset() == term_j.wires.toset():  # same wires no need to expand matrix
-                    mat_i = term_i.matrix(wire_order=term_i.wires)
-                    mat_j = term_j.matrix(wire_order=term_i.wires)
-
-                else:
-                    mat_i = expand_matrix(term_i.matrix(), term_i.wires, wires)
-                    mat_j = expand_matrix(term_j.matrix(), term_j.wires, wires)
-
-                if not math.allequal(mat_i @ mat_j, mat_j @ mat_i):
-                    return False
-
-        return True
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
