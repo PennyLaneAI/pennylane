@@ -1,5 +1,5 @@
 r"""
-The default.qutrit device is Pennylane's standard qutrit-based device.
+The default.qutrit device is PennyLane's standard qutrit-based device.
 
 It implements the :class:`~pennylane._device.Device` methods as well as some built-in
 :mod:`qutrit operations <pennylane.ops.qutrit>`, and provides a simple pure state
