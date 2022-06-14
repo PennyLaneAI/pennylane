@@ -7,8 +7,7 @@ from pennylane.wires import Wires
 
 
 class QutritUnitary(Operation):
-    r"""
-    Apply and arbitrary fixed unitary matrix.
+    r"""Apply an arbitrary, fixed unitary matrix.
 
     **Details:**
 
