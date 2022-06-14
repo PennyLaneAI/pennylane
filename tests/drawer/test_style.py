@@ -19,6 +19,7 @@ import pytest
 import pennylane as qml
 
 plt = pytest.importorskip("matplotlib.pyplot")
+patheffects = pytest.importorskip("matplotlib.patheffects")
 
 
 def test_available_styles():
@@ -27,6 +28,8 @@ def test_available_styles():
     assert qml.drawer.available_styles() == (
         "black_white",
         "black_white_dark",
+        "pennylane_light",
+        "pennylane_dark",
         "solarized_light",
         "solarized_dark",
         "default",
@@ -43,6 +46,66 @@ def test_black_white_style():
     assert plt.rcParams["patch.force_edgecolor"]  # = True
     assert plt.rcParams["lines.color"] == "black"
     assert plt.rcParams["text.color"] == "black"
+
+    plt.style.use("default")
+
+
+def test_black_white_style_dark():
+    """Tests the black white style dark sets ``plt.rcParams`` with correct values"""
+
+    qml.drawer.use_style("black_white_dark")
+
+    almost_black = "#151515"
+    assert plt.rcParams["figure.facecolor"] == almost_black
+    assert plt.rcParams["axes.facecolor"] == almost_black
+    assert plt.rcParams["patch.edgecolor"] == "white"
+    assert plt.rcParams["patch.facecolor"] == almost_black
+    assert plt.rcParams["patch.force_edgecolor"]
+    assert plt.rcParams["lines.color"] == "white"
+    assert plt.rcParams["text.color"] == "white"
+
+    plt.style.use("default")
+
+
+def test_pennylane_style_light():
+    """Tests the pennylane style light sets ``plt.rcParams`` with correct values"""
+
+    qml.drawer.use_style("pennylane_light")
+
+    assert plt.rcParams["figure.facecolor"] == "white"
+    assert plt.rcParams["savefig.facecolor"] == "white"
+    assert plt.rcParams["axes.facecolor"] == "#D6F5E2"
+    assert plt.rcParams["patch.facecolor"] == "#FFEED4"
+    assert plt.rcParams["patch.edgecolor"] == "black"
+    assert plt.rcParams["patch.linewidth"] == 3.0
+    assert plt.rcParams["patch.force_edgecolor"] == True
+    assert plt.rcParams["lines.color"] == "black"
+    assert plt.rcParams["text.color"] == "black"
+    assert plt.rcParams["path.sketch"] == (1, 100, 2)
+    assert len(plt.rcParams["path.effects"]) == 1
+    assert isinstance(plt.rcParams["path.effects"][0], patheffects.withStroke)
+
+    plt.style.use("default")
+
+
+def test_pennylane_style_dark():
+    """Tests the pennylane style dark sets ``plt.rcParams`` with correct values"""
+
+    qml.drawer.use_style("pennylane_dark")
+
+    almost_black = "#151515"  # less harsh than full black
+    assert plt.rcParams["figure.facecolor"] == almost_black
+    assert plt.rcParams["savefig.facecolor"] == almost_black
+    assert plt.rcParams["axes.facecolor"] == "#F9E69A"
+    assert plt.rcParams["patch.facecolor"] == "#9EDED1"
+    assert plt.rcParams["patch.edgecolor"] == "white"
+    assert plt.rcParams["patch.linewidth"] == 3.0
+    assert plt.rcParams["patch.force_edgecolor"] == True
+    assert plt.rcParams["lines.color"] == "white"
+    assert plt.rcParams["text.color"] == "white"
+    assert plt.rcParams["path.sketch"] == (1, 100, 2)
+    assert len(plt.rcParams["path.effects"]) == 1
+    assert isinstance(plt.rcParams["path.effects"][0], patheffects.withStroke)
 
     plt.style.use("default")
 
@@ -93,23 +156,6 @@ def test_default():
 
     # make sure dictionaries are the same
     assert sum(1 for key, value in initial.items() if new[key] != value) == 0
-
-
-def test_black_white_style_dark():
-    """Tests the black white style dark sets ``plt.rcParams`` with correct values"""
-
-    qml.drawer.use_style("black_white_dark")
-
-    almost_black = "#151515"
-    assert plt.rcParams["figure.facecolor"] == almost_black
-    assert plt.rcParams["axes.facecolor"] == almost_black
-    assert plt.rcParams["patch.edgecolor"] == "white"
-    assert plt.rcParams["patch.facecolor"] == almost_black
-    assert plt.rcParams["patch.force_edgecolor"]
-    assert plt.rcParams["lines.color"] == "white"
-    assert plt.rcParams["text.color"] == "white"
-
-    plt.style.use("default")
 
 
 def test_style_none_error():
