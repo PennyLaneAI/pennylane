@@ -207,8 +207,12 @@ def insert(
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
         tensor(0.72945434, requires_grad=True)
     """
-    # decompose templates
-    circuit = circuit.expand(stop_at=lambda op: not hasattr(qml.templates, op.name))
+    # decompose templates and their adjoints (which fixes a bug in the tutorial_error_mitigation demo)
+    # TODO: change this to be cleaner and more robust
+    circuit = circuit.expand(
+        stop_at=lambda op: not hasattr(qml.templates, op.name)
+        and not isinstance(op, qml.ops.op_math.Adjoint)
+    )
 
     if not isinstance(op, FunctionType) and op.num_wires != 1:
         raise ValueError("Only single-qubit operations can be inserted into the circuit")
