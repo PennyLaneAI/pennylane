@@ -2316,7 +2316,10 @@ class IsingXX(Operation):
 
     .. note::
 
-        :math:`XX(0) = I, XX(\pi) = i (X \otimes X)`
+        Special cases of using the :math:`XX` operator include:
+        
+        * :math:`XX(0) = I`;
+        * :math:`XX(\pi) = i (X \otimes X)`.
 
     **Details:**
 
