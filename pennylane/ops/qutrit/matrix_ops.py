@@ -74,7 +74,7 @@ class QutritUnitary(Operation):
 
     def adjoint(self):
         U = self.matrix()
-        return QutritUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
+        return QutritUnitary(qml.math.conj(qml.math.moveaxis(U, -2, -1)), wires=self.wires)
 
     def pow(self, z):
         if isinstance(z, int):

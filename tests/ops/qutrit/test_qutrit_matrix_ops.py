@@ -183,7 +183,7 @@ class TestQutritUnitary:
         # verify adjoint behaves correctly
         op = qml.QutritUnitary(U, wires=range(num_wires)).adjoint()
         mat = op.matrix()
-        expected = torch.t(U)
+        expected = torch.conj(torch.t(U))
         assert qml.math.allclose(mat, expected)
 
     @pytest.mark.tf
