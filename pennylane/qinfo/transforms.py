@@ -357,6 +357,30 @@ def classical_fisher(qnode, argnums=0):
     >>> print(rescaled_grad)
     [-0.66772533 -0.16618756 -0.05865127 -0.06696078]
 
+    The ``classical_fisher`` matrix itself is again differentiable:
+
+    .. close-block:: python
+
+        @qml.qnode(dev)
+        def circ(params):
+            qml.RX(qml.math.cos(params[0]), wires=0)
+            qml.RX(qml.math.cos(params[0]), wires=1)
+            qml.RX(qml.math.cos(params[1]), wires=0)
+            qml.RX(qml.math.cos(params[1]), wires=1)
+            return qml.probs(wires=range(2))
+
+        params = pnp.random.random(2)
+
+    >>> print(qml.qinfo.classical_fisher(circ)(params))
+    (tensor([[0.13340679, 0.03650311],
+             [0.03650311, 0.00998807]], requires_grad=True)
+    >>> print(qml.jacobian(qml.qinfo.classical_fisher(circ))(params))
+    array([[[9.98030491e-01, 3.46944695e-18],
+            [1.36541817e-01, 5.15248592e-01]],
+
+            [[1.36541817e-01, 5.15248592e-01],
+            [2.16840434e-18, 2.81967252e-01]]]))
+
     """
     new_qnode = _make_probs(qnode, post_processing_fn=lambda x: qml.math.squeeze(qml.math.stack(x)))
 
