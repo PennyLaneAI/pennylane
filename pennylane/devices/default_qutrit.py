@@ -136,7 +136,7 @@ class DefaultQutrit(QutritDevice):
 
         return self._apply_unitary(state, matrix, wires)
 
-    def _get_unitary_matrix(self, unitary):
+    def _get_unitary_matrix(self, unitary):  # pylint: disable=no-self-use
         """Return the matrix representing a unitary operation.
 
         Args:
