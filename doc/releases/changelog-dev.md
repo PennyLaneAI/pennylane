@@ -5,7 +5,7 @@
 <h3>New features since last release</h3>
 
 * Added new device `default.qutrit` for simulation of devices with wires of three dimensions. Users can currently make measurements with `qml.state()` and `qml.probs()`.
-* Added operation `qml.QutritUnitary` for basic operation of `default.qutrit` device with user-specified unitaries
+* Added operation `qml.QutritUnitary` for basic operation of `default.qutrit` device with user-specified unitaries.
 
 
 
