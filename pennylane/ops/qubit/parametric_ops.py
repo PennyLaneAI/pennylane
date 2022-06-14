@@ -2306,13 +2306,17 @@ class IsingXX(Operation):
     r"""
     Ising XX coupling gate
 
-    .. math:: XX(\phi) = \exp(-i \frac{\theta}{2} (X \otimes X) =
+    .. math:: XX(\phi) = \exp(-i \frac{\theta}{2} (X \otimes X)) =
         \begin{bmatrix} =
             \cos(\phi / 2) & 0 & 0 & -i \sin(\phi / 2) \\
             0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
             0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
             -i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
         \end{bmatrix}.
+
+    .. note::
+
+        :math:`XX(0) = I, XX(\pi) = i (X \otimes X)`
 
     **Details:**
 
@@ -2430,13 +2434,17 @@ class IsingYY(Operation):
     r"""
     Ising YY coupling gate
 
-    .. math:: \mathtt{YY}(\phi) = \exp(-i \frac{\theta}{2} (Y \otimes Y) \begin{bmatrix} =
+    .. math:: \mathtt{YY}(\phi) = \exp(-i \frac{\theta}{2} (Y \otimes Y)) =
         \begin{bmatrix}
             \cos(\phi / 2) & 0 & 0 & i \sin(\phi / 2) \\
             0 & \cos(\phi / 2) & -i \sin(\phi / 2) & 0 \\
             0 & -i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
             i \sin(\phi / 2) & 0 & 0 & \cos(\phi / 2)
         \end{bmatrix}.
+
+    .. note::
+
+        :math:`YY(0) = I, YY(\pi) = i (Y \otimes Y)`
 
     **Details:**
 
@@ -2553,13 +2561,17 @@ class IsingZZ(Operation):
     r"""
     Ising ZZ coupling gate
 
-    .. math:: ZZ(\phi) = \exp(-i \frac{\theta}{2} (Z \otimes Z) \begin{bmatrix} =
+    .. math:: ZZ(\phi) = \exp(-i \frac{\theta}{2} (Z \otimes Z) =
         \begin{bmatrix}
-        e^{-i \phi / 2} & 0 & 0 & 0 \\
-        0 & e^{i \phi / 2} & 0 & 0 \\
-        0 & 0 & e^{i \phi / 2} & 0 \\
-        0 & 0 & 0 & e^{-i \phi / 2}
+            e^{-i \phi / 2} & 0 & 0 & 0 \\
+            0 & e^{i \phi / 2} & 0 & 0 \\
+            0 & 0 & e^{i \phi / 2} & 0 \\
+            0 & 0 & 0 & e^{-i \phi / 2}
         \end{bmatrix}.
+
+    .. note::
+
+        :math:`ZZ(0) = I, ZZ(\pi) = - (Z \otimes Z), ZZ(2\pi) = - I`
 
     **Details:**
 
@@ -2707,13 +2719,17 @@ class IsingXY(Operation):
     r"""
     Ising (XX + YY) coupling gate
 
-    .. math:: \math{XY}(\phi) = \exp(-i \frac{\theta}{4} (X \otimes X + Y \otimes Y) =
+    .. math:: \mathtt{XY}(\phi) = \exp(-i \frac{\theta}{4} (X \otimes X + Y \otimes Y) =
         \begin{bmatrix}
             1 & 0 & 0 & 0 \\
             0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
             0 & i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
             0 & 0 & 0 & 1
         \end{bmatrix}.
+
+    .. note::
+
+        :math:`XY(0) = I, XY(\frac{\pi}{2}) = \sqrt{iSWAP}, XY(\pi) = iSWAP`
 
     **Details:**
 
