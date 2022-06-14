@@ -359,7 +359,7 @@ def classical_fisher(qnode, argnums=0):
 
     The ``classical_fisher`` matrix itself is again differentiable:
 
-    .. close-block:: python
+    .. code-block:: python
 
         @qml.qnode(dev)
         def circ(params):
