@@ -117,7 +117,7 @@ def _solarized_dark():
 
 @_needs_mpl
 def _pennylane_light():
-    """Apply the pennylane beige style to matplotlib's configuration. This function
+    """Apply the pennylane light style to matplotlib's configuration. This function
     modifies ``plt.rcParams``.
     """
     plt.rcParams["figure.facecolor"] = "white"
@@ -135,7 +135,7 @@ def _pennylane_light():
 
 @_needs_mpl
 def _pennylane_dark():
-    """Apply the pennylane green style to matplotlib's configuration. This function
+    """Apply the pennylane dark style to matplotlib's configuration. This function
     modifies ``plt.rcParams``.
     """
     almost_black = "#151515"  # less harsh than full black
