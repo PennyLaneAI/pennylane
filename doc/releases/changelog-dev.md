@@ -302,13 +302,6 @@
   0.9905158135644924
   ```
   
-
-* Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
-  attribute `batch_size`.
-  - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
-  - `Operator.batch_size` contains the size of an additional parameter broadcasting axis, if present,
-  - `QuantumTape.batch_size` contains the `batch_size` of its operations (see below).
-  
 * New `solarized_light` and `solarized_dark` styles available for drawing circuit diagram graphics. 
   [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
   
@@ -321,7 +314,6 @@
   ```
 
 * Parameter broadcasting within operations and tapes was introduced.
-
   [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
   [(#2590)](https://github.com/PennyLaneAI/pennylane/pull/2590)
   [(#2609)](https://github.com/PennyLaneAI/pennylane/pull/2609)
