@@ -14,6 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QutritDevice` class.
 """
+from pennylane.ops.qubit.parametric_ops import RX
 import pytest
 import numpy as np
 from random import random
@@ -760,13 +761,24 @@ class TestShotList:
         dev = qml.device("default.qutrit", wires=2, shots=shot_list)
 
         @qml.qnode(dev)
-        def circuit(U):
-            qml.QutritUnitary(np.eye(3), wires=0)
-            qml.QutritUnitary(np.eye(3), wires=0)
-            qml.QutritUnitary(U, wires=[0, 1])
+        def circuit(x, z):
+            RZ_01 = pnp.array(
+                [
+                    [pnp.exp(-1j * z / 2), 0.0, 0.0],
+                    [0.0, pnp.exp(1j * z / 2), 0.0],
+                    [0.0, 0.0, 1.0],
+                ]
+            )
+
+            c = pnp.cos(x / 2)
+            s = pnp.sin(x / 2) * 1j
+            RX_01 = pnp.array([[c, -s, 0.0], [-s, c, 0.0], [0.0, 0.0, 1.0]])
+
+            qml.QutritUnitary(RZ_01, wires=0)
+            qml.QutritUnitary(RX_01, wires=1)
             return qml.probs(wires=[0, 1])
 
-        res = circuit(pnp.eye(9))
+        res = circuit(0.1, 0.6)
 
         assert res.shape == expected_shape
         assert circuit.device._shot_vector == shot_vector
@@ -774,7 +786,7 @@ class TestShotList:
 
         # test gradient works
         # TODO: Add after differentiability of qutrit circuits is implemented
-        # res = qml.jacobian(circuit, argnum=[0, 1])(pnp.eye(9))
+        # res = qml.jacobian(circuit, argnum=[0, 1])(0.1, 0.6)
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 3, 2), 16],
@@ -809,5 +821,5 @@ class TestShotList:
 
         # test gradient works
         # TODO: Add after differentiability of qutrit circuits is implemented
-        # res = qml.jacobian(circuit, argnum=[0, 1])(pnp.eye(9))
+        # res = qml.jacobian(circuit, argnum=[0])(pnp.eye(9, dtype=np.complex128))
 
