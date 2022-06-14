@@ -181,8 +181,8 @@ def _torch_jac(circ):
     def wrapper(*args, **kwargs):
         loss = functools.partial(circ, **kwargs)
         if len(args) > 1:
-            return torch.autograd.functional.jacobian(loss, (args))
-        return torch.autograd.functional.jacobian(loss, *args)
+            return torch.autograd.functional.jacobian(loss, args, create_graph=True)
+        return torch.autograd.functional.jacobian(loss, *args, create_graph=True)
 
     return wrapper
 
@@ -195,7 +195,7 @@ def _tf_jac(circ):
     def wrapper(*args, **kwargs):
         with tf.GradientTape() as tape:
             loss = circ(*args, **kwargs)
-        return tape.jacobian(loss, (args))
+        return tape.jacobian(loss, args)
 
     return wrapper
 
@@ -385,13 +385,13 @@ def classical_fisher(qnode, argnums=0):
         p = new_qnode(*args, **kwargs)
 
         # In case multiple variables are used, we create a list of cfi matrices
-        if isinstance(j, tuple) and len(j) > 1:
+        if isinstance(j, tuple):
             res = []
             for j_i in j:
-                if interface == "tf":
-                    j_i = qml.math.transpose(qml.math.cast(j_i, dtype=p.dtype))
-
                 res.append(_compute_cfim(p, j_i))
+
+            if len(j) == 1:
+                return res[0]
 
             return res
 
