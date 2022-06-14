@@ -23,7 +23,7 @@ OMEGA = np.exp(2 * np.pi * 1j / 3)
 
 
 class DefaultQutrit(QutritDevice):
-    """Default qutrit device for PennyLane
+    """Default qutrit device for PennyLane.
 
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
