@@ -2447,7 +2447,10 @@ class IsingYY(Operation):
 
     .. note::
 
-        :math:`YY(0) = I, YY(\pi) = i (Y \otimes Y)`
+        Special cases of using the :math:`YY` operator include:
+        
+        * :math:`YY(0) = I`;
+        * :math:`YY(\pi) = i (Y \otimes Y)`.
 
     **Details:**
 
@@ -2574,7 +2577,11 @@ class IsingZZ(Operation):
 
     .. note::
 
-        :math:`ZZ(0) = I, ZZ(\pi) = - (Z \otimes Z), ZZ(2\pi) = - I`
+        Special cases of using the :math:`ZZ` operator include:
+        
+        * :math:`ZZ(0) = I`;
+        * :math:`ZZ(\pi) = - (Z \otimes Z)`;
+        * :math:`ZZ(2\pi) = - I;
 
     **Details:**
 
@@ -2732,7 +2739,11 @@ class IsingXY(Operation):
 
     .. note::
 
-        :math:`XY(0) = I, XY(\frac{\pi}{2}) = \sqrt{iSWAP}, XY(\pi) = iSWAP`
+        Special cases of using the :math:`XY` operator include:
+        
+        * :math:`XY(0) = I`;
+        * :math:`XY(\frac{\pi}{2}) = \sqrt{iSWAP}`;
+        * :math:`XY(\pi) = iSWAP;
 
     **Details:**
 
