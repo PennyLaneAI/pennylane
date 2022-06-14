@@ -41,10 +41,12 @@
   ```
 
 <h3>Improvements</h3>
-
   
 * Added the possibility to group samples into counts providing `counts=True` flag in `qml.sample` function. This required creation of a new measurement type `Counts` in `measurements.py`.
 [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
+
+* Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
+  [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
 
 <h3>Breaking changes</h3>
 
@@ -56,4 +58,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Bogdan Reznychenko, Ixchel Meza Chavez, Moritz Willmann
+Ankit Khandelwal, Bogdan Reznychenko, Ixchel Meza Chavez, Moritz Willmann
