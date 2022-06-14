@@ -11,25 +11,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+This module contains the :class:`QutritDevice` abstract base class.
+"""
+
+# For now, arguments may be different from the signatures provided in Device
+# e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
+# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
 import abc
 import itertools
-import warnings
 
 import numpy as np
 
 import pennylane as qml
 from pennylane import DeviceError
-from pennylane.operation import operation_derivative
 from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane import Device
-from pennylane.math import sum as qmlsum
 from pennylane.math import multiply as qmlmul
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WireError  # pylint: disable=unused-import
 
-from pennylane.measurements import MeasurementProcess
+from pennylane.measurements import MeasurementProcess  # pylint: disable=unused-import
 
 
-class QutritDevice(Device):
+class QutritDevice(Device):  # pylint: disable=too-many-public-methods
     """Abstract base class for Pennylane qutrit devices.
 
     The following abstract method **must** be defined:
@@ -814,7 +818,7 @@ class QutritDevice(Device):
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)
-        name = observable.name
+        name = observable.name  # pylint: disable=unused-variable
         sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
 
         # Replace the basis state in the computational basis with the correct eigenvalue.
@@ -839,5 +843,7 @@ class QutritDevice(Device):
         return samples.reshape((bin_size, -1))
 
     # TODO: Implement function
-    def adjoint_jacobian(self, tape, starting_state=None, use_device_state=False):
+    def adjoint_jacobian(
+        self, tape, starting_state=None, use_device_state=False
+    ):  # pylint: disable=missing-function-docstring
         pass

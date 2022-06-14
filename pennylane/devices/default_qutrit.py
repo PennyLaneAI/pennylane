@@ -18,16 +18,15 @@ It implements the :class:`~pennylane._device.Device` methods as well as some bui
 :mod:`qutrit operations <pennylane.ops.qutrit>`, and provides simple pure state
 simulation of qutrit-based quantum computing.
 """
-import functools, itertools
+import functools
+import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane import QutritDevice, DeviceError
-from pennylane.wires import Wires, WireError
+from pennylane import QutritDevice
+from pennylane.wires import Wires, WireError  # pylint: disable=unused-import
+from pennylane.devices.default_qubit import _get_slice  # pylint: disable=unused-import
 from .._version import __version__
-from pennylane.devices.default_qubit import _get_slice
-
-from pennylane.measurements import MeasurementProcess
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -110,7 +109,7 @@ class DefaultQutrit(QutritDevice):
         rotations = rotations or []
 
         # apply the circuit operations
-        for i, operation in enumerate(operations):
+        for i, operation in enumerate(operations):  # pylint: disable=unused-variable
             self._state = self._apply_operation(self._state, operation)
 
         # store the pre-rotated state
