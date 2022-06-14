@@ -69,6 +69,7 @@ ops = {
     "Adjoint(S)": qml.adjoint(qml.S(wires=[0])),
     "SWAP": qml.SWAP(wires=[0, 1]),
     "ISWAP": qml.ISWAP(wires=[0, 1]),
+    "ECR": qml.ECR(wires=[0, 1]),
     "Adjoint(ISWAP)": qml.adjoint(qml.ISWAP(wires=[0, 1])),
     "T": qml.T(wires=[0]),
     "Adjoint(T)": qml.adjoint(qml.T(wires=[0])),
@@ -81,6 +82,7 @@ ops = {
     "IsingXX": qml.IsingXX(0, wires=[0, 1]),
     "IsingYY": qml.IsingYY(0, wires=[0, 1]),
     "IsingZZ": qml.IsingZZ(0, wires=[0, 1]),
+    "IsingXY": qml.IsingXY(0, wires=[0, 1]),
     "SingleExcitation": qml.SingleExcitation(0, wires=[0, 1]),
     "SingleExcitationPlus": qml.SingleExcitationPlus(0, wires=[0, 1]),
     "SingleExcitationMinus": qml.SingleExcitationMinus(0, wires=[0, 1]),
@@ -127,6 +129,14 @@ T = np.diag([1, np.exp(1j * np.pi / 4)])
 SX = 0.5 * np.array([[1 + 1j, 1 - 1j], [1 - 1j, 1 + 1j]])
 SWAP = np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 ISWAP = np.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])
+ECR = np.array(
+    [
+        [0, 0, 1 / sqrt(2), 1j * 1 / sqrt(2)],
+        [0, 0, 1j * 1 / sqrt(2), 1 / sqrt(2)],
+        [1 / sqrt(2), -1j * 1 / sqrt(2), 0, 0],
+        [-1j * 1 / sqrt(2), 1 / sqrt(2), 0, 0],
+    ]
+)
 CNOT = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
 CZ = np.diag([1, 1, 1, -1])
 CY = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, -1j], [0, 0, 1j, 0]])
@@ -192,6 +202,15 @@ IsingXX = lambda phi: np.array(
     ]
 )
 
+IsingXY = lambda phi: np.array(
+    [
+        [1, 0, 0, 0],
+        [0, cos(phi / 2), 1j * sin(phi / 2), 0],
+        [0, 1j * sin(phi / 2), cos(phi / 2), 0],
+        [0, 0, 0, 1],
+    ]
+)
+
 IsingYY = lambda phi: np.array(
     [
         [cos(phi / 2), 0, 0, 1j * sin(phi / 2)],
@@ -245,6 +264,7 @@ two_qubit = [
     (qml.CNOT, CNOT),
     (qml.SWAP, SWAP),
     (qml.ISWAP, ISWAP),
+    (qml.ECR, ECR),
     (qml.CZ, CZ),
     (qml.CY, CY),
     adjoint_tuple(qml.ISWAP, ISWAP),
@@ -255,6 +275,7 @@ two_qubit_param = [
     (qml.CRY, cry),
     (qml.CRZ, crz),
     (qml.IsingXX, IsingXX),
+    (qml.IsingXY, IsingXY),
     (qml.IsingYY, IsingYY),
     (qml.IsingZZ, IsingZZ),
 ]
