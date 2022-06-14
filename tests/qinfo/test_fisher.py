@@ -401,13 +401,13 @@ class TestInterfacesClassicalFisher:
 
         @qml.qnode(dev, interface="tf")
         def circ(x, y, z):
-            for xi in x:
+            for xi in tf.unstack(x):
                 qml.RX(xi, wires=0)
                 qml.RX(xi, wires=1)
-            for yi in y:
+            for yi in tf.unstack(y):
                 qml.RY(yi, wires=0)
                 qml.RY(yi, wires=1)
-            for zi in z:
+            for zi in tf.unstack(z):
                 qml.RZ(zi, wires=0)
                 qml.RZ(zi, wires=1)
             return qml.probs(wires=range(n_wires))
