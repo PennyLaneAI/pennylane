@@ -13,6 +13,7 @@
 # limitations under the License.
 """Unit tests for the QuantumTape"""
 import copy
+from this import d
 import warnings
 from collections import defaultdict
 
@@ -326,16 +327,10 @@ class TestConstruction:
         """Test that the batch size is correctly inferred from all operation's
         batch_size, when creating and when using `set_parameters`."""
 
-        class RXWithNdim(qml.RX):
-            ndim_params = (0,)
-
-        class RotWithNdim(qml.Rot):
-            ndim_params = (0, 0, 0)
-
         # Test with tape construction
         with qml.tape.QuantumTape() as tape:
-            RXWithNdim(x, wires=0)
-            RotWithNdim(*rot, wires=1)
+            qml.RX(x, wires=0)
+            qml.Rot(*rot, wires=1)
             qml.apply(qml.expval(qml.PauliZ(0)))
             qml.apply(qml.expval(qml.PauliX(1)))
 
@@ -343,8 +338,8 @@ class TestConstruction:
 
         # Test with set_parameters
         with qml.tape.QuantumTape() as tape:
-            RXWithNdim(0.2, wires=0)
-            RotWithNdim(1.0, 0.2, -0.3, wires=1)
+            qml.RX(0.2, wires=0)
+            qml.Rot(1.0, 0.2, -0.3, wires=1)
             qml.apply(qml.expval(qml.PauliZ(0)))
             qml.apply(qml.expval(qml.PauliX(1)))
 
@@ -364,23 +359,17 @@ class TestConstruction:
         """Test that the batch size is correctly inferred from all operation's
         batch_size, when creating and when using `set_parameters`."""
 
-        class RXWithNdim(qml.RX):
-            ndim_params = (0,)
-
-        class RotWithNdim(qml.Rot):
-            ndim_params = (0, 0, 0)
-
         with pytest.raises(ValueError, match="batch sizes of the tape operations do not match."):
             with qml.tape.QuantumTape() as tape:
-                RXWithNdim(x, wires=0)
-                RotWithNdim(*rot, wires=1)
-                RXWithNdim(y, wires=1)
+                qml.RX(x, wires=0)
+                qml.Rot(*rot, wires=1)
+                qml.RX(y, wires=1)
                 qml.apply(qml.expval(qml.PauliZ(0)))
 
         with qml.tape.QuantumTape() as tape:
-            RXWithNdim(0.2, wires=0)
-            RotWithNdim(1.0, 0.2, -0.3, wires=1)
-            RXWithNdim(0.2, wires=1)
+            qml.RX(0.2, wires=0)
+            qml.Rot(1.0, 0.2, -0.3, wires=1)
+            qml.RX(0.2, wires=1)
             qml.apply(qml.expval(qml.PauliZ(0)))
         with pytest.raises(ValueError, match="batch sizes of the tape operations do not match."):
             tape.set_parameters([x] + rot + [y])
@@ -891,7 +880,7 @@ class TestParameters:
         assert np.all(obs.data[0] == H2)
 
 
-class TestInverse:
+class TestInverseAdjoint:
     """Tests for tape inversion"""
 
     def test_inverse(self):
@@ -915,6 +904,35 @@ class TestInverse:
 
         # check that parameter order has reversed
         assert tape.get_parameters() == [init_state, p[1], p[2], p[3], p[0]]
+
+    def test_adjoint(self):
+        """Test that tape.adjoint is a copy of in-place inversion."""
+
+        init_state = np.array([1, 1])
+        p = [0.1, 0.2, 0.3, 0.4]
+
+        with QuantumTape() as tape:
+            prep = qml.BasisState(init_state, wires=[0, "a"])
+            ops = [qml.RX(p[0], wires=0), qml.Rot(*p[1:], wires=0).inv(), qml.CNOT(wires=[0, "a"])]
+            m1 = qml.probs(wires=0)
+            m2 = qml.probs(wires="a")
+
+        with QuantumTape() as tape2:
+            adjoint_tape = tape.adjoint()
+
+        assert tape2[0] is adjoint_tape
+
+        assert id(adjoint_tape) != id(tape)
+        assert isinstance(adjoint_tape, QuantumTape)
+
+        tape.inv()
+
+        for op1, op2 in zip(adjoint_tape.circuit, tape.circuit):
+            assert op1.__class__ is op2.__class__
+            if hasattr(op1, "inverse"):
+                assert op1.inverse == op2.inverse
+            if hasattr(op1, "data"):
+                assert qml.math.allclose(op1.data, op2.data)
 
     def test_parameter_transforms(self):
         """Test that inversion correctly changes trainable parameters"""
@@ -1281,6 +1299,7 @@ class TestExecution:
         expected = [np.cos(x), np.cos(y) ** 2]
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.filterwarnings("ignore:Creating an ndarray from ragged nested sequences")
     def test_prob_expectation_values(self, tol):
         """Tests correct output shape and evaluation for a tape
         with prob and var outputs"""

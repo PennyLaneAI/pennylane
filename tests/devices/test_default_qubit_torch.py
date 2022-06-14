@@ -183,6 +183,21 @@ def test_analytic_deprecation():
 
 
 #####################################################
+# Helper Method Test
+#####################################################
+
+
+def test_conj_helper_method():
+    """Unittests the _conj helper method."""
+
+    dev = qml.device("default.qubit.torch", wires=1)
+
+    x = qml.numpy.array(1.0 + 1j)
+    conj_x = dev._conj(x)
+    assert qml.math.allclose(conj_x, qml.math.conj(x))
+
+
+#####################################################
 # Device-level integration tests
 #####################################################
 
@@ -191,6 +206,17 @@ def test_analytic_deprecation():
 @pytest.mark.parametrize("torch_device", torch_devices)
 class TestApply:
     """Test application of PennyLane operations."""
+
+    def test_conj_array(self, device, torch_device, tol):
+        """Test using conj method from the device."""
+        dev = device(wires=4, torch_device=torch_device)
+        state = torch.tensor([-1.0 + 1j, 1.0 + 1j], dtype=torch.complex128, device=torch_device)
+        assert torch.allclose(
+            dev._conj(state),
+            torch.tensor([-1.0 - 1j, 1.0 - 1j], dtype=torch.complex128),
+            atol=tol,
+            rtol=0,
+        )
 
     def test_basis_state(self, device, torch_device, tol):
         """Test basis state initialization"""
@@ -1130,6 +1156,7 @@ class TestQNodeIntegration:
             "supports_reversible_diff": False,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
+            "supports_broadcasting": False,
             "passthru_interface": "torch",
             "passthru_devices": {
                 "torch": "default.qubit.torch",

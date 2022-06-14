@@ -287,15 +287,3 @@ class Interferometer(CVOperation):
         shapes = [(shape_theta_phi,)] * 2 + [(n_wires,)]
 
         return shapes
-
-    def adjoint(self):
-        adjoint_op = Interferometer(
-            theta=self.parameters[0],
-            phi=self.parameters[1],
-            varphi=self.parameters[2],
-            mesh=self.hyperparameters["mesh"],
-            beamsplitter=self.hyperparameters["beamsplitter"],
-            wires=self.wires,
-        )
-        adjoint_op.inverse = not self.inverse
-        return adjoint_op

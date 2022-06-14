@@ -209,7 +209,7 @@ class TestTFMatrix:
             expected_mat = qml.math.kron(I, qml.math.kron(reg_mat, I))
 
         tf_mat = op(tf.Variable(param), wires=wires).matrix()
-        obtained_mat = qml.utils.expand(tf_mat, wires, list(range(4)))
+        obtained_mat = qml.operation.expand_matrix(tf_mat, wires, list(range(4)))
 
         assert qml.math.get_interface(obtained_mat) == "tensorflow"
         assert qml.math.allclose(qml.math.unwrap(obtained_mat), expected_mat)
@@ -1018,6 +1018,7 @@ class TestQNodeIntegration:
             "supports_reversible_diff": False,
             "supports_inverse_operations": True,
             "supports_analytic_computation": True,
+            "supports_broadcasting": False,
             "passthru_interface": "tf",
             "passthru_devices": {
                 "torch": "default.qubit.torch",
