@@ -58,7 +58,7 @@ class QutritUnitary(Operation):
         super().__init__(*params, wires=wires, do_queue=do_queue)
 
     @staticmethod
-    def compute_matrix(U):   # pylint: disable=arguments-differ
+    def compute_matrix(U):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.

@@ -30,8 +30,7 @@ ops = {
 
 # TODO: Remove QutritUnitary from obs list
 obs = {
-    "QutritUnitary",        # Added here to prevent errors when using device
+    "QutritUnitary",  # Added here to prevent errors when using device
 }
 
 __all__ = list(ops | obs)
-

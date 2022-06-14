@@ -53,19 +53,24 @@ class DefaultQutrit(QutritDevice):
     version = __version__
     author = "Mudit Pandey"
 
-    # TODO: Add list of operations and observables
+    # TODO: Update list of operations and observables once more are added
     operations = {
         "QutritUnitary",
     }
 
-    # TODO: Remove QutritUnitary from observables list
     observables = {
         "Identity",
-        "QutritUnitary",
+        "QutritUnitary",  # TODO: Remove QutritUnitary from observables list
     }
 
     def __init__(
-        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None,
+        self,
+        wires,
+        *,
+        r_dtype=np.float64,
+        c_dtype=np.complex128,
+        shots=None,
+        analytic=None,
     ):
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
@@ -77,7 +82,8 @@ class DefaultQutrit(QutritDevice):
 
         # TODO: Add operations
         self._apply_ops = {
-
+            # All operations that can be applied on the `default.qutrit` device by directly
+            # manipulating the internal state array will be included in this set
         }
 
     @functools.lru_cache()
@@ -156,7 +162,7 @@ class DefaultQutrit(QutritDevice):
             supports_reversible_diff=True,
             supports_inverse_operations=True,
             supports_analytic_computation=True,
-            returns_state=True
+            returns_state=True,
         )
         return capabilities
 
@@ -323,4 +329,3 @@ class DefaultQutrit(QutritDevice):
         imag_state = self._imag(flat_state)
         prob = self.marginal_prob(real_state**2 + imag_state**2, wires)
         return prob
-

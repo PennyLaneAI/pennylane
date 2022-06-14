@@ -127,7 +127,7 @@ class QutritDevice(Device):
         permuted_wires = Wires([ordered_obs_wire_lst[index] for index in permutation])
         return permuted_wires
 
-    # TODO: Add list of observables
+    # TODO: Update set of supported observables as new observables are added
     observables = {
         "Identity",
     }
@@ -570,7 +570,6 @@ class QutritDevice(Device):
 
         return np.array(ternary_arr, dtype=dtype)
 
-
     @property
     def circuit_hash(self):
         """The hash of the circuit upon the last execution.
@@ -694,7 +693,6 @@ class QutritDevice(Device):
 
         return self.estimate_probability(wires=wires, shot_range=shot_range, bin_size=bin_size)
 
-    # TODO: Implement function
     def marginal_prob(self, prob, wires=None):
         r"""Return the marginal probability of the computational basis
         states by summing the probabiliites on the non-specified wires.
@@ -766,7 +764,7 @@ class QutritDevice(Device):
 
     def expval(self, observable, shot_range=None, bin_size=None):
 
-        # TODO: Add Projector case
+        # TODO: Add Projector case if/when projectors are supported
         # exact expectation value
         if self.shots is None:
             try:
@@ -788,7 +786,7 @@ class QutritDevice(Device):
 
     def var(self, observable, shot_range=None, bin_size=None):
 
-        # TODO: Add Projector case
+        # TODO: Add Projector case if/when projectors are supported
         # exact variance value
         if self.shots is None:
             try:
@@ -811,7 +809,8 @@ class QutritDevice(Device):
 
     def sample(self, observable, shot_range=None, bin_size=None):
 
-        # TODO: Add special cases for any particular observables
+        # TODO: Add special cases for any observables that require them once list of
+        # observables is updated.
 
         # translate to wire labels used by device
         device_wires = self.map_wires(observable.wires)

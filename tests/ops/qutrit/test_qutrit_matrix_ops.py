@@ -22,13 +22,12 @@ import pennylane as qml
 from pennylane.wires import Wires
 from pennylane.operation import DecompositionUndefinedError
 
-U_thadamard_01 = np.multiply(1 / np.sqrt(2),
-                np.array(
-                    [[1, 1, 0],
-                     [1, -1, 0],
-                     [0, 0, np.sqrt(2)]],
-                    )
-                )
+U_thadamard_01 = np.multiply(
+    1 / np.sqrt(2),
+    np.array(
+        [[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]],
+    ),
+)
 
 U_tswap = np.array(
     [
@@ -40,9 +39,9 @@ U_tswap = np.array(
         [0, 0, 0, 0, 0, 0, 0, 1, 0],
         [0, 0, 1, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 1]
+        [0, 0, 0, 0, 0, 0, 0, 0, 1],
     ],
-    dtype=np.complex128
+    dtype=np.complex128,
 )
 
 
@@ -110,8 +109,8 @@ class TestQutritUnitary:
     interface_and_decomp_data = [
         (U_thadamard_01, 1),
         (U_tswap, 2),
-        (unitary_group.rvs(3,random_state=10), 1),
-        (unitary_group.rvs(9,random_state=10), 2),
+        (unitary_group.rvs(3, random_state=10), 1),
+        (unitary_group.rvs(9, random_state=10), 2),
         (np.eye(3), 1),
         (np.eye(9), 2),
         # (np.tensordot([1j, -1, 1], U_thadamard_01, axes=0), 1)
@@ -258,8 +257,7 @@ class TestQutritUnitary:
         assert qml.math.allclose(mat, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize(
-        "U,num_wires", interface_and_decomp_data)
+    @pytest.mark.parametrize("U,num_wires", interface_and_decomp_data)
     def test_qutrit_unitary_jax_jit(self, U, num_wires):
         """Tests that QutritUnitary works with jitting."""
         import jax
@@ -278,11 +276,7 @@ class TestQutritUnitary:
 
     def test_matrix_representation(self):
         """Test that the matrix representation is defined correctly"""
-        U = np.array([
-            [1, -1j, -1 + 1j],
-            [1j, 1, 1 + 1j],
-            [1 + 1j, -1 + 1j, 0]
-        ])
+        U = np.array([[1, -1j, -1 + 1j], [1j, 1, 1 + 1j], [1 + 1j, -1 + 1j, 0]])
         U = np.multiply(0.5, U)
 
         res_static = qml.QutritUnitary.compute_matrix(U)
@@ -295,6 +289,7 @@ class TestQutritUnitary:
 label_data = [
     (U_thadamard_01, qml.QutritUnitary(U_thadamard_01, wires=0)),
 ]
+
 
 @pytest.mark.parametrize("mat, op", label_data)
 class TestUnitaryLabels:

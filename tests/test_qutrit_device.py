@@ -109,9 +109,7 @@ class TestOperations:
             dev = mock_qutrit_device()
             dev.op_queue
 
-    def test_op_queue_is_filled_during_execution(
-        self, mock_qutrit_device, monkeypatch
-    ):
+    def test_op_queue_is_filled_during_execution(self, mock_qutrit_device, monkeypatch):
         """Tests that the op_queue is correctly filled when apply is called and that accessing
         op_queue raises no error"""
         U = unitary_group.rvs(3, random_state=10)
@@ -146,7 +144,11 @@ class TestOperations:
         U = unitary_group.rvs(3, random_state=10)
 
         with qml.tape.QuantumTape() as tape:
-            queue = [qml.QutritUnitary(U, wires=0), qml.Hadamard(wires=1), qml.QutritUnitary(U, wires=2)]
+            queue = [
+                qml.QutritUnitary(U, wires=0),
+                qml.Hadamard(wires=1),
+                qml.QutritUnitary(U, wires=2),
+            ]
             observables = [qml.expval(qml.Identity(0)), qml.var(qml.Identity(1))]
 
         with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
@@ -214,9 +216,7 @@ class TestObservables:
             dev = mock_qutrit_device()
             dev.execute(tape)
 
-    def test_unsupported_observable_return_type_raise_error(
-        self, mock_qutrit_device, monkeypatch
-    ):
+    def test_unsupported_observable_return_type_raise_error(self, mock_qutrit_device, monkeypatch):
         """Check that an error is raised if the return type of an observable is unsupported"""
         U = unitary_group.rvs(3, random_state=10)
 
@@ -294,7 +294,9 @@ class TestExtractStatistics:
         assert results == []
 
     @pytest.mark.parametrize("returntype", ["not None"])
-    def test_error_return_type_none(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
+    def test_error_return_type_none(
+        self, mock_qutrit_device_extract_stats, monkeypatch, returntype
+    ):
         """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
 
         assert returntype not in [Expectation, Variance, Sample, Probability, State, None]
@@ -482,7 +484,7 @@ class TestEstimateProb:
             (None, [0.25, 0, 0.25, 0, 0.25, 0, 0, 0, 0.25]),
             ([0, 1], [0.25, 0, 0.25, 0, 0.25, 0, 0, 0, 0.25]),
             ([1], [0.25, 0.25, 0.5]),
-        ]
+        ],
     )
     def test_estimate_probability(
         self, wires, expected, mock_qutrit_device_with_original_statistics, monkeypatch
@@ -567,7 +569,7 @@ class TestMarginalProb:
         self, mock_qutrit_device_with_original_statistics, probs, marginals, wires, tol
     ):
         """Test that the correct marginals are returned by the marginal_prob method"""
-        num_wires = int(np.log(len(probs)) / np.log(3))     # Same as log_3(len(probs))
+        num_wires = int(np.log(len(probs)) / np.log(3))  # Same as log_3(len(probs))
         dev = mock_qutrit_device_with_original_statistics(num_wires)
         res = dev.marginal_prob(probs, wires=wires)
         assert np.allclose(res, marginals, atol=tol, rtol=0)
@@ -577,7 +579,7 @@ class TestMarginalProb:
         self, mock_qutrit_device_with_original_statistics, probs, marginals, wires, tol
     ):
         """Test that passing wires=None simply returns the original probability."""
-        num_wires = int(np.log(len(probs)) / np.log(3))     # Same as log_3(len(probs))
+        num_wires = int(np.log(len(probs)) / np.log(3))  # Same as log_3(len(probs))
         dev = mock_qutrit_device_with_original_statistics(wires=num_wires)
         dev.num_wires = num_wires
 
@@ -589,7 +591,11 @@ class TestActiveWires:
     """Test that the active_wires static method works as required."""
 
     def test_active_wires_from_queue(self, mock_qutrit_device):
-        queue = [qml.QutritUnitary(np.eye(9), wires=[0, 2]), qml.QutritUnitary(np.eye(3), wires=0), qml.expval(qml.Identity(wires=5))]
+        queue = [
+            qml.QutritUnitary(np.eye(9), wires=[0, 2]),
+            qml.QutritUnitary(np.eye(3), wires=0),
+            qml.expval(qml.Identity(wires=5)),
+        ]
 
         dev = mock_qutrit_device(wires=6)
         res = dev.active_wires(queue)
@@ -822,4 +828,3 @@ class TestShotList:
         # test gradient works
         # TODO: Add after differentiability of qutrit circuits is implemented
         # res = qml.jacobian(circuit, argnum=[0])(pnp.eye(9, dtype=np.complex128))
-

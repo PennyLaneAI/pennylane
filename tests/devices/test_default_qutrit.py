@@ -25,40 +25,20 @@ from pennylane.wires import Wires, WireError
 OMEGA = np.exp(2 * np.pi * 1j / 3)
 
 
-U_thadamard_01 = np.multiply(1 / np.sqrt(2),
-                np.array(
-                    [[1, 1, 0],
-                     [1, -1, 0],
-                     [0, 0, np.sqrt(2)]],
-                    )
-                )
-
-U_x_02 = np.array(
-    [[0, 0, 1],
-     [0, 1, 0],
-     [1, 0, 0]],
-    dtype=np.complex128
+U_thadamard_01 = np.multiply(
+    1 / np.sqrt(2),
+    np.array(
+        [[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]],
+    ),
 )
 
-U_z_12 = np.array(
-    [[1, 0, 0],
-     [0, 1, 0],
-     [0, 0, -1]],
-    dtype=np.complex128
-)
+U_x_02 = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]], dtype=np.complex128)
 
-U_shift = np.array(
-    [[0, 0, 1],
-     [1, 0, 0],
-     [0, 1, 0]],
-    dtype=np.complex128
-)
+U_z_12 = np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]], dtype=np.complex128)
 
-U_clock = np.array(
-    [[1, 0, 0],
-     [0, OMEGA, 0],
-     [0, 0, OMEGA**2]]
-)
+U_shift = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]], dtype=np.complex128)
+
+U_clock = np.array([[1, 0, 0], [0, OMEGA, 0], [0, 0, OMEGA**2]])
 
 U_tswap = np.array(
     [
@@ -70,9 +50,9 @@ U_tswap = np.array(
         [0, 0, 0, 0, 0, 0, 0, 1, 0],
         [0, 0, 1, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 1]
+        [0, 0, 0, 0, 0, 0, 0, 0, 1],
     ],
-    dtype=np.complex128
+    dtype=np.complex128,
 )
 
 U_tadd = np.array(
@@ -85,9 +65,9 @@ U_tadd = np.array(
         [0, 0, 0, 0, 1, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 1, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0, 1, 0, 0]
+        [0, 0, 0, 0, 0, 0, 1, 0, 0],
     ],
-    dtype=np.complex128
+    dtype=np.complex128,
 )
 
 
@@ -115,6 +95,7 @@ def test_dtype_errors():
         DeviceError, match="Complex datatype must be a complex floating point type."
     ):
         qml.device("default.qutrit", wires=1, c_dtype=np.float64)
+
 
 dev = qml.device("default.qutrit", wires=1, shots=100000)
 
@@ -188,13 +169,13 @@ class TestApply:
             qml.QutritUnitary,
             [0, 0, 1, 0, 0, 0, 0, 1, 0] / np.sqrt(2),
             [0, 0, 0, 0, 0, 1, 1, 0, 0] / np.sqrt(2),
-            U_tswap
+            U_tswap,
         ),
         (
             qml.QutritUnitary,
             np.multiply(0.5, [0, 1, 1, 0, 0, 0, 0, 1, 1]),
             np.multiply(0.5, [0, 0, 0, 1, 0, 1, 1, 0, 1]),
-            U_tswap
+            U_tswap,
         ),
         (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], U_tadd),
         (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 0, 1, 0], [0, 0, 0, 0, 0, 0, 1, 0, 0], U_tadd),
@@ -208,17 +189,17 @@ class TestApply:
             qml.QutritUnitary,
             [0, 0, 1, 0, 0, 0, 0, 1, 0] / np.sqrt(2),
             [0, 0, 0, 0, 0, 1, 1, 0, 0] / np.sqrt(2),
-            U_tswap
+            U_tswap,
         ),
         (
             qml.QutritUnitary,
             np.multiply([0, 1, 1, 0, 0, 0, 0, 1, 1], 0.5),
             np.multiply([0, 0, 0, 1, 0, 1, 1, 0, 1], 0.5),
-            U_tswap
+            U_tswap,
         ),
         (qml.QutritUnitary, [0, 0, 0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 1, 0, 0, 0], U_tadd),
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 1, 0, 0], [0 ,0 ,0, 0, 0, 0, 0, 1, 0], U_tadd),
-        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0 ,0, 0, 0, 1, 0, 0, 0, 0], U_tadd),
+        (qml.QutritUnitary, [0, 0, 0, 0, 0, 0, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 1, 0], U_tadd),
+        (qml.QutritUnitary, [0, 0, 0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 1, 0, 0, 0, 0], U_tadd),
     ]
 
     @pytest.mark.parametrize(
@@ -277,7 +258,9 @@ class TestProbabilityIntegration:
         self.analytic_counter += 1
         return np.array([1, 0, 0, 0, 0, 0, 0, 0, 0], dtype=float)
 
-    @pytest.mark.parametrize("x", [[U_thadamard_01, U_clock], [U_shift, U_thadamard_01], [U_z_12, U_thadamard_01]])
+    @pytest.mark.parametrize(
+        "x", [[U_thadamard_01, U_clock], [U_shift, U_thadamard_01], [U_z_12, U_thadamard_01]]
+    )
     def test_probability(self, x, tol):
         """Test that the probability function works for finite and infinite shots"""
         dev = qml.device("default.qutrit", wires=2, shots=1000)
