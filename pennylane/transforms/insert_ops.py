@@ -23,6 +23,7 @@ from pennylane import Device, apply
 from pennylane.operation import Operation
 from pennylane.tape import QuantumTape
 from pennylane.transforms.qfunc_transforms import qfunc_transform
+from pennylane.ops.op_math import Adjoint
 
 # pylint: disable=too-many-branches
 
@@ -210,8 +211,7 @@ def insert(
     # decompose templates and their adjoints (which fixes a bug in the tutorial_error_mitigation demo)
     # TODO: change this to be cleaner and more robust
     circuit = circuit.expand(
-        stop_at=lambda op: not hasattr(qml.templates, op.name)
-        and not isinstance(op, qml.ops.op_math.Adjoint)
+        stop_at=lambda op: not hasattr(qml.templates, op.name) and not isinstance(op, Adjoint)
     )
 
     if not isinstance(op, FunctionType) and op.num_wires != 1:
