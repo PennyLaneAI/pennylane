@@ -738,6 +738,9 @@
 
 <h3>Deprecations</h3>
 
+* Deprecating ExpvalCost by adding a UserWarning.
+  [(#2571)](https://github.com/PennyLaneAI/pennylane/pull/2571)
+
 <h3>Documentation</h3>
 
 * The centralized [Xanadu Sphinx Theme](https://github.com/XanaduAI/xanadu-sphinx-theme)
