@@ -510,7 +510,7 @@
 
 <h4>New operations & transform </h4>  
   
-* Add `XY` gate.
+* Add `IsingXY` gate.
   [(#2649)](https://github.com/PennyLaneAI/pennylane/pull/2649)
   
 * Added the `qml.ECR` operation to represent the echoed RZX(pi/2) gate.
