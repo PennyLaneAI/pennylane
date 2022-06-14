@@ -164,7 +164,7 @@ def factorize(two, tol_first, tol_second):
 
     if np.sum([len(v) for v in eigvecs_m]) == 0:
         raise ValueError(
-            "All eigenvectors are discarded. Consider decreasing the second threshold" " error."
+            "All eigenvectors are discarded. Consider decreasing the second threshold error."
         )
 
     return factors, eigvals_m, eigvecs_m
