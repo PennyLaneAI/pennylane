@@ -47,8 +47,8 @@ def qrom_cost(constants):
 
     .. math::
 
-        cost = \left \lceil \frac{a + b}{k} \right \rceil + \left \lceil \frac{c}{k} \right \rceil +
-        d \left ( k + e \right ),
+        \text{cost} = \left \lceil \frac{a + b}{k} \right \rceil + \left \lceil \frac{c}{k} \right
+        \rceil + d \left ( k + e \right ),
 
     where :math:`a, b, c, d, e` are constants that depend on the nature of the QROM implementation
     and the expansion factor :math:`k` is an integer power of two, :math:`k = 2^n`, that minimizes
@@ -70,6 +70,7 @@ def qrom_cost(constants):
         tuple(int, int): the cost and the expansion factor for the QROM
 
     **Example**
+
     >>> constants = (151.0, 7.0, 151.0, 30.0, -1.0)
     >>> cost_qrom(constants)
     168, 4
