@@ -266,10 +266,6 @@ def classical_fisher(qnode, argnums=0):
         returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
         it returns a list of sizes ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
 
-    .. warning::
-
-        Differentiating the ``classical_fisher()`` matrix using the ``torch`` or ``tensorflow`` interface is currently not supported.
-
     .. seealso:: :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.qinfo.transforms.quantum_fisher`
 
     **Example**
