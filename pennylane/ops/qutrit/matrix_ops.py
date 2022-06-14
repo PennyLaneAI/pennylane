@@ -72,10 +72,6 @@ class QutritUnitary(Operation):
         """
         return U
 
-    @staticmethod
-    def compute_decomposition(U, wires):
-        raise DecompositionUndefinedError
-
     def adjoint(self):
         U = self.matrix()
         return QutritUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)

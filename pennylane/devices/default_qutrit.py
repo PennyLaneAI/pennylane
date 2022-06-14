@@ -278,10 +278,6 @@ class DefaultQutrit(QutritDevice):
 
         self._state = self._create_basis_state(num)
 
-    @property
-    def state(self):
-        return self._flatten(self._state)
-
     def _apply_unitary(self, state, mat, wires):
         r"""Apply multiplication of a matrix to subsystems of the quantum state.
 

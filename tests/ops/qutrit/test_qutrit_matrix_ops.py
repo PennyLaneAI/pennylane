@@ -110,6 +110,10 @@ class TestQutritUnitary:
     interface_and_decomp_data = [
         (U_thadamard_01, 1),
         (U_tswap, 2),
+        (unitary_group.rvs(3,random_state=10), 1),
+        (unitary_group.rvs(9,random_state=10), 2),
+        (np.eye(3), 1),
+        (np.eye(9), 2),
         # (np.tensordot([1j, -1, 1], U_thadamard_01, axes=0), 1)
     ]
 
