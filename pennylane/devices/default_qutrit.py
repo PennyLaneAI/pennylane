@@ -131,7 +131,7 @@ class DefaultQutrit(QutritDevice):
 
         Returns:
             array[complex]: Returns a 2D matrix representation of
-            the unitary in the computational basis
+            the unitary in the computational basis.
         """
         return unitary.matrix()
 
