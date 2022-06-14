@@ -89,7 +89,7 @@ class Sum(Operator):
     @property
     def is_hermitian(self):
         """If all of the terms in the sum are hermitian, then the Sum is hermitian."""
-        return all([s.is_hermitian for s in self.summands])
+        return all(s.is_hermitian for s in self.summands)
 
     def terms(self):
         return [1.0] * len(self.summands), self.summands
