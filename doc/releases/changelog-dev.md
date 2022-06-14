@@ -4,16 +4,16 @@
 
 <h3>New features since last release</h3>
 
-* Added new device `default.qutrit` for simulation of devices with wires of three dimensions. Users can currently make measurements with `qml.state()` and `qml.probs()` provided that an observable isn't passed into the measurements.
-* Added operation `qml.QutritUnitary` for basic operation of `default.qutrit` device with user-specified unitaries
+* Added new device `default.qutrit` for simulation of devices with wires of three dimensions. Users can currently make measurements with `qml.state()` and `qml.probs()`.
+* Added operation `qml.QutritUnitary` for basic operation of `default.qutrit` device with user-specified unitaries.
 
 
 
   ```pycon
   >>> dev = qml.device("default.qutrit", wires=1)
-  >>> def U = np.multiply(1 / np.sqrt(2), [[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]])
+  >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
   >>> @qml.qnode(dev)
-  >>> def circuit(U):
+  ... def circuit(U):
   ...     qml.QutritUnitary(U, wires=0)
   ...     return qml.probs(wires=0)
   >>> print(circuit(U))

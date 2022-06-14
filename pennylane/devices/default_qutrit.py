@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-The default.qutrit device is Pennylane's standard qutrit-based device.
+The default.qutrit device is PennyLane's standard qutrit-based device.
 
 It implements the :class:`~pennylane._device.Device` methods as well as some built-in
-:mod:`qutrit operations <pennylane.ops.qutrit>`, and provides a simple pure state
-simulation of qutrit-based quantum circuit architecture
+:mod:`qutrit operations <pennylane.ops.qutrit>`, and provides simple pure state
+simulation of qutrit-based quantum computing.
 """
 import functools, itertools
 import numpy as np
@@ -36,7 +36,7 @@ OMEGA = np.exp(2 * np.pi * 1j / 3)
 
 
 class DefaultQutrit(QutritDevice):
-    """Default qutrit device for PennyLane
+    """Default qutrit device for PennyLane.
 
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
@@ -144,7 +144,7 @@ class DefaultQutrit(QutritDevice):
 
         Returns:
             array[complex]: Returns a 2D matrix representation of
-            the unitary in the computational basis
+            the unitary in the computational basis.
         """
         return unitary.matrix()
 
