@@ -11,7 +11,7 @@
 
   ```pycon
   >>> dev = qml.device("default.qutrit", wires=1)
-  >>> def U = np.multiply(1 / np.sqrt(2), [[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]])
+  >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
   >>> @qml.qnode(dev)
   >>> def circuit(U):
   ...     qml.QutritUnitary(U, wires=0)
