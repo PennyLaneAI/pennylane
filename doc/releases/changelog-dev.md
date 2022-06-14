@@ -4,7 +4,7 @@
 
 <h3>New features since last release</h3>
 
-<h4> Improved JAX JIT interface</h4>
+<h4> Quantum information module </h4>
 
 * A new quantum information module is added. It includes a function for computing the reduced density matrix functions
   for state vectors and density matrices.
