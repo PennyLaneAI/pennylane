@@ -140,3 +140,30 @@ def test_shape_error(two_tensor):
     not have the correct shape."""
     with pytest.raises(ValueError, match="The two-electron repulsion tensor must have"):
         qml.resources.factorize(two_tensor, 1e-5, 1e-5)
+
+
+@pytest.mark.parametrize(
+    "two_tensor",
+    [
+        np.array(
+            [
+                [
+                    [[6.74755872e-01, -2.85826918e-13], [-2.85799162e-13, 6.63711349e-01]],
+                    [[-2.85965696e-13, 1.81210478e-01], [1.81210478e-01, -2.63900013e-13]],
+                ],
+                [
+                    [[-2.85854673e-13, 1.81210478e-01], [1.81210478e-01, -2.63900013e-13]],
+                    [[6.63711349e-01, -2.63677968e-13], [-2.63788991e-13, 6.97651447e-01]],
+                ],
+            ]
+        ),
+    ],
+)
+def test_empty_error(two_tensor):
+    r"""Test that the factorize function raises an error when all factors or their eigenvectors are
+    discarded."""
+    with pytest.raises(ValueError, match="All factors are discarded."):
+        qml.resources.factorize(two_tensor, 1e1, 1e-5)
+
+    with pytest.raises(ValueError, match="All eigenvectors are discarded."):
+        qml.resources.factorize(two_tensor, 1e-5, 1e1)

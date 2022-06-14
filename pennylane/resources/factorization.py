@@ -34,7 +34,7 @@ def factorize(two, tol_first, tol_second):
         tol_second (float): threshold error value for discarding the negligible factor eigenvalues
 
     Returns:
-        tuple(array[array[float]]], list[array[float]], list[array[float]]): tuple containing
+        tuple(array[array[float]], list[array[float]], list[array[float]]): tuple containing
         symmetric matrices (factors) approximating the two-electron tensor, truncated eigenvalues of
         the generated factors, and truncated eigenvectors of the generated factors
 
@@ -141,7 +141,13 @@ def factorize(two, tol_first, tol_second):
 
     eigvals_r, eigvecs_r = np.linalg.eigh(two)
     eigvals_r = np.array([val for val in eigvals_r if abs(val) > tol_first])
+
     eigvecs_r = eigvecs_r[:, -len(eigvals_r) :]
+
+    if eigvals_r.size == 0:
+        raise ValueError(
+            "All factors are discarded. Consider decreasing the first threshold error."
+        )
 
     vectors = eigvecs_r @ np.diag(np.sqrt(eigvals_r))
 
@@ -155,5 +161,10 @@ def factorize(two, tol_first, tol_second):
         idx = [i for i, v in enumerate(eigval) if abs(v) > tol_second]
         eigvals_m.append(eigval[idx])
         eigvecs_m.append(eigvecs[n][idx])
+
+    if np.sum([len(v) for v in eigvecs_m]) == 0:
+        raise ValueError(
+            "All eigenvectors are discarded. Consider decreasing the second threshold" " error."
+        )
 
     return factors, eigvals_m, eigvecs_m
