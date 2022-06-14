@@ -538,11 +538,13 @@ class TestCounts:
         @qml.qnode(dev)
         def circuit():
             qml.RX(0.54, wires=0)
-            return qml.sample(qml.PauliZ(0), counts = True), qml.sample(qml.PauliX(1), counts = True)
+            return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliX(1), counts=True)
 
         sample = circuit()
 
-        assert np.array_equal(sample.shape, (2,)) & np.all([sum(s.unwrap().values())==n_sample for s in sample])
+        assert np.array_equal(sample.shape, (2,)) & np.all(
+            [sum(s.unwrap().values()) == n_sample for s in sample]
+        )
 
     def test_counts_combination(self, tol):
         """Test the output of combining expval, var and counts"""
@@ -554,12 +556,16 @@ class TestCounts:
         def circuit():
             qml.RX(0.54, wires=0)
 
-            return qml.sample(qml.PauliZ(0), counts=True), qml.expval(qml.PauliX(1)), qml.var(qml.PauliY(2))
+            return (
+                qml.sample(qml.PauliZ(0), counts=True),
+                qml.expval(qml.PauliX(1)),
+                qml.var(qml.PauliY(2)),
+            )
 
         result = circuit()
 
         assert len(result) == 3
-        assert sum(result[0].unwrap().values())==n_sample
+        assert sum(result[0].unwrap().values()) == n_sample
         assert isinstance(result[1], np.ndarray)
         assert isinstance(result[2], np.ndarray)
 
@@ -573,12 +579,12 @@ class TestCounts:
         def circuit():
             qml.RX(0.54, wires=0)
 
-            return qml.sample(qml.PauliZ(0), counts = True)
+            return qml.sample(qml.PauliZ(0), counts=True)
 
         result = circuit()
 
         assert isinstance(result, np.ndarray)
-        assert sum(result.unwrap().values())==n_sample
+        assert sum(result.unwrap().values()) == n_sample
 
     def test_multi_wire_counts_regular_shape(self, tol):
         """Test the return type and shape of sampling multiple wires
@@ -589,16 +595,19 @@ class TestCounts:
 
         @qml.qnode(dev)
         def circuit():
-            return qml.sample(qml.PauliZ(0), counts = True), qml.sample(qml.PauliZ(1), counts = True), qml.sample(qml.PauliZ(2), counts = True)
+            return (
+                qml.sample(qml.PauliZ(0), counts=True),
+                qml.sample(qml.PauliZ(1), counts=True),
+                qml.sample(qml.PauliZ(2), counts=True),
+            )
 
         result = circuit()
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, np.ndarray)
         assert result.shape[0] == 3
-        assert all(sum(r.unwrap().values())==n_sample for r in result)
+        assert all(sum(r.unwrap().values()) == n_sample for r in result)
         assert all(all(v.dtype == np.dtype("int") for v in r.unwrap().values()) for r in result)
-
 
     def test_observable_return_type_is_counts(self):
         """Test that the return type of the observable is :attr:`ObservableReturnTypes.Counts`"""
@@ -607,12 +616,11 @@ class TestCounts:
 
         @qml.qnode(dev)
         def circuit():
-            res = qml.sample(qml.PauliZ(0), counts = True)
+            res = qml.sample(qml.PauliZ(0), counts=True)
             assert res.return_type is Counts
             return res
 
         circuit()
-
 
     def test_providing_no_observable_and_no_wires_counts(self):
         """Test that we can provide no observable and no wires to sample function"""
@@ -621,7 +629,7 @@ class TestCounts:
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
-            res = qml.sample(counts = True)
+            res = qml.sample(counts=True)
             assert res.obs is None
             assert res.wires == qml.wires.Wires([])
             return res
