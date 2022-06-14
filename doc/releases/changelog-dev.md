@@ -13,7 +13,7 @@
   >>> dev = qml.device("default.qutrit", wires=1)
   >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
   >>> @qml.qnode(dev)
-  >>> def circuit(U):
+  ... def circuit(U):
   ...     qml.QutritUnitary(U, wires=0)
   ...     return qml.probs(wires=0)
   >>> print(circuit(U))
