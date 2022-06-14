@@ -1,5 +1,5 @@
 """
-Unit tests for the :mod:`pennylane` :class:`QubitDevice` class.
+Unit tests for the :mod:`pennylane` :class:`QutritDevice` class.
 """
 import pytest
 import numpy as np
