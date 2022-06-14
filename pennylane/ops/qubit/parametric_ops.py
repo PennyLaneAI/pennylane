@@ -2317,7 +2317,7 @@ class IsingXX(Operation):
     .. note::
 
         Special cases of using the :math:`XX` operator include:
-        
+
         * :math:`XX(0) = I`;
         * :math:`XX(\pi) = i (X \otimes X)`.
 
@@ -2448,7 +2448,7 @@ class IsingYY(Operation):
     .. note::
 
         Special cases of using the :math:`YY` operator include:
-        
+
         * :math:`YY(0) = I`;
         * :math:`YY(\pi) = i (Y \otimes Y)`.
 
@@ -2578,7 +2578,7 @@ class IsingZZ(Operation):
     .. note::
 
         Special cases of using the :math:`ZZ` operator include:
-        
+
         * :math:`ZZ(0) = I`;
         * :math:`ZZ(\pi) = - (Z \otimes Z)`;
         * :math:`ZZ(2\pi) = - I;
@@ -2740,7 +2740,7 @@ class IsingXY(Operation):
     .. note::
 
         Special cases of using the :math:`XY` operator include:
-        
+
         * :math:`XY(0) = I`;
         * :math:`XY(\frac{\pi}{2}) = \sqrt{iSWAP}`;
         * :math:`XY(\pi) = iSWAP;
