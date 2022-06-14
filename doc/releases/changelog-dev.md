@@ -76,7 +76,7 @@
   >>> print(energy)
   -1.1258709813834058
   ```
-  
+ 
 <h3>Improvements</h3>
 
 <h3>Breaking changes</h3>
