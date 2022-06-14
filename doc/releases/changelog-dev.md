@@ -539,6 +539,10 @@
 
 <h3>Improvements</h3>
 
+* Supporting expectation values of groups of non-commuting observables that are not Hamiltonians. E.g. returning 
+  `[qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]` is now allowed.
+  [(#2587)](https://github.com/PennyLaneAI/pennylane/pull/2587)
+
 * Boolean mask indexing of the parameter-shift Hessian
   [(#2538)](https://github.com/PennyLaneAI/pennylane/pull/2538)
 
@@ -745,6 +749,9 @@
 
 <h3>Deprecations</h3>
 
+* Deprecating ExpvalCost by adding a UserWarning.
+  [(#2571)](https://github.com/PennyLaneAI/pennylane/pull/2571)
+
 <h3>Documentation</h3>
 
 * The centralized [Xanadu Sphinx Theme](https://github.com/XanaduAI/xanadu-sphinx-theme)
@@ -765,12 +772,33 @@
   that specifies how the channel behaves for the different values of depolarization probability `p`.
   [(#2669)](https://github.com/PennyLaneAI/pennylane/pull/2669)
 
+* Improve quickstart documentation.
+  [(#2530)](https://github.com/PennyLaneAI/pennylane/pull/2530)
+  [(#2534)](https://github.com/PennyLaneAI/pennylane/pull/2534)
+  [(#2564](https://github.com/PennyLaneAI/pennylane/pull/2564)
+  [(#2565](https://github.com/PennyLaneAI/pennylane/pull/2565)
+  [(#2566)](https://github.com/PennyLaneAI/pennylane/pull/2566)
+  [(#2607)](https://github.com/PennyLaneAI/pennylane/pull/2607)
+  [(#2608)](https://github.com/PennyLaneAI/pennylane/pull/2608)
+  
+* Improve Qchem documentation.
+  [(#2500)](https://github.com/PennyLaneAI/pennylane/pull/2500)
+  
+* Improve testing documentation.
+  [(#2536)](https://github.com/PennyLaneAI/pennylane/pull/2536)
+  
+* Add documentation for pre-commit.
+  [(#2567)](https://github.com/PennyLaneAI/pennylane/pull/2567)
+  
+* Update documentation for draw control wires change.
+  [(#2682)](https://github.com/PennyLaneAI/pennylane/pull/2682)
+  
 <h3>Contributors</h3>
 
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Samuel Banning, Avani Bhardwaj, 
-Amintor Dusko, Christian Gogolin, Qi Hu, Katharine Hyatt, Soran Jahangiri, Edward Jiang, Korbinian Kottmann, 
-Ankit Khandelwal, Christina Lee, Chae-Yeun Park, Mason Moreland, Romain Moyard, Maria Schuld, Jay Soni, Antal Száva, 
-David Wierichs, WingCode
+Albert Mitjans Coma, Amintor Dusko, Trent Fridey, Christian Gogolin, Qi Hu, Katharine Hyatt, Soran Jahangiri, 
+Edward Jiang, Korbinian Kottmann, Ankit Khandelwal, Christina Lee, Chae-Yeun Park, Mason Moreland, Romain Moyard, 
+Maria Schuld, Jay Soni, Antal Száva, tal66, David Wierichs, WingCode
 
