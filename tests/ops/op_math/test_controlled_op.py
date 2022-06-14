@@ -367,8 +367,10 @@ class TestMiscMethods:
             assert op1.wires == op2.wires
 
 
-class TestInverse:
-    def test_invert_pow_op(self):
+class TestOperationProperties:
+    """Test ControlledOperation specific properties."""
+
+    def test_invert_controlled_op(self):
         """Test that in-place inversion of a power operator inverts the base operator."""
 
         base = qml.S(0)

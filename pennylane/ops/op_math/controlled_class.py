@@ -77,23 +77,30 @@ class ControlledOperation(operation.Operation):
 
     @property
     def parameter_frequencies(self):
-        try:
-            base_gen = qml.generator(self.base, format="observable")
-        except operation.GeneratorUndefinedError as e:
-            raise operation.ParameterFrequenciesUndefinedError(
-                f"Operation {self.base.name} does not have parameter frequencies defined."
-            ) from e
+        if self.base.num_params == 1:
+            try:
+                base_gen = qml.generator(self.base, format="observable")
+            except operation.GeneratorUndefinedError as e:
+                raise operation.ParameterFrequenciesUndefinedError(
+                    f"Operation {self.base.name} does not have parameter frequencies defined."
+                ) from e
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                action="ignore", message=r".+ eigenvalues will be computed numerically\."
-            )
-            base_gen_eigvals = qml.eigvals(base_gen)
+            with warnings.catch_warnings():
+                warnings.filterwarnings(
+                    action="ignore", message=r".+ eigenvalues will be computed numerically\."
+                )
+                base_gen_eigvals = qml.eigvals(base_gen)
 
-        gen_eigvals = np.append(base_gen_eigvals, 0)
+            # The projectors in the full generator add a eigenvsalue of `0` to
+            # the eigenvalues of the base generator.
+            gen_eigvals = np.append(base_gen_eigvals, 0)
 
-        processed_gen_eigvals = tuple(np.round(gen_eigvals, 8))
-        return [qml.gradients.eigvals_to_frequencies(processed_gen_eigvals)]
+            processed_gen_eigvals = tuple(np.round(gen_eigvals, 8))
+            return [qml.gradients.eigvals_to_frequencies(processed_gen_eigvals)]
+        raise operation.ParameterFrequenciesUndefinedError(
+            f"Operation {self.name} does not have parameter frequencies defined, "
+            "and parameter frequencies can not be computed via generator for more than one parameter."
+        )
 
 
 # pylint: disable=too-many-arguments, too-many-public-methods
