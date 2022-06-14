@@ -24,7 +24,21 @@ from pennylane import numpy as np
 
 
 class ExpvalCost:
-    """Create a cost function that gives the expectation value of an input Hamiltonian.
+    """
+    .. warning::
+        ``ExpvalCost`` is deprecated. Instead, it is recommended to simply
+        pass Hamiltonians to the :func:`~.expval` function inside QNodes.
+
+        .. code-block:: python
+
+            @qml.qnode(dev)
+            def ansatz(params):
+                some_qfunc(params)
+                return qml.expval(Hamiltonian)
+
+        In order to optimize the Hamiltonian evaluation taking into account commuting terms, use the ``grouping_type`` keyword in :class:`~.Hamiltonian`.
+
+    Create a cost function that gives the expectation value of an input Hamiltonian.
 
     This cost function is useful for a range of problems including VQE and QAOA.
 
@@ -136,6 +150,13 @@ class ExpvalCost:
         optimize=False,
         **kwargs,
     ):
+        warnings.warn(
+            "ExpvalCost is deprecated, use qml.expval() instead. "
+            "For optimizing Hamiltonian measurements with measuring commuting "
+            "terms in parallel, use the grouping_type keyword in qml.Hamiltonian.",
+            UserWarning,
+        )
+
         if kwargs.get("measure", "expval") != "expval":
             raise ValueError("ExpvalCost can only be used to construct sums of expectation values.")
 
