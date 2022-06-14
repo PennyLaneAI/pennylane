@@ -1,3 +1,16 @@
+# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 Unit tests for the :mod:`pennylane.plugin.DefaultQutrit` device.
 """
@@ -104,6 +117,9 @@ def test_dtype_errors():
         qml.device("default.qutrit", wires=1, c_dtype=np.float64)
 
 dev = qml.device("default.qutrit", wires=1, shots=100000)
+
+
+# TODO: Add tests for expval, var, sample and tensor observables after addition of observables
 
 
 class TestApply:
@@ -243,37 +259,11 @@ class TestApply:
         )
         assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
 
-    # TODO: Add tests for state preperation ops
-
-
-# TODO: Add tests after addition of observables
-# class TestExpval:
-#     pass
-
-
-# class TestVar:
-#     pass
-
-
-# class TestSample:
-#     pass
+    # TODO: Add tests for state preperation ops after they're implemented
 
 
 class TestDefaultQutritIntegration:
     pass
-
-
-# TODO: Add tests after addition of observables
-# class TestTensorExpval:
-#     pass
-
-
-# class TestTensorVar:
-#     pass
-
-
-# class TestTensorSample:
-#     pass
 
 
 class TestDtypePreserved:
