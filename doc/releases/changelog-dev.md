@@ -39,6 +39,9 @@
   >>> print(energy)
   -1.1258709813834058
   ```
+  
+* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics. 
+  [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
 * Added new device `default.qutrit` for simulation of devices with wires of three dimensions. Users can currently make measurements with `qml.state()` and `qml.probs()`.
 * Added operation `qml.QutritUnitary` for basic operation of `default.qutrit` device with user-specified unitaries.
@@ -56,6 +59,9 @@
 
 <h3>Improvements</h3>
 
+* Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
+  [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
@@ -66,4 +72,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ixchel Meza Chavez, Moritz Willmann, Mudit Pandey
+Ankit Khandelwal, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann
