@@ -17,6 +17,7 @@
   [(#2640)](https://github.com/PennyLaneAI/pennylane/pull/2640)
   [(#2663)](https://github.com/PennyLaneAI/pennylane/pull/2663)
   [(#2684)](https://github.com/PennyLaneAI/pennylane/pull/2684)
+  [(#2688)](https://github.com/PennyLaneAI/pennylane/pull/2688)
 
   A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
 
@@ -798,7 +799,7 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso-Linaje, Mikhail Andrenkov, Juan Miguel Arrazola, Utkarsh Azad, Samuel Banning, Avani Bhardwaj, 
-Albert Mitjans Coma, Amintor Dusko, Trent Fridey, Christian Gogolin, Qi Hu, Katharine Hyatt, Soran Jahangiri, 
+Albert Mitjans Coma, Amintor Dusko, Trent Fridey, Christian Gogolin, Qi Hu, Katharine Hyatt, Josh Izaac, Soran Jahangiri, 
 Edward Jiang, Korbinian Kottmann, Ankit Khandelwal, Christina Lee, Chae-Yeun Park, Mason Moreland, Romain Moyard, 
 Maria Schuld, Jay Soni, Antal Száva, tal66, David Wierichs, WingCode
 
