@@ -3092,6 +3092,9 @@ control_data = [
     (qml.IsingZZ(1.234, wires=(0, 1)), Wires([])),
     ### Controlled Ops
     (qml.ControlledPhaseShift(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CPhaseShift00(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CPhaseShift01(1.234, wires=(0, 1)), Wires(0)),
+    (qml.CPhaseShift10(1.234, wires=(0, 1)), Wires(0)),
     (qml.CPhase(1.234, wires=(0, 1)), Wires(0)),
     (qml.CRX(1.234, wires=(0, 1)), Wires(0)),
     (qml.CRY(1.234, wires=(0, 1)), Wires(0)),
