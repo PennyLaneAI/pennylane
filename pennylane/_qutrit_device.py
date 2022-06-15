@@ -25,7 +25,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane import QubitDevice
-from pennylane.wires import Wires, WireError  # pylint: disable=unused-import
+from pennylane.wires import Wires   # pylint: disable=unused-import
 
 
 class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
