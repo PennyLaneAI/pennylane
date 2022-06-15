@@ -22,6 +22,7 @@ from collections.abc import Sequence
 import numpy as np
 
 import pennylane as qml
+from pennylane.measurements import State, VnEntropy, MutualInfo
 
 from .gradient_transform import (
     gradient_transform,
@@ -614,7 +615,7 @@ def param_shift(
          [ 0.69916862  0.34072424  0.69202359]]
     """
 
-    if any(m.return_type is qml.measurements.State for m in tape.measurements):
+    if any(m.return_type in [State, VnEntropy, MutualInfo] for m in tape.measurements):
         raise ValueError(
             "Computing the gradient of circuits that return the state is not supported."
         )

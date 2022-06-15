@@ -155,9 +155,9 @@ class TestIntegration:
         n_wires = 2
 
         dev = qml.device("default.qubit", wires=n_wires)
+        dev_hard = qml.device("default.qubit", wires=n_wires + 1, shots=1000)
 
-        @qml.qnode(dev)
-        def circ(params):
+        def qfunc(params):
             qml.RX(params[0], wires=0)
             qml.RX(params[1], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -165,13 +165,15 @@ class TestIntegration:
 
         params = pnp.random.random(2)
 
-        QFIM_hard = quantum_fisher(circ, hardware=True)(params)
-        QFIM1_hard = 4.0 * qml.metric_tensor(circ)(params)
+        circ_hard = qml.QNode(qfunc, dev_hard)
+        QFIM_hard = quantum_fisher(circ_hard)(params)
+        QFIM1_hard = 4.0 * qml.metric_tensor(circ_hard)(params)
 
-        QFIM = quantum_fisher(circ, hardware=False)(params)
+        circ = qml.QNode(qfunc, dev)
+        QFIM = quantum_fisher(circ)(params)
         QFIM1 = 4.0 * qml.adjoint_metric_tensor(circ)(params)
         assert np.allclose(QFIM, QFIM1)
-        assert np.allclose(QFIM_hard, QFIM1_hard)
+        assert np.allclose(QFIM_hard, QFIM1_hard, atol=1e-1)
 
 
 class TestInterfacesClassicalFisher:
@@ -401,20 +403,20 @@ class TestInterfacesClassicalFisher:
 
         @qml.qnode(dev, interface="tf")
         def circ(x, y, z):
-            for xi in x:
+            for xi in tf.unstack(x):
                 qml.RX(xi, wires=0)
                 qml.RX(xi, wires=1)
-            for yi in y:
+            for yi in tf.unstack(y):
                 qml.RY(yi, wires=0)
                 qml.RY(yi, wires=1)
-            for zi in z:
+            for zi in tf.unstack(z):
                 qml.RZ(zi, wires=0)
                 qml.RZ(zi, wires=1)
             return qml.probs(wires=range(n_wires))
 
-        x = [tf.Variable(np.pi / 8) for _ in range(2)]
-        y = [tf.Variable(np.pi / 8) for _ in range(10)]
-        z = [tf.Variable(1.0) for _ in range(1)]
+        x = tf.Variable(np.pi / 8 * np.ones(2), trainable=True)
+        y = tf.Variable(np.pi / 8 * np.ones(10), trainable=True)
+        z = tf.Variable([1.0], trainable=True)
         cfim = qml.qinfo.classical_fisher(circ)(x, y, z)
         assert np.allclose(cfim[0], 2.0 / 3.0 * np.ones((2, 2)))
         assert np.allclose(cfim[1], 2.0 / 3.0 * np.ones((10, 10)))
@@ -475,7 +477,6 @@ class TestDiffCFIM:
         assert np.allclose(result, result_calc, atol=1e-6)
 
     @pytest.mark.tf
-    @pytest.mark.xfail  # tf gradient of cfim is currently not computing correctly
     def test_diffability_tf(
         self,
     ):
@@ -502,7 +503,6 @@ class TestDiffCFIM:
         assert np.allclose(result, result_calc, atol=1e-6)
 
     @pytest.mark.torch
-    @pytest.mark.xfail  # torch gradient of cfim is currently not computing correctly
     def test_diffability_torch(
         self,
     ):
@@ -526,14 +526,15 @@ class TestDiffCFIM:
 
         assert np.allclose(result, result_calc, atol=1e-6)
 
-    @pytest.mark.autograd
-    @pytest.mark.torch
-    @pytest.mark.tf
-    @pytest.mark.jax
-    @pytest.mark.xfail
+    @pytest.mark.all_interfaces
     def test_consistency(self):
         """Testing that the derivative of the cfim is giving consistently the same results for all interfaces.
         Currently failing as (jax and autograd) and (torch and tf) are giving two different results."""
+        import tensorflow as tf
+        import torch
+        import jax.numpy as jnp
+        import jax
+
         dev = qml.device("default.qubit", wires=3)
 
         def qfunc(weights):
