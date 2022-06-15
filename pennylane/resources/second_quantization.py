@@ -175,6 +175,9 @@ def gate_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
 def qubit_cost(n, norm, error, rank_r, rank_m, br=7, alpha=10, beta=20):
     r"""Return the number of ancilla qubits needed to implement the double factorization method.
 
+    The expression for computing the cost is taken from
+    [`arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_].
+
     Args:
         n (int): number of molecular orbitals
         norm (float): 1-norm of a second-quantized Hamiltonian
