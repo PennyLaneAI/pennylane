@@ -155,9 +155,9 @@ class TestIntegration:
         n_wires = 2
 
         dev = qml.device("default.qubit", wires=n_wires)
+        dev_hard = qml.device("default.qubit", wires=n_wires + 1, shots=1000)
 
-        @qml.qnode(dev)
-        def circ(params):
+        def qfunc(params):
             qml.RX(params[0], wires=0)
             qml.RX(params[1], wires=0)
             qml.CNOT(wires=(0, 1))
@@ -165,13 +165,15 @@ class TestIntegration:
 
         params = pnp.random.random(2)
 
-        QFIM_hard = quantum_fisher(circ, hardware=True)(params)
-        QFIM1_hard = 4.0 * qml.metric_tensor(circ)(params)
+        circ_hard = qml.QNode(qfunc, dev_hard)
+        QFIM_hard = quantum_fisher(circ_hard)(params)
+        QFIM1_hard = 4.0 * qml.metric_tensor(circ_hard)(params)
 
-        QFIM = quantum_fisher(circ, hardware=False)(params)
+        circ = qml.QNode(qfunc, dev)
+        QFIM = quantum_fisher(circ)(params)
         QFIM1 = 4.0 * qml.adjoint_metric_tensor(circ)(params)
         assert np.allclose(QFIM, QFIM1)
-        assert np.allclose(QFIM_hard, QFIM1_hard)
+        assert np.allclose(QFIM_hard, QFIM1_hard, atol=1e-1)
 
 
 class TestInterfacesClassicalFisher:
