@@ -532,27 +532,11 @@
 
 <h4>New operations & transform</h4>  
   
-* The `IsingXY` gate is now available: 
+* The `IsingXY` gate is now available. 
   [(#2649)](https://github.com/PennyLaneAI/pennylane/pull/2649)
 
-  :math:`\text{XY}(\phi) = \begin{bmatrix}
-              1 & 0 & 0 & 0 \\
-              0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
-              0 & i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
-              0 & 0 & 0 & 1
-    \end{bmatrix}`.
-
-* The `qml.ECR` (echoed cross-resonance) operation is now available (see [2105.01063](https://arxiv.org/pdf/2105.01063.pdf) for reference):
+* The `qml.ECR` (echoed cross-resonance) operation is now available (see [2105.01063](https://arxiv.org/pdf/2105.01063.pdf) for reference). This gate is a maximally-entangling gate and is equivalent to a CNOT gate up to single-qubit pre-rotations.
   [(#2613)](https://github.com/PennyLaneAI/pennylane/pull/2613)
-
-  :math:`\text{ECR} = \frac{1}{\sqrt{2}} \begin{bmatrix}
-              0 & 0 & 1 & i \\
-              0 & 0 & i & 1 \\
-              1 & -i & 0 & 0 \\
-              -i & 1 & 0 & 0
-    \end{bmatrix}`
-
-  This gate is a maximally-entangling gate and is equivalent to a CNOT gate up to single-qubit pre-rotations.
 
 * A new transform `qml.batch_partial` is available which behaves similarly to `functools.partial` but supports batching in the unevaluated parameters.
   [(#2585)](https://github.com/PennyLaneAI/pennylane/pull/2585)
