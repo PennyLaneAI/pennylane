@@ -15,7 +15,9 @@
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
 import pennylane as qml
+
 from pennylane.transforms import batch_transform, metric_tensor, adjoint_metric_tensor
+from pennylane.devices import DefaultQubit
 
 
 def reduced_dm(qnode, wires):
@@ -426,8 +428,9 @@ def quantum_fisher(qnode, *args, **kwargs):
 
     .. note::
 
-        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. If a device with finite shots is used, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
-        If a device capable of exact expectations is used (e.g., ``shots=None``), :func:`~.pennylane.adjoint_metric_tensor` is used. Please refer to their respective documentations for details on the arguments.
+        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. Internally, :func:`~.pennylane.adjoint_metric_tensor` is used when executing on a device with
+        exact expectations (``shots=None``) that inherits from ``"default.qubit"``. In all other cases, i.e. if a device with finite shots is used, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
+        Please refer to their respective documentations for details on the arguments.
 
     **Example**
 
@@ -482,7 +485,7 @@ def quantum_fisher(qnode, *args, **kwargs):
 
     """
 
-    if qnode.device.shots is not None:
+    if qnode.device.shots is not None and isinstance(qnode.device, DefaultQubit):
 
         def wrapper(*args0, **kwargs0):
             return 4 * metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
