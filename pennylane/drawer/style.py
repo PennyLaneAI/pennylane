@@ -116,8 +116,8 @@ def _solarized_dark():
 
 
 @_needs_mpl
-def _pennylane_light():
-    """Apply the pennylane light style to matplotlib's configuration. This function
+def _sketch():
+    """Apply the sketch style to matplotlib's configuration. This function
     modifies ``plt.rcParams``.
     """
     plt.rcParams["figure.facecolor"] = "white"
@@ -129,34 +129,36 @@ def _pennylane_light():
     plt.rcParams["patch.force_edgecolor"] = True
     plt.rcParams["lines.color"] = "black"
     plt.rcParams["text.color"] = "black"
+    plt.rcParams["font.weight"] = "bold"
     plt.rcParams["path.sketch"] = (1, 100, 2)
-    plt.rcParams["path.effects"] = [patheffects.withStroke(linewidth=4, foreground="w")]
+    plt.rcParams["path.effects"] = []
 
 
 @_needs_mpl
-def _pennylane_dark():
-    """Apply the pennylane dark style to matplotlib's configuration. This function
+def _sketch_dark():
+    """Apply the sketch dark style to matplotlib's configuration. This function
     modifies ``plt.rcParams``.
     """
     almost_black = "#151515"  # less harsh than full black
     plt.rcParams["figure.facecolor"] = almost_black
     plt.rcParams["savefig.facecolor"] = almost_black
-    plt.rcParams["axes.facecolor"] = "#F9E69A"
-    plt.rcParams["patch.facecolor"] = "#9EDED1"
+    plt.rcParams["axes.facecolor"] = "#EBAAC1"
+    plt.rcParams["patch.facecolor"] = "#B0B5DC"
     plt.rcParams["patch.edgecolor"] = "white"
     plt.rcParams["patch.linewidth"] = 3.0
     plt.rcParams["patch.force_edgecolor"] = True
     plt.rcParams["lines.color"] = "white"
     plt.rcParams["text.color"] = "white"
+    plt.rcParams["font.weight"] = "bold"
     plt.rcParams["path.sketch"] = (1, 100, 2)
-    plt.rcParams["path.effects"] = [patheffects.withStroke(linewidth=4, foreground=almost_black)]
+    plt.rcParams["path.effects"] = []
 
 
 _styles_map = {
     "black_white": _black_white,
     "black_white_dark": _black_white_dark,
-    "pennylane_light": _pennylane_light,
-    "pennylane_dark": _pennylane_dark,
+    "sketch": _sketch,
+    "sketch_dark": _sketch_dark,
     "solarized_light": _solarized_light,
     "solarized_dark": _solarized_dark,
     "default": _needs_mpl(lambda: plt.style.use("default")),

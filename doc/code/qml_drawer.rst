@@ -51,10 +51,10 @@ Currently Available Styles
 .. |bwd| image:: ../_static/style/black_white_dark_style.png
     :width: 100%
 
-.. |pll| image:: ../_static/style/pennylane_light_style.png
+.. |sks| image:: ../_static/style/sketch_style.png
     :width: 100%
 
-.. |pld| image:: ../_static/style/pennylane_dark_style.png
+.. |skd| image:: ../_static/style/sketch_dark_style.png
     :width: 100%
 
 .. |sol| image:: ../_static/style/solarized_light_style.png
@@ -67,9 +67,9 @@ Currently Available Styles
     :width: 100%
 
 +-----+-----+-----+
-+|bws|+|bwd|+|pll|+
++|bws|+|bwd|+|sks|+
 +-----+-----+-----+
-+|pld|+|sol|+|sod|+
++|skd|+|sol|+|sod|+
 +-----+-----+-----+
 +|def|+     +     +
 +-----+-----+-----+

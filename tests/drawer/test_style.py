@@ -28,8 +28,8 @@ def test_available_styles():
     assert qml.drawer.available_styles() == (
         "black_white",
         "black_white_dark",
-        "pennylane_light",
-        "pennylane_dark",
+        "sketch",
+        "sketch_dark",
         "solarized_light",
         "solarized_dark",
         "default",
@@ -67,10 +67,10 @@ def test_black_white_style_dark():
     plt.style.use("default")
 
 
-def test_pennylane_style_light():
-    """Tests the pennylane style light sets ``plt.rcParams`` with correct values"""
+def test_sketch_style():
+    """Tests the sketch style sets ``plt.rcParams`` with correct values"""
 
-    qml.drawer.use_style("pennylane_light")
+    qml.drawer.use_style("sketch")
 
     assert plt.rcParams["figure.facecolor"] == "white"
     assert plt.rcParams["savefig.facecolor"] == "white"
@@ -81,17 +81,17 @@ def test_pennylane_style_light():
     assert plt.rcParams["patch.force_edgecolor"]  # = True
     assert plt.rcParams["lines.color"] == "black"
     assert plt.rcParams["text.color"] == "black"
+    assert plt.rcParams["font.weight"] == "bold"
     assert plt.rcParams["path.sketch"] == (1, 100, 2)
-    assert len(plt.rcParams["path.effects"]) == 1
-    assert isinstance(plt.rcParams["path.effects"][0], patheffects.withStroke)
+    assert len(plt.rcParams["path.effects"]) == 0
 
     plt.style.use("default")
 
 
-def test_pennylane_style_dark():
-    """Tests the pennylane style dark sets ``plt.rcParams`` with correct values"""
+def test_sketch_style_dark():
+    """Tests the sketch style dark sets ``plt.rcParams`` with correct values"""
 
-    qml.drawer.use_style("pennylane_dark")
+    qml.drawer.use_style("sketch_dark")
 
     almost_black = "#151515"  # less harsh than full black
     assert plt.rcParams["figure.facecolor"] == almost_black
@@ -103,10 +103,9 @@ def test_pennylane_style_dark():
     assert plt.rcParams["patch.force_edgecolor"]  # = True
     assert plt.rcParams["lines.color"] == "white"
     assert plt.rcParams["text.color"] == "white"
+    assert plt.rcParams["font.weight"] == "bold"
     assert plt.rcParams["path.sketch"] == (1, 100, 2)
-    assert len(plt.rcParams["path.effects"]) == 1
-    assert isinstance(plt.rcParams["path.effects"][0], patheffects.withStroke)
-
+    assert len(plt.rcParams["path.effects"]) == 0
     plt.style.use("default")
 
 
