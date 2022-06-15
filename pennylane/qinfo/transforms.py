@@ -21,7 +21,8 @@ from pennylane.devices import DefaultQubit
 
 
 def reduced_dm(qnode, wires):
-    """Compute the reduced density matrix from a :class:`~.QNode` returning :func:`~.state`.
+    """Compute the reduced density matrix from a :class:`~.QNode` returning
+    :func:`~.state`.
 
      Args:
          qnode (QNode): A :class:`~.QNode` returning :func:`~.state`.
@@ -29,7 +30,7 @@ def reduced_dm(qnode, wires):
 
      Returns:
          func: Function which wraps the QNode and accepts the same arguments. When called, this function will
-            return the density matrix.
+         return the density matrix.
 
      **Example**
 
