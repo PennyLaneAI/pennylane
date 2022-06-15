@@ -2927,25 +2927,25 @@ class PSWAP(Operation):
     def compute_matrix(phi):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
-         The canonical matrix is the textbook matrix representation that does not consider wires.
-         Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
 
-         .. seealso:: :meth:`~.PSWAP.matrix`
+        .. seealso:: :meth:`~.PSWAP.matrix`
 
 
-         Args:
-            phi (tensor_like or float): phase angle
+        Args:
+           phi (tensor_like or float): phase angle
 
-         Returns:
-            tensor_like: canonical matrix
+        Returns:
+           tensor_like: canonical matrix
 
-         **Example**
+        **Example**
 
-         >>> qml.PSWAP.compute_matrix(0.5)
-         array([[1.        +0.j, 0.        +0.j        , 0.        +0.j        , 0.        +0.j],
-               [0.        +0.j, 0.        +0.j        , 0.87758256+0.47942554j, 0.        +0.j],
-               [0.        +0.j, 0.87758256+0.47942554j, 0.        +0.j        , 0.        +0.j],
-               [0.        +0.j, 0.        +0.j        , 0.        +0.j        , 1.        +0.j]])
+        >>> qml.PSWAP.compute_matrix(0.5)
+        array([[1.        +0.j, 0.        +0.j        , 0.        +0.j        , 0.        +0.j],
+              [0.        +0.j, 0.        +0.j        , 0.87758256+0.47942554j, 0.        +0.j],
+              [0.        +0.j, 0.87758256+0.47942554j, 0.        +0.j        , 0.        +0.j],
+              [0.        +0.j, 0.        +0.j        , 0.        +0.j        , 1.        +0.j]])
         """
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
