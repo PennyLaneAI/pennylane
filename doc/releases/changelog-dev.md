@@ -16,6 +16,9 @@
   [(#2663)](https://github.com/PennyLaneAI/pennylane/pull/2663)
   [(#2684)](https://github.com/PennyLaneAI/pennylane/pull/2684)
   [(#2688)](https://github.com/PennyLaneAI/pennylane/pull/2688)
+  [(#2695)](https://github.com/PennyLaneAI/pennylane/pull/2695)
+  [(#2710)](https://github.com/PennyLaneAI/pennylane/pull/2710)
+  [(#2712)](https://github.com/PennyLaneAI/pennylane/pull/2712)
 
   The `reduced_dm` function returns a reduced density matrix given a state vector or a density matrix, supporting all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax):
 
