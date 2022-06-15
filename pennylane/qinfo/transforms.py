@@ -24,25 +24,25 @@ def reduced_dm(qnode, wires):
     """Compute the reduced density matrix from a :class:`~.QNode` returning
     :func:`~.state`.
 
-     Args:
-         qnode (QNode): A :class:`~.QNode` returning :func:`~.state`.
-         wires (Sequence(int)): List of wires in the considered subsystem.
+    Args:
+        qnode (QNode): A :class:`~.QNode` returning :func:`~.state`.
+        wires (Sequence(int)): List of wires in the considered subsystem.
 
-     Returns:
-         func: Function which wraps the QNode and accepts the same arguments. When called, this function will
-         return the density matrix.
+    Returns:
+        func: Function which wraps the QNode and accepts the same arguments. When called, this function will
+        return the density matrix.
 
-     **Example**
+    **Example**
 
-     .. code-block:: python
+    .. code-block:: python
 
-         import numpy as np
+        import numpy as np
 
-         dev = qml.device("default.qubit", wires=2)
-         @qml.qnode(dev)
-         def circuit(x):
-           qml.IsingXX(x, wires=[0,1])
-           return qml.state()
+        dev = qml.device("default.qubit", wires=2)
+        @qml.qnode(dev)
+        def circuit(x):
+          qml.IsingXX(x, wires=[0,1])
+          return qml.state()
 
     >>> reduced_dm(circuit, wires=[0])(np.pi/2)
      [[0.5+0.j 0.+0.j]
