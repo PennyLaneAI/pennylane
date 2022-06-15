@@ -31,3 +31,16 @@ def test_success_prob(n_basis, br, prob_ref):
     prob = qml.resources.success_prob(n_basis, br)
 
     assert prob == prob_ref
+
+
+@pytest.mark.parametrize(
+    ("eta", "n", "omega", "br", "charge", "norm_ref"),
+    [
+        (156, 100000, 169.69608, 7, 0, 5128920.595980267),
+    ],
+)
+def test_success_prob(eta, n, omega, br, charge, norm_ref):
+    r"""Test that norm returns the correct value."""
+    norm = qml.resources.norm(eta, n, omega, br, charge)
+
+    assert norm == norm_ref

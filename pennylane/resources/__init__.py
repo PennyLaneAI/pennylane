@@ -14,4 +14,4 @@
 """
 This subpackage provides the functionality for algorithm resource estimation.
 """
-from .first_quantization import success_prob
+from .first_quantization import norm, success_prob
