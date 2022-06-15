@@ -48,7 +48,7 @@
    [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
   ```
 
-  It also contains a `QNode` transform `qml.qinfo.reduced_dm`, that returns the density matrix from a `QNode`
+  It also contains a `QNode` transform `qml.qinfo.reduced_dm` that returns the density matrix from a `QNode`
   returning `qml.state`:
   ```python3
   dev = qml.device("default.qubit", wires=2)
@@ -263,7 +263,108 @@
   >>> df(x, y)
   (array([-0.04768725, -0.29183666]), array(-0.09489803))
   ```
+
+<h4>Operators arithmetic</h4>
+
+* The adjoint transform `adjoint` can now accept either a single instantiated operator or
+  a quantum function. It returns an entity of the same type / call signature as what it was given:
+  [(#2222)](https://github.com/PennyLaneAI/pennylane/pull/2222)
+  [(#2672)](https://github.com/PennyLaneAI/pennylane/pull/2672)
+
+  ```pycon
+  >>> qml.adjoint(qml.PauliX(0))
+  Adjoint(PauliX)(wires=[0])
+  >>> qml.adjoint(lambda x: qml.RX(x, wires=0))(1.23)
+  Adjoint(RX)(1.23, wires=[0])
+  ```
+
+  Now, `adjoint` wraps operators in a symbolic operator class `qml.ops.op_math.Adjoint`. This class
+  should not be constructed directly; the `adjoint` constructor should always be used instead. The
+  class behaves just like any other `Operator`:
+
+  ```pycon
+  >>> op = qml.adjoint(qml.S(0))
+  >>> qml.matrix(op)
+  array([[1.-0.j, 0.-0.j],
+        [0.-0.j, 0.-1.j]])
+  >>> qml.eigvals(op)
+  array([1.-0.j, 0.-1.j])
+  ```
+
+* The `ctrl` transform and `ControlledOperation` have been moved to the new `qml.ops.op_math`
+  submodule.  The developer-facing `ControlledOperation` class is no longer imported top-level.
+  [(#2656)](https://github.com/PennyLaneAI/pennylane/pull/2656)
+
+* A new symbolic operator class `qml.ops.op_math.Pow` represents an operator raised to a power:
+  [(#2621)](https://github.com/PennyLaneAI/pennylane/pull/2621)
+
+  ```pycon
+  >>> op = qml.ops.op_math.Pow(qml.PauliX(0), 0.5)
+  >>> op.decomposition()
+  [SX(wires=[0])]
+  >>> qml.matrix(op)
+  array([[0.5+0.5j, 0.5-0.5j],
+       [0.5-0.5j, 0.5+0.5j]])
+  ```
+
+* The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
+  [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
+
+* Several non-decomposable `Adjoint` operators are added to the device test suite.
+  [(#2658)](https://github.com/PennyLaneAI/pennylane/pull/2658)
+
+* The developer-facing `pow` method has been added to `Operator` with concrete implementations
+  for many classes.
+  [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
+
+<h4>Improved JAX JIT interface</h4>
+
+* The JAX JIT interface now supports evaluating vector-valued `QNode`s,
+  enabling new types of workflows to utilize the power of just-in-time
+  compilation for significant performance boosts.
+  [(#2034)](https://github.com/PennyLaneAI/pennylane/pull/2034)
   
+  Vector-valued `QNode`s include those with:
+  * `qml.probs`;
+  * `qml.state`;
+  * `qml.sample` or
+  * multiple `qml.expval` / `qml.var` measurements.
+
+  Consider a `QNode` that returns basis-state probabilities:
+  ```python
+  dev = qml.device('default.qubit', wires=2)
+  x = jnp.array(0.543)
+  y = jnp.array(-0.654)
+
+  @jax.jit
+  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
+  def circuit(x, y):
+      qml.RX(x, wires=[0])
+      qml.RY(y, wires=[1])
+      qml.CNOT(wires=[0, 1])
+      return qml.probs(wires=[1])
+  ```
+  The `QNode` can now be evaluated:
+  ```pycon
+  >>> circuit(x, y)
+  DeviceArray([0.8397495 , 0.16025047], dtype=float32)
+  ```
+  Computing the jacobian of vector-valued `QNode`s is not supported with the JAX
+  JIT interface. The output of vector-valued `QNode`s can, however, be used in
+  the definition of scalar-valued cost functions whose gradients can be
+  computed.
+
+  For example, one can define a cost function that outputs the first element of
+  the probability vector:
+  ```python
+  def cost(x, y):
+      return circuit(x, y)[0]
+  ```
+  
+  ```pycon
+  >>> jax.grad(cost, argnums=[0])(x, y)
+  (DeviceArray(-0.2050439, dtype=float32),)
+  ```
 <h4>Parameter broadcasting</h4>
 
 * Parameter broadcasting within operations and tapes is introduced.
@@ -273,7 +374,7 @@
   [(#2609)](https://github.com/PennyLaneAI/pennylane/pull/2609)
 
   Parameter broadcasting refers to passing parameters with a (single) leading additional
-  dimension (compared to the expected parameter shape) to `Operator`'s.
+  dimension (compared to the expected parameter shape) to `Operator`s.
   Introducing this concept involves multiple changes:
 
   1. New class attributes
@@ -397,55 +498,6 @@
   >>> qml.execute([tape], dev, None)[0]
   array([-0.33003414, -0.34999899, -0.38238817])
   ```
-  
-<h4>Improved JAX JIT interface</h4>
-
-* The JAX JIT interface now supports evaluating vector-valued `QNode`s,
-  enabling new types of workflows to utilize the power of just-in-time
-  compilation for significant performance boosts.
-  [(#2034)](https://github.com/PennyLaneAI/pennylane/pull/2034)
-  
-  Vector-valued `QNode`s include those with:
-  * `qml.probs`;
-  * `qml.state`;
-  * `qml.sample` or
-  * multiple `qml.expval` / `qml.var` measurements.
-
-  Consider a `QNode` that returns basis-state probabilities:
-  ```python
-  dev = qml.device('default.qubit', wires=2)
-  x = jnp.array(0.543)
-  y = jnp.array(-0.654)
-
-  @jax.jit
-  @qml.qnode(dev, diff_method="parameter-shift", interface="jax")
-  def circuit(x, y):
-      qml.RX(x, wires=[0])
-      qml.RY(y, wires=[1])
-      qml.CNOT(wires=[0, 1])
-      return qml.probs(wires=[1])
-  ```
-  The `QNode` can now be evaluated:
-  ```pycon
-  >>> circuit(x, y)
-  DeviceArray([0.8397495 , 0.16025047], dtype=float32)
-  ```
-  Computing the jacobian of vector-valued `QNode`s is not supported with the JAX
-  JIT interface. The output of vector-valued `QNode`s can, however, be used in
-  the definition of scalar-valued cost functions whose gradients can be
-  computed.
-
-  For example, one can define a cost function that outputs the first element of
-  the probability vector:
-  ```python
-  def cost(x, y):
-      return circuit(x, y)[0]
-  ```
-  
-  ```pycon
-  >>> jax.grad(cost, argnums=[0])(x, y)
-  (DeviceArray(-0.2050439, dtype=float32),)
-  ```
 
 <h4> Default mixed supports backpropagation</h4>
 
@@ -472,68 +524,34 @@
   >>> qml.grad(circuit)(x)
   -0.479425538604203
   ```
+  
+<h4>Two new drawing styles</h4>
 
-<h4>Operators arithmetic</h4>
-
-* The adjoint transform `adjoint` can now accept either a single instantiated operator or
-  a quantum function. It returns an entity of the same type / call signature as what it was given:
-  [(#2222)](https://github.com/PennyLaneAI/pennylane/pull/2222)
-  [(#2672)](https://github.com/PennyLaneAI/pennylane/pull/2672)
-
-  ```pycon
-  >>> qml.adjoint(qml.PauliX(0))
-  Adjoint(PauliX)(wires=[0])
-  >>> qml.adjoint(lambda x: qml.RX(x, wires=0))(1.23)
-  Adjoint(RX)(1.23, wires=[0])
-  ```
-
-  Now, `adjoint` wraps operators in a symbolic operator class `qml.ops.op_math.Adjoint`. This class
-  should not be constructed directly; the `adjoint` constructor should always be used instead. The
-  class behaves just like any other `Operator`:
-
-  ```pycon
-  >>> op = qml.adjoint(qml.S(0))
-  >>> qml.matrix(op)
-  array([[1.-0.j, 0.-0.j],
-        [0.-0.j, 0.-1.j]])
-  >>> qml.eigvals(op)
-  array([1.-0.j, 0.-1.j])
-  ```
-
-* The `ctrl` transform and `ControlledOperation` have been moved to the new `qml.ops.op_math`
-  submodule.  The developer-facing `ControlledOperation` class is no longer imported top-level.
-  [(#2656)](https://github.com/PennyLaneAI/pennylane/pull/2656)
-
-* A new symbolic operator class `qml.ops.op_math.Pow` represents an operator raised to a power:
-  [(#2621)](https://github.com/PennyLaneAI/pennylane/pull/2621)
-
-  ```pycon
-  >>> op = qml.ops.op_math.Pow(qml.PauliX(0), 0.5)
-  >>> op.decomposition()
-  [SX(wires=[0])]
-  >>> qml.matrix(op)
-  array([[0.5+0.5j, 0.5-0.5j],
-       [0.5-0.5j, 0.5+0.5j]])
-  ```
-
-* The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
-  [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
-
-* Several non-decomposable `Adjoint` operators are added to the device test suite.
-  [(#2658)](https://github.com/PennyLaneAI/pennylane/pull/2658)
-
-* The developer-facing `pow` method has been added to `Operator` with concrete implementations
-  for many classes.
-  [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
+* New `solarized_light` and `solarized_dark` styles are available for drawing circuit diagram graphics. 
+  [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
 
 <h4>New operations & transform</h4>  
   
 * The `IsingXY` gate is now available: 
   [(#2649)](https://github.com/PennyLaneAI/pennylane/pull/2649)
 
-* The `qml.ECR` operation to represent the echoed $\text{RZX}(\pi/2)$ gate is now available (see [2105.01063](https://arxiv.org/pdf/2105.01063.pdf)):
+  :math:`\text{XY}(\phi) = \begin{bmatrix}
+              1 & 0 & 0 & 0 \\
+              0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
+              0 & i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+              0 & 0 & 0 & 1
+    \end{bmatrix}`.
+
+* The `qml.ECR` (echoed cross-resonance) operation is now available (see [2105.01063](https://arxiv.org/pdf/2105.01063.pdf) for reference):
   [(#2613)](https://github.com/PennyLaneAI/pennylane/pull/2613)
-  
+
+  :math:`\text{ECR} = \frac{1}{\sqrt{2}} \begin{bmatrix}
+              0 & 0 & 1 & i \\
+              0 & 0 & i & 1 \\
+              1 & -i & 0 & 0 \\
+              -i & 1 & 0 & 0
+    \end{bmatrix}`
+
   This gate is a maximally-entangling gate and is equivalent to a CNOT gate up to single-qubit pre-rotations.
 
 * A new transform `qml.batch_partial` is available which behaves similarly to `functools.partial` but supports batching in the unevaluated parameters.
@@ -556,12 +574,7 @@
   >>> batched_partial_circuit(y=y)
   tensor([0.69301172, 0.67552491, 0.65128847], requires_grad=True)
   ```
-  
-<h4>Two new drawing styles</h4>
 
-* New `solarized_light` and `solarized_dark` styles are available for drawing circuit diagram graphics. 
-  [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
-  
 <h3>Improvements</h3>
 
 * Expectation values of groups of non-commuting observables that are not Hamiltonians are now supported. E.g., an allowable return of quantum functions can be
