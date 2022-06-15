@@ -32,3 +32,20 @@ def test_cost_qrom(k, lz, cost_ref):
     cost = qml.resources._cost_qrom(k, lz)
 
     assert cost == cost_ref
+
+
+@pytest.mark.parametrize(
+    ("lz", "cost_ref"),
+    [
+        # the reference cost is obtained manually by computing the cost for a range of k values, as
+        # powers of two and selecting the minimum cost.
+        (20, 9),
+        (100, 21),
+        (300, 35),
+    ],
+)
+def test_cost_qrom_min(lz, cost_ref):
+    r"""Test that _cost_qrom_min returns the correct value."""
+    cost = qml.resources._cost_qrom_min(lz)
+
+    assert cost == cost_ref
