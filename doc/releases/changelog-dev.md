@@ -4,8 +4,6 @@
 
 <h3>New features since last release</h3>
 
-<h4> Quantum information module </h4>
-
 * A new quantum information module is added. It includes a function for computing the reduced density matrix functions
   for state vectors and density matrices.
 
@@ -18,7 +16,7 @@
   [(#2663)](https://github.com/PennyLaneAI/pennylane/pull/2663)
   [(#2684)](https://github.com/PennyLaneAI/pennylane/pull/2684)
 
-  A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
+  The `reduced_dm` function returns a reduced density matrix given a state vector or a density matrix, supporting all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax):
 
   ```pycon
   >>> x = [1, 0, 1, 0] / np.sqrt(2)
@@ -53,14 +51,13 @@
       return qml.state()
   ```
   ```pycon
-
   >>> qml.qinfo.reduced_dm(circuit, wires=[0])(np.pi/2)
   [[0.5+0.j 0.+0.j]
    [0.+0.j 0.5+0.j]]
   ```
 
-  We add Von Neumann entropy capabilities, `qml.math.vn_entropy` that accepts both state vectors and density matrices
-  for all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
+  Von Neumann entropy can now be calculated with the addition of `qml.math.vn_entropy`. It that accepts both state vectors and density matrices
+  for all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax):
 
   ```pycon
   >>> x = [1, 0, 0, 1] / np.sqrt(2)
@@ -86,8 +83,7 @@
   >>> circuit_entropy(np.pi/2)
   1.0
   ```
-  The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy
-  `qml.qinfo.vn_entropy`:
+  The quantum information module also contains a QNode (returning states) transform `qml.qinfo.vn_entropy` for the Von Neumann entropy:
 
   ```python3
   dev = qml.device("default.qubit", wires=2)
@@ -102,57 +98,13 @@
   1.0
   ```
 
-  We add Von Neumann entropy capabilities, `qml.math.vn_entropy` that accepts both state vectors and density matrices
-  for all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
-
-  ```pycon
-  >>> x = [1, 0, 0, 1] / np.sqrt(2)
-  >>> vn_entropy(x, indices=[0])
-  0.6931472
-
-  >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
-  >>> vn_entropy(x, indices=[0])
-  0.6931472
-  ```
-
-  A Von Neumann measurement process `qml.vn_entropy` can be used as return in QNodes:
-
-  ```python3
-  dev = qml.device("default.qubit", wires=2)
-  @qml.qnode(dev)
-  def circuit_entropy(x):
-      qml.IsingXX(x, wires=[0,1])
-      return qml.vn_entropy(wires=[0], log_base=2)
-  ```
-
-  ```pycon
-  >>> circuit_entropy(np.pi/2)
-  1.0
-  ```
-
-  The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy
-  `qml.qinfo.vn_entropy`:
-
-  ```python3
-  dev = qml.device("default.qubit", wires=2)
-  @qml.qnode(dev)
-  def circuit_entropy(x):
-      qml.IsingXX(x, wires=[0,1])
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> vn_entropy(circuit, indices=[0], base=2)(np.pi/2)
-  1.0
-  ```
-
-  Support for mutual information computation is also added. The `qml.math.mutual_info`
+  Support for mutual information computation is also available. The `qml.math.mutual_info`
   function computes the mutual information from a state vector or a density matrix:
   ```pycon
   >>> x = np.array([1, 0, 0, 1]) / np.sqrt(2)
   >>> qml.math.mutual_info(x, indices0=[0], indices1=[1])
   1.3862943611198906
-  >>>
+  >>> 
   >>> y = np.array([[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]])
   >>> qml.math.mutual_info(x, indices0=[0], indices1=[1])
   1.3862943611198906
@@ -171,8 +123,8 @@
   tensor(1.38629436, requires_grad=True)
   ```
 
-  The `qml.qinfo.mutual_info` can be used to transform a QNode returning
-  a state to a function that returns the mutual information:
+  The `qml.qinfo.mutual_info` function can be used to transform a QNode returning
+  a state into a function that returns the mutual information:
   ```python3
   dev = qml.device("default.qubit", wires=2)
 
@@ -188,10 +140,8 @@
   1.3862943611198906
   ```
 
-  Support for the classical and quantum Fisher information matrices, `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher` is also added:
-
-  These are typically employed in variational optimization schemes to tilt the gradient in a more favorable direction, see [2103.15191](https://arxiv.org/abs/2103.15191) and [1909.02108](https://arxiv.org/abs/1909.02108). Here is a very simple example of a Hamiltonian loss function:
-
+  Support for the classical and quantum Fisher information matrices, `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher`, respectively, is also added. 
+  These quantities are typically employed in variational optimization schemes to tilt the gradient in a more favourable direction (see [2103.15191](https://arxiv.org/abs/2103.15191) and [1909.02108](https://arxiv.org/abs/1909.02108)). Here is a very simple example of a Hamiltonian loss function:
   ```python3
   n_wires = 3
 
@@ -203,11 +153,11 @@
       qml.CNOT(wires=(1,0))
       qml.RY(params[1], wires=1)
       qml.RZ(params[2], wires=1)
-      return qml.expval(1.*qml.PauliX(0) @ qml.PauliX(1) - 0.5 * qml.PauliZ(1))
+      return qml.expval(qml.PauliX(0) @ qml.PauliX(1) - 0.5 * qml.PauliZ(1))
 
-  params = pnp.array([0.5, 1., 0.2], requires_grad=True)
+  params = np.array([0.5, 1., 0.2], requires_grad=True)
   ```
-  From this circuit we can directly obtain the gradient of the expectation value, as well as the classical fisher information matrix (cfim) and quantum fisher information matrix (qfim) of the variational state.
+  From this circuit we can directly obtain the gradient of the expectation value, as well as the classical fisher information matrix (`cfim`) and quantum fisher information matrix (`qfim`) of the variational state.
   ```pycon
   >>> grad = qml.grad(circ)(params)
   >>> cfim = qml.qinfo.classical_fisher(circ)(params)
@@ -223,29 +173,29 @@
     q_grad: [ 0.59422561 -0.02615095 -0.03989212]
   ```
 
-  The support for calculating the fidelity between two arbitrary states is added as `qml.math.fidelity` for state
-  vectors and density matrices.
+  Support for calculating the fidelity between two arbitrary states is available through `qml.math.fidelity` for state
+  vectors and density matrices:
 
   ```pycon
   >>> state0 = [0, 1]
   >>> state1 = [[0, 0], [0, 1]]
   >>> qml.math.fidelity(state0, state1)
   1.0
-
+  >>> 
   >>> state0 = [[0.5, 0.5], [0.5, 0.5]]
   >>> state1 = [[0.5, 0], [0, 0.5]]
   >>> qml.math.fidelity(state0, state1)
   0.4999999999999998
   ```
-  The quantum information module now have a differentiable fidelity transform for QNodes.
+  The quantum information module now has a differentiable fidelity transform for QNodes.
 
   ```python
   dev = qml.device('default.qubit', wires=1)
 
   @qml.qnode(dev)
-  def circuit_rx(x, y):
-      qml.RX(x, wires=0)
-      qml.RZ(y, wires=0)
+  def circuit_rx(x):
+      qml.RX(x[0], wires=0)
+      qml.RZ(x[1], wires=0)
       return qml.state()
 
   @qml.qnode(dev)
@@ -254,8 +204,14 @@
       return qml.state()
   ```
   ```pycon
-  >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.2))
+  >>> x = np.array([0.1, 0.3], requires_grad=True)
+  >>> y = np.array(0.2, requires_grad=True) 
+  >>> fid_func = qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])
+  >>> print(fid_func(x, y))
   0.9905158135644924
+  >>> df = qml.grad(fid_func)
+  >>> print(df(x, y))
+  (array([-0.04768725, -0.29183666]), array(-0.09489803))
   ```
 
 <h4> Operators arithmetic </h4>
@@ -272,9 +228,9 @@
   Adjoint(RX)(1.23, wires=[0])
   ```
 
-  The adjoint now wraps operators in a symbolic operator class `qml.ops.op_math.Adjoint`. This class
-  should not be constructed directly; the `adjoint` constructor should always be used instead.  The
-  class behaves just like any other Operator:
+  Now, `adjoint` wraps operators in a symbolic operator class `qml.ops.op_math.Adjoint`. This class
+  should not be constructed directly; the `adjoint` constructor should always be used instead. The
+  class behaves just like any other `Operator`:
 
   ```pycon
   >>> op = qml.adjoint(qml.S(0))
@@ -286,10 +242,10 @@
   ```
 
 * The `ctrl` transform and `ControlledOperation` have been moved to the new `qml.ops.op_math`
-  submodule.  The developer-facing `ControlledOperation` class is no longer imported top-level.
+  submodule.  The developer-facing `ControlledOperation` class is no longer imported top-level:
   [(#2656)](https://github.com/PennyLaneAI/pennylane/pull/2656)
 
-* A new symbolic operator class `qml.ops.op_math.Pow` represents an operator raised to a power.
+* A new symbolic operator class `qml.ops.op_math.Pow` represents an operator raised to a power:
   [(#2621)](https://github.com/PennyLaneAI/pennylane/pull/2621)
 
   ```pycon
@@ -301,14 +257,14 @@
        [0.5-0.5j, 0.5+0.5j]])
   ```
 
-* The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed.
+* The unused keyword argument `do_queue` for `Operation.adjoint` is now fully removed:
   [(#2583)](https://github.com/PennyLaneAI/pennylane/pull/2583)
 
-* Several non-decomposable `Adjoint` ops are added to the device test suite.
+* Several non-decomposable `Adjoint` operators are added to the device test suite:
   [(#2658)](https://github.com/PennyLaneAI/pennylane/pull/2658)
 
 * The developer-facing `pow` method has been added to `Operator` with concrete implementations
-  for many classes.
+  for many classes:
   [(#2225)](https://github.com/PennyLaneAI/pennylane/pull/2225)
 
 <h4> Improved JAX JIT interface</h4>
@@ -361,12 +317,13 @@
   ```
 <h4> Parameter broadcasting </h4>
 
-* Parameter broadcasting within operations and tapes was introduced.
+* Parameter broadcasting within operations and tapes is introduced.
 
   [(#2575)](https://github.com/PennyLaneAI/pennylane/pull/2575)
   [(#2590)](https://github.com/PennyLaneAI/pennylane/pull/2590)
   [(#2609)](https://github.com/PennyLaneAI/pennylane/pull/2609)
 
+  Just like in machine learning libraries, quantum functions in PennyLane can now take batches of parameters (parameter broadcasting).
   Parameter broadcasting refers to passing parameters with a (single) leading additional
   dimension (compared to the expected parameter shape) to `Operator`'s.
   Introducing this concept involves multiple changes:
@@ -422,6 +379,23 @@
          [0.    -0.1494j, 0.9888+0.j    ]]], requires_grad=True)
   >>> op.matrix().shape
   (3, 2, 2)
+  ```
+  
+  This can be extended to quantum functions, where the `batch_size` of each `Operator` within the quantum function must be the same:
+
+  ```python
+  dev = qml.device('default.qubit', wires=1)
+
+  @qml.qnode(dev)
+  def circuit_rx(x, z):
+      qml.RX(x, wires=0)
+      qml.RZ(z, wires=0)
+      return qml.state()
+  ```
+  ```pycon
+  >>> circuit_rx([0.1, 0.2], [0.3, 0.4])
+  tensor([[0.98753537-0.14925137j, 0.00746879-0.04941796j],
+        [0.97517033-0.19767681j, 0.01983384-0.0978434j ]], requires_grad=True)
   ```
 
   A tape with such an operation will detect the `batch_size` and inherit it:
@@ -504,17 +478,37 @@
   
 <h4> Two new drawing styles </h4>
 
-* New `solarized_light` and `solarized_dark` styles available for drawing circuit diagram graphics. 
+* New `solarized_light` and `solarized_dark` styles are available for drawing circuit diagram graphics. 
   [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
 
 
 <h4>New operations & transform </h4>  
   
-* Add `IsingXY` gate.
+* The `IsingXY` gate is now available: 
   [(#2649)](https://github.com/PennyLaneAI/pennylane/pull/2649)
-  
-* Added the `qml.ECR` operation to represent the echoed RZX(pi/2) gate.
+
+  $$
+  \mathtt{XY}(\phi) = \begin{bmatrix}
+            1 & 0 & 0 & 0 \\
+            0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
+            0 & i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+            0 & 0 & 0 & 1
+  \end{bmatrix}.
+  $$
+
+* The `qml.ECR` operation to represent the echoed $\mathtt{RZX}(\pi/2)$ gate is now available:
   [(#2613)](https://github.com/PennyLaneAI/pennylane/pull/2613)
+
+  $$
+  \mathtt{ECR} = \frac{1}{\sqrt{2}} \begin{bmatrix}
+            0 & 0 & 1 & i \\
+            0 & 0 & i & 1 \\
+            1 & -i & 0 & 0 \\
+            -i & 1 & 0 & 0
+  \end{bmatrix}.
+  $$
+
+  This gate is a maximally-entangling gate and is equivalent to a CNOT gate up to single-qubit pre-rotations.
 
 * Added new transform `qml.batch_partial` which behaves similarly to `functools.partial` but supports batching in the unevaluated parameters.
   [(#2585)](https://github.com/PennyLaneAI/pennylane/pull/2585)
@@ -539,11 +533,11 @@
 
 <h3>Improvements</h3>
 
-* Supporting expectation values of groups of non-commuting observables that are not Hamiltonians. E.g. returning 
-  `[qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]` is now allowed.
+* Expectation values of groups of non-commuting observables that are not Hamiltonians are now supported. E.g., an allowable return of quantum functions can be
+  `[qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]`.
   [(#2587)](https://github.com/PennyLaneAI/pennylane/pull/2587)
 
-* Boolean mask indexing of the parameter-shift Hessian
+* Selecting which parts of parameter-shift Hessians are computed is now possible:
   [(#2538)](https://github.com/PennyLaneAI/pennylane/pull/2538)
 
   The `argnum` keyword argument for `param_shift_hessian`
@@ -570,33 +564,32 @@
         [ 0.        ,  0.        , -0.09928388]]])
   ```
 
-* Speed up measuring of commuting Pauli operators
+* Commuting Pauli operators are now measured faster:
   [(#2425)](https://github.com/PennyLaneAI/pennylane/pull/2425)
 
   The code that checks for qubit wise commuting (QWC) got a performance boost that is noticable
-  when many commuting paulis of the same type are measured.
+  when many commuting Pauli operators of the same type are measured.
 
-* Support adding `Observable` objects to the integer `0`.
-  [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603)
+* Developers can now add `Observable` objects to the integer `0`.
+  [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603):
 
-  This allows us to directly sum a list of observables as follows:
   ```
-  H = sum([qml.PauliX(i) for i in range(10)])
+  qml.PauliX(wires=[0]) + 0
   ```
 
-* IPython displays the `str` representation of a `Hamiltonian`, rather than the `repr`. This displays
-  more information about the object.
+* IPython now displays the `str` representation of a `Hamiltonian`, rather than the `repr`. This displays
+  more information about the object:
   [(#2648)](https://github.com/PennyLaneAI/pennylane/pull/2648)
 
-* The qchem openfermion-dependent tests are localized and collected in `tests.qchem.of_tests`. The
+* The qchem openfermion-dependent tests are now localized and collected in `tests.qchem.of_tests`. The
   new module `test_structure` is created to collect the tests of the `qchem.structure` module in
   one place and remove their dependency to openfermion.
   [(#2593)](https://github.com/PennyLaneAI/pennylane/pull/2593)
 
-* Test classes are created in qchem test modules to group the integrals and matrices unittests.
+* Test classes are now created in qchem test modules to group the integrals and matrices unittests:
   [(#2545)](https://github.com/PennyLaneAI/pennylane/pull/2545)
 
-* Introduced an `operations_only` argument to the `tape.get_parameters` method.
+* An `operations_only` argument is introduced to the `tape.get_parameters` method:
   [(#2543)](https://github.com/PennyLaneAI/pennylane/pull/2543)
 
 * The `gradients` module now uses faster subroutines and uniform
@@ -605,7 +598,7 @@
 
 * Wires can be passed as the final argument to an `Operator`, instead of requiring
   the wires to be explicitly specified with keyword `wires`. This functionality already
-  existed for `Observable`'s, but now extends to all `Operator`'s.
+  existed for `Observable`s, but now extends to all `Operator`s:
   [(#2432)](https://github.com/PennyLaneAI/pennylane/pull/2432)
 
   ```pycon
@@ -615,23 +608,23 @@
   CNOT(wires=[0, 1])
   ```
 
-* Instead of checking types, objects are processed in `QuantumTape`'s based on a new `_queue_category` property.
+* Instead of checking types, objects are processed in `QuantumTape`s based on a new `_queue_category` property.
   This is a temporary fix that will disappear in the future.
   [(#2408)](https://github.com/PennyLaneAI/pennylane/pull/2408)
 
 * The `qml.taper` function can now be used to consistently taper any additional observables such as dipole moment,
-  particle number, and spin operators using the symmetries obtained from the Hamiltonian.
+  particle number, and spin operators using the symmetries obtained from the Hamiltonian:
   [(#2510)](https://github.com/PennyLaneAI/pennylane/pull/2510)
 
 * The `QNode` class now contains a new method `best_method_str` that returns the best differentiation
-  method for a provided device and interface, in human-readable format.
+  method for a provided device and interface, in human-readable format:
   [(#2533)](https://github.com/PennyLaneAI/pennylane/pull/2533)
   
 * Using `Operation.inv()` in a queuing environment no longer updates the queue's metadata, but merely updates
-  the operation in place.
+  the operation in place:
   [(#2596)](https://github.com/PennyLaneAI/pennylane/pull/2596)
 
-* Sparse Hamiltonians representation has changed from COOrdinate (COO) to Compressed Sparse Row (CSR) format. The CSR representation is more performant for arithmetic operations and matrix vector products. This change decreases the `expval()` calculation time, for `qml.SparseHamiltonian`, specially for large workflows. Also, the CRS format consumes less memory for the `qml.SparseHamiltonian` storage.
+* Sparse Hamiltonians' representation has changed from COOrdinate (COO) to Compressed Sparse Row (CSR) format. The CSR representation is more performant for arithmetic operations and matrix vector products. This change decreases the `expval()` calculation time, for `qml.SparseHamiltonian`, specially for large workflows. Also, the CRS format consumes less memory for the `qml.SparseHamiltonian` storage.
   [(#2561)](https://github.com/PennyLaneAI/pennylane/pull/2561)
 
 * A new method `safe_update_info` is added to `qml.QueuingContext`. This method is substituted
