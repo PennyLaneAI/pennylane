@@ -64,7 +64,7 @@
   [(#2688)](https://github.com/PennyLaneAI/pennylane/pull/2688)
   
   A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
-  
+
   ```pycon
   >>> x = [1, 0, 1, 0] / np.sqrt(2)
   >>> reduced_dm(x, indices=[0])
@@ -98,12 +98,12 @@
       return qml.state()
   ```
   ```pycon
-  
+
   >>> qml.qinfo.reduced_dm(circuit, wires=[0])(np.pi/2)
   [[0.5+0.j 0.+0.j]
    [0.+0.j 0.5+0.j]]
   ```
-  
+
   We add Von Neumann entropy capabilities, `qml.math.vn_entropy` that accepts both state vectors and density matrices
   for all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax).
 
@@ -111,12 +111,12 @@
   >>> x = [1, 0, 0, 1] / np.sqrt(2)
   >>> vn_entropy(x, indices=[0])
   0.6931472
-  
+
   >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
   >>> vn_entropy(x, indices=[0])
   0.6931472
   ```
-  
+
   A Von Neumann measurement process `qml.vn_entropy` can be used as return in QNodes:
 
   ```python3
@@ -126,14 +126,14 @@
       qml.IsingXX(x, wires=[0,1])
       return qml.vn_entropy(wires=[0], log_base=2)
   ```
-  
+
   ```pycon
   >>> circuit_entropy(np.pi/2)
   1.0
   ```
-  The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy 
+  The quantum information module also now contains a QNode (returning states) transform for the Von Neumann entropy
   `qml.qinfo.vn_entropy`:
-  
+
   ```python3
   dev = qml.device("default.qubit", wires=2)
   @qml.qnode(dev)
@@ -141,7 +141,7 @@
       qml.IsingXX(x, wires=[0,1])
       return qml.state()
   ```
-  
+
   ```pycon
   >>> vn_entropy(circuit, indices=[0], base=2)(np.pi/2)
   1.0
@@ -232,7 +232,7 @@
   >>> mutual_info_circuit(np.pi / 2)
   1.3862943611198906
   ```
-  
+
   Support for the classical and quantum Fisher information matrices, `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher` is also added:
 
   These are typically employed in variational optimization schemes to tilt the gradient in a more favorable direction, see [2103.15191](https://arxiv.org/abs/2103.15191) and [1909.02108](https://arxiv.org/abs/1909.02108). Here is a very simple example of a Hamiltonian loss function:
@@ -263,27 +263,27 @@
   >>> c_grad = cfim @ grad
   >>> q_grad = qfim @ grad
   >>> print(f"Gradient: {grad} \n  c_grad: {c_grad} \n  q_grad: {q_grad}")
-  Gradient: [ 0.59422561 -0.02615095 -0.05146226] 
-    c_grad: [ 5.94225615e-01 -2.61509542e-02 -1.18674655e-18] 
+  Gradient: [ 0.59422561 -0.02615095 -0.05146226]
+    c_grad: [ 5.94225615e-01 -2.61509542e-02 -1.18674655e-18]
     q_grad: [ 0.59422561 -0.02615095 -0.03989212]
   ```
-  
-  The support for calculating the fidelity between two arbitrary states is added as `qml.math.fidelity` for state 
+
+  The support for calculating the fidelity between two arbitrary states is added as `qml.math.fidelity` for state
   vectors and density matrices.
-  
+
   ```pycon
   >>> state0 = [0, 1]
   >>> state1 = [[0, 0], [0, 1]]
   >>> qml.math.fidelity(state0, state1)
   1.0
-  
+
   >>> state0 = [[0.5, 0.5], [0.5, 0.5]]
   >>> state1 = [[0.5, 0], [0, 0.5]]
   >>> qml.math.fidelity(state0, state1)
   0.4999999999999998
   ```
   The quantum information module now have a differentiable fidelity transform for QNodes.
-  
+
   ```python
   dev = qml.device('default.qubit', wires=1)
 
@@ -302,17 +302,17 @@
   >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.2))
   0.9905158135644924
   ```
-  
+
 
 * Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
   attribute `batch_size`.
   - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
   - `Operator.batch_size` contains the size of an additional parameter broadcasting axis, if present,
   - `QuantumTape.batch_size` contains the `batch_size` of its operations (see below).
-  
-* New `solarized_light` and `solarized_dark` styles available for drawing circuit diagram graphics. 
+
+* New `solarized_light` and `solarized_dark` styles available for drawing circuit diagram graphics.
   [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
-  
+
 * Support adding `Observable` objects to the integer `0`.
   [(#2603)](https://github.com/PennyLaneAI/pennylane/pull/2603)
 
@@ -668,7 +668,7 @@
 
 * The `qml.utils.expand` function is now removed; `qml.operation.expand_matrix` should be used instead.
   [(#2654)](https://github.com/PennyLaneAI/pennylane/pull/2654)
-  
+
 * The module `qml.gradients.param_shift_hessian` has been renamed to
   `qml.gradients.parameter_shift_hessian` in order to distinguish it from the identically named
   function. Note that the `param_shift_hessian` function is unaffected by this change and can be
@@ -733,7 +733,14 @@
 * Updated the gradients fix [(#2485)](https://github.com/PennyLaneAI/pennylane/pull/2485) to only apply to the `strawberryfields.gbs` device, since
   the original logic was breaking some devices. [(#2595)](https://github.com/PennyLaneAI/pennylane/pull/2595)
 
+* Fixed a bug in `qml.transforms.insert` where operations were not inserted after
+  gates within a template.
+  [(#2704)](https://github.com/PennyLaneAI/pennylane/pull/2704)
+
 <h3>Deprecations</h3>
+
+* Deprecating ExpvalCost by adding a UserWarning.
+  [(#2571)](https://github.com/PennyLaneAI/pennylane/pull/2571)
 
 <h3>Documentation</h3>
 
