@@ -536,8 +536,6 @@ class TestDiffCFIM:
         import jax.numpy as jnp
         import jax
 
-        dev = qml.device("default.qubit", wires=3)
-
         def qfunc(weights):
             qml.RX(weights[0], wires=0)
             qml.RX(weights[1], wires=1)
