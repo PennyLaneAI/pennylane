@@ -426,8 +426,8 @@ def quantum_fisher(qnode, *args, **kwargs):
 
     .. note::
 
-        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. In case a device with finite shots is used, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
-        In case of  a device with ``shots=None``, :func:`~.pennylane.adjoint_metric_tensor` is used. Please refer to their respective documentations for details on the arguments.
+        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. If a device with finite shots is used, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
+        If a device capable of exact expectations is used (e.g., ``shots=None``), :func:`~.pennylane.adjoint_metric_tensor` is used. Please refer to their respective documentations for details on the arguments.
 
     **Example**
 
