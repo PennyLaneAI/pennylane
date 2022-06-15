@@ -1639,6 +1639,75 @@ class TestMatrix:
         res = op.eigvals()
         assert np.allclose(res, np.diag(exp))
 
+    @pytest.mark.tf
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    @pytest.mark.parametrize(
+        "cphase_op,gate_data_mat",
+        [
+            (qml.CPhaseShift00, CPhaseShift00),
+            (qml.CPhaseShift01, CPhaseShift01),
+            (qml.CPhaseShift10, CPhaseShift10),
+        ],
+    )
+    def test_c_phase_shift_matrix_and_eigvals_tf(self, phi, cphase_op, gate_data_mat, tol):
+        """Test matrix and eigenvalues computation for CPhaseShift using Tensorflow interface"""
+        import tensorflow as tf
+
+        param_tf = tf.Variable(phi)
+        op = cphase_op(param_tf, wires=[0, 1])
+        res = op.matrix()
+        exp = gate_data_mat(phi)
+        assert np.allclose(res, exp)
+
+        res = op.eigvals()
+        assert np.allclose(res, np.diag(exp))
+
+    @pytest.mark.torch
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    @pytest.mark.parametrize(
+        "cphase_op,gate_data_mat",
+        [
+            (qml.CPhaseShift00, CPhaseShift00),
+            (qml.CPhaseShift01, CPhaseShift01),
+            (qml.CPhaseShift10, CPhaseShift10),
+        ],
+    )
+    def test_c_phase_shift_matrix_and_eigvals_torch(self, phi, cphase_op, gate_data_mat, tol):
+        """Test matrix and eigenvalues computation for CPhaseShift using Torch interface"""
+        import torch
+
+        param_torch = torch.tensor(phi)
+        op = cphase_op(param_torch, wires=[0, 1])
+        res = op.matrix()
+        exp = gate_data_mat(phi)
+        assert np.allclose(res, exp)
+
+        res = op.eigvals()
+        assert np.allclose(res, np.diag(exp))
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
+    @pytest.mark.parametrize(
+        "cphase_op,gate_data_mat",
+        [
+            (qml.CPhaseShift00, CPhaseShift00),
+            (qml.CPhaseShift01, CPhaseShift01),
+            (qml.CPhaseShift10, CPhaseShift10),
+        ],
+    )
+    def test_c_phase_shift_matrix_and_eigvals_jax(self, phi, cphase_op, gate_data_mat, tol):
+        """Test matrix and eigenvalues computation for CPhaseShift using JAX interface"""
+        import jax
+
+        param_jax = jax.numpy.array(phi)
+        op = cphase_op(param_jax, wires=[0, 1])
+        res = op.matrix()
+        exp = gate_data_mat(phi)
+        assert np.allclose(res, exp)
+
+        res = op.eigvals()
+        assert np.allclose(res, np.diag(exp))
+
     @pytest.mark.parametrize(
         "cphase_op,shift_pos",
         [
