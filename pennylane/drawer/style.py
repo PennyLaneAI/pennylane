@@ -50,12 +50,15 @@ def _black_white():
     modifies ``plt.rcParams``.
     """
     plt.rcParams["savefig.facecolor"] = "white"
+    plt.rcParams["figure.facecolor"] = "white"
+    plt.rcParams["axes.facecolor"] = "white"
     plt.rcParams["patch.facecolor"] = "white"
     plt.rcParams["patch.edgecolor"] = "black"
     plt.rcParams["patch.linewidth"] = 3.0
     plt.rcParams["patch.force_edgecolor"] = True
     plt.rcParams["lines.color"] = "black"
     plt.rcParams["text.color"] = "black"
+    plt.rcParams["path.sketch"] = None
 
 
 @_needs_mpl
@@ -70,6 +73,7 @@ def _black_white_dark():
     plt.rcParams["patch.force_edgecolor"] = True
     plt.rcParams["lines.color"] = "white"
     plt.rcParams["text.color"] = "white"
+    plt.rcParams["path.sketch"] = None
 
 
 @_needs_mpl
@@ -86,6 +90,7 @@ def _solarized_light():
     plt.rcParams["lines.color"] = "#657b83"
     plt.rcParams["text.color"] = "#586e75"
     plt.rcParams["patch.force_edgecolor"] = True
+    plt.rcParams["path.sketch"] = None
 
 
 @_needs_mpl
@@ -102,11 +107,51 @@ def _solarized_dark():
     plt.rcParams["lines.color"] = "#839496"
     plt.rcParams["text.color"] = "#2aa198"
     plt.rcParams["patch.force_edgecolor"] = True
+    plt.rcParams["path.sketch"] = None
+
+
+@_needs_mpl
+def _sketch():
+    """Apply the sketch style to matplotlib's configuration. This function
+    modifies ``plt.rcParams``.
+    """
+    plt.rcParams["figure.facecolor"] = "white"
+    plt.rcParams["savefig.facecolor"] = "white"
+    plt.rcParams["axes.facecolor"] = "#D6F5E2"
+    plt.rcParams["patch.facecolor"] = "#FFEED4"
+    plt.rcParams["patch.edgecolor"] = "black"
+    plt.rcParams["patch.linewidth"] = 3.0
+    plt.rcParams["patch.force_edgecolor"] = True
+    plt.rcParams["lines.color"] = "black"
+    plt.rcParams["text.color"] = "black"
+    plt.rcParams["font.weight"] = "bold"
+    plt.rcParams["path.sketch"] = (1, 100, 2)
+
+
+@_needs_mpl
+def _sketch_dark():
+    """Apply the sketch dark style to matplotlib's configuration. This function
+    modifies ``plt.rcParams``.
+    """
+    almost_black = "#151515"  # less harsh than full black
+    plt.rcParams["figure.facecolor"] = almost_black
+    plt.rcParams["savefig.facecolor"] = almost_black
+    plt.rcParams["axes.facecolor"] = "#EBAAC1"
+    plt.rcParams["patch.facecolor"] = "#B0B5DC"
+    plt.rcParams["patch.edgecolor"] = "white"
+    plt.rcParams["patch.linewidth"] = 3.0
+    plt.rcParams["patch.force_edgecolor"] = True
+    plt.rcParams["lines.color"] = "white"
+    plt.rcParams["text.color"] = "white"
+    plt.rcParams["font.weight"] = "bold"
+    plt.rcParams["path.sketch"] = (1, 100, 2)
 
 
 _styles_map = {
     "black_white": _black_white,
     "black_white_dark": _black_white_dark,
+    "sketch": _sketch,
+    "sketch_dark": _sketch_dark,
     "solarized_light": _solarized_light,
     "solarized_dark": _solarized_dark,
     "default": _needs_mpl(lambda: plt.style.use("default")),
