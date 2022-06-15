@@ -23,7 +23,7 @@ from pennylane import numpy as npp
 import pennylane as qml
 from pennylane.wires import Wires
 
-from gate_data import ControlledPhaseShift, Z
+from gate_data import ControlledPhaseShift, CPhaseShift00, CPhaseShift01, CPhaseShift10, Z
 
 PARAMETRIZED_OPERATIONS = [
     qml.RX(0.123, wires=0),
@@ -38,6 +38,9 @@ PARAMETRIZED_OPERATIONS = [
     qml.PhaseShift(2.133, wires=0),
     qml.ControlledPhaseShift(1.777, wires=[0, 2]),
     qml.CPhase(1.777, wires=[0, 2]),
+    qml.CPhaseShift00(1.777, wires=[0, 2]),
+    qml.CPhaseShift01(1.777, wires=[0, 2]),
+    qml.CPhaseShift10(1.777, wires=[0, 2]),
     qml.MultiRZ(0.112, wires=[1, 2, 3]),
     qml.CRX(0.836, wires=[2, 3]),
     qml.CRY(0.721, wires=[2, 3]),
@@ -69,6 +72,9 @@ BROADCASTED_OPERATIONS = [
     qml.PhaseShift(np.array([2.12, 0.21, -6.2]), wires=0),
     qml.ControlledPhaseShift(np.array([1.777, -0.1, 5.29]), wires=[0, 2]),
     qml.CPhase(np.array([1.777, -0.1, 5.29]), wires=[0, 2]),
+    qml.CPhaseShift00(np.array([1.777, -0.1, 5.29]), wires=[0, 2]),
+    qml.CPhaseShift01(np.array([1.777, -0.1, 5.29]), wires=[0, 2]),
+    qml.CPhaseShift10(np.array([1.777, -0.1, 5.29]), wires=[0, 2]),
     qml.MultiRZ(np.array([1.124, -2.31, 0.112]), wires=[1, 2, 3]),
     qml.CRX(np.array([0.836, 0.21, -3.57]), wires=[2, 3]),
     qml.CRY(np.array([0.721, 2.31, 0.983]), wires=[2, 3]),
@@ -783,6 +789,110 @@ class TestDecompositions:
         decomposed_matrix = multi_dot_broadcasted(mats)
         lam = np.exp(1j * phi)
         exp = np.array([np.diag([1, 1, 1, 1, 1, el, 1, el]) for el in lam])
+
+        assert np.allclose(decomposed_matrix, exp)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    @pytest.mark.parametrize(
+        "cphase_op,lam_pos",
+        [
+            (qml.CPhaseShift00, [0, 2]),
+            (qml.CPhaseShift01, [1, 3]),
+            (qml.CPhaseShift10, [4, 6]),
+        ],
+    )
+    def test_c_phase_shift_decomp(self, phi, cphase_op, lam_pos):
+        """Tests that the CPhaseShift operations
+        calculate the correct decomposition"""
+        op = cphase_op(phi, wires=[0, 2])
+        decomp = op.decomposition()
+
+        mats = []
+        for i in reversed(decomp):
+            if i.wires.tolist() == [0]:
+                mats.append(np.kron(i.matrix(), np.eye(4)))
+            elif i.wires.tolist() == [1]:
+                mats.append(np.kron(np.eye(2), np.kron(i.matrix(), np.eye(2))))
+            elif i.wires.tolist() == [2]:
+                mats.append(np.kron(np.eye(4), i.matrix()))
+            elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 1]:
+                mats.append(np.kron(i.matrix(), np.eye(2)))
+            elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 2]:
+                mats.append(
+                    np.array(
+                        [
+                            [1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 1],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                        ]
+                    )
+                )
+
+        decomposed_matrix = np.linalg.multi_dot(mats)
+        lam = np.exp(1j * phi)
+        exp = np.eye(8, dtype=complex)
+        for i in lam_pos:
+            exp[..., i, i] = lam
+
+        assert np.allclose(decomposed_matrix, exp)
+
+    @pytest.mark.parametrize(
+        "cphase_op,lam_pos",
+        [
+            (qml.CPhaseShift00, [0, 2]),
+            (qml.CPhaseShift01, [1, 3]),
+            (qml.CPhaseShift10, [4, 6]),
+        ],
+    )
+    def test_c_phase_shift_decomp(self, cphase_op, lam_pos):
+        """Tests that the CPhaseShift operations
+        calculate the correct decomposition"""
+        phi = np.array([-0.2, 4.2, 1.8])
+        op = cphase_op(phi, wires=[0, 2])
+        decomp = op.decomposition()
+
+        mats = []
+        for i in reversed(decomp):
+            mat = i.matrix()
+            eye = np.eye(2)[np.newaxis] if np.ndim(mat) == 3 else np.eye(2)
+            if i.wires.tolist() == [0]:
+                mats.append(np.kron(mat, np.kron(eye, eye)))
+            elif i.wires.tolist() == [1]:
+                mats.append(np.kron(eye, np.kron(mat, eye)))
+            elif i.wires.tolist() == [2]:
+                mats.append(np.kron(np.kron(eye, eye), mat))
+            elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 1]:
+                mats.append(np.kron(mat, eye))
+            elif isinstance(i, qml.CNOT) and i.wires.tolist() == [0, 2]:
+                mats.append(
+                    np.array(
+                        [
+                            [1, 0, 0, 0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 0, 0, 0, 0],
+                            [0, 0, 1, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 1, 0, 0],
+                            [0, 0, 0, 0, 1, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0, 0, 1],
+                            [0, 0, 0, 0, 0, 0, 1, 0],
+                        ]
+                    )
+                )
+
+        decomposed_matrix = multi_dot_broadcasted(mats)
+        lam = np.exp(1j * phi)
+        exp = []
+        for el in lam:
+            exp_el = np.eye(8, dtype=complex)
+            for i in lam_pos:
+                exp_el[..., i, i] = el
+            exp.append(exp_el)
+        exp = np.array(exp)
 
         assert np.allclose(decomposed_matrix, exp)
 
@@ -1507,6 +1617,49 @@ class TestMatrix:
         res = op.eigvals()
         exp_eigvals = np.ones((3, 4), dtype=complex)
         exp_eigvals[..., 3] = np.exp(1j * phi)
+        assert np.allclose(res, exp_eigvals)
+
+    @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
+    @pytest.mark.parametrize(
+        "cphase_op,gate_data_mat",
+        [
+            (qml.CPhaseShift00, CPhaseShift00),
+            (qml.CPhaseShift01, CPhaseShift01),
+            (qml.CPhaseShift10, CPhaseShift10),
+        ],
+    )
+    def test_c_phase_shift_matrix_and_eigvals(self, phi, cphase_op, gate_data_mat):
+        """Tests that the CPhaseShift operations calculate the correct
+        matrix and eigenvalues"""
+        op = cphase_op(phi, wires=[0, 1])
+        res = op.matrix()
+        exp = gate_data_mat(phi)
+        assert np.allclose(res, exp)
+
+        res = op.eigvals()
+        assert np.allclose(res, np.diag(exp))
+
+    @pytest.mark.parametrize(
+        "cphase_op,shift_pos",
+        [
+            (qml.CPhaseShift00, 0),
+            (qml.CPhaseShift01, 1),
+            (qml.CPhaseShift10, 2),
+        ],
+    )
+    def test_c_phase_shift_matrix_and_eigvals_broadcasted(self, cphase_op, shift_pos):
+        """Tests that the CPhaseShift operations calculate the
+        correct matrix and eigenvalues for broadcasted parameters"""
+        phi = np.array([0.2, np.pi / 2, -0.1])
+        op = cphase_op(phi, wires=[0, 1])
+        res = op.matrix()
+        expected = np.array([np.eye(4, dtype=complex)] * 3)
+        expected[..., shift_pos, shift_pos] = np.exp(1j * phi)
+        assert np.allclose(res, expected)
+
+        res = op.eigvals()
+        exp_eigvals = np.ones((3, 4), dtype=complex)
+        exp_eigvals[..., shift_pos] = np.exp(1j * phi)
         assert np.allclose(res, exp_eigvals)
 
 
