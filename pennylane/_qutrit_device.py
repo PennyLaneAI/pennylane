@@ -85,6 +85,18 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         capabilities.update(model="qutrit")
         return capabilities
 
+    # Added here for tests to pass (See tests.test_qutrit_device.ExtractStatistics.test_results_no_state())
+    @property
+    def state(self):
+        """Returns the state vector of the circuit prior to measurement.
+
+        .. note::
+
+            Only state vector simulators support this property. Please see the
+            plugin documentation for more details.
+        """
+        raise NotImplementedError
+
     def statistics(self, observables, shot_range=None, bin_size=None):
         # Overloading QubitDevice.statistics() as VnEntropy and MutualInfo not yet supported for QutritDevice
         results = []

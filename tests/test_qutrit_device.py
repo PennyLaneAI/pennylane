@@ -22,7 +22,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane import QutritDevice, DeviceError, QuantumFunctionError
+from pennylane import QutritDevice, DeviceError, QuantumFunctionError, QubitDevice
 from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
@@ -272,6 +272,7 @@ class TestExtractStatistics:
         with monkeypatch.context():
             dev = mock_qutrit_device_extract_stats()
             delattr(dev.__class__, "state")
+            del QubitDevice.state
             with pytest.raises(
                 qml.QuantumFunctionError, match="The state is not available in the current"
             ):
