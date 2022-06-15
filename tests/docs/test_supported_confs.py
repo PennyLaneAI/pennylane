@@ -377,7 +377,7 @@ class TestSupportedConfs:
     @pytest.mark.parametrize("interface", diff_interfaces)
     @pytest.mark.parametrize(
         "return_type",
-        [Probability, Expectation, "Hermitian", "Projector", Variance, VnEntropy, MutualInfo],
+        [Probability, Expectation, "Hermitian", "Projector", Variance],
     )
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
@@ -391,7 +391,9 @@ class TestSupportedConfs:
         grad = compute_gradient(x, interface, circuit, return_type)
 
     @pytest.mark.parametrize("interface", diff_interfaces)
-    @pytest.mark.parametrize("return_type", ["StateCost", "StateVector", "DensityMatrix"])
+    @pytest.mark.parametrize(
+        "return_type", ["StateCost", "StateVector", "DensityMatrix", VnEntropy, MutualInfo]
+    )
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_paramshift_state(self, interface, return_type, shots, wire_specs):
