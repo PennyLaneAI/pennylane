@@ -18,7 +18,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.operation import DecompositionUndefinedError
+from pennylane.operation import DecompositionUndefinedError, GeneratorUndefinedError
 from pennylane.ops.op_math.controlled_class import Controlled, ControlledOperation
 from pennylane.wires import Wires
 
@@ -38,6 +38,10 @@ base_num_control_mats = [
 
 
 class TempOperator(qml.operation.Operator):
+    num_wires = 1
+
+
+class TempOperation(qml.operation.Operation):
     num_wires = 1
 
 
@@ -268,7 +272,7 @@ class TestProperties:
         assert op.control_wires == Wires(("a", "b"))
         assert op.work_wires == Wires(("extra"))
 
-    def test_wires_setter_too_few_wires(self):
+    def test_private_wires_setter_too_few_wires(self):
         """Test that an assertionerror is raised if wires are set with fewer active wires
         than the operation originally had."""
         base = qml.IsingXX(1.234, wires=(0, 1))
@@ -276,6 +280,15 @@ class TestProperties:
 
         with pytest.raises(AssertionError, match="CIsingXX needs at least 4 wires."):
             op._wires = ("a", "b")
+
+    def test_private_wires_setter_no_work_wires(self):
+        """Test work wires made empty if no left over wires provided to private setter."""
+        base = TempOperator(1)
+        op = Controlled(base, 2, work_wires="aux")
+
+        op._wires = [3, 4]
+        assert len(op.work_wires) == 0
+        assert isinstance(op.work_wires, qml.wires.Wires)
 
 
 class TestMiscMethods:
@@ -401,6 +414,65 @@ class TestOperationProperties:
         assert op.name == "CT.inv"
         assert op.base_name == "CT"
 
+    @pytest.mark.parametrize("gm", (None, "A", "F"))
+    def test_grad_method(self, gm):
+        """Check grad_method defers to that of the base operation."""
+
+        class DummyOp(qml.operation.Operation):
+            num_wires = 1
+            grad_method = gm
+
+        base = DummyOp(1)
+        op = Controlled(base, 2)
+        assert op.grad_method == gm
+
+    def test_basis(self):
+        """Test that controlled mimics the basis attribute of the base op."""
+
+        class DummyOp(qml.operation.Operation):
+            num_wires = 1
+            basis = "Z"
+
+        base = DummyOp(1)
+        op = Controlled(base, 2)
+        assert op.basis == "Z"
+
+    @pytest.mark.parametrize(
+        "base, expected",
+        [
+            (qml.RX(1.23, wires=0), [(0.5, 1.0)]),
+            (qml.PhaseShift(-2.4, wires=0), [(1,)]),
+            (qml.IsingZZ(-9.87, (0, 1)), [(0.5, 1.0)]),
+        ],
+    )
+    def test_parameter_frequencies(self, base, expected):
+        """Test parameter-frequencies against expected values."""
+
+        op = Controlled(base, (3, 4))
+        assert op.parameter_frequencies == expected
+
+    def test_parameter_frequencies_no_generator_error(self):
+        """An error should be raised if the base doesn't have a generator."""
+        base = TempOperation(1.234, 1)
+        op = Controlled(base, 2)
+
+        with pytest.raises(
+            qml.operation.ParameterFrequenciesUndefinedError,
+            match=r"does not have parameter frequencies",
+        ):
+            op.parameter_frequencies
+
+    def test_parameter_frequencies_multiple_params_error(self):
+        """An error should be raised if the base has more than one parameter."""
+        base = TempOperation(1.23, 2.234, 1)
+        op = Controlled(base, (2, 3))
+
+        with pytest.raises(
+            qml.operation.ParameterFrequenciesUndefinedError,
+            match=r"does not have parameter frequencies",
+        ):
+            op.parameter_frequencies
+
 
 class TestQueuing:
     """Test that Controlled operators queue and update base metadata."""
@@ -495,3 +567,82 @@ class TestMatrix:
         sparse_mat = op.sparse_matrix()
         assert isinstance(sparse_mat, sparse.csr_matrix)
         assert qml.math.allclose(op.sparse_matrix().toarray(), op.matrix())
+
+
+class TestDecomposition:
+    """Test controlled's decomposition method."""
+
+    def test_control_values(self):
+        """Test decomposition applies PauliX gates to flip any control-on-zero wires."""
+
+        control_wires = (0, 1, 2)
+        control_values = [True, False, False]
+
+        base = TempOperator("a")
+        op = Controlled(base, (0, 1, 2), [True, False, False])
+
+        decomp = op.decomposition()
+
+        for i in (0, 3):
+            assert isinstance(decomp[i], qml.PauliX)
+            assert decomp[i].wires == qml.wires.Wires(1)
+
+        for i in (1, 4):
+            assert isinstance(decomp[i], qml.PauliX)
+            assert decomp[i].wires == qml.wires.Wires(2)
+
+        assert isinstance(decomp[2], Controlled)
+        assert decomp[2].control_values == [True, True, True]
+
+    def test_control_on_one_decomp_error(self):
+        """Test if all control_values are true, decomp raises decomp error."""
+
+        base = TempOperator("a")
+        op = Controlled(base, (0, 1, 2), [1, 1, 1])
+
+        with pytest.raises(DecompositionUndefinedError):
+            op.decomposition()
+
+
+class TestArithmetic:
+
+    control_wires = qml.wires.Wires((3, 4))
+    work_wires = qml.wires.Wires("aux")
+    control_values = [True, False]
+
+    def test_adjoint(self):
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+
+            def adjoint(self):
+                return DummyOp("adjointed", self.wires)
+
+        base = DummyOp("basic", 2)
+        op = Controlled(base, self.control_wires, self.control_values, self.work_wires)
+
+        adj_op = op.adjoint()
+        assert isinstance(adj_op, Controlled)
+        assert adj_op.base.parameters == ["adjointed"]
+
+        assert adj_op.control_wires == self.control_wires
+        assert adj_op.control_values == self.control_values
+        assert adj_op.work_wires == self.work_wires
+
+    @pytest.mark.parametrize("z", (2, -1, 0.5))
+    def test_pow(self, z):
+        class DummyOp(qml.operation.Operator):
+            num_wires = 1
+
+            def pow(self, z):
+                return [DummyOp(z, self.wires)]
+
+        base = DummyOp(wires=0)
+        op = Controlled(base, self.control_wires, self.control_values, self.work_wires)
+
+        pow_op = op.pow(z)[0]
+        assert isinstance(pow_op, Controlled)
+        assert pow_op.base.parameters == [z]
+
+        assert pow_op.control_wires == self.control_wires
+        assert pow_op.control_values == self.control_values
+        assert pow_op.work_wires == self.work_wires
