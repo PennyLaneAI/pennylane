@@ -275,7 +275,7 @@ class TestExtractStatistics:
             with pytest.raises(
                 qml.QuantumFunctionError, match="The state is not available in the current"
             ):
-                dev.statistics([state()])
+                dev.statistics([qml.state()])
 
     @pytest.mark.parametrize("returntype", [None])
     def test_results_created_empty(self, mock_qutrit_device_extract_stats, monkeypatch, returntype):
