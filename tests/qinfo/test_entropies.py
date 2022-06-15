@@ -236,14 +236,13 @@ class TestVonNeumannEntropy:
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
-    @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("base", base)
     @pytest.mark.parametrize("diff_method", diff_methods)
-    def test_IsingXX_qnode_jax_entropy(self, param, wires, device, base, diff_method):
+    def test_IsingXX_qnode_jax_entropy(self, param, wires, base, diff_method):
         """Test entropy for a QNode with jax interface."""
         import jax.numpy as jnp
 
-        dev = qml.device(device, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="jax", diff_method=diff_method)
         def circuit_state(x):
@@ -587,7 +586,7 @@ class TestMutualInformation:
         tol = 1e-8 if diff_method == "backprop" else 1e-5
 
         actual = jax.jit(jax.grad(circuit))(param)
-        assert np.allclose(actual, expected, tol)
+        assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
