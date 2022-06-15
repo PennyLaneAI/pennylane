@@ -15,7 +15,9 @@
 # pylint: disable=import-outside-toplevel, not-callable
 import functools
 import pennylane as qml
+
 from pennylane.transforms import batch_transform, metric_tensor, adjoint_metric_tensor
+from pennylane.devices import DefaultQubit
 
 
 def reduced_dm(qnode, wires):
@@ -420,8 +422,8 @@ def classical_fisher(qnode, argnums=0):
     return wrapper
 
 
-def quantum_fisher(qnode, *args, hardware=False, **kwargs):
-    r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode` or quantum tape.
+def quantum_fisher(qnode, *args, **kwargs):
+    r"""Returns a function that computes the quantum fisher information matrix (QFIM) of a given :class:`.QNode`.
 
     Given a parametrized quantum state :math:`|\psi(\bm{\theta})\rangle`, the quantum fisher information matrix (QFIM) quantifies how changes to the parameters :math:`\bm{\theta}`
     are reflected in the quantum state. The metric used to induce the QFIM is the fidelity :math:`f = |\langle \psi | \psi' \rangle|^2` between two (pure) quantum states.
@@ -438,16 +440,17 @@ def quantum_fisher(qnode, *args, hardware=False, **kwargs):
         :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.adjoint_metric_tensor`, :func:`~.pennylane.qinfo.transforms.classical_fisher`
 
     Args:
-        qnode (:class:`.QNode` or qml.QuantumTape): A :class:`.QNode` or quantum tape that may have arbitrary return types.
-        hardware (bool): Indicate if execution needs to be hardware compatible (True)
+        qnode (:class:`.QNode`): A :class:`.QNode` that may have arbitrary return types.
+        *args: In case finite shots are used, further arguments according to :func:`~.pennylane.metric_tensor` may be passed.
 
     Returns:
         func: The function that computes the quantum fisher information matrix.
 
     .. note::
 
-        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. In case of ``hardware=True``, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
-        In case of  ``hardware=False``, :func:`~.pennylane.adjoint_metric_tensor` is used. Please refer to their respective documentations for details on the arguments.
+        ``quantum_fisher`` coincides with the ``metric_tensor`` with a prefactor of :math:`4`. Internally, :func:`~.pennylane.adjoint_metric_tensor` is used when executing on a device with
+        exact expectations (``shots=None``) that inherits from ``"default.qubit"``. In all other cases, i.e. if a device with finite shots is used, the hardware compatible transform :func:`~.pennylane.metric_tensor` is used.
+        Please refer to their respective documentations for details on the arguments.
 
     **Example**
 
@@ -483,16 +486,26 @@ def quantum_fisher(qnode, *args, hardware=False, **kwargs):
     >>> q_nat_grad = qfim @ grad
     [ 0.59422561 -0.02615095 -0.03989212]
 
-    When using real hardware with finite shots, we have to specify ``hardware=True`` in order to compute the QFIM.
-    Additionally, we need to provide a device that has a spare wire for the Hadamard test, otherwise it will just be able to compute the block diagonal terms.
+    When using real hardware or finite shots, ``quantum_fisher`` is internally calling :func:`~.pennylane.metric_tensor`.
+    To obtain the full QFIM, we need an auxilary wire to perform the Hadamard test.
 
     >>> dev = qml.device("default.qubit", wires=n_wires+1, shots=1000)
-    >>> circ = qml.QNode(circ, dev)
-    >>> qfim = qml.qinfo.quantum_fisher(circ, hardware=True)(params)
+    >>> @qml.qnode(dev)
+    ... def circ(params):
+    ...     qml.RY(params[0], wires=1)
+    ...     qml.CNOT(wires=(1,0))
+    ...     qml.RY(params[1], wires=1)
+    ...     qml.RZ(params[2], wires=1)
+    ...     return qml.expval(H)
+    >>> qfim = qml.qinfo.quantum_fisher(circ)(params)
+
+    Alternatively, we can fall back on the block-diagonal QFIM without the additional wire.
+
+    >>> qfim = qml.qinfo.quantum_fisher(circ, approx="block-diag")(params)
 
     """
-    # TODO: ``hardware`` argument will be obsolete in future releases when ``shots`` can be inferred.
-    if hardware:
+
+    if qnode.device.shots is not None and isinstance(qnode.device, DefaultQubit):
 
         def wrapper(*args0, **kwargs0):
             return 4 * metric_tensor(qnode, *args, **kwargs)(*args0, **kwargs0)
