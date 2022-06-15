@@ -479,13 +479,15 @@ def quantum_fisher(qnode, *args, **kwargs):
     The natural gradient is then simply the QFIM multiplied by the gradient:
 
     >>> grad = qml.grad(circ)(params)
-    [ 0.59422561, -0.02615095, -0.05146226]
-
+    >>> grad
+    array([ 0.59422561, -0.02615095, -0.05146226])
     >>> qfim = qml.qinfo.quantum_fisher(circ)(params)
-    np.diag([1., 1., 0.77517241])
-
-    >>> q_nat_grad = qfim @ grad
-    [ 0.59422561 -0.02615095 -0.03989212]
+    >>> qfim
+    tensor([[1.        , 0.        , 0.        ],
+            [0.        , 1.        , 0.        ],
+            [0.        , 0.        , 0.77517241]], requires_grad=True)
+    >>> qfim @ grad
+    tensor([ 0.59422561, -0.02615095, -0.03989212], requires_grad=True)
 
     When using real hardware or finite shots, ``quantum_fisher`` is internally calling :func:`~.pennylane.metric_tensor`.
     To obtain the full QFIM, we need an auxilary wire to perform the Hadamard test.
