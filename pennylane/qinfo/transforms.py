@@ -183,8 +183,8 @@ def _torch_jac(circ):
     def wrapper(*args, **kwargs):
         loss = functools.partial(circ, **kwargs)
         if len(args) > 1:
-            return torch.autograd.functional.jacobian(loss, (args))
-        return torch.autograd.functional.jacobian(loss, *args)
+            return torch.autograd.functional.jacobian(loss, args, create_graph=True)
+        return torch.autograd.functional.jacobian(loss, *args, create_graph=True)
 
     return wrapper
 
@@ -197,7 +197,7 @@ def _tf_jac(circ):
     def wrapper(*args, **kwargs):
         with tf.GradientTape() as tape:
             loss = circ(*args, **kwargs)
-        return tape.jacobian(loss, (args))
+        return tape.jacobian(loss, args)
 
     return wrapper
 
@@ -209,12 +209,12 @@ def _compute_cfim(p, dp):
     # Exclude values where p=0 and calculate 1/p
     nonzeros_p = qml.math.where(p > 0, p, qml.math.ones_like(p))
     one_over_p = qml.math.where(p > 0, qml.math.ones_like(p), qml.math.zeros_like(p))
-    one_over_p = qml.math.divide(one_over_p, nonzeros_p)
+    one_over_p = one_over_p / nonzeros_p
 
     # Multiply dp and p
     # Note that casting and being careful about dtypes is necessary as interfaces
     # typically treat derivatives (dp) with float32, while standard execution (p) comes in float64
-    dp = qml.math.cast(dp, dtype=p.dtype)
+    dp = qml.math.cast_like(dp, p)
     dp = qml.math.reshape(
         dp, (len(p), -1)
     )  # Squeeze does not work, as you could have shape (num_probs, num_params) with num_params = 1
@@ -268,9 +268,6 @@ def classical_fisher(qnode, argnums=0):
         returns a matrix of size ``(len(params), len(params))``. For multiple differentiable arguments ``x, y, z``,
         it returns a list of sizes ``[(len(x), len(x)), (len(y), len(y)), (len(z), len(z))]``.
 
-    .. warning::
-
-        The ``classical_fisher()`` matrix is currently not differentiable.
 
     .. seealso:: :func:`~.pennylane.metric_tensor`, :func:`~.pennylane.qinfo.transforms.quantum_fisher`
 
@@ -363,6 +360,29 @@ def classical_fisher(qnode, argnums=0):
     >>> print(rescaled_grad)
     [-0.66772533 -0.16618756 -0.05865127 -0.06696078]
 
+    The ``classical_fisher`` matrix itself is again differentiable:
+
+    .. code-block:: python
+
+        @qml.qnode(dev)
+        def circ(params):
+            qml.RX(qml.math.cos(params[0]), wires=0)
+            qml.RX(qml.math.cos(params[0]), wires=1)
+            qml.RX(qml.math.cos(params[1]), wires=0)
+            qml.RX(qml.math.cos(params[1]), wires=1)
+            return qml.probs(wires=range(2))
+
+        params = pnp.random.random(2)
+
+    >>> print(qml.qinfo.classical_fisher(circ)(params))
+    (tensor([[0.13340679, 0.03650311],
+             [0.03650311, 0.00998807]], requires_grad=True)
+    >>> print(qml.jacobian(qml.qinfo.classical_fisher(circ))(params))
+    array([[[9.98030491e-01, 3.46944695e-18],
+            [1.36541817e-01, 5.15248592e-01]],
+           [[1.36541817e-01, 5.15248592e-01],
+            [2.16840434e-18, 2.81967252e-01]]]))
+
     """
     new_qnode = _make_probs(qnode, post_processing_fn=lambda x: qml.math.squeeze(qml.math.stack(x)))
 
@@ -387,13 +407,13 @@ def classical_fisher(qnode, argnums=0):
         p = new_qnode(*args, **kwargs)
 
         # In case multiple variables are used, we create a list of cfi matrices
-        if isinstance(j, tuple) and len(j) > 1:
+        if isinstance(j, tuple):
             res = []
             for j_i in j:
-                if interface == "tf":
-                    j_i = qml.math.transpose(qml.math.cast(j_i, dtype=p.dtype))
-
                 res.append(_compute_cfim(p, j_i))
+
+            if len(j) == 1:
+                return res[0]
 
             return res
 

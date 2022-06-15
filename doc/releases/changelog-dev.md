@@ -61,7 +61,8 @@
   [(#2640)](https://github.com/PennyLaneAI/pennylane/pull/2640)
   [(#2663)](https://github.com/PennyLaneAI/pennylane/pull/2663)
   [(#2684)](https://github.com/PennyLaneAI/pennylane/pull/2684)
-
+  [(#2688)](https://github.com/PennyLaneAI/pennylane/pull/2688)
+  
   A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
 
   ```pycon
@@ -768,4 +769,5 @@ This release contains contributions from (in alphabetical order):
 Amintor Dusko, Ankit Khandelwal, Avani Bhardwaj, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs,
 Edward Jiang, Guillermo Alonso-Linaje, Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian Kottmann,
 Maria Schuld, Mason Moreland, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, Antal Száva,
-WingCode
+WingCode,
+Josh Izaac
