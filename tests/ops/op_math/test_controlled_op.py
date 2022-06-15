@@ -112,17 +112,17 @@ class TestInheritanceMixins:
 class TestInitialization:
     """Test the initialization process and standard properties."""
 
-    paulix_op = qml.PauliX("a")
+    temp_op = TempOperator("a")
 
     def test_nonparametric_ops(self):
         """Test pow initialization for a non parameteric operation."""
 
         op = Controlled(
-            self.paulix_op, (0, 1), control_values=[True, False], work_wires="aux", id="something"
+            self.temp_op, (0, 1), control_values=[True, False], work_wires="aux", id="something"
         )
 
-        assert op.base is self.paulix_op
-        assert op.hyperparameters["base"] is self.paulix_op
+        assert op.base is self.temp_op
+        assert op.hyperparameters["base"] is self.temp_op
 
         assert op.wires == Wires((0, 1, "a", "aux"))
 
@@ -136,7 +136,7 @@ class TestInitialization:
 
         assert op.work_wires == Wires(("aux"))
 
-        assert op.name == "CPauliX"
+        assert op.name == "CTempOperator"
         assert op.id == "something"
 
         assert op.num_params == 0
@@ -147,35 +147,35 @@ class TestInitialization:
 
     def test_default_control_values(self):
 
-        op = Controlled(self.paulix_op, (0, 1))
+        op = Controlled(self.temp_op, (0, 1))
         assert op.control_values == [True, True]
 
     def test_zero_one_control_values(self):
 
-        op = Controlled(self.paulix_op, (0, 1), control_values=[0, 1])
+        op = Controlled(self.temp_op, (0, 1), control_values=[0, 1])
         assert op.control_values == [False, True]
 
     def test_string_control_values(self):
 
         with pytest.warns(UserWarning, match="Specifying control values as a string"):
-            op = Controlled(self.paulix_op, (0, 1), "01")
+            op = Controlled(self.temp_op, (0, 1), "01")
 
         assert op.control_values == [False, True]
 
     def test_non_boolean_control_values(self):
 
         with pytest.raises(AssertionError, match="control_values can only take on"):
-            Controlled(self.paulix_op, (0, 1), ["b", 2])
+            Controlled(self.temp_op, (0, 1), ["b", 2])
 
     def test_control_values_wrong_length(self):
 
         with pytest.raises(AssertionError, match="control_values should be the same length"):
-            Controlled(self.paulix_op, (0, 1), [True])
+            Controlled(self.temp_op, (0, 1), [True])
 
     def test_target_control_wires_overlap(self):
 
         with pytest.raises(AssertionError, match="The control wires must be different"):
-            Controlled(self.paulix_op, "a")
+            Controlled(self.temp_op, "a")
 
 
 class TestProperties:
@@ -557,9 +557,22 @@ class TestMatrix:
 
         assert qml.math.allclose(mat, decomp_mat)
 
+    def test_sparse_matrix_base_defines(self):
+        """Check that an op that defines a sparse matrix has it used in the controlled
+        sparse matrix."""
+
+        Hmat = qml.utils.sparse_hamiltonian(1.0 * qml.PauliX(0))
+        H_sparse = qml.SparseHamiltonian(Hmat, wires="0")
+        op = Controlled(H_sparse, "a")
+
+        sparse_mat = op.sparse_matrix()
+        assert isinstance(sparse_mat, sparse.csr_matrix)
+        assert qml.math.allclose(sparse_mat.toarray(), op.matrix())
+
     @pytest.mark.parametrize("control_values", ([0, 0, 0], [0, 1, 0], [0, 1, 1], [1, 1, 1]))
-    def test_sparse_matrix(self, control_values):
-        """Check that the dense form"""
+    def test_sparse_matrix_only_matrix_defined(self, control_values):
+        """Check that an base doesn't define a sparse matrix but defines a dense matrix
+        still provides a controlled sparse matrix."""
         control_wires = (0, 1, 2)
         base = qml.U2(1.234, -3.2, wires=3)
         op = Controlled(base, control_wires, control_values=control_values)
@@ -567,6 +580,33 @@ class TestMatrix:
         sparse_mat = op.sparse_matrix()
         assert isinstance(sparse_mat, sparse.csr_matrix)
         assert qml.math.allclose(op.sparse_matrix().toarray(), op.matrix())
+
+    def test_sparse_matrix_wire_order_error(self):
+        """Check a NonImplementedError is raised if the user requests specific wire order."""
+        control_wires = (0, 1, 2)
+        base = qml.U2(1.234, -3.2, wires=3)
+        op = Controlled(base, control_wires)
+
+        with pytest.raises(NotImplementedError):
+            op.sparse_matrix(wire_order=[3, 2, 1, 0])
+
+    def test_no_matrix_defined_sparse_matrix_error(self):
+        """Check that if the base gate defines neither a sparse matrix nor a dense matrix, a
+        SparseMatrixUndefined error is raised."""
+
+        base = TempOperator(1)
+        op = Controlled(base, 2)
+
+        with pytest.raises(qml.operation.SparseMatrixUndefinedError):
+            op.sparse_matrix()
+
+    def test_sparse_matrix_format(self):
+        """Test format keyword determines output type of sparse matrix."""
+        base = qml.PauliX(0)
+        op = Controlled(base, 1)
+
+        lil_mat = op.sparse_matrix(format="lil")
+        assert isinstance(lil_mat, sparse.lil_matrix)
 
 
 class TestDecomposition:
