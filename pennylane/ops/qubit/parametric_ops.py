@@ -668,8 +668,8 @@ class CPhaseShift00(Operation):
     * Number of wires: 2
     * Number of parameters: 1
     * Number of dimensions per parameter: (0,)
-    * Gradient recipe: 
-    
+    * Gradient recipe:
+
     .. math::
         \frac{d}{d \phi} \mathtt{CPhaseShift00}(\phi)
         = \frac{1}{2} \left[ \mathtt{CPhaseShift00}(\phi + \pi / 2)
@@ -843,7 +843,7 @@ class CPhaseShift01(Operation):
     * Number of parameters: 1
     * Number of dimensions per parameter: (0,)
     * Gradient recipe:
-    
+
     .. math::
         \frac{d}{d \phi} \mathtt{CPhaseShift01}(\phi)
         = \frac{1}{2} \left[ \mathtt{CPhaseShift01}(\phi + \pi / 2)
