@@ -142,6 +142,7 @@ class TestVonNeumannEntropy:
     check_state = [True, False]
 
     devices = ["default.qubit", "default.mixed"]
+    diff_methods = ["backprop", "finite-diff"]
 
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
@@ -166,20 +167,24 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_entropy_grad(self, param, wires, base):
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_IsingXX_qnode_entropy_grad(self, param, wires, base, diff_method):
         """Test entropy for a QNode gradient with autograd."""
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, diff_method="backprop")
+        @qml.qnode(dev, diff_method=diff_method)
         def circuit_entropy(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
 
         grad_entropy = qml.grad(circuit_entropy)(param)
 
+        # higher tolerance for finite-diff method
+        tol = 1e-8 if diff_method == "backprop" else 1e-5
+
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
-        assert qml.math.allclose(grad_entropy, grad_expected_entropy)
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy, atol=tol)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -207,13 +212,14 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_entropy_grad_torch(self, param, wires, base):
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_IsingXX_qnode_entropy_grad_torch(self, param, wires, base, diff_method):
         """Test entropy for a QNode gradient with torch."""
         import torch
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch", diff_method="backprop")
+        @qml.qnode(dev, interface="torch", diff_method=diff_method)
         def circuit_entropy(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
@@ -225,7 +231,10 @@ class TestVonNeumannEntropy:
         entropy.backward()
         grad_entropy = param.grad
 
-        assert qml.math.allclose(grad_entropy, grad_expected_entropy)
+        # higher tolerance for finite-diff method
+        tol = 1e-8 if diff_method == "backprop" else 1e-5
+
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy, atol=tol)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -253,13 +262,14 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_entropy_grad_tf(self, param, wires, base):
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_IsingXX_qnode_entropy_grad_tf(self, param, wires, base, diff_method):
         """Test entropy for a QNode gradient with tf."""
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="tf", diff_method="backprop")
+        @qml.qnode(dev, interface="tf", diff_method=diff_method)
         def circuit_entropy(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
@@ -272,7 +282,10 @@ class TestVonNeumannEntropy:
 
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
 
-        assert qml.math.allclose(grad_entropy, grad_expected_entropy)
+        # higher tolerance for finite-diff method
+        tol = 1e-8 if diff_method == "backprop" else 1e-5
+
+        assert qml.math.allclose(grad_entropy, grad_expected_entropy, atol=tol)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -300,20 +313,23 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_entropy_grad_jax(self, param, wires, base):
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_IsingXX_qnode_entropy_grad_jax(self, param, wires, base, diff_method):
         """Test entropy for a QNode gradient with Jax."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax", diff_method="backprop")
+        @qml.qnode(dev, interface="jax", diff_method=diff_method)
         def circuit_entropy(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
 
         grad_entropy = jax.grad(circuit_entropy)(jax.numpy.array(param))
-
         grad_expected_entropy = expected_entropy_grad_ising_xx(param) / np.log(base)
+
+        # higher tolerance for finite-diff method
+        tol = 1e-8 if diff_method == "backprop" else 1e-5
 
         assert qml.math.allclose(grad_entropy, grad_expected_entropy, rtol=1e-04, atol=1e-05)
 
@@ -344,13 +360,14 @@ class TestVonNeumannEntropy:
     @pytest.mark.parametrize("wires", single_wires_list)
     @pytest.mark.parametrize("param", parameters)
     @pytest.mark.parametrize("base", base)
-    def test_IsingXX_qnode_entropy_grad_jax_jit(self, param, wires, base):
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_IsingXX_qnode_entropy_grad_jax_jit(self, param, wires, base, diff_method):
         """Test entropy for a QNode gradient with Jax-jit."""
         import jax
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="jax-jit", diff_method="backprop")
+        @qml.qnode(dev, interface="jax-jit", diff_method=diff_method)
         def circuit_entropy(x):
             qml.IsingXX(x, wires=[0, 1])
             return qml.vn_entropy(wires=wires, log_base=base)
