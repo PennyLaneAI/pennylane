@@ -419,7 +419,7 @@ def quantum_fisher(qnode, *args, **kwargs):
 
     Args:
         qnode (:class:`.QNode`): A :class:`.QNode` that may have arbitrary return types.
-        args: In case finite shots are used, further arguments according to :func:`~.pennylane.metric_tensor` may be passed.
+        *args: In case finite shots are used, further arguments according to :func:`~.pennylane.metric_tensor` may be passed.
 
     Returns:
         func: The function that computes the quantum fisher information matrix.
