@@ -138,7 +138,7 @@ class Sum(Operator):
         def matrix_gen(summands, wire_order=None):
             """Helper function to construct a generator of matrices"""
             for op in summands:
-                yield expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
+                yield op.matrix(wire_order=wire_order)
 
         if wire_order is None:
             wire_order = self.wires
