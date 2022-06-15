@@ -43,6 +43,9 @@
 * New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics. 
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
+* New parametric qubit ops `qml.CPhaseShift00`, `qml.CPhaseShift01` and `qml.CPhaseShift10` which perform a phaseshift, similar to `qml.ControlledPhaseShift` but on different positions of the state vector.
+  [(#2715)](https://github.com/PennyLaneAI/pennylane/pull/2715)
+
 <h3>Improvements</h3>
 
 * Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
