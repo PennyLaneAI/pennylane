@@ -377,8 +377,7 @@ def classical_fisher(qnode, argnums=0):
     >>> print(qml.jacobian(qml.qinfo.classical_fisher(circ))(params))
     array([[[9.98030491e-01, 3.46944695e-18],
             [1.36541817e-01, 5.15248592e-01]],
-
-            [[1.36541817e-01, 5.15248592e-01],
+           [[1.36541817e-01, 5.15248592e-01],
             [2.16840434e-18, 2.81967252e-01]]]))
 
     """
