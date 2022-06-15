@@ -28,7 +28,6 @@ errors if ``matplotlib`` is not installed.
 _has_mpl = True  # pragma: no cover
 try:  # pragma: no cover
     import matplotlib.pyplot as plt
-    from matplotlib import patheffects
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
     _has_mpl = False
 

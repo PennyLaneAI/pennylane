@@ -19,7 +19,6 @@ import pytest
 import pennylane as qml
 
 plt = pytest.importorskip("matplotlib.pyplot")
-patheffects = pytest.importorskip("matplotlib.patheffects")
 
 
 def test_available_styles():
