@@ -524,10 +524,7 @@ class TestDiffCFIM:
 
         assert np.allclose(result, result_calc, atol=1e-6)
 
-    @pytest.mark.autograd
-    @pytest.mark.torch
-    @pytest.mark.tf
-    @pytest.mark.jax
+    @pytest.mark.all_interfaces
     def test_consistency(self):
         """Testing that the derivative of the cfim is giving consistently the same results for all interfaces.
         Currently failing as (jax and autograd) and (torch and tf) are giving two different results."""
@@ -535,6 +532,8 @@ class TestDiffCFIM:
         import torch
         import jax.numpy as jnp
         import jax
+
+        dev = qml.device("default.qubit", wires=3)
 
         def qfunc(weights):
             qml.RX(weights[0], wires=0)
