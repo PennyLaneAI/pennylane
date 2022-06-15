@@ -42,6 +42,6 @@ def success_prob(n, br):
 
     theta = d * np.round((1 / d) * np.arcsin(np.sqrt(1 / (4 * c))))
 
-    p = c * ((1 + (2 - 4 * c) * np.sin(theta) ** 2) ** 2 + np.sin(2**theta) ** 2)
+    p = c * ((1 + (2 - 4 * c) * np.sin(theta) ** 2) ** 2 + np.sin(2 * theta) ** 2)
 
     return p
