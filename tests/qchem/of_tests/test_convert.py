@@ -29,6 +29,14 @@ openfermion = pytest.importorskip("openfermion")
 openfermionpyscf = pytest.importorskip("openfermionpyscf")
 
 
+def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
+    """Computes the ExpvalCost and catches the initial deprecation warning."""
+
+    with pytest.warns(UserWarning, match="is deprecated,"):
+        res = qml.ExpvalCost(ansatz, hamiltonian, device, **kwargs)
+    return res
+
+
 @pytest.fixture(
     scope="module",
     params=[
@@ -556,7 +564,7 @@ def test_integration_observable_to_vqe_cost(
         for phi, w in zip(phis, wires):
             qml.RX(phi, wires=w)
 
-    dummy_cost = qml.ExpvalCost(dummy_ansatz, vqe_observable, dev)
+    dummy_cost = catch_warn_ExpvalCost(dummy_ansatz, vqe_observable, dev)
     params = [0.1 * i for i in range(num_qubits)]
     res = dummy_cost(params)
 
@@ -666,7 +674,7 @@ def test_integration_mol_file_to_vqe_cost(
 
     phis = np.load(os.path.join(ref_dir, "dummy_ansatz_parameters.npy"))
 
-    dummy_cost = qml.ExpvalCost(dummy_ansatz, vqe_hamiltonian, dev)
+    dummy_cost = catch_warn_ExpvalCost(dummy_ansatz, vqe_hamiltonian, dev)
     res = dummy_cost(phis)
 
     assert np.abs(res - expected_cost) < tol["atol"]
