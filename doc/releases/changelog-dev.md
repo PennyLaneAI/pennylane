@@ -22,7 +22,8 @@
   [(#2710)](https://github.com/PennyLaneAI/pennylane/pull/2710)
   [(#2712)](https://github.com/PennyLaneAI/pennylane/pull/2712)
 
-  The `reduced_dm` function returns a reduced density matrix given a state vector or a density matrix, supporting all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax):
+* The `reduced_dm` function returns a reduced density matrix given a state vector or a density matrix, supporting all 
+  interfaces (Numpy, Autograd, Torch, Tensorflow and Jax):
 
   ```pycon
   >>> x = [1, 0, 1, 0] / np.sqrt(2)
@@ -62,8 +63,8 @@
    [0.+0.j 0.5+0.j]]
   ```
 
-* Von Neumann entropy can now be calculated with the addition of `qml.math.vn_entropy`. It accepts both state vectors and density matrices
-  for all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax):
+* Von Neumann entropy can now be calculated with the addition of `qml.math.vn_entropy`. It accepts both state vectors 
+  and density matrices for all interfaces (Numpy, Autograd, Torch, Tensorflow and Jax):
 
   ```pycon
   >>> x = [1, 0, 0, 1] / np.sqrt(2)
@@ -75,7 +76,7 @@
   0.6931472
   ```
 
-  A Von Neumann entropy measurement process `qml.vn_entropy` can be used as a return in `QNode`s:
+  A Von Neumann entropy measurement process `qml.vn_entropy` can be used as a return in `QNode`:
 
   ```python3
   dev = qml.device("default.qubit", wires=2)
@@ -90,7 +91,8 @@
   >>> circuit_entropy(np.pi/2)
   1.0
   ```
-  The quantum information module also contains a `QNode` (returning states) transform `qml.qinfo.vn_entropy` for the Von Neumann entropy:
+  The quantum information module also contains a `QNode` (returning states) transform `qml.qinfo.vn_entropy` for the 
+  Von Neumann entropy:
 
   ```python3
   dev = qml.device("default.qubit", wires=2)
@@ -104,6 +106,23 @@
   ```pycon
   >>> vn_entropy(circuit, indices=[0], base=2)(np.pi/2)
   1.0
+  ```
+  Both `qml.vn_entropy` and `qml.qinfo.vn_entropy` are differentiable for all interfaces with backpropagation:
+
+  ```python3
+  import jax
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev, interface="jax", diff_method="backprop")
+  def circuit_entropy(x):
+      qml.IsingXX(x, wires=[0, 1])
+      return qml.vn_entropy(wires=[0])
+  ```
+  
+  ```pycon
+  >>> grad_entropy = jax.grad(circuit_entropy)(jax.numpy.array(np.pi/4))
+  0.62322515
   ```
 
 * Support for mutual information computation is also available. The `qml.math.mutual_info`
@@ -147,6 +166,25 @@
   >>> mutual_info_circuit = qml.qinfo.mutual_info(circuit, wires0=[0], wires1=[1])
   >>> mutual_info_circuit(np.pi / 2)
   1.3862943611198906
+  ```
+  
+  Both `qml.mutual_info` and `qml.qinfo.mutual_info` are differentiable for all interfaces with backpropagation:
+
+  ```python3
+  import jax
+  
+  dev = qml.device("default.qubit", wires=2)
+  
+  @qml.qnode(dev, interface="jax", diff_method="backprop")
+  def circuit_mutual_info(param):
+      qml.RY(param, wires=0)
+      qml.CNOT(wires=[0, 1])
+      return qml.mutual_info(wires0=[0], wires1=[1])
+  ```
+  
+  ```pycon
+  >>> grad_mutual = jax.grad(circuit_mutual_info)(jax.numpy.array(np.pi/4))
+  1.2464502
   ```
 
 * Support for the classical and quantum Fisher information matrices, `qml.qinfo.classical_fisher` and `qml.qinfo.quantum_fisher`, respectively, is also added. 
@@ -197,7 +235,7 @@
   >>> qml.math.fidelity(state0, state1)
   0.4999999999999998
   ```
-  The quantum information module also has a differentiable fidelity transform for `QNode`s:
+  The quantum information module also has a differentiable fidelity transform for `QNode`:
 
   ```python
   dev = qml.device('default.qubit', wires=1)
