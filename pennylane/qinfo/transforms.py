@@ -333,7 +333,7 @@ def classical_fisher(qnode, argnums=0):
 
     .. code-block:: python
 
-        H = qml.Hamiltonian(coeffs = [0.5, 0.5], ops = [qml.PauliZ(0), qml.PauliZ(1)])
+        H = qml.Hamiltonian(coeffs=[0.5, 0.5], observables=[qml.PauliZ(0), qml.PauliZ(1)])
 
         @qml.qnode(dev)
         def circ(params):
