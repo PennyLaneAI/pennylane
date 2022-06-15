@@ -104,7 +104,7 @@
   ```
 
   ```pycon
-  >>> vn_entropy(circuit, indices=[0], base=2)(np.pi/2)
+  >>> vn_entropy(circuit_entropy, wires=[0], base=2)(np.pi/2)
   1.0
   ```
   Both `qml.vn_entropy` and `qml.qinfo.vn_entropy` are differentiable for all interfaces with backpropagation:
