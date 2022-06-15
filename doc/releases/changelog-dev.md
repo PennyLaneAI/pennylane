@@ -497,26 +497,22 @@
 * The `IsingXY` gate is now available: 
   [(#2649)](https://github.com/PennyLaneAI/pennylane/pull/2649)
 
-  $$
-  \mathtt{XY}(\phi) = \begin{bmatrix}
-            1 & 0 & 0 & 0 \\
-            0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
-            0 & i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
-            0 & 0 & 0 & 1
-  \end{bmatrix}.
-  $$
+  .. math::  \text{XY}(\phi) = \begin{bmatrix}
+              1 & 0 & 0 & 0 \\
+              0 & \cos(\phi / 2) & i \sin(\phi / 2) & 0 \\
+              0 & i \sin(\phi / 2) & \cos(\phi / 2) & 0 \\
+              0 & 0 & 0 & 1
+    \end{bmatrix}.
 
 * The `qml.ECR` operation to represent the echoed $\mathtt{RZX}(\pi/2)$ gate is now available (see [2105.01063](https://arxiv.org/pdf/2105.01063.pdf)):
   [(#2613)](https://github.com/PennyLaneAI/pennylane/pull/2613)
 
-  $$
-  \mathtt{ECR} = \frac{1}{\sqrt{2}} \begin{bmatrix}
-            0 & 0 & 1 & i \\
-            0 & 0 & i & 1 \\
-            1 & -i & 0 & 0 \\
-            -i & 1 & 0 & 0
-  \end{bmatrix}.
-  $$
+  .. math:: \text{ECR} = \frac{1}{\sqrt{2}} \begin{bmatrix}
+              0 & 0 & 1 & i \\
+              0 & 0 & i & 1 \\
+              1 & -i & 0 & 0 \\
+              -i & 1 & 0 & 0
+    \end{bmatrix}.
 
   This gate is a maximally-entangling gate and is equivalent to a CNOT gate up to single-qubit pre-rotations.
 
