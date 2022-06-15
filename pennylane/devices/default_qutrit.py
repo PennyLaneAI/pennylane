@@ -24,8 +24,7 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import QutritDevice
-from pennylane.wires import Wires, WireError  # pylint: disable=unused-import
-from pennylane.devices.default_qubit import _get_slice  # pylint: disable=unused-import
+from pennylane.wires import WireError   # pylint: disable=unused-import
 from .._version import __version__
 
 # tolerance for numerical errors

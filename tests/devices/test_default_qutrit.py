@@ -101,6 +101,9 @@ dev = qml.device("default.qutrit", wires=1, shots=100000)
 
 
 # TODO: Add tests for expval, var, sample and tensor observables after addition of observables
+# TODO: Add tests to check for dtype preservation after more ops and observables have been added
+# TODO: Add tests for operations that will have custom internal implementations for default.qutrit once added
+# TODO: Add tests for inverse decomposition once decomposible operations are added
 
 
 class TestApply:
@@ -244,11 +247,83 @@ class TestApply:
 
 
 class TestDefaultQutritIntegration:
-    pass
+    """Integration tests for default.qutrit. This test ensures it integrates
+    properly with the PennyLane interface, in particular QNode."""
 
+    def test_defines_correct_capabilities(self):
+        """Test that the device defines the right capabilities"""
 
-class TestDtypePreserved:
-    pass
+        dev = qml.device("default.qutrit", wires=1)
+        cap = dev.capabilities()
+        capabilities = {
+            "model": "qutrit",
+            "supports_finite_shots": True,
+            "supports_tensor_observables": True,
+            "returns_probs": True,
+            "returns_state": True,
+            "supports_reversible_diff": True,
+            "supports_inverse_operations": True,
+            "supports_analytic_computation": True,
+            "supports_broadcasting": False,
+        }
+        assert cap == capabilities
+
+    three_wire_final_state = np.zeros(27)
+    three_wire_final_state[0] = 1
+    three_wire_final_state[4] = 1
+
+    four_wire_final_state = np.zeros(81)
+    four_wire_final_state[0] = 1
+    four_wire_final_state[1] = 1
+    four_wire_final_state[36] = 1
+    four_wire_final_state[37] = 1
+    state_measurement_data = [
+        (1, U_thadamard_01, np.array([1, 1, 0]) / np.sqrt(2)),
+        (2, U_tadd @ np.kron(U_shift, np.eye(3)), [0, 0, 0, 0, 1, 0, 0, 0, 0]),
+        (1, U_shift, [0, 1, 0]),
+        (
+            2,
+            U_tswap @ np.kron(U_thadamard_01, np.eye(3)),
+            np.array([1, 1, 0, 0, 0, 0, 0, 0, 0]) / np.sqrt(2)
+        ),
+        (
+            1,
+            U_clock @ U_shift @ U_thadamard_01,
+            np.array([0, OMEGA, OMEGA**2]) / np.sqrt(2)
+        ),
+        (
+            3,
+            np.kron(np.eye(3), U_tadd) @ np.kron(np.eye(3), np.kron(U_thadamard_01, np.eye(3))),
+            three_wire_final_state / np.sqrt(2)
+        ),
+        (
+            4,
+            np.kron(U_tadd, U_tswap) @ np.kron(U_thadamard_01, np.eye(27)) @ np.kron(np.eye(9), np.kron(U_thadamard_01, np.eye(3))),
+            four_wire_final_state / 2.0
+        ),
+    ]
+
+    @pytest.mark.parametrize("num_wires, mat, expected_out", state_measurement_data)
+    def test_qutrit_circuit_state_measurement(self, num_wires, mat, expected_out, tol):
+        """Tests if state returned by state function is correct
+        """
+        dev = qml.device("default.qutrit", wires=num_wires)
+
+        @qml.qnode(dev)
+        def circuit(mat):
+            qml.QutritUnitary(mat, wires=list(range(num_wires)))
+            return qml.state()
+
+        state = circuit(mat)
+        assert np.allclose(state, expected_out, atol=tol)
+
+    # TODO: Add tests that use expval, var to test qutrit circuits after observables
+    # are implemented.
+
+    # TODO: Add tests for verifying correct behaviour of different observables on default
+    # qutrit device.
+
+    # TODO: Add tests for devices with shots for testing correct behaviour of sample
 
 
 class TestProbabilityIntegration:
@@ -372,14 +447,6 @@ class TestWiresIntegration:
 
         # The number of hits increased
         assert dev.map_wires.cache_info().hits > original_hits
-
-
-class TestApplyOps:
-    pass
-
-
-class TestInverseDecomposition:
-    pass
 
 
 class TestApplyOperationUnit:

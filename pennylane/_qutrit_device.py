@@ -18,19 +18,14 @@ This module contains the :class:`QutritDevice` abstract base class.
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
 # pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
-import abc
 import itertools
 
 import numpy as np
 
 import pennylane as qml
-from pennylane import DeviceError
 from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane import QubitDevice
-from pennylane.math import multiply as qmlmul
-from pennylane.wires import Wires, WireError  # pylint: disable=unused-import
-
-from pennylane.measurements import MeasurementProcess  # pylint: disable=unused-import
+from pennylane.wires import Wires   # pylint: disable=unused-import
 
 
 class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
