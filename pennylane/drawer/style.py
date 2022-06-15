@@ -59,7 +59,6 @@ def _black_white():
     plt.rcParams["lines.color"] = "black"
     plt.rcParams["text.color"] = "black"
     plt.rcParams["path.sketch"] = None
-    plt.rcParams["path.effects"] = []
 
 
 @_needs_mpl
@@ -75,7 +74,6 @@ def _black_white_dark():
     plt.rcParams["lines.color"] = "white"
     plt.rcParams["text.color"] = "white"
     plt.rcParams["path.sketch"] = None
-    plt.rcParams["path.effects"] = []
 
 
 @_needs_mpl
@@ -93,7 +91,6 @@ def _solarized_light():
     plt.rcParams["text.color"] = "#586e75"
     plt.rcParams["patch.force_edgecolor"] = True
     plt.rcParams["path.sketch"] = None
-    plt.rcParams["path.effects"] = []
 
 
 @_needs_mpl
@@ -111,7 +108,6 @@ def _solarized_dark():
     plt.rcParams["text.color"] = "#2aa198"
     plt.rcParams["patch.force_edgecolor"] = True
     plt.rcParams["path.sketch"] = None
-    plt.rcParams["path.effects"] = []
 
 
 @_needs_mpl
@@ -130,7 +126,6 @@ def _sketch():
     plt.rcParams["text.color"] = "black"
     plt.rcParams["font.weight"] = "bold"
     plt.rcParams["path.sketch"] = (1, 100, 2)
-    plt.rcParams["path.effects"] = []
 
 
 @_needs_mpl
@@ -150,7 +145,6 @@ def _sketch_dark():
     plt.rcParams["text.color"] = "white"
     plt.rcParams["font.weight"] = "bold"
     plt.rcParams["path.sketch"] = (1, 100, 2)
-    plt.rcParams["path.effects"] = []
 
 
 _styles_map = {

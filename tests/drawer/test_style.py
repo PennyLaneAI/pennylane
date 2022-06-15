@@ -45,6 +45,7 @@ def test_black_white_style():
     assert plt.rcParams["patch.force_edgecolor"]  # = True
     assert plt.rcParams["lines.color"] == "black"
     assert plt.rcParams["text.color"] == "black"
+    assert plt.rcParams["path.sketch"] == None
 
     plt.style.use("default")
 
@@ -62,6 +63,7 @@ def test_black_white_style_dark():
     assert plt.rcParams["patch.force_edgecolor"]
     assert plt.rcParams["lines.color"] == "white"
     assert plt.rcParams["text.color"] == "white"
+    assert plt.rcParams["path.sketch"] == None
 
     plt.style.use("default")
 
@@ -82,7 +84,6 @@ def test_sketch_style():
     assert plt.rcParams["text.color"] == "black"
     assert plt.rcParams["font.weight"] == "bold"
     assert plt.rcParams["path.sketch"] == (1, 100, 2)
-    assert len(plt.rcParams["path.effects"]) == 0
 
     plt.style.use("default")
 
@@ -95,8 +96,8 @@ def test_sketch_style_dark():
     almost_black = "#151515"  # less harsh than full black
     assert plt.rcParams["figure.facecolor"] == almost_black
     assert plt.rcParams["savefig.facecolor"] == almost_black
-    assert plt.rcParams["axes.facecolor"] == "#F9E69A"
-    assert plt.rcParams["patch.facecolor"] == "#9EDED1"
+    assert plt.rcParams["axes.facecolor"] == "#EBAAC1"
+    assert plt.rcParams["patch.facecolor"] == "#B0B5DC"
     assert plt.rcParams["patch.edgecolor"] == "white"
     assert plt.rcParams["patch.linewidth"] == 3.0
     assert plt.rcParams["patch.force_edgecolor"]  # = True
@@ -104,7 +105,6 @@ def test_sketch_style_dark():
     assert plt.rcParams["text.color"] == "white"
     assert plt.rcParams["font.weight"] == "bold"
     assert plt.rcParams["path.sketch"] == (1, 100, 2)
-    assert len(plt.rcParams["path.effects"]) == 0
     plt.style.use("default")
 
 
@@ -121,6 +121,7 @@ def test_solarized_light_style():
     assert plt.rcParams["lines.color"] == "#657b83"
     assert plt.rcParams["text.color"] == "#586e75"
     assert plt.rcParams["patch.force_edgecolor"]  # = True
+    assert plt.rcParams["path.sketch"] == None
 
     plt.style.use("default")
 
@@ -138,6 +139,7 @@ def test_solarized_dark_style():
     assert plt.rcParams["lines.color"] == "#839496"
     assert plt.rcParams["text.color"] == "#2aa198"
     assert plt.rcParams["patch.force_edgecolor"]  # = True
+    assert plt.rcParams["path.sketch"] == None
 
     plt.style.use("default")
 
