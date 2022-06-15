@@ -17,7 +17,7 @@ This module contains the functions needed for two-electron tensor factorization.
 from pennylane import numpy as np
 
 
-def factorize(two, tol_first, tol_second):
+def factorize(two, tol_factor=1.0e-5, tol_eigval=1.0e-5):
     r"""Return the double-factorized form of a two-electron tensor.
 
     The two-electron tensor :math:`V`, in
@@ -30,8 +30,8 @@ def factorize(two, tol_first, tol_second):
     Args:
         two (array[array[float]]): the two-electron repulsion tensor in the molecular orbital basis
             arranged in chemist notation
-        tol_first (float): threshold error value for discarding the negligible factors
-        tol_second (float): threshold error value for discarding the negligible factor eigenvalues
+        tol_factor (float): threshold error value for discarding the negligible factors
+        tol_eigval (float): threshold error value for discarding the negligible factor eigenvalues
 
     Returns:
         tuple(array[array[float]], list[array[float]], list[array[float]]): tuple containing
@@ -140,7 +140,7 @@ def factorize(two, tol_first, tol_second):
     two = two.reshape(n * n, n * n)
 
     eigvals_r, eigvecs_r = np.linalg.eigh(two)
-    eigvals_r = np.array([val for val in eigvals_r if abs(val) > tol_first])
+    eigvals_r = np.array([val for val in eigvals_r if abs(val) > tol_factor])
 
     eigvecs_r = eigvecs_r[:, -len(eigvals_r) :]
 
@@ -158,7 +158,7 @@ def factorize(two, tol_first, tol_second):
     eigvals_m = []
     eigvecs_m = []
     for n, eigval in enumerate(eigvals):
-        idx = [i for i, v in enumerate(eigval) if abs(v) > tol_second]
+        idx = [i for i, v in enumerate(eigval) if abs(v) > tol_eigval]
         eigvals_m.append(eigval[idx])
         eigvecs_m.append(eigvecs[n][idx])
 
