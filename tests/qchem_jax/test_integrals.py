@@ -83,7 +83,7 @@ class TestParams:
         r"""Test that test_generate_params returns correct basis set parameters."""
         params = [alpha, coeff, r]
         args = [p for p in [alpha, coeff, r]]
-        basis_params = qchem.integrals._generate_params(params, args)
+        basis_params = qchem.integrals._generate_params(params)
 
         assert np.allclose(basis_params, (alpha, coeff, r))
 
@@ -247,7 +247,7 @@ class TestOverlap:
         basis_b = mol.basis_set[1]
         args = [p for p in [alpha, coef, r]]
 
-        o = qchem.overlap_integral(basis_a, basis_b)(*args)
+        o = qchem.overlap_integral(args, basis_a, basis_b)
         assert np.allclose(o, o_ref)
 
     @pytest.mark.parametrize(
@@ -273,8 +273,8 @@ class TestOverlap:
         basis_b = mol.basis_set[1]
         args = [mol.alpha, mol.coeff]
 
-        g_alpha = jax.grad(qchem.overlap_integral(basis_a, basis_b), argnums=0)(*args)
-        g_coeff = jax.grad(qchem.overlap_integral(basis_a, basis_b), argnums=1)(*args)
+        g_alpha = jax.grad(qchem.overlap_integral, argnums=0)(args, basis_a, basis_b)[0]
+        g_coeff = jax.grad(qchem.overlap_integral, argnums=0)(args, basis_a, basis_b)[1]
 
         # compute overlap gradients with respect to alpha and coeff using finite diff
         delta = 0.0001
@@ -288,16 +288,16 @@ class TestOverlap:
                 alpha_plus = alpha.copy()
                 alpha_minus[i][j] = alpha_minus[i][j] - delta
                 alpha_plus[i][j] = alpha_plus[i][j] + delta
-                o_minus = qchem.overlap_integral(basis_a, basis_b)(*[alpha_minus, coeff])
-                o_plus = qchem.overlap_integral(basis_a, basis_b)(*[alpha_plus, coeff])
+                o_minus = qchem.overlap_integral([alpha_minus, coeff], basis_a, basis_b)
+                o_plus = qchem.overlap_integral([alpha_plus, coeff], basis_a, basis_b)
                 g_ref_alpha[i][j] = (o_plus - o_minus) / (2 * delta)
 
                 coeff_minus = coeff.copy()
                 coeff_plus = coeff.copy()
                 coeff_minus[i][j] = coeff_minus[i][j] - delta
                 coeff_plus[i][j] = coeff_plus[i][j] + delta
-                o_minus = qchem.overlap_integral(basis_a, basis_b)(*[alpha, coeff_minus])
-                o_plus = qchem.overlap_integral(basis_a, basis_b)(*[alpha, coeff_plus])
+                o_minus = qchem.overlap_integral([alpha, coeff_minus], basis_a, basis_b)
+                o_plus = qchem.overlap_integral([alpha, coeff_plus], basis_a, basis_b)
                 g_ref_coeff[i][j] = (o_plus - o_minus) / (2 * delta)
 
         assert np.allclose(g_alpha, g_ref_alpha)
