@@ -351,7 +351,7 @@ class Controlled(operation.Operator):
     def is_hermitian(self):
         return self.base.is_hermitian
 
-    # pylint: disable=invalid-overridden-method
+    # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
     def has_matrix(self):
         return self.base.has_matrix
