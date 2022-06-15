@@ -2581,7 +2581,7 @@ class IsingZZ(Operation):
 
         * :math:`ZZ(0) = I`;
         * :math:`ZZ(\pi) = - (Z \otimes Z)`;
-        * :math:`ZZ(2\pi) = - I;
+        * :math:`ZZ(2\pi) = - I`;
 
     **Details:**
 
@@ -2743,7 +2743,7 @@ class IsingXY(Operation):
 
         * :math:`XY(0) = I`;
         * :math:`XY(\frac{\pi}{2}) = \sqrt{iSWAP}`;
-        * :math:`XY(\pi) = iSWAP;
+        * :math:`XY(\pi) = iSWAP`;
 
     **Details:**
 
