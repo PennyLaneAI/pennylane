@@ -39,9 +39,12 @@ def test_black_white_style():
     """Tests the black white style sets ``plt.rcParams`` with correct values"""
 
     qml.drawer.use_style("black_white")
-    assert plt.rcParams["patch.linewidth"] == 3.0
+    assert plt.rcParams["savefig.facecolor"] == "white"
+    assert plt.rcParams["figure.facecolor"] == "white"
+    assert plt.rcParams["axes.facecolor"] == "white"
     assert plt.rcParams["patch.facecolor"] == "white"
     assert plt.rcParams["patch.edgecolor"] == "black"
+    assert plt.rcParams["patch.linewidth"] == 3.0
     assert plt.rcParams["patch.force_edgecolor"]  # = True
     assert plt.rcParams["lines.color"] == "black"
     assert plt.rcParams["text.color"] == "black"
@@ -56,11 +59,12 @@ def test_black_white_style_dark():
     qml.drawer.use_style("black_white_dark")
 
     almost_black = "#151515"
+    assert plt.rcParams["savefig.facecolor"] == almost_black
     assert plt.rcParams["figure.facecolor"] == almost_black
     assert plt.rcParams["axes.facecolor"] == almost_black
     assert plt.rcParams["patch.edgecolor"] == "white"
     assert plt.rcParams["patch.facecolor"] == almost_black
-    assert plt.rcParams["patch.force_edgecolor"]
+    assert plt.rcParams["patch.force_edgecolor"]  # = True
     assert plt.rcParams["lines.color"] == "white"
     assert plt.rcParams["text.color"] == "white"
     assert plt.rcParams["path.sketch"] == None
