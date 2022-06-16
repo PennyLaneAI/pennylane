@@ -14,4 +14,11 @@
 """
 This subpackage provides the functionality for algorithm resource estimation.
 """
-from .first_quantization import _cost_qrom, _cost_qrom_min, qubit_cost, unitary_cost
+from .first_quantization import (
+    _cost_qrom,
+    _cost_qrom_min,
+    estimation_cost,
+    gate_cost,
+    qubit_cost,
+    unitary_cost,
+)

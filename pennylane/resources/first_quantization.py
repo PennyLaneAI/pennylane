@@ -122,6 +122,58 @@ def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
     return int(np.ceil(cost))
 
 
+def estimation_cost(lamb, error):
+    r"""Return the number of calls to the unitary needed to achieve the desired error in quantum
+    phase estimation.
+
+    Args:
+        lamb (float): 1-norm of a second-quantized Hamiltonian
+        error (float): target error in the algorithm
+
+    Returns:
+        int: number of calls to unitary
+
+    **Example**
+
+    >>> cost = estimation_cost(72.49779513025341, 0.001)
+    >>> print(cost)
+    113880
+    """
+    return int(np.ceil(np.pi * lamb / (2 * error)))
+
+
+def gate_cost(n, eta, omega, error, lamb, br=7, charge=0):
+    r"""Return the total number of Toffoli gates needed to implement the first quantization
+    algorithm.
+
+    Args:
+        n (int): number of basis states
+        eta (int): number of electrons
+        omega (float): unit cell volume
+        error (float): target error in the algorithm
+        lamb (float): 1-norm of the Hamiltonian
+        br (int): number of bits for ancilla qubit rotation
+        charge (int): total electric charge of the system
+
+    Returns:
+        int: the number of Toffoli gates needed to implement the first quantization algorithm
+
+    **Example**
+
+    >>> n = 100000
+    >>> eta = 156
+    >>> omega = 169.69608
+    >>> error = 0.01
+    >>> lamb = 5128920.595980267
+    >>> gate_cost(n, eta, omega, error, lamb)
+    10327614069516
+    """
+    e_cost = estimation_cost(lamb, error)
+    u_cost = unitary_cost(n, eta, omega, error, lamb, br, charge)
+
+    return e_cost * u_cost
+
+
 def qubit_cost(n, eta, omega, error, lamb, charge=0):
     r"""Return the number of ancilla qubits needed to implement the first quantization algorithm.
     ￼
