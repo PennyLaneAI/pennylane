@@ -143,14 +143,14 @@ def mutual_info(qnode, wires0, wires1, base=None):
 
     **Example**
 
-        .. code-block:: python
+    .. code-block:: python
 
-            dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
-            @qml.qnode(dev)
-            def circuit(x):
-                qml.IsingXX(x, wires=[0, 1])
-                return qml.state()
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
 
     >>> mutual_info_circuit = qinfo.mutual_info(circuit, wires0=[0], wires1=[1])
     >>> mutual_info_circuit(np.pi/2)
@@ -158,12 +158,12 @@ def mutual_info(qnode, wires0, wires1, base=None):
     >>> x = np.array(0.4, requires_grad=True)
     >>> mutual_info_circuit(x)
     0.3325090393262875
-    >>> qml.grad(mutual_info_circuit)(0.4)
+    >>> qml.grad(mutual_info_circuit)(np.array(0.4, requires_grad=True))
     1.2430067731198946
 
     .. seealso::
 
-        :func:`~.qinfo.vn_entropy_transform`
+        :func:`~.qinfo.vn_entropy`
     """
 
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
