@@ -62,7 +62,7 @@
   [(#2663)](https://github.com/PennyLaneAI/pennylane/pull/2663)
   [(#2684)](https://github.com/PennyLaneAI/pennylane/pull/2684)
   [(#2688)](https://github.com/PennyLaneAI/pennylane/pull/2688)
-  
+
   A `reduced_dm` function that can handle both state vectors and density matrix, to return a reduced density matrix:
 
   ```pycon
@@ -302,13 +302,6 @@
   >>> qml.qinfo.fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.2))
   0.9905158135644924
   ```
-
-
-* Operators have new attributes `ndim_params` and `batch_size`, and `QuantumTapes` have the new
-  attribute `batch_size`.
-  - `Operator.ndim_params` contains the expected number of dimensions per parameter of the operator,
-  - `Operator.batch_size` contains the size of an additional parameter broadcasting axis, if present,
-  - `QuantumTape.batch_size` contains the `batch_size` of its operations (see below).
 
 * New `solarized_light` and `solarized_dark` styles available for drawing circuit diagram graphics.
   [(#2662)](https://github.com/PennyLaneAI/pennylane/pull/2662)
