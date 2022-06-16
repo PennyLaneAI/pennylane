@@ -975,7 +975,9 @@ class TestMatrix:
         assert np.allclose(qml.IsingXY(z, wires=[0, 1]).matrix(), np.identity(4), atol=tol, rtol=0)
 
         def get_expected(theta):
-            expected = np.array([np.diag([1, np.cos(t / 2), np.cos(t / 2), 1]) for t in theta], dtype=np.complex128)
+            expected = np.array(
+                [np.diag([1, np.cos(t / 2), np.cos(t / 2), 1]) for t in theta], dtype=np.complex128
+            )
             sin_coeff = 1j * np.sin(theta / 2)
             expected[:, 2, 1] = sin_coeff
             expected[:, 1, 2] = sin_coeff
@@ -1009,10 +1011,10 @@ class TestMatrix:
         """Test broadcasted eigenvalues computation for IsingXY"""
         phi = np.linspace(-np.pi, np.pi, 10)
         evs = qml.IsingXY.compute_eigvals(phi)
-        c = np.cos(phi/2)
-        s = np.sin(phi/2)
+        c = np.cos(phi / 2)
+        s = np.sin(phi / 2)
         ones = np.ones_like(c)
-        expected = np.stack([c+1j*s, c-1j*s, ones, ones], axis=-1)
+        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
         assert qml.math.allclose(evs, expected)
 
     @pytest.mark.tf
@@ -1038,10 +1040,10 @@ class TestMatrix:
 
         phi = np.linspace(-np.pi, np.pi, 10)
         evs = qml.IsingXY.compute_eigvals(tf.Variable(phi))
-        c = np.cos(phi/2)
-        s = np.sin(phi/2)
+        c = np.cos(phi / 2)
+        s = np.sin(phi / 2)
         ones = np.ones_like(c)
-        expected = np.stack([c+1j*s, c-1j*s, ones, ones], axis=-1)
+        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
         assert qml.math.allclose(evs, expected)
 
     @pytest.mark.torch
@@ -1067,10 +1069,10 @@ class TestMatrix:
 
         phi = np.linspace(-np.pi, np.pi, 10)
         evs = qml.IsingXY.compute_eigvals(torch.tensor(phi, requires_grad=True))
-        c = np.cos(phi/2)
-        s = np.sin(phi/2)
+        c = np.cos(phi / 2)
+        s = np.sin(phi / 2)
         ones = np.ones_like(c)
-        expected = np.stack([c+1j*s, c-1j*s, ones, ones], axis=-1)
+        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
         assert qml.math.allclose(evs.detach().numpy(), expected)
 
     @pytest.mark.jax
@@ -1096,10 +1098,10 @@ class TestMatrix:
 
         phi = np.linspace(-np.pi, np.pi, 10)
         evs = qml.IsingXY.compute_eigvals(jax.numpy.array(phi))
-        c = np.cos(phi/2)
-        s = np.sin(phi/2)
+        c = np.cos(phi / 2)
+        s = np.sin(phi / 2)
         ones = np.ones_like(c)
-        expected = np.stack([c+1j*s, c-1j*s, ones, ones], axis=-1)
+        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
         assert qml.math.allclose(evs, expected)
 
     def test_isingxx_broadcasted(self, tol):
