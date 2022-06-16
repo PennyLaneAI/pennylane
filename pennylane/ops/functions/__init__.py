@@ -13,6 +13,14 @@
 # limitations under the License.
 """
 This module contains functions that act on operators and tapes.
+
+.. autosummary::
+    :toctree: api
+
+    ~eigvals
+    ~generator
+    ~matrix
+
 """
 from .eigvals import eigvals
 from .generator import generator
