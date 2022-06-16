@@ -21,8 +21,7 @@ from pennylane.devices import DefaultQubit
 
 
 def reduced_dm(qnode, wires):
-    """Compute the reduced density matrix from a :class:`~.QNode` returning
-    :func:`~.state`.
+    """Compute the reduced density matrix from a :class:`~.QNode` returning :func:`~.state`.
 
     Args:
         qnode (QNode): A :class:`~.QNode` returning :func:`~.state`.
@@ -83,17 +82,24 @@ def vn_entropy(qnode, wires, base=None):
 
     **Example**
 
-        .. code-block:: python
+    It is possible to obtain the entropy of a subsystem from a :class:`.QNode` returning a :func:`~.state`.
 
-            dev = qml.device("default.qubit", wires=2)
-            @qml.qnode(dev)
-            def circuit(x):
-                qml.IsingXX(x, wires=[0, 1])
-                return qml.state()
+    .. code-block:: python
+
+        dev = qml.device("default.qubit", wires=2)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
 
     >>> vn_entropy(circuit, wires=[0])(np.pi/2)
     0.6931472
 
+    The function is differentiable with backpropagation for all interfaces, e.g.:
+
+    >>> param = pennylane.numpy.array(np.pi/4, requires_grad=True)
+    >>> qml.grad(vn_entropy(circuit, wires=[0]))(param)
+    0.6232252401402305
     """
 
     density_matrix_qnode = qml.qinfo.reduced_dm(qnode, qnode.device.wires)
@@ -143,14 +149,17 @@ def mutual_info(qnode, wires0, wires1, base=None):
 
     **Example**
 
-        .. code-block:: python
+    It is possible to obtain the mutual information of two subsystems from a
+    :class:`.QNode` returning a :func:`~.state`.
 
-            dev = qml.device("default.qubit", wires=2)
+    .. code-block:: python
 
-            @qml.qnode(dev)
-            def circuit(x):
-                qml.IsingXX(x, wires=[0, 1])
-                return qml.state()
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.state()
 
     >>> mutual_info_circuit = qinfo.mutual_info(circuit, wires0=[0], wires1=[1])
     >>> mutual_info_circuit(np.pi/2)
