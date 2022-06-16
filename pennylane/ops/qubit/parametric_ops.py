@@ -2925,6 +2925,7 @@ class PSWAP(Operation):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = "A"
+    grad_recipe = ([[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]],)
 
     def __init__(self, phi, wires, do_queue=True, id=None):
         super().__init__(phi, wires=wires, do_queue=do_queue, id=id)
@@ -2984,7 +2985,17 @@ class PSWAP(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        return qml.math.diag([1, qml.math.exp(1j * phi), qml.math.exp(1j * phi), 1])[[0, 2, 1, 3]]
+        e = qml.math.exp(1j * phi)
+
+        return qml.math.stack(
+            [
+                stack_last([1, 0, 0, 0]),
+                stack_last([0, 0, e, 0]),
+                stack_last([0, e, 0, 0]),
+                stack_last([0, 0, 0, 1]),
+            ],
+            axis=-2,
+        )
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
