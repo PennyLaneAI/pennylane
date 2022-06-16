@@ -65,3 +65,57 @@ def _cost_qrom_min(lz):
     cost = min(_cost_qrom(np.floor(n), lz), _cost_qrom(np.ceil(n), lz))
 
     return cost
+
+
+def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
+    r"""Return the number of Toffoli gates needed to implement the qubitization unitary operator.
+    ￼
+    The expression for computing the cost is taken from
+    [`arXiv:2105.12767 <https://arxiv.org/abs/2105.12767>`_].
+
+    Args:
+        n (int): number of basis states
+        eta (int): number of electrons
+        omega (float): unit cell volume
+        error (float): target error in the algorithm
+        lamb (float): 1-norm of the Hamiltonian
+        br (int): number of bits for ancilla qubit rotation
+        charge (int): total electric charge of the system
+
+    Returns:
+        int: the number of Toffoli gates to implement the qubitization unitary operator
+
+    **Example**
+
+    >>> n = 100000
+    >>> eta = 156
+    >>> omega = 169.69608
+    >>> error = 0.01
+    >>> lamb = 5128920.595980267
+    >>> _cost_qrom_min(100)
+    12819
+    """
+    l_z = eta + charge
+    l_nu = 4 * np.pi * n ** (1 / 3)
+
+    n_eta = np.ceil(np.log2(eta))
+    n_etaz = np.ceil(np.log2(eta + 2 * l_z))
+
+    n_p = np.ceil(np.log2(n ** (1 / 3) + 1))
+    n_t = np.log2(np.pi * lamb / (0.01 * error))
+    n_r = np.log2((eta * l_z * l_nu) / (0.01 * error * omega ** (1 / 3)))
+    n_m = np.log2(
+        (2 * eta) / (0.01 * error * omega ** (1 / 3))
+        + (eta - 1 + 2 * l_z)
+        + (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
+    )
+
+    e_r = _cost_qrom_min(l_z)
+
+    cost = 2 * (n_t + 4 * n_etaz + 2 * br - 12) + 14 * n_eta + 8 * br - 36
+    cost += 3 * n_p**2 + 15 * n_p - 7 + 4 * n_m * (n_p + 1)
+    cost += l_z + e_r + 2 * (2 * n_p + 2 * br - 7) + 12 * eta * n_p
+    cost += 5 * (n_p - 1) + 2 + 24 * n_p + 6 * n_p + n_r + 18
+    cost += n_etaz + 2 * n_eta + 6 * n_p + n_m + 16  # + polylog 1/epsilon
+
+    return int(np.ceil(cost))

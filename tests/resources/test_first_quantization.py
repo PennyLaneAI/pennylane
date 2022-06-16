@@ -49,3 +49,16 @@ def test_cost_qrom_min(lz, cost_ref):
     cost = qml.resources._cost_qrom_min(lz)
 
     assert cost == cost_ref
+
+
+@pytest.mark.parametrize(
+    ("n", "eta", "omega", "error", "lamb", "br", "charge", "cost_ref"),
+    [
+        (100000, 156, 169.69608, 0.01, 5128920.595980267, 7, 0, 12819),
+    ],
+)
+def test_unitary_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
+    r"""Test that unitary_cost returns the correct value."""
+    cost = qml.resources.unitary_cost(n, eta, omega, error, lamb, br, charge)
+
+    assert cost == cost_ref
