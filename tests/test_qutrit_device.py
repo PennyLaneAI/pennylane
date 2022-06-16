@@ -623,7 +623,7 @@ class TestActiveWires:
 
 
 class TestCapabilities:
-    """Test that a default qutrit device defines capabilities that all devices inheriting
+    """Test that a qutrit device defines capabilities that all devices inheriting
     from it will automatically have."""
 
     def test_defines_correct_capabilities(self):
