@@ -99,7 +99,6 @@ the measurement results always coincide, and the lists are therefore equal:
 
 >>> np.all(result[0] == result[1])
 True
- 
 
 Tensor observables
 ------------------
