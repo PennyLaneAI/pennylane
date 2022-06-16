@@ -19,6 +19,15 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+def catch_warn_ExpvalCost(ansatz, hamiltonian, device, **kwargs):
+    """Computes the ExpvalCost and catches the initial deprecation warning."""
+
+    with pytest.warns(UserWarning, match="is deprecated,"):
+
+        res = qml.ExpvalCost(ansatz, hamiltonian, device, **kwargs)
+    return res
+
+
 class TestExceptions:
     """Test exceptions are raised for incorrect usage"""
 
@@ -30,7 +39,7 @@ class TestExceptions:
         def ansatz(x, **kwargs):
             qml.RX(x, wires=0)
 
-        expval_cost = qml.ExpvalCost(ansatz, H, dev)
+        expval_cost = catch_warn_ExpvalCost(ansatz, H, dev)
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
@@ -54,7 +63,7 @@ class TestExceptions:
         def ansatz(x, **kwargs):
             qml.RX(x, wires=0)
 
-        expval_cost = qml.ExpvalCost(ansatz, H, dev)
+        expval_cost = catch_warn_ExpvalCost(ansatz, H, dev)
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, stepsize=100.0)
 
@@ -110,7 +119,7 @@ class TestSingleShotGradientIntegration:
     def ansatz(x, **kwargs):
         qml.RX(x, wires=0)
 
-    expval_cost = qml.ExpvalCost(ansatz, H, dev)
+    expval_cost = catch_warn_ExpvalCost(ansatz, H, dev)
 
     @qml.qnode(dev)
     def qnode(x):
@@ -182,7 +191,7 @@ class TestSingleShotGradientIntegration:
         qml.RY(x[1, 1], wires=0)
         qml.RZ(x[1, 2], wires=0)
 
-    expval_cost = qml.ExpvalCost(ansatz, H, dev)
+    expval_cost = catch_warn_ExpvalCost(ansatz, H, dev)
     qnode = expval_cost.qnodes[0]
 
     @pytest.mark.parametrize("cost_fn", [qnode, expval_cost])
@@ -408,7 +417,7 @@ class TestWeightedRandomSampling:
         dev = qml.device("default.qubit", wires=2, shots=100)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
-        expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
+        expval_cost = catch_warn_ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
         weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
@@ -428,7 +437,7 @@ class TestWeightedRandomSampling:
         dev = qml.device("default.qubit", wires=2, shots=100)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
-        expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
+        expval_cost = catch_warn_ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
         weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling=None)
@@ -443,7 +452,7 @@ class TestWeightedRandomSampling:
         dev = qml.device("default.qubit", wires=2, shots=100)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliZ(1)])
 
-        expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
+        expval_cost = catch_warn_ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
         weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10, term_sampling="uniform_random_sampling")
@@ -458,7 +467,7 @@ class TestWeightedRandomSampling:
         dev = qml.device("default.qubit", wires=2, shots=100)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
 
-        expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
+        expval_cost = catch_warn_ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
         weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
@@ -479,7 +488,7 @@ class TestWeightedRandomSampling:
         dev = qml.device("default.qubit", wires=2, shots=100)
         H = qml.Hamiltonian(coeffs, [qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0) @ qml.PauliZ(1)])
 
-        expval_cost = qml.ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
+        expval_cost = catch_warn_ExpvalCost(qml.templates.StronglyEntanglingLayers, H, dev)
         weights = np.random.random(qml.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
@@ -544,7 +553,7 @@ class TestOptimization:
             qml.Rot(*x[3], wires=1)
             qml.CNOT(wires=[0, 1])
 
-        cost = qml.ExpvalCost(ansatz, H, dev)
+        cost = catch_warn_ExpvalCost(ansatz, H, dev)
         params = np.random.random((4, 3), requires_grad=True)
         initial_loss = cost(params)
 
@@ -594,7 +603,7 @@ class TestStepAndCost:
             qml.RY(x[1], wires=0)
 
         H = qml.Hamiltonian([1.0], [qml.PauliZ(0)])
-        circuit = qml.ExpvalCost(ansatz, H, dev)
+        circuit = catch_warn_ExpvalCost(ansatz, H, dev)
         params = np.array([0.1, 0.3], requires_grad=True)
         opt = qml.ShotAdaptiveOptimizer(min_shots=10)
 
