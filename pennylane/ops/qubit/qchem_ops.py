@@ -121,7 +121,7 @@ class SingleExcitation(Operation):
         mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
         diag = qml.math.einsum("...,ij->...ij", c, mask_c)
         off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
-        return diag + off_diag + np.eye(4)
+        return diag + off_diag + qml.math.eye(4, like=diag)
 
     @staticmethod
     def compute_decomposition(phi, wires):
