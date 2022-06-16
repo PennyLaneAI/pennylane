@@ -310,9 +310,7 @@ class RZ(Operation):
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
-        p = qml.math.exp(-0.5j * theta)
-
-        return stack_last([p, qml.math.conj(p)])
+        return qml.math.exp(qml.math.einsum("...,i->...i", theta, [-0.5j, 0.5j]))
 
     def adjoint(self):
         return RZ(-self.data[0], wires=self.wires)
@@ -430,9 +428,7 @@ class PhaseShift(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        p = qml.math.exp(1j * phi)
-
-        return stack_last([qml.math.ones_like(p), p])
+        return qml.math.exp(qml.math.einsum("...,i->...i", phi, [0j, 1j]))
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -579,9 +575,7 @@ class ControlledPhaseShift(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        exp_part = qml.math.exp(1j * phi)
-        ones = qml.math.ones_like(exp_part)
-        return stack_last([ones, ones, ones, exp_part])
+        return qml.math.exp(qml.math.einsum("...,i->...i", phi, [0j, 0j, 0j, 1j]))
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -853,12 +847,8 @@ class MultiRZ(Operation):
             theta = qml.math.cast_like(theta, 1j)
             eigs = qml.math.cast_like(eigs, 1j)
 
-        if qml.math.ndim(theta) > 0:
-            eigvals = [qml.math.exp(-0.5j * t * eigs) for t in theta]
-            return qml.math.stack([qml.math.diag(eig) for eig in eigvals])
-
-        eigvals = qml.math.exp(-0.5j * theta * eigs)
-        return qml.math.diag(eigvals)
+        phases = qml.math.exp(qml.math.einsum("...,i->...i", -0.5j * theta, eigs))
+        return qml.math.einsum("...i,il->...il", phases, np.eye(2**num_wires))
 
     def generator(self):
         return -0.5 * functools.reduce(matmul, [qml.PauliZ(w) for w in self.wires])
@@ -898,10 +888,7 @@ class MultiRZ(Operation):
             theta = qml.math.cast_like(theta, 1j)
             eigs = qml.math.cast_like(eigs, 1j)
 
-        if qml.math.ndim(theta) > 0:
-            return qml.math.exp(qml.math.tensordot(-0.5j * theta, eigs, axes=0))
-
-        return qml.math.exp(-0.5j * theta * eigs)
+        return qml.math.exp(qml.math.einsum("...,i->...i", -0.5j * theta, eigs))
 
     @staticmethod
     def compute_decomposition(
@@ -1678,10 +1665,7 @@ class CRZ(Operation):
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
-        exp_part = qml.math.exp(-0.5j * theta)
-        o = qml.math.ones_like(exp_part)
-
-        return stack_last([o, o, exp_part, qml.math.conj(exp_part)])
+        return qml.math.exp(qml.math.einsum("...,i->...i", theta, [0j, 0j, -0.5j, 0.5j]))
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -1969,10 +1953,9 @@ class U1(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        p = qml.math.exp(1j * phi)
-        z = qml.math.zeros_like(p)
+        phases = qml.math.exp(qml.math.einsum("...,i->...i", phi, [0j, 1j]))
 
-        return qml.math.stack([stack_last([qml.math.ones_like(p), z]), stack_last([z, p])], axis=-2)
+        return qml.math.einsum("...i,il->...il", phases, np.eye(2))
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -1997,6 +1980,38 @@ class U1(Operation):
 
         """
         return [PhaseShift(phi, wires=wires)]
+
+    @staticmethod
+    def compute_eigvals(phi):  # pylint: disable=arguments-differ
+        r"""Eigenvalues of the operator in the computational basis (static method).
+
+        If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U`,
+        the operator can be reconstructed as
+
+        .. math:: O = U \Sigma U^{\dagger},
+
+        where :math:`\Sigma` is the diagonal matrix containing the eigenvalues.
+
+        Otherwise, no particular order for the eigenvalues is guaranteed.
+
+        .. seealso:: :meth:`~.U1.eigvals`
+
+
+        Args:
+            phi (tensor_like or float): phase shift
+
+        Returns:
+            tensor_like: eigenvalues
+
+        **Example**
+
+        >>> qml.U1.compute_eigvals(torch.tensor(0.5))
+        tensor([1.0000+0.0000j, 0.8776+0.4794j])
+        """
+        if qml.math.get_interface(phi) == "tensorflow":
+            phi = qml.math.cast_like(phi, 1j)
+
+        return qml.math.exp(qml.math.einsum("...,i->...i", phi, [0j, 1j]))
 
     def adjoint(self):
         return U1(-self.data[0], wires=self.wires)

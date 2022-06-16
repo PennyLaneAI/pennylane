@@ -117,7 +117,6 @@ class SingleExcitation(Operation):
         c = qml.math.cos(phi / 2) - 1
         s = qml.math.sin(phi / 2)
 
-        # I[::-1] in conjunction with einsum is not supported by torch
         mask_c = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])
         mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
         diag = qml.math.einsum("...,ij->...ij", c, mask_c)
@@ -738,12 +737,13 @@ class DoubleExcitationPlus(Operation):
 
         e = qml.math.exp(0.5j * phi)
         zeros = qml.math.zeros_like(e)
+        c = (1 + 0j) * c
 
         diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
-        mask_s = np.zeros((16, 16), dtype=complex)
-        mask_s[3, 12] = -1 + 0j
-        mask_s[12, 3] = 1 + 0j
-        diag = qml.math.einsum("...i,ij->...ij", diag, np.eye(16, dtype=complex))
+        mask_s = np.zeros((16, 16))
+        mask_s[3, 12] = -1
+        mask_s[12, 3] = 1
+        diag = qml.math.einsum("...i,ij->...ij", diag, np.eye(16))
         off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
         return diag + off_diag
 
@@ -834,6 +834,7 @@ class DoubleExcitationMinus(Operation):
             s = qml.math.cast_like(s, 1j)
 
         e = qml.math.exp(-0.5j * phi)
+        c = (1 + 0j) * c
         zeros = qml.math.zeros_like(e)
 
         diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
