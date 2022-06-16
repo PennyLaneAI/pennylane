@@ -956,8 +956,6 @@ class OrbitalRotation(Operation):
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
 
-        interface = qml.math.get_interface(phi)
-
         ones = qml.math.ones_like(c)
         diag = qml.math.stack(
             [ones, c, c, c**2, c, ones, c**2, c, c, c**2, ones, c, c**2, c, c, ones],
