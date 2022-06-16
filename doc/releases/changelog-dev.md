@@ -48,6 +48,11 @@
 * Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
 
+<h3>Bug fixes</h3>
+
+* `Hamiltonian.wires` attribute now updates properly after in place addition. 
+  [(#2733)](https://github.com/PennyLaneAI/pennylane/pull/2733)
+
 <h3>Breaking changes</h3>
 
 <h3>Deprecations</h3>
@@ -58,4 +63,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
+Ankit Khandelwal, Ixchel Meza Chavez, Jay Soni, Moritz Willmann
