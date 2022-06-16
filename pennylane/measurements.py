@@ -881,7 +881,7 @@ def vn_entropy(wires, log_base=None):
 
     It is also possible to get the gradient of the previous QNode:
 
-    >>> param = pennylane.numpy.array(np.pi/4, requires_grad=True)
+    >>> param = np.array(np.pi/4, requires_grad=True)
     >>> qml.grad(circuit_entropy)(param)
     0.6232252401402305
 
@@ -931,7 +931,7 @@ def mutual_info(wires0, wires1, log_base=None):
 
     It is also possible to get the gradient of the previous QNode:
 
-    >>> param = pennylane.numpy.array(np.pi/4, requires_grad=True)
+    >>> param = np.array(np.pi/4, requires_grad=True)
     >>> qml.grad(circuit_mutual)(param)
     1.2464504802804612
 
