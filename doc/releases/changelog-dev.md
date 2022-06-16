@@ -668,6 +668,9 @@
 * Fixed a bug in `qml.transforms.insert` where operations were not inserted after gates within a
   template.
   [(#2704)](https://github.com/PennyLaneAI/pennylane/pull/2704)
+  
+* `Hamiltonian.wires` is now properly updated after in place operations.
+  [(#2738)](https://github.com/PennyLaneAI/pennylane/pull/2738)
 
 
 <h3>Documentation</h3>
