@@ -577,11 +577,6 @@
   <class 'numpy.complex64'>
   ```
 
-<h3>Bug fixes</h3>
-
-* `Hamiltonian.wires` attribute now updates properly after in place addition. 
-  [(#2733)](https://github.com/PennyLaneAI/pennylane/pull/2733)
-
 <h3>Breaking changes</h3>
 
 * Fixed a bug in `qml.transforms.insert` where operations were not inserted after
@@ -599,8 +594,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Amintor Dusko, Ankit Khandelwal, Avani Bhardwaj, Chae-Yeun Park, Christian Gogolin, Christina Lee, David Wierichs,
-Edward Jiang, Guillermo Alonso-Linaje, Jay Soni, Juan Miguel Arrazola, Katharine Hyatt, Korbinian Kottmann,
-Maria Schuld, Mason Moreland, Mikhail Andrenkov, Romain Moyard, Qi Hu, Samuel Banning, Soran Jahangiri, Utkarsh Azad, Antal Száva,
-WingCode,
-Josh Izaac
+Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann
