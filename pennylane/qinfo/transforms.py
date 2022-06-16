@@ -639,6 +639,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     you can follow this example:
 
     .. code-block:: python
+
         dev = qml.device('default.qubit', wires=1)
 
         @qml.qnode(dev)
