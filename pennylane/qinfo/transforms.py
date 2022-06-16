@@ -569,8 +569,8 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
     First, let's consider two QNodes with potentially different signatures: a circuit with two parameters
     and another circuit with a single parameter. The output of the `qml.qinfo.fidelity` transform then requires
-    two tuples to be passed as arguments, each containing the args and kwargs of their respective circuit, e.g. `all_args0 = (0.1, 0.3)` and
-    `all_args1 = (0.2)` in the following case:
+    two tuples to be passed as arguments, each containing the args and kwargs of their respective circuit, e.g.
+    `all_args0 = (0.1, 0.3)` and `all_args1 = (0.2)` in the following case:
 
     .. code-block:: python
 
@@ -635,6 +635,26 @@ def fidelity(qnode0, qnode1, wires0, wires1):
     >>> jax.grad(qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0]))((jax.numpy.array(0.3)))
     -0.14776011
 
+    There is also the possibility to pass a single dictionnary at the end of the tuple for fixing args,
+    you can follow this example:
+
+    .. code-block:: python
+        dev = qml.device('default.qubit', wires=1)
+
+        @qml.qnode(dev)
+        def circuit_rx(x, y):
+            qml.RX(x, wires=0)
+            qml.RZ(y, wires=0)
+            return qml.state()
+
+        @qml.qnode(dev)
+        def circuit_ry(y, use_ry):
+            if use_ry:
+                qml.RY(y, wires=0)
+            return qml.state()
+
+    >>> fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.9, {'use_ry': True})))
+    0.8208074192135424
     """
 
     if len(wires0) != len(wires1):
@@ -671,14 +691,28 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
         # If no all_args is given, evaluate the QNode without args
         if all_args0 is not None:
-            state0 = state_qnode0(*all_args0)
+            # Handle a dictionary as last argument
+            if isinstance(all_args0[-1], dict):
+                args0 = all_args0[:-1]
+                kwargs0 = all_args0[-1]
+            else:
+                args0 = all_args0
+                kwargs0 = {}
+            state0 = state_qnode0(*args0, **kwargs0)
         else:
             # No args
             state0 = state_qnode0()
 
         # If no all_args is given, evaluate the QNode without args
         if all_args1 is not None:
-            state1 = state_qnode1(*all_args1)
+            # Handle a dictionary as last argument
+            if isinstance(all_args1[-1], dict):
+                args1 = all_args1[:-1]
+                kwargs1 = all_args1[-1]
+            else:
+                args1 = all_args1
+                kwargs1 = {}
+            state1 = state_qnode1(*args1, **kwargs1)
         else:
             # No args
             state1 = state_qnode1()

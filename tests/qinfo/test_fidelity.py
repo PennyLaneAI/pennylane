@@ -140,11 +140,19 @@ class TestFidelityQnode:
             qml.RY(y, wires=0)
             return qml.state()
 
-        fid = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
+        fid_args = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
             (0.0, np.pi), (0.0, 0.0)
         )
+        fid_arg_kwarg = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
+            (0.0, {"y": np.pi}), (0.0, {"y": 0})
+        )
+        fid_kwargs = qml.qinfo.fidelity(circuit0, circuit1, wires0=[0], wires1=[0])(
+            ({"x": 0, "y": np.pi}), ({"x": 0, "y": 0})
+        )
 
-        assert qml.math.allclose(fid, 1.0)
+        assert qml.math.allclose(fid_args, 1.0)
+        assert qml.math.allclose(fid_arg_kwarg, 1.0)
+        assert qml.math.allclose(fid_kwargs, 1.0)
 
     parameters = np.linspace(0, 2 * np.pi, 20)
     wires = [1, 2]
