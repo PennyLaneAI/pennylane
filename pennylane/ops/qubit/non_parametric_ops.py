@@ -1296,8 +1296,8 @@ class ECR(Operation):
          [0.+0.j 0.+0.j 0.+1.j/sqrt(2) 1/sqrt(2)+0.j]
          [1/sqrt(2)+0.j 0.-1.j/sqrt(2) 0.+0.j 0.+0.j]
          [0.-1/sqrt(2)j 1/sqrt(2)+0.j 0.+0.j 0.+0.j]]
-         """
-        
+        """
+
         return np.array(
             [
                 [0, 0, INV_SQRT2, INV_SQRT2 * 1j],
