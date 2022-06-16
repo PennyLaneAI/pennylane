@@ -1626,6 +1626,114 @@ class TestGrad:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_pswap_autograd_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient with Autograd for the gate PSWAP."""
+
+        if diff_method in {"adjoint"}:
+            pytest.skip("PSWAP does not support adjoint")
+
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = 0.1
+        psi_1 = 0.2
+        psi_2 = 0.3
+        psi_3 = 0.4
+
+        init_state = npp.array([psi_0, psi_1, psi_2, psi_3], requires_grad=False)
+        norm = np.linalg.norm(init_state)
+        init_state /= norm
+
+        @qml.qnode(dev, diff_method=diff_method, interface="autograd")
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.PSWAP(phi, wires=[0, 1])
+            return qml.expval(qml.PauliY(0))
+
+        expected = 2 * np.cos(phi) * (psi_0 * psi_1 - psi_3 * psi_2) / norm**2
+
+        res = qml.grad(circuit)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_pswap_jax_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient with JAX for the gate PSWAP."""
+
+        if diff_method in {"adjoint"}:
+            pytest.skip("PSWAP does not support adjoint")
+
+        if diff_method in {"finite-diff"}:
+            pytest.skip("Test does not support finite-diff")
+
+        if diff_method in {"parameter-shift"}:
+            pytest.skip("Test does not support parameter-shift")
+
+        import jax
+        import jax.numpy as jnp
+
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = 0.1
+        psi_1 = 0.2
+        psi_2 = 0.3
+        psi_3 = 0.4
+
+        init_state = jnp.array([psi_0, psi_1, psi_2, psi_3])
+        norm = jnp.linalg.norm(init_state)
+        init_state = init_state / norm
+
+        @qml.qnode(dev, diff_method=diff_method, interface="jax")
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.PSWAP(phi, wires=[0, 1])
+            return qml.expval(qml.PauliY(0))
+
+        phi = jnp.array(phi)
+
+        expected = 2 * np.cos(phi) * (psi_0 * psi_1 - psi_3 * psi_2) / norm**2
+
+        res = jax.grad(circuit, argnums=0)(phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
+    def test_pswap_tf_grad(self, tol, dev_name, diff_method, phi):
+        """Test the gradient with Tensorflow for the gate PSWAP."""
+
+        if diff_method in {"adjoint"}:
+            pytest.skip("PSWAP does not support adjoint")
+
+        import tensorflow as tf
+
+        dev = qml.device(dev_name, wires=2)
+
+        psi_0 = tf.Variable(0.1, dtype=tf.complex128)
+        psi_1 = tf.Variable(0.2, dtype=tf.complex128)
+        psi_2 = tf.Variable(0.3, dtype=tf.complex128)
+        psi_3 = tf.Variable(0.4, dtype=tf.complex128)
+
+        init_state = tf.Variable([psi_0, psi_1, psi_2, psi_3], dtype=tf.complex128)
+        norm = tf.norm(init_state)
+        init_state = init_state / norm
+
+        @qml.qnode(dev, interface="tf", diff_method=diff_method)
+        def circuit(phi):
+            qml.QubitStateVector(init_state, wires=[0, 1])
+            qml.PSWAP(phi, wires=[0, 1])
+            return qml.expval(qml.PauliY(0))
+
+        phi = tf.Variable(phi, dtype=tf.complex128)
+
+        expected = 2 * tf.cos(phi) * (psi_0 * psi_1 - psi_3 * psi_2) / norm**2
+
+        with tf.GradientTape() as tape:
+            result = circuit(phi)
+
+        res = tape.gradient(result, phi)
+        assert np.allclose(res, expected, atol=tol, rtol=0)
+
+    @pytest.mark.autograd
+    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
     def test_isingxx_autograd_grad(self, tol, dev_name, diff_method, phi):
         """Test the gradient for the gate IsingXX."""
         dev = qml.device(dev_name, wires=2)
