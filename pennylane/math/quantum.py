@@ -420,7 +420,7 @@ def reduced_dm(state, indices, check_state=False, c_dtype="complex128"):
      [0.+0.j 0.+0.j]]
 
     >>> y = tf.Variable([1, 0, 0, 0], dtype=tf.complex128)
-    >>> reduced_dm(z, indices=[1])
+    >>> reduced_dm(y, indices=[1])
     tf.Tensor(
     [[1.+0.j 0.+0.j]
      [0.+0.j 0.+0.j]], shape=(2, 2), dtype=complex128)
