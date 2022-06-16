@@ -114,12 +114,15 @@ class SingleExcitation(Operation):
                 [ 0.0000,  0.2474,  0.9689,  0.0000],
                 [ 0.0000,  0.0000,  0.0000,  1.0000]])
         """
-        c = qml.math.cos(phi / 2)
+        c = qml.math.cos(phi / 2) - 1
         s = qml.math.sin(phi / 2)
 
-        mat = qml.math.diag([1, c, c, 1])
-        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), phi)
-        return mat + s * qml.math.cast_like(off_diag, s)
+        # I[::-1] in conjunction with einsum is not supported by torch
+        mask_c = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])
+        mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
+        diag = qml.math.einsum("...,ij->...ij", c, mask_c)
+        off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
+        return diag + off_diag + np.eye(4)
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -246,9 +249,13 @@ class SingleExcitationMinus(Operation):
             s = qml.math.cast_like(s, 1j)
 
         e = qml.math.exp(-1j * phi / 2)
-        mat = qml.math.diag([e, 0, 0, e]) + qml.math.diag([0, c, c, 0])
-        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), phi)
-        return mat + s * qml.math.cast_like(off_diag, s)
+
+        mask_e = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])
+        mask_c = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])
+        mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
+        diag = qml.math.einsum("...,ij->...ij", c, mask_c) + qml.math.einsum("...,ij->...ij", e, mask_e)
+        off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
+        return diag + off_diag
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -386,9 +393,13 @@ class SingleExcitationPlus(Operation):
             s = qml.math.cast_like(s, 1j)
 
         e = qml.math.exp(1j * phi / 2)
-        mat = qml.math.diag([e, 0, 0, e]) + qml.math.diag([0, c, c, 0])
-        off_diag = qml.math.convert_like(np.diag([0, 1, -1, 0])[::-1].copy(), phi)
-        return mat + s * qml.math.cast_like(off_diag, s)
+
+        mask_e = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])
+        mask_c = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])
+        mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
+        diag = qml.math.einsum("...,ij->...ij", c, mask_c) + qml.math.einsum("...,ij->...ij", e, mask_e)
+        off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
+        return diag + off_diag
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -543,10 +554,14 @@ class DoubleExcitation(Operation):
         c = qml.math.cos(phi / 2)
         s = qml.math.sin(phi / 2)
 
-        mat = qml.math.diag([1.0] * 3 + [c] + [1.0] * 8 + [c] + [1.0] * 3)
-        mat = qml.math.scatter_element_add(mat, (3, 12), -s)
-        mat = qml.math.scatter_element_add(mat, (12, 3), s)
-        return mat
+        ones = qml.math.ones_like(c)
+        diag = qml.math.stack([ones] * 3 + [c] + [ones] * 8 + [c] + [ones] * 3, axis=-1)
+        mask_s = np.zeros((16, 16))
+        mask_s[3, 12] = -1
+        mask_s[12, 3] = 1
+        diag = qml.math.einsum("...i,ij->...ij", diag, np.eye(16))
+        off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
+        return diag + off_diag
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -721,14 +736,16 @@ class DoubleExcitationPlus(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        e = qml.math.exp(1j * phi / 2)
+        e = qml.math.exp(0.5j * phi)
+        zeros = qml.math.zeros_like(e)
 
-        mat = qml.math.diag([e] * 3 + [0] + [e] * 8 + [0] + [e] * 3)
-        mat = qml.math.scatter_element_add(mat, (3, 3), c)
-        mat = qml.math.scatter_element_add(mat, (3, 12), -s)
-        mat = qml.math.scatter_element_add(mat, (12, 3), s)
-        mat = qml.math.scatter_element_add(mat, (12, 12), c)
-        return mat
+        diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
+        mask_s = np.zeros((16, 16), dtype=complex)
+        mask_s[3, 12] = -1 + 0j
+        mask_s[12, 3] = 1 + 0j
+        diag = qml.math.einsum("...i,ij->...ij", diag, np.eye(16, dtype=complex))
+        off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
+        return diag + off_diag
 
     def adjoint(self):
         (theta,) = self.parameters
@@ -816,13 +833,16 @@ class DoubleExcitationMinus(Operation):
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
-        e = qml.math.exp(-1j * phi / 2)
-        mat = qml.math.diag([e] * 3 + [0] + [e] * 8 + [0] + [e] * 3)
-        mat = qml.math.scatter_element_add(mat, (3, 3), c)
-        mat = qml.math.scatter_element_add(mat, (3, 12), -s)
-        mat = qml.math.scatter_element_add(mat, (12, 3), s)
-        mat = qml.math.scatter_element_add(mat, (12, 12), c)
-        return mat
+        e = qml.math.exp(-0.5j * phi)
+        zeros = qml.math.zeros_like(e)
+
+        diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
+        mask_s = np.zeros((16, 16))
+        mask_s[3, 12] = -1
+        mask_s[12, 3] = 1
+        diag = qml.math.einsum("...i,ij->...ij", diag, np.eye(16))
+        off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
+        return diag + off_diag
 
     def adjoint(self):
         (theta,) = self.parameters
@@ -942,30 +962,32 @@ class OrbitalRotation(Operation):
         else:
             z = qml.math.zeros([16], like=interface)
 
-        diag = qml.math.diag([1, c, c, c**2, c, 1, c**2, c, c, c**2, 1, c, c**2, c, c, 1])
+        ones = qml.math.ones_like(c)
+        diag = qml.math.stack(
+            [ones, c, c, c**2, c, ones, c**2, c, c, c**2, ones, c, c**2, c, c, ones],
+            axis=-1,
+        )
+        mask_s = np.zeros((16, 16))
+        mask_s[1, 4] = mask_s[2, 8] = mask_s[7, 13] = mask_s[11, 14] = -1
+        mask_s[4, 1] = mask_s[8, 2] = mask_s[13, 7] = mask_s[14, 11] = 1
 
-        U = diag + qml.math.stack(
-            [
-                z,
-                qml.math.stack([0, 0, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-                qml.math.stack([0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0, 0, 0, 0, 0, 0]),
-                qml.math.stack([0, 0, 0, 0, 0, 0, -c * s, 0, 0, -c * s, 0, 0, s * s, 0, 0, 0]),
-                qml.math.stack([0, s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-                z,
-                qml.math.stack([0, 0, 0, c * s, 0, 0, 0, 0, 0, -s * s, 0, 0, -c * s, 0, 0, 0]),
-                qml.math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0, 0]),
-                qml.math.stack([0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-                qml.math.stack([0, 0, 0, c * s, 0, 0, -s * s, 0, 0, 0, 0, 0, -c * s, 0, 0, 0]),
-                z,
-                qml.math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -s, 0]),
-                qml.math.stack([0, 0, 0, s * s, 0, 0, c * s, 0, 0, c * s, 0, 0, 0, 0, 0, 0]),
-                qml.math.stack([0, 0, 0, 0, 0, 0, 0, s, 0, 0, 0, 0, 0, 0, 0, 0]),
-                qml.math.stack([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, s, 0, 0, 0, 0]),
-                z,
-            ]
+        mask_cs = np.zeros((16, 16))
+        mask_cs[3, 6] = mask_cs[3, 9] = mask_cs[6, 12] = mask_cs[9, 12] = -1
+        mask_cs[6, 3] = mask_cs[9, 3] = mask_cs[12, 6] = mask_cs[12, 9] = 1
+
+        mask_s2 = np.zeros((16, 16))
+        mask_s2[3, 12] = mask_s2[12, 3] = 1
+        mask_s2[6, 9] = mask_s2[9, 6] = -1
+
+
+        diag = qml.math.einsum("...i,ij->...ij", diag, np.eye(16))
+        off_diag = (
+            qml.math.einsum("...,ij->...ij", s, mask_s)
+            + qml.math.einsum("...,ij->...ij", c * s, mask_cs)
+            + qml.math.einsum("...,ij->...ij", s ** 2, mask_s2)
         )
 
-        return U
+        return diag + off_diag
 
     @staticmethod
     def compute_decomposition(phi, wires):
