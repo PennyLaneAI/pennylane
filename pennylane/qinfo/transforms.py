@@ -560,7 +560,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
     First, let's consider two QNodes with potentially different signatures: a circuit with two parameters
     and another circuit with a single parameter. The output of the :func:`~.qinfo.fidelity` transform then requires
-    two tuples to be passed as arguments, each containing the args of their respective
+    two tuples to be passed as arguments, each containing the args and kwargs of their respective
     circuit, e.g. ``all_args0 = (0.1, 0.3)`` and ``all_args1 = (0.2)`` in the following case:
 
     .. code-block:: python
@@ -645,11 +645,11 @@ def fidelity(qnode0, qnode1, wires0, wires1):
 
     def evaluate_fidelity(all_args0=None, all_args1=None):
         """Wrapper used for evaluation of the fidelity between two states computed from QNodes. It allows giving
-        the args to each :class:`.QNode`.
+        the args and kwargs to each :class:`.QNode`.
 
         Args:
-            all_args0 (tuple): Tuple containing the arguments (*args) of the first :class:`.QNode`.
-            all_args1 (tuple): Tuple containing the arguments (*args) of the second :class:`.QNode`.
+            all_args0 (tuple): Tuple containing the arguments (*args, kwargs) of the first :class:`.QNode`.
+            all_args1 (tuple): Tuple containing the arguments (*args, kwargs) of the second :class:`.QNode`.
 
         Returns:
             float: Fidelity between two quantum states
