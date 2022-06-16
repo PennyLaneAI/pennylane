@@ -661,10 +661,7 @@ def sample(op=None, wires=None, counts=False):
             f"{op.name} is not an observable: cannot be used with sample"
         )
 
-    if counts:
-        sample_or_counts = Counts
-    else:
-        sample_or_counts = Sample
+    sample_or_counts = Counts if counts else Sample
 
     if wires is not None:
         if op is not None:
