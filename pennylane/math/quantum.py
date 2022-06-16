@@ -472,7 +472,7 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
 
     **Example**
 
-    You can get the entropy of a subsystem for any state vectors. You can find an example for the
+    The entropy of a subsystem for any state vectors can be obtained. Here is an example for the
     maximally entangled state, where the subsystem entropy is maximal (default base for log is exponential).
 
 
@@ -480,12 +480,12 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
     >>> vn_entropy(x, indices=[0])
     0.6931472
 
-    You can also switch the logarithm base to 2.
+    The logarithm base can be switched to 2 for example.
 
     >>> vn_entropy(x, indices=[0], base=2)
     1.0
 
-    You can also get the entropy by providing a quantum state as a density matrix, for example:
+    The entropy can be obtained by providing a quantum state as a density matrix, for example:
 
     >>> y = [[1/2, 0, 0, 1/2], [0, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]]
     >>> vn_entropy(x, indices=[0])
@@ -562,7 +562,7 @@ def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype
 
     **Examples**
 
-    You can get the mutual information between subsystem for a state vector:
+    The mutual information between subsystems for a state vector can be returned as follows:
     >>> x = np.array([1, 0, 0, 1]) / np.sqrt(2)
     >>> qml.math.mutual_info(x, indices0=[0], indices1=[1])
     1.3862943611198906
@@ -571,7 +571,7 @@ def mutual_info(state, indices0, indices1, base=None, check_state=False, c_dtype
     >>> qml.math.mutual_info(x, indices0=[0], indices1=[1], base=2)
     2.0
 
-    Similarly you can porvide a quantum state as a density matrix:
+    Similarly the quantum state can be provided as a density matrix:
     >>> y = np.array([[1/2, 1/2, 0, 1/2], [1/2, 0, 0, 0], [0, 0, 0, 0], [1/2, 0, 0, 1/2]])
     >>> qml.math.mutual_info(y, indices0=[0], indices1=[1])
     0.4682351577408206
@@ -657,13 +657,13 @@ def fidelity(state0, state1, check_state=False, c_dtype="complex128"):
 
     **Example**
 
-    You can give two state vectors as arguments and return the fidelity (overlap), e.g.:
+    Two state vectors can be used as arguments and the fidelity (overlap) is returned, e.g.:
     >>> state0 = [0.98753537-0.14925137j, 0.00746879-0.04941796j]
     >>> state1 = [0.99500417+0.j, 0.09983342+0.j]
     >>> qml.math.fidelity(state0, state1)
     0.9905158135644924
 
-    Alternatively you can give one state vector and one density matrix, e.g.:
+    Alternatively one can give a state vector and a density matrix as arguments, e.g.:
     >>> state0 = [0, 1]
     >>> state1 = [[0, 0], [0, 1]]
     >>> qml.math.fidelity(state0, state1)
