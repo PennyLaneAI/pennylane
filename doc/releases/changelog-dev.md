@@ -39,21 +39,20 @@
   >>> print(energy)
   -1.1258709813834058
   ```
-  
-* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics. 
+
+* New PennyLane-inspired `sketch` and `sketch_dark` styles are now available for drawing circuit diagram graphics.
   [(#2709)](https://github.com/PennyLaneAI/pennylane/pull/2709)
 
-* Added new device `default.qutrit` for simulation of devices with wires of three dimensions. Users can currently make measurements with `qml.state()` and `qml.probs()`.
-* Added operation `qml.QutritUnitary` for basic operation of `default.qutrit` device with user-specified unitaries.
+* Added new device abstract base class `QutritDevice` for simulation of devices with wires of three dimensions. Users can currently make measurements with `qml.state()` and `qml.probs()`.
+* Added operation `qml.QutritUnitary` for applying user-specified unitaries to `QutritDevice`.
 
   ```pycon
   >>> dev = qml.device("default.qutrit", wires=1)
   >>> U = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-  >>> @qml.qnode(dev)
-  ... def circuit(U):
+  >>> with qml.tape.QuantumTape() as tape:
   ...     qml.QutritUnitary(U, wires=0)
   ...     return qml.probs(wires=0)
-  >>> print(circuit(U))
+  >>> print(QutritDevice.execute(tape))
   [0.5 0.5 0. ]
   ```
 
@@ -72,4 +71,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Ankit Khandelwal, Ixchel Meza Chavez, Mudit Pandey, Moritz Willmann
+Ankit Khandelwal, Ixchel Meza Chavez, Moritz Willmann, Mudit Pandey
