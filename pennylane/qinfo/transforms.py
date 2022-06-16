@@ -97,7 +97,7 @@ def vn_entropy(qnode, wires, base=None):
 
     The function is differentiable with backpropagation for all interfaces, e.g.:
 
-    >>> param = pennylane.numpy.array(np.pi/4, requires_grad=True)
+    >>> param = np.array(np.pi/4, requires_grad=True)
     >>> qml.grad(vn_entropy(circuit, wires=[0]))(param)
     0.6232252401402305
     """
