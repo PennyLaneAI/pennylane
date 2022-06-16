@@ -276,7 +276,7 @@ class RZ(Operation):
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
-        phases = qml.math.exp(qml.math.einsum("...,i->...i", theta / 2, [-1j, 1j]))
+        phases = qml.math.exp(qml.math.einsum("...,i->...i", 0.5j * theta, [-1, 1]))
         mat = qml.math.einsum("...i,il->...il", phases, np.eye(2))
         #print(f"RZ({theta}) = {mat}")
         return mat
@@ -312,7 +312,7 @@ class RZ(Operation):
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
-        return qml.math.exp(qml.math.einsum("...,i->...i", theta / 2, [-1j, 1j]))
+        return qml.math.exp(qml.math.einsum("...,i->...i", 0.5j * theta, [-1, 1]))
 
     def adjoint(self):
         return RZ(-self.data[0], wires=self.wires)
@@ -397,7 +397,7 @@ class PhaseShift(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        phases = qml.math.exp(qml.math.einsum("...,i->...i", phi, [0j, 1j]))
+        phases = qml.math.exp(qml.math.einsum("...,i->...i", 1j * phi, [0, 1]))
         return qml.math.einsum("...i,il->...il", phases, np.eye(2))
 
     @staticmethod
@@ -430,7 +430,7 @@ class PhaseShift(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        return qml.math.exp(qml.math.einsum("...,i->...i", phi, [0j, 1j]))
+        return qml.math.exp(qml.math.einsum("...,i->...i", 1j * phi, [0, 1]))
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -544,7 +544,7 @@ class ControlledPhaseShift(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        phases = qml.math.exp(qml.math.einsum("...,i->...i", phi, [0j, 0j, 0j, 1j]))
+        phases = qml.math.exp(qml.math.einsum("...,i->...i", 1j * phi, [0, 0, 0, 1]))
         return qml.math.einsum("...i,il->...il", phases, np.eye(4))
 
     @staticmethod
@@ -577,7 +577,7 @@ class ControlledPhaseShift(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        return qml.math.exp(qml.math.einsum("...,i->...i", phi, [0j, 0j, 0j, 1j]))
+        return qml.math.exp(qml.math.einsum("...,i->...i", 1j * phi, [0, 0, 0, 1]))
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -849,7 +849,7 @@ class MultiRZ(Operation):
             theta = qml.math.cast_like(theta, 1j)
             eigs = qml.math.cast_like(eigs, 1j)
 
-        phases = qml.math.exp(qml.math.einsum("...,i->...i", -1j * theta / 2, eigs))
+        phases = qml.math.exp(qml.math.einsum("...,i->...i", -0.5j * theta, eigs))
         return qml.math.einsum("...i,il->...il", phases, np.eye(2**num_wires))
 
     def generator(self):
@@ -890,7 +890,7 @@ class MultiRZ(Operation):
             theta = qml.math.cast_like(theta, 1j)
             eigs = qml.math.cast_like(eigs, 1j)
 
-        return qml.math.exp(qml.math.einsum("...,i->...i", -1j * theta / 2, eigs))
+        return qml.math.exp(qml.math.einsum("...,i->...i", -0.5j * theta, eigs))
 
     @staticmethod
     def compute_decomposition(
@@ -1634,7 +1634,7 @@ class CRZ(Operation):
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
-        phases = qml.math.exp(qml.math.einsum("...,i->...i", theta / 2, [0j, 0j, -1j, 1j]))
+        phases = qml.math.exp(qml.math.einsum("...,i->...i", 0.5j * theta, [0, 0, -1, 1]))
         return qml.math.einsum("...i,il->...il", phases, np.eye(4))
 
     @staticmethod
@@ -1667,7 +1667,7 @@ class CRZ(Operation):
         if qml.math.get_interface(theta) == "tensorflow":
             theta = qml.math.cast_like(theta, 1j)
 
-        return qml.math.exp(qml.math.einsum("...,i->...i", theta / 2, [0j, 0j, -1j, 1j]))
+        return qml.math.exp(qml.math.einsum("...,i->...i", 0.5j * theta, [0, 0, -1, 1]))
 
     @staticmethod
     def compute_decomposition(phi, wires):
@@ -1955,7 +1955,7 @@ class U1(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        phases = qml.math.exp(qml.math.einsum("...,i->...i", phi, [0j, 1j]))
+        phases = qml.math.exp(qml.math.einsum("...,i->...i", 1j * phi, [0, 1]))
 
         return qml.math.einsum("...i,il->...il", phases, np.eye(2))
 
@@ -2013,7 +2013,7 @@ class U1(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        return qml.math.exp(qml.math.einsum("...,i->...i", phi, [0j, 1j]))
+        return qml.math.exp(qml.math.einsum("...,i->...i", 1j * phi, [0, 1]))
 
     def adjoint(self):
         return U1(-self.data[0], wires=self.wires)
@@ -2620,7 +2620,7 @@ class IsingZZ(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        phases = qml.math.exp(qml.math.einsum("...,i->...i", phi / 2, [-1j, 1j, 1j, -1j]))
+        phases = qml.math.exp(qml.math.einsum("...,i->...i", 0.5j * phi, [-1, 1, 1, -1]))
         return qml.math.einsum("...i,il->...il", phases, np.eye(4))
 
     @staticmethod
@@ -2777,16 +2777,18 @@ class IsingXY(Operation):
         """
         c = qml.math.cos(phi / 2) - 1
         s = qml.math.sin(phi / 2)
+        I = qml.math.eye(4, like=c)
 
         if qml.math.get_interface(phi) == "tensorflow":
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
+            I = qml.math.cast_like(I, 1j)
 
         mask_c = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])
         mask_s = np.array([[0, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
         diag = qml.math.einsum("...,ij->...ij", c, mask_c)
-        off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
-        return diag + off_diag + qml.math.eye(4, like=diag)
+        off_diag = qml.math.einsum("...,ij->...ij", 1j * s, mask_s)
+        return diag + off_diag + I
 
     @staticmethod
     def compute_eigvals(phi):  # pylint: disable=arguments-differ
@@ -2818,10 +2820,7 @@ class IsingXY(Operation):
         if qml.math.get_interface(phi) == "tensorflow":
             phi = qml.math.cast_like(phi, 1j)
 
-        pos_phase = qml.math.exp(1.0j * phi / 2)
-        neg_phase = qml.math.exp(-1.0j * phi / 2)
-
-        return qml.math.stack([pos_phase, neg_phase, 1, 1])
+        return qml.math.exp(qml.math.einsum("...,i->...i", 0.5j * phi, [1, -1, 0, 0]))
 
     def adjoint(self):
         (phi,) = self.parameters
