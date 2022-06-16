@@ -266,6 +266,12 @@ add_hamiltonians = [
             np.array([qml.PauliX(0), qml.PauliZ(1), qml.PauliX(2), qml.PauliX(1)]),
         ),
     ),
+    # Case where the first Hamiltonian does not cover all wires
+    (
+        qml.Hamiltonian([1.23, -4.56], [qml.PauliZ(0), qml.Identity(2)]),
+        qml.Hamiltonian([3.14, 1.0], [qml.PauliZ(0), qml.PauliX(1)]),
+        qml.Hamiltonian([4.37, 1.0, -4.56], [qml.PauliZ(0), qml.PauliX(1), qml.Identity(2)]),
+    ),
 ]
 
 add_zero_hamiltonians = [
@@ -808,16 +814,20 @@ class TestHamiltonian:
         """Tests that Hamiltonians are added inline correctly"""
         H1 += H2
         assert H.compare(H1)
+        assert H.wires == H1.wires
 
     @pytest.mark.parametrize(("H1", "H2"), iadd_zero_hamiltonians)
     def test_hamiltonian_iadd_zero(self, H1, H2):
         """Tests in-place addition between Hamiltonians and zero"""
         H1 += 0
         assert H1.compare(H2)
+        assert H2.wires == H1.wires
         H1 += 0.0
         assert H1.compare(H2)
+        assert H2.wires == H1.wires
         H1 += 0e1
         assert H1.compare(H2)
+        assert H2.wires == H1.wires
 
     @pytest.mark.parametrize(("coeff", "H", "res"), mul_hamiltonians)
     def test_hamiltonian_imul(self, coeff, H, res):
@@ -830,6 +840,7 @@ class TestHamiltonian:
         """Tests that Hamiltonians are subtracted inline correctly"""
         H1 -= H2
         assert H.compare(H1)
+        assert H.wires == H1.wires
 
     def test_arithmetic_errors(self):
         """Tests that the arithmetic operations thrown the correct errors"""

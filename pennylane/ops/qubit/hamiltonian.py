@@ -396,6 +396,7 @@ class Hamiltonian(Observable):
 
         self._coeffs = qml.math.stack(new_coeffs) if new_coeffs else []
         self._ops = new_ops
+        self._wires = self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
         # reset grouping, since the indices refer to the old observables and coefficients
         self._grouping_indices = None
 
@@ -619,18 +620,19 @@ class Hamiltonian(Observable):
         if isinstance(H, Hamiltonian):
             self._coeffs = qml.math.concatenate([self._coeffs, H.coeffs], axis=0)
             self._ops.extend(H.ops.copy())
-            self.simplify()
-            return self
 
-        if isinstance(H, (Tensor, Observable)):
+        elif isinstance(H, (Tensor, Observable)):
             self._coeffs = qml.math.concatenate(
                 [self._coeffs, qml.math.cast_like([1.0], self._coeffs)], axis=0
             )
             self._ops.append(H)
-            self.simplify()
-            return self
 
-        raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+        else:
+            raise ValueError(f"Cannot add Hamiltonian and {type(H)}")
+
+        self._wires = qml.wires.Wires.all_wires([op.wires for op in self.ops], sort=True)
+        self.simplify()
+        return self
 
     def __imul__(self, a):
         r"""The inplace scalar multiplication operation between a scalar and a Hamiltonian."""
