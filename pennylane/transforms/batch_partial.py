@@ -41,7 +41,7 @@ def batch_partial(qnode, all_operations=False, preprocess=None, **partial_kwargs
     """
     Create a batched partial callable object from the QNode specified.
 
-    This transform provides functionality akin to `functools.partial` and
+    This transform provides functionality akin to `functools.partial`` and
     allows batching the arguments used for calling the batched partial object.
 
     Args:
