@@ -14,7 +14,6 @@
 """
 Unit tests for the :mod:`pennylane` :class:`QutritDevice` class.
 """
-from pennylane.ops.qubit.parametric_ops import RX
 import pytest
 import numpy as np
 from random import random
@@ -23,6 +22,7 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import QutritDevice, DeviceError, QuantumFunctionError, QubitDevice
+from pennylane.devices import DefaultQubit
 from pennylane.measurements import Sample, Variance, Expectation, Probability, State
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.wires import Wires
@@ -72,10 +72,38 @@ def mock_qutrit_device_extract_stats(monkeypatch):
         m.setattr(QutritDevice, "state", 0)
         m.setattr(QutritDevice, "density_matrix", lambda self, wires=None: 0)
         m.setattr(QutritDevice, "probability", lambda self, wires=None, *args, **kwargs: 0)
-        m.setattr(QutritDevice, "apply", lambda self, x: x)
+        m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: x)
 
         def get_qutrit_device(wires=1):
             return QutritDevice(wires=wires)
+
+        yield get_qutrit_device
+
+
+@pytest.fixture(scope="function")
+def mock_qutrit_device_shots(monkeypatch):
+    """A function to create a mock device that mocks the methods related to
+    statistics (expval, var, sample, probability)"""
+    with monkeypatch.context() as m:
+        m.setattr(QutritDevice, "__abstractmethods__", frozenset())
+        m.setattr(QutritDevice, "_capabilities", mock_qutrit_device_capabilities)
+        m.setattr(QutritDevice, "short_name", "MockQutritDevice")
+        m.setattr(QutritDevice, "operations", ["QutritUnitary", "Identity"])
+        m.setattr(QutritDevice, "observables", ["Identity"])
+        m.setattr(QutritDevice, "expval", lambda self, *args, **kwargs: 0)
+        m.setattr(QutritDevice, "var", lambda self, *args, **kwargs: 0)
+        m.setattr(QutritDevice, "sample", lambda self, *args, **kwargs: 0)
+        m.setattr(QutritDevice, "state", 0)
+        m.setattr(QutritDevice, "density_matrix", lambda self, wires=None: 0)
+        m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: x)
+        m.setattr(
+            QutritDevice,
+            "analytic_probability",
+            lambda self, wires=None: QutritDevice.marginal_prob(self, np.ones(9) / 9.0, wires),
+        )
+
+        def get_qutrit_device(wires=1, shots=None):
+            return QutritDevice(wires=wires, shots=shots)
 
         yield get_qutrit_device
 
@@ -95,6 +123,9 @@ def mock_qutrit_device_with_original_statistics(monkeypatch):
             return QutritDevice(wires=wires)
 
         yield get_qutrit_device
+
+
+# TODO: Add tests for expval, var after observables are added
 
 
 class TestOperations:
@@ -462,19 +493,6 @@ class TestStatesToTernary:
         assert np.allclose(res, ternary_states, atol=tol, rtol=0)
 
 
-# TODO: Add tests for expval, var after observables are added
-# class TestExpval:
-#     pass
-
-
-# class TestVar:
-#     pass
-
-
-# class TestSample:
-#     pass
-
-
 class TestEstimateProb:
     """Test the estimate_probability method"""
 
@@ -623,11 +641,11 @@ class TestCapabilities:
 class TestExecution:
     """Tests for the execute method"""
 
-    def test_device_executions(self):
+    def test_device_executions(self, mock_qutrit_device_extract_stats):
         """Test the number of times a qubit device is executed over a QNode's
         lifetime is tracked by `num_executions`"""
 
-        dev_1 = qml.device("default.qutrit", wires=2)
+        dev_1 = mock_qutrit_device_extract_stats(wires=2)
 
         def circuit_1(U1, U2, U3):
             qml.QutritUnitary(U1, wires=[0])
@@ -643,7 +661,7 @@ class TestExecution:
         assert dev_1.num_executions == num_evals_1
 
         # test a second instance of a default qubit device
-        dev_2 = qml.device("default.qutrit", wires=2)
+        dev_2 = mock_qutrit_device_extract_stats(wires=2)
 
         def circuit_2(U1, U2):
             qml.QutritUnitary(U1, wires=[0])
@@ -741,13 +759,13 @@ class TestShotList:
 
     # TODO: Add tests for expval and sample with shot lists after observables are added
 
-    def test_invalid_shot_list(self):
+    def test_invalid_shot_list(self, mock_qutrit_device_shots):
         """Test exception raised if the shot list is the wrong type"""
         with pytest.raises(qml.DeviceError, match="Shots must be"):
-            qml.device("default.qubit", wires=2, shots=0.5)
+            mock_qutrit_device_shots(wires=2, shots=0.5)
 
         with pytest.raises(ValueError, match="Unknown shot sequence"):
-            qml.device("default.qubit", wires=2, shots=["a", "b", "c"])
+            mock_qutrit_device_shots(wires=2, shots=["a", "b", "c"])
 
     shot_data = [
         [[1, 2, 3, 10], [(1, 1), (2, 1), (3, 1), (10, 1)], (4, 9), 16],
@@ -763,9 +781,11 @@ class TestShotList:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
-    def test_probs(self, shot_list, shot_vector, expected_shape, total_shots):
+    def test_probs(
+        self, mock_qutrit_device_shots, shot_list, shot_vector, expected_shape, total_shots
+    ):
         """Test a probability return"""
-        dev = qml.device("default.qutrit", wires=2, shots=shot_list)
+        dev = mock_qutrit_device_shots(wires=2, shots=shot_list)
 
         @qml.qnode(dev)
         def circuit(x, z):
@@ -809,9 +829,11 @@ class TestShotList:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("shot_list,shot_vector,expected_shape,total_shots", shot_data)
-    def test_multiple_probs(self, shot_list, shot_vector, expected_shape, total_shots):
+    def test_multiple_probs(
+        self, mock_qutrit_device_shots, shot_list, shot_vector, expected_shape, total_shots
+    ):
         """Test multiple probability returns"""
-        dev = qml.device("default.qutrit", wires=2, shots=shot_list)
+        dev = mock_qutrit_device_shots(wires=2, shots=shot_list)
 
         @qml.qnode(dev)
         def circuit(U):
