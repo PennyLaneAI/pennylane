@@ -45,9 +45,42 @@
 
 <h3>Improvements</h3>
   
-* Added the possibility to group samples into counts providing `counts=True` flag in `qml.sample` function. This required creation of a new measurement type `Counts` in `measurements.py`.
-[(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
+* Added the possibility to group samples into counts providing `counts=True` flag in `qml.sample` function. This required
+  creation of a new measurement type `Counts` in `measurements.py`.
+  [(#2686)](https://github.com/PennyLaneAI/pennylane/pull/2686)
 
+  It can be used with states:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...     qml.Hadamard(wires=0)
+  ...     qml.CNOT(wires=[0, 1])
+  ...     # passing the counts flag
+  ...     return qml.sample(counts=True)   
+  >>> result = circuit()
+  >>> print(result)
+  {'00': 495, '11': 505}
+  ```
+  
+  And with operators:
+  
+  ```pycon
+  >>> dev = qml.device("default.qubit", wires=2, shots=1000)
+
+  >>> @qml.qnode(dev)
+  >>> def circuit():
+  ...   qml.Hadamard(wires=0)
+  ...   qml.CNOT(wires=[0, 1])
+  ...   return qml.sample(qml.PauliZ(0), counts=True), qml.sample(qml.PauliZ(1), counts=True)
+  >>> result = circuit()
+  >>> print(result)
+  [tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)
+   tensor({-1: 526, 1: 474}, dtype=object, requires_grad=True)]
+  ```
+  
 * Adds a new function to compare operators. `qml.equal` can be used to compare equality of parametric operators taking into account their interfaces and trainability.
   [(#2651)](https://github.com/PennyLaneAI/pennylane/pull/2651)
 
