@@ -168,7 +168,6 @@ And the result is:
 >>> print(result)
 {'00': 495, '11': 505}
 
-
 Probability
 -----------
 
