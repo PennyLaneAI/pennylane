@@ -14,40 +14,12 @@ Functions
 Operator Math
 ------------- 
 
+The ``pennylane.ops.op_math`` submodule is a work in progress.  The functions are
+user-facing, but the classes are developer-only.
+
 .. currentmodule:: pennylane.ops.op_math
 
 .. automodapi:: pennylane.ops.op_math
-    :no-heading:
-    :no-inheritance-diagram:
-    :no-inherited-members:
-
-Core Qubit Operations
----------------------
-
-.. currentmodule:: pennylane.ops.qubit
-
-.. automodapi:: pennylane.ops.qubit
-    :no-heading:
-    :no-inheritance-diagram:
-    :no-inherited-members:
-
-CV Operations
--------------
-
-.. currentmodule:: pennylane.ops.cv
-
-.. automodapi:: pennylane.ops.cv
-    :no-heading:
-    :no-inheritance-diagram:
-    :no-inherited-members:
-
-
-Channels
---------
-
-.. currentmodule:: pennylane.ops.channel
-
-.. automodapi:: pennylane.ops.channel
     :no-heading:
     :no-inheritance-diagram:
     :no-inherited-members:
