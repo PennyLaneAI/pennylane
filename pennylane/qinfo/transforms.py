@@ -654,7 +654,7 @@ def fidelity(qnode0, qnode1, wires0, wires1):
                 qml.RY(y, wires=0)
             return qml.state()
 
-    >>> fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.9, {'use_ry': True})))
+    >>> fidelity(circuit_rx, circuit_ry, wires0=[0], wires1=[0])((0.1, 0.3), (0.9, {'use_ry': True}))
     0.8208074192135424
     """
 
