@@ -17,10 +17,17 @@ This module contains the functions needed for computing integrals over basis fun
 # pylint: disable= unbalanced-tuple-unpacking, too-many-arguments
 import itertools as it
 
-from scipy.special import factorial2 as fac2
+# from scipy.special import factorial2 as fac2
 
+import jax
 from jax import numpy as jnp
 from jax import scipy as jsp
+from functools import partial
+
+
+def fac2(n):
+    """The double factorial function."""
+    return jnp.prod(jnp.arange(n, 1, -2))
 
 
 def primitive_norm(l, alpha):
@@ -41,7 +48,9 @@ def primitive_norm(l, alpha):
         {(2l_x-1)!! (2l_y-1)!! (2l_z-1)!!)^{1/2}}.
 
     Args:
-        l (tuple[int]): angular momentum quantum number of the basis function
+        l (tuple[int]): Angular momentum quantum number of the basis function.
+                        Note that the angular momentum variable is not differentiable. Any JIT of
+                        functions should mark it so with `jax.jit(..., static_argnums=0)`
         alpha (array[float]): exponent of the primitive Gaussian function
 
     Returns:
@@ -110,7 +119,7 @@ def contracted_norm(l, alpha, a):
     return n
 
 
-def _generate_params(params):
+def _generate_params(params, args):
     """Generate basis set parameters. The default values are used for the non-differentiable
     parameters and the user-defined values are used for the differentiable ones.
 
@@ -121,7 +130,6 @@ def _generate_params(params):
     Returns:
         list(array[float]): basis set parameters
     """
-    # This should be removed as we do not need this unrolling with Jax as the backend
     basis_params = []
     for p in params:
         basis_params.append(p)
@@ -253,16 +261,15 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     return s
 
 
-def overlap_integral(args, basis_a, basis_b):
-    r"""Normalizes and compute the overlap integral for two contracted Gaussian functions.
+def overlap_integral(args_a, args_b, basis_a, basis_b):
+    r"""Return a function that computes the overlap integral for two contracted Gaussian functions.
 
     Args:
-        args (array[float]): initial values of the differentiable parameters
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
 
     Returns:
-        array[float]: the overlap integral between two contracted Gaussian orbitals
+        function: function that computes the overlap integral
 
     **Example**
 
@@ -270,28 +277,41 @@ def overlap_integral(args, basis_a, basis_b):
     >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad = False)
     >>> mol = qml.qchem.Molecule(symbols, geometry)
     >>> args = []
-    >>> overlap_integral(args, mol.basis_set[0], mol.basis_set[0])
+    >>> overlap_integral(mol.basis_set[0], mol.basis_set[0])(*args)
     1.0
     """
-    args_a = [arg[0] for arg in args]
-    args_b = [arg[1] for arg in args]
-    alpha, ca, ra = _generate_params(basis_a.params)
-    beta, cb, rb = _generate_params(basis_b.params)
 
-    ca = ca * primitive_norm(basis_a.l, alpha)
-    cb = cb * primitive_norm(basis_b.l, beta)
+    def _overlap_integral(*args):
+        r"""Normalize and compute the overlap integral for two contracted Gaussian functions.
 
-    na = contracted_norm(basis_a.l, alpha, ca)
-    nb = contracted_norm(basis_b.l, beta, cb)
+        Args:
+            args (array[float]): initial values of the differentiable parameters
 
-    return (
-        na
-        * nb
-        * (
-            (ca[:, jnp.newaxis] * cb)
-            * gaussian_overlap(basis_a.l, basis_b.l, ra, rb, alpha[:, jnp.newaxis], beta)
-        ).sum()
-    )
+        Returns:
+            array[float]: the overlap integral between two contracted Gaussian orbitals
+        """
+
+        args_a = [arg[0] for arg in args]
+        args_b = [arg[1] for arg in args]
+        alpha, ca, ra = _generate_params(basis_a.params, args_a)
+        beta, cb, rb = _generate_params(basis_b.params, args_b)
+
+        ca = ca * primitive_norm(basis_a.l, alpha)
+        cb = cb * primitive_norm(basis_b.l, beta)
+
+        na = contracted_norm(basis_a.l, alpha, ca)
+        nb = contracted_norm(basis_b.l, beta, cb)
+
+        return (
+            na
+            * nb
+            * (
+                (ca[:, jnp.newaxis] * cb)
+                * gaussian_overlap(basis_a.l, basis_b.l, ra, rb, alpha[:, jnp.newaxis], beta)
+            ).sum()
+        )
+
+    return _overlap_integral
 
 
 def hermite_moment(alpha, beta, t, order, r):
@@ -466,8 +486,8 @@ def moment_integral(basis_a, basis_b, order, idx):
         la = basis_a.l
         lb = basis_b.l
 
-        alpha, ca, ra = _generate_params(basis_a.params)
-        beta, cb, rb = _generate_params(basis_b.params)
+        alpha, ca, ra = _generate_params(basis_a.params, args_a)
+        beta, cb, rb = _generate_params(basis_b.params, args_b)
 
         ca = ca * primitive_norm(basis_a.l, alpha)
         cb = cb * primitive_norm(basis_b.l, beta)
@@ -632,8 +652,8 @@ def kinetic_integral(basis_a, basis_b):
         """
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
-        alpha, ca, ra = _generate_params(basis_a.params)
-        beta, cb, rb = _generate_params(basis_b.params)
+        alpha, ca, ra = _generate_params(basis_a.params, args_a)
+        beta, cb, rb = _generate_params(basis_b.params, args_b)
 
         ca = ca * primitive_norm(basis_a.l, alpha)
         cb = cb * primitive_norm(basis_b.l, beta)
@@ -840,8 +860,8 @@ def attraction_integral(r, basis_a, basis_b):
         args_a = [arg[0] for arg in args]
         args_b = [arg[1] for arg in args]
 
-        alpha, ca, ra = _generate_params(basis_a.params)
-        beta, cb, rb = _generate_params(basis_b.params)
+        alpha, ca, ra = _generate_params(basis_a.params, args_a)
+        beta, cb, rb = _generate_params(basis_b.params, args_b)
 
         ca = ca * primitive_norm(basis_a.l, alpha)
         cb = cb * primitive_norm(basis_b.l, beta)
@@ -979,10 +999,10 @@ def repulsion_integral(basis_a, basis_b, basis_c, basis_d):
         args_c = [arg[2] for arg in args]
         args_d = [arg[3] for arg in args]
 
-        alpha, ca, ra = _generate_params(basis_a.params)
-        beta, cb, rb = _generate_params(basis_b.params)
-        gamma, cc, rc = _generate_params(basis_c.params)
-        delta, cd, rd = _generate_params(basis_d.params)
+        alpha, ca, ra = _generate_params(basis_a.params, args_a)
+        beta, cb, rb = _generate_params(basis_b.params, args_b)
+        gamma, cc, rc = _generate_params(basis_c.params, args_c)
+        delta, cd, rd = _generate_params(basis_d.params, args_d)
 
         ca = ca * primitive_norm(basis_a.l, alpha)
         cb = cb * primitive_norm(basis_b.l, beta)
