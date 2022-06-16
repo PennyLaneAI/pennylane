@@ -35,6 +35,8 @@ The available measurement functions are
     ~pennylane.probs
     ~pennylane.state
     ~pennylane.density_matrix
+    ~pennylane.mutual_info
+    ~pennylane.vn_entropy
 
 :html:`</div>`
 
