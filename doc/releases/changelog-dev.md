@@ -4,6 +4,19 @@
 
 <h3>New features since last release</h3>
 
+* Operations for quantum chemistry now also support parameter broadcasting
+  in their numerical representations.
+  [(#2726)](https://github.com/PennyLaneAI/pennylane/pull/2726)
+
+  Similar to standard parametrized operations, quantum chemistry operations now
+  also work with broadcasted parameters:
+
+  ```pycon
+  >>> op = qml.SingleExcitation(np.array([0.3, 1.2, -0.7]), wires=[0, 1])
+  >>> op.matrix().shape
+  (3, 4, 4)
+  ```
+
 * Added the new optimizer, `qml.SPSAOptimizer` that implements the simultaneous
   perturbation stochastic approximation method based on
   [An Overview of the Simultaneous Perturbation Method for Efficient Optimization](https://www.jhuapl.edu/SPSA/PDF-SPSA/Spall_An_Overview.PDF).
