@@ -62,3 +62,16 @@ def test_unitary_cost(n, eta, omega, error, lamb, br, charge, cost_ref):
     cost = qml.resources.unitary_cost(n, eta, omega, error, lamb, br, charge)
 
     assert cost == cost_ref
+
+
+@pytest.mark.parametrize(
+    ("n", "eta", "omega", "error", "lamb", "charge", "cost_ref"),
+    [
+        (100000, 156, 169.69608, 0.01, 5128920.595980267, 0, 4238),
+    ],
+)
+def test_qubit_cost(n, eta, omega, error, lamb, charge, cost_ref):
+    r"""Test that qubit_cost returns the correct value."""
+    cost = qml.resources.qubit_cost(n, eta, omega, error, lamb, charge)
+
+    assert cost == cost_ref

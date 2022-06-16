@@ -15,6 +15,7 @@
 This module contains the functions needed for estimating the number of logical qubits and
 non-Clifford gates for quantum algorithms in first quantization using a plane-wave basis.
 """
+# pylint: disable= too-many-arguments
 from functools import partial
 from scipy.optimize import minimize_scalar
 from pennylane import numpy as np
@@ -83,7 +84,7 @@ def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
         charge (int): total electric charge of the system
 
     Returns:
-        int: the number of Toffoli gates to implement the qubitization unitary operator
+        int: the number of Toffoli gates needed to implement the qubitization unitary operator
 
     **Example**
 
@@ -92,7 +93,7 @@ def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
     >>> omega = 169.69608
     >>> error = 0.01
     >>> lamb = 5128920.595980267
-    >>> _cost_qrom_min(100)
+    >>> unitary_cost(n, eta, omega, error, lamb)
     12819
     """
     l_z = eta + charge
@@ -119,3 +120,50 @@ def unitary_cost(n, eta, omega, error, lamb, br=7, charge=0):
     cost += n_etaz + 2 * n_eta + 6 * n_p + n_m + 16  # + polylog 1/epsilon
 
     return int(np.ceil(cost))
+
+
+def qubit_cost(n, eta, omega, error, lamb, charge=0):
+    r"""Return the number of ancilla qubits needed to implement the first quantization algorithm.
+    ￼
+    The expression for computing the cost is taken from
+    [`arXiv:2105.12767 <https://arxiv.org/abs/2105.12767>`_].
+
+    Args:
+        n (int): number of basis states
+        eta (int): number of electrons
+        omega (float): unit cell volume
+        error (float): target error in the algorithm
+        lamb (float): 1-norm of the Hamiltonian
+        charge (int): total electric charge of the system
+
+    Returns:
+        int: the number of ancilla qubits needed to implement the first quantization algorithm
+
+    **Example**
+
+    >>> n = 100000
+    >>> eta = 156
+    >>> omega = 169.69608
+    >>> error = 0.01
+    >>> lamb = 5128920.595980267
+    >>> qubit_cost(n, eta, omega, error, lamb)
+    4238
+    """
+    l_z = eta + charge
+    l_nu = 4 * np.pi * n ** (1 / 3)
+
+    n_p = np.ceil(np.log2(n ** (1 / 3) + 1))
+    n_t = np.log2(np.pi * lamb / (0.01 * error))
+    n_r = np.log2((eta * l_z * l_nu) / (0.01 * error * omega ** (1 / 3)))
+    n_m = np.log2(
+        (2 * eta) / (0.01 * error * omega ** (1 / 3))
+        + (eta - 1 + 2 * l_z)
+        + (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
+    )
+
+    qubits = 3 * eta * n_p + 4 * n_r * n_p + 12 * n_p
+    qubits += 2 * (np.ceil(np.log2(np.ceil(np.pi * lamb / (2 * error))))) + 5 * n_m
+    qubits += 2 * np.ceil(np.log2(eta)) + 3 * n_p**2 + np.ceil(np.log2(3 * eta + 2 * charge))
+    qubits += np.maximum(5 * n_p + 1, 5 * n_r - 4) + np.maximum(n_t, n_r + 1) + 33
+
+    return int(np.ceil(qubits))
