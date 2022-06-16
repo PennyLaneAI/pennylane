@@ -126,7 +126,7 @@ def qubit_cost(n, eta, omega, error, lamb, charge=0):
     r"""Return the number of ancilla qubits needed to implement the first quantization algorithm.
     ￼
     The expression for computing the cost is taken from
-    [`arXiv:2105.12767 <https://arxiv.org/abs/2105.12767>`_].
+    [`arXiv:arXiv:2204.11890 <https://arxiv.org/abs/2204.11890>`_].
 
     Args:
         n (int): number of basis states
@@ -161,9 +161,9 @@ def qubit_cost(n, eta, omega, error, lamb, charge=0):
         + (7 * 2 ** (n_p + 1) - 9 * n_p - 11 - 3 * 2 ** (-1 * n_p))
     )
 
-    qubits = 3 * eta * n_p + 4 * n_r * n_p + 12 * n_p
+    qubits = 3 * eta * n_p + 4 * n_m * n_p + 12 * n_p
     qubits += 2 * (np.ceil(np.log2(np.ceil(np.pi * lamb / (2 * error))))) + 5 * n_m
-    qubits += 2 * np.ceil(np.log2(eta)) + 3 * n_p**2 + np.ceil(np.log2(3 * eta + 2 * charge))
+    qubits += 2 * np.ceil(np.log2(eta)) + 3 * n_p**2 + np.ceil(np.log2(eta + 2 * l_z))
     qubits += np.maximum(5 * n_p + 1, 5 * n_r - 4) + np.maximum(n_t, n_r + 1) + 33
 
     return int(np.ceil(qubits))
