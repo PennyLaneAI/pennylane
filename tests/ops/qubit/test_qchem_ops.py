@@ -752,7 +752,6 @@ class TestOrbitalRotation:
         assert np.allclose(res_dynamic, exp)
         assert np.allclose(res_static, exp)
 
-
     @pytest.mark.parametrize("phi", [-0.1, 0.2, np.pi / 4])
     def test_orbital_rotation_generator(self, phi):
         """Tests that the OrbitalRotation operation calculates the correct generator"""

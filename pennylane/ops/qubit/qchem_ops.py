@@ -252,7 +252,9 @@ class SingleExcitationMinus(Operation):
         mask_e = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])
         mask_c = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])
         mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
-        diag = qml.math.einsum("...,ij->...ij", c, mask_c) + qml.math.einsum("...,ij->...ij", e, mask_e)
+        diag = qml.math.einsum("...,ij->...ij", c, mask_c) + qml.math.einsum(
+            "...,ij->...ij", e, mask_e
+        )
         off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
         return diag + off_diag
 
@@ -396,7 +398,9 @@ class SingleExcitationPlus(Operation):
         mask_e = np.array([[1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 1]])
         mask_c = np.array([[0, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0]])
         mask_s = np.array([[0, 0, 0, 0], [0, 0, -1, 0], [0, 1, 0, 0], [0, 0, 0, 0]])
-        diag = qml.math.einsum("...,ij->...ij", c, mask_c) + qml.math.einsum("...,ij->...ij", e, mask_e)
+        diag = qml.math.einsum("...,ij->...ij", c, mask_c) + qml.math.einsum(
+            "...,ij->...ij", e, mask_e
+        )
         off_diag = qml.math.einsum("...,ij->...ij", s, mask_s)
         return diag + off_diag
 
@@ -736,7 +740,6 @@ class DoubleExcitationPlus(Operation):
             s = qml.math.cast_like(s, 1j)
 
         e = qml.math.exp(0.5j * phi)
-        zeros = qml.math.zeros_like(e)
         c = (1 + 0j) * c
 
         diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
@@ -835,7 +838,6 @@ class DoubleExcitationMinus(Operation):
 
         e = qml.math.exp(-0.5j * phi)
         c = (1 + 0j) * c
-        zeros = qml.math.zeros_like(e)
 
         diag = qml.math.stack([e] * 3 + [c] + [e] * 8 + [c] + [e] * 3, axis=-1)
         mask_s = np.zeros((16, 16))
@@ -956,13 +958,6 @@ class OrbitalRotation(Operation):
 
         interface = qml.math.get_interface(phi)
 
-        if interface == "torch":
-            # Use convert_like to ensure that the tensor is put on the correct
-            # Torch device
-            z = qml.math.convert_like(qml.math.zeros([16]), phi)
-        else:
-            z = qml.math.zeros([16], like=interface)
-
         ones = qml.math.ones_like(c)
         diag = qml.math.stack(
             [ones, c, c, c**2, c, ones, c**2, c, c, c**2, ones, c, c**2, c, c, ones],
@@ -980,12 +975,11 @@ class OrbitalRotation(Operation):
         mask_s2[3, 12] = mask_s2[12, 3] = 1
         mask_s2[6, 9] = mask_s2[9, 6] = -1
 
-
         diag = qml.math.einsum("...i,ij->...ij", diag, np.eye(16))
         off_diag = (
             qml.math.einsum("...,ij->...ij", s, mask_s)
             + qml.math.einsum("...,ij->...ij", c * s, mask_cs)
-            + qml.math.einsum("...,ij->...ij", s ** 2, mask_s2)
+            + qml.math.einsum("...,ij->...ij", s**2, mask_s2)
         )
 
         return diag + off_diag
