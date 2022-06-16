@@ -412,7 +412,7 @@ class TestSample:
 
     def test_no_eigval_error(self, mock_qutrit_device_with_original_statistics):
         """Tests that an error is thrown if sample is called with an observable that does not have eigenvalues defined."""
-        dev = mock_qutrit_device_with_original_statistics()
+        dev = mock_qutrit_device_with_original_statistics(wires=2)
         dev._samples = np.array([[1, 0], [0, 2]])
 
         class SomeObservable(qml.operation.Observable):
@@ -423,8 +423,21 @@ class TestSample:
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
             dev.sample(SomeObservable(wires=0))
 
-    # def test_shot_list_samples(self, mock_qutrit_device_with_original_statistics):
-    #     """Tests that sample works correctly when instantiating device with shot list"""
+    def test_samples_with_bins(self, mock_qutrit_device_with_original_statistics, monkeypatch):
+        """Tests that sample works correctly when instantiating device with shot list"""
+
+        dev = mock_qutrit_device_with_original_statistics(wires=2)
+        samples = np.array([[0, 1], [2, 0], [2, 1], [1, 1], [2, 2], [1, 2]])
+        dev._samples = samples
+        obs = qml.measurements.sample(op=None, wires=[0, 1])
+
+        shot_range = [0, 6]
+        bin_size = 3
+
+        out = dev.sample(obs, shot_range=shot_range, bin_size=bin_size)
+        expected_samples = samples.reshape(3, -1)
+
+        assert np.array_equal(out, expected_samples)
 
 
 class TestGenerateSamples:

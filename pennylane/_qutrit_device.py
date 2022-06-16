@@ -32,7 +32,7 @@ from pennylane.measurements import (
     State,
 )
 from pennylane import QubitDevice
-from pennylane.wires import Wires  # pylint: disable=unused-import
+from pennylane.wires import Wires
 
 
 class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
@@ -325,12 +325,9 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         prob = self._reshape(prob, [3] * self.num_wires)
 
         # sum over all inactive wires
-        # hotfix to catch when default.qubit uses this method
-        # since then device_wires is a list
-        if isinstance(inactive_device_wires, Wires):
-            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
-        else:
-            prob = self._flatten(self._reduce_sum(prob, inactive_device_wires))
+        prob = self._flatten(self._reduce_sum(prob, inactive_device_wires.labels))
+        # TODO: Add case for when inactive_device_wires is not an instance of Wires once
+        # default qutrit device is added
 
         # The wires provided might not be in consecutive order (i.e., wires might be [2, 0]).
         # If this is the case, we must permute the marginalized probability so that
