@@ -473,7 +473,8 @@ def vn_entropy(state, indices, base=None, check_state=False, c_dtype="complex128
     **Example**
 
     You can get the entropy of a subsystem for any state vectors. You can find an example for the
-    maximally mixed state, where the entropy is maximal (default base for log is exponential).
+    maximally entangled state, where the subsystem entropy is maximal (default base for log is exponential).
+
 
     >>> x = [1, 0, 0, 1] / np.sqrt(2)
     >>> vn_entropy(x, indices=[0])
