@@ -23,7 +23,14 @@ import itertools
 import numpy as np
 
 import pennylane as qml
-from pennylane.measurements import Sample, Variance, Expectation, Probability, State
+from pennylane.measurements import (
+    MeasurementProcess,
+    Sample,
+    Variance,
+    Expectation,
+    Probability,
+    State,
+)
 from pennylane import QubitDevice
 from pennylane.wires import Wires  # pylint: disable=unused-import
 
@@ -346,21 +353,33 @@ class QutritDevice(QubitDevice):  # pylint: disable=too-many-public-methods
         name = observable.name  # pylint: disable=unused-variable
         sample_slice = Ellipsis if shot_range is None else slice(*shot_range)
 
-        # Replace the basis state in the computational basis with the correct eigenvalue.
-        # Extract only the columns of the basis samples required based on ``wires``.
-        samples = self._samples[
-            sample_slice, np.array(device_wires, dtype=np.int32)
-        ]  # Add np.array here for Jax support.
-        powers_of_three = 3 ** np.arange(samples.shape[-1])[::-1]
-        indices = samples @ powers_of_three
-        indices = np.array(indices)  # Add np.array here for Jax support.
-        try:
-            samples = observable.eigvals()[indices]
-        except qml.operation.EigvalsUndefinedError as e:
-            # if observable has no info on eigenvalues, we cannot return this measurement
-            raise qml.operation.EigvalsUndefinedError(
-                f"Cannot compute samples of {observable.name}."
-            ) from e
+        if isinstance(
+            observable, MeasurementProcess
+        ):  # if no observable was provided then return the raw samples
+            if (
+                len(observable.wires) != 0
+            ):  # if wires are provided, then we only return samples from those wires
+                samples = self._samples[sample_slice, np.array(device_wires)]
+            else:
+                samples = self._samples[sample_slice]
+
+        else:
+
+            # Replace the basis state in the computational basis with the correct eigenvalue.
+            # Extract only the columns of the basis samples required based on ``wires``.
+            samples = self._samples[
+                sample_slice, np.array(device_wires)
+            ]  # Add np.array here for Jax support.
+            powers_of_three = 3 ** np.arange(samples.shape[-1])[::-1]
+            indices = samples @ powers_of_three
+            indices = np.array(indices)  # Add np.array here for Jax support.
+            try:
+                samples = observable.eigvals()[indices]
+            except qml.operation.EigvalsUndefinedError as e:
+                # if observable has no info on eigenvalues, we cannot return this measurement
+                raise qml.operation.EigvalsUndefinedError(
+                    f"Cannot compute samples of {observable.name}."
+                ) from e
 
         if bin_size is None:
             return samples
