@@ -256,20 +256,28 @@ def gaussian_overlap(la, lb, ra, rb, alpha, beta):
     """
     p = alpha + beta
     s = 1.0
-    for i in range(3):
-        s = s * jnp.sqrt(jnp.pi / p) * expansion(la[i], lb[i], ra[i], rb[i], alpha, beta, 0)
+
+    s = s * jnp.sqrt(jnp.pi / p) * expansion(la[0], lb[0], ra[0], rb[0], alpha, beta, 0)
+    s = s * jnp.sqrt(jnp.pi / p) * expansion(la[1], lb[1], ra[1], rb[1], alpha, beta, 0)
+    s = s * jnp.sqrt(jnp.pi / p) * expansion(la[2], lb[2], ra[2], rb[2], alpha, beta, 0)
+
     return s
 
 
-def overlap_integral(args_a, args_b, basis_a, basis_b):
-    r"""Return a function that computes the overlap integral for two contracted Gaussian functions.
+def overlap_integral(alphas, coeffs, rs, basis_a, basis_b):
+    r"""Normalize and compute the overlap integral for two contracted Gaussian functions.
 
     Args:
+        alphas (array[float]): Values of the exponent of the primitive Gaussian function
+                               for each atom.
+        coeffs (array[float]): Values of the coefficients of the contracted Gaussian
+                               function for each atom.
+        rs (array[float]): Values of the position vectors of the first Gaussian functions.
         basis_a (~qchem.basis_set.BasisFunction): first basis function
         basis_b (~qchem.basis_set.BasisFunction): second basis function
 
     Returns:
-        function: function that computes the overlap integral
+        array[float]: the overlap integral between two contracted Gaussian orbitals
 
     **Example**
 
@@ -280,38 +288,23 @@ def overlap_integral(args_a, args_b, basis_a, basis_b):
     >>> overlap_integral(mol.basis_set[0], mol.basis_set[0])(*args)
     1.0
     """
+    alpha, ca, ra = alphas[0], coeffs[0], rs[0]
+    beta, cb, rb = alphas[1], coeffs[1], rs[1]
 
-    def _overlap_integral(*args):
-        r"""Normalize and compute the overlap integral for two contracted Gaussian functions.
+    ca = ca * primitive_norm(basis_a.l, alpha)
+    cb = cb * primitive_norm(basis_b.l, beta)
 
-        Args:
-            args (array[float]): initial values of the differentiable parameters
+    na = contracted_norm(basis_a.l, alpha, ca)
+    nb = contracted_norm(basis_b.l, beta, cb)
 
-        Returns:
-            array[float]: the overlap integral between two contracted Gaussian orbitals
-        """
-
-        args_a = [arg[0] for arg in args]
-        args_b = [arg[1] for arg in args]
-        alpha, ca, ra = _generate_params(basis_a.params, args_a)
-        beta, cb, rb = _generate_params(basis_b.params, args_b)
-
-        ca = ca * primitive_norm(basis_a.l, alpha)
-        cb = cb * primitive_norm(basis_b.l, beta)
-
-        na = contracted_norm(basis_a.l, alpha, ca)
-        nb = contracted_norm(basis_b.l, beta, cb)
-
-        return (
-            na
-            * nb
-            * (
-                (ca[:, jnp.newaxis] * cb)
-                * gaussian_overlap(basis_a.l, basis_b.l, ra, rb, alpha[:, jnp.newaxis], beta)
-            ).sum()
-        )
-
-    return _overlap_integral
+    return (
+        na
+        * nb
+        * (
+            (ca[:, jnp.newaxis] * cb)
+            * gaussian_overlap(basis_a.l, basis_b.l, ra, rb, alpha[:, jnp.newaxis], beta)
+        ).sum()
+    )
 
 
 def hermite_moment(alpha, beta, t, order, r):

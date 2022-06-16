@@ -19,7 +19,7 @@ import pytest
 
 import numpy as np
 
-
+from pennylane.qchem import Molecule
 from pennylane import qchem_jax as qchem
 
 
@@ -104,7 +104,7 @@ def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
     assert np.allclose(qchem.expansion(la, lb, ra, rb, alpha, beta, -1), jnp.array([0.0]))
     assert np.allclose(qchem.expansion(0, 1, ra, rb, alpha, beta, 2), jnp.array([0.0]))
 
-    # JIT
+    # JIT - Note that changing the angular momenta will trigger recompilation
     assert np.allclose(
         jax.jit(qchem.expansion, static_argnums=(0, 1, 6))(la, lb, ra, rb, alpha, beta, t), c
     )
@@ -116,3 +116,89 @@ def test_expansion(la, lb, ra, rb, alpha, beta, t, c):
         jax.jit(qchem.expansion, static_argnums=(0, 1, 6))(0, 1, ra, rb, alpha, beta, 2),
         jnp.array([0.0]),
     )
+
+
+@pytest.mark.parametrize(
+    ("la", "lb", "ra", "rb", "alpha", "beta", "o"),
+    [
+        # two normalized s orbitals
+        (
+            (0, 0, 0),
+            (0, 0, 0),
+            jnp.array([0.0, 0.0, 0.0]),
+            jnp.array([0.0, 0.0, 0.0]),
+            jnp.array([jnp.pi / 2]),
+            jnp.array([jnp.pi / 2]),
+            jnp.array([1.0]),
+        ),
+        (
+            (0, 0, 0),
+            (0, 0, 0),
+            jnp.array([0.0, 0.0, 0.0]),
+            jnp.array([20.0, 0.0, 0.0]),
+            jnp.array([3.42525091]),
+            jnp.array([3.42525091]),
+            jnp.array([0.0]),
+        ),
+        (
+            (1, 0, 0),
+            (0, 0, 1),
+            jnp.array([0.0, 0.0, 0.0]),
+            jnp.array([0.0, 0.0, 0.0]),
+            jnp.array([6.46480325]),
+            jnp.array([6.46480325]),
+            jnp.array([0.0]),
+        ),
+    ],
+)
+def test_gaussian_overlap(la, lb, ra, rb, alpha, beta, o):
+    r"""Test that gaussian overlap function returns a correct value and can be JIT compiled."""
+    assert np.allclose(qchem.gaussian_overlap(la, lb, ra, rb, alpha, beta), o)
+    assert np.allclose(
+        jax.jit(qchem.gaussian_overlap, static_argnums=(0, 1))(la, lb, ra, rb, alpha, beta), o
+    )
+
+
+@pytest.mark.parametrize(
+    ("symbols", "geometry", "alphas", "coeffs", "rs", "o_ref"),
+    [
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]]),
+            np.array([[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]),
+            np.array([[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 20.0]]),
+            np.array([0.0]),
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]),
+            np.array([[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]),
+            np.array([[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]),
+            np.array([1.0]),
+        ),
+        (
+            ["H", "H"],
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]),
+            np.array([[3.42525091, 0.62391373, 0.1688554], [3.42525091, 0.62391373, 0.1688554]]),
+            np.array([[0.15432897, 0.53532814, 0.44463454], [0.15432897, 0.53532814, 0.44463454]]),
+            np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]),
+            np.array([1.0]),
+        ),
+    ],
+)
+def test_overlap_integral(symbols, geometry, alphas, coeffs, rs, o_ref):
+    r"""Test that overlap_integral function returns a correct value for the overlap integral."""
+    mol = Molecule(symbols, geometry)
+
+    basis_a = mol.basis_set[0]
+    basis_b = mol.basis_set[1]
+
+    o = qchem.overlap_integral(alphas, coeffs, rs, basis_a, basis_b)
+    assert np.allclose(o, o_ref)
+
+    # JIT version - this will get tricky perhaps
+    overlap_integral_jitted = jax.jit(qchem.overlap_integral, static_argnums=(3, 4))
+    o_jitted = overlap_integral_jitted(alphas, coeffs, rs, basis_a, basis_b)
+    assert np.allclose(o_jitted, o_ref)
