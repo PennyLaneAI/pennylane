@@ -771,7 +771,7 @@ class TestExecution:
             node_2(np.eye(3), np.eye(3))
         assert dev_2.num_executions == num_evals_2
 
-        # test a new circuit on an existing instance of a qubit device
+        # test a new circuit on an existing instance of a qutrit device
         def circuit_3(U1, U2):
             qml.QutritUnitary(U1, wires=[0])
             qml.QutritUnitary(U2, wires=[0, 1])
