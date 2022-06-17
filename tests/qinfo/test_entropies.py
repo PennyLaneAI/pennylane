@@ -359,6 +359,8 @@ class TestVonNeumannEntropy:
 class TestMutualInformation:
     """Tests for the mutual information functions"""
 
+    diff_methods = ["backprop", "finite-diff"]
+
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
     @pytest.mark.parametrize("params", np.linspace(0, 2 * np.pi, 8))
@@ -475,12 +477,13 @@ class TestMutualInformation:
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    def test_qnode_grad(self, param):
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_qnode_grad(self, param, diff_method):
         """Test that the gradient of mutual information works for QNodes
         with the autograd interface"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="autograd")
+        @qml.qnode(dev, interface="autograd", diff_method=diff_method)
         def circuit(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -494,12 +497,16 @@ class TestMutualInformation:
                 np.log(np.cos(param / 2) ** 2) - np.log(np.sin(param / 2) ** 2)
             )
 
+        # higher tolerance for finite-diff method
+        tol = 1e-8 if diff_method == "backprop" else 1e-5
+
         actual = qml.grad(circuit)(param)
-        assert np.allclose(actual, expected)
+        assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    def test_qnode_grad_jax(self, param):
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_qnode_grad_jax(self, param, diff_method):
         """Test that the gradient of mutual information works for QNodes
         with the JAX interface"""
         import jax.numpy as jnp
@@ -508,7 +515,7 @@ class TestMutualInformation:
 
         param = jnp.array(param)
 
-        @qml.qnode(dev, interface="jax")
+        @qml.qnode(dev, interface="jax", diff_method=diff_method)
         def circuit(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -522,12 +529,16 @@ class TestMutualInformation:
                 jnp.log(jnp.cos(param / 2) ** 2) - jnp.log(jnp.sin(param / 2) ** 2)
             )
 
+        # higher tolerance for finite-diff method
+        tol = 1e-8 if diff_method == "backprop" else 1e-5
+
         actual = jax.grad(circuit)(param)
-        assert np.allclose(actual, expected)
+        assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    def test_qnode_grad_jax_jit(self, param):
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_qnode_grad_jax_jit(self, param, diff_method):
         """Test that the gradient of mutual information works for QNodes
         with the JAX-jit interface"""
         import jax.numpy as jnp
@@ -536,7 +547,7 @@ class TestMutualInformation:
 
         param = jnp.array(param)
 
-        @qml.qnode(dev, interface="jax-jit")
+        @qml.qnode(dev, interface="jax-jit", diff_method=diff_method)
         def circuit(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -550,19 +561,23 @@ class TestMutualInformation:
                 jnp.log(jnp.cos(param / 2) ** 2) - jnp.log(jnp.sin(param / 2) ** 2)
             )
 
+        # higher tolerance for finite-diff method
+        tol = 1e-8 if diff_method == "backprop" else 1e-5
+
         actual = jax.jit(jax.grad(circuit))(param)
-        assert np.allclose(actual, expected)
+        assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    def test_qnode_grad_tf(self, param):
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_qnode_grad_tf(self, param, diff_method):
         """Test that the gradient of mutual information works for QNodes
         with the tensorflow interface"""
         dev = qml.device("default.qubit", wires=2)
 
         param = tf.Variable(param)
 
-        @qml.qnode(dev, interface="tensorflow")
+        @qml.qnode(dev, interface="tensorflow", diff_method=diff_method)
         def circuit(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -579,17 +594,21 @@ class TestMutualInformation:
         with tf.GradientTape() as tape:
             out = circuit(param)
 
+        # higher tolerance for finite-diff method
+        tol = 1e-8 if diff_method == "backprop" else 1e-5
+
         actual = tape.gradient(out, param)
-        assert np.allclose(actual, expected)
+        assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 16))
-    def test_qnode_grad_torch(self, param):
+    @pytest.mark.parametrize("diff_method", diff_methods)
+    def test_qnode_grad_torch(self, param, diff_method):
         """Test that the gradient of mutual information works for QNodes
         with the torch interface"""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev, interface="torch")
+        @qml.qnode(dev, interface="torch", diff_method=diff_method)
         def circuit(param):
             qml.RY(param, wires=0)
             qml.CNOT(wires=[0, 1])
@@ -607,8 +626,11 @@ class TestMutualInformation:
         out = circuit(param)
         out.backward()
 
+        # higher tolerance for finite-diff method
+        tol = 1e-8 if diff_method == "backprop" else 1e-5
+
         actual = param.grad
-        assert np.allclose(actual, expected)
+        assert np.allclose(actual, expected, atol=tol)
 
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
