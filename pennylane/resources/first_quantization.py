@@ -82,6 +82,6 @@ def norm(eta, n, omega, br=7, charge=0):
     lambda_v = l_nu * eta * (eta - 1) / (2 * np.pi * omega ** (1 / 3))
 
     lambda_1 = lambda_t + lambda_u + lambda_v
-    lambda_2 = (lambda_u + lambda_v) / (p_nu * (1 - 1 / eta))
+    lambda_2 = (lambda_u + lambda_v / (1 - 1 / eta)) / p_nu
 
     return np.maximum(lambda_1, lambda_2) / p_eq

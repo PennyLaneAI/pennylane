@@ -23,7 +23,9 @@ from pennylane import numpy as np
 @pytest.mark.parametrize(
     ("n_basis", "br", "prob_ref"),
     [
+        # prob_ref computed with TFermion
         (1, 7, 1.0),
+        (10000, 7, 0.9998814293823286),
     ],
 )
 def test_success_prob(n_basis, br, prob_ref):
@@ -36,10 +38,10 @@ def test_success_prob(n_basis, br, prob_ref):
 @pytest.mark.parametrize(
     ("eta", "n", "omega", "br", "charge", "norm_ref"),
     [
-        (156, 100000, 169.69608, 7, 0, 5128920.595980267),
+        (156, 10000, 1145.166, 7, 0,  1254382.0657073155),
     ],
 )
-def test_success_prob(eta, n, omega, br, charge, norm_ref):
+def test_norm(eta, n, omega, br, charge, norm_ref):
     r"""Test that norm returns the correct value."""
     norm = qml.resources.norm(eta, n, omega, br, charge)
 
