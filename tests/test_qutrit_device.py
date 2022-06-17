@@ -756,7 +756,7 @@ class TestExecution:
             node_1(np.eye(3), np.eye(3), np.eye(9))
         assert dev_1.num_executions == num_evals_1
 
-        # test a second instance of a default qubit device
+        # test a second instance of a qutrit device
         dev_2 = mock_qutrit_device_extract_stats(wires=2)
 
         def circuit_2(U1, U2):
